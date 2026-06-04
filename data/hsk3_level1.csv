@@ -1,0 +1,11 @@
+language,system,level,sort_order,lesson_group,category,priority,word,reading,reading_plain,meaning,part_of_speech,audio_path
+chinese,hsk_3,1,1,1,pronoun,1,我,wǒ,wo,"I, me",pronoun,chinese/hsk_3/level_1/001_wo.mp3
+chinese,hsk_3,1,2,1,pronoun,1,你,nǐ,ni,"you",pronoun,chinese/hsk_3/level_1/002_ni.mp3
+chinese,hsk_3,1,3,1,pronoun,1,他,tā,ta,"he, him",pronoun,chinese/hsk_3/level_1/003_ta.mp3
+chinese,hsk_3,1,4,1,pronoun,1,她,tā,ta,"she, her",pronoun,chinese/hsk_3/level_1/004_ta_she.mp3
+chinese,hsk_3,1,5,1,pronoun,1,我们,wǒmen,women,"we, us",pronoun,chinese/hsk_3/level_1/005_women.mp3
+chinese,hsk_3,1,6,2,grammar,1,是,shì,shi,"to be",verb,chinese/hsk_3/level_1/006_shi.mp3
+chinese,hsk_3,1,7,2,grammar,1,不,bù,bu,"no, not",adverb,chinese/hsk_3/level_1/007_bu.mp3
+chinese,hsk_3,1,8,2,grammar,1,的,de,de,"possessive particle",particle,chinese/hsk_3/level_1/008_de.mp3
+chinese,hsk_3,1,9,2,grammar,1,有,yǒu,you,"to have; there is",verb,chinese/hsk_3/level_1/009_you.mp3
+chinese,hsk_3,1,10,2,grammar,1,在,zài,zai,"at; in; on; to be located at",verb/preposition,chinese/hsk_3/level_1/010_zai.mp3
