@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import { schedule, previewLabels } from './srs'
 import { updateStreak } from './streak'
 
-export default function Study({ session, profile, onBack, onStreakUpdate }) {
+export default function Study({ session, profile, track, onBack, onStreakUpdate }) {
   const [queue, setQueue] = useState([])
   const [loading, setLoading] = useState(true)
   const [flipped, setFlipped] = useState(false)
@@ -11,7 +11,6 @@ export default function Study({ session, profile, onBack, onStreakUpdate }) {
   const [streakDone, setStreakDone] = useState(false)
 
   const accent = profile.active_language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
-  const level = profile.active_language === 'chinese' ? profile.chinese_level : profile.japanese_level
   const isJapanese = profile.active_language === 'japanese'
 
   useEffect(() => { loadQueue() }, [])
@@ -19,13 +18,17 @@ export default function Study({ session, profile, onBack, onStreakUpdate }) {
   const loadQueue = async () => {
     setLoading(true)
 
+    // Fetch vocab for this language track in fixed order
     const { data: vocab } = await supabase
       .from('vocabulary')
       .select('*')
-      .eq('language', profile.active_language)
-      .eq('level', level)
+      .eq('language', track.language)
+      .eq('system', track.system)
+      .eq('level', track.current_level)
+      .eq('is_active', true)
       .order('sort_order', { ascending: true })
 
+    // Fetch all user cards
     const { data: cards } = await supabase
       .from('cards')
       .select('*')
@@ -34,27 +37,33 @@ export default function Study({ session, profile, onBack, onStreakUpdate }) {
     const vocabById = {}
     ;(vocab || []).forEach(v => { vocabById[v.id] = v })
 
+    // How many new cards introduced today?
     const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0)
-    const introducedToday = (cards || []).filter(c => new Date(c.created_at) >= startOfToday).length
-    const remainingNew = Math.max(0, profile.daily_card_goal - introducedToday)
+    const introducedToday = (cards || [])
+      .filter(c => new Date(c.created_at) >= startOfToday).length
+    const remainingNew = Math.max(0, profile.daily_new_cards - introducedToday)
 
     const now = new Date()
     const startedVocab = new Set()
 
+    // Attach vocab to existing cards for this level
     const levelCards = (cards || [])
       .map(c => ({ ...c, vocab: vocabById[c.vocab_id] }))
       .filter(c => c.vocab)
     levelCards.forEach(c => startedVocab.add(c.vocab_id))
 
-    const dueLearning = levelCards.filter(c => c.state === 'learning' && new Date(c.next_review) <= now)
-    const dueReview = levelCards.filter(c => c.state === 'review' && new Date(c.next_review) <= now)
+    const dueLearning = levelCards
+      .filter(c => c.state === 'learning' && new Date(c.due_at) <= now)
+    const dueReview = levelCards
+      .filter(c => c.state === 'review' && new Date(c.due_at) <= now)
 
+    // New cards in sort_order, limited by today's remaining goal
     const newItems = (vocab || [])
       .filter(v => !startedVocab.has(v.id))
       .slice(0, remainingNew)
       .map(v => ({
         id: null, vocab_id: v.id, vocab: v,
-        state: 'new', ease_factor: 2.5, interval: 0, learning_step: 0,
+        state: 'new', ease_factor: 2.5, interval_days: 0, learning_step: 0,
       }))
 
     const newQueue = [...dueLearning, ...newItems, ...dueReview]
@@ -67,19 +76,25 @@ export default function Study({ session, profile, onBack, onStreakUpdate }) {
     const card = queue[0]
     const res = schedule(card, grade)
 
+    // Update streak once per session
     if (!streakDone) {
       setStreakDone(true)
       const newStreak = await updateStreak(profile)
       if (onStreakUpdate) onStreakUpdate(newStreak)
     }
 
+    // Save to database
     let cardId = card.id
     if (cardId) {
       await supabase.from('cards').update(res.updates).eq('id', cardId)
     } else {
       const { data } = await supabase
         .from('cards')
-        .insert({ user_id: session.user.id, vocab_id: card.vocab_id, ...res.updates })
+        .insert({
+          user_id: session.user.id,
+          vocab_id: card.vocab_id,
+          ...res.updates,
+        })
         .select('id')
         .single()
       cardId = data?.id
@@ -87,6 +102,7 @@ export default function Study({ session, profile, onBack, onStreakUpdate }) {
 
     setFlipped(false)
 
+    // Update session queue
     setQueue(prev => {
       const rest = prev.slice(1)
       if (res.stay) {
@@ -99,6 +115,7 @@ export default function Study({ session, profile, onBack, onStreakUpdate }) {
     })
   }
 
+  // Live counts
   const newCount = queue.filter(c => c.state === 'new').length
   const learnCount = queue.filter(c => c.state === 'learning').length
   const dueCount = queue.filter(c => c.state === 'review').length
@@ -113,8 +130,10 @@ export default function Study({ session, profile, onBack, onStreakUpdate }) {
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>✨</div>
           <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '8px' }}>All done for now!</h1>
-          <p style={{ color: '#888', marginBottom: '24px' }}>No more cards due. Come back later.</p>
-          <button onClick={onBack} style={{ ...btn, background: accent, color: '#fff', border: 'none' }}>Back home</button>
+          <p style={{ color: '#888', marginBottom: '24px' }}>No cards due. Come back later.</p>
+          <button onClick={onBack} style={{ ...btn, background: accent, color: '#fff', border: 'none' }}>
+            Back home
+          </button>
         </div>
       </div>
     )
@@ -126,6 +145,7 @@ export default function Study({ session, profile, onBack, onStreakUpdate }) {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* Top bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px' }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '14px' }}>
           ← Exit
@@ -137,6 +157,7 @@ export default function Study({ session, profile, onBack, onStreakUpdate }) {
         </div>
       </div>
 
+      {/* Card */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
         <div
           onClick={() => setFlipped(true)}
@@ -154,19 +175,31 @@ export default function Study({ session, profile, onBack, onStreakUpdate }) {
           }}>
             {v.word}
           </div>
-          {!flipped && <div style={{ fontSize: '13px', color: '#bbb', marginTop: '24px' }}>tap to reveal</div>}
+
+          {!flipped && (
+            <div style={{ fontSize: '13px', color: '#bbb', marginTop: '24px' }}>tap to reveal</div>
+          )}
+
           {flipped && (
             <>
-              <div style={{ fontSize: '20px', color: accent, marginTop: '16px', fontWeight: 500 }}>{v.pinyin}</div>
-              <div style={{ fontSize: '18px', color: '#555', marginTop: '8px' }}>{v.meaning}</div>
+              <div style={{ fontSize: '20px', color: accent, marginTop: '16px', fontWeight: 500 }}>
+                {v.reading}
+              </div>
+              <div style={{ fontSize: '18px', color: '#555', marginTop: '8px' }}>
+                {v.meaning}
+              </div>
             </>
           )}
         </div>
       </div>
 
+      {/* Grade buttons */}
       <div style={{ padding: '24px', maxWidth: '460px', margin: '0 auto', width: '100%' }}>
         {!flipped ? (
-          <button onClick={() => setFlipped(true)} style={{ ...btn, width: '100%', background: '#1a1a1a', color: '#fff', border: 'none' }}>
+          <button
+            onClick={() => setFlipped(true)}
+            style={{ ...btn, width: '100%', background: '#1a1a1a', color: '#fff', border: 'none' }}
+          >
             Show answer
           </button>
         ) : (
@@ -188,7 +221,9 @@ export default function Study({ session, profile, onBack, onStreakUpdate }) {
                 }}
               >
                 {label}
-                <span style={{ fontSize: '11px', fontWeight: 500, opacity: 0.75 }}>{labels[g]}</span>
+                <span style={{ fontSize: '11px', fontWeight: 500, opacity: 0.75 }}>
+                  {labels[g]}
+                </span>
               </button>
             ))}
           </div>

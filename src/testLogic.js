@@ -1,7 +1,6 @@
 import { supabase } from './supabase'
 
-// Normalize pinyin so "nǐ", "ni", "NI " all match.
-// Strips tones, spaces, apostrophes; lowercases; maps ü→u (and v→u).
+// Normalize for tone-insensitive comparison
 export function normalizePinyin(str) {
   if (!str) return ''
   const toneMap = {
@@ -18,35 +17,33 @@ export function normalizePinyin(str) {
     .map(ch => toneMap[ch] || ch)
     .join('')
     .replace(/v/g, 'u')
-    .replace(/['’\s]/g, '')
+    .replace(/[''\s]/g, '')
 }
 
-// Check if the user's answer matches the word (accepts characters OR pinyin)
+// Accept: exact character match OR reading_plain match OR normalized reading match
 export function checkAnswer(userInput, vocab) {
   const input = (userInput || '').trim()
   if (!input) return false
-  // Exact character match
   if (input === vocab.word) return true
-  // Pinyin match (tone-insensitive)
-  if (normalizePinyin(input) === normalizePinyin(vocab.pinyin)) return true
+  if (vocab.reading_plain && input.toLowerCase().replace(/\s/g, '') === vocab.reading_plain.toLowerCase().replace(/\s/g, '')) return true
+  if (normalizePinyin(input) === normalizePinyin(vocab.reading)) return true
   return false
 }
 
-// Returns { unlocked, totalWords, easyWords } for the test gate
-export async function getTestStatus(session, profile) {
-  const language = profile.active_language
-  const level = language === 'chinese' ? profile.chinese_level : profile.japanese_level
-
+// Returns { allEasy, totalWords, easyWords }
+export async function getTestStatus(userId, track) {
   const { data: vocab } = await supabase
     .from('vocabulary')
     .select('id')
-    .eq('language', language)
-    .eq('level', level)
+    .eq('language', track.language)
+    .eq('system', track.system)
+    .eq('level', track.current_level)
+    .eq('is_active', true)
 
   const { data: cards } = await supabase
     .from('cards')
     .select('vocab_id, is_easy')
-    .eq('user_id', session.user.id)
+    .eq('user_id', userId)
 
   const vocabIds = new Set((vocab || []).map(v => v.id))
   const easyCards = (cards || []).filter(c => vocabIds.has(c.vocab_id) && c.is_easy)
@@ -55,24 +52,23 @@ export async function getTestStatus(session, profile) {
   const easyWords = easyCards.length
 
   return {
-    unlocked: totalWords > 0 && easyWords === totalWords,
+    allEasy: totalWords > 0 && easyWords === totalWords,
     totalWords,
     easyWords,
   }
 }
 
-// Count today's test attempts
-export async function getAttemptsToday(session, profile) {
-  const language = profile.active_language
-  const level = language === 'chinese' ? profile.chinese_level : profile.japanese_level
+// Count today's attempts and check if any passed
+export async function getAttemptsToday(userId, track) {
   const today = new Date().toISOString().slice(0, 10)
 
   const { data } = await supabase
     .from('test_attempts')
     .select('id, passed')
-    .eq('user_id', session.user.id)
-    .eq('language', language)
-    .eq('level', level)
+    .eq('user_id', userId)
+    .eq('language', track.language)
+    .eq('system', track.system)
+    .eq('level', track.current_level)
     .eq('attempt_date', today)
 
   return {
