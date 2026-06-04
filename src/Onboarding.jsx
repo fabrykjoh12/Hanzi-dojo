@@ -5,13 +5,13 @@ export default function Onboarding({ session, onComplete }) {
   const [step, setStep] = useState(1)
   const [language, setLanguage] = useState(null)
   const [level, setLevel] = useState(null)
-  const [goal, setGoal] = useState(20)
+  const [goal, setGoal] = useState(10)
   const [saving, setSaving] = useState(false)
 
   const accent = language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
 
   const chineseLevels = [1, 2, 3, 4, 5, 6]
-  const japaneseLevels = [5, 4, 3, 2, 1] // N5 (easy) to N1 (hard)
+  const japaneseLevels = [5, 4, 3, 2, 1]
 
   const handleFinish = async () => {
     setSaving(true)
@@ -34,7 +34,6 @@ export default function Onboarding({ session, onComplete }) {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
       <div style={{ width: '100%', maxWidth: '440px' }}>
 
-        {/* Progress dots */}
         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '40px' }}>
           {[1, 2, 3].map(n => (
             <div key={n} style={{
@@ -47,7 +46,6 @@ export default function Onboarding({ session, onComplete }) {
           ))}
         </div>
 
-        {/* STEP 1: Language */}
         {step === 1 && (
           <div>
             <h1 style={{ fontSize: '26px', fontWeight: 600, textAlign: 'center', marginBottom: '8px' }}>
@@ -59,7 +57,7 @@ export default function Onboarding({ session, onComplete }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <button
                 onClick={() => { setLanguage('chinese'); setLevel(null); setStep(2) }}
-                style={langCard('var(--chinese-accent)')}
+                style={langCard()}
               >
                 <span style={{ fontSize: '40px', color: 'var(--chinese-accent)', fontFamily: "'Noto Sans SC'" }}>中文</span>
                 <div>
@@ -69,7 +67,7 @@ export default function Onboarding({ session, onComplete }) {
               </button>
               <button
                 onClick={() => { setLanguage('japanese'); setLevel(null); setStep(2) }}
-                style={langCard('var(--japanese-accent)')}
+                style={langCard()}
               >
                 <span style={{ fontSize: '40px', color: 'var(--japanese-accent)', fontFamily: "'Noto Sans JP'" }}>日本語</span>
                 <div>
@@ -81,7 +79,6 @@ export default function Onboarding({ session, onComplete }) {
           </div>
         )}
 
-        {/* STEP 2: Level */}
         {step === 2 && (
           <div>
             <h1 style={{ fontSize: '26px', fontWeight: 600, textAlign: 'center', marginBottom: '8px' }}>
@@ -120,7 +117,6 @@ export default function Onboarding({ session, onComplete }) {
           </div>
         )}
 
-        {/* STEP 3: Daily goal */}
         {step === 3 && (
           <div>
             <h1 style={{ fontSize: '26px', fontWeight: 600, textAlign: 'center', marginBottom: '8px' }}>
@@ -131,9 +127,9 @@ export default function Onboarding({ session, onComplete }) {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {[
-                { val: 10, label: 'Casual', desc: '10 new cards / day' },
-                { val: 20, label: 'Regular', desc: '20 new cards / day' },
-                { val: 50, label: 'Intensive', desc: '50 new cards / day' },
+                { val: 5, label: 'Casual', desc: '5 new cards / day' },
+                { val: 10, label: 'Regular', desc: '10 new cards / day' },
+                { val: 15, label: 'Intensive', desc: '15 new cards / day' },
               ].map(opt => (
                 <button
                   key={opt.val}
@@ -171,7 +167,7 @@ export default function Onboarding({ session, onComplete }) {
   )
 }
 
-const langCard = (accent) => ({
+const langCard = () => ({
   display: 'flex',
   alignItems: 'center',
   gap: '20px',

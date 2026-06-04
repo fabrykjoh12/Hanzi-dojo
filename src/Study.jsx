@@ -1,87 +1,107 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import { calcNextReview } from './srs'
+import { schedule, previewLabels } from './srs'
+import { updateStreak } from './streak'
 
-export default function Study({ session, profile, onBack }) {
+export default function Study({ session, profile, onBack, onStreakUpdate }) {
   const [queue, setQueue] = useState([])
   const [loading, setLoading] = useState(true)
   const [flipped, setFlipped] = useState(false)
   const [done, setDone] = useState(false)
+  const [streakDone, setStreakDone] = useState(false)
 
   const accent = profile.active_language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
   const level = profile.active_language === 'chinese' ? profile.chinese_level : profile.japanese_level
+  const isJapanese = profile.active_language === 'japanese'
 
-  useEffect(() => {
-    loadQueue()
-  }, [])
+  useEffect(() => { loadQueue() }, [])
 
   const loadQueue = async () => {
     setLoading(true)
 
-    // 1. Get all vocabulary for this level/language
     const { data: vocab } = await supabase
       .from('vocabulary')
       .select('*')
       .eq('language', profile.active_language)
       .eq('level', level)
+      .order('sort_order', { ascending: true })
 
-    // 2. Get the user's existing cards (their progress)
     const { data: cards } = await supabase
       .from('cards')
       .select('*')
       .eq('user_id', session.user.id)
 
-    const cardsByVocab = {}
-    ;(cards || []).forEach(c => { cardsByVocab[c.vocab_id] = c })
+    const vocabById = {}
+    ;(vocab || []).forEach(v => { vocabById[v.id] = v })
+
+    const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0)
+    const introducedToday = (cards || []).filter(c => new Date(c.created_at) >= startOfToday).length
+    const remainingNew = Math.max(0, profile.daily_card_goal - introducedToday)
 
     const now = new Date()
+    const startedVocab = new Set()
 
-    // Due review cards (already started, due now)
-    const dueCards = (cards || [])
-      .filter(c => new Date(c.next_review) <= now)
-      .map(c => ({ ...c, vocab: vocab.find(v => v.id === c.vocab_id) }))
+    const levelCards = (cards || [])
+      .map(c => ({ ...c, vocab: vocabById[c.vocab_id] }))
       .filter(c => c.vocab)
+    levelCards.forEach(c => startedVocab.add(c.vocab_id))
 
-    // New cards (vocab with no card yet), limited by daily goal
-    const newVocab = (vocab || [])
-      .filter(v => !cardsByVocab[v.id])
-      .slice(0, profile.daily_card_goal)
-      .map(v => ({ id: null, vocab_id: v.id, vocab: v, isNew: true, interval: 1, ease_factor: 2.5, repetitions: 0 }))
+    const dueLearning = levelCards.filter(c => c.state === 'learning' && new Date(c.next_review) <= now)
+    const dueReview = levelCards.filter(c => c.state === 'review' && new Date(c.next_review) <= now)
 
-    setQueue([...dueCards, ...newVocab])
+    const newItems = (vocab || [])
+      .filter(v => !startedVocab.has(v.id))
+      .slice(0, remainingNew)
+      .map(v => ({
+        id: null, vocab_id: v.id, vocab: v,
+        state: 'new', ease_factor: 2.5, interval: 0, learning_step: 0,
+      }))
+
+    const newQueue = [...dueLearning, ...newItems, ...dueReview]
+    setQueue(newQueue)
+    setDone(newQueue.length === 0)
     setLoading(false)
-    setDone((dueCards.length + newVocab.length) === 0)
   }
 
   const handleGrade = async (grade) => {
     const card = queue[0]
-    const updated = calcNextReview(card, grade)
+    const res = schedule(card, grade)
 
-    if (card.id) {
-      // Existing card — update it
-      await supabase.from('cards').update(updated).eq('id', card.id)
+    if (!streakDone) {
+      setStreakDone(true)
+      const newStreak = await updateStreak(profile)
+      if (onStreakUpdate) onStreakUpdate(newStreak)
+    }
+
+    let cardId = card.id
+    if (cardId) {
+      await supabase.from('cards').update(res.updates).eq('id', cardId)
     } else {
-      // New card — create it
-      await supabase.from('cards').insert({
-        user_id: session.user.id,
-        vocab_id: card.vocab_id,
-        ...updated,
-      })
+      const { data } = await supabase
+        .from('cards')
+        .insert({ user_id: session.user.id, vocab_id: card.vocab_id, ...res.updates })
+        .select('id')
+        .single()
+      cardId = data?.id
     }
 
     setFlipped(false)
 
-    // If failed (Again), move card to back of queue; otherwise remove it
-    setTimeout(() => {
-      if (grade === 0) {
-        setQueue(prev => [...prev.slice(1), prev[0]])
-      } else {
-        const next = queue.slice(1)
-        setQueue(next)
-        if (next.length === 0) setDone(true)
+    setQueue(prev => {
+      const rest = prev.slice(1)
+      if (res.stay) {
+        const item = { ...card, ...res.updates, id: cardId }
+        const pos = Math.min(res.gap, rest.length)
+        rest.splice(pos, 0, item)
       }
-    }, 150)
+      if (rest.length === 0) setDone(true)
+      return rest
+    })
   }
+
+  const newCount = queue.filter(c => c.state === 'new').length
+  const learnCount = queue.filter(c => c.state === 'learning').length
+  const dueCount = queue.filter(c => c.state === 'review').length
 
   if (loading) {
     return <div style={center}><div style={{ fontSize: '32px', color: accent }}>学</div></div>
@@ -94,9 +114,7 @@ export default function Study({ session, profile, onBack }) {
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>✨</div>
           <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '8px' }}>All done for now!</h1>
           <p style={{ color: '#888', marginBottom: '24px' }}>No more cards due. Come back later.</p>
-          <button onClick={onBack} style={{ ...btn, background: accent, color: '#fff', border: 'none' }}>
-            Back home
-          </button>
+          <button onClick={onBack} style={{ ...btn, background: accent, color: '#fff', border: 'none' }}>Back home</button>
         </div>
       </div>
     )
@@ -104,49 +122,39 @@ export default function Study({ session, profile, onBack }) {
 
   const card = queue[0]
   const v = card.vocab
-  const isJapanese = profile.active_language === 'japanese'
+  const labels = previewLabels(card)
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Top bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px' }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '14px' }}>
           ← Exit
         </button>
-        <div style={{ fontSize: '13px', color: '#888' }}>{queue.length} left</div>
+        <div style={{ display: 'flex', gap: '14px', fontSize: '13px', fontWeight: 600 }}>
+          <span style={{ color: '#3E63DD' }}>New {newCount}</span>
+          <span style={{ color: '#E08C00' }}>Learning {learnCount}</span>
+          <span style={{ color: '#30A46C' }}>Due {dueCount}</span>
+        </div>
       </div>
 
-      {/* Card */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
         <div
           onClick={() => setFlipped(true)}
           style={{
-            width: '100%',
-            maxWidth: '420px',
-            minHeight: '280px',
-            background: '#fff',
-            border: '1px solid #eee',
-            borderRadius: '20px',
+            width: '100%', maxWidth: '420px', minHeight: '280px',
+            background: '#fff', border: '1px solid #eee', borderRadius: '20px',
             boxShadow: '0 4px 24px rgba(0,0,0,0.04)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: flipped ? 'default' : 'pointer',
-            padding: '32px',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            cursor: flipped ? 'default' : 'pointer', padding: '32px',
           }}
         >
           <div style={{
-            fontSize: '72px',
-            fontWeight: 400,
-            color: '#1a1a1a',
+            fontSize: '72px', fontWeight: 400, color: '#1a1a1a',
             fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
           }}>
             {v.word}
           </div>
-
           {!flipped && <div style={{ fontSize: '13px', color: '#bbb', marginTop: '24px' }}>tap to reveal</div>}
-
           {flipped && (
             <>
               <div style={{ fontSize: '20px', color: accent, marginTop: '16px', fontWeight: 500 }}>{v.pinyin}</div>
@@ -156,7 +164,6 @@ export default function Study({ session, profile, onBack }) {
         </div>
       </div>
 
-      {/* Grade buttons */}
       <div style={{ padding: '24px', maxWidth: '460px', margin: '0 auto', width: '100%' }}>
         {!flipped ? (
           <button onClick={() => setFlipped(true)} style={{ ...btn, width: '100%', background: '#1a1a1a', color: '#fff', border: 'none' }}>
@@ -174,17 +181,14 @@ export default function Study({ session, profile, onBack }) {
                 key={g}
                 onClick={() => handleGrade(g)}
                 style={{
-                  padding: '14px 4px',
-                  borderRadius: '10px',
-                  border: `1px solid ${color}33`,
-                  background: `${color}11`,
-                  color: color,
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
+                  padding: '12px 4px', borderRadius: '10px',
+                  border: `1px solid ${color}33`, background: `${color}11`,
+                  color, fontSize: '14px', fontWeight: 600, cursor: 'pointer',
                 }}
               >
                 {label}
+                <span style={{ fontSize: '11px', fontWeight: 500, opacity: 0.75 }}>{labels[g]}</span>
               </button>
             ))}
           </div>
