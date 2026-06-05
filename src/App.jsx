@@ -8,6 +8,7 @@ import Stories from './Stories'
 import { getTestStatus } from './testLogic'
 import { getHomeCounts } from './homeCounts'
 import Profile from './Profile'
+import YouTube from './YouTube'
 
 // ── Feature card component ────────────────────────────────────────────────
 function FeatureCard({ icon, title, subtitle, detail, detailColor, onClick, accent, locked, indicator }) {
@@ -218,6 +219,15 @@ export default function App() {
     />
   )
 }
+if (view === 'youtube') {
+  return (
+    <YouTube
+      profile={profile}
+      track={track}
+      onBack={() => setView('home')}
+    />
+  )
+}
 
   // ── Home ─────────────────────────────────────────────────────────────────
   return (
@@ -369,13 +379,14 @@ export default function App() {
             indicator={storiesUnlocked ? '→' : '🔒'}
           />
           <FeatureCard
-            icon="▶️"
-            title="YouTube"
-            subtitle="Curated beginner videos"
-            detail="Coming soon"
-            accent={accentHex}
-            locked
-          />
+  icon="▶️"
+  title="YouTube"
+  subtitle="Curated beginner videos"
+  detail="Watch & learn"
+  detailColor={accentHex}
+  onClick={() => setView('youtube')}
+  accent={accentHex}
+/>
         </div>
       </div>
     </div>
