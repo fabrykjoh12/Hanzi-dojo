@@ -18,7 +18,7 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
 
   const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0)
   const introducedToday = (cards || [])
-    .filter(c => new Date(c.created_at) >= startOfToday).length
+    .filter(c => new Date(c.created_at) >= startOfToday && vocabIds.has(c.vocab_id)).length
   const remainingNew = Math.max(0, dailyNewCards - introducedToday)
 
   const startedVocabIds = new Set((cards || []).map(c => c.vocab_id))

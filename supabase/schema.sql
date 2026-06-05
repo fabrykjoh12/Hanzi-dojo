@@ -12,6 +12,7 @@ drop table if exists public.test_answers cascade;
 drop table if exists public.test_attempts cascade;
 drop table if exists public.daily_activity cascade;
 drop table if exists public.review_logs cascade;
+drop table if exists public.writing_stats cascade;
 drop table if exists public.cards cascade;
 drop table if exists public.vocabulary cascade;
 drop table if exists public.language_tracks cascade;
@@ -166,7 +167,33 @@ create index cards_vocab_idx
 on public.cards(vocab_id);
 
 
--- 6. Review logs
+-- 6. Writing practice stats
+create table public.writing_stats (
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  vocab_id uuid not null references public.vocabulary(id) on delete cascade,
+
+  xp int not null default 0 check (xp between 0 and 100),
+  attempts int not null default 0,
+  correct_count int not null default 0,
+  missed_count int not null default 0,
+  correct_streak int not null default 0,
+
+  last_practiced_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  primary key (user_id, vocab_id)
+);
+
+create trigger writing_stats_set_updated_at
+before update on public.writing_stats
+for each row execute function public.set_updated_at();
+
+create index writing_stats_user_xp_idx
+on public.writing_stats(user_id, xp desc);
+
+
+-- 7. Review logs
 create table public.review_logs (
   id uuid primary key default gen_random_uuid(),
 
@@ -187,7 +214,7 @@ create index review_logs_user_time_idx
 on public.review_logs(user_id, reviewed_at desc);
 
 
--- 7. Daily activity
+-- 8. Daily activity
 create table public.daily_activity (
   user_id uuid not null references public.profiles(id) on delete cascade,
   activity_date date not null default current_date,
@@ -208,7 +235,7 @@ before update on public.daily_activity
 for each row execute function public.set_updated_at();
 
 
--- 8. Test attempts
+-- 9. Test attempts
 create table public.test_attempts (
   id uuid primary key default gen_random_uuid(),
 
@@ -234,7 +261,7 @@ create index test_attempts_level_idx
 on public.test_attempts(user_id, language, system, level, attempt_date);
 
 
--- 9. Individual answers inside a test
+-- 10. Individual answers inside a test
 create table public.test_answers (
   id uuid primary key default gen_random_uuid(),
 
@@ -253,7 +280,7 @@ create index test_answers_attempt_idx
 on public.test_answers(attempt_id);
 
 
--- 10. Level unlocks
+-- 11. Level unlocks
 create table public.level_unlocks (
   user_id uuid not null references public.profiles(id) on delete cascade,
 
@@ -267,7 +294,7 @@ create table public.level_unlocks (
 );
 
 
--- 11. Stories
+-- 12. Stories
 create table public.stories (
   id uuid primary key default gen_random_uuid(),
 
@@ -293,7 +320,7 @@ before update on public.stories
 for each row execute function public.set_updated_at();
 
 
--- 12. Story vocabulary mapping
+-- 13. Story vocabulary mapping
 -- Helps tooltips and makes it easy to know which words appear in a story.
 create table public.story_vocab (
   story_id uuid not null references public.stories(id) on delete cascade,
@@ -303,7 +330,7 @@ create table public.story_vocab (
 );
 
 
--- 13. Curated YouTube recommendations
+-- 14. Curated YouTube recommendations
 create table public.youtube_recommendations (
   id uuid primary key default gen_random_uuid(),
 
@@ -328,6 +355,7 @@ alter table public.profiles enable row level security;
 alter table public.language_tracks enable row level security;
 alter table public.vocabulary enable row level security;
 alter table public.cards enable row level security;
+alter table public.writing_stats enable row level security;
 alter table public.review_logs enable row level security;
 alter table public.daily_activity enable row level security;
 alter table public.test_attempts enable row level security;
@@ -431,6 +459,24 @@ for delete to authenticated
 using ((select auth.uid()) = user_id);
 
 
+-- Writing stats
+create policy "users can read own writing stats"
+on public.writing_stats
+for select to authenticated
+using ((select auth.uid()) = user_id);
+
+create policy "users can insert own writing stats"
+on public.writing_stats
+for insert to authenticated
+with check ((select auth.uid()) = user_id);
+
+create policy "users can update own writing stats"
+on public.writing_stats
+for update to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
+
 -- Review logs
 create policy "users can read own review logs"
 on public.review_logs
@@ -495,6 +541,90 @@ create policy "users can insert own level unlocks"
 on public.level_unlocks
 for insert to authenticated
 with check ((select auth.uid()) = user_id);
+
+
+-- Progress reset
+-- Lets a signed-in user reset their own progress for a language/system track.
+create or replace function public.reset_current_language_progress(
+  p_language text,
+  p_system text,
+  p_reset_streak boolean default true
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_has_track boolean;
+begin
+  if v_user_id is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  select exists (
+    select 1
+    from public.language_tracks
+    where user_id = v_user_id
+      and language = p_language
+      and system = p_system
+      and is_active = true
+  )
+  into v_has_track;
+
+  if not v_has_track then
+    raise exception 'Language track not found';
+  end if;
+
+  delete from public.review_logs rl
+  using public.vocabulary v
+  where rl.user_id = v_user_id
+    and rl.vocab_id = v.id
+    and v.language = p_language
+    and v.system = p_system;
+
+  delete from public.cards c
+  using public.vocabulary v
+  where c.user_id = v_user_id
+    and c.vocab_id = v.id
+    and v.language = p_language
+    and v.system = p_system;
+
+  delete from public.writing_stats ws
+  using public.vocabulary v
+  where ws.user_id = v_user_id
+    and ws.vocab_id = v.id
+    and v.language = p_language
+    and v.system = p_system;
+
+  delete from public.test_attempts
+  where user_id = v_user_id
+    and language = p_language
+    and system = p_system;
+
+  delete from public.level_unlocks
+  where user_id = v_user_id
+    and language = p_language
+    and system = p_system;
+
+  if p_reset_streak then
+    delete from public.daily_activity
+    where user_id = v_user_id;
+
+    update public.profiles
+    set streak = 0,
+        streak_freezes = 1,
+        last_studied_on = null
+    where id = v_user_id;
+  end if;
+end;
+$$;
+
+revoke all on function public.reset_current_language_progress(text, text, boolean) from public;
+grant execute on function public.reset_current_language_progress(text, text, boolean) to authenticated;
+
+notify pgrst, 'reload schema';
 
 
 -- Starter content source row

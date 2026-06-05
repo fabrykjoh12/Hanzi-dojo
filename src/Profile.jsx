@@ -7,19 +7,17 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
   const [editingGoal, setEditingGoal] = useState(false)
   const [newGoal, setNewGoal] = useState(profile.daily_new_cards)
   const [saving, setSaving] = useState(false)
+  const [confirmingReset, setConfirmingReset] = useState(false)
+  const [resetting, setResetting] = useState(false)
+  const [resetError, setResetError] = useState('')
   const [loading, setLoading] = useState(true)
 
   const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
-  const accent = profile.active_language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
   const langChars = profile.active_language === 'japanese' ? '日本語' : '中文'
 
-  useEffect(() => { loadStats() }, [])
-
-  const loadStats = async () => {
-    setLoading(true)
-
+  async function loadStats() {
     const { data: vocab } = await supabase
       .from('vocabulary')
       .select('id')
@@ -56,6 +54,41 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
     if (!error && onUpdate) onUpdate({ daily_new_cards: newGoal })
     setSaving(false)
     setEditingGoal(false)
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(loadStats, 0)
+    return () => clearTimeout(timer)
+  }, [])
+
+  const resetProgress = async () => {
+    if (!confirmingReset) {
+      setConfirmingReset(true)
+      setResetError('')
+      return
+    }
+
+    setResetting(true)
+    setResetError('')
+
+    const { error } = await supabase.rpc('reset_current_language_progress', {
+      p_language: track.language,
+      p_system: track.system,
+    })
+
+    if (error) {
+      setResetError(error.message)
+      setResetting(false)
+      return
+    }
+
+    if (onUpdate) {
+      onUpdate({ streak: 0, streak_freezes: 1, last_studied_on: null })
+    }
+
+    await loadStats()
+    setResetting(false)
+    setConfirmingReset(false)
   }
 
   const masteryPct = stats.totalWords > 0
@@ -248,6 +281,59 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
             </span>
           </div>
         )}
+
+        {/* Reset progress */}
+        <div style={{
+          background: '#fff', borderRadius: '18px',
+          border: '1px solid #FECACA',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+          padding: '22px 24px', marginBottom: '14px',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: '#18181B' }}>Reset progress</div>
+              <div style={{ fontSize: '13px', color: '#71717A', marginTop: '2px', lineHeight: 1.4 }}>
+                Clears flashcards, tests, unlocks, and streak for this language.
+              </div>
+            </div>
+            <button
+              onClick={resetProgress}
+              disabled={resetting}
+              style={{
+                padding: '8px 14px', borderRadius: '8px',
+                border: '1px solid #FCA5A5',
+                background: confirmingReset ? '#DC2626' : '#FEF2F2',
+                color: confirmingReset ? '#fff' : '#DC2626',
+                cursor: resetting ? 'default' : 'pointer',
+                fontSize: '13px', fontWeight: 600,
+                fontFamily: 'Inter, sans-serif',
+                whiteSpace: 'nowrap',
+                opacity: resetting ? 0.65 : 1,
+              }}
+            >
+              {resetting ? 'Resetting...' : confirmingReset ? 'Confirm reset' : 'Reset'}
+            </button>
+          </div>
+
+          {confirmingReset && !resetting && (
+            <button
+              onClick={() => { setConfirmingReset(false); setResetError('') }}
+              style={{
+                marginTop: '12px', background: 'none', border: 'none',
+                padding: 0, color: '#71717A', cursor: 'pointer',
+                fontSize: '13px', fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              Cancel
+            </button>
+          )}
+
+          {resetError && (
+            <div style={{ fontSize: '12px', color: '#DC2626', marginTop: '10px', lineHeight: 1.4 }}>
+              {resetError}
+            </div>
+          )}
+        </div>
 
         {/* Sign out */}
         <button

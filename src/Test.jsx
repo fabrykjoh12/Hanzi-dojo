@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getTestStatus, getAttemptsToday } from './testLogic'
-import { getLevelLabel } from './utils'
+import { getLevelLabel, getNextLevel } from './utils'
 
 function generateQuestions(vocabList, allVocab) {
   const shuffled = [...vocabList].sort(() => Math.random() - 0.5)
@@ -50,11 +50,8 @@ export default function Test({ session, profile, track, onBack }) {
 
   const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
-  const isJapanese = profile.active_language === 'japanese'
 
-  useEffect(() => { loadStatus() }, [])
-
-  const loadStatus = async () => {
+  async function loadStatus() {
     setLoading(true)
     const [s, a, vocabResult] = await Promise.all([
       getTestStatus(session.user.id, track),
@@ -72,6 +69,11 @@ export default function Test({ session, profile, track, onBack }) {
     setAllVocab(vocabResult.data || [])
     setLoading(false)
   }
+
+  useEffect(() => {
+    const timer = setTimeout(loadStatus, 0)
+    return () => clearTimeout(timer)
+  }, [])
 
   const startTest = () => {
     const qs = generateQuestions(allVocab, allVocab)
@@ -173,6 +175,15 @@ export default function Test({ session, profile, track, onBack }) {
         system: track.system,
         level: track.current_level,
       })
+
+      const nextLevel = getNextLevel(track.language, track.system, track.current_level)
+      if (nextLevel !== track.current_level) {
+        await supabase
+          .from('language_tracks')
+          .update({ current_level: nextLevel })
+          .eq('id', track.id)
+          .eq('user_id', session.user.id)
+      }
     }
 
     setLastResult({ passed, score: Math.round(score), wrongCount: finalWrong.length, correctCount })
@@ -190,7 +201,7 @@ export default function Test({ session, profile, track, onBack }) {
   }
 
   // ── LOCKED ───────────────────────────────────────────────────────────────
-  if (phase === 'intro' && !status.allEasy) {
+  if (phase === 'intro' && !status.testUnlocked) {
     return (
       <div style={{ minHeight: '100vh', background: '#FAFAF8' }}>
         <div style={{ maxWidth: '520px', margin: '0 auto', padding: '60px 24px', textAlign: 'center' }}>

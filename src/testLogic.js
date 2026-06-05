@@ -30,29 +30,44 @@ export function checkAnswer(userInput, vocab) {
   return false
 }
 
-// Returns { allEasy, totalWords, easyWords }
+// Returns { allEasy, testUnlocked, levelPassed, totalWords, easyWords }
 export async function getTestStatus(userId, track) {
-  const { data: vocab } = await supabase
-    .from('vocabulary')
-    .select('id')
-    .eq('language', track.language)
-    .eq('system', track.system)
-    .eq('level', track.current_level)
-    .eq('is_active', true)
+  const [vocabResult, cardsResult, unlockResult] = await Promise.all([
+    supabase
+      .from('vocabulary')
+      .select('id')
+      .eq('language', track.language)
+      .eq('system', track.system)
+      .eq('level', track.current_level)
+      .eq('is_active', true),
+    supabase
+      .from('cards')
+      .select('vocab_id, is_easy')
+      .eq('user_id', userId),
+    supabase
+      .from('level_unlocks')
+      .select('level')
+      .eq('user_id', userId)
+      .eq('language', track.language)
+      .eq('system', track.system)
+      .eq('level', track.current_level)
+      .maybeSingle(),
+  ])
 
-  const { data: cards } = await supabase
-    .from('cards')
-    .select('vocab_id, is_easy')
-    .eq('user_id', userId)
-
+  const vocab = vocabResult.data
+  const cards = cardsResult.data
   const vocabIds = new Set((vocab || []).map(v => v.id))
   const easyCards = (cards || []).filter(c => vocabIds.has(c.vocab_id) && c.is_easy)
 
   const totalWords = vocabIds.size
   const easyWords = easyCards.length
+  const allEasy = totalWords > 0 && easyWords === totalWords
+  const levelPassed = Boolean(unlockResult.data)
 
   return {
-    allEasy: totalWords > 0 && easyWords === totalWords,
+    allEasy,
+    levelPassed,
+    testUnlocked: allEasy || levelPassed,
     totalWords,
     easyWords,
   }

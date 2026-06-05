@@ -27,7 +27,7 @@ levelLabel: (l) => getLevelLabel('japanese', 'jlpt', l),
   },
 ]
 
-function LanguageCard({ lang, track, prog, isActive, saving, onClick }) {
+function LanguageCard({ lang, track, prog, levelProgress, isActive, saving, onClick, onLevelSelect }) {
   const [hovered, setHovered] = useState(false)
   return (
     <div
@@ -81,6 +81,49 @@ function LanguageCard({ lang, track, prog, isActive, saving, onClick }) {
           </div>
         </>
       )}
+
+      {isActive && levelProgress && (
+        <div style={{ marginTop: '18px', paddingTop: '16px', borderTop: '1px solid #E7E5E4' }}>
+          <div style={{ fontSize: '12px', fontWeight: 600, color: '#71717A', marginBottom: '10px' }}>
+            Study level
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {lang.levels.map(lvl => {
+              const levelProg = levelProgress[lvl] || { easyCount: 0, totalWords: 0, unlocked: false }
+              const current = track.current_level === lvl
+              return (
+                <button
+                  key={lvl}
+                  onClick={e => {
+                    e.stopPropagation()
+                    if (!current && !saving) onLevelSelect(lvl)
+                  }}
+                  disabled={current || saving}
+                  style={{
+                    minHeight: '58px',
+                    padding: '8px 6px',
+                    borderRadius: '10px',
+                    border: '1.5px solid ' + (current ? lang.accent : '#E7E5E4'),
+                    background: current ? lang.accent + '10' : '#fff',
+                    color: current ? lang.accent : '#18181B',
+                    cursor: current || saving ? 'default' : 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                    textAlign: 'center',
+                    opacity: saving && !current ? 0.55 : 1,
+                  }}
+                >
+                  <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: 1.2 }}>
+                    {lang.levelLabel(lvl)}
+                  </div>
+                  <div style={{ fontSize: '10px', color: levelProg.unlocked ? '#2F9E6D' : '#71717A', marginTop: '5px' }}>
+                    {levelProg.unlocked ? 'Passed' : `${levelProg.easyCount}/${levelProg.totalWords || 0}`}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -129,9 +172,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
   const [selectedLevel, setSelectedLevel] = useState(null)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { loadTracks() }, [])
-
-  const loadTracks = async () => {
+  async function loadTracks() {
     setLoading(true)
 
     const { data: tracksData } = await supabase
@@ -146,25 +187,42 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
       .select('vocab_id, is_easy')
       .eq('user_id', session.user.id)
 
+    const { data: unlocks } = await supabase
+      .from('level_unlocks')
+      .select('language, system, level')
+      .eq('user_id', session.user.id)
+
     const progressMap = {}
     for (const track of (tracksData || [])) {
+      const lang = LANGUAGES.find(l => l.code === track.language)
+      if (!lang) continue
+
       const { data: vocab } = await supabase
         .from('vocabulary')
-        .select('id')
+        .select('id, level')
         .eq('language', track.language)
         .eq('system', track.system)
-        .eq('level', track.current_level)
         .eq('is_active', true)
 
-      const vocabIds = new Set((vocab || []).map(v => v.id))
-      const levelCards = (allCards || []).filter(c => vocabIds.has(c.vocab_id))
-      const easyCount = levelCards.filter(c => c.is_easy).length
-      const totalWords = vocabIds.size
+      progressMap[track.language] = {}
 
-      progressMap[track.language] = {
-        easyCount,
-        totalWords,
-        pct: totalWords > 0 ? Math.round(easyCount / totalWords * 100) : 0,
+      for (const lvl of lang.levels) {
+        const vocabIds = new Set((vocab || []).filter(v => v.level === lvl).map(v => v.id))
+        const levelCards = (allCards || []).filter(c => vocabIds.has(c.vocab_id))
+        const easyCount = levelCards.filter(c => c.is_easy).length
+        const totalWords = vocabIds.size
+        const unlocked = (unlocks || []).some(u =>
+          u.language === track.language &&
+          u.system === track.system &&
+          u.level === lvl
+        )
+
+        progressMap[track.language][lvl] = {
+          easyCount,
+          totalWords,
+          unlocked,
+          pct: totalWords > 0 ? Math.round(easyCount / totalWords * 100) : 0,
+        }
       }
     }
 
@@ -179,6 +237,29 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
       .update({ active_language: langCode })
       .eq('id', session.user.id)
     onSwitch(langCode)
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(loadTracks, 0)
+    return () => clearTimeout(timer)
+  }, [])
+
+  const switchLevel = async (track, level) => {
+    if (track.current_level === level) return
+    setSaving(true)
+
+    await supabase
+      .from('language_tracks')
+      .update({ current_level: level })
+      .eq('id', track.id)
+      .eq('user_id', session.user.id)
+
+    await supabase
+      .from('profiles')
+      .update({ active_language: track.language })
+      .eq('id', session.user.id)
+
+    onSwitch(track.language)
   }
 
   const startLanguage = async (lang) => {
@@ -287,7 +368,8 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {LANGUAGES.map(lang => {
             const track = tracks.find(t => t.language === lang.code)
-            const prog = progress[lang.code]
+            const levelProgress = progress[lang.code]
+            const prog = levelProgress?.[track?.current_level]
             const isActive = profile.active_language === lang.code
 
             if (track) {
@@ -297,9 +379,11 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
                   lang={lang}
                   track={track}
                   prog={prog}
+                  levelProgress={levelProgress}
                   isActive={isActive}
                   saving={saving}
                   onClick={() => switchTo(lang.code)}
+                  onLevelSelect={(level) => switchLevel(track, level)}
                 />
               )
             }

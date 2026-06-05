@@ -18,3 +18,26 @@ export function getSystemLabel(system) {
   if (system === 'hsk_3') return 'HSK 3.0'
   return system
 }
+
+export function getLevelRange(language, system) {
+  if (language === 'japanese' || system === 'jlpt') {
+    return { min: 1, max: 6 }
+  }
+  return { min: 1, max: 9 }
+}
+
+export function getNextLevel(language, system, level) {
+  const { max } = getLevelRange(language, system)
+  return level < max ? level + 1 : level
+}
+
+export function normalizeRecallInput(value) {
+  return (value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[。、，,.!?！？\s]/g, '')
+}
+
+export function isRecallMatch(input, expected) {
+  return normalizeRecallInput(input) === normalizeRecallInput(expected)
+}

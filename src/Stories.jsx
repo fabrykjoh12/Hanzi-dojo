@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
+import { getLevelLabel } from './utils'
 
 const CATEGORIES = [
   { tier: 1, minWords: 20, label: 'First Steps', description: 'Words 1–50', wordRange: '1-50' },
@@ -63,7 +64,6 @@ function WordToken({ word, vocab, userCards, accentHex, onAdd }) {
   const [hovered, setHovered] = useState(false)
   const ref = useRef(null)
   const status = getWordStatus(vocab.id, userCards)
-  const card = userCards[vocab.id]
 
   const underlineColor = status === 'mastered'
     ? accentHex + '88'
@@ -219,7 +219,7 @@ function StoryReader({ story, vocabMap, userCards, setUserCards, session, track,
 
   const masteredCount = storyVocab.length - wordsToReview.length
   const systemLabel = track.system === 'hsk_3' ? 'HSK 3.0' : 'JLPT'
-  const levelLabel = isJapanese ? 'N' + track.current_level : 'Level ' + track.current_level
+  const levelLabel = getLevelLabel(track.language, track.system, track.current_level)
 
   return (
     <div style={{ minHeight: '100vh', background: '#FAFAF8', position: 'relative', overflow: 'hidden' }}>
@@ -506,9 +506,7 @@ export default function Stories({ session, profile, track, onBack }) {
 
   const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
 
-  useEffect(() => { loadData() }, [])
-
-  const loadData = async () => {
+  async function loadData() {
     setLoading(true)
 
     const { data: vocabData } = await supabase
@@ -549,6 +547,11 @@ export default function Stories({ session, profile, track, onBack }) {
     setStories(storiesData || [])
     setLoading(false)
   }
+
+  useEffect(() => {
+    const timer = setTimeout(loadData, 0)
+    return () => clearTimeout(timer)
+  }, [])
 
   if (loading) {
     return (

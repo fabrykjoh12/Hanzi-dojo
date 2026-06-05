@@ -3,9 +3,9 @@ import { supabase } from './supabase'
 import Auth from './Auth'
 import Onboarding from './Onboarding'
 import Study from './Study'
+import Writing from './Writing'
 import Test from './Test'
 import Stories from './Stories'
-import { getTestStatus } from './testLogic'
 import { getHomeCounts } from './homeCounts'
 import Profile from './Profile'
 import YouTube from './YouTube'
@@ -90,7 +90,8 @@ export default function App() {
       .eq('is_active', true)
       .single()
 
-    const { prof: finalProf, track: finalTrack } = await checkAndAdvance(prof, tr)
+    const finalProf = prof
+    const finalTrack = tr
 
     if (finalTrack) {
       const c = await getHomeCounts(userId, finalTrack, finalProf.daily_new_cards)
@@ -100,38 +101,6 @@ export default function App() {
     setProfile(finalProf)
     setTrack(finalTrack)
     setLoading(false)
-  }
-
-  const checkAndAdvance = async (prof, tr) => {
-    if (!tr) return { prof, track: tr }
-
-    const { data: unlock } = await supabase
-      .from('level_unlocks')
-      .select('*')
-      .eq('user_id', prof.id)
-      .eq('language', tr.language)
-      .eq('system', tr.system)
-      .eq('level', tr.current_level)
-      .maybeSingle()
-
-    if (!unlock) return { prof, track: tr }
-
-    const status = await getTestStatus(prof.id, tr)
-    if (!status.allEasy) return { prof, track: tr }
-
-    let nextLevel = tr.current_level
-    if (tr.language === 'chinese' && tr.current_level < 9) nextLevel = tr.current_level + 1
-    if (tr.language === 'japanese' && tr.current_level > 1) nextLevel = tr.current_level - 1
-    if (nextLevel === tr.current_level) return { prof, track: tr }
-
-    const { data: newTrack } = await supabase
-      .from('language_tracks')
-      .update({ current_level: nextLevel })
-      .eq('id', tr.id)
-      .select()
-      .single()
-
-    return { prof, track: newTrack || { ...tr, current_level: nextLevel } }
   }
 
   useEffect(() => {
@@ -165,7 +134,6 @@ export default function App() {
     return <Onboarding session={session} onComplete={() => loadProfile(session.user.id)} />
   }
 
-  const accent = profile.active_language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
   const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
   const langChars = profile.active_language === 'japanese' ? '日本語' : '中文'
 const systemLabel = getSystemLabel(track.system)
@@ -200,6 +168,17 @@ const levelSuffix = getLevelLabel(profile.active_language, track.system, track.c
     )
   }
 
+  if (view === 'writing') {
+    return (
+      <Writing
+        session={session}
+        profile={profile}
+        track={track}
+        onBack={() => { setView('home'); loadProfile(session.user.id) }}
+      />
+    )
+  }
+
   if (view === 'stories') {
     return (
       <Stories
@@ -216,7 +195,7 @@ const levelSuffix = getLevelLabel(profile.active_language, track.system, track.c
       session={session}
       profile={profile}
       track={track}
-      onBack={() => setView('home')}
+      onBack={() => { setView('home'); loadProfile(session.user.id) }}
       onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
     />
   )
@@ -393,6 +372,15 @@ if (view === 'youtube') {
           />
           <FeatureCard
             icon="📖"
+            title="Writing"
+            subtitle="Type from memory"
+            detail={profile.active_language === 'japanese' ? 'Word or kana recall' : 'Characters or pinyin'}
+            detailColor={accentHex}
+            onClick={() => setView('writing')}
+            accent={accentHex}
+          />
+          <FeatureCard
+            icon="ðŸ“–"
             title="Stories"
             subtitle={storiesUnlocked ? 'Read in Chinese' : `Unlock at 20 Easy words`}
             detail={storiesUnlocked ? 'Available' : `${counts.easyCount}/20 Easy`}

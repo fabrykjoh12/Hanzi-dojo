@@ -16,21 +16,14 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const [flipped, setFlipped] = useState(false)
   const [done, setDone] = useState(false)
   const [streakDone, setStreakDone] = useState(false)
+  const [japaneseFront, setJapaneseFront] = useState('word')
+  const [showFurigana, setShowFurigana] = useState(true)
   const audioRef = useRef(null)
 
   const accent = profile.active_language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
   const isJapanese = profile.active_language === 'japanese'
 
-  useEffect(() => { loadQueue() }, [])
-
-  // Play audio when card is revealed
-  useEffect(() => {
-    if (flipped && queue.length > 0) {
-      playAudio()
-    }
-  }, [flipped])
-
-  const playAudio = () => {
+  function playAudio() {
     const card = queue[0]
     if (!card?.vocab?.audio_path) return
     const url = getAudioUrl(card.vocab.audio_path)
@@ -43,7 +36,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     audioRef.current.play().catch(() => {})
   }
 
-  const loadQueue = async () => {
+  async function loadQueue() {
     setLoading(true)
 
     const { data: vocab } = await supabase
@@ -65,7 +58,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
 
     const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0)
     const introducedToday = (cards || [])
-      .filter(c => new Date(c.created_at) >= startOfToday).length
+      .filter(c => new Date(c.created_at) >= startOfToday && vocabById[c.vocab_id]).length
     const remainingNew = Math.max(0, profile.daily_new_cards - introducedToday)
 
     const now = new Date()
@@ -94,6 +87,18 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     setDone(newQueue.length === 0)
     setLoading(false)
   }
+
+  useEffect(() => {
+    const timer = setTimeout(loadQueue, 0)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Play audio when card is revealed
+  useEffect(() => {
+    if (flipped && queue.length > 0) {
+      playAudio()
+    }
+  }, [flipped])
 
   const handleGrade = async (grade) => {
     const card = queue[0]
@@ -158,6 +163,8 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const v = card.vocab
   const labels = previewLabels(card)
   const audioUrl = getAudioUrl(v.audio_path)
+  const frontText = isJapanese && japaneseFront === 'reading' ? v.reading : v.word
+  const secondaryText = isJapanese && japaneseFront === 'reading' ? v.word : v.reading
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -171,6 +178,20 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
           <span style={{ color: '#30A46C' }}>Due {dueCount}</span>
         </div>
       </div>
+
+      {isJapanese && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', padding: '0 24px 12px', flexWrap: 'wrap' }}>
+          <button onClick={() => setJapaneseFront('word')} style={toggleBtn(japaneseFront === 'word', accent)}>
+            Word first
+          </button>
+          <button onClick={() => setJapaneseFront('reading')} style={toggleBtn(japaneseFront === 'reading', accent)}>
+            Kana first
+          </button>
+          <button onClick={() => setShowFurigana(prev => !prev)} style={toggleBtn(showFurigana, accent)}>
+            Furigana
+          </button>
+        </div>
+      )}
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
         <div
@@ -200,12 +221,22 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
             </button>
           )}
 
-          <div style={{
-            fontSize: '72px', fontWeight: 400, color: '#1a1a1a',
-            fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
-          }}>
-            {v.word}
-          </div>
+          {isJapanese && flipped && showFurigana && japaneseFront === 'word' ? (
+            <ruby style={{
+              fontSize: '72px', fontWeight: 400, color: '#1a1a1a',
+              fontFamily: "'Noto Sans JP'", lineHeight: 1.35,
+            }}>
+              {v.word}
+              {v.reading && <rt style={{ fontSize: '18px', color: '#71717A' }}>{v.reading}</rt>}
+            </ruby>
+          ) : (
+            <div style={{
+              fontSize: '72px', fontWeight: 400, color: '#1a1a1a',
+              fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
+            }}>
+              {frontText}
+            </div>
+          )}
 
           {!flipped && (
             <div style={{ fontSize: '13px', color: '#bbb', marginTop: '24px' }}>tap to reveal</div>
@@ -213,9 +244,11 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
 
           {flipped && (
             <>
-              <div style={{ fontSize: '20px', color: accent, marginTop: '16px', fontWeight: 500 }}>
-                {v.reading}
-              </div>
+              {!(isJapanese && showFurigana && japaneseFront === 'word') && (
+                <div style={{ fontSize: '20px', color: accent, marginTop: '16px', fontWeight: 500 }}>
+                  {secondaryText}
+                </div>
+              )}
               <div style={{ fontSize: '18px', color: '#555', marginTop: '8px' }}>
                 {v.meaning}
               </div>
@@ -265,3 +298,14 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
 
 const center = { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }
 const btn = { padding: '12px 24px', borderRadius: '10px', fontSize: '15px', fontWeight: 500, cursor: 'pointer' }
+const toggleBtn = (active, accent) => ({
+  padding: '8px 12px',
+  borderRadius: '10px',
+  border: '1px solid ' + (active ? accent : '#E7E5E4'),
+  background: active ? accent + '10' : '#fff',
+  color: active ? accent : '#71717A',
+  fontSize: '12px',
+  fontWeight: 700,
+  cursor: 'pointer',
+  fontFamily: 'Inter, sans-serif',
+})
