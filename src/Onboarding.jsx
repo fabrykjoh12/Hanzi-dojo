@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from './supabase'
+import { getLevelLabel } from './utils'
 
 export default function Onboarding({ session, onComplete }) {
   const [step, setStep] = useState(1)
@@ -11,7 +12,7 @@ export default function Onboarding({ session, onComplete }) {
 
   const accent = language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
   const chineseLevels = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-  const japaneseLevels = [5, 4, 3, 2, 1]
+  const japaneseLevels = [1, 2, 3, 4, 5, 6]
 
   const handleFinish = async () => {
     setSaving(true)
@@ -108,7 +109,7 @@ export default function Onboarding({ session, onComplete }) {
                     color: level === lvl ? accent : '#1a1a1a', transition: 'all 0.2s',
                   }}
                 >
-                  {language === 'chinese' ? `HSK ${lvl}` : `N${lvl}`}
+                  {language === 'chinese' ? 'HSK ' + lvl : getLevelLabel('japanese', 'jlpt', lvl)}
                 </button>
               ))}
             </div>

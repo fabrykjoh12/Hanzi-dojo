@@ -10,6 +10,7 @@ import { getHomeCounts } from './homeCounts'
 import Profile from './Profile'
 import YouTube from './YouTube'
 import LanguageSwitcher from './LanguageSwitcher'
+import { getLevelLabel, getSystemLabel } from './utils'
 
 // ── Feature card component ────────────────────────────────────────────────
 function FeatureCard({ icon, title, subtitle, detail, detailColor, onClick, accent, locked, indicator }) {
@@ -167,8 +168,8 @@ export default function App() {
   const accent = profile.active_language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
   const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
   const langChars = profile.active_language === 'japanese' ? '日本語' : '中文'
-  const systemLabel = track.system === 'hsk_3' ? 'HSK 3.0' : 'JLPT'
-  const levelSuffix = profile.active_language === 'japanese' ? `N${track.current_level}` : `Level ${track.current_level}`
+const systemLabel = getSystemLabel(track.system)
+const levelSuffix = getLevelLabel(profile.active_language, track.system, track.current_level)
   const totalDue = counts.newCount + counts.learnCount + counts.dueCount
   const masteryPct = counts.totalWords > 0
     ? Math.min(100, Math.round((counts.easyCount / counts.totalWords) * 100))

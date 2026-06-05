@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getTestStatus, getAttemptsToday } from './testLogic'
+import { getLevelLabel } from './utils'
 
 function generateQuestions(vocabList, allVocab) {
   const shuffled = [...vocabList].sort(() => Math.random() - 0.5)
@@ -48,9 +49,7 @@ export default function Test({ session, profile, track, onBack }) {
   const [lastResult, setLastResult] = useState(null)
 
   const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
-  const levelLabel = profile.active_language === 'chinese'
-    ? 'HSK ' + track.current_level
-    : 'N' + track.current_level
+  const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
   const isJapanese = profile.active_language === 'japanese'
 
   useEffect(() => { loadStatus() }, [])

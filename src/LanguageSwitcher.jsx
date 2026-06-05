@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
+import { getLevelLabel } from './utils'
 
 const LANGUAGES = [
   {
@@ -19,8 +20,8 @@ const LANGUAGES = [
     name: 'Japanese',
     nativeName: '日本語',
     flag: '🇯🇵',
-    levels: [5, 4, 3, 2, 1],
-    levelLabel: (l) => 'N' + l,
+levels: [1, 2, 3, 4, 5, 6],
+levelLabel: (l) => getLevelLabel('japanese', 'jlpt', l),
     systemLabel: 'JLPT',
     accent: '#2E3A6E',
   },
