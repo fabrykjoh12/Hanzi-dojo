@@ -1,7 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { schedule, previewLabels } from './srs'
 import { updateStreak } from './streak'
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+
+function getAudioUrl(audioPath) {
+  if (!audioPath) return null
+  return `${SUPABASE_URL}/storage/v1/object/public/audio/${audioPath}`
+}
 
 export default function Study({ session, profile, track, onBack, onStreakUpdate }) {
   const [queue, setQueue] = useState([])
@@ -9,16 +16,36 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const [flipped, setFlipped] = useState(false)
   const [done, setDone] = useState(false)
   const [streakDone, setStreakDone] = useState(false)
+  const audioRef = useRef(null)
 
   const accent = profile.active_language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
   const isJapanese = profile.active_language === 'japanese'
 
   useEffect(() => { loadQueue() }, [])
 
+  // Play audio when card is revealed
+  useEffect(() => {
+    if (flipped && queue.length > 0) {
+      playAudio()
+    }
+  }, [flipped])
+
+  const playAudio = () => {
+    const card = queue[0]
+    if (!card?.vocab?.audio_path) return
+    const url = getAudioUrl(card.vocab.audio_path)
+    if (!url) return
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+    }
+    audioRef.current = new Audio(url)
+    audioRef.current.play().catch(() => {})
+  }
+
   const loadQueue = async () => {
     setLoading(true)
 
-    // Fetch vocab for this language track in fixed order
     const { data: vocab } = await supabase
       .from('vocabulary')
       .select('*')
@@ -28,7 +55,6 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
       .eq('is_active', true)
       .order('sort_order', { ascending: true })
 
-    // Fetch all user cards
     const { data: cards } = await supabase
       .from('cards')
       .select('*')
@@ -37,7 +63,6 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     const vocabById = {}
     ;(vocab || []).forEach(v => { vocabById[v.id] = v })
 
-    // How many new cards introduced today?
     const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0)
     const introducedToday = (cards || [])
       .filter(c => new Date(c.created_at) >= startOfToday).length
@@ -46,7 +71,6 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     const now = new Date()
     const startedVocab = new Set()
 
-    // Attach vocab to existing cards for this level
     const levelCards = (cards || [])
       .map(c => ({ ...c, vocab: vocabById[c.vocab_id] }))
       .filter(c => c.vocab)
@@ -57,7 +81,6 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     const dueReview = levelCards
       .filter(c => c.state === 'review' && new Date(c.due_at) <= now)
 
-    // New cards in sort_order, limited by today's remaining goal
     const newItems = (vocab || [])
       .filter(v => !startedVocab.has(v.id))
       .slice(0, remainingNew)
@@ -76,25 +99,19 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     const card = queue[0]
     const res = schedule(card, grade)
 
-    // Update streak once per session
     if (!streakDone) {
       setStreakDone(true)
       const newStreak = await updateStreak(profile)
       if (onStreakUpdate) onStreakUpdate(newStreak)
     }
 
-    // Save to database
     let cardId = card.id
     if (cardId) {
       await supabase.from('cards').update(res.updates).eq('id', cardId)
     } else {
       const { data } = await supabase
         .from('cards')
-        .insert({
-          user_id: session.user.id,
-          vocab_id: card.vocab_id,
-          ...res.updates,
-        })
+        .insert({ user_id: session.user.id, vocab_id: card.vocab_id, ...res.updates })
         .select('id')
         .single()
       cardId = data?.id
@@ -102,7 +119,6 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
 
     setFlipped(false)
 
-    // Update session queue
     setQueue(prev => {
       const rest = prev.slice(1)
       if (res.stay) {
@@ -115,7 +131,6 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     })
   }
 
-  // Live counts
   const newCount = queue.filter(c => c.state === 'new').length
   const learnCount = queue.filter(c => c.state === 'learning').length
   const dueCount = queue.filter(c => c.state === 'review').length
@@ -142,10 +157,10 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const card = queue[0]
   const v = card.vocab
   const labels = previewLabels(card)
+  const audioUrl = getAudioUrl(v.audio_path)
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Top bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px' }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '14px' }}>
           ← Exit
@@ -157,18 +172,34 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
         </div>
       </div>
 
-      {/* Card */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
         <div
-          onClick={() => setFlipped(true)}
+          onClick={() => !flipped && setFlipped(true)}
           style={{
             width: '100%', maxWidth: '420px', minHeight: '280px',
             background: '#fff', border: '1px solid #eee', borderRadius: '20px',
             boxShadow: '0 4px 24px rgba(0,0,0,0.04)',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            cursor: flipped ? 'default' : 'pointer', padding: '32px',
+            cursor: flipped ? 'default' : 'pointer', padding: '32px', position: 'relative',
           }}
         >
+          {audioUrl && flipped && (
+            <button
+              onClick={e => { e.stopPropagation(); playAudio() }}
+              style={{
+                position: 'absolute', top: '14px', right: '14px',
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: '18px', opacity: 0.5, padding: '4px',
+                transition: 'opacity .2s',
+              }}
+              onMouseEnter={e => e.target.style.opacity = 1}
+              onMouseLeave={e => e.target.style.opacity = 0.5}
+              title="Replay audio"
+            >
+              🔊
+            </button>
+          )}
+
           <div style={{
             fontSize: '72px', fontWeight: 400, color: '#1a1a1a',
             fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
@@ -193,7 +224,6 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
         </div>
       </div>
 
-      {/* Grade buttons */}
       <div style={{ padding: '24px', maxWidth: '460px', margin: '0 auto', width: '100%' }}>
         {!flipped ? (
           <button
