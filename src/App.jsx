@@ -9,6 +9,7 @@ import { getTestStatus } from './testLogic'
 import { getHomeCounts } from './homeCounts'
 import Profile from './Profile'
 import YouTube from './YouTube'
+import LanguageSwitcher from './LanguageSwitcher'
 
 // ── Feature card component ────────────────────────────────────────────────
 function FeatureCard({ icon, title, subtitle, detail, detailColor, onClick, accent, locked, indicator }) {
@@ -219,6 +220,16 @@ export default function App() {
     />
   )
 }
+if (view === 'languages') {
+  return (
+    <LanguageSwitcher
+      session={session}
+      profile={profile}
+      onSwitch={() => { setView('home'); loadProfile(session.user.id) }}
+      onBack={() => setView('home')}
+    />
+  )
+}
 if (view === 'youtube') {
   return (
     <YouTube
@@ -258,8 +269,20 @@ if (view === 'youtube') {
               {langChars}
             </div>
             <div style={{ fontSize: '14px', color: '#71717A', marginTop: '8px', letterSpacing: '0.2px' }}>
-              {systemLabel} · {levelSuffix}
-            </div>
+  {systemLabel} · {levelSuffix}
+</div>
+<button
+  onClick={() => setView('languages')}
+  style={{
+    background: 'none', border: 'none', padding: 0,
+    fontSize: '12px', color: accentHex, cursor: 'pointer',
+    marginTop: '6px', fontFamily: 'Inter, sans-serif',
+    fontWeight: 500, textDecoration: 'underline',
+    textUnderlineOffset: '3px',
+  }}
+>
+  Switch language
+</button>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
