@@ -21,8 +21,8 @@ async function synthesize(text) {
       body: JSON.stringify({
         input: { text },
         voice: {
-          languageCode: 'cmn-CN',
-          name: 'cmn-CN-Chirp3-HD-Achird',
+          languageCode: 'ja-JP',
+          name: 'ja-JP-Wavenet-B',
         },
         audioConfig: {
           audioEncoding: 'MP3',
@@ -45,9 +45,8 @@ async function main() {
   const { data: vocab, error } = await supabase
     .from('vocabulary')
     .select('id, word, reading, audio_path')
-    .eq('language', 'chinese')
-    .eq('system', 'hsk_3')
-    .eq('level', 1)
+    .eq('language', 'japanese')
+    .eq('system', 'jlpt')
     .order('sort_order', { ascending: true })
 
   if (error) {
