@@ -1,0 +1,293 @@
+import { useState, useEffect } from 'react'
+import { supabase } from './supabase'
+
+export default function Profile({ session, profile, track, onBack, onUpdate }) {
+  const [stats, setStats] = useState({ learned: 0, totalCards: 0, easyCount: 0, totalWords: 0 })
+  const [editingGoal, setEditingGoal] = useState(false)
+  const [newGoal, setNewGoal] = useState(profile.daily_new_cards)
+  const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
+  const accent = profile.active_language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
+  const systemLabel = track.system === 'hsk_3' ? 'HSK 3.0' : 'JLPT'
+  const levelLabel = profile.active_language === 'japanese'
+    ? `N${track.current_level}`
+    : `Level ${track.current_level}`
+  const langChars = profile.active_language === 'japanese' ? '日本語' : '中文'
+
+  useEffect(() => { loadStats() }, [])
+
+  const loadStats = async () => {
+    setLoading(true)
+
+    const { data: vocab } = await supabase
+      .from('vocabulary')
+      .select('id')
+      .eq('language', track.language)
+      .eq('system', track.system)
+      .eq('level', track.current_level)
+      .eq('is_active', true)
+
+    const { data: cards } = await supabase
+      .from('cards')
+      .select('vocab_id, learned, is_easy')
+      .eq('user_id', session.user.id)
+
+    const vocabIds = new Set((vocab || []).map(v => v.id))
+    const levelCards = (cards || []).filter(c => vocabIds.has(c.vocab_id))
+
+    setStats({
+      learned: levelCards.filter(c => c.learned).length,
+      totalCards: levelCards.length,
+      easyCount: levelCards.filter(c => c.is_easy).length,
+      totalWords: vocabIds.size,
+    })
+
+    setLoading(false)
+  }
+
+  const saveGoal = async () => {
+    if (newGoal === profile.daily_new_cards) { setEditingGoal(false); return }
+    setSaving(true)
+    const { error } = await supabase
+      .from('profiles')
+      .update({ daily_new_cards: newGoal })
+      .eq('id', session.user.id)
+    if (!error && onUpdate) onUpdate({ daily_new_cards: newGoal })
+    setSaving(false)
+    setEditingGoal(false)
+  }
+
+  const masteryPct = stats.totalWords > 0
+    ? Math.round((stats.easyCount / stats.totalWords) * 100)
+    : 0
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#FAFAF8' }}>
+      {/* Header */}
+      <div style={{
+        maxWidth: '680px', margin: '0 auto',
+        padding: '40px 24px 0',
+      }}>
+        <button
+          onClick={onBack}
+          style={{ background: 'none', border: 'none', color: '#71717A', cursor: 'pointer', fontSize: '14px', marginBottom: '32px', padding: 0 }}
+        >
+          ← Back
+        </button>
+
+        {/* Avatar + identity */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '40px' }}>
+          <div style={{
+            width: '64px', height: '64px', borderRadius: '50%',
+            background: `${accentHex}15`,
+            border: `2px solid ${accentHex}30`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '24px', fontFamily: "'Noto Sans SC'", color: accentHex, fontWeight: 700,
+          }}>
+            {langChars[0]}
+          </div>
+          <div>
+            <div style={{ fontSize: '18px', fontWeight: 700, color: '#18181B' }}>
+              {profile.display_name || session.user.email}
+            </div>
+            <div style={{ fontSize: '13px', color: '#71717A', marginTop: '3px' }}>
+              {systemLabel} · {levelLabel}
+            </div>
+          </div>
+        </div>
+
+        {/* Stats grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
+          <StatCard
+            label="Current streak"
+            value={profile.streak || 0}
+            unit="days"
+            icon="🔥"
+            color="#D97706"
+            bg="#FFFBEB"
+          />
+          <StatCard
+            label="Streak freezes"
+            value={profile.streak_freezes || 0}
+            unit="available"
+            icon="🛡️"
+            color="#3E63DD"
+            bg="#EEF2FF"
+          />
+          <StatCard
+            label="Words in review"
+            value={loading ? '–' : stats.learned}
+            unit={`of ${stats.totalWords}`}
+            icon="📚"
+            color={accentHex}
+            bg={`${accentHex}10`}
+          />
+          <StatCard
+            label="Words mastered"
+            value={loading ? '–' : stats.easyCount}
+            unit={`${masteryPct}% Easy`}
+            icon="✦"
+            color="#2F9E6D"
+            bg="#ECFDF5"
+          />
+        </div>
+
+        {/* Mastery progress */}
+        {!loading && (
+          <div style={{
+            background: '#fff', borderRadius: '18px',
+            border: '1px solid #E7E5E4',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+            padding: '22px 24px', marginBottom: '14px',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <span style={{ fontSize: '14px', fontWeight: 600, color: '#18181B' }}>Level mastery</span>
+              <span style={{ fontSize: '13px', color: '#71717A' }}>{stats.easyCount}/{stats.totalWords} Easy</span>
+            </div>
+            <div style={{ height: '8px', background: '#E7E5E4', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', borderRadius: '4px',
+                background: `linear-gradient(90deg, ${accentHex}, ${accentHex}aa)`,
+                width: `${masteryPct}%`, transition: 'width .7s ease',
+              }} />
+            </div>
+            <div style={{ fontSize: '12px', color: '#71717A', marginTop: '8px' }}>
+              {stats.totalWords - stats.easyCount} words remaining to unlock test
+            </div>
+          </div>
+        )}
+
+        {/* Daily goal setting */}
+        <div style={{
+          background: '#fff', borderRadius: '18px',
+          border: '1px solid #E7E5E4',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+          padding: '22px 24px', marginBottom: '14px',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: editingGoal ? '16px' : 0 }}>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: '#18181B' }}>Daily new cards</div>
+              {!editingGoal && (
+                <div style={{ fontSize: '13px', color: '#71717A', marginTop: '2px' }}>
+                  {profile.daily_new_cards} new cards per day
+                </div>
+              )}
+            </div>
+            {!editingGoal ? (
+              <button
+                onClick={() => { setEditingGoal(true); setNewGoal(profile.daily_new_cards) }}
+                style={{
+                  padding: '7px 14px', borderRadius: '8px',
+                  border: '1px solid #E7E5E4', background: '#fff',
+                  cursor: 'pointer', fontSize: '13px', color: '#71717A',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                Change
+              </button>
+            ) : (
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => setEditingGoal(false)}
+                  style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #E7E5E4', background: '#fff', cursor: 'pointer', fontSize: '13px', color: '#71717A', fontFamily: 'Inter, sans-serif' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveGoal}
+                  disabled={saving}
+                  style={{ padding: '7px 14px', borderRadius: '8px', border: 'none', background: accentHex, color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif', opacity: saving ? 0.6 : 1 }}
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {editingGoal && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {[
+                { val: 5, label: 'Casual', desc: '5 cards / day' },
+                { val: 10, label: 'Regular', desc: '10 cards / day' },
+                { val: 15, label: 'Intensive', desc: '15 cards / day' },
+              ].map(opt => (
+                <button
+                  key={opt.val}
+                  onClick={() => setNewGoal(opt.val)}
+                  style={{
+                    padding: '12px 16px', borderRadius: '12px', textAlign: 'left',
+                    border: `1.5px solid ${newGoal === opt.val ? accentHex : '#E7E5E4'}`,
+                    background: newGoal === opt.val ? `${accentHex}08` : '#fff',
+                    cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  <span style={{ fontWeight: 600, fontSize: '14px', color: newGoal === opt.val ? accentHex : '#18181B' }}>
+                    {opt.label}
+                  </span>
+                  <span style={{ fontSize: '13px', color: '#71717A' }}>{opt.desc}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Last studied */}
+        {profile.last_studied_on && (
+          <div style={{
+            background: '#fff', borderRadius: '18px',
+            border: '1px solid #E7E5E4',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+            padding: '18px 24px', marginBottom: '14px',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <span style={{ fontSize: '14px', color: '#71717A' }}>Last studied</span>
+            <span style={{ fontSize: '14px', fontWeight: 600, color: '#18181B' }}>
+              {new Date(profile.last_studied_on).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </span>
+          </div>
+        )}
+
+        {/* Sign out */}
+        <button
+          onClick={() => supabase.auth.signOut()}
+          style={{
+            width: '100%', padding: '14px', borderRadius: '14px',
+            border: '1px solid #FCA5A5', background: '#FEF2F2',
+            color: '#DC2626', cursor: 'pointer', fontSize: '14px',
+            fontWeight: 600, fontFamily: 'Inter, sans-serif',
+            marginTop: '8px',
+          }}
+        >
+          Sign out
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function StatCard({ label, value, unit, icon, color, bg }) {
+  return (
+    <div style={{
+      background: '#fff', borderRadius: '16px',
+      border: '1px solid #E7E5E4',
+      boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+      padding: '20px',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+        <div style={{
+          width: '36px', height: '36px', borderRadius: '10px',
+          background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '16px',
+        }}>
+          {icon}
+        </div>
+      </div>
+      <div style={{ fontSize: '28px', fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: '11px', color: '#71717A', marginTop: '4px' }}>{unit}</div>
+      <div style={{ fontSize: '12px', color: '#A1A1AA', marginTop: '6px' }}>{label}</div>
+    </div>
+  )
+}

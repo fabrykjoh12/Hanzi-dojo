@@ -12,14 +12,14 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background: #ffffff;
-  color: #1a1a1a;
+  background: #FAFAF8;
+  color: #18181B;
   -webkit-font-smoothing: antialiased;
 }
 
 :root {
-  --chinese-accent: #C8442A;
-  --chinese-accent-dark: #9E2E1A;
+  --chinese-accent: #B83A24;
+  --chinese-accent-dark: #922E1C;
   --japanese-accent: #2E3A6E;
   --japanese-accent-dark: #1E2750;
 }

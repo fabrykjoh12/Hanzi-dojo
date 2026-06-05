@@ -14,7 +14,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 // Call Google Cloud Text-to-Speech API
 async function synthesize(text) {
   const response = await fetch(
-    `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_TTS_KEY}`,
+    `https://texttospeech.googleapis.com/v1beta1/text:synthesize?key=${GOOGLE_TTS_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -22,11 +22,10 @@ async function synthesize(text) {
         input: { text },
         voice: {
           languageCode: 'cmn-CN',
-          name: 'cmn-CN-Chirp3-HD-Aoede',
+          name: 'cmn-CN-Chirp3-HD-Achird',
         },
         audioConfig: {
           audioEncoding: 'MP3',
-          speakingRate: 0.9, // Slightly slower for learning
         },
       }),
     }
