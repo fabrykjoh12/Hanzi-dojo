@@ -4,10 +4,23 @@ import { schedule, previewLabels } from './srs'
 import { updateStreak } from './streak'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const FURIGANA_STORAGE_KEY = 'hanzi-dojo-show-furigana'
 
 function getAudioUrl(audioPath) {
   if (!audioPath) return null
   return `${SUPABASE_URL}/storage/v1/object/public/audio/${audioPath}`
+}
+
+function hasKanji(text) {
+  return /[\u3400-\u9FFF]/.test(text || '')
+}
+
+function getStoredFuriganaPreference() {
+  try {
+    return localStorage.getItem(FURIGANA_STORAGE_KEY) !== 'false'
+  } catch {
+    return true
+  }
 }
 
 export default function Study({ session, profile, track, onBack, onStreakUpdate }) {
@@ -16,8 +29,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const [flipped, setFlipped] = useState(false)
   const [done, setDone] = useState(false)
   const [streakDone, setStreakDone] = useState(false)
-  const [japaneseFront, setJapaneseFront] = useState('word')
-  const [showFurigana, setShowFurigana] = useState(true)
+  const [showFurigana, setShowFurigana] = useState(getStoredFuriganaPreference)
   const audioRef = useRef(null)
 
   const accent = profile.active_language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
@@ -93,6 +105,10 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     return () => clearTimeout(timer)
   }, [])
 
+  useEffect(() => {
+    localStorage.setItem(FURIGANA_STORAGE_KEY, showFurigana ? 'true' : 'false')
+  }, [showFurigana])
+
   // Play audio when card is revealed
   useEffect(() => {
     if (flipped && queue.length > 0) {
@@ -163,8 +179,9 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const v = card.vocab
   const labels = previewLabels(card)
   const audioUrl = getAudioUrl(v.audio_path)
-  const frontText = isJapanese && japaneseFront === 'reading' ? v.reading : v.word
-  const secondaryText = isJapanese && japaneseFront === 'reading' ? v.word : v.reading
+  const canUseFurigana = isJapanese && hasKanji(v.word) && Boolean(v.reading)
+  const showRuby = canUseFurigana && (showFurigana || flipped)
+  const showReadingLine = flipped && v.reading && !isJapanese
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -181,12 +198,6 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
 
       {isJapanese && (
         <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', padding: '0 24px 12px', flexWrap: 'wrap' }}>
-          <button onClick={() => setJapaneseFront('word')} style={toggleBtn(japaneseFront === 'word', accent)}>
-            Word first
-          </button>
-          <button onClick={() => setJapaneseFront('reading')} style={toggleBtn(japaneseFront === 'reading', accent)}>
-            Kana first
-          </button>
           <button onClick={() => setShowFurigana(prev => !prev)} style={toggleBtn(showFurigana, accent)}>
             Furigana
           </button>
@@ -221,7 +232,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
             </button>
           )}
 
-          {isJapanese && flipped && showFurigana && japaneseFront === 'word' ? (
+          {showRuby ? (
             <ruby style={{
               fontSize: '72px', fontWeight: 400, color: '#1a1a1a',
               fontFamily: "'Noto Sans JP'", lineHeight: 1.35,
@@ -234,7 +245,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
               fontSize: '72px', fontWeight: 400, color: '#1a1a1a',
               fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
             }}>
-              {frontText}
+              {v.word}
             </div>
           )}
 
@@ -244,9 +255,9 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
 
           {flipped && (
             <>
-              {!(isJapanese && showFurigana && japaneseFront === 'word') && (
+              {showReadingLine && (
                 <div style={{ fontSize: '20px', color: accent, marginTop: '16px', fontWeight: 500 }}>
-                  {secondaryText}
+                  {v.reading}
                 </div>
               )}
               <div style={{ fontSize: '18px', color: '#555', marginTop: '8px' }}>

@@ -20,10 +20,10 @@ async function synthesize(text) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         input: { text },
-        voice: {
-          languageCode: 'ja-JP',
-          name: 'ja-JP-Wavenet-B',
-        },
+       voice: {
+  languageCode: 'ja-JP',
+  name: 'ja-JP-Neural2-B',
+},
         audioConfig: {
           audioEncoding: 'MP3',
         },
@@ -65,7 +65,7 @@ async function main() {
       process.stdout.write(`[${success + failed + 1}/${vocab.length}] ${v.word} (${v.reading})... `)
 
       // Generate audio
-      const audioBuffer = await synthesize(v.word)
+      const audioBuffer = await synthesize(v.reading)
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
