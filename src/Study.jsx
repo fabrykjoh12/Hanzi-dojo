@@ -22,6 +22,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const [done, setDone] = useState(false)
   const [streakDone, setStreakDone] = useState(false)
   const [showFurigana, setShowFurigana] = useState(true)
+  const [saveError, setSaveError] = useState(null)
   const audioRef = useRef(null)
 
   const accent = profile.active_language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
@@ -118,14 +119,22 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     let cardId = card.id
     if (cardId) {
       const { error } = await supabase.from('cards').update(res.updates).eq('id', cardId)
-      if (error) console.error('[Study] card update failed', error)
+      if (error) {
+        console.error('[Study] card update failed', error)
+        setSaveError(error.message)
+        return
+      }
     } else {
       const { data, error } = await supabase
         .from('cards')
         .insert({ user_id: session.user.id, vocab_id: card.vocab_id, ...res.updates })
         .select('id')
         .single()
-      if (error) console.error('[Study] card insert failed', error)
+      if (error) {
+        console.error('[Study] card insert failed', error)
+        setSaveError(error.message)
+        return
+      }
       cardId = data?.id
     }
 
@@ -177,6 +186,15 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {saveError && (
+        <div style={{
+          background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626',
+          padding: '12px 20px', fontSize: '13px', lineHeight: 1.5,
+        }}>
+          <strong>Card save failed</strong> — your progress is not being saved. Database error: {saveError}
+          <br />Run the migration SQL in your Supabase SQL Editor, then refresh.
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px' }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '14px' }}>
           ← Exit
