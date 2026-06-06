@@ -11,6 +11,7 @@ import Profile from './Profile'
 import YouTube from './YouTube'
 import LanguageSwitcher from './LanguageSwitcher'
 import { getLevelLabel, getSystemLabel } from './utils'
+import InfoTip from './InfoTip'
 
 // ── Feature card component ────────────────────────────────────────────────
 function FeatureCard({ icon, title, subtitle, detail, detailColor, onClick, accent, locked, indicator }) {
@@ -69,7 +70,7 @@ export default function App() {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [track, setTrack] = useState(null)
-  const [counts, setCounts] = useState({ newCount: 0, learnCount: 0, dueCount: 0, easyCount: 0, totalWords: 0 })
+  const [counts, setCounts] = useState({ newCount: 0, learnCount: 0, dueCount: 0, easyCount: 0, totalWords: 0, learnedCount: 0, masteredCount: 0, masteredPct: 0 })
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState('home')
 
@@ -140,9 +141,9 @@ const systemLabel = getSystemLabel(track.system)
 const levelSuffix = getLevelLabel(profile.active_language, track.system, track.current_level)
   const totalDue = counts.newCount + counts.learnCount + counts.dueCount
   const masteryPct = counts.totalWords > 0
-    ? Math.min(100, Math.round((counts.easyCount / counts.totalWords) * 100))
+    ? Math.min(100, Math.round((counts.masteredCount / counts.totalWords) * 100))
     : 0
-  const storiesUnlocked = counts.easyCount >= 20
+  const storiesUnlocked = counts.learnedCount >= 20
 
   // ── Views ────────────────────────────────────────────────────────────────
   if (view === 'study') {
@@ -333,10 +334,13 @@ if (view === 'youtube') {
           {/* Level mastery */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#18181B' }}>Level mastery</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', fontWeight: 600, color: '#18181B' }}>
+                Mastery
+                <InfoTip accentHex={accentHex} text="A word is mastered once the app predicts you'll still recall it about three weeks from now. It can't be rushed — mastery comes from reviewing correctly over time, across multiple days." />
+              </span>
               <span style={{ fontSize: '13px', color: '#71717A' }}>
-                <span style={{ fontWeight: 600, color: '#18181B' }}>{counts.easyCount}</span>
-                /{counts.totalWords} Easy · {masteryPct}%
+                <span style={{ fontWeight: 600, color: '#18181B' }}>{counts.masteredCount}</span>
+                /{counts.totalWords} · {masteryPct}%
               </span>
             </div>
             <div style={{ height: '7px', background: '#E7E5E4', borderRadius: '4px', overflow: 'hidden' }}>
@@ -365,7 +369,7 @@ if (view === 'youtube') {
             icon="✍️"
             title="Test"
             subtitle="Prove your level to advance"
-            detail={`${counts.easyCount}/${counts.totalWords} Easy`}
+            detail={`${counts.masteredCount}/${counts.totalWords} Mastered`}
             detailColor={accentHex}
             onClick={() => setView('test')}
             accent={accentHex}
@@ -382,8 +386,8 @@ if (view === 'youtube') {
           <FeatureCard
             icon="ðŸ“–"
             title="Stories"
-            subtitle={storiesUnlocked ? 'Read in Chinese' : `Unlock at 20 Easy words`}
-            detail={storiesUnlocked ? 'Available' : `${counts.easyCount}/20 Easy`}
+            subtitle={storiesUnlocked ? 'Read in Chinese' : 'Unlock at 20 learned words'}
+            detail={storiesUnlocked ? 'Available' : `${counts.learnedCount}/20 learned`}
             detailColor={storiesUnlocked ? accentHex : '#71717A'}
             onClick={() => setView('stories')}
             accent={accentHex}

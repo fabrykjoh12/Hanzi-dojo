@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel } from './utils'
+import { isLearned } from './mastery'
 
 const CATEGORIES = [
   { tier: 1, minWords: 20, label: 'First Steps', description: 'Words 1–50', wordRange: '1-50' },
@@ -499,7 +500,7 @@ export default function Stories({ session, profile, track, onBack }) {
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [selectedStory, setSelectedStory] = useState(null)
   const [stories, setStories] = useState([])
-  const [easyCount, setEasyCount] = useState(0)
+  const [learnedCount, setLearnedCount] = useState(0)
   const [vocabMap, setVocabMap] = useState({})
   const [userCards, setUserCards] = useState({})
   const [loading, setLoading] = useState(true)
@@ -523,7 +524,7 @@ export default function Stories({ session, profile, track, onBack }) {
 
     const { data: cardsData } = await supabase
       .from('cards')
-      .select('vocab_id, is_easy, state')
+      .select('vocab_id, is_easy, state, learned')
       .eq('user_id', session.user.id)
 
     const cardsMap = {}
@@ -531,8 +532,10 @@ export default function Stories({ session, profile, track, onBack }) {
     setUserCards(cardsMap)
 
     const vocabIds = new Set((vocabData || []).map(v => v.id))
-    const easy = (cardsData || []).filter(c => vocabIds.has(c.vocab_id) && c.is_easy).length
-    setEasyCount(easy)
+    // Stories unlock on "learned" (graduated to review at least once) — a low bar
+    // so users start immersion early. The test uses the higher stability-based mastery bar.
+    const learned = (cardsData || []).filter(c => vocabIds.has(c.vocab_id) && isLearned(c)).length
+    setLearnedCount(learned)
 
     const { data: storiesData } = await supabase
       .from('stories')
@@ -633,14 +636,14 @@ export default function Stories({ session, profile, track, onBack }) {
           boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '8px' }}>
-            <span style={{ color: '#71717A' }}>Words mastered</span>
-            <span style={{ fontWeight: 700, color: '#18181B' }}>{easyCount} / 300</span>
+            <span style={{ color: '#71717A' }}>Words learned</span>
+            <span style={{ fontWeight: 700, color: '#18181B' }}>{learnedCount} / 300</span>
           </div>
           <div style={{ height: '6px', background: '#E7E5E4', borderRadius: '3px', overflow: 'hidden' }}>
             <div style={{
               height: '100%', borderRadius: '3px',
               background: 'linear-gradient(90deg, ' + accentHex + ', ' + accentHex + '99)',
-              width: Math.min(100, easyCount / 300 * 100) + '%',
+              width: Math.min(100, learnedCount / 300 * 100) + '%',
               transition: 'width .6s ease',
             }} />
           </div>
@@ -648,7 +651,7 @@ export default function Stories({ session, profile, track, onBack }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {CATEGORIES.map(cat => {
-            const unlocked = easyCount >= cat.minWords
+            const unlocked = learnedCount >= cat.minWords
             const catStories = stories.filter(s => s.tier === cat.tier)
             const hasStories = catStories.length > 0
             const isClickable = unlocked && hasStories

@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getTestStatus, getAttemptsToday } from './testLogic'
 import { getLevelLabel, getNextLevel } from './utils'
+import { schedule } from './srs'
+import { TEST_UNLOCK_MASTERY_PCT } from './mastery'
+import InfoTip from './InfoTip'
 
 function generateQuestions(vocabList, allVocab, language) {
   const shuffled = [...vocabList].sort(() => Math.random() - 0.5)
@@ -169,11 +172,25 @@ export default function Test({ session, profile, track, onBack }) {
     }
 
     if (finalWrong.length > 0) {
-      await supabase
+      // Apply FSRS "Again" to each wrong card so stability drops and the word
+      // stops counting as mastered, returning naturally to review.
+      const wrongVocabIds = finalWrong.map(w => w.id)
+      const { data: wrongCards } = await supabase
         .from('cards')
-        .update({ is_easy: false, due_at: new Date().toISOString() })
+        .select('id, vocab_id, state, due_at, stability, difficulty, elapsed_days, scheduled_days, reps, lapses, learning_step, last_review')
         .eq('user_id', session.user.id)
-        .in('vocab_id', finalWrong.map(w => w.id))
+        .in('vocab_id', wrongVocabIds)
+
+      const cardByVocabId = {}
+      ;(wrongCards || []).forEach(c => { cardByVocabId[c.vocab_id] = c })
+
+      for (const w of finalWrong) {
+        const card = cardByVocabId[w.id]
+        if (card) {
+          const { updates } = schedule(card, 0)
+          await supabase.from('cards').update(updates).eq('id', card.id).eq('user_id', session.user.id)
+        }
+      }
     }
 
     if (passed) {
@@ -210,6 +227,7 @@ export default function Test({ session, profile, track, onBack }) {
 
   // ── LOCKED ───────────────────────────────────────────────────────────────
   if (phase === 'intro' && !status.testUnlocked) {
+    const unlockPct = Math.round(TEST_UNLOCK_MASTERY_PCT * 100)
     return (
       <div style={{ minHeight: '100vh', background: '#FAFAF8' }}>
         <div style={{ maxWidth: '520px', margin: '0 auto', padding: '60px 24px', textAlign: 'center' }}>
@@ -218,22 +236,28 @@ export default function Test({ session, profile, track, onBack }) {
             {levelLabel} Test locked
           </h1>
           <p style={{ fontSize: '15px', color: '#71717A', marginBottom: '24px', lineHeight: 1.6 }}>
-            Mark every word as <strong>Easy</strong> in flashcards to unlock the test.
+            Master {unlockPct}% of this level's words to unlock the test.
           </p>
           <div style={{
             background: '#fff', borderRadius: '16px', border: '1px solid #E7E5E4',
             padding: '20px', marginBottom: '28px',
           }}>
-            <div style={{ fontSize: '32px', fontWeight: 700, color: accentHex, marginBottom: '4px' }}>
-              {status.easyWords} / {status.totalWords}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '4px' }}>
+              <div style={{ fontSize: '32px', fontWeight: 700, color: accentHex }}>
+                {status.masteredCount} / {status.totalWords}
+              </div>
+              <InfoTip accentHex={accentHex} text="A word is mastered once the app predicts you'll still recall it about three weeks from now. It can't be rushed — mastery comes from reviewing correctly over time, across multiple days." />
             </div>
-            <div style={{ fontSize: '13px', color: '#71717A' }}>words marked Easy</div>
+            <div style={{ fontSize: '13px', color: '#71717A' }}>words mastered</div>
             <div style={{ height: '6px', background: '#E7E5E4', borderRadius: '3px', overflow: 'hidden', marginTop: '14px' }}>
               <div style={{
                 height: '100%', background: accentHex, borderRadius: '3px',
-                width: status.totalWords > 0 ? (status.easyWords / status.totalWords * 100) + '%' : '0%',
+                width: status.totalWords > 0 ? Math.min(100, status.masteredPct * 100) + '%' : '0%',
                 transition: 'width .6s ease',
               }} />
+            </div>
+            <div style={{ fontSize: '12px', color: '#71717A', marginTop: '10px' }}>
+              Unlocks at {unlockPct}% ({Math.ceil(status.totalWords * TEST_UNLOCK_MASTERY_PCT)} words)
             </div>
           </div>
           <button onClick={onBack} style={primaryBtn(accentHex)}>Back home</button>

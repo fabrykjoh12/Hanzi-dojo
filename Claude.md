@@ -56,7 +56,7 @@ Flashcards come first (they build the base); immersion follows (it makes the wor
 
 ## 6. Learning philosophy (this shapes every UX decision)
 
-- **No shortcuts.** The user should never be able to fake progress just to advance. Progression is gated on genuine mastery. Example: the level test requires **100% to pass**, and stories/tests unlock based on words actually marked **Easy**, not just seen.
+- **No shortcuts.** The user should never be able to fake progress just to advance. Progression is gated on genuine mastery. Mastery is now defined by FSRS **stability** (time-proven retention across real reviews, not a self-graded Easy click) — it cannot be faked. Stories unlock on the easier "learned" bar; the level test unlocks on the stricter stability-based mastery bar.
 - **Mastery before progression.** A user moves to the next level because they've learned the current one, not because they clicked through it.
 - **Calm, not pressured.** The design should make the user feel calm and focused, never anxious or manipulated. No dark patterns, no guilt, no fake urgency. Streaks exist to gently encourage consistency, not to punish.
 - **Frequency-first vocabulary.** Words are ordered by real-world frequency and usefulness. Learn the most useful words first.
@@ -213,7 +213,22 @@ Always use `getLevelLabel(language, system, level)` for display. Never hardcode 
 
 ---
 
-## 15. SRS rules (src/srs.js)
+## 15. Mastery model (src/mastery.js)
+
+Two tiers, two purposes — constants defined in `src/mastery.js`:
+
+| Tier | Definition | Used for |
+|------|-----------|---------|
+| **Learned** | Card has graduated to `review` state at least once (`learned` column = true) | Story unlocks — low bar encourages early immersion |
+| **Mastered** | FSRS `stability >= 21 days` — algorithm predicts recall 3+ weeks out | Test unlock and mastery progress display |
+
+- `MASTERY_STABILITY_DAYS = 21` — stability threshold for mastery
+- `TEST_UNLOCK_MASTERY_PCT = 0.9` — test unlocks at 90% of level words mastered
+- `is_easy` is no longer a gate for anything. The column is kept (Easy grade still sets it), but no unlock logic reads it.
+
+---
+
+## 15b. SRS rules (src/srs.js)
 
 FSRS-based, using the ts-fsrs library. Default request_retention is 0.9 (90%), using library default parameters.
 
@@ -232,7 +247,8 @@ FSRS-based, using the ts-fsrs library. Default request_retention is 0.9 (90%), u
 - 30 multiple choice questions, mix of E→C and C→E
 - **100% required to pass** (no shortcuts — this is intentional, see philosophy)
 - 3 attempts per day
-- Wrong answers: card loses `is_easy`, becomes due again
+- Test **unlocks** when ≥ 90% of the level's active words are mastered (stability ≥ 21 days)
+- Wrong answers: FSRS "Again" grade is applied to the card, dropping stability below mastery threshold and making it due again — the word genuinely returns to review
 - Passing inserts a `level_unlocks` row and advances the track
 - Test unlock is **permanent** once passed — it does not re-lock if cards later become due
 
@@ -240,7 +256,7 @@ FSRS-based, using the ts-fsrs library. Default request_retention is 0.9 (90%), u
 
 ## 17. Story unlock thresholds
 
-Unlock based on `easyCount` (cards with `is_easy = true`) for the current level:
+Unlock based on `learnedCount` (cards that have graduated to `review` state, i.e. `learned = true`) for the current level. This is intentionally a lower bar than mastery — immersion should start early so words stick in context.
 
 | Tier | Unlock at |
 |------|-----------|

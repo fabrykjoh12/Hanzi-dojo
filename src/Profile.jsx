@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
+import { isMastered } from './mastery'
+import InfoTip from './InfoTip'
 
 export default function Profile({ session, profile, track, onBack, onUpdate }) {
-  const [stats, setStats] = useState({ learned: 0, totalCards: 0, easyCount: 0, totalWords: 0 })
+  const [stats, setStats] = useState({ learned: 0, totalCards: 0, masteredCount: 0, totalWords: 0 })
   const [editingGoal, setEditingGoal] = useState(false)
   const [newGoal, setNewGoal] = useState(profile.daily_new_cards)
   const [saving, setSaving] = useState(false)
@@ -28,7 +30,7 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
 
     const { data: cards } = await supabase
       .from('cards')
-      .select('vocab_id, learned, is_easy')
+      .select('vocab_id, learned, stability')
       .eq('user_id', session.user.id)
 
     const vocabIds = new Set((vocab || []).map(v => v.id))
@@ -37,7 +39,7 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
     setStats({
       learned: levelCards.filter(c => c.learned).length,
       totalCards: levelCards.length,
-      easyCount: levelCards.filter(c => c.is_easy).length,
+      masteredCount: levelCards.filter(c => isMastered(c)).length,
       totalWords: vocabIds.size,
     })
 
@@ -92,7 +94,7 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
   }
 
   const masteryPct = stats.totalWords > 0
-    ? Math.round((stats.easyCount / stats.totalWords) * 100)
+    ? Math.round((stats.masteredCount / stats.totalWords) * 100)
     : 0
 
   return (
@@ -158,8 +160,8 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
           />
           <StatCard
             label="Words mastered"
-            value={loading ? '–' : stats.easyCount}
-            unit={`${masteryPct}% Easy`}
+            value={loading ? '–' : stats.masteredCount}
+            unit={`${masteryPct}% mastered`}
             icon="✦"
             color="#2F9E6D"
             bg="#ECFDF5"
@@ -174,9 +176,12 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
             boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
             padding: '22px 24px', marginBottom: '14px',
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ fontSize: '14px', fontWeight: 600, color: '#18181B' }}>Level mastery</span>
-              <span style={{ fontSize: '13px', color: '#71717A' }}>{stats.easyCount}/{stats.totalWords} Easy</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '14px', fontWeight: 600, color: '#18181B' }}>
+                Level mastery
+                <InfoTip accentHex={accentHex} text="A word is mastered once the app predicts you'll still recall it about three weeks from now. It can't be rushed — mastery comes from reviewing correctly over time, across multiple days." />
+              </span>
+              <span style={{ fontSize: '13px', color: '#71717A' }}>{stats.masteredCount}/{stats.totalWords} mastered</span>
             </div>
             <div style={{ height: '8px', background: '#E7E5E4', borderRadius: '4px', overflow: 'hidden' }}>
               <div style={{
@@ -186,7 +191,7 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
               }} />
             </div>
             <div style={{ fontSize: '12px', color: '#71717A', marginTop: '8px' }}>
-              {stats.totalWords - stats.easyCount} words remaining to unlock test
+              {stats.masteredCount}/{stats.totalWords} words mastered · test unlocks at 90%
             </div>
           </div>
         )}

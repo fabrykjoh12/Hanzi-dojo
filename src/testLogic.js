@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { isMastered, TEST_UNLOCK_MASTERY_PCT } from './mastery'
 
 // Normalize for tone-insensitive comparison
 export function normalizePinyin(str) {
@@ -30,7 +31,7 @@ export function checkAnswer(userInput, vocab) {
   return false
 }
 
-// Returns { allEasy, testUnlocked, levelPassed, totalWords, easyWords }
+// Returns { masteredCount, totalWords, masteredPct, testUnlocked, levelPassed }
 export async function getTestStatus(userId, track) {
   const [vocabResult, cardsResult, unlockResult] = await Promise.all([
     supabase
@@ -42,7 +43,7 @@ export async function getTestStatus(userId, track) {
       .eq('is_active', true),
     supabase
       .from('cards')
-      .select('vocab_id, is_easy')
+      .select('vocab_id, stability')
       .eq('user_id', userId),
     supabase
       .from('level_unlocks')
@@ -57,19 +58,19 @@ export async function getTestStatus(userId, track) {
   const vocab = vocabResult.data
   const cards = cardsResult.data
   const vocabIds = new Set((vocab || []).map(v => v.id))
-  const easyCards = (cards || []).filter(c => vocabIds.has(c.vocab_id) && c.is_easy)
+  const levelCards = (cards || []).filter(c => vocabIds.has(c.vocab_id))
 
   const totalWords = vocabIds.size
-  const easyWords = easyCards.length
-  const allEasy = totalWords > 0 && easyWords === totalWords
+  const masteredCount = levelCards.filter(c => isMastered(c)).length
+  const masteredPct = totalWords > 0 ? masteredCount / totalWords : 0
   const levelPassed = Boolean(unlockResult.data)
 
   return {
-    allEasy,
-    levelPassed,
-    testUnlocked: allEasy || levelPassed,
+    masteredCount,
     totalWords,
-    easyWords,
+    masteredPct,
+    levelPassed,
+    testUnlocked: levelPassed || masteredPct >= TEST_UNLOCK_MASTERY_PCT,
   }
 }
 
