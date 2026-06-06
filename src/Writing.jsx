@@ -43,6 +43,14 @@ function normalizeRomaji(value) {
   return (value || '').toLowerCase().trim().replace(/\s+/g, '')
 }
 
+function hasKanji(str) {
+  for (let i = 0; i < (str || '').length; i++) {
+    const code = str.charCodeAt(i)
+    if (code >= 0x4e00 && code <= 0x9faf) return true
+  }
+  return false
+}
+
 function isWritingMatch(input, vocab, direction, isJapanese) {
   if (direction === 'to_english') return isMeaningMatch(input, vocab.meaning)
 
@@ -598,16 +606,40 @@ export default function Writing({ session, track, onBack }) {
                   ? `Correct · +${result.xpGain} XP · ${result.multiplier}x · 🔥 ${result.streak}`
                   : 'Missed · streak reset'}
               </div>
-              {isJapanese && showFurigana ? (
-                <JapaneseRuby word={current.word} reading={current.reading} fontSize="38px" />
+              {isJapanese ? (
+                hasKanji(current.word) ? (
+                  <>
+                    {showFurigana ? (
+                      <JapaneseRuby word={current.word} reading={current.reading} fontSize="38px" />
+                    ) : (
+                      <div style={{ fontSize: '34px', fontWeight: 700, color: '#18181B', fontFamily: "'Noto Sans JP'" }}>
+                        {current.word}
+                      </div>
+                    )}
+                    <div style={{ fontSize: '14px', color: '#71717A', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
+                      {normalizeRomaji(toRomaji(current.reading || ''))}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize: '34px', fontWeight: 700, color: '#18181B', fontFamily: "'Noto Sans JP'" }}>
+                      {current.word}
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#71717A', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
+                      {normalizeRomaji(toRomaji(current.reading || ''))}
+                    </div>
+                  </>
+                )
               ) : (
-                <div style={{ fontSize: '34px', fontWeight: 700, color: '#18181B', fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'" }}>
+                <div style={{ fontSize: '34px', fontWeight: 700, color: '#18181B', fontFamily: "'Noto Sans SC'" }}>
                   {current.word}
                 </div>
               )}
-              <div style={{ fontSize: '18px', color: accentHex, marginTop: '8px', fontWeight: 700, fontFamily: isJapanese ? "'Noto Sans JP'" : 'Inter, sans-serif' }}>
-                {current.reading}
-              </div>
+              {!isJapanese && (
+                <div style={{ fontSize: '18px', color: accentHex, marginTop: '8px', fontWeight: 700 }}>
+                  {current.reading}
+                </div>
+              )}
               <div style={{ fontSize: '14px', color: '#71717A', marginTop: '6px' }}>
                 {current.meaning}
               </div>
