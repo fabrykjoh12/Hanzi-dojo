@@ -12,4 +12,11 @@ alter table cards add column if not exists last_review timestamptz;
 alter table cards add column if not exists scheduled_days int default 0;
 alter table cards add column if not exists elapsed_days int default 0;
 
+-- Ensure state constraint includes 'relearning' (FSRS adds this state for failed review cards).
+-- The original schema may only have ('new','learning','review').
+-- Drop and recreate with the full set — safe to run even if already correct.
+alter table cards drop constraint if exists cards_state_check;
+alter table cards add constraint cards_state_check
+  check (state in ('new', 'learning', 'review', 'relearning'));
+
 notify pgrst, 'reload schema';

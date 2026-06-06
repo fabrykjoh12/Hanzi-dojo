@@ -117,13 +117,15 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
 
     let cardId = card.id
     if (cardId) {
-      await supabase.from('cards').update(res.updates).eq('id', cardId)
+      const { error } = await supabase.from('cards').update(res.updates).eq('id', cardId)
+      if (error) console.error('[Study] card update failed', error)
     } else {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('cards')
         .insert({ user_id: session.user.id, vocab_id: card.vocab_id, ...res.updates })
         .select('id')
         .single()
+      if (error) console.error('[Study] card insert failed', error)
       cardId = data?.id
     }
 
