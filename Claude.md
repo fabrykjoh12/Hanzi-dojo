@@ -215,12 +215,21 @@ Always use `getLevelLabel(language, system, level)` for display. Never hardcode 
 
 ## 15. SRS rules (src/srs.js)
 
-SM-2 based (FSRS upgrade planned; srs.js is isolated so it's safe to swap).
+FSRS v5 (ts-fsrs 5.4.1). Default retention: 0.9 (90%). Enable fuzz: true.
 
-- Learning steps: [1, 10] minutes
-- Hard = 5 min, Graduating = 1 day, Easy = 4 days, Review again = 10 min
-- `is_easy = true` is set **only** on the Easy grade
+Card fields used by FSRS: `stability`, `difficulty`, `reps`, `lapses`, `last_review`, `scheduled_days`, `elapsed_days`. The existing `learning_step` column is repurposed to store FSRS's `learning_steps` (step index within the learning phase — same concept, same column). Legacy columns `ease_factor` (old SM-2 ease) are now unused but kept in schema.
+
+State values stored in DB: `'new'`, `'learning'`, `'review'`, `'relearning'` (relearning is new — a review card that was failed).
+
+Grade → FSRS Rating mapping:
+- 0 (Again) → Rating.Again
+- 1 (Hard) → Rating.Hard
+- 2 (Good) → Rating.Good
+- 3 (Easy) → Rating.Easy
+
+- `is_easy = true` is set **only** on the Easy grade (grade 3)
 - `is_easy` gates story unlocks and test unlock — never set it true anywhere else
+- `'relearning'` state cards count as due/learning in homeCounts.js and Study.jsx queue
 
 ---
 
@@ -309,6 +318,7 @@ Commit before and after every meaningful session. Update this file when features
 - Duplicate kanji in Japanese vocab (何 = なん/なに, 私 = わたし/わたくし) create identical-looking test options. Plan: deactivate less-common duplicates and/or show reading in test options.
 - A few JLPT N5 level-2 entries are counter suffixes (～グラム, ～たち) — more grammar than vocab. Review and optionally deactivate.
 - Existing ESLint hook-dependency warnings in some files — don't add new ones.
+- `ease_factor` and old SM-2 `learning_step` semantics: these columns exist in the DB but `ease_factor` is now unused. `learning_step` is repurposed to store FSRS's `learning_steps` field (step index in learning phase).
 
 ---
 
@@ -327,7 +337,6 @@ These were added by another AI session and should be verified:
 
 ## 24. Roadmap (not yet built)
 
-- FSRS algorithm upgrade
 - More HSK 1 stories; HSK 2 vocabulary + audio
 - Japanese N5 stories; Japanese YouTube recommendations
 - Practice test mode (unlimited, no progression impact, no card state changes)
