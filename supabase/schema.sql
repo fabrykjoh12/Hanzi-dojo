@@ -100,6 +100,9 @@ create table public.vocabulary (
   reading_plain text,
   meaning text not null,
   part_of_speech text,
+  example_sentence text,
+  example_reading text,
+  example_translation text,
 
   audio_path text,
   audio_provider text,

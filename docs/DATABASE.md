@@ -74,6 +74,9 @@ Every word has:
 - reading
 - reading_plain
 - meaning
+- example_sentence
+- example_reading
+- example_translation
 - audio_path
 
 For Chinese:
@@ -82,6 +85,9 @@ For Chinese:
 - reading = wǒ
 - reading_plain = wo
 - meaning = I, me
+- example_sentence = 我是学生。
+- example_reading = wǒ shì xuéshēng.
+- example_translation = I am a student.
 
 Important: use `reading`, not `pinyin`.
 

@@ -4,7 +4,6 @@ import { schedule, previewLabels } from './srs'
 import { updateStreak } from './streak'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
-const FURIGANA_STORAGE_KEY = 'hanzi-dojo-show-furigana'
 
 function getAudioUrl(audioPath) {
   if (!audioPath) return null
@@ -15,13 +14,6 @@ function hasKanji(text) {
   return /[\u3400-\u9FFF]/.test(text || '')
 }
 
-function getStoredFuriganaPreference() {
-  try {
-    return localStorage.getItem(FURIGANA_STORAGE_KEY) !== 'false'
-  } catch {
-    return true
-  }
-}
 
 export default function Study({ session, profile, track, onBack, onStreakUpdate }) {
   const [queue, setQueue] = useState([])
@@ -29,7 +21,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const [flipped, setFlipped] = useState(false)
   const [done, setDone] = useState(false)
   const [streakDone, setStreakDone] = useState(false)
-  const [showFurigana, setShowFurigana] = useState(getStoredFuriganaPreference)
+  const [showFurigana, setShowFurigana] = useState(true)
   const audioRef = useRef(null)
 
   const accent = profile.active_language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
@@ -105,9 +97,6 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     return () => clearTimeout(timer)
   }, [])
 
-  useEffect(() => {
-    localStorage.setItem(FURIGANA_STORAGE_KEY, showFurigana ? 'true' : 'false')
-  }, [showFurigana])
 
   // Play audio when card is revealed
   useEffect(() => {
@@ -182,6 +171,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const canUseFurigana = isJapanese && hasKanji(v.word) && Boolean(v.reading)
   const showRuby = canUseFurigana && (showFurigana || flipped)
   const showReadingLine = flipped && v.reading && !isJapanese
+  const hasExample = Boolean(v.example_sentence || v.example_reading || v.example_translation)
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -263,6 +253,31 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
               <div style={{ fontSize: '18px', color: '#555', marginTop: '8px' }}>
                 {v.meaning}
               </div>
+              {hasExample && (
+                <div style={{
+                  width: '100%', maxWidth: '340px', marginTop: '18px', paddingTop: '16px',
+                  borderTop: '1px solid #F1F1F0', textAlign: 'center',
+                }}>
+                  {v.example_sentence && (
+                    <div style={{
+                      fontSize: '20px', color: '#27272A', lineHeight: 1.5,
+                      fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
+                    }}>
+                      {v.example_sentence}
+                    </div>
+                  )}
+                  {v.example_reading && (
+                    <div style={{ fontSize: '14px', color: accent, marginTop: '6px', lineHeight: 1.45 }}>
+                      {v.example_reading}
+                    </div>
+                  )}
+                  {v.example_translation && (
+                    <div style={{ fontSize: '14px', color: '#71717A', marginTop: '6px', lineHeight: 1.45 }}>
+                      {v.example_translation}
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>

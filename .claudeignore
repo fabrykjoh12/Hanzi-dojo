@@ -1,0 +1,40 @@
+# Dependencies — never read these, thousands of files
+node_modules/
+
+# Build output
+dist/
+build/
+.vite/
+
+# Git internals
+.git/
+
+# Environment files (secrets — never read these)
+.env
+.env.script
+.env.local
+.env.*.local
+
+# Audio and media (binary, no value in reading)
+*.mp3
+*.wav
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.pdf
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Logs and caches
+*.log
+.cache/
+.DS_Store
+
+# Large data files (read only when explicitly asked)
+*.csv
+*.sql
