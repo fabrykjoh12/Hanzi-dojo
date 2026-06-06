@@ -74,12 +74,19 @@ export function schedule(card, grade) {
   const nextCard = scheduling[rating].card
 
   const state = STATE_TO_TEXT[nextCard.state] ?? 'learning'
+  const isLearning = nextCard.state === State.Learning || nextCard.state === State.Relearning
   const isReviewOrRelearning = nextCard.state === State.Review || nextCard.state === State.Relearning
+
+  // Learning/relearning cards are saved with due_at=now so they always appear
+  // immediately when the study screen reloads. Queue positioning within the session
+  // is controlled by the gap value, not by due_at.
+  // Review cards use the real FSRS-computed due date (days away).
+  const due_at = isLearning ? now.toISOString() : new Date(nextCard.due).toISOString()
 
   const updates = {
     state,
     interval_days: nextCard.scheduled_days,
-    due_at: new Date(nextCard.due).toISOString(),
+    due_at,
     is_easy: grade === 3,
     learned: isReviewOrRelearning,
     stability: nextCard.stability,
