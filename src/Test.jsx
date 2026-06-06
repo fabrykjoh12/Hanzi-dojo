@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import { getTestStatus, getAttemptsToday } from './testLogic'
 import { getLevelLabel, getNextLevel } from './utils'
 
-function generateQuestions(vocabList, allVocab) {
+function generateQuestions(vocabList, allVocab, language) {
   const shuffled = [...vocabList].sort(() => Math.random() - 0.5)
   const selected = shuffled.slice(0, Math.min(30, shuffled.length))
 
@@ -14,23 +14,31 @@ function generateQuestions(vocabList, allVocab) {
       .sort(() => Math.random() - 0.5)
       .slice(0, 3)
 
-    let prompt, correctAnswer, options, promptLabel, answerLabel
+    let prompt, correctAnswer, options, promptLabel, answerLabel, optionReadings
 
     if (type === 'e_to_c') {
       prompt = v.meaning
       correctAnswer = v.word
       promptLabel = 'English'
-      answerLabel = 'Chinese'
-      options = [v.word, ...wrong.map(w => w.word)].sort(() => Math.random() - 0.5)
+      answerLabel = language === 'japanese' ? 'Japanese' : 'Chinese'
+      const wordOptions = [
+        { word: v.word, reading: v.reading },
+        ...wrong.map(w => ({ word: w.word, reading: w.reading })),
+      ].sort(() => Math.random() - 0.5)
+      options = wordOptions.map(o => o.word)
+      optionReadings = language === 'japanese'
+        ? wordOptions.reduce((acc, o) => { acc[o.word] = o.reading; return acc }, {})
+        : null
     } else {
       prompt = v.word
       correctAnswer = v.meaning
-      promptLabel = 'Chinese'
+      promptLabel = language === 'japanese' ? 'Japanese' : 'Chinese'
       answerLabel = 'English'
       options = [v.meaning, ...wrong.map(w => w.meaning)].sort(() => Math.random() - 0.5)
+      optionReadings = null
     }
 
-    return { type, prompt, correctAnswer, options, vocab: v, promptLabel, answerLabel }
+    return { type, prompt, correctAnswer, options, optionReadings, vocab: v, promptLabel, answerLabel }
   })
 }
 
@@ -76,7 +84,7 @@ export default function Test({ session, profile, track, onBack }) {
   }, [])
 
   const startTest = () => {
-    const qs = generateQuestions(allVocab, allVocab)
+    const qs = generateQuestions(allVocab, allVocab, profile.active_language)
     setQuestions(qs)
     setAnswers([])
     setIndex(0)
@@ -440,7 +448,17 @@ export default function Test({ session, profile, track, onBack }) {
                     boxShadow: hasAnswered ? 'none' : '0 1px 4px rgba(0,0,0,0.04)',
                   }}
                 >
-                  <span>{option}</span>
+                  {q.optionReadings && q.optionReadings[option]
+                    ? (
+                      <span style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span>{option}</span>
+                        <span style={{ fontSize: '12px', fontWeight: 400, color: hasAnswered ? textColor : '#71717A', fontFamily: 'Inter, sans-serif' }}>
+                          {q.optionReadings[option]}
+                        </span>
+                      </span>
+                    )
+                    : <span>{option}</span>
+                  }
                   {icon && (
                     <span style={{ fontSize: '18px', fontFamily: 'Inter, sans-serif' }}>{icon}</span>
                   )}

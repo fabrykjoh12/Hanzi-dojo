@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, isRecallMatch } from './utils'
 import { normalizePinyin } from './testLogic'
+import { toRomaji } from 'wanakana'
 
 const ROUND_SIZES = [10, 15, 20, 30]
 const XP_PER_CORRECT = 10
@@ -38,11 +39,23 @@ function isMeaningMatch(input, meaning) {
   return normalizeEnglish(meaning) === normalizedInput || variants.includes(normalizedInput)
 }
 
+function normalizeRomaji(value) {
+  return (value || '').toLowerCase().trim().replace(/\s+/g, '')
+}
+
 function isWritingMatch(input, vocab, direction, isJapanese) {
   if (direction === 'to_english') return isMeaningMatch(input, vocab.meaning)
 
-  if (isRecallMatch(input, vocab.word)) return true
-  if (isJapanese) return isRecallMatch(input, vocab.reading)
+  const word = (vocab.word || '').replace(/。$/, '')
+  if (isRecallMatch(input, word)) return true
+
+  if (isJapanese) {
+    if (isRecallMatch(input, vocab.reading)) return true
+    const reading = vocab.reading || ''
+    const expectedRomaji = normalizeRomaji(toRomaji(reading))
+    const inputRomaji = normalizeRomaji(input)
+    return inputRomaji.length > 0 && inputRomaji === expectedRomaji
+  }
 
   const normalizedInput = normalizeChinesePinyin(input)
   return [vocab.reading_plain, vocab.reading]
@@ -441,7 +454,7 @@ export default function Writing({ session, track, onBack }) {
               >
                 <div style={{ fontSize: '15px', fontWeight: 800 }}>English → {isJapanese ? 'Japanese' : 'Chinese'}</div>
                 <div style={{ fontSize: '11px', color: questionMode === 'to_target' ? accentHex : '#71717A', marginTop: '4px' }}>
-                  {isJapanese ? 'Type word or reading' : 'Type Hanzi or pinyin'}
+                  {isJapanese ? 'Kanji, hiragana, or romaji' : 'Type Hanzi or pinyin'}
                 </div>
               </button>
               <button
@@ -557,7 +570,7 @@ export default function Writing({ session, track, onBack }) {
             onChange={e => setInput(e.target.value)}
             disabled={Boolean(result)}
             autoFocus
-            placeholder={toEnglish ? 'Type the English meaning' : `Type ${isJapanese ? 'word or reading' : 'Hanzi or pinyin'}`}
+            placeholder={toEnglish ? 'Type the English meaning' : `Type ${isJapanese ? 'kanji, hiragana, or romaji' : 'Hanzi or pinyin'}`}
             style={{
               width: '100%',
               boxSizing: 'border-box',

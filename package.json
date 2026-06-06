@@ -14,7 +14,8 @@
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.17.0",
-    "ts-fsrs": "^5.4.1"
+    "ts-fsrs": "^5.4.1",
+    "wanakana": "^5.3.1"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.101.0",
