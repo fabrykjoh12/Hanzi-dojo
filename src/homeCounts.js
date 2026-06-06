@@ -30,7 +30,7 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   const now = new Date()
   const levelCards = (cards || []).filter(c => vocabIds.has(c.vocab_id))
   const learnCount = levelCards
-    .filter(c => c.state === 'learning' && new Date(c.due_at) <= now).length
+    .filter(c => (c.state === 'learning' || c.state === 'relearning') && new Date(c.due_at) <= now).length
   const dueCount = levelCards
     .filter(c => c.state === 'review' && new Date(c.due_at) <= now).length
   const easyCount = levelCards.filter(c => c.is_easy).length
