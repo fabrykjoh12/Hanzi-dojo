@@ -23,6 +23,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const [streakDone, setStreakDone] = useState(false)
   const [showFurigana, setShowFurigana] = useState(true)
   const [saveError, setSaveError] = useState(null)
+  const [pendingLearning, setPendingLearning] = useState(0)
   const audioRef = useRef(null)
 
   const accent = profile.active_language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
@@ -78,6 +79,11 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
       .filter(c => (c.state === 'learning' || c.state === 'relearning') && new Date(c.due_at) <= now)
     const dueReview = levelCards
       .filter(c => c.state === 'review' && new Date(c.due_at) <= now)
+
+    // Learning cards saved in DB but not yet due (short FSRS intervals — 1-10 min)
+    const pending = levelCards
+      .filter(c => (c.state === 'learning' || c.state === 'relearning') && new Date(c.due_at) > now)
+    setPendingLearning(pending.length)
 
     const newItems = (vocab || [])
       .filter(v => !startedVocab.has(v.id))
@@ -166,7 +172,13 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>✨</div>
           <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '8px' }}>All done for now!</h1>
-          <p style={{ color: '#888', marginBottom: '24px' }}>No cards due. Come back later.</p>
+          {pendingLearning > 0 ? (
+            <p style={{ color: '#E08C00', marginBottom: '24px', fontWeight: 500 }}>
+              {pendingLearning} learning {pendingLearning === 1 ? 'card' : 'cards'} will be ready in a few minutes — come back soon.
+            </p>
+          ) : (
+            <p style={{ color: '#888', marginBottom: '24px' }}>No cards due. Come back later.</p>
+          )}
           <button onClick={onBack} style={{ ...btn, background: accent, color: '#fff', border: 'none' }}>
             Back home
           </button>
