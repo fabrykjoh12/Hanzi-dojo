@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { schedule, previewLabels } from './srs'
 import { updateStreak } from './streak'
+import { Volume2 } from 'lucide-react'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
@@ -231,14 +232,14 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
               style={{
                 position: 'absolute', top: '14px', right: '14px',
                 background: 'none', border: 'none', cursor: 'pointer',
-                fontSize: '18px', opacity: 0.5, padding: '4px',
-                transition: 'opacity .2s',
+                color: '#71717A', opacity: 0.5, padding: '4px',
+                display: 'inline-flex', transition: 'opacity .2s',
               }}
-              onMouseEnter={e => e.target.style.opacity = 1}
-              onMouseLeave={e => e.target.style.opacity = 0.5}
+              onMouseEnter={e => e.currentTarget.style.opacity = 1}
+              onMouseLeave={e => e.currentTarget.style.opacity = 0.5}
               title="Replay audio"
             >
-              🔊
+              <Volume2 size={18} strokeWidth={2} />
             </button>
           )}
 

@@ -12,6 +12,7 @@ import YouTube from './YouTube'
 import LanguageSwitcher from './LanguageSwitcher'
 import { getLevelLabel, getSystemLabel } from './utils'
 import InfoTip from './InfoTip'
+import { Layers, GraduationCap, PenLine, BookOpen, Play, Flame, Lock } from 'lucide-react'
 
 // ── Feature card component ────────────────────────────────────────────────
 function FeatureCard({ icon, title, subtitle, detail, detailColor, onClick, accent, locked, indicator }) {
@@ -46,12 +47,11 @@ function FeatureCard({ icon, title, subtitle, detail, detailColor, onClick, acce
           width: '38px', height: '38px', borderRadius: '10px',
           background: locked ? '#F4F4F5' : `${accent}12`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '18px',
         }}>
           {icon}
         </div>
-        <span style={{ fontSize: '16px', color: locked ? '#D1D5DB' : accent }}>
-          {indicator || (locked ? '🔒' : '→')}
+        <span style={{ fontSize: '16px', color: locked ? '#D1D5DB' : accent, display: 'inline-flex', alignItems: 'center' }}>
+          {indicator || (locked ? <Lock size={15} strokeWidth={2} /> : '→')}
         </span>
       </div>
       <div style={{ fontSize: '15px', fontWeight: 600, color: '#18181B' }}>{title}</div>
@@ -273,7 +273,7 @@ if (view === 'youtube') {
               padding: '8px 14px', borderRadius: '20px',
               background: '#FEF3C7', border: '1px solid #FDE68A',
             }}>
-              <span style={{ fontSize: '16px' }}>🔥</span>
+              <Flame size={15} strokeWidth={2} color="#D97706" />
               <span style={{ fontSize: '15px', fontWeight: 700, color: '#D97706' }}>
                 {profile.streak || 0}
               </span>
@@ -357,7 +357,7 @@ if (view === 'youtube') {
         {/* ── Feature cards grid ── */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <FeatureCard
-            icon="📚"
+            icon={<Layers size={22} strokeWidth={1.75} color={accentHex} />}
             title="Flashcards"
             subtitle="Continue your session"
             detail={totalDue > 0 ? `New ${counts.newCount} · Learn ${counts.learnCount} · Due ${counts.dueCount}` : 'Nothing due right now'}
@@ -366,7 +366,7 @@ if (view === 'youtube') {
             accent={accentHex}
           />
           <FeatureCard
-            icon="✍️"
+            icon={<GraduationCap size={22} strokeWidth={1.75} color={accentHex} />}
             title="Test"
             subtitle="Prove your level to advance"
             detail={`${counts.masteredCount}/${counts.totalWords} Mastered`}
@@ -375,7 +375,7 @@ if (view === 'youtube') {
             accent={accentHex}
           />
           <FeatureCard
-            icon="📖"
+            icon={<PenLine size={22} strokeWidth={1.75} color={accentHex} />}
             title="Writing"
             subtitle="Type from memory"
             detail={profile.active_language === 'japanese' ? 'Word or kana recall' : 'Characters or pinyin'}
@@ -384,7 +384,7 @@ if (view === 'youtube') {
             accent={accentHex}
           />
           <FeatureCard
-            icon="ðŸ“–"
+            icon={<BookOpen size={22} strokeWidth={1.75} color={storiesUnlocked ? accentHex : '#A1A1AA'} />}
             title="Stories"
             subtitle={storiesUnlocked ? 'Read in Chinese' : 'Unlock at 20 learned words'}
             detail={storiesUnlocked ? 'Available' : `${counts.learnedCount}/20 learned`}
@@ -392,10 +392,10 @@ if (view === 'youtube') {
             onClick={() => setView('stories')}
             accent={accentHex}
             locked={!storiesUnlocked}
-            indicator={storiesUnlocked ? '→' : '🔒'}
+            indicator={storiesUnlocked ? '→' : <Lock size={15} strokeWidth={2} />}
           />
           <FeatureCard
-  icon="▶️"
+  icon={<Play size={22} strokeWidth={1.75} color={accentHex} />}
   title="YouTube"
   subtitle="Curated beginner videos"
   detail="Watch & learn"

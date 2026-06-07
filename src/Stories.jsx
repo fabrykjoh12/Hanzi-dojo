@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel } from './utils'
 import { isLearned } from './mastery'
+import { BookOpen, Lock } from 'lucide-react'
 
 const CATEGORIES = [
   { tier: 1, minWords: 20, label: 'First Steps', description: 'Words 1–50', wordRange: '1-50' },
@@ -725,7 +726,9 @@ function CategoryCard({ cat, unlocked, hasStories, isClickable, storyCount, acce
     >
       <div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-          <span style={{ fontSize: '16px' }}>{unlocked ? '📖' : '🔒'}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', color: unlocked ? accentHex : '#A1A1AA' }}>
+            {unlocked ? <BookOpen size={16} strokeWidth={1.75} /> : <Lock size={16} strokeWidth={1.75} />}
+          </span>
           <span style={{ fontSize: '16px', fontWeight: 600, color: '#18181B' }}>{cat.label}</span>
           {hasStories && unlocked && (
             <span style={{

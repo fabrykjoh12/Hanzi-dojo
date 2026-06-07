@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { isMastered } from './mastery'
 import InfoTip from './InfoTip'
+import { Flame, Shield, Layers, Sparkles } from 'lucide-react'
 
 export default function Profile({ session, profile, track, onBack, onUpdate }) {
   const [stats, setStats] = useState({ learned: 0, totalCards: 0, masteredCount: 0, totalWords: 0 })
@@ -138,7 +139,7 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
             label="Current streak"
             value={profile.streak || 0}
             unit="days"
-            icon="🔥"
+            icon={<Flame size={18} strokeWidth={1.75} color="#D97706" />}
             color="#D97706"
             bg="#FFFBEB"
           />
@@ -146,7 +147,7 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
             label="Streak freezes"
             value={profile.streak_freezes || 0}
             unit="available"
-            icon="🛡️"
+            icon={<Shield size={18} strokeWidth={1.75} color="#3E63DD" />}
             color="#3E63DD"
             bg="#EEF2FF"
           />
@@ -154,7 +155,7 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
             label="Words in review"
             value={loading ? '–' : stats.learned}
             unit={`of ${stats.totalWords}`}
-            icon="📚"
+            icon={<Layers size={18} strokeWidth={1.75} color={accentHex} />}
             color={accentHex}
             bg={`${accentHex}10`}
           />
@@ -162,7 +163,7 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
             label="Words mastered"
             value={loading ? '–' : stats.masteredCount}
             unit={`${masteryPct}% mastered`}
-            icon="✦"
+            icon={<Sparkles size={18} strokeWidth={1.75} color="#2F9E6D" />}
             color="#2F9E6D"
             bg="#ECFDF5"
           />

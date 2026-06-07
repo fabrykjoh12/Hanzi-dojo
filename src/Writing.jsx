@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import { getLevelLabel, isRecallMatch } from './utils'
 import { normalizePinyin } from './testLogic'
 import { toRomaji } from 'wanakana'
+import { Flame, PenLine } from 'lucide-react'
 
 const ROUND_SIZES = [10, 15, 20, 30]
 const XP_PER_CORRECT = 10
@@ -145,8 +146,8 @@ function WordStatRow({ word, stat, isJapanese, accentHex }) {
             {stat.xp}/{MAX_XP} XP
           </div>
           {getSafeStreak(stat) > 0 && (
-            <div style={{ fontSize: '11px', color: '#D97706', marginTop: '4px', fontWeight: 800 }}>
-              🔥 {getSafeStreak(stat)}
+            <div style={{ fontSize: '11px', color: '#D97706', marginTop: '4px', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+              <Flame size={11} strokeWidth={2} /> {getSafeStreak(stat)}
             </div>
           )}
         </div>
@@ -353,7 +354,7 @@ export default function Writing({ session, track, onBack }) {
     return (
       <div style={center}>
         <div style={{ width: '100%', maxWidth: '460px', textAlign: 'center', padding: '24px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>✎</div>
+          <div style={{ marginBottom: '16px' }}><PenLine size={44} strokeWidth={1.5} color={accentHex} /></div>
           <h1 style={{ fontSize: '24px', color: '#18181B', marginBottom: '8px' }}>No studied words yet</h1>
           <p style={{ fontSize: '14px', color: '#71717A', marginBottom: '24px', lineHeight: 1.5 }}>
             Study some flashcards in this level first, then come back to practice writing from memory.
@@ -532,8 +533,8 @@ export default function Writing({ session, track, onBack }) {
           <span style={statusPill(accentHex)}>
             {directionLabel}
           </span>
-          <span style={statusPill('#D97706')}>
-            🔥 {getSafeStreak(currentStat)} · next {nextMultiplier}x
+          <span style={{ ...statusPill('#D97706'), display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <Flame size={12} strokeWidth={2} /> {getSafeStreak(currentStat)} · next {nextMultiplier}x
           </span>
           {isJapanese && (
             <button onClick={() => setShowFurigana(prev => !prev)} style={pill(showFurigana, accentHex)}>
@@ -603,7 +604,11 @@ export default function Writing({ session, track, onBack }) {
             }}>
               <div style={{ fontSize: '13px', fontWeight: 700, color: result.status === 'correct' ? '#2F9E6D' : '#DC2626', marginBottom: '8px' }}>
                 {result.status === 'correct'
-                  ? `Correct · +${result.xpGain} XP · ${result.multiplier}x · 🔥 ${result.streak}`
+                  ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      Correct · +{result.xpGain} XP · {result.multiplier}x · <Flame size={12} strokeWidth={2} /> {result.streak}
+                    </span>
+                  )
                   : 'Missed · streak reset'}
               </div>
               {isJapanese ? (

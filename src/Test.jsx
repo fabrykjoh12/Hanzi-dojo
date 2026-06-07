@@ -5,6 +5,7 @@ import { getLevelLabel, getNextLevel } from './utils'
 import { schedule } from './srs'
 import { TEST_UNLOCK_MASTERY_PCT } from './mastery'
 import InfoTip from './InfoTip'
+import { Lock, Clock, GraduationCap } from 'lucide-react'
 
 function generateQuestions(vocabList, allVocab, language) {
   const shuffled = [...vocabList].sort(() => Math.random() - 0.5)
@@ -231,7 +232,7 @@ export default function Test({ session, profile, track, onBack }) {
     return (
       <div style={{ minHeight: '100vh', background: '#FAFAF8' }}>
         <div style={{ maxWidth: '520px', margin: '0 auto', padding: '60px 24px', textAlign: 'center' }}>
-          <div style={{ fontSize: '56px', marginBottom: '20px' }}>🔒</div>
+          <div style={{ marginBottom: '20px' }}><Lock size={52} strokeWidth={1.5} color="#D1D5DB" /></div>
           <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#18181B', marginBottom: '8px' }}>
             {levelLabel} Test locked
           </h1>
@@ -271,7 +272,7 @@ export default function Test({ session, profile, track, onBack }) {
     return (
       <div style={{ minHeight: '100vh', background: '#FAFAF8' }}>
         <div style={{ maxWidth: '520px', margin: '0 auto', padding: '60px 24px', textAlign: 'center' }}>
-          <div style={{ fontSize: '56px', marginBottom: '20px' }}>⏳</div>
+          <div style={{ marginBottom: '20px' }}><Clock size={52} strokeWidth={1.5} color="#D97706" /></div>
           <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#18181B', marginBottom: '8px' }}>
             No attempts left today
           </h1>
@@ -292,7 +293,7 @@ export default function Test({ session, profile, track, onBack }) {
           <button onClick={onBack} style={backBtn}>← Back</button>
 
           <div style={{ textAlign: 'center', marginTop: '32px' }}>
-            <div style={{ fontSize: '56px', marginBottom: '20px' }}>✍️</div>
+            <div style={{ marginBottom: '20px' }}><GraduationCap size={52} strokeWidth={1.5} color={accentHex} /></div>
             <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#18181B', marginBottom: '8px' }}>
               {levelLabel} Test
             </h1>
