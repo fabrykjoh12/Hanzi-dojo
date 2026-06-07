@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Placeholder enso brushstroke. Replace with the real logo at src/assets/logo.png (or .svg). -->
+  <path d="M72 24 A38 38 0 1 0 80 58"
+        fill="none" stroke="#B83A24" stroke-width="9"
+        stroke-linecap="round" transform="rotate(8 50 50)"/>
+</svg>
