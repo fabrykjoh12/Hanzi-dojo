@@ -1,50 +1,19 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
-import { getLevelLabel } from './utils'
+import { getLevelLabel, getSystemLabel } from './utils'
 import { isLearned } from './mastery'
-import { BookOpen, Lock } from 'lucide-react'
+import {
+  ArrowLeft, ArrowRight, BookOpen, BookOpenCheck, CheckCircle2,
+  Circle, Library, Lock, Plus, Sparkles,
+} from 'lucide-react'
 
 const CATEGORIES = [
-  { tier: 1, minWords: 20, label: 'First Steps', description: 'Words 1–50', wordRange: '1-50' },
-  { tier: 2, minWords: 50, label: 'Growing', description: 'Words 1–100', wordRange: '1-100' },
-  { tier: 3, minWords: 100, label: 'Comfortable', description: 'Words 1–150', wordRange: '1-150' },
-  { tier: 4, minWords: 200, label: 'Confident', description: 'Words 1–250', wordRange: '1-250' },
+  { tier: 1, minWords: 20, label: 'First Steps', description: 'Words 1-50', wordRange: '1-50' },
+  { tier: 2, minWords: 50, label: 'Growing', description: 'Words 1-100', wordRange: '1-100' },
+  { tier: 3, minWords: 100, label: 'Comfortable', description: 'Words 1-150', wordRange: '1-150' },
+  { tier: 4, minWords: 200, label: 'Confident', description: 'Words 1-250', wordRange: '1-250' },
   { tier: 5, minWords: 300, label: 'Complete', description: 'All 300 words', wordRange: '1-300' },
 ]
-
-function segmentText(text, vocabMap) {
-  const result = []
-  let i = 0
-  while (i < text.length) {
-    let matched = false
-    for (let len = Math.min(5, text.length - i); len >= 1; len--) {
-      const candidate = text.slice(i, i + len)
-      if (vocabMap[candidate]) {
-        result.push({ word: candidate, vocab: vocabMap[candidate], isVocab: true })
-        i += len
-        matched = true
-        break
-      }
-    }
-    if (!matched) {
-      if (result.length > 0 && !result[result.length - 1].isVocab) {
-        result[result.length - 1].word += text[i]
-      } else {
-        result.push({ word: text[i], isVocab: false })
-      }
-      i++
-    }
-  }
-  return result
-}
-
-function getWordStatus(vocabId, userCards) {
-  const card = userCards[vocabId]
-  if (!card) return 'not_started'
-  if (card.is_easy) return 'mastered'
-  if (card.state === 'review') return 'review'
-  return 'learning'
-}
 
 const STATUS_LABELS = {
   not_started: 'Not started',
@@ -60,8 +29,143 @@ const STATUS_COLORS = {
   mastered: '#2F9E6D',
 }
 
-// ── Word token with tooltip ────────────────────────────────────────────────
-function WordToken({ word, vocab, userCards, accentHex, onAdd }) {
+function segmentText(text, vocabMap) {
+  const result = []
+  let i = 0
+  while (i < text.length) {
+    let matched = false
+    for (let len = Math.min(5, text.length - i); len >= 1; len -= 1) {
+      const candidate = text.slice(i, i + len)
+      if (vocabMap[candidate]) {
+        result.push({ word: candidate, vocab: vocabMap[candidate], isVocab: true })
+        i += len
+        matched = true
+        break
+      }
+    }
+    if (!matched) {
+      if (result.length > 0 && !result[result.length - 1].isVocab) {
+        result[result.length - 1].word += text[i]
+      } else {
+        result.push({ word: text[i], isVocab: false })
+      }
+      i += 1
+    }
+  }
+  return result
+}
+
+function splitSpeakerLine(line) {
+  const fullWidthIndex = line.indexOf('：')
+  const asciiIndex = line.indexOf(':')
+  let colonIdx = -1
+  if (fullWidthIndex > 0) colonIdx = fullWidthIndex
+  if (colonIdx < 0 && asciiIndex > 0) colonIdx = asciiIndex
+
+  if (colonIdx > 0 && colonIdx <= 3) {
+    return { speaker: line.slice(0, colonIdx), text: line.slice(colonIdx + 1) }
+  }
+  return { speaker: null, text: line }
+}
+
+function getWordStatus(vocabId, userCards) {
+  const card = userCards[vocabId]
+  if (!card) return 'not_started'
+  if (card.is_easy) return 'mastered'
+  if (card.state === 'review') return 'review'
+  return 'learning'
+}
+
+function getLanguageDetails(profile, track) {
+  const isJapanese = profile.active_language === 'japanese' || track.language === 'japanese'
+  return {
+    isJapanese,
+    accentHex: isJapanese ? '#2E3A6E' : '#B83A24',
+    languageName: isJapanese ? 'Japanese' : 'Chinese',
+    nativeName: isJapanese ? '日本語' : '中文',
+    fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
+    faintCharacter: isJapanese ? '読' : '读',
+  }
+}
+
+function pageShell() {
+  return {
+    minHeight: '100vh',
+    position: 'relative',
+    overflow: 'hidden',
+    background: 'linear-gradient(180deg, #FBFBF9 0%, #FAFAF8 100%)',
+  }
+}
+
+function BackgroundCharacter({ character, fontFamily, color }) {
+  return (
+    <div style={{
+      position: 'fixed', right: '-42px', bottom: '-112px',
+      fontSize: '360px', lineHeight: 1,
+      color, opacity: 0.035,
+      fontFamily, fontWeight: 700,
+      pointerEvents: 'none', userSelect: 'none', zIndex: 0,
+    }}>
+      {character}
+    </div>
+  )
+}
+
+function IconButton({ icon: Icon, label, onClick }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+        height: '40px', padding: '0 14px', borderRadius: '12px',
+        border: '1px solid #E7E5E4',
+        background: hovered ? '#F7F7F5' : '#FFFFFF',
+        color: '#52525B',
+        fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+        cursor: 'pointer',
+        transition: 'background 160ms ease, transform 160ms ease',
+        transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
+      }}
+    >
+      <Icon size={17} strokeWidth={1.85} color="#71717A" />
+      {label}
+    </button>
+  )
+}
+
+function ProgressCard({ learnedCount, totalWords, accentHex }) {
+  const pct = totalWords > 0 ? Math.min(100, Math.round((learnedCount / totalWords) * 100)) : 0
+  return (
+    <div style={{
+      background: '#FFFFFF', borderRadius: '20px',
+      border: '1px solid #E7E5E4',
+      padding: '22px 24px',
+      boxShadow: '0 18px 48px rgba(24,24,27,0.06)',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <span style={{ color: '#18181B', fontSize: '14px', fontWeight: 750 }}>Immersion unlocks</span>
+        <span style={{ color: '#71717A', fontSize: '13px', fontWeight: 650 }}>
+          <span style={{ color: '#18181B', fontWeight: 800 }}>{learnedCount}</span>/{totalWords} · {pct}%
+        </span>
+      </div>
+      <div style={{ height: '7px', background: '#E7E5E4', borderRadius: '999px', overflow: 'hidden' }}>
+        <div style={{
+          height: '100%', width: pct + '%',
+          background: 'linear-gradient(90deg, ' + accentHex + ', ' + accentHex + 'AA)',
+          borderRadius: '999px', transition: 'width 600ms ease',
+        }} />
+      </div>
+      <p style={{ margin: '12px 0 0', color: '#71717A', fontSize: '13px', lineHeight: 1.5 }}>
+        Stories unlock from learned words, so reading starts early and reinforces the flashcards.
+      </p>
+    </div>
+  )
+}
+
+function WordToken({ word, vocab, userCards, accentHex, fontFamily, onAdd }) {
   const [show, setShow] = useState(false)
   const [hovered, setHovered] = useState(false)
   const ref = useRef(null)
@@ -91,7 +195,7 @@ function WordToken({ word, vocab, userCards, accentHex, onAdd }) {
         style={{
           color: '#18181B',
           background: hovered || show ? accentHex + '12' : 'transparent',
-          borderRadius: '4px',
+          borderRadius: '5px',
           padding: '1px 3px',
           cursor: 'pointer',
           borderBottom: '1.5px dotted ' + underlineColor,
@@ -104,44 +208,46 @@ function WordToken({ word, vocab, userCards, accentHex, onAdd }) {
       {show && (
         <div style={{
           position: 'absolute',
-          bottom: '130%',
+          bottom: '135%',
           left: '50%',
           transform: 'translateX(-50%)',
-          background: '#fff',
+          background: '#FFFFFF',
           border: '1px solid #E7E5E4',
-          borderRadius: '14px',
-          padding: '14px 16px',
+          borderRadius: '16px',
+          padding: '16px',
           zIndex: 50,
-          minWidth: '160px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+          minWidth: '180px',
+          boxShadow: '0 16px 42px rgba(24,24,27,0.14)',
           textAlign: 'center',
           whiteSpace: 'nowrap',
         }}>
           <div style={{
-            fontSize: '26px',
-            fontFamily: "'Noto Sans SC'",
+            fontSize: '27px',
+            fontFamily,
             color: '#18181B',
-            fontWeight: 600,
-            marginBottom: '4px',
+            fontWeight: 650,
+            marginBottom: '5px',
           }}>
             {word}
           </div>
-          <div style={{ fontSize: '13px', color: accentHex, fontWeight: 500, marginBottom: '3px' }}>
-            {vocab.reading}
-          </div>
-          <div style={{ fontSize: '13px', color: '#71717A', marginBottom: '10px' }}>
+          {vocab.reading && (
+            <div style={{ fontSize: '13px', color: accentHex, fontWeight: 650, marginBottom: '4px' }}>
+              {vocab.reading}
+            </div>
+          )}
+          <div style={{ fontSize: '13px', color: '#71717A', marginBottom: '11px' }}>
             {vocab.meaning}
           </div>
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '5px',
+            gap: '6px',
             fontSize: '11px',
-            fontWeight: 600,
+            fontWeight: 750,
             color: STATUS_COLORS[status],
             background: STATUS_COLORS[status] + '15',
-            padding: '3px 10px',
-            borderRadius: '20px',
+            padding: '4px 10px',
+            borderRadius: '999px',
             marginBottom: status === 'not_started' ? '10px' : 0,
           }}>
             <span style={{
@@ -154,21 +260,24 @@ function WordToken({ word, vocab, userCards, accentHex, onAdd }) {
             <button
               onClick={e => { e.stopPropagation(); onAdd(vocab); setShow(false) }}
               style={{
-                display: 'block',
+                display: 'flex',
                 width: '100%',
-                marginTop: '0',
-                padding: '7px 0',
-                borderRadius: '8px',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                padding: '8px 0',
+                borderRadius: '10px',
                 border: 'none',
                 background: accentHex,
-                color: '#fff',
+                color: '#FFFFFF',
                 fontSize: '12px',
-                fontWeight: 700,
+                fontWeight: 750,
                 cursor: 'pointer',
                 fontFamily: 'Inter, sans-serif',
               }}
             >
-              + Add to deck
+              <Plus size={14} strokeWidth={2} color="#FFFFFF" />
+              Add to deck
             </button>
           )}
         </div>
@@ -177,9 +286,8 @@ function WordToken({ word, vocab, userCards, accentHex, onAdd }) {
   )
 }
 
-// ── Story reader ───────────────────────────────────────────────────────────
-function StoryReader({ story, vocabMap, userCards, setUserCards, session, track, accentHex, onBack }) {
-  const isJapanese = track.language === 'japanese'
+function StoryReader({ story, vocabMap, userCards, setUserCards, session, track, languageDetails, onBack }) {
+  const { isJapanese, accentHex, fontFamily, faintCharacter } = languageDetails
 
   const addToDeck = async (vocabItem) => {
     const { error } = await supabase.from('cards').insert({
@@ -197,13 +305,10 @@ function StoryReader({ story, vocabMap, userCards, setUserCards, session, track,
   }
 
   const lines = story.content.split('\n').filter(Boolean)
-
-  // Collect unique vocab words from story
   const storyVocab = []
   const seen = new Set()
   lines.forEach(line => {
-    const colonIdx = line.indexOf('：')
-    const text = colonIdx > 0 && colonIdx <= 3 ? line.slice(colonIdx + 1) : line
+    const { text } = splitSpeakerLine(line)
     const segments = segmentText(text, vocabMap)
     segments.forEach(seg => {
       if (seg.isVocab && !seen.has(seg.vocab.id)) {
@@ -213,250 +318,179 @@ function StoryReader({ story, vocabMap, userCards, setUserCards, session, track,
     })
   })
 
-  // Words to review = not mastered
-  const wordsToReview = storyVocab.filter(v => {
-    const status = getWordStatus(v.id, userCards)
-    return status !== 'mastered'
-  })
-
+  const wordsToReview = storyVocab.filter(v => getWordStatus(v.id, userCards) !== 'mastered')
   const masteredCount = storyVocab.length - wordsToReview.length
-  const systemLabel = track.system === 'hsk_3' ? 'HSK 3.0' : 'JLPT'
   const levelLabel = getLevelLabel(track.language, track.system, track.current_level)
+  const systemLabel = getSystemLabel(track.system)
+  const progressPct = storyVocab.length > 0 ? masteredCount / storyVocab.length * 100 : 0
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FAFAF8', position: 'relative', overflow: 'hidden' }}>
-      {/* Faint background character */}
-      <div style={{
-        position: 'fixed', right: '-20px', top: '50%',
-        transform: 'translateY(-50%)',
-        fontSize: '360px', lineHeight: 1,
-        color: accentHex, opacity: 0.035,
-        fontFamily: "'Noto Sans SC'", fontWeight: 700,
-        pointerEvents: 'none', userSelect: 'none', zIndex: 0,
-      }}>
-        读
-      </div>
+    <div style={pageShell(accentHex, fontFamily, faintCharacter)}>
+      <BackgroundCharacter character={faintCharacter} fontFamily={fontFamily} color={accentHex} />
+      <div style={{ maxWidth: '1160px', margin: '0 auto', padding: '38px 32px 72px', position: 'relative', zIndex: 1 }}>
+        <IconButton icon={ArrowLeft} label="Back to stories" onClick={onBack} />
 
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 24px 80px', position: 'relative', zIndex: 1 }}>
-
-        {/* Back */}
-        <button
-          onClick={onBack}
-          style={{ background: 'none', border: 'none', color: '#71717A', cursor: 'pointer', fontSize: '14px', padding: 0, marginBottom: '28px' }}
-        >
-          ← Back to stories
-        </button>
-
-        {/* Story header */}
-        <div style={{ marginBottom: '32px' }}>
+        <div style={{ margin: '28px 0 28px', maxWidth: '760px' }}>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
-            <span style={{
-              fontSize: '12px', fontWeight: 600,
-              color: accentHex, background: accentHex + '12',
-              padding: '4px 12px', borderRadius: '20px',
-              border: '1px solid ' + accentHex + '30',
-            }}>
+            <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>
               {systemLabel} · {levelLabel}
             </span>
-            <span style={{
-              fontSize: '12px', fontWeight: 600,
-              color: '#71717A', background: '#F4F4F5',
-              padding: '4px 12px', borderRadius: '20px',
-              border: '1px solid #E7E5E4',
-            }}>
-              Dialogue
-            </span>
+            <span style={pillStyle('#71717A', '#F4F4F5', '#E7E5E4')}>Level-matched reading</span>
           </div>
           <h1 style={{
-            fontSize: '36px', fontWeight: 700, color: '#18181B',
-            fontFamily: "'Noto Sans SC'", lineHeight: 1.2, marginBottom: '10px',
+            margin: 0, color: '#18181B', fontSize: '38px', fontWeight: 800,
+            lineHeight: 1.15, fontFamily,
           }}>
             {story.title}
           </h1>
           {story.english_summary && (
-            <p style={{ fontSize: '15px', color: '#71717A', lineHeight: 1.6, maxWidth: '600px' }}>
+            <p style={{ color: '#71717A', fontSize: '15px', lineHeight: 1.65, margin: '12px 0 0', maxWidth: '680px' }}>
               {story.english_summary}
             </p>
           )}
         </div>
 
-        {/* Legend */}
-        <div style={{
-          display: 'flex', gap: '20px', flexWrap: 'wrap',
-          marginBottom: '24px', fontSize: '12px', color: '#71717A',
-        }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ borderBottom: '1.5px dotted ' + accentHex + '88', padding: '0 4px' }}>词</span>
-            Mastered
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ borderBottom: '1.5px dotted #A1A1AA', padding: '0 4px' }}>词</span>
-            In deck
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ borderBottom: '1.5px dotted #D4D4D4', padding: '0 4px' }}>词</span>
-            Not in deck — tap to add
-          </span>
-        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '24px', alignItems: 'start' }}>
+          <div style={{
+            background: '#FFFFFF', border: '1px solid #E7E5E4',
+            borderRadius: '24px',
+            boxShadow: '0 22px 64px rgba(24,24,27,0.07)',
+            overflow: 'visible',
+          }}>
+            {lines.map((line, lineIdx) => {
+              const { speaker, text } = splitSpeakerLine(line)
+              const segments = segmentText(text, vocabMap)
 
-        {/* Two-column layout */}
-        <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
-
-          {/* ── Story dialogue ── */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{
-              background: '#fff', borderRadius: '20px',
-              border: '1px solid #E7E5E4',
-              boxShadow: '0 2px 16px rgba(0,0,0,0.05)',
-            }}>
-              {lines.map((line, lineIdx) => {
-                const colonIdx = line.indexOf('：')
-                let speaker = null
-                let text = line
-
-                if (colonIdx > 0 && colonIdx <= 3) {
-                  speaker = line.slice(0, colonIdx)
-                  text = line.slice(colonIdx + 1)
-                }
-
-                const segments = segmentText(text, vocabMap)
-
-                return (
-                  <div key={lineIdx}>
-                    <div style={{
-                      display: 'flex', gap: '20px', alignItems: 'flex-start',
-                      padding: '22px 28px',
-                    }}>
-                      {speaker ? (
-                        <span style={{
-                          fontSize: '14px', fontWeight: 700,
-                          color: accentHex,
-                          minWidth: '36px', paddingTop: '6px',
-                          fontFamily: "'Noto Sans SC'",
-                          flexShrink: 0,
-                        }}>
-                          {speaker}
-                        </span>
-                      ) : (
-                        <span style={{ minWidth: '36px', flexShrink: 0 }} />
-                      )}
-                      <p style={{
-                        fontSize: '22px', lineHeight: 2.0, margin: 0,
-                        fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
-                        color: '#18181B', flex: 1,
-                        letterSpacing: '0.02em',
+              return (
+                <div key={lineIdx}>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: speaker ? '48px minmax(0, 1fr)' : 'minmax(0, 1fr)',
+                    gap: '18px',
+                    alignItems: 'start',
+                    padding: '26px 32px',
+                  }}>
+                    {speaker && (
+                      <span style={{
+                        width: '40px', height: '40px', borderRadius: '14px',
+                        background: accentHex + '10', color: accentHex,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '15px', fontWeight: 800, fontFamily,
+                        border: '1px solid ' + accentHex + '18',
                       }}>
-                        {segments.map((seg, segIdx) => {
-                          if (!seg.isVocab) {
-                            return <span key={segIdx} style={{ color: '#18181B' }}>{seg.word}</span>
-                          }
-                          return (
-                            <WordToken
-                              key={segIdx}
-                              word={seg.word}
-                              vocab={seg.vocab}
-                              userCards={userCards}
-                              accentHex={accentHex}
-                              onAdd={addToDeck}
-                            />
-                          )
-                        })}
-                      </p>
-                    </div>
-                    {lineIdx < lines.length - 1 && (
-                      <div style={{ height: '1px', background: '#F4F4F5', margin: '0 28px' }} />
+                        {speaker}
+                      </span>
                     )}
+                    <p style={{
+                      margin: 0,
+                      fontSize: '24px',
+                      lineHeight: 2,
+                      fontFamily,
+                      color: '#18181B',
+                      letterSpacing: isJapanese ? '0' : '0.01em',
+                    }}>
+                      {segments.map((seg, segIdx) => {
+                        if (!seg.isVocab) {
+                          return <span key={segIdx}>{seg.word}</span>
+                        }
+                        return (
+                          <WordToken
+                            key={segIdx}
+                            word={seg.word}
+                            vocab={seg.vocab}
+                            userCards={userCards}
+                            accentHex={accentHex}
+                            fontFamily={fontFamily}
+                            onAdd={addToDeck}
+                          />
+                        )
+                      })}
+                    </p>
                   </div>
-                )
-              })}
-            </div>
+                  {lineIdx < lines.length - 1 && (
+                    <div style={{ height: '1px', background: '#F4F4F5', margin: '0 32px' }} />
+                  )}
+                </div>
+              )
+            })}
           </div>
 
-          {/* ── Sidebar ── */}
-          <div style={{ width: '300px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-            {/* Story progress card */}
-            <div style={{
-              background: '#fff', borderRadius: '16px',
-              border: '1px solid #E7E5E4',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-              padding: '20px',
-            }}>
-              <div style={{ fontSize: '13px', fontWeight: 700, color: '#18181B', marginBottom: '16px' }}>
-                Story progress
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', position: 'sticky', top: '24px' }}>
+            <div style={sidePanelStyle()}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '16px' }}>
+                <BookOpenCheck size={18} strokeWidth={1.85} color={accentHex} />
+                <span style={{ fontSize: '14px', fontWeight: 800, color: '#18181B' }}>Story progress</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '9px' }}>
                 <span style={{ color: '#71717A' }}>Words mastered</span>
-                <span style={{ fontWeight: 700, color: '#18181B' }}>{masteredCount} / {storyVocab.length}</span>
+                <span style={{ fontWeight: 800, color: '#18181B' }}>{masteredCount} / {storyVocab.length}</span>
               </div>
-              <div style={{ height: '6px', background: '#E7E5E4', borderRadius: '3px', overflow: 'hidden' }}>
+              <div style={{ height: '7px', background: '#E7E5E4', borderRadius: '999px', overflow: 'hidden' }}>
                 <div style={{
-                  height: '100%', borderRadius: '3px',
-                  background: 'linear-gradient(90deg, ' + accentHex + ', ' + accentHex + 'aa)',
-                  width: storyVocab.length > 0 ? (masteredCount / storyVocab.length * 100) + '%' : '0%',
-                  transition: 'width .6s ease',
+                  height: '100%',
+                  width: progressPct + '%',
+                  borderRadius: '999px',
+                  background: 'linear-gradient(90deg, ' + accentHex + ', ' + accentHex + 'AA)',
+                  transition: 'width 600ms ease',
                 }} />
               </div>
               {masteredCount === storyVocab.length && storyVocab.length > 0 && (
-                <div style={{ fontSize: '12px', color: '#2F9E6D', marginTop: '10px', fontWeight: 600 }}>
-                  ✓ All story words mastered!
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '7px',
+                  color: '#2F9E6D', fontSize: '12px', fontWeight: 750, marginTop: '12px',
+                }}>
+                  <CheckCircle2 size={15} strokeWidth={2} color="#2F9E6D" />
+                  All story words mastered
                 </div>
               )}
             </div>
 
-            {/* Words to review card */}
-            <div style={{
-              background: '#fff', borderRadius: '16px',
-              border: '1px solid #E7E5E4',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-              padding: '20px',
-            }}>
-              <div style={{ fontSize: '13px', fontWeight: 700, color: '#18181B', marginBottom: '16px' }}>
-                Words to review
+            <div style={sidePanelStyle()}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '14px' }}>
+                <Sparkles size={18} strokeWidth={1.85} color={accentHex} />
+                <span style={{ fontSize: '14px', fontWeight: 800, color: '#18181B' }}>Words to review</span>
               </div>
 
               {wordsToReview.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '16px 0' }}>
-                  <div style={{ fontSize: '24px', marginBottom: '8px' }}>🎉</div>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#18181B', marginBottom: '4px' }}>
+                <div style={{ textAlign: 'center', padding: '18px 0 8px' }}>
+                  <CheckCircle2 size={28} strokeWidth={1.9} color="#2F9E6D" />
+                  <div style={{ fontSize: '13px', fontWeight: 750, color: '#18181B', marginTop: '10px' }}>
                     All words mastered
                   </div>
-                  <div style={{ fontSize: '12px', color: '#71717A', lineHeight: 1.5 }}>
-                    Great work — nothing urgent to review here.
+                  <div style={{ fontSize: '12px', color: '#71717A', lineHeight: 1.5, marginTop: '4px' }}>
+                    Nothing urgent to review here.
                   </div>
                 </div>
               ) : (
                 <>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
                     {wordsToReview.map((vocab, idx) => {
                       const status = getWordStatus(vocab.id, userCards)
                       return (
                         <div key={vocab.id} style={{
-                          padding: '11px 0',
+                          padding: '12px 0',
                           borderBottom: idx < wordsToReview.length - 1 ? '1px solid #F4F4F5' : 'none',
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px',
                         }}>
-                          <div>
-                            <div style={{
-                              fontSize: '18px', fontWeight: 600,
-                              fontFamily: "'Noto Sans SC'", color: '#18181B',
-                              lineHeight: 1.2, marginBottom: '2px',
-                            }}>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: '19px', fontWeight: 700, fontFamily, color: '#18181B', lineHeight: 1.25 }}>
                               {vocab.word}
                             </div>
-                            <div style={{ fontSize: '11px', color: accentHex, fontWeight: 500 }}>
-                              {vocab.reading}
-                            </div>
-                            <div style={{ fontSize: '11px', color: '#71717A', marginTop: '1px' }}>
+                            {vocab.reading && (
+                              <div style={{ fontSize: '11px', color: accentHex, fontWeight: 650, marginTop: '3px' }}>
+                                {vocab.reading}
+                              </div>
+                            )}
+                            <div style={{ fontSize: '11px', color: '#71717A', marginTop: '2px', lineHeight: 1.35 }}>
                               {vocab.meaning}
                             </div>
                           </div>
                           <span style={{
-                            fontSize: '10px', fontWeight: 700,
+                            fontSize: '10px', fontWeight: 800,
                             color: STATUS_COLORS[status],
                             background: STATUS_COLORS[status] + '15',
-                            padding: '3px 8px', borderRadius: '20px',
-                            whiteSpace: 'nowrap', flexShrink: 0, marginLeft: '8px',
+                            padding: '4px 8px', borderRadius: '999px',
+                            whiteSpace: 'nowrap', flexShrink: 0,
                           }}>
                             {STATUS_LABELS[status]}
                           </span>
@@ -465,20 +499,19 @@ function StoryReader({ story, vocabMap, userCards, setUserCards, session, track,
                     })}
                   </div>
 
-                  {/* Practice button */}
                   <button
                     disabled
-                    title="Coming soon — practice story words in a focused session"
+                    title="Coming soon - practice story words in a focused session"
                     style={{
                       marginTop: '16px',
                       width: '100%',
-                      padding: '10px',
-                      borderRadius: '10px',
+                      minHeight: '42px',
+                      borderRadius: '12px',
                       border: '1px solid #E7E5E4',
                       background: '#FAFAF8',
                       color: '#A1A1AA',
                       fontSize: '13px',
-                      fontWeight: 600,
+                      fontWeight: 700,
                       cursor: 'not-allowed',
                       fontFamily: 'Inter, sans-serif',
                     }}
@@ -495,7 +528,6 @@ function StoryReader({ story, vocabMap, userCards, setUserCards, session, track,
   )
 }
 
-// ── Main Stories component ─────────────────────────────────────────────────
 export default function Stories({ session, profile, track, onBack }) {
   const [view, setView] = useState('categories')
   const [selectedCategory, setSelectedCategory] = useState(null)
@@ -506,7 +538,9 @@ export default function Stories({ session, profile, track, onBack }) {
   const [userCards, setUserCards] = useState({})
   const [loading, setLoading] = useState(true)
 
-  const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
+  const languageDetails = getLanguageDetails(profile, track)
+  const { accentHex, languageName, nativeName, fontFamily, faintCharacter } = languageDetails
+  const totalWords = track.language === 'japanese' ? 400 : 300
 
   async function loadData() {
     setLoading(true)
@@ -533,8 +567,6 @@ export default function Stories({ session, profile, track, onBack }) {
     setUserCards(cardsMap)
 
     const vocabIds = new Set((vocabData || []).map(v => v.id))
-    // Stories unlock on "learned" (graduated to review at least once) — a low bar
-    // so users start immersion early. The test uses the higher stability-based mastery bar.
     const learned = (cardsData || []).filter(c => vocabIds.has(c.vocab_id) && isLearned(c)).length
     setLearnedCount(learned)
 
@@ -559,13 +591,22 @@ export default function Stories({ session, profile, track, onBack }) {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#FAFAF8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontSize: '32px', color: accentHex, fontFamily: "'Noto Sans SC'" }}>学</div>
+      <div style={pageShell(accentHex, fontFamily, faintCharacter)}>
+        <BackgroundCharacter character={faintCharacter} fontFamily={fontFamily} color={accentHex} />
+        <div style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
+          <div style={{
+            width: '88px', height: '88px', borderRadius: '26px',
+            background: '#FFFFFF', border: '1px solid #E7E5E4',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 16px 40px rgba(24,24,27,0.06)',
+          }}>
+            <BookOpen size={34} strokeWidth={1.75} color={accentHex} />
+          </div>
+        </div>
       </div>
     )
   }
 
-  // ── Story reader ──────────────────────────────────────────────────────────
   if (view === 'reader' && selectedStory) {
     return (
       <StoryReader
@@ -575,39 +616,46 @@ export default function Stories({ session, profile, track, onBack }) {
         setUserCards={setUserCards}
         session={session}
         track={track}
-        accentHex={accentHex}
+        languageDetails={languageDetails}
         onBack={() => setView('list')}
       />
     )
   }
 
-  // ── Story list ────────────────────────────────────────────────────────────
   if (view === 'list' && selectedCategory) {
     const catStories = stories.filter(s => s.tier === selectedCategory.tier)
-
     return (
-      <div style={{ minHeight: '100vh', background: '#FAFAF8' }}>
-        <div style={{ maxWidth: '680px', margin: '0 auto', padding: '40px 24px 60px' }}>
-          <button onClick={() => setView('categories')} style={backBtnStyle}>← Back</button>
+      <div style={pageShell(accentHex, fontFamily, faintCharacter)}>
+        <BackgroundCharacter character={faintCharacter} fontFamily={fontFamily} color={accentHex} />
+        <div style={{ maxWidth: '860px', margin: '0 auto', padding: '38px 32px 72px', position: 'relative', zIndex: 1 }}>
+          <IconButton icon={ArrowLeft} label="Back" onClick={() => setView('categories')} />
 
-          <div style={{ margin: '24px 0 32px' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#18181B', marginBottom: '4px' }}>
+          <div style={{ margin: '28px 0 24px' }}>
+            <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>
+              {selectedCategory.wordRange} words
+            </span>
+            <h1 style={{ fontSize: '34px', fontWeight: 800, color: '#18181B', margin: '14px 0 8px' }}>
               {selectedCategory.label}
             </h1>
-            <p style={{ fontSize: '14px', color: '#71717A' }}>{selectedCategory.description}</p>
+            <p style={{ fontSize: '15px', color: '#71717A', lineHeight: 1.6, margin: 0 }}>
+              Choose a story matched to this vocabulary tier.
+            </p>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'grid', gap: '14px' }}>
             {catStories.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#71717A', padding: '48px 0', fontSize: '15px' }}>
-                More stories coming soon...
-              </div>
+              <EmptyPanel
+                icon={Library}
+                title="More stories coming soon"
+                text="This tier is ready for new content, but no stories have been published yet."
+              />
             ) : (
               catStories.map(story => (
                 <StoryListCard
                   key={story.id}
                   story={story}
                   accentHex={accentHex}
+                  fontFamily={fontFamily}
                   onClick={() => { setSelectedStory(story); setView('reader') }}
                 />
               ))
@@ -618,39 +666,34 @@ export default function Stories({ session, profile, track, onBack }) {
     )
   }
 
-  // ── Categories ────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', background: '#FAFAF8' }}>
-      <div style={{ maxWidth: '680px', margin: '0 auto', padding: '40px 24px 60px' }}>
-        <button onClick={onBack} style={backBtnStyle}>← Back</button>
+    <div style={pageShell(accentHex, fontFamily, faintCharacter)}>
+      <BackgroundCharacter character={faintCharacter} fontFamily={fontFamily} color={accentHex} />
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '38px 32px 72px', position: 'relative', zIndex: 1 }}>
+        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
 
-        <div style={{ margin: '24px 0 16px' }}>
-          <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#18181B', marginBottom: '4px' }}>Stories</h1>
-          <p style={{ fontSize: '14px', color: '#71717A' }}>Read in Chinese — new stories unlock as you learn more words</p>
-        </div>
-
-        {/* Progress bar */}
         <div style={{
-          background: '#fff', borderRadius: '14px',
-          border: '1px solid #E7E5E4',
-          padding: '16px 20px', marginBottom: '20px',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) 320px',
+          gap: '28px',
+          alignItems: 'end',
+          margin: '28px 0 24px',
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '8px' }}>
-            <span style={{ color: '#71717A' }}>Words learned</span>
-            <span style={{ fontWeight: 700, color: '#18181B' }}>{learnedCount} / 300</span>
+          <div>
+            <div style={{ color: accentHex, fontSize: '13px', fontWeight: 800, marginBottom: '10px' }}>
+              {nativeName} immersion
+            </div>
+            <h1 style={{ margin: 0, color: '#18181B', fontSize: '42px', fontWeight: 850, lineHeight: 1.1 }}>
+              Stories
+            </h1>
+            <p style={{ margin: '12px 0 0', color: '#71717A', fontSize: '15px', lineHeight: 1.65 }}>
+              Read in {languageName}. New stories unlock as your flashcards become learned.
+            </p>
           </div>
-          <div style={{ height: '6px', background: '#E7E5E4', borderRadius: '3px', overflow: 'hidden' }}>
-            <div style={{
-              height: '100%', borderRadius: '3px',
-              background: 'linear-gradient(90deg, ' + accentHex + ', ' + accentHex + '99)',
-              width: Math.min(100, learnedCount / 300 * 100) + '%',
-              transition: 'width .6s ease',
-            }} />
-          </div>
+          <ProgressCard learnedCount={learnedCount} totalWords={totalWords} accentHex={accentHex} />
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'grid', gap: '14px' }}>
           {CATEGORIES.map(cat => {
             const unlocked = learnedCount >= cat.minWords
             const catStories = stories.filter(s => s.tier === cat.tier)
@@ -665,8 +708,13 @@ export default function Stories({ session, profile, track, onBack }) {
                 hasStories={hasStories}
                 isClickable={isClickable}
                 storyCount={catStories.length}
+                learnedCount={learnedCount}
                 accentHex={accentHex}
-                onClick={() => isClickable && (setSelectedCategory(cat), setView('list'))}
+                onClick={() => {
+                  if (!isClickable) return
+                  setSelectedCategory(cat)
+                  setView('list')
+                }}
               />
             )
           })}
@@ -676,7 +724,7 @@ export default function Stories({ session, profile, track, onBack }) {
   )
 }
 
-function StoryListCard({ story, accentHex, onClick }) {
+function StoryListCard({ story, accentHex, fontFamily, onClick }) {
   const [hovered, setHovered] = useState(false)
   return (
     <button
@@ -684,73 +732,155 @@ function StoryListCard({ story, accentHex, onClick }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        padding: '20px 24px', borderRadius: '16px',
+        padding: '22px 24px',
+        borderRadius: '20px',
         border: '1px solid ' + (hovered ? accentHex + '55' : '#E7E5E4'),
-        background: '#fff', textAlign: 'left', cursor: 'pointer', width: '100%',
-        boxShadow: hovered ? '0 8px 24px rgba(0,0,0,0.08)' : '0 1px 4px rgba(0,0,0,0.04)',
+        background: '#FFFFFF',
+        textAlign: 'left',
+        cursor: 'pointer',
+        width: '100%',
+        boxShadow: hovered ? '0 16px 36px rgba(24,24,27,0.09)' : '0 8px 26px rgba(24,24,27,0.05)',
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
         transition: 'all 180ms ease',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        display: 'grid',
+        gridTemplateColumns: '44px minmax(0, 1fr) 28px',
+        gap: '16px',
+        alignItems: 'center',
       }}
     >
-      <div>
-        <div style={{ fontSize: '17px', fontWeight: 600, marginBottom: '4px', fontFamily: "'Noto Sans SC'", color: '#18181B' }}>
+      <div style={{
+        width: '44px', height: '44px', borderRadius: '15px',
+        background: accentHex + '10',
+        border: '1px solid ' + accentHex + '18',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <BookOpen size={21} strokeWidth={1.8} color={accentHex} />
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <div style={{
+          fontSize: '18px',
+          fontWeight: 750,
+          marginBottom: '5px',
+          fontFamily,
+          color: '#18181B',
+        }}>
           {story.title}
         </div>
-        <div style={{ fontSize: '13px', color: '#71717A' }}>{story.english_summary}</div>
+        <div style={{ fontSize: '13px', color: '#71717A', lineHeight: 1.5 }}>
+          {story.english_summary}
+        </div>
       </div>
-      <span style={{ color: accentHex, fontSize: '18px', marginLeft: '16px', flexShrink: 0 }}>→</span>
+      <ArrowRight size={20} strokeWidth={2} color={accentHex} />
     </button>
   )
 }
 
-function CategoryCard({ cat, unlocked, hasStories, isClickable, storyCount, accentHex, onClick }) {
+function CategoryCard({ cat, unlocked, hasStories, isClickable, storyCount, learnedCount, accentHex, onClick }) {
   const [hovered, setHovered] = useState(false)
+  const Icon = unlocked ? BookOpen : Lock
+  const remaining = Math.max(0, cat.minWords - learnedCount)
+
   return (
     <button
       onClick={onClick}
       onMouseEnter={() => isClickable && setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        padding: '20px 24px', borderRadius: '16px',
+        padding: '22px 24px',
+        borderRadius: '20px',
         border: '1px solid ' + (hovered ? accentHex + '55' : '#E7E5E4'),
-        background: '#fff',
-        textAlign: 'left', width: '100%',
+        background: '#FFFFFF',
+        textAlign: 'left',
+        width: '100%',
         cursor: isClickable ? 'pointer' : 'default',
-        opacity: unlocked ? 1 : 0.45,
-        boxShadow: hovered ? '0 8px 24px rgba(0,0,0,0.08)' : '0 1px 4px rgba(0,0,0,0.04)',
+        opacity: unlocked ? 1 : 0.58,
+        boxShadow: hovered ? '0 16px 36px rgba(24,24,27,0.09)' : '0 8px 26px rgba(24,24,27,0.05)',
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
         transition: 'all 180ms ease',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        display: 'grid',
+        gridTemplateColumns: '48px minmax(0, 1fr) auto',
+        gap: '16px',
+        alignItems: 'center',
       }}
     >
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', color: unlocked ? accentHex : '#A1A1AA' }}>
-            {unlocked ? <BookOpen size={16} strokeWidth={1.75} /> : <Lock size={16} strokeWidth={1.75} />}
-          </span>
-          <span style={{ fontSize: '16px', fontWeight: 600, color: '#18181B' }}>{cat.label}</span>
+      <div style={{
+        width: '48px', height: '48px', borderRadius: '16px',
+        background: unlocked ? accentHex + '10' : '#F4F4F5',
+        border: '1px solid ' + (unlocked ? accentHex + '18' : '#E7E5E4'),
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <Icon size={22} strokeWidth={1.8} color={unlocked ? accentHex : '#A1A1AA'} />
+      </div>
+
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '18px', fontWeight: 800, color: '#18181B' }}>{cat.label}</span>
           {hasStories && unlocked && (
-            <span style={{
-              fontSize: '11px', background: accentHex, color: '#fff',
-              padding: '2px 8px', borderRadius: '10px', fontWeight: 600,
-            }}>
+            <span style={pillStyle('#FFFFFF', accentHex, accentHex)}>
               {storyCount} {storyCount === 1 ? 'story' : 'stories'}
             </span>
           )}
         </div>
-        <div style={{ fontSize: '13px', color: '#71717A' }}>
+        <div style={{ fontSize: '13px', color: '#71717A', lineHeight: 1.5 }}>
           {unlocked
             ? (hasStories ? cat.description : 'Stories coming soon')
-            : 'Master ' + cat.minWords + ' words to unlock'}
+            : remaining + ' more learned words to unlock'}
         </div>
       </div>
-      {isClickable && <span style={{ color: accentHex, fontSize: '18px' }}>→</span>}
+
+      {isClickable ? (
+        <ArrowRight size={20} strokeWidth={2} color={accentHex} />
+      ) : (
+        <Circle size={10} strokeWidth={2} color="#D4D4D8" />
+      )}
     </button>
   )
 }
 
-const backBtnStyle = {
-  background: 'none', border: 'none', color: '#71717A',
-  cursor: 'pointer', fontSize: '14px', padding: 0,
+function EmptyPanel({ icon: Icon, title, text }) {
+  return (
+    <div style={{
+      textAlign: 'center',
+      color: '#71717A',
+      padding: '54px 28px',
+      fontSize: '15px',
+      background: '#FFFFFF',
+      border: '1px solid #E7E5E4',
+      borderRadius: '22px',
+      boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
+    }}>
+      <Icon size={30} strokeWidth={1.8} color="#A1A1AA" />
+      <div style={{ color: '#18181B', fontSize: '17px', fontWeight: 800, marginTop: '14px' }}>
+        {title}
+      </div>
+      <div style={{ marginTop: '6px', lineHeight: 1.6 }}>
+        {text}
+      </div>
+    </div>
+  )
+}
+
+function pillStyle(color, background, border) {
+  return {
+    display: 'inline-flex',
+    alignItems: 'center',
+    fontSize: '12px',
+    fontWeight: 800,
+    color,
+    background,
+    border: '1px solid ' + border,
+    padding: '5px 11px',
+    borderRadius: '999px',
+    lineHeight: 1,
+  }
+}
+
+function sidePanelStyle() {
+  return {
+    background: '#FFFFFF',
+    borderRadius: '20px',
+    border: '1px solid #E7E5E4',
+    boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
+    padding: '20px',
+  }
 }
