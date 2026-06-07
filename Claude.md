@@ -107,6 +107,7 @@ Error:            #DC2626
 - React 19 + Vite (OXC parser — strict syntax, see Coding rules)
 - Supabase (Postgres + auth + storage)
 - Tailwind installed but mostly unused — styling is inline style objects
+- `lucide-react` for UI icons — do not use emoji as functional icons (they render inconsistently across devices). Render icons inside the existing container, stroke colored with the active-language `accentHex`, size ~18–22px, strokeWidth ~1.75. Emoji that are actual content (e.g. 🇨🇳/🇯🇵 flags, celebration glyphs) are fine.
 - Node 24, plain JSX, no TypeScript
 - GitHub: fabrykjoh12/Hanzi-dojo (private)
 - Google Cloud TTS for audio generation
@@ -207,7 +208,7 @@ Always use `getLevelLabel(language, system, level)` for display. Never hardcode 
 
 - **Chinese HSK 3.0 Level 1:** 300 words, frequency-ordered, with audio at `chinese/hsk_3/level_1/`
 - **Japanese JLPT N5:** 802 words total — 400 in level 1 (most frequent), 402 in level 2 — with audio at `japanese/jlpt/level_1/` and `japanese/jlpt/level_2/`
-- **Stories:** 1 story for Chinese HSK Level 1
+- **Stories:** Chinese HSK Level 1 — the original hand-written story (story_number 1) plus 25 frequency-tiered stories (story_number 2–26, 5 per tier across tiers 1–5). Each story is verified to use only words within its tier's `sort_order` ceiling (T1≤50, T2≤100, T3≤150, T4≤200, T5≤300); `story_vocab` link rows populated for all. Only proper nouns used: 李明, 小花.
 - **YouTube:** 3 recommendations for Chinese HSK Level 1
 - Audio voices: Chinese `cmn-CN-Chirp3-HD-Aoede`, Japanese `ja-JP-Neural2-B` (use hiragana `reading` as TTS input)
 
@@ -332,9 +333,13 @@ Commit before and after every meaningful session. Update this file when features
 
 ---
 
-## 23. Recently changed (Codex session — review before building on top)
+## 23. Recently changed (review before building on top)
 
-These were added by another AI session and should be verified:
+Most recent first:
+- **Icon polish:** swapped emoji-as-UI-icons for `lucide-react` across home feature tiles and Profile/Stories/Test/Study/Writing (see Stack note). Layout/colors otherwise unchanged. Content emoji (flags, celebration glyphs) left as-is.
+- **HSK 1 stories:** added 25 frequency-tiered stories + `story_vocab` links (see Content seeded). Replaced an earlier short-draft set.
+
+Older (added by a Codex session — should be verified):
 - Reset progress (Profile.jsx + RPC migration — migration must be run in Supabase)
 - Level replay in LanguageSwitcher.jsx
 - Permanent test unlock via level_unlocks; removed auto-advance from App.jsx
@@ -348,7 +353,7 @@ These were added by another AI session and should be verified:
 ## 24. Roadmap (not yet built)
 
 - Mastery redefinition: gate level/test unlocks on FSRS stability (genuine retention) instead of self-graded Easy. Stories stay on an easier "learned" count to encourage early immersion; the level test uses stability-based mastery at ~90% rather than 100%.
-- More HSK 1 stories; HSK 2 vocabulary + audio
+- HSK 2 vocabulary + audio (HSK 1 now has 25 tiered stories — see Content seeded)
 - Japanese N5 stories; Japanese YouTube recommendations
 - Practice test mode (unlimited, no progression impact, no card state changes)
 - Example sentences on flashcards
