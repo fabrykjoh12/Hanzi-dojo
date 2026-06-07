@@ -2,19 +2,119 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { schedule, previewLabels } from './srs'
 import { updateStreak } from './streak'
-import { Volume2 } from 'lucide-react'
+import { getLevelLabel, getSystemLabel } from './utils'
+import {
+  Volume2, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
+  Sparkles, CheckCircle2, Layers, BookOpenCheck,
+} from 'lucide-react'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SAGE = '#6E8466'
+const SAGE_DARK = '#5C7155'
 
 function getAudioUrl(audioPath) {
   if (!audioPath) return null
-  return `${SUPABASE_URL}/storage/v1/object/public/audio/${audioPath}`
+  return SUPABASE_URL + '/storage/v1/object/public/audio/' + audioPath
 }
 
 function hasKanji(text) {
-  return /[\u3400-\u9FFF]/.test(text || '')
+  const value = text || ''
+  for (let i = 0; i < value.length; i += 1) {
+    const code = value.charCodeAt(i)
+    if (code >= 0x3400 && code <= 0x9FFF) return true
+  }
+  return false
 }
 
+function QueuePill({ label, value, color, background }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '8px',
+      padding: '8px 12px', borderRadius: '14px',
+      background, border: '1px solid ' + color + '22',
+      minWidth: '94px', justifyContent: 'center',
+    }}>
+      <span style={{ fontSize: '15px', fontWeight: 750, color, lineHeight: 1 }}>{value}</span>
+      <span style={{ fontSize: '12px', fontWeight: 600, color: '#52525B' }}>{label}</span>
+    </div>
+  )
+}
+
+function IconButton({ icon: Icon, label, onClick, color, background, border }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+        border: border || '1px solid #E7E5E4',
+        background: hovered ? '#F7F7F5' : (background || '#FFFFFF'),
+        color: color || '#52525B',
+        height: '40px', padding: '0 14px', borderRadius: '12px',
+        fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+        cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease',
+        transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
+      }}
+    >
+      <Icon size={17} strokeWidth={1.85} color={color || '#71717A'} />
+      {label}
+    </button>
+  )
+}
+
+function GradeButton({ grade, label, interval, color, icon: Icon, onClick }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <button
+      onClick={() => onClick(grade)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        gap: '6px', minHeight: '76px', padding: '12px 8px',
+        borderRadius: '16px', border: '1px solid ' + color + (hovered ? '66' : '30'),
+        background: hovered ? color + '14' : color + '0D',
+        color, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+        transition: 'background 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease',
+        transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
+        boxShadow: hovered ? '0 10px 22px rgba(24,24,27,0.08)' : 'none',
+      }}
+    >
+      <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: 750 }}>
+        <Icon size={16} strokeWidth={2} color={color} />
+        {label}
+      </span>
+      <span style={{ fontSize: '11px', fontWeight: 650, color: '#71717A' }}>
+        {interval}
+      </span>
+    </button>
+  )
+}
+
+function PrimaryButton({ onClick, children, icon: Icon }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+        width: '100%', minHeight: '54px', borderRadius: '16px', border: 'none',
+        background: hovered ? SAGE_DARK : SAGE, color: '#FFFFFF',
+        fontSize: '15px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+        cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease, box-shadow 160ms ease',
+        transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
+        boxShadow: hovered ? '0 12px 28px rgba(110,132,102,0.28)' : '0 6px 18px rgba(110,132,102,0.18)',
+      }}
+    >
+      <Icon size={18} strokeWidth={2.1} color="#FFFFFF" />
+      {children}
+    </button>
+  )
+}
 
 export default function Study({ session, profile, track, onBack, onStreakUpdate }) {
   const [queue, setQueue] = useState([])
@@ -26,8 +126,13 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const [saveError, setSaveError] = useState(null)
   const audioRef = useRef(null)
 
+  const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
   const accent = profile.active_language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
   const isJapanese = profile.active_language === 'japanese'
+  const langFont = isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'"
+  const langChars = isJapanese ? 'Japanese' : 'Chinese'
+  const systemLabel = getSystemLabel(track.system)
+  const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
 
   function playAudio() {
     const card = queue[0]
@@ -62,7 +167,8 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     const vocabById = {}
     ;(vocab || []).forEach(v => { vocabById[v.id] = v })
 
-    const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0)
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
     const introducedToday = (cards || [])
       .filter(c => new Date(c.created_at) >= startOfToday && vocabById[c.vocab_id]).length
     const remainingNew = Math.max(0, profile.daily_new_cards - introducedToday)
@@ -99,8 +205,6 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     return () => clearTimeout(timer)
   }, [])
 
-
-  // Play audio when card is revealed
   useEffect(() => {
     if (flipped && queue.length > 0) {
       playAudio()
@@ -156,21 +260,61 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const newCount = queue.filter(c => c.state === 'new').length
   const learnCount = queue.filter(c => c.state === 'learning' || c.state === 'relearning').length
   const dueCount = queue.filter(c => c.state === 'review').length
+  const pageShell = {
+    minHeight: '100vh',
+    position: 'relative',
+    overflow: 'hidden',
+    padding: '34px 32px 42px',
+    background: 'linear-gradient(180deg, #FBFBF9 0%, #FAFAF8 100%)',
+  }
+
+  const faintCharacter = isJapanese ? '読' : '学'
 
   if (loading) {
-    return <div style={center}><div style={{ fontSize: '32px', color: accent }}>学</div></div>
+    return (
+      <div style={pageShell}>
+        <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{
+            width: '88px', height: '88px', borderRadius: '26px',
+            background: '#FFFFFF', border: '1px solid #E7E5E4',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 16px 40px rgba(24,24,27,0.06)',
+          }}>
+            <BookOpenCheck size={34} strokeWidth={1.75} color={accentHex} />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (done || queue.length === 0) {
     return (
-      <div style={center}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>✨</div>
-          <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '8px' }}>All done for now!</h1>
-          <p style={{ color: '#888', marginBottom: '24px' }}>No cards due. Come back later.</p>
-          <button onClick={onBack} style={{ ...btn, background: accent, color: '#fff', border: 'none' }}>
-            Back home
-          </button>
+      <div style={pageShell}>
+        <div style={backgroundCharacter(faintCharacter, langFont)}>{faintCharacter}</div>
+        <div style={{ maxWidth: '760px', margin: '0 auto', minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{
+            width: '100%', maxWidth: '520px', textAlign: 'center',
+            background: '#FFFFFF', border: '1px solid #E7E5E4',
+            borderRadius: '24px', padding: '46px 38px',
+            boxShadow: '0 22px 60px rgba(24,24,27,0.07)',
+          }}>
+            <div style={{
+              width: '58px', height: '58px', borderRadius: '18px',
+              margin: '0 auto 18px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: accentHex + '10', border: '1px solid ' + accentHex + '18',
+            }}>
+              <CheckCircle2 size={28} strokeWidth={1.9} color={accentHex} />
+            </div>
+            <h1 style={{ fontSize: '26px', fontWeight: 750, marginBottom: '8px', color: '#18181B' }}>
+              All done for now
+            </h1>
+            <p style={{ color: '#71717A', marginBottom: '28px', fontSize: '15px', lineHeight: 1.6 }}>
+              No cards are waiting. Come back later, or continue the loop with stories.
+            </p>
+            <PrimaryButton onClick={onBack} icon={ArrowLeft}>
+              Back home
+            </PrimaryButton>
+          </div>
         </div>
       </div>
     )
@@ -184,175 +328,231 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const showRuby = canUseFurigana && (showFurigana || flipped)
   const showReadingLine = flipped && v.reading && !isJapanese
   const hasExample = Boolean(v.example_sentence || v.example_reading || v.example_translation)
+  const stateLabel = card.state === 'new' ? 'New card' : (card.state === 'review' ? 'Review' : 'Learning')
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={pageShell}>
+      <div style={backgroundCharacter(faintCharacter, langFont)}>{faintCharacter}</div>
+
       {saveError && (
         <div style={{
+          maxWidth: '620px', margin: '0 auto 18px',
           background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626',
-          padding: '12px 20px', fontSize: '13px', lineHeight: 1.5,
+          padding: '14px 18px', borderRadius: '16px', fontSize: '13px', lineHeight: 1.5,
         }}>
-          <strong>Card save failed</strong> — your progress is not being saved. Database error: {saveError}
+          <strong>Card save failed</strong> - your progress is not being saved. Database error: {saveError}
           <br />Run the migration SQL in your Supabase SQL Editor, then refresh.
         </div>
       )}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px' }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '14px' }}>
-          ← Exit
-        </button>
-        <div style={{ display: 'flex', gap: '14px', fontSize: '13px', fontWeight: 600 }}>
-          <span style={{ color: '#3E63DD' }}>New {newCount}</span>
-          <span style={{ color: '#E08C00' }}>Learning {learnCount}</span>
-          <span style={{ color: '#30A46C' }}>Due {dueCount}</span>
+
+      <div style={{ maxWidth: '620px', margin: '0 auto 26px' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '18px' }}>
+          <IconButton icon={ArrowLeft} label="Exit" onClick={onBack} />
+        </div>
+
+        <div style={{ textAlign: 'center', minWidth: 0, marginBottom: '18px' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
+            color: accentHex, fontSize: '13px', fontWeight: 750, marginBottom: '8px',
+          }}>
+            <Layers size={17} strokeWidth={1.8} color={accentHex} />
+            {langChars} flashcards
+          </div>
+          <h1 style={{ fontSize: '30px', color: '#18181B', fontWeight: 780, lineHeight: 1.1 }}>
+            Study session
+          </h1>
+          <div style={{ color: '#71717A', fontSize: '13px', fontWeight: 550, marginTop: '6px' }}>
+            {systemLabel} · {levelLabel}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <QueuePill label="New" value={newCount} color="#3E63DD" background="#EEF2FF" />
+          <QueuePill label="Learn" value={learnCount} color="#D97706" background="#FFFBEB" />
+          <QueuePill label="Due" value={dueCount} color="#2F9E6D" background="#ECFDF5" />
         </div>
       </div>
 
       {isJapanese && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', padding: '0 24px 12px', flexWrap: 'wrap' }}>
-          <button onClick={() => setShowFurigana(prev => !prev)} style={toggleBtn(showFurigana, accent)}>
-            Furigana
-          </button>
+        <div style={{ maxWidth: '620px', margin: '0 auto 18px', display: 'flex', justifyContent: 'center' }}>
+          <IconButton
+            icon={BookOpenCheck}
+            label={showFurigana ? 'Furigana on' : 'Furigana off'}
+            onClick={() => setShowFurigana(prev => !prev)}
+            color={showFurigana ? accentHex : '#71717A'}
+            background={showFurigana ? accentHex + '10' : '#FFFFFF'}
+            border={'1px solid ' + (showFurigana ? accentHex + '30' : '#E7E5E4')}
+          />
         </div>
       )}
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+      <div style={{
+        maxWidth: '620px', margin: '0 auto',
+        display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', justifyItems: 'center',
+      }}>
         <div
           onClick={() => !flipped && setFlipped(true)}
           style={{
-            width: '100%', maxWidth: '420px', minHeight: '280px',
-            background: '#fff', border: '1px solid #eee', borderRadius: '20px',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.04)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            cursor: flipped ? 'default' : 'pointer', padding: '32px', position: 'relative',
+            width: '100%', maxWidth: '620px', minHeight: '430px',
+            background: 'linear-gradient(180deg, #FFFFFF 0%, #FFFDFC 100%)',
+            border: '1px solid #E7E5E4', borderRadius: '26px',
+            boxShadow: '0 24px 70px rgba(24,24,27,0.08)',
+            display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'space-between',
+            cursor: flipped ? 'default' : 'pointer', padding: '24px', position: 'relative',
           }}
         >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '12px' }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              padding: '8px 12px', borderRadius: '999px',
+              background: accentHex + '10', color: accentHex,
+              fontSize: '12px', fontWeight: 750, border: '1px solid ' + accentHex + '18',
+            }}>
+              <Sparkles size={14} strokeWidth={1.9} color={accentHex} />
+              {stateLabel}
+            </span>
+          </div>
+
           {audioUrl && flipped && (
             <button
               onClick={e => { e.stopPropagation(); playAudio() }}
               style={{
-                position: 'absolute', top: '14px', right: '14px',
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: '#71717A', opacity: 0.5, padding: '4px',
-                display: 'inline-flex', transition: 'opacity .2s',
+                position: 'absolute', top: '82px', right: '24px',
+                width: '40px', height: '40px', borderRadius: '13px',
+                background: '#FFFFFF', border: '1px solid #E7E5E4', cursor: 'pointer',
+                color: '#71717A', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 10px 24px rgba(24,24,27,0.07)',
               }}
-              onMouseEnter={e => e.currentTarget.style.opacity = 1}
-              onMouseLeave={e => e.currentTarget.style.opacity = 0.5}
               title="Replay audio"
+              aria-label="Replay audio"
             >
-              <Volume2 size={18} strokeWidth={2} />
+              <Volume2 size={18} strokeWidth={1.9} />
             </button>
           )}
 
-          {showRuby ? (
-            <ruby style={{
-              fontSize: '72px', fontWeight: 400, color: '#1a1a1a',
-              fontFamily: "'Noto Sans JP'", lineHeight: 1.35,
-            }}>
-              {v.word}
-              {v.reading && <rt style={{ fontSize: '18px', color: '#71717A' }}>{v.reading}</rt>}
-            </ruby>
+          <div style={{
+            flex: 1, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            textAlign: 'center', padding: '34px 24px',
+          }}>
+            {showRuby ? (
+              <ruby style={{
+                fontSize: '86px', fontWeight: 400, color: '#18181B',
+                fontFamily: langFont, lineHeight: 1.25,
+              }}>
+                {v.word}
+                {v.reading && <rt style={{ fontSize: '18px', color: '#71717A' }}>{v.reading}</rt>}
+              </ruby>
+            ) : (
+              <div style={{
+                fontSize: '86px', fontWeight: 400, color: '#18181B',
+                fontFamily: langFont, lineHeight: 1.08,
+                overflowWrap: 'anywhere',
+              }}>
+                {v.word}
+              </div>
+            )}
+
+            {!flipped && (
+              <div style={{ fontSize: '13px', color: '#A1A1AA', marginTop: '28px', fontWeight: 650 }}>
+                Tap the card or reveal the answer
+              </div>
+            )}
+
+            {flipped && (
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                {showReadingLine && (
+                  <div style={{ fontSize: '21px', color: accent, marginTop: '18px', fontWeight: 650 }}>
+                    {v.reading}
+                  </div>
+                )}
+                <div style={{ fontSize: '19px', color: '#52525B', marginTop: '10px', lineHeight: 1.45, fontWeight: 550 }}>
+                  {v.meaning}
+                </div>
+                {hasExample && (
+                  <div style={{
+                    width: '100%', maxWidth: '430px', marginTop: '22px', paddingTop: '18px',
+                    borderTop: '1px solid #F1F1F0', textAlign: 'center',
+                  }}>
+                    {v.example_sentence && (
+                      <div style={{
+                        fontSize: '20px', color: '#27272A', lineHeight: 1.5,
+                        fontFamily: langFont,
+                      }}>
+                        {v.example_sentence}
+                      </div>
+                    )}
+                    {v.example_reading && (
+                      <div style={{ fontSize: '14px', color: accent, marginTop: '7px', lineHeight: 1.45, fontWeight: 550 }}>
+                        {v.example_reading}
+                      </div>
+                    )}
+                    {v.example_translation && (
+                      <div style={{ fontSize: '14px', color: '#71717A', marginTop: '7px', lineHeight: 1.45 }}>
+                        {v.example_translation}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div style={{
+            minHeight: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            borderTop: '1px solid #F4F4F2', paddingTop: '18px',
+          }}>
+            <span style={{ fontSize: '12px', color: '#A1A1AA', fontWeight: 650 }}>
+              {flipped ? 'How well did you remember this?' : 'Recall first, then reveal'}
+            </span>
+          </div>
+        </div>
+
+        <div style={{ width: '100%', maxWidth: '620px', marginTop: '20px' }}>
+          {!flipped ? (
+            <PrimaryButton onClick={() => setFlipped(true)} icon={Eye}>
+              Show answer
+            </PrimaryButton>
           ) : (
             <div style={{
-              fontSize: '72px', fontWeight: 400, color: '#1a1a1a',
-              fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
+              display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              gap: '10px',
             }}>
-              {v.word}
+              {[
+                { grade: 0, label: 'Again', color: '#DC2626', icon: RotateCcw },
+                { grade: 1, label: 'Hard', color: '#D97706', icon: AlertTriangle },
+                { grade: 2, label: 'Good', color: '#3E63DD', icon: Check },
+                { grade: 3, label: 'Easy', color: '#2F9E6D', icon: Sparkles },
+              ].map(item => (
+                <GradeButton
+                  key={item.grade}
+                  grade={item.grade}
+                  label={item.label}
+                  interval={labels[item.grade]}
+                  color={item.color}
+                  icon={item.icon}
+                  onClick={handleGrade}
+                />
+              ))}
             </div>
           )}
-
-          {!flipped && (
-            <div style={{ fontSize: '13px', color: '#bbb', marginTop: '24px' }}>tap to reveal</div>
-          )}
-
-          {flipped && (
-            <>
-              {showReadingLine && (
-                <div style={{ fontSize: '20px', color: accent, marginTop: '16px', fontWeight: 500 }}>
-                  {v.reading}
-                </div>
-              )}
-              <div style={{ fontSize: '18px', color: '#555', marginTop: '8px' }}>
-                {v.meaning}
-              </div>
-              {hasExample && (
-                <div style={{
-                  width: '100%', maxWidth: '340px', marginTop: '18px', paddingTop: '16px',
-                  borderTop: '1px solid #F1F1F0', textAlign: 'center',
-                }}>
-                  {v.example_sentence && (
-                    <div style={{
-                      fontSize: '20px', color: '#27272A', lineHeight: 1.5,
-                      fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
-                    }}>
-                      {v.example_sentence}
-                    </div>
-                  )}
-                  {v.example_reading && (
-                    <div style={{ fontSize: '14px', color: accent, marginTop: '6px', lineHeight: 1.45 }}>
-                      {v.example_reading}
-                    </div>
-                  )}
-                  {v.example_translation && (
-                    <div style={{ fontSize: '14px', color: '#71717A', marginTop: '6px', lineHeight: 1.45 }}>
-                      {v.example_translation}
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
-          )}
         </div>
-      </div>
-
-      <div style={{ padding: '24px', maxWidth: '460px', margin: '0 auto', width: '100%' }}>
-        {!flipped ? (
-          <button
-            onClick={() => setFlipped(true)}
-            style={{ ...btn, width: '100%', background: '#1a1a1a', color: '#fff', border: 'none' }}
-          >
-            Show answer
-          </button>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-            {[
-              { g: 0, label: 'Again', color: '#E5484D' },
-              { g: 1, label: 'Hard', color: '#E08C00' },
-              { g: 2, label: 'Good', color: '#3E63DD' },
-              { g: 3, label: 'Easy', color: '#30A46C' },
-            ].map(({ g, label, color }) => (
-              <button
-                key={g}
-                onClick={() => handleGrade(g)}
-                style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
-                  padding: '12px 4px', borderRadius: '10px',
-                  border: `1px solid ${color}33`, background: `${color}11`,
-                  color, fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-                }}
-              >
-                {label}
-                <span style={{ fontSize: '11px', fontWeight: 500, opacity: 0.75 }}>
-                  {labels[g]}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   )
 }
 
-const center = { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }
-const btn = { padding: '12px 24px', borderRadius: '10px', fontSize: '15px', fontWeight: 500, cursor: 'pointer' }
-const toggleBtn = (active, accent) => ({
-  padding: '8px 12px',
-  borderRadius: '10px',
-  border: '1px solid ' + (active ? accent : '#E7E5E4'),
-  background: active ? accent + '10' : '#fff',
-  color: active ? accent : '#71717A',
-  fontSize: '12px',
-  fontWeight: 700,
-  cursor: 'pointer',
-  fontFamily: 'Inter, sans-serif',
-})
+function backgroundCharacter(character, fontFamily) {
+  return {
+    position: 'absolute',
+    right: '-24px',
+    bottom: '-96px',
+    fontSize: '360px',
+    lineHeight: 1,
+    color: '#18181B',
+    opacity: 0.035,
+    fontFamily,
+    pointerEvents: 'none',
+    userSelect: 'none',
+  }
+}
