@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
-import { getLevelLabel, isRecallMatch } from './utils'
+import { getLevelLabel, getSystemLabel, isRecallMatch } from './utils'
 import { normalizePinyin } from './testLogic'
 import { toRomaji } from 'wanakana'
-import { Flame, PenLine } from 'lucide-react'
+import {
+  ArrowLeft, ArrowRight, BarChart3, Check, CheckCircle2,
+  Flame, PenLine, RotateCcw, Sparkles, X,
+} from 'lucide-react'
 
 const ROUND_SIZES = [10, 15, 20, 30]
 const XP_PER_CORRECT = 10
@@ -15,38 +18,68 @@ function shuffle(items) {
   return [...items].sort(() => Math.random() - 0.5)
 }
 
+function stripChars(value, chars) {
+  let output = ''
+  const source = value || ''
+  for (let i = 0; i < source.length; i += 1) {
+    if (!chars.includes(source[i])) output += source[i]
+  }
+  return output
+}
+
 function normalizeChinesePinyin(value) {
-  return normalizePinyin(value)
-    .replace(/[1-5]/g, '')
-    .replace(/[^a-z]/g, '')
+  const withoutTones = normalizePinyin(value)
+    .split('')
+    .filter(ch => ch < '1' || ch > '5')
+    .join('')
+  return stripChars(withoutTones, ' .,!?;:\'"()-_').toLowerCase()
 }
 
 function normalizeEnglish(value) {
-  return (value || '')
-    .toLowerCase()
-    .trim()
-    .replace(/[。、，,.!?！？;:'"()\s-]/g, '')
+  return stripChars((value || '').toLowerCase().trim(), '。、「」，,.!?！？;:\'"()-_ ')
+}
+
+function stripParentheses(value) {
+  const source = value || ''
+  let output = ''
+  let depth = 0
+  for (let i = 0; i < source.length; i += 1) {
+    const ch = source[i]
+    if (ch === '(') {
+      depth += 1
+    } else if (ch === ')') {
+      if (depth > 0) depth -= 1
+    } else if (depth === 0) {
+      output += ch
+    }
+  }
+  return output
 }
 
 function isMeaningMatch(input, meaning) {
   const normalizedInput = normalizeEnglish(input)
   if (!normalizedInput) return false
 
-  const variants = (meaning || '')
-    .split(/[,;/]/)
+  const withoutParens = stripParentheses(meaning)
+
+  const variants = withoutParens
+    .split(',')
+    .flatMap(part => part.split(';'))
+    .flatMap(part => part.split('/'))
     .map(part => normalizeEnglish(part))
     .filter(Boolean)
 
-  return normalizeEnglish(meaning) === normalizedInput || variants.includes(normalizedInput)
+  return normalizeEnglish(withoutParens) === normalizedInput || variants.includes(normalizedInput)
 }
 
 function normalizeRomaji(value) {
-  return (value || '').toLowerCase().trim().replace(/\s+/g, '')
+  return stripChars((value || '').toLowerCase().trim(), ' ')
 }
 
 function hasKanji(str) {
-  for (let i = 0; i < (str || '').length; i++) {
-    const code = str.charCodeAt(i)
+  const value = str || ''
+  for (let i = 0; i < value.length; i += 1) {
+    const code = value.charCodeAt(i)
     if (code >= 0x4e00 && code <= 0x9faf) return true
   }
   return false
@@ -55,7 +88,7 @@ function hasKanji(str) {
 function isWritingMatch(input, vocab, direction, isJapanese) {
   if (direction === 'to_english') return isMeaningMatch(input, vocab.meaning)
 
-  const word = (vocab.word || '').replace(/。$/, '')
+  const word = (vocab.word || '').replace('。', '')
   if (isRecallMatch(input, word)) return true
 
   if (isJapanese) {
@@ -102,6 +135,136 @@ function getSafeStreak(stat) {
   return stat?.correct_streak || 0
 }
 
+function getLanguageDetails(track) {
+  const isJapanese = track.language === 'japanese'
+  return {
+    isJapanese,
+    accentHex: isJapanese ? '#2E3A6E' : '#B83A24',
+    languageName: isJapanese ? 'Japanese' : 'Chinese',
+    fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
+    faintCharacter: isJapanese ? '書' : '写',
+  }
+}
+
+function Shell({ children, accentHex, fontFamily, faintCharacter, narrow }) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      position: 'relative',
+      overflow: 'hidden',
+      background: 'linear-gradient(180deg, #FBFBF9 0%, #FAFAF8 100%)',
+    }}>
+      <div style={{
+        position: 'fixed', right: '-42px', bottom: '-118px',
+        fontSize: '360px', lineHeight: 1,
+        color: accentHex, opacity: 0.035,
+        fontFamily, fontWeight: 700,
+        pointerEvents: 'none', userSelect: 'none',
+      }}>
+        {faintCharacter}
+      </div>
+      <div style={{
+        maxWidth: narrow ? '640px' : '860px',
+        margin: '0 auto',
+        padding: '38px 32px 72px',
+        position: 'relative',
+        zIndex: 1,
+      }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function IconButton({ icon: Icon, label, onClick }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+        height: '40px', padding: '0 14px', borderRadius: '12px',
+        border: '1px solid #E7E5E4',
+        background: hovered ? '#F7F7F5' : '#FFFFFF',
+        color: '#52525B',
+        fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+        cursor: 'pointer',
+        transition: 'background 160ms ease, transform 160ms ease',
+        transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
+      }}
+    >
+      <Icon size={17} strokeWidth={1.85} color="#71717A" />
+      {label}
+    </button>
+  )
+}
+
+function PrimaryButton({ onClick, children, accentHex, icon: Icon, disabled }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        flex: 1,
+        minHeight: '52px',
+        borderRadius: '16px',
+        border: 'none',
+        background: disabled ? '#A1A1AA' : (hovered ? accentHex + 'E6' : accentHex),
+        color: '#FFFFFF',
+        fontSize: '15px',
+        fontWeight: 750,
+        fontFamily: 'Inter, sans-serif',
+        cursor: disabled ? 'default' : 'pointer',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '9px',
+        transition: 'background 160ms ease, transform 160ms ease, box-shadow 160ms ease',
+        transform: hovered && !disabled ? 'translateY(-1px)' : 'translateY(0)',
+        boxShadow: hovered && !disabled ? '0 12px 28px ' + accentHex + '30' : '0 5px 16px ' + accentHex + '22',
+      }}
+    >
+      {Icon && <Icon size={18} strokeWidth={2} color="#FFFFFF" />}
+      {children}
+    </button>
+  )
+}
+
+function GhostButton({ onClick, children, icon: Icon }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        flex: 1,
+        minHeight: '52px',
+        borderRadius: '16px',
+        border: '1px solid #E7E5E4',
+        background: hovered ? '#F7F7F5' : '#FFFFFF',
+        color: '#52525B',
+        fontSize: '15px',
+        fontWeight: 700,
+        fontFamily: 'Inter, sans-serif',
+        cursor: 'pointer',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '9px',
+      }}
+    >
+      {Icon && <Icon size={18} strokeWidth={2} color="#71717A" />}
+      {children}
+    </button>
+  )
+}
+
 function JapaneseRuby({ word, reading, fontSize = '48px' }) {
   return (
     <ruby style={{ fontSize, fontFamily: "'Noto Sans JP'", color: '#18181B', lineHeight: 1.4 }}>
@@ -111,35 +274,60 @@ function JapaneseRuby({ word, reading, fontSize = '48px' }) {
   )
 }
 
-function WordStatRow({ word, stat, isJapanese, accentHex }) {
+function ProgressBar({ pct, color }) {
+  return (
+    <div style={{ height: '7px', background: '#E7E5E4', borderRadius: '999px', overflow: 'hidden' }}>
+      <div style={{ width: pct + '%', height: '100%', background: color, borderRadius: '999px', transition: 'width 220ms ease' }} />
+    </div>
+  )
+}
+
+function StatBox({ label, value, color, icon: Icon }) {
+  return (
+    <div style={{
+      background: '#FFFFFF',
+      border: '1px solid #E7E5E4',
+      borderRadius: '18px',
+      padding: '18px 20px',
+      boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
+    }}>
+      {Icon && <Icon size={20} strokeWidth={1.8} color={color} />}
+      <div style={{ fontSize: '30px', fontWeight: 850, color, lineHeight: 1, marginTop: Icon ? '12px' : 0 }}>{value}</div>
+      <div style={{ fontSize: '12px', color: '#71717A', marginTop: '7px', fontWeight: 650 }}>{label}</div>
+    </div>
+  )
+}
+
+function WordStatRow({ word, stat, accentHex, fontFamily }) {
   const level = getLevel(stat.xp)
   const pct = stat.attempts > 0 ? Math.round((stat.correct_count / stat.attempts) * 100) : 0
   const levelPct = getLevelProgress(stat.xp)
 
   return (
     <div style={{
-      background: '#fff',
+      background: '#FFFFFF',
       border: '1px solid #E7E5E4',
-      borderRadius: '12px',
-      padding: '14px 16px',
+      borderRadius: '18px',
+      padding: '16px 18px',
+      boxShadow: '0 8px 26px rgba(24,24,27,0.045)',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div style={{
-            fontSize: '24px',
-            fontWeight: 700,
+            fontSize: '25px',
+            fontWeight: 750,
             color: '#18181B',
-            fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
+            fontFamily,
             lineHeight: 1.2,
           }}>
             {word.word}
           </div>
-          <div style={{ fontSize: '12px', color: '#71717A', marginTop: '3px' }}>
+          <div style={{ fontSize: '12px', color: '#71717A', marginTop: '4px', lineHeight: 1.4 }}>
             {word.reading} · {word.meaning}
           </div>
         </div>
         <div style={{ textAlign: 'right', minWidth: '76px' }}>
-          <div style={{ fontSize: '13px', fontWeight: 800, color: level === MAX_LEVEL ? '#2F9E6D' : accentHex }}>
+          <div style={{ fontSize: '13px', fontWeight: 850, color: level === MAX_LEVEL ? '#2F9E6D' : accentHex }}>
             Lv {level}
           </div>
           <div style={{ fontSize: '11px', color: '#71717A', marginTop: '2px' }}>
@@ -153,8 +341,8 @@ function WordStatRow({ word, stat, isJapanese, accentHex }) {
         </div>
       </div>
 
-      <div style={{ height: '6px', background: '#E7E5E4', borderRadius: '4px', overflow: 'hidden', marginTop: '12px' }}>
-        <div style={{ width: `${level === MAX_LEVEL ? 100 : levelPct}%`, height: '100%', background: level === MAX_LEVEL ? '#2F9E6D' : accentHex }} />
+      <div style={{ marginTop: '12px' }}>
+        <ProgressBar pct={level === MAX_LEVEL ? 100 : levelPct} color={level === MAX_LEVEL ? '#2F9E6D' : accentHex} />
       </div>
 
       <div style={{ display: 'flex', gap: '12px', marginTop: '10px', fontSize: '11px', color: '#71717A' }}>
@@ -181,8 +369,8 @@ export default function Writing({ session, track, onBack }) {
   const [roundStats, setRoundStats] = useState({ correct: 0, missed: 0 })
   const [loading, setLoading] = useState(true)
 
-  const isJapanese = track.language === 'japanese'
-  const accentHex = isJapanese ? '#2E3A6E' : '#B83A24'
+  const { isJapanese, accentHex, languageName, fontFamily, faintCharacter } = getLanguageDetails(track)
+  const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(track.language, track.system, track.current_level)
   const current = queue[index]
   const currentDirection = current?.questionDirection || questionMode
@@ -305,9 +493,8 @@ export default function Writing({ session, track, onBack }) {
     return { xpGain, multiplier, streak: nextStreak }
   }
 
-  const submit = async (e) => {
-    e.preventDefault()
-    if (!current || result) return
+  const submit = async () => {
+    if (!current || result || !input.trim()) return
 
     const correct = isWritingMatch(input, current, currentDirection, isJapanese)
     setResult(correct ? { status: 'correct', xpGain: XP_PER_CORRECT, multiplier: 1, streak: 1 } : { status: 'missed', xpGain: 0, multiplier: 0, streak: 0 })
@@ -344,164 +531,134 @@ export default function Writing({ session, track, onBack }) {
 
   if (loading) {
     return (
-      <div style={center}>
-        <div style={{ fontSize: '32px', color: accentHex, fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'" }}>学</div>
-      </div>
+      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+        <div style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <StateIcon icon={PenLine} accentHex={accentHex} />
+        </div>
+      </Shell>
     )
   }
 
   if (studiedWords.length === 0) {
     return (
-      <div style={center}>
-        <div style={{ width: '100%', maxWidth: '460px', textAlign: 'center', padding: '24px' }}>
-          <div style={{ marginBottom: '16px' }}><PenLine size={44} strokeWidth={1.5} color={accentHex} /></div>
-          <h1 style={{ fontSize: '24px', color: '#18181B', marginBottom: '8px' }}>No studied words yet</h1>
-          <p style={{ fontSize: '14px', color: '#71717A', marginBottom: '24px', lineHeight: 1.5 }}>
-            Study some flashcards in this level first, then come back to practice writing from memory.
-          </p>
-          <button onClick={onBack} style={{ ...primaryBtn, background: accentHex }}>Back home</button>
+      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+        <div style={centerPanelStyle}>
+          <StateIcon icon={PenLine} accentHex={accentHex} />
+          <h1 style={titleStyle}>No studied words yet</h1>
+          <p style={bodyTextStyle}>Study some flashcards in this level first, then come back to practice writing from memory.</p>
+          <PrimaryButton onClick={onBack} accentHex={accentHex} icon={ArrowLeft}>Back home</PrimaryButton>
         </div>
-      </div>
+      </Shell>
     )
   }
 
   if (phase === 'stats') {
     return (
-      <div style={{ minHeight: '100vh', background: '#FAFAF8' }}>
-        <div style={{ maxWidth: '760px', margin: '0 auto', padding: '32px 24px 60px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-            <button onClick={() => setPhase('start')} style={backBtn}>← Back</button>
-            <div style={{ fontSize: '13px', color: '#71717A' }}>{levelLabel}</div>
-          </div>
-
-          <h1 style={{ fontSize: '26px', color: '#18181B', marginBottom: '6px' }}>Writing stats</h1>
-          <p style={{ fontSize: '14px', color: '#71717A', marginBottom: '22px' }}>
-            {masteredCount}/{studiedWords.length} words at max level
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '24px' }}>
-            <StatBox label="Studied words" value={studiedWords.length} color={accentHex} />
-            <StatBox label="Maxed words" value={masteredCount} color="#2F9E6D" />
-          </div>
-
-          <h2 style={sectionTitle}>Best known</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '28px' }}>
-            {bestWords.map(({ word, stat }) => (
-              <WordStatRow key={word.id} word={word} stat={stat} isJapanese={isJapanese} accentHex={accentHex} />
-            ))}
-          </div>
-
-          <h2 style={sectionTitle}>Needs work</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {weakestWords.map(({ word, stat }) => (
-              <WordStatRow key={word.id} word={word} stat={stat} isJapanese={isJapanese} accentHex={accentHex} />
-            ))}
-          </div>
+      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+          <IconButton icon={ArrowLeft} label="Back" onClick={() => setPhase('start')} />
+          <div style={{ fontSize: '13px', color: '#71717A', fontWeight: 650 }}>{systemLabel} · {levelLabel}</div>
         </div>
-      </div>
+
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{ color: accentHex, fontSize: '13px', fontWeight: 800, marginBottom: '10px' }}>Writing progress</div>
+          <h1 style={{ margin: 0, color: '#18181B', fontSize: '36px', fontWeight: 850, lineHeight: 1.1 }}>Writing stats</h1>
+          <p style={{ margin: '10px 0 0', fontSize: '15px', color: '#71717A' }}>
+            {masteredCount}/{studiedWords.length} words at max writing level.
+          </p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '26px' }}>
+          <StatBox label="Studied words" value={studiedWords.length} color={accentHex} icon={PenLine} />
+          <StatBox label="Maxed words" value={masteredCount} color="#2F9E6D" icon={Sparkles} />
+        </div>
+
+        <h2 style={sectionTitle}>Best known</h2>
+        <div style={{ display: 'grid', gap: '10px', marginBottom: '28px' }}>
+          {bestWords.map(({ word, stat }) => (
+            <WordStatRow key={word.id} word={word} stat={stat} accentHex={accentHex} fontFamily={fontFamily} />
+          ))}
+        </div>
+
+        <h2 style={sectionTitle}>Needs work</h2>
+        <div style={{ display: 'grid', gap: '10px' }}>
+          {weakestWords.map(({ word, stat }) => (
+            <WordStatRow key={word.id} word={word} stat={stat} accentHex={accentHex} fontFamily={fontFamily} />
+          ))}
+        </div>
+      </Shell>
     )
   }
 
   if (phase === 'start') {
     return (
-      <div style={center}>
-        <div style={{ width: '100%', maxWidth: '640px', padding: '28px 24px' }}>
-          <button onClick={onBack} style={{ ...backBtn, marginBottom: '32px' }}>← Back</button>
-          <h1 style={{ fontSize: '28px', color: '#18181B', marginBottom: '8px' }}>Writing practice</h1>
-          <p style={{ fontSize: '14px', color: '#71717A', lineHeight: 1.5, marginBottom: '26px' }}>
-            Pick a round size and level up the words you have already seen in flashcards.
+      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+
+        <div style={{ margin: '32px 0 24px', textAlign: 'center' }}>
+          <StateIcon icon={PenLine} accentHex={accentHex} />
+          <div style={{ color: accentHex, fontSize: '13px', fontWeight: 800, marginTop: '18px' }}>
+            {languageName} active recall
+          </div>
+          <h1 style={{ ...titleStyle, fontSize: '32px' }}>Writing practice</h1>
+          <p style={bodyTextStyle}>
+            Pick a round size and level up words you have already seen in flashcards.
           </p>
+        </div>
 
-          <div style={{ background: '#fff', border: '1px solid #E7E5E4', borderRadius: '18px', padding: '22px', marginBottom: '16px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#18181B', marginBottom: '12px' }}>Round size</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-              {ROUND_SIZES.map(size => {
-                const disabled = studiedWords.length < size
-                return (
-                  <button
-                    key={size}
-                    onClick={() => setSelectedCount(size)}
-                    disabled={disabled}
-                    style={{
-                      padding: '14px 8px',
-                      borderRadius: '12px',
-                      border: '1.5px solid ' + (selectedCount === size ? accentHex : '#E7E5E4'),
-                      background: selectedCount === size ? accentHex + '10' : '#fff',
-                      color: selectedCount === size ? accentHex : '#18181B',
-                      opacity: disabled ? 0.4 : 1,
-                      cursor: disabled ? 'default' : 'pointer',
-                      fontSize: '15px',
-                      fontWeight: 800,
-                      fontFamily: 'Inter, sans-serif',
-                    }}
-                  >
-                    {size}
-                  </button>
-                )
-              })}
-            </div>
-            <div style={{ fontSize: '12px', color: '#71717A', marginTop: '12px' }}>
-              {roundSize} words available for this round · default is 15
-            </div>
+        <div style={panelStyle}>
+          <div style={panelTitleStyle}>Round size</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+            {ROUND_SIZES.map(size => {
+              const disabled = studiedWords.length < size
+              return (
+                <button
+                  key={size}
+                  onClick={() => setSelectedCount(size)}
+                  disabled={disabled}
+                  style={choiceBox(selectedCount === size, accentHex, disabled)}
+                >
+                  {size}
+                </button>
+              )
+            })}
           </div>
-
-          <div style={{ background: '#fff', border: '1px solid #E7E5E4', borderRadius: '18px', padding: '22px', marginBottom: '16px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#18181B', marginBottom: '12px' }}>Question type</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px' }}>
-              <button
-                onClick={() => setQuestionMode('mixed')}
-                style={choiceBtn(questionMode === 'mixed', accentHex)}
-              >
-                <div style={{ fontSize: '15px', fontWeight: 800 }}>Mixed</div>
-                <div style={{ fontSize: '11px', color: questionMode === 'mixed' ? accentHex : '#71717A', marginTop: '4px' }}>
-                  Both ways
-                </div>
-              </button>
-              <button
-                onClick={() => setQuestionMode('to_target')}
-                style={choiceBtn(questionMode === 'to_target', accentHex)}
-              >
-                <div style={{ fontSize: '15px', fontWeight: 800 }}>English → {isJapanese ? 'Japanese' : 'Chinese'}</div>
-                <div style={{ fontSize: '11px', color: questionMode === 'to_target' ? accentHex : '#71717A', marginTop: '4px' }}>
-                  {isJapanese ? 'Kanji, hiragana, or romaji' : 'Type Hanzi or pinyin'}
-                </div>
-              </button>
-              <button
-                onClick={() => setQuestionMode('to_english')}
-                style={choiceBtn(questionMode === 'to_english', accentHex)}
-              >
-                <div style={{ fontSize: '15px', fontWeight: 800 }}>{isJapanese ? 'Japanese' : 'Chinese'} → English</div>
-                <div style={{ fontSize: '11px', color: questionMode === 'to_english' ? accentHex : '#71717A', marginTop: '4px' }}>
-                  Type the English meaning
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={() => setPhase('stats')} style={ghostBtn}>Stats</button>
-            <button onClick={startRound} style={{ ...primaryBtn, background: accentHex }}>Start practice</button>
+          <div style={{ fontSize: '12px', color: '#71717A', marginTop: '12px' }}>
+            {roundSize} words available for this round.
           </div>
         </div>
-      </div>
+
+        <div style={panelStyle}>
+          <div style={panelTitleStyle}>Question type</div>
+          <div style={{ display: 'grid', gap: '8px' }}>
+            <ModeButton active={questionMode === 'mixed'} accentHex={accentHex} title="Mixed" detail="Both directions" onClick={() => setQuestionMode('mixed')} />
+            <ModeButton active={questionMode === 'to_target'} accentHex={accentHex} title={'English -> ' + languageName} detail={isJapanese ? 'Kanji, hiragana, or romaji' : 'Hanzi or pinyin'} onClick={() => setQuestionMode('to_target')} />
+            <ModeButton active={questionMode === 'to_english'} accentHex={accentHex} title={languageName + ' -> English'} detail="Type the English meaning" onClick={() => setQuestionMode('to_english')} />
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <GhostButton onClick={() => setPhase('stats')} icon={BarChart3}>Stats</GhostButton>
+          <PrimaryButton onClick={startRound} accentHex={accentHex} icon={ArrowRight}>Start practice</PrimaryButton>
+        </div>
+      </Shell>
     )
   }
 
   if (index >= queue.length) {
     return (
-      <div style={center}>
-        <div style={{ width: '100%', maxWidth: '460px', textAlign: 'center', padding: '24px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>✓</div>
-          <h1 style={{ fontSize: '24px', color: '#18181B', marginBottom: '8px' }}>Writing round complete</h1>
-          <p style={{ fontSize: '14px', color: '#71717A', marginBottom: '24px' }}>
-            {roundStats.correct} correct · {roundStats.missed} missed
-          </p>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={() => setPhase('start')} style={ghostBtn}>Start screen</button>
-            <button onClick={resetRound} style={{ ...primaryBtn, background: accentHex }}>Practice again</button>
+      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+        <div style={centerPanelStyle}>
+          <StateIcon icon={CheckCircle2} accentHex="#2F9E6D" />
+          <h1 style={titleStyle}>Writing round complete</h1>
+          <p style={bodyTextStyle}>{roundStats.correct} correct · {roundStats.missed} missed</p>
+          <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+            <GhostButton onClick={() => setPhase('start')} icon={ArrowLeft}>Start screen</GhostButton>
+            <PrimaryButton onClick={resetRound} accentHex={accentHex} icon={RotateCcw}>Practice again</PrimaryButton>
           </div>
         </div>
-      </div>
+      </Shell>
     )
   }
 
@@ -509,193 +666,251 @@ export default function Writing({ session, track, onBack }) {
   const promptText = toEnglish ? current.word : current.meaning
   const targetLabel = toEnglish ? 'English' : isJapanese ? 'Japanese' : 'Chinese'
   const directionLabel = toEnglish
-    ? `${isJapanese ? 'Japanese' : 'Chinese'} → English`
-    : `English → ${isJapanese ? 'Japanese' : 'Chinese'}`
+    ? (isJapanese ? 'Japanese' : 'Chinese') + ' -> English'
+    : 'English -> ' + (isJapanese ? 'Japanese' : 'Chinese')
   const currentStat = writingStats[current.id] || defaultStat(current.id)
   const currentLevel = getLevel(currentStat.xp)
   const nextMultiplier = getMultiplier(getSafeStreak(currentStat) + 1)
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FAFAF8' }}>
-      <div style={{ maxWidth: '620px', margin: '0 auto', padding: '28px 24px 60px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <button onClick={() => setPhase('start')} style={backBtn}>← Exit</button>
-          <div style={{ fontSize: '13px', color: '#71717A' }}>
-            {index + 1}/{queue.length} · {levelLabel} · Lv {currentLevel}
-          </div>
+    <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '22px' }}>
+        <IconButton icon={ArrowLeft} label="Exit" onClick={() => setPhase('start')} />
+        <div style={{ fontSize: '13px', color: '#71717A', fontWeight: 650 }}>
+          {index + 1}/{queue.length} · {levelLabel} · Lv {currentLevel}
         </div>
-
-        <div style={{ height: '6px', background: '#E7E5E4', borderRadius: '3px', overflow: 'hidden', marginBottom: '20px' }}>
-          <div style={{ width: `${progress}%`, height: '100%', background: accentHex, transition: 'width 220ms ease' }} />
-        </div>
-
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '18px' }}>
-          <span style={statusPill(accentHex)}>
-            {directionLabel}
-          </span>
-          <span style={{ ...statusPill('#D97706'), display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <Flame size={12} strokeWidth={2} /> {getSafeStreak(currentStat)} · next {nextMultiplier}x
-          </span>
-          {isJapanese && (
-            <button onClick={() => setShowFurigana(prev => !prev)} style={pill(showFurigana, accentHex)}>
-              Furigana
-            </button>
-          )}
-        </div>
-
-        <div style={{
-          background: '#fff',
-          border: '1px solid #E7E5E4',
-          borderRadius: '18px',
-          padding: '30px 28px',
-          boxShadow: '0 2px 16px rgba(0,0,0,0.05)',
-          marginBottom: '18px',
-        }}>
-          <div style={{ fontSize: '12px', color: '#71717A', fontWeight: 700, marginBottom: '12px', textTransform: 'uppercase' }}>
-            Type the {targetLabel}
-          </div>
-          <div style={{
-            minHeight: '82px',
-            display: 'flex',
-            alignItems: 'center',
-            fontSize: toEnglish ? '52px' : '26px',
-            fontWeight: 700,
-            color: '#18181B',
-            fontFamily: toEnglish ? isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'" : 'Inter, sans-serif',
-            lineHeight: 1.35,
-          }}>
-            {promptText}
-          </div>
-          {card && (
-            <div style={{ fontSize: '12px', color: '#71717A', marginTop: '6px' }}>
-              {card.is_easy ? 'Mastered' : card.state || 'Started'} · {currentStat.xp}/{MAX_XP} XP
-            </div>
-          )}
-        </div>
-
-        <form onSubmit={submit}>
-          <input
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            disabled={Boolean(result)}
-            autoFocus
-            placeholder={toEnglish ? 'Type the English meaning' : `Type ${isJapanese ? 'kanji, hiragana, or romaji' : 'Hanzi or pinyin'}`}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              padding: '16px 18px',
-              borderRadius: '14px',
-              border: '2px solid ' + (result?.status === 'correct' ? '#2F9E6D' : result?.status === 'missed' ? '#DC2626' : '#E7E5E4'),
-              background: '#fff',
-              fontSize: '20px',
-              color: '#18181B',
-              fontFamily: toEnglish ? 'Inter, sans-serif' : isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
-              outline: 'none',
-            }}
-          />
-
-          {result && (
-            <div style={{
-              marginTop: '14px',
-              padding: '16px 18px',
-              borderRadius: '14px',
-              background: result.status === 'correct' ? '#ECFDF5' : '#FEF2F2',
-              border: '1px solid ' + (result.status === 'correct' ? '#BBF7D0' : '#FECACA'),
-            }}>
-              <div style={{ fontSize: '13px', fontWeight: 700, color: result.status === 'correct' ? '#2F9E6D' : '#DC2626', marginBottom: '8px' }}>
-                {result.status === 'correct'
-                  ? (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                      Correct · +{result.xpGain} XP · {result.multiplier}x · <Flame size={12} strokeWidth={2} /> {result.streak}
-                    </span>
-                  )
-                  : 'Missed · streak reset'}
-              </div>
-              {isJapanese ? (
-                hasKanji(current.word) ? (
-                  <>
-                    {showFurigana ? (
-                      <JapaneseRuby word={current.word} reading={current.reading} fontSize="38px" />
-                    ) : (
-                      <div style={{ fontSize: '34px', fontWeight: 700, color: '#18181B', fontFamily: "'Noto Sans JP'" }}>
-                        {current.word}
-                      </div>
-                    )}
-                    <div style={{ fontSize: '14px', color: '#71717A', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
-                      {normalizeRomaji(toRomaji(current.reading || ''))}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ fontSize: '34px', fontWeight: 700, color: '#18181B', fontFamily: "'Noto Sans JP'" }}>
-                      {current.word}
-                    </div>
-                    <div style={{ fontSize: '14px', color: '#71717A', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
-                      {normalizeRomaji(toRomaji(current.reading || ''))}
-                    </div>
-                  </>
-                )
-              ) : (
-                <div style={{ fontSize: '34px', fontWeight: 700, color: '#18181B', fontFamily: "'Noto Sans SC'" }}>
-                  {current.word}
-                </div>
-              )}
-              {!isJapanese && (
-                <div style={{ fontSize: '18px', color: accentHex, marginTop: '8px', fontWeight: 700 }}>
-                  {current.reading}
-                </div>
-              )}
-              <div style={{ fontSize: '14px', color: '#71717A', marginTop: '6px' }}>
-                {current.meaning}
-              </div>
-            </div>
-          )}
-
-          <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
-            {!result ? (
-              <button disabled={!input.trim()} style={{ ...primaryBtn, background: input.trim() ? accentHex : '#A1A1AA' }}>
-                Check
-              </button>
-            ) : (
-              <button type="button" onClick={next} style={{ ...primaryBtn, background: accentHex }}>
-                Next
-              </button>
-            )}
-          </div>
-        </form>
       </div>
-    </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <ProgressBar pct={progress} color={accentHex} />
+      </div>
+
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '18px', justifyContent: 'center' }}>
+        <span style={statusPill(accentHex)}>{directionLabel}</span>
+        <span style={{ ...statusPill('#D97706'), display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <Flame size={12} strokeWidth={2} /> {getSafeStreak(currentStat)} · next {nextMultiplier}x
+        </span>
+        {isJapanese && (
+          <button onClick={() => setShowFurigana(prev => !prev)} style={togglePill(showFurigana, accentHex)}>
+            Furigana {showFurigana ? 'on' : 'off'}
+          </button>
+        )}
+      </div>
+
+      <div style={{
+        ...panelStyle,
+        padding: '34px 30px',
+        boxShadow: '0 22px 64px rgba(24,24,27,0.07)',
+      }}>
+        <div style={{ fontSize: '12px', color: '#71717A', fontWeight: 800, marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+          Type the {targetLabel}
+        </div>
+        <div style={{
+          minHeight: '92px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          fontSize: toEnglish ? '58px' : '28px',
+          fontWeight: 800,
+          color: '#18181B',
+          fontFamily: toEnglish ? fontFamily : 'Inter, sans-serif',
+          lineHeight: 1.3,
+        }}>
+          {promptText}
+        </div>
+        {card && (
+          <div style={{ fontSize: '12px', color: '#71717A', marginTop: '12px', textAlign: 'center' }}>
+            {card.is_easy ? 'Mastered' : card.state || 'Started'} · {currentStat.xp}/{MAX_XP} XP
+          </div>
+        )}
+      </div>
+
+      <input
+        value={input}
+        onChange={e => setInput(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === 'Enter') {
+            if (result) next()
+            else submit()
+          }
+        }}
+        disabled={Boolean(result)}
+        autoFocus
+        placeholder={toEnglish ? 'Type the English meaning' : 'Type ' + (isJapanese ? 'kanji, hiragana, or romaji' : 'Hanzi or pinyin')}
+        style={{
+          width: '100%',
+          boxSizing: 'border-box',
+          padding: '17px 19px',
+          borderRadius: '16px',
+          border: '1.5px solid ' + (result?.status === 'correct' ? '#2F9E6D' : result?.status === 'missed' ? '#DC2626' : '#E7E5E4'),
+          background: '#FFFFFF',
+          fontSize: '20px',
+          color: '#18181B',
+          fontFamily: toEnglish ? 'Inter, sans-serif' : fontFamily,
+          outline: 'none',
+          marginTop: '18px',
+          boxShadow: '0 8px 26px rgba(24,24,27,0.045)',
+        }}
+      />
+
+      {result && (
+        <div style={{
+          marginTop: '14px',
+          padding: '18px 20px',
+          borderRadius: '18px',
+          background: result.status === 'correct' ? '#ECFDF5' : '#FEF2F2',
+          border: '1px solid ' + (result.status === 'correct' ? '#BBF7D0' : '#FECACA'),
+        }}>
+          <div style={{ fontSize: '13px', fontWeight: 800, color: result.status === 'correct' ? '#2F9E6D' : '#DC2626', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {result.status === 'correct' ? <Check size={15} strokeWidth={2.2} /> : <X size={15} strokeWidth={2.2} />}
+            {result.status === 'correct'
+              ? 'Correct · +' + result.xpGain + ' XP · ' + result.multiplier + 'x · streak ' + result.streak
+              : 'Missed · streak reset'}
+          </div>
+          {isJapanese ? (
+            hasKanji(current.word) && showFurigana ? (
+              <JapaneseRuby word={current.word} reading={current.reading} fontSize="38px" />
+            ) : (
+              <div style={{ fontSize: '34px', fontWeight: 800, color: '#18181B', fontFamily: "'Noto Sans JP'" }}>
+                {current.word}
+              </div>
+            )
+          ) : (
+            <div style={{ fontSize: '34px', fontWeight: 800, color: '#18181B', fontFamily: "'Noto Sans SC'" }}>
+              {current.word}
+            </div>
+          )}
+          {isJapanese && (
+            <div style={{ fontSize: '14px', color: '#71717A', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
+              {normalizeRomaji(toRomaji(current.reading || ''))}
+            </div>
+          )}
+          {!isJapanese && (
+            <div style={{ fontSize: '18px', color: accentHex, marginTop: '8px', fontWeight: 700 }}>
+              {current.reading}
+            </div>
+          )}
+          <div style={{ fontSize: '14px', color: '#71717A', marginTop: '6px' }}>
+            {current.meaning}
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '12px', marginTop: '18px' }}>
+        {!result ? (
+          <PrimaryButton disabled={!input.trim()} onClick={submit} accentHex={accentHex} icon={Check}>Check</PrimaryButton>
+        ) : (
+          <PrimaryButton onClick={next} accentHex={accentHex} icon={ArrowRight}>Next</PrimaryButton>
+        )}
+      </div>
+    </Shell>
   )
 }
 
-function StatBox({ label, value, color }) {
+function StateIcon({ icon: Icon, accentHex }) {
   return (
-    <div style={{ background: '#fff', border: '1px solid #E7E5E4', borderRadius: '14px', padding: '18px 20px' }}>
-      <div style={{ fontSize: '28px', fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: '12px', color: '#71717A', marginTop: '6px' }}>{label}</div>
+    <div style={{
+      width: '68px',
+      height: '68px',
+      borderRadius: '22px',
+      background: accentHex + '10',
+      border: '1px solid ' + accentHex + '20',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      margin: '0 auto',
+    }}>
+      <Icon size={34} strokeWidth={1.75} color={accentHex} />
     </div>
   )
 }
 
-const center = { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FAFAF8' }
-const backBtn = { background: 'none', border: 'none', color: '#71717A', cursor: 'pointer', fontSize: '14px', padding: 0 }
-const primaryBtn = { flex: 1, border: 'none', borderRadius: '12px', padding: '14px 18px', color: '#fff', fontSize: '15px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
-const ghostBtn = { flex: 1, border: '1px solid #E7E5E4', background: '#fff', borderRadius: '12px', padding: '14px 18px', color: '#71717A', fontSize: '15px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }
-const sectionTitle = { fontSize: '15px', fontWeight: 800, color: '#18181B', margin: '0 0 12px' }
-const choiceBtn = (active, accent) => ({
-  minHeight: '76px',
-  padding: '14px 12px',
-  borderRadius: '12px',
+function ModeButton({ active, accentHex, title, detail, onClick }) {
+  return (
+    <button onClick={onClick} style={modeButtonStyle(active, accentHex)}>
+      <div style={{ fontSize: '15px', fontWeight: 850 }}>{title}</div>
+      <div style={{ fontSize: '11px', color: active ? accentHex : '#71717A', marginTop: '4px' }}>{detail}</div>
+    </button>
+  )
+}
+
+const centerPanelStyle = {
+  minHeight: '68vh',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  textAlign: 'center',
+}
+
+const titleStyle = {
+  color: '#18181B',
+  fontSize: '26px',
+  fontWeight: 850,
+  lineHeight: 1.15,
+  margin: '18px 0 8px',
+}
+
+const bodyTextStyle = {
+  color: '#71717A',
+  fontSize: '15px',
+  lineHeight: 1.65,
+  margin: '0 0 24px',
+  maxWidth: '520px',
+}
+
+const panelStyle = {
+  background: '#FFFFFF',
+  border: '1px solid #E7E5E4',
+  borderRadius: '22px',
+  padding: '22px',
+  marginBottom: '16px',
+  boxShadow: '0 10px 32px rgba(24,24,27,0.055)',
+}
+
+const panelTitleStyle = {
+  fontSize: '13px',
+  fontWeight: 800,
+  color: '#18181B',
+  marginBottom: '12px',
+}
+
+const sectionTitle = {
+  fontSize: '15px',
+  fontWeight: 850,
+  color: '#18181B',
+  margin: '0 0 12px',
+}
+
+const choiceBox = (active, accent, disabled) => ({
+  minHeight: '54px',
+  borderRadius: '14px',
   border: '1.5px solid ' + (active ? accent : '#E7E5E4'),
-  background: active ? accent + '10' : '#fff',
+  background: active ? accent + '10' : '#FFFFFF',
+  color: active ? accent : '#18181B',
+  opacity: disabled ? 0.4 : 1,
+  cursor: disabled ? 'default' : 'pointer',
+  fontSize: '15px',
+  fontWeight: 850,
+  fontFamily: 'Inter, sans-serif',
+})
+
+const modeButtonStyle = (active, accent) => ({
+  minHeight: '76px',
+  padding: '14px 14px',
+  borderRadius: '14px',
+  border: '1.5px solid ' + (active ? accent : '#E7E5E4'),
+  background: active ? accent + '10' : '#FFFFFF',
   color: active ? accent : '#18181B',
   cursor: 'pointer',
   fontFamily: 'Inter, sans-serif',
   textAlign: 'left',
 })
+
 const statusPill = (accent) => ({
   padding: '8px 12px',
-  borderRadius: '10px',
+  borderRadius: '999px',
   border: '1px solid ' + accent + '33',
   background: accent + '10',
   color: accent,
@@ -703,14 +918,15 @@ const statusPill = (accent) => ({
   fontWeight: 800,
   fontFamily: 'Inter, sans-serif',
 })
-const pill = (active, accent) => ({
+
+const togglePill = (active, accent) => ({
   padding: '8px 12px',
-  borderRadius: '10px',
+  borderRadius: '999px',
   border: '1px solid ' + (active ? accent : '#E7E5E4'),
-  background: active ? accent + '10' : '#fff',
+  background: active ? accent + '10' : '#FFFFFF',
   color: active ? accent : '#71717A',
   fontSize: '12px',
-  fontWeight: 700,
+  fontWeight: 800,
   cursor: 'pointer',
   fontFamily: 'Inter, sans-serif',
 })

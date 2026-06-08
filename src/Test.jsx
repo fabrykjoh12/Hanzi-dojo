@@ -5,7 +5,10 @@ import { getLevelLabel, getNextLevel } from './utils'
 import { schedule } from './srs'
 import { TEST_UNLOCK_MASTERY_PCT } from './mastery'
 import InfoTip from './InfoTip'
-import { Lock, Clock, GraduationCap } from 'lucide-react'
+import {
+  ArrowRight, Check, CheckCircle2, Clock, GraduationCap,
+  Lock, RotateCcw, ShieldCheck, X,
+} from 'lucide-react'
 
 function generateQuestions(vocabList, allVocab, language) {
   const shuffled = [...vocabList].sort(() => Math.random() - 0.5)
@@ -46,6 +49,168 @@ function generateQuestions(vocabList, allVocab, language) {
   })
 }
 
+function getLanguageDetails(profile, track) {
+  const isJapanese = profile.active_language === 'japanese' || track.language === 'japanese'
+  return {
+    isJapanese,
+    accentHex: isJapanese ? '#2E3A6E' : '#B83A24',
+    fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
+    languageName: isJapanese ? 'Japanese' : 'Chinese',
+    faintCharacter: isJapanese ? '験' : '考',
+  }
+}
+
+function Shell({ children, accentHex, fontFamily, faintCharacter, narrow }) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      position: 'relative',
+      overflow: 'hidden',
+      background: 'linear-gradient(180deg, #FBFBF9 0%, #FAFAF8 100%)',
+    }}>
+      <div style={{
+        position: 'fixed', right: '-36px', bottom: '-120px',
+        fontSize: '360px', lineHeight: 1,
+        color: accentHex, opacity: 0.035,
+        fontFamily, fontWeight: 700,
+        pointerEvents: 'none', userSelect: 'none',
+      }}>
+        {faintCharacter}
+      </div>
+      <div style={{
+        maxWidth: narrow ? '620px' : '760px',
+        margin: '0 auto',
+        padding: '38px 32px 72px',
+        position: 'relative',
+        zIndex: 1,
+      }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function IconButton({ icon: Icon, label, onClick, danger, disabled }) {
+  const [hovered, setHovered] = useState(false)
+  const color = danger ? '#DC2626' : '#52525B'
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+        height: '40px', padding: '0 14px', borderRadius: '12px',
+        border: '1px solid ' + (danger ? '#FECACA' : '#E7E5E4'),
+        background: hovered && !disabled ? (danger ? '#FEF2F2' : '#F7F7F5') : '#FFFFFF',
+        color,
+        fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+        cursor: disabled ? 'default' : 'pointer',
+        opacity: disabled ? 0.55 : 1,
+        transition: 'background 160ms ease, transform 160ms ease',
+        transform: hovered && !disabled ? 'translateY(-1px)' : 'translateY(0)',
+      }}
+    >
+      <Icon size={17} strokeWidth={1.85} color={color} />
+      {label}
+    </button>
+  )
+}
+
+function PrimaryButton({ onClick, children, accentHex, icon: Icon }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        flex: 1,
+        minHeight: '52px',
+        borderRadius: '16px',
+        border: 'none',
+        background: hovered ? accentHex + 'E6' : accentHex,
+        color: '#FFFFFF',
+        fontSize: '15px',
+        fontWeight: 750,
+        fontFamily: 'Inter, sans-serif',
+        cursor: 'pointer',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '9px',
+        transition: 'background 160ms ease, transform 160ms ease, box-shadow 160ms ease',
+        transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
+        boxShadow: hovered ? '0 12px 28px ' + accentHex + '30' : '0 5px 16px ' + accentHex + '22',
+      }}
+    >
+      {Icon && <Icon size={18} strokeWidth={2} color="#FFFFFF" />}
+      {children}
+    </button>
+  )
+}
+
+function GhostButton({ onClick, children, icon: Icon }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        flex: 1,
+        minHeight: '52px',
+        borderRadius: '16px',
+        border: '1px solid #E7E5E4',
+        background: hovered ? '#F7F7F5' : '#FFFFFF',
+        color: '#52525B',
+        fontSize: '15px',
+        fontWeight: 700,
+        fontFamily: 'Inter, sans-serif',
+        cursor: 'pointer',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '9px',
+      }}
+    >
+      {Icon && <Icon size={18} strokeWidth={2} color="#71717A" />}
+      {children}
+    </button>
+  )
+}
+
+function StatCard({ label, value, color }) {
+  return (
+    <div style={{
+      background: '#FFFFFF',
+      border: '1px solid #E7E5E4',
+      borderRadius: '18px',
+      padding: '18px 20px',
+      textAlign: 'center',
+      boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
+    }}>
+      <div style={{ fontSize: '28px', fontWeight: 850, color, lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: '12px', color: '#71717A', marginTop: '7px', fontWeight: 650 }}>{label}</div>
+    </div>
+  )
+}
+
+function ProgressBar({ pct, accentHex }) {
+  return (
+    <div style={{ height: '7px', background: '#E7E5E4', borderRadius: '999px', overflow: 'hidden' }}>
+      <div style={{
+        height: '100%',
+        width: pct + '%',
+        borderRadius: '999px',
+        background: 'linear-gradient(90deg, ' + accentHex + ', ' + accentHex + 'AA)',
+        transition: 'width 300ms ease',
+      }} />
+    </div>
+  )
+}
+
 export default function Test({ session, profile, track, onBack }) {
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState(null)
@@ -60,7 +225,7 @@ export default function Test({ session, profile, track, onBack }) {
   const [saving, setSaving] = useState(false)
   const [lastResult, setLastResult] = useState(null)
 
-  const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
+  const { accentHex, fontFamily, languageName, faintCharacter } = getLanguageDetails(profile, track)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
 
   async function loadStatus() {
@@ -98,7 +263,7 @@ export default function Test({ session, profile, track, onBack }) {
   }
 
   const handleSelect = (option) => {
-    if (selected !== null) return // already answered
+    if (selected !== null) return
     const q = questions[index]
     const correct = option === q.correctAnswer
     setSelected(option)
@@ -107,7 +272,6 @@ export default function Test({ session, profile, track, onBack }) {
     const newAnswers = [...answers, { vocab: q.vocab, user_answer: option, was_correct: correct }]
     setAnswers(newAnswers)
 
-    // Auto-advance after 1.5 seconds
     setTimeout(() => {
       setSelected(null)
       if (index + 1 < questions.length) {
@@ -117,26 +281,22 @@ export default function Test({ session, profile, track, onBack }) {
       }
     }, 1500)
   }
+
   const handleEndQuiz = () => {
-  const confirmed = window.confirm(
-    'End the quiz now? Unanswered questions will be counted as wrong.'
-  )
+    const confirmed = window.confirm('End the quiz now? Unanswered questions will be counted as wrong.')
+    if (!confirmed) return
 
-  if (!confirmed) return
+    const unansweredQuestions = questions.slice(index)
+    const unansweredAnswers = unansweredQuestions.map(q => ({
+      vocab: q.vocab,
+      user_answer: 'Skipped',
+      was_correct: false,
+    }))
 
-  const unansweredQuestions = questions.slice(index)
-
-  const unansweredAnswers = unansweredQuestions.map(q => ({
-    vocab: q.vocab,
-    user_answer: 'Skipped',
-    was_correct: false,
-  }))
-
-  const finalAnswers = [...answers, ...unansweredAnswers]
-  const finalWrong = [...wrongVocab, ...unansweredQuestions.map(q => q.vocab)]
-
-  finishTest(finalAnswers, finalWrong)
-}
+    const finalAnswers = [...answers, ...unansweredAnswers]
+    const finalWrong = [...wrongVocab, ...unansweredQuestions.map(q => q.vocab)]
+    finishTest(finalAnswers, finalWrong)
+  }
 
   const finishTest = async (allAnswers, finalWrong) => {
     setSaving(true)
@@ -173,8 +333,6 @@ export default function Test({ session, profile, track, onBack }) {
     }
 
     if (finalWrong.length > 0) {
-      // Apply FSRS "Again" to each wrong card so stability drops and the word
-      // stops counting as mastered, returning naturally to review.
       const wrongVocabIds = finalWrong.map(w => w.id)
       const { data: wrongCards } = await supabase
         .from('cards')
@@ -220,397 +378,340 @@ export default function Test({ session, profile, track, onBack }) {
 
   if (loading) {
     return (
-      <div style={center}>
-        <div style={{ fontSize: '32px', color: accentHex, fontFamily: "'Noto Sans SC'" }}>学</div>
-      </div>
+      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+        <div style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{
+            width: '88px', height: '88px', borderRadius: '26px',
+            background: '#FFFFFF', border: '1px solid #E7E5E4',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 16px 40px rgba(24,24,27,0.06)',
+          }}>
+            <GraduationCap size={34} strokeWidth={1.75} color={accentHex} />
+          </div>
+        </div>
+      </Shell>
     )
   }
 
-  // ── LOCKED ───────────────────────────────────────────────────────────────
   if (phase === 'intro' && !status.testUnlocked) {
     const unlockPct = Math.round(TEST_UNLOCK_MASTERY_PCT * 100)
+    const masteryPct = status.totalWords > 0 ? Math.round(status.masteredPct * 100) : 0
     return (
-      <div style={{ minHeight: '100vh', background: '#FAFAF8' }}>
-        <div style={{ maxWidth: '520px', margin: '0 auto', padding: '60px 24px', textAlign: 'center' }}>
-          <div style={{ marginBottom: '20px' }}><Lock size={52} strokeWidth={1.5} color="#D1D5DB" /></div>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#18181B', marginBottom: '8px' }}>
-            {levelLabel} Test locked
-          </h1>
-          <p style={{ fontSize: '15px', color: '#71717A', marginBottom: '24px', lineHeight: 1.6 }}>
-            Master {unlockPct}% of this level's words to unlock the test.
-          </p>
-          <div style={{
-            background: '#fff', borderRadius: '16px', border: '1px solid #E7E5E4',
-            padding: '20px', marginBottom: '28px',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '4px' }}>
-              <div style={{ fontSize: '32px', fontWeight: 700, color: accentHex }}>
+      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+        <div style={centerPanelStyle}>
+          <StateIcon icon={Lock} accentHex="#A1A1AA" />
+          <h1 style={titleStyle}>{levelLabel} Test locked</h1>
+          <p style={bodyTextStyle}>Master {unlockPct}% of this level's words to unlock the test.</p>
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '6px' }}>
+              <div style={{ fontSize: '34px', fontWeight: 850, color: accentHex }}>
                 {status.masteredCount} / {status.totalWords}
               </div>
-              <InfoTip accentHex={accentHex} text="A word is mastered once the app predicts you'll still recall it about three weeks from now. It can't be rushed — mastery comes from reviewing correctly over time, across multiple days." />
+              <InfoTip accentHex={accentHex} text="A word is mastered once the app predicts you'll still recall it about three weeks from now. It can't be rushed - mastery comes from reviewing correctly over time, across multiple days." />
             </div>
-            <div style={{ fontSize: '13px', color: '#71717A' }}>words mastered</div>
-            <div style={{ height: '6px', background: '#E7E5E4', borderRadius: '3px', overflow: 'hidden', marginTop: '14px' }}>
-              <div style={{
-                height: '100%', background: accentHex, borderRadius: '3px',
-                width: status.totalWords > 0 ? Math.min(100, status.masteredPct * 100) + '%' : '0%',
-                transition: 'width .6s ease',
-              }} />
-            </div>
-            <div style={{ fontSize: '12px', color: '#71717A', marginTop: '10px' }}>
-              Unlocks at {unlockPct}% ({Math.ceil(status.totalWords * TEST_UNLOCK_MASTERY_PCT)} words)
+            <div style={{ fontSize: '13px', color: '#71717A', textAlign: 'center', marginBottom: '16px' }}>words mastered</div>
+            <ProgressBar pct={masteryPct} accentHex={accentHex} />
+            <div style={{ fontSize: '12px', color: '#71717A', marginTop: '12px', textAlign: 'center' }}>
+              Unlocks at {Math.ceil(status.totalWords * TEST_UNLOCK_MASTERY_PCT)} mastered words
             </div>
           </div>
-          <button onClick={onBack} style={primaryBtn(accentHex)}>Back home</button>
         </div>
-      </div>
+      </Shell>
     )
   }
 
-  // ── OUT OF ATTEMPTS ───────────────────────────────────────────────────────
   if (phase === 'intro' && attempts.count >= 3 && !attempts.passed) {
     return (
-      <div style={{ minHeight: '100vh', background: '#FAFAF8' }}>
-        <div style={{ maxWidth: '520px', margin: '0 auto', padding: '60px 24px', textAlign: 'center' }}>
-          <div style={{ marginBottom: '20px' }}><Clock size={52} strokeWidth={1.5} color="#D97706" /></div>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#18181B', marginBottom: '8px' }}>
-            No attempts left today
-          </h1>
-          <p style={{ fontSize: '15px', color: '#71717A', marginBottom: '28px' }}>
-            You've used all 3 attempts. Review your words and come back tomorrow.
-          </p>
-          <button onClick={onBack} style={primaryBtn(accentHex)}>Back home</button>
+      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+        <div style={centerPanelStyle}>
+          <StateIcon icon={Clock} accentHex="#D97706" />
+          <h1 style={titleStyle}>No attempts left today</h1>
+          <p style={bodyTextStyle}>You've used all 3 attempts. Review your words and come back tomorrow.</p>
         </div>
-      </div>
+      </Shell>
     )
   }
 
-  // ── INTRO ─────────────────────────────────────────────────────────────────
   if (phase === 'intro') {
     return (
-      <div style={{ minHeight: '100vh', background: '#FAFAF8' }}>
-        <div style={{ maxWidth: '520px', margin: '0 auto', padding: '60px 24px' }}>
-          <button onClick={onBack} style={backBtn}>← Back</button>
+      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+        <div style={{ textAlign: 'center', margin: '34px 0 28px' }}>
+          <StateIcon icon={GraduationCap} accentHex={accentHex} />
+          <div style={{ color: accentHex, fontSize: '13px', fontWeight: 800, marginTop: '18px' }}>
+            {languageName} level gate
+          </div>
+          <h1 style={{ ...titleStyle, fontSize: '32px', marginTop: '8px' }}>{levelLabel} Test</h1>
+          <p style={bodyTextStyle}>
+            30 multiple choice questions. You need 100% to pass and unlock the next level.
+          </p>
+        </div>
 
-          <div style={{ textAlign: 'center', marginTop: '32px' }}>
-            <div style={{ marginBottom: '20px' }}><GraduationCap size={52} strokeWidth={1.5} color={accentHex} /></div>
-            <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#18181B', marginBottom: '8px' }}>
-              {levelLabel} Test
-            </h1>
-            <p style={{ fontSize: '15px', color: '#71717A', marginBottom: '6px' }}>
-              30 multiple choice questions — mix of English → Chinese and Chinese → English.
-            </p>
-            <p style={{ fontSize: '14px', color: '#71717A', marginBottom: '28px' }}>
-              You need <strong>100%</strong> to pass and unlock the next level.
-            </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '22px' }}>
+          <StatCard label="attempts today" value={attempts.count} color="#18181B" />
+          <StatCard label="remaining" value={3 - attempts.count} color={accentHex} />
+          <StatCard label="questions" value="30" color="#2F9E6D" />
+        </div>
 
-            <div style={{
-              background: '#fff', borderRadius: '16px', border: '1px solid #E7E5E4',
-              padding: '16px 24px', marginBottom: '28px',
-              display: 'flex', justifyContent: 'space-around',
-            }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '22px', fontWeight: 700, color: '#18181B' }}>{attempts.count}</div>
-                <div style={{ fontSize: '12px', color: '#71717A' }}>attempts today</div>
-              </div>
-              <div style={{ width: '1px', background: '#E7E5E4' }} />
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '22px', fontWeight: 700, color: '#18181B' }}>{3 - attempts.count}</div>
-                <div style={{ fontSize: '12px', color: '#71717A' }}>remaining</div>
-              </div>
-              <div style={{ width: '1px', background: '#E7E5E4' }} />
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '22px', fontWeight: 700, color: '#18181B' }}>30</div>
-                <div style={{ fontSize: '12px', color: '#71717A' }}>questions</div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={onBack} style={ghostBtn}>Back</button>
-              <button onClick={startTest} style={{ ...primaryBtn(accentHex), flex: 2 }}>
-                Start test
-              </button>
+        <div style={{
+          ...cardStyle,
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '12px',
+          marginBottom: '22px',
+        }}>
+          <ShieldCheck size={21} strokeWidth={1.8} color={accentHex} style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 800, color: '#18181B', marginBottom: '5px' }}>Strict by design</div>
+            <div style={{ fontSize: '13px', color: '#71717A', lineHeight: 1.55 }}>
+              Wrong answers return to review through FSRS, so the test strengthens weak words instead of just blocking progress.
             </div>
           </div>
         </div>
-      </div>
+
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <PrimaryButton onClick={startTest} accentHex={accentHex} icon={ArrowRight}>Start test</PrimaryButton>
+        </div>
+      </Shell>
     )
   }
 
-  // ── TESTING ───────────────────────────────────────────────────────────────
   if (phase === 'testing') {
     if (saving) {
       return (
-        <div style={center}>
-          <div style={{ fontSize: '32px', color: accentHex, fontFamily: "'Noto Sans SC'" }}>学</div>
-        </div>
+        <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+          <div style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <StateIcon icon={GraduationCap} accentHex={accentHex} />
+          </div>
+        </Shell>
       )
     }
 
     const q = questions[index]
-    const isChinesePrompt = q.type === 'c_to_e'
+    const isTargetPrompt = q.type === 'c_to_e'
+    const progress = questions.length > 0 ? Math.round((index / questions.length) * 100) : 0
 
     return (
-      <div style={{ minHeight: '100vh', background: '#FAFAF8' }}>
-        <div style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 24px 60px' }}>
-
-          {/* Progress bar */}
-          <div style={{ marginBottom: '32px' }}>
-            <div style={{
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: '8px',
-}}>
-  <div style={{ fontSize: '13px', color: '#71717A' }}>
-    <span style={{ fontWeight: 600, color: '#18181B' }}>
-      {index + 1} / {questions.length}
-    </span>
-    <span style={{ marginLeft: '8px' }}>
-      {Math.round((index / questions.length) * 100)}% complete
-    </span>
-  </div>
-
-  <button
-    onClick={handleEndQuiz}
-    disabled={selected !== null || saving}
-    style={{
-      ...endQuizBtn,
-      opacity: selected !== null || saving ? 0.5 : 1,
-      cursor: selected !== null || saving ? 'default' : 'pointer',
-    }}
-  >
-    End quiz
-  </button>
-</div>
-            <div style={{ height: '6px', background: '#E7E5E4', borderRadius: '3px', overflow: 'hidden' }}>
-              <div style={{
-                height: '100%', borderRadius: '3px', background: accentHex,
-                width: (index / questions.length * 100) + '%',
-                transition: 'width 0.3s ease',
-              }} />
+      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', gap: '12px' }}>
+          <div>
+            <div style={{ fontSize: '13px', color: '#71717A', marginBottom: '8px' }}>
+              <span style={{ fontWeight: 800, color: '#18181B' }}>{index + 1} / {questions.length}</span>
+              <span style={{ marginLeft: '8px' }}>{progress}% complete</span>
             </div>
+            <div style={{ width: '220px' }}><ProgressBar pct={progress} accentHex={accentHex} /></div>
           </div>
+          <IconButton
+            icon={X}
+            label="End quiz"
+            danger
+            onClick={handleEndQuiz}
+            disabled={selected !== null || saving}
+          />
+        </div>
 
-          {/* Question card */}
+        <div style={{
+          ...cardStyle,
+          padding: '38px 34px',
+          textAlign: 'center',
+          marginBottom: '18px',
+          boxShadow: '0 22px 64px rgba(24,24,27,0.07)',
+        }}>
+          <div style={{ fontSize: '12px', fontWeight: 800, color: '#71717A', marginBottom: '18px', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+            {q.type === 'e_to_c' ? 'Choose the target-language word' : 'Choose the English meaning'}
+          </div>
           <div style={{
-            background: '#fff', borderRadius: '20px',
-            border: '1px solid #E7E5E4',
-            boxShadow: '0 2px 16px rgba(0,0,0,0.05)',
-            padding: '36px 32px', marginBottom: '20px', textAlign: 'center',
+            fontSize: isTargetPrompt ? '58px' : '28px',
+            fontWeight: 800,
+            color: '#18181B',
+            fontFamily: isTargetPrompt ? fontFamily : 'Inter, sans-serif',
+            lineHeight: 1.25,
           }}>
-            <div style={{ fontSize: '12px', fontWeight: 600, color: '#71717A', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              {q.type === 'e_to_c' ? 'What is the Chinese word for?' : 'What does this mean?'}
-            </div>
-            <div style={{
-              fontSize: isChinesePrompt ? '52px' : '26px',
-              fontWeight: 700,
-              color: '#18181B',
-              fontFamily: isChinesePrompt ? "'Noto Sans SC'" : 'Inter, sans-serif',
-              lineHeight: 1.3,
-            }}>
-              {q.prompt}
-            </div>
-            {isChinesePrompt && (
-              <div style={{ fontSize: '16px', color: accentHex, marginTop: '8px', fontWeight: 500 }}>
-                {q.vocab.reading}
-              </div>
-            )}
+            {q.prompt}
           </div>
-
-          {/* Options */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {q.options.map((option, optIdx) => {
-              const isSelected = selected === option
-              const isCorrect = option === q.correctAnswer
-              const hasAnswered = selected !== null
-
-              let borderColor = '#E7E5E4'
-              let bgColor = '#fff'
-              let textColor = '#18181B'
-              let icon = null
-
-              if (hasAnswered) {
-                if (isCorrect) {
-                  borderColor = '#2F9E6D'
-                  bgColor = '#ECFDF5'
-                  textColor = '#2F9E6D'
-                  icon = '✓'
-                } else if (isSelected && !isCorrect) {
-                  borderColor = '#DC2626'
-                  bgColor = '#FEF2F2'
-                  textColor = '#DC2626'
-                  icon = '✗'
-                } else {
-                  borderColor = '#E7E5E4'
-                  bgColor = '#fff'
-                  textColor = '#A1A1AA'
-                }
-              }
-
-              const isChinese = q.type === 'e_to_c'
-
-              return (
-                <button
-                  key={optIdx}
-                  onClick={() => handleSelect(option)}
-                  disabled={hasAnswered}
-                  style={{
-                    padding: '16px 20px',
-                    borderRadius: '14px',
-                    border: '2px solid ' + borderColor,
-                    background: bgColor,
-                    color: textColor,
-                    fontSize: isChinese ? '22px' : '15px',
-                    fontFamily: isChinese ? "'Noto Sans SC'" : 'Inter, sans-serif',
-                    fontWeight: 600,
-                    cursor: hasAnswered ? 'default' : 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 200ms ease',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    boxShadow: hasAnswered ? 'none' : '0 1px 4px rgba(0,0,0,0.04)',
-                  }}
-                >
-                  {q.optionReadings && q.optionReadings[option]
-                    ? (
-                      <span style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <span>{option}</span>
-                        <span style={{ fontSize: '12px', fontWeight: 400, color: hasAnswered ? textColor : '#71717A', fontFamily: 'Inter, sans-serif' }}>
-                          {q.optionReadings[option]}
-                        </span>
-                      </span>
-                    )
-                    : <span>{option}</span>
-                  }
-                  {icon && (
-                    <span style={{ fontSize: '18px', fontFamily: 'Inter, sans-serif' }}>{icon}</span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Feedback message */}
-          {selected !== null && (
-            <div style={{
-              marginTop: '20px', padding: '14px 20px',
-              borderRadius: '12px', textAlign: 'center',
-              background: selected === questions[index].correctAnswer ? '#ECFDF5' : '#FEF2F2',
-              border: '1px solid ' + (selected === questions[index].correctAnswer ? '#BBF7D0' : '#FECACA'),
-            }}>
-              <span style={{
-                fontSize: '14px', fontWeight: 600,
-                color: selected === questions[index].correctAnswer ? '#2F9E6D' : '#DC2626',
-              }}>
-                {selected === questions[index].correctAnswer
-                  ? '✓ Correct! Well done.'
-                  : '✗ Incorrect — correct answer highlighted above.'}
-              </span>
+          {isTargetPrompt && q.vocab.reading && (
+            <div style={{ fontSize: '16px', color: accentHex, marginTop: '10px', fontWeight: 650 }}>
+              {q.vocab.reading}
             </div>
           )}
         </div>
-      </div>
+
+        <div style={{ display: 'grid', gap: '10px' }}>
+          {q.options.map((option, optIdx) => {
+            const isSelected = selected === option
+            const isCorrect = option === q.correctAnswer
+            const hasAnswered = selected !== null
+            const isTargetOption = q.type === 'e_to_c'
+
+            let borderColor = '#E7E5E4'
+            let bgColor = '#FFFFFF'
+            let textColor = '#18181B'
+            let Icon = null
+
+            if (hasAnswered) {
+              if (isCorrect) {
+                borderColor = '#2F9E6D'
+                bgColor = '#ECFDF5'
+                textColor = '#2F9E6D'
+                Icon = Check
+              } else if (isSelected && !isCorrect) {
+                borderColor = '#DC2626'
+                bgColor = '#FEF2F2'
+                textColor = '#DC2626'
+                Icon = X
+              } else {
+                textColor = '#A1A1AA'
+              }
+            }
+
+            return (
+              <button
+                key={optIdx}
+                onClick={() => handleSelect(option)}
+                disabled={hasAnswered}
+                style={{
+                  padding: '17px 20px',
+                  borderRadius: '16px',
+                  border: '1.5px solid ' + borderColor,
+                  background: bgColor,
+                  color: textColor,
+                  fontSize: isTargetOption ? '23px' : '15px',
+                  fontFamily: isTargetOption ? fontFamily : 'Inter, sans-serif',
+                  fontWeight: 750,
+                  cursor: hasAnswered ? 'default' : 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 180ms ease',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  boxShadow: hasAnswered ? 'none' : '0 8px 22px rgba(24,24,27,0.045)',
+                }}
+              >
+                {q.optionReadings && q.optionReadings[option]
+                  ? (
+                    <span style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                      <span>{option}</span>
+                      <span style={{ fontSize: '12px', fontWeight: 550, color: hasAnswered ? textColor : '#71717A', fontFamily: 'Inter, sans-serif' }}>
+                        {q.optionReadings[option]}
+                      </span>
+                    </span>
+                  )
+                  : <span>{option}</span>
+                }
+                {Icon && <Icon size={19} strokeWidth={2.2} color={textColor} />}
+              </button>
+            )
+          })}
+        </div>
+
+        {selected !== null && (
+          <div style={{
+            marginTop: '18px',
+            padding: '15px 18px',
+            borderRadius: '16px',
+            textAlign: 'center',
+            background: selected === questions[index].correctAnswer ? '#ECFDF5' : '#FEF2F2',
+            border: '1px solid ' + (selected === questions[index].correctAnswer ? '#BBF7D0' : '#FECACA'),
+          }}>
+            <span style={{
+              fontSize: '14px',
+              fontWeight: 750,
+              color: selected === questions[index].correctAnswer ? '#2F9E6D' : '#DC2626',
+            }}>
+              {selected === questions[index].correctAnswer
+                ? 'Correct. Moving on...'
+                : 'Incorrect. The correct answer is highlighted.'}
+            </span>
+          </div>
+        )}
+      </Shell>
     )
   }
 
-  // ── RESULTS ───────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', background: '#FAFAF8' }}>
-      <div style={{ maxWidth: '520px', margin: '0 auto', padding: '60px 24px', textAlign: 'center' }}>
-        <div style={{ fontSize: '64px', marginBottom: '20px' }}>
-          {lastResult.passed ? '🎉' : '💪'}
-        </div>
-        <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#18181B', marginBottom: '8px' }}>
-          {lastResult.passed ? 'Perfect score!' : lastResult.score + '%'}
+    <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+      <div style={centerPanelStyle}>
+        <StateIcon icon={lastResult.passed ? CheckCircle2 : RotateCcw} accentHex={lastResult.passed ? '#2F9E6D' : '#D97706'} />
+        <h1 style={{ ...titleStyle, fontSize: '32px' }}>
+          {lastResult.passed ? 'Perfect score' : lastResult.score + '%'}
         </h1>
 
-        {/* Score breakdown */}
-        <div style={{
-          background: '#fff', borderRadius: '16px', border: '1px solid #E7E5E4',
-          padding: '20px 24px', margin: '24px 0',
-          display: 'flex', justifyContent: 'space-around',
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: 700, color: '#2F9E6D' }}>
-              {lastResult.correctCount}
-            </div>
-            <div style={{ fontSize: '12px', color: '#71717A', marginTop: '2px' }}>Correct</div>
-          </div>
-          <div style={{ width: '1px', background: '#E7E5E4' }} />
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: 700, color: lastResult.wrongCount > 0 ? '#DC2626' : '#A1A1AA' }}>
-              {lastResult.wrongCount}
-            </div>
-            <div style={{ fontSize: '12px', color: '#71717A', marginTop: '2px' }}>Wrong</div>
-          </div>
-          <div style={{ width: '1px', background: '#E7E5E4' }} />
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: 700, color: '#18181B' }}>
-              {questions.length}
-            </div>
-            <div style={{ fontSize: '12px', color: '#71717A', marginTop: '2px' }}>Total</div>
-          </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', width: '100%', margin: '22px 0' }}>
+          <StatCard label="Correct" value={lastResult.correctCount} color="#2F9E6D" />
+          <StatCard label="Wrong" value={lastResult.wrongCount} color={lastResult.wrongCount > 0 ? '#DC2626' : '#A1A1AA'} />
+          <StatCard label="Total" value={questions.length} color="#18181B" />
         </div>
 
-        <p style={{ fontSize: '15px', color: '#71717A', marginBottom: '28px', lineHeight: 1.6 }}>
+        <p style={bodyTextStyle}>
           {lastResult.passed
-            ? 'All correct! Your next level is now unlocking.'
-            : lastResult.wrongCount + ' wrong words have been added back to your reviews. You need 100% to pass.'}
+            ? 'All correct. Your next level is now unlocking.'
+            : lastResult.wrongCount + ' wrong words have been returned to review. You need 100% to pass.'}
         </p>
 
         {!lastResult.passed && attempts.count < 3 && (
-          <p style={{ fontSize: '13px', color: '#A1A1AA', marginBottom: '20px' }}>
+          <p style={{ fontSize: '13px', color: '#A1A1AA', margin: '0 0 18px' }}>
             Attempts remaining today: {3 - attempts.count}
           </p>
         )}
 
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
           {!lastResult.passed && attempts.count < 3 && (
-            <button
-              onClick={() => { setPhase('intro'); loadStatus() }}
-              style={ghostBtn}
-            >
+            <GhostButton onClick={() => { setPhase('intro'); loadStatus() }} icon={RotateCcw}>
               Try again
-            </button>
+            </GhostButton>
           )}
-          <button onClick={onBack} style={primaryBtn(accentHex)}>
-            Back home
-          </button>
         </div>
       </div>
+    </Shell>
+  )
+}
+
+function StateIcon({ icon: Icon, accentHex }) {
+  return (
+    <div style={{
+      width: '68px',
+      height: '68px',
+      borderRadius: '22px',
+      background: accentHex + '10',
+      border: '1px solid ' + accentHex + '20',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      margin: '0 auto',
+    }}>
+      <Icon size={34} strokeWidth={1.75} color={accentHex} />
     </div>
   )
 }
 
-const center = { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FAFAF8' }
-
-const primaryBtn = (accent) => ({
-  flex: 1, padding: '13px 24px', borderRadius: '12px',
-  border: 'none', background: accent, color: '#fff',
-  fontSize: '15px', fontWeight: 600, cursor: 'pointer',
-  fontFamily: 'Inter, sans-serif',
-})
-
-const ghostBtn = {
-  flex: 1, padding: '13px 24px', borderRadius: '12px',
-  border: '1px solid #E7E5E4', background: '#fff', color: '#71717A',
-  fontSize: '15px', fontWeight: 500, cursor: 'pointer',
-  fontFamily: 'Inter, sans-serif',
+const centerPanelStyle = {
+  minHeight: '68vh',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  textAlign: 'center',
 }
 
-const backBtn = {
-  background: 'none', border: 'none', color: '#71717A',
-  cursor: 'pointer', fontSize: '14px', padding: 0,
+const titleStyle = {
+  color: '#18181B',
+  fontSize: '26px',
+  fontWeight: 850,
+  lineHeight: 1.15,
+  margin: '18px 0 8px',
 }
-const endQuizBtn = {
-  padding: '8px 12px',
-  borderRadius: '10px',
-  border: '1px solid #FECACA',
-  background: '#FEF2F2',
-  color: '#DC2626',
-  fontSize: '13px',
-  fontWeight: 600,
-  fontFamily: 'Inter, sans-serif',
+
+const bodyTextStyle = {
+  color: '#71717A',
+  fontSize: '15px',
+  lineHeight: 1.65,
+  margin: '0 0 24px',
+  maxWidth: '520px',
+}
+
+const cardStyle = {
+  background: '#FFFFFF',
+  border: '1px solid #E7E5E4',
+  borderRadius: '22px',
+  padding: '24px',
+  boxShadow: '0 10px 32px rgba(24,24,27,0.055)',
 }

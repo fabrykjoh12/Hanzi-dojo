@@ -264,7 +264,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     minHeight: '100vh',
     position: 'relative',
     overflow: 'hidden',
-    padding: '34px 32px 42px',
+    padding: '20px 32px 36px',
     background: 'linear-gradient(180deg, #FBFBF9 0%, #FAFAF8 100%)',
   }
 
@@ -336,7 +336,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
 
       {saveError && (
         <div style={{
-          maxWidth: '620px', margin: '0 auto 18px',
+          maxWidth: '680px', margin: '0 auto 18px',
           background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626',
           padding: '14px 18px', borderRadius: '16px', fontSize: '13px', lineHeight: 1.5,
         }}>
@@ -345,23 +345,23 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
         </div>
       )}
 
-      <div style={{ maxWidth: '620px', margin: '0 auto 26px' }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '18px' }}>
+      <div style={{ maxWidth: '680px', margin: '0 auto 14px' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '10px' }}>
           <IconButton icon={ArrowLeft} label="Exit" onClick={onBack} />
         </div>
 
-        <div style={{ textAlign: 'center', minWidth: 0, marginBottom: '18px' }}>
+        <div style={{ textAlign: 'center', minWidth: 0, marginBottom: '12px' }}>
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
-            color: accentHex, fontSize: '13px', fontWeight: 750, marginBottom: '8px',
+            color: accentHex, fontSize: '13px', fontWeight: 750, marginBottom: '6px',
           }}>
             <Layers size={17} strokeWidth={1.8} color={accentHex} />
             {langChars} flashcards
           </div>
-          <h1 style={{ fontSize: '30px', color: '#18181B', fontWeight: 780, lineHeight: 1.1 }}>
+          <h1 style={{ fontSize: '28px', color: '#18181B', fontWeight: 780, lineHeight: 1.1 }}>
             Study session
           </h1>
-          <div style={{ color: '#71717A', fontSize: '13px', fontWeight: 550, marginTop: '6px' }}>
+          <div style={{ color: '#71717A', fontSize: '13px', fontWeight: 550, marginTop: '5px' }}>
             {systemLabel} · {levelLabel}
           </div>
         </div>
@@ -374,7 +374,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
       </div>
 
       {isJapanese && (
-        <div style={{ maxWidth: '620px', margin: '0 auto 18px', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ maxWidth: '680px', margin: '0 auto 14px', display: 'flex', justifyContent: 'center' }}>
           <IconButton
             icon={BookOpenCheck}
             label={showFurigana ? 'Furigana on' : 'Furigana off'}
@@ -387,13 +387,13 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
       )}
 
       <div style={{
-        maxWidth: '620px', margin: '0 auto',
+        maxWidth: '680px', margin: '0 auto',
         display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', justifyItems: 'center',
       }}>
         <div
           onClick={() => !flipped && setFlipped(true)}
           style={{
-            width: '100%', maxWidth: '620px', minHeight: '430px',
+            width: '100%', maxWidth: '680px', minHeight: '420px',
             background: 'linear-gradient(180deg, #FFFFFF 0%, #FFFDFC 100%)',
             border: '1px solid #E7E5E4', borderRadius: '26px',
             boxShadow: '0 24px 70px rgba(24,24,27,0.08)',
@@ -508,7 +508,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
           </div>
         </div>
 
-        <div style={{ width: '100%', maxWidth: '620px', marginTop: '20px' }}>
+        <div style={{ width: '100%', maxWidth: '680px', marginTop: '14px' }}>
           {!flipped ? (
             <PrimaryButton onClick={() => setFlipped(true)} icon={Eye}>
               Show answer
