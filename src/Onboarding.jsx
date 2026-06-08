@@ -46,7 +46,7 @@ export default function Onboarding({ session, onComplete }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, padding: '24px' }}>
       <div style={{ width: '100%', maxWidth: '440px' }}>
 
         {/* Progress dots */}

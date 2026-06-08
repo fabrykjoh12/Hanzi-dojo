@@ -11,6 +11,7 @@ import Profile from './Profile'
 import YouTube from './YouTube'
 import LanguageSwitcher from './LanguageSwitcher'
 import Sidebar from './Sidebar'
+import Background from './Background'
 import Home from './Home'
 import Settings from './Settings'
 
@@ -86,10 +87,22 @@ export default function App() {
     )
   }
 
-  if (!session) return <Auth />
+  if (!session) {
+    return (
+      <>
+        <Background language="chinese" />
+        <Auth />
+      </>
+    )
+  }
 
   if (!profile || !track) {
-    return <Onboarding session={session} onComplete={() => loadProfile(session.user.id)} />
+    return (
+      <>
+        <Background language="chinese" />
+        <Onboarding session={session} onComplete={() => loadProfile(session.user.id)} />
+      </>
+    )
   }
 
   // ── Content for the selected view ─────────────────────────────────────────
@@ -175,10 +188,14 @@ export default function App() {
   return (
     <div style={{
       display: 'flex', minHeight: '100vh', alignItems: 'stretch',
+      position: 'relative',
       background: 'linear-gradient(180deg, #FBFBF9 0%, #FAFAF8 100%)',
     }}>
-      <Sidebar view={view} onNavigate={navigate} onLogout={handleLogout} />
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <Background language={profile.active_language} />
+      <div style={{ position: 'relative', zIndex: 10 }}>
+        <Sidebar view={view} onNavigate={navigate} onLogout={handleLogout} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
         {content}
       </div>
     </div>

@@ -39,7 +39,8 @@ export default function Auth() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#ffffff',
+      position: 'relative',
+      zIndex: 1,
       padding: '24px',
     }}>
       <div style={{ width: '100%', maxWidth: '380px' }}>
