@@ -3,9 +3,7 @@ import {
   Home, Layers, GraduationCap, PenLine, BookOpen, Play,
   User, Settings, Globe, LogOut, ChevronsLeft, ChevronsRight,
 } from 'lucide-react'
-// Placeholder logo lives at src/assets/logo.svg. Drop the real logo at
-// src/assets/logo.png (or .svg) and update this import to use it.
-import logo from './assets/logo.svg'
+import logo from './assets/Hanzi-logo.png'
 
 // Neutral sage green used for active-state pill (see CLAUDE.md redesign spec)
 const SAGE_BG = '#E7EDE4'
@@ -94,14 +92,13 @@ export default function Sidebar({ view, onNavigate, onLogout }) {
       <div style={{
         display: 'flex', alignItems: 'center',
         justifyContent: collapsed ? 'center' : 'space-between',
-        gap: '8px', padding: '4px 8px 22px',
+        gap: '8px', padding: collapsed ? '4px 0 22px' : '4px 8px 22px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-          {/* Placeholder until logo.png is dropped in at src/assets/logo.png */}
           <img
             src={logo}
             alt="Hanzi-dojo logo"
-            style={{ width: '32px', height: '32px', objectFit: 'contain', flexShrink: 0 }}
+            style={{ width: collapsed ? '62px' : '44px', height: collapsed ? '62px' : '44px', objectFit: 'contain', flexShrink: 0 }}
           />
           {!collapsed && (
             <span style={{

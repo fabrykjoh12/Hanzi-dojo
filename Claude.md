@@ -336,6 +336,7 @@ Commit before and after every meaningful session. Update this file when features
 ## 23. Recently changed (review before building on top)
 
 Most recent first:
+- **Three focused fixes:** Writing.jsx answer matching now strips parenthetical context and accepts any comma/slash-separated meaning variant (e.g. "they (objects)" accepts "they", "still, also" accepts "still"); removed the Exit/Back buttons from Test.jsx's locked, out-of-attempts, intro, and results states (sidebar nav makes them redundant — "End quiz" during an active session stays); tightened Study.jsx flashcard layout (less top padding, tighter header spacing, wider card at 680px, grade buttons closer to the card).
 - **Icon polish:** swapped emoji-as-UI-icons for `lucide-react` across home feature tiles and Profile/Stories/Test/Study/Writing (see Stack note). Layout/colors otherwise unchanged. Content emoji (flags, celebration glyphs) left as-is.
 - **HSK 1 stories:** added 25 frequency-tiered stories + `story_vocab` links (see Content seeded). Replaced an earlier short-draft set.
 
