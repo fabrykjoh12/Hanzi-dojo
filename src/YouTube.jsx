@@ -129,7 +129,6 @@ export default function YouTube({ profile, track, onBack }) {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#FAFAF8',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -142,7 +141,7 @@ export default function YouTube({ profile, track, onBack }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FAFAF8' }}>
+    <div style={{ minHeight: '100vh' }}>
       <div style={{ maxWidth: '860px', margin: '0 auto', padding: '40px 24px 60px' }}>
         <button
           onClick={onBack}

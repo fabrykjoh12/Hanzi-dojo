@@ -142,6 +142,7 @@ src/testLogic.js         getTestStatus, getAttemptsToday, checkAnswer.
 src/homeCounts.js        getHomeCounts — new/learn/due/easy card counts.
 src/utils.js             getLevelLabel(language, system, level), getSystemLabel(system).
 src/supabase.js          Supabase client.
+src/Background.jsx       Fixed full-page themed background art (faint, behind app shell + auth/onboarding).
 generate-audio.mjs       TTS audio generation script (not in app bundle).
 ```
 
@@ -336,6 +337,7 @@ Commit before and after every meaningful session. Update this file when features
 ## 23. Recently changed (review before building on top)
 
 Most recent first:
+- **Themed background art:** added `src/Background.jsx` — a fixed, full-page background image (`bg-chinese.png` / `bg-japanese.png` in `src/assets/`) rendered at low opacity (0.4 — the source art is itself very pale, so 0.08 was invisible) behind the app shell, Auth, and Onboarding screens. Crossfades between language themes. Sidebar updated to a semi-transparent frosted look (`rgba(255,255,255,0.85)` + blur) so it stays readable over the art. Visual-only; no logic changed.
 - **Three focused fixes:** Writing.jsx answer matching now strips parenthetical context and accepts any comma/slash-separated meaning variant (e.g. "they (objects)" accepts "they", "still, also" accepts "still"); removed the Exit/Back buttons from Test.jsx's locked, out-of-attempts, intro, and results states (sidebar nav makes them redundant — "End quiz" during an active session stays); tightened Study.jsx flashcard layout (less top padding, tighter header spacing, wider card at 680px, grade buttons closer to the card).
 - **Icon polish:** swapped emoji-as-UI-icons for `lucide-react` across home feature tiles and Profile/Stories/Test/Study/Writing (see Stack note). Layout/colors otherwise unchanged. Content emoji (flags, celebration glyphs) left as-is.
 - **HSK 1 stories:** added 25 frequency-tiered stories + `story_vocab` links (see Content seeded). Replaced an earlier short-draft set.

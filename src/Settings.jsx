@@ -5,30 +5,18 @@ function getLanguageDetails(profile) {
   return {
     accentHex: isJapanese ? '#2E3A6E' : '#B83A24',
     fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
-    faintCharacter: isJapanese ? '設' : '设',
   }
 }
 
 export default function Settings({ profile }) {
-  const { accentHex, fontFamily, faintCharacter } = getLanguageDetails(profile)
+  const { accentHex, fontFamily } = getLanguageDetails(profile)
 
   return (
     <div style={{
       minHeight: '100vh',
       position: 'relative',
       overflow: 'hidden',
-      background: 'linear-gradient(180deg, #FBFBF9 0%, #FAFAF8 100%)',
     }}>
-      <div style={{
-        position: 'fixed', right: '-44px', bottom: '-118px',
-        fontSize: '360px', lineHeight: 1,
-        color: accentHex, opacity: 0.035,
-        fontFamily, fontWeight: 700,
-        pointerEvents: 'none', userSelect: 'none',
-      }}>
-        {faintCharacter}
-      </div>
-
       <div style={{ maxWidth: '760px', margin: '0 auto', padding: '52px 32px 72px', position: 'relative', zIndex: 1 }}>
         <div style={{
           width: '68px', height: '68px', borderRadius: '22px',

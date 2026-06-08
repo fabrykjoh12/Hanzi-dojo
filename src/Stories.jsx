@@ -84,7 +84,6 @@ function getLanguageDetails(profile, track) {
     languageName: isJapanese ? 'Japanese' : 'Chinese',
     nativeName: isJapanese ? '日本語' : '中文',
     fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
-    faintCharacter: isJapanese ? '読' : '读',
   }
 }
 
@@ -93,22 +92,7 @@ function pageShell() {
     minHeight: '100vh',
     position: 'relative',
     overflow: 'hidden',
-    background: 'linear-gradient(180deg, #FBFBF9 0%, #FAFAF8 100%)',
   }
-}
-
-function BackgroundCharacter({ character, fontFamily, color }) {
-  return (
-    <div style={{
-      position: 'fixed', right: '-42px', bottom: '-112px',
-      fontSize: '360px', lineHeight: 1,
-      color, opacity: 0.035,
-      fontFamily, fontWeight: 700,
-      pointerEvents: 'none', userSelect: 'none', zIndex: 0,
-    }}>
-      {character}
-    </div>
-  )
 }
 
 function IconButton({ icon: Icon, label, onClick }) {
@@ -287,7 +271,7 @@ function WordToken({ word, vocab, userCards, accentHex, fontFamily, onAdd }) {
 }
 
 function StoryReader({ story, vocabMap, userCards, setUserCards, session, track, languageDetails, onBack }) {
-  const { isJapanese, accentHex, fontFamily, faintCharacter } = languageDetails
+  const { isJapanese, accentHex, fontFamily } = languageDetails
 
   const addToDeck = async (vocabItem) => {
     const { error } = await supabase.from('cards').insert({
@@ -325,8 +309,7 @@ function StoryReader({ story, vocabMap, userCards, setUserCards, session, track,
   const progressPct = storyVocab.length > 0 ? masteredCount / storyVocab.length * 100 : 0
 
   return (
-    <div style={pageShell(accentHex, fontFamily, faintCharacter)}>
-      <BackgroundCharacter character={faintCharacter} fontFamily={fontFamily} color={accentHex} />
+    <div style={pageShell()}>
       <div style={{ maxWidth: '1160px', margin: '0 auto', padding: '38px 32px 72px', position: 'relative', zIndex: 1 }}>
         <IconButton icon={ArrowLeft} label="Back to stories" onClick={onBack} />
 
@@ -539,7 +522,7 @@ export default function Stories({ session, profile, track, onBack }) {
   const [loading, setLoading] = useState(true)
 
   const languageDetails = getLanguageDetails(profile, track)
-  const { accentHex, languageName, nativeName, fontFamily, faintCharacter } = languageDetails
+  const { accentHex, languageName, nativeName, fontFamily } = languageDetails
   const totalWords = track.language === 'japanese' ? 400 : 300
 
   async function loadData() {
@@ -591,8 +574,7 @@ export default function Stories({ session, profile, track, onBack }) {
 
   if (loading) {
     return (
-      <div style={pageShell(accentHex, fontFamily, faintCharacter)}>
-        <BackgroundCharacter character={faintCharacter} fontFamily={fontFamily} color={accentHex} />
+      <div style={pageShell()}>
         <div style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{
             width: '88px', height: '88px', borderRadius: '26px',
@@ -625,8 +607,7 @@ export default function Stories({ session, profile, track, onBack }) {
   if (view === 'list' && selectedCategory) {
     const catStories = stories.filter(s => s.tier === selectedCategory.tier)
     return (
-      <div style={pageShell(accentHex, fontFamily, faintCharacter)}>
-        <BackgroundCharacter character={faintCharacter} fontFamily={fontFamily} color={accentHex} />
+      <div style={pageShell()}>
         <div style={{ maxWidth: '860px', margin: '0 auto', padding: '38px 32px 72px', position: 'relative', zIndex: 1 }}>
           <IconButton icon={ArrowLeft} label="Back" onClick={() => setView('categories')} />
 
@@ -667,8 +648,7 @@ export default function Stories({ session, profile, track, onBack }) {
   }
 
   return (
-    <div style={pageShell(accentHex, fontFamily, faintCharacter)}>
-      <BackgroundCharacter character={faintCharacter} fontFamily={fontFamily} color={accentHex} />
+    <div style={pageShell()}>
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '38px 32px 72px', position: 'relative', zIndex: 1 }}>
         <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
 

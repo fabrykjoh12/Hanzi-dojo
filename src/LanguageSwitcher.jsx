@@ -14,7 +14,6 @@ const LANGUAGES = [
     levelLabel: (l) => 'HSK ' + l,
     systemLabel: 'HSK 3.0',
     accent: '#B83A24',
-    faintCharacter: '语',
   },
   {
     code: 'japanese',
@@ -26,27 +25,16 @@ const LANGUAGES = [
     levelLabel: (l) => getLevelLabel('japanese', 'jlpt', l),
     systemLabel: 'JLPT',
     accent: '#2E3A6E',
-    faintCharacter: '語',
   },
 ]
 
-function Shell({ children, accentHex, faintCharacter }) {
+function Shell({ children, accentHex }) {
   return (
     <div style={{
       minHeight: '100vh',
       position: 'relative',
       overflow: 'hidden',
-      background: 'linear-gradient(180deg, #FBFBF9 0%, #FAFAF8 100%)',
     }}>
-      <div style={{
-        position: 'fixed', right: '-44px', bottom: '-118px',
-        fontSize: '360px', lineHeight: 1,
-        color: accentHex, opacity: 0.035,
-        fontFamily: "'Noto Sans SC'", fontWeight: 700,
-        pointerEvents: 'none', userSelect: 'none',
-      }}>
-        {faintCharacter}
-      </div>
       <div style={{ maxWidth: '760px', margin: '0 auto', padding: '38px 32px 72px', position: 'relative', zIndex: 1 }}>
         {children}
       </div>
@@ -354,7 +342,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
 
   if (loading) {
     return (
-      <Shell accentHex={activeLang.accent} faintCharacter={activeLang.faintCharacter}>
+      <Shell accentHex={activeLang.accent}>
         <div style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{
             width: '88px', height: '88px', borderRadius: '26px',
@@ -372,7 +360,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
   if (starting) {
     const lang = LANGUAGES.find(l => l.code === starting)
     return (
-      <Shell accentHex={lang.accent} faintCharacter={lang.faintCharacter}>
+      <Shell accentHex={lang.accent}>
         <IconButton icon={ArrowLeft} label="Back" onClick={() => { setStarting(null); setSelectedLevel(null) }} />
 
         <div style={{ margin: '32px 0 28px', textAlign: 'center' }}>
@@ -450,7 +438,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
   }
 
   return (
-    <Shell accentHex={activeLang.accent} faintCharacter={activeLang.faintCharacter}>
+    <Shell accentHex={activeLang.accent}>
       <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
 
       <div style={{ margin: '32px 0 26px' }}>

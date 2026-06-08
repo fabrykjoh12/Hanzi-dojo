@@ -56,27 +56,16 @@ function getLanguageDetails(profile, track) {
     accentHex: isJapanese ? '#2E3A6E' : '#B83A24',
     fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
     languageName: isJapanese ? 'Japanese' : 'Chinese',
-    faintCharacter: isJapanese ? '験' : '考',
   }
 }
 
-function Shell({ children, accentHex, fontFamily, faintCharacter, narrow }) {
+function Shell({ children, accentHex, fontFamily, narrow }) {
   return (
     <div style={{
       minHeight: '100vh',
       position: 'relative',
       overflow: 'hidden',
-      background: 'linear-gradient(180deg, #FBFBF9 0%, #FAFAF8 100%)',
     }}>
-      <div style={{
-        position: 'fixed', right: '-36px', bottom: '-120px',
-        fontSize: '360px', lineHeight: 1,
-        color: accentHex, opacity: 0.035,
-        fontFamily, fontWeight: 700,
-        pointerEvents: 'none', userSelect: 'none',
-      }}>
-        {faintCharacter}
-      </div>
       <div style={{
         maxWidth: narrow ? '620px' : '760px',
         margin: '0 auto',
@@ -225,7 +214,7 @@ export default function Test({ session, profile, track, onBack }) {
   const [saving, setSaving] = useState(false)
   const [lastResult, setLastResult] = useState(null)
 
-  const { accentHex, fontFamily, languageName, faintCharacter } = getLanguageDetails(profile, track)
+  const { accentHex, fontFamily, languageName } = getLanguageDetails(profile, track)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
 
   async function loadStatus() {
@@ -378,7 +367,7 @@ export default function Test({ session, profile, track, onBack }) {
 
   if (loading) {
     return (
-      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+      <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
         <div style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{
             width: '88px', height: '88px', borderRadius: '26px',
@@ -397,7 +386,7 @@ export default function Test({ session, profile, track, onBack }) {
     const unlockPct = Math.round(TEST_UNLOCK_MASTERY_PCT * 100)
     const masteryPct = status.totalWords > 0 ? Math.round(status.masteredPct * 100) : 0
     return (
-      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+      <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
         <div style={centerPanelStyle}>
           <StateIcon icon={Lock} accentHex="#A1A1AA" />
           <h1 style={titleStyle}>{levelLabel} Test locked</h1>
@@ -422,7 +411,7 @@ export default function Test({ session, profile, track, onBack }) {
 
   if (phase === 'intro' && attempts.count >= 3 && !attempts.passed) {
     return (
-      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+      <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
         <div style={centerPanelStyle}>
           <StateIcon icon={Clock} accentHex="#D97706" />
           <h1 style={titleStyle}>No attempts left today</h1>
@@ -434,7 +423,7 @@ export default function Test({ session, profile, track, onBack }) {
 
   if (phase === 'intro') {
     return (
-      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+      <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
         <div style={{ textAlign: 'center', margin: '34px 0 28px' }}>
           <StateIcon icon={GraduationCap} accentHex={accentHex} />
           <div style={{ color: accentHex, fontSize: '13px', fontWeight: 800, marginTop: '18px' }}>
@@ -478,7 +467,7 @@ export default function Test({ session, profile, track, onBack }) {
   if (phase === 'testing') {
     if (saving) {
       return (
-        <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+        <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
           <div style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <StateIcon icon={GraduationCap} accentHex={accentHex} />
           </div>
@@ -491,7 +480,7 @@ export default function Test({ session, profile, track, onBack }) {
     const progress = questions.length > 0 ? Math.round((index / questions.length) * 100) : 0
 
     return (
-      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+      <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', gap: '12px' }}>
           <div>
             <div style={{ fontSize: '13px', color: '#71717A', marginBottom: '8px' }}>
@@ -628,7 +617,7 @@ export default function Test({ session, profile, track, onBack }) {
   }
 
   return (
-    <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+    <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
       <div style={centerPanelStyle}>
         <StateIcon icon={lastResult.passed ? CheckCircle2 : RotateCcw} accentHex={lastResult.passed ? '#2F9E6D' : '#D97706'} />
         <h1 style={{ ...titleStyle, fontSize: '32px' }}>

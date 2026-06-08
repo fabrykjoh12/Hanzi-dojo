@@ -14,27 +14,16 @@ function getLanguageDetails(profile) {
     accentHex: isJapanese ? '#2E3A6E' : '#B83A24',
     fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
     nativeName: isJapanese ? '日本語' : '中文',
-    faintCharacter: isJapanese ? '人' : '人',
   }
 }
 
-function Shell({ children, accentHex, fontFamily, faintCharacter }) {
+function Shell({ children, accentHex, fontFamily }) {
   return (
     <div style={{
       minHeight: '100vh',
       position: 'relative',
       overflow: 'hidden',
-      background: 'linear-gradient(180deg, #FBFBF9 0%, #FAFAF8 100%)',
     }}>
-      <div style={{
-        position: 'fixed', right: '-48px', bottom: '-128px',
-        fontSize: '360px', lineHeight: 1,
-        color: accentHex, opacity: 0.035,
-        fontFamily, fontWeight: 700,
-        pointerEvents: 'none', userSelect: 'none',
-      }}>
-        {faintCharacter}
-      </div>
       <div style={{ maxWidth: '820px', margin: '0 auto', padding: '38px 32px 72px', position: 'relative', zIndex: 1 }}>
         {children}
       </div>
@@ -77,7 +66,7 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
   const [resetError, setResetError] = useState('')
   const [loading, setLoading] = useState(true)
 
-  const { accentHex, fontFamily, nativeName, faintCharacter } = getLanguageDetails(profile)
+  const { accentHex, fontFamily, nativeName } = getLanguageDetails(profile)
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
 
@@ -160,7 +149,7 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
     : 0
 
   return (
-    <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter}>
+    <Shell accentHex={accentHex} fontFamily={fontFamily}>
       <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
 
       <div style={{ margin: '30px 0 28px', display: 'flex', alignItems: 'center', gap: '20px' }}>

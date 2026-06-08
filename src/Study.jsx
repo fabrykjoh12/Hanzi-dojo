@@ -265,10 +265,8 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     position: 'relative',
     overflow: 'hidden',
     padding: '20px 32px 36px',
-    background: 'linear-gradient(180deg, #FBFBF9 0%, #FAFAF8 100%)',
   }
 
-  const faintCharacter = isJapanese ? '読' : '学'
 
   if (loading) {
     return (
@@ -290,7 +288,6 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   if (done || queue.length === 0) {
     return (
       <div style={pageShell}>
-        <div style={backgroundCharacter(faintCharacter, langFont)}>{faintCharacter}</div>
         <div style={{ maxWidth: '760px', margin: '0 auto', minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{
             width: '100%', maxWidth: '520px', textAlign: 'center',
@@ -332,8 +329,6 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
 
   return (
     <div style={pageShell}>
-      <div style={backgroundCharacter(faintCharacter, langFont)}>{faintCharacter}</div>
-
       {saveError && (
         <div style={{
           maxWidth: '680px', margin: '0 auto 18px',
@@ -540,19 +535,4 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
       </div>
     </div>
   )
-}
-
-function backgroundCharacter(character, fontFamily) {
-  return {
-    position: 'absolute',
-    right: '-24px',
-    bottom: '-96px',
-    fontSize: '360px',
-    lineHeight: 1,
-    color: '#18181B',
-    opacity: 0.035,
-    fontFamily,
-    pointerEvents: 'none',
-    userSelect: 'none',
-  }
 }

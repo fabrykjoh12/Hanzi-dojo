@@ -142,27 +142,16 @@ function getLanguageDetails(track) {
     accentHex: isJapanese ? '#2E3A6E' : '#B83A24',
     languageName: isJapanese ? 'Japanese' : 'Chinese',
     fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
-    faintCharacter: isJapanese ? '書' : '写',
   }
 }
 
-function Shell({ children, accentHex, fontFamily, faintCharacter, narrow }) {
+function Shell({ children, accentHex, fontFamily, narrow }) {
   return (
     <div style={{
       minHeight: '100vh',
       position: 'relative',
       overflow: 'hidden',
-      background: 'linear-gradient(180deg, #FBFBF9 0%, #FAFAF8 100%)',
     }}>
-      <div style={{
-        position: 'fixed', right: '-42px', bottom: '-118px',
-        fontSize: '360px', lineHeight: 1,
-        color: accentHex, opacity: 0.035,
-        fontFamily, fontWeight: 700,
-        pointerEvents: 'none', userSelect: 'none',
-      }}>
-        {faintCharacter}
-      </div>
       <div style={{
         maxWidth: narrow ? '640px' : '860px',
         margin: '0 auto',
@@ -369,7 +358,7 @@ export default function Writing({ session, track, onBack }) {
   const [roundStats, setRoundStats] = useState({ correct: 0, missed: 0 })
   const [loading, setLoading] = useState(true)
 
-  const { isJapanese, accentHex, languageName, fontFamily, faintCharacter } = getLanguageDetails(track)
+  const { isJapanese, accentHex, languageName, fontFamily } = getLanguageDetails(track)
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(track.language, track.system, track.current_level)
   const current = queue[index]
@@ -531,7 +520,7 @@ export default function Writing({ session, track, onBack }) {
 
   if (loading) {
     return (
-      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+      <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
         <div style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <StateIcon icon={PenLine} accentHex={accentHex} />
         </div>
@@ -541,7 +530,7 @@ export default function Writing({ session, track, onBack }) {
 
   if (studiedWords.length === 0) {
     return (
-      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+      <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
         <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
         <div style={centerPanelStyle}>
           <StateIcon icon={PenLine} accentHex={accentHex} />
@@ -555,7 +544,7 @@ export default function Writing({ session, track, onBack }) {
 
   if (phase === 'stats') {
     return (
-      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter}>
+      <Shell accentHex={accentHex} fontFamily={fontFamily}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
           <IconButton icon={ArrowLeft} label="Back" onClick={() => setPhase('start')} />
           <div style={{ fontSize: '13px', color: '#71717A', fontWeight: 650 }}>{systemLabel} · {levelLabel}</div>
@@ -593,7 +582,7 @@ export default function Writing({ session, track, onBack }) {
 
   if (phase === 'start') {
     return (
-      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+      <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
         <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
 
         <div style={{ margin: '32px 0 24px', textAlign: 'center' }}>
@@ -648,7 +637,7 @@ export default function Writing({ session, track, onBack }) {
 
   if (index >= queue.length) {
     return (
-      <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+      <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
         <div style={centerPanelStyle}>
           <StateIcon icon={CheckCircle2} accentHex="#2F9E6D" />
           <h1 style={titleStyle}>Writing round complete</h1>
@@ -673,7 +662,7 @@ export default function Writing({ session, track, onBack }) {
   const nextMultiplier = getMultiplier(getSafeStreak(currentStat) + 1)
 
   return (
-    <Shell accentHex={accentHex} fontFamily={fontFamily} faintCharacter={faintCharacter} narrow>
+    <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '22px' }}>
         <IconButton icon={ArrowLeft} label="Exit" onClick={() => setPhase('start')} />
         <div style={{ fontSize: '13px', color: '#71717A', fontWeight: 650 }}>
