@@ -734,7 +734,6 @@ function StoryReader({ story, vocabMap, userCards, setUserCards, session, track,
             border: '1px solid #E8E6E3',
             borderRadius: '22px',
             boxShadow: '0 4px 28px rgba(24,24,27,0.07)',
-            overflow: 'hidden',
           }}>
             {lines.map((line, lineIdx) => {
               const { speaker } = splitSpeakerLine(line)
