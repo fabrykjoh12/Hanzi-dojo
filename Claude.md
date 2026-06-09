@@ -4,72 +4,469 @@ Read this entire file before making any change. It describes not just *what* the
 
 ---
 
-## 1. What this project is
+## 1. Project purpose and philosophy
 
-Hanzi-dojo is a free language learning web app built around two things that actually work: **SRS flashcards** and **immersion** (reading and listening in the target language). It currently supports Chinese (HSK 3.0) and Japanese (JLPT), with the goal of expanding to many more languages over time.
+Hanzi-dojo is a free language learning web app built around the two methods that actually work: **SRS flashcards** and **immersion** (reading and listening in the target language). It currently supports Chinese (HSK 3.0) and Japanese (JLPT).
 
-It is being built by a solo non-coder directing AI assistants. Code must therefore be simple, readable, and safe to change.
+**Why it exists:** Most language apps don't teach the language. Duolingo wastes time on gamified loops; immersion works but finding content at your level is hard. Hanzi-dojo combines SRS with level-matched immersion content so the user never has to hunt for comprehensible material — the right-level stories come to them.
 
----
+**The daily learning loop (the UX should reinforce this order):**
+1. Flashcards — daily SRS review and new cards
+2. Stories — reading immersion matched to learned vocabulary
+3. YouTube — curated listening immersion for the level
+4. Writing practice — active recall and output
 
-## 2. Why it exists (the motivation)
+**Core philosophy:**
+- **No shortcuts.** Progression is gated on genuine mastery (FSRS stability), not self-graded buttons.
+- **Mastery before progression.** The level test requires 100% correct. Stories unlock on a lower "learned" bar to encourage early immersion.
+- **Calm, not pressured.** No dark patterns, no guilt, no fake urgency. Streaks gently encourage consistency.
+- **Frequency-first vocabulary.** Most useful words first, ordered by real-world frequency.
+- **Community mission.** Stay free. If monetisation is ever needed, prefer donations or letting YouTubers pay a small fee for featured placement — never paywalls on core features.
 
-Most language apps don't actually teach you the language. The creator has tried learning many languages and hit the same wall every time:
-
-- **Duolingo and similar apps waste your time** — you spend hours on useless words and gamified loops that don't make the language stick.
-- **The methods that actually work are SRS flashcards (like Anki) and immersion** — reading and listening to real content in the target language.
-- **But immersion has a hard problem: finding content at your level.** Beginners can't read native material, and hunting for "comprehensible input" is tedious and discouraging.
-
-Hanzi-dojo solves this by combining both proven methods in one place, and by **giving the user stories matched to how many words they actually know** — so they never have to go looking for content they can understand. The app brings the right-level content to them.
-
-The mission: build a genuinely useful, free language app that the community can rely on — not another gamified time-sink.
-
----
-
-## 3. The two core features (everything serves these)
-
-1. **SRS flashcards** — spaced repetition to build a vocabulary base efficiently.
-2. **Immersion** — reading stories, listening to audio, watching curated videos, and writing practice, all matched to the user's current level.
-
-Every feature decision should strengthen one of these two pillars. If a proposed feature doesn't make flashcards or immersion better, question whether it belongs.
+**Long-term vision:** Expand to Spanish and more languages. Build a content engine that produces level-matched stories from the user's known words (the "immersion differentiator"). Architecture must stay language-agnostic.
 
 ---
 
-## 4. Who it's for
+## 2. Current state — what is built and working
 
-Everyone. Complete beginners through to people who already study and want better tools. The app should never assume prior knowledge or technical skill. It is for the global language-learning community, and it should stay accessible to all.
-
----
-
-## 5. The intended daily learning loop
-
-This is the experience the app should guide the user through, in this order:
-
-1. **Daily flashcards** — review due cards and learn the day's new words (SRS).
-2. **Read stories** — immersion with content matched to the words they now know.
-3. **Watch YouTube videos** — curated listening immersion for their level.
-4. **Writing exercises** — active recall and output practice.
-
-Flashcards come first (they build the base); immersion follows (it makes the words stick in context). The home screen and navigation should gently reinforce this flow without forcing it.
-
----
-
-## 6. Learning philosophy (this shapes every UX decision)
-
-- **No shortcuts.** The user should never be able to fake progress just to advance. Progression is gated on genuine mastery. Mastery is now defined by FSRS **stability** (time-proven retention across real reviews, not a self-graded Easy click) — it cannot be faked. Stories unlock on the easier "learned" bar; the level test unlocks on the stricter stability-based mastery bar.
-- **Mastery before progression.** A user moves to the next level because they've learned the current one, not because they clicked through it.
-- **Calm, not pressured.** The design should make the user feel calm and focused, never anxious or manipulated. No dark patterns, no guilt, no fake urgency. Streaks exist to gently encourage consistency, not to punish.
-- **Frequency-first vocabulary.** Words are ordered by real-world frequency and usefulness. Learn the most useful words first.
-- **HSK/JLPT as a base, not the point.** The app suits exam prep, but its primary purpose is **general learning and real fluency**. The official word lists are simply a sensible, well-researched order in which to learn vocabulary first.
-
-When unsure about a feature, ask: *does this help the user genuinely learn, while keeping them calm and free of shortcuts?*
+- **Auth:** Email/password sign-up and log-in, Google OAuth. Full-page bg-login.png background at 0.35 opacity, white card with logo + "Hanzi-dojo" wordmark. Tab toggle (Log in / Sign up) with vermillion underline. "Free forever. No credit card." tagline below the card.
+- **Onboarding:** 3-step flow: language selection (side-by-side Chinese/Japanese cards) → level selection (grid of level buttons, Continue disabled until selection) → daily goal (5/10/15 new cards/day). Creates profiles row and language_tracks row.
+- **FSRS flashcards:** Study screen with New/Learn/Due queue pills, 86px character display, furigana toggle for Japanese (ruby text), four grade buttons (Again/Hard/Good/Easy) with FSRS-previewed interval labels, audio autoplay on flip, example sentence on card back (sentence + reading/pinyin line + translation), word highlighted in accent color.
+- **Level test:** 30 multiple-choice questions, mix of E→target and target→E. Unlocks at 90% mastery (FSRS stability ≥ 21 days). 100% required to pass. 3 attempts per day, tracked via `test_attempts` table with `attempt_date` column. Wrong answers apply FSRS Again grade. Passing inserts a `level_unlocks` row and advances `language_tracks.current_level`. "End quiz" button ends active quiz early (unanswered = wrong). Japanese options show reading below the word.
+- **Stories:** 3 tiers (First Steps / Growing / Fluent), unlocked by learnedCount. Category list → story list → reader. Reader has: character guide with pinyin pills (popover on click), word tooltips (click shows word/reading/meaning/status + "Add to deck" for unstarted words), story progress sidebar, "words to review" sidebar list. Text segmented with greedy longest-match algorithm against vocab map.
+- **Writing practice:** Active recall for words already studied in flashcards. Round sizes 10/15/20/30. Three modes: Mixed / English→target / target→English. Accepts: hanzi, pinyin (tone-insensitive), hiragana, kanji, romaji (via wanakana) for Japanese. XP system (0–100 XP per word, Lv 1–5), correct-streak multiplier (up to 3×). Stats screen shows best/weakest words. Wrong answers set `is_easy = false` and make the card due immediately.
+- **YouTube recommendations:** Grid of video cards with thumbnails (from YouTube API URL pattern), channel name, notes. Loads for current language/system/level.
+- **Profile:** Stats (streak, freezes, learned count, mastered count + mastery % progress bar), daily goal editor (5/10/15 options), last-studied date, reset progress button (two-step confirm → calls RPC), sign out.
+- **Language switcher:** Shows both languages with track progress. Active language has level-replay grid (click any level to jump back). Not-started languages show dashed "Start" card → level picker → creates track. Level replay and language switch both call `profiles.update({ active_language })`.
+- **Settings:** Placeholder page (Appearance / Reminders / Account safety panels) — no real functionality yet. Actual settings (daily goal, reset) live in Profile.
+- **Sidebar:** Persistent left nav. Main items: Home, Flashcards, Test, Writing, Stories, YouTube. Bottom items: Profile, Settings, Language, Log out. Collapses to 64px icon-only rail with hover tooltips; expanded width 232px. Active item uses sage green pill (#E7EDE4 bg, #4F6047 text). Semi-transparent frosted glass (rgba(255,255,255,0.85) + blur(6px)).
+- **Themed backgrounds:** Background.jsx — fixed full-page image at opacity 0.4, crossfades between bg-chinese.png and bg-japanese.png on language change, z-index 0 behind everything.
+- **Mastery system:** Two tiers — "learned" (card has ever reached review/relearning state, `learned` column = true) and "mastered" (FSRS stability ≥ 21 days). Constants in src/mastery.js.
+- **Streak system:** Updates on first grade of the day. Gap of 1 day = streak increment. Gap > 1 day = uses a freeze if available, else resets to 1. Streak freezes given back on progress reset.
+- **InfoTip:** Reusable `?` tooltip component used next to "Mastery" labels in Home, Test locked screen, and Profile. Shows explanatory text in a floating panel on click, closes on outside click.
+- **Home screen:** Language header (native script + level badge + streak pill), Today card (New/Learning/Due counts + mastery progress bar + InfoTip), "Start studying" sage green CTA, "Keep the flow going" row of 4 flow steps (Flashcards → Stories → Videos → Writing).
 
 ---
 
-## 7. Design system & feel
+## 3. Stack
 
-The app should feel **premium, minimal, and calm** — like a quiet, well-made study space. Never childish, gamified, or cluttered.
+| Tool | Version / Notes |
+|------|----------------|
+| React | 19.x |
+| Vite | 8.x (OXC parser — strict, no complex regex in JSX) |
+| react-router-dom | 7.x (not currently used for routing — App.jsx uses view state) |
+| Supabase JS | ^2.107 |
+| ts-fsrs | ^5.4.1 — FSRS v5 scheduling |
+| wanakana | ^5.3.1 — Japanese romaji conversion in Writing.jsx |
+| lucide-react | ^1.17 — all UI icons |
+| @anthropic-ai/sdk | dev only — not in app bundle |
+| Tailwind CSS | installed but **not used** in JSX; all styling is inline style objects |
+| Node | 24 |
+| Language | Plain JSX, no TypeScript |
 
+**Supabase project:**
+- Project ID: `bvqvturqupbggxaeihvi`
+- URL: `https://bvqvturqupbggxaeihvi.supabase.co`
+- Storage bucket: `audio` (public) — all TTS MP3 files
+
+---
+
+## 4. All source files — what each one does
+
+```
+src/App.jsx
+  Root component. Manages auth session, profile, track, counts state. Renders
+  Auth or Onboarding when unauthenticated/unconfigured, otherwise renders the
+  app shell (Background + Sidebar + current view). All view switching goes
+  through the navigate() function, which also refreshes counts.
+
+src/Auth.jsx
+  Login/signup screen. Email+password and Google OAuth via Supabase. Tab toggle
+  between Log in and Sign up. Uses bg-login.png background and Hanzi-logo.png.
+  No form tag — submit via button onClick.
+
+src/Onboarding.jsx
+  3-step flow: language → level → daily goal. Creates profiles and
+  language_tracks rows on finish. Continue button disabled until selection made.
+
+src/Study.jsx
+  Flashcard session. Builds a queue (due-learning first, then new up to daily
+  limit, then due-review). Flip card to reveal reading, meaning, and example
+  sentence. Four FSRS grade buttons (Again/Hard/Good/Easy) with interval
+  previews. Audio autoplay on flip. Furigana toggle for Japanese (ruby element).
+  Saves full FSRS state to cards table on every grade.
+
+src/Test.jsx
+  Level test. Generates 30 mixed E↔target multiple-choice questions. Unlocks at
+  90% mastery. 3 attempts/day. 100% required to pass. Wrong answers apply FSRS
+  Again grade. Passing inserts level_unlocks row and advances language_tracks.
+  "End quiz" ends early (unanswered = wrong). Shows reading below Japanese options.
+
+src/Stories.jsx
+  Story immersion. Three-tier category screen → story list → story reader.
+  Reader segments text with greedy longest-match against vocab map, renders
+  clickable WordToken components for known words (tooltip: word/reading/meaning/
+  status/add-to-deck). CharacterGuide shows named characters with pinyin pills.
+  Sidebar shows story progress and words-to-review list.
+
+src/Writing.jsx
+  Writing practice. Active recall for words the user has studied. Round sizes
+  10/15/20/30. Three question modes (mixed, E→target, target→E). Accepts hanzi,
+  pinyin (tone-insensitive), hiragana, kanji, or romaji for Japanese.
+  XP system (0–100 per word), streak multiplier (1–3×). Stats screen with
+  best/weakest word breakdown.
+
+src/Profile.jsx
+  User stats page. Shows streak, freezes, learned count, mastered count, mastery
+  progress bar. Daily goal editor (5/10/15). Last studied date. Reset progress
+  button (two-step confirm → calls reset_current_language_progress RPC). Sign out.
+
+src/Home.jsx
+  Dashboard. Language identity header (native script + level + streak pill).
+  Today card with New/Learning/Due counts and mastery progress bar + InfoTip.
+  "Start studying" sage green CTA. "Keep the flow going" row of feature shortcuts.
+
+src/YouTube.jsx
+  Curated video grid for current language/system/level. Loads from
+  youtube_recommendations table. Thumbnail from YouTube video ID. Opens in new tab.
+
+src/LanguageSwitcher.jsx
+  Language management. Shows both languages (Chinese + Japanese). Active language
+  shows level-replay grid. Not-started shows dashed "Start" card. Supports
+  switching active language, replaying a level, starting a new language.
+
+src/Sidebar.jsx
+  Persistent left navigation. Collapses to 64px icon-only rail with hover tooltips.
+  Expanded at 232px. Active state: sage green pill (#E7EDE4 bg, #4F6047 text).
+  Semi-transparent frosted glass (rgba(255,255,255,0.85) + blur).
+
+src/Background.jsx
+  Fixed full-page background image at opacity 0.4. Crossfades between
+  bg-chinese.png and bg-japanese.png on language change (500ms fade).
+  z-index 0, pointer-events none, aria-hidden.
+
+src/Settings.jsx
+  Placeholder settings page. Shows three preview panels (Appearance, Reminders,
+  Account safety) with no real functionality. Actual settings live in Profile.
+
+src/InfoTip.jsx
+  Reusable "?" tooltip button. Shows a fixed-position panel on click with
+  explanatory text. Closes on outside click. Used next to mastery labels.
+
+src/srs.js
+  FSRS v5 scheduling via ts-fsrs. Exports schedule(card, grade) → {updates, stay,
+  gap} and previewLabels(card) → {0,1,2,3: string}. Grades 0-3 map to
+  Again/Hard/Good/Easy. State stored as text (new/learning/review/relearning).
+  is_easy = true only on grade 3. learning_step column repurposed for FSRS
+  learning_steps index.
+
+src/mastery.js
+  Mastery constants and helpers. MASTERY_STABILITY_DAYS = 21, TEST_UNLOCK_MASTERY_PCT
+  = 0.9. Exports isLearned(card), isMastered(card), countMastery(cards, total).
+
+src/homeCounts.js
+  getHomeCounts(userId, track, dailyNewCards) — loads vocabulary and cards for the
+  current level, computes newCount/learnCount/dueCount/easyCount/totalWords/
+  learnedCount/masteredCount/masteredPct. Called by App.jsx on every navigate().
+
+src/testLogic.js
+  getTestStatus(userId, track) — returns masteredCount/totalWords/masteredPct/
+  testUnlocked/levelPassed. getAttemptsToday(userId, track) — returns count and
+  passed. normalizePinyin(str) — strips tone marks for comparison. checkAnswer() —
+  accepts exact character match, reading_plain match, or normalized pinyin.
+
+src/streak.js
+  updateStreak(profile) — increments streak on first study of the day, uses a
+  freeze if gap > 1 day, resets to 1 if no freeze available. Persists to profiles.
+
+src/utils.js
+  getLevelLabel(language, system, level) — returns 'HSK N' or 'N5 · Part 1' etc.
+  getSystemLabel(system) — 'HSK 3.0' or 'JLPT'. getLevelRange(language, system).
+  getNextLevel(language, system, level). normalizeRecallInput(value) — strips
+  punctuation/spaces/CJK punctuation for recall matching. isRecallMatch().
+
+src/supabase.js
+  Exports the Supabase client created from VITE_SUPABASE_URL and
+  VITE_SUPABASE_ANON_KEY environment variables.
+
+src/main.jsx
+  React 19 root. Mounts App into #root.
+
+src/index.css
+  Global reset (box-sizing, margin, padding). Imports Google Fonts (Noto Sans SC,
+  Noto Sans JP, Inter). Tailwind base/components/utilities directives (Tailwind
+  is installed but not used in JSX). Defines CSS variables:
+  --chinese-accent, --chinese-accent-dark, --japanese-accent, --japanese-accent-dark.
+
+src/App.css
+  Empty / minimal (not currently used).
+```
+
+**Assets:**
+```
+src/assets/Hanzi-logo.png    — enso brushstroke circle, vermillion; used in sidebar and auth/onboarding
+src/assets/bg-chinese.png    — ink-wash mountain background for Chinese mode
+src/assets/bg-japanese.png   — Mt Fuji / cherry blossom background for Japanese mode
+src/assets/bg-login.png      — background for auth and onboarding screens (opacity 0.35)
+src/assets/logo.svg          — placeholder SVG (not used, replaced by Hanzi-logo.png)
+src/assets/hero.png          — unused asset
+```
+
+---
+
+## 5. Database schema
+
+```sql
+profiles
+  id uuid PRIMARY KEY (= auth.users.id)
+  active_language text          -- 'chinese' | 'japanese'
+  daily_new_cards int           -- default 10
+  streak int                    -- consecutive study days
+  streak_freezes int            -- available freeze tokens
+  last_studied_on date
+  display_name text
+
+language_tracks
+  id uuid PRIMARY KEY
+  user_id uuid REFERENCES profiles
+  language text                 -- 'chinese' | 'japanese'
+  system text                   -- 'hsk_3' | 'jlpt'
+  current_level int
+  is_active boolean
+
+vocabulary
+  id uuid PRIMARY KEY
+  language text
+  system text
+  level int
+  sort_order int                -- frequency rank within level
+  word text                     -- the target-language word/character
+  reading text                  -- pinyin with tones (Chinese) or hiragana (Japanese)
+  reading_plain text            -- pinyin without tones (Chinese); unused for Japanese
+  meaning text                  -- English meaning, may include comma/slash variants
+  audio_path text               -- path within the 'audio' storage bucket
+  is_active boolean
+  example_sentence text         -- example sentence in target language
+  example_reading text          -- reading/pinyin for the example sentence
+                                   NOTE: Study.jsx reads v.example_pinyin (wrong name —
+                                   should be v.example_reading). Pinyin line never renders.
+                                   Known bug; fix by renaming reference in Study.jsx.
+  example_translation text      -- English translation of example sentence
+
+cards
+  id uuid PRIMARY KEY
+  user_id uuid REFERENCES profiles
+  vocab_id uuid REFERENCES vocabulary
+  state text CHECK IN ('new','learning','review','relearning')
+  is_easy boolean               -- set true only on Easy grade; no longer gates anything
+  learned boolean               -- true once card first reaches review/relearning state
+  due_at timestamptz
+  -- FSRS columns (from 20260606120000_add_fsrs_columns.sql):
+  stability real                -- FSRS stability (days until 90% recall)
+  difficulty real               -- FSRS difficulty
+  reps int
+  lapses int
+  last_review timestamptz
+  scheduled_days int
+  elapsed_days int
+  learning_step int             -- repurposed: FSRS learning_steps index (step within learning phase)
+  -- Legacy SM-2 columns (unused, kept in place):
+  ease_factor real
+  created_at timestamptz
+
+review_logs
+  id uuid PRIMARY KEY
+  user_id uuid REFERENCES profiles
+  vocab_id uuid REFERENCES vocabulary
+  grade int
+  reviewed_at timestamptz
+
+daily_activity
+  user_id uuid
+  date date
+  cards_reviewed int
+  new_cards_introduced int
+
+test_attempts
+  id uuid PRIMARY KEY
+  user_id uuid REFERENCES profiles
+  language text
+  system text
+  level int
+  score real
+  total_questions int
+  correct_count int
+  passed boolean
+  attempt_date date             -- used by getAttemptsToday() for daily attempt limit
+
+test_answers
+  id uuid PRIMARY KEY
+  user_id uuid REFERENCES profiles
+  attempt_id uuid REFERENCES test_attempts
+  vocab_id uuid REFERENCES vocabulary
+  user_answer text
+  correct_answer text
+  was_correct boolean
+
+level_unlocks
+  user_id uuid REFERENCES profiles
+  language text
+  system text
+  level int
+  PRIMARY KEY (user_id, language, system, level)
+
+stories
+  id uuid PRIMARY KEY
+  language text
+  system text
+  level int
+  tier int                      -- 1, 2, or 3
+  tier_min_words int            -- minimum learned words to unlock this tier
+  story_number int
+  title text
+  english_summary text
+  content text                  -- plain text; newline-separated lines; speaker lines use '：' or ':'
+  is_published boolean
+
+story_vocab
+  story_id uuid REFERENCES stories
+  vocab_id uuid REFERENCES vocabulary
+
+youtube_recommendations
+  id uuid PRIMARY KEY
+  language text
+  system text
+  level int
+  sort_order int
+  title text
+  channel_name text
+  video_url text
+  notes text
+  is_published boolean
+
+writing_stats
+  user_id uuid REFERENCES profiles    -- PRIMARY KEY (user_id, vocab_id)
+  vocab_id uuid REFERENCES vocabulary
+  xp int CHECK (0..100)
+  attempts int
+  correct_count int
+  missed_count int
+  correct_streak int
+  last_practiced_at timestamptz
+  created_at timestamptz
+  updated_at timestamptz
+```
+
+**Supabase RPC:**
+```
+reset_current_language_progress(p_language, p_system, p_reset_streak=true)
+  Deletes cards, review_logs, writing_stats, test_attempts, level_unlocks for the
+  language. If p_reset_streak=true, also deletes daily_activity and resets
+  profiles.streak=0, streak_freezes=1, last_studied_on=null. Security definer,
+  callable only by authenticated users on their own data.
+```
+
+---
+
+## 6. Language and level system
+
+**Chinese:** `language='chinese'`, `system='hsk_3'`, levels 1–9, displayed as 'HSK 1' through 'HSK 9'.
+
+**Japanese:** `language='japanese'`, `system='jlpt'`, levels 1–6:
+
+| DB level | Display (getLevelLabel) |
+|----------|------------------------|
+| 1 | N5 · Part 1 |
+| 2 | N5 · Part 2 |
+| 3 | N4 |
+| 4 | N3 |
+| 5 | N2 |
+| 6 | N1 |
+
+JLPT advances: 1 → 2 → 3 → 4 → 5 → 6. Always use `getLevelLabel(language, system, level)` from utils.js for display. Never hardcode labels.
+
+`getSystemLabel('hsk_3')` returns `'HSK 3.0'`. `getSystemLabel('jlpt')` returns `'JLPT'`.
+
+---
+
+## 7. Content seeded
+
+**Chinese HSK 3.0 Level 1:**
+- 300 words, frequency-ordered (sort_order 1–300), all with audio at `chinese/hsk_3/level_1/`
+- Example sentences on all 300 words (example_sentence, example_reading, example_translation columns)
+- 23 stories published across 3 tiers (story_number 2–26 approximately; story_number 1 was the original hand-written story)
+- 3 YouTube recommendations
+- Audio voice: `cmn-CN-Chirp3-HD-Aoede`, languageCode `cmn-CN`
+
+**Japanese JLPT:**
+- Level 1 (N5 Part 1): 400 words with audio at `japanese/jlpt/level_1/`
+- Level 2 (N5 Part 2): 402 words with audio at `japanese/jlpt/level_2/`
+- Audio voice: `ja-JP-Neural2-B`, languageCode `ja-JP`, TTS input = `v.reading` (hiragana — never v.word)
+- No stories yet; no YouTube recommendations yet
+- No example sentences yet
+
+**Story tier structure (Chinese HSK 1, defined in Stories.jsx CATEGORIES):**
+
+| Tier | Label | Unlocks at (learnedCount) | Vocabulary used |
+|------|-------|--------------------------|-----------------|
+| 1 | First Steps | 30 learned words | First 100 most common words |
+| 2 | Growing | 100 learned words | First 200 most common words |
+| 3 | Fluent | 200 learned words | All 300 HSK 1 words |
+
+Character names used in stories (known to CharacterGuide):
+李明 (Lǐ Míng), 小花 (Xiǎo Huā), 大力 (Dà Lì), 小明 (Xiǎo Míng), 小红 (Xiǎo Hóng),
+妈妈 (Māma), 路人 (Lù rén), 大毛 (Dà Máo), 服务员 (Fúwùyuán), 收银员 (Shōuyínyuán), 店员 (Diànyuán)
+
+---
+
+## 8. Mastery system
+
+Defined in `src/mastery.js`:
+
+```js
+MASTERY_STABILITY_DAYS = 21   // stability threshold for "mastered"
+TEST_UNLOCK_MASTERY_PCT = 0.9  // test unlocks at 90% mastered
+```
+
+| Tier | Definition | Used for |
+|------|-----------|---------|
+| **Learned** | `learned` column = true, OR state is 'review' or 'relearning' | Story tier unlocks (lower bar = early immersion) |
+| **Mastered** | FSRS `stability >= 21 days` | Test unlock and mastery progress display |
+
+`is_easy` is kept (set on Easy grade) but no longer gates anything. Stability is the gate.
+
+Wrong test answers apply FSRS Again grade, dropping stability below 21 and making the word due for review again. This is intentional.
+
+---
+
+## 9. SRS / FSRS (src/srs.js)
+
+Uses **ts-fsrs v5**. Configuration: `request_retention: 0.9`, `enable_fuzz: true`.
+
+**Grade mapping:**
+- 0 = Again (Rating.Again)
+- 1 = Hard (Rating.Hard)
+- 2 = Good (Rating.Good)
+- 3 = Easy (Rating.Easy) — also sets `is_easy = true`
+
+**Card fields persisted to DB:**
+`state`, `stability`, `difficulty`, `reps`, `lapses`, `last_review`, `scheduled_days`, `elapsed_days`, `learning_step` (= FSRS learning_steps index), `due_at`, `is_easy`, `learned`
+
+**State values:** `'new'` / `'learning'` / `'review'` / `'relearning'` (text strings in DB)
+
+**Scheduling behavior:**
+- Learning/relearning cards: `due_at = now()` (always appears immediately on next load); re-inserted into session queue at position `gap` (2–20 minutes expressed as queue position)
+- Review cards: `due_at` = real FSRS computed future date
+
+**`learned` column:** Set to `true` when card first reaches review or relearning state. Never set false.
+
+**Legacy columns** `ease_factor` and the old SM-2 `learning_step` semantics are kept in the DB but not written to by the new FSRS code. `learning_step` is repurposed to store FSRS `learning_steps` (the step index within the learning phase sequence).
+
+---
+
+## 10. Design system
+
+**Color palette:**
 ```
 Background:       #FAFAF8
 Cards:            #FFFFFF
@@ -81,287 +478,167 @@ Japanese accent:  #2E3A6E   (indigo)
 Success:          #2F9E6D
 Warning:          #D97706
 Error:            #DC2626
+Sage (nav active bg):   #E7EDE4
+Sage (nav active text): #4F6047
+Sage (CTA button):      #6E8466
+Sage dark (CTA hover):  #5C7155
 ```
 
-- Fonts: Inter (UI), Noto Sans SC (Chinese), Noto Sans JP (Japanese)
-- Each language has its own accent color; the whole UI shifts accent when the active language changes
-- Card hover: `translateY(-2px)`, stronger shadow, accent border, 180ms transition
-- Subtle faint background character (学 / 読) at ~0.035 opacity on key screens for atmosphere
-- CSS variables in index.css: `--chinese-accent`, `--japanese-accent`
-- Generous spacing, clear hierarchy, restraint over decoration
+**CSS variables** (defined in index.css):
+`--chinese-accent: #B83A24`, `--chinese-accent-dark: #922E1C`, `--japanese-accent: #2E3A6E`, `--japanese-accent-dark: #1E2750`
+
+**Fonts:** Inter (UI), Noto Sans SC (Chinese), Noto Sans JP (Japanese) — loaded from Google Fonts in index.css.
+
+**Card interaction:** `translateY(-2px)`, stronger shadow, accent border on hover, ~180ms transition.
+
+**Per-language accent:** The whole UI shifts accent color when the active language changes. Components derive `accentHex` from `profile.active_language`.
+
+**Background images:** Fixed full-page at opacity **0.4** (Background.jsx `TARGET_OPACITY = 0.4`). Auth/Onboarding use bg-login.png at opacity 0.35.
+
+**Sidebar:** Semi-transparent frosted glass `rgba(255,255,255,0.85)` + `backdropFilter: blur(6px)`. Expanded 232px, collapsed 64px. Collapse state is session-only (useState — not persisted).
+
+**Navigation active state:** Sage green pill background (`#E7EDE4`) and text (`#4F6047`) — neutral, not accent-colored. Icons at 19px, strokeWidth 1.85.
+
+**lucide-react icons:** All functional UI icons. Content emoji (🇨🇳 🇯🇵 flags) are fine as content. Never use emoji as icons.
 
 ---
 
-## 8. Roadmap & future direction
-
-**Languages:** Start with Chinese and Japanese. Expand to Spanish next, then more over time. Architecture should stay language-agnostic — anything hardcoded to Chinese/Japanese is a future problem. Always store and branch on `language` + `system`, and route display through `getLevelLabel`.
-
-**Monetisation (future, kept minimal):** The app should stay as free as possible. If monetisation becomes necessary, prefer community-friendly models: community funding/donations, or letting YouTubers pay a small fee to be featured in the curated video section. Never compromise the learning experience with ads or paywalls on core features.
-
-**Immersion content engine:** The long-term differentiator is content matched to the user's known words. Currently stories are hand-written per level. The future direction is a system that produces/curates level-appropriate stories so users always have understandable content. Keep this in mind when touching the stories system.
-
----
-
-## 9. Stack
-
-- React 19 + Vite (OXC parser — strict syntax, see Coding rules)
-- Supabase (Postgres + auth + storage)
-- Tailwind installed but mostly unused — styling is inline style objects
-- `lucide-react` for UI icons — do not use emoji as functional icons (they render inconsistently across devices). Render icons inside the existing container, stroke colored with the active-language `accentHex`, size ~18–22px, strokeWidth ~1.75. Emoji that are actual content (e.g. 🇨🇳/🇯🇵 flags, celebration glyphs) are fine.
-- Node 24, plain JSX, no TypeScript
-- GitHub: fabrykjoh12/Hanzi-dojo (private)
-- Google Cloud TTS for audio generation
-
----
-
-## 10. Supabase project
-
-- Project ID: bvqvturqupbggxaeihvi
-- URL: https://bvqvturqupbggxaeihvi.supabase.co
-- Storage bucket: `audio` (public) — all TTS audio
-- Auth: email/password + Google OAuth
-
----
-
-## 11. Important files
+## 11. Assets
 
 ```
-src/App.jsx              Main router. Loads profile + track. Renders all views.
-src/Auth.jsx             Login and signup (email + Google OAuth).
-src/Onboarding.jsx       3-step onboarding: language → level → daily goal.
-src/Study.jsx            Flashcard screen. SM-2 scheduling. Audio. Japanese controls.
-src/Test.jsx             Multiple choice level test. E→C and C→E mix. End quiz button.
-src/Stories.jsx          Story categories → list → reader with word tooltips + sidebar.
-src/Writing.jsx          Writing practice. Typed recall mode.
-src/Profile.jsx          User stats, daily goal editor, reset progress.
-src/YouTube.jsx          Curated video cards per level.
-src/LanguageSwitcher.jsx Switch languages. Start new language. Level replay.
-src/srs.js               SM-2 spaced repetition scheduler (FSRS upgrade planned).
-src/streak.js            Daily streak logic.
-src/testLogic.js         getTestStatus, getAttemptsToday, checkAnswer.
-src/homeCounts.js        getHomeCounts — new/learn/due/easy card counts.
-src/utils.js             getLevelLabel(language, system, level), getSystemLabel(system).
-src/supabase.js          Supabase client.
-src/Background.jsx       Fixed full-page themed background art (faint, behind app shell + auth/onboarding).
-generate-audio.mjs       TTS audio generation script (not in app bundle).
+src/assets/Hanzi-logo.png   enso brushstroke circle, vermillion on white
+src/assets/bg-chinese.png   ink-wash mountain landscape (Chinese mode background)
+src/assets/bg-japanese.png  Mt Fuji / cherry blossom (Japanese mode background)
+src/assets/bg-login.png     background for auth and onboarding screens
+src/assets/logo.svg         placeholder SVG (not used)
+src/assets/hero.png         unused
 ```
 
 ---
 
-## 12. Database schema
+## 12. Coding rules (mandatory — OXC parser is strict)
 
-```sql
-profiles           id, active_language, daily_new_cards, streak, streak_freezes,
-                   last_studied_on, display_name
-
-language_tracks    user_id, language, system, current_level, is_active
-
-vocabulary         id, language, system, level, sort_order, word, reading,
-                   reading_plain, meaning, audio_path, is_active
-
-cards              user_id, vocab_id, state, is_easy, learned, ease_factor,
-                   interval_days, due_at, learning_step
-
-review_logs        user_id, vocab_id, grade, reviewed_at
-
-daily_activity     user_id, date, cards_reviewed, new_cards_introduced
-
-test_attempts      user_id, language, system, level, score, total_questions,
-                   correct_count, passed
-
-test_answers       user_id, attempt_id, vocab_id, user_answer, correct_answer,
-                   was_correct
-
-level_unlocks      user_id, language, system, level
-
-stories            id, language, system, level, tier, tier_min_words,
-                   story_number, title, english_summary, content, is_published
-
-story_vocab        story_id, vocab_id
-
-youtube_recommendations  id, language, system, level, sort_order, title,
-                         channel_name, video_url, notes, is_published
-```
+1. **No TypeScript.** No type annotations anywhere.
+2. **No complex regex literals** — OXC breaks on them. Use `string.indexOf()`, `string.split()`, `string.includes()` instead.
+3. **All styling is inline style objects.** No Tailwind classes in JSX. Tailwind is installed but only used via directives in index.css.
+4. **No template literals inside JSX style props** where string concatenation works. (`'url(' + src + ')'` not `` `url(${src})` `` in style values.)
+5. **No localStorage or sessionStorage** — they don't work in this environment.
+6. **No `<form>` tags** — use `onClick`/`onChange` handlers on inputs and buttons.
+7. **Keep components flat and simple.** Extract subcomponents only when they are clearly reused or the file would be unreadable.
+8. **`npm run build` must pass before any commit.** The build is the source of truth.
+9. **Prefer full file replacements** for large changes when the user applies changes by hand.
 
 ---
 
-## 13. Language & level system
+## 13. Supabase safety rules
 
-**Chinese:** language='chinese', system='hsk_3', levels 1–9
-
-**Japanese:** language='japanese', system='jlpt', levels 1–6:
-
-| DB level | Display |
-|----------|---------|
-| 1 | N5 · Part 1 |
-| 2 | N5 · Part 2 |
-| 3 | N4 |
-| 4 | N3 |
-| 5 | N2 |
-| 6 | N1 |
-
-JLPT advances 1 → 2 → 3 → 4 → 5 → 6 (N5-1 → N5-2 → N4 → N3 → N2 → N1).
-Always use `getLevelLabel(language, system, level)` for display. Never hardcode labels.
+1. **Never delete vocabulary rows** — set `is_active = false` instead.
+2. **Never delete cards** without explicit user request. Reset goes through the `reset_current_language_progress` RPC only.
+3. **Never set `is_easy = true`** outside the SRS grading flow (`srs.js` + `Study.jsx`). Other features may set it `false` (Writing.jsx does this on wrong answer), never `true`.
+4. **RLS is enabled** — all frontend queries run as the authenticated user. Never put the service key in frontend code.
+5. **`level_unlocks` is append-only** except during a full progress reset via the RPC.
+6. **Progress reset must go through the RPC** — never raw-delete across tables from the frontend.
+7. **The audio bucket is public** — never store user data there.
 
 ---
 
-## 14. Content currently seeded
-
-- **Chinese HSK 3.0 Level 1:** 300 words, frequency-ordered, with audio at `chinese/hsk_3/level_1/`
-- **Japanese JLPT N5:** 802 words total — 400 in level 1 (most frequent), 402 in level 2 — with audio at `japanese/jlpt/level_1/` and `japanese/jlpt/level_2/`
-- **Stories:** Chinese HSK Level 1 — the original hand-written story (story_number 1) plus 25 frequency-tiered stories (story_number 2–26, 5 per tier across tiers 1–5). Each story is verified to use only words within its tier's `sort_order` ceiling (T1≤50, T2≤100, T3≤150, T4≤200, T5≤300); `story_vocab` link rows populated for all. Only proper nouns used: 李明, 小花.
-- **YouTube:** 3 recommendations for Chinese HSK Level 1
-- Audio voices: Chinese `cmn-CN-Chirp3-HD-Aoede`, Japanese `ja-JP-Neural2-B` (use hiragana `reading` as TTS input)
-
----
-
-## 15. Mastery model (src/mastery.js)
-
-Two tiers, two purposes — constants defined in `src/mastery.js`:
-
-| Tier | Definition | Used for |
-|------|-----------|---------|
-| **Learned** | Card has graduated to `review` state at least once (`learned` column = true) | Story unlocks — low bar encourages early immersion |
-| **Mastered** | FSRS `stability >= 21 days` — algorithm predicts recall 3+ weeks out | Test unlock and mastery progress display |
-
-- `MASTERY_STABILITY_DAYS = 21` — stability threshold for mastery
-- `TEST_UNLOCK_MASTERY_PCT = 0.9` — test unlocks at 90% of level words mastered
-- `is_easy` is no longer a gate for anything. The column is kept (Easy grade still sets it), but no unlock logic reads it.
-
----
-
-## 15b. SRS rules (src/srs.js)
-
-FSRS-based, using the ts-fsrs library. Default request_retention is 0.9 (90%), using library default parameters.
-
-- Each card tracks: stability, difficulty, reps, lapses, last_review, scheduled_days, elapsed_days
-- Four ratings: Again, Hard, Good, Easy (mapped to FSRS Rating enum)
-- State is stored as text ('new' / 'learning' / 'review' / 'relearning') mapped from the FSRS numeric State enum
-- Every grade persists the full FSRS card state to the database immediately, including learning/relearning cards
-- The in-session queue reinsertion (re-showing a learning card minutes later) is separate from the database save — the database due_at is the source of truth
-- `is_easy = true` is set only on the Easy rating — never set it true anywhere else
-- `is_easy` currently gates story unlocks and test unlock (this will move to stability-based mastery in a future phase)
-
----
-
-## 16. Test rules
-
-- 30 multiple choice questions, mix of E→C and C→E
-- **100% required to pass** (no shortcuts — this is intentional, see philosophy)
-- 3 attempts per day
-- Test **unlocks** when ≥ 90% of the level's active words are mastered (stability ≥ 21 days)
-- Wrong answers: FSRS "Again" grade is applied to the card, dropping stability below mastery threshold and making it due again — the word genuinely returns to review
-- Passing inserts a `level_unlocks` row and advances the track
-- Test unlock is **permanent** once passed — it does not re-lock if cards later become due
-
----
-
-## 17. Story unlock thresholds
-
-Unlock based on `learnedCount` (cards that have graduated to `review` state, i.e. `learned = true`) for the current level. This is intentionally a lower bar than mastery — immersion should start early so words stick in context.
-
-| Tier | Unlock at |
-|------|-----------|
-| 1 — First Steps | 20 words |
-| 2 — Growing | 50 words |
-| 3 — Comfortable | 100 words |
-| 4 — Confident | 200 words |
-| 5 — Complete | 300 words |
-
----
-
-## 18. Coding rules (mandatory — OXC parser is strict)
-
-1. No TypeScript. No type annotations.
-2. No complex regex literals — they break the OXC parser. Use string methods.
-3. All styling is inline style objects. No Tailwind classes in JSX.
-4. No template literals inside JSX style props where concatenation works.
-5. No localStorage or sessionStorage — they don't work in this environment.
-6. No `<form>` tags — use onClick/onChange handlers.
-7. Keep components flat and simple.
-8. Always run `npm run build` before committing. The build is the source of truth.
-9. Prefer full file replacements over find-and-replace fragments when the user applies changes by hand.
-
----
-
-## 19. Supabase safety rules
-
-1. Never delete vocabulary rows — set `is_active = false` instead.
-2. Never delete cards without explicit user request — reset goes through the RPC only.
-3. Never set `is_easy = true` outside the SRS grading flow (srs.js + Study.jsx). Other features may set it false, never true.
-4. RLS is enabled — all queries run as the authenticated user. Never put the service key in frontend code.
-5. `level_unlocks` is effectively append-only except in a full progress reset.
-6. Progress reset must go through the `reset_current_language_progress` RPC — never raw-delete across tables from the frontend.
-7. The audio bucket is public — never store user data there.
-
----
-
-## 20. Environment files
+## 14. Environment
 
 ```
-.env          Vite app vars (VITE_ prefix). Gitignored.
-.env.script   Server-side vars for generate-audio.mjs. Gitignored.
+.env            Vite app vars (VITE_ prefix). Gitignored.
+                Required: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_GOOGLE_TTS_KEY
+
+.env.script     Server-side vars for generate-audio.mjs. Gitignored.
+                Required: SUPABASE_URL, SUPABASE_SERVICE_KEY, GOOGLE_TTS_KEY
 ```
 
-`.env` requires: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_GOOGLE_TTS_KEY
-`.env.script` requires: SUPABASE_URL, SUPABASE_SERVICE_KEY, GOOGLE_TTS_KEY
+### generate-audio.mjs
+
+Script for generating TTS audio and uploading to Supabase storage. Not in app bundle.
+
+**Run with:**
+```bash
+node --env-file=.env.script generate-audio.mjs
+```
+
+**Current state:** Hardcoded for Japanese JLPT (queries `language='japanese'`, `system='jlpt'`). Iterates all JLPT vocabulary, calls Google TTS with `v.reading` (hiragana) as input, uploads MP3 to the path stored in `v.audio_path`.
+
+**Voice config:**
+- Japanese: `languageCode: 'ja-JP'`, `name: 'ja-JP-Neural2-B'`, input = `v.reading` (hiragana — NEVER `v.word`)
+- Chinese (to reconfigure): `languageCode: 'cmn-CN'`, `name: 'cmn-CN-Chirp3-HD-Aoede'`, input = `v.word`
+
+To regenerate without skipping existing files: delete the storage folder in Supabase first, then run the script (`upsert: true` is set but storage skips existing paths by default in some configurations).
 
 ---
 
-## 21. Verification & GitHub workflow
+## 15. Slash commands available
+
+These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
+
+| Command | File | What it does |
+|---------|------|-------------|
+| `/unlock` | commands/unlock.md | Marks all cards for the current testing level as Easy so the full unlocked state can be previewed |
+| `/reset` | commands/reset.md | Resets language progress back to level 1 to test the fresh-start experience |
+| `/ship` | commands/ship.md | Runs `npm run build` then commits and pushes to GitHub |
+| `/audio` | commands/audio.md | Regenerates TTS audio for a vocabulary level |
+
+---
+
+## 16. Known issues
+
+**Critical bugs:**
+- **example_reading column name mismatch:** `vocabulary` table has column `example_reading` (from migration `20260605231000_add_vocabulary_examples.sql`), but `Study.jsx` reads `v.example_pinyin`. The pinyin line on flashcard example sentences never renders because the JS property name doesn't match the DB column. Fix: change `v.example_pinyin` → `v.example_reading` in Study.jsx (lines ~327, ~498).
+
+**In progress:**
+- **Japanese N5 level 1 example sentences:** Not yet populated. When added, use `example_reading` column (hiragana reading) and `example_translation`. The furigana display for Japanese examples needs a separate implementation — Study.jsx currently renders the `example_reading` line as plain text, which works for Chinese pinyin but Japanese should display it differently (or as a reading below the sentence).
+- **Japanese N5 level 2:** No example sentences yet.
+
+**Missing content:**
+- **Japanese stories:** None published. Chinese has 23 stories across 3 tiers.
+- **Japanese YouTube recommendations:** None published. Chinese HSK 1 has 3.
+- **HSK 2 vocabulary:** Not seeded. HSK 1 is complete.
+- **HSK 3–9 and JLPT N4–N1:** No vocabulary seeded. Level selection exists but shows empty study queues.
+
+**Technical debt:**
+- **Some Japanese audio mispronounces kanji.** Fix: generate-audio.mjs already uses `v.reading` (hiragana). Delete the storage folder for the level before regenerating so files are not skipped.
+- **Duplicate kanji in Japanese vocab** (何 = なん/なに, 私 = わたし/わたくし) create identical-looking test options. Plan: deactivate less-common duplicates and/or show reading in test options (reading is already shown in Test.jsx Japanese options).
+- **A few JLPT N5 level-2 entries are counter suffixes** (～グラム, ～たち) — more grammar than vocab. Review and optionally deactivate.
+- **LanguageSwitcher.jsx** still shows "Words marked Easy" in the progress display (uses `is_easy` for display), not the mastery-based count. This is a display inconsistency with the rest of the app but is not a functional bug.
+- **Mobile layout not built.** Sidebar needs to become a bottom bar on narrow screens (~768px breakpoint).
+- **Existing ESLint hook-dependency warnings** in some files — don't add new ones.
+- **Legacy DB columns** `ease_factor` and old SM-2 `learning_step` semantics are kept in the cards table but unused. Do not write to `ease_factor`.
+
+---
+
+## 17. Roadmap
+
+Priority order (most impactful first):
+
+1. **Fix example_reading column reference in Study.jsx** — `v.example_pinyin` → `v.example_reading` so Chinese pinyin lines actually render on flashcards.
+2. **Japanese example sentences:** Populate `example_sentence` / `example_reading` / `example_translation` for JLPT N5 level 1. Decide how to render Japanese example_reading (as romaji, as hiragana annotation, or as a reading below the sentence).
+3. **Japanese stories and YouTube recommendations:** At minimum one tier of stories for JLPT N5.
+4. **HSK 2 vocabulary + audio + stories:** Next Chinese level content.
+5. **Furigana on Japanese flashcard main word:** Show reading above kanji as ruby text by default (furigana toggle already exists for Study.jsx — add it to card back when word has kanji).
+6. **Mobile layout:** Sidebar → bottom navigation bar at ~768px breakpoint.
+7. **FSRS parameter tuning:** Once real user data exists, optimize parameters beyond library defaults.
+8. **Practice test mode:** Unlimited questions, no progression impact, no card state changes.
+9. **Offline support:** Service worker (post-launch).
+10. **Spanish:** Third language after Chinese and Japanese content is solid.
+
+---
+
+## 18. Verification and GitHub workflow
 
 Before committing:
 ```bash
 npm run build
 ```
-If it passes, commit:
+
+If build passes:
 ```bash
 git add .
 git commit -m "Short specific message"
 git push
 ```
-Commit before and after every meaningful session. Update this file when features are added or known issues resolved.
 
----
-
-## 22. Known issues
-
-- Some Japanese audio mispronounces kanji. Fix: send `v.reading` (hiragana) to TTS, voice `ja-JP-Neural2-B`. Delete the storage folder before regenerating so files aren't skipped.
-- Duplicate kanji in Japanese vocab (何 = なん/なに, 私 = わたし/わたくし) create identical-looking test options. Plan: deactivate less-common duplicates and/or show reading in test options.
-- A few JLPT N5 level-2 entries are counter suffixes (～グラム, ～たち) — more grammar than vocab. Review and optionally deactivate.
-- Existing ESLint hook-dependency warnings in some files — don't add new ones.
-- The cards table still has legacy SM-2 columns `ease_factor` and `learning_step` that are now unused by FSRS. Left in place intentionally; do not write to them.
-
----
-
-## 23. Recently changed (review before building on top)
-
-Most recent first:
-- **Auth and Onboarding redesign:** both screens rebuilt with a premium visual identity — full-page `bg-login.png` background at 0.35 opacity, white card (460px, 20px radius, soft shadow), logo (`Hanzi-logo.png`) + "Hanzi-dojo" wordmark at the top. Auth: tab toggle (Log in / Sign up) with vermillion underline on active tab, vermillion submit button, updated tagline "Learn a language. Grow every day.", "Free forever. No credit card." below the card. Onboarding step 1: side-by-side language cards (flag + native script + name) with Continue button disabled until a language is selected (previously auto-advanced on click). Steps 2–3 restyled to match. All Supabase logic and routing unchanged.
-- **Themed background art:** added `src/Background.jsx` — a fixed, full-page background image (`bg-chinese.png` / `bg-japanese.png` in `src/assets/`) rendered at low opacity (0.4 — the source art is itself very pale, so 0.08 was invisible) behind the app shell, Auth, and Onboarding screens. Crossfades between language themes. Sidebar updated to a semi-transparent frosted look (`rgba(255,255,255,0.85)` + blur) so it stays readable over the art. Visual-only; no logic changed.
-- **Three focused fixes:** Writing.jsx answer matching now strips parenthetical context and accepts any comma/slash-separated meaning variant (e.g. "they (objects)" accepts "they", "still, also" accepts "still"); removed the Exit/Back buttons from Test.jsx's locked, out-of-attempts, intro, and results states (sidebar nav makes them redundant — "End quiz" during an active session stays); tightened Study.jsx flashcard layout (less top padding, tighter header spacing, wider card at 680px, grade buttons closer to the card).
-- **Icon polish:** swapped emoji-as-UI-icons for `lucide-react` across home feature tiles and Profile/Stories/Test/Study/Writing (see Stack note). Layout/colors otherwise unchanged. Content emoji (flags, celebration glyphs) left as-is.
-- **HSK 1 stories:** added 25 frequency-tiered stories + `story_vocab` links (see Content seeded). Replaced an earlier short-draft set.
-
-Older (added by a Codex session — should be verified):
-- Reset progress (Profile.jsx + RPC migration — migration must be run in Supabase)
-- Level replay in LanguageSwitcher.jsx
-- Permanent test unlock via level_unlocks; removed auto-advance from App.jsx
-- Fixed JLPT progression order
-- Fixed home page new-card count (homeCounts.js — now current-level only)
-- Writing practice (Writing.jsx)
-- Japanese flashcard controls (Study.jsx — Word first / Kana first / Furigana toggle)
-
----
-
-## 24. Roadmap (not yet built)
-
-- Mastery redefinition: gate level/test unlocks on FSRS stability (genuine retention) instead of self-graded Easy. Stories stay on an easier "learned" count to encourage early immersion; the level test uses stability-based mastery at ~90% rather than 100%.
-- HSK 2 vocabulary + audio (HSK 1 now has 25 tiered stories — see Content seeded)
-- Japanese N5 stories; Japanese YouTube recommendations
-- Practice test mode (unlimited, no progression impact, no card state changes)
-- Example sentences on flashcards
-- Furigana above kanji on Japanese cards
-- Spanish (third language)
-- Level-matched story content engine (the long-term immersion differentiator)
-- Offline support (post-launch)
+Use `/ship` skill to automate this. Commit before and after every meaningful session. Update this CLAUDE.md when features are added or known issues are resolved.
