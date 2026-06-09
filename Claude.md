@@ -31,9 +31,9 @@ Hanzi-dojo is a free language learning web app built around the two methods that
 
 - **Auth:** Email/password sign-up and log-in, Google OAuth. Full-page bg-login.png background at 0.35 opacity, white card with logo + "Hanzi-dojo" wordmark. Tab toggle (Log in / Sign up) with vermillion underline. "Free forever. No credit card." tagline below the card.
 - **Onboarding:** 3-step flow: language selection (side-by-side Chinese/Japanese cards) → level selection (grid of level buttons, Continue disabled until selection) → daily goal (5/10/15 new cards/day). Creates profiles row and language_tracks row.
-- **FSRS flashcards:** Study screen with New/Learn/Due queue pills, 86px character display, furigana toggle for Japanese (ruby text), four grade buttons (Again/Hard/Good/Easy) with FSRS-previewed interval labels, audio autoplay on flip, example sentence on card back (sentence + reading/pinyin line + translation), word highlighted in accent color.
+- **FSRS flashcards:** Study screen with New/Learn/Due queue pills, 86px character display, furigana toggle for Japanese (ruby text), four grade buttons (Again/Hard/Good/Easy) with FSRS-previewed interval labels, audio autoplay on flip, example sentence on card back (sentence + reading/pinyin line + translation, with inline furigana on the target word for Japanese), word highlighted in accent color.
 - **Level test:** 30 multiple-choice questions, mix of E→target and target→E. Unlocks at 90% mastery (FSRS stability ≥ 21 days). 100% required to pass. 3 attempts per day, tracked via `test_attempts` table with `attempt_date` column. Wrong answers apply FSRS Again grade. Passing inserts a `level_unlocks` row and advances `language_tracks.current_level`. "End quiz" button ends active quiz early (unanswered = wrong). Japanese options show reading below the word.
-- **Stories:** 3 tiers (First Steps / Growing / Fluent), unlocked by learnedCount. Category list → story list → reader. Reader has: character guide with pinyin pills (popover on click), word tooltips (click shows word/reading/meaning/status + "Add to deck" for unstarted words), story progress sidebar, "words to review" sidebar list. Text segmented with greedy longest-match algorithm against vocab map.
+- **Stories:** 3 tiers (First Steps / Growing / Fluent), unlocked by learnedCount, separate category lists per language (CATEGORIES_CHINESE / CATEGORIES_JAPANESE). Category list → story list → reader. Reader is an interactive dialogue layout: StoryLine renders each line with a per-speaker color avatar and a per-line "play" button (Web Speech API TTS); clicking a word opens a VocabularyPopup (furigana on kanji, status badge, "Add to deck" for unstarted words). CharacterGuide shows named characters with reading pills (Chinese only — CHARACTER_READINGS.japanese is empty). Sticky sidebar has StoryProgressCard and ReviewWordsCard (responsive: moves below the story on screens <860px). End-of-story StoryCompletionCard links to the next story. Vocabulary for word-clickability is loaded across all levels (not just the current level), so every word in a story is underlined. A translation toggle swaps the interactive reader for an English prose view (EnglishStoryLine) using the `english_content` column — only shown when populated.
 - **Writing practice:** Active recall for words already studied in flashcards. Round sizes 10/15/20/30. Three modes: Mixed / English→target / target→English. Accepts: hanzi, pinyin (tone-insensitive), hiragana, kanji, romaji (via wanakana) for Japanese. XP system (0–100 XP per word, Lv 1–5), correct-streak multiplier (up to 3×). Stats screen shows best/weakest words. Wrong answers set `is_easy = false` and make the card due immediately.
 - **YouTube recommendations:** Grid of video cards with thumbnails (from YouTube API URL pattern), channel name, notes. Loads for current language/system/level.
 - **Profile:** Stats (streak, freezes, learned count, mastered count + mastery % progress bar), daily goal editor (5/10/15 options), last-studied date, reset progress button (two-step confirm → calls RPC), sign out.
@@ -59,7 +59,7 @@ Hanzi-dojo is a free language learning web app built around the two methods that
 | ts-fsrs | ^5.4.1 — FSRS v5 scheduling |
 | wanakana | ^5.3.1 — Japanese romaji conversion in Writing.jsx |
 | lucide-react | ^1.17 — all UI icons |
-| @anthropic-ai/sdk | dev only — not in app bundle |
+| openai | used by content scripts (generate-examples/stories/translations) to call Groq's OpenAI-compatible API — not in app bundle |
 | Tailwind CSS | installed but **not used** in JSX; all styling is inline style objects |
 | Node | 24 |
 | Language | Plain JSX, no TypeScript |
@@ -93,8 +93,9 @@ src/Study.jsx
   Flashcard session. Builds a queue (due-learning first, then new up to daily
   limit, then due-review). Flip card to reveal reading, meaning, and example
   sentence. Four FSRS grade buttons (Again/Hard/Good/Easy) with interval
-  previews. Audio autoplay on flip. Furigana toggle for Japanese (ruby element).
-  Saves full FSRS state to cards table on every grade.
+  previews. Audio autoplay on flip. Furigana toggle for Japanese (ruby element);
+  the example sentence also shows inline furigana on the target word for
+  Japanese cards. Saves full FSRS state to cards table on every grade.
 
 src/Test.jsx
   Level test. Generates 30 mixed E↔target multiple-choice questions. Unlocks at
@@ -103,11 +104,17 @@ src/Test.jsx
   "End quiz" ends early (unanswered = wrong). Shows reading below Japanese options.
 
 src/Stories.jsx
-  Story immersion. Three-tier category screen → story list → story reader.
-  Reader segments text with greedy longest-match against vocab map, renders
-  clickable WordToken components for known words (tooltip: word/reading/meaning/
-  status/add-to-deck). CharacterGuide shows named characters with pinyin pills.
-  Sidebar shows story progress and words-to-review list.
+  Story immersion. Three-tier category screen (CATEGORIES_CHINESE /
+  CATEGORIES_JAPANESE) → story list → story reader. Text is segmented with
+  greedy longest-match (segmentText) against a vocab map loaded across all
+  levels. StoryLine renders each line with a per-speaker avatar/color
+  (splitSpeakerLine) and a per-line Web Speech API "play" button; clicking a
+  word opens VocabularyPopup (furigana, status, add-to-deck). CharacterGuide +
+  CHARACTER_READINGS shows named characters with reading pills (Chinese only).
+  StoryProgressCard and ReviewWordsCard form a sticky sidebar that moves below
+  the story on narrow screens. StoryCompletionCard ends the story with a
+  next-story link. A translation toggle renders EnglishStoryLine from the
+  `english_content` column instead of the interactive reader.
 
 src/Writing.jsx
   Writing practice. Active recall for words the user has studied. Round sizes
@@ -248,9 +255,7 @@ vocabulary
   is_active boolean
   example_sentence text         -- example sentence in target language
   example_reading text          -- reading/pinyin for the example sentence
-                                   NOTE: Study.jsx reads v.example_pinyin (wrong name —
-                                   should be v.example_reading). Pinyin line never renders.
-                                   Known bug; fix by renaming reference in Study.jsx.
+                                   (pinyin with tones for Chinese, hiragana for Japanese)
   example_translation text      -- English translation of example sentence
 
 cards
@@ -326,6 +331,8 @@ stories
   title text
   english_summary text
   content text                  -- plain text; newline-separated lines; speaker lines use '：' or ':'
+  english_content text          -- line-aligned English translation of content (same line count);
+                                   nullable — translation toggle only shows when populated
   is_published boolean
 
 story_vocab
@@ -394,7 +401,7 @@ JLPT advances: 1 → 2 → 3 → 4 → 5 → 6. Always use `getLevelLabel(langua
 **Chinese HSK 3.0 Level 1:**
 - 300 words, frequency-ordered (sort_order 1–300), all with audio at `chinese/hsk_3/level_1/`
 - Example sentences on all 300 words (example_sentence, example_reading, example_translation columns)
-- 23 stories published across 3 tiers (story_number 2–26 approximately; story_number 1 was the original hand-written story)
+- 23 stories published across 3 tiers (7 / 8 / 8), all with `english_content` translations
 - 3 YouTube recommendations
 - Audio voice: `cmn-CN-Chirp3-HD-Aoede`, languageCode `cmn-CN`
 
@@ -402,18 +409,22 @@ JLPT advances: 1 → 2 → 3 → 4 → 5 → 6. Always use `getLevelLabel(langua
 - Level 1 (N5 Part 1): 400 words with audio at `japanese/jlpt/level_1/`
 - Level 2 (N5 Part 2): 402 words with audio at `japanese/jlpt/level_2/`
 - Audio voice: `ja-JP-Neural2-B`, languageCode `ja-JP`, TTS input = `v.reading` (hiragana — never v.word)
-- No stories yet; no YouTube recommendations yet
-- Example sentences: run `generate-examples.mjs --japanese` to populate (see §14)
+- Example sentences: 798/800 words populated (run `generate-examples.mjs --japanese` to fill the remaining 2)
+- 15 stories published across 3 tiers (5 / 5 / 5) for level 1, all with `english_content` translations.
+  Generated by `generate-stories.mjs` across 15 distinct scenes (park, supermarket, station, etc.) with
+  characters たかし/はな/おかあさん/みせのひと
+- No YouTube recommendations yet
 
-**Story tier structure (Chinese HSK 1, defined in Stories.jsx CATEGORIES):**
+**Story tier structure (per language, defined in Stories.jsx CATEGORIES_CHINESE / CATEGORIES_JAPANESE):**
 
-| Tier | Label | Unlocks at (learnedCount) | Vocabulary used |
-|------|-------|--------------------------|-----------------|
-| 1 | First Steps | 30 learned words | First 100 most common words |
-| 2 | Growing | 100 learned words | First 200 most common words |
-| 3 | Fluent | 200 learned words | All 300 HSK 1 words |
+| Tier | Label | Unlocks at (learnedCount) | Chinese vocab used | Japanese vocab used |
+|------|-------|--------------------------|---------------------|----------------------|
+| 1 | First Steps | 30 learned words | First 100 HSK 1 words | First 100 N5 Part 1 words |
+| 2 | Growing | 100 learned words | First 200 HSK 1 words | First 200 N5 Part 1 words |
+| 3 | Fluent | 200 learned words | All 300 HSK 1 words | All 400 N5 Part 1 words |
 
-Character names used in stories (known to CharacterGuide):
+Character names used in stories (known to CharacterGuide via CHARACTER_READINGS — Chinese only,
+CHARACTER_READINGS.japanese is empty since Japanese names are already written in hiragana):
 李明 (Lǐ Míng), 小花 (Xiǎo Huā), 大力 (Dà Lì), 小明 (Xiǎo Míng), 小红 (Xiǎo Hóng),
 妈妈 (Māma), 路人 (Lù rén), 大毛 (Dà Máo), 服务员 (Fúwùyuán), 收银员 (Shōuyínyuán), 店员 (Diànyuán)
 
@@ -548,8 +559,9 @@ src/assets/hero.png         unused
 .env            Vite app vars (VITE_ prefix). Gitignored.
                 Required: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_GOOGLE_TTS_KEY
 
-.env.script     Server-side vars for generate-audio.mjs and generate-examples.mjs. Gitignored.
-                Required: SUPABASE_URL, SUPABASE_SERVICE_KEY, GOOGLE_TTS_KEY, ANTHROPIC_API_KEY
+.env.script     Server-side vars for generate-audio.mjs, generate-examples.mjs,
+                generate-stories.mjs, and generate-story-translations.mjs. Gitignored.
+                Required: SUPABASE_URL, SUPABASE_SERVICE_KEY, GOOGLE_TTS_KEY, GROQ_API_KEY
 ```
 
 ### generate-audio.mjs
@@ -571,7 +583,7 @@ To regenerate without skipping existing files: delete the storage folder in Supa
 
 ### generate-examples.mjs
 
-Script for generating AI example sentences and uploading to Supabase vocabulary rows. Not in app bundle. Uses Claude Haiku via `@anthropic-ai/sdk`.
+Script for generating AI example sentences and uploading to Supabase vocabulary rows. Not in app bundle. Uses Groq (`llama-3.1-8b-instant` via `openai` SDK pointed at `https://api.groq.com/openai/v1`).
 
 **Run with:**
 ```bash
@@ -580,12 +592,35 @@ node --env-file=.env.script generate-examples.mjs --chinese    # Chinese only
 node --env-file=.env.script generate-examples.mjs              # Both
 ```
 
-**Behavior:** Queries all vocabulary rows where `example_sentence IS NULL`, batches in groups of 20, calls Claude Haiku with a language-appropriate prompt, then updates `example_sentence`, `example_reading`, and `example_translation` columns. Safe to re-run — skips words already populated.
+**Behavior:** Queries all vocabulary rows where `example_sentence IS NULL`, batches in groups of 20, calls Groq with a language-appropriate prompt, then updates `example_sentence`, `example_reading`, and `example_translation` columns. Safe to re-run — skips words already populated. Retries with backoff on rate limits.
 
 **Output per word:**
 - `example_sentence` — target-language sentence containing the word (Chinese: ≤10 chars; Japanese: ≤15 chars)
 - `example_reading` — full sentence in phonetic form (pinyin with tones for Chinese; hiragana for Japanese)
 - `example_translation` — natural English translation
+
+### generate-stories.mjs
+
+Generates new Japanese JLPT N5 (level 1) stories via Groq (`llama-3.3-70b-versatile`) and inserts them into the `stories` table. Not in app bundle.
+
+**Run with:**
+```bash
+node --env-file=.env.script generate-stories.mjs            # append new stories
+node --env-file=.env.script generate-stories.mjs --replace  # delete existing level-1 JP stories first, then regenerate
+```
+
+**Behavior:** For each of 3 tiers (First Steps / Growing / Fluent, vocab pools sort_order ≤100/≤200/≤400), generates 5 stories using one of 15 distinct scenes (park, supermarket, station, restaurant, etc.) so stories don't default to a school setting. Characters are restricted to たかし/はな/おかあさん/みせのひと, written in hiragana. Each story includes `content` and a line-aligned `english_content` translation. Inserts with `is_published: true` and incrementing `story_number`.
+
+### generate-story-translations.mjs
+
+Backfills `english_content` for existing published stories where it is `NULL`. Not in app bundle. Uses Groq (`llama-3.1-8b-instant` — chosen for its higher daily token quota over the 70b model).
+
+**Run with:**
+```bash
+node --env-file=.env.script generate-story-translations.mjs
+```
+
+**Behavior:** For each story, sends a numbered list of its content lines and requires the response's `english_content` to have the exact same line count, in the same order (dialogue lines keep `speaker：English text` format). Retries up to twice on a line-count mismatch. If a Groq daily token limit (TPD) error is detected, stops cleanly with a "resume later" message — safe to re-run, picks up where it left off.
 
 ---
 
@@ -605,10 +640,9 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 ## 16. Known issues
 
 **In progress:**
-- **Japanese example sentences (N5 Part 1 + Part 2):** Run `node --env-file=.env.script generate-examples.mjs --japanese` to populate `example_sentence`, `example_reading` (hiragana), and `example_translation` for all 802 JLPT N5 words. Script batches 20 words at a time via Claude Haiku and skips words that already have sentences. Study.jsx renders `example_reading` as plain text below the sentence — hiragana displays fine this way; no code change needed.
+- **Japanese example sentences (N5 Part 1 + Part 2):** 798/800 words populated. Run `node --env-file=.env.script generate-examples.mjs --japanese` to fill the remaining 2.
 
 **Missing content:**
-- **Japanese stories:** None published. Chinese has 23 stories across 3 tiers.
 - **Japanese YouTube recommendations:** None published. Chinese HSK 1 has 3.
 - **HSK 2 vocabulary:** Not seeded. HSK 1 is complete.
 - **HSK 3–9 and JLPT N4–N1:** No vocabulary seeded. Level selection exists but shows empty study queues.
@@ -628,16 +662,17 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 
 Priority order (most impactful first):
 
-1. ~~**Fix example_reading column reference in Study.jsx**~~ — **Done.** `v.example_pinyin` → `v.example_reading` fixed in Study.jsx.
-2. **Japanese example sentences:** Run `node --env-file=.env.script generate-examples.mjs --japanese` to populate all 802 JLPT N5 words. No code change needed — Study.jsx already renders `example_reading` correctly as plain hiragana text.
-3. **Japanese stories and YouTube recommendations:** At minimum one tier of stories for JLPT N5.
-4. **HSK 2 vocabulary + audio + stories:** Next Chinese level content.
-5. **Furigana on Japanese flashcard main word:** Show reading above kanji as ruby text by default (furigana toggle already exists for Study.jsx — add it to card back when word has kanji).
-6. **Mobile layout:** Sidebar → bottom navigation bar at ~768px breakpoint.
-7. **FSRS parameter tuning:** Once real user data exists, optimize parameters beyond library defaults.
-8. **Practice test mode:** Unlimited questions, no progression impact, no card state changes.
-9. **Offline support:** Service worker (post-launch).
-10. **Spanish:** Third language after Chinese and Japanese content is solid.
+1. ~~**Fix example_reading column reference in Study.jsx**~~ — **Done.**
+2. ~~**Japanese example sentences**~~ — **Done** (798/800 words; 2 stragglers remain).
+3. ~~**Japanese stories**~~ — **Done.** 15 stories across 3 tiers for JLPT N5 level 1, with English translations.
+4. **Japanese YouTube recommendations:** At least a few curated videos for JLPT N5.
+5. **HSK 2 vocabulary + audio + stories:** Next Chinese level content.
+6. **Furigana on Japanese flashcard main word:** Show reading above kanji as ruby text by default (furigana toggle already exists for Study.jsx — add it to card back when word has kanji).
+7. **Mobile layout:** Sidebar → bottom navigation bar at ~768px breakpoint.
+8. **FSRS parameter tuning:** Once real user data exists, optimize parameters beyond library defaults.
+9. **Practice test mode:** Unlimited questions, no progression impact, no card state changes.
+10. **Offline support:** Service worker (post-launch).
+11. **Spanish:** Third language after Chinese and Japanese content is solid.
 
 ---
 
