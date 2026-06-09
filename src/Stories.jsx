@@ -8,11 +8,9 @@ import {
 } from 'lucide-react'
 
 const CATEGORIES = [
-  { tier: 1, minWords: 20, label: 'First Steps', description: 'Words 1-50', wordRange: '1-50' },
-  { tier: 2, minWords: 50, label: 'Growing', description: 'Words 1-100', wordRange: '1-100' },
-  { tier: 3, minWords: 100, label: 'Comfortable', description: 'Words 1-150', wordRange: '1-150' },
-  { tier: 4, minWords: 200, label: 'Confident', description: 'Words 1-250', wordRange: '1-250' },
-  { tier: 5, minWords: 300, label: 'Complete', description: 'All 300 words', wordRange: '1-300' },
+  { tier: 1, minWords: 30, label: 'First Steps', description: 'Stories using the first 100 most common words' },
+  { tier: 2, minWords: 100, label: 'Growing', description: 'Stories using the first 200 most common words' },
+  { tier: 3, minWords: 200, label: 'Fluent', description: 'All 300 HSK 1 words in use' },
 ]
 
 const STATUS_LABELS = {
