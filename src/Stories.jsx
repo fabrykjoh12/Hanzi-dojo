@@ -268,6 +268,103 @@ function WordToken({ word, vocab, userCards, accentHex, fontFamily, onAdd }) {
   )
 }
 
+const CHARACTER_PINYIN = {
+  '李明': 'Lǐ Míng',
+  '小花': 'Xiǎo Huā',
+  '大力': 'Dà Lì',
+  '小明': 'Xiǎo Míng',
+  '小红': 'Xiǎo Hóng',
+  '妈妈': 'Māma',
+  '路人': 'Lù rén',
+  '大毛': 'Dà Máo',
+  '服务员': 'Fúwùyuán',
+  '收银员': 'Shōuyínyuán',
+  '店员': 'Diànyuán',
+}
+
+function CharacterPill({ name, pinyin, accentHex }) {
+  const [pos, setPos] = useState(null)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!pos) return
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setPos(null)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [pos])
+
+  function handleToggle(e) {
+    if (pos) { setPos(null); return }
+    const rect = e.currentTarget.getBoundingClientRect()
+    setPos({ x: rect.left + rect.width / 2, y: rect.top })
+  }
+
+  return (
+    <span ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+      <button
+        onClick={handleToggle}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: '6px',
+          padding: '5px 12px', borderRadius: '999px',
+          border: '1px solid ' + accentHex + '30',
+          background: pos ? accentHex + '12' : accentHex + '08',
+          cursor: 'pointer',
+          fontFamily: 'Inter, sans-serif',
+          transition: 'background 140ms ease',
+        }}
+      >
+        <span style={{ fontSize: '15px', fontFamily: "'Noto Sans SC'", color: accentHex, fontWeight: 700 }}>{name}</span>
+        <span style={{ fontSize: '12px', color: '#71717A', fontWeight: 500 }}>{pinyin}</span>
+      </button>
+      {pos && (
+        <div style={{
+          position: 'fixed',
+          left: pos.x,
+          top: pos.y - 8,
+          transform: 'translate(-50%, -100%)',
+          background: '#FFFFFF',
+          border: '1px solid #E7E5E4',
+          borderRadius: '16px',
+          padding: '16px 20px',
+          zIndex: 200,
+          minWidth: '160px',
+          boxShadow: '0 16px 42px rgba(24,24,27,0.14)',
+          textAlign: 'center',
+          whiteSpace: 'nowrap',
+        }}>
+          <div style={{ fontSize: '28px', fontFamily: "'Noto Sans SC'", color: '#18181B', fontWeight: 700, marginBottom: '4px' }}>{name}</div>
+          <div style={{ fontSize: '14px', color: accentHex, fontWeight: 650, marginBottom: '6px' }}>{pinyin}</div>
+          <div style={{ fontSize: '12px', color: '#71717A' }}>Character name</div>
+        </div>
+      )}
+    </span>
+  )
+}
+
+function CharacterGuide({ content, accentHex }) {
+  const found = Object.keys(CHARACTER_PINYIN).filter(name => content.indexOf(name) !== -1)
+  if (found.length === 0) return null
+  return (
+    <div style={{
+      background: '#FFFFFF', border: '1px solid #E7E5E4',
+      borderRadius: '16px', padding: '12px 16px',
+      marginBottom: '20px',
+      display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap',
+    }}>
+      <span style={{ fontSize: '11px', fontWeight: 800, color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>
+        Characters
+      </span>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+        {found.map(name => (
+          <CharacterPill key={name} name={name} pinyin={CHARACTER_PINYIN[name]} accentHex={accentHex} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function StoryReader({ story, vocabMap, userCards, setUserCards, session, track, languageDetails, onBack }) {
   const { isJapanese, accentHex, fontFamily } = languageDetails
 
@@ -330,6 +427,8 @@ function StoryReader({ story, vocabMap, userCards, setUserCards, session, track,
             </p>
           )}
         </div>
+
+        <CharacterGuide content={story.content} accentHex={accentHex} />
 
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '24px', alignItems: 'start' }}>
           <div style={{
