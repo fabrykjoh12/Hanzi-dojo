@@ -324,7 +324,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const canUseFurigana = isJapanese && hasKanji(v.word) && Boolean(v.reading)
   const showRuby = canUseFurigana && (showFurigana || flipped)
   const showReadingLine = flipped && v.reading && !isJapanese
-  const hasExample = Boolean(v.example_sentence || v.example_pinyin || v.example_translation)
+  const hasExample = Boolean(v.example_sentence || v.example_reading || v.example_translation)
 
   function renderExampleSentence(sentence, word) {
     if (!sentence) return null
@@ -494,9 +494,9 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
                         {renderExampleSentence(v.example_sentence, v.word)}
                       </div>
                     )}
-                    {v.example_pinyin && (
+                    {v.example_reading && (
                       <div style={{ fontSize: '13px', color: accentHex, marginTop: '7px', lineHeight: 1.45, fontWeight: 550 }}>
-                        {v.example_pinyin}
+                        {v.example_reading}
                       </div>
                     )}
                     {v.example_translation && (

@@ -403,7 +403,7 @@ JLPT advances: 1 → 2 → 3 → 4 → 5 → 6. Always use `getLevelLabel(langua
 - Level 2 (N5 Part 2): 402 words with audio at `japanese/jlpt/level_2/`
 - Audio voice: `ja-JP-Neural2-B`, languageCode `ja-JP`, TTS input = `v.reading` (hiragana — never v.word)
 - No stories yet; no YouTube recommendations yet
-- No example sentences yet
+- Example sentences: run `generate-examples.mjs --japanese` to populate (see §14)
 
 **Story tier structure (Chinese HSK 1, defined in Stories.jsx CATEGORIES):**
 
@@ -548,8 +548,8 @@ src/assets/hero.png         unused
 .env            Vite app vars (VITE_ prefix). Gitignored.
                 Required: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_GOOGLE_TTS_KEY
 
-.env.script     Server-side vars for generate-audio.mjs. Gitignored.
-                Required: SUPABASE_URL, SUPABASE_SERVICE_KEY, GOOGLE_TTS_KEY
+.env.script     Server-side vars for generate-audio.mjs and generate-examples.mjs. Gitignored.
+                Required: SUPABASE_URL, SUPABASE_SERVICE_KEY, GOOGLE_TTS_KEY, ANTHROPIC_API_KEY
 ```
 
 ### generate-audio.mjs
@@ -569,6 +569,24 @@ node --env-file=.env.script generate-audio.mjs
 
 To regenerate without skipping existing files: delete the storage folder in Supabase first, then run the script (`upsert: true` is set but storage skips existing paths by default in some configurations).
 
+### generate-examples.mjs
+
+Script for generating AI example sentences and uploading to Supabase vocabulary rows. Not in app bundle. Uses Claude Haiku via `@anthropic-ai/sdk`.
+
+**Run with:**
+```bash
+node --env-file=.env.script generate-examples.mjs --japanese   # Japanese only
+node --env-file=.env.script generate-examples.mjs --chinese    # Chinese only
+node --env-file=.env.script generate-examples.mjs              # Both
+```
+
+**Behavior:** Queries all vocabulary rows where `example_sentence IS NULL`, batches in groups of 20, calls Claude Haiku with a language-appropriate prompt, then updates `example_sentence`, `example_reading`, and `example_translation` columns. Safe to re-run — skips words already populated.
+
+**Output per word:**
+- `example_sentence` — target-language sentence containing the word (Chinese: ≤10 chars; Japanese: ≤15 chars)
+- `example_reading` — full sentence in phonetic form (pinyin with tones for Chinese; hiragana for Japanese)
+- `example_translation` — natural English translation
+
 ---
 
 ## 15. Slash commands available
@@ -586,12 +604,8 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 
 ## 16. Known issues
 
-**Critical bugs:**
-- **example_reading column name mismatch:** `vocabulary` table has column `example_reading` (from migration `20260605231000_add_vocabulary_examples.sql`), but `Study.jsx` reads `v.example_pinyin`. The pinyin line on flashcard example sentences never renders because the JS property name doesn't match the DB column. Fix: change `v.example_pinyin` → `v.example_reading` in Study.jsx (lines ~327, ~498).
-
 **In progress:**
-- **Japanese N5 level 1 example sentences:** Not yet populated. When added, use `example_reading` column (hiragana reading) and `example_translation`. The furigana display for Japanese examples needs a separate implementation — Study.jsx currently renders the `example_reading` line as plain text, which works for Chinese pinyin but Japanese should display it differently (or as a reading below the sentence).
-- **Japanese N5 level 2:** No example sentences yet.
+- **Japanese example sentences (N5 Part 1 + Part 2):** Run `node --env-file=.env.script generate-examples.mjs --japanese` to populate `example_sentence`, `example_reading` (hiragana), and `example_translation` for all 802 JLPT N5 words. Script batches 20 words at a time via Claude Haiku and skips words that already have sentences. Study.jsx renders `example_reading` as plain text below the sentence — hiragana displays fine this way; no code change needed.
 
 **Missing content:**
 - **Japanese stories:** None published. Chinese has 23 stories across 3 tiers.
@@ -614,8 +628,8 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 
 Priority order (most impactful first):
 
-1. **Fix example_reading column reference in Study.jsx** — `v.example_pinyin` → `v.example_reading` so Chinese pinyin lines actually render on flashcards.
-2. **Japanese example sentences:** Populate `example_sentence` / `example_reading` / `example_translation` for JLPT N5 level 1. Decide how to render Japanese example_reading (as romaji, as hiragana annotation, or as a reading below the sentence).
+1. ~~**Fix example_reading column reference in Study.jsx**~~ — **Done.** `v.example_pinyin` → `v.example_reading` fixed in Study.jsx.
+2. **Japanese example sentences:** Run `node --env-file=.env.script generate-examples.mjs --japanese` to populate all 802 JLPT N5 words. No code change needed — Study.jsx already renders `example_reading` correctly as plain hiragana text.
 3. **Japanese stories and YouTube recommendations:** At minimum one tier of stories for JLPT N5.
 4. **HSK 2 vocabulary + audio + stories:** Next Chinese level content.
 5. **Furigana on Japanese flashcard main word:** Show reading above kanji as ruby text by default (furigana toggle already exists for Study.jsx — add it to card back when word has kanji).
