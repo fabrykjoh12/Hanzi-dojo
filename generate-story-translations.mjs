@@ -16,18 +16,20 @@ const groq = new OpenAI({ apiKey: GROQ_API_KEY, baseURL: 'https://api.groq.com/o
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
 
 function buildPrompt(story) {
-  return 'Translate this Japanese story to English for a language learner.\n\n' +
+  const lines = story.content.split('\n').filter(Boolean)
+  const numbered = lines.map((l, i) => (i + 1) + ': ' + l).join('\n')
+  return 'Translate the following ' + lines.length + '-line story to English for a language learner.\n\n' +
+    'CRITICAL: english_content must have EXACTLY ' + lines.length + ' lines — one English line per numbered ' +
+    'line below, in the same order. Do not merge, split, summarize, or drop any line.\n\n' +
     'Rules:\n' +
-    '- Translate line by line, keeping the EXACT same number of lines\n' +
-    '- Keep the dialogue format: speaker：English text (same speaker names, full-width colon)\n' +
+    '- Keep the dialogue format: speaker：English text (same speaker name, full-width colon)\n' +
     '- Narration lines have no prefix\n' +
     '- Natural, readable English — not word-for-word literal\n' +
     '- Each translated line should be short and clear\n\n' +
-    'Japanese story:\n' +
-    story.content + '\n\n' +
-    'Return ONLY valid JSON with no markdown:\n' +
-    '{"english_content":"line1\\nline2\\n..."}\n\n' +
-    'The english_content must have exactly the same number of lines as the Japanese.'
+    'Numbered story lines:\n' +
+    numbered + '\n\n' +
+    'Return ONLY valid JSON with no markdown, with exactly ' + lines.length + ' lines in english_content:\n' +
+    '{"english_content":"line1\\nline2\\n..."}'
 }
 
 function parseDailyLimitWait(err) {
@@ -51,6 +53,13 @@ async function translateStory(story, attempt = 0) {
     const text = response.choices[0].message.content.trim()
     const json = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
     const parsed = JSON.parse(json)
+
+    const jpLines = story.content.split('\n').filter(Boolean).length
+    const enLines = (parsed.english_content || '').split('\n').filter(Boolean).length
+    if (enLines !== jpLines && attempt < 2) {
+      process.stdout.write('(line mismatch, retry) ')
+      return translateStory(story, attempt + 1)
+    }
     return parsed.english_content
   } catch (err) {
     const dailyWaitMs = parseDailyLimitWait(err)
