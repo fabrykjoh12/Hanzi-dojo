@@ -1,17 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
+const GROQ_API_KEY = process.env.GROQ_API_KEY
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !ANTHROPIC_API_KEY) {
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !GROQ_API_KEY) {
   console.error('Missing env vars. Run with: node --env-file=.env.script generate-examples.mjs')
   process.exit(1)
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
+const groq = new OpenAI({ apiKey: GROQ_API_KEY, baseURL: 'https://api.groq.com/openai/v1' })
 
 // Language arg: --chinese or --japanese (default: both)
 const args = process.argv.slice(2)
@@ -50,19 +50,31 @@ Return a JSON array with exactly ${words.length} objects in the same order:
 [{"example_sentence":"...","example_reading":"...","example_translation":"..."},...]`
 }
 
-async function generateBatch(words, language) {
+async function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms))
+}
+
+async function generateBatch(words, language, attempt = 0) {
   const prompt = buildPrompt(words, language)
 
-  const msg = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 4096,
-    messages: [{ role: 'user', content: prompt }],
-  })
-
-  const text = msg.content[0].text.trim()
-  // Strip markdown code fences if present
-  const json = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-  return JSON.parse(json)
+  try {
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.1-8b-instant',
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: prompt }],
+    })
+    const text = response.choices[0].message.content.trim()
+    const json = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+    return JSON.parse(json)
+  } catch (err) {
+    const waitSec = Math.min(15 * Math.pow(2, attempt), 120)
+    if (attempt < 3) {
+      process.stdout.write(`(waiting ${waitSec}s) `)
+      await sleep(waitSec * 1000)
+      return generateBatch(words, language, attempt + 1)
+    }
+    throw err
+  }
 }
 
 async function processLanguage(language, system) {
@@ -93,15 +105,16 @@ async function processLanguage(language, system) {
     try {
       const examples = await generateBatch(batch, language)
 
-      if (examples.length !== batch.length) {
-        throw new Error(`Expected ${batch.length} results, got ${examples.length}`)
+      if (examples.length === 0) {
+        throw new Error(`Got 0 results`)
       }
+      const aligned = examples.slice(0, batch.length)
 
-      const updates = batch.map((w, idx) => ({
+      const updates = batch.slice(0, aligned.length).map((w, idx) => ({
         id: w.id,
-        example_sentence: examples[idx].example_sentence,
-        example_reading: examples[idx].example_reading,
-        example_translation: examples[idx].example_translation,
+        example_sentence: aligned[idx].example_sentence,
+        example_reading: aligned[idx].example_reading,
+        example_translation: aligned[idx].example_translation,
       }))
 
       for (const update of updates) {
@@ -120,9 +133,9 @@ async function processLanguage(language, system) {
       success += batch.length
       console.log(`✓ (${success}/${vocab.length} done)`)
 
-      // Polite delay between batches
+      // Stay under free-tier rate limit (15 RPM)
       if (i + BATCH_SIZE < vocab.length) {
-        await new Promise(r => setTimeout(r, 500))
+        await sleep(5000)
       }
     } catch (err) {
       failed += batch.length
