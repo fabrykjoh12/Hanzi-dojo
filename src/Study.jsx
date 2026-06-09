@@ -326,7 +326,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const showReadingLine = flipped && v.reading && !isJapanese
   const hasExample = Boolean(v.example_sentence || v.example_reading || v.example_translation)
 
-  function renderExampleSentence(sentence, word) {
+  function renderExampleSentence(sentence, word, reading) {
     if (!sentence) return null
     const idx = word ? sentence.indexOf(word) : -1
     if (idx === -1 || !word) {
@@ -334,10 +334,19 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     }
     const before = sentence.slice(0, idx)
     const after = sentence.slice(idx + word.length)
+    const showWordFurigana = isJapanese && reading && hasKanji(word)
+    const wordEl = showWordFurigana
+      ? (
+        <ruby style={{ color: accentHex }}>
+          {word}
+          <rt style={{ fontSize: '0.65em', fontWeight: 500, color: accentHex }}>{reading}</rt>
+        </ruby>
+      )
+      : <span style={{ color: accentHex, borderBottom: '1px solid ' + accentHex + '88' }}>{word}</span>
     return (
       <span>
         {before}
-        <span style={{ color: accentHex, borderBottom: '1px solid ' + accentHex + '88' }}>{word}</span>
+        {wordEl}
         {after}
       </span>
     )
@@ -491,10 +500,10 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
                         fontSize: '17px', color: '#18181B', lineHeight: 1.5,
                         fontFamily: langFont,
                       }}>
-                        {renderExampleSentence(v.example_sentence, v.word)}
+                        {renderExampleSentence(v.example_sentence, v.word, v.reading)}
                       </div>
                     )}
-                    {v.example_reading && (
+                    {!isJapanese && v.example_reading && (
                       <div style={{ fontSize: '13px', color: accentHex, marginTop: '7px', lineHeight: 1.45, fontWeight: 550 }}>
                         {v.example_reading}
                       </div>
