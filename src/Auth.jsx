@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { supabase } from './supabase'
+import logo from './assets/Hanzi-logo.png'
+import bgLogin from './assets/bg-login.png'
 
 export default function Auth() {
   const [isSignup, setIsSignup] = useState(false)
@@ -37,28 +39,96 @@ export default function Auth() {
     <div style={{
       minHeight: '100vh',
       display: 'flex',
+      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       position: 'relative',
-      zIndex: 1,
       padding: '24px',
+      background: '#FAFAF8',
     }}>
-      <div style={{ width: '100%', maxWidth: '380px' }}>
-        {/* Logo / Title */}
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '8px', color: 'var(--chinese-accent)', fontWeight: 700 }}>
-            学
+      {/* Background image */}
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 0,
+        backgroundImage: 'url(' + bgLogin + ')',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        opacity: 0.35,
+        pointerEvents: 'none',
+      }} />
+
+      {/* Card */}
+      <div style={{
+        position: 'relative',
+        zIndex: 1,
+        width: '100%',
+        maxWidth: '460px',
+        background: '#FFFFFF',
+        borderRadius: '20px',
+        boxShadow: '0 4px 40px rgba(0,0,0,0.10)',
+        padding: '40px 40px 32px',
+      }}>
+        {/* Logo + wordmark */}
+        <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+          <img src={logo} alt="Hanzi-dojo" style={{ width: '48px', height: '48px', objectFit: 'contain', marginBottom: '10px' }} />
+          <div style={{ fontSize: '20px', fontWeight: 700, color: '#18181B', fontFamily: 'Inter, sans-serif', letterSpacing: '-0.3px' }}>
+            Hanzi-dojo
           </div>
-          <h1 style={{ fontSize: '24px', fontWeight: 600, color: '#1a1a1a' }}>
-            {isSignup ? 'Create your account' : 'Welcome back'}
-          </h1>
-          <p style={{ fontSize: '14px', color: '#888', marginTop: '6px' }}>
-            {isSignup ? 'Start your language journey' : 'Continue learning'}
-          </p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {/* Tagline */}
+        <p style={{ textAlign: 'center', fontSize: '13px', color: '#71717A', marginBottom: '28px', marginTop: '4px' }}>
+          Learn a language. Grow every day.
+        </p>
+
+        {/* Divider */}
+        <div style={{ height: '1px', background: '#E7E5E4', marginBottom: '24px' }} />
+
+        {/* Tab toggle */}
+        <div style={{ display: 'flex', marginBottom: '24px', borderBottom: '1px solid #E7E5E4' }}>
+          <button
+            onClick={() => { setIsSignup(false); setMessage('') }}
+            style={{
+              flex: 1,
+              padding: '10px 0',
+              background: 'none',
+              border: 'none',
+              borderBottom: !isSignup ? '2px solid #B83A24' : '2px solid transparent',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: isSignup ? 400 : 600,
+              color: !isSignup ? '#18181B' : '#71717A',
+              fontFamily: 'Inter, sans-serif',
+              transition: 'all 0.2s',
+              marginBottom: '-1px',
+            }}
+          >
+            Log in
+          </button>
+          <button
+            onClick={() => { setIsSignup(true); setMessage('') }}
+            style={{
+              flex: 1,
+              padding: '10px 0',
+              background: 'none',
+              border: 'none',
+              borderBottom: isSignup ? '2px solid #B83A24' : '2px solid transparent',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: isSignup ? 600 : 400,
+              color: isSignup ? '#18181B' : '#71717A',
+              fontFamily: 'Inter, sans-serif',
+              transition: 'all 0.2s',
+              marginBottom: '-1px',
+            }}
+          >
+            Sign up
+          </button>
+        </div>
+
+        {/* Inputs */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
           <input
             type="email"
             placeholder="Email"
@@ -76,20 +146,54 @@ export default function Auth() {
             minLength={6}
             style={inputStyle}
           />
-          <button type="submit" disabled={loading} style={primaryBtn}>
-            {loading ? 'Please wait...' : isSignup ? 'Sign up' : 'Log in'}
-          </button>
-        </form>
+        </div>
 
-        {/* Divider */}
+        {/* Submit */}
+        <button
+          onClick={handleAuth}
+          disabled={loading}
+          style={{
+            width: '100%',
+            padding: '13px',
+            borderRadius: '12px',
+            border: 'none',
+            background: '#B83A24',
+            color: '#fff',
+            fontSize: '15px',
+            fontWeight: 600,
+            cursor: loading ? 'not-allowed' : 'pointer',
+            fontFamily: 'Inter, sans-serif',
+            opacity: loading ? 0.7 : 1,
+            transition: 'opacity 0.2s',
+          }}
+        >
+          {loading ? 'Please wait...' : isSignup ? 'Create account' : 'Log in'}
+        </button>
+
+        {/* OR divider */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '20px 0' }}>
-          <div style={{ flex: 1, height: '1px', background: '#eee' }} />
-          <span style={{ fontSize: '12px', color: '#aaa' }}>or</span>
-          <div style={{ flex: 1, height: '1px', background: '#eee' }} />
+          <div style={{ flex: 1, height: '1px', background: '#E7E5E4' }} />
+          <span style={{ fontSize: '12px', color: '#71717A' }}>or continue with</span>
+          <div style={{ flex: 1, height: '1px', background: '#E7E5E4' }} />
         </div>
 
         {/* Google */}
-        <button onClick={handleGoogle} style={googleBtn}>
+        <button onClick={handleGoogle} style={{
+          width: '100%',
+          padding: '12px',
+          borderRadius: '12px',
+          border: '1px solid #E7E5E4',
+          background: '#fff',
+          color: '#18181B',
+          fontSize: '15px',
+          fontWeight: 500,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '10px',
+          fontFamily: 'Inter, sans-serif',
+        }}>
           <svg width="18" height="18" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -101,22 +205,16 @@ export default function Auth() {
 
         {/* Message */}
         {message && (
-          <p style={{ textAlign: 'center', fontSize: '13px', color: '#C8442A', marginTop: '16px' }}>
+          <p style={{ textAlign: 'center', fontSize: '13px', color: '#DC2626', marginTop: '16px' }}>
             {message}
           </p>
         )}
-
-        {/* Toggle */}
-        <p style={{ textAlign: 'center', fontSize: '14px', color: '#888', marginTop: '24px' }}>
-          {isSignup ? 'Already have an account?' : "Don't have an account?"}{' '}
-          <button
-            onClick={() => { setIsSignup(!isSignup); setMessage('') }}
-            style={{ background: 'none', border: 'none', color: 'var(--chinese-accent)', cursor: 'pointer', fontWeight: 500, fontSize: '14px' }}
-          >
-            {isSignup ? 'Log in' : 'Sign up'}
-          </button>
-        </p>
       </div>
+
+      {/* Below card */}
+      <p style={{ position: 'relative', zIndex: 1, marginTop: '20px', fontSize: '13px', color: '#71717A' }}>
+        Free forever. No credit card.
+      </p>
     </div>
   )
 }
@@ -124,37 +222,12 @@ export default function Auth() {
 const inputStyle = {
   padding: '12px 14px',
   borderRadius: '10px',
-  border: '1px solid #e5e5e5',
+  border: '1px solid #E7E5E4',
   fontSize: '15px',
   outline: 'none',
   fontFamily: 'Inter, sans-serif',
-  transition: 'border-color 0.2s',
-}
-
-const primaryBtn = {
-  padding: '12px',
-  borderRadius: '10px',
-  border: 'none',
-  background: '#1a1a1a',
-  color: '#fff',
-  fontSize: '15px',
-  fontWeight: 500,
-  cursor: 'pointer',
-  marginTop: '4px',
-}
-
-const googleBtn = {
+  color: '#18181B',
+  background: '#FAFAF8',
   width: '100%',
-  padding: '12px',
-  borderRadius: '10px',
-  border: '1px solid #e5e5e5',
-  background: '#fff',
-  color: '#1a1a1a',
-  fontSize: '15px',
-  fontWeight: 500,
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: '10px',
+  boxSizing: 'border-box',
 }

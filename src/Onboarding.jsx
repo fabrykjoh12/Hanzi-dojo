@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel } from './utils'
+import logo from './assets/Hanzi-logo.png'
+import bgLogin from './assets/bg-login.png'
 
 export default function Onboarding({ session, onComplete }) {
   const [step, setStep] = useState(1)
@@ -10,7 +12,8 @@ export default function Onboarding({ session, onComplete }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const accent = language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
+  const accent = language === 'japanese' ? 'var(--japanese-accent)' : '#B83A24'
+  const accentHex = language === 'japanese' ? '#2E3A6E' : '#B83A24'
   const chineseLevels = [1, 2, 3, 4, 5, 6, 7, 8, 9]
   const japaneseLevels = [1, 2, 3, 4, 5, 6]
 
@@ -19,7 +22,6 @@ export default function Onboarding({ session, onComplete }) {
     setError('')
 
     try {
-      // 1. Create profile
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: session.user.id,
         active_language: language,
@@ -27,7 +29,6 @@ export default function Onboarding({ session, onComplete }) {
       })
       if (profileError) throw profileError
 
-      // 2. Create language track
       const system = language === 'chinese' ? 'hsk_3' : 'jlpt'
       const { error: trackError } = await supabase.from('language_tracks').upsert({
         user_id: session.user.id,
@@ -46,15 +47,48 @@ export default function Onboarding({ session, onComplete }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, padding: '24px' }}>
-      <div style={{ width: '100%', maxWidth: '440px' }}>
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+      padding: '24px',
+      background: '#FAFAF8',
+    }}>
+      {/* Background image */}
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 0,
+        backgroundImage: 'url(' + bgLogin + ')',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        opacity: 0.35,
+        pointerEvents: 'none',
+      }} />
 
+      {/* Card */}
+      <div style={{
+        position: 'relative',
+        zIndex: 1,
+        width: '100%',
+        maxWidth: '460px',
+        background: '#FFFFFF',
+        borderRadius: '20px',
+        boxShadow: '0 4px 40px rgba(0,0,0,0.10)',
+        padding: '40px 40px 36px',
+      }}>
         {/* Progress dots */}
-        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '40px' }}>
+        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '32px' }}>
           {[1, 2, 3].map(n => (
             <div key={n} style={{
-              width: step === n ? '24px' : '8px', height: '8px', borderRadius: '4px',
-              background: step >= n ? accent : '#e5e5e5', transition: 'all 0.3s',
+              width: step === n ? '24px' : '8px',
+              height: '8px',
+              borderRadius: '4px',
+              background: step >= n ? accentHex : '#E7E5E4',
+              transition: 'all 0.3s',
             }} />
           ))}
         </div>
@@ -62,63 +96,137 @@ export default function Onboarding({ session, onComplete }) {
         {/* STEP 1: Language */}
         {step === 1 && (
           <div>
-            <h1 style={{ fontSize: '26px', fontWeight: 600, textAlign: 'center', marginBottom: '8px' }}>
-              Choose your language
-            </h1>
-            <p style={{ textAlign: 'center', color: '#888', marginBottom: '32px', fontSize: '15px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '6px' }}>
+              <img src={logo} alt="Hanzi-dojo" style={{ width: '44px', height: '44px', objectFit: 'contain', marginBottom: '10px' }} />
+              <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#18181B', fontFamily: 'Inter, sans-serif', margin: 0 }}>
+                Welcome to Hanzi-dojo
+              </h1>
+            </div>
+            <p style={{ textAlign: 'center', color: '#71717A', marginBottom: '28px', marginTop: '8px', fontSize: '14px' }}>
               Which language do you want to learn?
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <button onClick={() => { setLanguage('chinese'); setLevel(null); setStep(2) }} style={langCard()}>
-                <span style={{ fontSize: '40px', color: 'var(--chinese-accent)', fontFamily: "'Noto Sans SC'" }}>中文</span>
-                <div>
-                  <div style={{ fontSize: '17px', fontWeight: 600 }}>Chinese</div>
-                  <div style={{ fontSize: '13px', color: '#888' }}>Mandarin · HSK 3.0 levels 1–9</div>
-                </div>
+
+            <div style={{ display: 'flex', gap: '14px' }}>
+              {/* Chinese card */}
+              <button
+                onClick={() => { setLanguage('chinese'); setLevel(null) }}
+                style={{
+                  flex: 1,
+                  padding: '24px 16px',
+                  borderRadius: '14px',
+                  border: language === 'chinese' ? '2px solid #B83A24' : '2px solid #E7E5E4',
+                  background: language === 'chinese' ? 'rgba(184,58,36,0.05)' : '#fff',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <span style={{ fontSize: '36px', lineHeight: 1 }}>🇨🇳</span>
+                <span style={{ fontSize: '28px', fontWeight: 700, color: '#B83A24', fontFamily: "'Noto Sans SC', sans-serif", lineHeight: 1 }}>中文</span>
+                <span style={{ fontSize: '15px', fontWeight: 600, color: '#18181B', fontFamily: 'Inter, sans-serif' }}>Chinese</span>
               </button>
-              <button onClick={() => { setLanguage('japanese'); setLevel(null); setStep(2) }} style={langCard()}>
-                <span style={{ fontSize: '40px', color: 'var(--japanese-accent)', fontFamily: "'Noto Sans JP'" }}>日本語</span>
-                <div>
-                  <div style={{ fontSize: '17px', fontWeight: 600 }}>Japanese</div>
-                  <div style={{ fontSize: '13px', color: '#888' }}>JLPT N5–N1</div>
-                </div>
+
+              {/* Japanese card */}
+              <button
+                onClick={() => { setLanguage('japanese'); setLevel(null) }}
+                style={{
+                  flex: 1,
+                  padding: '24px 16px',
+                  borderRadius: '14px',
+                  border: language === 'japanese' ? '2px solid #2E3A6E' : '2px solid #E7E5E4',
+                  background: language === 'japanese' ? 'rgba(46,58,110,0.05)' : '#fff',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <span style={{ fontSize: '36px', lineHeight: 1 }}>🇯🇵</span>
+                <span style={{ fontSize: '28px', fontWeight: 700, color: '#2E3A6E', fontFamily: "'Noto Sans JP', sans-serif", lineHeight: 1 }}>日本語</span>
+                <span style={{ fontSize: '15px', fontWeight: 600, color: '#18181B', fontFamily: 'Inter, sans-serif' }}>Japanese</span>
               </button>
             </div>
+
+            <button
+              onClick={() => setStep(2)}
+              disabled={!language}
+              style={{
+                width: '100%',
+                marginTop: '28px',
+                padding: '13px',
+                borderRadius: '12px',
+                border: 'none',
+                background: language ? accentHex : '#E7E5E4',
+                color: language ? '#fff' : '#71717A',
+                fontSize: '15px',
+                fontWeight: 600,
+                cursor: language ? 'pointer' : 'not-allowed',
+                fontFamily: 'Inter, sans-serif',
+                transition: 'all 0.2s',
+              }}
+            >
+              Continue
+            </button>
           </div>
         )}
 
         {/* STEP 2: Level */}
         {step === 2 && (
           <div>
-            <h1 style={{ fontSize: '26px', fontWeight: 600, textAlign: 'center', marginBottom: '8px' }}>
-              Where do you start?
+            <h1 style={{ fontSize: '22px', fontWeight: 700, textAlign: 'center', color: '#18181B', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
+              What's your level?
             </h1>
-            <p style={{ textAlign: 'center', color: '#888', marginBottom: '32px', fontSize: '15px' }}>
-              Pick your level. Starting higher assumes you know all earlier vocabulary.
+            <p style={{ textAlign: 'center', color: '#71717A', marginBottom: '28px', fontSize: '14px' }}>
+              {language === 'chinese' ? 'Pick your HSK level. Starting higher assumes you know all earlier vocabulary.' : 'Pick your JLPT level. Starting higher assumes you know all earlier vocabulary.'}
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
               {(language === 'chinese' ? chineseLevels : japaneseLevels).map(lvl => (
                 <button
                   key={lvl}
                   onClick={() => setLevel(lvl)}
                   style={{
-                    padding: '20px', borderRadius: '12px',
-                    border: `2px solid ${level === lvl ? accent : '#e5e5e5'}`,
-                    background: level === lvl ? `${accent}0D` : '#fff',
-                    cursor: 'pointer', fontSize: '15px', fontWeight: 600,
-                    color: level === lvl ? accent : '#1a1a1a', transition: 'all 0.2s',
+                    padding: '18px 8px',
+                    borderRadius: '12px',
+                    border: level === lvl ? ('2px solid ' + accentHex) : '2px solid #E7E5E4',
+                    background: level === lvl ? (accentHex + '0D') : '#fff',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: level === lvl ? accentHex : '#18181B',
+                    transition: 'all 0.2s',
+                    fontFamily: 'Inter, sans-serif',
+                    lineHeight: 1.3,
                   }}
                 >
-                  {language === 'chinese' ? 'HSK ' + lvl : getLevelLabel('japanese', 'jlpt', lvl)}
+                  {language === 'chinese' ? getLevelLabel('chinese', 'hsk_3', lvl) : getLevelLabel('japanese', 'jlpt', lvl)}
                 </button>
               ))}
             </div>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '32px' }}>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '28px' }}>
               <button onClick={() => setStep(1)} style={backBtn}>Back</button>
               <button
                 onClick={() => setStep(3)}
                 disabled={!level}
-                style={{ ...nextBtn(accent), opacity: level ? 1 : 0.4 }}
+                style={{
+                  flex: 2,
+                  padding: '13px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: level ? accentHex : '#E7E5E4',
+                  color: level ? '#fff' : '#71717A',
+                  cursor: level ? 'pointer' : 'not-allowed',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  fontFamily: 'Inter, sans-serif',
+                  transition: 'all 0.2s',
+                }}
               >
                 Continue
               </button>
@@ -129,44 +237,68 @@ export default function Onboarding({ session, onComplete }) {
         {/* STEP 3: Daily goal */}
         {step === 3 && (
           <div>
-            <h1 style={{ fontSize: '26px', fontWeight: 600, textAlign: 'center', marginBottom: '8px' }}>
-              Daily goal
+            <h1 style={{ fontSize: '22px', fontWeight: 700, textAlign: 'center', color: '#18181B', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
+              Set your daily goal
             </h1>
-            <p style={{ textAlign: 'center', color: '#888', marginBottom: '32px', fontSize: '15px' }}>
-              How many new cards do you want to learn each day?
+            <p style={{ textAlign: 'center', color: '#71717A', marginBottom: '28px', fontSize: '14px' }}>
+              How many new words do you want to learn each day?
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[
-                { val: 5, label: 'Casual', desc: '5 new cards / day' },
-                { val: 10, label: 'Regular', desc: '10 new cards / day' },
-                { val: 15, label: 'Intensive', desc: '15 new cards / day' },
+                { val: 5, label: 'Casual', cards: '5 cards / day', desc: 'A little each day' },
+                { val: 10, label: 'Regular', cards: '10 cards / day', desc: 'Steady progress' },
+                { val: 15, label: 'Intensive', cards: '15 cards / day', desc: 'Fast track' },
               ].map(opt => (
                 <button
                   key={opt.val}
                   onClick={() => setGoal(opt.val)}
                   style={{
-                    padding: '16px 20px', borderRadius: '12px',
-                    border: `2px solid ${goal === opt.val ? accent : '#e5e5e5'}`,
-                    background: goal === opt.val ? `${accent}0D` : '#fff',
-                    cursor: 'pointer', textAlign: 'left',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '16px 20px',
+                    borderRadius: '12px',
+                    border: goal === opt.val ? ('2px solid ' + accentHex) : '2px solid #E7E5E4',
+                    background: goal === opt.val ? (accentHex + '0D') : '#fff',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                     transition: 'all 0.2s',
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: '16px', fontWeight: 600, color: goal === opt.val ? accent : '#1a1a1a' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 600, color: goal === opt.val ? accentHex : '#18181B', fontFamily: 'Inter, sans-serif' }}>
                       {opt.label}
                     </div>
-                    <div style={{ fontSize: '13px', color: '#888' }}>{opt.desc}</div>
+                    <div style={{ fontSize: '13px', color: '#71717A', marginTop: '2px' }}>{opt.desc}</div>
+                  </div>
+                  <div style={{ fontSize: '13px', fontWeight: 500, color: goal === opt.val ? accentHex : '#71717A' }}>
+                    {opt.cards}
                   </div>
                 </button>
               ))}
             </div>
-            {error && <p style={{ color: '#E5484D', fontSize: '13px', marginTop: '12px', textAlign: 'center' }}>{error}</p>}
-            <div style={{ display: 'flex', gap: '12px', marginTop: '32px' }}>
+            {error && <p style={{ color: '#DC2626', fontSize: '13px', marginTop: '12px', textAlign: 'center' }}>{error}</p>}
+            <div style={{ display: 'flex', gap: '12px', marginTop: '28px' }}>
               <button onClick={() => setStep(2)} style={backBtn}>Back</button>
-              <button onClick={handleFinish} disabled={saving} style={nextBtn(accent)}>
-                {saving ? 'Setting up...' : 'Start learning'}
+              <button
+                onClick={handleFinish}
+                disabled={saving}
+                style={{
+                  flex: 2,
+                  padding: '13px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: accentHex,
+                  color: '#fff',
+                  cursor: saving ? 'not-allowed' : 'pointer',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  fontFamily: 'Inter, sans-serif',
+                  opacity: saving ? 0.7 : 1,
+                  transition: 'opacity 0.2s',
+                }}
+              >
+                {saving ? 'Setting up...' : 'Start Learning'}
               </button>
             </div>
           </div>
@@ -176,22 +308,15 @@ export default function Onboarding({ session, onComplete }) {
   )
 }
 
-const langCard = () => ({
-  display: 'flex', alignItems: 'center', gap: '20px',
-  padding: '20px 24px', borderRadius: '14px',
-  border: '1px solid #e5e5e5', background: '#fff',
-  cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s',
-  width: '100%',
-})
-
 const backBtn = {
-  flex: 1, padding: '12px', borderRadius: '10px',
-  border: '1px solid #e5e5e5', background: '#fff',
-  cursor: 'pointer', fontSize: '15px', fontWeight: 500,
+  flex: 1,
+  padding: '13px',
+  borderRadius: '12px',
+  border: '1px solid #E7E5E4',
+  background: '#fff',
+  cursor: 'pointer',
+  fontSize: '15px',
+  fontWeight: 500,
+  fontFamily: 'Inter, sans-serif',
+  color: '#18181B',
 }
-
-const nextBtn = (accent) => ({
-  flex: 2, padding: '12px', borderRadius: '10px',
-  border: 'none', background: accent, color: '#fff',
-  cursor: 'pointer', fontSize: '15px', fontWeight: 500,
-})
