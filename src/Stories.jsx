@@ -927,12 +927,12 @@ export default function Stories({ session, profile, track, onBack }) {
   async function loadData() {
     setLoading(true)
 
+    // Load all levels so every word in a story is clickable, not just current level
     const { data: vocabData } = await supabase
       .from('vocabulary')
       .select('*')
       .eq('language', track.language)
       .eq('system', track.system)
-      .eq('level', track.current_level)
       .eq('is_active', true)
 
     const map = {}
@@ -948,8 +948,11 @@ export default function Stories({ session, profile, track, onBack }) {
     ;(cardsData || []).forEach(c => { cardsMap[c.vocab_id] = c })
     setUserCards(cardsMap)
 
-    const vocabIds = new Set((vocabData || []).map(v => v.id))
-    const learned = (cardsData || []).filter(c => vocabIds.has(c.vocab_id) && isLearned(c)).length
+    // learnedCount uses current level only (drives tier unlock thresholds)
+    const currentLevelIds = new Set(
+      (vocabData || []).filter(v => v.level === track.current_level).map(v => v.id)
+    )
+    const learned = (cardsData || []).filter(c => currentLevelIds.has(c.vocab_id) && isLearned(c)).length
     setLearnedCount(learned)
 
     const { data: storiesData } = await supabase
