@@ -324,7 +324,24 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const canUseFurigana = isJapanese && hasKanji(v.word) && Boolean(v.reading)
   const showRuby = canUseFurigana && (showFurigana || flipped)
   const showReadingLine = flipped && v.reading && !isJapanese
-  const hasExample = Boolean(v.example_sentence || v.example_reading || v.example_translation)
+  const hasExample = Boolean(v.example_sentence || v.example_pinyin || v.example_translation)
+
+  function renderExampleSentence(sentence, word) {
+    if (!sentence) return null
+    const idx = word ? sentence.indexOf(word) : -1
+    if (idx === -1 || !word) {
+      return <span>{sentence}</span>
+    }
+    const before = sentence.slice(0, idx)
+    const after = sentence.slice(idx + word.length)
+    return (
+      <span>
+        {before}
+        <span style={{ color: accentHex, borderBottom: '1px solid ' + accentHex + '88' }}>{word}</span>
+        {after}
+      </span>
+    )
+  }
   const stateLabel = card.state === 'new' ? 'New card' : (card.state === 'review' ? 'Review' : 'Learning')
 
   return (
@@ -467,23 +484,23 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
                 {hasExample && (
                   <div style={{
                     width: '100%', maxWidth: '430px', marginTop: '22px', paddingTop: '18px',
-                    borderTop: '1px solid #F1F1F0', textAlign: 'center',
+                    borderTop: '1px solid #E7E5E4', textAlign: 'center',
                   }}>
                     {v.example_sentence && (
                       <div style={{
-                        fontSize: '20px', color: '#27272A', lineHeight: 1.5,
+                        fontSize: '17px', color: '#18181B', lineHeight: 1.5,
                         fontFamily: langFont,
                       }}>
-                        {v.example_sentence}
+                        {renderExampleSentence(v.example_sentence, v.word)}
                       </div>
                     )}
-                    {v.example_reading && (
-                      <div style={{ fontSize: '14px', color: accent, marginTop: '7px', lineHeight: 1.45, fontWeight: 550 }}>
-                        {v.example_reading}
+                    {v.example_pinyin && (
+                      <div style={{ fontSize: '13px', color: accentHex, marginTop: '7px', lineHeight: 1.45, fontWeight: 550 }}>
+                        {v.example_pinyin}
                       </div>
                     )}
                     {v.example_translation && (
-                      <div style={{ fontSize: '14px', color: '#71717A', marginTop: '7px', lineHeight: 1.45 }}>
+                      <div style={{ fontSize: '13px', color: '#71717A', marginTop: '7px', lineHeight: 1.45 }}>
                         {v.example_translation}
                       </div>
                     )}
