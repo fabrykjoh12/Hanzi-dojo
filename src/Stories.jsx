@@ -4,7 +4,7 @@ import { getLevelLabel, getSystemLabel } from './utils'
 import { isLearned } from './mastery'
 import {
   ArrowLeft, ArrowRight, BookOpen, BookOpenCheck, CheckCircle2,
-  Circle, Library, Lock, Plus, Sparkles, Volume2, Type, Award,
+  Circle, Library, Lock, Plus, Sparkles, Volume2, Type, Award, Languages,
 } from 'lucide-react'
 
 // ─── CATEGORIES ────────────────────────────────────────────────────────────
@@ -617,11 +617,48 @@ function StoryCompletionCard({ totalVocab, masteredCount, accentHex, onBack, onN
   )
 }
 
+// ─── ENGLISH STORY LINE ────────────────────────────────────────────────────
+
+function EnglishStoryLine({ line, speakerIndexMap }) {
+  const { speaker, text } = splitSpeakerLine(line)
+  const speakerColor = speaker !== null && speakerIndexMap[speaker] !== undefined
+    ? SPEAKER_PALETTE[speakerIndexMap[speaker] % SPEAKER_PALETTE.length] : null
+
+  return (
+    <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start', padding: '16px 24px' }}>
+      <div style={{ width: '36px', flexShrink: 0, paddingTop: '4px' }}>
+        {speakerColor && (
+          <div style={{
+            width: '36px', height: '36px', borderRadius: '11px',
+            background: speakerColor + '18', border: '1px solid ' + speakerColor + '28',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '12px', fontWeight: 800, color: speakerColor,
+            fontFamily: 'Inter, sans-serif',
+          }}>
+            {speaker.slice(0, 1)}
+          </div>
+        )}
+      </div>
+      <div style={{ flex: 1 }}>
+        {speaker && (
+          <div style={{ fontSize: '11px', fontWeight: 750, color: speakerColor, marginBottom: '4px', letterSpacing: '0.03em' }}>
+            {speaker}
+          </div>
+        )}
+        <p style={{ margin: 0, fontSize: '16px', lineHeight: 1.75, color: '#52525B', fontFamily: 'Inter, sans-serif' }}>
+          {text}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 // ─── STORY READER ──────────────────────────────────────────────────────────
 
 function StoryReader({ story, vocabMap, userCards, setUserCards, session, track, languageDetails, onBack, nextStory, onNextStory }) {
   const { isJapanese, accentHex, fontFamily } = languageDetails
   const [showFurigana, setShowFurigana] = useState(isJapanese)
+  const [showEnglish, setShowEnglish] = useState(false)
   const [winWidth, setWinWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200)
 
   useEffect(() => {
@@ -708,8 +745,8 @@ function StoryReader({ story, vocabMap, userCards, setUserCards, session, track,
         <CharacterGuide content={story.content} accentHex={accentHex} fontFamily={fontFamily} language={track.language} />
 
         {/* Reader controls */}
-        {isJapanese && (
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+          {isJapanese && (
             <ToggleButton
               active={showFurigana}
               onClick={() => setShowFurigana(v => !v)}
@@ -717,8 +754,17 @@ function StoryReader({ story, vocabMap, userCards, setUserCards, session, track,
               label="Furigana"
               accentHex={accentHex}
             />
-          </div>
-        )}
+          )}
+          {story.english_content && (
+            <ToggleButton
+              active={showEnglish}
+              onClick={() => setShowEnglish(v => !v)}
+              icon={Languages}
+              label={showEnglish ? 'Japanese' : 'Translation'}
+              accentHex={accentHex}
+            />
+          )}
+        </div>
 
         {/* Main two-column layout */}
         <div style={{
@@ -730,33 +776,42 @@ function StoryReader({ story, vocabMap, userCards, setUserCards, session, track,
 
           {/* Story card */}
           <div style={{
-            background: '#FFFFFF',
-            border: '1px solid #E8E6E3',
+            background: showEnglish ? '#FDFCFB' : '#FFFFFF',
+            border: '1px solid ' + (showEnglish ? '#EAE8E4' : '#E8E6E3'),
             borderRadius: '22px',
             boxShadow: '0 4px 28px rgba(24,24,27,0.07)',
+            transition: 'background 200ms ease, border-color 200ms ease',
           }}>
-            {lines.map((line, lineIdx) => {
-              const { speaker } = splitSpeakerLine(line)
-              const speakerIdx = speaker !== null ? speakerIndexMap[speaker] : null
-              return (
-                <div
-                  key={lineIdx}
-                  style={{ borderBottom: lineIdx < lines.length - 1 ? '1px solid #F5F4F2' : 'none' }}
-                >
-                  <StoryLine
-                    line={line}
-                    vocabMap={vocabMap}
-                    userCards={userCards}
-                    accentHex={accentHex}
-                    fontFamily={fontFamily}
-                    isJapanese={isJapanese}
-                    showFurigana={showFurigana}
-                    speakerIndex={speakerIdx}
-                    onAdd={addToDeck}
-                  />
-                </div>
-              )
-            })}
+            {showEnglish ? (
+              (story.english_content || '').split('\n').filter(Boolean).map((line, lineIdx) => {
+                const allLines = (story.english_content || '').split('\n').filter(Boolean)
+                return (
+                  <div key={lineIdx} style={{ borderBottom: lineIdx < allLines.length - 1 ? '1px solid #F2F0ED' : 'none' }}>
+                    <EnglishStoryLine line={line} speakerIndexMap={speakerIndexMap} />
+                  </div>
+                )
+              })
+            ) : (
+              lines.map((line, lineIdx) => {
+                const { speaker } = splitSpeakerLine(line)
+                const speakerIdx = speaker !== null ? speakerIndexMap[speaker] : null
+                return (
+                  <div key={lineIdx} style={{ borderBottom: lineIdx < lines.length - 1 ? '1px solid #F5F4F2' : 'none' }}>
+                    <StoryLine
+                      line={line}
+                      vocabMap={vocabMap}
+                      userCards={userCards}
+                      accentHex={accentHex}
+                      fontFamily={fontFamily}
+                      isJapanese={isJapanese}
+                      showFurigana={showFurigana}
+                      speakerIndex={speakerIdx}
+                      onAdd={addToDeck}
+                    />
+                  </div>
+                )
+              })
+            )}
           </div>
 
           {/* Sidebar */}

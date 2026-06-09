@@ -79,7 +79,8 @@ function buildPrompt(vocab, tierLabel, sceneIndex) {
     '- Title: use "' + scene.title + '" or another 2-6 character word that reflects the scene\n' +
     '- english_summary: 1-2 sentences describing what happens\n\n' +
     'Return ONLY valid JSON with no markdown fences:\n' +
-    '{"title":"...","english_summary":"...","content":"line1\\nline2\\n..."}'
+    '{"title":"...","english_summary":"...","content":"line1\\nline2\\n...","english_content":"English translation line1\\nline translation line2\\n..."}\n\n' +
+    'english_content must have the SAME number of lines as content, in the same order. Keep dialogue format: speaker：English text'
 }
 
 async function generateStory(vocab, tierLabel, sceneIndex, attempt = 0) {
@@ -150,6 +151,7 @@ async function main() {
           title: story.title,
           english_summary: story.english_summary,
           content: story.content,
+          english_content: story.english_content || null,
           is_published: true,
         })
         if (error) throw new Error(error.message)
