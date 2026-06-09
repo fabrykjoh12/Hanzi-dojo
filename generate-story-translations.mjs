@@ -30,10 +30,21 @@ function buildPrompt(story) {
     'The english_content must have exactly the same number of lines as the Japanese.'
 }
 
+function parseDailyLimitWait(err) {
+  const msg = (err.message || '') + (err.error ? JSON.stringify(err.error) : '')
+  if (!msg.includes('tokens per day') && !msg.includes('TPD')) return null
+  // "Please try again in 18m9.5s"
+  const mMatch = msg.match(/try again in (\d+)m([\d.]+)s/)
+  if (mMatch) return (parseInt(mMatch[1]) * 60 + parseFloat(mMatch[2])) * 1000
+  const sMatch = msg.match(/try again in ([\d.]+)s/)
+  if (sMatch) return parseFloat(sMatch[1]) * 1000
+  return 60 * 60 * 1000 // default: 1 hour
+}
+
 async function translateStory(story, attempt = 0) {
   try {
     const response = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      model: 'llama-3.1-8b-instant',
       max_tokens: 1024,
       messages: [{ role: 'user', content: buildPrompt(story) }],
     })
@@ -42,6 +53,11 @@ async function translateStory(story, attempt = 0) {
     const parsed = JSON.parse(json)
     return parsed.english_content
   } catch (err) {
+    const dailyWaitMs = parseDailyLimitWait(err)
+    if (dailyWaitMs !== null) {
+      const mins = Math.ceil(dailyWaitMs / 60000)
+      throw Object.assign(new Error('Daily token limit reached. Run again in ~' + mins + ' minutes.'), { isDailyLimit: true })
+    }
     if (attempt < 3) {
       const wait = Math.min(15 * Math.pow(2, attempt), 60)
       process.stdout.write('(retry ' + wait + 's) ')
@@ -88,6 +104,12 @@ async function main() {
       success++
       await sleep(3000)
     } catch (err) {
+      if (err.isDailyLimit) {
+        console.log('STOPPED: ' + err.message)
+        console.log('\n' + success + ' translated so far, ' + (stories.length - success) + ' remaining.')
+        console.log('Re-run the same command later to continue where it left off.')
+        return
+      }
       console.log('FAILED: ' + err.message)
       failed++
     }
