@@ -2,6 +2,8 @@
 
 Read this entire file before making any change. It describes not just *what* the project is, but *why* it exists and *how* it should feel. When a decision isn't covered here, choose the option that best serves the vision and learning philosophy below.
 
+> **⚠️ ALWAYS KEEP THIS FILE UP TO DATE.** Claude **must** update CLAUDE.md after **every** change and at the end of **every** conversation. Whenever you add or change a feature, fix a known issue, alter the database schema, add content, or make any other meaningful change, update the relevant sections here in the **same** session — before you finish. Treat an out-of-date CLAUDE.md as a bug. Specifically: move resolved items out of "Known issues" (§16) and "Roadmap" (§17), update "Current state" (§2) and the file descriptions (§4), and reflect schema changes in §5. This is mandatory, not optional.
+
 ---
 
 ## 1. Project purpose and philosophy
@@ -690,4 +692,10 @@ git commit -m "Short specific message"
 git push
 ```
 
-Use `/ship` skill to automate this. Commit before and after every meaningful session. Update this CLAUDE.md when features are added or known issues are resolved.
+Use `/ship` skill to automate this. Commit before and after every meaningful session.
+
+**Updating CLAUDE.md is mandatory (see the rule at the top of this file).** After every change and at the end of every conversation, update CLAUDE.md so it always reflects the current state of the project:
+- Add or revise the relevant entry in §2 (Current state) and §4 (source-file descriptions) when behaviour changes.
+- Move finished items out of §16 (Known issues) and §17 (Roadmap); add any new issues you discover.
+- Update §5 (Database schema) for any schema change and §7 (Content seeded) for new content.
+- Do this in the same session as the change — never leave CLAUDE.md stale. Treat an out-of-date CLAUDE.md as a bug.
