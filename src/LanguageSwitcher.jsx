@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel } from './utils'
+import { isMastered } from './mastery'
 import { ArrowLeft, ArrowRight, Globe2, Plus } from 'lucide-react'
 
 const LANGUAGES = [
@@ -115,8 +116,8 @@ function LanguageCard({ lang, track, prog, levelProgress, isActive, saving, onCl
       {prog && (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '9px' }}>
-            <span style={{ color: '#71717A' }}>Words marked Easy</span>
-            <span style={{ fontWeight: 750, color: '#18181B' }}>{prog.easyCount} / {prog.totalWords}</span>
+            <span style={{ color: '#71717A' }}>Words mastered</span>
+            <span style={{ fontWeight: 750, color: '#18181B' }}>{prog.masteredCount} / {prog.totalWords}</span>
           </div>
           <div style={{ height: '7px', background: '#E7E5E4', borderRadius: '999px', overflow: 'hidden' }}>
             <div style={{
@@ -137,7 +138,7 @@ function LanguageCard({ lang, track, prog, levelProgress, isActive, saving, onCl
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
             {lang.levels.map(lvl => {
-              const levelProg = levelProgress[lvl] || { easyCount: 0, totalWords: 0, unlocked: false }
+              const levelProg = levelProgress[lvl] || { masteredCount: 0, totalWords: 0, unlocked: false }
               const current = track.current_level === lvl
               return (
                 <button
@@ -164,7 +165,7 @@ function LanguageCard({ lang, track, prog, levelProgress, isActive, saving, onCl
                     {lang.levelLabel(lvl)}
                   </div>
                   <div style={{ fontSize: '10px', color: levelProg.unlocked ? '#2F9E6D' : '#71717A', marginTop: '5px', fontWeight: 700 }}>
-                    {levelProg.unlocked ? 'Passed' : levelProg.easyCount + '/' + (levelProg.totalWords || 0)}
+                    {levelProg.unlocked ? 'Passed' : levelProg.masteredCount + '/' + (levelProg.totalWords || 0)}
                   </div>
                 </button>
               )
@@ -242,7 +243,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
 
     const { data: allCards } = await supabase
       .from('cards')
-      .select('vocab_id, is_easy')
+      .select('vocab_id, stability')
       .eq('user_id', session.user.id)
 
     const { data: unlocks } = await supabase
@@ -267,7 +268,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
       for (const lvl of lang.levels) {
         const vocabIds = new Set((vocab || []).filter(v => v.level === lvl).map(v => v.id))
         const levelCards = (allCards || []).filter(c => vocabIds.has(c.vocab_id))
-        const easyCount = levelCards.filter(c => c.is_easy).length
+        const masteredCount = levelCards.filter(isMastered).length
         const totalWords = vocabIds.size
         const unlocked = (unlocks || []).some(u =>
           u.language === track.language &&
@@ -276,10 +277,10 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
         )
 
         progressMap[track.language][lvl] = {
-          easyCount,
+          masteredCount,
           totalWords,
           unlocked,
-          pct: totalWords > 0 ? Math.round(easyCount / totalWords * 100) : 0,
+          pct: totalWords > 0 ? Math.round(masteredCount / totalWords * 100) : 0,
         }
       }
     }

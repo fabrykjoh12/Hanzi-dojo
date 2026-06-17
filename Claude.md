@@ -144,6 +144,8 @@ src/LanguageSwitcher.jsx
   Language management. Shows both languages (Chinese + Japanese). Active language
   shows level-replay grid. Not-started shows dashed "Start" card. Supports
   switching active language, replaying a level, starting a new language.
+  Progress (per-level bar + grid sub-labels) is mastery-based (isMastered /
+  card stability), consistent with Home and Profile — not the legacy is_easy count.
 
 src/Sidebar.jsx
   Persistent left navigation. Collapses to 64px icon-only rail with hover tooltips.
@@ -671,7 +673,6 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 - **Some Japanese audio mispronounces kanji.** Fix: generate-audio.mjs already uses `v.reading` (hiragana). Delete the storage folder for the level before regenerating so files are not skipped.
 - **Duplicate kanji in Japanese vocab** (何 = なん/なに, 私 = わたし/わたくし) create identical-looking test options. Plan: deactivate less-common duplicates and/or show reading in test options (reading is already shown in Test.jsx Japanese options).
 - **A few JLPT N5 level-2 entries are counter suffixes** (～グラム, ～たち) — more grammar than vocab. Review and optionally deactivate.
-- **LanguageSwitcher.jsx** still shows "Words marked Easy" in the progress display (uses `is_easy` for display), not the mastery-based count. This is a display inconsistency with the rest of the app but is not a functional bug.
 - **Existing ESLint hook-dependency warnings** in some files — don't add new ones.
 - **Legacy DB columns** `ease_factor` and old SM-2 `learning_step` semantics are kept in the cards table but unused. Do not write to `ease_factor`.
 
