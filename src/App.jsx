@@ -14,6 +14,7 @@ import Sidebar from './Sidebar'
 import Background from './Background'
 import Home from './Home'
 import Settings from './Settings'
+import useIsMobile from './useIsMobile'
 
 // ── Main app ──────────────────────────────────────────────────────────────
 export default function App() {
@@ -23,6 +24,7 @@ export default function App() {
   const [counts, setCounts] = useState({ newCount: 0, learnCount: 0, dueCount: 0, easyCount: 0, totalWords: 0, learnedCount: 0, masteredCount: 0, masteredPct: 0 })
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState('home')
+  const isMobile = useIsMobile()
 
   const loadProfile = async (userId) => {
     const { data: prof } = await supabase
@@ -195,7 +197,10 @@ export default function App() {
       <div style={{ position: 'relative', zIndex: 10 }}>
         <Sidebar view={view} onNavigate={navigate} onLogout={handleLogout} />
       </div>
-      <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
+      <div style={{
+        flex: 1, minWidth: 0, position: 'relative', zIndex: 1,
+        paddingBottom: isMobile ? 'calc(64px + env(safe-area-inset-bottom))' : 0,
+      }}>
         {content}
       </div>
     </div>

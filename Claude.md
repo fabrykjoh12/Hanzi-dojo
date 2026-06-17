@@ -41,7 +41,7 @@ Hanzi-dojo is a free language learning web app built around the two methods that
 - **Profile:** Stats (streak, freezes, learned count, mastered count + mastery % progress bar), daily goal editor (5/10/15 options), last-studied date, reset progress button (two-step confirm → calls RPC), sign out.
 - **Language switcher:** Shows both languages with track progress. Active language has level-replay grid (click any level to jump back). Not-started languages show dashed "Start" card → level picker → creates track. Level replay and language switch both call `profiles.update({ active_language })`.
 - **Settings:** Placeholder page (Appearance / Reminders / Account safety panels) — no real functionality yet. Actual settings (daily goal, reset) live in Profile.
-- **Sidebar:** Persistent left nav. Main items: Home, Flashcards, Test, Writing, Stories, YouTube. Bottom items: Profile, Settings, Language, Log out. Collapses to 64px icon-only rail with hover tooltips; expanded width 232px. Active item uses sage green pill (#E7EDE4 bg, #4F6047 text). Semi-transparent frosted glass (rgba(255,255,255,0.85) + blur(6px)).
+- **Sidebar:** Persistent left nav. Main items: Home, Flashcards, Test, Writing, Stories, YouTube. Bottom items: Profile, Settings, Language, Log out. Collapses to 64px icon-only rail with hover tooltips; expanded width 232px. Active item uses sage green pill (#E7EDE4 bg, #4F6047 text). Semi-transparent frosted glass (rgba(255,255,255,0.85) + blur(6px)). **Mobile (≤768px):** the rail is replaced by a fixed frosted bottom navigation bar with four primary destinations (Home, Flashcards, Stories, Writing) plus a "More" button that opens a slide-up sheet for Test, YouTube, Profile, Settings, Language, Log out. Breakpoint via `useIsMobile()` hook; content area gets bottom padding (incl. iOS `env(safe-area-inset-bottom)`, with `viewport-fit=cover` in index.html).
 - **Themed backgrounds:** Background.jsx — fixed full-page image at opacity 0.4, crossfades between bg-chinese.png and bg-japanese.png on language change, z-index 0 behind everything.
 - **Mastery system:** Two tiers — "learned" (card has ever reached review/relearning state, `learned` column = true) and "mastered" (FSRS stability ≥ 21 days). Constants in src/mastery.js.
 - **Streak system:** Updates on first grade of the day. Gap of 1 day = streak increment. Gap > 1 day = uses a freeze if available, else resets to 1. Streak freezes given back on progress reset.
@@ -147,7 +147,15 @@ src/LanguageSwitcher.jsx
 src/Sidebar.jsx
   Persistent left navigation. Collapses to 64px icon-only rail with hover tooltips.
   Expanded at 232px. Active state: sage green pill (#E7EDE4 bg, #4F6047 text).
-  Semi-transparent frosted glass (rgba(255,255,255,0.85) + blur).
+  Semi-transparent frosted glass (rgba(255,255,255,0.85) + blur). On mobile
+  (useIsMobile, ≤768px) renders MobileNav instead: a fixed bottom bar (Home,
+  Flashcards, Stories, Writing + More) where "More" opens a slide-up sheet with
+  the remaining destinations. MOBILE_BAR_KEYS / MOBILE_MORE_KEYS control the split.
+
+src/useIsMobile.js
+  Responsive hook. Exports MOBILE_BREAKPOINT (768) and a default useIsMobile()
+  that returns true at ≤768px via matchMedia + useSyncExternalStore (no
+  setState-in-effect). Used by App.jsx (content bottom padding) and Sidebar.jsx.
 
 src/Background.jsx
   Fixed full-page background image at opacity 0.4. Crossfades between
@@ -654,7 +662,6 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 - **Duplicate kanji in Japanese vocab** (何 = なん/なに, 私 = わたし/わたくし) create identical-looking test options. Plan: deactivate less-common duplicates and/or show reading in test options (reading is already shown in Test.jsx Japanese options).
 - **A few JLPT N5 level-2 entries are counter suffixes** (～グラム, ～たち) — more grammar than vocab. Review and optionally deactivate.
 - **LanguageSwitcher.jsx** still shows "Words marked Easy" in the progress display (uses `is_easy` for display), not the mastery-based count. This is a display inconsistency with the rest of the app but is not a functional bug.
-- **Mobile layout not built.** Sidebar needs to become a bottom bar on narrow screens (~768px breakpoint).
 - **Existing ESLint hook-dependency warnings** in some files — don't add new ones.
 - **Legacy DB columns** `ease_factor` and old SM-2 `learning_step` semantics are kept in the cards table but unused. Do not write to `ease_factor`.
 
@@ -670,7 +677,7 @@ Priority order (most impactful first):
 4. **Japanese YouTube recommendations:** At least a few curated videos for JLPT N5.
 5. **HSK 2 vocabulary + audio + stories:** Next Chinese level content.
 6. **Furigana on Japanese flashcard main word:** Show reading above kanji as ruby text by default (furigana toggle already exists for Study.jsx — add it to card back when word has kanji).
-7. **Mobile layout:** Sidebar → bottom navigation bar at ~768px breakpoint.
+7. ~~**Mobile layout:** Sidebar → bottom navigation bar at ~768px breakpoint.~~ — **Done.** Fixed bottom bar (Home/Flashcards/Stories/Writing + More sheet) below 768px via `useIsMobile`.
 8. **FSRS parameter tuning:** Once real user data exists, optimize parameters beyond library defaults.
 9. **Practice test mode:** Unlimited questions, no progression impact, no card state changes.
 10. **Offline support:** Service worker (post-launch).
