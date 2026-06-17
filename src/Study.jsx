@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import { schedule, previewLabels } from './srs'
 import { updateStreak } from './streak'
 import { getLevelLabel, getSystemLabel } from './utils'
+import { getFuriganaDefault } from './prefs'
 import {
   Volume2, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
   Sparkles, CheckCircle2, Layers, BookOpenCheck,
@@ -122,7 +123,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const [flipped, setFlipped] = useState(false)
   const [done, setDone] = useState(false)
   const [streakDone, setStreakDone] = useState(false)
-  const [showFurigana, setShowFurigana] = useState(true)
+  const [showFurigana, setShowFurigana] = useState(() => getFuriganaDefault())
   const [saveError, setSaveError] = useState(null)
   const audioRef = useRef(null)
 

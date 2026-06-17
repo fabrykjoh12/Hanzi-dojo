@@ -174,7 +174,13 @@ export default function App() {
       />
     )
   } else if (view === 'settings') {
-    content = <Settings profile={profile} />
+    content = (
+      <Settings
+        session={session}
+        profile={profile}
+        onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
+      />
+    )
   } else {
     content = (
       <Home

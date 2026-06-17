@@ -40,7 +40,7 @@ Hanzi-dojo is a free language learning web app built around the two methods that
 - **YouTube recommendations:** Grid of video cards with thumbnails (from YouTube API URL pattern), channel name, notes. Loads for current language/system/level.
 - **Profile:** Stats (streak, freezes, learned count, mastered count + mastery % progress bar), daily goal editor (5/10/15 options), last-studied date, reset progress button (two-step confirm → calls RPC), sign out.
 - **Language switcher:** Shows both languages with track progress. Active language has level-replay grid (click any level to jump back). Not-started languages show dashed "Start" card → level picker → creates track. Level replay and language switch both call `profiles.update({ active_language })`.
-- **Settings:** Placeholder page (Appearance / Reminders / Account safety panels) — no real functionality yet. Actual settings (daily goal, reset) live in Profile.
+- **Settings:** Functional preferences page. **Appearance:** "Furigana on Japanese cards" toggle — a device-local default (localStorage via `src/prefs.js`) that seeds the per-session furigana state in Study.jsx. **Account:** edit display name (writes `profiles.display_name`, propagates via `onUpdate`), read-only email, and change password (`supabase.auth.updateUser`). **Reminders:** honest "not available yet" note (no fake controls). Sign out at the bottom. Daily goal and reset still live in Profile.
 - **Sidebar:** Persistent left nav. Main items: Home, Flashcards, Test, Writing, Stories, YouTube. Bottom items: Profile, Settings, Language, Log out. Collapses to 64px icon-only rail with hover tooltips; expanded width 232px. Active item uses sage green pill (#E7EDE4 bg, #4F6047 text). Semi-transparent frosted glass (rgba(255,255,255,0.85) + blur(6px)). **Mobile (≤768px):** the rail is replaced by a fixed frosted bottom navigation bar with four primary destinations (Home, Flashcards, Stories, Writing) plus a "More" button that opens a slide-up sheet for Test, YouTube, Profile, Settings, Language, Log out. Breakpoint via `useIsMobile()` hook; content area gets bottom padding (incl. iOS `env(safe-area-inset-bottom)`, with `viewport-fit=cover` in index.html).
 - **Themed backgrounds:** Background.jsx — fixed full-page image at opacity 0.4, crossfades between bg-chinese.png and bg-japanese.png on language change, z-index 0 behind everything.
 - **Mastery system:** Two tiers — "learned" (card has ever reached review/relearning state, `learned` column = true) and "mastered" (FSRS stability ≥ 21 days). Constants in src/mastery.js.
@@ -95,7 +95,8 @@ src/Study.jsx
   Flashcard session. Builds a queue (due-learning first, then new up to daily
   limit, then due-review). Flip card to reveal reading, meaning, and example
   sentence. Four FSRS grade buttons (Again/Hard/Good/Easy) with interval
-  previews. Audio autoplay on flip. Furigana toggle for Japanese (ruby element);
+  previews. Audio autoplay on flip. Furigana toggle for Japanese (ruby element),
+  initialised from the device-local default in prefs.js (set in Settings);
   the example sentence also shows inline furigana on the target word for
   Japanese cards. Saves full FSRS state to cards table on every grade.
 
@@ -163,8 +164,17 @@ src/Background.jsx
   z-index 0, pointer-events none, aria-hidden.
 
 src/Settings.jsx
-  Placeholder settings page. Shows three preview panels (Appearance, Reminders,
-  Account safety) with no real functionality. Actual settings live in Profile.
+  Functional settings page. Appearance: furigana-default toggle (device-local via
+  prefs.js). Account: display-name edit (profiles.display_name + onUpdate),
+  read-only email, change password (supabase.auth.updateUser). Reminders: honest
+  "not available yet" note. Sign out. Receives session + onUpdate from App.jsx.
+  Self-contained Section/Row/Toggle/Input/Button helpers. Daily goal + reset
+  still live in Profile.
+
+src/prefs.js
+  Device-local UI preferences in localStorage (defensive try/catch — never throws
+  on disabled storage). getFuriganaDefault()/setFuriganaDefault(bool). Shared by
+  Settings.jsx (the control) and Study.jsx (initial furigana state).
 
 src/InfoTip.jsx
   Reusable "?" tooltip button. Shows a fixed-position panel on click with
