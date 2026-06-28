@@ -83,7 +83,9 @@ src/App.jsx
 src/Auth.jsx
   Login/signup screen. Email+password and Google OAuth via Supabase. Tab toggle
   between Log in and Sign up. Uses bg-login.png background and Hanzi-logo.png.
-  No form tag — submit via button onClick.
+  No form tag — submit via button onClick. Google sign-in passes
+  redirectTo = window.location.origin + import.meta.env.BASE_URL so OAuth returns
+  to whichever host the user is on (see section 19 Deployment).
 
 src/Onboarding.jsx
   3-step flow: language → level → daily goal. Creates profiles and
@@ -194,7 +196,10 @@ src/utils.js
 
 src/supabase.js
   Exports the Supabase client created from VITE_SUPABASE_URL and
-  VITE_SUPABASE_ANON_KEY environment variables.
+  VITE_SUPABASE_ANON_KEY environment variables. If either is missing at build
+  time, it renders a visible "Site can't start" card into #root and throws,
+  instead of letting createClient crash to a blank page. This is the fast signal
+  that a host is missing its env vars (see section 19).
 
 src/main.jsx
   React 19 root. Mounts App into #root.
@@ -555,6 +560,9 @@ src/assets/hero.png         unused
 
 ## 14. Environment
 
+For local dev these live in files; in production they come from each host's
+settings (see section 19 Deployment).
+
 ```
 .env            Vite app vars (VITE_ prefix). Gitignored.
                 Required: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_GOOGLE_TTS_KEY
@@ -660,19 +668,24 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 
 ## 17. Roadmap
 
+**Status:** The app is now **live** on GitHub Pages + Vercel (section 19), so real users can reach it. That raises the priority of mobile layout and content breadth.
+
+Done:
+- ~~**Fix example_reading column reference in Study.jsx**~~
+- ~~**Japanese example sentences**~~ (798/800 words; 2 stragglers remain).
+- ~~**Japanese stories**~~ — 15 stories across 3 tiers for JLPT N5 level 1, with English translations.
+- ~~**Deploy to the web**~~ — GitHub Pages + Vercel, auto-deploy from `main`, graceful missing-config screen, OAuth redirect handling.
+
 Priority order (most impactful first):
 
-1. ~~**Fix example_reading column reference in Study.jsx**~~ — **Done.**
-2. ~~**Japanese example sentences**~~ — **Done** (798/800 words; 2 stragglers remain).
-3. ~~**Japanese stories**~~ — **Done.** 15 stories across 3 tiers for JLPT N5 level 1, with English translations.
-4. **Japanese YouTube recommendations:** At least a few curated videos for JLPT N5.
-5. **HSK 2 vocabulary + audio + stories:** Next Chinese level content.
-6. **Furigana on Japanese flashcard main word:** Show reading above kanji as ruby text by default (furigana toggle already exists for Study.jsx — add it to card back when word has kanji).
-7. **Mobile layout:** Sidebar → bottom navigation bar at ~768px breakpoint.
-8. **FSRS parameter tuning:** Once real user data exists, optimize parameters beyond library defaults.
-9. **Practice test mode:** Unlimited questions, no progression impact, no card state changes.
-10. **Offline support:** Service worker (post-launch).
-11. **Spanish:** Third language after Chinese and Japanese content is solid.
+1. **Mobile layout:** Sidebar → bottom navigation bar at ~768px breakpoint. *Now the top priority — the site is public and unusable on phones.*
+2. **Japanese YouTube recommendations:** At least a few curated videos for JLPT N5.
+3. **HSK 2 vocabulary + audio + stories:** Next Chinese level content.
+4. **Furigana on Japanese flashcard main word:** Show reading above kanji as ruby text by default (furigana toggle already exists for Study.jsx — add it to card back when word has kanji).
+5. **FSRS parameter tuning:** Once real user data exists, optimize parameters beyond library defaults.
+6. **Practice test mode:** Unlimited questions, no progression impact, no card state changes.
+7. **Offline support:** Service worker (post-launch).
+8. **Spanish:** Third language after Chinese and Japanese content is solid.
 
 ---
 
@@ -691,3 +704,49 @@ git push
 ```
 
 Use `/ship` skill to automate this. Commit before and after every meaningful session. Update this CLAUDE.md when features are added or known issues are resolved.
+
+**Pushing to `main` auto-deploys both hosts** (see section 19). Always `npm run build` first — a broken build ships a broken site to real users now.
+
+---
+
+## 19. Deployment & hosting
+
+The app is **live** and deployed to two static hosts, both building from `main`. It is a pure client-side SPA (no server) talking directly to Supabase.
+
+### GitHub Pages (primary)
+- **URL:** https://fabrykjoh12.github.io/Hanzi-dojo/ (served under the `/Hanzi-dojo/` subpath — the repo name).
+- **How:** `.github/workflows/deploy.yml` builds and deploys on every push to `main` using the official `actions/upload-pages-artifact` + `actions/deploy-pages`.
+- **Pages Source MUST be "GitHub Actions"** (repo → Settings → Pages → Build and deployment → Source). If it is ever set to "Deploy from a branch", Pages serves the unbuilt source `index.html` (which references `/src/main.jsx`) and the site is a blank page with 404s. This was the original "I can't see the website" bug.
+- **Env vars:** GitHub **repository secrets** (Settings → Secrets and variables → Actions → Repository secrets): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_GOOGLE_TTS_KEY`. Secrets are read at build time; changing them requires a re-run of the workflow.
+
+### Vercel (secondary)
+- **URL:** https://hanzi-dojo-jet.vercel.app/ (served from root `/`).
+- **How:** Vercel project `hanzi-dojo` auto-deploys; the **Production** environment tracks the `main` branch. Framework preset = Vite, build `npm run build`, output `dist`.
+- **Env vars:** set per-environment under Settings → Environments → Production: the same three `VITE_` vars. Vercel bakes them in at build time and only applies them to **new** builds — after adding/changing, redeploy (Deployments → ⋯ → Redeploy, uncheck build cache).
+
+### Base path logic (vite.config.js) — do not hardcode
+The two hosts need different base paths, resolved automatically:
+- GitHub Pages production build → `base: '/Hanzi-dojo/'`
+- Vercel build → `base: '/'` (Vercel sets the `VERCEL` env var during build; the config keys off it)
+- Local dev (`command === 'serve'`) → `base: '/'`
+
+Changing `base` to a fixed value will break one of the two hosts (assets 404 → white page).
+
+### OAuth redirect (Supabase)
+- `Auth.jsx` passes `redirectTo: window.location.origin + import.meta.env.BASE_URL`, so Google login returns to whichever host the user came from.
+- Supabase only honors a `redirectTo` that is allow-listed. In Supabase → Authentication → URL Configuration → **Redirect URLs**, keep all three:
+  - `https://fabrykjoh12.github.io/Hanzi-dojo/**`
+  - `https://hanzi-dojo-jet.vercel.app/**`
+  - `http://localhost:5173/**`
+- The **Site URL** is set to the GitHub Pages URL. Adding a new host = add its URL to the Redirect URLs allow-list.
+
+### Failure-mode cheat sheet
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Blank page, console 404 on `/src/main.jsx` | Pages Source on "Deploy from a branch" | Set Source = GitHub Actions |
+| Blank/white page, 404 on `/Hanzi-dojo/assets/*` at a root host | base path wrong for that host | check vite.config.js VERCEL detection |
+| "Site can't start" card | build ran without the `VITE_SUPABASE_*` env vars | add host env vars, then **rebuild/redeploy** |
+| Google login bounces to localhost | host URL not in Supabase Redirect URLs | add `https://<host>/**` to the allow-list |
+
+### Secrets / keys
+- The `VITE_SUPABASE_ANON_KEY` is **public by design** (it ships in the client bundle); data is protected by RLS, not by hiding the key. Never put the Supabase **service key** in any `VITE_` var or frontend code — it belongs only in `.env.script` for the content scripts.
