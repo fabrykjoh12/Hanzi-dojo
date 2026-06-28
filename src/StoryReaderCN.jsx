@@ -2,23 +2,24 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRight } from 'lucide-react'
 
-// HSKStory-inspired dark reader for Chinese stories. Distraction-free prose,
-// tap a word for a bottom-sheet definition, pinyin + translation toggles, and a
-// bottom audio bar. Japanese still uses the original reader (see Stories.jsx).
+// HSKStory-inspired reader for Chinese stories. Light theme (matches the app —
+// no dark mode). Distraction-free prose, tap a word for a bottom-sheet
+// definition, pinyin + translation toggles, and a bottom audio bar. Japanese
+// still uses the original reader (see Stories.jsx).
 
-const BG = '#0F0F12'
-const PANEL = '#1B1B20'
-const TEXT = '#E8E8EA'
-const MUTED = '#8A8A93'
-const RED = '#E0503A'
-const GOLD = '#E0A33E'
-const HILITE = 'rgba(224, 163, 62, 0.24)'
+const BG = '#FAFAF8'
+const PANEL = '#FFFFFF'
+const TEXT = '#18181B'
+const MUTED = '#71717A'
+const RED = '#B83A24'
+const GOLD = '#B45309'
+const HILITE = 'rgba(217, 164, 62, 0.32)'
 
 const STATUS_COLOR = {
-  not_started: '#6B6B73',
-  learning: '#E0A33E',
-  review: '#5B8DEF',
-  mastered: '#42B883',
+  not_started: '#A1A1AA',
+  learning: '#CA8A04',
+  review: '#3E63DD',
+  mastered: '#2F9E6D',
 }
 
 function wordStatus(vocabId, userCards) {
@@ -105,8 +106,8 @@ function Token({ token, isSelected, showPinyin, onSelect }) {
         cursor: 'pointer',
         borderRadius: '5px',
         padding: '0 1px',
-        background: isSelected ? HILITE : (hover ? 'rgba(255,255,255,0.07)' : 'transparent'),
-        boxShadow: isSelected ? '0 0 0 1px rgba(224,163,62,0.4)' : 'none',
+        background: isSelected ? HILITE : (hover ? 'rgba(0,0,0,0.05)' : 'transparent'),
+        boxShadow: isSelected ? '0 0 0 1px rgba(202,138,4,0.45)' : 'none',
         transition: 'background 120ms ease',
       }}
     >
@@ -210,7 +211,7 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
           {!isMobile && <span style={{ color: MUTED, fontSize: '14px', fontWeight: 600 }}>Library</span>}
         </button>
         <div style={{ color: MUTED, fontSize: '13px', fontWeight: 600, textAlign: 'center', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {levelLabel} · <span style={{ color: '#C9C9CE' }}>{story.title}</span>
+          {levelLabel} · <span style={{ color: '#3F3F46' }}>{story.title}</span>
         </div>
         <div style={{ display: 'flex', gap: '6px' }}>
           <TopToggle active={showPinyin} onClick={() => setShowPinyin(v => !v)} icon={Type} label="Pinyin" isMobile={isMobile} />
@@ -253,7 +254,7 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
         {/* End-of-story → next */}
         {nextStory && (
           <button onClick={onNextStory} style={{
-            marginTop: '28px', width: '100%', background: PANEL, border: '1px solid #2A2A30',
+            marginTop: '28px', width: '100%', background: PANEL, border: '1px solid #E7E5E4',
             borderRadius: '16px', padding: '18px 20px', cursor: 'pointer', textAlign: 'left',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: TEXT,
           }}>
@@ -273,11 +274,11 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
           display: 'flex', justifyContent: 'center', padding: '0 12px', pointerEvents: 'none',
         }}>
           <div style={{
-            width: '100%', maxWidth: '760px', background: PANEL, border: '1px solid #2A2A30',
-            borderRadius: '18px', boxShadow: '0 -8px 40px rgba(0,0,0,0.5)', padding: '14px 18px 16px',
+            width: '100%', maxWidth: '760px', background: PANEL, border: '1px solid #E7E5E4',
+            borderRadius: '18px', boxShadow: '0 -10px 40px rgba(24,24,27,0.14)', padding: '14px 18px 16px',
             pointerEvents: 'auto',
           }}>
-            <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: '#3A3A42', margin: '0 auto 12px' }} />
+            <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: '#D4D4D8', margin: '0 auto 12px' }} />
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
@@ -285,7 +286,7 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
                 <span style={{ width: '8px', height: '8px', borderRadius: '999px', background: STATUS_COLOR[selStatus], flexShrink: 0 }} />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: MUTED, border: '1px solid #34343C', borderRadius: '999px', padding: '3px 9px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: MUTED, border: '1px solid #E4E4E7', borderRadius: '999px', padding: '3px 9px' }}>
                   {levelLabel}
                 </span>
                 <button onClick={() => !selInDeck && addToDeck(sel.vocab)} aria-label="Add to deck"
@@ -306,10 +307,10 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
             </div>
 
             <div style={{ fontSize: '17px', color: GOLD, fontWeight: 600, marginTop: '6px' }}>{sel.vocab.reading}</div>
-            <div style={{ fontSize: '15px', color: '#CFCFD4', marginTop: '4px', lineHeight: 1.45 }}>{sel.vocab.meaning}</div>
+            <div style={{ fontSize: '15px', color: '#3F3F46', marginTop: '4px', lineHeight: 1.45 }}>{sel.vocab.meaning}</div>
 
             {story.english_content && englishLines[sel.lineIndex] && (
-              <div style={{ marginTop: '12px', borderTop: '1px solid #2A2A30', paddingTop: '10px' }}>
+              <div style={{ marginTop: '12px', borderTop: '1px solid #E7E5E4', paddingTop: '10px' }}>
                 <button onClick={() => setShowSentence(v => !v)}
                   style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: MUTED, fontSize: '13px', fontWeight: 600, padding: 0 }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
@@ -318,7 +319,7 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
                   <ChevronRight size={16} color={MUTED} style={{ transform: showSentence ? 'rotate(90deg)' : 'none', transition: 'transform 150ms' }} />
                 </button>
                 {showSentence && (
-                  <div style={{ fontSize: '14px', color: '#CFCFD4', marginTop: '8px', lineHeight: 1.55 }}>
+                  <div style={{ fontSize: '14px', color: '#3F3F46', marginTop: '8px', lineHeight: 1.55 }}>
                     {englishLines[sel.lineIndex]}
                   </div>
                 )}
@@ -332,10 +333,10 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
       <div style={{
         position: 'fixed', left: 0, right: 0, bottom: bottomOffset, zIndex: 24,
         display: 'flex', justifyContent: 'center', padding: '10px 12px',
-        background: 'linear-gradient(180deg, rgba(15,15,18,0) 0%, ' + BG + ' 40%)',
+        background: 'linear-gradient(180deg, rgba(250,250,248,0) 0%, ' + BG + ' 40%)',
       }}>
         <div style={{
-          width: '100%', maxWidth: '760px', background: PANEL, border: '1px solid #2A2A30',
+          width: '100%', maxWidth: '760px', background: PANEL, border: '1px solid #E7E5E4',
           borderRadius: '16px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '14px',
         }}>
           <button onClick={toggleStoryAudio} aria-label={speaking ? 'Pause' : 'Play story'}
@@ -356,8 +357,8 @@ function TopToggle({ active, onClick, icon: Icon, label, isMobile }) {
   return (
     <button onClick={onClick} style={{
       display: 'flex', alignItems: 'center', gap: '6px',
-      background: active ? 'rgba(224,80,58,0.16)' : 'transparent',
-      border: '1px solid ' + (active ? 'rgba(224,80,58,0.5)' : '#2E2E36'),
+      background: active ? 'rgba(184,58,36,0.10)' : 'transparent',
+      border: '1px solid ' + (active ? 'rgba(184,58,36,0.4)' : '#E4E4E7'),
       color: active ? RED : MUTED, borderRadius: '999px',
       padding: isMobile ? '6px 10px' : '7px 13px', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
     }}>
@@ -370,7 +371,7 @@ function TopToggle({ active, onClick, icon: Icon, label, isMobile }) {
 function watermarkStyle(side) {
   const base = {
     position: 'fixed', top: '50%', transform: 'translateY(-50%)',
-    fontSize: '300px', fontWeight: 800, color: 'rgba(255,255,255,0.022)',
+    fontSize: '300px', fontWeight: 800, color: 'rgba(24,24,27,0.04)',
     fontFamily: "'Noto Sans SC'", pointerEvents: 'none', userSelect: 'none', zIndex: 1,
   }
   if (side === 'left') base.left = '2%'
