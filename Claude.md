@@ -149,6 +149,16 @@ src/Sidebar.jsx
   Expanded at 232px. Active state: sage green pill (#E7EDE4 bg, #4F6047 text).
   Semi-transparent frosted glass (rgba(255,255,255,0.85) + blur).
 
+src/MobileNav.jsx
+  Fixed bottom navigation bar shown below 768px (instead of Sidebar). 5 primary
+  tabs (Home, Cards, Stories, Writing, More); "More" opens a bottom sheet with
+  Test, YouTube, Profile, Language, Settings, Log out. Respects iOS safe-area inset.
+
+src/useIsMobile.js
+  useIsMobile() hook + MOBILE_BREAKPOINT (768). window.innerWidth + resize
+  listener; App.jsx uses it to pick Sidebar vs MobileNav and to pad content
+  above the bottom bar.
+
 src/Background.jsx
   Fixed full-page background image at opacity 0.4. Crossfades between
   bg-chinese.png and bg-japanese.png on language change (500ms fade).
@@ -660,7 +670,7 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 - **Duplicate kanji in Japanese vocab** (何 = なん/なに, 私 = わたし/わたくし) create identical-looking test options. Plan: deactivate less-common duplicates and/or show reading in test options (reading is already shown in Test.jsx Japanese options).
 - **A few JLPT N5 level-2 entries are counter suffixes** (～グラム, ～たち) — more grammar than vocab. Review and optionally deactivate.
 - **LanguageSwitcher.jsx** still shows "Words marked Easy" in the progress display (uses `is_easy` for display), not the mastery-based count. This is a display inconsistency with the rest of the app but is not a functional bug.
-- **Mobile layout not built.** Sidebar needs to become a bottom bar on narrow screens (~768px breakpoint).
+- **Mobile layout — nav done, per-screen polish pending.** Below 768px the left sidebar is replaced by a fixed bottom bar (MobileNav.jsx, 5 tabs + a "More" sheet); App.jsx branches the shell via useIsMobile(). Individual screens still use desktop horizontal padding (~32px) and 860px max-widths — usable on phones but could be tightened per screen.
 - **Existing ESLint hook-dependency warnings** in some files — don't add new ones.
 - **Legacy DB columns** `ease_factor` and old SM-2 `learning_step` semantics are kept in the cards table but unused. Do not write to `ease_factor`.
 
@@ -675,10 +685,11 @@ Done:
 - ~~**Japanese example sentences**~~ (798/800 words; 2 stragglers remain).
 - ~~**Japanese stories**~~ — 15 stories across 3 tiers for JLPT N5 level 1, with English translations.
 - ~~**Deploy to the web**~~ — GitHub Pages + Vercel, auto-deploy from `main`, graceful missing-config screen, OAuth redirect handling.
+- ~~**Mobile navigation**~~ — bottom tab bar (MobileNav.jsx) replaces the sidebar below 768px. Per-screen padding polish still pending (see Known issues).
 
 Priority order (most impactful first):
 
-1. **Mobile layout:** Sidebar → bottom navigation bar at ~768px breakpoint. *Now the top priority — the site is public and unusable on phones.*
+1. **Mobile per-screen polish:** Tighten horizontal padding and max-widths on each screen below 768px (nav bar is done; screens still use desktop spacing).
 2. **Japanese YouTube recommendations:** At least a few curated videos for JLPT N5.
 3. **HSK 2 vocabulary + audio + stories:** Next Chinese level content.
 4. **Furigana on Japanese flashcard main word:** Show reading above kanji as ruby text by default (furigana toggle already exists for Study.jsx — add it to card back when word has kanji).

@@ -11,6 +11,8 @@ import Profile from './Profile'
 import YouTube from './YouTube'
 import LanguageSwitcher from './LanguageSwitcher'
 import Sidebar from './Sidebar'
+import MobileNav from './MobileNav'
+import { useIsMobile } from './useIsMobile'
 import Background from './Background'
 import Home from './Home'
 import Settings from './Settings'
@@ -23,6 +25,7 @@ export default function App() {
   const [counts, setCounts] = useState({ newCount: 0, learnCount: 0, dueCount: 0, easyCount: 0, totalWords: 0, learnedCount: 0, masteredCount: 0, masteredPct: 0 })
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState('home')
+  const isMobile = useIsMobile()
 
   const loadProfile = async (userId) => {
     const { data: prof } = await supabase
@@ -192,12 +195,19 @@ export default function App() {
       background: 'linear-gradient(180deg, #FBFBF9 0%, #FAFAF8 100%)',
     }}>
       <Background language={profile.active_language} />
-      <div style={{ position: 'relative', zIndex: 10 }}>
-        <Sidebar view={view} onNavigate={navigate} onLogout={handleLogout} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
+      {!isMobile && (
+        <div style={{ position: 'relative', zIndex: 10 }}>
+          <Sidebar view={view} onNavigate={navigate} onLogout={handleLogout} />
+        </div>
+      )}
+      <div style={{
+        flex: 1, minWidth: 0, position: 'relative', zIndex: 1,
+        // Leave room for the fixed bottom bar so content isn't hidden behind it.
+        paddingBottom: isMobile ? 'calc(62px + env(safe-area-inset-bottom))' : 0,
+      }}>
         {content}
       </div>
+      {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} />}
     </div>
   )
 }
