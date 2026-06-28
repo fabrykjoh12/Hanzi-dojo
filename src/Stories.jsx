@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { isLearned } from './mastery'
 import { useIsMobile } from './useIsMobile'
+import StoryReaderCN from './StoryReaderCN'
 import {
   ArrowLeft, ArrowRight, BookOpen, BookOpenCheck, CheckCircle2,
   Circle, Library, Lock, Plus, Sparkles, Volume2, Type, Award, Languages,
@@ -1053,6 +1054,22 @@ export default function Stories({ session, profile, track, onBack }) {
     const currentIdx = catStories.findIndex(s => s.id === selectedStory.id)
     const nextStory = currentIdx >= 0 && currentIdx < catStories.length - 1
       ? catStories[currentIdx + 1] : null
+
+    if (track.language === 'chinese') {
+      return (
+        <StoryReaderCN
+          story={selectedStory}
+          vocabMap={vocabMap}
+          userCards={userCards}
+          setUserCards={setUserCards}
+          session={session}
+          track={track}
+          onBack={() => setView('list')}
+          nextStory={nextStory}
+          onNextStory={() => setSelectedStory(nextStory)}
+        />
+      )
+    }
 
     return (
       <StoryReader
