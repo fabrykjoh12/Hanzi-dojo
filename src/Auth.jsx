@@ -31,7 +31,14 @@ export default function Auth() {
   }
 
   const handleGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' })
+    // Return to wherever the app is actually running — the GitHub Pages URL in
+    // production, localhost in dev — instead of Supabase's default Site URL.
+    // BASE_URL is '/Hanzi-dojo/' in the prod build and '/' during dev.
+    const redirectTo = window.location.origin + import.meta.env.BASE_URL
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo },
+    })
     if (error) setMessage(error.message)
   }
 
