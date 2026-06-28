@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import { schedule, previewLabels } from './srs'
 import { updateStreak } from './streak'
 import { getLevelLabel, getSystemLabel } from './utils'
+import { useIsMobile } from './useIsMobile'
 import {
   Volume2, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
   Sparkles, CheckCircle2, Layers, BookOpenCheck,
@@ -125,6 +126,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const [showFurigana, setShowFurigana] = useState(true)
   const [saveError, setSaveError] = useState(null)
   const audioRef = useRef(null)
+  const isMobile = useIsMobile()
 
   const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
   const accent = profile.active_language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
@@ -264,7 +266,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     minHeight: '100vh',
     position: 'relative',
     overflow: 'hidden',
-    padding: '20px 32px 36px',
+    padding: isMobile ? '16px 14px 28px' : '20px 32px 36px',
   }
 
 

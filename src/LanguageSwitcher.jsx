@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel } from './utils'
+import { useIsMobile } from './useIsMobile'
 import { ArrowLeft, ArrowRight, Globe2, Plus } from 'lucide-react'
 
 const LANGUAGES = [
@@ -29,13 +30,14 @@ const LANGUAGES = [
 ]
 
 function Shell({ children, accentHex }) {
+  const isMobile = useIsMobile()
   return (
     <div style={{
       minHeight: '100vh',
       position: 'relative',
       overflow: 'hidden',
     }}>
-      <div style={{ maxWidth: '760px', margin: '0 auto', padding: '38px 32px 72px', position: 'relative', zIndex: 1 }}>
+      <div style={{ maxWidth: '760px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px', position: 'relative', zIndex: 1 }}>
         {children}
       </div>
     </div>

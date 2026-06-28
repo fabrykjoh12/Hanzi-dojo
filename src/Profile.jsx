@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { isMastered } from './mastery'
+import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
 import {
   ArrowLeft, Flame, Layers, LogOut, RotateCcw, Save,
@@ -18,13 +19,14 @@ function getLanguageDetails(profile) {
 }
 
 function Shell({ children, accentHex, fontFamily }) {
+  const isMobile = useIsMobile()
   return (
     <div style={{
       minHeight: '100vh',
       position: 'relative',
       overflow: 'hidden',
     }}>
-      <div style={{ maxWidth: '820px', margin: '0 auto', padding: '38px 32px 72px', position: 'relative', zIndex: 1 }}>
+      <div style={{ maxWidth: '820px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px', position: 'relative', zIndex: 1 }}>
         {children}
       </div>
     </div>

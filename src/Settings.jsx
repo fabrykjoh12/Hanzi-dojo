@@ -1,4 +1,5 @@
 import { Bell, Palette, ShieldCheck, SlidersHorizontal } from 'lucide-react'
+import { useIsMobile } from './useIsMobile'
 
 function getLanguageDetails(profile) {
   const isJapanese = profile.active_language === 'japanese'
@@ -10,6 +11,7 @@ function getLanguageDetails(profile) {
 
 export default function Settings({ profile }) {
   const { accentHex, fontFamily } = getLanguageDetails(profile)
+  const isMobile = useIsMobile()
 
   return (
     <div style={{
@@ -17,7 +19,7 @@ export default function Settings({ profile }) {
       position: 'relative',
       overflow: 'hidden',
     }}>
-      <div style={{ maxWidth: '760px', margin: '0 auto', padding: '52px 32px 72px', position: 'relative', zIndex: 1 }}>
+      <div style={{ maxWidth: '760px', margin: '0 auto', padding: isMobile ? '32px 16px 56px' : '52px 32px 72px', position: 'relative', zIndex: 1 }}>
         <div style={{
           width: '68px', height: '68px', borderRadius: '22px',
           background: accentHex + '10',

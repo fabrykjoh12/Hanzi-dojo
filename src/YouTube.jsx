@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
+import { useIsMobile } from './useIsMobile'
 
 function getVideoId(url) {
   if (!url) return null
@@ -103,6 +104,7 @@ function VideoCard({ video, accentHex }) {
 export default function YouTube({ profile, track, onBack }) {
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
+  const isMobile = useIsMobile()
 
   const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
   const systemLabel = getSystemLabel(track.system)
@@ -142,7 +144,7 @@ export default function YouTube({ profile, track, onBack }) {
 
   return (
     <div style={{ minHeight: '100vh' }}>
-      <div style={{ maxWidth: '860px', margin: '0 auto', padding: '40px 24px 60px' }}>
+      <div style={{ maxWidth: '860px', margin: '0 auto', padding: isMobile ? '24px 16px 48px' : '40px 24px 60px' }}>
         <button
           onClick={onBack}
           style={{

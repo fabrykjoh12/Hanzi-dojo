@@ -4,6 +4,7 @@ import { getTestStatus, getAttemptsToday } from './testLogic'
 import { getLevelLabel, getNextLevel } from './utils'
 import { schedule } from './srs'
 import { TEST_UNLOCK_MASTERY_PCT } from './mastery'
+import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
 import {
   ArrowRight, Check, CheckCircle2, Clock, GraduationCap,
@@ -60,6 +61,7 @@ function getLanguageDetails(profile, track) {
 }
 
 function Shell({ children, accentHex, fontFamily, narrow }) {
+  const isMobile = useIsMobile()
   return (
     <div style={{
       minHeight: '100vh',
@@ -69,7 +71,7 @@ function Shell({ children, accentHex, fontFamily, narrow }) {
       <div style={{
         maxWidth: narrow ? '620px' : '760px',
         margin: '0 auto',
-        padding: '38px 32px 72px',
+        padding: isMobile ? '24px 16px 56px' : '38px 32px 72px',
         position: 'relative',
         zIndex: 1,
       }}>

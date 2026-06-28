@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, isRecallMatch } from './utils'
 import { normalizePinyin } from './testLogic'
+import { useIsMobile } from './useIsMobile'
 import { toRomaji } from 'wanakana'
 import {
   ArrowLeft, ArrowRight, BarChart3, Check, CheckCircle2,
@@ -146,6 +147,7 @@ function getLanguageDetails(track) {
 }
 
 function Shell({ children, accentHex, fontFamily, narrow }) {
+  const isMobile = useIsMobile()
   return (
     <div style={{
       minHeight: '100vh',
@@ -155,7 +157,7 @@ function Shell({ children, accentHex, fontFamily, narrow }) {
       <div style={{
         maxWidth: narrow ? '640px' : '860px',
         margin: '0 auto',
-        padding: '38px 32px 72px',
+        padding: isMobile ? '24px 16px 56px' : '38px 32px 72px',
         position: 'relative',
         zIndex: 1,
       }}>

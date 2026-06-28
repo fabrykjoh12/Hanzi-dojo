@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { getLevelLabel, getSystemLabel } from './utils'
 import InfoTip from './InfoTip'
+import { useIsMobile } from './useIsMobile'
 import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight } from 'lucide-react'
 
 // Neutral sage green for the primary CTA (see CLAUDE.md redesign spec)
@@ -36,6 +37,7 @@ function FlowStep({ icon, label, accentHex, onClick }) {
 
 export default function Home({ profile, track, counts, onNavigate }) {
   const [ctaHovered, setCtaHovered] = useState(false)
+  const isMobile = useIsMobile()
 
   const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
   const langChars = profile.active_language === 'japanese' ? '日本語' : '中文'
@@ -49,7 +51,7 @@ export default function Home({ profile, track, counts, onNavigate }) {
     : 0
 
   return (
-    <div style={{ maxWidth: '820px', margin: '0 auto', padding: '52px 32px 60px' }}>
+    <div style={{ maxWidth: '820px', margin: '0 auto', padding: isMobile ? '28px 16px 40px' : '52px 32px 60px' }}>
 
       {/* ── Header: language identity + streak ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '36px' }}>
@@ -77,7 +79,7 @@ export default function Home({ profile, track, counts, onNavigate }) {
       {/* ── Today card ── */}
       <div style={{
         background: '#fff', borderRadius: '20px', border: '1px solid #E7E5E4',
-        boxShadow: '0 2px 16px rgba(0,0,0,0.05)', padding: '28px 32px', marginBottom: '20px',
+        boxShadow: '0 2px 16px rgba(0,0,0,0.05)', padding: isMobile ? '22px 18px' : '28px 32px', marginBottom: '20px',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
           <span style={{ fontSize: '17px', fontWeight: 700, color: '#18181B' }}>Today</span>

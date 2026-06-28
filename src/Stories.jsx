@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { isLearned } from './mastery'
+import { useIsMobile } from './useIsMobile'
 import {
   ArrowLeft, ArrowRight, BookOpen, BookOpenCheck, CheckCircle2,
   Circle, Library, Lock, Plus, Sparkles, Volume2, Type, Award, Languages,
@@ -716,7 +717,7 @@ function StoryReader({ story, vocabMap, userCards, setUserCards, session, track,
 
   return (
     <div style={pageShell()}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 28px 72px', position: 'relative', zIndex: 1 }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '22px 16px 56px' : '32px 28px 72px', position: 'relative', zIndex: 1 }}>
 
         {/* Back nav */}
         <div style={{ marginBottom: '26px' }}>
@@ -972,6 +973,7 @@ export default function Stories({ session, profile, track, onBack }) {
   const [vocabMap, setVocabMap] = useState({})
   const [userCards, setUserCards] = useState({})
   const [loading, setLoading] = useState(true)
+  const isMobile = useIsMobile()
 
   const languageDetails = getLanguageDetails(profile, track)
   const { isJapanese, accentHex, nativeName, fontFamily } = languageDetails
@@ -1073,7 +1075,7 @@ export default function Stories({ session, profile, track, onBack }) {
     const catStories = stories.filter(s => s.tier === selectedCategory.tier)
     return (
       <div style={pageShell()}>
-        <div style={{ maxWidth: '860px', margin: '0 auto', padding: '38px 32px 72px', position: 'relative', zIndex: 1 }}>
+        <div style={{ maxWidth: '860px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px', position: 'relative', zIndex: 1 }}>
           <IconButton icon={ArrowLeft} label="Back" onClick={() => setView('categories')} />
 
           <div style={{ margin: '28px 0 24px' }}>
@@ -1111,7 +1113,7 @@ export default function Stories({ session, profile, track, onBack }) {
   // ── Category view ──────────────────────────────────────────────────────
   return (
     <div style={pageShell()}>
-      <div style={{ maxWidth: '860px', margin: '0 auto', padding: '38px 32px 72px', position: 'relative', zIndex: 1 }}>
+      <div style={{ maxWidth: '860px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px', position: 'relative', zIndex: 1 }}>
         <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
 
         <div style={{ margin: '28px 0 28px' }}>
