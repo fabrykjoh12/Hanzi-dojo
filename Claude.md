@@ -669,7 +669,6 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 - **Some Japanese audio mispronounces kanji.** Fix: generate-audio.mjs already uses `v.reading` (hiragana). Delete the storage folder for the level before regenerating so files are not skipped.
 - **Duplicate kanji in Japanese vocab** (何 = なん/なに, 私 = わたし/わたくし) create identical-looking test options. Plan: deactivate less-common duplicates and/or show reading in test options (reading is already shown in Test.jsx Japanese options).
 - **A few JLPT N5 level-2 entries are counter suffixes** (～グラム, ～たち) — more grammar than vocab. Review and optionally deactivate.
-- **LanguageSwitcher.jsx** still shows "Words marked Easy" in the progress display (uses `is_easy` for display), not the mastery-based count. This is a display inconsistency with the rest of the app but is not a functional bug.
 - **Mobile layout.** Below 768px the left sidebar is replaced by a fixed bottom bar (MobileNav.jsx, 5 tabs + a "More" sheet); App.jsx branches the shell via useIsMobile(). Each top-level screen (Home, Study, Test, Writing, Stories, Profile, Settings, LanguageSwitcher, YouTube) reduces its horizontal padding (~32px → ~16px) on mobile via useIsMobile(). Stat/option grids use `1fr`/`minmax(0,1fr)` columns so they compress without overflow. Further polish (font scaling, 4-col → 2-col stat grids on very small phones) is optional.
 - **Existing ESLint hook-dependency warnings** in some files — don't add new ones.
 - **Legacy DB columns** `ease_factor` and old SM-2 `learning_step` semantics are kept in the cards table but unused. Do not write to `ease_factor`.
@@ -687,16 +686,17 @@ Done:
 - ~~**Deploy to the web**~~ — GitHub Pages + Vercel, auto-deploy from `main`, graceful missing-config screen, OAuth redirect handling.
 - ~~**Mobile navigation**~~ — bottom tab bar (MobileNav.jsx) replaces the sidebar below 768px.
 - ~~**Mobile per-screen padding**~~ — every top-level screen tightens horizontal padding on mobile via useIsMobile().
+- ~~**Furigana on Japanese flashcard main word**~~ — already implemented: showFurigana defaults true and showRuby shows the reading above kanji on front (by default) and back (Study.jsx).
+- ~~**LanguageSwitcher mastery count**~~ — progress display now uses mastery (FSRS stability) instead of the old `is_easy` count, consistent with the rest of the app.
 
 Priority order (most impactful first):
 
-1. **Japanese YouTube recommendations:** At least a few curated videos for JLPT N5.
-2. **HSK 2 vocabulary + audio + stories:** Next Chinese level content.
-3. **Furigana on Japanese flashcard main word:** Show reading above kanji as ruby text by default (furigana toggle already exists for Study.jsx — add it to card back when word has kanji).
-4. **FSRS parameter tuning:** Once real user data exists, optimize parameters beyond library defaults.
-5. **Practice test mode:** Unlimited questions, no progression impact, no card state changes.
-6. **Offline support:** Service worker (post-launch).
-7. **Spanish:** Third language after Chinese and Japanese content is solid.
+1. **Japanese YouTube recommendations:** At least a few curated videos for JLPT N5. *(content task — needs video URLs)*
+2. **HSK 2 vocabulary + audio + stories:** Next Chinese level content. *(content task — needs vocab data + API keys)*
+3. **FSRS parameter tuning:** Once real user data exists, optimize parameters beyond library defaults.
+4. **Practice test mode:** Unlimited questions, no progression impact, no card state changes. *(next pure-code feature)*
+5. **Offline support:** Service worker (post-launch).
+6. **Spanish:** Third language after Chinese and Japanese content is solid.
 
 ---
 
