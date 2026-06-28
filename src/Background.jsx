@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react'
 import bgChinese from './assets/bg-chinese.png'
 import bgJapanese from './assets/bg-japanese.png'
 
-const TARGET_OPACITY = 0.4
-
 const baseStyle = {
   position: 'fixed', top: 0, left: 0,
   width: '100vw', height: '100vh',
@@ -35,7 +33,7 @@ export default function Background({ language }) {
       src={current}
       alt=""
       aria-hidden="true"
-      style={{ ...baseStyle, opacity: visible ? TARGET_OPACITY : 0 }}
+      style={{ ...baseStyle, opacity: visible ? 'var(--bg-image-opacity)' : 0 }}
     />
   )
 }

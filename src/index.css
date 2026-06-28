@@ -33,6 +33,7 @@ body {
   --text-muted: #71717A;
   --text-faint: #A1A1AA;
   --reader-watermark: rgba(24, 24, 27, 0.04);
+  --bg-image-opacity: 0.4;
   color-scheme: light;
 }
 
@@ -46,5 +47,8 @@ body {
   --text-muted: #9AA0A8;
   --text-faint: #797F88;
   --reader-watermark: rgba(255, 255, 255, 0.05);
+  /* The language background image is bright; keep it barely-there on dark so it
+     blends instead of glowing. */
+  --bg-image-opacity: 0.06;
   color-scheme: dark;
 }
