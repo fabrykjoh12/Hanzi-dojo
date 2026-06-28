@@ -214,6 +214,13 @@ src/utils.js
   getNextLevel(language, system, level). normalizeRecallInput(value) — strips
   punctuation/spaces/CJK punctuation for recall matching. isRecallMatch().
 
+src/ThemeContext.jsx
+  React context for light/dark theme. App owns the theme state, applies it via
+  document.documentElement[data-theme], and persists to profiles.theme. Consumers
+  use useTheme() → { theme, toggleTheme, setTheme }. The Settings "Appearance"
+  card and a Sidebar toggle switch it. Initial theme follows the OS preference
+  until a saved profile theme loads.
+
 src/supabase.js
   Exports the Supabase client created from VITE_SUPABASE_URL and
   VITE_SUPABASE_ANON_KEY environment variables. If either is missing at build
@@ -257,6 +264,7 @@ profiles
   streak_freezes int            -- available freeze tokens
   last_studied_on date
   display_name text
+  theme text                    -- 'light' | 'dark' (migration 20260628190000); default 'light'
 
 language_tracks
   id uuid PRIMARY KEY
@@ -522,6 +530,14 @@ Sage dark (CTA hover):  #5C7155
 
 **CSS variables** (defined in index.css):
 `--chinese-accent: #B83A24`, `--chinese-accent-dark: #922E1C`, `--japanese-accent: #2E3A6E`, `--japanese-accent-dark: #1E2750`
+
+**Theming (light/dark) — use these tokens for all neutral colors:**
+Semantic tokens in index.css drive light/dark via `:root` and `:root[data-theme="dark"]`:
+`--bg`, `--surface`, `--surface-2`, `--surface-glass`, `--border`, `--text`, `--text-muted`, `--text-faint`, `--reader-watermark`.
+- **New code MUST use these tokens** (e.g. `background: 'var(--surface)'`, `color: 'var(--text)'`) instead of hardcoded neutral hexes, or it won't theme.
+- Accent colors (chinese/japanese), status colors (success/warn/error), sage nav colors, and **white text on accent buttons** (`color: '#fff'`) stay hardcoded — they read on both themes.
+- Fixed dark popovers/tooltips (e.g. Sidebar collapsed tooltip) use a literal dark (`#27272A`), not `var(--text)`, so they don't invert.
+- Known minor: the Home New/Learning/Due tiles and streak pill use pale pastel accent-tint backgrounds that stay light in dark mode (look like colored chips; acceptable, could be refined).
 
 **Fonts:** Inter (UI), Noto Sans SC (Chinese), Noto Sans JP (Japanese) — loaded from Google Fonts in index.css.
 

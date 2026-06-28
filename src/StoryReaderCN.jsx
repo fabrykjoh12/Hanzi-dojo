@@ -7,16 +7,16 @@ import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRigh
 // definition, pinyin + translation toggles, and a bottom audio bar. Japanese
 // still uses the original reader (see Stories.jsx).
 
-const BG = '#FAFAF8'
-const PANEL = '#FFFFFF'
-const TEXT = '#18181B'
-const MUTED = '#71717A'
+const BG = 'var(--bg)'
+const PANEL = 'var(--surface)'
+const TEXT = 'var(--text)'
+const MUTED = 'var(--text-muted)'
 const RED = '#B83A24'
 const GOLD = '#B45309'
 const HILITE = 'rgba(217, 164, 62, 0.32)'
 
 const STATUS_COLOR = {
-  not_started: '#A1A1AA',
+  not_started: 'var(--text-faint)',
   learning: '#CA8A04',
   review: '#3E63DD',
   mastered: '#2F9E6D',
@@ -211,7 +211,7 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
           {!isMobile && <span style={{ color: MUTED, fontSize: '14px', fontWeight: 600 }}>Library</span>}
         </button>
         <div style={{ color: MUTED, fontSize: '13px', fontWeight: 600, textAlign: 'center', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {levelLabel} · <span style={{ color: '#3F3F46' }}>{story.title}</span>
+          {levelLabel} · <span style={{ color: 'var(--text-muted)' }}>{story.title}</span>
         </div>
         <div style={{ display: 'flex', gap: '6px' }}>
           <TopToggle active={showPinyin} onClick={() => setShowPinyin(v => !v)} icon={Type} label="Pinyin" isMobile={isMobile} />
@@ -254,7 +254,7 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
         {/* End-of-story → next */}
         {nextStory && (
           <button onClick={onNextStory} style={{
-            marginTop: '28px', width: '100%', background: PANEL, border: '1px solid #E7E5E4',
+            marginTop: '28px', width: '100%', background: PANEL, border: '1px solid var(--border)',
             borderRadius: '16px', padding: '18px 20px', cursor: 'pointer', textAlign: 'left',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: TEXT,
           }}>
@@ -274,7 +274,7 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
           display: 'flex', justifyContent: 'center', padding: '0 12px', pointerEvents: 'none',
         }}>
           <div style={{
-            width: '100%', maxWidth: '760px', background: PANEL, border: '1px solid #E7E5E4',
+            width: '100%', maxWidth: '760px', background: PANEL, border: '1px solid var(--border)',
             borderRadius: '18px', boxShadow: '0 -10px 40px rgba(24,24,27,0.14)', padding: '14px 18px 16px',
             pointerEvents: 'auto',
           }}>
@@ -286,7 +286,7 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
                 <span style={{ width: '8px', height: '8px', borderRadius: '999px', background: STATUS_COLOR[selStatus], flexShrink: 0 }} />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: MUTED, border: '1px solid #E4E4E7', borderRadius: '999px', padding: '3px 9px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: MUTED, border: '1px solid var(--border)', borderRadius: '999px', padding: '3px 9px' }}>
                   {levelLabel}
                 </span>
                 <button onClick={() => !selInDeck && addToDeck(sel.vocab)} aria-label="Add to deck"
@@ -307,10 +307,10 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
             </div>
 
             <div style={{ fontSize: '17px', color: GOLD, fontWeight: 600, marginTop: '6px' }}>{sel.vocab.reading}</div>
-            <div style={{ fontSize: '15px', color: '#3F3F46', marginTop: '4px', lineHeight: 1.45 }}>{sel.vocab.meaning}</div>
+            <div style={{ fontSize: '15px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>{sel.vocab.meaning}</div>
 
             {story.english_content && englishLines[sel.lineIndex] && (
-              <div style={{ marginTop: '12px', borderTop: '1px solid #E7E5E4', paddingTop: '10px' }}>
+              <div style={{ marginTop: '12px', borderTop: '1px solid var(--border)', paddingTop: '10px' }}>
                 <button onClick={() => setShowSentence(v => !v)}
                   style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: MUTED, fontSize: '13px', fontWeight: 600, padding: 0 }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
@@ -319,7 +319,7 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
                   <ChevronRight size={16} color={MUTED} style={{ transform: showSentence ? 'rotate(90deg)' : 'none', transition: 'transform 150ms' }} />
                 </button>
                 {showSentence && (
-                  <div style={{ fontSize: '14px', color: '#3F3F46', marginTop: '8px', lineHeight: 1.55 }}>
+                  <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '8px', lineHeight: 1.55 }}>
                     {englishLines[sel.lineIndex]}
                   </div>
                 )}
@@ -336,7 +336,7 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
         background: 'linear-gradient(180deg, rgba(250,250,248,0) 0%, ' + BG + ' 40%)',
       }}>
         <div style={{
-          width: '100%', maxWidth: '760px', background: PANEL, border: '1px solid #E7E5E4',
+          width: '100%', maxWidth: '760px', background: PANEL, border: '1px solid var(--border)',
           borderRadius: '16px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '14px',
         }}>
           <button onClick={toggleStoryAudio} aria-label={speaking ? 'Pause' : 'Play story'}
@@ -358,7 +358,7 @@ function TopToggle({ active, onClick, icon: Icon, label, isMobile }) {
     <button onClick={onClick} style={{
       display: 'flex', alignItems: 'center', gap: '6px',
       background: active ? 'rgba(184,58,36,0.10)' : 'transparent',
-      border: '1px solid ' + (active ? 'rgba(184,58,36,0.4)' : '#E4E4E7'),
+      border: '1px solid ' + (active ? 'rgba(184,58,36,0.4)' : 'var(--border)'),
       color: active ? RED : MUTED, borderRadius: '999px',
       padding: isMobile ? '6px 10px' : '7px 13px', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
     }}>

@@ -31,9 +31,9 @@ export default function InfoTip({ accentHex, text }) {
         style={{
           width: '18px', height: '18px',
           borderRadius: '50%',
-          border: '1.5px solid ' + (accentHex || '#71717A') + '66',
-          background: pos ? (accentHex || '#71717A') + '18' : 'transparent',
-          color: accentHex || '#71717A',
+          border: '1.5px solid ' + (accentHex || 'var(--text-muted)') + '66',
+          background: pos ? (accentHex || 'var(--text-muted)') + '18' : 'transparent',
+          color: accentHex || 'var(--text-muted)',
           fontSize: '11px', fontWeight: 700,
           cursor: 'pointer', lineHeight: '15px',
           padding: 0, display: 'inline-flex',
@@ -51,15 +51,15 @@ export default function InfoTip({ accentHex, text }) {
           top: pos.top,
           left: pos.left,
           width: '290px',
-          background: '#fff',
-          border: '1px solid #E7E5E4',
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
           borderRadius: '16px',
           padding: '16px 18px',
           boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
           zIndex: 9999,
           textAlign: 'left',
         }}>
-          <div style={{ fontSize: '13px', color: '#71717A', lineHeight: 1.6 }}>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
             {text}
           </div>
         </div>

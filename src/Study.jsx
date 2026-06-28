@@ -75,7 +75,7 @@ function QueuePill({ label, value, color, background }) {
       minWidth: '94px', justifyContent: 'center',
     }}>
       <span style={{ fontSize: '15px', fontWeight: 750, color, lineHeight: 1 }}>{value}</span>
-      <span style={{ fontSize: '12px', fontWeight: 600, color: '#52525B' }}>{label}</span>
+      <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)' }}>{label}</span>
     </div>
   )
 }
@@ -89,16 +89,16 @@ function IconButton({ icon: Icon, label, onClick, color, background, border }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-        border: border || '1px solid #E7E5E4',
-        background: hovered ? '#F7F7F5' : (background || '#FFFFFF'),
-        color: color || '#52525B',
+        border: border || '1px solid var(--border)',
+        background: hovered ? 'var(--surface-2)' : (background || 'var(--surface)'),
+        color: color || 'var(--text-muted)',
         height: '40px', padding: '0 14px', borderRadius: '12px',
         fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
         cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease',
         transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
       }}
     >
-      <Icon size={17} strokeWidth={1.85} color={color || '#71717A'} />
+      <Icon size={17} strokeWidth={1.85} color={color || 'var(--text-muted)'} />
       {label}
     </button>
   )
@@ -126,7 +126,7 @@ function GradeButton({ grade, label, interval, color, icon: Icon, onClick }) {
         <Icon size={16} strokeWidth={2} color={color} />
         {label}
       </span>
-      <span style={{ fontSize: '11px', fontWeight: 650, color: '#71717A' }}>
+      <span style={{ fontSize: '11px', fontWeight: 650, color: 'var(--text-muted)' }}>
         {interval}
       </span>
     </button>
@@ -143,14 +143,14 @@ function PrimaryButton({ onClick, children, icon: Icon }) {
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
         width: '100%', minHeight: '54px', borderRadius: '16px', border: 'none',
-        background: hovered ? SAGE_DARK : SAGE, color: '#FFFFFF',
+        background: hovered ? SAGE_DARK : SAGE, color: '#fff',
         fontSize: '15px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
         cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease, box-shadow 160ms ease',
         transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
         boxShadow: hovered ? '0 12px 28px rgba(110,132,102,0.28)' : '0 6px 18px rgba(110,132,102,0.18)',
       }}
     >
-      <Icon size={18} strokeWidth={2.1} color="#FFFFFF" />
+      <Icon size={18} strokeWidth={2.1} color="#fff" />
       {children}
     </button>
   )
@@ -315,7 +315,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
         <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{
             width: '88px', height: '88px', borderRadius: '26px',
-            background: '#FFFFFF', border: '1px solid #E7E5E4',
+            background: 'var(--surface)', border: '1px solid var(--border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 16px 40px rgba(24,24,27,0.06)',
           }}>
@@ -332,7 +332,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
         <div style={{ maxWidth: '760px', margin: '0 auto', minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{
             width: '100%', maxWidth: '520px', textAlign: 'center',
-            background: '#FFFFFF', border: '1px solid #E7E5E4',
+            background: 'var(--surface)', border: '1px solid var(--border)',
             borderRadius: '24px', padding: '46px 38px',
             boxShadow: '0 22px 60px rgba(24,24,27,0.07)',
           }}>
@@ -343,10 +343,10 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
             }}>
               <CheckCircle2 size={28} strokeWidth={1.9} color={accentHex} />
             </div>
-            <h1 style={{ fontSize: '26px', fontWeight: 750, marginBottom: '8px', color: '#18181B' }}>
+            <h1 style={{ fontSize: '26px', fontWeight: 750, marginBottom: '8px', color: 'var(--text)' }}>
               All done for now
             </h1>
-            <p style={{ color: '#71717A', marginBottom: '28px', fontSize: '15px', lineHeight: 1.6 }}>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '28px', fontSize: '15px', lineHeight: 1.6 }}>
               No cards are waiting. Come back later, or continue the loop with stories.
             </p>
             <PrimaryButton onClick={onBack} icon={ArrowLeft}>
@@ -425,10 +425,10 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
             <Layers size={17} strokeWidth={1.8} color={accentHex} />
             {langChars} flashcards
           </div>
-          <h1 style={{ fontSize: '28px', color: '#18181B', fontWeight: 780, lineHeight: 1.1 }}>
+          <h1 style={{ fontSize: '28px', color: 'var(--text)', fontWeight: 780, lineHeight: 1.1 }}>
             Study session
           </h1>
-          <div style={{ color: '#71717A', fontSize: '13px', fontWeight: 550, marginTop: '5px' }}>
+          <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: 550, marginTop: '5px' }}>
             {systemLabel} · {levelLabel}
           </div>
         </div>
@@ -446,9 +446,9 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
             icon={BookOpenCheck}
             label={showFurigana ? 'Furigana on' : 'Furigana off'}
             onClick={() => setShowFurigana(prev => !prev)}
-            color={showFurigana ? accentHex : '#71717A'}
-            background={showFurigana ? accentHex + '10' : '#FFFFFF'}
-            border={'1px solid ' + (showFurigana ? accentHex + '30' : '#E7E5E4')}
+            color={showFurigana ? accentHex : 'var(--text-muted)'}
+            background={showFurigana ? accentHex + '10' : 'var(--surface)'}
+            border={'1px solid ' + (showFurigana ? accentHex + '30' : 'var(--border)')}
           />
         </div>
       )}
@@ -461,8 +461,8 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
           onClick={() => !flipped && setFlipped(true)}
           style={{
             width: '100%', maxWidth: '680px', minHeight: '420px',
-            background: 'linear-gradient(180deg, #FFFFFF 0%, #FFFDFC 100%)',
-            border: '1px solid #E7E5E4', borderRadius: '26px',
+            background: 'linear-gradient(180deg, var(--surface) 0%, var(--surface) 100%)',
+            border: '1px solid var(--border)', borderRadius: '26px',
             boxShadow: '0 24px 70px rgba(24,24,27,0.08)',
             display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'space-between',
             cursor: flipped ? 'default' : 'pointer', padding: '24px', position: 'relative',
@@ -486,8 +486,8 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
               style={{
                 position: 'absolute', top: '82px', right: '24px',
                 width: '40px', height: '40px', borderRadius: '13px',
-                background: '#FFFFFF', border: '1px solid #E7E5E4', cursor: 'pointer',
-                color: '#71717A', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer',
+                color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: '0 10px 24px rgba(24,24,27,0.07)',
               }}
               title="Replay audio"
@@ -504,19 +504,19 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
           }}>
             {wordFuri ? (
               <div style={{
-                fontSize: '86px', fontWeight: 400, color: '#18181B',
+                fontSize: '86px', fontWeight: 400, color: 'var(--text)',
                 fontFamily: langFont, lineHeight: 1.25,
               }}>
                 {wordFuri.lead}
                 <ruby>
                   {wordFuri.core}
-                  <rt style={{ fontSize: '18px', color: '#71717A' }}>{wordFuri.coreReading}</rt>
+                  <rt style={{ fontSize: '18px', color: 'var(--text-muted)' }}>{wordFuri.coreReading}</rt>
                 </ruby>
                 {wordFuri.trail}
               </div>
             ) : (
               <div style={{
-                fontSize: '86px', fontWeight: 400, color: '#18181B',
+                fontSize: '86px', fontWeight: 400, color: 'var(--text)',
                 fontFamily: langFont, lineHeight: 1.08,
                 overflowWrap: 'anywhere',
               }}>
@@ -525,7 +525,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
             )}
 
             {!flipped && (
-              <div style={{ fontSize: '13px', color: '#A1A1AA', marginTop: '28px', fontWeight: 650 }}>
+              <div style={{ fontSize: '13px', color: 'var(--text-faint)', marginTop: '28px', fontWeight: 650 }}>
                 Tap the card or reveal the answer
               </div>
             )}
@@ -537,17 +537,17 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
                     {v.reading}
                   </div>
                 )}
-                <div style={{ fontSize: '19px', color: '#52525B', marginTop: '10px', lineHeight: 1.45, fontWeight: 550 }}>
+                <div style={{ fontSize: '19px', color: 'var(--text-muted)', marginTop: '10px', lineHeight: 1.45, fontWeight: 550 }}>
                   {v.meaning}
                 </div>
                 {hasExample && (
                   <div style={{
                     width: '100%', maxWidth: '430px', marginTop: '22px', paddingTop: '18px',
-                    borderTop: '1px solid #E7E5E4', textAlign: 'center',
+                    borderTop: '1px solid var(--border)', textAlign: 'center',
                   }}>
                     {v.example_sentence && (
                       <div style={{
-                        fontSize: '17px', color: '#18181B', lineHeight: 1.5,
+                        fontSize: '17px', color: 'var(--text)', lineHeight: 1.5,
                         fontFamily: langFont,
                       }}>
                         {renderExampleSentence(v.example_sentence, v.word, v.reading)}
@@ -559,7 +559,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
                       </div>
                     )}
                     {v.example_translation && (
-                      <div style={{ fontSize: '13px', color: '#71717A', marginTop: '7px', lineHeight: 1.45 }}>
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '7px', lineHeight: 1.45 }}>
                         {v.example_translation}
                       </div>
                     )}
@@ -571,9 +571,9 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
 
           <div style={{
             minHeight: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            borderTop: '1px solid #F4F4F2', paddingTop: '18px',
+            borderTop: '1px solid var(--surface-2)', paddingTop: '18px',
           }}>
-            <span style={{ fontSize: '12px', color: '#A1A1AA', fontWeight: 650 }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-faint)', fontWeight: 650 }}>
               {flipped ? 'How well did you remember this?' : 'Recall first, then reveal'}
             </span>
           </div>

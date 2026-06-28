@@ -51,7 +51,7 @@ export default function Auth() {
       justifyContent: 'center',
       position: 'relative',
       padding: '24px',
-      background: '#FAFAF8',
+      background: 'var(--bg)',
     }}>
       {/* Background image */}
       <div style={{
@@ -71,7 +71,7 @@ export default function Auth() {
         zIndex: 1,
         width: '100%',
         maxWidth: '460px',
-        background: '#FFFFFF',
+        background: 'var(--surface)',
         borderRadius: '20px',
         boxShadow: '0 4px 40px rgba(0,0,0,0.10)',
         padding: '40px 40px 32px',
@@ -79,21 +79,21 @@ export default function Auth() {
         {/* Logo + wordmark */}
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
           <img src={logo} alt="Hanzi-dojo" style={{ width: '48px', height: '48px', objectFit: 'contain', marginBottom: '10px' }} />
-          <div style={{ fontSize: '20px', fontWeight: 700, color: '#18181B', fontFamily: 'Inter, sans-serif', letterSpacing: '-0.3px' }}>
+          <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', fontFamily: 'Inter, sans-serif', letterSpacing: '-0.3px' }}>
             Hanzi-dojo
           </div>
         </div>
 
         {/* Tagline */}
-        <p style={{ textAlign: 'center', fontSize: '13px', color: '#71717A', marginBottom: '28px', marginTop: '4px' }}>
+        <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '28px', marginTop: '4px' }}>
           Learn a language. Grow every day.
         </p>
 
         {/* Divider */}
-        <div style={{ height: '1px', background: '#E7E5E4', marginBottom: '24px' }} />
+        <div style={{ height: '1px', background: 'var(--border)', marginBottom: '24px' }} />
 
         {/* Tab toggle */}
-        <div style={{ display: 'flex', marginBottom: '24px', borderBottom: '1px solid #E7E5E4' }}>
+        <div style={{ display: 'flex', marginBottom: '24px', borderBottom: '1px solid var(--border)' }}>
           <button
             onClick={() => { setIsSignup(false); setMessage('') }}
             style={{
@@ -105,7 +105,7 @@ export default function Auth() {
               cursor: 'pointer',
               fontSize: '14px',
               fontWeight: isSignup ? 400 : 600,
-              color: !isSignup ? '#18181B' : '#71717A',
+              color: !isSignup ? 'var(--text)' : 'var(--text-muted)',
               fontFamily: 'Inter, sans-serif',
               transition: 'all 0.2s',
               marginBottom: '-1px',
@@ -124,7 +124,7 @@ export default function Auth() {
               cursor: 'pointer',
               fontSize: '14px',
               fontWeight: isSignup ? 600 : 400,
-              color: isSignup ? '#18181B' : '#71717A',
+              color: isSignup ? 'var(--text)' : 'var(--text-muted)',
               fontFamily: 'Inter, sans-serif',
               transition: 'all 0.2s',
               marginBottom: '-1px',
@@ -179,9 +179,9 @@ export default function Auth() {
 
         {/* OR divider */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '20px 0' }}>
-          <div style={{ flex: 1, height: '1px', background: '#E7E5E4' }} />
-          <span style={{ fontSize: '12px', color: '#71717A' }}>or continue with</span>
-          <div style={{ flex: 1, height: '1px', background: '#E7E5E4' }} />
+          <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>or continue with</span>
+          <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
         </div>
 
         {/* Google */}
@@ -189,9 +189,9 @@ export default function Auth() {
           width: '100%',
           padding: '12px',
           borderRadius: '12px',
-          border: '1px solid #E7E5E4',
-          background: '#fff',
-          color: '#18181B',
+          border: '1px solid var(--border)',
+          background: 'var(--surface)',
+          color: 'var(--text)',
           fontSize: '15px',
           fontWeight: 500,
           cursor: 'pointer',
@@ -219,7 +219,7 @@ export default function Auth() {
       </div>
 
       {/* Below card */}
-      <p style={{ position: 'relative', zIndex: 1, marginTop: '20px', fontSize: '13px', color: '#71717A' }}>
+      <p style={{ position: 'relative', zIndex: 1, marginTop: '20px', fontSize: '13px', color: 'var(--text-muted)' }}>
         Free forever. No credit card.
       </p>
     </div>
@@ -229,12 +229,12 @@ export default function Auth() {
 const inputStyle = {
   padding: '12px 14px',
   borderRadius: '10px',
-  border: '1px solid #E7E5E4',
+  border: '1px solid var(--border)',
   fontSize: '15px',
   outline: 'none',
   fontFamily: 'Inter, sans-serif',
-  color: '#18181B',
-  background: '#FAFAF8',
+  color: 'var(--text)',
+  background: 'var(--bg)',
   width: '100%',
   boxSizing: 'border-box',
 }

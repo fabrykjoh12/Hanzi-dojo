@@ -55,7 +55,7 @@ export default function Onboarding({ session, onComplete }) {
       justifyContent: 'center',
       position: 'relative',
       padding: '24px',
-      background: '#FAFAF8',
+      background: 'var(--bg)',
     }}>
       {/* Background image */}
       <div style={{
@@ -75,7 +75,7 @@ export default function Onboarding({ session, onComplete }) {
         zIndex: 1,
         width: '100%',
         maxWidth: '460px',
-        background: '#FFFFFF',
+        background: 'var(--surface)',
         borderRadius: '20px',
         boxShadow: '0 4px 40px rgba(0,0,0,0.10)',
         padding: '40px 40px 36px',
@@ -87,7 +87,7 @@ export default function Onboarding({ session, onComplete }) {
               width: step === n ? '24px' : '8px',
               height: '8px',
               borderRadius: '4px',
-              background: step >= n ? accentHex : '#E7E5E4',
+              background: step >= n ? accentHex : 'var(--border)',
               transition: 'all 0.3s',
             }} />
           ))}
@@ -98,11 +98,11 @@ export default function Onboarding({ session, onComplete }) {
           <div>
             <div style={{ textAlign: 'center', marginBottom: '6px' }}>
               <img src={logo} alt="Hanzi-dojo" style={{ width: '44px', height: '44px', objectFit: 'contain', marginBottom: '10px' }} />
-              <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#18181B', fontFamily: 'Inter, sans-serif', margin: 0 }}>
+              <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', fontFamily: 'Inter, sans-serif', margin: 0 }}>
                 Welcome to Hanzi-dojo
               </h1>
             </div>
-            <p style={{ textAlign: 'center', color: '#71717A', marginBottom: '28px', marginTop: '8px', fontSize: '14px' }}>
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '28px', marginTop: '8px', fontSize: '14px' }}>
               Which language do you want to learn?
             </p>
 
@@ -114,8 +114,8 @@ export default function Onboarding({ session, onComplete }) {
                   flex: 1,
                   padding: '24px 16px',
                   borderRadius: '14px',
-                  border: language === 'chinese' ? '2px solid #B83A24' : '2px solid #E7E5E4',
-                  background: language === 'chinese' ? 'rgba(184,58,36,0.05)' : '#fff',
+                  border: language === 'chinese' ? '2px solid #B83A24' : '2px solid var(--border)',
+                  background: language === 'chinese' ? 'rgba(184,58,36,0.05)' : 'var(--surface)',
                   cursor: 'pointer',
                   textAlign: 'center',
                   transition: 'all 0.2s',
@@ -127,7 +127,7 @@ export default function Onboarding({ session, onComplete }) {
               >
                 <span style={{ fontSize: '36px', lineHeight: 1 }}>🇨🇳</span>
                 <span style={{ fontSize: '28px', fontWeight: 700, color: '#B83A24', fontFamily: "'Noto Sans SC', sans-serif", lineHeight: 1 }}>中文</span>
-                <span style={{ fontSize: '15px', fontWeight: 600, color: '#18181B', fontFamily: 'Inter, sans-serif' }}>Chinese</span>
+                <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', fontFamily: 'Inter, sans-serif' }}>Chinese</span>
               </button>
 
               {/* Japanese card */}
@@ -137,8 +137,8 @@ export default function Onboarding({ session, onComplete }) {
                   flex: 1,
                   padding: '24px 16px',
                   borderRadius: '14px',
-                  border: language === 'japanese' ? '2px solid #2E3A6E' : '2px solid #E7E5E4',
-                  background: language === 'japanese' ? 'rgba(46,58,110,0.05)' : '#fff',
+                  border: language === 'japanese' ? '2px solid #2E3A6E' : '2px solid var(--border)',
+                  background: language === 'japanese' ? 'rgba(46,58,110,0.05)' : 'var(--surface)',
                   cursor: 'pointer',
                   textAlign: 'center',
                   transition: 'all 0.2s',
@@ -150,7 +150,7 @@ export default function Onboarding({ session, onComplete }) {
               >
                 <span style={{ fontSize: '36px', lineHeight: 1 }}>🇯🇵</span>
                 <span style={{ fontSize: '28px', fontWeight: 700, color: '#2E3A6E', fontFamily: "'Noto Sans JP', sans-serif", lineHeight: 1 }}>日本語</span>
-                <span style={{ fontSize: '15px', fontWeight: 600, color: '#18181B', fontFamily: 'Inter, sans-serif' }}>Japanese</span>
+                <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', fontFamily: 'Inter, sans-serif' }}>Japanese</span>
               </button>
             </div>
 
@@ -163,8 +163,8 @@ export default function Onboarding({ session, onComplete }) {
                 padding: '13px',
                 borderRadius: '12px',
                 border: 'none',
-                background: language ? accentHex : '#E7E5E4',
-                color: language ? '#fff' : '#71717A',
+                background: language ? accentHex : 'var(--border)',
+                color: language ? 'var(--surface)' : 'var(--text-muted)',
                 fontSize: '15px',
                 fontWeight: 600,
                 cursor: language ? 'pointer' : 'not-allowed',
@@ -180,10 +180,10 @@ export default function Onboarding({ session, onComplete }) {
         {/* STEP 2: Level */}
         {step === 2 && (
           <div>
-            <h1 style={{ fontSize: '22px', fontWeight: 700, textAlign: 'center', color: '#18181B', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
+            <h1 style={{ fontSize: '22px', fontWeight: 700, textAlign: 'center', color: 'var(--text)', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
               What's your level?
             </h1>
-            <p style={{ textAlign: 'center', color: '#71717A', marginBottom: '28px', fontSize: '14px' }}>
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '28px', fontSize: '14px' }}>
               {language === 'chinese' ? 'Pick your HSK level. Starting higher assumes you know all earlier vocabulary.' : 'Pick your JLPT level. Starting higher assumes you know all earlier vocabulary.'}
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
@@ -194,12 +194,12 @@ export default function Onboarding({ session, onComplete }) {
                   style={{
                     padding: '18px 8px',
                     borderRadius: '12px',
-                    border: level === lvl ? ('2px solid ' + accentHex) : '2px solid #E7E5E4',
-                    background: level === lvl ? (accentHex + '0D') : '#fff',
+                    border: level === lvl ? ('2px solid ' + accentHex) : '2px solid var(--border)',
+                    background: level === lvl ? (accentHex + '0D') : 'var(--surface)',
                     cursor: 'pointer',
                     fontSize: '13px',
                     fontWeight: 600,
-                    color: level === lvl ? accentHex : '#18181B',
+                    color: level === lvl ? accentHex : 'var(--text)',
                     transition: 'all 0.2s',
                     fontFamily: 'Inter, sans-serif',
                     lineHeight: 1.3,
@@ -219,8 +219,8 @@ export default function Onboarding({ session, onComplete }) {
                   padding: '13px',
                   borderRadius: '12px',
                   border: 'none',
-                  background: level ? accentHex : '#E7E5E4',
-                  color: level ? '#fff' : '#71717A',
+                  background: level ? accentHex : 'var(--border)',
+                  color: level ? 'var(--surface)' : 'var(--text-muted)',
                   cursor: level ? 'pointer' : 'not-allowed',
                   fontSize: '15px',
                   fontWeight: 600,
@@ -237,10 +237,10 @@ export default function Onboarding({ session, onComplete }) {
         {/* STEP 3: Daily goal */}
         {step === 3 && (
           <div>
-            <h1 style={{ fontSize: '22px', fontWeight: 700, textAlign: 'center', color: '#18181B', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
+            <h1 style={{ fontSize: '22px', fontWeight: 700, textAlign: 'center', color: 'var(--text)', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
               Set your daily goal
             </h1>
-            <p style={{ textAlign: 'center', color: '#71717A', marginBottom: '28px', fontSize: '14px' }}>
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '28px', fontSize: '14px' }}>
               How many new words do you want to learn each day?
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -255,8 +255,8 @@ export default function Onboarding({ session, onComplete }) {
                   style={{
                     padding: '16px 20px',
                     borderRadius: '12px',
-                    border: goal === opt.val ? ('2px solid ' + accentHex) : '2px solid #E7E5E4',
-                    background: goal === opt.val ? (accentHex + '0D') : '#fff',
+                    border: goal === opt.val ? ('2px solid ' + accentHex) : '2px solid var(--border)',
+                    background: goal === opt.val ? (accentHex + '0D') : 'var(--surface)',
                     cursor: 'pointer',
                     textAlign: 'left',
                     display: 'flex',
@@ -266,12 +266,12 @@ export default function Onboarding({ session, onComplete }) {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: '15px', fontWeight: 600, color: goal === opt.val ? accentHex : '#18181B', fontFamily: 'Inter, sans-serif' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 600, color: goal === opt.val ? accentHex : 'var(--text)', fontFamily: 'Inter, sans-serif' }}>
                       {opt.label}
                     </div>
-                    <div style={{ fontSize: '13px', color: '#71717A', marginTop: '2px' }}>{opt.desc}</div>
+                    <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>{opt.desc}</div>
                   </div>
-                  <div style={{ fontSize: '13px', fontWeight: 500, color: goal === opt.val ? accentHex : '#71717A' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 500, color: goal === opt.val ? accentHex : 'var(--text-muted)' }}>
                     {opt.cards}
                   </div>
                 </button>
@@ -312,11 +312,11 @@ const backBtn = {
   flex: 1,
   padding: '13px',
   borderRadius: '12px',
-  border: '1px solid #E7E5E4',
-  background: '#fff',
+  border: '1px solid var(--border)',
+  background: 'var(--surface)',
   cursor: 'pointer',
   fontSize: '15px',
   fontWeight: 500,
   fontFamily: 'Inter, sans-serif',
-  color: '#18181B',
+  color: 'var(--text)',
 }

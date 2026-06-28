@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import {
   Home, Layers, GraduationCap, PenLine, BookOpen, Play,
-  User, Settings, Globe, LogOut, ChevronsLeft, ChevronsRight,
+  User, Settings, Globe, LogOut, ChevronsLeft, ChevronsRight, Sun, Moon,
 } from 'lucide-react'
 import logo from './assets/Hanzi-logo.png'
+import { useTheme } from './ThemeContext'
 
 // Neutral sage green used for active-state pill (see CLAUDE.md redesign spec)
 const SAGE_BG = '#E7EDE4'
@@ -44,15 +45,15 @@ function NavItem({ item, active, collapsed, onClick }) {
         justifyContent: collapsed ? 'center' : 'flex-start',
         borderRadius: '11px',
         cursor: 'pointer',
-        background: isActive ? SAGE_BG : (hovered ? '#F4F4F2' : 'transparent'),
-        color: isActive ? SAGE_TEXT : '#52525B',
+        background: isActive ? SAGE_BG : (hovered ? 'var(--surface-2)' : 'transparent'),
+        color: isActive ? SAGE_TEXT : 'var(--text-muted)',
         fontWeight: isActive ? 600 : 500,
         fontSize: '14px',
         transition: 'background 140ms ease, color 140ms ease',
         userSelect: 'none',
       }}
     >
-      <Icon size={19} strokeWidth={1.85} color={isActive ? SAGE_TEXT : '#71717A'} style={{ flexShrink: 0 }} />
+      <Icon size={19} strokeWidth={1.85} color={isActive ? SAGE_TEXT : 'var(--text-muted)'} style={{ flexShrink: 0 }} />
       {!collapsed && <span>{item.label}</span>}
 
       {/* Tooltip shown on hover when collapsed */}
@@ -60,7 +61,7 @@ function NavItem({ item, active, collapsed, onClick }) {
         <span style={{
           position: 'absolute', left: 'calc(100% + 10px)', top: '50%',
           transform: 'translateY(-50%)',
-          background: '#18181B', color: '#fff',
+          background: '#27272A', color: '#fff',
           fontSize: '12px', fontWeight: 500,
           padding: '6px 10px', borderRadius: '8px',
           whiteSpace: 'nowrap', pointerEvents: 'none',
@@ -76,13 +77,14 @@ function NavItem({ item, active, collapsed, onClick }) {
 
 export default function Sidebar({ view, onNavigate, onLogout }) {
   const [collapsed, setCollapsed] = useState(false)
+  const { theme, toggleTheme } = useTheme()
 
   return (
     <div style={{
       width: collapsed ? `${COLLAPSED_WIDTH}px` : `${EXPANDED_WIDTH}px`,
       flexShrink: 0,
       height: '100vh', position: 'sticky', top: 0,
-      background: 'rgba(255, 255, 255, 0.85)', borderRight: '1px solid #E7E5E4',
+      background: 'var(--surface-glass)', borderRight: '1px solid var(--border)',
       backdropFilter: 'blur(6px)',
       display: 'flex', flexDirection: 'column',
       padding: '22px 16px',
@@ -103,7 +105,7 @@ export default function Sidebar({ view, onNavigate, onLogout }) {
           />
           {!collapsed && (
             <span style={{
-              fontSize: '17px', fontWeight: 700, color: '#18181B',
+              fontSize: '17px', fontWeight: 700, color: 'var(--text)',
               letterSpacing: '0.2px', whiteSpace: 'nowrap', overflow: 'hidden',
             }}>
               Hanzi-dojo
@@ -121,7 +123,7 @@ export default function Sidebar({ view, onNavigate, onLogout }) {
               alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             }}
           >
-            <ChevronsLeft size={18} strokeWidth={1.85} color="#71717A" />
+            <ChevronsLeft size={18} strokeWidth={1.85} color="var(--text-muted)" />
           </button>
         )}
       </div>
@@ -137,7 +139,7 @@ export default function Sidebar({ view, onNavigate, onLogout }) {
             margin: '0 auto 18px',
           }}
         >
-          <ChevronsRight size={18} strokeWidth={1.85} color="#71717A" />
+          <ChevronsRight size={18} strokeWidth={1.85} color="var(--text-muted)" />
         </button>
       )}
 
@@ -151,8 +153,26 @@ export default function Sidebar({ view, onNavigate, onLogout }) {
       {/* Spacer */}
       <div style={{ flex: 1 }} />
 
+      {/* Theme toggle */}
+      <div
+        onClick={toggleTheme}
+        title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '12px',
+          padding: collapsed ? '10px' : '10px 14px',
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          borderRadius: '11px', cursor: 'pointer', color: 'var(--text-muted)',
+          fontSize: '14px', fontWeight: 500, userSelect: 'none',
+        }}
+      >
+        {theme === 'dark'
+          ? <Sun size={19} strokeWidth={1.85} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+          : <Moon size={19} strokeWidth={1.85} color="var(--text-muted)" style={{ flexShrink: 0 }} />}
+        {!collapsed && <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>}
+      </div>
+
       {/* Divider */}
-      <div style={{ height: '1px', background: '#E7E5E4', margin: '12px 8px' }} />
+      <div style={{ height: '1px', background: 'var(--border)', margin: '12px 8px' }} />
 
       {/* Bottom section */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>

@@ -13,9 +13,18 @@ import LanguageSwitcher from './LanguageSwitcher'
 import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
 import { useIsMobile } from './useIsMobile'
+import { ThemeContext } from './ThemeContext'
 import Background from './Background'
 import Home from './Home'
 import Settings from './Settings'
+
+// Initial theme before a profile loads: follow the OS preference.
+function osTheme() {
+  try {
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark'
+  } catch (e) { /* noop */ }
+  return 'light'
+}
 
 // ── Main app ──────────────────────────────────────────────────────────────
 export default function App() {
@@ -25,7 +34,22 @@ export default function App() {
   const [counts, setCounts] = useState({ newCount: 0, learnCount: 0, dueCount: 0, easyCount: 0, totalWords: 0, learnedCount: 0, masteredCount: 0, masteredPct: 0 })
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState('home')
+  const [theme, setThemeState] = useState(osTheme)
   const isMobile = useIsMobile()
+
+  // Apply the theme to the document so the CSS variables (index.css) switch.
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
+
+  const setTheme = (next) => {
+    setThemeState(next)
+    if (session) {
+      // Best-effort persistence; harmless if the `theme` column doesn't exist yet.
+      supabase.from('profiles').update({ theme: next }).eq('id', session.user.id).then(() => {})
+    }
+  }
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark')
 
   const loadProfile = async (userId) => {
     const { data: prof } = await supabase
@@ -35,6 +59,9 @@ export default function App() {
       .single()
 
     if (!prof) { setLoading(false); return }
+
+    // Apply the user's saved theme preference, if any.
+    if (prof.theme === 'dark' || prof.theme === 'light') setThemeState(prof.theme)
 
     const { data: tr } = await supabase
       .from('language_tracks')
@@ -84,7 +111,7 @@ export default function App() {
   // ── Loading ─────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FAFAF8' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
         <div style={{ fontSize: '32px', color: 'var(--chinese-accent)', fontFamily: "'Noto Sans SC'" }}>学</div>
       </div>
     )
@@ -189,25 +216,27 @@ export default function App() {
 
   // ── App shell: persistent sidebar + content area ──────────────────────────
   return (
-    <div style={{
-      display: 'flex', minHeight: '100vh', alignItems: 'stretch',
-      position: 'relative',
-      background: 'linear-gradient(180deg, #FBFBF9 0%, #FAFAF8 100%)',
-    }}>
-      <Background language={profile.active_language} />
-      {!isMobile && (
-        <div style={{ position: 'relative', zIndex: 10 }}>
-          <Sidebar view={view} onNavigate={navigate} onLogout={handleLogout} />
-        </div>
-      )}
+    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
       <div style={{
-        flex: 1, minWidth: 0, position: 'relative', zIndex: 1,
-        // Leave room for the fixed bottom bar so content isn't hidden behind it.
-        paddingBottom: isMobile ? 'calc(62px + env(safe-area-inset-bottom))' : 0,
+        display: 'flex', minHeight: '100vh', alignItems: 'stretch',
+        position: 'relative',
+        background: 'var(--bg)',
       }}>
-        {content}
+        <Background language={profile.active_language} />
+        {!isMobile && (
+          <div style={{ position: 'relative', zIndex: 10 }}>
+            <Sidebar view={view} onNavigate={navigate} onLogout={handleLogout} />
+          </div>
+        )}
+        <div style={{
+          flex: 1, minWidth: 0, position: 'relative', zIndex: 1,
+          // Leave room for the fixed bottom bar so content isn't hidden behind it.
+          paddingBottom: isMobile ? 'calc(62px + env(safe-area-inset-bottom))' : 0,
+        }}>
+          {content}
+        </div>
+        {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} />}
       </div>
-      {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} />}
-    </div>
+    </ThemeContext.Provider>
   )
 }

@@ -33,7 +33,7 @@ const STATUS_LABELS = {
 }
 
 const STATUS_COLORS = {
-  not_started: '#71717A',
+  not_started: 'var(--text-muted)',
   learning: '#D97706',
   review: '#3E63DD',
   mastered: '#2F9E6D',
@@ -135,8 +135,8 @@ function pillStyle(color, background, border) {
 
 function sidePanelStyle() {
   return {
-    background: '#FFFFFF',
-    border: '1px solid #E7E5E4',
+    background: 'var(--surface)',
+    border: '1px solid var(--border)',
     borderRadius: '20px',
     padding: '20px 22px',
     boxShadow: '0 4px 20px rgba(24,24,27,0.05)',
@@ -155,15 +155,15 @@ function IconButton({ icon: Icon, label, onClick }) {
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
         height: '40px', padding: '0 14px', borderRadius: '12px',
-        border: '1px solid #E7E5E4',
-        background: hovered ? '#F7F7F5' : '#FFFFFF',
-        color: '#52525B', fontSize: '13px', fontWeight: 650,
+        border: '1px solid var(--border)',
+        background: hovered ? 'var(--surface-2)' : 'var(--surface)',
+        color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650,
         fontFamily: 'Inter, sans-serif', cursor: 'pointer',
         transition: 'background 160ms ease, transform 160ms ease',
         transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
       }}
     >
-      <Icon size={17} strokeWidth={1.85} color="#71717A" />
+      <Icon size={17} strokeWidth={1.85} color="var(--text-muted)" />
       {label}
     </button>
   )
@@ -173,24 +173,24 @@ function ProgressCard({ learnedCount, totalWords, accentHex }) {
   const pct = totalWords > 0 ? Math.min(100, Math.round((learnedCount / totalWords) * 100)) : 0
   return (
     <div style={{
-      background: '#FFFFFF', borderRadius: '20px',
-      border: '1px solid #E7E5E4', padding: '22px 24px',
+      background: 'var(--surface)', borderRadius: '20px',
+      border: '1px solid var(--border)', padding: '22px 24px',
       boxShadow: '0 18px 48px rgba(24,24,27,0.06)',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-        <span style={{ color: '#18181B', fontSize: '14px', fontWeight: 750 }}>Immersion unlocks</span>
-        <span style={{ color: '#71717A', fontSize: '13px', fontWeight: 650 }}>
-          <span style={{ color: '#18181B', fontWeight: 800 }}>{learnedCount}</span>/{totalWords} · {pct}%
+        <span style={{ color: 'var(--text)', fontSize: '14px', fontWeight: 750 }}>Immersion unlocks</span>
+        <span style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650 }}>
+          <span style={{ color: 'var(--text)', fontWeight: 800 }}>{learnedCount}</span>/{totalWords} · {pct}%
         </span>
       </div>
-      <div style={{ height: '7px', background: '#E7E5E4', borderRadius: '999px', overflow: 'hidden' }}>
+      <div style={{ height: '7px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden' }}>
         <div style={{
           height: '100%', width: pct + '%',
           background: 'linear-gradient(90deg, ' + accentHex + ', ' + accentHex + 'AA)',
           borderRadius: '999px', transition: 'width 600ms ease',
         }} />
       </div>
-      <p style={{ margin: '12px 0 0', color: '#71717A', fontSize: '13px', lineHeight: 1.5 }}>
+      <p style={{ margin: '12px 0 0', color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.5 }}>
         Stories unlock from learned words, so reading starts early and reinforces the flashcards.
       </p>
     </div>
@@ -242,21 +242,21 @@ function CharacterPill({ name, pinyin, accentHex, fontFamily }) {
         }}
       >
         <span style={{ fontSize: '15px', fontFamily: fontFamily, color: accentHex, fontWeight: 700 }}>{name}</span>
-        <span style={{ fontSize: '12px', color: '#71717A', fontWeight: 500 }}>{pinyin}</span>
+        <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>{pinyin}</span>
       </button>
       {pos && (
         <div style={{
           position: 'fixed', left: pos.x, top: pos.y - 8,
           transform: 'translate(-50%, -100%)',
-          background: '#FFFFFF', border: '1px solid #E7E5E4',
+          background: 'var(--surface)', border: '1px solid var(--border)',
           borderRadius: '16px', padding: '16px 20px',
           zIndex: 200, minWidth: '160px',
           boxShadow: '0 16px 42px rgba(24,24,27,0.14)',
           textAlign: 'center', whiteSpace: 'nowrap',
         }}>
-          <div style={{ fontSize: '28px', fontFamily: fontFamily, color: '#18181B', fontWeight: 700, marginBottom: '4px' }}>{name}</div>
+          <div style={{ fontSize: '28px', fontFamily: fontFamily, color: 'var(--text)', fontWeight: 700, marginBottom: '4px' }}>{name}</div>
           <div style={{ fontSize: '14px', color: accentHex, fontWeight: 650, marginBottom: '6px' }}>{pinyin}</div>
-          <div style={{ fontSize: '12px', color: '#71717A' }}>Character name</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Character name</div>
         </div>
       )}
     </span>
@@ -269,11 +269,11 @@ function CharacterGuide({ content, accentHex, fontFamily, language }) {
   if (found.length === 0) return null
   return (
     <div style={{
-      background: '#FFFFFF', border: '1px solid #E7E5E4',
+      background: 'var(--surface)', border: '1px solid var(--border)',
       borderRadius: '16px', padding: '12px 16px', marginBottom: '16px',
       display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap',
     }}>
-      <span style={{ fontSize: '11px', fontWeight: 800, color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>
+      <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>
         Characters
       </span>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -304,7 +304,7 @@ function VocabularyPopup({ word, vocab, userCards, accentHex, fontFamily, onAdd,
   }, [show])
 
   const underlineColor = status === 'mastered' ? accentHex + '88'
-    : status === 'not_started' ? '#D4D4D4' : '#A1A1AA'
+    : status === 'not_started' ? '#D4D4D4' : 'var(--text-faint)'
 
   return (
     <span ref={ref} style={{ position: 'relative', display: 'inline' }}>
@@ -335,8 +335,8 @@ function VocabularyPopup({ word, vocab, userCards, accentHex, fontFamily, onAdd,
           bottom: 'calc(100% + 12px)',
           left: '50%',
           transform: 'translateX(-50%)',
-          background: '#FFFFFF',
-          border: '1px solid #E7E5E4',
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
           borderRadius: '18px',
           padding: '18px 20px',
           zIndex: 100,
@@ -345,11 +345,11 @@ function VocabularyPopup({ word, vocab, userCards, accentHex, fontFamily, onAdd,
           textAlign: 'center',
           whiteSpace: 'nowrap',
         }}>
-          <div style={{ fontSize: '30px', fontFamily, color: '#18181B', fontWeight: 700, marginBottom: '5px' }}>{word}</div>
+          <div style={{ fontSize: '30px', fontFamily, color: 'var(--text)', fontWeight: 700, marginBottom: '5px' }}>{word}</div>
           {vocab.reading && (
             <div style={{ fontSize: '14px', color: accentHex, fontWeight: 700, marginBottom: '4px' }}>{vocab.reading}</div>
           )}
-          <div style={{ fontSize: '13px', color: '#71717A', marginBottom: '12px' }}>{vocab.meaning}</div>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>{vocab.meaning}</div>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '5px',
             fontSize: '11px', fontWeight: 750,
@@ -366,12 +366,12 @@ function VocabularyPopup({ word, vocab, userCards, accentHex, fontFamily, onAdd,
               style={{
                 display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'center',
                 gap: '6px', padding: '9px 0', borderRadius: '10px',
-                border: 'none', background: accentHex, color: '#FFFFFF',
+                border: 'none', background: accentHex, color: '#fff',
                 fontSize: '12px', fontWeight: 750, cursor: 'pointer',
                 fontFamily: 'Inter, sans-serif',
               }}
             >
-              <Plus size={13} strokeWidth={2.2} color="#FFFFFF" />
+              <Plus size={13} strokeWidth={2.2} color="#fff" />
               Add to deck
             </button>
           )}
@@ -416,7 +416,7 @@ function StoryLine({ line, vocabMap, userCards, accentHex, fontFamily, isJapanes
         )}
         <p style={{
           margin: 0, fontSize: '22px', lineHeight: 2.1,
-          fontFamily, color: '#18181B',
+          fontFamily, color: 'var(--text)',
           letterSpacing: isJapanese ? '0.02em' : '0',
         }}>
           {segments.map((seg, idx) => {
@@ -443,15 +443,15 @@ function StoryLine({ line, vocabMap, userCards, accentHex, fontFamily, isJapanes
         title="Read aloud"
         style={{
           flexShrink: 0, width: '30px', height: '30px', borderRadius: '9px',
-          border: '1px solid #E7E5E4', background: 'transparent',
+          border: '1px solid var(--border)', background: 'transparent',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', marginTop: '8px',
           transition: 'background 140ms ease, border-color 140ms ease',
         }}
-        onMouseEnter={e => { e.currentTarget.style.background = '#F4F4F2'; e.currentTarget.style.borderColor = '#D4D4D0' }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E7E5E4' }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.borderColor = '#D4D4D0' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--border)' }}
       >
-        <Volume2 size={13} strokeWidth={1.9} color="#A1A1AA" />
+        <Volume2 size={13} strokeWidth={1.9} color="var(--text-faint)" />
       </button>
     </div>
   )
@@ -466,9 +466,9 @@ function ToggleButton({ active, onClick, icon: Icon, label, accentHex }) {
       style={{
         display: 'inline-flex', alignItems: 'center', gap: '6px',
         height: '34px', padding: '0 13px', borderRadius: '10px',
-        border: '1px solid ' + (active ? accentHex + '40' : '#E7E5E4'),
-        background: active ? accentHex + '0E' : '#FFFFFF',
-        color: active ? accentHex : '#71717A',
+        border: '1px solid ' + (active ? accentHex + '40' : 'var(--border)'),
+        background: active ? accentHex + '0E' : 'var(--surface)',
+        color: active ? accentHex : 'var(--text-muted)',
         fontSize: '12px', fontWeight: 700,
         cursor: 'pointer', transition: 'all 150ms ease',
         fontFamily: 'Inter, sans-serif',
@@ -488,13 +488,13 @@ function StoryProgressCard({ masteredCount, totalVocab, accentHex }) {
     <div style={sidePanelStyle()}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '16px' }}>
         <BookOpenCheck size={17} strokeWidth={1.85} color={accentHex} />
-        <span style={{ fontSize: '14px', fontWeight: 800, color: '#18181B' }}>Story progress</span>
+        <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Story progress</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '8px' }}>
-        <span style={{ color: '#71717A' }}>Words mastered</span>
-        <span style={{ fontWeight: 800, color: '#18181B' }}>
+        <span style={{ color: 'var(--text-muted)' }}>Words mastered</span>
+        <span style={{ fontWeight: 800, color: 'var(--text)' }}>
           {masteredCount}
-          <span style={{ color: '#A1A1AA', fontWeight: 500 }}>/{totalVocab}</span>
+          <span style={{ color: 'var(--text-faint)', fontWeight: 500 }}>/{totalVocab}</span>
         </span>
       </div>
       <div style={{ height: '6px', background: '#F0F0ED', borderRadius: '999px', overflow: 'hidden' }}>
@@ -521,13 +521,13 @@ function ReviewWordsCard({ wordsToReview, userCards, accentHex, fontFamily }) {
     <div style={sidePanelStyle()}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '14px' }}>
         <Sparkles size={17} strokeWidth={1.85} color={accentHex} />
-        <span style={{ fontSize: '14px', fontWeight: 800, color: '#18181B' }}>Words to review</span>
+        <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Words to review</span>
       </div>
       {wordsToReview.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '16px 0 6px' }}>
           <CheckCircle2 size={26} strokeWidth={1.9} color="#2F9E6D" />
-          <div style={{ fontSize: '13px', fontWeight: 750, color: '#18181B', marginTop: '9px' }}>All words mastered</div>
-          <div style={{ fontSize: '12px', color: '#71717A', lineHeight: 1.5, marginTop: '4px' }}>Nothing to review here.</div>
+          <div style={{ fontSize: '13px', fontWeight: 750, color: 'var(--text)', marginTop: '9px' }}>All words mastered</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: '4px' }}>Nothing to review here.</div>
         </div>
       ) : (
         <div style={{ maxHeight: '380px', overflowY: 'auto' }}>
@@ -536,15 +536,15 @@ function ReviewWordsCard({ wordsToReview, userCards, accentHex, fontFamily }) {
             return (
               <div key={vocab.id} style={{
                 padding: '10px 0',
-                borderBottom: idx < wordsToReview.length - 1 ? '1px solid #F4F4F5' : 'none',
+                borderBottom: idx < wordsToReview.length - 1 ? '1px solid var(--surface-2)' : 'none',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px',
               }}>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: '18px', fontWeight: 700, fontFamily, color: '#18181B', lineHeight: 1.25 }}>{vocab.word}</div>
+                  <div style={{ fontSize: '18px', fontWeight: 700, fontFamily, color: 'var(--text)', lineHeight: 1.25 }}>{vocab.word}</div>
                   {vocab.reading && (
                     <div style={{ fontSize: '11px', color: accentHex, fontWeight: 650, marginTop: '2px' }}>{vocab.reading}</div>
                   )}
-                  <div style={{ fontSize: '11px', color: '#71717A', marginTop: '2px', lineHeight: 1.35 }}>{vocab.meaning}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.35 }}>{vocab.meaning}</div>
                 </div>
                 <span style={{
                   fontSize: '10px', fontWeight: 800,
@@ -581,10 +581,10 @@ function StoryCompletionCard({ totalVocab, masteredCount, accentHex, onBack, onN
       }}>
         <Award size={30} strokeWidth={1.75} color={accentHex} />
       </div>
-      <div style={{ fontSize: '22px', fontWeight: 800, color: '#18181B', marginBottom: '8px' }}>
+      <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text)', marginBottom: '8px' }}>
         Story complete!
       </div>
-      <div style={{ fontSize: '14px', color: '#71717A', lineHeight: 1.6, marginBottom: '24px' }}>
+      <div style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '24px' }}>
         {masteredCount} of {totalVocab} story words mastered
       </div>
       <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -592,8 +592,8 @@ function StoryCompletionCard({ totalVocab, masteredCount, accentHex, onBack, onN
           onClick={onBack}
           style={{
             height: '42px', padding: '0 20px', borderRadius: '12px',
-            border: '1px solid #E7E5E4', background: '#FFFFFF',
-            color: '#52525B', fontSize: '13px', fontWeight: 700,
+            border: '1px solid var(--border)', background: 'var(--surface)',
+            color: 'var(--text-muted)', fontSize: '13px', fontWeight: 700,
             cursor: 'pointer', fontFamily: 'Inter, sans-serif',
           }}
         >
@@ -605,13 +605,13 @@ function StoryCompletionCard({ totalVocab, masteredCount, accentHex, onBack, onN
             style={{
               height: '42px', padding: '0 20px', borderRadius: '12px',
               border: 'none', background: accentHex,
-              color: '#FFFFFF', fontSize: '13px', fontWeight: 700,
+              color: '#fff', fontSize: '13px', fontWeight: 700,
               cursor: 'pointer', fontFamily: 'Inter, sans-serif',
               display: 'inline-flex', alignItems: 'center', gap: '7px',
             }}
           >
             Next story
-            <ArrowRight size={15} strokeWidth={2.2} color="#FFFFFF" />
+            <ArrowRight size={15} strokeWidth={2.2} color="#fff" />
           </button>
         )}
       </div>
@@ -647,7 +647,7 @@ function EnglishStoryLine({ line, speakerIndexMap }) {
             {speaker}
           </div>
         )}
-        <p style={{ margin: 0, fontSize: '16px', lineHeight: 1.75, color: '#52525B', fontFamily: 'Inter, sans-serif' }}>
+        <p style={{ margin: 0, fontSize: '16px', lineHeight: 1.75, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
           {text}
         </p>
       </div>
@@ -731,13 +731,13 @@ function StoryReader({ story, vocabMap, userCards, setUserCards, session, track,
             <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>
               {systemLabel} · {levelLabel}
             </span>
-            <span style={pillStyle('#71717A', '#F4F4F5', '#E7E5E4')}>Reading</span>
+            <span style={pillStyle('var(--text-muted)', 'var(--surface-2)', 'var(--border)')}>Reading</span>
           </div>
-          <h1 style={{ margin: 0, color: '#18181B', fontSize: '34px', fontWeight: 800, lineHeight: 1.15, fontFamily }}>
+          <h1 style={{ margin: 0, color: 'var(--text)', fontSize: '34px', fontWeight: 800, lineHeight: 1.15, fontFamily }}>
             {story.title}
           </h1>
           {story.english_summary && (
-            <p style={{ color: '#71717A', fontSize: '15px', lineHeight: 1.65, margin: '10px 0 0', maxWidth: '600px' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.65, margin: '10px 0 0', maxWidth: '600px' }}>
               {story.english_summary}
             </p>
           )}
@@ -778,7 +778,7 @@ function StoryReader({ story, vocabMap, userCards, setUserCards, session, track,
 
           {/* Story card */}
           <div style={{
-            background: showEnglish ? '#FDFCFB' : '#FFFFFF',
+            background: showEnglish ? '#FDFCFB' : 'var(--surface)',
             border: '1px solid ' + (showEnglish ? '#EAE8E4' : '#E8E6E3'),
             borderRadius: '22px',
             boxShadow: '0 4px 28px rgba(24,24,27,0.07)',
@@ -867,8 +867,8 @@ function StoryListCard({ story, accentHex, fontFamily, onClick }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         padding: '22px 24px', borderRadius: '20px',
-        border: '1px solid ' + (hovered ? accentHex + '55' : '#E7E5E4'),
-        background: '#FFFFFF', textAlign: 'left', cursor: 'pointer', width: '100%',
+        border: '1px solid ' + (hovered ? accentHex + '55' : 'var(--border)'),
+        background: 'var(--surface)', textAlign: 'left', cursor: 'pointer', width: '100%',
         boxShadow: hovered ? '0 16px 36px rgba(24,24,27,0.09)' : '0 8px 26px rgba(24,24,27,0.05)',
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
         transition: 'all 180ms ease',
@@ -884,10 +884,10 @@ function StoryListCard({ story, accentHex, fontFamily, onClick }) {
         <BookOpen size={21} strokeWidth={1.8} color={accentHex} />
       </div>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: '18px', fontWeight: 750, marginBottom: '5px', fontFamily, color: '#18181B' }}>
+        <div style={{ fontSize: '18px', fontWeight: 750, marginBottom: '5px', fontFamily, color: 'var(--text)' }}>
           {story.title}
         </div>
-        <div style={{ fontSize: '13px', color: '#71717A', lineHeight: 1.5 }}>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
           {story.english_summary}
         </div>
       </div>
@@ -908,8 +908,8 @@ function CategoryCard({ cat, unlocked, hasStories, isClickable, storyCount, lear
       onMouseLeave={() => setHovered(false)}
       style={{
         padding: '22px 24px', borderRadius: '20px',
-        border: '1px solid ' + (hovered ? accentHex + '55' : '#E7E5E4'),
-        background: '#FFFFFF', textAlign: 'left', width: '100%',
+        border: '1px solid ' + (hovered ? accentHex + '55' : 'var(--border)'),
+        background: 'var(--surface)', textAlign: 'left', width: '100%',
         cursor: isClickable ? 'pointer' : 'default',
         opacity: unlocked ? 1 : 0.58,
         boxShadow: hovered ? '0 16px 36px rgba(24,24,27,0.09)' : '0 8px 26px rgba(24,24,27,0.05)',
@@ -921,22 +921,22 @@ function CategoryCard({ cat, unlocked, hasStories, isClickable, storyCount, lear
     >
       <div style={{
         width: '48px', height: '48px', borderRadius: '16px',
-        background: unlocked ? accentHex + '10' : '#F4F4F5',
-        border: '1px solid ' + (unlocked ? accentHex + '18' : '#E7E5E4'),
+        background: unlocked ? accentHex + '10' : 'var(--surface-2)',
+        border: '1px solid ' + (unlocked ? accentHex + '18' : 'var(--border)'),
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <Icon size={22} strokeWidth={1.8} color={unlocked ? accentHex : '#A1A1AA'} />
+        <Icon size={22} strokeWidth={1.8} color={unlocked ? accentHex : 'var(--text-faint)'} />
       </div>
       <div style={{ minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '18px', fontWeight: 800, color: '#18181B' }}>{cat.label}</span>
+          <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>{cat.label}</span>
           {hasStories && unlocked && (
             <span style={pillStyle(accentHex, accentHex + '10', accentHex + '25')}>
               {storyCount} {storyCount === 1 ? 'story' : 'stories'}
             </span>
           )}
         </div>
-        <div style={{ fontSize: '13px', color: '#71717A', lineHeight: 1.5 }}>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
           {unlocked
             ? (hasStories ? cat.description : 'Stories coming soon')
             : remaining + ' more learned words to unlock'}
@@ -952,12 +952,12 @@ function CategoryCard({ cat, unlocked, hasStories, isClickable, storyCount, lear
 function EmptyPanel({ icon: Icon, title, text }) {
   return (
     <div style={{
-      textAlign: 'center', color: '#71717A', padding: '54px 28px', fontSize: '15px',
-      background: '#FFFFFF', border: '1px solid #E7E5E4',
+      textAlign: 'center', color: 'var(--text-muted)', padding: '54px 28px', fontSize: '15px',
+      background: 'var(--surface)', border: '1px solid var(--border)',
       borderRadius: '22px', boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
     }}>
-      <Icon size={30} strokeWidth={1.8} color="#A1A1AA" />
-      <div style={{ color: '#18181B', fontSize: '17px', fontWeight: 800, marginTop: '14px' }}>{title}</div>
+      <Icon size={30} strokeWidth={1.8} color="var(--text-faint)" />
+      <div style={{ color: 'var(--text)', fontSize: '17px', fontWeight: 800, marginTop: '14px' }}>{title}</div>
       <div style={{ marginTop: '6px', lineHeight: 1.6 }}>{text}</div>
     </div>
   )
@@ -1037,7 +1037,7 @@ export default function Stories({ session, profile, track, onBack }) {
         <div style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{
             width: '88px', height: '88px', borderRadius: '26px',
-            background: '#FFFFFF', border: '1px solid #E7E5E4',
+            background: 'var(--surface)', border: '1px solid var(--border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 16px 40px rgba(24,24,27,0.06)',
           }}>
@@ -1099,10 +1099,10 @@ export default function Stories({ session, profile, track, onBack }) {
             <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>
               {selectedCategory.wordRange} words
             </span>
-            <h1 style={{ fontSize: '34px', fontWeight: 800, color: '#18181B', margin: '14px 0 8px' }}>
+            <h1 style={{ fontSize: '34px', fontWeight: 800, color: 'var(--text)', margin: '14px 0 8px' }}>
               {selectedCategory.label}
             </h1>
-            <p style={{ fontSize: '15px', color: '#71717A', lineHeight: 1.6, margin: 0 }}>
+            <p style={{ fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
               Choose a story matched to this vocabulary tier.
             </p>
           </div>
@@ -1136,14 +1136,14 @@ export default function Stories({ session, profile, track, onBack }) {
         <div style={{ margin: '28px 0 28px' }}>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
             <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>{nativeName}</span>
-            <span style={pillStyle('#71717A', '#F4F4F5', '#E7E5E4')}>
+            <span style={pillStyle('var(--text-muted)', 'var(--surface-2)', 'var(--border)')}>
               {getSystemLabel(track.system)} · {getLevelLabel(track.language, track.system, track.current_level)}
             </span>
           </div>
-          <h1 style={{ fontSize: '36px', fontWeight: 800, color: '#18181B', margin: '0 0 8px' }}>
+          <h1 style={{ fontSize: '36px', fontWeight: 800, color: 'var(--text)', margin: '0 0 8px' }}>
             Stories
           </h1>
-          <p style={{ color: '#71717A', fontSize: '15px', lineHeight: 1.6, margin: 0 }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.6, margin: 0 }}>
             Read stories matched to your vocabulary level.
           </p>
         </div>

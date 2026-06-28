@@ -83,7 +83,7 @@ function Shell({ children, accentHex, fontFamily, narrow }) {
 
 function IconButton({ icon: Icon, label, onClick, danger, disabled }) {
   const [hovered, setHovered] = useState(false)
-  const color = danger ? '#DC2626' : '#52525B'
+  const color = danger ? '#DC2626' : 'var(--text-muted)'
   return (
     <button
       onClick={onClick}
@@ -93,8 +93,8 @@ function IconButton({ icon: Icon, label, onClick, danger, disabled }) {
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
         height: '40px', padding: '0 14px', borderRadius: '12px',
-        border: '1px solid ' + (danger ? '#FECACA' : '#E7E5E4'),
-        background: hovered && !disabled ? (danger ? '#FEF2F2' : '#F7F7F5') : '#FFFFFF',
+        border: '1px solid ' + (danger ? '#FECACA' : 'var(--border)'),
+        background: hovered && !disabled ? (danger ? '#FEF2F2' : 'var(--surface-2)') : 'var(--surface)',
         color,
         fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
         cursor: disabled ? 'default' : 'pointer',
@@ -122,7 +122,7 @@ function PrimaryButton({ onClick, children, accentHex, icon: Icon }) {
         borderRadius: '16px',
         border: 'none',
         background: hovered ? accentHex + 'E6' : accentHex,
-        color: '#FFFFFF',
+        color: '#fff',
         fontSize: '15px',
         fontWeight: 750,
         fontFamily: 'Inter, sans-serif',
@@ -136,7 +136,7 @@ function PrimaryButton({ onClick, children, accentHex, icon: Icon }) {
         boxShadow: hovered ? '0 12px 28px ' + accentHex + '30' : '0 5px 16px ' + accentHex + '22',
       }}
     >
-      {Icon && <Icon size={18} strokeWidth={2} color="#FFFFFF" />}
+      {Icon && <Icon size={18} strokeWidth={2} color="#fff" />}
       {children}
     </button>
   )
@@ -153,9 +153,9 @@ function GhostButton({ onClick, children, icon: Icon }) {
         flex: 1,
         minHeight: '52px',
         borderRadius: '16px',
-        border: '1px solid #E7E5E4',
-        background: hovered ? '#F7F7F5' : '#FFFFFF',
-        color: '#52525B',
+        border: '1px solid var(--border)',
+        background: hovered ? 'var(--surface-2)' : 'var(--surface)',
+        color: 'var(--text-muted)',
         fontSize: '15px',
         fontWeight: 700,
         fontFamily: 'Inter, sans-serif',
@@ -166,7 +166,7 @@ function GhostButton({ onClick, children, icon: Icon }) {
         gap: '9px',
       }}
     >
-      {Icon && <Icon size={18} strokeWidth={2} color="#71717A" />}
+      {Icon && <Icon size={18} strokeWidth={2} color="var(--text-muted)" />}
       {children}
     </button>
   )
@@ -175,22 +175,22 @@ function GhostButton({ onClick, children, icon: Icon }) {
 function StatCard({ label, value, color }) {
   return (
     <div style={{
-      background: '#FFFFFF',
-      border: '1px solid #E7E5E4',
+      background: 'var(--surface)',
+      border: '1px solid var(--border)',
       borderRadius: '18px',
       padding: '18px 20px',
       textAlign: 'center',
       boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
     }}>
       <div style={{ fontSize: '28px', fontWeight: 850, color, lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: '12px', color: '#71717A', marginTop: '7px', fontWeight: 650 }}>{label}</div>
+      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '7px', fontWeight: 650 }}>{label}</div>
     </div>
   )
 }
 
 function ProgressBar({ pct, accentHex }) {
   return (
-    <div style={{ height: '7px', background: '#E7E5E4', borderRadius: '999px', overflow: 'hidden' }}>
+    <div style={{ height: '7px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden' }}>
       <div style={{
         height: '100%',
         width: pct + '%',
@@ -373,7 +373,7 @@ export default function Test({ session, profile, track, onBack }) {
         <div style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{
             width: '88px', height: '88px', borderRadius: '26px',
-            background: '#FFFFFF', border: '1px solid #E7E5E4',
+            background: 'var(--surface)', border: '1px solid var(--border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 16px 40px rgba(24,24,27,0.06)',
           }}>
@@ -390,7 +390,7 @@ export default function Test({ session, profile, track, onBack }) {
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
         <div style={centerPanelStyle}>
-          <StateIcon icon={Lock} accentHex="#A1A1AA" />
+          <StateIcon icon={Lock} accentHex="var(--text-faint)" />
           <h1 style={titleStyle}>{levelLabel} Test locked</h1>
           <p style={bodyTextStyle}>Master {unlockPct}% of this level's words to unlock the test.</p>
           <div style={cardStyle}>
@@ -400,9 +400,9 @@ export default function Test({ session, profile, track, onBack }) {
               </div>
               <InfoTip accentHex={accentHex} text="A word is mastered once the app predicts you'll still recall it about three weeks from now. It can't be rushed - mastery comes from reviewing correctly over time, across multiple days." />
             </div>
-            <div style={{ fontSize: '13px', color: '#71717A', textAlign: 'center', marginBottom: '16px' }}>words mastered</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', marginBottom: '16px' }}>words mastered</div>
             <ProgressBar pct={masteryPct} accentHex={accentHex} />
-            <div style={{ fontSize: '12px', color: '#71717A', marginTop: '12px', textAlign: 'center' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '12px', textAlign: 'center' }}>
               Unlocks at {Math.ceil(status.totalWords * TEST_UNLOCK_MASTERY_PCT)} mastered words
             </div>
           </div>
@@ -438,7 +438,7 @@ export default function Test({ session, profile, track, onBack }) {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '22px' }}>
-          <StatCard label="attempts today" value={attempts.count} color="#18181B" />
+          <StatCard label="attempts today" value={attempts.count} color="var(--text)" />
           <StatCard label="remaining" value={3 - attempts.count} color={accentHex} />
           <StatCard label="questions" value="30" color="#2F9E6D" />
         </div>
@@ -452,8 +452,8 @@ export default function Test({ session, profile, track, onBack }) {
         }}>
           <ShieldCheck size={21} strokeWidth={1.8} color={accentHex} style={{ flexShrink: 0, marginTop: '2px' }} />
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 800, color: '#18181B', marginBottom: '5px' }}>Strict by design</div>
-            <div style={{ fontSize: '13px', color: '#71717A', lineHeight: 1.55 }}>
+            <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)', marginBottom: '5px' }}>Strict by design</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55 }}>
               Wrong answers return to review through FSRS, so the test strengthens weak words instead of just blocking progress.
             </div>
           </div>
@@ -485,8 +485,8 @@ export default function Test({ session, profile, track, onBack }) {
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', gap: '12px' }}>
           <div>
-            <div style={{ fontSize: '13px', color: '#71717A', marginBottom: '8px' }}>
-              <span style={{ fontWeight: 800, color: '#18181B' }}>{index + 1} / {questions.length}</span>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+              <span style={{ fontWeight: 800, color: 'var(--text)' }}>{index + 1} / {questions.length}</span>
               <span style={{ marginLeft: '8px' }}>{progress}% complete</span>
             </div>
             <div style={{ width: '220px' }}><ProgressBar pct={progress} accentHex={accentHex} /></div>
@@ -507,13 +507,13 @@ export default function Test({ session, profile, track, onBack }) {
           marginBottom: '18px',
           boxShadow: '0 22px 64px rgba(24,24,27,0.07)',
         }}>
-          <div style={{ fontSize: '12px', fontWeight: 800, color: '#71717A', marginBottom: '18px', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '18px', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
             {q.type === 'e_to_c' ? 'Choose the target-language word' : 'Choose the English meaning'}
           </div>
           <div style={{
             fontSize: isTargetPrompt ? '58px' : '28px',
             fontWeight: 800,
-            color: '#18181B',
+            color: 'var(--text)',
             fontFamily: isTargetPrompt ? fontFamily : 'Inter, sans-serif',
             lineHeight: 1.25,
           }}>
@@ -533,9 +533,9 @@ export default function Test({ session, profile, track, onBack }) {
             const hasAnswered = selected !== null
             const isTargetOption = q.type === 'e_to_c'
 
-            let borderColor = '#E7E5E4'
-            let bgColor = '#FFFFFF'
-            let textColor = '#18181B'
+            let borderColor = 'var(--border)'
+            let bgColor = '#fff'
+            let textColor = 'var(--text)'
             let Icon = null
 
             if (hasAnswered) {
@@ -550,7 +550,7 @@ export default function Test({ session, profile, track, onBack }) {
                 textColor = '#DC2626'
                 Icon = X
               } else {
-                textColor = '#A1A1AA'
+                textColor = 'var(--text-faint)'
               }
             }
 
@@ -581,7 +581,7 @@ export default function Test({ session, profile, track, onBack }) {
                   ? (
                     <span style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                       <span>{option}</span>
-                      <span style={{ fontSize: '12px', fontWeight: 550, color: hasAnswered ? textColor : '#71717A', fontFamily: 'Inter, sans-serif' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 550, color: hasAnswered ? textColor : 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
                         {q.optionReadings[option]}
                       </span>
                     </span>
@@ -628,8 +628,8 @@ export default function Test({ session, profile, track, onBack }) {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', width: '100%', margin: '22px 0' }}>
           <StatCard label="Correct" value={lastResult.correctCount} color="#2F9E6D" />
-          <StatCard label="Wrong" value={lastResult.wrongCount} color={lastResult.wrongCount > 0 ? '#DC2626' : '#A1A1AA'} />
-          <StatCard label="Total" value={questions.length} color="#18181B" />
+          <StatCard label="Wrong" value={lastResult.wrongCount} color={lastResult.wrongCount > 0 ? '#DC2626' : 'var(--text-faint)'} />
+          <StatCard label="Total" value={questions.length} color="var(--text)" />
         </div>
 
         <p style={bodyTextStyle}>
@@ -639,7 +639,7 @@ export default function Test({ session, profile, track, onBack }) {
         </p>
 
         {!lastResult.passed && attempts.count < 3 && (
-          <p style={{ fontSize: '13px', color: '#A1A1AA', margin: '0 0 18px' }}>
+          <p style={{ fontSize: '13px', color: 'var(--text-faint)', margin: '0 0 18px' }}>
             Attempts remaining today: {3 - attempts.count}
           </p>
         )}
@@ -684,7 +684,7 @@ const centerPanelStyle = {
 }
 
 const titleStyle = {
-  color: '#18181B',
+  color: 'var(--text)',
   fontSize: '26px',
   fontWeight: 850,
   lineHeight: 1.15,
@@ -692,7 +692,7 @@ const titleStyle = {
 }
 
 const bodyTextStyle = {
-  color: '#71717A',
+  color: 'var(--text-muted)',
   fontSize: '15px',
   lineHeight: 1.65,
   margin: '0 0 24px',
@@ -700,8 +700,8 @@ const bodyTextStyle = {
 }
 
 const cardStyle = {
-  background: '#FFFFFF',
-  border: '1px solid #E7E5E4',
+  background: 'var(--surface)',
+  border: '1px solid var(--border)',
   borderRadius: '22px',
   padding: '24px',
   boxShadow: '0 10px 32px rgba(24,24,27,0.055)',

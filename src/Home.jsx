@@ -19,7 +19,7 @@ function FlowStep({ icon, label, accentHex, onClick }) {
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
         padding: '14px 10px', borderRadius: '14px', cursor: 'pointer',
-        background: hovered ? '#F7F7F5' : 'transparent',
+        background: hovered ? 'var(--surface-2)' : 'transparent',
         transition: 'background 140ms ease', minWidth: '76px',
       }}
     >
@@ -30,7 +30,7 @@ function FlowStep({ icon, label, accentHex, onClick }) {
       }}>
         <Icon size={20} strokeWidth={1.75} color={accentHex} />
       </div>
-      <span style={{ fontSize: '12px', fontWeight: 500, color: '#52525B' }}>{label}</span>
+      <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)' }}>{label}</span>
     </div>
   )
 }
@@ -59,7 +59,7 @@ export default function Home({ profile, track, counts, onNavigate }) {
           <div style={{ fontSize: '52px', fontWeight: 700, color: accentHex, lineHeight: 1, fontFamily: langFont }}>
             {langChars}
           </div>
-          <div style={{ fontSize: '14px', color: '#71717A', marginTop: '8px', letterSpacing: '0.2px' }}>
+          <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '8px', letterSpacing: '0.2px' }}>
             {systemLabel} · {levelSuffix}
           </div>
         </div>
@@ -78,20 +78,20 @@ export default function Home({ profile, track, counts, onNavigate }) {
 
       {/* ── Today card ── */}
       <div style={{
-        background: '#fff', borderRadius: '20px', border: '1px solid #E7E5E4',
+        background: 'var(--surface)', borderRadius: '20px', border: '1px solid var(--border)',
         boxShadow: '0 2px 16px rgba(0,0,0,0.05)', padding: isMobile ? '22px 18px' : '28px 32px', marginBottom: '20px',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-          <span style={{ fontSize: '17px', fontWeight: 700, color: '#18181B' }}>Today</span>
+          <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)' }}>Today</span>
           <span style={{
-            fontSize: '12px', color: totalDue > 0 ? accentHex : '#71717A',
-            background: totalDue > 0 ? `${accentHex}10` : '#F4F4F5',
+            fontSize: '12px', color: totalDue > 0 ? accentHex : 'var(--text-muted)',
+            background: totalDue > 0 ? `${accentHex}10` : 'var(--surface-2)',
             padding: '4px 12px', borderRadius: '20px', fontWeight: 500,
           }}>
             {totalDue > 0 ? 'Cards waiting' : 'All caught up ✓'}
           </span>
         </div>
-        <div style={{ fontSize: '13px', color: '#71717A', marginBottom: '24px' }}>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px' }}>
           Your current study queue
         </div>
 
@@ -104,7 +104,7 @@ export default function Home({ profile, track, counts, onNavigate }) {
           ].map(({ label, value, color, bg }) => (
             <div key={label} style={{ textAlign: 'center', padding: '16px 12px', background: bg, borderRadius: '14px' }}>
               <div style={{ fontSize: '34px', fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
-              <div style={{ fontSize: '12px', color: '#71717A', marginTop: '6px', fontWeight: 500 }}>{label}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 500 }}>{label}</div>
             </div>
           ))}
         </div>
@@ -112,16 +112,16 @@ export default function Home({ profile, track, counts, onNavigate }) {
         {/* Mastery */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', fontWeight: 600, color: '#18181B' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
               Mastery
               <InfoTip accentHex={accentHex} text="A word is mastered once the app predicts you'll still recall it about three weeks from now. It can't be rushed — mastery comes from reviewing correctly over time, across multiple days." />
             </span>
-            <span style={{ fontSize: '13px', color: '#71717A' }}>
-              <span style={{ fontWeight: 600, color: '#18181B' }}>{counts.masteredCount}</span>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+              <span style={{ fontWeight: 600, color: 'var(--text)' }}>{counts.masteredCount}</span>
               /{counts.totalWords} · {masteryPct}%
             </span>
           </div>
-          <div style={{ height: '7px', background: '#E7E5E4', borderRadius: '4px', overflow: 'hidden' }}>
+          <div style={{ height: '7px', background: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
             <div style={{
               height: '100%', borderRadius: '4px',
               background: `linear-gradient(90deg, ${accentHex}, ${accentHex}bb)`,
@@ -152,10 +152,10 @@ export default function Home({ profile, track, counts, onNavigate }) {
 
       {/* ── Keep the flow going ── */}
       <div style={{
-        background: '#fff', borderRadius: '18px', border: '1px solid #E7E5E4',
+        background: 'var(--surface)', borderRadius: '18px', border: '1px solid var(--border)',
         boxShadow: '0 1px 4px rgba(0,0,0,0.04)', padding: '22px 24px',
       }}>
-        <div style={{ fontSize: '14px', fontWeight: 600, color: '#18181B', marginBottom: '14px' }}>
+        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', marginBottom: '14px' }}>
           Keep the flow going
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

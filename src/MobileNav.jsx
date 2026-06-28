@@ -6,7 +6,7 @@ import {
 
 const SAGE_BG = '#E7EDE4'
 const SAGE_TEXT = '#4F6047'
-const MUTED = '#71717A'
+const MUTED = 'var(--text-muted)'
 
 // Primary tabs live directly in the bottom bar. Everything else goes behind the
 // "More" sheet so the bar stays uncluttered on phones. (Sidebar.jsx keeps the
@@ -72,13 +72,13 @@ export default function MobileNav({ view, onNavigate, onLogout }) {
           />
           <div style={{
             position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 41,
-            background: '#fff',
+            background: 'var(--surface)',
             borderTopLeftRadius: '18px', borderTopRightRadius: '18px',
             boxShadow: '0 -8px 30px rgba(0,0,0,0.18)',
             padding: '10px 14px calc(16px + env(safe-area-inset-bottom))',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 6px 8px' }}>
-              <span style={{ fontSize: '15px', fontWeight: 700, color: '#18181B' }}>More</span>
+              <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>More</span>
               <button onClick={() => setMoreOpen(false)} aria-label="Close menu"
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex' }}>
                 <X size={20} strokeWidth={1.9} color={MUTED} />
@@ -96,7 +96,7 @@ export default function MobileNav({ view, onNavigate, onLogout }) {
                     width: '100%', background: active ? SAGE_BG : 'none', border: 'none',
                     cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px',
                     padding: '13px 12px', borderRadius: '11px',
-                    color: danger ? '#DC2626' : (active ? SAGE_TEXT : '#3F3F46'),
+                    color: danger ? '#DC2626' : (active ? SAGE_TEXT : 'var(--text-muted)'),
                     fontSize: '15px', fontWeight: active ? 600 : 500, textAlign: 'left',
                   }}
                 >
@@ -113,8 +113,8 @@ export default function MobileNav({ view, onNavigate, onLogout }) {
       <nav style={{
         position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 30,
         display: 'flex', alignItems: 'stretch',
-        background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(10px)',
-        borderTop: '1px solid #E7E5E4',
+        background: 'var(--surface-glass)', backdropFilter: 'blur(10px)',
+        borderTop: '1px solid var(--border)',
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}>
         {PRIMARY.map(item => (

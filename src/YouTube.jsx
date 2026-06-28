@@ -32,9 +32,9 @@ function VideoCard({ video, accentHex }) {
         onMouseEnter={function() { setHovered(true) }}
         onMouseLeave={function() { setHovered(false) }}
         style={{
-          background: '#fff',
+          background: 'var(--surface)',
           borderRadius: '16px',
-          border: '1px solid ' + (hovered ? accentHex + '55' : '#E7E5E4'),
+          border: '1px solid ' + (hovered ? accentHex + '55' : 'var(--border)'),
           boxShadow: hovered ? '0 8px 28px rgba(0,0,0,0.09)' : '0 1px 4px rgba(0,0,0,0.04)',
           transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
           transition: 'all 180ms ease',
@@ -42,7 +42,7 @@ function VideoCard({ video, accentHex }) {
           cursor: 'pointer',
         }}
       >
-        <div style={{ position: 'relative', paddingTop: '56.25%', background: '#F4F4F5' }}>
+        <div style={{ position: 'relative', paddingTop: '56.25%', background: 'var(--surface-2)' }}>
           {thumbnail ? (
             <img
               src={thumbnail}
@@ -74,14 +74,14 @@ function VideoCard({ video, accentHex }) {
           <div style={{
             fontSize: '14px',
             fontWeight: 600,
-            color: '#18181B',
+            color: 'var(--text)',
             lineHeight: 1.45,
             marginBottom: '5px',
           }}>
             {video.title}
           </div>
           {video.channel_name && (
-            <div style={{ fontSize: '12px', color: '#71717A' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
               {video.channel_name}
             </div>
           )}
@@ -150,7 +150,7 @@ export default function YouTube({ profile, track, onBack }) {
           style={{
             background: 'none',
             border: 'none',
-            color: '#71717A',
+            color: 'var(--text-muted)',
             cursor: 'pointer',
             fontSize: '14px',
             padding: 0,
@@ -161,10 +161,10 @@ export default function YouTube({ profile, track, onBack }) {
         </button>
 
         <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#18181B', marginBottom: '4px' }}>
+          <h1 style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>
             YouTube
           </h1>
-          <p style={{ fontSize: '14px', color: '#71717A' }}>
+          <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
             {'Curated videos for ' + systemLabel + ' · ' + levelLabel}
           </p>
         </div>
@@ -172,10 +172,10 @@ export default function YouTube({ profile, track, onBack }) {
         {videos.length === 0 && (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>▶</div>
-            <div style={{ fontSize: '17px', fontWeight: 600, color: '#18181B', marginBottom: '8px' }}>
+            <div style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text)', marginBottom: '8px' }}>
               No videos yet
             </div>
-            <div style={{ fontSize: '14px', color: '#71717A' }}>
+            <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
               Videos for this level are coming soon.
             </div>
           </div>

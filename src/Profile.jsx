@@ -43,16 +43,16 @@ function IconButton({ icon: Icon, label, onClick }) {
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
         height: '40px', padding: '0 14px', borderRadius: '12px',
-        border: '1px solid #E7E5E4',
-        background: hovered ? '#F7F7F5' : '#FFFFFF',
-        color: '#52525B',
+        border: '1px solid var(--border)',
+        background: hovered ? 'var(--surface-2)' : 'var(--surface)',
+        color: 'var(--text-muted)',
         fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
         cursor: 'pointer',
         transition: 'background 160ms ease, transform 160ms ease',
         transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
       }}
     >
-      <Icon size={17} strokeWidth={1.85} color="#71717A" />
+      <Icon size={17} strokeWidth={1.85} color="var(--text-muted)" />
       {label}
     </button>
   )
@@ -173,10 +173,10 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
             <User size={16} strokeWidth={1.8} color={accentHex} />
             Profile
           </div>
-          <h1 style={{ margin: 0, fontSize: '34px', lineHeight: 1.1, fontWeight: 850, color: '#18181B' }}>
+          <h1 style={{ margin: 0, fontSize: '34px', lineHeight: 1.1, fontWeight: 850, color: 'var(--text)' }}>
             {profile.display_name || session.user.email}
           </h1>
-          <div style={{ fontSize: '14px', color: '#71717A', marginTop: '8px', fontWeight: 600 }}>
+          <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '8px', fontWeight: 600 }}>
             {systemLabel} · {levelLabel}
           </div>
         </div>
@@ -192,13 +192,13 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
       {!loading && (
         <Panel>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: '#18181B' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
               Level mastery
               <InfoTip accentHex={accentHex} text="A word is mastered once the app predicts you'll still recall it about three weeks from now. It can't be rushed - mastery comes from reviewing correctly over time, across multiple days." />
             </span>
-            <span style={{ fontSize: '13px', color: '#71717A', fontWeight: 650 }}>{stats.masteredCount}/{stats.totalWords} mastered</span>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{stats.masteredCount}/{stats.totalWords} mastered</span>
           </div>
-          <div style={{ height: '8px', background: '#E7E5E4', borderRadius: '999px', overflow: 'hidden' }}>
+          <div style={{ height: '8px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden' }}>
             <div style={{
               height: '100%',
               borderRadius: '999px',
@@ -207,7 +207,7 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
               transition: 'width 700ms ease',
             }} />
           </div>
-          <div style={{ fontSize: '12px', color: '#71717A', marginTop: '9px' }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '9px' }}>
             Test unlocks at 90% mastery.
           </div>
         </Panel>
@@ -216,12 +216,12 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
       <Panel>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '18px', marginBottom: editingGoal ? '16px' : 0 }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 800, color: '#18181B' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
               <Target size={17} strokeWidth={1.85} color={accentHex} />
               Daily new cards
             </div>
             {!editingGoal && (
-              <div style={{ fontSize: '13px', color: '#71717A', marginTop: '4px' }}>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>
                 {profile.daily_new_cards} new cards per day
               </div>
             )}
@@ -252,16 +252,16 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
                 onClick={() => setNewGoal(opt.val)}
                 style={{
                   padding: '14px 16px', borderRadius: '14px', textAlign: 'left',
-                  border: '1.5px solid ' + (newGoal === opt.val ? accentHex : '#E7E5E4'),
-                  background: newGoal === opt.val ? accentHex + '08' : '#FFFFFF',
+                  border: '1.5px solid ' + (newGoal === opt.val ? accentHex : 'var(--border)'),
+                  background: newGoal === opt.val ? accentHex + '08' : 'var(--surface)',
                   cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   fontFamily: 'Inter, sans-serif',
                 }}
               >
-                <span style={{ fontWeight: 750, fontSize: '14px', color: newGoal === opt.val ? accentHex : '#18181B' }}>
+                <span style={{ fontWeight: 750, fontSize: '14px', color: newGoal === opt.val ? accentHex : 'var(--text)' }}>
                   {opt.label}
                 </span>
-                <span style={{ fontSize: '13px', color: '#71717A' }}>{opt.desc}</span>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{opt.desc}</span>
               </button>
             ))}
           </div>
@@ -271,8 +271,8 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
       {profile.last_studied_on && (
         <Panel compact>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', color: '#71717A' }}>Last studied</span>
-            <span style={{ fontSize: '14px', fontWeight: 750, color: '#18181B' }}>
+            <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Last studied</span>
+            <span style={{ fontSize: '14px', fontWeight: 750, color: 'var(--text)' }}>
               {new Date(profile.last_studied_on).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
             </span>
           </div>
@@ -282,8 +282,8 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
       <Panel danger>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '18px', alignItems: 'center' }}>
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 800, color: '#18181B' }}>Reset progress</div>
-            <div style={{ fontSize: '13px', color: '#71717A', marginTop: '4px', lineHeight: 1.45 }}>
+            <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Reset progress</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
               Clears flashcards, tests, unlocks, and streak for this language.
             </div>
           </div>
@@ -297,7 +297,7 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
             onClick={() => { setConfirmingReset(false); setResetError('') }}
             style={{
               marginTop: '12px', background: 'none', border: 'none',
-              padding: 0, color: '#71717A', cursor: 'pointer',
+              padding: 0, color: 'var(--text-muted)', cursor: 'pointer',
               fontSize: '13px', fontFamily: 'Inter, sans-serif',
             }}
           >
@@ -342,9 +342,9 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
 function Panel({ children, compact, danger }) {
   return (
     <div style={{
-      background: '#FFFFFF',
+      background: 'var(--surface)',
       borderRadius: '20px',
-      border: '1px solid ' + (danger ? '#FECACA' : '#E7E5E4'),
+      border: '1px solid ' + (danger ? '#FECACA' : 'var(--border)'),
       boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
       padding: compact ? '18px 22px' : '22px 24px',
       marginBottom: '14px',
@@ -357,9 +357,9 @@ function Panel({ children, compact, danger }) {
 function StatCard({ label, value, unit, icon: Icon, color, bg }) {
   return (
     <div style={{
-      background: '#FFFFFF',
+      background: 'var(--surface)',
       borderRadius: '18px',
-      border: '1px solid #E7E5E4',
+      border: '1px solid var(--border)',
       boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
       padding: '18px',
     }}>
@@ -371,14 +371,14 @@ function StatCard({ label, value, unit, icon: Icon, color, bg }) {
         <Icon size={19} strokeWidth={1.85} color={color} />
       </div>
       <div style={{ fontSize: '29px', fontWeight: 850, color, lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: '11px', color: '#71717A', marginTop: '5px', fontWeight: 650 }}>{unit}</div>
-      <div style={{ fontSize: '12px', color: '#A1A1AA', marginTop: '7px' }}>{label}</div>
+      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '5px', fontWeight: 650 }}>{unit}</div>
+      <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '7px' }}>{label}</div>
     </div>
   )
 }
 
 function SmallButton({ children, onClick, accentHex, filled, danger, disabled, icon: Icon }) {
-  const color = danger ? '#DC2626' : (accentHex || '#71717A')
+  const color = danger ? '#DC2626' : (accentHex || 'var(--text-muted)')
   return (
     <button
       onClick={onClick}
@@ -387,9 +387,9 @@ function SmallButton({ children, onClick, accentHex, filled, danger, disabled, i
         minHeight: '36px',
         padding: '0 14px',
         borderRadius: '10px',
-        border: '1px solid ' + (danger ? '#FCA5A5' : filled ? color : '#E7E5E4'),
-        background: filled ? color : (danger ? '#FEF2F2' : '#FFFFFF'),
-        color: filled ? '#FFFFFF' : color,
+        border: '1px solid ' + (danger ? '#FCA5A5' : filled ? color : 'var(--border)'),
+        background: filled ? color : (danger ? '#FEF2F2' : 'var(--surface)'),
+        color: filled ? 'var(--surface)' : color,
         cursor: disabled ? 'default' : 'pointer',
         fontSize: '13px',
         fontWeight: 750,
@@ -402,7 +402,7 @@ function SmallButton({ children, onClick, accentHex, filled, danger, disabled, i
         gap: '7px',
       }}
     >
-      {Icon && <Icon size={15} strokeWidth={2} color={filled ? '#FFFFFF' : color} />}
+      {Icon && <Icon size={15} strokeWidth={2} color={filled ? 'var(--surface)' : color} />}
       {children}
     </button>
   )

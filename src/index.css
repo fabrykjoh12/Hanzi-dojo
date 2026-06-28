@@ -12,8 +12,8 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background: #FAFAF8;
-  color: #18181B;
+  background: var(--bg);
+  color: var(--text);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -22,4 +22,29 @@ body {
   --chinese-accent-dark: #922E1C;
   --japanese-accent: #2E3A6E;
   --japanese-accent-dark: #1E2750;
+
+  /* Semantic theme tokens — light (default) */
+  --bg: #FAFAF8;
+  --surface: #FFFFFF;
+  --surface-2: #F4F4F5;
+  --surface-glass: rgba(255, 255, 255, 0.85);
+  --border: #E7E5E4;
+  --text: #18181B;
+  --text-muted: #71717A;
+  --text-faint: #A1A1AA;
+  --reader-watermark: rgba(24, 24, 27, 0.04);
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0F1115;
+  --surface: #1A1D24;
+  --surface-2: #23272F;
+  --surface-glass: rgba(26, 29, 36, 0.82);
+  --border: #2B2F38;
+  --text: #E8E8EA;
+  --text-muted: #9AA0A8;
+  --text-faint: #797F88;
+  --reader-watermark: rgba(255, 255, 255, 0.05);
+  color-scheme: dark;
 }
