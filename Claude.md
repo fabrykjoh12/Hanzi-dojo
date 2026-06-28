@@ -688,6 +688,7 @@ Done:
 - ~~**Mobile per-screen padding**~~ — every top-level screen tightens horizontal padding on mobile via useIsMobile().
 - ~~**Furigana on Japanese flashcard main word**~~ — already implemented: showFurigana defaults true and showRuby shows the reading above kanji on front (by default) and back (Study.jsx).
 - ~~**LanguageSwitcher mastery count**~~ — progress display now uses mastery (FSRS stability) instead of the old `is_easy` count, consistent with the rest of the app.
+- ~~**Installable PWA**~~ — web manifest + icons, real page title/description, theme-color, and social-share (og) tags; fixed the favicon 404 on the Pages subpath (section 19).
 
 Priority order (most impactful first):
 
@@ -759,6 +760,11 @@ Changing `base` to a fixed value will break one of the two hosts (assets 404 →
 | Blank/white page, 404 on `/Hanzi-dojo/assets/*` at a root host | base path wrong for that host | check vite.config.js VERCEL detection |
 | "Site can't start" card | build ran without the `VITE_SUPABASE_*` env vars | add host env vars, then **rebuild/redeploy** |
 | Google login bounces to localhost | host URL not in Supabase Redirect URLs | add `https://<host>/**` to the allow-list |
+
+### PWA / installable
+- `public/manifest.webmanifest` + icons (`icon-192.png`, `icon-512.png`, `maskable-512.png`, `apple-touch-icon.png`) make the app installable ("Add to Home Screen", standalone display). Icons were generated from `src/assets/Hanzi-logo.png` (the vermillion enso) composited onto white.
+- `index.html` references the manifest/icons via Vite's `%BASE_URL%` so paths are correct on both hosts. This also fixed the old absolute `/favicon.svg` that 404'd on the GitHub Pages subpath. The manifest's internal paths (`start_url`, icon `src`) are **relative**, so they resolve under either base.
+- To regenerate icons: `npm install --no-save sharp`, then a short sharp script compositing the logo onto a white background at 192/512/180. (Note: the browser-tab favicon is still the separate purple mark in `public/favicon.svg` — replace it with an enso-derived icon if full brand consistency is wanted.)
 
 ### Secrets / keys
 - The `VITE_SUPABASE_ANON_KEY` is **public by design** (it ships in the client bundle); data is protected by RLS, not by hiding the key. Never put the Supabase **service key** in any `VITE_` var or frontend code — it belongs only in `.env.script` for the content scripts.

@@ -1,0 +1,16 @@
+{
+  "name": "Hanzi-dojo",
+  "short_name": "Hanzi-dojo",
+  "description": "Learn Chinese and Japanese with SRS flashcards and level-matched immersion. Free forever.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAFAF8",
+  "theme_color": "#B83A24",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
