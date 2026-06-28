@@ -694,9 +694,10 @@ Priority order (most impactful first):
 1. **Japanese YouTube recommendations:** At least a few curated videos for JLPT N5. *(content task — needs video URLs)*
 2. **HSK 2 vocabulary + audio + stories:** Next Chinese level content. *(content task — needs vocab data + API keys)*
 3. **FSRS parameter tuning:** Once real user data exists, optimize parameters beyond library defaults.
-4. **Practice test mode:** Unlimited questions, no progression impact, no card state changes. *(next pure-code feature)*
-5. **Offline support:** Service worker (post-launch).
-6. **Spanish:** Third language after Chinese and Japanese content is solid.
+4. **Offline support:** Service worker (post-launch).
+5. **Spanish:** Third language after Chinese and Japanese content is solid.
+
+(Practice mode is intentionally *not* on the roadmap — Writing.jsx already serves as the low-stakes practice/active-recall page.)
 
 ---
 
