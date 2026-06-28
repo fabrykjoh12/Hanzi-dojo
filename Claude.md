@@ -686,7 +686,7 @@ Done:
 - ~~**Deploy to the web**~~ — GitHub Pages + Vercel, auto-deploy from `main`, graceful missing-config screen, OAuth redirect handling.
 - ~~**Mobile navigation**~~ — bottom tab bar (MobileNav.jsx) replaces the sidebar below 768px.
 - ~~**Mobile per-screen padding**~~ — every top-level screen tightens horizontal padding on mobile via useIsMobile().
-- ~~**Furigana on Japanese flashcard main word**~~ — already implemented: showFurigana defaults true and showRuby shows the reading above kanji on front (by default) and back (Study.jsx).
+- ~~**Furigana on Japanese flashcard main word**~~ — showFurigana defaults true; showRuby shows the reading above kanji on front (by default) and back. Furigana is okurigana-aware (Study.jsx `furiganaParts`): the reading sits only over the kanji core, with leading/trailing kana left bare, and pure hiragana/katakana words (incl. katakana loanwords) get no furigana at all. Applies to both the big card word and the example-sentence target word.
 - ~~**LanguageSwitcher mastery count**~~ — progress display now uses mastery (FSRS stability) instead of the old `is_easy` count, consistent with the rest of the app.
 - ~~**Installable PWA**~~ — web manifest + icons, real page title/description, theme-color, and social-share (og) tags; fixed the favicon 404 on the Pages subpath (section 19).
 

@@ -27,6 +27,45 @@ function hasKanji(text) {
   return false
 }
 
+// Hiragana (0x3040–0x309F) and katakana (0x30A0–0x30FF, incl. the prolonged
+// sound mark ー) are kana — phonetic, so they never need furigana.
+function isKana(code) {
+  return code >= 0x3040 && code <= 0x30FF
+}
+
+// Split a word + reading so furigana (the reading) sits ONLY over the kanji
+// core. Leading/trailing kana that also appear in the reading (okurigana, e.g.
+// the べる in 食べる) are rendered bare. Returns { lead, core, coreReading, trail }
+// or null when there is no kanji to annotate — which covers pure hiragana and
+// pure katakana words (including katakana loanwords with a hiragana reading).
+function furiganaParts(word, reading) {
+  const w = word || ''
+  const r = reading || ''
+  if (!w || !r) return null
+
+  let wStart = 0
+  let rStart = 0
+  while (wStart < w.length && rStart < r.length
+      && isKana(w.charCodeAt(wStart)) && w[wStart] === r[rStart]) {
+    wStart += 1
+    rStart += 1
+  }
+
+  let wEnd = w.length
+  let rEnd = r.length
+  while (wEnd > wStart && rEnd > rStart
+      && isKana(w.charCodeAt(wEnd - 1)) && w[wEnd - 1] === r[rEnd - 1]) {
+    wEnd -= 1
+    rEnd -= 1
+  }
+
+  const core = w.slice(wStart, wEnd)
+  const coreReading = r.slice(rStart, rEnd)
+  if (!core || !coreReading || !hasKanji(core)) return null
+
+  return { lead: w.slice(0, wStart), core, coreReading, trail: w.slice(wEnd) }
+}
+
 function QueuePill({ label, value, color, background }) {
   return (
     <div style={{
@@ -325,6 +364,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const audioUrl = getAudioUrl(v.audio_path)
   const canUseFurigana = isJapanese && hasKanji(v.word) && Boolean(v.reading)
   const showRuby = canUseFurigana && (showFurigana || flipped)
+  const wordFuri = showRuby ? furiganaParts(v.word, v.reading) : null
   const showReadingLine = flipped && v.reading && !isJapanese
   const hasExample = Boolean(v.example_sentence || v.example_reading || v.example_translation)
 
@@ -336,13 +376,17 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     }
     const before = sentence.slice(0, idx)
     const after = sentence.slice(idx + word.length)
-    const showWordFurigana = isJapanese && reading && hasKanji(word)
-    const wordEl = showWordFurigana
+    const exFuri = isJapanese ? furiganaParts(word, reading) : null
+    const wordEl = exFuri
       ? (
-        <ruby style={{ color: accentHex }}>
-          {word}
-          <rt style={{ fontSize: '0.65em', fontWeight: 500, color: accentHex }}>{reading}</rt>
-        </ruby>
+        <span style={{ color: accentHex }}>
+          {exFuri.lead}
+          <ruby>
+            {exFuri.core}
+            <rt style={{ fontSize: '0.65em', fontWeight: 500, color: accentHex }}>{exFuri.coreReading}</rt>
+          </ruby>
+          {exFuri.trail}
+        </span>
       )
       : <span style={{ color: accentHex, borderBottom: '1px solid ' + accentHex + '88' }}>{word}</span>
     return (
@@ -458,14 +502,18 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
             alignItems: 'center', justifyContent: 'center',
             textAlign: 'center', padding: '34px 24px',
           }}>
-            {showRuby ? (
-              <ruby style={{
+            {wordFuri ? (
+              <div style={{
                 fontSize: '86px', fontWeight: 400, color: '#18181B',
                 fontFamily: langFont, lineHeight: 1.25,
               }}>
-                {v.word}
-                {v.reading && <rt style={{ fontSize: '18px', color: '#71717A' }}>{v.reading}</rt>}
-              </ruby>
+                {wordFuri.lead}
+                <ruby>
+                  {wordFuri.core}
+                  <rt style={{ fontSize: '18px', color: '#71717A' }}>{wordFuri.coreReading}</rt>
+                </ruby>
+                {wordFuri.trail}
+              </div>
             ) : (
               <div style={{
                 fontSize: '86px', fontWeight: 400, color: '#18181B',
