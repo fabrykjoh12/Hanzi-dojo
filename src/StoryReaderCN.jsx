@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
-import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRight } from 'lucide-react'
+import { CHARACTER_READINGS } from './characterNames'
+import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRight, UserRound } from 'lucide-react'
+
+const NAMES = CHARACTER_READINGS.chinese
 
 // HSKStory-inspired reader for Chinese stories. Light theme (matches the app —
 // no dark mode). Distraction-free prose, tap a word for a bottom-sheet
@@ -45,12 +48,29 @@ function makeSegmenter() {
   return null
 }
 
-// Greedy vocab match first (so every known word stays tappable), then break the
-// leftover runs into clean words with Intl.Segmenter for natural boundaries.
+// A proper name is one in the curated map that ISN'T a normal vocab word — so
+// 小明/李明 are names, while role-nouns like 妈妈/服务员 keep their word popups.
+function matchName(text, i, vocabMap) {
+  const maxLen = Math.min(4, text.length - i)
+  for (let len = maxLen; len >= 2; len -= 1) {
+    const cand = text.slice(i, i + len)
+    if (NAMES[cand] && !vocabMap[cand]) return cand
+  }
+  return null
+}
+
+// Names first (so personal names aren't split into characters), then greedy
+// vocab match, then break leftover runs into clean words with Intl.Segmenter.
 function segmentLine(text, vocabMap, segmenter) {
   const tokens = []
   let i = 0
   while (i < text.length) {
+    const name = matchName(text, i, vocabMap)
+    if (name) {
+      tokens.push({ text: name, name: { word: name, pinyin: NAMES[name] } })
+      i += name.length
+      continue
+    }
     let matched = null
     const maxLen = Math.min(6, text.length - i)
     for (let len = maxLen; len >= 1; len -= 1) {
@@ -62,9 +82,10 @@ function segmentLine(text, vocabMap, segmenter) {
       i += matched.length
       continue
     }
-    // Collect a run until the next vocab match begins.
+    // Collect a run until the next vocab/name match begins.
     let j = i
     while (j < text.length) {
+      if (matchName(text, j, vocabMap)) break
       let isVocabStart = false
       const maxL = Math.min(6, text.length - j)
       for (let len = maxL; len >= 1; len -= 1) {
@@ -88,14 +109,16 @@ function segmentLine(text, vocabMap, segmenter) {
 
 function Token({ token, isSelected, showPinyin, onSelect }) {
   const [hover, setHover] = useState(false)
-  if (!token.vocab) {
+  const reading = token.vocab ? token.vocab.reading : (token.name ? token.name.pinyin : null)
+  const clickable = Boolean(token.vocab || token.name)
+  if (!clickable) {
     if (showPinyin) {
       return <ruby style={{ rubyAlign: 'center' }}>{token.text}<rt>&nbsp;</rt></ruby>
     }
     return <span>{token.text}</span>
   }
   const body = showPinyin
-    ? <ruby>{token.text}<rt style={{ fontSize: '0.42em', color: GOLD, fontWeight: 500 }}>{token.vocab.reading}</rt></ruby>
+    ? <ruby>{token.text}<rt style={{ fontSize: '0.42em', color: GOLD, fontWeight: 500 }}>{reading}</rt></ruby>
     : token.text
   return (
     <span
@@ -180,14 +203,15 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
     setSpeaking(true)
   }
 
-  const selectWord = (lineIndex, tokenKey, vocab) => {
+  const selectToken = (lineIndex, tokenKey, token) => {
     setShowSentence(false)
-    setSelected({ lineIndex, tokenKey, vocab })
+    setSelected({ lineIndex, tokenKey, vocab: token.vocab || null, name: token.name || null })
   }
 
   const sel = selected
-  const selStatus = sel ? wordStatus(sel.vocab.id, userCards) : 'not_started'
-  const selInDeck = sel ? Boolean(userCards[sel.vocab.id]) : false
+  const isName = Boolean(sel && sel.name)
+  const selStatus = sel && sel.vocab ? wordStatus(sel.vocab.id, userCards) : 'not_started'
+  const selInDeck = sel && sel.vocab ? Boolean(userCards[sel.vocab.id]) : false
   const bottomOffset = isMobile ? 'calc(62px + env(safe-area-inset-bottom))' : '0px'
 
   return (
@@ -239,7 +263,7 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
                   token={tk}
                   showPinyin={showPinyin}
                   isSelected={Boolean(sel) && sel.lineIndex === li && sel.tokenKey === ti}
-                  onSelect={() => selectWord(li, ti, tk.vocab)}
+                  onSelect={() => selectToken(li, ti, tk)}
                 />
               ))}
             </p>
@@ -282,18 +306,31 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                <span style={{ fontSize: '26px', fontWeight: 800, color: RED, fontFamily: "'Noto Sans SC'" }}>{sel.vocab.word}</span>
-                <span style={{ width: '8px', height: '8px', borderRadius: '999px', background: STATUS_COLOR[selStatus], flexShrink: 0 }} />
+                <span style={{ fontSize: '26px', fontWeight: 800, color: RED, fontFamily: "'Noto Sans SC'" }}>
+                  {isName ? sel.name.word : sel.vocab.word}
+                </span>
+                {!isName && (
+                  <span style={{ width: '8px', height: '8px', borderRadius: '999px', background: STATUS_COLOR[selStatus], flexShrink: 0 }} />
+                )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: MUTED, border: '1px solid var(--border)', borderRadius: '999px', padding: '3px 9px' }}>
-                  {levelLabel}
+                <span style={{
+                  fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '3px 9px',
+                  color: isName ? RED : MUTED,
+                  border: '1px solid ' + (isName ? RED + '40' : 'var(--border)'),
+                  background: isName ? RED + '12' : 'transparent',
+                  display: 'inline-flex', alignItems: 'center', gap: '5px',
+                }}>
+                  {isName && <UserRound size={12} strokeWidth={2.2} color={RED} />}
+                  {isName ? 'Name' : levelLabel}
                 </span>
-                <button onClick={() => !selInDeck && addToDeck(sel.vocab)} aria-label="Add to deck"
-                  style={{ background: 'none', border: 'none', cursor: selInDeck ? 'default' : 'pointer', padding: '4px', display: 'flex' }}>
-                  <Bookmark size={20} strokeWidth={2} color={selInDeck ? RED : MUTED} fill={selInDeck ? RED : 'none'} />
-                </button>
-                {sel.vocab.audio_path && (
+                {!isName && (
+                  <button onClick={() => !selInDeck && addToDeck(sel.vocab)} aria-label="Add to deck"
+                    style={{ background: 'none', border: 'none', cursor: selInDeck ? 'default' : 'pointer', padding: '4px', display: 'flex' }}>
+                    <Bookmark size={20} strokeWidth={2} color={selInDeck ? RED : MUTED} fill={selInDeck ? RED : 'none'} />
+                  </button>
+                )}
+                {!isName && sel.vocab.audio_path && (
                   <button onClick={() => playWord(sel.vocab.audio_path)} aria-label="Play audio"
                     style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex' }}>
                     <Volume2 size={20} strokeWidth={2} color={MUTED} />
@@ -306,8 +343,12 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
               </div>
             </div>
 
-            <div style={{ fontSize: '17px', color: GOLD, fontWeight: 600, marginTop: '6px' }}>{sel.vocab.reading}</div>
-            <div style={{ fontSize: '15px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>{sel.vocab.meaning}</div>
+            <div style={{ fontSize: '17px', color: GOLD, fontWeight: 600, marginTop: '6px' }}>
+              {isName ? sel.name.pinyin : sel.vocab.reading}
+            </div>
+            <div style={{ fontSize: '15px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
+              {isName ? 'Proper noun — a character’s name.' : sel.vocab.meaning}
+            </div>
 
             {story.english_content && englishLines[sel.lineIndex] && (
               <div style={{ marginTop: '12px', borderTop: '1px solid var(--border)', paddingTop: '10px' }}>

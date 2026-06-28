@@ -214,6 +214,12 @@ src/utils.js
   getNextLevel(language, system, level). normalizeRecallInput(value) — strips
   punctuation/spaces/CJK punctuation for recall matching. isRecallMatch().
 
+src/characterNames.js
+  CHARACTER_READINGS: curated map of PROPER NAMES (Chinese) → reading, used by
+  StoryReaderCN to detect personal names (李明/小明/林雨晴…) and show a "Name"
+  popup instead of translating them character-by-character. Role nouns
+  (妈妈/服务员/姐姐…) are deliberately excluded — they're normal vocab.
+
 src/ThemeContext.jsx
   React context for light/dark theme. App owns the theme state, applies it via
   document.documentElement[data-theme], and persists to profiles.theme. Consumers

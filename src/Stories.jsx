@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { isLearned } from './mastery'
 import { useIsMobile } from './useIsMobile'
+import { CHARACTER_READINGS } from './characterNames'
 import StoryReaderCN from './StoryReaderCN'
 import {
   ArrowLeft, ArrowRight, BookOpen, BookOpenCheck, CheckCircle2,
@@ -199,15 +200,8 @@ function ProgressCard({ learnedCount, totalWords, accentHex }) {
 
 // ─── CHARACTER GUIDE ───────────────────────────────────────────────────────
 
-const CHARACTER_READINGS = {
-  chinese: {
-    '李明': 'Lǐ Míng', '小花': 'Xiǎo Huā', '大力': 'Dà Lì',
-    '小明': 'Xiǎo Míng', '小红': 'Xiǎo Hóng', '妈妈': 'Māma',
-    '路人': 'Lù rén', '大毛': 'Dà Máo', '服务员': 'Fúwùyuán',
-    '收银员': 'Shōuyínyuán', '店员': 'Diànyuán',
-  },
-  japanese: {},
-}
+// CHARACTER_READINGS is shared with StoryReaderCN — see characterNames.js
+// (imported at the top of this file).
 
 function CharacterPill({ name, pinyin, accentHex, fontFamily }) {
   const [pos, setPos] = useState(null)
