@@ -68,7 +68,7 @@ export default function Home({ profile, track, counts, onNavigate }) {
         <div style={{
           display: 'flex', alignItems: 'center', gap: '8px',
           padding: '10px 16px', borderRadius: '20px',
-          background: '#FEF3C7', border: '1px solid #FDE68A',
+          background: 'rgba(217,119,6,0.13)', border: '1px solid rgba(217,119,6,0.30)',
         }}>
           <Flame size={17} strokeWidth={2} color="#D97706" />
           <span style={{ fontSize: '15px', fontWeight: 700, color: '#D97706' }}>{profile.streak || 0}</span>
@@ -98,11 +98,11 @@ export default function Home({ profile, track, counts, onNavigate }) {
         {/* New / Learning / Due */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '28px' }}>
           {[
-            { label: 'New', value: counts.newCount, color: '#3E63DD', bg: '#EEF2FF' },
-            { label: 'Learning', value: counts.learnCount, color: '#D97706', bg: '#FFFBEB' },
-            { label: 'Due', value: counts.dueCount, color: '#2F9E6D', bg: '#ECFDF5' },
-          ].map(({ label, value, color, bg }) => (
-            <div key={label} style={{ textAlign: 'center', padding: '16px 12px', background: bg, borderRadius: '14px' }}>
+            { label: 'New', value: counts.newCount, color: '#3E63DD' },
+            { label: 'Learning', value: counts.learnCount, color: '#D97706' },
+            { label: 'Due', value: counts.dueCount, color: '#2F9E6D' },
+          ].map(({ label, value, color }) => (
+            <div key={label} style={{ textAlign: 'center', padding: '16px 12px', background: color + '14', border: '1px solid ' + color + '26', borderRadius: '14px' }}>
               <div style={{ fontSize: '34px', fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 500 }}>{label}</div>
             </div>
