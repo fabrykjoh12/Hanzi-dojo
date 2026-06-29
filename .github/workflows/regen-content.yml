@@ -1,0 +1,63 @@
+name: Regenerate vocabulary content
+
+# Manually-triggered job that regenerates the AI meanings and/or example
+# sentences for the vocabulary, running on GitHub's servers (which can reach
+# Supabase + Groq). Trigger from the Actions tab → "Run workflow".
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: What to regenerate
+        type: choice
+        default: both
+        options: [meanings, examples, both]
+      language:
+        description: Which language
+        type: choice
+        default: both
+        options: [both, japanese, chinese]
+
+permissions:
+  contents: read
+
+# Don't run two regenerations at once (they'd fight over the same rows).
+concurrency:
+  group: regen-content
+  cancel-in-progress: false
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Regenerate
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          set -e
+          LANG_FLAG=""
+          case "${{ inputs.language }}" in
+            japanese) LANG_FLAG="--japanese" ;;
+            chinese)  LANG_FLAG="--chinese" ;;
+          esac
+
+          if [ "${{ inputs.task }}" = "meanings" ] || [ "${{ inputs.task }}" = "both" ]; then
+            echo "::group::Meanings"
+            node generate-meanings.mjs $LANG_FLAG
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "examples" ] || [ "${{ inputs.task }}" = "both" ]; then
+            echo "::group::Example sentences"
+            node generate-examples.mjs $LANG_FLAG --regen
+            echo "::endgroup::"
+          fi
