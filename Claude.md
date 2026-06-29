@@ -141,6 +141,9 @@ src/Profile.jsx
   User stats page. Shows streak, freezes, learned count, mastered count, mastery
   progress bar. Daily goal editor (5/10/15). Last studied date. Reset progress
   button (two-step confirm → calls reset_current_language_progress RPC). Sign out.
+  StudyCalendar: a GitHub-style contribution heatmap of studied days (last
+  17 weeks mobile / 24 desktop) from daily_activity, with intensity by
+  studied_cards, month labels, a today outline, and a Less→More legend.
 
 src/Home.jsx
   Dashboard. Language identity header (native script + level + streak pill).
@@ -335,10 +338,12 @@ review_logs
   reviewed_at timestamptz
 
 daily_activity
-  user_id uuid
-  date date
-  cards_reviewed int
-  new_cards_introduced int
+  user_id uuid                   -- PRIMARY KEY (user_id, activity_date)
+  activity_date date
+  studied_cards int              -- written by Study.jsx on each grade (upsert);
+  new_cards int                     drives the Profile "Study activity" calendar
+  learning_cards int
+  review_cards int               -- (counts are this-session running totals; presence is exact)
 
 test_attempts
   id uuid PRIMARY KEY

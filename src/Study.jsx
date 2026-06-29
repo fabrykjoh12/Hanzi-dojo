@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { schedule, previewLabels } from './srs'
-import { updateStreak } from './streak'
+import { updateStreak, todayStr } from './streak'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
@@ -166,6 +166,9 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const [showFurigana, setShowFurigana] = useState(true)
   const [saveError, setSaveError] = useState(null)
   const audioRef = useRef(null)
+  // Running counts of today's study session, persisted to daily_activity so the
+  // Profile calendar can show which days were studied.
+  const activityRef = useRef({ studied: 0, newC: 0, learn: 0, review: 0 })
   const isMobile = useIsMobile()
 
   const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
@@ -253,6 +256,24 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     }
   }, [flipped])
 
+  // Upsert today's study counts so the Profile calendar can show studied days.
+  // Counts are this session's running totals (presence is always correct).
+  const recordActivity = (cardState) => {
+    const a = activityRef.current
+    a.studied += 1
+    if (cardState === 'new') a.newC += 1
+    else if (cardState === 'review') a.review += 1
+    else a.learn += 1
+    supabase.from('daily_activity').upsert({
+      user_id: session.user.id,
+      activity_date: todayStr(),
+      studied_cards: a.studied,
+      new_cards: a.newC,
+      learning_cards: a.learn,
+      review_cards: a.review,
+    }, { onConflict: 'user_id,activity_date' }).then(() => {})
+  }
+
   const handleGrade = async (grade) => {
     const card = queue[0]
     const res = schedule(card, grade)
@@ -285,6 +306,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
       cardId = data?.id
     }
 
+    recordActivity(card.state)
     setFlipped(false)
 
     setQueue(prev => {

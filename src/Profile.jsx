@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { isMastered } from './mastery'
+import { todayStr } from './streak'
 import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
 import {
@@ -67,6 +68,7 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
   const [resetting, setResetting] = useState(false)
   const [resetError, setResetError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [activity, setActivity] = useState({})
 
   const { accentHex, fontFamily, nativeName } = getLanguageDetails(profile)
   const systemLabel = getSystemLabel(track.system)
@@ -95,6 +97,14 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
       masteredCount: levelCards.filter(c => isMastered(c)).length,
       totalWords: vocabIds.size,
     })
+
+    const { data: acts } = await supabase
+      .from('daily_activity')
+      .select('activity_date, studied_cards')
+      .eq('user_id', session.user.id)
+    const actMap = {}
+    ;(acts || []).forEach(a => { if (a.studied_cards > 0) actMap[a.activity_date] = a.studied_cards })
+    setActivity(actMap)
 
     setLoading(false)
   }
@@ -188,6 +198,12 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
         <StatCard label="Words learned" value={loading ? '-' : stats.learned} unit={'of ' + stats.totalWords} icon={Layers} color={accentHex} bg={accentHex + '10'} />
         <StatCard label="Words mastered" value={loading ? '-' : stats.masteredCount} unit={masteryPct + '%'} icon={Sparkles} color="#2F9E6D" bg="#ECFDF5" />
       </div>
+
+      {!loading && (
+        <Panel>
+          <StudyCalendar activity={activity} accentHex={accentHex} />
+        </Panel>
+      )}
 
       {!loading && (
         <Panel>
@@ -336,6 +352,90 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
         Sign out
       </button>
     </Shell>
+  )
+}
+
+function pad2(n) { return String(n).padStart(2, '0') }
+function dateToStr(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) }
+
+// Build numWeeks columns (Sun→Sat) ending with the current week.
+function buildWeeks(numWeeks) {
+  const today = new Date(); today.setHours(12, 0, 0, 0)
+  const end = new Date(today); end.setDate(end.getDate() + (6 - end.getDay()))   // Saturday of this week
+  const start = new Date(end); start.setDate(start.getDate() - (numWeeks * 7 - 1)) // Sunday, numWeeks back
+  const weeks = []
+  const cur = new Date(start)
+  for (let w = 0; w < numWeeks; w += 1) {
+    const col = []
+    for (let d = 0; d < 7; d += 1) {
+      col.push({ ds: dateToStr(cur), future: cur > today })
+      cur.setDate(cur.getDate() + 1)
+    }
+    weeks.push(col)
+  }
+  return weeks
+}
+
+function cellColor(count, accentHex) {
+  if (!count) return 'var(--surface-2)'
+  if (count < 5) return accentHex + '55'
+  if (count < 15) return accentHex + 'AA'
+  return accentHex
+}
+
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+export function StudyCalendar({ activity, accentHex }) {
+  const isMobile = useIsMobile()
+  const numWeeks = isMobile ? 17 : 24
+  const weeks = buildWeeks(numWeeks)
+  const today = todayStr()
+  const totalDays = Object.keys(activity).length
+  const cell = isMobile ? 13 : 14
+  const gap = 3
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '12px', marginBottom: '14px' }}>
+        <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Study activity</span>
+        <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>
+          {totalDays} {totalDays === 1 ? 'day' : 'days'} studied
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', gap: gap + 'px', overflowX: 'auto', paddingBottom: '2px' }}>
+        {weeks.map((col, wi) => {
+          const firstOfMonth = col.find(c => c.ds.slice(8) === '01')
+          return (
+            <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: gap + 'px', position: 'relative', flexShrink: 0 }}>
+              {firstOfMonth && (
+                <span style={{ position: 'absolute', top: '-15px', left: 0, fontSize: '9px', color: 'var(--text-faint)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  {MONTH_ABBR[parseInt(firstOfMonth.ds.slice(5, 7), 10) - 1]}
+                </span>
+              )}
+              {col.map((c) => (
+                <div key={c.ds} title={c.ds + (activity[c.ds] ? ' · ' + activity[c.ds] + ' cards' : '')}
+                  style={{
+                    width: cell + 'px', height: cell + 'px', borderRadius: '3px',
+                    background: c.future ? 'transparent' : cellColor(activity[c.ds], accentHex),
+                    border: c.ds === today ? '1.5px solid ' + accentHex : (c.future ? 'none' : '1px solid rgba(0,0,0,0.04)'),
+                    boxSizing: 'border-box',
+                  }}
+                />
+              ))}
+            </div>
+          )
+        })}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', marginTop: '12px', fontSize: '11px', color: 'var(--text-faint)' }}>
+        <span>Less</span>
+        {['var(--surface-2)', accentHex + '55', accentHex + 'AA', accentHex].map((bg, i) => (
+          <span key={i} style={{ width: '11px', height: '11px', borderRadius: '3px', background: bg }} />
+        ))}
+        <span>More</span>
+      </div>
+    </div>
   )
 }
 
