@@ -676,13 +676,14 @@ Regenerates the vocabulary `meaning` column with concise, accurate English gloss
 When running Node scripts isn't convenient, the same fixes can be done entirely in the **Supabase SQL Editor + ChatGPT** (no keys, no CLI):
 1. **Export a batch** as JSON: `select json_agg(t) from (select id, word, reading[, meaning] from vocabulary where language='japanese' and is_active order by sort_order limit 100 offset 0) t;`
 2. **Paste into ChatGPT** with a prompt asking for accurate meanings / meaningful sentences, returning a raw JSON array keyed by `id` (copy id verbatim).
-3. **Apply** by pasting ChatGPT's JSON into a dollar-quoted upsert (no escaping needed):
+3. **Apply** by pasting ChatGPT's JSON into a dollar-quoted upsert (no escaping needed). Read `id` as **text** (not uuid) and join on `v.id::text = x.id` so an occasional ChatGPT-mangled UUID is skipped instead of aborting the whole batch:
    ```sql
    update vocabulary v set meaning = x.meaning
-   from json_to_recordset($json$ <PASTE JSON> $json$) as x(id uuid, meaning text)
-   where v.id = x.id;
+   from json_to_recordset($json$ <PASTE JSON> $json$) as x(id text, meaning text)
+   where v.id::text = x.id;
    ```
-   (For sentences: `x(id uuid, example_sentence text, example_reading text, example_translation text)` updating those three columns.)
+   (For sentences: `x(id text, example_sentence text, example_reading text, example_translation text)` updating those three columns.)
+   The "rows updated" count vs the batch size tells you how many (if any) were skipped due to a bad id.
 Batch ~100 words (meanings) / ~60 (sentences) via `offset`. Use dollar-quoting (`$json$…$json$`) so apostrophes don't break the SQL.
 
 ### generate-stories.mjs
