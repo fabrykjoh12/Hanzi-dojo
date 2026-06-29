@@ -4,7 +4,7 @@ import { getLevelLabel, getSystemLabel } from './utils'
 import { isLearned } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import { CHARACTER_READINGS } from './characterNames'
-import StoryReaderCN from './StoryReaderCN'
+import StoryReaderImmersive from './StoryReaderImmersive'
 import {
   ArrowLeft, ArrowRight, BookOpen, BookOpenCheck, CheckCircle2,
   Circle, Library, Lock, Plus, Sparkles, Volume2, Type, Award, Languages,
@@ -200,7 +200,7 @@ function ProgressCard({ learnedCount, totalWords, accentHex }) {
 
 // ─── CHARACTER GUIDE ───────────────────────────────────────────────────────
 
-// CHARACTER_READINGS is shared with StoryReaderCN — see characterNames.js
+// CHARACTER_READINGS is shared with StoryReaderImmersive — see characterNames.js
 // (imported at the top of this file).
 
 function CharacterPill({ name, pinyin, accentHex, fontFamily }) {
@@ -1049,31 +1049,14 @@ export default function Stories({ session, profile, track, onBack }) {
     const nextStory = currentIdx >= 0 && currentIdx < catStories.length - 1
       ? catStories[currentIdx + 1] : null
 
-    if (track.language === 'chinese') {
-      return (
-        <StoryReaderCN
-          story={selectedStory}
-          vocabMap={vocabMap}
-          userCards={userCards}
-          setUserCards={setUserCards}
-          session={session}
-          track={track}
-          onBack={() => setView('list')}
-          nextStory={nextStory}
-          onNextStory={() => setSelectedStory(nextStory)}
-        />
-      )
-    }
-
     return (
-      <StoryReader
+      <StoryReaderImmersive
         story={selectedStory}
         vocabMap={vocabMap}
         userCards={userCards}
         setUserCards={setUserCards}
         session={session}
         track={track}
-        languageDetails={languageDetails}
         onBack={() => setView('list')}
         nextStory={nextStory}
         onNextStory={() => setSelectedStory(nextStory)}

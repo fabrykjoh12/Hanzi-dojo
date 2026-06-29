@@ -118,15 +118,17 @@ src/Stories.jsx
   next-story link. A translation toggle renders EnglishStoryLine from the
   `english_content` column instead of the interactive reader.
 
-src/StoryReaderCN.jsx
-  HSKStory-style reader used for CHINESE stories (Stories.jsx routes Chinese
-  to it; Japanese still uses the in-file StoryReader). Light theme matching the
-  app. Distraction-free prose with faded 读/书 watermarks, word segmentation via
-  Intl.Segmenter('zh') with a greedy-vocab-first pass so known words stay
-  tappable. Tapping a word opens a bottom sheet (pinyin, meaning, status dot,
-  HSK badge, add-to-deck bookmark, word audio, "Translate sentence" using
-  english_content). Top-bar Pinyin and EN toggles; bottom audio bar reads the
-  story via Web Speech (zh-CN).
+src/StoryReaderImmersive.jsx
+  HSKStory-style reader used for BOTH languages (Stories.jsx routes all stories
+  here; the old in-file StoryReader is now unused dead code). Light theme.
+  Language is derived from track.language: Intl.Segmenter('zh'|'ja') for
+  whole-word tapping, vermillion/indigo accent, pinyin/furigana toggle, zh-CN/
+  ja-JP audio, 读书/読書 watermarks. Furigana is okurigana-aware (only over
+  kanji). Dialogue lines get per-speaker color labels (splitSpeaker). Tapping a
+  word opens a bottom sheet (reading, meaning, status dot, level badge,
+  add-to-deck, audio, "Translate sentence"). Chinese personal names (not vocab)
+  are detected and shown with a "Name" popup. Greedy-vocab-first segmentation
+  keeps known words tappable as whole units.
 
 src/Writing.jsx
   Writing practice. Active recall for words the user has studied. Round sizes
@@ -701,7 +703,7 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 - **Some Japanese audio mispronounces kanji.** Fix: generate-audio.mjs already uses `v.reading` (hiragana). Delete the storage folder for the level before regenerating so files are not skipped.
 - **Duplicate kanji in Japanese vocab** (何 = なん/なに, 私 = わたし/わたくし) create identical-looking test options. Plan: deactivate less-common duplicates and/or show reading in test options (reading is already shown in Test.jsx Japanese options).
 - **A few JLPT N5 level-2 entries are counter suffixes** (～グラム, ～たち) — more grammar than vocab. Review and optionally deactivate.
-- **Stories reader split by language.** Chinese now uses the new light, HSKStory-style `StoryReaderCN.jsx` (Intl.Segmenter word tapping, bottom-sheet definitions, pinyin/EN toggles, audio bar). Japanese still uses the original in-file `StoryReader` (dialogue/avatars/sidebar) and is pending its own redesign — direction TBD with the user. The old reader's greedy 5-char `segmentText` is the cause of poor Japanese word tapping; the Japanese redesign should adopt `Intl.Segmenter('ja')`.
+- **Unified Stories reader.** Both Chinese and Japanese now use `StoryReaderImmersive.jsx` (Intl.Segmenter word tapping, furigana/pinyin, per-speaker dialogue labels, bottom-sheet definitions, audio bar). The old in-file `StoryReader` (and `CharacterGuide`/`StoryLine`/sidebar cards) in Stories.jsx are now **dead code** — safe to delete in a cleanup pass.
 - **Mobile layout.** Below 768px the left sidebar is replaced by a fixed bottom bar (MobileNav.jsx, 5 tabs + a "More" sheet); App.jsx branches the shell via useIsMobile(). Each top-level screen (Home, Study, Test, Writing, Stories, Profile, Settings, LanguageSwitcher, YouTube) reduces its horizontal padding (~32px → ~16px) on mobile via useIsMobile(). Stat/option grids use `1fr`/`minmax(0,1fr)` columns so they compress without overflow. Further polish (font scaling, 4-col → 2-col stat grids on very small phones) is optional.
 - **Existing ESLint hook-dependency warnings** in some files — don't add new ones.
 - **Legacy DB columns** `ease_factor` and old SM-2 `learning_step` semantics are kept in the cards table but unused. Do not write to `ease_factor`.

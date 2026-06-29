@@ -1,5 +1,5 @@
 // Curated PROPER NAMES used in the seeded stories, mapped to their reading.
-// Used by the Chinese reader (StoryReaderCN) to make personal names tappable
+// Used by the Chinese reader (StoryReaderImmersive) to make personal names tappable
 // with a "Name" popup instead of mis-translating them character-by-character.
 // Only real personal names belong here — role nouns (妈妈/服务员/姐姐/弟弟…) are
 // ordinary vocabulary and must NOT be listed, or they'd be mislabeled "Name".

@@ -1,45 +1,51 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { CHARACTER_READINGS } from './characterNames'
+import { getLevelLabel } from './utils'
 import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRight, UserRound } from 'lucide-react'
 
-const NAMES = CHARACTER_READINGS.chinese
+// HSKStory-inspired immersion reader for BOTH languages. Light theme. Tap a word
+// for a bottom-sheet definition; pinyin (Chinese) / furigana (Japanese) and
+// translation toggles; bottom audio bar. Word segmentation uses the browser's
+// Intl.Segmenter per locale so you tap whole words, not single characters.
 
-// Per-speaker label colors (work on light and dark). Assigned in story order.
-const SPEAKER_PALETTE = ['#B83A24', '#2E6FB8', '#2F9E6D', '#C2680E', '#7C5CD0', '#B83A7A']
-
-// Dialogue lines look like "速速：text" with a full-width or ascii colon near the
-// start. Returns { speaker, text }; speaker is null for narration.
-function splitSpeaker(line) {
-  const full = line.indexOf('：')
-  const ascii = line.indexOf(':')
-  let idx = -1
-  if (full > 0) idx = full
-  if (idx < 0 && ascii > 0) idx = ascii
-  if (idx > 0 && idx <= 6) {
-    return { speaker: line.slice(0, idx).trim(), text: line.slice(idx + 1).trim() }
-  }
-  return { speaker: null, text: line }
-}
-
-// HSKStory-inspired reader for Chinese stories. Light theme (matches the app —
-// no dark mode). Distraction-free prose, tap a word for a bottom-sheet
-// definition, pinyin + translation toggles, and a bottom audio bar. Japanese
-// still uses the original reader (see Stories.jsx).
-
-const BG = 'var(--bg)'
 const PANEL = 'var(--surface)'
 const TEXT = 'var(--text)'
 const MUTED = 'var(--text-muted)'
-const RED = '#B83A24'
 const GOLD = '#B45309'
 const HILITE = 'rgba(217, 164, 62, 0.32)'
+
+const SPEAKER_PALETTE = ['#B83A24', '#2E6FB8', '#2F9E6D', '#C2680E', '#7C5CD0', '#B83A7A']
 
 const STATUS_COLOR = {
   not_started: 'var(--text-faint)',
   learning: '#CA8A04',
   review: '#3E63DD',
   mastered: '#2F9E6D',
+}
+
+// ── Japanese furigana helpers (reading only over kanji) ─────────────────────
+function hasKanji(text) {
+  const v = text || ''
+  for (let i = 0; i < v.length; i += 1) {
+    const c = v.charCodeAt(i)
+    if (c >= 0x3400 && c <= 0x9FFF) return true
+  }
+  return false
+}
+function isKana(c) { return c >= 0x3040 && c <= 0x30FF }
+function furiganaParts(word, reading) {
+  const w = word || ''
+  const r = reading || ''
+  if (!w || !r) return null
+  let wS = 0, rS = 0
+  while (wS < w.length && rS < r.length && isKana(w.charCodeAt(wS)) && w[wS] === r[rS]) { wS += 1; rS += 1 }
+  let wE = w.length, rE = r.length
+  while (wE > wS && rE > rS && isKana(w.charCodeAt(wE - 1)) && w[wE - 1] === r[rE - 1]) { wE -= 1; rE -= 1 }
+  const core = w.slice(wS, wE)
+  const coreReading = r.slice(rS, rE)
+  if (!core || !coreReading || !hasKanji(core)) return null
+  return { lead: w.slice(0, wS), core, coreReading, trail: w.slice(wE) }
 }
 
 function wordStatus(vocabId, userCards) {
@@ -56,35 +62,46 @@ function audioUrlFor(path) {
   return (data && data.publicUrl) || null
 }
 
-function makeSegmenter() {
+function makeSegmenter(locale) {
   try {
     if (typeof Intl !== 'undefined' && Intl.Segmenter) {
-      return new Intl.Segmenter('zh', { granularity: 'word' })
+      return new Intl.Segmenter(locale, { granularity: 'word' })
     }
   } catch (e) { /* not supported */ }
   return null
 }
 
-// A proper name is one in the curated map that ISN'T a normal vocab word — so
-// 小明/李明 are names, while role-nouns like 妈妈/服务员 keep their word popups.
-function matchName(text, i, vocabMap) {
+function splitSpeaker(line) {
+  const full = line.indexOf('：')
+  const ascii = line.indexOf(':')
+  let idx = -1
+  if (full > 0) idx = full
+  if (idx < 0 && ascii > 0) idx = ascii
+  if (idx > 0 && idx <= 6) {
+    return { speaker: line.slice(0, idx).trim(), text: line.slice(idx + 1).trim() }
+  }
+  return { speaker: null, text: line }
+}
+
+// A proper name is one in the curated map that ISN'T a normal vocab word.
+function matchName(text, i, vocabMap, names) {
   const maxLen = Math.min(4, text.length - i)
   for (let len = maxLen; len >= 2; len -= 1) {
     const cand = text.slice(i, i + len)
-    if (NAMES[cand] && !vocabMap[cand]) return cand
+    if (names[cand] && !vocabMap[cand]) return cand
   }
   return null
 }
 
-// Names first (so personal names aren't split into characters), then greedy
-// vocab match, then break leftover runs into clean words with Intl.Segmenter.
-function segmentLine(text, vocabMap, segmenter) {
+// Names → greedy vocab match → Intl.Segmenter for the rest, so known words stay
+// tappable as whole units and everything else has clean word boundaries.
+function segmentLine(text, vocabMap, segmenter, names) {
   const tokens = []
   let i = 0
   while (i < text.length) {
-    const name = matchName(text, i, vocabMap)
+    const name = matchName(text, i, vocabMap, names)
     if (name) {
-      tokens.push({ text: name, name: { word: name, pinyin: NAMES[name] } })
+      tokens.push({ text: name, name: { word: name, reading: names[name] } })
       i += name.length
       continue
     }
@@ -99,10 +116,9 @@ function segmentLine(text, vocabMap, segmenter) {
       i += matched.length
       continue
     }
-    // Collect a run until the next vocab/name match begins.
     let j = i
     while (j < text.length) {
-      if (matchName(text, j, vocabMap)) break
+      if (matchName(text, j, vocabMap, names)) break
       let isVocabStart = false
       const maxL = Math.min(6, text.length - j)
       for (let len = maxL; len >= 1; len -= 1) {
@@ -113,9 +129,7 @@ function segmentLine(text, vocabMap, segmenter) {
     }
     const run = text.slice(i, j)
     if (segmenter) {
-      for (const seg of segmenter.segment(run)) {
-        tokens.push({ text: seg.segment, vocab: null })
-      }
+      for (const seg of segmenter.segment(run)) tokens.push({ text: seg.segment, vocab: null })
     } else {
       tokens.push({ text: run, vocab: null })
     }
@@ -124,28 +138,35 @@ function segmentLine(text, vocabMap, segmenter) {
   return tokens
 }
 
-function Token({ token, isSelected, showPinyin, onSelect }) {
+function Token({ token, isSelected, showReading, isJapanese, onSelect }) {
   const [hover, setHover] = useState(false)
-  const reading = token.vocab ? token.vocab.reading : (token.name ? token.name.pinyin : null)
+  const reading = token.vocab ? token.vocab.reading : (token.name ? token.name.reading : null)
   const clickable = Boolean(token.vocab || token.name)
   if (!clickable) {
-    if (showPinyin) {
-      return <ruby style={{ rubyAlign: 'center' }}>{token.text}<rt>&nbsp;</rt></ruby>
-    }
+    if (showReading) return <ruby>{token.text}<rt>&nbsp;</rt></ruby>
     return <span>{token.text}</span>
   }
-  const body = showPinyin
-    ? <ruby>{token.text}<rt style={{ fontSize: '0.42em', color: GOLD, fontWeight: 500 }}>{reading}</rt></ruby>
-    : token.text
+  let body = token.text
+  if (showReading && reading) {
+    if (isJapanese) {
+      const fp = furiganaParts(token.text, reading)
+      // Names (no kanji core) and kana words just show the reading over the whole token.
+      body = fp
+        ? <>{fp.lead}<ruby>{fp.core}<rt style={{ fontSize: '0.5em', color: GOLD, fontWeight: 500 }}>{fp.coreReading}</rt></ruby>{fp.trail}</>
+        : (token.name
+            ? <ruby>{token.text}<rt style={{ fontSize: '0.42em', color: GOLD, fontWeight: 500 }}>{reading}</rt></ruby>
+            : token.text)
+    } else {
+      body = <ruby>{token.text}<rt style={{ fontSize: '0.42em', color: GOLD, fontWeight: 500 }}>{reading}</rt></ruby>
+    }
+  }
   return (
     <span
       onClick={onSelect}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        cursor: 'pointer',
-        borderRadius: '5px',
-        padding: '0 1px',
+        cursor: 'pointer', borderRadius: '5px', padding: '0 1px',
         background: isSelected ? HILITE : (hover ? 'rgba(0,0,0,0.05)' : 'transparent'),
         boxShadow: isSelected ? '0 0 0 1px rgba(202,138,4,0.45)' : 'none',
         transition: 'background 120ms ease',
@@ -156,9 +177,9 @@ function Token({ token, isSelected, showPinyin, onSelect }) {
   )
 }
 
-export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards, session, track, onBack, nextStory, onNextStory }) {
-  const [selected, setSelected] = useState(null) // { lineIndex, tokenKey, vocab }
-  const [showPinyin, setShowPinyin] = useState(false)
+export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, track, onBack, nextStory, onNextStory }) {
+  const [selected, setSelected] = useState(null)
+  const [showReading, setShowReading] = useState(false)
   const [showEnglish, setShowEnglish] = useState(false)
   const [showSentence, setShowSentence] = useState(false)
   const [speaking, setSpeaking] = useState(false)
@@ -166,7 +187,15 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
   const segmenterRef = useRef(null)
   const wordAudioRef = useRef(null)
 
-  if (!segmenterRef.current) segmenterRef.current = makeSegmenter()
+  const isJapanese = track.language === 'japanese'
+  const accent = isJapanese ? '#2E3A6E' : '#B83A24'
+  const font = isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'"
+  const names = isJapanese ? {} : CHARACTER_READINGS.chinese
+  const watermark = isJapanese ? ['読', '書'] : ['读', '书']
+  const readingLabel = isJapanese ? 'Furigana' : 'Pinyin'
+  const levelLabel = getLevelLabel(track.language, track.system, track.current_level)
+
+  if (!segmenterRef.current) segmenterRef.current = makeSegmenter(isJapanese ? 'ja' : 'zh')
 
   useEffect(() => {
     function onResize() { setWinWidth(window.innerWidth) }
@@ -174,16 +203,12 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  // Stop any speech when leaving the story.
   useEffect(() => () => { try { window.speechSynthesis.cancel() } catch (e) { /* noop */ } }, [])
 
   const isMobile = winWidth < 760
   const lines = story.content.split('\n').filter(Boolean)
   const englishLines = (story.english_content || '').split('\n').filter(Boolean)
-  const levelLabel = getLevelLabelSafe(track)
 
-  // Parse each line into an optional speaker label + segmented tokens, and give
-  // each unique speaker a stable color so dialogue is easy to follow.
   const speakerColors = {}
   let speakerN = 0
   const parsed = lines.map(line => {
@@ -192,7 +217,7 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
       speakerColors[speaker] = SPEAKER_PALETTE[speakerN % SPEAKER_PALETTE.length]
       speakerN += 1
     }
-    return { speaker, tokens: segmentLine(text, vocabMap, segmenterRef.current) }
+    return { speaker, tokens: segmentLine(text, vocabMap, segmenterRef.current, names) }
   })
 
   const addToDeck = async (vocabItem) => {
@@ -221,8 +246,8 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
     const synth = window.speechSynthesis
     if (!synth) return
     if (speaking) { synth.cancel(); setSpeaking(false); return }
-    const u = new SpeechSynthesisUtterance(lines.join('。'))
-    u.lang = 'zh-CN'
+    const u = new SpeechSynthesisUtterance(lines.map(l => splitSpeaker(l).text).join('。'))
+    u.lang = isJapanese ? 'ja-JP' : 'zh-CN'
     u.rate = 0.85
     u.onend = () => setSpeaking(false)
     u.onerror = () => setSpeaking(false)
@@ -243,12 +268,11 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
   const bottomOffset = isMobile ? 'calc(62px + env(safe-area-inset-bottom))' : '0px'
 
   return (
-    <div style={{ minHeight: '100vh', background: BG, color: TEXT, position: 'relative', overflow: 'hidden' }}>
-      {/* Decorative watermark characters */}
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: TEXT, position: 'relative', overflow: 'hidden' }}>
       {!isMobile && (
         <>
-          <span style={watermarkStyle('left')}>读</span>
-          <span style={watermarkStyle('right')}>书</span>
+          <span style={watermarkStyle('left', font)}>{watermark[0]}</span>
+          <span style={watermarkStyle('right', font)}>{watermark[1]}</span>
         </>
       )}
 
@@ -266,9 +290,9 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
           {levelLabel} · <span style={{ color: 'var(--text-muted)' }}>{story.title}</span>
         </div>
         <div style={{ display: 'flex', gap: '6px' }}>
-          <TopToggle active={showPinyin} onClick={() => setShowPinyin(v => !v)} icon={Type} label="Pinyin" isMobile={isMobile} />
+          <TopToggle active={showReading} onClick={() => setShowReading(v => !v)} icon={Type} label={readingLabel} accent={accent} isMobile={isMobile} />
           {story.english_content && (
-            <TopToggle active={showEnglish} onClick={() => setShowEnglish(v => !v)} icon={Languages} label="EN" isMobile={isMobile} />
+            <TopToggle active={showEnglish} onClick={() => setShowEnglish(v => !v)} icon={Languages} label="EN" accent={accent} isMobile={isMobile} />
           )}
         </div>
       </div>
@@ -282,12 +306,12 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
           <div key={li} style={{ marginBottom: speaker ? '22px' : '18px' }}>
             {speaker && (
               <div
-                onClick={NAMES[speaker] ? () => selectToken(li, 'sp', { name: { word: speaker, pinyin: NAMES[speaker] } }) : undefined}
+                onClick={names[speaker] ? () => selectToken(li, 'sp', { name: { word: speaker, reading: names[speaker] } }) : undefined}
                 style={{
                   fontSize: '13px', fontWeight: 700, letterSpacing: '0.4px',
                   color: speakerColors[speaker], marginBottom: '5px',
-                  fontFamily: "'Noto Sans SC'", display: 'inline-block',
-                  cursor: NAMES[speaker] ? 'pointer' : 'default',
+                  fontFamily: font, display: 'inline-block',
+                  cursor: names[speaker] ? 'pointer' : 'default',
                 }}
               >
                 {speaker}
@@ -295,15 +319,16 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
             )}
             <p style={{
               margin: 0, textIndent: speaker ? 0 : '1.6em',
-              fontSize: isMobile ? '20px' : '25px', lineHeight: showPinyin ? 2.05 : 1.75,
-              fontFamily: "'Noto Sans SC'", color: TEXT, fontWeight: 400,
+              fontSize: isMobile ? '20px' : '25px', lineHeight: showReading ? 2.05 : 1.75,
+              fontFamily: font, color: TEXT, fontWeight: 400,
               paddingLeft: speaker ? (isMobile ? '2px' : '4px') : 0,
             }}>
               {tokens.map((tk, ti) => (
                 <Token
                   key={ti}
                   token={tk}
-                  showPinyin={showPinyin}
+                  showReading={showReading}
+                  isJapanese={isJapanese}
                   isSelected={Boolean(sel) && sel.lineIndex === li && sel.tokenKey === ti}
                   onSelect={() => selectToken(li, ti, tk)}
                 />
@@ -317,7 +342,6 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
           </div>
         ))}
 
-        {/* End-of-story → next */}
         {nextStory && (
           <button onClick={onNextStory} style={{
             marginTop: '28px', width: '100%', background: PANEL, border: '1px solid var(--border)',
@@ -326,9 +350,9 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
           }}>
             <span>
               <span style={{ display: 'block', fontSize: '12px', color: MUTED, fontWeight: 600, marginBottom: '3px' }}>Next story</span>
-              <span style={{ fontSize: '17px', fontWeight: 700, fontFamily: "'Noto Sans SC'" }}>{nextStory.title}</span>
+              <span style={{ fontSize: '17px', fontWeight: 700, fontFamily: font }}>{nextStory.title}</span>
             </span>
-            <ChevronRight size={22} color={RED} />
+            <ChevronRight size={22} color={accent} />
           </button>
         )}
       </div>
@@ -348,7 +372,7 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                <span style={{ fontSize: '26px', fontWeight: 800, color: RED, fontFamily: "'Noto Sans SC'" }}>
+                <span style={{ fontSize: '26px', fontWeight: 800, color: accent, fontFamily: font }}>
                   {isName ? sel.name.word : sel.vocab.word}
                 </span>
                 {!isName && (
@@ -358,18 +382,18 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{
                   fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '3px 9px',
-                  color: isName ? RED : MUTED,
-                  border: '1px solid ' + (isName ? RED + '40' : 'var(--border)'),
-                  background: isName ? RED + '12' : 'transparent',
+                  color: isName ? accent : MUTED,
+                  border: '1px solid ' + (isName ? accent + '40' : 'var(--border)'),
+                  background: isName ? accent + '12' : 'transparent',
                   display: 'inline-flex', alignItems: 'center', gap: '5px',
                 }}>
-                  {isName && <UserRound size={12} strokeWidth={2.2} color={RED} />}
+                  {isName && <UserRound size={12} strokeWidth={2.2} color={accent} />}
                   {isName ? 'Name' : levelLabel}
                 </span>
                 {!isName && (
                   <button onClick={() => !selInDeck && addToDeck(sel.vocab)} aria-label="Add to deck"
                     style={{ background: 'none', border: 'none', cursor: selInDeck ? 'default' : 'pointer', padding: '4px', display: 'flex' }}>
-                    <Bookmark size={20} strokeWidth={2} color={selInDeck ? RED : MUTED} fill={selInDeck ? RED : 'none'} />
+                    <Bookmark size={20} strokeWidth={2} color={selInDeck ? accent : MUTED} fill={selInDeck ? accent : 'none'} />
                   </button>
                 )}
                 {!isName && sel.vocab.audio_path && (
@@ -386,7 +410,7 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
             </div>
 
             <div style={{ fontSize: '17px', color: GOLD, fontWeight: 600, marginTop: '6px' }}>
-              {isName ? sel.name.pinyin : sel.vocab.reading}
+              {isName ? sel.name.reading : sel.vocab.reading}
             </div>
             <div style={{ fontSize: '15px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
               {isName ? 'Proper noun — a character’s name.' : sel.vocab.meaning}
@@ -403,7 +427,7 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
                 </button>
                 {showSentence && (
                   <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '8px', lineHeight: 1.55 }}>
-                    {englishLines[sel.lineIndex]}
+                    {splitSpeaker(englishLines[sel.lineIndex]).speaker ? splitSpeaker(englishLines[sel.lineIndex]).text : englishLines[sel.lineIndex]}
                   </div>
                 )}
               </div>
@@ -416,18 +440,18 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
       <div style={{
         position: 'fixed', left: 0, right: 0, bottom: bottomOffset, zIndex: 24,
         display: 'flex', justifyContent: 'center', padding: '10px 12px',
-        background: 'linear-gradient(180deg, rgba(250,250,248,0) 0%, ' + BG + ' 40%)',
+        background: 'linear-gradient(180deg, rgba(250,250,248,0) 0%, var(--bg) 40%)',
       }}>
         <div style={{
           width: '100%', maxWidth: '760px', background: PANEL, border: '1px solid var(--border)',
           borderRadius: '16px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '14px',
         }}>
           <button onClick={toggleStoryAudio} aria-label={speaking ? 'Pause' : 'Play story'}
-            style={{ width: '44px', height: '44px', borderRadius: '999px', background: RED, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            style={{ width: '44px', height: '44px', borderRadius: '999px', background: accent, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             {speaking ? <Pause size={20} color="#fff" fill="#fff" /> : <Play size={20} color="#fff" fill="#fff" style={{ marginLeft: '2px' }} />}
           </button>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: '15px', fontWeight: 700, color: TEXT, fontFamily: "'Noto Sans SC'", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{story.title}</div>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: TEXT, fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{story.title}</div>
             <div style={{ fontSize: '12px', color: MUTED }}>{speaking ? 'Reading aloud…' : 'Listen (text-to-speech)'}</div>
           </div>
         </div>
@@ -436,13 +460,13 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
   )
 }
 
-function TopToggle({ active, onClick, icon: Icon, label, isMobile }) {
+function TopToggle({ active, onClick, icon: Icon, label, accent, isMobile }) {
   return (
     <button onClick={onClick} style={{
       display: 'flex', alignItems: 'center', gap: '6px',
-      background: active ? 'rgba(184,58,36,0.10)' : 'transparent',
-      border: '1px solid ' + (active ? 'rgba(184,58,36,0.4)' : 'var(--border)'),
-      color: active ? RED : MUTED, borderRadius: '999px',
+      background: active ? accent + '1A' : 'transparent',
+      border: '1px solid ' + (active ? accent + '66' : 'var(--border)'),
+      color: active ? accent : MUTED, borderRadius: '999px',
       padding: isMobile ? '6px 10px' : '7px 13px', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
     }}>
       <Icon size={15} strokeWidth={2} />
@@ -451,20 +475,15 @@ function TopToggle({ active, onClick, icon: Icon, label, isMobile }) {
   )
 }
 
-function watermarkStyle(side) {
+function watermarkStyle(side, font) {
   const base = {
     position: 'fixed', top: '50%', transform: 'translateY(-50%)',
-    fontSize: '300px', fontWeight: 800, color: 'rgba(24,24,27,0.04)',
-    fontFamily: "'Noto Sans SC'", pointerEvents: 'none', userSelect: 'none', zIndex: 1,
+    fontSize: '300px', fontWeight: 800, color: 'var(--reader-watermark)',
+    fontFamily: font, pointerEvents: 'none', userSelect: 'none', zIndex: 1,
   }
   if (side === 'left') base.left = '2%'
   else base.right = '2%'
   return base
-}
-
-function getLevelLabelSafe(track) {
-  const lvl = track && track.current_level ? track.current_level : 1
-  return 'HSK ' + lvl
 }
 
 const ghostBtn = {
