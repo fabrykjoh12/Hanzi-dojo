@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { CHARACTER_READINGS } from './characterNames'
 import { getLevelLabel } from './utils'
+import { cleanMeaning } from './cleanMeaning'
 import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRight, UserRound } from 'lucide-react'
 
 // HSKStory-inspired immersion reader for BOTH languages. Light theme. Tap a word
@@ -421,7 +422,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               {isName ? sel.name.reading : sel.vocab.reading}
             </div>
             <div style={{ fontSize: '15px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
-              {isName ? 'Proper noun — a character’s name.' : sel.vocab.meaning}
+              {isName ? 'Proper noun — a character’s name.' : cleanMeaning(sel.vocab.meaning)}
             </div>
 
             {story.english_content && englishLines[sel.lineIndex] && (

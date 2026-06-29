@@ -216,6 +216,13 @@ src/utils.js
   getNextLevel(language, system, level). normalizeRecallInput(value) — strips
   punctuation/spaces/CJK punctuation for recall matching. isRecallMatch().
 
+src/cleanMeaning.js
+  cleanMeaning(raw) — DISPLAY-ONLY tidy for vocabulary `meaning` strings:
+  normalises separators, strips stray trailing periods, dedupes senses, caps to
+  4. Used in the story reader popup and the flashcard back. Never used for answer
+  matching, and cannot fix a gloss that is semantically wrong (that needs
+  regenerating the meaning data).
+
 src/characterNames.js
   CHARACTER_READINGS: curated map of PROPER NAMES (Chinese) → reading, used by
   StoryReaderCN to detect personal names (李明/小明/林雨晴…) and show a "Name"

@@ -4,6 +4,7 @@ import { schedule, previewLabels } from './srs'
 import { updateStreak } from './streak'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { useIsMobile } from './useIsMobile'
+import { cleanMeaning } from './cleanMeaning'
 import {
   Volume2, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
   Sparkles, CheckCircle2, Layers, BookOpenCheck,
@@ -538,7 +539,7 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
                   </div>
                 )}
                 <div style={{ fontSize: '19px', color: 'var(--text-muted)', marginTop: '10px', lineHeight: 1.45, fontWeight: 550 }}>
-                  {v.meaning}
+                  {cleanMeaning(v.meaning)}
                 </div>
                 {hasExample && (
                   <div style={{
