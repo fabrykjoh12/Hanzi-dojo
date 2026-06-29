@@ -17,6 +17,12 @@ const HILITE = 'rgba(217, 164, 62, 0.32)'
 
 const SPEAKER_PALETTE = ['#B83A24', '#2E6FB8', '#2F9E6D', '#C2680E', '#7C5CD0', '#B83A7A']
 
+// Single-kana grammatical particles. They collide with homograph nouns stored in
+// kana (は = topic marker 'wa' vs 歯 'teeth'), so exclude them from word lookup —
+// in a sentence they're almost always the particle, not the noun.
+const JP_PARTICLES = new Set(['は', 'が', 'を', 'に', 'へ', 'と', 'も', 'の', 'で', 'か', 'ね', 'よ', 'わ', 'や', 'な', 'ば'])
+const NO_PARTICLES = new Set()
+
 const STATUS_COLOR = {
   not_started: 'var(--text-faint)',
   learning: '#CA8A04',
@@ -95,7 +101,8 @@ function matchName(text, i, vocabMap, names) {
 
 // Names → greedy vocab match → Intl.Segmenter for the rest, so known words stay
 // tappable as whole units and everything else has clean word boundaries.
-function segmentLine(text, vocabMap, segmenter, names) {
+function segmentLine(text, vocabMap, segmenter, names, particles) {
+  const isVocab = (cand) => vocabMap[cand] && !(cand.length === 1 && particles.has(cand))
   const tokens = []
   let i = 0
   while (i < text.length) {
@@ -109,7 +116,7 @@ function segmentLine(text, vocabMap, segmenter, names) {
     const maxLen = Math.min(6, text.length - i)
     for (let len = maxLen; len >= 1; len -= 1) {
       const cand = text.slice(i, i + len)
-      if (vocabMap[cand]) { matched = cand; break }
+      if (isVocab(cand)) { matched = cand; break }
     }
     if (matched) {
       tokens.push({ text: matched, vocab: vocabMap[matched] })
@@ -122,7 +129,7 @@ function segmentLine(text, vocabMap, segmenter, names) {
       let isVocabStart = false
       const maxL = Math.min(6, text.length - j)
       for (let len = maxL; len >= 1; len -= 1) {
-        if (vocabMap[text.slice(j, j + len)]) { isVocabStart = true; break }
+        if (isVocab(text.slice(j, j + len))) { isVocabStart = true; break }
       }
       if (isVocabStart) break
       j += 1
@@ -191,6 +198,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const accent = isJapanese ? '#2E3A6E' : '#B83A24'
   const font = isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'"
   const names = isJapanese ? {} : CHARACTER_READINGS.chinese
+  const particles = isJapanese ? JP_PARTICLES : NO_PARTICLES
   const watermark = isJapanese ? ['読', '書'] : ['读', '书']
   const readingLabel = isJapanese ? 'Furigana' : 'Pinyin'
   const levelLabel = getLevelLabel(track.language, track.system, track.current_level)
@@ -217,7 +225,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
       speakerColors[speaker] = SPEAKER_PALETTE[speakerN % SPEAKER_PALETTE.length]
       speakerN += 1
     }
-    return { speaker, tokens: segmentLine(text, vocabMap, segmenterRef.current, names) }
+    return { speaker, tokens: segmentLine(text, vocabMap, segmenterRef.current, names, particles) }
   })
 
   const addToDeck = async (vocabItem) => {
@@ -318,10 +326,10 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               </div>
             )}
             <p style={{
-              margin: 0, textIndent: speaker ? 0 : '1.6em',
+              margin: 0,
               fontSize: isMobile ? '20px' : '25px', lineHeight: showReading ? 2.05 : 1.75,
               fontFamily: font, color: TEXT, fontWeight: 400,
-              paddingLeft: speaker ? (isMobile ? '2px' : '4px') : 0,
+              paddingLeft: isMobile ? '2px' : '4px',
             }}>
               {tokens.map((tk, ti) => (
                 <Token
@@ -370,16 +378,16 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
           }}>
             <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: '#D4D4D8', margin: '0 auto 12px' }} />
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                <span style={{ fontSize: '26px', fontWeight: 800, color: accent, fontFamily: font }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0, flex: 1, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '24px', fontWeight: 800, color: accent, fontFamily: font, lineHeight: 1.2, overflowWrap: 'anywhere' }}>
                   {isName ? sel.name.word : sel.vocab.word}
                 </span>
                 {!isName && (
                   <span style={{ width: '8px', height: '8px', borderRadius: '999px', background: STATUS_COLOR[selStatus], flexShrink: 0 }} />
                 )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0, paddingTop: '2px' }}>
                 <span style={{
                   fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '3px 9px',
                   color: isName ? accent : MUTED,
