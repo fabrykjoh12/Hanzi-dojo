@@ -654,12 +654,13 @@ Script for generating AI example sentences and uploading to Supabase vocabulary 
 
 **Run with:**
 ```bash
-node --env-file=.env.script generate-examples.mjs --japanese   # Japanese only
-node --env-file=.env.script generate-examples.mjs --chinese    # Chinese only
-node --env-file=.env.script generate-examples.mjs              # Both
+node --env-file=.env.script generate-examples.mjs --japanese          # fill missing (Japanese)
+node --env-file=.env.script generate-examples.mjs --japanese --regen  # REGENERATE all (replace bad ones)
+node --env-file=.env.script generate-examples.mjs --chinese           # Chinese
+node --env-file=.env.script generate-examples.mjs                     # both, fill missing
 ```
 
-**Behavior:** Queries all vocabulary rows where `example_sentence IS NULL`, batches in groups of 20, calls Groq with a language-appropriate prompt, then updates `example_sentence`, `example_reading`, and `example_translation` columns. Safe to re-run — skips words already populated. Retries with backoff on rate limits.
+**Behavior:** Batches vocab (10/batch), calls Groq **`llama-3.3-70b-versatile`** with a quality-focused prompt (meaningful sentences, realistic human subjects, counter/suffix handling, few-shot good/bad examples), then updates `example_sentence`/`example_reading`/`example_translation`. By default only fills `example_sentence IS NULL`; **`--regen`** regenerates ALL active words to replace low-quality sentences. Retries with backoff on rate limits.
 
 **Output per word:**
 - `example_sentence` — target-language sentence containing the word (Chinese: ≤10 chars; Japanese: ≤15 chars)
@@ -729,6 +730,13 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
   2. **Regenerate Japanese meanings** (later) — extend the Groq tooling to
      rewrite `meaning` with a tighter prompt (concise, correct senses) to fix
      semantic errors. Costs API calls; spot-check results.
+- **Example sentences are often low quality / nonsensical (TODO — deferred).**
+  e.g. ～さい (years old) got "今日は12さいです" ("Today is 12 years old"). The
+  generator was upgraded (`generate-examples.mjs`: 70B model + quality prompt +
+  few-shot). Fix = **regenerate**: `node --env-file=.env.script
+  generate-examples.mjs --japanese --regen` (then `--chinese --regen`).
+  Costs Groq tokens; spot-check, and consider the counter-suffix entries
+  (～さい/～グラム/～たち) for deactivation since they make awkward sentences.
 - **Some Japanese audio mispronounces kanji.** Fix: generate-audio.mjs already uses `v.reading` (hiragana). Delete the storage folder for the level before regenerating so files are not skipped.
 - **Duplicate kanji in Japanese vocab** (何 = なん/なに, 私 = わたし/わたくし) create identical-looking test options. Plan: deactivate less-common duplicates and/or show reading in test options (reading is already shown in Test.jsx Japanese options).
 - **A few JLPT N5 level-2 entries are counter suffixes** (～グラム, ～たち) — more grammar than vocab. Review and optionally deactivate.

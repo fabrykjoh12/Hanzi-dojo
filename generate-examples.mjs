@@ -14,39 +14,58 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 const groq = new OpenAI({ apiKey: GROQ_API_KEY, baseURL: 'https://api.groq.com/openai/v1' })
 
 // Language arg: --chinese or --japanese (default: both)
+// --regen regenerates ALL active words (not just ones missing an example), so
+//         existing low-quality sentences get replaced. Without it, only words
+//         with a NULL example_sentence are filled.
 const args = process.argv.slice(2)
 const onlyChinese = args.includes('--chinese')
 const onlyJapanese = args.includes('--japanese')
+const regen = args.includes('--regen')
 
-const BATCH_SIZE = 20
+// Smaller batches + the 70B model give noticeably more sensible sentences.
+const BATCH_SIZE = 10
+const MODEL = 'llama-3.3-70b-versatile'
 
 function buildPrompt(words, language) {
   const isChinese = language === 'chinese'
 
+  // Strip the leading ～ that marks counters/suffixes so the model knows the bare form.
   const wordList = words.map((w, i) =>
-    `${i + 1}. word="${w.word}" reading="${w.reading}" meaning="${w.meaning}"`
+    `${i + 1}. word="${w.word.replace(/^～/, '')}" reading="${w.reading}" meaning="${w.meaning}"`
   ).join('\n')
 
   const sentenceNote = isChinese
-    ? 'Use very short HSK 1–2 level sentences (under 10 characters). Use proper pinyin with tone marks for example_reading.'
-    : 'Use simple JLPT N5–N4 level sentences (under 15 characters). Use hiragana/katakana reading for example_reading (no kanji in the reading line).'
+    ? 'Write very short HSK 1–2 sentences (≤10 characters). example_reading = pinyin WITH tone marks.'
+    : 'Write simple JLPT N5–N4 sentences (≤15 characters). example_reading = the full sentence in hiragana/katakana only (NO kanji).'
 
-  return `You are generating example sentences for a language learning flashcard app.
+  const examples = isChinese
+    ? `Good examples:
+- word 天气 → {"example_sentence":"今天天气很好。","example_reading":"jīn tiān tiān qì hěn hǎo.","example_translation":"The weather is nice today."}
+- word 岁 (age counter) → {"example_sentence":"我今年十岁。","example_reading":"wǒ jīn nián shí suì.","example_translation":"I am ten years old this year."}`
+    : `Good examples:
+- word 学校 → {"example_sentence":"がっこうに行きます。","example_reading":"がっこうにいきます。","example_translation":"I go to school."}
+- word さい (age counter) → {"example_sentence":"わたしは12さいです。","example_reading":"わたしは じゅうにさい です。","example_translation":"I am 12 years old."}
+Bad example (DO NOT do this): "今日は12さいです" ("Today is 12 years old") — 今日 (today) cannot have an age. Use a PERSON as the subject.`
 
-Language: ${language}
+  return `You write example sentences for a beginner ${language} flashcard app. Quality matters more than anything: every sentence must be MEANINGFUL and make real-world sense, not just grammatically contain the word.
+
 ${sentenceNote}
 
 Rules:
-- The target word MUST appear in example_sentence.
-- Keep sentences natural and simple — a beginner should understand most of it.
-- example_reading is the full sentence in reading/phonetic form (pinyin with tones for Chinese, hiragana for Japanese).
-- example_translation is a natural English translation.
-- Return ONLY a JSON array, no markdown, no explanation.
+- The target word MUST appear in example_sentence, used with its correct meaning.
+- The sentence must be logically sensible. Pick a realistic subject: for ages, sizes, jobs, feelings, etc. use a PERSON (I / you / a name), never an inanimate subject like "today" or "this".
+- For counter words / suffixes (age, money, people, counters), attach a number and a fitting noun naturally.
+- Keep it natural, simple, and beginner-friendly.
+- example_reading = the full sentence's reading (${isChinese ? 'pinyin with tones' : 'hiragana/katakana, no kanji'}).
+- example_translation = a natural English translation.
+- Return ONLY a JSON array, no markdown, no commentary.
+
+${examples}
 
 Words:
 ${wordList}
 
-Return a JSON array with exactly ${words.length} objects in the same order:
+Return a JSON array with exactly ${words.length} objects, same order:
 [{"example_sentence":"...","example_reading":"...","example_translation":"..."},...]`
 }
 
@@ -59,7 +78,8 @@ async function generateBatch(words, language, attempt = 0) {
 
   try {
     const response = await groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
+      model: MODEL,
+      temperature: 0.4,
       max_tokens: 4096,
       messages: [{ role: 'user', content: prompt }],
     })
@@ -80,14 +100,16 @@ async function generateBatch(words, language, attempt = 0) {
 async function processLanguage(language, system) {
   console.log(`\n=== ${language.toUpperCase()} (${system}) ===`)
 
-  const { data: vocab, error } = await supabase
+  let query = supabase
     .from('vocabulary')
     .select('id, word, reading, meaning, sort_order')
     .eq('language', language)
     .eq('system', system)
     .eq('is_active', true)
-    .is('example_sentence', null)
     .order('sort_order', { ascending: true })
+  // Without --regen, only fill words that have no example yet.
+  if (!regen) query = query.is('example_sentence', null)
+  const { data: vocab, error } = await query
 
   if (error) { console.error('Fetch error:', error.message); return }
   console.log(`Found ${vocab.length} words without examples.`)
