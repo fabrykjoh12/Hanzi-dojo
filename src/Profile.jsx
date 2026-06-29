@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { isMastered } from './mastery'
-import { todayStr } from './streak'
+import { todayStr, liveStreak } from './streak'
 import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
 import {
@@ -193,7 +193,7 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '18px' }}>
-        <StatCard label="Current streak" value={profile.streak || 0} unit="days" icon={Flame} color="#D97706" bg="#FFFBEB" />
+        <StatCard label="Current streak" value={liveStreak(profile)} unit="days" icon={Flame} color="#D97706" bg="#FFFBEB" />
         <StatCard label="Streak freezes" value={profile.streak_freezes || 0} unit="available" icon={Shield} color="#3E63DD" bg="#EEF2FF" />
         <StatCard label="Words learned" value={loading ? '-' : stats.learned} unit={'of ' + stats.totalWords} icon={Layers} color={accentHex} bg={accentHex + '10'} />
         <StatCard label="Words mastered" value={loading ? '-' : stats.masteredCount} unit={masteryPct + '%'} icon={Sparkles} color="#2F9E6D" bg="#ECFDF5" />

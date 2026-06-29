@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getLevelLabel, getSystemLabel } from './utils'
+import { liveStreak } from './streak'
 import InfoTip from './InfoTip'
 import { useIsMobile } from './useIsMobile'
 import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight } from 'lucide-react'
@@ -71,7 +72,7 @@ export default function Home({ profile, track, counts, onNavigate }) {
           background: 'rgba(217,119,6,0.13)', border: '1px solid rgba(217,119,6,0.30)',
         }}>
           <Flame size={17} strokeWidth={2} color="#D97706" />
-          <span style={{ fontSize: '15px', fontWeight: 700, color: '#D97706' }}>{profile.streak || 0}</span>
+          <span style={{ fontSize: '15px', fontWeight: 700, color: '#D97706' }}>{liveStreak(profile)}</span>
           <span style={{ fontSize: '13px', fontWeight: 500, color: '#B45309' }}>day streak</span>
         </div>
       </div>

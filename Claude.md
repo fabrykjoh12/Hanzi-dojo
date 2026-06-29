@@ -42,7 +42,7 @@ Hanzi-dojo is a free language learning web app built around the two methods that
 - **Sidebar:** Persistent left nav. Main items: Home, Flashcards, Test, Writing, Stories, YouTube. Bottom items: Profile, Settings, Language, Log out. Collapses to 64px icon-only rail with hover tooltips; expanded width 232px. Active item uses sage green pill (#E7EDE4 bg, #4F6047 text). Semi-transparent frosted glass (rgba(255,255,255,0.85) + blur(6px)).
 - **Themed backgrounds:** Background.jsx — fixed full-page image at opacity 0.4, crossfades between bg-chinese.png and bg-japanese.png on language change, z-index 0 behind everything.
 - **Mastery system:** Two tiers — "learned" (card has ever reached review/relearning state, `learned` column = true) and "mastered" (FSRS stability ≥ 21 days). Constants in src/mastery.js.
-- **Streak system:** Updates on first grade of the day. Gap of 1 day = streak increment. Gap > 1 day = uses a freeze if available, else resets to 1. Streak freezes given back on progress reset.
+- **Streak system:** Updates on first grade of the day. Gap of 1 day = streak increment. Gap > 1 day = consumes one freeze per missed day, else resets to 1. The displayed streak uses `liveStreak(profile)` (computed from days since last study + freezes) so a broken streak shows 0 immediately rather than the stale stored value, which only changes on the next study. Streak freezes given back on progress reset.
 - **InfoTip:** Reusable `?` tooltip component used next to "Mastery" labels in Home, Test locked screen, and Profile. Shows explanatory text in a floating panel on click, closes on outside click.
 - **Home screen:** Language header (native script + level badge + streak pill), Today card (New/Learning/Due counts + mastery progress bar + InfoTip), "Start studying" sage green CTA, "Keep the flow going" row of 4 flow steps (Flashcards → Stories → Videos → Writing).
 
@@ -210,8 +210,11 @@ src/testLogic.js
   accepts exact character match, reading_plain match, or normalized pinyin.
 
 src/streak.js
-  updateStreak(profile) — increments streak on first study of the day, uses a
-  freeze if gap > 1 day, resets to 1 if no freeze available. Persists to profiles.
+  updateStreak(profile) — on first study of the day: +1 if consecutive, else
+  consumes one freeze PER missed day (resets to 1 if not enough freezes).
+  liveStreak(profile) — the streak to DISPLAY: computed from days since
+  last_studied_on (+ freezes) so a broken streak shows 0 immediately instead of
+  the stale stored value. Home and Profile use liveStreak. todayStr() exported.
 
 src/utils.js
   getLevelLabel(language, system, level) — returns 'HSK N' or 'N5 · Part 1' etc.

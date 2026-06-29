@@ -11,6 +11,18 @@ function daysBetween(dateStr1, dateStr2) {
   return Math.round((d2 - d1) / 86400000)
 }
 
+// The streak the user should SEE right now, computed from how long ago they last
+// studied — because the stored `profile.streak` only changes when they study, so
+// a broken streak would otherwise keep showing the old number. A freeze covers
+// one missed day; if more days were missed than freezes available, it's broken.
+export function liveStreak(profile) {
+  if (!profile || !profile.streak || !profile.last_studied_on) return 0
+  const gap = daysBetween(profile.last_studied_on, todayStr())
+  if (gap <= 1) return profile.streak            // studied today or yesterday
+  const missed = gap - 1
+  return missed <= (profile.streak_freezes || 0) ? profile.streak : 0
+}
+
 export async function updateStreak(profile) {
   const today = todayStr()
 
@@ -27,9 +39,12 @@ export async function updateStreak(profile) {
     const gap = daysBetween(profile.last_studied_on, today)
     if (gap === 1) {
       streak += 1
-    } else if (gap > 1) {
-      if (freezes > 0) {
-        freezes -= 1
+    } else {
+      // gap > 1 → one or more missed days. A freeze covers each missed day; if
+      // there aren't enough freezes the streak breaks and restarts at today.
+      const missed = gap - 1
+      if (freezes >= missed) {
+        freezes -= missed
         streak += 1
       } else {
         streak = 1
