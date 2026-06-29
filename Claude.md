@@ -707,6 +707,20 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 - **HSK 3–9 and JLPT N4–N1:** No vocabulary seeded. Level selection exists but shows empty study queues.
 
 **Technical debt:**
+- **Vocabulary `meaning` data is messy and sometimes wrong (TODO — deferred).**
+  AI-generated glosses have junk formatting ("Good morning., Good afternoon.,
+  Hello.") and some are semantically off (こんにちは listed as "good morning").
+  `cleanMeaning()` tidies *display* in the reader + flashcard, but the source
+  data is still messy and used elsewhere. Two follow-ups, do **#1 first**:
+  1. **Deterministic DB cleanup script** (not written yet) — a one-off
+     `clean-meanings.mjs` matching the `generate-*.mjs` conventions
+     (`--env-file=.env.script`, SUPABASE_URL + SUPABASE_SERVICE_KEY). Apply the
+     same `cleanMeaning` tidy to the `meaning` column across all vocab. Default
+     to a **dry-run** that prints before→after; `--apply` to write. Free, safe,
+     no AI — fixes formatting everywhere (flashcards/test/writing/stories).
+  2. **Regenerate Japanese meanings** (later) — extend the Groq tooling to
+     rewrite `meaning` with a tighter prompt (concise, correct senses) to fix
+     semantic errors. Costs API calls; spot-check results.
 - **Some Japanese audio mispronounces kanji.** Fix: generate-audio.mjs already uses `v.reading` (hiragana). Delete the storage folder for the level before regenerating so files are not skipped.
 - **Duplicate kanji in Japanese vocab** (何 = なん/なに, 私 = わたし/わたくし) create identical-looking test options. Plan: deactivate less-common duplicates and/or show reading in test options (reading is already shown in Test.jsx Japanese options).
 - **A few JLPT N5 level-2 entries are counter suffixes** (～グラム, ～たち) — more grammar than vocab. Review and optionally deactivate.
