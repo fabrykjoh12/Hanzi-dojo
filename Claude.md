@@ -667,6 +667,24 @@ node --env-file=.env.script generate-examples.mjs                     # both, fi
 - `example_reading` — full sentence in phonetic form (pinyin with tones for Chinese; hiragana for Japanese)
 - `example_translation` — natural English translation
 
+### generate-meanings.mjs
+
+Regenerates the vocabulary `meaning` column with concise, accurate English glosses via `llama-3.3-70b-versatile` (fixes wrong/messy meanings). `--chinese`/`--japanese`; `--dry-run` prints before→after without writing. Rewrites ALL active words.
+
+### No-Node alternative: ChatGPT + Supabase SQL (for meanings & sentences)
+
+When running Node scripts isn't convenient, the same fixes can be done entirely in the **Supabase SQL Editor + ChatGPT** (no keys, no CLI):
+1. **Export a batch** as JSON: `select json_agg(t) from (select id, word, reading[, meaning] from vocabulary where language='japanese' and is_active order by sort_order limit 100 offset 0) t;`
+2. **Paste into ChatGPT** with a prompt asking for accurate meanings / meaningful sentences, returning a raw JSON array keyed by `id` (copy id verbatim).
+3. **Apply** by pasting ChatGPT's JSON into a dollar-quoted upsert (no escaping needed):
+   ```sql
+   update vocabulary v set meaning = x.meaning
+   from json_to_recordset($json$ <PASTE JSON> $json$) as x(id uuid, meaning text)
+   where v.id = x.id;
+   ```
+   (For sentences: `x(id uuid, example_sentence text, example_reading text, example_translation text)` updating those three columns.)
+Batch ~100 words (meanings) / ~60 (sentences) via `offset`. Use dollar-quoting (`$json$…$json$`) so apostrophes don't break the SQL.
+
 ### generate-stories.mjs
 
 Generates new Japanese JLPT N5 (level 1) stories via Groq (`llama-3.3-70b-versatile`) and inserts them into the `stories` table. Not in app bundle.
