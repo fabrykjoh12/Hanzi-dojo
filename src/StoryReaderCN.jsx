@@ -5,6 +5,23 @@ import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRigh
 
 const NAMES = CHARACTER_READINGS.chinese
 
+// Per-speaker label colors (work on light and dark). Assigned in story order.
+const SPEAKER_PALETTE = ['#B83A24', '#2E6FB8', '#2F9E6D', '#C2680E', '#7C5CD0', '#B83A7A']
+
+// Dialogue lines look like "速速：text" with a full-width or ascii colon near the
+// start. Returns { speaker, text }; speaker is null for narration.
+function splitSpeaker(line) {
+  const full = line.indexOf('：')
+  const ascii = line.indexOf(':')
+  let idx = -1
+  if (full > 0) idx = full
+  if (idx < 0 && ascii > 0) idx = ascii
+  if (idx > 0 && idx <= 6) {
+    return { speaker: line.slice(0, idx).trim(), text: line.slice(idx + 1).trim() }
+  }
+  return { speaker: null, text: line }
+}
+
 // HSKStory-inspired reader for Chinese stories. Light theme (matches the app —
 // no dark mode). Distraction-free prose, tap a word for a bottom-sheet
 // definition, pinyin + translation toggles, and a bottom audio bar. Japanese
@@ -165,7 +182,18 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
   const englishLines = (story.english_content || '').split('\n').filter(Boolean)
   const levelLabel = getLevelLabelSafe(track)
 
-  const segmented = lines.map(line => segmentLine(line, vocabMap, segmenterRef.current))
+  // Parse each line into an optional speaker label + segmented tokens, and give
+  // each unique speaker a stable color so dialogue is easy to follow.
+  const speakerColors = {}
+  let speakerN = 0
+  const parsed = lines.map(line => {
+    const { speaker, text } = splitSpeaker(line)
+    if (speaker && speakerColors[speaker] === undefined) {
+      speakerColors[speaker] = SPEAKER_PALETTE[speakerN % SPEAKER_PALETTE.length]
+      speakerN += 1
+    }
+    return { speaker, tokens: segmentLine(text, vocabMap, segmenterRef.current) }
+  })
 
   const addToDeck = async (vocabItem) => {
     const { error } = await supabase.from('cards').insert({
@@ -250,12 +278,26 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
         maxWidth: '740px', margin: '0 auto', position: 'relative', zIndex: 2,
         padding: isMobile ? '14px 18px 200px' : '22px 28px 220px',
       }}>
-        {segmented.map((tokens, li) => (
-          <div key={li} style={{ marginBottom: showEnglish ? '6px' : '14px' }}>
+        {parsed.map(({ speaker, tokens }, li) => (
+          <div key={li} style={{ marginBottom: speaker ? '22px' : '18px' }}>
+            {speaker && (
+              <div
+                onClick={NAMES[speaker] ? () => selectToken(li, 'sp', { name: { word: speaker, pinyin: NAMES[speaker] } }) : undefined}
+                style={{
+                  fontSize: '13px', fontWeight: 700, letterSpacing: '0.4px',
+                  color: speakerColors[speaker], marginBottom: '5px',
+                  fontFamily: "'Noto Sans SC'", display: 'inline-block',
+                  cursor: NAMES[speaker] ? 'pointer' : 'default',
+                }}
+              >
+                {speaker}
+              </div>
+            )}
             <p style={{
-              margin: 0, textIndent: '2em',
-              fontSize: isMobile ? '21px' : '28px', lineHeight: showPinyin ? 2.2 : 1.95,
+              margin: 0, textIndent: speaker ? 0 : '1.6em',
+              fontSize: isMobile ? '20px' : '25px', lineHeight: showPinyin ? 2.05 : 1.75,
               fontFamily: "'Noto Sans SC'", color: TEXT, fontWeight: 400,
+              paddingLeft: speaker ? (isMobile ? '2px' : '4px') : 0,
             }}>
               {tokens.map((tk, ti) => (
                 <Token
@@ -268,8 +310,8 @@ export default function StoryReaderCN({ story, vocabMap, userCards, setUserCards
               ))}
             </p>
             {showEnglish && englishLines[li] && (
-              <p style={{ margin: '2px 0 0', textIndent: '2em', fontSize: isMobile ? '14px' : '15px', lineHeight: 1.6, color: MUTED, fontStyle: 'italic' }}>
-                {englishLines[li]}
+              <p style={{ margin: '6px 0 0', fontSize: isMobile ? '14px' : '15px', lineHeight: 1.55, color: MUTED, fontStyle: 'italic', paddingLeft: speaker ? (isMobile ? '2px' : '4px') : 0 }}>
+                {speaker ? splitSpeaker(englishLines[li]).text : englishLines[li]}
               </p>
             )}
           </div>
