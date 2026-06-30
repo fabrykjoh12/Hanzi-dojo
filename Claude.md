@@ -456,7 +456,7 @@ JLPT advances: 1 → 2 → 3 → 4 → 5 → 6. Always use `getLevelLabel(langua
 
 **Chinese HSK 3.0 Level 1:**
 - 300 words, frequency-ordered (sort_order 1–300), all with audio at `chinese/hsk_3/level_1/`
-- Example sentences on all 300 words (example_sentence, example_reading, example_translation columns)
+- Example sentences on all 300 words (example_sentence, example_reading, example_translation columns), regenerated with the quality/anti-tautology prompt via the one-click Action
 - 23 stories published across 3 tiers (7 / 8 / 8), all with `english_content` translations
 - 3 YouTube recommendations
 - Audio voice: `cmn-CN-Chirp3-HD-Aoede`, languageCode `cmn-CN`
@@ -650,7 +650,7 @@ To regenerate without skipping existing files: delete the storage folder in Supa
 
 ### generate-examples.mjs
 
-Script for generating AI example sentences and uploading to Supabase vocabulary rows. Not in app bundle. Uses Groq (`llama-3.1-8b-instant` via `openai` SDK pointed at `https://api.groq.com/openai/v1`).
+Script for generating AI example sentences and uploading to Supabase vocabulary rows. Not in app bundle. Uses Groq (`llama-3.3-70b-versatile` via `openai` SDK pointed at `https://api.groq.com/openai/v1`).
 
 **Run with:**
 ```bash
@@ -661,6 +661,8 @@ node --env-file=.env.script generate-examples.mjs                     # both, fi
 ```
 
 **Behavior:** Batches vocab (10/batch), calls Groq **`llama-3.3-70b-versatile`** with a quality-focused prompt (meaningful sentences, realistic human subjects, counter/suffix handling, few-shot good/bad examples), then updates `example_sentence`/`example_reading`/`example_translation`. By default only fills `example_sentence IS NULL`; **`--regen`** regenerates ALL active words to replace low-quality sentences. Retries with backoff on rate limits.
+
+The prompt explicitly **bans tautologies / math identities** — sentences whose only point is to restate the word's meaning (e.g. 半 → "one yuan is twice half a yuan"). It carries a 半 good-example (现在八点半 — "it's half past eight") and that exact math sentence as a labeled bad-example, alongside the Japanese 今日は12さい bad-example.
 
 **Output per word:**
 - `example_sentence` — target-language sentence containing the word (Chinese: ≤10 chars; Japanese: ≤15 chars)
@@ -685,6 +687,16 @@ When running Node scripts isn't convenient, the same fixes can be done entirely 
    (For sentences: `x(id text, example_sentence text, example_reading text, example_translation text)` updating those three columns.)
    The "rows updated" count vs the batch size tells you how many (if any) were skipped due to a bad id.
 Batch ~100 words (meanings) / ~60 (sentences) via `offset`. Use dollar-quoting (`$json$…$json$`) so apostrophes don't break the SQL.
+
+### One-click regeneration (GitHub Action) — `.github/workflows/regen-content.yml`
+
+The fully hands-off way to regenerate content: a **manual `workflow_dispatch`** job that runs the `generate-*.mjs` scripts on GitHub's runners (which can reach Supabase + Groq — the local sandbox cannot). Trigger from the repo **Actions tab → "Regenerate vocabulary content" → Run workflow**.
+
+- **Inputs:** `task` (meanings / examples / both) and `language` (both / japanese / chinese). For examples it always runs with `--regen` (replaces existing sentences, not just NULLs).
+- **Secrets used:** `VITE_SUPABASE_URL` (mapped to `SUPABASE_URL`), `SUPABASE_SERVICE_KEY`, `GROQ_API_KEY` — the same Actions repository secrets as the deploy workflow, plus the service key.
+- **Node 22 is required** (`setup-node` pins `node-version: 22`). `@supabase/supabase-js` v2 needs a **global `WebSocket`** at `createClient` time (RealtimeClient init); Node 20 has none and `createClient` throws immediately. Do not drop below 22.
+- **Concurrency** is serialized (`group: regen-content`, no cancel) so two runs can't fight over the same rows. `timeout-minutes: 180`.
+- A full Chinese-examples pass (300 words, 30 batches) takes ~4–5 min. If Groq's free-tier **daily token cap** is hit mid-run, batches start failing near the end — just re-run the workflow the next day; it re-fills whatever is still bad.
 
 ### generate-stories.mjs
 
@@ -746,14 +758,16 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
      same `cleanMeaning` tidy to the `meaning` column across all vocab. Default
      to a **dry-run** that prints before→after; `--apply` to write. Free, safe,
      no AI — fixes formatting everywhere (flashcards/test/writing/stories).
-  2. **Regenerate Japanese meanings** (later) — extend the Groq tooling to
-     rewrite `meaning` with a tighter prompt (concise, correct senses) to fix
-     semantic errors. Costs API calls; spot-check results.
-- **Example sentences are often low quality / nonsensical (TODO — deferred).**
-  e.g. ～さい (years old) got "今日は12さいです" ("Today is 12 years old"). The
-  generator was upgraded (`generate-examples.mjs`: 70B model + quality prompt +
-  few-shot). Fix = **regenerate**: `node --env-file=.env.script
-  generate-examples.mjs --japanese --regen` (then `--chinese --regen`).
+  2. **Regenerate meanings** (later) — `generate-meanings.mjs` already exists
+     (70B, tighter prompt, `--dry-run`/`--chinese`/`--japanese`). Easiest path is
+     the one-click Action (`task=meanings`, `language=both`). Neither Chinese nor
+     Japanese meanings have been regenerated yet. Costs API calls; spot-check.
+- **Example sentences — Chinese regenerated; Japanese still pending.**
+  The generator was upgraded (`generate-examples.mjs`: 70B model + quality
+  prompt + few-shot + an anti-tautology rule). **Chinese HSK 1 (all 300 words)
+  has been regenerated** via the one-click Action (`task=examples,
+  language=chinese`). **Japanese is still on the old data** — run the Action with
+  `task=examples, language=japanese` (or `--japanese --regen` locally) to fix it.
   Costs Groq tokens; spot-check, and consider the counter-suffix entries
   (～さい/～グラム/～たち) for deactivation since they make awkward sentences.
 - **Some Japanese audio mispronounces kanji.** Fix: generate-audio.mjs already uses `v.reading` (hiragana). Delete the storage folder for the level before regenerating so files are not skipped.
