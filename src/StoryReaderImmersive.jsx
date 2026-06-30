@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import { CHARACTER_READINGS } from './characterNames'
 import { getLevelLabel } from './utils'
 import { cleanMeaning } from './cleanMeaning'
-import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRight, UserRound, Highlighter } from 'lucide-react'
+import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRight, UserRound, Highlighter, Check, X } from 'lucide-react'
 
 // HSKStory-inspired immersion reader for BOTH languages. Light theme. Tap a word
 // for a bottom-sheet definition; pinyin (Chinese) / furigana (Japanese) and
@@ -203,6 +203,9 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const [showSentence, setShowSentence] = useState(false)
   const [speaking, setSpeaking] = useState(false)
   const [winWidth, setWinWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200)
+  const [questions, setQuestions] = useState([])
+  const [answers, setAnswers] = useState({})   // question id → chosen option index
+  const [adding, setAdding] = useState(false)
   const segmenterRef = useRef(null)
   const wordAudioRef = useRef(null)
 
@@ -225,6 +228,16 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
 
   useEffect(() => () => { try { window.speechSynthesis.cancel() } catch (e) { /* noop */ } }, [])
 
+  // Load end-of-story comprehension questions (no-op until content is generated).
+  useEffect(() => {
+    let active = true
+    setAnswers({})
+    setQuestions([])
+    supabase.from('story_questions').select('*').eq('story_id', story.id).order('question_number', { ascending: true })
+      .then(({ data }) => { if (active) setQuestions(data || []) })
+    return () => { active = false }
+  }, [story.id])
+
   const isMobile = winWidth < 760
   const lines = story.content.split('\n').filter(Boolean)
   const englishLines = (story.english_content || '').split('\n').filter(Boolean)
@@ -242,8 +255,13 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
 
   // Word-coverage stats over the unique vocabulary that appears in this story.
   const vocabSeen = new Map()
+  const newWordsMap = new Map()   // not-yet-started words → vocab object (for the recap)
   parsed.forEach(p => p.tokens.forEach(tk => {
-    if (tk.vocab) vocabSeen.set(tk.vocab.id, wordStatus(tk.vocab.id, userCards))
+    if (tk.vocab) {
+      const st = wordStatus(tk.vocab.id, userCards)
+      vocabSeen.set(tk.vocab.id, st)
+      if (st === 'not_started') newWordsMap.set(tk.vocab.id, tk.vocab)
+    }
   }))
   const totalUnique = vocabSeen.size
   let knownCount = 0, learningCount = 0, newCount = 0
@@ -253,6 +271,29 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     else newCount += 1
   })
   const knownPct = totalUnique ? Math.round((knownCount / totalUnique) * 100) : 0
+  const newWords = [...newWordsMap.values()]
+
+  // Comprehension scoring.
+  const answeredCount = Object.keys(answers).length
+  const correctCount = questions.filter(q => answers[q.id] === q.correct_index).length
+
+  const addAllNewWords = async () => {
+    if (adding || newWords.length === 0) return
+    setAdding(true)
+    const rows = newWords.map(v => ({
+      user_id: session.user.id, vocab_id: v.id,
+      state: 'new', ease_factor: 2.5, learning_step: 0, due_at: new Date().toISOString(),
+    }))
+    const { error } = await supabase.from('cards').insert(rows)
+    if (!error) {
+      setUserCards(prev => {
+        const nx = { ...prev }
+        newWords.forEach(v => { nx[v.id] = { vocab_id: v.id, is_easy: false, state: 'new' } })
+        return nx
+      })
+    }
+    setAdding(false)
+  }
 
   const addToDeck = async (vocabItem) => {
     const { error } = await supabase.from('cards').insert({
@@ -400,9 +441,90 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
           </div>
         ))}
 
+        {/* New-words recap */}
+        {newWords.length > 0 && (
+          <div style={{ marginTop: '28px', background: PANEL, border: '1px solid var(--border)', borderRadius: '16px', padding: '18px 20px' }}>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: TEXT, marginBottom: '3px' }}>New words in this story</div>
+            <div style={{ fontSize: '13px', color: MUTED, marginBottom: '14px' }}>
+              {newWords.length} word{newWords.length === 1 ? '' : 's'} you haven’t started yet.
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+              {newWords.slice(0, 30).map(v => (
+                <span key={v.id} style={{
+                  display: 'inline-flex', alignItems: 'baseline', gap: '6px',
+                  padding: '5px 10px', borderRadius: '999px', background: 'var(--surface-2)', border: '1px solid var(--border)',
+                }}>
+                  <span style={{ fontFamily: font, fontSize: '15px', color: TEXT }}>{v.word}</span>
+                  <span style={{ fontSize: '11px', color: MUTED }}>{v.reading}</span>
+                </span>
+              ))}
+            </div>
+            <button onClick={addAllNewWords} disabled={adding} style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              minHeight: '44px', padding: '0 18px', borderRadius: '12px', border: 'none',
+              background: accent, color: '#fff', cursor: adding ? 'default' : 'pointer',
+              fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif', opacity: adding ? 0.7 : 1,
+            }}>
+              <Bookmark size={17} strokeWidth={2} color="#fff" />
+              {adding ? 'Adding…' : 'Add ' + newWords.length + ' to deck'}
+            </button>
+          </div>
+        )}
+
+        {/* Comprehension check */}
+        {questions.length > 0 && (
+          <div style={{ marginTop: '20px', background: PANEL, border: '1px solid var(--border)', borderRadius: '16px', padding: '18px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '4px' }}>
+              <span style={{ fontSize: '15px', fontWeight: 700, color: TEXT }}>Check your understanding</span>
+              {answeredCount > 0 && (
+                <span style={{ fontSize: '13px', fontWeight: 700, color: correctCount === questions.length ? '#2F9E6D' : MUTED }}>
+                  {correctCount}/{questions.length}
+                </span>
+              )}
+            </div>
+            {questions.map((q, qi) => {
+              const chosen = answers[q.id]
+              const answered = chosen !== undefined
+              return (
+                <div key={q.id} style={{ marginTop: qi === 0 ? '14px' : '18px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 650, color: TEXT, marginBottom: '9px', lineHeight: 1.5 }}>
+                    {qi + 1}. {q.question}
+                  </div>
+                  <div style={{ display: 'grid', gap: '8px' }}>
+                    {q.options.map((opt, oi) => {
+                      const isCorrect = oi === q.correct_index
+                      const isChosen = oi === chosen
+                      let bc = 'var(--border)', bg = 'var(--surface)'
+                      if (answered && isCorrect) { bc = '#2F9E6D'; bg = '#ECFDF5' }
+                      else if (answered && isChosen) { bc = '#DC2626'; bg = '#FEF2F2' }
+                      return (
+                        <button
+                          key={oi}
+                          onClick={() => { if (!answered) setAnswers(a => ({ ...a, [q.id]: oi })) }}
+                          disabled={answered}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px',
+                            textAlign: 'left', padding: '11px 14px', borderRadius: '11px',
+                            border: '1.5px solid ' + bc, background: bg, color: TEXT,
+                            cursor: answered ? 'default' : 'pointer', fontSize: '14px', fontFamily: 'Inter, sans-serif',
+                          }}
+                        >
+                          <span>{opt}</span>
+                          {answered && isCorrect && <Check size={17} strokeWidth={2.4} color="#2F9E6D" />}
+                          {answered && isChosen && !isCorrect && <X size={17} strokeWidth={2.4} color="#DC2626" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
         {nextStory && (
           <button onClick={onNextStory} style={{
-            marginTop: '28px', width: '100%', background: PANEL, border: '1px solid var(--border)',
+            marginTop: '20px', width: '100%', background: PANEL, border: '1px solid var(--border)',
             borderRadius: '16px', padding: '18px 20px', cursor: 'pointer', textAlign: 'left',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: TEXT,
           }}>

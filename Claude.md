@@ -33,6 +33,7 @@ Hanzi-dojo is a free language learning web app built around the two methods that
 - **Onboarding:** 3-step flow: language selection (side-by-side Chinese/Japanese cards) → level selection (grid of level buttons, Continue disabled until selection) → daily goal (5/10/15 new cards/day). Creates profiles row and language_tracks row.
 - **FSRS flashcards:** Study screen with New/Learn/Due queue pills, 86px character display, furigana toggle for Japanese (ruby text), four grade buttons (Again/Hard/Good/Easy) with FSRS-previewed interval labels, audio autoplay on flip, example sentence on card back (sentence + reading/pinyin line + translation, with inline furigana on the target word for Japanese), word highlighted in accent color. **Recall mode** is a per-user preference (`profiles.recall_mode`): `flip` (reveal-then-grade) or `typed` (type the reading → checked against reading/pinyin/romaji via `checkTyped`, shows a correct/incorrect banner, then grade). **Audio autoplay** and **furigana default** are also prefs. Awards **account XP** per graded card (`src/xp.js` `xpForGrade`), persisted best-effort to `profiles.total_xp`.
 - **Session recap:** End-of-session card (Study.jsx) showing cards studied / new learned / graduated to review / accuracy, a `+N XP` badge, and a next-day forecast (reviews + new waiting). Snapshotted to state at completion (`recap`), forecast loaded via `loadForecast()`.
+- **Story comprehension + new-words recap (story reader):** At the end of a story, a **"New words in this story"** card lists the not-yet-started vocab as chips with an **"Add N to deck"** bulk-insert button (updates `userCards` live). If `story_questions` exist for the story, a **"Check your understanding"** card shows English multiple-choice questions with immediate correct/incorrect feedback and a running score. Questions are loaded per `story.id`; the block is absent until content is generated.
 - **Adaptive reading (story reader):** `StoryReaderImmersive.jsx` shows a **"% known"** coverage bar per story (unique in-story vocab split into known = review/mastered, learning, new — via `wordStatus`/`userCards`), plus a **"Known" toggle** that spotlights the learning frontier: new words get an accent underline + tint, learning words an amber underline, known words stay plain. Tapping any highlighted word still opens the add-to-deck sheet.
 - **Flip animation + grade feedback:** Flashcard faces turn in on the Y axis (`hd-flip-in` keyframe, card has `perspective`); grading fires a per-grade colored ring pulse (`hd-grade-flash`, color via inline `--flash`). Reduced-motion users get a fade instead of rotation.
 - **Listening quiz:** `src/Listen.jsx` (nav `Listening`, App view `listen`). Plays a word's audio and asks the user to pick the matching word from 4 same-level options; autoplay + replay, immediate correct/incorrect feedback with reading + meaning, progress bar, end recap with accuracy and XP earned (`+correct × 4` XP, persisted best-effort to `total_xp`). Pure practice — does not touch FSRS. Needs ≥4 audio-backed words at the level or it shows an empty state.
@@ -417,6 +418,16 @@ story_vocab
   story_id uuid REFERENCES stories
   vocab_id uuid REFERENCES vocabulary
 
+story_questions                  -- migration 20260630010000; end-of-story comprehension
+  id uuid PRIMARY KEY
+  story_id uuid REFERENCES stories ON DELETE CASCADE
+  question_number int
+  question text                  -- English comprehension question
+  options text[]                 -- 4 English answer choices
+  correct_index int              -- 0-3, the correct option
+  UNIQUE (story_id, question_number)
+  -- RLS: authenticated users can read; generator writes via the service key.
+
 youtube_recommendations
   id uuid PRIMARY KEY
   language text
@@ -714,7 +725,7 @@ Batch ~100 words (meanings) / ~60 (sentences) via `offset`. Use dollar-quoting (
 
 The fully hands-off way to regenerate content: a **manual `workflow_dispatch`** job that runs the `generate-*.mjs` scripts on GitHub's runners (which can reach Supabase + Groq — the local sandbox cannot). Trigger from the repo **Actions tab → "Regenerate vocabulary content" → Run workflow**.
 
-- **Inputs:** `task` (meanings / examples / both) and `language` (both / japanese / chinese). For examples it always runs with `--regen` (replaces existing sentences, not just NULLs).
+- **Inputs:** `task` (meanings / examples / both / **comprehension** / **clean-meanings**) and `language` (both / japanese / chinese). For examples it always runs with `--regen` (replaces existing sentences, not just NULLs). `comprehension` runs `generate-comprehension.mjs` (fills stories with no questions). `clean-meanings` runs `clean-meanings.mjs --apply` (deterministic, no AI).
 - **Secrets used:** `VITE_SUPABASE_URL` (mapped to `SUPABASE_URL`), `SUPABASE_SERVICE_KEY`, `GROQ_API_KEY` — the same Actions repository secrets as the deploy workflow, plus the service key.
 - **Node 22 is required** (`setup-node` pins `node-version: 22`). `@supabase/supabase-js` v2 needs a **global `WebSocket`** at `createClient` time (RealtimeClient init); Node 20 has none and `createClient` throws immediately. Do not drop below 22.
 - **Concurrency** is serialized (`group: regen-content`, no cancel) so two runs can't fight over the same rows. `timeout-minutes: 180`.
@@ -762,6 +773,7 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 
 **In progress:**
 - **Apply migration `20260630000000_add_xp_and_prefs.sql`** in the Supabase SQL Editor to enable persistence of account XP and study prefs (`total_xp`, `recall_mode`, `audio_autoplay`, `furigana_default`). The app is defensive — it runs without it (defaults applied in code), but XP/prefs won't save across reloads until the columns exist.
+- **Apply migration `20260630010000_add_story_questions.sql`**, then generate questions (Action `task=comprehension`, or `node --env-file=.env.script generate-comprehension.mjs`). The end-of-story comprehension card only appears once questions exist; the "new words" recap works without it.
 - **Japanese example sentences (N5 Part 1 + Part 2):** 798/800 words populated. Run `node --env-file=.env.script generate-examples.mjs --japanese` to fill the remaining 2.
 
 **Missing content:**
