@@ -70,7 +70,7 @@ Hanzi-dojo is a free language learning web app built around the two methods that
 |------|----------------|
 | React | 19.x |
 | Vite | 8.x (OXC parser — strict, no complex regex in JSX) |
-| react-router-dom | 7.x (not currently used for routing — App.jsx uses view state) |
+| react-router-dom | 7.x — BrowserRouter; App derives `view` from the URL path (each top-level screen is `/<key>`, home is `/`) |
 | Supabase JS | ^2.107 |
 | ts-fsrs | ^5.4.1 — FSRS v5 scheduling |
 | wanakana | ^5.3.1 — Japanese romaji conversion in Writing.jsx |
@@ -888,6 +888,13 @@ The app is **live** and deployed to two static hosts, both building from `main`.
 - **URL:** https://hanzi-dojo-jet.vercel.app/ (served from root `/`).
 - **How:** Vercel project `hanzi-dojo` auto-deploys; the **Production** environment tracks the `main` branch. Framework preset = Vite, build `npm run build`, output `dist`.
 - **Env vars:** set per-environment under Settings → Environments → Production: the same three `VITE_` vars. Vercel bakes them in at build time and only applies them to **new** builds — after adding/changing, redeploy (Deployments → ⋯ → Redeploy, uncheck build cache).
+
+### Routing (react-router BrowserRouter)
+- `main.jsx` wraps `<App>` in `<BrowserRouter basename=…>` (basename = `BASE_URL` minus the trailing slash, so it matches each host's base path). `App.jsx` derives `view` from `useLocation().pathname` (`pathToView`) and `navigate(key)` calls `useNavigate()` with `viewToPath(key)`. Each top-level screen is its own URL (`/study`, `/profile`, …); home is `/`. Browser back/forward and refresh-keeps-place now work. (Stories' internal list↔reader is still local state, not routed.)
+- **Deep-link fallback (required for refresh on a deep route):**
+  - GitHub Pages: the build copies `dist/index.html` → `dist/404.html` (`"build": "vite build && cp …"`), so Pages serves the SPA shell for any unknown path (correct content; 404 status is invisible to the app).
+  - Vercel: `vercel.json` rewrites `/(.*)` → `/index.html`.
+  - OAuth is unaffected: `redirectTo` is the base path (`/` or `/Hanzi-dojo/`), which always resolves to a real `index.html`, and Supabase's hash tokens don't collide with BrowserRouter (which uses the path, not the hash).
 
 ### Base path logic (vite.config.js) — do not hardcode
 The two hosts need different base paths, resolved automatically:

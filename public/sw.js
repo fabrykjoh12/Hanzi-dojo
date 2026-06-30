@@ -10,7 +10,7 @@
  * This file is served verbatim from /public (no bundler transform). Plain JS.
  */
 
-var VERSION = 'v1'
+var VERSION = 'v2'
 var SHELL_CACHE = 'hanzi-shell-' + VERSION
 var ASSET_CACHE = 'hanzi-assets-' + VERSION
 var AUDIO_CACHE = 'hanzi-audio-' + VERSION

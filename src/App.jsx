@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
 import Auth from './Auth'
 import Onboarding from './Onboarding'
@@ -24,6 +25,16 @@ import Background from './Background'
 import Home from './Home'
 import Settings from './Settings'
 
+// Map between the internal view key and the URL path. Home is '/', every other
+// view is '/<key>' (e.g. 'study' → '/study').
+function viewToPath(key) { return key === 'home' ? '/' : '/' + key }
+function pathToView(pathname) {
+  let p = pathname || '/'
+  if (p.startsWith('/')) p = p.slice(1)
+  const seg = p.split('/')[0]
+  return seg || 'home'
+}
+
 // Initial theme before a profile loads: follow the OS preference.
 function osTheme() {
   try {
@@ -39,9 +50,11 @@ export default function App() {
   const [track, setTrack] = useState(null)
   const [counts, setCounts] = useState({ newCount: 0, learnCount: 0, dueCount: 0, easyCount: 0, totalWords: 0, learnedCount: 0, masteredCount: 0, masteredPct: 0 })
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState('home')
   const [theme, setThemeState] = useState(osTheme)
   const isMobile = useIsMobile()
+  const routerNavigate = useNavigate()
+  const location = useLocation()
+  const view = pathToView(location.pathname)
 
   // Apply the theme to the document so the CSS variables (index.css) switch.
   useEffect(() => {
@@ -106,9 +119,10 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Navigate between views; refresh counts so the dashboard stays current.
+  // Navigate between views (updates the URL) and refresh counts so the
+  // dashboard stays current.
   const navigate = (key) => {
-    setView(key)
+    routerNavigate(viewToPath(key))
     if (session) loadProfile(session.user.id)
   }
 
