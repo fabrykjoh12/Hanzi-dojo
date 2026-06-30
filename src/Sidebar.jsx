@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  Home, Layers, GraduationCap, PenLine, BookOpen, Play, Headphones, AlignLeft,
+  Home, Layers, GraduationCap, PenLine, BookOpen, Play, Headphones, AlignLeft, Blocks,
   User, Settings, Globe, LogOut, ChevronsLeft, ChevronsRight, Sun, Moon,
 } from 'lucide-react'
 import logo from './assets/Hanzi-logo.png'
@@ -21,6 +21,7 @@ const MAIN_ITEMS = [
   { key: 'stories', label: 'Stories', icon: BookOpen },
   { key: 'listen', label: 'Listening', icon: Headphones },
   { key: 'fillblank', label: 'Sentences', icon: AlignLeft },
+  { key: 'builder', label: 'Builder', icon: Blocks },
   { key: 'youtube', label: 'YouTube', icon: Play },
 ]
 
