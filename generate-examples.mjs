@@ -41,7 +41,9 @@ function buildPrompt(words, language) {
   const examples = isChinese
     ? `Good examples:
 - word 天气 → {"example_sentence":"今天天气很好。","example_reading":"jīn tiān tiān qì hěn hǎo.","example_translation":"The weather is nice today."}
-- word 岁 (age counter) → {"example_sentence":"我今年十岁。","example_reading":"wǒ jīn nián shí suì.","example_translation":"I am ten years old this year."}`
+- word 岁 (age counter) → {"example_sentence":"我今年十岁。","example_reading":"wǒ jīn nián shí suì.","example_translation":"I am ten years old this year."}
+- word 半 (half) → {"example_sentence":"现在八点半。","example_reading":"xiàn zài bā diǎn bàn.","example_translation":"It's half past eight now."}
+Bad example (DO NOT do this): "一块钱是半块钱的两倍。" ("One yuan is twice half a yuan.") — a circular math identity that only restates the word's meaning. Use an everyday situation (time, food, shopping, family) instead.`
     : `Good examples:
 - word 学校 → {"example_sentence":"がっこうに行きます。","example_reading":"がっこうにいきます。","example_translation":"I go to school."}
 - word さい (age counter) → {"example_sentence":"わたしは12さいです。","example_reading":"わたしは じゅうにさい です。","example_translation":"I am 12 years old."}
@@ -54,6 +56,7 @@ ${sentenceNote}
 Rules:
 - The target word MUST appear in example_sentence, used with its correct meaning.
 - The sentence must be logically sensible. Pick a realistic subject: for ages, sizes, jobs, feelings, etc. use a PERSON (I / you / a name), never an inanimate subject like "today" or "this".
+- NO tautologies, math identities, or definition-sentences whose only point is to restate the word (e.g. "one is twice half of one"). Show the word in a normal everyday situation.
 - For counter words / suffixes (age, money, people, counters), attach a number and a fitting noun naturally.
 - Keep it natural, simple, and beginner-friendly.
 - example_reading = the full sentence's reading (${isChinese ? 'pinyin with tones' : 'hiragana/katakana, no kanji'}).
