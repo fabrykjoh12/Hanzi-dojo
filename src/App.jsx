@@ -11,6 +11,7 @@ import Tones from './Tones'
 import Kana from './Kana'
 import FillBlank from './FillBlank'
 import SentenceBuilder from './SentenceBuilder'
+import Writer from './Writer'
 import { getHomeCounts } from './homeCounts'
 import Profile from './Profile'
 import YouTube from './YouTube'
@@ -199,6 +200,14 @@ export default function App() {
         track={track}
         onBack={() => navigate('home')}
         onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
+      />
+    )
+  } else if (view === 'strokes') {
+    content = (
+      <Writer
+        profile={profile}
+        track={track}
+        onBack={() => navigate('home')}
       />
     )
   } else if (view === 'builder') {
