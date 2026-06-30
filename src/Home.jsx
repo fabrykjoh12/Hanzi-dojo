@@ -3,11 +3,46 @@ import { getLevelLabel, getSystemLabel } from './utils'
 import { liveStreak } from './streak'
 import InfoTip from './InfoTip'
 import { useIsMobile } from './useIsMobile'
-import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight } from 'lucide-react'
+import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise } from 'lucide-react'
 
 // Neutral sage green for the primary CTA (see CLAUDE.md redesign spec)
 const SAGE = '#6E8466'
 const SAGE_DARK = '#5C7155'
+
+// Compact circular progress ring for the daily new-card goal.
+function GoalRing({ done, goal, accentHex, complete }) {
+  const size = 62
+  const stroke = 6
+  const r = (size - stroke) / 2
+  const circ = 2 * Math.PI * r
+  const pct = goal > 0 ? Math.min(1, done / goal) : 0
+  const ringColor = complete ? '#2F9E6D' : accentHex
+  return (
+    <div style={{ position: 'relative', width: size + 'px', height: size + 'px', flexShrink: 0 }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
+        <circle
+          cx={size / 2} cy={size / 2} r={r} fill="none" stroke={ringColor} strokeWidth={stroke}
+          strokeLinecap="round" strokeDasharray={circ}
+          strokeDashoffset={circ * (1 - pct)}
+          style={{ transition: 'stroke-dashoffset .7s ease' }}
+        />
+      </svg>
+      <div style={{
+        position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+      }}>
+        {complete ? (
+          <Check size={24} strokeWidth={2.4} color="#2F9E6D" />
+        ) : (
+          <span style={{ fontSize: '15px', fontWeight: 750, color: 'var(--text)', lineHeight: 1 }}>
+            {done}<span style={{ color: 'var(--text-faint)', fontWeight: 600 }}>/{goal}</span>
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
 
 function FlowStep({ icon, label, accentHex, onClick }) {
   const [hovered, setHovered] = useState(false)
@@ -51,6 +86,13 @@ export default function Home({ profile, track, counts, onNavigate }) {
     ? Math.min(100, Math.round((counts.masteredCount / counts.totalWords) * 100))
     : 0
 
+  // Daily new-card goal progress.
+  const goal = profile.daily_new_cards || 0
+  const doneToday = counts.newDoneToday || 0
+  const goalComplete = goal > 0 && doneToday >= goal
+  const noNewLeft = !goalComplete && counts.newCount === 0
+  const dueTomorrow = counts.dueTomorrow || 0
+
   return (
     <div style={{ maxWidth: '820px', margin: '0 auto', padding: isMobile ? '28px 16px 40px' : '52px 32px 60px' }}>
 
@@ -82,18 +124,30 @@ export default function Home({ profile, track, counts, onNavigate }) {
         background: 'var(--surface)', borderRadius: '20px', border: '1px solid var(--border)',
         boxShadow: '0 2px 16px rgba(0,0,0,0.05)', padding: isMobile ? '22px 18px' : '28px 32px', marginBottom: '20px',
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-          <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)' }}>Today</span>
-          <span style={{
-            fontSize: '12px', color: totalDue > 0 ? accentHex : 'var(--text-muted)',
-            background: totalDue > 0 ? `${accentHex}10` : 'var(--surface-2)',
-            padding: '4px 12px', borderRadius: '20px', fontWeight: 500,
-          }}>
-            {totalDue > 0 ? 'Cards waiting' : 'All caught up ✓'}
-          </span>
-        </div>
-        <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px' }}>
-          Your current study queue
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+              <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)' }}>Today</span>
+              <span style={{
+                fontSize: '12px', color: totalDue > 0 ? accentHex : 'var(--text-muted)',
+                background: totalDue > 0 ? `${accentHex}10` : 'var(--surface-2)',
+                padding: '4px 12px', borderRadius: '20px', fontWeight: 500,
+              }}>
+                {totalDue > 0 ? 'Cards waiting' : 'All caught up ✓'}
+              </span>
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+              {goalComplete
+                ? 'Daily goal complete — nice work.'
+                : noNewLeft
+                  ? 'No new cards left at this level.'
+                  : 'Daily goal: ' + doneToday + ' of ' + goal + ' new cards'}
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
+            <GoalRing done={doneToday} goal={goal} accentHex={accentHex} complete={goalComplete} />
+            <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-faint)' }}>Daily goal</span>
+          </div>
         </div>
 
         {/* New / Learning / Due */}
@@ -130,6 +184,18 @@ export default function Home({ profile, track, counts, onNavigate }) {
             }} />
           </div>
         </div>
+
+        {/* ── Tomorrow forecast ── */}
+        {dueTomorrow > 0 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '8px', marginTop: '20px',
+            paddingTop: '16px', borderTop: '1px solid var(--border)',
+            fontSize: '13px', color: 'var(--text-muted)',
+          }}>
+            <Sunrise size={16} strokeWidth={1.9} color="#D97706" />
+            <span><strong style={{ color: 'var(--text)', fontWeight: 650 }}>{dueTomorrow}</strong> review{dueTomorrow === 1 ? '' : 's'} waiting by tomorrow</span>
+          </div>
+        )}
       </div>
 
       {/* ── Primary CTA ── */}

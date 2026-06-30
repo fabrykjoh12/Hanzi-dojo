@@ -37,7 +37,26 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   const easyCount = levelCards.filter(c => c.is_easy).length
   const totalWords = vocabIds.size
 
+  // Daily-goal progress: how many new cards the user has already started today,
+  // measured against their daily_new_cards goal.
+  const newDoneToday = introducedToday
+
+  // Review forecast: reviews that become due between now and the end of tomorrow
+  // (drives the "waiting tomorrow" nudge). Learning/relearning cards are stored
+  // with due_at = now, so this is dominated by scheduled review cards.
+  const endOfTomorrow = new Date(); endOfTomorrow.setHours(23, 59, 59, 999)
+  endOfTomorrow.setDate(endOfTomorrow.getDate() + 1)
+  const dueTomorrow = levelCards.filter(c => {
+    if (c.state !== 'review') return false
+    const d = new Date(c.due_at)
+    return d > now && d <= endOfTomorrow
+  }).length
+
   const { learnedCount, masteredCount, masteredPct } = countMastery(levelCards, totalWords)
 
-  return { newCount, learnCount, dueCount, easyCount, totalWords, learnedCount, masteredCount, masteredPct }
+  return {
+    newCount, learnCount, dueCount, easyCount, totalWords,
+    learnedCount, masteredCount, masteredPct,
+    newDoneToday, dueTomorrow,
+  }
 }

@@ -7,7 +7,7 @@ import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import {
   Volume2, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
-  Sparkles, CheckCircle2, Layers, BookOpenCheck,
+  Sparkles, CheckCircle2, Layers, BookOpenCheck, Sunrise,
 } from 'lucide-react'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
@@ -169,6 +169,9 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   // Running counts of today's study session, persisted to daily_activity so the
   // Profile calendar can show which days were studied.
   const activityRef = useRef({ studied: 0, newC: 0, learn: 0, review: 0 })
+  // Per-session tally for the end-of-session recap card.
+  const sessionRef = useRef({ graded: 0, newLearned: 0, graduated: 0, again: 0, reviewedRight: 0, reviewedTotal: 0 })
+  const [forecast, setForecast] = useState(null)
   const isMobile = useIsMobile()
 
   const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
@@ -256,6 +259,12 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     }
   }, [flipped])
 
+  useEffect(() => {
+    if (done && sessionRef.current.graded > 0 && !forecast) {
+      loadForecast()
+    }
+  }, [done])
+
   // Upsert today's study counts so the Profile calendar can show studied days.
   // Counts are this session's running totals (presence is always correct).
   const recordActivity = (cardState) => {
@@ -274,9 +283,47 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     }, { onConflict: 'user_id,activity_date' }).then(() => {})
   }
 
+  // Recompute the next-day forecast (reviews + new) for the recap card.
+  async function loadForecast() {
+    const { data: vocab } = await supabase
+      .from('vocabulary')
+      .select('id')
+      .eq('language', track.language)
+      .eq('system', track.system)
+      .eq('level', track.current_level)
+      .eq('is_active', true)
+    const { data: cards } = await supabase
+      .from('cards')
+      .select('vocab_id, state, due_at')
+      .eq('user_id', session.user.id)
+
+    const vocabIds = new Set((vocab || []).map(v => v.id))
+    const started = new Set((cards || []).map(c => c.vocab_id))
+    const endOfTomorrow = new Date(); endOfTomorrow.setHours(23, 59, 59, 999)
+    endOfTomorrow.setDate(endOfTomorrow.getDate() + 1)
+
+    const reviews = (cards || []).filter(c =>
+      vocabIds.has(c.vocab_id) && c.state === 'review' && new Date(c.due_at) <= endOfTomorrow
+    ).length
+    const unstarted = (vocab || []).filter(v => !started.has(v.id)).length
+    const newAvail = Math.min(profile.daily_new_cards, unstarted)
+    setForecast({ reviews, newAvail })
+  }
+
   const handleGrade = async (grade) => {
     const card = queue[0]
     const res = schedule(card, grade)
+
+    // Tally this card for the session recap (before the queue mutates).
+    const s = sessionRef.current
+    s.graded += 1
+    if (card.state === 'new') s.newLearned += 1
+    if (grade === 0) s.again += 1
+    if (res.updates.state === 'review' && card.state !== 'review') s.graduated += 1
+    if (card.state === 'review') {
+      s.reviewedTotal += 1
+      if (grade >= 1) s.reviewedRight += 1
+    }
 
     if (!streakDone) {
       setStreakDone(true)
@@ -350,13 +397,23 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   }
 
   if (done || queue.length === 0) {
+    const s = sessionRef.current
+    const didStudy = s.graded > 0
+    const accuracy = s.reviewedTotal > 0 ? Math.round((s.reviewedRight / s.reviewedTotal) * 100) : null
+    const recapStats = [
+      { label: 'Cards studied', value: s.graded, color: accentHex },
+      { label: 'New learned', value: s.newLearned, color: '#3E63DD' },
+      { label: 'To review', value: s.graduated, color: '#2F9E6D' },
+    ]
+    if (accuracy !== null) recapStats.push({ label: 'Accuracy', value: accuracy + '%', color: '#D97706' })
+
     return (
       <div style={pageShell}>
         <div style={{ maxWidth: '760px', margin: '0 auto', minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{
             width: '100%', maxWidth: '520px', textAlign: 'center',
             background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: '24px', padding: '46px 38px',
+            borderRadius: '24px', padding: '40px 34px',
             boxShadow: '0 22px 60px rgba(24,24,27,0.07)',
           }}>
             <div style={{
@@ -367,11 +424,51 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
               <CheckCircle2 size={28} strokeWidth={1.9} color={accentHex} />
             </div>
             <h1 style={{ fontSize: '26px', fontWeight: 750, marginBottom: '8px', color: 'var(--text)' }}>
-              All done for now
+              {didStudy ? 'Session complete' : 'All done for now'}
             </h1>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '28px', fontSize: '15px', lineHeight: 1.6 }}>
-              No cards are waiting. Come back later, or continue the loop with stories.
+            <p style={{ color: 'var(--text-muted)', marginBottom: didStudy ? '26px' : '28px', fontSize: '15px', lineHeight: 1.6 }}>
+              {didStudy
+                ? 'Nice, steady work. Every review nudges these words further into memory.'
+                : 'No cards are waiting. Come back later, or continue the loop with stories.'}
             </p>
+
+            {didStudy && (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: recapStats.length === 4 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
+                gap: '10px', marginBottom: '22px',
+              }}>
+                {recapStats.map(st => (
+                  <div key={st.label} style={{
+                    padding: '16px 10px', borderRadius: '14px',
+                    background: st.color + '0D', border: '1px solid ' + st.color + '22',
+                  }}>
+                    <div style={{ fontSize: '26px', fontWeight: 760, color: st.color, lineHeight: 1 }}>{st.value}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>{st.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {didStudy && forecast && (forecast.reviews > 0 || forecast.newAvail > 0) && (
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                marginBottom: '24px', padding: '12px 16px', borderRadius: '14px',
+                background: 'var(--surface-2)', border: '1px solid var(--border)',
+                fontSize: '13px', color: 'var(--text-muted)', flexWrap: 'wrap',
+              }}>
+                <Sunrise size={16} strokeWidth={1.9} color="#D97706" />
+                <span>
+                  Tomorrow:&nbsp;
+                  <strong style={{ color: 'var(--text)', fontWeight: 650 }}>{forecast.reviews}</strong> review{forecast.reviews === 1 ? '' : 's'}
+                  {forecast.newAvail > 0 && (
+                    <> + <strong style={{ color: 'var(--text)', fontWeight: 650 }}>{forecast.newAvail}</strong> new</>
+                  )}
+                  &nbsp;waiting
+                </span>
+              </div>
+            )}
+
             <PrimaryButton onClick={onBack} icon={ArrowLeft}>
               Back home
             </PrimaryButton>
