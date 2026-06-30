@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import { CHARACTER_READINGS } from './characterNames'
 import { getLevelLabel } from './utils'
 import { cleanMeaning } from './cleanMeaning'
-import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRight, UserRound } from 'lucide-react'
+import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRight, UserRound, Highlighter } from 'lucide-react'
 
 // HSKStory-inspired immersion reader for BOTH languages. Light theme. Tap a word
 // for a bottom-sheet definition; pinyin (Chinese) / furigana (Japanese) and
@@ -146,13 +146,22 @@ function segmentLine(text, vocabMap, segmenter, names, particles) {
   return tokens
 }
 
-function Token({ token, isSelected, showReading, isJapanese, onSelect }) {
+function Token({ token, isSelected, showReading, isJapanese, adaptive, status, accent, onSelect }) {
   const [hover, setHover] = useState(false)
   const reading = token.vocab ? token.vocab.reading : (token.name ? token.name.reading : null)
   const clickable = Boolean(token.vocab || token.name)
   if (!clickable) {
     if (showReading) return <ruby>{token.text}<rt>&nbsp;</rt></ruby>
     return <span>{token.text}</span>
+  }
+
+  // Adaptive reading: spotlight the words the user hasn't learned yet so the eye
+  // lands on the learning frontier. Known (review/mastered) words stay plain.
+  let decoBorder = 'none'
+  let decoBg = 'transparent'
+  if (adaptive && token.vocab) {
+    if (status === 'not_started') { decoBorder = '2px solid ' + accent + '70'; decoBg = accent + '12' }
+    else if (status === 'learning') { decoBorder = '2px solid #CA8A0466' }
   }
   let body = token.text
   if (showReading && reading) {
@@ -175,8 +184,9 @@ function Token({ token, isSelected, showReading, isJapanese, onSelect }) {
       onMouseLeave={() => setHover(false)}
       style={{
         cursor: 'pointer', borderRadius: '5px', padding: '0 1px',
-        background: isSelected ? HILITE : (hover ? 'rgba(0,0,0,0.05)' : 'transparent'),
+        background: isSelected ? HILITE : (hover ? 'rgba(0,0,0,0.05)' : decoBg),
         boxShadow: isSelected ? '0 0 0 1px rgba(202,138,4,0.45)' : 'none',
+        borderBottom: decoBorder,
         transition: 'background 120ms ease',
       }}
     >
@@ -188,6 +198,7 @@ function Token({ token, isSelected, showReading, isJapanese, onSelect }) {
 export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, track, onBack, nextStory, onNextStory }) {
   const [selected, setSelected] = useState(null)
   const [showReading, setShowReading] = useState(false)
+  const [showKnown, setShowKnown] = useState(false)
   const [showEnglish, setShowEnglish] = useState(false)
   const [showSentence, setShowSentence] = useState(false)
   const [speaking, setSpeaking] = useState(false)
@@ -228,6 +239,20 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     }
     return { speaker, tokens: segmentLine(text, vocabMap, segmenterRef.current, names, particles) }
   })
+
+  // Word-coverage stats over the unique vocabulary that appears in this story.
+  const vocabSeen = new Map()
+  parsed.forEach(p => p.tokens.forEach(tk => {
+    if (tk.vocab) vocabSeen.set(tk.vocab.id, wordStatus(tk.vocab.id, userCards))
+  }))
+  const totalUnique = vocabSeen.size
+  let knownCount = 0, learningCount = 0, newCount = 0
+  vocabSeen.forEach(st => {
+    if (st === 'review' || st === 'mastered') knownCount += 1
+    else if (st === 'learning') learningCount += 1
+    else newCount += 1
+  })
+  const knownPct = totalUnique ? Math.round((knownCount / totalUnique) * 100) : 0
 
   const addToDeck = async (vocabItem) => {
     const { error } = await supabase.from('cards').insert({
@@ -300,6 +325,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         </div>
         <div style={{ display: 'flex', gap: '6px' }}>
           <TopToggle active={showReading} onClick={() => setShowReading(v => !v)} icon={Type} label={readingLabel} accent={accent} isMobile={isMobile} />
+          <TopToggle active={showKnown} onClick={() => setShowKnown(v => !v)} icon={Highlighter} label="Known" accent={accent} isMobile={isMobile} />
           {story.english_content && (
             <TopToggle active={showEnglish} onClick={() => setShowEnglish(v => !v)} icon={Languages} label="EN" accent={accent} isMobile={isMobile} />
           )}
@@ -311,6 +337,26 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         maxWidth: '740px', margin: '0 auto', position: 'relative', zIndex: 2,
         padding: isMobile ? '14px 18px 200px' : '22px 28px 220px',
       }}>
+        {totalUnique > 0 && (
+          <div style={{ marginBottom: '20px', background: PANEL, border: '1px solid var(--border)', borderRadius: '14px', padding: '12px 16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '9px', gap: '10px' }}>
+              <span style={{ fontSize: '14px', fontWeight: 700, color: TEXT }}>{knownPct}% known</span>
+              <span style={{ fontSize: '12px', color: MUTED }}>
+                {newCount} new · {learningCount} learning · {knownCount} known
+              </span>
+            </div>
+            <div style={{ display: 'flex', height: '7px', borderRadius: '999px', overflow: 'hidden', background: 'var(--border)' }}>
+              <div style={{ width: Math.round((knownCount / totalUnique) * 100) + '%', background: '#2F9E6D' }} />
+              <div style={{ width: Math.round((learningCount / totalUnique) * 100) + '%', background: '#CA8A04' }} />
+              <div style={{ width: Math.round((newCount / totalUnique) * 100) + '%', background: accent + '55' }} />
+            </div>
+            {showKnown && (
+              <div style={{ fontSize: '12px', color: MUTED, marginTop: '9px', lineHeight: 1.5 }}>
+                Underlined words are new to you; amber are still learning. Tap a word to add it to your deck.
+              </div>
+            )}
+          </div>
+        )}
         {parsed.map(({ speaker, tokens }, li) => (
           <div key={li} style={{ marginBottom: speaker ? '22px' : '18px' }}>
             {speaker && (
@@ -338,6 +384,9 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                   token={tk}
                   showReading={showReading}
                   isJapanese={isJapanese}
+                  adaptive={showKnown}
+                  status={tk.vocab ? wordStatus(tk.vocab.id, userCards) : 'not_started'}
+                  accent={accent}
                   isSelected={Boolean(sel) && sel.lineIndex === li && sel.tokenKey === ti}
                   onSelect={() => selectToken(li, ti, tk)}
                 />
