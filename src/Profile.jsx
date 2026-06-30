@@ -3,13 +3,16 @@ import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { isMastered } from './mastery'
 import { levelInfo } from './xp'
+import { evaluateAchievements } from './achievements'
 import { todayStr, liveStreak } from './streak'
 import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
 import {
   ArrowLeft, Flame, Layers, LogOut, RotateCcw, Save,
-  Shield, Sparkles, Target, User,
+  Shield, Sparkles, Target, User, Trophy, CalendarCheck, Award,
 } from 'lucide-react'
+
+const ACH_ICONS = { flame: Flame, layers: Layers, sparkles: Sparkles, trophy: Trophy, calendar: CalendarCheck }
 
 function getLanguageDetails(profile) {
   const isJapanese = profile.active_language === 'japanese'
@@ -71,6 +74,7 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
   const [loading, setLoading] = useState(true)
   const [activity, setActivity] = useState({})
 
+  const isMobile = useIsMobile()
   const { accentHex, fontFamily, nativeName } = getLanguageDetails(profile)
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
@@ -97,6 +101,9 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
       totalCards: levelCards.length,
       masteredCount: levelCards.filter(c => isMastered(c)).length,
       totalWords: vocabIds.size,
+      // Lifetime counts (across all levels) for achievements.
+      lifetimeLearned: (cards || []).filter(c => c.learned).length,
+      lifetimeMastered: (cards || []).filter(c => isMastered(c)).length,
     })
 
     const { data: acts } = await supabase
@@ -160,6 +167,15 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
   const masteryPct = stats.totalWords > 0
     ? Math.round((stats.masteredCount / stats.totalWords) * 100)
     : 0
+
+  const achievements = evaluateAchievements({
+    streak: liveStreak(profile),
+    learned: stats.lifetimeLearned || 0,
+    mastered: stats.lifetimeMastered || 0,
+    level: levelInfo(profile.total_xp).level,
+    daysStudied: Object.keys(activity).length,
+  })
+  const earnedCount = achievements.filter(a => a.earned).length
 
   return (
     <Shell accentHex={accentHex} fontFamily={fontFamily}>
@@ -228,6 +244,23 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
           )
         })()}
       </Panel>
+
+      {!loading && (
+        <Panel>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
+              <Award size={17} strokeWidth={1.85} color={accentHex} />
+              Achievements
+            </span>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{earnedCount}/{achievements.length} unlocked</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '12px' }}>
+            {achievements.map(a => (
+              <Badge key={a.id} ach={a} accentHex={accentHex} Icon={ACH_ICONS[a.icon] || Award} />
+            ))}
+          </div>
+        </Panel>
+      )}
 
       {!loading && (
         <Panel>
@@ -503,6 +536,33 @@ function StatCard({ label, value, unit, icon: Icon, color, bg }) {
       <div style={{ fontSize: '29px', fontWeight: 850, color, lineHeight: 1 }}>{value}</div>
       <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '5px', fontWeight: 650 }}>{unit}</div>
       <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '7px' }}>{label}</div>
+    </div>
+  )
+}
+
+function Badge({ ach, accentHex, Icon }) {
+  const earned = ach.earned
+  return (
+    <div
+      title={ach.desc}
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '8px',
+        padding: '16px 10px', borderRadius: '16px',
+        border: '1px solid ' + (earned ? accentHex + '33' : 'var(--border)'),
+        background: earned ? accentHex + '0A' : 'var(--surface-2)',
+        opacity: earned ? 1 : 0.65,
+      }}
+    >
+      <div style={{
+        width: '46px', height: '46px', borderRadius: '14px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: earned ? accentHex + '16' : 'var(--surface)',
+        border: '1px solid ' + (earned ? accentHex + '2E' : 'var(--border)'),
+      }}>
+        <Icon size={22} strokeWidth={1.9} color={earned ? accentHex : 'var(--text-faint)'} />
+      </div>
+      <div style={{ fontSize: '13px', fontWeight: 750, color: earned ? 'var(--text)' : 'var(--text-muted)' }}>{ach.title}</div>
+      <div style={{ fontSize: '11px', color: 'var(--text-faint)', lineHeight: 1.4 }}>{ach.desc}</div>
     </div>
   )
 }
