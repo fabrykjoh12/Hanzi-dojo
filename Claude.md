@@ -845,7 +845,7 @@ Priority order (most impactful first):
 1. **Japanese YouTube recommendations:** At least a few curated videos for JLPT N5. *(content task — needs video URLs)*
 2. **HSK 2 vocabulary + audio + stories:** Next Chinese level content. *(content task — needs vocab data + API keys)*
 3. **FSRS parameter tuning:** Once real user data exists, optimize parameters beyond library defaults.
-4. **Offline support:** Service worker (post-launch).
+4. ~~**Offline support:** Service worker~~ — done (`public/sw.js`, runtime caching). Follow-up: offline grading via a background-sync queue.
 5. **Spanish:** Third language after Chinese and Japanese content is solid.
 
 (Practice mode is intentionally *not* on the roadmap — Writing.jsx already serves as the low-stakes practice/active-recall page.)
@@ -911,7 +911,8 @@ Changing `base` to a fixed value will break one of the two hosts (assets 404 →
 | "Site can't start" card | build ran without the `VITE_SUPABASE_*` env vars | add host env vars, then **rebuild/redeploy** |
 | Google login bounces to localhost | host URL not in Supabase Redirect URLs | add `https://<host>/**` to the allow-list |
 
-### PWA / installable
+### PWA / installable + offline
+- **Offline service worker** (`public/sw.js`, registered in `main.jsx` in production only). Runtime caching: navigations are network-first with a cached-shell fallback; same-origin assets and Google Fonts are cache-first; the Supabase **audio** bucket is cache-first (offline pronunciation replay); Supabase **REST/auth** is never cached (no stale user data). Versioned caches cleaned on `activate`; `skipWaiting`+`clientsClaim` apply updates on next load. Scope follows `BASE_URL`, so it works on both the Pages subpath and the Vercel root. **Not yet done:** offline flashcard *grading* (would need a background-sync queue) and caching Supabase data for full offline study — reads work from cache once loaded, but saving a grade still needs the network.
 - `public/manifest.webmanifest` + icons (`icon-192.png`, `icon-512.png`, `maskable-512.png`, `apple-touch-icon.png`) make the app installable ("Add to Home Screen", standalone display). Icons were generated from `src/assets/Hanzi-logo.png` (the vermillion enso) composited onto white.
 - `index.html` references the manifest/icons via Vite's `%BASE_URL%` so paths are correct on both hosts. This also fixed the old absolute `/favicon.svg` that 404'd on the GitHub Pages subpath. The manifest's internal paths (`start_url`, icon `src`) are **relative**, so they resolve under either base.
 - To regenerate icons: `npm install --no-save sharp`, then a short sharp script compositing the logo onto a white background at 192/512/180. (Note: the browser-tab favicon is still the separate purple mark in `public/favicon.svg` — replace it with an enso-derived icon if full brand consistency is wanted.)

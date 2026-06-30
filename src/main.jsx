@@ -8,3 +8,12 @@ createRoot(document.getElementById('root')).render(
     <App />
   </StrictMode>,
 )
+
+// Register the offline service worker in production only (keeps dev/sandbox
+// clean). Scope follows BASE_URL so it works on both the GitHub Pages subpath
+// and the Vercel root. Failures are non-fatal.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register(import.meta.env.BASE_URL + 'sw.js').catch(function () { /* ignore */ })
+  })
+}
