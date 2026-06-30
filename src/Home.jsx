@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { liveStreak } from './streak'
+import { levelInfo } from './xp'
 import InfoTip from './InfoTip'
 import { useIsMobile } from './useIsMobile'
 import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise } from 'lucide-react'
@@ -107,15 +108,25 @@ export default function Home({ profile, track, counts, onNavigate }) {
           </div>
         </div>
 
-        {/* Streak indicator */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '8px',
-          padding: '10px 16px', borderRadius: '20px',
-          background: 'rgba(217,119,6,0.13)', border: '1px solid rgba(217,119,6,0.30)',
-        }}>
-          <Flame size={17} strokeWidth={2} color="#D97706" />
-          <span style={{ fontSize: '15px', fontWeight: 700, color: '#D97706' }}>{liveStreak(profile)}</span>
-          <span style={{ fontSize: '13px', fontWeight: 500, color: '#B45309' }}>day streak</span>
+        {/* Streak + account level */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '10px 16px', borderRadius: '20px',
+            background: 'rgba(217,119,6,0.13)', border: '1px solid rgba(217,119,6,0.30)',
+          }}>
+            <Flame size={17} strokeWidth={2} color="#D97706" />
+            <span style={{ fontSize: '15px', fontWeight: 700, color: '#D97706' }}>{liveStreak(profile)}</span>
+            <span style={{ fontSize: '13px', fontWeight: 500, color: '#B45309' }}>day streak</span>
+          </div>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '8px 14px', borderRadius: '20px',
+            background: `${accentHex}12`, border: '1px solid ' + accentHex + '2E',
+          }}>
+            <span style={{ fontSize: '13px', fontWeight: 750, color: accentHex }}>Lv {levelInfo(profile.total_xp).level}</span>
+            <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)' }}>{levelInfo(profile.total_xp).pct}%</span>
+          </div>
         </div>
       </div>
 

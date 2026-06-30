@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { schedule, previewLabels } from './srs'
+import { xpForGrade } from './xp'
 import { updateStreak, todayStr } from './streak'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { useIsMobile } from './useIsMobile'
@@ -170,7 +171,9 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   // Profile calendar can show which days were studied.
   const activityRef = useRef({ studied: 0, newC: 0, learn: 0, review: 0 })
   // Per-session tally for the end-of-session recap card.
-  const sessionRef = useRef({ graded: 0, newLearned: 0, graduated: 0, again: 0, reviewedRight: 0, reviewedTotal: 0 })
+  const sessionRef = useRef({ graded: 0, newLearned: 0, graduated: 0, again: 0, reviewedRight: 0, reviewedTotal: 0, xpEarned: 0 })
+  // Running lifetime XP, seeded from the profile and persisted on each grade.
+  const xpRef = useRef(profile.total_xp || 0)
   const [forecast, setForecast] = useState(null)
   const isMobile = useIsMobile()
 
@@ -324,6 +327,9 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
       s.reviewedTotal += 1
       if (grade >= 1) s.reviewedRight += 1
     }
+    const xpGain = xpForGrade(grade)
+    s.xpEarned += xpGain
+    xpRef.current += xpGain
 
     if (!streakDone) {
       setStreakDone(true)
@@ -354,6 +360,12 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     }
 
     recordActivity(card.state)
+
+    // Persist lifetime XP (best-effort; harmless if the column doesn't exist yet)
+    // and reflect it in the in-memory profile so Home/Profile update live.
+    supabase.from('profiles').update({ total_xp: xpRef.current }).eq('id', session.user.id).then(() => {})
+    if (onStreakUpdate) onStreakUpdate({ total_xp: xpRef.current })
+
     setFlipped(false)
 
     setQueue(prev => {
@@ -431,6 +443,18 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
                 ? 'Nice, steady work. Every review nudges these words further into memory.'
                 : 'No cards are waiting. Come back later, or continue the loop with stories.'}
             </p>
+
+            {didStudy && s.xpEarned > 0 && (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: '7px',
+                margin: '0 auto 20px', padding: '8px 16px', borderRadius: '999px',
+                background: '#6E84661A', border: '1px solid #6E846633',
+                color: '#5C7155', fontSize: '14px', fontWeight: 750,
+              }}>
+                <Sparkles size={15} strokeWidth={2} color="#6E8466" />
+                +{s.xpEarned} XP
+              </div>
+            )}
 
             {didStudy && (
               <div style={{

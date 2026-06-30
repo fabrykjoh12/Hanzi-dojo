@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { isMastered } from './mastery'
+import { levelInfo } from './xp'
 import { todayStr, liveStreak } from './streak'
 import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
@@ -198,6 +199,35 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
         <StatCard label="Words learned" value={loading ? '-' : stats.learned} unit={'of ' + stats.totalWords} icon={Layers} color={accentHex} bg={accentHex + '10'} />
         <StatCard label="Words mastered" value={loading ? '-' : stats.masteredCount} unit={masteryPct + '%'} icon={Sparkles} color="#2F9E6D" bg="#ECFDF5" />
       </div>
+
+      <Panel>
+        {(() => {
+          const lv = levelInfo(profile.total_xp)
+          return (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
+                  <Sparkles size={17} strokeWidth={1.85} color={accentHex} />
+                  Account level {lv.level}
+                </span>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>
+                  {Math.max(0, Math.floor(profile.total_xp || 0))} XP
+                </span>
+              </div>
+              <div style={{ height: '8px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: '999px',
+                  background: 'linear-gradient(90deg, ' + accentHex + ', ' + accentHex + 'AA)',
+                  width: lv.pct + '%', transition: 'width 700ms ease',
+                }} />
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '9px' }}>
+                {lv.levelSpan - lv.intoLevel} XP to level {lv.level + 1}. Earn XP from every flashcard you review.
+              </div>
+            </div>
+          )
+        })()}
+      </Panel>
 
       {!loading && (
         <Panel>
