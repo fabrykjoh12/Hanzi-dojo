@@ -1,10 +1,8 @@
 import { useState } from 'react'
-import {
-  Home, Layers, GraduationCap, PenLine, BookOpen, Play, Headphones, AlignLeft, Blocks,
-  User, Settings, Globe, LogOut, ChevronsLeft, ChevronsRight, Sun, Moon,
-} from 'lucide-react'
+import { ChevronsLeft, ChevronsRight, Sun, Moon } from 'lucide-react'
 import logo from './assets/Hanzi-logo.png'
 import { useTheme } from './ThemeContext'
+import { PRIMARY_NAV, BOTTOM_NAV } from './navConfig'
 
 // Neutral sage green used for active-state pill (see CLAUDE.md redesign spec)
 const SAGE_BG = '#E7EDE4'
@@ -13,24 +11,8 @@ const SAGE_TEXT = '#4F6047'
 const EXPANDED_WIDTH = 232
 const COLLAPSED_WIDTH = 64
 
-const MAIN_ITEMS = [
-  { key: 'home', label: 'Home', icon: Home },
-  { key: 'study', label: 'Flashcards', icon: Layers },
-  { key: 'test', label: 'Test', icon: GraduationCap },
-  { key: 'writing', label: 'Writing', icon: PenLine },
-  { key: 'stories', label: 'Stories', icon: BookOpen },
-  { key: 'listen', label: 'Listening', icon: Headphones },
-  { key: 'fillblank', label: 'Sentences', icon: AlignLeft },
-  { key: 'builder', label: 'Builder', icon: Blocks },
-  { key: 'youtube', label: 'YouTube', icon: Play },
-]
-
-const BOTTOM_ITEMS = [
-  { key: 'profile', label: 'Profile', icon: User },
-  { key: 'settings', label: 'Settings', icon: Settings },
-  { key: 'languages', label: 'Language', icon: Globe },
-  { key: 'logout', label: 'Log out', icon: LogOut },
-]
+const MAIN_ITEMS = PRIMARY_NAV
+const BOTTOM_ITEMS = BOTTOM_NAV
 
 function NavItem({ item, active, collapsed, onClick }) {
   const [hovered, setHovered] = useState(false)

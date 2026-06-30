@@ -1,34 +1,15 @@
 import { useState } from 'react'
-import {
-  Home, Layers, BookOpen, PenLine, MoreHorizontal,
-  GraduationCap, Play, Headphones, AlignLeft, Blocks, User, Globe, Settings, LogOut, X,
-} from 'lucide-react'
+import { MoreHorizontal, X } from 'lucide-react'
+import { MOBILE_PRIMARY, MOBILE_MORE } from './navConfig'
 
 const SAGE_BG = '#E7EDE4'
 const SAGE_TEXT = '#4F6047'
 const MUTED = 'var(--text-muted)'
 
-// Primary tabs live directly in the bottom bar. Everything else goes behind the
-// "More" sheet so the bar stays uncluttered on phones. (Sidebar.jsx keeps the
-// full flat list for desktop.)
-const PRIMARY = [
-  { key: 'home', label: 'Home', icon: Home },
-  { key: 'study', label: 'Cards', icon: Layers },
-  { key: 'stories', label: 'Stories', icon: BookOpen },
-  { key: 'writing', label: 'Writing', icon: PenLine },
-]
-
-const MORE_ITEMS = [
-  { key: 'test', label: 'Test', icon: GraduationCap },
-  { key: 'listen', label: 'Listening', icon: Headphones },
-  { key: 'fillblank', label: 'Sentences', icon: AlignLeft },
-  { key: 'builder', label: 'Builder', icon: Blocks },
-  { key: 'youtube', label: 'YouTube', icon: Play },
-  { key: 'profile', label: 'Profile', icon: User },
-  { key: 'languages', label: 'Language', icon: Globe },
-  { key: 'settings', label: 'Settings', icon: Settings },
-  { key: 'logout', label: 'Log out', icon: LogOut },
-]
+// Primary tabs live directly in the bottom bar; the rest go behind the "More"
+// sheet. Study/practice modes are reached through the Practice tab.
+const PRIMARY = MOBILE_PRIMARY
+const MORE_ITEMS = MOBILE_MORE
 
 const MORE_KEYS = MORE_ITEMS.map(i => i.key)
 

@@ -4,7 +4,7 @@ import { liveStreak } from './streak'
 import { levelInfo } from './xp'
 import InfoTip from './InfoTip'
 import { useIsMobile } from './useIsMobile'
-import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, AlertTriangle, Gauge, Music2, Languages, Brush } from 'lucide-react'
+import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, Gauge, Dumbbell } from 'lucide-react'
 import { fluencyScore, fluencyRank } from './fluency'
 
 // Neutral sage green for the primary CTA (see CLAUDE.md redesign spec)
@@ -276,66 +276,21 @@ export default function Home({ profile, track, counts, onNavigate }) {
         <ArrowRight size={19} strokeWidth={2.2} color="#fff" />
       </button>
 
-      {/* ── Weak-word cleanup ── */}
-      {counts.weakCount > 0 && (
-        <button
-          onClick={() => onNavigate('weak')}
-          style={{
-            width: '100%', padding: '14px 20px', borderRadius: '14px',
-            border: '1px solid rgba(217,119,6,0.30)', background: 'rgba(217,119,6,0.08)',
-            color: '#B45309', fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            marginTop: '-16px', marginBottom: '28px',
-          }}
-        >
-          <AlertTriangle size={17} strokeWidth={2} color="#D97706" />
-          Clean up {counts.weakCount} weak word{counts.weakCount === 1 ? '' : 's'}
-        </button>
-      )}
-
-      {/* ── Tone practice (Chinese) / Kana practice (Japanese) ── */}
-      {profile.active_language === 'chinese' && (
-        <button
-          onClick={() => onNavigate('tones')}
-          style={{
-            width: '100%', padding: '14px 20px', borderRadius: '14px',
-            border: '1px solid ' + accentHex + '33', background: accentHex + '0D',
-            color: accentHex, fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            marginTop: counts.weakCount > 0 ? '0' : '-16px', marginBottom: '28px',
-          }}
-        >
-          <Music2 size={17} strokeWidth={2} color={accentHex} />
-          Practice tones
-        </button>
-      )}
-      {profile.active_language === 'japanese' && (
-        <button
-          onClick={() => onNavigate('kana')}
-          style={{
-            width: '100%', padding: '14px 20px', borderRadius: '14px',
-            border: '1px solid ' + accentHex + '33', background: accentHex + '0D',
-            color: accentHex, fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            marginTop: counts.weakCount > 0 ? '0' : '-16px', marginBottom: '28px',
-          }}
-        >
-          <Languages size={17} strokeWidth={2} color={accentHex} />
-          Practice kana
-        </button>
-      )}
+      {/* ── Practice hub entry (with a weak-word nudge when relevant) ── */}
       <button
-        onClick={() => onNavigate('strokes')}
+        onClick={() => onNavigate('practice')}
         style={{
           width: '100%', padding: '14px 20px', borderRadius: '14px',
           border: '1px solid ' + accentHex + '33', background: accentHex + '0D',
           color: accentHex, fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-          marginBottom: '28px',
+          marginTop: '-16px', marginBottom: '28px',
         }}
       >
-        <Brush size={17} strokeWidth={2} color={accentHex} />
-        Stroke order
+        <Dumbbell size={17} strokeWidth={2} color={accentHex} />
+        {counts.weakCount > 0
+          ? 'Practice · ' + counts.weakCount + ' weak word' + (counts.weakCount === 1 ? '' : 's')
+          : 'Practice'}
       </button>
 
       {/* ── Keep the flow going ── */}

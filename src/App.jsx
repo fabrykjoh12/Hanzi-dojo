@@ -13,6 +13,7 @@ import Kana from './Kana'
 import FillBlank from './FillBlank'
 import SentenceBuilder from './SentenceBuilder'
 import Writer from './Writer'
+import Practice from './Practice'
 import { getHomeCounts } from './homeCounts'
 import Profile from './Profile'
 import YouTube from './YouTube'
@@ -214,6 +215,16 @@ export default function App() {
         track={track}
         onBack={() => navigate('home')}
         onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
+      />
+    )
+  } else if (view === 'practice') {
+    content = (
+      <Practice
+        profile={profile}
+        track={track}
+        counts={counts}
+        onNavigate={navigate}
+        onBack={() => navigate('home')}
       />
     )
   } else if (view === 'strokes') {
