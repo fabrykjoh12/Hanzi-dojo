@@ -46,7 +46,7 @@ function GoalRing({ done, goal, accentHex, complete }) {
   )
 }
 
-function FlowStep({ icon, label, accentHex, onClick }) {
+function FlowStep({ icon, label, accentHex, active, onClick }) {
   const [hovered, setHovered] = useState(false)
   const Icon = icon
   return (
@@ -57,18 +57,19 @@ function FlowStep({ icon, label, accentHex, onClick }) {
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
         padding: '14px 10px', borderRadius: '14px', cursor: 'pointer',
-        background: hovered ? 'var(--surface-2)' : 'transparent',
+        background: active ? `${accentHex}0D` : (hovered ? 'var(--surface-2)' : 'transparent'),
+        border: '1px solid ' + (active ? accentHex + '33' : 'transparent'),
         transition: 'background 140ms ease', minWidth: '76px',
       }}
     >
       <div style={{
         width: '40px', height: '40px', borderRadius: '11px',
-        background: `${accentHex}12`,
+        background: active ? accentHex : `${accentHex}12`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <Icon size={20} strokeWidth={1.75} color={accentHex} />
+        <Icon size={20} strokeWidth={1.75} color={active ? '#fff' : accentHex} />
       </div>
-      <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)' }}>{label}</span>
+      <span style={{ fontSize: '12px', fontWeight: active ? 700 : 500, color: active ? accentHex : 'var(--text-muted)' }}>{label}</span>
     </div>
   )
 }
@@ -100,6 +101,18 @@ export default function Home({ profile, track, counts, onNavigate }) {
   const fRank = fluencyRank(fScore)
   const fMastered = counts.lifetimeMastered || 0
   const fLearning = Math.max(0, (counts.lifetimeLearned || 0) - fMastered)
+
+  // Guided "next step" in the daily loop: clear the flashcard queue first, then
+  // move to reading immersion. This turns Home from a menu into a coach.
+  const rec = totalDue > 0
+    ? {
+        key: 'study', label: 'Review & learn', icon: Layers,
+        reason: totalDue + ' card' + (totalDue === 1 ? '' : 's') + ' waiting in your queue',
+      }
+    : {
+        key: 'stories', label: 'Read a story', icon: BookOpen,
+        reason: 'Flashcards are clear — immerse to lock the words in',
+      }
 
   return (
     <div style={{ maxWidth: '820px', margin: '0 auto', padding: isMobile ? '28px 16px 40px' : '52px 32px 60px' }}>
@@ -257,22 +270,27 @@ export default function Home({ profile, track, counts, onNavigate }) {
         )}
       </div>
 
-      {/* ── Primary CTA ── */}
+      {/* ── Recommended next step ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '10px' }}>
+        <span style={{ fontSize: '12px', fontWeight: 750, letterSpacing: '0.3px', textTransform: 'uppercase', color: accentHex }}>Next up</span>
+        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{rec.reason}</span>
+      </div>
       <button
-        onClick={() => onNavigate('study')}
+        onClick={() => onNavigate(rec.key)}
         onMouseEnter={() => setCtaHovered(true)}
         onMouseLeave={() => setCtaHovered(false)}
         style={{
           width: '100%', padding: '18px 24px', borderRadius: '16px', border: 'none',
           background: ctaHovered ? SAGE_DARK : SAGE, color: '#fff',
           fontSize: '16px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
           boxShadow: ctaHovered ? '0 8px 24px rgba(110,132,102,0.32)' : '0 2px 10px rgba(110,132,102,0.22)',
           transform: ctaHovered ? 'translateY(-1px)' : 'translateY(0)',
-          transition: 'all 160ms ease', marginBottom: '28px',
+          transition: 'all 160ms ease', marginBottom: '14px',
         }}
       >
-        Start studying
+        <rec.icon size={19} strokeWidth={2.1} color="#fff" />
+        {rec.label}
         <ArrowRight size={19} strokeWidth={2.2} color="#fff" />
       </button>
 
@@ -284,7 +302,7 @@ export default function Home({ profile, track, counts, onNavigate }) {
           border: '1px solid ' + accentHex + '33', background: accentHex + '0D',
           color: accentHex, fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-          marginTop: '-16px', marginBottom: '28px',
+          marginTop: '0', marginBottom: '28px',
         }}
       >
         <Dumbbell size={17} strokeWidth={2} color={accentHex} />
@@ -299,12 +317,12 @@ export default function Home({ profile, track, counts, onNavigate }) {
         boxShadow: '0 1px 4px rgba(0,0,0,0.04)', padding: '22px 24px',
       }}>
         <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', marginBottom: '14px' }}>
-          Keep the flow going
+          Your daily loop
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <FlowStep icon={Layers} label="Flashcards" accentHex={accentHex} onClick={() => onNavigate('study')} />
+          <FlowStep icon={Layers} label="Flashcards" accentHex={accentHex} active={rec.key === 'study'} onClick={() => onNavigate('study')} />
           <ArrowRight size={16} strokeWidth={2} color="#D4D4D8" />
-          <FlowStep icon={BookOpen} label="Stories" accentHex={accentHex} onClick={() => onNavigate('stories')} />
+          <FlowStep icon={BookOpen} label="Stories" accentHex={accentHex} active={rec.key === 'stories'} onClick={() => onNavigate('stories')} />
           <ArrowRight size={16} strokeWidth={2} color="#D4D4D8" />
           <FlowStep icon={Play} label="Videos" accentHex={accentHex} onClick={() => onNavigate('youtube')} />
           <ArrowRight size={16} strokeWidth={2} color="#D4D4D8" />
