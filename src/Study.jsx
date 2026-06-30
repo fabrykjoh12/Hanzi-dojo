@@ -34,6 +34,8 @@ function checkTyped(input, v, isJapanese) {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SAGE = '#6E8466'
 const SAGE_DARK = '#5C7155'
+// Grade → feedback color (Again / Hard / Good / Easy)
+const GRADE_COLORS = ['#DC2626', '#D97706', '#3E63DD', '#2F9E6D']
 
 function getAudioUrl(audioPath) {
   if (!audioPath) return null
@@ -189,6 +191,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const [saveError, setSaveError] = useState(null)
   const [typedValue, setTypedValue] = useState('')
   const [typedResult, setTypedResult] = useState(null)   // null | 'correct' | 'wrong'
+  const [gradeColor, setGradeColor] = useState(null)     // feedback ring color
+  const [gradeId, setGradeId] = useState(0)              // bumps to restart the flash
   const audioRef = useRef(null)
   // Running counts of today's study session, persisted to daily_activity so the
   // Profile calendar can show which days were studied.
@@ -355,6 +359,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const handleGrade = async (grade) => {
     const card = queue[0]
     const res = schedule(card, grade)
+
+    // Fire the colored grade-feedback ring (restarts via the bumped key).
+    setGradeColor(GRADE_COLORS[grade])
+    setGradeId(id => id + 1)
 
     // Tally this card for the session recap (before the queue mutates).
     const s = sessionRef.current
@@ -662,8 +670,20 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             boxShadow: '0 24px 70px rgba(24,24,27,0.08)',
             display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'space-between',
             cursor: flipped ? 'default' : 'pointer', padding: '24px', position: 'relative',
+            perspective: '1200px',
           }}
         >
+          {gradeColor && (
+            <div
+              key={gradeId}
+              aria-hidden
+              style={{
+                position: 'absolute', inset: 0, borderRadius: '26px', pointerEvents: 'none',
+                ['--flash']: gradeColor, zIndex: 3,
+                animation: 'hd-grade-flash 460ms ease-out forwards',
+              }}
+            />
+          )}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '12px' }}>
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
@@ -693,11 +713,16 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             </button>
           )}
 
-          <div style={{
-            flex: 1, display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            textAlign: 'center', padding: '34px 24px',
-          }}>
+          <div
+            key={flipped ? 'back' : 'front'}
+            style={{
+              flex: 1, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+              textAlign: 'center', padding: '34px 24px',
+              transformOrigin: 'center', willChange: 'transform',
+              animation: 'hd-flip-in 260ms ease',
+            }}
+          >
             {wordFuri ? (
               <div style={{
                 fontSize: '86px', fontWeight: 400, color: 'var(--text)',
