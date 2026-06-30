@@ -4,7 +4,7 @@ import { liveStreak } from './streak'
 import { levelInfo } from './xp'
 import InfoTip from './InfoTip'
 import { useIsMobile } from './useIsMobile'
-import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, AlertTriangle, Gauge } from 'lucide-react'
+import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, AlertTriangle, Gauge, Music2 } from 'lucide-react'
 import { fluencyScore, fluencyRank } from './fluency'
 
 // Neutral sage green for the primary CTA (see CLAUDE.md redesign spec)
@@ -290,6 +290,23 @@ export default function Home({ profile, track, counts, onNavigate }) {
         >
           <AlertTriangle size={17} strokeWidth={2} color="#D97706" />
           Clean up {counts.weakCount} weak word{counts.weakCount === 1 ? '' : 's'}
+        </button>
+      )}
+
+      {/* ── Tone practice (Chinese only) ── */}
+      {profile.active_language === 'chinese' && (
+        <button
+          onClick={() => onNavigate('tones')}
+          style={{
+            width: '100%', padding: '14px 20px', borderRadius: '14px',
+            border: '1px solid ' + accentHex + '33', background: accentHex + '0D',
+            color: accentHex, fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            marginTop: counts.weakCount > 0 ? '0' : '-16px', marginBottom: '28px',
+          }}
+        >
+          <Music2 size={17} strokeWidth={2} color={accentHex} />
+          Practice tones
         </button>
       )}
 
