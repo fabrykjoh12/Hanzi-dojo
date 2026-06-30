@@ -775,12 +775,14 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
   Hello.") and some are semantically off (こんにちは listed as "good morning").
   `cleanMeaning()` tidies *display* in the reader + flashcard, but the source
   data is still messy and used elsewhere. Two follow-ups, do **#1 first**:
-  1. **Deterministic DB cleanup script** (not written yet) — a one-off
-     `clean-meanings.mjs` matching the `generate-*.mjs` conventions
-     (`--env-file=.env.script`, SUPABASE_URL + SUPABASE_SERVICE_KEY). Apply the
-     same `cleanMeaning` tidy to the `meaning` column across all vocab. Default
-     to a **dry-run** that prints before→after; `--apply` to write. Free, safe,
-     no AI — fixes formatting everywhere (flashcards/test/writing/stories).
+  1. **Deterministic DB cleanup script — DONE (`clean-meanings.mjs`).** Imports
+     `src/cleanMeaning.js` (no drift) and applies the same tidy to the `meaning`
+     column across all active vocab. Conventions match the `generate-*.mjs`
+     scripts (`--env-file=.env.script`, SUPABASE_URL + SUPABASE_SERVICE_KEY).
+     **Dry-run by default** (prints every before→after, only rows that differ);
+     `--apply` writes; `--chinese`/`--japanese` filter. Free, safe, no AI — never
+     blanks a meaning. **Not yet run** — run it (or via a runner that can reach
+     Supabase) to fix formatting everywhere (flashcards/test/writing/stories).
   2. **Regenerate meanings** (later) — `generate-meanings.mjs` already exists
      (70B, tighter prompt, `--dry-run`/`--chinese`/`--japanese`). Easiest path is
      the one-click Action (`task=meanings`, `language=both`). Neither Chinese nor
