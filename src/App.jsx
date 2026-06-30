@@ -6,6 +6,7 @@ import Study from './Study'
 import Writing from './Writing'
 import Test from './Test'
 import Stories from './Stories'
+import Listen from './Listen'
 import { getHomeCounts } from './homeCounts'
 import Profile from './Profile'
 import YouTube from './YouTube'
@@ -174,6 +175,16 @@ export default function App() {
         profile={profile}
         track={track}
         onBack={() => navigate('home')}
+      />
+    )
+  } else if (view === 'listen') {
+    content = (
+      <Listen
+        session={session}
+        profile={profile}
+        track={track}
+        onBack={() => navigate('home')}
+        onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
   } else if (view === 'stories') {

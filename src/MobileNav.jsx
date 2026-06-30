@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   Home, Layers, BookOpen, PenLine, MoreHorizontal,
-  GraduationCap, Play, User, Globe, Settings, LogOut, X,
+  GraduationCap, Play, Headphones, User, Globe, Settings, LogOut, X,
 } from 'lucide-react'
 
 const SAGE_BG = '#E7EDE4'
@@ -20,6 +20,7 @@ const PRIMARY = [
 
 const MORE_ITEMS = [
   { key: 'test', label: 'Test', icon: GraduationCap },
+  { key: 'listen', label: 'Listening', icon: Headphones },
   { key: 'youtube', label: 'YouTube', icon: Play },
   { key: 'profile', label: 'Profile', icon: User },
   { key: 'languages', label: 'Language', icon: Globe },
