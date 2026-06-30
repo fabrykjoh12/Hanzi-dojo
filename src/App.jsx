@@ -9,6 +9,7 @@ import Stories from './Stories'
 import Listen from './Listen'
 import Tones from './Tones'
 import Kana from './Kana'
+import FillBlank from './FillBlank'
 import { getHomeCounts } from './homeCounts'
 import Profile from './Profile'
 import YouTube from './YouTube'
@@ -192,6 +193,16 @@ export default function App() {
   } else if (view === 'kana') {
     content = (
       <Kana
+        session={session}
+        profile={profile}
+        track={track}
+        onBack={() => navigate('home')}
+        onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
+      />
+    )
+  } else if (view === 'fillblank') {
+    content = (
+      <FillBlank
         session={session}
         profile={profile}
         track={track}
