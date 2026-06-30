@@ -1,4 +1,8 @@
-import { Bell, Palette, ShieldCheck, SlidersHorizontal, Sun, Moon } from 'lucide-react'
+import { supabase } from './supabase'
+import {
+  Palette, SlidersHorizontal, Sun, Moon, Keyboard, Eye,
+  Volume2, BookOpenCheck,
+} from 'lucide-react'
 import { useIsMobile } from './useIsMobile'
 import { useTheme } from './ThemeContext'
 
@@ -7,27 +11,35 @@ function getLanguageDetails(profile) {
   return {
     accentHex: isJapanese ? '#2E3A6E' : '#B83A24',
     fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
+    isJapanese,
   }
 }
 
-export default function Settings({ profile }) {
-  const { accentHex, fontFamily } = getLanguageDetails(profile)
+export default function Settings({ session, profile, onUpdate }) {
+  const { accentHex, isJapanese } = getLanguageDetails(profile)
   const isMobile = useIsMobile()
   const { theme, setTheme } = useTheme()
 
+  // Defensive reads so the UI works even before the prefs migration is applied.
+  const recallMode = profile.recall_mode === 'typed' ? 'typed' : 'flip'
+  const audioAutoplay = profile.audio_autoplay !== false
+  const furiganaDefault = profile.furigana_default !== false
+
+  // Persist a single preference column (best-effort) and reflect it live.
+  const savePref = (patch) => {
+    if (onUpdate) onUpdate(patch)
+    if (session) {
+      supabase.from('profiles').update(patch).eq('id', session.user.id).then(() => {})
+    }
+  }
+
   return (
-    <div style={{
-      minHeight: '100vh',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
+    <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
       <div style={{ maxWidth: '760px', margin: '0 auto', padding: isMobile ? '32px 16px 56px' : '52px 32px 72px', position: 'relative', zIndex: 1 }}>
         <div style={{
           width: '68px', height: '68px', borderRadius: '22px',
-          background: accentHex + '10',
-          border: '1px solid ' + accentHex + '20',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          marginBottom: '20px',
+          background: accentHex + '10', border: '1px solid ' + accentHex + '20',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px',
         }}>
           <SlidersHorizontal size={32} strokeWidth={1.75} color={accentHex} />
         </div>
@@ -39,24 +51,54 @@ export default function Settings({ profile }) {
           Settings
         </h1>
         <p style={{ fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.65, margin: '12px 0 30px', maxWidth: '560px' }}>
-          This screen is ready for future app preferences. For now, daily goal and reset controls stay in Profile.
+          Tune how studying feels. Daily goal and reset controls live in Profile.
         </p>
 
         <div style={{ display: 'grid', gap: '14px' }}>
-          <AppearanceCard theme={theme} setTheme={setTheme} accentHex={accentHex} />
-          <SettingPreview icon={Bell} title="Reminders" text="Daily study reminder settings can be added when notifications are wired up." accentHex={accentHex} />
-          <SettingPreview icon={ShieldCheck} title="Account safety" text="Account and privacy controls can expand from this page over time." accentHex={accentHex} />
+          {/* Appearance */}
+          <Card icon={Palette} title="Appearance" text="Choose a light or dark theme for the whole app." accentHex={accentHex}>
+            <Segmented
+              accentHex={accentHex}
+              value={theme}
+              onChange={setTheme}
+              options={[
+                { key: 'light', label: 'Light', icon: Sun },
+                { key: 'dark', label: 'Dark', icon: Moon },
+              ]}
+            />
+          </Card>
+
+          {/* Recall mode */}
+          <Card icon={Keyboard} title="Flashcard recall" text="Flip lets you reveal the answer and grade yourself. Typed asks you to type the reading first, for stronger active recall." accentHex={accentHex}>
+            <Segmented
+              accentHex={accentHex}
+              value={recallMode}
+              onChange={(v) => savePref({ recall_mode: v })}
+              options={[
+                { key: 'flip', label: 'Flip', icon: Eye },
+                { key: 'typed', label: 'Typed', icon: Keyboard },
+              ]}
+            />
+          </Card>
+
+          {/* Audio autoplay */}
+          <Card icon={Volume2} title="Audio on flip" text="Automatically play the word's pronunciation when you reveal a card." accentHex={accentHex}>
+            <Toggle accentHex={accentHex} checked={audioAutoplay} onChange={(v) => savePref({ audio_autoplay: v })} />
+          </Card>
+
+          {/* Furigana default — Japanese only */}
+          {isJapanese && (
+            <Card icon={BookOpenCheck} title="Furigana by default" text="Show readings above kanji on the front of Japanese flashcards." accentHex={accentHex}>
+              <Toggle accentHex={accentHex} checked={furiganaDefault} onChange={(v) => savePref({ furigana_default: v })} />
+            </Card>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-function AppearanceCard({ theme, setTheme, accentHex }) {
-  const options = [
-    { key: 'light', label: 'Light', icon: Sun },
-    { key: 'dark', label: 'Dark', icon: Moon },
-  ]
+function Card({ icon: Icon, title, text, accentHex, children }) {
   return (
     <div style={{
       background: 'var(--surface)', borderRadius: '20px',
@@ -68,71 +110,63 @@ function AppearanceCard({ theme, setTheme, accentHex }) {
         background: accentHex + '10', border: '1px solid ' + accentHex + '18',
         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
-        <Palette size={21} strokeWidth={1.85} color={accentHex} />
+        <Icon size={21} strokeWidth={1.85} color={accentHex} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '15px', fontWeight: 850, color: 'var(--text)', marginBottom: '5px' }}>Appearance</div>
-        <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: '14px' }}>
-          Choose a light or dark theme for the whole app.
-        </div>
-        <div style={{ display: 'inline-flex', gap: '8px', background: 'var(--surface-2)', padding: '4px', borderRadius: '12px' }}>
-          {options.map(opt => {
-            const active = theme === opt.key
-            const Icon = opt.icon
-            return (
-              <button
-                key={opt.key}
-                onClick={() => setTheme(opt.key)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '7px',
-                  padding: '8px 16px', borderRadius: '9px', cursor: 'pointer',
-                  border: '1px solid ' + (active ? accentHex + '40' : 'transparent'),
-                  background: active ? 'var(--surface)' : 'transparent',
-                  color: active ? 'var(--text)' : 'var(--text-muted)',
-                  fontSize: '13px', fontWeight: 700,
-                  boxShadow: active ? '0 1px 4px rgba(24,24,27,0.08)' : 'none',
-                }}
-              >
-                <Icon size={16} strokeWidth={2} color={active ? accentHex : 'var(--text-muted)'} />
-                {opt.label}
-              </button>
-            )
-          })}
-        </div>
+        <div style={{ fontSize: '15px', fontWeight: 850, color: 'var(--text)', marginBottom: '5px' }}>{title}</div>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: '14px' }}>{text}</div>
+        {children}
       </div>
     </div>
   )
 }
 
-function SettingPreview({ icon: Icon, title, text, accentHex }) {
+function Segmented({ value, onChange, options, accentHex }) {
   return (
-    <div style={{
-      background: 'var(--surface)',
-      borderRadius: '20px',
-      border: '1px solid var(--border)',
-      boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
-      padding: '22px 24px',
-      display: 'flex',
-      alignItems: 'flex-start',
-      gap: '16px',
-    }}>
-      <div style={{
-        width: '44px', height: '44px', borderRadius: '15px',
-        background: accentHex + '10',
-        border: '1px solid ' + accentHex + '18',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0,
-      }}>
-        <Icon size={21} strokeWidth={1.85} color={accentHex} />
-      </div>
-      <div>
-        <div style={{ fontSize: '15px', fontWeight: 850, color: 'var(--text)', marginBottom: '5px' }}>
-          {title}
-        </div>
-        <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55 }}>
-          {text}
-        </div>
-      </div>
+    <div style={{ display: 'inline-flex', gap: '8px', background: 'var(--surface-2)', padding: '4px', borderRadius: '12px' }}>
+      {options.map(opt => {
+        const active = value === opt.key
+        const Icon = opt.icon
+        return (
+          <button
+            key={opt.key}
+            onClick={() => onChange(opt.key)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '7px',
+              padding: '8px 16px', borderRadius: '9px', cursor: 'pointer',
+              border: '1px solid ' + (active ? accentHex + '40' : 'transparent'),
+              background: active ? 'var(--surface)' : 'transparent',
+              color: active ? 'var(--text)' : 'var(--text-muted)',
+              fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+              boxShadow: active ? '0 1px 4px rgba(24,24,27,0.08)' : 'none',
+            }}
+          >
+            <Icon size={16} strokeWidth={2} color={active ? accentHex : 'var(--text-muted)'} />
+            {opt.label}
+          </button>
+        )
+      })}
     </div>
+  )
+}
+
+function Toggle({ checked, onChange, accentHex }) {
+  return (
+    <button
+      onClick={() => onChange(!checked)}
+      aria-pressed={checked}
+      style={{
+        width: '50px', height: '28px', borderRadius: '999px', position: 'relative',
+        border: '1px solid ' + (checked ? accentHex : 'var(--border)'),
+        background: checked ? accentHex : 'var(--surface-2)',
+        cursor: 'pointer', transition: 'background 160ms ease, border-color 160ms ease', padding: 0,
+      }}
+    >
+      <span style={{
+        position: 'absolute', top: '2px', left: checked ? '24px' : '2px',
+        width: '22px', height: '22px', borderRadius: '50%', background: '#fff',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.25)', transition: 'left 160ms ease',
+      }} />
+    </button>
   )
 }

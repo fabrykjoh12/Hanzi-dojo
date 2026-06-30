@@ -4,12 +4,32 @@ import { schedule, previewLabels } from './srs'
 import { xpForGrade } from './xp'
 import { updateStreak, todayStr } from './streak'
 import { getLevelLabel, getSystemLabel } from './utils'
+import { normalizePinyin } from './testLogic'
+import { toRomaji } from 'wanakana'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import {
   Volume2, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
-  Sparkles, CheckCircle2, Layers, BookOpenCheck, Sunrise,
+  Sparkles, CheckCircle2, Layers, BookOpenCheck, Sunrise, X,
 } from 'lucide-react'
+
+// Does the typed input match the card's reading (or the word itself)?
+// Japanese accepts romaji or kana; Chinese accepts tone-insensitive pinyin.
+function checkTyped(input, v, isJapanese) {
+  const t = (input || '').trim().toLowerCase()
+  if (!t) return false
+  if (t === (v.word || '').toLowerCase()) return true
+  const reading = v.reading || ''
+  if (t === reading.toLowerCase()) return true
+  if (isJapanese) {
+    const norm = s => (toRomaji(s || '') || '').toLowerCase().split(' ').join('')
+    const target = norm(reading)
+    return target !== '' && norm(input) === target
+  }
+  const strip = s => normalizePinyin(s || '').split(' ').join('').toLowerCase()
+  const target = strip(v.reading_plain || reading)
+  return target !== '' && strip(input) === target
+}
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SAGE = '#6E8466'
@@ -164,8 +184,10 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   const [flipped, setFlipped] = useState(false)
   const [done, setDone] = useState(false)
   const [streakDone, setStreakDone] = useState(false)
-  const [showFurigana, setShowFurigana] = useState(true)
+  const [showFurigana, setShowFurigana] = useState(profile.furigana_default !== false)
   const [saveError, setSaveError] = useState(null)
+  const [typedValue, setTypedValue] = useState('')
+  const [typedResult, setTypedResult] = useState(null)   // null | 'correct' | 'wrong'
   const audioRef = useRef(null)
   // Running counts of today's study session, persisted to daily_activity so the
   // Profile calendar can show which days were studied.
@@ -175,7 +197,9 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   // Running lifetime XP, seeded from the profile and persisted on each grade.
   const xpRef = useRef(profile.total_xp || 0)
   const [forecast, setForecast] = useState(null)
+  const [recap, setRecap] = useState(null)   // snapshot of sessionRef at completion
   const isMobile = useIsMobile()
+  const isTyped = profile.recall_mode === 'typed'
 
   const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
   const accent = profile.active_language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
@@ -257,16 +281,10 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   }, [])
 
   useEffect(() => {
-    if (flipped && queue.length > 0) {
+    if (flipped && queue.length > 0 && profile.audio_autoplay !== false) {
       playAudio()
     }
   }, [flipped])
-
-  useEffect(() => {
-    if (done && sessionRef.current.graded > 0 && !forecast) {
-      loadForecast()
-    }
-  }, [done])
 
   // Upsert today's study counts so the Profile calendar can show studied days.
   // Counts are this session's running totals (presence is always correct).
@@ -312,6 +330,13 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     const newAvail = Math.min(profile.daily_new_cards, unstarted)
     setForecast({ reviews, newAvail })
   }
+
+  useEffect(() => {
+    if (done && recap && recap.graded > 0 && !forecast) {
+      loadForecast()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done, recap])
 
   const handleGrade = async (grade) => {
     const card = queue[0]
@@ -367,6 +392,8 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     if (onStreakUpdate) onStreakUpdate({ total_xp: xpRef.current })
 
     setFlipped(false)
+    setTypedValue('')
+    setTypedResult(null)
 
     setQueue(prev => {
       const rest = prev.slice(1)
@@ -375,7 +402,10 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
         const pos = Math.min(res.gap, rest.length)
         rest.splice(pos, 0, item)
       }
-      if (rest.length === 0) setDone(true)
+      if (rest.length === 0) {
+        setRecap({ ...sessionRef.current })
+        setDone(true)
+      }
       return rest
     })
   }
@@ -409,14 +439,14 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
   }
 
   if (done || queue.length === 0) {
-    const s = sessionRef.current
-    const didStudy = s.graded > 0
-    const accuracy = s.reviewedTotal > 0 ? Math.round((s.reviewedRight / s.reviewedTotal) * 100) : null
-    const recapStats = [
+    const s = recap
+    const didStudy = Boolean(s && s.graded > 0)
+    const accuracy = s && s.reviewedTotal > 0 ? Math.round((s.reviewedRight / s.reviewedTotal) * 100) : null
+    const recapStats = s ? [
       { label: 'Cards studied', value: s.graded, color: accentHex },
       { label: 'New learned', value: s.newLearned, color: '#3E63DD' },
       { label: 'To review', value: s.graduated, color: '#2F9E6D' },
-    ]
+    ] : []
     if (accuracy !== null) recapStats.push({ label: 'Accuracy', value: accuracy + '%', color: '#D97706' })
 
     return (
@@ -542,6 +572,12 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
     )
   }
   const stateLabel = card.state === 'new' ? 'New card' : (card.state === 'review' ? 'Review' : 'Learning')
+
+  function submitTyped() {
+    if (!typedValue.trim()) return
+    setTypedResult(checkTyped(typedValue, v, isJapanese) ? 'correct' : 'wrong')
+    setFlipped(true)
+  }
 
   return (
     <div style={pageShell}>
@@ -718,37 +754,95 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
             borderTop: '1px solid var(--surface-2)', paddingTop: '18px',
           }}>
             <span style={{ fontSize: '12px', color: 'var(--text-faint)', fontWeight: 650 }}>
-              {flipped ? 'How well did you remember this?' : 'Recall first, then reveal'}
+              {flipped ? 'How well did you remember this?' : (isTyped ? 'Type the reading, then check' : 'Recall first, then reveal')}
             </span>
           </div>
         </div>
 
         <div style={{ width: '100%', maxWidth: '680px', marginTop: '14px' }}>
           {!flipped ? (
-            <PrimaryButton onClick={() => setFlipped(true)} icon={Eye}>
-              Show answer
-            </PrimaryButton>
+            isTyped ? (
+              <div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <input
+                    autoFocus
+                    value={typedValue}
+                    onChange={e => setTypedValue(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') submitTyped() }}
+                    placeholder={isJapanese ? 'Type the reading (kana or romaji)' : 'Type the pinyin'}
+                    style={{
+                      flex: 1, minWidth: 0, height: '54px', padding: '0 18px',
+                      borderRadius: '16px', border: '1px solid var(--border)',
+                      background: 'var(--surface)', color: 'var(--text)',
+                      fontSize: '16px', fontFamily: 'Inter, sans-serif', outline: 'none',
+                    }}
+                  />
+                  <button
+                    onClick={submitTyped}
+                    style={{
+                      flexShrink: 0, minWidth: '120px', height: '54px', borderRadius: '16px',
+                      border: 'none', background: SAGE, color: '#fff',
+                      fontSize: '15px', fontWeight: 750, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    }}
+                  >
+                    <Check size={18} strokeWidth={2.2} color="#fff" />
+                    Check
+                  </button>
+                </div>
+                <button
+                  onClick={() => setFlipped(true)}
+                  style={{
+                    marginTop: '12px', width: '100%', background: 'none', border: 'none',
+                    color: 'var(--text-faint)', cursor: 'pointer', fontSize: '13px',
+                    fontWeight: 650, fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  Skip — reveal answer
+                </button>
+              </div>
+            ) : (
+              <PrimaryButton onClick={() => setFlipped(true)} icon={Eye}>
+                Show answer
+              </PrimaryButton>
+            )
           ) : (
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-              gap: '10px',
-            }}>
-              {[
-                { grade: 0, label: 'Again', color: '#DC2626', icon: RotateCcw },
-                { grade: 1, label: 'Hard', color: '#D97706', icon: AlertTriangle },
-                { grade: 2, label: 'Good', color: '#3E63DD', icon: Check },
-                { grade: 3, label: 'Easy', color: '#2F9E6D', icon: Sparkles },
-              ].map(item => (
-                <GradeButton
-                  key={item.grade}
-                  grade={item.grade}
-                  label={item.label}
-                  interval={labels[item.grade]}
-                  color={item.color}
-                  icon={item.icon}
-                  onClick={handleGrade}
-                />
-              ))}
+            <div>
+              {typedResult && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  marginBottom: '12px', padding: '10px 16px', borderRadius: '14px',
+                  background: typedResult === 'correct' ? '#ECFDF5' : '#FEF2F2',
+                  border: '1px solid ' + (typedResult === 'correct' ? '#A7F3D0' : '#FECACA'),
+                  color: typedResult === 'correct' ? '#2F9E6D' : '#DC2626',
+                  fontSize: '13px', fontWeight: 700,
+                }}>
+                  {typedResult === 'correct'
+                    ? <><Check size={16} strokeWidth={2.4} color="#2F9E6D" /> Correct — “{typedValue}”</>
+                    : <><X size={16} strokeWidth={2.4} color="#DC2626" /> You typed “{typedValue}”</>}
+                </div>
+              )}
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                gap: '10px',
+              }}>
+                {[
+                  { grade: 0, label: 'Again', color: '#DC2626', icon: RotateCcw },
+                  { grade: 1, label: 'Hard', color: '#D97706', icon: AlertTriangle },
+                  { grade: 2, label: 'Good', color: '#3E63DD', icon: Check },
+                  { grade: 3, label: 'Easy', color: '#2F9E6D', icon: Sparkles },
+                ].map(item => (
+                  <GradeButton
+                    key={item.grade}
+                    grade={item.grade}
+                    label={item.label}
+                    interval={labels[item.grade]}
+                    color={item.color}
+                    icon={item.icon}
+                    onClick={handleGrade}
+                  />
+                ))}
+              </div>
             </div>
           )}
         </div>
