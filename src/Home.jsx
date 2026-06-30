@@ -4,7 +4,8 @@ import { liveStreak } from './streak'
 import { levelInfo } from './xp'
 import InfoTip from './InfoTip'
 import { useIsMobile } from './useIsMobile'
-import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, AlertTriangle } from 'lucide-react'
+import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, AlertTriangle, Gauge } from 'lucide-react'
+import { fluencyScore, fluencyRank } from './fluency'
 
 // Neutral sage green for the primary CTA (see CLAUDE.md redesign spec)
 const SAGE = '#6E8466'
@@ -93,6 +94,12 @@ export default function Home({ profile, track, counts, onNavigate }) {
   const goalComplete = goal > 0 && doneToday >= goal
   const noNewLeft = !goalComplete && counts.newCount === 0
   const dueTomorrow = counts.dueTomorrow || 0
+
+  // Fluency score (lifetime vocabulary command across all levels).
+  const fScore = fluencyScore(counts)
+  const fRank = fluencyRank(fScore)
+  const fMastered = counts.lifetimeMastered || 0
+  const fLearning = Math.max(0, (counts.lifetimeLearned || 0) - fMastered)
 
   return (
     <div style={{ maxWidth: '820px', margin: '0 auto', padding: isMobile ? '28px 16px 40px' : '52px 32px 60px' }}>
@@ -205,6 +212,47 @@ export default function Home({ profile, track, counts, onNavigate }) {
           }}>
             <Sunrise size={16} strokeWidth={1.9} color="#D97706" />
             <span><strong style={{ color: 'var(--text)', fontWeight: 650 }}>{dueTomorrow}</strong> review{dueTomorrow === 1 ? '' : 's'} waiting by tomorrow</span>
+          </div>
+        )}
+      </div>
+
+      {/* ── Fluency score ── */}
+      <div style={{
+        background: 'var(--surface)', borderRadius: '20px', border: '1px solid var(--border)',
+        boxShadow: '0 2px 16px rgba(0,0,0,0.05)', padding: isMobile ? '20px 18px' : '24px 32px', marginBottom: '20px',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
+            <Gauge size={17} strokeWidth={1.9} color={accentHex} />
+            Fluency score
+          </span>
+          <span style={{
+            fontSize: '12px', fontWeight: 700, color: accentHex,
+            background: `${accentHex}12`, border: '1px solid ' + accentHex + '2E',
+            padding: '4px 12px', borderRadius: '20px',
+          }}>
+            {fRank.name}
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '6px' }}>
+          <span style={{ fontSize: '40px', fontWeight: 750, color: 'var(--text)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{fScore}</span>
+          <span style={{ fontSize: '13px', color: 'var(--text-faint)', fontWeight: 600 }}>pts</span>
+        </div>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: fRank.next ? '14px' : 0 }}>
+          {fMastered} word{fMastered === 1 ? '' : 's'} mastered · {fLearning} learning
+        </div>
+        {fRank.next && (
+          <div>
+            <div style={{ height: '7px', background: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', borderRadius: '4px',
+                background: `linear-gradient(90deg, ${accentHex}, ${accentHex}bb)`,
+                width: `${fRank.pct}%`, transition: 'width .7s ease',
+              }} />
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '8px' }}>
+              {fRank.next.min - fScore} pts to {fRank.next.name}
+            </div>
           </div>
         )}
       </div>

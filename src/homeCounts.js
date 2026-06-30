@@ -58,9 +58,14 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
 
   const { learnedCount, masteredCount, masteredPct } = countMastery(levelCards, totalWords)
 
+  // Lifetime counts (all levels) for the fluency score.
+  const lifetimeLearned = (cards || []).filter(c => c.learned).length
+  const lifetimeMastered = (cards || []).filter(c => (c.stability || 0) >= 21).length
+
   return {
     newCount, learnCount, dueCount, easyCount, totalWords,
     learnedCount, masteredCount, masteredPct,
     newDoneToday, dueTomorrow, weakCount,
+    lifetimeLearned, lifetimeMastered,
   }
 }
