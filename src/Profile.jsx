@@ -9,7 +9,7 @@ import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
 import {
   ArrowLeft, Flame, Layers, LogOut, RotateCcw, Save,
-  Shield, Sparkles, Target, User, Trophy, CalendarCheck, Award,
+  Shield, Sparkles, Target, User, Trophy, CalendarCheck, Award, Share2, Check,
 } from 'lucide-react'
 
 const ACH_ICONS = { flame: Flame, layers: Layers, sparkles: Sparkles, trophy: Trophy, calendar: CalendarCheck }
@@ -73,6 +73,7 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
   const [resetError, setResetError] = useState('')
   const [loading, setLoading] = useState(true)
   const [activity, setActivity] = useState({})
+  const [shared, setShared] = useState(false)
 
   const isMobile = useIsMobile()
   const { accentHex, fontFamily, nativeName } = getLanguageDetails(profile)
@@ -177,6 +178,29 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
   })
   const earnedCount = achievements.filter(a => a.earned).length
 
+  // This-month report (from daily_activity; presence is exact, counts approximate).
+  const nowDate = new Date()
+  const ymPrefix = nowDate.getFullYear() + '-' + String(nowDate.getMonth() + 1).padStart(2, '0')
+  const monthName = nowDate.toLocaleString('en-US', { month: 'long' })
+  const monthDays = Object.keys(activity).filter(d => d.indexOf(ymPrefix) === 0)
+  const activeDays = monthDays.length
+  const cardsThisMonth = monthDays.reduce((sum, d) => sum + (activity[d] || 0), 0)
+
+  const shareReport = async () => {
+    const lang = profile.active_language === 'japanese' ? 'Japanese' : 'Chinese'
+    const text = 'My ' + monthName + ' on Hanzi-dojo: ' + activeDays + ' active days, '
+      + cardsThisMonth + ' reviews, ' + (stats.lifetimeMastered || 0) + ' words mastered learning '
+      + lang + '. https://fabrykjoh12.github.io/Hanzi-dojo/'
+    try {
+      if (navigator.share) { await navigator.share({ text }); return }
+    } catch (e) { return /* user cancelled */ }
+    try {
+      await navigator.clipboard.writeText(text)
+      setShared(true)
+      setTimeout(() => setShared(false), 2000)
+    } catch (e) { /* clipboard unavailable */ }
+  }
+
   return (
     <Shell accentHex={accentHex} fontFamily={fontFamily}>
       <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
@@ -257,6 +281,45 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '12px' }}>
             {achievements.map(a => (
               <Badge key={a.id} ach={a} accentHex={accentHex} Icon={ACH_ICONS[a.icon] || Award} />
+            ))}
+          </div>
+        </Panel>
+      )}
+
+      {!loading && (
+        <Panel>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
+              <CalendarCheck size={17} strokeWidth={1.85} color={accentHex} />
+              {monthName} so far
+            </span>
+            <button
+              onClick={shareReport}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '7px',
+                minHeight: '34px', padding: '0 13px', borderRadius: '10px',
+                border: '1px solid ' + (shared ? '#2F9E6D' : 'var(--border)'),
+                background: shared ? '#ECFDF5' : 'var(--surface)',
+                color: shared ? '#2F9E6D' : 'var(--text-muted)',
+                cursor: 'pointer', fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              {shared
+                ? <><Check size={15} strokeWidth={2.4} color="#2F9E6D" /> Copied</>
+                : <><Share2 size={15} strokeWidth={2} color="var(--text-muted)" /> Share</>}
+            </button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '12px' }}>
+            {[
+              { label: 'Active days', value: activeDays, color: accentHex },
+              { label: 'Reviews', value: cardsThisMonth, color: '#3E63DD' },
+              { label: 'Day streak', value: liveStreak(profile), color: '#D97706' },
+              { label: 'Words mastered', value: stats.lifetimeMastered || 0, color: '#2F9E6D' },
+            ].map(s => (
+              <div key={s.label} style={{ padding: '14px 12px', borderRadius: '14px', background: s.color + '0D', border: '1px solid ' + s.color + '22', textAlign: 'center' }}>
+                <div style={{ fontSize: '26px', fontWeight: 800, color: s.color, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 650 }}>{s.label}</div>
+              </div>
             ))}
           </div>
         </Panel>
