@@ -236,6 +236,7 @@ export default function App() {
         profile={profile}
         track={track}
         onBack={() => navigate('home')}
+        onNavigate={navigate}
         onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )

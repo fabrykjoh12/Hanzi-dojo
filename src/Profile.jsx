@@ -3,13 +3,14 @@ import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { isMastered } from './mastery'
 import { levelInfo } from './xp'
+import { cleanMeaning } from './cleanMeaning'
 import { evaluateAchievements } from './achievements'
 import { todayStr, liveStreak } from './streak'
 import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
 import {
   ArrowLeft, Flame, Layers, LogOut, RotateCcw, Save,
-  Shield, Sparkles, Target, User, Trophy, CalendarCheck, Award, Share2, Check,
+  Shield, Sparkles, Target, User, Trophy, CalendarCheck, Award, Share2, Check, AlertTriangle,
 } from 'lucide-react'
 
 const ACH_ICONS = { flame: Flame, layers: Layers, sparkles: Sparkles, trophy: Trophy, calendar: CalendarCheck }
@@ -63,7 +64,7 @@ function IconButton({ icon: Icon, label, onClick }) {
   )
 }
 
-export default function Profile({ session, profile, track, onBack, onUpdate }) {
+export default function Profile({ session, profile, track, onBack, onNavigate, onUpdate }) {
   const [stats, setStats] = useState({ learned: 0, totalCards: 0, masteredCount: 0, totalWords: 0 })
   const [editingGoal, setEditingGoal] = useState(false)
   const [newGoal, setNewGoal] = useState(profile.daily_new_cards)
@@ -74,6 +75,7 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
   const [loading, setLoading] = useState(true)
   const [activity, setActivity] = useState({})
   const [shared, setShared] = useState(false)
+  const [leeches, setLeeches] = useState([])
 
   const isMobile = useIsMobile()
   const { accentHex, fontFamily, nativeName } = getLanguageDetails(profile)
@@ -114,6 +116,21 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
     const actMap = {}
     ;(acts || []).forEach(a => { if (a.studied_cards > 0) actMap[a.activity_date] = a.studied_cards })
     setActivity(actMap)
+
+    // Leeches: the words that keep lapsing, scoped to the current track.
+    const { data: leechData } = await supabase
+      .from('cards')
+      .select('lapses, vocabulary(word, reading, meaning, language, system, level)')
+      .eq('user_id', session.user.id)
+      .gte('lapses', 4)
+      .order('lapses', { ascending: false })
+    const leechList = (leechData || [])
+      .filter(l => l.vocabulary
+        && l.vocabulary.language === track.language
+        && l.vocabulary.system === track.system
+        && l.vocabulary.level === track.current_level)
+      .slice(0, 6)
+    setLeeches(leechList)
 
     setLoading(false)
   }
@@ -283,6 +300,49 @@ export default function Profile({ session, profile, track, onBack, onUpdate }) {
               <Badge key={a.id} ach={a} accentHex={accentHex} Icon={ACH_ICONS[a.icon] || Award} />
             ))}
           </div>
+        </Panel>
+      )}
+
+      {!loading && leeches.length > 0 && (
+        <Panel>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
+              <AlertTriangle size={17} strokeWidth={1.95} color="#D97706" />
+              Words that keep slipping
+            </span>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{leeches.length}</span>
+          </div>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '14px', lineHeight: 1.5 }}>
+            These have lapsed the most. A focused drill helps them stick.
+          </div>
+          <div style={{ display: 'grid', gap: '8px', marginBottom: '16px' }}>
+            {leeches.map((l, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+                padding: '10px 14px', borderRadius: '12px', background: 'var(--surface-2)', border: '1px solid var(--border)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', minWidth: 0 }}>
+                  <span style={{ fontSize: '20px', fontFamily, color: 'var(--text)', flexShrink: 0 }}>{l.vocabulary.word}</span>
+                  <span style={{ fontSize: '12px', color: accentHex, fontWeight: 600, flexShrink: 0 }}>{l.vocabulary.reading}</span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cleanMeaning(l.vocabulary.meaning)}</span>
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#D97706', background: 'rgba(217,119,6,0.12)', border: '1px solid rgba(217,119,6,0.28)', borderRadius: '999px', padding: '3px 9px', flexShrink: 0 }}>
+                  missed {l.lapses}×
+                </span>
+              </div>
+            ))}
+          </div>
+          {onNavigate && (
+            <button onClick={() => onNavigate('weak')} style={{
+              width: '100%', minHeight: '44px', borderRadius: '12px',
+              border: '1px solid rgba(217,119,6,0.30)', background: 'rgba(217,119,6,0.08)',
+              color: '#B45309', fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            }}>
+              <RotateCcw size={16} strokeWidth={2} color="#D97706" />
+              Review weak words
+            </button>
+          )}
         </Panel>
       )}
 
