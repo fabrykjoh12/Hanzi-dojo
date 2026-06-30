@@ -31,14 +31,17 @@ Hanzi-dojo is a free language learning web app built around the two methods that
 
 - **Auth:** Email/password sign-up and log-in, Google OAuth. Full-page bg-login.png background at 0.35 opacity, white card with logo + "Hanzi-dojo" wordmark. Tab toggle (Log in / Sign up) with vermillion underline. "Free forever. No credit card." tagline below the card.
 - **Onboarding:** 3-step flow: language selection (side-by-side Chinese/Japanese cards) → level selection (grid of level buttons, Continue disabled until selection) → daily goal (5/10/15 new cards/day). Creates profiles row and language_tracks row.
-- **FSRS flashcards:** Study screen with New/Learn/Due queue pills, 86px character display, furigana toggle for Japanese (ruby text), four grade buttons (Again/Hard/Good/Easy) with FSRS-previewed interval labels, audio autoplay on flip, example sentence on card back (sentence + reading/pinyin line + translation, with inline furigana on the target word for Japanese), word highlighted in accent color.
+- **FSRS flashcards:** Study screen with New/Learn/Due queue pills, 86px character display, furigana toggle for Japanese (ruby text), four grade buttons (Again/Hard/Good/Easy) with FSRS-previewed interval labels, audio autoplay on flip, example sentence on card back (sentence + reading/pinyin line + translation, with inline furigana on the target word for Japanese), word highlighted in accent color. **Recall mode** is a per-user preference (`profiles.recall_mode`): `flip` (reveal-then-grade) or `typed` (type the reading → checked against reading/pinyin/romaji via `checkTyped`, shows a correct/incorrect banner, then grade). **Audio autoplay** and **furigana default** are also prefs. Awards **account XP** per graded card (`src/xp.js` `xpForGrade`), persisted best-effort to `profiles.total_xp`.
+- **Session recap:** End-of-session card (Study.jsx) showing cards studied / new learned / graduated to review / accuracy, a `+N XP` badge, and a next-day forecast (reviews + new waiting). Snapshotted to state at completion (`recap`), forecast loaded via `loadForecast()`.
+- **Weak-words drill:** Study.jsx with `mode="weak"` (App view `weak`) — a focused queue of the level's most-lapsed, not-yet-mastered cards (`lapses >= 2 && stability < 21`, top 30), regardless of due date. Entry point is a Home button shown when `counts.weakCount > 0`.
 - **Level test:** 30 multiple-choice questions, mix of E→target and target→E. Unlocks at 90% mastery (FSRS stability ≥ 21 days). 100% required to pass. 3 attempts per day, tracked via `test_attempts` table with `attempt_date` column. Wrong answers apply FSRS Again grade. Passing inserts a `level_unlocks` row and advances `language_tracks.current_level`. "End quiz" button ends active quiz early (unanswered = wrong). Japanese options show reading below the word.
 - **Stories:** 3 tiers (First Steps / Growing / Fluent), unlocked by learnedCount, separate category lists per language (CATEGORIES_CHINESE / CATEGORIES_JAPANESE). Category list → story list → reader. Reader is an interactive dialogue layout: StoryLine renders each line with a per-speaker color avatar and a per-line "play" button (Web Speech API TTS); clicking a word opens a VocabularyPopup (furigana on kanji, status badge, "Add to deck" for unstarted words). CharacterGuide shows named characters with reading pills (Chinese only — CHARACTER_READINGS.japanese is empty). Sticky sidebar has StoryProgressCard and ReviewWordsCard (responsive: moves below the story on screens <860px). End-of-story StoryCompletionCard links to the next story. Vocabulary for word-clickability is loaded across all levels (not just the current level), so every word in a story is underlined. A translation toggle swaps the interactive reader for an English prose view (EnglishStoryLine) using the `english_content` column — only shown when populated.
 - **Writing practice:** Active recall for words already studied in flashcards. Round sizes 10/15/20/30. Three modes: Mixed / English→target / target→English. Accepts: hanzi, pinyin (tone-insensitive), hiragana, kanji, romaji (via wanakana) for Japanese. XP system (0–100 XP per word, Lv 1–5), correct-streak multiplier (up to 3×). Stats screen shows best/weakest words. Wrong answers set `is_easy = false` and make the card due immediately.
 - **YouTube recommendations:** Grid of video cards with thumbnails (from YouTube API URL pattern), channel name, notes. Loads for current language/system/level.
 - **Profile:** Stats (streak, freezes, learned count, mastered count + mastery % progress bar), daily goal editor (5/10/15 options), last-studied date, reset progress button (two-step confirm → calls RPC), sign out.
 - **Language switcher:** Shows both languages with track progress. Active language has level-replay grid (click any level to jump back). Not-started languages show dashed "Start" card → level picker → creates track. Level replay and language switch both call `profiles.update({ active_language })`.
-- **Settings:** Placeholder page (Appearance / Reminders / Account safety panels) — no real functionality yet. Actual settings (daily goal, reset) live in Profile.
+- **Settings:** Functional preferences page (`profiles` columns). Controls: theme (light/dark), flashcard recall mode (flip/typed), audio-on-flip toggle, and Japanese furigana default toggle. Persists best-effort and updates the in-memory profile live (App passes `session` + `onUpdate`). Daily goal and reset still live in Profile.
+- **Home extras:** A daily new-card **goal ring** (`newDoneToday`/`daily_new_cards`, with complete state), an account **Lv N** pill (`levelInfo` from `src/xp.js`), a **reviews-waiting-tomorrow** line (`counts.dueTomorrow`), and a **weak-word cleanup** button (`counts.weakCount`).
 - **Sidebar:** Persistent left nav. Main items: Home, Flashcards, Test, Writing, Stories, YouTube. Bottom items: Profile, Settings, Language, Log out. Collapses to 64px icon-only rail with hover tooltips; expanded width 232px. Active item uses sage green pill (#E7EDE4 bg, #4F6047 text). Semi-transparent frosted glass (rgba(255,255,255,0.85) + blur(6px)).
 - **Themed backgrounds:** Background.jsx — fixed full-page image at opacity 0.4, crossfades between bg-chinese.png and bg-japanese.png on language change, z-index 0 behind everything.
 - **Mastery system:** Two tiers — "learned" (card has ever reached review/relearning state, `learned` column = true) and "mastered" (FSRS stability ≥ 21 days). Constants in src/mastery.js.
@@ -198,6 +201,11 @@ src/mastery.js
   Mastery constants and helpers. MASTERY_STABILITY_DAYS = 21, TEST_UNLOCK_MASTERY_PCT
   = 0.9. Exports isLearned(card), isMastered(card), countMastery(cards, total).
 
+src/xp.js
+  Account XP / level helpers. xpForGrade(grade) → 2/6/10 XP. levelInfo(totalXp) →
+  { level, intoLevel, levelSpan, pct } using a 100 + (level-1)*50 per-level curve.
+  Used by Study (award), Home (Lv pill), Profile (account-level panel).
+
 src/homeCounts.js
   getHomeCounts(userId, track, dailyNewCards) — loads vocabulary and cards for the
   current level, computes newCount/learnCount/dueCount/easyCount/totalWords/
@@ -286,6 +294,10 @@ profiles
   last_studied_on date
   display_name text
   theme text                    -- 'light' | 'dark' (migration 20260628190000); default 'light'
+  total_xp int                  -- lifetime account XP from flashcard reviews (migration 20260630000000); default 0
+  recall_mode text              -- flashcard recall: 'flip' | 'typed'; default 'flip'
+  audio_autoplay boolean        -- play card audio on flip; default true
+  furigana_default boolean      -- show furigana over kanji by default (Japanese); default true
 
 language_tracks
   id uuid PRIMARY KEY
@@ -739,6 +751,7 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 ## 16. Known issues
 
 **In progress:**
+- **Apply migration `20260630000000_add_xp_and_prefs.sql`** in the Supabase SQL Editor to enable persistence of account XP and study prefs (`total_xp`, `recall_mode`, `audio_autoplay`, `furigana_default`). The app is defensive — it runs without it (defaults applied in code), but XP/prefs won't save across reloads until the columns exist.
 - **Japanese example sentences (N5 Part 1 + Part 2):** 798/800 words populated. Run `node --env-file=.env.script generate-examples.mjs --japanese` to fill the remaining 2.
 
 **Missing content:**

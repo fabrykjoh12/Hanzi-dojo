@@ -178,7 +178,8 @@ function PrimaryButton({ onClick, children, icon: Icon }) {
   )
 }
 
-export default function Study({ session, profile, track, onBack, onStreakUpdate }) {
+export default function Study({ session, profile, track, mode = 'review', onBack, onStreakUpdate }) {
+  const isWeak = mode === 'weak'
   const [queue, setQueue] = useState([])
   const [loading, setLoading] = useState(true)
   const [flipped, setFlipped] = useState(false)
@@ -255,6 +256,19 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
       .map(c => ({ ...c, vocab: vocabById[c.vocab_id] }))
       .filter(c => c.vocab)
     levelCards.forEach(c => startedVocab.add(c.vocab_id))
+
+    // Weak-words drill: focus the cards the user keeps lapsing on, regardless of
+    // their due date. No new cards; grading still feeds FSRS normally.
+    if (isWeak) {
+      const weakQueue = levelCards
+        .filter(c => (c.lapses || 0) >= 2 && (c.stability || 0) < 21)
+        .sort((a, b) => (b.lapses - a.lapses) || ((a.stability || 0) - (b.stability || 0)))
+        .slice(0, 30)
+      setQueue(weakQueue)
+      setDone(weakQueue.length === 0)
+      setLoading(false)
+      return
+    }
 
     const dueLearning = levelCards
       .filter(c => (c.state === 'learning' || c.state === 'relearning') && new Date(c.due_at) <= now)
@@ -471,7 +485,9 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
             <p style={{ color: 'var(--text-muted)', marginBottom: didStudy ? '26px' : '28px', fontSize: '15px', lineHeight: 1.6 }}>
               {didStudy
                 ? 'Nice, steady work. Every review nudges these words further into memory.'
-                : 'No cards are waiting. Come back later, or continue the loop with stories.'}
+                : isWeak
+                  ? 'No weak words to clean up right now — your tricky cards are settling.'
+                  : 'No cards are waiting. Come back later, or continue the loop with stories.'}
             </p>
 
             {didStudy && s.xpEarned > 0 && (
@@ -603,10 +619,10 @@ export default function Study({ session, profile, track, onBack, onStreakUpdate 
             color: accentHex, fontSize: '13px', fontWeight: 750, marginBottom: '6px',
           }}>
             <Layers size={17} strokeWidth={1.8} color={accentHex} />
-            {langChars} flashcards
+            {isWeak ? 'Weak word cleanup' : langChars + ' flashcards'}
           </div>
           <h1 style={{ fontSize: '28px', color: 'var(--text)', fontWeight: 780, lineHeight: 1.1 }}>
-            Study session
+            {isWeak ? 'Weak words' : 'Study session'}
           </h1>
           <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: 550, marginTop: '5px' }}>
             {systemLabel} · {levelLabel}

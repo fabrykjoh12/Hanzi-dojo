@@ -147,6 +147,17 @@ export default function App() {
         onStreakUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
+  } else if (view === 'weak') {
+    content = (
+      <Study
+        session={session}
+        profile={profile}
+        track={track}
+        mode="weak"
+        onBack={() => navigate('home')}
+        onStreakUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
+      />
+    )
   } else if (view === 'test') {
     content = (
       <Test

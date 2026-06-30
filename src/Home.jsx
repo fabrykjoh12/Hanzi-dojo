@@ -4,7 +4,7 @@ import { liveStreak } from './streak'
 import { levelInfo } from './xp'
 import InfoTip from './InfoTip'
 import { useIsMobile } from './useIsMobile'
-import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise } from 'lucide-react'
+import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, AlertTriangle } from 'lucide-react'
 
 // Neutral sage green for the primary CTA (see CLAUDE.md redesign spec)
 const SAGE = '#6E8466'
@@ -227,6 +227,23 @@ export default function Home({ profile, track, counts, onNavigate }) {
         Start studying
         <ArrowRight size={19} strokeWidth={2.2} color="#fff" />
       </button>
+
+      {/* ── Weak-word cleanup ── */}
+      {counts.weakCount > 0 && (
+        <button
+          onClick={() => onNavigate('weak')}
+          style={{
+            width: '100%', padding: '14px 20px', borderRadius: '14px',
+            border: '1px solid rgba(217,119,6,0.30)', background: 'rgba(217,119,6,0.08)',
+            color: '#B45309', fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            marginTop: '-16px', marginBottom: '28px',
+          }}
+        >
+          <AlertTriangle size={17} strokeWidth={2} color="#D97706" />
+          Clean up {counts.weakCount} weak word{counts.weakCount === 1 ? '' : 's'}
+        </button>
+      )}
 
       {/* ── Keep the flow going ── */}
       <div style={{

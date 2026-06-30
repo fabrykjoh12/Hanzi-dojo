@@ -12,7 +12,7 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
 
   const { data: cards } = await supabase
     .from('cards')
-    .select('vocab_id, state, due_at, created_at, is_easy, learned, stability')
+    .select('vocab_id, state, due_at, created_at, is_easy, learned, stability, lapses')
     .eq('user_id', userId)
 
   const vocabIds = new Set((vocab || []).map(v => v.id))
@@ -52,11 +52,15 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
     return d > now && d <= endOfTomorrow
   }).length
 
+  // Weak words: cards the user has lapsed on at least twice and that aren't yet
+  // mastered — the cleanup-drill pool.
+  const weakCount = levelCards.filter(c => (c.lapses || 0) >= 2 && (c.stability || 0) < 21).length
+
   const { learnedCount, masteredCount, masteredPct } = countMastery(levelCards, totalWords)
 
   return {
     newCount, learnCount, dueCount, easyCount, totalWords,
     learnedCount, masteredCount, masteredPct,
-    newDoneToday, dueTomorrow,
+    newDoneToday, dueTomorrow, weakCount,
   }
 }
