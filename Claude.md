@@ -510,6 +510,10 @@ JLPT advances: 1 → 2 → 3 → 4 → 5 → 6. Always use `getLevelLabel(langua
 - 3 YouTube recommendations
 - Audio voice: `cmn-CN-Chirp3-HD-Aoede`, languageCode `cmn-CN`
 
+**Chinese HSK 3.0 Level 2:**
+- 198 words seeded (frequency-ordered, from the New HSK Level 2 list → `data/hsk2.json`), sort_order 1–198, `audio_path` set to `chinese/hsk_3/level_2/NNN_<reading>.mp3` (files not generated yet)
+- No audio / example sentences / stories / comprehension / YouTube yet (run the respective generators next)
+
 **Japanese JLPT:**
 - Level 1 (N5 Part 1): 400 words with audio at `japanese/jlpt/level_1/`
 - Level 2 (N5 Part 2): 402 words with audio at `japanese/jlpt/level_2/`
@@ -806,7 +810,7 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 
 **Missing content:**
 - **Japanese YouTube recommendations:** None published. Chinese HSK 1 has 3.
-- **HSK 2 vocabulary:** Not seeded — but the **seed pipeline is ready** (`seed-vocab.mjs` + Action `task=seed-hsk2`). Needs a verified, frequency-ordered HSK 3.0 level-2 word list committed at `data/hsk2.json` (format: `data/hsk2.sample.json`), then seed → audio → examples → stories → comprehension. HSK 1 is complete.
+- **HSK 2 vocabulary:** **198 words SEEDED** (Chinese HSK 3.0 level 2, from `data/hsk2.json` via the `seed-hsk2` Action). Flashcards + Test work now. **Still pending for level 2:** audio (reconfigure `generate-audio.mjs` for `chinese/hsk_3/level_2` and run), example sentences (`examples, language=chinese`), stories (extend `generate-stories.mjs`), and comprehension. HSK 1 is complete.
 - **HSK 3–9 and JLPT N4–N1:** No vocabulary seeded. Level selection exists but shows empty study queues.
 
 **Technical debt:**
