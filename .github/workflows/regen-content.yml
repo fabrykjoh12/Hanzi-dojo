@@ -11,7 +11,7 @@ on:
         description: What to regenerate
         type: choice
         default: both
-        options: [meanings, examples, both, comprehension, clean-meanings, deactivate-awkward]
+        options: [meanings, examples, both, comprehension, clean-meanings, deactivate-awkward, seed-hsk2]
       language:
         description: Which language
         type: choice
@@ -77,5 +77,11 @@ jobs:
           if [ "${{ inputs.task }}" = "deactivate-awkward" ]; then
             echo "::group::Deactivate awkward vocab (counter-suffixes + duplicate readings)"
             node deactivate-awkward-vocab.mjs --apply
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "seed-hsk2" ]; then
+            echo "::group::Seed HSK 3.0 level 2 vocabulary from data/hsk2.json"
+            node seed-vocab.mjs --file data/hsk2.json --language chinese --system hsk_3 --level 2 --apply
             echo "::endgroup::"
           fi

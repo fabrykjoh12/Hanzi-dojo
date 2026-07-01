@@ -722,6 +722,18 @@ The prompt explicitly **bans tautologies / math identities** — sentences whose
 
 Regenerates the vocabulary `meaning` column with concise, accurate English glosses via `llama-3.3-70b-versatile` (fixes wrong/messy meanings). `--chinese`/`--japanese`; `--dry-run` prints before→after without writing. Rewrites ALL active words.
 
+### seed-vocab.mjs — adding a new level (the content on-ramp)
+
+Inserts a level's vocabulary from a JSON word list. **This is how new levels (HSK 2, JLPT N4, …) get added.** Input is an array of `{ word, reading, meaning, reading_plain? }` (frequency-ordered — list order becomes `sort_order`). It derives `reading_plain` (strips pinyin tones) when absent, builds `audio_path` as `<lang>/<system>/level_<n>/<NNN>_<reading>.mp3`, sets `is_active=true`, and inserts. **Idempotent** (skips words already present at that level) and **dry-run by default** — never deletes/overwrites.
+
+```bash
+# 1. Put a verified, frequency-ordered list at data/hsk2.json (see data/hsk2.sample.json for the shape)
+node --env-file=.env.script seed-vocab.mjs --file data/hsk2.json --language chinese --system hsk_3 --level 2            # preview
+node --env-file=.env.script seed-vocab.mjs --file data/hsk2.json --language chinese --system hsk_3 --level 2 --apply    # write
+```
+
+**Full "add a level" pipeline (in order):** `seed-vocab` → `generate-audio` (reconfigure for the level) → `generate-examples` (`--chinese --regen`) → `generate-stories` → `generate-comprehension`. For HSK 2 specifically, the Action has a one-click `task=seed-hsk2` that runs the seed against `data/hsk2.json` (commit the verified list there first). The word data itself must come from a canonical HSK 3.0 source — the meanings can be tidied afterward with `generate-meanings`/`clean-meanings`, but pinyin and level membership should be correct at seed time.
+
 ### No-Node alternative: ChatGPT + Supabase SQL (for meanings & sentences)
 
 When running Node scripts isn't convenient, the same fixes can be done entirely in the **Supabase SQL Editor + ChatGPT** (no keys, no CLI):
@@ -794,7 +806,7 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 
 **Missing content:**
 - **Japanese YouTube recommendations:** None published. Chinese HSK 1 has 3.
-- **HSK 2 vocabulary:** Not seeded. HSK 1 is complete.
+- **HSK 2 vocabulary:** Not seeded — but the **seed pipeline is ready** (`seed-vocab.mjs` + Action `task=seed-hsk2`). Needs a verified, frequency-ordered HSK 3.0 level-2 word list committed at `data/hsk2.json` (format: `data/hsk2.sample.json`), then seed → audio → examples → stories → comprehension. HSK 1 is complete.
 - **HSK 3–9 and JLPT N4–N1:** No vocabulary seeded. Level selection exists but shows empty study queues.
 
 **Technical debt:**
