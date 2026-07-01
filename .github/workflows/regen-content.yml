@@ -11,7 +11,7 @@ on:
         description: What to regenerate
         type: choice
         default: both
-        options: [meanings, examples, both, comprehension, clean-meanings]
+        options: [meanings, examples, both, comprehension, clean-meanings, deactivate-awkward]
       language:
         description: Which language
         type: choice
@@ -71,5 +71,11 @@ jobs:
           if [ "${{ inputs.task }}" = "clean-meanings" ]; then
             echo "::group::Clean meanings (deterministic)"
             node clean-meanings.mjs $LANG_FLAG --apply
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "deactivate-awkward" ]; then
+            echo "::group::Deactivate awkward vocab (counter-suffixes + duplicate readings)"
+            node deactivate-awkward-vocab.mjs --apply
             echo "::endgroup::"
           fi
