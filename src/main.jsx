@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
+import ErrorBoundary from './ErrorBoundary.jsx'
 
 // react-router basename must match the host's base path (Pages serves under
 // /Hanzi-dojo/, Vercel/dev under /). Strip the trailing slash for a subpath.
@@ -11,9 +12,11 @@ const basename = rawBase.length > 1 && rawBase.endsWith('/') ? rawBase.slice(0, 
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter basename={basename}>
-      <App />
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter basename={basename}>
+        <App />
+      </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>,
 )
 

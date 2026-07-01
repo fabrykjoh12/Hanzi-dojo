@@ -15,22 +15,22 @@ describe('levelInfo', () => {
     const l = levelInfo(0)
     expect(l.level).toBe(1)
     expect(l.intoLevel).toBe(0)
-    expect(l.levelSpan).toBe(100)
+    expect(l.levelSpan).toBe(150) // 150 + (1-1)*110
     expect(l.pct).toBe(0)
   })
 
   it('reports progress within the current level', () => {
-    const l = levelInfo(50)
+    const l = levelInfo(75)
     expect(l.level).toBe(1)
-    expect(l.intoLevel).toBe(50)
-    expect(l.pct).toBe(50)
+    expect(l.intoLevel).toBe(75)
+    expect(l.pct).toBe(50) // 75 / 150
   })
 
-  it('advances to level 2 once the first 100 XP are cleared', () => {
-    const l = levelInfo(100)
+  it('advances to level 2 once the first 150 XP are cleared', () => {
+    const l = levelInfo(150)
     expect(l.level).toBe(2)
     expect(l.intoLevel).toBe(0)
-    expect(l.levelSpan).toBe(150) // 100 + (2-1)*50
+    expect(l.levelSpan).toBe(260) // 150 + (2-1)*110
   })
 
   it('is monotonic and never negative', () => {

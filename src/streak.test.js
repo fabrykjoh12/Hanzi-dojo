@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from 'vitest'
 // liveStreak helper can be tested in isolation.
 vi.mock('./supabase', () => ({ supabase: {} }))
 
-import { liveStreak } from './streak'
+import { liveStreak, streakStatus } from './streak'
 
 // Local YYYY-MM-DD for `daysAgo` days ago, matching streak.js's todayStr format.
 function ymd(daysAgo) {
@@ -35,5 +35,28 @@ describe('liveStreak', () => {
 
   it('breaks when missed days exceed available freezes', () => {
     expect(liveStreak({ streak: 5, streak_freezes: 1, last_studied_on: ymd(3) })).toBe(0)
+  })
+})
+
+describe('streakStatus', () => {
+  it('reports none without an active streak', () => {
+    expect(streakStatus(null)).toBe('none')
+    expect(streakStatus({ streak: 0, last_studied_on: ymd(0) })).toBe('none')
+  })
+
+  it('is safe after studying today', () => {
+    expect(streakStatus({ streak: 5, streak_freezes: 0, last_studied_on: ymd(0) })).toBe('safe')
+  })
+
+  it('is due_today after studying yesterday', () => {
+    expect(streakStatus({ streak: 5, streak_freezes: 0, last_studied_on: ymd(1) })).toBe('due_today')
+  })
+
+  it('is frozen when a missed day is covered by a freeze', () => {
+    expect(streakStatus({ streak: 5, streak_freezes: 1, last_studied_on: ymd(2) })).toBe('frozen')
+  })
+
+  it('is broken when missed days exceed freezes', () => {
+    expect(streakStatus({ streak: 5, streak_freezes: 0, last_studied_on: ymd(2) })).toBe('broken')
   })
 })
