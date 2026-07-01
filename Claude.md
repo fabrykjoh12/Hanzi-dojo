@@ -80,6 +80,7 @@ Hanzi-dojo is a free language learning web app built around the two methods that
 | ts-fsrs | ^5.4.1 — FSRS v5 scheduling |
 | wanakana | ^5.3.1 — Japanese romaji conversion in Writing.jsx |
 | hanzi-writer | ^3.7.3 — animated stroke order in Writer.jsx (loads char data from the hanzi-writer-data CDN at runtime) |
+| vitest | ^4.x (dev) — unit tests for the pure logic modules; `npm test`, config in `vitest.config.js`, specs are `src/*.test.js` |
 | lucide-react | ^1.17 — all UI icons |
 | openai | used by content scripts (generate-examples/stories/translations) to call Groq's OpenAI-compatible API — not in app bundle |
 | Tailwind CSS | installed but **not used** in JSX; all styling is inline style objects |
@@ -864,7 +865,10 @@ Priority order (most impactful first):
 Before committing:
 ```bash
 npm run build
+npm test      # vitest — pure logic modules (srs, xp, fluency, mastery, streak, testLogic)
 ```
+
+**Tests:** `npm test` runs the vitest suite (`src/*.test.js`). It covers the pure, high-risk logic — FSRS `schedule`/`previewLabels` invariants (fuzz-safe: asserts structure/flags, not exact intervals), XP curve, fluency score/rank, mastery thresholds, streak/freeze logic, and pinyin normalization. Modules that import `./supabase` mock it (`vi.mock('./supabase', …)`). Add a spec when you touch scheduling/scoring/progression.
 
 If build passes:
 ```bash
