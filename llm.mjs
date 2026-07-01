@@ -21,7 +21,11 @@ function pickConfig() {
       provider: 'gemini',
       apiKey: GEMINI_API_KEY,
       baseURL: process.env.LLM_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/',
-      model: process.env.LLM_MODEL || 'gemini-2.5-flash',
+      // flash-lite: much higher free-tier rate limits and no heavy "thinking"
+      // pass, so the bulk jobs (hundreds of example sentences) actually finish.
+      // Plenty good for short sentences + MCQs; override with LLM_MODEL for max
+      // quality (e.g. gemini-2.5-flash) on the smaller story runs.
+      model: process.env.LLM_MODEL || 'gemini-2.5-flash-lite',
     }
   }
   if (GROQ_API_KEY) {
@@ -41,7 +45,9 @@ if (!cfg) {
   process.exit(1)
 }
 
-export const llm = new OpenAI({ apiKey: cfg.apiKey, baseURL: cfg.baseURL })
+// A per-request timeout so a stalled provider call fails fast and the script's
+// own backoff/retry kicks in, instead of hanging on the SDK's 10-minute default.
+export const llm = new OpenAI({ apiKey: cfg.apiKey, baseURL: cfg.baseURL, timeout: 60000, maxRetries: 2 })
 export const LLM_MODEL = cfg.model
 export const LLM_PROVIDER = cfg.provider
 
