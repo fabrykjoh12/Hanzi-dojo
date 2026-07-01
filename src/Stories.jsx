@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
+import { languageTheme } from './languageTheme'
 import { isLearned } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import StoryReaderImmersive from './StoryReaderImmersive'
@@ -25,13 +26,14 @@ const CATEGORIES_JAPANESE = [
 // ─── CONSTANTS ─────────────────────────────────────────────────────────────
 
 function getLanguageDetails(profile, track) {
-  const isJapanese = profile.active_language === 'japanese' || track.language === 'japanese'
+  const language = track.language || profile.active_language
+  const t = languageTheme(language)
   return {
-    isJapanese,
-    accentHex: isJapanese ? '#2E3A6E' : '#B83A24',
-    languageName: isJapanese ? 'Japanese' : 'Chinese',
-    nativeName: isJapanese ? '日本語' : '中文',
-    fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
+    isJapanese: language === 'japanese',
+    accentHex: t.accentHex,
+    languageName: t.languageName,
+    nativeName: t.nativeName,
+    fontFamily: t.font,
   }
 }
 

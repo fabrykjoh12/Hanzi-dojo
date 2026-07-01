@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import bgChinese from './assets/bg-chinese.png'
 import bgJapanese from './assets/bg-japanese.png'
+import bgRussian from './assets/bg-russian.png'
+import { languageTheme } from './languageTheme'
 
 const baseStyle = {
   position: 'fixed', top: 0, left: 0,
@@ -11,10 +13,19 @@ const baseStyle = {
   transition: 'opacity 500ms ease',
 }
 
+// Background image per language, keyed by the theme's backgroundKey so adding a
+// language is just a new asset + config entry.
+const BACKGROUNDS = {
+  chinese: bgChinese,
+  japanese: bgJapanese,
+  russian: bgRussian,
+}
+
 // Fixed full-page background image, faint and behind everything (z-index 0).
 // Crossfades between language themes when `language` changes.
 export default function Background({ language }) {
-  const src = language === 'japanese' ? bgJapanese : bgChinese
+  const key = languageTheme(language).backgroundKey
+  const src = BACKGROUNDS[key] || bgChinese
   const [current, setCurrent] = useState(src)
   const [visible, setVisible] = useState(true)
 

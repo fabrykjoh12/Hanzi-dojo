@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getLevelLabel, getSystemLabel } from './utils'
+import { languageTheme } from './languageTheme'
 import { liveStreak } from './streak'
 import { levelInfo } from './xp'
 import InfoTip from './InfoTip'
@@ -78,9 +79,10 @@ export default function Home({ profile, track, counts, onNavigate }) {
   const [ctaHovered, setCtaHovered] = useState(false)
   const isMobile = useIsMobile()
 
-  const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
-  const langChars = profile.active_language === 'japanese' ? '日本語' : '中文'
-  const langFont = profile.active_language === 'japanese' ? "'Noto Sans JP'" : "'Noto Sans SC'"
+  const theme = languageTheme(profile.active_language)
+  const accentHex = theme.accentHex
+  const langChars = theme.nativeName
+  const langFont = theme.font
   const systemLabel = getSystemLabel(track.system)
   const levelSuffix = getLevelLabel(profile.active_language, track.system, track.current_level)
 

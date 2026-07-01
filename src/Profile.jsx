@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
+import { languageTheme } from './languageTheme'
 import { isMastered } from './mastery'
 import { levelInfo } from './xp'
 import { cleanMeaning } from './cleanMeaning'
@@ -16,11 +17,11 @@ import {
 const ACH_ICONS = { flame: Flame, layers: Layers, sparkles: Sparkles, trophy: Trophy, calendar: CalendarCheck }
 
 function getLanguageDetails(profile) {
-  const isJapanese = profile.active_language === 'japanese'
+  const t = languageTheme(profile.active_language)
   return {
-    accentHex: isJapanese ? '#2E3A6E' : '#B83A24',
-    fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
-    nativeName: isJapanese ? '日本語' : '中文',
+    accentHex: t.accentHex,
+    fontFamily: t.font,
+    nativeName: t.nativeName,
   }
 }
 

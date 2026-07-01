@@ -66,7 +66,21 @@ const CHINESE_SCENES = [
   { title: '旅游', en: 'on a short weekend trip in another city' },
 ]
 
+const RUSSIAN_SCENES = [
+  { title: 'Парк', en: 'at a park on a sunny afternoon' },
+  { title: 'Утро', en: 'at home during the morning routine' },
+  { title: 'Магазин', en: 'shopping at a small grocery store' },
+  { title: 'Вокзал', en: 'at the train station waiting for a train' },
+  { title: 'Кафе', en: 'in a cafe ordering and eating food' },
+  { title: 'Город', en: 'walking through town on a weekend afternoon' },
+  { title: 'Вечер', en: 'at home in the evening, relaxing after dinner' },
+  { title: 'Рынок', en: 'at a market buying fruit and vegetables' },
+  { title: 'Улица', en: 'meeting a friend on the street' },
+]
+
 // Per-target config. prereq pulls basic words from an earlier level into the pool.
+// colon: dialogue separator (defaults to the full-width '：' used by CJK; Russian
+// uses a regular ':').
 const CONFIGS = {
   'japanese|jlpt|1': {
     scenes: JAPANESE_SCENES,
@@ -107,6 +121,20 @@ const CONFIGS = {
       { tier: 3, label: 'Fluent', maxSortOrder: 198, minWords: 130, stories: 5 },
     ],
   },
+  'russian|russian|1': {
+    scenes: RUSSIAN_SCENES,
+    promptLang: 'Russian', level: 'CEFR A1',
+    names: '- Иван (Ivan)\n- Аня (Anya)\n- мама (Mother)\n- продавец (Shop or station worker)',
+    nameNote: 'Russian names in Cyrillic',
+    maxLineChars: 50,   // Russian lines are short sentences, not per-character scripts
+    colon: ':',
+    prereqLevel: null, prereqMax: 0,
+    tiers: [
+      { tier: 1, label: 'First Steps', maxSortOrder: 50, minWords: 15, stories: 4 },
+      { tier: 2, label: 'Growing', maxSortOrder: 100, minWords: 40, stories: 4 },
+      { tier: 3, label: 'Fluent', maxSortOrder: 147, minWords: 80, stories: 4 },
+    ],
+  },
 }
 
 const cfg = CONFIGS[language + '|' + system + '|' + level]
@@ -139,6 +167,8 @@ async function fetchVocab(maxSortOrder) {
 
 function buildPrompt(vocab, tierLabel, sceneIndex) {
   const scene = cfg.scenes[sceneIndex % cfg.scenes.length]
+  const colon = cfg.colon || '：'
+  const colonNote = colon === '：' ? 'full-width colon, no space before text' : 'regular colon'
   const wordList = vocab.map(v => v.word + ' (' + v.reading + ' = ' + v.meaning + ')').join(', ')
   return 'You are writing a short ' + cfg.promptLang + ' story for ' + cfg.level + ' beginners.\n\n' +
     'Tier: ' + tierLabel + '\n' +
@@ -148,14 +178,14 @@ function buildPrompt(vocab, tierLabel, sceneIndex) {
     'Rules:\n' +
     '- 8-14 lines total\n' +
     '- Use ONLY words from the vocabulary list above, plus basic particles and grammar\n' +
-    '- Mix dialogue and narration. Dialogue format: NAME：text (full-width colon, no space before text)\n' +
+    '- Mix dialogue and narration. Dialogue format: NAME' + colon + 'text (' + colonNote + ')\n' +
     '- Narration lines have no speaker prefix\n' +
     '- Each line must be under ' + cfg.maxLineChars + ' characters\n' +
     '- Title: use "' + scene.title + '" or another 2-6 character word that reflects the scene\n' +
     '- english_summary: 1-2 sentences describing what happens\n\n' +
     'Return ONLY valid JSON with no markdown fences:\n' +
     '{"title":"...","english_summary":"...","content":"line1\\nline2\\n...","english_content":"English line1\\nEnglish line2\\n..."}\n\n' +
-    'english_content must have the SAME number of lines as content, in the same order. Keep dialogue format: speaker：English text'
+    'english_content must have the SAME number of lines as content, in the same order. Keep dialogue format: speaker' + colon + 'English text'
 }
 
 async function generateStory(vocab, tierLabel, sceneIndex, attempt = 0) {

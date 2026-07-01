@@ -13,14 +13,17 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !GROQ_API_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 const groq = new OpenAI({ apiKey: GROQ_API_KEY, baseURL: 'https://api.groq.com/openai/v1' })
 
-// Language arg: --chinese or --japanese (default: both)
+// Language arg: --chinese, --japanese, or --russian (default: all)
 // --regen regenerates ALL active words (not just ones missing an example), so
 //         existing low-quality sentences get replaced. Without it, only words
 //         with a NULL example_sentence are filled.
 const args = process.argv.slice(2)
 const onlyChinese = args.includes('--chinese')
 const onlyJapanese = args.includes('--japanese')
+const onlyRussian = args.includes('--russian')
 const regen = args.includes('--regen')
+// When any single language flag is passed, only that language runs.
+const anyLangFlag = onlyChinese || onlyJapanese || onlyRussian
 
 // Smaller batches + the 70B model give noticeably more sensible sentences.
 const BATCH_SIZE = 10
@@ -28,11 +31,40 @@ const MODEL = 'llama-3.3-70b-versatile'
 
 function buildPrompt(words, language) {
   const isChinese = language === 'chinese'
+  const isRussian = language === 'russian'
 
   // Strip the leading ～ that marks counters/suffixes so the model knows the bare form.
   const wordList = words.map((w, i) =>
     `${i + 1}. word="${w.word.replace(/^～/, '')}" reading="${w.reading}" meaning="${w.meaning}"`
   ).join('\n')
+
+  // Russian: short A1–A2 sentences in Cyrillic; example_reading = Latin
+  // transliteration of the whole sentence (matches how `reading` is stored).
+  if (isRussian) {
+    return `You write example sentences for a beginner Russian flashcard app. Quality matters more than anything: every sentence must be MEANINGFUL and make real-world sense, not just grammatically contain the word.
+
+Write simple A1–A2 Russian sentences (≤8 words), written in Cyrillic. example_reading = the full sentence transliterated into Latin letters.
+
+Rules:
+- The target word MUST appear in example_sentence, used with its correct meaning.
+- The sentence must be logically sensible. Pick a realistic subject: for ages, jobs, feelings, etc. use a PERSON (I / you / a name), never an inanimate subject.
+- NO tautologies or definition-sentences whose only point is to restate the word. Show the word in a normal everyday situation.
+- Keep it natural, simple, and beginner-friendly.
+- example_reading = the full sentence transliterated into Latin letters (approximate romanization).
+- example_translation = a natural English translation.
+- Return ONLY a JSON array, no markdown, no commentary.
+
+Good examples:
+- word привет → {"example_sentence":"Привет, как дела?","example_reading":"Privet, kak dela?","example_translation":"Hi, how are you?"}
+- word кошка → {"example_sentence":"У меня есть кошка.","example_reading":"U menya yest koshka.","example_translation":"I have a cat."}
+Bad example (DO NOT do this): "Кошка это кошка." ("A cat is a cat.") — a circular restatement. Use an everyday situation instead.
+
+Words:
+${wordList}
+
+Return a JSON array with exactly ${words.length} objects, same order:
+[{"example_sentence":"...","example_reading":"...","example_translation":"..."},...]`
+  }
 
   const sentenceNote = isChinese
     ? 'Write very short HSK 1–2 sentences (≤10 characters). example_reading = pinyin WITH tone marks.'
@@ -172,8 +204,10 @@ async function processLanguage(language, system) {
 }
 
 async function main() {
-  if (!onlyJapanese) await processLanguage('chinese', 'hsk_3')
-  if (!onlyChinese) await processLanguage('japanese', 'jlpt')
+  // With no language flag, run all languages; with a flag, run only that one.
+  if (onlyChinese || !anyLangFlag) await processLanguage('chinese', 'hsk_3')
+  if (onlyJapanese || !anyLangFlag) await processLanguage('japanese', 'jlpt')
+  if (onlyRussian || !anyLangFlag) await processLanguage('russian', 'russian')
   console.log('\nAll done.')
 }
 

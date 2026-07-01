@@ -6,7 +6,9 @@ Read this entire file before making any change. It describes not just *what* the
 
 ## 1. Project purpose and philosophy
 
-Hanzi-dojo is a free language learning web app built around the two methods that actually work: **SRS flashcards** and **immersion** (reading and listening in the target language). It currently supports Chinese (HSK 3.0) and Japanese (JLPT).
+Hanzi-dojo is a free language learning web app built around the two methods that actually work: **SRS flashcards** and **immersion** (reading and listening in the target language). It currently supports Chinese (HSK 3.0), Japanese (JLPT), and Russian (CEFR).
+
+**Adding a language is data-driven.** Per-language identity (accent color, font, native name, background, level system, whether the script is CJK) lives in `src/languageTheme.js`. Adding a language means: add an entry there, add its background asset, run the CHECK-constraint migration (see the `20260701120000_add_russian_language.sql` template), and seed content. Screens read the config instead of branching on `active_language === 'japanese'`.
 
 **Why it exists:** Most language apps don't teach the language. Duolingo wastes time on gamified loops; immersion works but finding content at your level is hard. Hanzi-dojo combines SRS with level-matched immersion content so the user never has to hunt for comprehensible material — the right-level stories come to them.
 
@@ -30,7 +32,7 @@ Hanzi-dojo is a free language learning web app built around the two methods that
 ## 2. Current state — what is built and working
 
 - **Auth:** Email/password sign-up and log-in, Google OAuth. Full-page bg-login.png background at 0.35 opacity, white card with logo + "Hanzi-dojo" wordmark. Tab toggle (Log in / Sign up) with vermillion underline. "Free forever. No credit card." tagline below the card.
-- **Onboarding:** 3-step flow: language selection (side-by-side Chinese/Japanese cards) → level selection (grid of level buttons, Continue disabled until selection) → daily goal (5/10/15 new cards/day). Creates profiles row and language_tracks row.
+- **Onboarding:** 3-step flow: language selection (cards rendered from the shared language config — Chinese/Japanese/Russian) → level selection (grid of level buttons, Continue disabled until selection) → daily goal (5/10/15 new cards/day). Creates profiles row and language_tracks row.
 - **FSRS flashcards:** Study screen with New/Learn/Due queue pills, 86px character display, furigana toggle for Japanese (ruby text), four grade buttons (Again/Hard/Good/Easy) with FSRS-previewed interval labels, audio autoplay on flip, example sentence on card back (sentence + reading/pinyin line + translation, with inline furigana on the target word for Japanese), word highlighted in accent color. **Recall mode** is a per-user preference (`profiles.recall_mode`): `flip` (reveal-then-grade) or `typed` (type the reading → checked against reading/pinyin/romaji via `checkTyped`, shows a correct/incorrect banner, then grade). **Audio autoplay** and **furigana default** are also prefs. Awards **account XP** per graded card (`src/xp.js` `xpForGrade`), persisted best-effort to `profiles.total_xp`.
 - **Session recap:** End-of-session card (Study.jsx) showing cards studied / new learned / graduated to review / accuracy, a `+N XP` badge, and a next-day forecast (reviews + new waiting). Snapshotted to state at completion (`recap`), forecast loaded via `loadForecast()`.
 - **Stroke-order explorer (both languages):** `src/Writer.jsx` (App view `strokes`, Home "Stroke order" button). Uses the `hanzi-writer` package: a grid of the level's CJK characters (kanji only for Japanese — kana filtered out); tap one for animated stroke order on a guide grid, with Animate (replay), Practice (draw-to-quiz), and a guide-outline toggle. Single-character vocab also show reading + meaning. Stroke data loads from the hanzi-writer-data CDN at runtime (so it needs a connection; gracefully shows "stroke data unavailable" on failure).
@@ -38,6 +40,7 @@ Hanzi-dojo is a free language learning web app built around the two methods that
 - **Leech detection (Profile):** When the current track has cards with `lapses >= 4`, a "Words that keep slipping" panel lists the top offenders (word, reading, meaning, lapse count) with a button into the weak-words drill (`onNavigate('weak')`). Scoped to the active language/system/level.
 - **Fill-in-the-blank (both languages):** `src/FillBlank.jsx` (nav "Sentences", App view `fillblank`). Blanks the target word out of its `example_sentence`, shows the English translation as a hint, and asks the user to pick the missing word from 4 same-level options. Reveals the full word/reading/meaning on answer; recap with accuracy + XP. Reuses the generated example-sentence data; context-based recall for both languages.
 - **Kana drill (Japanese):** `src/Kana.jsx` (App view `kana`, Home "Practice kana" button shown only for Japanese). Embedded gojūon + dakuten/handakuten for both scripts (no DB). Pick Hiragana / Katakana / Both, then see a kana and choose its romaji from 4 options; immediate feedback, progress, recap with accuracy + XP. Chinese users see a "switch to Japanese" state. The Japanese parallel to the tone drill — a true-beginner on-ramp the app previously assumed.
+- **Cyrillic alphabet drill (Russian):** `src/Cyrillic.jsx` (App view `cyrillic`). The Russian parallel to Kana/Tones — a true-beginner on-ramp for the alphabet. Pick Vowels / Consonants / All, see a Cyrillic letter, choose its sound (approximate Latin romanization) from 4 options; immediate feedback, progress bar, recap with accuracy + XP. Non-Russian users see a "switch to Russian" state. Alphabet is embedded (no DB).
 - **Tone drill (Chinese):** `src/Tones.jsx` (App view `tones`, Home "Practice tones" button shown only for Chinese). Shows a single-character word, plays its audio, and asks which of the 4 tones (or neutral) it is — tone extracted from the pinyin tone mark (`toneOf`). Single hanzi = one syllable, the clean drill unit. Immediate feedback (pinyin + meaning), progress bar, recap with accuracy + XP (`correct × 4`). Japanese users see a "switch to Chinese" empty state. Closes the gap that flashcards/writing accept tone-insensitive answers, so tones were never tested.
 - **Monthly report (Profile):** A "{Month} so far" panel summarising the current month from `daily_activity` — active days (exact), reviews (approx, summed `studied_cards`), day streak, and lifetime words mastered — with a **Share** button (Web Share API → clipboard fallback, "Copied" confirmation).
 - **Fluency score (Home):** A single composite number (`src/fluency.js`) from lifetime vocabulary command across all levels — mastered words (stability ≥ 21d) worth 5, learned-not-mastered worth 2. Shown on Home with a rank label (Getting started → Beginner → Elementary → Intermediate → Advanced → Fluent) and a progress bar to the next rank. `homeCounts.js` exposes `lifetimeLearned`/`lifetimeMastered`.
@@ -57,7 +60,7 @@ Hanzi-dojo is a free language learning web app built around the two methods that
 - **Settings:** Functional preferences page (`profiles` columns). Controls: theme (light/dark), flashcard recall mode (flip/typed), audio-on-flip toggle, and Japanese furigana default toggle. Persists best-effort and updates the in-memory profile live (App passes `session` + `onUpdate`). Daily goal and reset still live in Profile.
 - **Home extras:** A daily new-card **goal ring** (`newDoneToday`/`daily_new_cards`, with complete state), an account **Lv N** pill (`levelInfo` from `src/xp.js`), a **reviews-waiting-tomorrow** line (`counts.dueTomorrow`), and a **Practice** button (with a weak-word count nudge).
 - **Guided "Next up" (Home):** The primary CTA is recommendation-driven, not static — if the flashcard queue has cards (`newCount+learnCount+dueCount > 0`) it says "Review & learn (N waiting)" → study; once the queue is clear it says "Read a story" → stories (the immersion step). A "Next up" eyebrow + reason line explains why, and the matching step in the "Your daily loop" row is highlighted. Turns Home from a menu into a coach.
-- **Practice hub:** `src/Practice.jsx` (App view `practice`, nav "Practice", Home "Practice" button). A calm card grid that gathers every drill/activity in one place — Weak words (with a count badge), Listening, Writing, Fill-in-the-blank, Sentence builder, Tones (Chinese) / Kana (Japanese), Stroke order, and Videos — so the top-level nav stays focused on the daily loop. Each card routes to the existing mode's view.
+- **Practice hub:** `src/Practice.jsx` (App view `practice`, nav "Practice", Home "Practice" button). A calm card grid that gathers every drill/activity in one place — Weak words (with a count badge), Listening, Writing, Fill-in-the-blank, Sentence builder, a language-appropriate script drill (Tones for Chinese, Kana for Japanese, Cyrillic alphabet for Russian), Stroke order (CJK only — hidden for Russian), and Videos — so the top-level nav stays focused on the daily loop. Each card routes to the existing mode's view.
 - **Navigation:** A single source of truth in `src/navConfig.js` (PRIMARY_NAV / BOTTOM_NAV / MOBILE_PRIMARY / MOBILE_MORE) consumed by both `Sidebar.jsx` and `MobileNav.jsx` (no duplicated arrays).
 - **Sidebar:** Persistent left nav. Primary items: Home, Flashcards, Stories, Practice, Test. Bottom items: Profile, Settings, Language, Log out. Collapses to 64px icon-only rail with hover tooltips; expanded width 232px. Active item uses sage green pill (#E7EDE4 bg, #4F6047 text). Semi-transparent frosted glass (rgba(255,255,255,0.85) + blur(6px)).
 - **MobileNav:** Bottom bar with 4 tabs (Home, Cards, Stories, Practice) + a "More" sheet (Test, Profile, Language, Settings, Log out). All study/practice modes are reached through the Practice tab.
@@ -111,8 +114,10 @@ src/Auth.jsx
   to whichever host the user is on (see section 19 Deployment).
 
 src/Onboarding.jsx
-  3-step flow: language → level → daily goal. Creates profiles and
-  language_tracks rows on finish. Continue button disabled until selection made.
+  3-step flow: language → level → daily goal. The language cards and the level
+  grid are rendered from the shared config (languageList() + getLevels), so a
+  new language appears automatically. Creates profiles and language_tracks rows
+  on finish. Continue button disabled until selection made.
 
 src/Study.jsx
   Flashcard session. Builds a queue (due-learning first, then new up to daily
@@ -185,9 +190,10 @@ src/Listen.jsx
   touch FSRS.
 
 src/LanguageSwitcher.jsx
-  Language management. Shows both languages (Chinese + Japanese). Active language
-  shows level-replay grid. Not-started shows dashed "Start" card. Supports
-  switching active language, replaying a level, starting a new language.
+  Language management. Shows every configured language (Chinese, Japanese,
+  Russian — built from languageList()). Active language shows level-replay grid.
+  Not-started shows dashed "Start" card. Supports switching active language,
+  replaying a level, starting a new language.
 
 src/Sidebar.jsx
   Persistent left navigation. Collapses to 64px icon-only rail with hover tooltips.
@@ -205,9 +211,10 @@ src/useIsMobile.js
   above the bottom bar.
 
 src/Background.jsx
-  Fixed full-page background image at opacity 0.4. Crossfades between
-  bg-chinese.png and bg-japanese.png on language change (500ms fade).
-  z-index 0, pointer-events none, aria-hidden.
+  Fixed full-page background image at opacity 0.4. Crossfades between the
+  per-language backgrounds (bg-chinese/bg-japanese/bg-russian, keyed by the
+  theme's backgroundKey) on language change (500ms fade). z-index 0,
+  pointer-events none, aria-hidden.
 
 src/Settings.jsx
   Placeholder settings page. Shows three preview panels (Appearance, Reminders,
@@ -252,10 +259,26 @@ src/streak.js
   the stale stored value. Home and Profile use liveStreak. todayStr() exported.
 
 src/utils.js
-  getLevelLabel(language, system, level) — returns 'HSK N' or 'N5 · Part 1' etc.
-  getSystemLabel(system) — 'HSK 3.0' or 'JLPT'. getLevelRange(language, system).
-  getNextLevel(language, system, level). normalizeRecallInput(value) — strips
-  punctuation/spaces/CJK punctuation for recall matching. isRecallMatch().
+  getLevelLabel(language, system, level) — returns 'HSK N', 'N5 · Part 1', or a
+  Russian CEFR band ('A1'…'C2'). getSystemLabel(system) — 'HSK 3.0' / 'JLPT' /
+  'CEFR'. getLevelRange(language, system) and getLevels(language, system) — the
+  numeric level range / list for a language. getNextLevel(language, system, level).
+  normalizeRecallInput(value) — strips punctuation/spaces/CJK punctuation for
+  recall matching. isRecallMatch().
+
+src/languageTheme.js
+  Single source of truth for per-language identity/theme. languageTheme(language)
+  → { key, system, languageName, nativeName, flag, accentHex, accentHexDark,
+  accentVar, font, backgroundKey, cjk, script }, falling back to the default for
+  unknown values. languageList() (ordered configs for pickers), isCjk(language).
+  Adding a language = add an entry here. Replaces the old duplicated
+  getLanguageDetails helpers and active_language ternaries across the app.
+
+src/Cyrillic.jsx
+  Russian alphabet drill (App view 'cyrillic'). The parallel to Kana (Japanese)
+  and Tones (Chinese): pick Vowels / Consonants / All, see a Cyrillic letter,
+  choose its sound (approximate Latin romanization) from 4 options; XP + recap.
+  No DB — the alphabet is embedded. Non-Russian users see a switch-language state.
 
 src/cleanMeaning.js
   cleanMeaning(raw) — DISPLAY-ONLY tidy for vocabulary `meaning` strings:
@@ -314,7 +337,7 @@ src/assets/hero.png          — unused asset
 ```sql
 profiles
   id uuid PRIMARY KEY (= auth.users.id)
-  active_language text          -- 'chinese' | 'japanese'
+  active_language text          -- 'chinese' | 'japanese' | 'russian'
   daily_new_cards int           -- default 10
   streak int                    -- consecutive study days
   streak_freezes int            -- available freeze tokens
@@ -329,8 +352,8 @@ profiles
 language_tracks
   id uuid PRIMARY KEY
   user_id uuid REFERENCES profiles
-  language text                 -- 'chinese' | 'japanese'
-  system text                   -- 'hsk_3' | 'jlpt'
+  language text                 -- 'chinese' | 'japanese' | 'russian'
+  system text                   -- 'hsk_3' | 'jlpt' | 'russian'
   current_level int
   is_active boolean
 
@@ -484,6 +507,19 @@ reset_current_language_progress(p_language, p_system, p_reset_streak=true)
 
 **Chinese:** `language='chinese'`, `system='hsk_3'`, levels 1–9, displayed as 'HSK 1' through 'HSK 9'.
 
+**Russian:** `language='russian'`, `system='russian'`, levels 1–6, displayed as CEFR bands:
+
+| DB level | Display (getLevelLabel) |
+|----------|------------------------|
+| 1 | A1 |
+| 2 | A2 |
+| 3 | B1 |
+| 4 | B2 |
+| 5 | C1 |
+| 6 | C2 |
+
+`getSystemLabel('russian')` returns `'CEFR'`. Russian is written in Cyrillic; `word` is the Cyrillic word, `reading` is a Latin transliteration (used for display and as the audio-filename slug — audio itself speaks the Cyrillic `word`). Russian is **not** a CJK script, so the CJK-only modes (tones, kana, stroke order, furigana) are gated off and a **Cyrillic alphabet drill** (`src/Cyrillic.jsx`) is offered instead.
+
 **Japanese:** `language='japanese'`, `system='jlpt'`, levels 1–6:
 
 | DB level | Display (getLevelLabel) |
@@ -529,6 +565,11 @@ JLPT advances: 1 → 2 → 3 → 4 → 5 → 6. Always use `getLevelLabel(langua
   characters たかし/はな/おかあさん/みせのひと
 - **Level 3 (N4): 636 words seeded** (from `data/n4.json`, sourced from the open-anki-jlpt Genki-aligned deck; word/reading/meaning, deck-order not strict frequency, 28 `～`-suffix entries excluded). Audio / example sentences / stories / comprehension generated via the `seed-n4` / `audio-n4` / `examples-fill` / `stories-n4` / `comprehension` Action tasks. Readings validated (0 kanji-in-reading); spot-check recommended.
 - No YouTube recommendations yet
+
+**Russian CEFR:**
+- Starter deck: 147 verified A1 words at `data/russian-a1.json` (frequency-ordered; Cyrillic `word` + Latin transliteration `reading` + English `meaning`). Seed with `seed-vocab.mjs --language russian --system russian --level 1 --apply`, then the full pipeline (audio → examples → stories). **Not yet seeded to the DB** (needs a runner with Supabase access, like HSK 2).
+- Audio voice: `ru-RU-Wavenet-C`, languageCode `ru-RU`, TTS input = `v.word` (the Cyrillic word).
+- No example sentences / stories / YouTube yet (run the respective generators after seeding).
 
 **Story tier structure (per language, defined in Stories.jsx CATEGORIES_CHINESE / CATEGORIES_JAPANESE):**
 
@@ -601,6 +642,7 @@ Primary text:     #18181B
 Muted text:       #71717A
 Chinese accent:   #B83A24   (vermillion)
 Japanese accent:  #2E3A6E   (indigo)
+Russian accent:   #2563C9   (royal blue)
 Success:          #2F9E6D
 Warning:          #D97706
 Error:            #DC2626
@@ -611,7 +653,7 @@ Sage dark (CTA hover):  #5C7155
 ```
 
 **CSS variables** (defined in index.css):
-`--chinese-accent: #B83A24`, `--chinese-accent-dark: #922E1C`, `--japanese-accent: #2E3A6E`, `--japanese-accent-dark: #1E2750`
+`--chinese-accent: #B83A24`, `--chinese-accent-dark: #922E1C`, `--japanese-accent: #2E3A6E`, `--japanese-accent-dark: #1E2750`, `--russian-accent: #2563C9`, `--russian-accent-dark: #1D4EA0`
 
 **Theming (light/dark) — use these tokens for all neutral colors:**
 Semantic tokens in index.css drive light/dark via `:root` and `:root[data-theme="dark"]`:
@@ -621,11 +663,11 @@ Semantic tokens in index.css drive light/dark via `:root` and `:root[data-theme=
 - Fixed dark popovers/tooltips (e.g. Sidebar collapsed tooltip) use a literal dark (`#27272A`), not `var(--text)`, so they don't invert.
 - Known minor: the Home New/Learning/Due tiles and streak pill use pale pastel accent-tint backgrounds that stay light in dark mode (look like colored chips; acceptable, could be refined).
 
-**Fonts:** Inter (UI), Noto Sans SC (Chinese), Noto Sans JP (Japanese) — loaded from Google Fonts in index.css.
+**Fonts:** Inter (UI), Noto Sans SC (Chinese), Noto Sans JP (Japanese) — loaded from Google Fonts in index.css. **Russian uses Inter**, which already ships full Cyrillic coverage, so no extra web font is needed.
 
 **Card interaction:** `translateY(-2px)`, stronger shadow, accent border on hover, ~180ms transition.
 
-**Per-language accent:** The whole UI shifts accent color when the active language changes. Components derive `accentHex` from `profile.active_language`.
+**Per-language accent:** The whole UI shifts accent color when the active language changes. Components derive `accentHex` (and font, native name, background) from `languageTheme(profile.active_language)` in `src/languageTheme.js` — never hardcode the ternary.
 
 **Background images:** Fixed full-page at opacity **0.4** (Background.jsx `TARGET_OPACITY = 0.4`). Auth/Onboarding use bg-login.png at opacity 0.35.
 
@@ -643,6 +685,7 @@ Semantic tokens in index.css drive light/dark via `:root` and `:root[data-theme=
 src/assets/Hanzi-logo.png   enso brushstroke circle, vermillion on white
 src/assets/bg-chinese.png   ink-wash mountain landscape (Chinese mode background)
 src/assets/bg-japanese.png  Mt Fuji / cherry blossom (Japanese mode background)
+src/assets/bg-russian.png   soft winter scene with onion-dome cathedral (Russian mode)
 src/assets/bg-login.png     background for auth and onboarding screens
 src/assets/logo.svg         placeholder SVG (not used)
 src/assets/hero.png         unused
@@ -704,6 +747,7 @@ node --env-file=.env.script generate-audio.mjs
 **Voice config:**
 - Japanese: `languageCode: 'ja-JP'`, `name: 'ja-JP-Neural2-B'`, input = `v.reading` (hiragana — NEVER `v.word`)
 - Chinese (to reconfigure): `languageCode: 'cmn-CN'`, `name: 'cmn-CN-Chirp3-HD-Aoede'`, input = `v.word`
+- Russian: `languageCode: 'ru-RU'`, `name: 'ru-RU-Wavenet-C'`, input = `v.word` (the Cyrillic word)
 
 To regenerate without skipping existing files: delete the storage folder in Supabase first, then run the script (`upsert: true` is set but storage skips existing paths by default in some configurations).
 
@@ -716,7 +760,8 @@ Script for generating AI example sentences and uploading to Supabase vocabulary 
 node --env-file=.env.script generate-examples.mjs --japanese          # fill missing (Japanese)
 node --env-file=.env.script generate-examples.mjs --japanese --regen  # REGENERATE all (replace bad ones)
 node --env-file=.env.script generate-examples.mjs --chinese           # Chinese
-node --env-file=.env.script generate-examples.mjs                     # both, fill missing
+node --env-file=.env.script generate-examples.mjs --russian           # Russian (Cyrillic + Latin transliteration reading)
+node --env-file=.env.script generate-examples.mjs                     # all languages, fill missing
 ```
 
 **Behavior:** Batches vocab (10/batch), calls Groq **`llama-3.3-70b-versatile`** with a quality-focused prompt (meaningful sentences, realistic human subjects, counter/suffix handling, few-shot good/bad examples), then updates `example_sentence`/`example_reading`/`example_translation`. By default only fills `example_sentence IS NULL`; **`--regen`** regenerates ALL active words to replace low-quality sentences. Retries with backoff on rate limits.
@@ -740,7 +785,11 @@ Inserts a level's vocabulary from a JSON word list. **This is how new levels (HS
 # 1. Put a verified, frequency-ordered list at data/hsk2.json (see data/hsk2.sample.json for the shape)
 node --env-file=.env.script seed-vocab.mjs --file data/hsk2.json --language chinese --system hsk_3 --level 2            # preview
 node --env-file=.env.script seed-vocab.mjs --file data/hsk2.json --language chinese --system hsk_3 --level 2 --apply    # write
+
+# Russian A1 starter deck (data/russian-a1.json — 24 verified words):
+node --env-file=.env.script seed-vocab.mjs --file data/russian-a1.json --language russian --system russian --level 1 --apply
 ```
+seed-vocab is language-agnostic — it works for Russian unchanged (for Russian, `reading` is the Latin transliteration and `reading_plain`/audio slug derive from it).
 
 **Full "add a level" pipeline (in order):** `seed-vocab` → `generate-audio` (reconfigure for the level) → `generate-examples` (`--chinese --regen`) → `generate-stories` → `generate-comprehension`. For HSK 2 specifically, the Action has a one-click `task=seed-hsk2` that runs the seed against `data/hsk2.json` (commit the verified list there first). The word data itself must come from a canonical HSK 3.0 source — the meanings can be tidied afterward with `generate-meanings`/`clean-meanings`, but pinyin and level membership should be correct at seed time.
 
@@ -763,7 +812,7 @@ Batch ~100 words (meanings) / ~60 (sentences) via `offset`. Use dollar-quoting (
 
 The fully hands-off way to regenerate content: a **manual `workflow_dispatch`** job that runs the `generate-*.mjs` scripts on GitHub's runners (which can reach Supabase + Groq — the local sandbox cannot). Trigger from the repo **Actions tab → "Regenerate vocabulary content" → Run workflow**.
 
-- **Inputs:** `task` (meanings / examples / **examples-fill** / both / **comprehension** / **clean-meanings** / **deactivate-awkward** / **seed-hsk2**) and `language`. `examples-fill` runs `generate-examples.mjs` WITHOUT `--regen` — fills only words missing a sentence (safe for a newly-seeded level; won't touch existing good sentences). (both / japanese / chinese). For examples it always runs with `--regen` (replaces existing sentences, not just NULLs). `comprehension` runs `generate-comprehension.mjs` (fills stories with no questions). `clean-meanings` runs `clean-meanings.mjs --apply` (deterministic, no AI). `deactivate-awkward` runs `deactivate-awkward-vocab.mjs --apply` (sets `is_active=false` on counter-suffix + duplicate-reading entries; reversible).
+- **Inputs:** `task` (meanings / examples / **examples-fill** / both / **comprehension** / **clean-meanings** / **deactivate-awkward** / per-level content tasks **seed-hsk2** / **audio-hsk2** / **stories-hsk2** / **seed-n4** / **audio-n4** / **stories-n4** / **seed-russian** / **audio-russian** / **examples-russian** / **stories-russian**) and `language`. The per-level `seed-*`/`audio-*`/`stories-*` tasks are self-contained (they carry their own `--language/--system/--level`) and ignore the `language` input. `examples-fill` runs `generate-examples.mjs` WITHOUT `--regen` — fills only words missing a sentence (safe for a newly-seeded level; won't touch existing good sentences). (both / japanese / chinese). For examples it always runs with `--regen` (replaces existing sentences, not just NULLs). `comprehension` runs `generate-comprehension.mjs` (fills stories with no questions). `clean-meanings` runs `clean-meanings.mjs --apply` (deterministic, no AI). `deactivate-awkward` runs `deactivate-awkward-vocab.mjs --apply` (sets `is_active=false` on counter-suffix + duplicate-reading entries; reversible).
 - **Secrets used:** `VITE_SUPABASE_URL` (mapped to `SUPABASE_URL`), `SUPABASE_SERVICE_KEY`, `GROQ_API_KEY` — the same Actions repository secrets as the deploy workflow, plus the service key.
 - **Node 22 is required** (`setup-node` pins `node-version: 22`). `@supabase/supabase-js` v2 needs a **global `WebSocket`** at `createClient` time (RealtimeClient init); Node 20 has none and `createClient` throws immediately. Do not drop below 22.
 - **Concurrency** is serialized (`group: regen-content`, no cancel) so two runs can't fight over the same rows. `timeout-minutes: 180`.
@@ -771,15 +820,17 @@ The fully hands-off way to regenerate content: a **manual `workflow_dispatch`** 
 
 ### generate-stories.mjs
 
-Generates new Japanese JLPT N5 (level 1) stories via Groq (`llama-3.3-70b-versatile`) and inserts them into the `stories` table. Not in app bundle.
+Generates level-matched stories via Groq (`llama-3.3-70b-versatile`) and inserts them into the `stories` table. Not in app bundle. **Config-driven** per `--language/--system/--level` (the `CONFIGS` map, keyed `language|system|level`).
 
 **Run with:**
 ```bash
-node --env-file=.env.script generate-stories.mjs            # append new stories
-node --env-file=.env.script generate-stories.mjs --replace  # delete existing level-1 JP stories first, then regenerate
+node --env-file=.env.script generate-stories.mjs --language japanese --system jlpt --level 1
+node --env-file=.env.script generate-stories.mjs --language chinese --system hsk_3 --level 2
+node --env-file=.env.script generate-stories.mjs --language russian --system russian --level 1
+# add --replace to delete that level's existing stories first
 ```
 
-**Behavior:** Config-driven per `--language/--system/--level` (CONFIGS map). Japanese JLPT N5 level 1 and **Chinese HSK 2** are configured. For each of 3 tiers (First Steps / Growing / Fluent), generates 5 stories from one of 15 scene templates; the vocab pool = an optional prerequisite level (Chinese HSK 2 pulls the 150 most-frequent HSK 1 words) + the current level up to the tier's sort_order cap. Characters: Japanese たかし/はな/おかあさん/みせのひと (hiragana); Chinese 李明/小红/小明/妈妈 (hanzi). Dialogue uses the full-width colon `：`. Each story has `content` + line-aligned `english_content`. Action: `task=stories-hsk2`.
+**Behavior:** Configured targets are Japanese JLPT N5 (level 1) + N4 (level 3), **Chinese HSK 2**, and **Russian CEFR A1** (level 1). For each of 3 tiers (First Steps / Growing / Fluent), generates N stories from one of 15 scene templates; the vocab pool = an optional prerequisite level (e.g. Chinese HSK 2 pulls the 150 most-frequent HSK 1 words) + the current level up to the tier's sort_order cap. Characters: Japanese たかし/はな/おかあさん (hiragana); Chinese 李明/小红/小明/妈妈 (hanzi); Russian Иван/Аня/мама/продавец (Cyrillic). Dialogue uses the full-width colon `：` for CJK and a regular `:` for Russian (per-config `colon`). Each story has `content` + line-aligned `english_content`. Adding a language/level = add a `CONFIGS` entry. Actions: `task=stories-hsk2` / `stories-n4` / `stories-russian`.
 
 ### generate-story-translations.mjs
 
@@ -813,6 +864,11 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 - **Apply migration `20260630000000_add_xp_and_prefs.sql`** in the Supabase SQL Editor to enable persistence of account XP and study prefs (`total_xp`, `recall_mode`, `audio_autoplay`, `furigana_default`). The app is defensive — it runs without it (defaults applied in code), but XP/prefs won't save across reloads until the columns exist.
 - **Apply migration `20260630010000_add_story_questions.sql`**, then generate questions (Action `task=comprehension`, or `node --env-file=.env.script generate-comprehension.mjs`). The end-of-story comprehension card only appears once questions exist; the "new words" recap works without it.
 - **Japanese example sentences (N5 Part 1 + Part 2):** 798/800 words populated. Run `node --env-file=.env.script generate-examples.mjs --japanese` to fill the remaining 2.
+
+**Russian (new language — frontend + DB ready, content pending):**
+- **Apply migration `20260701120000_add_russian_language.sql`** so the DB accepts `language='russian'` / `system='russian'` (relaxes the CHECK constraints across profiles, language_tracks, vocabulary, test_attempts, level_unlocks, stories, youtube_recommendations; RLS unchanged). Until applied, creating a Russian track fails the CHECK.
+- **Seed the starter deck** (`data/russian-a1.json`, 147 A1 words) via `seed-vocab.mjs --language russian --system russian --level 1 --apply` (needs a runner with Supabase access, like HSK 2). Then run the pipeline: `generate-audio --language russian --system russian --level 1` → `generate-examples --russian` → `generate-stories --language russian --system russian --level 1`.
+- The Cyrillic alphabet drill, gating of CJK-only modes, background, accent, and native name all ship in the frontend already.
 
 **Missing content:**
 - **Japanese YouTube recommendations:** None published. Chinese HSK 1 has 3.
@@ -875,7 +931,7 @@ Priority order (most impactful first):
 2. **HSK 2 vocabulary + audio + stories:** Next Chinese level content. *(content task — needs vocab data + API keys)*
 3. **FSRS parameter tuning:** Once real user data exists, optimize parameters beyond library defaults.
 4. ~~**Offline support:** Service worker~~ — done (`public/sw.js`, runtime caching). Follow-up: offline grading via a background-sync queue.
-5. **Spanish:** Third language after Chinese and Japanese content is solid.
+5. **Russian (CEFR):** Added as the third language — frontend + DB migration + A1 starter deck are in place; **seed + generate content** to make it live (see Known issues → Russian). The language-agnostic `src/languageTheme.js` refactor makes further languages (Spanish, …) mostly data + content.
 
 (Practice mode is intentionally *not* on the roadmap — Writing.jsx already serves as the low-stakes practice/active-recall page.)
 

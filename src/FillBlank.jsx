@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
+import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import { markWordDue } from './practiceSignal'
@@ -43,8 +44,9 @@ export default function FillBlank({ session, profile, track, onBack, onUpdate })
   const [correctCount, setCorrectCount] = useState(0)
   const [done, setDone] = useState(false)
 
-  const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
-  const langFont = profile.active_language === 'japanese' ? "'Noto Sans JP'" : "'Noto Sans SC'"
+  const theme = languageTheme(profile.active_language)
+  const accentHex = theme.accentHex
+  const langFont = theme.font
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
 

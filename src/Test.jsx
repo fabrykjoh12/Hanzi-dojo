@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getTestStatus, getAttemptsToday } from './testLogic'
 import { getLevelLabel, getNextLevel } from './utils'
+import { languageTheme } from './languageTheme'
 import { schedule } from './srs'
 import { TEST_UNLOCK_MASTERY_PCT } from './mastery'
 import { useIsMobile } from './useIsMobile'
@@ -51,12 +52,13 @@ function generateQuestions(vocabList, allVocab, language) {
 }
 
 function getLanguageDetails(profile, track) {
-  const isJapanese = profile.active_language === 'japanese' || track.language === 'japanese'
+  const language = track.language || profile.active_language
+  const t = languageTheme(language)
   return {
-    isJapanese,
-    accentHex: isJapanese ? '#2E3A6E' : '#B83A24',
-    fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
-    languageName: isJapanese ? 'Japanese' : 'Chinese',
+    isJapanese: language === 'japanese',
+    accentHex: t.accentHex,
+    fontFamily: t.font,
+    languageName: t.languageName,
   }
 }
 

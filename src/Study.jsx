@@ -4,6 +4,7 @@ import { schedule, previewLabels } from './srs'
 import { xpForGrade } from './xp'
 import { updateStreak, todayStr } from './streak'
 import { getLevelLabel, getSystemLabel } from './utils'
+import { languageTheme } from './languageTheme'
 import { normalizePinyin } from './testLogic'
 import { toRomaji } from 'wanakana'
 import { useIsMobile } from './useIsMobile'
@@ -206,11 +207,12 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const isMobile = useIsMobile()
   const isTyped = profile.recall_mode === 'typed'
 
-  const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
-  const accent = profile.active_language === 'japanese' ? 'var(--japanese-accent)' : 'var(--chinese-accent)'
+  const theme = languageTheme(profile.active_language)
+  const accentHex = theme.accentHex
+  const accent = theme.accentVar
   const isJapanese = profile.active_language === 'japanese'
-  const langFont = isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'"
-  const langChars = isJapanese ? 'Japanese' : 'Chinese'
+  const langFont = theme.font
+  const langChars = theme.languageName
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
 

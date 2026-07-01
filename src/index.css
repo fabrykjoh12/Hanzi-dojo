@@ -22,6 +22,8 @@ body {
   --chinese-accent-dark: #922E1C;
   --japanese-accent: #2E3A6E;
   --japanese-accent-dark: #1E2750;
+  --russian-accent: #2563C9;
+  --russian-accent-dark: #1D4EA0;
 
   /* Semantic theme tokens — light (default) */
   --bg: #FAFAF8;

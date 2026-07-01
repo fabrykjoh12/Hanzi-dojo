@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getSystemLabel, getLevelLabel } from './utils'
+import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import {
   ArrowLeft, Dumbbell, AlertTriangle, Headphones, PenLine,
@@ -10,11 +11,20 @@ import {
 // navigation can stay focused on the daily loop (Flashcards → Stories → Test).
 export default function Practice({ profile, track, counts, onNavigate, onBack }) {
   const isMobile = useIsMobile()
-  const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
+  const theme = languageTheme(profile.active_language)
+  const accentHex = theme.accentHex
   const isJapanese = profile.active_language === 'japanese'
+  const isChinese = profile.active_language === 'chinese'
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
   const weak = counts ? (counts.weakCount || 0) : 0
+
+  // The script drill matches the language's writing system: Kana (Japanese),
+  // Tones (Chinese), Cyrillic alphabet (Russian). Stroke order is CJK-only.
+  let scriptCard = null
+  if (isJapanese) scriptCard = { key: 'kana', icon: Languages, title: 'Kana', desc: 'Hiragana & katakana' }
+  else if (isChinese) scriptCard = { key: 'tones', icon: Music2, title: 'Tones', desc: 'Hear and name the tone' }
+  else if (theme.script === 'cyrillic') scriptCard = { key: 'cyrillic', icon: Languages, title: 'Alphabet', desc: 'Cyrillic letters & sounds' }
 
   const cards = [
     {
@@ -26,12 +36,11 @@ export default function Practice({ profile, track, counts, onNavigate, onBack })
     { key: 'writing', icon: PenLine, title: 'Writing', desc: 'Type words from memory' },
     { key: 'fillblank', icon: AlignLeft, title: 'Fill in the blank', desc: 'Complete the sentence' },
     { key: 'builder', icon: Blocks, title: 'Sentence builder', desc: 'Reorder the words' },
-    isJapanese
-      ? { key: 'kana', icon: Languages, title: 'Kana', desc: 'Hiragana & katakana' }
-      : { key: 'tones', icon: Music2, title: 'Tones', desc: 'Hear and name the tone' },
-    { key: 'strokes', icon: Brush, title: 'Stroke order', desc: 'Animated writing' },
+    scriptCard,
+    // Stroke order only applies to CJK scripts (hanzi/kanji).
+    theme.cjk ? { key: 'strokes', icon: Brush, title: 'Stroke order', desc: 'Animated writing' } : null,
     { key: 'youtube', icon: Play, title: 'Videos', desc: 'Curated listening' },
-  ]
+  ].filter(Boolean)
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', padding: isMobile ? '28px 16px 40px' : '44px 32px 60px' }}>
