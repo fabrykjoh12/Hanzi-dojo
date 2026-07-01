@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
+import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { markWordDue } from './practiceSignal'
 import {
@@ -83,12 +84,17 @@ export default function SentenceBuilder({ session, profile, track, onBack, onUpd
   const [done, setDone] = useState(false)
   const segRef = useRef(null)
 
-  const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
-  const langFont = profile.active_language === 'japanese' ? "'Noto Sans JP'" : "'Noto Sans SC'"
+  const theme = languageTheme(profile.active_language)
+  const accentHex = theme.accentHex
+  const langFont = theme.font
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
 
-  if (!segRef.current) segRef.current = makeSegmenter(profile.active_language === 'japanese' ? 'ja' : 'zh')
+  if (!segRef.current) {
+    const segLocale = profile.active_language === 'japanese' ? 'ja'
+      : profile.active_language === 'russian' ? 'ru' : 'zh'
+    segRef.current = makeSegmenter(segLocale)
+  }
 
   async function load() {
     setLoading(true)

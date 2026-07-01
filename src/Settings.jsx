@@ -5,13 +5,14 @@ import {
 } from 'lucide-react'
 import { useIsMobile } from './useIsMobile'
 import { useTheme } from './ThemeContext'
+import { languageTheme } from './languageTheme'
 
 function getLanguageDetails(profile) {
-  const isJapanese = profile.active_language === 'japanese'
+  const t = languageTheme(profile.active_language)
   return {
-    accentHex: isJapanese ? '#2E3A6E' : '#B83A24',
-    fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
-    isJapanese,
+    accentHex: t.accentHex,
+    fontFamily: t.font,
+    isJapanese: profile.active_language === 'japanese',
   }
 }
 

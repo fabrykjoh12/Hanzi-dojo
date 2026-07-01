@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
+import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import { markWordDue } from './practiceSignal'
@@ -51,9 +52,10 @@ export default function Listen({ session, profile, track, onBack, onUpdate }) {
   const audioRef = useRef(null)
   const xpAwardedRef = useRef(false)
 
-  const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
+  const theme = languageTheme(profile.active_language)
+  const accentHex = theme.accentHex
   const isJapanese = profile.active_language === 'japanese'
-  const langFont = isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'"
+  const langFont = theme.font
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
 

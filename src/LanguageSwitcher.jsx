@@ -1,34 +1,23 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import { getLevelLabel } from './utils'
+import { getLevelLabel, getSystemLabel, getLevels } from './utils'
+import { languageList } from './languageTheme'
 import { isMastered } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import { ArrowLeft, ArrowRight, Globe2, Plus } from 'lucide-react'
 
-const LANGUAGES = [
-  {
-    code: 'chinese',
-    system: 'hsk_3',
-    name: 'Chinese',
-    nativeName: '中文',
-    flag: '🇨🇳',
-    levels: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-    levelLabel: (l) => 'HSK ' + l,
-    systemLabel: 'HSK 3.0',
-    accent: '#B83A24',
-  },
-  {
-    code: 'japanese',
-    system: 'jlpt',
-    name: 'Japanese',
-    nativeName: '日本語',
-    flag: '🇯🇵',
-    levels: [1, 2, 3, 4, 5, 6],
-    levelLabel: (l) => getLevelLabel('japanese', 'jlpt', l),
-    systemLabel: 'JLPT',
-    accent: '#2E3A6E',
-  },
-]
+// Built from the shared language config so a new language shows up here for free.
+const LANGUAGES = languageList().map(t => ({
+  code: t.key,
+  system: t.system,
+  name: t.languageName,
+  nativeName: t.nativeName,
+  flag: t.flag,
+  levels: getLevels(t.key, t.system),
+  levelLabel: (l) => getLevelLabel(t.key, t.system, l),
+  systemLabel: getSystemLabel(t.system),
+  accent: t.accentHex,
+}))
 
 function Shell({ children, accentHex }) {
   const isMobile = useIsMobile()

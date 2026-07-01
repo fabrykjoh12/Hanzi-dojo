@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { CHARACTER_READINGS } from './characterNames'
 import { getLevelLabel } from './utils'
+import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
 import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRight, UserRound, Highlighter, Check, X } from 'lucide-react'
 
@@ -209,16 +210,19 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const segmenterRef = useRef(null)
   const wordAudioRef = useRef(null)
 
+  const theme = languageTheme(track.language)
   const isJapanese = track.language === 'japanese'
-  const accent = isJapanese ? '#2E3A6E' : '#B83A24'
-  const font = isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'"
-  const names = isJapanese ? {} : CHARACTER_READINGS.chinese
+  const isChinese = track.language === 'chinese'
+  const accent = theme.accentHex
+  const font = theme.font
+  const names = isChinese ? CHARACTER_READINGS.chinese : {}
   const particles = isJapanese ? JP_PARTICLES : NO_PARTICLES
-  const watermark = isJapanese ? ['読', '書'] : ['读', '书']
-  const readingLabel = isJapanese ? 'Furigana' : 'Pinyin'
+  const watermark = isJapanese ? ['読', '書'] : isChinese ? ['读', '书'] : ['А', 'Я']
+  const readingLabel = isJapanese ? 'Furigana' : isChinese ? 'Pinyin' : 'Reading'
   const levelLabel = getLevelLabel(track.language, track.system, track.current_level)
 
-  if (!segmenterRef.current) segmenterRef.current = makeSegmenter(isJapanese ? 'ja' : 'zh')
+  const segLocale = isJapanese ? 'ja' : isChinese ? 'zh' : 'ru'
+  if (!segmenterRef.current) segmenterRef.current = makeSegmenter(segLocale)
 
   useEffect(() => {
     function onResize() { setWinWidth(window.innerWidth) }
@@ -322,7 +326,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     if (!synth) return
     if (speaking) { synth.cancel(); setSpeaking(false); return }
     const u = new SpeechSynthesisUtterance(lines.map(l => splitSpeaker(l).text).join('。'))
-    u.lang = isJapanese ? 'ja-JP' : 'zh-CN'
+    u.lang = isJapanese ? 'ja-JP' : isChinese ? 'zh-CN' : 'ru-RU'
     u.rate = 0.85
     u.onend = () => setSpeaking(false)
     u.onerror = () => setSpeaking(false)

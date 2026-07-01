@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, isRecallMatch } from './utils'
+import { languageTheme } from './languageTheme'
 import { normalizePinyin } from './testLogic'
 import { useIsMobile } from './useIsMobile'
 import { toRomaji } from 'wanakana'
@@ -137,12 +138,12 @@ function getSafeStreak(stat) {
 }
 
 function getLanguageDetails(track) {
-  const isJapanese = track.language === 'japanese'
+  const t = languageTheme(track.language)
   return {
-    isJapanese,
-    accentHex: isJapanese ? '#2E3A6E' : '#B83A24',
-    languageName: isJapanese ? 'Japanese' : 'Chinese',
-    fontFamily: isJapanese ? "'Noto Sans JP'" : "'Noto Sans SC'",
+    isJapanese: track.language === 'japanese',
+    accentHex: t.accentHex,
+    languageName: t.languageName,
+    fontFamily: t.font,
   }
 }
 

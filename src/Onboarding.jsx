@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from './supabase'
-import { getLevelLabel } from './utils'
+import { getLevelLabel, getSystemLabel, getLevels } from './utils'
+import { languageList, languageTheme } from './languageTheme'
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.png'
 
@@ -12,10 +13,12 @@ export default function Onboarding({ session, onComplete }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const accent = language === 'japanese' ? 'var(--japanese-accent)' : '#B83A24'
-  const accentHex = language === 'japanese' ? '#2E3A6E' : '#B83A24'
-  const chineseLevels = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-  const japaneseLevels = [1, 2, 3, 4, 5, 6]
+  // Data-driven: the language cards + level grid come from the shared config, so
+  // adding a language needs no changes here.
+  const languages = languageList()
+  const selectedTheme = language ? languageTheme(language) : null
+  const accentHex = selectedTheme ? selectedTheme.accentHex : '#B83A24'
+  const levels = selectedTheme ? getLevels(language, selectedTheme.system) : []
 
   const handleFinish = async () => {
     setSaving(true)
@@ -29,7 +32,7 @@ export default function Onboarding({ session, onComplete }) {
       })
       if (profileError) throw profileError
 
-      const system = language === 'chinese' ? 'hsk_3' : 'jlpt'
+      const system = languageTheme(language).system
       const { error: trackError } = await supabase.from('language_tracks').upsert({
         user_id: session.user.id,
         language,
@@ -106,52 +109,34 @@ export default function Onboarding({ session, onComplete }) {
               Which language do you want to learn?
             </p>
 
-            <div style={{ display: 'flex', gap: '14px' }}>
-              {/* Chinese card */}
-              <button
-                onClick={() => { setLanguage('chinese'); setLevel(null) }}
-                style={{
-                  flex: 1,
-                  padding: '24px 16px',
-                  borderRadius: '14px',
-                  border: language === 'chinese' ? '2px solid #B83A24' : '2px solid var(--border)',
-                  background: language === 'chinese' ? 'rgba(184,58,36,0.05)' : 'var(--surface)',
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-              >
-                <span style={{ fontSize: '36px', lineHeight: 1 }}>🇨🇳</span>
-                <span style={{ fontSize: '28px', fontWeight: 700, color: '#B83A24', fontFamily: "'Noto Sans SC', sans-serif", lineHeight: 1 }}>中文</span>
-                <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', fontFamily: 'Inter, sans-serif' }}>Chinese</span>
-              </button>
-
-              {/* Japanese card */}
-              <button
-                onClick={() => { setLanguage('japanese'); setLevel(null) }}
-                style={{
-                  flex: 1,
-                  padding: '24px 16px',
-                  borderRadius: '14px',
-                  border: language === 'japanese' ? '2px solid #2E3A6E' : '2px solid var(--border)',
-                  background: language === 'japanese' ? 'rgba(46,58,110,0.05)' : 'var(--surface)',
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-              >
-                <span style={{ fontSize: '36px', lineHeight: 1 }}>🇯🇵</span>
-                <span style={{ fontSize: '28px', fontWeight: 700, color: '#2E3A6E', fontFamily: "'Noto Sans JP', sans-serif", lineHeight: 1 }}>日本語</span>
-                <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', fontFamily: 'Inter, sans-serif' }}>Japanese</span>
-              </button>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              {languages.map(lang => {
+                const selected = language === lang.key
+                return (
+                  <button
+                    key={lang.key}
+                    onClick={() => { setLanguage(lang.key); setLevel(null) }}
+                    style={{
+                      flex: 1,
+                      padding: '24px 12px',
+                      borderRadius: '14px',
+                      border: selected ? ('2px solid ' + lang.accentHex) : '2px solid var(--border)',
+                      background: selected ? (lang.accentHex + '0D') : 'var(--surface)',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <span style={{ fontSize: '34px', lineHeight: 1 }}>{lang.flag}</span>
+                    <span style={{ fontSize: '26px', fontWeight: 700, color: lang.accentHex, fontFamily: lang.font + ', sans-serif', lineHeight: 1 }}>{lang.nativeName}</span>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', fontFamily: 'Inter, sans-serif' }}>{lang.languageName}</span>
+                  </button>
+                )
+              })}
             </div>
 
             <button
@@ -184,10 +169,10 @@ export default function Onboarding({ session, onComplete }) {
               What's your level?
             </h1>
             <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '28px', fontSize: '14px' }}>
-              {language === 'chinese' ? 'Pick your HSK level. Starting higher assumes you know all earlier vocabulary.' : 'Pick your JLPT level. Starting higher assumes you know all earlier vocabulary.'}
+              Pick your {getSystemLabel(selectedTheme.system)} level. Starting higher assumes you know all earlier vocabulary.
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-              {(language === 'chinese' ? chineseLevels : japaneseLevels).map(lvl => (
+              {levels.map(lvl => (
                 <button
                   key={lvl}
                   onClick={() => setLevel(lvl)}
@@ -205,7 +190,7 @@ export default function Onboarding({ session, onComplete }) {
                     lineHeight: 1.3,
                   }}
                 >
-                  {language === 'chinese' ? getLevelLabel('chinese', 'hsk_3', lvl) : getLevelLabel('japanese', 'jlpt', lvl)}
+                  {getLevelLabel(language, selectedTheme.system, lvl)}
                 </button>
               ))}
             </div>
