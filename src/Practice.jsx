@@ -4,7 +4,7 @@ import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import {
   ArrowLeft, Dumbbell, AlertTriangle, Headphones, PenLine,
-  AlignLeft, Blocks, Music2, Languages, Brush, Play,
+  AlignLeft, Blocks, Music2, Languages, Brush, Play, GraduationCap,
 } from 'lucide-react'
 
 // The Practice hub: every drill/activity in one calm place, so the top-level
@@ -40,6 +40,7 @@ export default function Practice({ profile, track, counts, onNavigate, onBack })
     // Stroke order only applies to CJK scripts (hanzi/kanji).
     theme.cjk ? { key: 'strokes', icon: Brush, title: 'Stroke order', desc: 'Animated writing' } : null,
     { key: 'youtube', icon: Play, title: 'Videos', desc: 'Curated listening' },
+    { key: 'grammar', icon: GraduationCap, title: 'Grammar guide', desc: 'How the language works' },
   ].filter(Boolean)
 
   return (

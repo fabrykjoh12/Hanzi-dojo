@@ -28,6 +28,7 @@ const args = process.argv.slice(2)
 const onlyChinese = args.includes('--chinese')
 const onlyJapanese = args.includes('--japanese')
 const doReplace = args.includes('--replace')
+const doPrune = args.includes('--prune')   // delete existing trivial questions (whole story), no LLM
 const dryRun = args.includes('--dry-run')
 
 const MODEL = 'llama-3.3-70b-versatile'
@@ -45,18 +46,41 @@ ${story.content}
 English translation (for your reference):
 ${story.english_content || '(none provided)'}
 
-Write exactly ${PER_STORY} multiple-choice comprehension questions IN ENGLISH that check whether the reader understood what happened in the story.
+Write exactly ${PER_STORY} multiple-choice comprehension questions IN ENGLISH that check whether the reader understood what HAPPENED in the story.
 
 Rules:
 - Questions and all answer options are in ENGLISH.
 - Each question has exactly 4 options; exactly ONE is correct.
 - Answers must be decidable from the story alone. No trick questions.
-- Keep questions simple and concrete (who/what/where/why), suitable for a beginner.
-- Vary the position of the correct option.
+- Test real understanding of events, actions, feelings, reasons, or relationships — what someone DID, WANTED, felt, or why.
+- NEVER ask a question whose answer is stated inside the question itself. In particular, do NOT ask what a character is named / called (e.g. "What is Xiao Hua's name?") — that is trivial and self-answering. Refer to characters by name in the question and ask what they DID.
+- Do NOT ask about spelling, pronunciation, or how to say a word.
+- Every wrong option must be plausible (same category as the answer) but clearly false per the story — not obviously silly.
+- Keep questions concrete and beginner-friendly (who did what, where they went, why, what happened next).
+- Vary the position of the correct option across the ${PER_STORY} questions.
 - Return ONLY a JSON array, no markdown, no commentary.
+
+Good question: "Why did Xiao Hua go to the store?" → ["To buy fruit","To meet a teacher","To sleep","To swim"]
+Bad question (NEVER do this): "What is Xiao Hua's name?" — the name is already in the question.
 
 Return a JSON array with exactly ${PER_STORY} objects:
 [{"question":"...","options":["...","...","...","..."],"correct_index":0}, ...]`
+}
+
+// A question is trivial/self-answering when its answer is already present in the
+// wording — most commonly "What is X's name?" (the name is right there) — or when
+// it asks about naming/spelling rather than comprehension. These read as "stupid"
+// to users, so we reject the whole set and regenerate.
+function isTrivial(it) {
+  const q = it.question.toLowerCase()
+  const namePhrases = ["'s name", '’s name', 'what is the name', 'what are the names',
+    'what is his name', 'what is her name', 'what is their name',
+    'called?', 'what is she called', 'what is he called', 'how do you say', 'how to say']
+  if (namePhrases.some(p => q.includes(p))) return true
+  const correct = String(it.options[it.correct_index] || '').toLowerCase().trim()
+  // Self-answering: the correct option's text appears verbatim in the question.
+  if (correct.length > 1 && q.includes(correct)) return true
+  return false
 }
 
 function validate(items) {
@@ -67,7 +91,9 @@ function validate(items) {
     if (!Array.isArray(it.options) || it.options.length !== 4) return null
     const ci = Number(it.correct_index)
     if (!Number.isInteger(ci) || ci < 0 || ci > 3) return null
-    out.push({ question: it.question.trim(), options: it.options.map(o => String(o).trim()), correct_index: ci })
+    const clean = { question: it.question.trim(), options: it.options.map(o => String(o).trim()), correct_index: ci }
+    if (isTrivial(clean)) return null   // force a regeneration
+    out.push(clean)
   }
   return out.length ? out : null
 }
@@ -76,13 +102,20 @@ async function generateFor(story, attempt = 0) {
   try {
     const response = await groq.chat.completions.create({
       model: MODEL,
-      temperature: 0.3,
+      // Nudge temperature up on later attempts so a regenerated set differs from
+      // a rejected (trivial) one.
+      temperature: 0.3 + attempt * 0.15,
       max_tokens: 1024,
       messages: [{ role: 'user', content: buildPrompt(story) }],
     })
     const text = response.choices[0].message.content.trim()
     const json = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-    return validate(JSON.parse(json))
+    const result = validate(JSON.parse(json))
+    if (!result && attempt < 3) {
+      process.stdout.write('(retry: weak questions) ')
+      return generateFor(story, attempt + 1)
+    }
+    return result
   } catch (err) {
     const waitSec = Math.min(15 * Math.pow(2, attempt), 120)
     if (attempt < 3) {
@@ -151,7 +184,35 @@ async function processLanguage(language, system) {
   console.log(`\n${language}: ${dryRun ? 'previewed' : '✓'} ${done}, skipped ${skipped} (already had questions), ✗ ${failed} failed`)
 }
 
+// Delete every question belonging to a story that has at least one trivial /
+// self-answering question, so a later fill run regenerates that story cleanly.
+async function pruneTrivial() {
+  console.log(`\n=== PRUNE trivial questions${dryRun ? ' — DRY RUN' : ''} ===`)
+  const { data: rows, error } = await supabase
+    .from('story_questions')
+    .select('id, story_id, question, options, correct_index')
+  if (error) { console.error('Fetch error:', error.message); return }
+
+  const badStoryIds = new Set()
+  for (const r of (rows || [])) {
+    if (isTrivial({ question: r.question, options: r.options, correct_index: r.correct_index })) {
+      badStoryIds.add(r.story_id)
+    }
+  }
+  console.log(`${badStoryIds.size} story(ies) have a trivial question.`)
+  if (badStoryIds.size === 0) return
+
+  for (const storyId of badStoryIds) {
+    if (dryRun) { console.log(`  would clear story ${storyId}`); continue }
+    const { error: delErr } = await supabase.from('story_questions').delete().eq('story_id', storyId)
+    if (delErr) console.log(`  ✗ ${storyId}: ${delErr.message}`)
+    else console.log(`  ✓ cleared ${storyId}`)
+  }
+  console.log('Now run generate-comprehension.mjs (no flags) to regenerate them.')
+}
+
 async function main() {
+  if (doPrune) { await pruneTrivial(); console.log('\nAll done.'); return }
   if (!onlyJapanese) await processLanguage('chinese', 'hsk_3')
   if (!onlyChinese) await processLanguage('japanese', 'jlpt')
   console.log(`\nAll done.${dryRun ? ' (dry run — nothing written)' : ''}`)

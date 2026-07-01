@@ -68,7 +68,7 @@ Return a JSON array with exactly ${words.length} objects, same order:
 
   const sentenceNote = isChinese
     ? 'Write very short HSK 1–2 sentences (≤10 characters). example_reading = pinyin WITH tone marks.'
-    : 'Write simple JLPT N5–N4 sentences (≤15 characters). example_reading = the full sentence in hiragana/katakana only (NO kanji).'
+    : 'Write short, NATURAL everyday Japanese the way a beginner textbook or a native speaker actually talks — polite です／ます form, correct particles (は/が/を/に/で…), about 4–10 words. Choose a common daily situation. It must NOT read like a stiff word-for-word translation of English. example_reading = the ENTIRE sentence written in hiragana/katakana only (NO kanji, NO romaji, NO spaces beyond natural ones).'
 
   const examples = isChinese
     ? `Good examples:
@@ -77,9 +77,10 @@ Return a JSON array with exactly ${words.length} objects, same order:
 - word 半 (half) → {"example_sentence":"现在八点半。","example_reading":"xiàn zài bā diǎn bàn.","example_translation":"It's half past eight now."}
 Bad example (DO NOT do this): "一块钱是半块钱的两倍。" ("One yuan is twice half a yuan.") — a circular math identity that only restates the word's meaning. Use an everyday situation (time, food, shopping, family) instead.`
     : `Good examples:
-- word 学校 → {"example_sentence":"がっこうに行きます。","example_reading":"がっこうにいきます。","example_translation":"I go to school."}
-- word さい (age counter) → {"example_sentence":"わたしは12さいです。","example_reading":"わたしは じゅうにさい です。","example_translation":"I am 12 years old."}
-Bad example (DO NOT do this): "今日は12さいです" ("Today is 12 years old") — 今日 (today) cannot have an age. Use a PERSON as the subject.`
+- word 学校 → {"example_sentence":"毎朝、学校に歩いて行きます。","example_reading":"まいあさ、がっこうにあるいていきます。","example_translation":"I walk to school every morning."}
+- word さい (age counter) → {"example_sentence":"妹は今年で12さいになります。","example_reading":"いもうとはことしでじゅうにさいになります。","example_translation":"My little sister turns 12 this year."}
+- word 元気 → {"example_sentence":"おかげさまで、とても元気です。","example_reading":"おかげさまで、とてもげんきです。","example_translation":"Thanks to you, I'm doing very well."}
+Bad example (DO NOT do this): "今日は12さいです" ("Today is 12 years old") — 今日 (today) cannot have an age. Also avoid stiff, unnatural sentences like "これはペンです" for every word. Use a real, everyday situation with a person as the subject.`
 
   return `You write example sentences for a beginner ${language} flashcard app. Quality matters more than anything: every sentence must be MEANINGFUL and make real-world sense, not just grammatically contain the word.
 
@@ -87,6 +88,7 @@ ${sentenceNote}
 
 Rules:
 - The target word MUST appear in example_sentence, used with its correct meaning.
+- Sound like natural, real-world ${language} that a native speaker would actually say — NOT a literal, word-for-word translation of an English sentence.
 - The sentence must be logically sensible. Pick a realistic subject: for ages, sizes, jobs, feelings, etc. use a PERSON (I / you / a name), never an inanimate subject like "today" or "this".
 - NO tautologies, math identities, or definition-sentences whose only point is to restate the word (e.g. "one is twice half of one"). Show the word in a normal everyday situation.
 - For counter words / suffixes (age, money, people, counters), attach a number and a fitting noun naturally.
@@ -167,12 +169,22 @@ async function processLanguage(language, system) {
       }
       const aligned = examples.slice(0, batch.length)
 
-      const updates = batch.slice(0, aligned.length).map((w, idx) => ({
-        id: w.id,
-        example_sentence: aligned[idx].example_sentence,
-        example_reading: aligned[idx].example_reading,
-        example_translation: aligned[idx].example_translation,
-      }))
+      // Keep only well-formed examples where the target word actually appears in
+      // the sentence — a word-for-word mismatch means the model drifted, so we
+      // leave that word NULL and let a later run re-attempt it rather than store junk.
+      const updates = batch.slice(0, aligned.length).map((w, idx) => {
+        const ex = aligned[idx] || {}
+        const bare = w.word.replace(/^～/, '')
+        const ok = ex.example_sentence && ex.example_translation
+          && String(ex.example_sentence).includes(bare)
+        if (!ok) return null
+        return {
+          id: w.id,
+          example_sentence: ex.example_sentence,
+          example_reading: ex.example_reading,
+          example_translation: ex.example_translation,
+        }
+      }).filter(Boolean)
 
       for (const update of updates) {
         const { error: upsertError } = await supabase
@@ -187,8 +199,9 @@ async function processLanguage(language, system) {
         if (upsertError) throw new Error(upsertError.message)
       }
 
-      success += batch.length
-      console.log(`✓ (${success}/${vocab.length} done)`)
+      success += updates.length
+      const skippedInBatch = batch.length - updates.length
+      console.log(`✓ (${success}/${vocab.length} done${skippedInBatch ? `, ${skippedInBatch} skipped for re-attempt` : ''})`)
 
       // Stay under free-tier rate limit (15 RPM)
       if (i + BATCH_SIZE < vocab.length) {

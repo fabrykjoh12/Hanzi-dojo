@@ -11,7 +11,7 @@ on:
         description: What to regenerate
         type: choice
         default: both
-        options: [meanings, examples, examples-fill, both, comprehension, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk2, stories-hsk2, seed-n4, audio-n4, stories-n4, seed-russian, audio-russian, examples-russian, stories-russian]
+        options: [meanings, examples, examples-fill, both, comprehension, comprehension-prune, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk2, stories-hsk2, seed-n4, audio-n4, stories-n4, seed-russian, audio-russian, examples-russian, stories-russian]
       language:
         description: Which language
         type: choice
@@ -71,6 +71,13 @@ jobs:
 
           if [ "${{ inputs.task }}" = "comprehension" ]; then
             echo "::group::Story comprehension questions"
+            node generate-comprehension.mjs $LANG_FLAG
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "comprehension-prune" ]; then
+            echo "::group::Prune trivial comprehension questions, then regenerate them"
+            node generate-comprehension.mjs --prune
             node generate-comprehension.mjs $LANG_FLAG
             echo "::endgroup::"
           fi

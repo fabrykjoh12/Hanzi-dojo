@@ -65,10 +65,18 @@ function buildQuestions(pool, segmenter) {
   const usable = []
   for (const v of pool) {
     if (!v.example_sentence) continue
+    // Require a translation so there's a clear English goal, and keep the
+    // sentence a natural, buildable length.
+    if (!v.example_translation) continue
     const tokens = tokenize(v.example_sentence, segmenter)
-    if (tokens.length >= 3 && tokens.length <= 8) usable.push({ vocab: v, tokens })
+    if (tokens.length >= 3 && tokens.length <= 9) usable.push({ vocab: v, tokens })
   }
-  return shuffle(usable).slice(0, Math.min(QUESTION_COUNT, usable.length)).map(q => ({
+  // Bias toward the most common words (lowest sort_order) so learners build the
+  // everyday sentences, not rare tail vocabulary — then shuffle within that pool
+  // for variety each round.
+  usable.sort((a, b) => (a.vocab.sort_order || 0) - (b.vocab.sort_order || 0))
+  const commonPool = usable.slice(0, Math.max(QUESTION_COUNT * 3, 30))
+  return shuffle(commonPool).slice(0, Math.min(QUESTION_COUNT, commonPool.length)).map(q => ({
     ...q, order: scrambleIds(q.tokens.length),
   }))
 }
@@ -100,7 +108,7 @@ export default function SentenceBuilder({ session, profile, track, onBack, onUpd
     setLoading(true)
     const { data: vocab } = await supabase
       .from('vocabulary')
-      .select('id, word, reading, example_sentence, example_translation')
+      .select('id, word, reading, example_sentence, example_translation, sort_order')
       .eq('language', track.language)
       .eq('system', track.system)
       .eq('level', track.current_level)
