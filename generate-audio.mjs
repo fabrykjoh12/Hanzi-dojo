@@ -31,7 +31,7 @@ const levelArg = arg('level', null)
 const level = levelArg == null ? null : parseInt(levelArg, 10)
 
 if (!language || !system) {
-  console.error('Required: --language <chinese|japanese> --system <hsk_3|jlpt> [--level <n>]')
+  console.error('Required: --language <chinese|japanese|russian> --system <hsk_3|jlpt|russian> [--level <n>]')
   process.exit(1)
 }
 
@@ -39,6 +39,9 @@ if (!language || !system) {
 const VOICES = {
   chinese: { languageCode: 'cmn-CN', name: 'cmn-CN-Chirp3-HD-Aoede', field: 'word' },
   japanese: { languageCode: 'ja-JP', name: 'ja-JP-Neural2-B', field: 'reading' },
+  // Russian is written in Cyrillic, so the word itself is spoken (like Chinese),
+  // not the Latin transliteration in `reading`.
+  russian: { languageCode: 'ru-RU', name: 'ru-RU-Wavenet-C', field: 'word' },
 }
 const voice = VOICES[language]
 if (!voice) { console.error('Unsupported language:', language); process.exit(1) }
