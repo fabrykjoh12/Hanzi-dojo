@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
+import { markWordDue } from './practiceSignal'
 import {
   ArrowLeft, Volume2, Music2, Check, X, RotateCcw, CheckCircle2, Sparkles,
 } from 'lucide-react'
@@ -114,6 +115,7 @@ export default function Tones({ session, profile, track, onBack, onUpdate }) {
     if (picked !== null) return
     setPicked(toneN)
     if (toneN === q.tone) setCorrectCount(c => c + 1)
+    else markWordDue(session, q.id)
   }
 
   function finish() {

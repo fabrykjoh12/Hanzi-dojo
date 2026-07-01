@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { useIsMobile } from './useIsMobile'
+import { markWordDue } from './practiceSignal'
 import {
   ArrowLeft, Blocks, Check, X, RotateCcw, CheckCircle2, Sparkles, Eye,
 } from 'lucide-react'
@@ -124,6 +125,7 @@ export default function SentenceBuilder({ session, profile, track, onBack, onUpd
     const ok = placed.length === q.tokens.length && placed.every((id, i) => id === i)
     setResult(ok ? 'correct' : 'wrong')
     if (ok) setCorrectCount(c => c + 1)
+    else markWordDue(session, q.vocab.id)
   }
 
   function reveal() {
@@ -131,6 +133,7 @@ export default function SentenceBuilder({ session, profile, track, onBack, onUpd
     for (let i = 0; i < q.tokens.length; i += 1) target.push(i)
     setPlaced(target)
     setResult('wrong')
+    markWordDue(session, q.vocab.id)
   }
 
   function finish(finalCorrect) {
