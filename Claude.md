@@ -511,8 +511,13 @@ JLPT advances: 1 → 2 → 3 → 4 → 5 → 6. Always use `getLevelLabel(langua
 - Audio voice: `cmn-CN-Chirp3-HD-Aoede`, languageCode `cmn-CN`
 
 **Chinese HSK 3.0 Level 2:**
-- 198 words seeded (frequency-ordered, from the New HSK Level 2 list → `data/hsk2.json`), sort_order 1–198, `audio_path` set to `chinese/hsk_3/level_2/NNN_<reading>.mp3` (files not generated yet)
-- No audio / example sentences / stories / comprehension / YouTube yet (run the respective generators next)
+- 198 words (frequency-ordered, from the New HSK Level 2 list → `data/hsk2.json`), sort_order 1–198
+- Audio: all 198 clips generated (`chinese/hsk_3/level_2/NNN_<reading>.mp3`, `cmn-CN-Chirp3-HD-Aoede`)
+- Example sentences: filled (via `examples-fill`)
+- Stories: 15 published across 3 tiers (`stories-hsk2`), characters 李明/小红/小明/妈妈, with `english_content`
+- Comprehension questions: generated for the level-2 stories (via `comprehension`)
+- No YouTube recommendations yet
+- **All eight study modes work for HSK 2** (flashcards, test, listening, tones, fill-in-the-blank, sentence builder, stories, comprehension)
 
 **Japanese JLPT:**
 - Level 1 (N5 Part 1): 400 words with audio at `japanese/jlpt/level_1/`
@@ -810,7 +815,7 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 
 **Missing content:**
 - **Japanese YouTube recommendations:** None published. Chinese HSK 1 has 3.
-- **HSK 2 vocabulary:** **198 words SEEDED** (Chinese HSK 3.0 level 2, from `data/hsk2.json` via the `seed-hsk2` Action). Flashcards + Test work now. **Still pending for level 2:** audio (reconfigure `generate-audio.mjs` for `chinese/hsk_3/level_2` and run), example sentences (`examples, language=chinese`), stories (extend `generate-stories.mjs`), and comprehension. HSK 1 is complete.
+- **HSK 2 vocabulary: COMPLETE** (Chinese HSK 3.0 level 2) — 198 words + audio + example sentences + 15 stories + comprehension questions, all live. Only missing extra: YouTube recommendations. Both HSK 1 and HSK 2 are now done.
 - **HSK 3–9 and JLPT N4–N1:** No vocabulary seeded. Level selection exists but shows empty study queues.
 
 **Technical debt:**
