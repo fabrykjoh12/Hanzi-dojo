@@ -4,6 +4,7 @@ import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
+import { languageTheme } from './languageTheme'
 import { ArrowLeft, Brush, Play, PenLine, Eye, EyeOff } from 'lucide-react'
 
 function isIdeograph(ch) {
@@ -22,8 +23,9 @@ export default function Writer({ profile, track, onBack }) {
   const targetRef = useRef(null)
   const writerRef = useRef(null)
 
-  const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
-  const langFont = profile.active_language === 'japanese' ? "'Noto Sans JP'" : "'Noto Sans SC'"
+  const theme = languageTheme(profile.active_language)
+  const accentHex = theme.accentHex
+  const langFont = theme.font
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
   const kindLabel = profile.active_language === 'japanese' ? 'kanji' : 'characters'
@@ -107,6 +109,31 @@ export default function Writer({ profile, track, onBack }) {
   const pageShell = {
     minHeight: '100vh', position: 'relative', overflow: 'hidden',
     padding: isMobile ? '16px 14px 28px' : '20px 32px 36px',
+  }
+
+  // Stroke order is a CJK-only mode (hanzi / kanji). Alphabetic languages
+  // (e.g. Russian) get an empty state pointing back home.
+  if (!theme.cjk) {
+    return (
+      <div style={pageShell}>
+        <div style={{ maxWidth: '520px', margin: '0 auto', paddingTop: isMobile ? '8px' : '20px' }}>
+          <Ghost onClick={onBack} icon={ArrowLeft} label="Back home" />
+          <div style={{
+            marginTop: '18px', textAlign: 'center', background: 'var(--surface)',
+            border: '1px solid var(--border)', borderRadius: '24px', padding: '42px 30px',
+            boxShadow: '0 22px 60px rgba(24,24,27,0.07)',
+          }}>
+            <Brush size={30} strokeWidth={1.8} color={accentHex} style={{ marginBottom: '14px' }} />
+            <h1 style={{ fontSize: '22px', fontWeight: 750, color: 'var(--text)', marginBottom: '8px' }}>
+              Stroke order is for Chinese &amp; Japanese
+            </h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6 }}>
+              {theme.languageName} uses an alphabet, so there is no character stroke-order drill. Try the alphabet practice instead.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // ── Focused character view ──

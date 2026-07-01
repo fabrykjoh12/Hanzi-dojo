@@ -20,6 +20,7 @@ const Stories = lazy(() => import('./Stories'))
 const Listen = lazy(() => import('./Listen'))
 const Tones = lazy(() => import('./Tones'))
 const Kana = lazy(() => import('./Kana'))
+const Cyrillic = lazy(() => import('./Cyrillic'))
 const FillBlank = lazy(() => import('./FillBlank'))
 const SentenceBuilder = lazy(() => import('./SentenceBuilder'))
 const Writer = lazy(() => import('./Writer'))
@@ -222,6 +223,16 @@ export default function App() {
   } else if (view === 'kana') {
     content = (
       <Kana
+        session={session}
+        profile={profile}
+        track={track}
+        onBack={() => navigate('home')}
+        onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
+      />
+    )
+  } else if (view === 'cyrillic') {
+    content = (
+      <Cyrillic
         session={session}
         profile={profile}
         track={track}
