@@ -1,30 +1,42 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
-import Auth from './Auth'
-import Onboarding from './Onboarding'
-import Study from './Study'
-import Writing from './Writing'
-import Test from './Test'
-import Stories from './Stories'
-import Listen from './Listen'
-import Tones from './Tones'
-import Kana from './Kana'
-import FillBlank from './FillBlank'
-import SentenceBuilder from './SentenceBuilder'
-import Writer from './Writer'
-import Practice from './Practice'
 import { getHomeCounts } from './homeCounts'
-import Profile from './Profile'
-import YouTube from './YouTube'
-import LanguageSwitcher from './LanguageSwitcher'
-import Sidebar from './Sidebar'
-import MobileNav from './MobileNav'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
+// Eager: the app shell + first-paint screens.
+import Auth from './Auth'
+import Onboarding from './Onboarding'
+import Sidebar from './Sidebar'
+import MobileNav from './MobileNav'
 import Background from './Background'
 import Home from './Home'
-import Settings from './Settings'
+// Lazy: heavier/less-frequent screens are code-split so the initial load stays
+// small (Home is what most sessions open to). react-router basename is unaffected.
+const Study = lazy(() => import('./Study'))
+const Writing = lazy(() => import('./Writing'))
+const Test = lazy(() => import('./Test'))
+const Stories = lazy(() => import('./Stories'))
+const Listen = lazy(() => import('./Listen'))
+const Tones = lazy(() => import('./Tones'))
+const Kana = lazy(() => import('./Kana'))
+const FillBlank = lazy(() => import('./FillBlank'))
+const SentenceBuilder = lazy(() => import('./SentenceBuilder'))
+const Writer = lazy(() => import('./Writer'))
+const Practice = lazy(() => import('./Practice'))
+const Profile = lazy(() => import('./Profile'))
+const YouTube = lazy(() => import('./YouTube'))
+const LanguageSwitcher = lazy(() => import('./LanguageSwitcher'))
+const Settings = lazy(() => import('./Settings'))
+
+// Calm centered fallback while a lazy screen loads.
+function ViewFallback() {
+  return (
+    <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ fontSize: '30px', color: 'var(--text-faint)', fontFamily: "'Noto Sans SC'" }}>学</div>
+    </div>
+  )
+}
 
 // Map between the internal view key and the URL path. Home is '/', every other
 // view is '/<key>' (e.g. 'study' → '/study').
@@ -340,7 +352,9 @@ export default function App() {
           // Leave room for the fixed bottom bar so content isn't hidden behind it.
           paddingBottom: isMobile ? 'calc(62px + env(safe-area-inset-bottom))' : 0,
         }}>
-          {content}
+          <Suspense fallback={<ViewFallback />}>
+            {content}
+          </Suspense>
         </div>
         {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} />}
       </div>
