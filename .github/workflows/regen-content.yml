@@ -11,7 +11,7 @@ on:
         description: What to regenerate
         type: choice
         default: both
-        options: [meanings, examples, examples-fill, both, comprehension, clean-meanings, deactivate-awkward, seed-hsk2]
+        options: [meanings, examples, examples-fill, both, comprehension, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk2]
       language:
         description: Which language
         type: choice
@@ -42,6 +42,7 @@ jobs:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GOOGLE_TTS_KEY: ${{ secrets.VITE_GOOGLE_TTS_KEY }}
         run: |
           set -e
           LANG_FLAG=""
@@ -89,5 +90,11 @@ jobs:
           if [ "${{ inputs.task }}" = "seed-hsk2" ]; then
             echo "::group::Seed HSK 3.0 level 2 vocabulary from data/hsk2.json"
             node seed-vocab.mjs --file data/hsk2.json --language chinese --system hsk_3 --level 2 --apply
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "audio-hsk2" ]; then
+            echo "::group::Generate HSK 3.0 level 2 audio (Google TTS)"
+            node generate-audio.mjs --language chinese --system hsk_3 --level 2
             echo "::endgroup::"
           fi

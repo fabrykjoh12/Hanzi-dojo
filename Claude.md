@@ -693,7 +693,7 @@ Script for generating TTS audio and uploading to Supabase storage. Not in app bu
 node --env-file=.env.script generate-audio.mjs
 ```
 
-**Current state:** Hardcoded for Japanese JLPT (queries `language='japanese'`, `system='jlpt'`). Iterates all JLPT vocabulary, calls Google TTS with `v.reading` (hiragana) as input, uploads MP3 to the path stored in `v.audio_path`.
+**Current state:** Configurable via `--language <chinese|japanese> --system <hsk_3|jlpt> [--level <n>]`. Chinese speaks `v.word` with `cmn-CN-Chirp3-HD-Aoede`; Japanese speaks `v.reading` (hiragana — never the kanji) with `ja-JP-Neural2-B`. Scopes to a level with `--level` so you don't re-synthesize a level that already has audio. Uploads each MP3 (upsert) to the path in `v.audio_path`. In the Action: `task=audio-hsk2` (runs `--language chinese --system hsk_3 --level 2`), which now has `GOOGLE_TTS_KEY` mapped from the `VITE_GOOGLE_TTS_KEY` repo secret.
 
 **Voice config:**
 - Japanese: `languageCode: 'ja-JP'`, `name: 'ja-JP-Neural2-B'`, input = `v.reading` (hiragana — NEVER `v.word`)
