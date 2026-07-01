@@ -773,7 +773,7 @@ node --env-file=.env.script generate-stories.mjs            # append new stories
 node --env-file=.env.script generate-stories.mjs --replace  # delete existing level-1 JP stories first, then regenerate
 ```
 
-**Behavior:** For each of 3 tiers (First Steps / Growing / Fluent, vocab pools sort_order ≤100/≤200/≤400), generates 5 stories using one of 15 distinct scenes (park, supermarket, station, restaurant, etc.) so stories don't default to a school setting. Characters are restricted to たかし/はな/おかあさん/みせのひと, written in hiragana. Each story includes `content` and a line-aligned `english_content` translation. Inserts with `is_published: true` and incrementing `story_number`.
+**Behavior:** Config-driven per `--language/--system/--level` (CONFIGS map). Japanese JLPT N5 level 1 and **Chinese HSK 2** are configured. For each of 3 tiers (First Steps / Growing / Fluent), generates 5 stories from one of 15 scene templates; the vocab pool = an optional prerequisite level (Chinese HSK 2 pulls the 150 most-frequent HSK 1 words) + the current level up to the tier's sort_order cap. Characters: Japanese たかし/はな/おかあさん/みせのひと (hiragana); Chinese 李明/小红/小明/妈妈 (hanzi). Dialogue uses the full-width colon `：`. Each story has `content` + line-aligned `english_content`. Action: `task=stories-hsk2`.
 
 ### generate-story-translations.mjs
 

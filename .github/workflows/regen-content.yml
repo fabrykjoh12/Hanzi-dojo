@@ -11,7 +11,7 @@ on:
         description: What to regenerate
         type: choice
         default: both
-        options: [meanings, examples, examples-fill, both, comprehension, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk2]
+        options: [meanings, examples, examples-fill, both, comprehension, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk2, stories-hsk2]
       language:
         description: Which language
         type: choice
@@ -96,5 +96,11 @@ jobs:
           if [ "${{ inputs.task }}" = "audio-hsk2" ]; then
             echo "::group::Generate HSK 3.0 level 2 audio (Google TTS)"
             node generate-audio.mjs --language chinese --system hsk_3 --level 2
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "stories-hsk2" ]; then
+            echo "::group::Generate HSK 3.0 level 2 stories"
+            node generate-stories.mjs --language chinese --system hsk_3 --level 2
             echo "::endgroup::"
           fi
