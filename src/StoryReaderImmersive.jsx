@@ -157,12 +157,15 @@ function Token({ token, isSelected, showReading, isJapanese, adaptive, status, a
   }
 
   // Adaptive reading: spotlight the words the user hasn't learned yet so the eye
-  // lands on the learning frontier. Known (review/mastered) words stay plain.
+  // lands on the learning frontier. Words you already know are dimmed ("seen
+  // through") so the new and still-learning words visually pop.
   let decoBorder = 'none'
   let decoBg = 'transparent'
+  let faded = false
   if (adaptive && token.vocab) {
     if (status === 'not_started') { decoBorder = '2px solid ' + accent + '70'; decoBg = accent + '12' }
     else if (status === 'learning') { decoBorder = '2px solid #CA8A0466' }
+    else { faded = true }   // review / mastered → learned, so fade it back
   }
   let body = token.text
   if (showReading && reading) {
@@ -188,7 +191,8 @@ function Token({ token, isSelected, showReading, isJapanese, adaptive, status, a
         background: isSelected ? HILITE : (hover ? 'rgba(0,0,0,0.05)' : decoBg),
         boxShadow: isSelected ? '0 0 0 1px rgba(202,138,4,0.45)' : 'none',
         borderBottom: decoBorder,
-        transition: 'background 120ms ease',
+        opacity: faded && !hover && !isSelected ? 0.4 : 1,
+        transition: 'background 120ms ease, opacity 120ms ease',
       }}
     >
       {body}
@@ -203,6 +207,11 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const [showEnglish, setShowEnglish] = useState(false)
   const [showSentence, setShowSentence] = useState(false)
   const [speaking, setSpeaking] = useState(false)
+  const [speakingLine, setSpeakingLine] = useState(-1)   // which line the TTS is reading (for read-along highlight)
+  const [rate, setRate] = useState(0.85)                 // TTS playback rate
+  const rateRef = useRef(0.85)
+  const runRef = useRef(0)                               // invalidates stale onend callbacks when we stop/restart
+  const speakingLineRef = useRef(-1)
   const [winWidth, setWinWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200)
   const [questions, setQuestions] = useState([])
   const [answers, setAnswers] = useState({})   // question id → chosen option index
@@ -321,18 +330,56 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     wordAudioRef.current.play().catch(() => { /* ignore */ })
   }
 
+  // Read the story aloud line-by-line so the sentence currently being spoken can
+  // be highlighted (read-along). Per-word boundary events are unreliable for
+  // CJK, so line granularity is the robust choice. `runRef` tags each playback
+  // so a stopped/restarted read ignores callbacks from the previous one.
+  const RATES = [0.6, 0.85, 1.1]
+  const ttsLang = isJapanese ? 'ja-JP' : isChinese ? 'zh-CN' : 'ru-RU'
+
+  const speakFrom = (index, runId) => {
+    const synth = window.speechSynthesis
+    if (!synth || runId !== runRef.current) return
+    if (index >= lines.length) { setSpeaking(false); setSpeakingLine(-1); speakingLineRef.current = -1; return }
+    const u = new SpeechSynthesisUtterance(splitSpeaker(lines[index]).text)
+    u.lang = ttsLang
+    u.rate = rateRef.current
+    u.onend = () => { if (runId === runRef.current) speakFrom(index + 1, runId) }
+    u.onerror = () => { if (runId === runRef.current) { setSpeaking(false); setSpeakingLine(-1); speakingLineRef.current = -1 } }
+    setSpeakingLine(index)
+    speakingLineRef.current = index
+    synth.speak(u)
+  }
+
   const toggleStoryAudio = () => {
     const synth = window.speechSynthesis
     if (!synth) return
-    if (speaking) { synth.cancel(); setSpeaking(false); return }
-    const u = new SpeechSynthesisUtterance(lines.map(l => splitSpeaker(l).text).join('。'))
-    u.lang = isJapanese ? 'ja-JP' : isChinese ? 'zh-CN' : 'ru-RU'
-    u.rate = 0.85
-    u.onend = () => setSpeaking(false)
-    u.onerror = () => setSpeaking(false)
+    if (speaking) {
+      runRef.current += 1
+      synth.cancel()
+      setSpeaking(false)
+      setSpeakingLine(-1)
+      speakingLineRef.current = -1
+      return
+    }
+    runRef.current += 1
+    const runId = runRef.current
     synth.cancel()
-    synth.speak(u)
     setSpeaking(true)
+    speakFrom(0, runId)
+  }
+
+  const cycleRate = () => {
+    const next = RATES[(RATES.indexOf(rateRef.current) + 1) % RATES.length]
+    rateRef.current = next
+    setRate(next)
+    // If a read is in progress, restart the current line at the new speed.
+    if (speaking) {
+      runRef.current += 1
+      const runId = runRef.current
+      window.speechSynthesis.cancel()
+      speakFrom(Math.max(0, speakingLineRef.current), runId)
+    }
   }
 
   const selectToken = (lineIndex, tokenKey, token) => {
@@ -397,7 +444,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             </div>
             {showKnown && (
               <div style={{ fontSize: '12px', color: MUTED, marginTop: '9px', lineHeight: 1.5 }}>
-                Underlined words are new to you; amber are still learning. Tap a word to add it to your deck.
+                New words are boxed; amber are still learning; words you already know are dimmed so the rest stands out. Tap any word to add it to your deck.
               </div>
             )}
           </div>
@@ -422,6 +469,11 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               fontSize: isMobile ? '20px' : '25px', lineHeight: showReading ? 2.05 : 1.75,
               fontFamily: font, color: TEXT, fontWeight: 400,
               paddingLeft: isMobile ? '2px' : '4px',
+              // Read-along highlight: the line the TTS is currently speaking.
+              background: li === speakingLine ? HILITE : 'transparent',
+              borderRadius: '8px',
+              boxShadow: li === speakingLine ? '0 0 0 6px ' + HILITE : 'none',
+              transition: 'background 200ms ease, box-shadow 200ms ease',
             }}>
               {tokens.map((tk, ti) => (
                 <Token
@@ -634,10 +686,20 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             style={{ width: '44px', height: '44px', borderRadius: '999px', background: accent, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             {speaking ? <Pause size={20} color="#fff" fill="#fff" /> : <Play size={20} color="#fff" fill="#fff" style={{ marginLeft: '2px' }} />}
           </button>
-          <div style={{ minWidth: 0 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontSize: '15px', fontWeight: 700, color: TEXT, fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{story.title}</div>
             <div style={{ fontSize: '12px', color: MUTED }}>{speaking ? 'Reading aloud…' : 'Listen (text-to-speech)'}</div>
           </div>
+          <button onClick={cycleRate} aria-label="Playback speed" title="Playback speed"
+            style={{
+              flexShrink: 0, minWidth: '52px', height: '38px', borderRadius: '11px',
+              background: rate === 0.85 ? 'var(--surface-2)' : accent + '14',
+              border: '1px solid ' + (rate === 0.85 ? 'var(--border)' : accent + '40'),
+              color: rate === 0.85 ? MUTED : accent, cursor: 'pointer',
+              fontSize: '13px', fontWeight: 800, fontFamily: 'Inter, sans-serif',
+            }}>
+            {rate}×
+          </button>
         </div>
       </div>
     </div>
