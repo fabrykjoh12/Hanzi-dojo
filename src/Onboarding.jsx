@@ -4,7 +4,7 @@ import { getLevelLabel, getSystemLabel, getLevels } from './utils'
 import { languageList, languageTheme } from './languageTheme'
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.png'
-import { BRAND_NAME, wordmarkStyle } from './brand'
+import { BRAND_NAME, heroWordmarkStyle } from './brand'
 
 export default function Onboarding({ session, onComplete }) {
   const [step, setStep] = useState(1)
@@ -101,10 +101,11 @@ export default function Onboarding({ session, onComplete }) {
         {step === 1 && (
           <div>
             <div style={{ textAlign: 'center', marginBottom: '6px' }}>
-              <img src={logo} alt={BRAND_NAME} style={{ width: '44px', height: '44px', objectFit: 'contain', marginBottom: '10px' }} />
-              <h1 style={{ ...wordmarkStyle('22px'), margin: 0 }}>
-                Welcome to {BRAND_NAME}
+              <img src={logo} alt={BRAND_NAME} style={{ width: '48px', height: '48px', objectFit: 'contain', marginBottom: '4px' }} />
+              <h1 style={{ ...heroWordmarkStyle('40px'), margin: 0 }}>
+                {BRAND_NAME}
               </h1>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600, marginTop: '2px' }}>Welcome</div>
             </div>
             <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '28px', marginTop: '8px', fontSize: '14px' }}>
               Which language do you want to learn?

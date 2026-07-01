@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { supabase } from './supabase'
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.png'
-import { BRAND_NAME, wordmarkStyle } from './brand'
+import { BRAND_NAME, heroWordmarkStyle } from './brand'
 
 export default function Auth() {
   const [isSignup, setIsSignup] = useState(false)
@@ -79,8 +79,8 @@ export default function Auth() {
       }}>
         {/* Logo + wordmark */}
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <img src={logo} alt={BRAND_NAME} style={{ width: '48px', height: '48px', objectFit: 'contain', marginBottom: '10px' }} />
-          <div style={wordmarkStyle('22px')}>
+          <img src={logo} alt={BRAND_NAME} style={{ width: '52px', height: '52px', objectFit: 'contain', marginBottom: '4px' }} />
+          <div style={heroWordmarkStyle('42px')}>
             {BRAND_NAME}
           </div>
         </div>
