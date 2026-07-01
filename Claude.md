@@ -561,7 +561,7 @@ JLPT advances: 1 → 2 → 3 → 4 → 5 → 6. Always use `getLevelLabel(langua
 - No YouTube recommendations yet
 
 **Russian CEFR:**
-- Starter deck: 24 verified A1 words at `data/russian-a1.json` (frequency-ordered; Cyrillic `word` + Latin transliteration `reading` + English `meaning`). Seed with `seed-vocab.mjs --language russian --system russian --level 1 --apply`, then the full pipeline (audio → examples → stories). **Not yet seeded to the DB** (needs a runner with Supabase access, like HSK 2).
+- Starter deck: 147 verified A1 words at `data/russian-a1.json` (frequency-ordered; Cyrillic `word` + Latin transliteration `reading` + English `meaning`). Seed with `seed-vocab.mjs --language russian --system russian --level 1 --apply`, then the full pipeline (audio → examples → stories). **Not yet seeded to the DB** (needs a runner with Supabase access, like HSK 2).
 - Audio voice: `ru-RU-Wavenet-C`, languageCode `ru-RU`, TTS input = `v.word` (the Cyrillic word).
 - No example sentences / stories / YouTube yet (run the respective generators after seeding).
 
@@ -860,7 +860,7 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 
 **Russian (new language — frontend + DB ready, content pending):**
 - **Apply migration `20260701120000_add_russian_language.sql`** so the DB accepts `language='russian'` / `system='russian'` (relaxes the CHECK constraints across profiles, language_tracks, vocabulary, test_attempts, level_unlocks, stories, youtube_recommendations; RLS unchanged). Until applied, creating a Russian track fails the CHECK.
-- **Seed the starter deck** (`data/russian-a1.json`, 24 A1 words) via `seed-vocab.mjs --language russian --system russian --level 1 --apply` (needs a runner with Supabase access, like HSK 2). Then run the pipeline: `generate-audio --language russian --system russian --level 1` → `generate-examples --russian` → `generate-stories --language russian`.
+- **Seed the starter deck** (`data/russian-a1.json`, 147 A1 words) via `seed-vocab.mjs --language russian --system russian --level 1 --apply` (needs a runner with Supabase access, like HSK 2). Then run the pipeline: `generate-audio --language russian --system russian --level 1` → `generate-examples --russian` → `generate-stories --language russian`.
 - The Cyrillic alphabet drill, gating of CJK-only modes, background, accent, and native name all ship in the frontend already.
 
 **Missing content:**
