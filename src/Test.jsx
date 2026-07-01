@@ -95,8 +95,8 @@ function IconButton({ icon: Icon, label, onClick, danger, disabled }) {
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
         height: '40px', padding: '0 14px', borderRadius: '12px',
-        border: '1px solid ' + (danger ? '#FECACA' : 'var(--border)'),
-        background: hovered && !disabled ? (danger ? '#FEF2F2' : 'var(--surface-2)') : 'var(--surface)',
+        border: '1px solid ' + (danger ? 'var(--danger-border)' : 'var(--border)'),
+        background: hovered && !disabled ? (danger ? 'var(--danger-bg)' : 'var(--surface-2)') : 'var(--surface)',
         color,
         fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
         cursor: disabled ? 'default' : 'pointer',
@@ -543,12 +543,12 @@ export default function Test({ session, profile, track, onBack }) {
             if (hasAnswered) {
               if (isCorrect) {
                 borderColor = '#2F9E6D'
-                bgColor = '#ECFDF5'
+                bgColor = 'var(--success-bg)'
                 textColor = '#2F9E6D'
                 Icon = Check
               } else if (isSelected && !isCorrect) {
                 borderColor = '#DC2626'
-                bgColor = '#FEF2F2'
+                bgColor = 'var(--danger-bg)'
                 textColor = '#DC2626'
                 Icon = X
               } else {
@@ -602,8 +602,8 @@ export default function Test({ session, profile, track, onBack }) {
             padding: '15px 18px',
             borderRadius: '16px',
             textAlign: 'center',
-            background: selected === questions[index].correctAnswer ? '#ECFDF5' : '#FEF2F2',
-            border: '1px solid ' + (selected === questions[index].correctAnswer ? '#BBF7D0' : '#FECACA'),
+            background: selected === questions[index].correctAnswer ? 'var(--success-bg)' : 'var(--danger-bg)',
+            border: '1px solid ' + (selected === questions[index].correctAnswer ? 'var(--success-border)' : 'var(--danger-border)'),
           }}>
             <span style={{
               fontSize: '14px',

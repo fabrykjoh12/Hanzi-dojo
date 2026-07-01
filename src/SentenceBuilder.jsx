@@ -254,7 +254,7 @@ export default function SentenceBuilder({ session, profile, track, onBack, onUpd
         <div style={{
           minHeight: '70px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center',
           padding: '16px', borderRadius: '16px', border: '1.5px solid ' + buildBorder,
-          background: result === 'correct' ? '#ECFDF5' : result === 'wrong' ? '#FEF2F2' : 'var(--surface)',
+          background: result === 'correct' ? 'var(--success-bg)' : result === 'wrong' ? 'var(--danger-bg)' : 'var(--surface)',
           marginBottom: '12px', transition: 'border-color 140ms ease, background 140ms ease',
         }}>
           {placed.length === 0 && (
@@ -286,8 +286,8 @@ export default function SentenceBuilder({ session, profile, track, onBack, onUpd
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
               padding: '12px 16px', borderRadius: '14px', marginBottom: '14px',
-              background: result === 'correct' ? '#ECFDF5' : '#FEF2F2',
-              border: '1px solid ' + (result === 'correct' ? '#A7F3D0' : '#FECACA'),
+              background: result === 'correct' ? 'var(--success-bg)' : 'var(--danger-bg)',
+              border: '1px solid ' + (result === 'correct' ? 'var(--success-border)' : 'var(--danger-border)'),
               color: result === 'correct' ? '#2F9E6D' : '#DC2626', fontSize: '14px', fontWeight: 700,
             }}>
               {result === 'correct'

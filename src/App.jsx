@@ -49,11 +49,11 @@ function pathToView(pathname) {
   return seg || 'home'
 }
 
-// Initial theme before a profile loads: follow the OS preference.
-function osTheme() {
-  try {
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark'
-  } catch (e) { /* noop */ }
+// Initial theme before a profile loads: always start light. A signed-in user's
+// saved preference (loaded from their profile) takes over once it arrives, so a
+// deliberate dark-mode choice is still respected — only the very first paint and
+// signed-out visitors default to light.
+function initialTheme() {
   return 'light'
 }
 
@@ -64,7 +64,7 @@ export default function App() {
   const [track, setTrack] = useState(null)
   const [counts, setCounts] = useState({ newCount: 0, learnCount: 0, dueCount: 0, easyCount: 0, totalWords: 0, learnedCount: 0, masteredCount: 0, masteredPct: 0 })
   const [loading, setLoading] = useState(true)
-  const [theme, setThemeState] = useState(osTheme)
+  const [theme, setThemeState] = useState(initialTheme)
   const isMobile = useIsMobile()
   const routerNavigate = useNavigate()
   const location = useLocation()

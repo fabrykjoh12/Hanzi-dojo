@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;600&family=Poppins:wght@500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -36,6 +36,17 @@ body {
   --text-faint: #A1A1AA;
   --reader-watermark: rgba(24, 24, 27, 0.04);
   --bg-image-opacity: 0.4;
+
+  /* Answer-feedback tokens (quizzes, typing, fill-in-the-blank). Kept as
+     semantic vars so the correct/wrong panels adapt to dark mode instead of
+     glowing as near-white blocks. */
+  --success: #2F9E6D;
+  --success-bg: #ECFDF5;
+  --success-border: #A7F3D0;
+  --danger: #DC2626;
+  --danger-bg: #FEF2F2;
+  --danger-border: #FECACA;
+
   color-scheme: light;
 }
 
@@ -70,5 +81,14 @@ body {
   /* The language background image is bright; keep it barely-there on dark so it
      blends instead of glowing. */
   --bg-image-opacity: 0.06;
+
+  /* Feedback tokens tuned for dark surfaces: brighter text, translucent fills. */
+  --success: #34D399;
+  --success-bg: rgba(16, 185, 129, 0.14);
+  --success-border: rgba(16, 185, 129, 0.38);
+  --danger: #F87171;
+  --danger-bg: rgba(248, 113, 113, 0.14);
+  --danger-border: rgba(248, 113, 113, 0.40);
+
   color-scheme: dark;
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { schedule, previewLabels } from './srs'
-import { xpForGrade } from './xp'
+import { xpForGrade, levelInfo } from './xp'
 import { updateStreak, todayStr } from './streak'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
@@ -11,8 +11,11 @@ import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import {
   Volume2, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
-  Sparkles, CheckCircle2, Layers, BookOpenCheck, Sunrise, X,
+  Sparkles, CheckCircle2, Layers, BookOpenCheck, Sunrise, X, Snowflake, TrendingUp,
 } from 'lucide-react'
+
+// Level-ups award a streak freeze, capped so they can't be hoarded indefinitely.
+const MAX_FREEZES = 5
 
 // Does the typed input match the card's reading (or the word itself)?
 // Japanese accepts romaji or kana; Chinese accepts tone-insensitive pinyin.
@@ -195,13 +198,16 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const [gradeColor, setGradeColor] = useState(null)     // feedback ring color
   const [gradeId, setGradeId] = useState(0)              // bumps to restart the flash
   const audioRef = useRef(null)
+  const [audioSpeed, setAudioSpeed] = useState(1)   // TTS playback rate (1× / 0.75× / 0.5×)
   // Running counts of today's study session, persisted to daily_activity so the
   // Profile calendar can show which days were studied.
   const activityRef = useRef({ studied: 0, newC: 0, learn: 0, review: 0 })
   // Per-session tally for the end-of-session recap card.
-  const sessionRef = useRef({ graded: 0, newLearned: 0, graduated: 0, again: 0, reviewedRight: 0, reviewedTotal: 0, xpEarned: 0 })
+  const sessionRef = useRef({ graded: 0, newLearned: 0, graduated: 0, again: 0, reviewedRight: 0, reviewedTotal: 0, xpEarned: 0, leveledTo: 0, freezesEarned: 0 })
   // Running lifetime XP, seeded from the profile and persisted on each grade.
   const xpRef = useRef(profile.total_xp || 0)
+  // Running streak-freeze balance, so level-up rewards stack correctly within a session.
+  const freezesRef = useRef(profile.streak_freezes || 0)
   const [forecast, setForecast] = useState(null)
   const [recap, setRecap] = useState(null)   // snapshot of sessionRef at completion
   const isMobile = useIsMobile()
@@ -226,7 +232,13 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       audioRef.current.currentTime = 0
     }
     audioRef.current = new Audio(url)
+    audioRef.current.playbackRate = audioSpeed
     audioRef.current.play().catch(() => {})
+  }
+
+  const SPEEDS = [1, 0.75, 0.5]
+  function cycleSpeed() {
+    setAudioSpeed(prev => SPEEDS[(SPEEDS.indexOf(prev) + 1) % SPEEDS.length])
   }
 
   async function loadQueue() {
@@ -377,13 +389,30 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       if (grade >= 1) s.reviewedRight += 1
     }
     const xpGain = xpForGrade(grade)
+    const prevLevel = levelInfo(xpRef.current).level
     s.xpEarned += xpGain
     xpRef.current += xpGain
+    const newLevel = levelInfo(xpRef.current).level
 
     if (!streakDone) {
       setStreakDone(true)
       const newStreak = await updateStreak(profile)
+      if (typeof newStreak.streak_freezes === 'number') freezesRef.current = newStreak.streak_freezes
       if (onStreakUpdate) onStreakUpdate(newStreak)
+    }
+
+    // Level-up reward: each level gained grants a streak freeze (capped). This is
+    // the tangible payoff for the steeper XP curve — progress you can spend.
+    if (newLevel > prevLevel) {
+      const before = freezesRef.current
+      freezesRef.current = Math.min(MAX_FREEZES, before + (newLevel - prevLevel))
+      const earned = freezesRef.current - before
+      s.leveledTo = newLevel
+      s.freezesEarned += earned
+      if (earned > 0) {
+        supabase.from('profiles').update({ streak_freezes: freezesRef.current }).eq('id', session.user.id).then(() => {})
+        if (onStreakUpdate) onStreakUpdate({ streak_freezes: freezesRef.current })
+      }
     }
 
     let cardId = card.id
@@ -512,6 +541,25 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               </div>
             )}
 
+            {didStudy && s.leveledTo > 0 && (
+              <div style={{
+                margin: '0 auto 22px', padding: '16px 18px', borderRadius: '18px',
+                background: accentHex + '0D', border: '1px solid ' + accentHex + '2A',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: accentHex, fontSize: '17px', fontWeight: 850 }}>
+                  <TrendingUp size={19} strokeWidth={2.2} color={accentHex} />
+                  Level {s.leveledTo}!
+                </div>
+                {s.freezesEarned > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: '#3E63DD', fontSize: '13px', fontWeight: 700 }}>
+                    <Snowflake size={15} strokeWidth={2} color="#3E63DD" />
+                    +{s.freezesEarned} streak freeze{s.freezesEarned === 1 ? '' : 's'} earned
+                  </div>
+                )}
+              </div>
+            )}
+
             {didStudy && (
               <div style={{
                 display: 'grid',
@@ -610,7 +658,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       {saveError && (
         <div style={{
           maxWidth: '680px', margin: '0 auto 18px',
-          background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626',
+          background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: '#DC2626',
           padding: '14px 18px', borderRadius: '16px', fontSize: '13px', lineHeight: 1.5,
         }}>
           <strong>Card save failed</strong> - your progress is not being saved. Database error: {saveError}
@@ -642,7 +690,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
           <QueuePill label="New" value={newCount} color="#3E63DD" background="#EEF2FF" />
           <QueuePill label="Learn" value={learnCount} color="#D97706" background="#FFFBEB" />
-          <QueuePill label="Due" value={dueCount} color="#2F9E6D" background="#ECFDF5" />
+          <QueuePill label="Due" value={dueCount} color="#2F9E6D" background="var(--success-bg)" />
         </div>
       </div>
 
@@ -699,20 +747,37 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           </div>
 
           {audioUrl && flipped && (
-            <button
-              onClick={e => { e.stopPropagation(); playAudio() }}
-              style={{
-                position: 'absolute', top: '82px', right: '24px',
-                width: '40px', height: '40px', borderRadius: '13px',
-                background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer',
-                color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 10px 24px rgba(24,24,27,0.07)',
-              }}
-              title="Replay audio"
-              aria-label="Replay audio"
-            >
-              <Volume2 size={18} strokeWidth={1.9} />
-            </button>
+            <div style={{ position: 'absolute', top: '76px', right: '24px', display: 'flex', gap: '8px' }}>
+              <button
+                onClick={e => { e.stopPropagation(); playAudio() }}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '7px',
+                  height: '40px', padding: '0 14px', borderRadius: '13px',
+                  background: accentHex + '10', border: '1px solid ' + accentHex + '2A', cursor: 'pointer',
+                  color: accentHex, fontSize: '13px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+                  boxShadow: '0 10px 24px rgba(24,24,27,0.07)',
+                }}
+                title="Replay audio"
+                aria-label="Replay audio"
+              >
+                <Volume2 size={18} strokeWidth={2} />
+                Replay
+              </button>
+              <button
+                onClick={e => { e.stopPropagation(); cycleSpeed() }}
+                style={{
+                  width: '48px', height: '40px', borderRadius: '13px',
+                  background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer',
+                  color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, fontFamily: 'Inter, sans-serif',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 10px 24px rgba(24,24,27,0.07)',
+                }}
+                title="Playback speed"
+                aria-label="Change playback speed"
+              >
+                {audioSpeed}×
+              </button>
+            </div>
           )}
 
           <div
@@ -855,8 +920,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                   marginBottom: '12px', padding: '10px 16px', borderRadius: '14px',
-                  background: typedResult === 'correct' ? '#ECFDF5' : '#FEF2F2',
-                  border: '1px solid ' + (typedResult === 'correct' ? '#A7F3D0' : '#FECACA'),
+                  background: typedResult === 'correct' ? 'var(--success-bg)' : 'var(--danger-bg)',
+                  border: '1px solid ' + (typedResult === 'correct' ? 'var(--success-border)' : 'var(--danger-border)'),
                   color: typedResult === 'correct' ? '#2F9E6D' : '#DC2626',
                   fontSize: '13px', fontWeight: 700,
                 }}>

@@ -267,8 +267,8 @@ export default function Listen({ session, profile, track, onBack, onUpdate }) {
             const isPicked = opt.id === picked
             let borderColor = 'var(--border)'
             let bg = 'var(--surface)'
-            if (answered && isCorrect) { borderColor = '#2F9E6D'; bg = '#ECFDF5' }
-            else if (answered && isPicked && !isCorrect) { borderColor = '#DC2626'; bg = '#FEF2F2' }
+            if (answered && isCorrect) { borderColor = '#2F9E6D'; bg = 'var(--success-bg)' }
+            else if (answered && isPicked && !isCorrect) { borderColor = '#DC2626'; bg = 'var(--danger-bg)' }
             return (
               <button
                 key={opt.id}

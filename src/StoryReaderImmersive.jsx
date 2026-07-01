@@ -499,8 +499,8 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                       const isCorrect = oi === q.correct_index
                       const isChosen = oi === chosen
                       let bc = 'var(--border)', bg = 'var(--surface)'
-                      if (answered && isCorrect) { bc = '#2F9E6D'; bg = '#ECFDF5' }
-                      else if (answered && isChosen) { bc = '#DC2626'; bg = '#FEF2F2' }
+                      if (answered && isCorrect) { bc = '#2F9E6D'; bg = 'var(--success-bg)' }
+                      else if (answered && isChosen) { bc = '#DC2626'; bg = 'var(--danger-bg)' }
                       return (
                         <button
                           key={oi}

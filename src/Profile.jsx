@@ -205,8 +205,9 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   const cardsThisMonth = monthDays.reduce((sum, d) => sum + (activity[d] || 0), 0)
 
   const shareReport = async () => {
-    const lang = profile.active_language === 'japanese' ? 'Japanese' : 'Chinese'
-    const text = 'My ' + monthName + ' on Hanzi-dojo: ' + activeDays + ' active days, '
+    const lang = profile.active_language === 'japanese' ? 'Japanese'
+      : profile.active_language === 'russian' ? 'Russian' : 'Chinese'
+    const text = 'My ' + monthName + ' on Hanzi Dojo: ' + activeDays + ' active days, '
       + cardsThisMonth + ' reviews, ' + (stats.lifetimeMastered || 0) + ' words mastered learning '
       + lang + '. https://fabrykjoh12.github.io/Hanzi-dojo/'
     try {
@@ -255,7 +256,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         <StatCard label="Current streak" value={liveStreak(profile)} unit="days" icon={Flame} color="#D97706" bg="#FFFBEB" />
         <StatCard label="Streak freezes" value={profile.streak_freezes || 0} unit="available" icon={Shield} color="#3E63DD" bg="#EEF2FF" />
         <StatCard label="Words learned" value={loading ? '-' : stats.learned} unit={'of ' + stats.totalWords} icon={Layers} color={accentHex} bg={accentHex + '10'} />
-        <StatCard label="Words mastered" value={loading ? '-' : stats.masteredCount} unit={masteryPct + '%'} icon={Sparkles} color="#2F9E6D" bg="#ECFDF5" />
+        <StatCard label="Words mastered" value={loading ? '-' : stats.masteredCount} unit={masteryPct + '%'} icon={Sparkles} color="#2F9E6D" bg="var(--success-bg)" />
       </div>
 
       <Panel>
@@ -360,7 +361,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
                 display: 'inline-flex', alignItems: 'center', gap: '7px',
                 minHeight: '34px', padding: '0 13px', borderRadius: '10px',
                 border: '1px solid ' + (shared ? '#2F9E6D' : 'var(--border)'),
-                background: shared ? '#ECFDF5' : 'var(--surface)',
+                background: shared ? 'var(--success-bg)' : 'var(--surface)',
                 color: shared ? '#2F9E6D' : 'var(--text-muted)',
                 cursor: 'pointer', fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
               }}
@@ -521,8 +522,8 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
           width: '100%',
           minHeight: '52px',
           borderRadius: '16px',
-          border: '1px solid #FCA5A5',
-          background: '#FEF2F2',
+          border: '1px solid var(--danger-border)',
+          background: 'var(--danger-bg)',
           color: '#DC2626',
           cursor: 'pointer',
           fontSize: '14px',
@@ -631,7 +632,7 @@ function Panel({ children, compact, danger }) {
     <div style={{
       background: 'var(--surface)',
       borderRadius: '20px',
-      border: '1px solid ' + (danger ? '#FECACA' : 'var(--border)'),
+      border: '1px solid ' + (danger ? 'var(--danger-border)' : 'var(--border)'),
       boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
       padding: compact ? '18px 22px' : '22px 24px',
       marginBottom: '14px',
@@ -701,8 +702,8 @@ function SmallButton({ children, onClick, accentHex, filled, danger, disabled, i
         minHeight: '36px',
         padding: '0 14px',
         borderRadius: '10px',
-        border: '1px solid ' + (danger ? '#FCA5A5' : filled ? color : 'var(--border)'),
-        background: filled ? color : (danger ? '#FEF2F2' : 'var(--surface)'),
+        border: '1px solid ' + (danger ? 'var(--danger-border)' : filled ? color : 'var(--border)'),
+        background: filled ? color : (danger ? 'var(--danger-bg)' : 'var(--surface)'),
         color: filled ? 'var(--surface)' : color,
         cursor: disabled ? 'default' : 'pointer',
         fontSize: '13px',

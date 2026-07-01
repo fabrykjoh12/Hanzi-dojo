@@ -11,14 +11,17 @@ import {
 
 // ─── CATEGORIES ────────────────────────────────────────────────────────────
 
+// Tier 1 is unlocked from day one (minWords 0) so a brand-new learner can start
+// reading immediately — every word is tappable and addable to their deck, which
+// is itself a gentle way to learn. Later tiers still gate on learned-word count.
 const CATEGORIES_CHINESE = [
-  { tier: 1, minWords: 30,  label: 'First Steps', wordRange: '1–100', description: 'Stories using the first 100 most common HSK 1 words' },
+  { tier: 1, minWords: 0,   label: 'First Steps', wordRange: '1–100', description: 'Stories using the first 100 most common HSK 1 words' },
   { tier: 2, minWords: 100, label: 'Growing',     wordRange: '1–200', description: 'Stories using the first 200 most common HSK 1 words' },
   { tier: 3, minWords: 200, label: 'Fluent',      wordRange: '1–300', description: 'All 300 HSK 1 words in use' },
 ]
 
 const CATEGORIES_JAPANESE = [
-  { tier: 1, minWords: 30,  label: 'First Steps', wordRange: '1–100', description: 'Stories using the first 100 most common JLPT N5 words' },
+  { tier: 1, minWords: 0,   label: 'First Steps', wordRange: '1–100', description: 'Stories using the first 100 most common JLPT N5 words' },
   { tier: 2, minWords: 100, label: 'Growing',     wordRange: '1–200', description: 'Stories using the first 200 most common JLPT N5 words' },
   { tier: 3, minWords: 200, label: 'Fluent',      wordRange: '1–400', description: 'All 400 N5 Part 1 words in use' },
 ]

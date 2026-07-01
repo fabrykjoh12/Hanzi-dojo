@@ -208,8 +208,8 @@ export default function FillBlank({ session, profile, track, onBack, onUpdate })
             const isCorrect = opt.id === q.vocab.id
             const isPicked = opt.id === picked
             let bc = 'var(--border)', bg = 'var(--surface)'
-            if (answered && isCorrect) { bc = '#2F9E6D'; bg = '#ECFDF5' }
-            else if (answered && isPicked && !isCorrect) { bc = '#DC2626'; bg = '#FEF2F2' }
+            if (answered && isCorrect) { bc = '#2F9E6D'; bg = 'var(--success-bg)' }
+            else if (answered && isPicked && !isCorrect) { bc = '#DC2626'; bg = 'var(--danger-bg)' }
             return (
               <button key={opt.id} onClick={() => choose(opt)} disabled={answered} style={{
                 position: 'relative', minHeight: '64px', padding: '12px 14px', borderRadius: '14px',

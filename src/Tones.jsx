@@ -270,8 +270,8 @@ export default function Tones({ session, profile, track, onBack, onUpdate }) {
             const isCorrect = t.n === q.tone
             const isPicked = t.n === picked
             let bc = 'var(--border)', bg = 'var(--surface)'
-            if (answered && isCorrect) { bc = '#2F9E6D'; bg = '#ECFDF5' }
-            else if (answered && isPicked && !isCorrect) { bc = '#DC2626'; bg = '#FEF2F2' }
+            if (answered && isCorrect) { bc = '#2F9E6D'; bg = 'var(--success-bg)' }
+            else if (answered && isPicked && !isCorrect) { bc = '#DC2626'; bg = 'var(--danger-bg)' }
             return (
               <button key={t.n} onClick={() => choose(t.n)} disabled={answered} style={{
                 position: 'relative', minHeight: '84px', padding: '10px 4px', borderRadius: '14px',

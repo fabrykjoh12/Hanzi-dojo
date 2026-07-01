@@ -37,8 +37,20 @@ function normalizeChinesePinyin(value) {
   return stripChars(withoutTones, ' .,!?;:\'"()-_').toLowerCase()
 }
 
+// Drop a leading article / infinitive marker so "to run", "a dog", "the sun"
+// all match a bare "run" / "dog" / "sun". Word-boundary aware (needs the space).
+function stripLead(value) {
+  const leads = ['to ', 'a ', 'an ', 'the ']
+  let s = value
+  for (let i = 0; i < leads.length; i += 1) {
+    if (s.startsWith(leads[i])) return s.slice(leads[i].length)
+  }
+  return s
+}
+
 function normalizeEnglish(value) {
-  return stripChars((value || '').toLowerCase().trim(), '。、「」，,.!?！？;:\'"()-_ ')
+  const lowered = stripLead((value || '').toLowerCase().trim())
+  return stripChars(lowered, '。、「」，,.!?！？;:\'"()-_ ')
 }
 
 function stripParentheses(value) {
@@ -68,6 +80,7 @@ function isMeaningMatch(input, meaning) {
     .split(',')
     .flatMap(part => part.split(';'))
     .flatMap(part => part.split('/'))
+    .flatMap(part => part.split(' or '))
     .map(part => normalizeEnglish(part))
     .filter(Boolean)
 
@@ -751,8 +764,8 @@ export default function Writing({ session, track, onBack }) {
           marginTop: '14px',
           padding: '18px 20px',
           borderRadius: '18px',
-          background: result.status === 'correct' ? '#ECFDF5' : '#FEF2F2',
-          border: '1px solid ' + (result.status === 'correct' ? '#BBF7D0' : '#FECACA'),
+          background: result.status === 'correct' ? 'var(--success-bg)' : 'var(--danger-bg)',
+          border: '1px solid ' + (result.status === 'correct' ? 'var(--success-border)' : 'var(--danger-border)'),
         }}>
           <div style={{ fontSize: '13px', fontWeight: 800, color: result.status === 'correct' ? '#2F9E6D' : '#DC2626', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             {result.status === 'correct' ? <Check size={15} strokeWidth={2.2} /> : <X size={15} strokeWidth={2.2} />}

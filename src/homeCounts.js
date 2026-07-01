@@ -10,6 +10,16 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
     .eq('level', track.current_level)
     .eq('is_active', true)
 
+  // All vocab ids for the ACTIVE language (every level) — the fluency score is
+  // scoped to this so studying a second language never inflates the first.
+  const { data: langVocab } = await supabase
+    .from('vocabulary')
+    .select('id')
+    .eq('language', track.language)
+    .eq('system', track.system)
+    .eq('is_active', true)
+  const langVocabIds = new Set((langVocab || []).map(v => v.id))
+
   const { data: cards } = await supabase
     .from('cards')
     .select('vocab_id, state, due_at, created_at, is_easy, learned, stability, lapses')
@@ -58,9 +68,11 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
 
   const { learnedCount, masteredCount, masteredPct } = countMastery(levelCards, totalWords)
 
-  // Lifetime counts (all levels) for the fluency score.
-  const lifetimeLearned = (cards || []).filter(c => c.learned).length
-  const lifetimeMastered = (cards || []).filter(c => (c.stability || 0) >= 21).length
+  // Fluency counts: every level of the ACTIVE language only (not other
+  // languages the user also studies). Named "lifetime" for continuity.
+  const langCards = (cards || []).filter(c => langVocabIds.has(c.vocab_id))
+  const lifetimeLearned = langCards.filter(c => c.learned).length
+  const lifetimeMastered = langCards.filter(c => (c.stability || 0) >= 21).length
 
   return {
     newCount, learnCount, dueCount, easyCount, totalWords,

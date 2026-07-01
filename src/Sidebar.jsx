@@ -3,6 +3,7 @@ import { ChevronsLeft, ChevronsRight, Sun, Moon } from 'lucide-react'
 import logo from './assets/Hanzi-logo.png'
 import { useTheme } from './ThemeContext'
 import { PRIMARY_NAV, BOTTOM_NAV } from './navConfig'
+import { BRAND_NAME, wordmarkStyle } from './brand'
 
 // Neutral sage green used for active-state pill (see CLAUDE.md redesign spec)
 const SAGE_BG = '#E7EDE4'
@@ -85,15 +86,12 @@ export default function Sidebar({ view, onNavigate, onLogout }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
           <img
             src={logo}
-            alt="Hanzi-dojo logo"
+            alt={BRAND_NAME + ' logo'}
             style={{ width: collapsed ? '62px' : '44px', height: collapsed ? '62px' : '44px', objectFit: 'contain', flexShrink: 0 }}
           />
           {!collapsed && (
-            <span style={{
-              fontSize: '17px', fontWeight: 700, color: 'var(--text)',
-              letterSpacing: '0.2px', whiteSpace: 'nowrap', overflow: 'hidden',
-            }}>
-              Hanzi-dojo
+            <span style={{ ...wordmarkStyle('18px'), overflow: 'hidden' }}>
+              {BRAND_NAME}
             </span>
           )}
         </div>

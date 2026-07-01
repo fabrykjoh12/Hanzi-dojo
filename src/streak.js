@@ -23,6 +23,22 @@ export function liveStreak(profile) {
   return missed <= (profile.streak_freezes || 0) ? profile.streak : 0
 }
 
+// A plain-language status for the current streak, so the freeze mechanic is
+// visible instead of silently "never losing". Returns one of:
+//   'none'      – no active streak
+//   'safe'      – already studied today
+//   'due_today' – studied yesterday; study today to extend it (or it breaks tomorrow)
+//   'frozen'    – a missed day is being covered by a streak freeze right now
+//   'broken'    – too many days missed; the streak is gone
+export function streakStatus(profile) {
+  if (!profile || !profile.streak || !profile.last_studied_on) return 'none'
+  const gap = daysBetween(profile.last_studied_on, todayStr())
+  if (gap <= 0) return 'safe'
+  if (gap === 1) return 'due_today'
+  const missed = gap - 1
+  return missed <= (profile.streak_freezes || 0) ? 'frozen' : 'broken'
+}
+
 export async function updateStreak(profile) {
   const today = todayStr()
 

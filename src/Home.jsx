@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
-import { liveStreak } from './streak'
+import { liveStreak, streakStatus } from './streak'
 import { levelInfo } from './xp'
 import InfoTip from './InfoTip'
 import { useIsMobile } from './useIsMobile'
-import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, Gauge, Dumbbell } from 'lucide-react'
+import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, Gauge, Dumbbell, Snowflake } from 'lucide-react'
 import { fluencyScore, fluencyRank } from './fluency'
 
 // Neutral sage green for the primary CTA (see CLAUDE.md redesign spec)
@@ -141,6 +141,24 @@ export default function Home({ profile, track, counts, onNavigate }) {
             <span style={{ fontSize: '15px', fontWeight: 700, color: '#D97706' }}>{liveStreak(profile)}</span>
             <span style={{ fontSize: '13px', fontWeight: 500, color: '#B45309' }}>day streak</span>
           </div>
+          {(() => {
+            const st = streakStatus(profile)
+            if (st === 'due_today') {
+              return (
+                <span style={{ fontSize: '11px', fontWeight: 650, color: '#D97706', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Sunrise size={13} strokeWidth={2} color="#D97706" /> Study today to keep it
+                </span>
+              )
+            }
+            if (st === 'frozen') {
+              return (
+                <span style={{ fontSize: '11px', fontWeight: 650, color: '#3E63DD', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Snowflake size={13} strokeWidth={2} color="#3E63DD" /> Freeze protecting your streak · {profile.streak_freezes || 0} left
+                </span>
+              )
+            }
+            return null
+          })()}
           <div style={{
             display: 'flex', alignItems: 'center', gap: '8px',
             padding: '8px 14px', borderRadius: '20px',
