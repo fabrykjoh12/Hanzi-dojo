@@ -1,17 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
-import OpenAI from 'openai'
+import { llm, LLM_MODEL } from './llm.mjs'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
-const GROQ_API_KEY = process.env.GROQ_API_KEY
-
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !GROQ_API_KEY) {
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error('Missing env vars. Run with: node --env-file=.env.script generate-examples.mjs')
   process.exit(1)
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-const groq = new OpenAI({ apiKey: GROQ_API_KEY, baseURL: 'https://api.groq.com/openai/v1' })
+const groq = llm
 
 // Language arg: --chinese, --japanese, or --russian (default: all)
 // --regen regenerates ALL active words (not just ones missing an example), so
@@ -27,7 +25,7 @@ const anyLangFlag = onlyChinese || onlyJapanese || onlyRussian
 
 // Smaller batches + the 70B model give noticeably more sensible sentences.
 const BATCH_SIZE = 10
-const MODEL = 'llama-3.3-70b-versatile'
+const MODEL = LLM_MODEL
 
 function buildPrompt(words, language) {
   const isChinese = language === 'chinese'

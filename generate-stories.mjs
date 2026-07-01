@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import OpenAI from 'openai'
+import { llm, LLM_MODEL } from './llm.mjs'
 
 // Generate level-matched immersion stories via Groq and insert them into the
 // stories table. Config-driven per language/system/level so it works for both
@@ -14,14 +14,13 @@ import OpenAI from 'openai'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
-const GROQ_API_KEY = process.env.GROQ_API_KEY
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !GROQ_API_KEY) {
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error('Missing env vars. Run with: node --env-file=.env.script generate-stories.mjs --language <l> --system <s> --level <n>')
   process.exit(1)
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-const groq = new OpenAI({ apiKey: GROQ_API_KEY, baseURL: 'https://api.groq.com/openai/v1' })
+const groq = llm
 
 const args = process.argv.slice(2)
 function arg(name, def) { const i = args.indexOf('--' + name); return i !== -1 && args[i + 1] ? args[i + 1] : def }
@@ -191,7 +190,7 @@ function buildPrompt(vocab, tierLabel, sceneIndex) {
 async function generateStory(vocab, tierLabel, sceneIndex, attempt = 0) {
   try {
     const response = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile', max_tokens: 1024,
+      model: LLM_MODEL, max_tokens: 1024,
       messages: [{ role: 'user', content: buildPrompt(vocab, tierLabel, sceneIndex) }],
     })
     const text = response.choices[0].message.content.trim()

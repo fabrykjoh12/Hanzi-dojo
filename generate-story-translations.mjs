@@ -1,17 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
-import OpenAI from 'openai'
+import { llm, LLM_MODEL } from './llm.mjs'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
-const GROQ_API_KEY = process.env.GROQ_API_KEY
-
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !GROQ_API_KEY) {
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error('Missing env vars. Run with: node --env-file=.env.script generate-story-translations.mjs')
   process.exit(1)
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-const groq = new OpenAI({ apiKey: GROQ_API_KEY, baseURL: 'https://api.groq.com/openai/v1' })
+const groq = llm
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
 
@@ -46,7 +44,7 @@ function parseDailyLimitWait(err) {
 async function translateStory(story, attempt = 0) {
   try {
     const response = await groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
+      model: LLM_MODEL,
       max_tokens: 1024,
       messages: [{ role: 'user', content: buildPrompt(story) }],
     })

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import OpenAI from 'openai'
+import { llm, LLM_MODEL } from './llm.mjs'
 
 // Generate end-of-story comprehension questions and insert them into
 // story_questions. Three English multiple-choice questions per story (4 options,
@@ -14,15 +14,13 @@ import OpenAI from 'openai'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
-const GROQ_API_KEY = process.env.GROQ_API_KEY
-
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !GROQ_API_KEY) {
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error('Missing env vars. Run with: node --env-file=.env.script generate-comprehension.mjs')
   process.exit(1)
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-const groq = new OpenAI({ apiKey: GROQ_API_KEY, baseURL: 'https://api.groq.com/openai/v1' })
+const groq = llm
 
 const args = process.argv.slice(2)
 const onlyChinese = args.includes('--chinese')
@@ -31,7 +29,7 @@ const doReplace = args.includes('--replace')
 const doPrune = args.includes('--prune')   // delete existing trivial questions (whole story), no LLM
 const dryRun = args.includes('--dry-run')
 
-const MODEL = 'llama-3.3-70b-versatile'
+const MODEL = LLM_MODEL
 const PER_STORY = 3
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
