@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
+import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 
 function getVideoId(url) {
@@ -106,7 +107,7 @@ export default function YouTube({ profile, track, onBack }) {
   const [loading, setLoading] = useState(true)
   const isMobile = useIsMobile()
 
-  const accentHex = profile.active_language === 'japanese' ? '#2E3A6E' : '#B83A24'
+  const accentHex = languageTheme(profile.active_language).accentHex
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
 
