@@ -11,7 +11,7 @@ on:
         description: What to regenerate
         type: choice
         default: both
-        options: [meanings, examples, both, comprehension, clean-meanings, deactivate-awkward, seed-hsk2]
+        options: [meanings, examples, examples-fill, both, comprehension, clean-meanings, deactivate-awkward, seed-hsk2]
       language:
         description: Which language
         type: choice
@@ -57,8 +57,14 @@ jobs:
           fi
 
           if [ "${{ inputs.task }}" = "examples" ] || [ "${{ inputs.task }}" = "both" ]; then
-            echo "::group::Example sentences"
+            echo "::group::Example sentences (regenerate ALL)"
             node generate-examples.mjs $LANG_FLAG --regen
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "examples-fill" ]; then
+            echo "::group::Example sentences (fill only missing — safe for new levels)"
+            node generate-examples.mjs $LANG_FLAG
             echo "::endgroup::"
           fi
 
