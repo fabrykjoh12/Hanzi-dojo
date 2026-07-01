@@ -81,6 +81,19 @@ const CONFIGS = {
       { tier: 3, label: 'Fluent', maxSortOrder: 400, minWords: 200, stories: 5 },
     ],
   },
+  'japanese|jlpt|3': {
+    scenes: JAPANESE_SCENES,
+    promptLang: 'Japanese', level: 'JLPT N4',
+    names: '- たかし (Takashi)\n- はな (Hana)\n- おかあさん (Mother)\n- せんせい (Teacher)',
+    nameNote: 'write in hiragana, not kanji',
+    maxLineChars: 22,
+    prereqLevel: 1, prereqMax: 150,   // include the 150 most basic N5 Part 1 words
+    tiers: [
+      { tier: 1, label: 'First Steps', maxSortOrder: 200, minWords: 30, stories: 5 },
+      { tier: 2, label: 'Growing', maxSortOrder: 400, minWords: 150, stories: 5 },
+      { tier: 3, label: 'Fluent', maxSortOrder: 636, minWords: 300, stories: 5 },
+    ],
+  },
   'chinese|hsk_3|2': {
     scenes: CHINESE_SCENES,
     promptLang: 'Chinese', level: 'HSK 2',
