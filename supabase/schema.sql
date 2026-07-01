@@ -47,7 +47,7 @@ create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text,
   active_language text not null default 'chinese'
-    check (active_language in ('chinese', 'japanese')),
+    check (active_language in ('chinese', 'japanese', 'russian')),
   daily_new_cards int not null default 10
     check (daily_new_cards between 1 and 100),
   streak int not null default 0,
@@ -67,8 +67,8 @@ for each row execute function public.set_updated_at();
 create table public.language_tracks (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
-  language text not null check (language in ('chinese', 'japanese')),
-  system text not null check (system in ('hsk_3', 'jlpt', 'custom')),
+  language text not null check (language in ('chinese', 'japanese', 'russian')),
+  system text not null check (system in ('hsk_3', 'jlpt', 'russian', 'custom')),
   current_level int not null check (current_level between 1 and 9),
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
@@ -86,8 +86,8 @@ for each row execute function public.set_updated_at();
 create table public.vocabulary (
   id uuid primary key default gen_random_uuid(),
 
-  language text not null check (language in ('chinese', 'japanese')),
-  system text not null check (system in ('hsk_3', 'jlpt', 'custom')),
+  language text not null check (language in ('chinese', 'japanese', 'russian')),
+  system text not null check (system in ('hsk_3', 'jlpt', 'russian', 'custom')),
   level int not null check (level between 1 and 9),
 
   sort_order int not null,
@@ -244,8 +244,8 @@ create table public.test_attempts (
 
   user_id uuid not null references public.profiles(id) on delete cascade,
 
-  language text not null check (language in ('chinese', 'japanese')),
-  system text not null check (system in ('hsk_3', 'jlpt', 'custom')),
+  language text not null check (language in ('chinese', 'japanese', 'russian')),
+  system text not null check (system in ('hsk_3', 'jlpt', 'russian', 'custom')),
   level int not null check (level between 1 and 9),
 
   attempt_date date not null default current_date,
@@ -287,8 +287,8 @@ on public.test_answers(attempt_id);
 create table public.level_unlocks (
   user_id uuid not null references public.profiles(id) on delete cascade,
 
-  language text not null check (language in ('chinese', 'japanese')),
-  system text not null check (system in ('hsk_3', 'jlpt', 'custom')),
+  language text not null check (language in ('chinese', 'japanese', 'russian')),
+  system text not null check (system in ('hsk_3', 'jlpt', 'russian', 'custom')),
   level int not null check (level between 1 and 9),
 
   unlocked_at timestamptz not null default now(),
@@ -301,8 +301,8 @@ create table public.level_unlocks (
 create table public.stories (
   id uuid primary key default gen_random_uuid(),
 
-  language text not null check (language in ('chinese', 'japanese')),
-  system text not null check (system in ('hsk_3', 'jlpt', 'custom')),
+  language text not null check (language in ('chinese', 'japanese', 'russian')),
+  system text not null check (system in ('hsk_3', 'jlpt', 'russian', 'custom')),
   level int not null check (level between 1 and 9),
   story_number int not null,
 
@@ -337,8 +337,8 @@ create table public.story_vocab (
 create table public.youtube_recommendations (
   id uuid primary key default gen_random_uuid(),
 
-  language text not null check (language in ('chinese', 'japanese')),
-  system text not null check (system in ('hsk_3', 'jlpt', 'custom')),
+  language text not null check (language in ('chinese', 'japanese', 'russian')),
+  system text not null check (system in ('hsk_3', 'jlpt', 'russian', 'custom')),
   level int not null check (level between 1 and 9),
 
   title text not null,
