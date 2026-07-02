@@ -405,7 +405,11 @@ export default function App() {
           </Suspense>
         </div>
         {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} />}
-        <Feedback session={session} profile={profile} view={view} />
+        {/* Calm screens only — floating over Study it covered the Easy grade
+            button, and the story reader has its own bottom audio bar. */}
+        {['home', 'practice', 'profile', 'settings', 'words', 'grammar', 'languages'].indexOf(view) !== -1 && (
+          <Feedback session={session} profile={profile} view={view} />
+        )}
         <Toasts />
       </div>
     </ThemeContext.Provider>

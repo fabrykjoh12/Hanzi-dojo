@@ -911,24 +911,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
   return (
     <div style={pageShell}>
-      {undoVisible && (
-        <button
-          onClick={undoLast}
-          style={{
-            position: 'fixed', left: '50%', transform: 'translateX(-50%)',
-            bottom: isMobile ? 'calc(74px + env(safe-area-inset-bottom))' : '26px',
-            zIndex: 30, display: 'inline-flex', alignItems: 'center', gap: '8px',
-            padding: '10px 16px', borderRadius: '999px',
-            background: 'var(--surface)', border: '1px solid var(--border)',
-            color: 'var(--text)', fontSize: '13px', fontWeight: 650,
-            fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-            boxShadow: '0 12px 32px rgba(24,24,27,0.16)',
-          }}
-        >
-          <RotateCcw size={15} strokeWidth={2} color="var(--text-muted)" />
-          Undo last grade
-        </button>
-      )}
       {saveError && (
         <div style={{
           maxWidth: '680px', margin: '0 auto 18px',
@@ -1008,7 +990,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               }}
             />
           )}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '12px' }}>
+          {/* State pill + audio controls share one header row: the controls
+              used to float absolutely over the card, which covered the word's
+              furigana on narrow screens. In flow they can't cover anything. */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
               padding: '8px 12px', borderRadius: '999px',
@@ -1018,56 +1003,55 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               <Sparkles size={14} strokeWidth={1.9} color={accentHex} />
               {stateLabel}
             </span>
-          </div>
-
-          {audioUrl && flipped && (
-            <div style={{ position: 'absolute', top: '76px', right: '24px', display: 'flex', gap: '8px' }}>
-              {audioBroken ? (
-                <span
-                  title="This word's audio file couldn't be loaded"
+            {audioUrl && flipped && (
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {audioBroken ? (
+                  <span
+                    title="This word's audio file couldn't be loaded"
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '7px',
+                      height: '40px', padding: '0 14px', borderRadius: '13px',
+                      background: 'var(--surface-2)', border: '1px solid var(--border)',
+                      color: 'var(--text-faint)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+                    }}
+                  >
+                    <VolumeX size={18} strokeWidth={2} />
+                    No audio
+                  </span>
+                ) : (
+                <button
+                  onClick={e => { e.stopPropagation(); playAudio() }}
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: '7px',
                     height: '40px', padding: '0 14px', borderRadius: '13px',
-                    background: 'var(--surface-2)', border: '1px solid var(--border)',
-                    color: 'var(--text-faint)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+                    background: accentHex + '10', border: '1px solid ' + accentHex + '2A', cursor: 'pointer',
+                    color: accentHex, fontSize: '13px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+                    boxShadow: '0 10px 24px rgba(24,24,27,0.07)',
                   }}
+                  title="Replay audio"
+                  aria-label="Replay audio"
                 >
-                  <VolumeX size={18} strokeWidth={2} />
-                  No audio
-                </span>
-              ) : (
-              <button
-                onClick={e => { e.stopPropagation(); playAudio() }}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '7px',
-                  height: '40px', padding: '0 14px', borderRadius: '13px',
-                  background: accentHex + '10', border: '1px solid ' + accentHex + '2A', cursor: 'pointer',
-                  color: accentHex, fontSize: '13px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
-                  boxShadow: '0 10px 24px rgba(24,24,27,0.07)',
-                }}
-                title="Replay audio"
-                aria-label="Replay audio"
-              >
-                <Volume2 size={18} strokeWidth={2} />
-                Replay
-              </button>
-              )}
-              <button
-                onClick={e => { e.stopPropagation(); cycleSpeed() }}
-                style={{
-                  width: '48px', height: '40px', borderRadius: '13px',
-                  background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer',
-                  color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, fontFamily: 'Inter, sans-serif',
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 10px 24px rgba(24,24,27,0.07)',
-                }}
-                title="Playback speed"
-                aria-label="Change playback speed"
-              >
-                {audioSpeed}×
-              </button>
-            </div>
-          )}
+                  <Volume2 size={18} strokeWidth={2} />
+                  Replay
+                </button>
+                )}
+                <button
+                  onClick={e => { e.stopPropagation(); cycleSpeed() }}
+                  style={{
+                    width: '48px', height: '40px', borderRadius: '13px',
+                    background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer',
+                    color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, fontFamily: 'Inter, sans-serif',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 10px 24px rgba(24,24,27,0.07)',
+                  }}
+                  title="Playback speed"
+                  aria-label="Change playback speed"
+                >
+                  {audioSpeed}×
+                </button>
+              </div>
+            )}
+          </div>
 
           <div
             key={flipped ? 'back' : 'front'}
@@ -1248,6 +1232,26 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               {flipped
                 ? '1–4 to grade · Enter = ' + (suggestedGrade === 0 ? 'Again' : 'Good') + ' · R to replay'
                 : (isTyped ? 'Enter to check' : 'Space to reveal')}
+            </div>
+          )}
+          {/* In flow (not fixed) so it can never sit on top of the grade
+              buttons — the fixed version covered Again/Hard on phones. */}
+          {undoVisible && (
+            <div style={{ textAlign: 'center', marginTop: '14px' }}>
+              <button
+                onClick={undoLast}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  padding: '10px 16px', borderRadius: '999px',
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  color: 'var(--text)', fontSize: '13px', fontWeight: 650,
+                  fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+                  boxShadow: '0 6px 18px rgba(24,24,27,0.10)',
+                }}
+              >
+                <RotateCcw size={15} strokeWidth={2} color="var(--text-muted)" />
+                Undo last grade
+              </button>
             </div>
           )}
         </div>
