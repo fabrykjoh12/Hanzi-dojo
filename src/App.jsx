@@ -279,9 +279,11 @@ export default function App() {
   } else if (view === 'grammar') {
     content = (
       <Grammar
+        session={session}
         profile={profile}
         track={track}
         onBack={() => navigate('home')}
+        onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
   } else if (view === 'strokes') {
