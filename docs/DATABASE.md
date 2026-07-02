@@ -168,6 +168,13 @@ finish XP. Cleared per language by the progress-reset RPC.
 
 This stores curated YouTube videos for each level.
 
+### feedback
+
+In-app bug reports / ideas / notes from users (user_id, email snapshot,
+category: bug|idea|other, message, page, language, created_at). Users can
+insert and read their own rows; there's no in-app admin view yet — read
+submissions via the Supabase dashboard Table Editor or SQL editor.
+
 ## Audio
 
 Audio is stored in Supabase Storage bucket:

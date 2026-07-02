@@ -6,6 +6,10 @@ Read this entire file before making any change. It describes not just *what* the
 
 ## 0. LATEST SESSION — read first (2026-07-02)
 
+### Batch 13 — in-app feedback widget (user request)
+- New `feedback` table (migration `20260702180000_add_feedback.sql`, apply in SQL editor): `user_id`, `email` (snapshot at submit time), `category` (bug|idea|other), `message`, `page` (current view), `language`, `created_at`. RLS: users insert/read their own rows only; append-only (no update/delete policy). No in-app admin view yet — read submissions via the Supabase dashboard Table Editor or SQL editor (`select * from feedback order by created_at desc`).
+- New `src/Feedback.jsx` — a small floating button (bottom-right, sage, sits above the mobile nav bar) present on every signed-in screen, opening a modal: pick a category (Bug / Idea / Something else), write a message, send. No `<form>` tag (plain controlled textarea + button per project rules). Success shows a toast; auto-captures the current view and active language for context. Mounted once in App.jsx alongside `<Toasts />`.
+
 ### Batch 12 — flashcard audio still broken on iOS after v4 (user-reported, follow-up)
 - User confirmed on Chrome-for-iOS (WebKit media engine, same as Safari) the "No audio" badge was showing on every card — a real, detected failure, not the earlier SW-cache poisoning (already fixed and merged in Batch 9/v4; the SW now bypasses Range requests entirely, so on iOS — which ranges every request — audio goes straight to network every time and the SW isn't in the loop at all).
 - **Root cause (best fit, can't reproduce live from this sandbox — network to prod is blocked):** WebKit's progressive `<audio>`/`Audio()` load is stricter about Range-request byte-serving than Chromium; some CDN/edge paths in front of Supabase Storage don't answer Range the way WebKit expects, so the direct load errors out even though the MP3 itself (plain Google-TTS `audio/mpeg`, generated in `generate-audio.mjs`) is fine.

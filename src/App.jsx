@@ -8,6 +8,7 @@ import { ThemeContext } from './ThemeContext'
 import Landing from './Landing'
 import PasswordReset from './PasswordReset'
 import Toasts from './Toasts'
+import Feedback from './Feedback'
 import Onboarding from './Onboarding'
 import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
@@ -404,6 +405,7 @@ export default function App() {
           </Suspense>
         </div>
         {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} />}
+        <Feedback session={session} profile={profile} view={view} />
         <Toasts />
       </div>
     </ThemeContext.Provider>
