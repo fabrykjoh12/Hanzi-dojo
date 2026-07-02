@@ -1,11 +1,33 @@
+import { useState } from 'react'
 import { supabase } from './supabase'
 import {
   Palette, SlidersHorizontal, Sun, Moon, Keyboard, Eye,
-  Volume2, BookOpenCheck, Gauge,
+  Volume2, BookOpenCheck, Gauge, Bell,
 } from 'lucide-react'
 import { useIsMobile } from './useIsMobile'
 import { useTheme } from './ThemeContext'
 import { languageTheme } from './languageTheme'
+import { pushSupported, enableReminders, disableReminders, setReminderHour } from './push'
+
+// The picker shows times the user actually recognizes ("9:00 AM" local),
+// while reminder_hour_utc stores UTC for the sender script — convert at the
+// boundary in both directions.
+function localHourToUtc(localHour) {
+  const d = new Date()
+  d.setHours(localHour, 0, 0, 0)
+  return d.getUTCHours()
+}
+function utcHourToLocal(utcHour) {
+  const d = new Date()
+  d.setUTCHours(utcHour, 0, 0, 0)
+  return d.getHours()
+}
+function hourLabel(localHour) {
+  const period = localHour < 12 ? 'AM' : 'PM'
+  const h12 = localHour % 12 === 0 ? 12 : localHour % 12
+  return h12 + ':00 ' + period
+}
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, h) => h)
 
 function getLanguageDetails(profile) {
   const t = languageTheme(profile.active_language)
@@ -20,12 +42,18 @@ export default function Settings({ session, profile, onUpdate }) {
   const { accentHex, isJapanese } = getLanguageDetails(profile)
   const isMobile = useIsMobile()
   const { theme, setTheme } = useTheme()
+  const [reminderBusy, setReminderBusy] = useState(false)
+  const [reminderError, setReminderError] = useState(null)
 
   // Defensive reads so the UI works even before the prefs migration is applied.
   const recallMode = profile.recall_mode === 'typed' ? 'typed' : 'flip'
   const audioAutoplay = profile.audio_autoplay !== false
   const furiganaDefault = profile.furigana_default !== false
   const audioSpeed = profile.audio_speed === 0.75 || profile.audio_speed === 0.5 ? profile.audio_speed : 1
+  const remindersOn = profile.reminder_enabled === true
+  const localHour = utcHourToLocal(
+    typeof profile.reminder_hour_utc === 'number' ? profile.reminder_hour_utc : localHourToUtc(9)
+  )
 
   // Persist a single preference column (best-effort) and reflect it live.
   const savePref = (patch) => {
@@ -33,6 +61,33 @@ export default function Settings({ session, profile, onUpdate }) {
     if (session) {
       supabase.from('profiles').update(patch).eq('id', session.user.id).then(() => {})
     }
+  }
+
+  const toggleReminders = async (on) => {
+    setReminderError(null)
+    setReminderBusy(true)
+    if (on) {
+      const res = await enableReminders(session, localHourToUtc(localHour))
+      if (!res.ok) {
+        setReminderError(
+          res.error === 'permission-denied'
+            ? "Notifications are blocked — allow them for this site in your browser's settings, then try again."
+            : "Push notifications aren't supported in this browser."
+        )
+      } else if (onUpdate) {
+        onUpdate({ reminder_enabled: true, reminder_hour_utc: localHourToUtc(localHour) })
+      }
+    } else {
+      await disableReminders(session)
+      if (onUpdate) onUpdate({ reminder_enabled: false })
+    }
+    setReminderBusy(false)
+  }
+
+  const changeReminderHour = async (nextLocalHour) => {
+    const utc = localHourToUtc(nextLocalHour)
+    if (onUpdate) onUpdate({ reminder_hour_utc: utc })
+    await setReminderHour(session, utc)
   }
 
   return (
@@ -108,6 +163,46 @@ export default function Settings({ session, profile, onUpdate }) {
               <Toggle accentHex={accentHex} checked={furiganaDefault} onChange={(v) => savePref({ furigana_default: v })} />
             </Card>
           )}
+
+          {/* Daily review reminder — opt-in Web Push */}
+          <Card
+            icon={Bell}
+            title="Daily review reminder"
+            text={
+              pushSupported()
+                ? "Get a notification when you have cards waiting. Off by default — nothing is sent unless you turn this on."
+                : "Push notifications aren't supported in this browser."
+            }
+            accentHex={accentHex}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+              <Toggle
+                accentHex={accentHex}
+                checked={remindersOn}
+                onChange={(v) => toggleReminders(v)}
+                disabled={reminderBusy || !pushSupported()}
+              />
+              {remindersOn && (
+                <select
+                  value={localHour}
+                  onChange={(e) => changeReminderHour(Number(e.target.value))}
+                  disabled={reminderBusy}
+                  style={{
+                    height: '36px', padding: '0 10px', borderRadius: '10px',
+                    border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text)',
+                    fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+                  }}
+                >
+                  {HOUR_OPTIONS.map(h => (
+                    <option key={h} value={h}>{hourLabel(h)}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+            {reminderError && (
+              <div style={{ fontSize: '12.5px', color: 'var(--danger)', marginTop: '10px', lineHeight: 1.5 }}>{reminderError}</div>
+            )}
+          </Card>
         </div>
       </div>
     </div>
@@ -166,16 +261,18 @@ function Segmented({ value, onChange, options, accentHex }) {
   )
 }
 
-function Toggle({ checked, onChange, accentHex }) {
+function Toggle({ checked, onChange, accentHex, disabled }) {
   return (
     <button
-      onClick={() => onChange(!checked)}
+      onClick={() => !disabled && onChange(!checked)}
       aria-pressed={checked}
+      disabled={disabled}
       style={{
         width: '50px', height: '28px', borderRadius: '999px', position: 'relative',
         border: '1px solid ' + (checked ? accentHex : 'var(--border)'),
         background: checked ? accentHex : 'var(--surface-2)',
-        cursor: 'pointer', transition: 'background 160ms ease, border-color 160ms ease', padding: 0,
+        cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.55 : 1,
+        transition: 'background 160ms ease, border-color 160ms ease', padding: 0,
       }}
     >
       <span style={{

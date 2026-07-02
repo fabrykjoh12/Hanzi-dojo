@@ -10,11 +10,10 @@
  * This file is served verbatim from /public (no bundler transform). Plain JS.
  */
 
-// v4: audio requests carrying a Range header bypass the cache entirely —
-// answering them from a cached full response breaks Safari's media stack, and
-// caching an opaque partial response poisons that file for every later play.
-// The version bump also wipes any already-poisoned audio caches.
-var VERSION = 'v4'
+// v5: adds push notification handling (opt-in daily review reminders) — no
+// caching behavior changed, the bump just gives the new SW code a clean
+// install/activate cycle.
+var VERSION = 'v5'
 var SHELL_CACHE = 'hanzi-shell-' + VERSION
 var ASSET_CACHE = 'hanzi-assets-' + VERSION
 var AUDIO_CACHE = 'hanzi-audio-' + VERSION
@@ -126,4 +125,35 @@ self.addEventListener('fetch', function (event) {
   if (url.indexOf(self.location.origin) === 0) {
     event.respondWith(cacheFirst(request, ASSET_CACHE))
   }
+})
+
+// Opt-in daily review reminder (product review item #16). The payload is
+// sent as JSON by send-review-reminders.mjs: { title, body, url }.
+self.addEventListener('push', function (event) {
+  var data = { title: 'Reviews waiting', body: 'You have cards due for review.', url: '/' }
+  if (event.data) {
+    try { data = Object.assign(data, event.data.json()) } catch { /* keep defaults */ }
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: './pwa-192.png',
+      badge: './pwa-192.png',
+      data: { url: data.url },
+    })
+  )
+})
+
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close()
+  var target = new URL(event.notification.data && event.notification.data.url || './', self.registration.scope).toString()
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clients) {
+      for (var i = 0; i < clients.length; i += 1) {
+        if (clients[i].url === target && 'focus' in clients[i]) return clients[i].focus()
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(target)
+      return null
+    })
+  )
 })

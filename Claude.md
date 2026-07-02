@@ -6,6 +6,15 @@ Read this entire file before making any change. It describes not just *what* the
 
 ## 0. LATEST SESSION — read first (2026-07-02)
 
+### Batch 16 — opt-in daily review reminder via Web Push (product review item #16, 3 of 3 remaining — LAST original-review item)
+- New tables/columns: `push_subscriptions` (endpoint/p256dh/auth per device, RLS insert/select/delete own) and `profiles.reminder_enabled` / `profiles.reminder_hour_utc` (migration `20260702220000_add_push_reminders.sql`).
+- **No Supabase Edge Function** — this repo has no Supabase CLI/functions setup, so sending is a plain Node script (`send-review-reminders.mjs`, uses the `web-push` npm package) run hourly by a new GitHub Action (`.github/workflows/send-reminders.yml`, `cron: '0 * * * *'`). It matches profiles where `reminder_hour_utc` equals the current UTC hour, counts due cards for their active track (any level, `state in (review, learning, relearning)` and `due_at <= now`), and pushes to every subscribed device; 404/410 responses (dead subscriptions) are pruned automatically.
+- `src/push.js`: `enableReminders` (requests Notification permission, subscribes via `registration.pushManager`, upserts the subscription + hour), `setReminderHour` (change hour without re-subscribing), `disableReminders` (best-effort unsubscribe + clears the DB rows/flag), `pushSupported()` capability check.
+- `sw.js` → **v5**: added `push` (shows the notification from the JSON payload `{title, body, url}`) and `notificationclick` (focuses an existing tab at that URL or opens one) handlers. No caching behavior changed.
+- Settings.jsx: new "Daily review reminder" card — toggle + an hour `<select>` labeled in the user's **local** time (converted to/from UTC at the boundary; a plain hour number, not a full IANA timezone, so it can drift ~1h across a DST change — noted as a known v1 limitation) — inline error text if the browser denies/lacks push support.
+- **Setup required before this does anything** (see the deployment section further down for exact steps): a VAPID keypair was generated this session (private key given to the user in chat only — never committed) — needs `VAPID_PRIVATE_KEY` + `VITE_VAPID_PUBLIC_KEY` as GitHub repo secrets, `VITE_VAPID_PUBLIC_KEY` as a Vercel env var, and optionally a `VAPID_SUBJECT` repo variable (`mailto:` contact).
+- Not verified end-to-end from this sandbox (no live browser/device here) — needs a real device test after the secrets are in place.
+
 ### Batch 15 — retention % + reviews/day in Profile (product review item #17b, 2 of 3 remaining)
 - New `ReviewAccuracy` component in `Profile.jsx`, rendered as its own panel right after the existing 6-month `StudyCalendar` heatmap (which already covered item #17's other half). Queries `review_logs` scoped to the current track (`vocabulary!inner(language, system)` filter, same pattern as `src/data.js`'s `getTrackCards`) and computes: retention % (grade 0 = "Again"/forgotten counts against it, grades 1–3 all count as recalled) and a 30-day reviews-per-day bar chart.
 - Empty state (not a misleading "0%") when `review_logs` has no rows yet for the track — expected for any account predating Batch 6, which is when review-log writes started.
@@ -1122,7 +1131,14 @@ The app is **live** and deployed to two static hosts, both building from `main`.
 ### Vercel (secondary)
 - **URL:** https://hanzi-dojo-jet.vercel.app/ (served from root `/`).
 - **How:** Vercel project `hanzi-dojo` auto-deploys; the **Production** environment tracks the `main` branch. Framework preset = Vite, build `npm run build`, output `dist`.
-- **Env vars:** set per-environment under Settings → Environments → Production: the same three `VITE_` vars. Vercel bakes them in at build time and only applies them to **new** builds — after adding/changing, redeploy (Deployments → ⋯ → Redeploy, uncheck build cache).
+- **Env vars:** set per-environment under Settings → Environments → Production: the same three `VITE_` vars, plus **`VITE_VAPID_PUBLIC_KEY`** (push reminders, item #16 — see below). Vercel bakes them in at build time and only applies them to **new** builds — after adding/changing, redeploy (Deployments → ⋯ → Redeploy, uncheck build cache).
+
+### Push reminders (item #16) — one-time secret setup
+`send-review-reminders.mjs` runs hourly via `.github/workflows/send-reminders.yml` and needs its own secrets, separate from the `regen-content` ones:
+- **GitHub repository secrets:** `VAPID_PRIVATE_KEY` (keep this one secret — never in the frontend), `VITE_VAPID_PUBLIC_KEY` (same value as the Vercel one below — the workflow reads it as `VAPID_PUBLIC_KEY`).
+- **GitHub repository variable** (Settings → Secrets and variables → Actions → Variables): `VAPID_SUBJECT`, a `mailto:` contact address some push services require — defaults to a placeholder if unset.
+- **Vercel env var:** `VITE_VAPID_PUBLIC_KEY` — same public key as above; the frontend needs it to call `pushManager.subscribe()`.
+- The keypair itself is generated once with `web-push`'s `generateVAPIDKeys()` — it isn't regenerated by any script in this repo, so store both halves somewhere safe (rotating them invalidates every existing subscription, requiring users to re-enable reminders).
 
 ### Routing (react-router BrowserRouter)
 - `main.jsx` wraps `<App>` in `<BrowserRouter basename=…>` (basename = `BASE_URL` minus the trailing slash, so it matches each host's base path). `App.jsx` derives `view` from `useLocation().pathname` (`pathToView`) and `navigate(key)` calls `useNavigate()` with `viewToPath(key)`. Each top-level screen is its own URL (`/study`, `/profile`, …); home is `/`. Browser back/forward and refresh-keeps-place now work. (Stories' internal list↔reader is still local state, not routed.)
