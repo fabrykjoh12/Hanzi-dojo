@@ -73,6 +73,35 @@ export function getAudioUrl(audioPath) {
   return SUPABASE_URL + '/storage/v1/object/public/audio/' + audioPath
 }
 
+// Play a URL on a given <audio> element, with a fallback for iOS WebKit
+// (Safari, and Chrome-on-iOS — same underlying media engine) which can fail
+// a direct progressive-load play() from some CDNs' Range-request handling
+// even though the file itself is fine. If the direct URL errors, retry once
+// by fetching the whole file as a blob, which sidesteps Range entirely.
+// `onFail` is called only if both attempts fail.
+export function playAudioEl(el, url, onFail) {
+  function fallback() {
+    fetch(url)
+      .then(res => { if (!res.ok) throw new Error('fetch failed'); return res.blob() })
+      .then(blob => {
+        const blobUrl = URL.createObjectURL(blob)
+        el.onerror = () => { if (onFail) onFail() }
+        el.addEventListener('ended', () => URL.revokeObjectURL(blobUrl), { once: true })
+        el.src = blobUrl
+        return el.play()
+      })
+      .catch(() => { if (onFail) onFail() })
+  }
+  el.onerror = fallback
+  el.src = url
+  el.play().catch(e => {
+    // Expected, not a real failure: autoplay blocked, or play() interrupted
+    // by a pause()/src swap from a rapid second tap.
+    if (e && (e.name === 'NotAllowedError' || e.name === 'AbortError')) return
+    fallback()
+  })
+}
+
 export function normalizeRecallInput(value) {
   return (value || '')
     .toLowerCase()

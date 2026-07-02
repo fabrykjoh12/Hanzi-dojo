@@ -7,7 +7,7 @@ import { computeAward } from './xpService'
 import { updateStreak, todayStr, liveStreak } from './streak'
 import { evaluateAchievements } from './achievements'
 import { toast } from './toast'
-import { getLevelLabel, getSystemLabel, getAudioUrl } from './utils'
+import { getLevelLabel, getSystemLabel, getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { lenientPinyin } from './testLogic'
 import { toRomaji } from 'wanakana'
@@ -250,17 +250,14 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       audioRef.current.pause()
       audioRef.current.currentTime = 0
     }
-    const el = new Audio(url)
-    // Surface a broken/missing file instead of failing silently — "the sound
-    // doesn't work" with no signal is undebuggable for the user.
-    el.onerror = () => setAudioBroken(true)
+    const el = new Audio()
     el.playbackRate = audioSpeed
     audioRef.current = el
-    el.play().catch((e) => {
-      // Autoplay-policy rejections are expected (user just taps Replay);
-      // anything else means the file didn't load.
-      if (e && e.name !== 'NotAllowedError' && e.name !== 'AbortError') setAudioBroken(true)
-    })
+    // Surface a broken/missing file instead of failing silently — "the sound
+    // doesn't work" with no signal is undebuggable for the user. playAudioEl
+    // already retries once via a blob fetch (works around iOS WebKit Range
+    // quirks against the storage CDN) before giving up.
+    playAudioEl(el, url, () => setAudioBroken(true))
   }
 
   const SPEEDS = [1, 0.75, 0.5]

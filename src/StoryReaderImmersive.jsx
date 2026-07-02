@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import { awardXp } from './xpService'
 import { PrimaryButton } from './ui'
 import { CHARACTER_READINGS } from './characterNames'
-import { getLevelLabel } from './utils'
+import { getLevelLabel, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
 import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRight, UserRound, Highlighter, Check, X } from 'lucide-react'
@@ -364,8 +364,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     const url = audioUrlFor(path)
     if (!url) return
     if (!wordAudioRef.current) wordAudioRef.current = new Audio()
-    wordAudioRef.current.src = url
-    wordAudioRef.current.play().catch(() => { /* ignore */ })
+    playAudioEl(wordAudioRef.current, url, () => { /* ignore */ })
   }
 
   // Read the story aloud line-by-line so the sentence currently being spoken can

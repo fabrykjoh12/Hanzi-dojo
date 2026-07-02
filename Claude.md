@@ -6,6 +6,12 @@ Read this entire file before making any change. It describes not just *what* the
 
 ## 0. LATEST SESSION — read first (2026-07-02)
 
+### Batch 12 — flashcard audio still broken on iOS after v4 (user-reported, follow-up)
+- User confirmed on Chrome-for-iOS (WebKit media engine, same as Safari) the "No audio" badge was showing on every card — a real, detected failure, not the earlier SW-cache poisoning (already fixed and merged in Batch 9/v4; the SW now bypasses Range requests entirely, so on iOS — which ranges every request — audio goes straight to network every time and the SW isn't in the loop at all).
+- **Root cause (best fit, can't reproduce live from this sandbox — network to prod is blocked):** WebKit's progressive `<audio>`/`Audio()` load is stricter about Range-request byte-serving than Chromium; some CDN/edge paths in front of Supabase Storage don't answer Range the way WebKit expects, so the direct load errors out even though the MP3 itself (plain Google-TTS `audio/mpeg`, generated in `generate-audio.mjs`) is fine.
+- **Fix:** new `playAudioEl(el, url, onFail)` in `utils.js` — plays the direct URL first (unchanged, fast path for every other browser); if that errors (`onerror` or a `play()` rejection other than `NotAllowedError`/`AbortError`), it retries once by `fetch()`-ing the whole file as a blob and playing from an object URL, which sidesteps Range entirely. `onFail` only fires if both attempts fail. Wired into all four playback sites: Study.jsx (flashcards — feeds the "No audio" badge), Listen.jsx, Tones.jsx, StoryReaderImmersive.jsx (word-tap audio).
+- Not yet confirmed fixed on-device (sandbox can't reach prod) — ask the user to retest on Chrome/Safari iOS after this deploys.
+
 ### Product-review fix batch (branch `claude/product-design-review-kfwlx2` — NOT yet on main)
 A full product/design/code review was performed, then its Phase-1 fixes were implemented on this branch:
 - **Study.jsx:** double-grade race guard (`gradingRef` around `handleGrade`); **`review_logs` now written on every grade** (best-effort insert — enables future FSRS tuning/retention stats); desktop **keyboard shortcuts** (Space/Enter reveal, 1–4 grade, R replay, hint row under the buttons); queue pills use translucent accent tints (dark-mode correct).
