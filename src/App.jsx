@@ -8,6 +8,7 @@ import { ThemeContext } from './ThemeContext'
 import Landing from './Landing'
 import PasswordReset from './PasswordReset'
 import Toasts from './Toasts'
+import Feedback from './Feedback'
 import Onboarding from './Onboarding'
 import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
@@ -27,6 +28,7 @@ const FillBlank = lazy(() => import('./FillBlank'))
 const SentenceBuilder = lazy(() => import('./SentenceBuilder'))
 const Writer = lazy(() => import('./Writer'))
 const Practice = lazy(() => import('./Practice'))
+const Words = lazy(() => import('./Words'))
 const Grammar = lazy(() => import('./Grammar'))
 const Profile = lazy(() => import('./Profile'))
 const YouTube = lazy(() => import('./YouTube'))
@@ -266,12 +268,23 @@ export default function App() {
         onBack={() => navigate('home')}
       />
     )
+  } else if (view === 'words') {
+    content = (
+      <Words
+        session={session}
+        profile={profile}
+        track={track}
+        onBack={() => navigate('practice')}
+      />
+    )
   } else if (view === 'grammar') {
     content = (
       <Grammar
+        session={session}
         profile={profile}
         track={track}
         onBack={() => navigate('home')}
+        onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
   } else if (view === 'strokes') {
@@ -392,6 +405,7 @@ export default function App() {
           </Suspense>
         </div>
         {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} />}
+        <Feedback session={session} profile={profile} view={view} />
         <Toasts />
       </div>
     </ThemeContext.Provider>

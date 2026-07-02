@@ -54,7 +54,25 @@ function scrambleIds(n) {
   return s
 }
 
+// How "everyday" a sentence is: its HARDEST in-level word decides (a sentence
+// built from words 1–40 plus one word ranked 280 is a rank-280 sentence), and
+// tokens that aren't level vocabulary at all — names, out-of-level words — are
+// the strongest rarity signal, so each one costs a large penalty.
+function sentenceScore(tokens, orderByWord) {
+  let worst = 0
+  let unknown = 0
+  for (const t of tokens) {
+    const o = orderByWord[t]
+    if (o === undefined) unknown += 1
+    else if (o > worst) worst = o
+  }
+  return worst + unknown * 400
+}
+
 function buildQuestions(pool, segmenter) {
+  const orderByWord = {}
+  for (const v of pool) orderByWord[v.word] = v.sort_order || 0
+
   const usable = []
   for (const v of pool) {
     if (!v.example_sentence) continue
@@ -62,12 +80,13 @@ function buildQuestions(pool, segmenter) {
     // sentence a natural, buildable length.
     if (!v.example_translation) continue
     const tokens = tokenize(v.example_sentence, segmenter)
-    if (tokens.length >= 3 && tokens.length <= 9) usable.push({ vocab: v, tokens })
+    if (tokens.length >= 3 && tokens.length <= 8) {
+      usable.push({ vocab: v, tokens, score: sentenceScore(tokens, orderByWord) })
+    }
   }
-  // Bias toward the most common words (lowest sort_order) so learners build the
-  // everyday sentences, not rare tail vocabulary — then shuffle within that pool
-  // for variety each round.
-  usable.sort((a, b) => (a.vocab.sort_order || 0) - (b.vocab.sort_order || 0))
+  // Most-everyday sentences first (lowest worst-word rank, fewest off-list
+  // tokens), then shuffle within that pool for variety each round.
+  usable.sort((a, b) => a.score - b.score)
   const commonPool = usable.slice(0, Math.max(QUESTION_COUNT * 3, 30))
   return shuffle(commonPool).slice(0, Math.min(QUESTION_COUNT, commonPool.length)).map(q => ({
     ...q, order: scrambleIds(q.tokens.length),

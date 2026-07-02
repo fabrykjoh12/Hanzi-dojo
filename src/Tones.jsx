@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { awardXp } from './xpService'
-import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl } from './utils'
+import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl } from './utils'
 import { PrimaryButton, SecondaryButton } from './ui'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
@@ -144,8 +144,9 @@ export default function Tones({ session, profile, track, onBack, onUpdate }) {
     const url = getAudioUrl(path)
     if (!url) return
     if (audioRef.current) { audioRef.current.pause(); audioRef.current.currentTime = 0 }
-    audioRef.current = new Audio(url)
-    audioRef.current.play().catch(() => {})
+    const el = new Audio()
+    audioRef.current = el
+    playAudioEl(el, url, () => {})
   }
 
   const q = questions[idx]

@@ -16,8 +16,8 @@ describe('computeAward', () => {
   })
 
   it('grants one streak freeze per level gained', () => {
-    // Level 1 → 2 costs 150 XP.
-    const res = computeAward(145, 10, 1)
+    // Level 1 → 2 costs 250 XP.
+    const res = computeAward(245, 10, 1)
     expect(res.newLevel).toBe(2)
     expect(res.leveled).toBe(true)
     expect(res.freezes).toBe(2)
@@ -25,7 +25,7 @@ describe('computeAward', () => {
   })
 
   it('caps freezes at MAX_FREEZES', () => {
-    const res = computeAward(145, 10, MAX_FREEZES)
+    const res = computeAward(245, 10, MAX_FREEZES)
     expect(res.leveled).toBe(true)
     expect(res.freezes).toBe(MAX_FREEZES)
     expect(res.freezesEarned).toBe(0)

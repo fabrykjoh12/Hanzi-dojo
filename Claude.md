@@ -6,6 +6,16 @@ Read this entire file before making any change. It describes not just *what* the
 
 ## 0. LATEST SESSION — read first (2026-07-02)
 
+### Batch 13 — in-app feedback widget (user request)
+- New `feedback` table (migration `20260702180000_add_feedback.sql`, apply in SQL editor): `user_id`, `email` (snapshot at submit time), `category` (bug|idea|other), `message`, `page` (current view), `language`, `created_at`. RLS: users insert/read their own rows only; append-only (no update/delete policy). No in-app admin view yet — read submissions via the Supabase dashboard Table Editor or SQL editor (`select * from feedback order by created_at desc`).
+- New `src/Feedback.jsx` — a small floating button (bottom-right, sage, sits above the mobile nav bar) present on every signed-in screen, opening a modal: pick a category (Bug / Idea / Something else), write a message, send. No `<form>` tag (plain controlled textarea + button per project rules). Success shows a toast; auto-captures the current view and active language for context. Mounted once in App.jsx alongside `<Toasts />`.
+
+### Batch 12 — flashcard audio still broken on iOS after v4 (user-reported, follow-up)
+- User confirmed on Chrome-for-iOS (WebKit media engine, same as Safari) the "No audio" badge was showing on every card — a real, detected failure, not the earlier SW-cache poisoning (already fixed and merged in Batch 9/v4; the SW now bypasses Range requests entirely, so on iOS — which ranges every request — audio goes straight to network every time and the SW isn't in the loop at all).
+- **Root cause (best fit, can't reproduce live from this sandbox — network to prod is blocked):** WebKit's progressive `<audio>`/`Audio()` load is stricter about Range-request byte-serving than Chromium; some CDN/edge paths in front of Supabase Storage don't answer Range the way WebKit expects, so the direct load errors out even though the MP3 itself (plain Google-TTS `audio/mpeg`, generated in `generate-audio.mjs`) is fine.
+- **Fix:** new `playAudioEl(el, url, onFail)` in `utils.js` — plays the direct URL first (unchanged, fast path for every other browser); if that errors (`onerror` or a `play()` rejection other than `NotAllowedError`/`AbortError`), it retries once by `fetch()`-ing the whole file as a blob and playing from an object URL, which sidesteps Range entirely. `onFail` only fires if both attempts fail. Wired into all four playback sites: Study.jsx (flashcards — feeds the "No audio" badge), Listen.jsx, Tones.jsx, StoryReaderImmersive.jsx (word-tap audio).
+- Not yet confirmed fixed on-device (sandbox can't reach prod) — ask the user to retest on Chrome/Safari iOS after this deploys.
+
 ### Product-review fix batch (branch `claude/product-design-review-kfwlx2` — NOT yet on main)
 A full product/design/code review was performed, then its Phase-1 fixes were implemented on this branch:
 - **Study.jsx:** double-grade race guard (`gradingRef` around `handleGrade`); **`review_logs` now written on every grade** (best-effort insert — enables future FSRS tuning/retention stats); desktop **keyboard shortcuts** (Space/Enter reveal, 1–4 grade, R replay, hint row under the buttons); queue pills use translucent accent tints (dark-mode correct).
@@ -17,6 +27,18 @@ A full product/design/code review was performed, then its Phase-1 fixes were imp
 - **Perf:** backgrounds converted to WebP (`bg-*.webp`, 1.2–1.8 MB PNGs → 9–50 KB; imports updated in Background/Auth/Onboarding — PNG originals kept in assets but unbundled); Google Fonts moved from CSS `@import` to preconnect+`<link>` in index.html.
 - **Misc:** unused Vite-template `src/App.css` deleted; `og:image` is now an absolute GH-Pages URL (scrapers don't resolve relative paths).
 - Verified: `npm run build` ✓, `npx vitest run` 45/45 ✓, `npm run lint` at the pre-existing baseline (no new errors).
+
+### Batch 11 — user's 13-item feedback list (2026-07-02)
+- **Leniency (items 1/8):** `lenientPinyin` in testLogic (tone marks + tone NUMBERS + punctuation/space/ü-v insensitive) now backs both Study typed mode and Writing; Writing's Japanese path runs the INPUT through toRomaji so kana↔romaji↔katakana all match. Tests added.
+- **Word list (item 2):** new `src/Words.jsx` (view `words`, Practice-hub card "Word list") — every current-level word with live status (New/Learning/Learned/Mastered), count chips, search.
+- **Fluency (item 3):** card is now titled "{Language} fluency" — the score was already language-scoped since the data-layer change; the label made it look global.
+- **XP (items 4/5):** curve steepened — `spanForLevel = 250 + (level-1)*170` (was 150/+110); tests updated. New rank ladder in xp.js (`levelTitle`/`nextTitle`: Novice→Student(3)→Adept(6)→Wanderer(10)→Scholar(15)→Master(20)→Sensei(30)) shown on the Home pill, in the Study level-up recap (with next-rank preview), and in the awardXp toast.
+- **Item 6:** `comprehension-prune` (chinese) dispatched via the Action. Also ran `clean-meanings` (both) and `deactivate-awkward` — both succeeded.
+- **Sentence builder (item 7):** sentences now scored by their HARDEST word (max in-level sort_order; off-list tokens cost 400 each) instead of just the target word; token window tightened to 3–8.
+- **Stories (item 12):** `generate-stories.mjs` prompt reworked — per-tier line ranges (14–20 / 16–24 / 20–28), story-arc requirement, 90%-list rule with a few extra common words allowed, max_tokens 2560. New `chinese|hsk_3|1` config; workflow gained `stories-hsk1-replace` / `stories-hsk2-replace` tasks (they DELETE + regenerate).
+- **Grammar (item 10):** full overhaul. Data (`grammarGuides.js`) doubled to CN 14 / JP 14 / RU 12 topics; new optional topic fields: `pattern` (formula chip), `find` (substrings matched against real story lines), `check` (two 4-option self-check MCQs), and Japanese examples can carry `segs` (`[[text, reading|null], ...]`) for per-kanji `<ruby>` furigana. `Grammar.jsx` renders it all: pattern chip, ruby segs (fallback: reading ABOVE when kanji present, nothing for kana-only; CN/RU keep reading below), "In your stories" block (up to 3 current-level published story lines containing a `find` substring, deduped, with story title), and a "Check yourself" block — instant right/wrong per option, answers lock once correct, solving both pays +6 XP via `awardXp` once per topic per visit. App.jsx now passes `session`/`onUpdate` to Grammar.
+- **Kana (item 13):** rebuilt Kana!-style — gojūon ROW picker grid (hira+kata labels, dakuten rows), session-miss dots per row (drillMemory), Basics/All/None quick-selects, answer mode toggle: Tap choices or TYPE romaji (Hepburn/kunrei variants accepted: shi/si, tsu/tu, fu/hu, ji/zi), Enter-driven typed flow.
+- Item 11 (replay): root-caused earlier — the poisoned audio cache; fixed by SW v4 (needs one hard refresh). Item 9 (Russian bg): generated via Higgsfield — see assets if the CDN allowed download.
 
 ### Batch 10 — polish: count-ups, persisted audio speed, tone pairs
 - **`CountUp`** in `ui.jsx` (rAF ease-out, ~650ms; reduced-motion renders the final value instantly). Used on the Study recap tiles + XP badge and Home's fluency score.

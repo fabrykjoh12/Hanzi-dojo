@@ -22,6 +22,21 @@ export function normalizePinyin(str) {
     .replace(/[''\s]/g, '')
 }
 
+// The most lenient pinyin form we accept everywhere: tone marks stripped,
+// numeric tones (hai3) stripped, spaces/apostrophes/punctuation removed,
+// v treated as ü. "hǎi", "hai", "hai3", "HAI " all normalize identically.
+export function lenientPinyin(value) {
+  let out = ''
+  const base = normalizePinyin(value)
+  for (let i = 0; i < base.length; i += 1) {
+    const ch = base[i]
+    if (ch >= '1' && ch <= '5') continue
+    if (' .,!?;:\'"()-_·'.indexOf(ch) !== -1) continue
+    out += ch
+  }
+  return out
+}
+
 // Accept: exact character match OR reading_plain match OR normalized reading match
 export function checkAnswer(userInput, vocab) {
   const input = (userInput || '').trim()

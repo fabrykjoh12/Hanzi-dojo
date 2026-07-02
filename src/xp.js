@@ -11,10 +11,41 @@ export function xpForGrade(grade) {
 }
 
 // XP required to clear a given level. Deliberately steep so levels are earned
-// over real weeks of study, not a single big session: level 1 → 2 costs 150,
-// and each level after that costs 110 more than the last (2→3 = 260, 3→4 = 370…).
+// over real weeks of study, not a single big session: level 1 → 2 costs 250,
+// and each level after that costs 170 more than the last (2→3 = 420, 3→4 = 590…).
 function spanForLevel(level) {
-  return 150 + (level - 1) * 110
+  return 250 + (level - 1) * 170
+}
+
+// Milestone titles — the dojo's rank ladder. Earned at the level shown, kept
+// until the next one. Displayed beside the account level on Home/Profile and
+// announced in the level-up moment.
+const TITLES = [
+  { min: 1, name: 'Novice' },
+  { min: 3, name: 'Student' },
+  { min: 6, name: 'Adept' },
+  { min: 10, name: 'Wanderer' },
+  { min: 15, name: 'Scholar' },
+  { min: 20, name: 'Master' },
+  { min: 30, name: 'Sensei' },
+]
+
+// levelTitle(level) → current rank name for an account level.
+export function levelTitle(level) {
+  let name = TITLES[0].name
+  for (let i = 0; i < TITLES.length; i += 1) {
+    if (level >= TITLES[i].min) name = TITLES[i].name
+  }
+  return name
+}
+
+// The next title milestone above `level`, or null at the top — for
+// "next reward" previews.
+export function nextTitle(level) {
+  for (let i = 0; i < TITLES.length; i += 1) {
+    if (TITLES[i].min > level) return TITLES[i]
+  }
+  return null
 }
 
 // levelInfo(totalXp) → { level, intoLevel, levelSpan, pct }

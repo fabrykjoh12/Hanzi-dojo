@@ -11,7 +11,7 @@ on:
         description: What to regenerate
         type: choice
         default: both
-        options: [meanings, examples, examples-fill, both, comprehension, comprehension-prune, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk2, stories-hsk2, seed-n4, audio-n4, stories-n4, seed-russian, audio-russian, examples-russian, stories-russian]
+        options: [meanings, examples, examples-fill, both, comprehension, comprehension-prune, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk2, stories-hsk2, seed-n4, audio-n4, stories-n4, seed-russian, audio-russian, examples-russian, stories-russian, stories-hsk1-replace, stories-hsk2-replace, audio-jlpt1, audio-jlpt2]
       language:
         description: Which language
         type: choice
@@ -116,6 +116,18 @@ jobs:
             echo "::endgroup::"
           fi
 
+          if [ "${{ inputs.task }}" = "stories-hsk1-replace" ]; then
+            echo "::group::REPLACE HSK 1 stories (deletes existing, regenerates longer story-first versions)"
+            node generate-stories.mjs --language chinese --system hsk_3 --level 1 --replace
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "stories-hsk2-replace" ]; then
+            echo "::group::REPLACE HSK 2 stories (deletes existing, regenerates longer story-first versions)"
+            node generate-stories.mjs --language chinese --system hsk_3 --level 2 --replace
+            echo "::endgroup::"
+          fi
+
           if [ "${{ inputs.task }}" = "seed-n4" ]; then
             echo "::group::Seed JLPT N4 (japanese level 3) vocabulary from data/n4.json"
             node seed-vocab.mjs --file data/n4.json --language japanese --system jlpt --level 3 --apply
@@ -125,6 +137,18 @@ jobs:
           if [ "${{ inputs.task }}" = "audio-n4" ]; then
             echo "::group::Generate JLPT N4 audio (Google TTS)"
             node generate-audio.mjs --language japanese --system jlpt --level 3
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "audio-jlpt1" ]; then
+            echo "::group::Regenerate JLPT N5 Part 1 (japanese level 1) audio (Google TTS)"
+            node generate-audio.mjs --language japanese --system jlpt --level 1
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "audio-jlpt2" ]; then
+            echo "::group::Regenerate JLPT N5 Part 2 (japanese level 2) audio (Google TTS)"
+            node generate-audio.mjs --language japanese --system jlpt --level 2
             echo "::endgroup::"
           fi
 
