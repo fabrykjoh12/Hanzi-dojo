@@ -217,6 +217,8 @@ export default function Test({ session, profile, track, onBack }) {
   const [selected, setSelected] = useState(null)
   const [saving, setSaving] = useState(false)
   const [lastResult, setLastResult] = useState(null)
+  // Two-step in-UI confirm for ending the quiz early (no native dialogs).
+  const [confirmingEnd, setConfirmingEnd] = useState(false)
 
   const { accentHex, fontFamily, languageName } = getLanguageDetails(profile, track)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
@@ -252,6 +254,7 @@ export default function Test({ session, profile, track, onBack }) {
     setIndex(0)
     setSelected(null)
     setWrongVocab([])
+    setConfirmingEnd(false)
     setPhase('testing')
   }
 
@@ -276,9 +279,6 @@ export default function Test({ session, profile, track, onBack }) {
   }
 
   const handleEndQuiz = () => {
-    const confirmed = window.confirm('End the quiz now? Unanswered questions will be counted as wrong.')
-    if (!confirmed) return
-
     const unansweredQuestions = questions.slice(index)
     const unansweredAnswers = unansweredQuestions.map(q => ({
       vocab: q.vocab,
@@ -493,13 +493,33 @@ export default function Test({ session, profile, track, onBack }) {
             </div>
             <div style={{ width: '220px' }}><ProgressBar pct={progress} accentHex={accentHex} /></div>
           </div>
-          <IconButton
-            icon={X}
-            label="End quiz"
-            danger
-            onClick={handleEndQuiz}
-            disabled={selected !== null || saving}
-          />
+          {confirmingEnd ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                Unanswered count as wrong.
+              </span>
+              <IconButton
+                icon={X}
+                label="End now"
+                danger
+                onClick={() => { setConfirmingEnd(false); handleEndQuiz() }}
+                disabled={saving}
+              />
+              <IconButton
+                icon={RotateCcw}
+                label="Keep going"
+                onClick={() => setConfirmingEnd(false)}
+              />
+            </div>
+          ) : (
+            <IconButton
+              icon={X}
+              label="End quiz"
+              danger
+              onClick={() => setConfirmingEnd(true)}
+              disabled={selected !== null || saving}
+            />
+          )}
         </div>
 
         <div style={{

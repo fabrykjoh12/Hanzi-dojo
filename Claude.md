@@ -18,6 +18,12 @@ A full product/design/code review was performed, then its Phase-1 fixes were imp
 - **Misc:** unused Vite-template `src/App.css` deleted; `og:image` is now an absolute GH-Pages URL (scrapers don't resolve relative paths).
 - Verified: `npm run build` ✓, `npx vitest run` 45/45 ✓, `npm run lint` at the pre-existing baseline (no new errors).
 
+### Batch 3 (same branch, PR #4)
+- **Undo last grade (Study.jsx):** every grade snapshots the pre-grade card row, queue, session tallies, XP/freeze balances, and daily-activity counts; a floating "Undo last grade" chip (6s, or `U` key) restores all of it. Undoing a brand-new card's first grade deletes the row that grade created (explicit user request — the card returns as new). The undone grade's `review_logs` entry is deleted too — **apply migration `20260702090000_allow_review_log_delete.sql`** (review_logs previously had no delete policy, so the cleanup silently no-ops until it's applied). The streak is deliberately not reverted. No undo on the session-completing grade (recap already snapshotted).
+- **Suggested grade + Enter:** typed mode highlights Good/Again from the check result (2px accent border on the `GradeButton`); Enter grades it. Flip mode: Enter = Good (Anki convention). Hint row shows the mapping.
+- **Test.jsx:** `window.confirm` replaced with an inline two-step End-quiz confirm (`confirmingEnd` state).
+- **StoryReaderImmersive.jsx:** story segmentation (`parsed`/`speakerColors`) and coverage stats are now `useMemo`'d — previously every toggle/sheet interaction re-ran `Intl.Segmenter` over the whole story.
+
 ### Phase 2 (same branch, PR #4)
 - **`src/data.js`** — `getTrackCards(userId, track, { level, columns })`: cards scoped **server-side** via a `vocabulary!inner` join (language/system/level filters in PostgREST). Migrated: `Study.loadQueue` + `loadForecast`, `homeCounts` (which also dropped its now-redundant language-vocab query), `testLogic.getTestStatus`. Screens no longer pull the user's whole cross-language cards table. Rows carry a nested `vocabulary: {id, level}` — harmless, never written back. Profile.jsx intentionally NOT migrated (achievements legitimately need lifetime cross-language cards).
 - **Navigation refetch diet** — `App.navigate()` reloads profile/track/counts only when landing on `home` (was: every view switch = ~5 queries). Study/practice screens already patch the in-memory profile via `onUpdate`/`onStreakUpdate`.

@@ -131,7 +131,7 @@ function IconButton({ icon: Icon, label, onClick, color, background, border }) {
   )
 }
 
-function GradeButton({ grade, label, interval, color, icon: Icon, onClick }) {
+function GradeButton({ grade, label, interval, color, icon: Icon, onClick, suggested }) {
   const [hovered, setHovered] = useState(false)
   return (
     <button
@@ -141,8 +141,9 @@ function GradeButton({ grade, label, interval, color, icon: Icon, onClick }) {
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         gap: '6px', minHeight: '76px', padding: '12px 8px',
-        borderRadius: '16px', border: '1px solid ' + color + (hovered ? '66' : '30'),
-        background: hovered ? color + '14' : color + '0D',
+        borderRadius: '16px',
+        border: suggested ? '2px solid ' + color + '99' : '1px solid ' + color + (hovered ? '66' : '30'),
+        background: hovered || suggested ? color + '14' : color + '0D',
         color, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
         transition: 'background 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease',
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
@@ -202,6 +203,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // twice while the first save is still in flight (which would double-schedule
   // it and, for new cards, attempt a duplicate insert).
   const gradingRef = useRef(false)
+  // Snapshot of everything the last grade mutated, so a misclicked "Easy" can
+  // be undone for a few seconds instead of silently mis-scheduling the card.
+  const undoRef = useRef(null)
+  const undoTimerRef = useRef(null)
+  const [undoVisible, setUndoVisible] = useState(false)
   // Running counts of today's study session, persisted to daily_activity so the
   // Profile calendar can show which days were studied.
   const activityRef = useRef({ studied: 0, newC: 0, learn: 0, review: 0 })
@@ -385,6 +391,25 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     const card = queue[0]
     const res = schedule(card, grade)
 
+    // A new grade invalidates any pending undo — its snapshot predates this one.
+    clearTimeout(undoTimerRef.current)
+    undoRef.current = null
+    setUndoVisible(false)
+
+    // Snapshot the pre-grade world for undo. `card`/`queue` are the pre-grade
+    // values; the running refs are copied before this grade's tallies land.
+    const snapshot = {
+      card: { ...card },
+      prevQueue: queue.slice(),
+      session: { ...sessionRef.current },
+      activity: { ...activityRef.current },
+      xp: xpRef.current,
+      freezes: freezesRef.current,
+      wasNew: !card.id,
+      cardId: null,
+      logId: null,
+    }
+
     // Fire the colored grade-feedback ring (restarts via the bumped key).
     setGradeColor(GRADE_COLORS[grade])
     setGradeId(id => id + 1)
@@ -446,10 +471,24 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       cardId = data?.id
     }
 
+    // Offer undo for a few seconds — except when this grade completes the
+    // session (the recap snapshot has already been taken by then).
+    snapshot.cardId = cardId
+    const willComplete = !res.stay && queue.length === 1
+    if (!willComplete) {
+      undoRef.current = snapshot
+      setUndoVisible(true)
+      undoTimerRef.current = setTimeout(() => {
+        undoRef.current = null
+        setUndoVisible(false)
+      }, 6000)
+    }
+
     recordActivity(card.state)
 
     // Log the review so FSRS parameters can be tuned and retention stats built
-    // later. Best-effort: history is nice-to-have, grading must never block on it.
+    // later. Best-effort: history is nice-to-have, grading must never block on
+    // it. The log id is captured onto the snapshot so undo can remove the entry.
     supabase.from('review_logs').insert({
       user_id: session.user.id,
       card_id: cardId,
@@ -459,7 +498,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       next_state: res.updates.state,
       previous_interval_days: card.interval_days || 0,
       next_interval_days: res.updates.interval_days,
-    }).then(() => {})
+    }).select('id').single().then(({ data }) => {
+      snapshot.logId = data && data.id
+    })
 
     // Persist lifetime XP (best-effort; harmless if the column doesn't exist yet)
     // and reflect it in the in-memory profile so Home/Profile update live.
@@ -485,15 +526,91 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     })
   }
 
-  // Desktop keyboard flow: Space/Enter reveals, 1–4 grades, R replays audio.
-  // Rebinds each render so the handler always sees current state. The typed-mode
-  // input owns its own keys (Enter submits there), so key events from inputs are
+  // Undo the last grade: restore the card row, queue order, XP/freeze balances,
+  // session tallies, and daily activity to their pre-grade snapshot. The streak
+  // itself is deliberately NOT reverted — the user did show up and study.
+  const undoLast = async () => {
+    const u = undoRef.current
+    if (!u || gradingRef.current) return
+    gradingRef.current = true
+    clearTimeout(undoTimerRef.current)
+    undoRef.current = null
+    setUndoVisible(false)
+    try {
+      if (u.wasNew) {
+        // This grade created the row; the user's explicit undo removes it again
+        // (the card returns to the queue as a brand-new item).
+        if (u.cardId) {
+          await supabase.from('cards').delete().eq('id', u.cardId).eq('user_id', session.user.id)
+        }
+      } else {
+        const c = u.card
+        await supabase.from('cards').update({
+          state: c.state,
+          interval_days: c.interval_days,
+          due_at: c.due_at,
+          is_easy: c.is_easy,
+          learned: c.learned,
+          stability: c.stability,
+          difficulty: c.difficulty,
+          reps: c.reps,
+          lapses: c.lapses,
+          last_review: c.last_review,
+          scheduled_days: c.scheduled_days,
+          elapsed_days: c.elapsed_days,
+          learning_step: c.learning_step,
+        }).eq('id', u.cardId)
+      }
+      if (u.logId) supabase.from('review_logs').delete().eq('id', u.logId).then(() => {})
+
+      sessionRef.current = u.session
+      activityRef.current = u.activity
+      xpRef.current = u.xp
+      const restore = { total_xp: u.xp }
+      if (freezesRef.current !== u.freezes) restore.streak_freezes = u.freezes
+      freezesRef.current = u.freezes
+      supabase.from('profiles').update(restore).eq('id', session.user.id).then(() => {})
+      if (onStreakUpdate) onStreakUpdate(restore)
+      supabase.from('daily_activity').upsert({
+        user_id: session.user.id,
+        activity_date: todayStr(),
+        studied_cards: u.activity.studied,
+        new_cards: u.activity.newC,
+        learning_cards: u.activity.learn,
+        review_cards: u.activity.review,
+      }, { onConflict: 'user_id,activity_date' }).then(() => {})
+
+      setFlipped(false)
+      setTypedValue('')
+      setTypedResult(null)
+      setQueue(u.prevQueue)
+    } finally {
+      gradingRef.current = false
+    }
+  }
+
+  // Clear a pending undo timer if the screen unmounts mid-window.
+  useEffect(() => () => clearTimeout(undoTimerRef.current), [])
+
+  // In typed mode the check result implies a grade — highlight it and let Enter
+  // confirm it. Flip mode defaults Enter to "Good" (the Anki convention).
+  const suggestedGrade = isTyped && typedResult ? (typedResult === 'correct' ? 2 : 0) : null
+
+  // Desktop keyboard flow: Space/Enter reveals, 1–4 grades, Enter takes the
+  // suggested/Good grade, R replays audio, U undoes the last grade. Rebinds
+  // each render so the handler always sees current state. The typed-mode input
+  // owns its own keys (Enter submits there), so key events from inputs are
   // ignored.
   useEffect(() => {
     const onKey = (e) => {
       if (loading || done || queue.length === 0) return
       const tag = e.target && e.target.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      if ((e.key === 'u' || e.key === 'U') && undoRef.current) {
+        e.preventDefault()
+        undoLast()
+        return
+      }
       if (!flipped) {
         if (e.key === ' ' || e.key === 'Enter') {
           e.preventDefault()
@@ -504,6 +621,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       if (e.key >= '1' && e.key <= '4') {
         e.preventDefault()
         handleGrade(Number(e.key) - 1)
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        handleGrade(suggestedGrade != null ? suggestedGrade : 2)
       } else if (e.key === 'r' || e.key === 'R') {
         playAudio()
       }
@@ -704,6 +824,24 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
   return (
     <div style={pageShell}>
+      {undoVisible && (
+        <button
+          onClick={undoLast}
+          style={{
+            position: 'fixed', left: '50%', transform: 'translateX(-50%)',
+            bottom: isMobile ? 'calc(74px + env(safe-area-inset-bottom))' : '26px',
+            zIndex: 30, display: 'inline-flex', alignItems: 'center', gap: '8px',
+            padding: '10px 16px', borderRadius: '999px',
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            color: 'var(--text)', fontSize: '13px', fontWeight: 650,
+            fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+            boxShadow: '0 12px 32px rgba(24,24,27,0.16)',
+          }}
+        >
+          <RotateCcw size={15} strokeWidth={2} color="var(--text-muted)" />
+          Undo last grade
+        </button>
+      )}
       {saveError && (
         <div style={{
           maxWidth: '680px', margin: '0 auto 18px',
@@ -997,6 +1135,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                     color={item.color}
                     icon={item.icon}
                     onClick={handleGrade}
+                    suggested={suggestedGrade === item.grade}
                   />
                 ))}
               </div>
@@ -1005,7 +1144,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           {!isMobile && (
             <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '12px', color: 'var(--text-faint)', fontWeight: 550 }}>
               {flipped
-                ? '1–4 to grade · R to replay audio'
+                ? '1–4 to grade · Enter = ' + (suggestedGrade === 0 ? 'Again' : 'Good') + ' · R to replay'
                 : (isTyped ? 'Enter to check' : 'Space to reveal')}
             </div>
           )}

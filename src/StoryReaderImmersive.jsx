@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from './supabase'
 import { CHARACTER_READINGS } from './characterNames'
 import { getLevelLabel } from './utils'
@@ -255,36 +255,52 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const lines = story.content.split('\n').filter(Boolean)
   const englishLines = (story.english_content || '').split('\n').filter(Boolean)
 
-  const speakerColors = {}
-  let speakerN = 0
-  const parsed = lines.map(line => {
-    const { speaker, text } = splitSpeaker(line)
-    if (speaker && speakerColors[speaker] === undefined) {
-      speakerColors[speaker] = SPEAKER_PALETTE[speakerN % SPEAKER_PALETTE.length]
-      speakerN += 1
-    }
-    return { speaker, tokens: segmentLine(text, vocabMap, segmenterRef.current, names, particles) }
-  })
+  // Segmenting the whole story is the expensive part of this screen; memoize it
+  // so toggles/sheet interactions don't re-run Intl.Segmenter over every line.
+  // `names`/`particles` derive from track.language, so it stands in for both.
+  const { parsed, speakerColors } = useMemo(() => {
+    const storyLines = story.content.split('\n').filter(Boolean)
+    const colors = {}
+    let speakerN = 0
+    const parsedLines = storyLines.map(line => {
+      const { speaker, text } = splitSpeaker(line)
+      if (speaker && colors[speaker] === undefined) {
+        colors[speaker] = SPEAKER_PALETTE[speakerN % SPEAKER_PALETTE.length]
+        speakerN += 1
+      }
+      return { speaker, tokens: segmentLine(text, vocabMap, segmenterRef.current, names, particles) }
+    })
+    return { parsed: parsedLines, speakerColors: colors }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story.content, vocabMap, track.language])
 
   // Word-coverage stats over the unique vocabulary that appears in this story.
-  const vocabSeen = new Map()
-  const newWordsMap = new Map()   // not-yet-started words → vocab object (for the recap)
-  parsed.forEach(p => p.tokens.forEach(tk => {
-    if (tk.vocab) {
-      const st = wordStatus(tk.vocab.id, userCards)
-      vocabSeen.set(tk.vocab.id, st)
-      if (st === 'not_started') newWordsMap.set(tk.vocab.id, tk.vocab)
+  // Recomputes only when the parse or the user's card map changes.
+  const { totalUnique, knownCount, learningCount, newCount, knownPct, newWords } = useMemo(() => {
+    const vocabSeen = new Map()
+    const newWordsMap = new Map()   // not-yet-started words → vocab object (for the recap)
+    parsed.forEach(p => p.tokens.forEach(tk => {
+      if (tk.vocab) {
+        const st = wordStatus(tk.vocab.id, userCards)
+        vocabSeen.set(tk.vocab.id, st)
+        if (st === 'not_started') newWordsMap.set(tk.vocab.id, tk.vocab)
+      }
+    }))
+    let known = 0, learning = 0, fresh = 0
+    vocabSeen.forEach(st => {
+      if (st === 'review' || st === 'mastered') known += 1
+      else if (st === 'learning') learning += 1
+      else fresh += 1
+    })
+    return {
+      totalUnique: vocabSeen.size,
+      knownCount: known,
+      learningCount: learning,
+      newCount: fresh,
+      knownPct: vocabSeen.size ? Math.round((known / vocabSeen.size) * 100) : 0,
+      newWords: [...newWordsMap.values()],
     }
-  }))
-  const totalUnique = vocabSeen.size
-  let knownCount = 0, learningCount = 0, newCount = 0
-  vocabSeen.forEach(st => {
-    if (st === 'review' || st === 'mastered') knownCount += 1
-    else if (st === 'learning') learningCount += 1
-    else newCount += 1
-  })
-  const knownPct = totalUnique ? Math.round((knownCount / totalUnique) * 100) : 0
-  const newWords = [...newWordsMap.values()]
+  }, [parsed, userCards])
 
   // Comprehension scoring.
   const answeredCount = Object.keys(answers).length
