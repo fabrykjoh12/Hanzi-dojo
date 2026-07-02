@@ -4,6 +4,38 @@ Read this entire file before making any change. It describes not just *what* the
 
 ---
 
+## 0. LATEST SESSION — read first (2026-07-01)
+
+Most recent round of work, so a fresh chat has current context. Everything below is **shipped to `main`** (Vercel production auto-deploys from `main`; hard-refresh to clear the service-worker cache after a deploy). The dev branch `claude/language-app-analysis-jl41s4` is kept in sync with `main`. Where this section conflicts with older text below, **this section wins.**
+
+### Branding — now "Hanzi Dojo" (no hyphen)
+- Visible product name is **"Hanzi Dojo"** everywhere (was "Hanzi-dojo"). The **repo name, directories, storage paths, DB `system`/`language` values are unchanged** — only the displayed wordmark changed.
+- `src/brand.js` is the single source: `BRAND_NAME`, `wordmarkStyle()` (Poppins — small, in the Sidebar), `heroWordmarkStyle()` (**Nanum Brush Script**, brand-red `#B83A24` — large, on Auth + Onboarding, to echo the ensō brush logo). Fonts imported in `src/index.css`.
+- The ensō logo (`src/assets/Hanzi-logo.png`) is unchanged. (A brush-text wordmark PNG was generated via Higgsfield but NOT used — the CDN is blocked by the sandbox network policy, and scalable live text is the better call anyway.)
+
+### New files this session
+- `src/brand.js` — brand name + wordmark styles.
+- `src/Grammar.jsx` + `src/grammarGuides.js` — **grammar guides** (App view `grammar`, a card in the Practice hub). Accordion of ~7–8 beginner topics per language (CN/JP/RU) with examples; pure static data.
+- `src/ErrorBoundary.jsx` — top-level React error boundary (wraps `<App>` in `main.jsx`) → calm reload screen instead of a white page.
+- `llm.mjs` — **central LLM client for all `generate-*.mjs`** (see "Content pipeline" below).
+
+### App changes shipped (a 19-item polish batch)
+Flashcards: labelled **Replay** + **speed toggle** (1×/0.75×/0.5×) on the answer. Streak: freeze mechanic made **visible** (`streakStatus()` in `streak.js` → Home shows "Study today to keep it" / "❄️ Freeze protecting your streak"). Stories: **tier 1 unlocked from day one** (`minWords: 0`), **read-along line highlight** during TTS, **TTS speed** cycle, and learned words **dimmed** under the "Known" toggle. Dark mode: theme-aware feedback tokens (`--success`/`--success-bg`/`--success-border`/`--danger`/… in `index.css`) replace pale hardcoded greens/reds across all quiz/typing screens. Answer leniency (`Writing.jsx`): strips a leading `to/a/an/the` and splits meanings on ` or `. **Fluency score scoped to the active language** (`homeCounts.js` — previously summed all languages). **XP curve steepened** (`xp.js`: `150 + (level-1)*110`) and **level-ups grant a streak freeze** (capped `MAX_FREEZES=5`, shown in the Study recap). **Default theme is now light** (`App.jsx` `initialTheme`). Sentence builder biased toward common words (lowest `sort_order`). Public-readiness: error boundary + updated manifest/meta. Tests updated → `npx vitest run` = **45 passing**.
+
+### Content pipeline — MIGRATED from Groq to Google Gemini
+- Every `generate-*.mjs` now imports **`llm.mjs`** instead of building its own Groq client. `llm.mjs` prefers **`GEMINI_API_KEY`** (Gemini OpenAI-compatible endpoint `https://generativelanguage.googleapis.com/v1beta/openai/`, default model **`gemini-2.5-flash-lite`**) and **falls back to `GROQ_API_KEY`** (`llama-3.3-70b-versatile`). Overridable via env `LLM_MODEL` / `LLM_BASE_URL`. Client has a **60s timeout + maxRetries 2** so a stalled call fails fast into the script's own backoff.
+- Workflow `regen-content.yml` now passes `GEMINI_API_KEY` (repo secret — user added it), `GROQ_API_KEY` (fallback), and optional `LLM_MODEL` (repo *variable*). New task **`comprehension-prune`** (delete trivial questions, then regenerate).
+- Generator quality fixes: **comprehension** rejects trivial/self-answering questions (the "What is Xiao Hua's name?" bug) via `isTrivial()` + retry, plus a `--prune` mode; **examples** has a stronger natural-Japanese prompt and drops any example whose sentence lacks the target word.
+
+### Content generation — CURRENT STATE (important)
+- ✅ **Comprehension regenerated**: pruned 7 trivial-question Chinese stories, generated fresh non-trivial MCQs — **17 Chinese stories** now good (1 left intentionally question-less; the filter kept rejecting weak questions). Confirmed working on Gemini.
+- ⚠️ **Gemini's FREE tier can't do the story/bulk workload reliably.** Small outputs (comprehension, examples) work; **large story generations get hard-429'd** — an N4-stories run produced only ~1–2 of 15. After several runs/day the free quota throttles even examples.
+- ⏳ **Pending / partial:** **N4 stories** (~1–2 inserted, rest 429'd), **Russian stories** (not done), **Russian examples** (was throttling; re-run fills gaps — idempotent), **N4 Japanese examples** (never generated → N4 has no example sentences, so no N4 Fill-blank/Sentence-builder). Full Japanese-examples *regen* was **skipped per the user**.
+- **To finish reliably: add a paid key** — Gemini pay-as-you-go on the same `GEMINI_API_KEY`, or enable Groq **Dev tier** (the `GROQ_API_KEY` fallback still works). Volume is pennies. On the free tier: spread small runs across days, skip stories.
+- **⚠️ Story re-run caveat:** `generate-stories.mjs` **inserts** (doesn't skip existing), so a story re-run must pass **`--replace`** or it duplicates the ~1–2 N4 stories already inserted. The `stories-*` workflow tasks do NOT pass `--replace` yet — add it before re-triggering stories.
+
+---
+
 ## 1. Project purpose and philosophy
 
 Hanzi-dojo is a free language learning web app built around the two methods that actually work: **SRS flashcards** and **immersion** (reading and listening in the target language). It currently supports Chinese (HSK 3.0), Japanese (JLPT), and Russian (CEFR).
@@ -730,8 +762,12 @@ settings (see section 19 Deployment).
 
 .env.script     Server-side vars for generate-audio.mjs, generate-examples.mjs,
                 generate-stories.mjs, and generate-story-translations.mjs. Gitignored.
-                Required: SUPABASE_URL, SUPABASE_SERVICE_KEY, GOOGLE_TTS_KEY, GROQ_API_KEY
+                Required: SUPABASE_URL, SUPABASE_SERVICE_KEY, GOOGLE_TTS_KEY, and an LLM key —
+                GEMINI_API_KEY (preferred; llm.mjs → gemini-2.5-flash-lite) OR GROQ_API_KEY (fallback).
+                Optional overrides: LLM_MODEL, LLM_BASE_URL.
 ```
+
+> **LLM provider note (2026-07-01):** All the `generate-*.mjs` LLM scripts now go through **`llm.mjs`**, which selects the provider/model at runtime — **Gemini by default** (`GEMINI_API_KEY` → `gemini-2.5-flash-lite`), Groq as fallback (`GROQ_API_KEY` → `llama-3.3-70b-versatile`). The per-script descriptions below that say "Uses Groq / llama-3.3-70b" describe the *legacy* default; the model is now whatever `llm.mjs` resolves. See Section 0 → "Content pipeline".
 
 ### generate-audio.mjs
 
@@ -813,10 +849,11 @@ Batch ~100 words (meanings) / ~60 (sentences) via `offset`. Use dollar-quoting (
 The fully hands-off way to regenerate content: a **manual `workflow_dispatch`** job that runs the `generate-*.mjs` scripts on GitHub's runners (which can reach Supabase + Groq — the local sandbox cannot). Trigger from the repo **Actions tab → "Regenerate vocabulary content" → Run workflow**.
 
 - **Inputs:** `task` (meanings / examples / **examples-fill** / both / **comprehension** / **clean-meanings** / **deactivate-awkward** / per-level content tasks **seed-hsk2** / **audio-hsk2** / **stories-hsk2** / **seed-n4** / **audio-n4** / **stories-n4** / **seed-russian** / **audio-russian** / **examples-russian** / **stories-russian**) and `language`. The per-level `seed-*`/`audio-*`/`stories-*` tasks are self-contained (they carry their own `--language/--system/--level`) and ignore the `language` input. `examples-fill` runs `generate-examples.mjs` WITHOUT `--regen` — fills only words missing a sentence (safe for a newly-seeded level; won't touch existing good sentences). (both / japanese / chinese). For examples it always runs with `--regen` (replaces existing sentences, not just NULLs). `comprehension` runs `generate-comprehension.mjs` (fills stories with no questions). `clean-meanings` runs `clean-meanings.mjs --apply` (deterministic, no AI). `deactivate-awkward` runs `deactivate-awkward-vocab.mjs --apply` (sets `is_active=false` on counter-suffix + duplicate-reading entries; reversible).
-- **Secrets used:** `VITE_SUPABASE_URL` (mapped to `SUPABASE_URL`), `SUPABASE_SERVICE_KEY`, `GROQ_API_KEY` — the same Actions repository secrets as the deploy workflow, plus the service key.
+- **Secrets used:** `VITE_SUPABASE_URL` (→ `SUPABASE_URL`), `SUPABASE_SERVICE_KEY`, `VITE_GOOGLE_TTS_KEY` (→ `GOOGLE_TTS_KEY`), **`GEMINI_API_KEY`** (preferred LLM key), `GROQ_API_KEY` (fallback), and the optional repo **variable** `LLM_MODEL`. `llm.mjs` picks Gemini when `GEMINI_API_KEY` is present.
+- **New task `comprehension-prune`:** deletes existing trivial/self-answering questions (whole-story) then regenerates them — run this once to purge the old "What is X's name?" questions, then `comprehension` fills the rest.
 - **Node 22 is required** (`setup-node` pins `node-version: 22`). `@supabase/supabase-js` v2 needs a **global `WebSocket`** at `createClient` time (RealtimeClient init); Node 20 has none and `createClient` throws immediately. Do not drop below 22.
 - **Concurrency** is serialized (`group: regen-content`, no cancel) so two runs can't fight over the same rows. `timeout-minutes: 180`.
-- A full Chinese-examples pass (300 words, 30 batches) takes ~4–5 min. If Groq's free-tier **daily token cap** is hit mid-run, batches start failing near the end — just re-run the workflow the next day; it re-fills whatever is still bad.
+- **Rate limits (now Gemini):** small-output tasks (examples, comprehension) run fine on Gemini's free tier; **story generation gets hard-429'd** on the free tier and mostly fails (see Section 0 → "Content generation — current state"). A paid key removes the caps. Runs are idempotent/resumable — re-run to fill whatever is still missing (except stories, which need `--replace`).
 
 ### generate-stories.mjs
 
@@ -859,6 +896,8 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 ---
 
 ## 16. Known issues
+
+> **Content-generation status is in Section 0 (authoritative, 2026-07-01).** Summary: comprehension regenerated + de-trivialised (17 CN stories); pipeline moved to Gemini via `llm.mjs`; **N4 stories, Russian stories, Russian examples, and N4 Japanese examples are still pending/partial** because Gemini's free tier throttles bulk/story generation — finish with a paid key. Some bullets below predate that and are marked where stale.
 
 **In progress:**
 - **Apply migration `20260630000000_add_xp_and_prefs.sql`** in the Supabase SQL Editor to enable persistence of account XP and study prefs (`total_xp`, `recall_mode`, `audio_autoplay`, `furigana_default`). The app is defensive — it runs without it (defaults applied in code), but XP/prefs won't save across reloads until the columns exist.
