@@ -79,18 +79,34 @@ export function getAudioUrl(audioPath) {
 // even though the file itself is fine. If the direct URL errors, retry once
 // by fetching the whole file as a blob, which sidesteps Range entirely.
 // `onFail` is called only if both attempts fail.
+//
+// Elements get reused across calls (e.g. StoryReaderImmersive's single
+// wordAudioRef for every word tap), so each call is tagged with an attempt
+// id on the element itself — a fallback that resolves after a newer call
+// has already taken over the same element is stale and must not touch
+// `el.src` or fire `onFail` for the wrong clip.
+let nextAttempt = 1
 export function playAudioEl(el, url, onFail) {
+  const attempt = nextAttempt
+  nextAttempt += 1
+  el.__hdAttempt = attempt
+  const stale = () => el.__hdAttempt !== attempt
+  let fallbackStarted = false
+
   function fallback() {
+    if (stale() || fallbackStarted) return
+    fallbackStarted = true
     fetch(url)
       .then(res => { if (!res.ok) throw new Error('fetch failed'); return res.blob() })
       .then(blob => {
         const blobUrl = URL.createObjectURL(blob)
-        el.onerror = () => { if (onFail) onFail() }
+        if (stale()) { URL.revokeObjectURL(blobUrl); return }
+        el.onerror = () => { if (!stale() && onFail) onFail() }
         el.addEventListener('ended', () => URL.revokeObjectURL(blobUrl), { once: true })
         el.src = blobUrl
         return el.play()
       })
-      .catch(() => { if (onFail) onFail() })
+      .catch(() => { if (!stale() && onFail) onFail() })
   }
   el.onerror = fallback
   el.src = url

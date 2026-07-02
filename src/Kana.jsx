@@ -28,7 +28,7 @@ const ROWS = [
   { key: 'wa', label: 'わ・ワ', items: [['わ','ワ','wa'],['を','ヲ','wo'],['ん','ン','n']] },
   { key: 'ga', label: 'が・ガ', items: [['が','ガ','ga'],['ぎ','ギ','gi'],['ぐ','グ','gu'],['げ','ゲ','ge'],['ご','ゴ','go']] },
   { key: 'za', label: 'ざ・ザ', items: [['ざ','ザ','za'],['じ','ジ','ji'],['ず','ズ','zu'],['ぜ','ゼ','ze'],['ぞ','ゾ','zo']] },
-  { key: 'da', label: 'だ・ダ', items: [['だ','ダ','da'],['で','デ','de'],['ど','ド','do']] },
+  { key: 'da', label: 'だ・ダ', items: [['だ','ダ','da'],['ぢ','ヂ','ji'],['づ','ヅ','zu'],['で','デ','de'],['ど','ド','do']] },
   { key: 'ba', label: 'ば・バ', items: [['ば','バ','ba'],['び','ビ','bi'],['ぶ','ブ','bu'],['べ','ベ','be'],['ぼ','ボ','bo']] },
   { key: 'pa', label: 'ぱ・パ', items: [['ぱ','パ','pa'],['ぴ','ピ','pi'],['ぷ','プ','pu'],['ぺ','ペ','pe'],['ぽ','ポ','po']] },
 ]
@@ -102,9 +102,17 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
   function selectAll() { setSelectedRows(new Set(ROWS.map(r => r.key))) }
   function selectBasics() { setSelectedRows(new Set(['a', 'ka', 'sa', 'ta', 'na', 'ha', 'ma', 'ya', 'ra', 'wa'])) }
 
+  // Typed mode only needs one kana to drill; choice mode needs 4 distinct
+  // romaji so the options aren't full of duplicates (short rows like や/わ
+  // would otherwise be unstartable in choice mode, or offer <4 real choices).
+  function canStart(pool) {
+    if (answerMode === 'typed') return pool.length > 0
+    return new Set(pool.map(p => p[1])).size >= 4
+  }
+
   function start() {
     const pool = buildPool(selectedRows, script)
-    if (pool.length < 4) return
+    if (!canStart(pool)) return
     setQuestions(buildQuestions(pool))
     setIdx(0); setPicked(null); setTyped(''); setTypedResult(null)
     setCorrectCount(0); setDone(false)
@@ -161,7 +169,9 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
 
   // ── Setup: script + rows + answer mode ────────────────────────────────────
   if (!started) {
-    const poolSize = buildPool(selectedRows, script).length
+    const pool = buildPool(selectedRows, script)
+    const poolSize = pool.length
+    const startDisabled = !canStart(pool)
     return (
       <div style={pageShell}>
         <div style={{ maxWidth: '620px', margin: '0 auto', paddingTop: isMobile ? '8px' : '20px' }}>
@@ -235,8 +245,10 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
             <button onClick={() => setSelectedRows(new Set())} style={quickBtn}>None</button>
           </div>
 
-          <PrimaryButton onClick={start} icon={Sparkles} disabled={poolSize < 4}>
-            {poolSize < 4 ? 'Pick at least one row' : 'Start · ' + Math.min(QUESTION_COUNT, poolSize) + ' questions'}
+          <PrimaryButton onClick={start} icon={Sparkles} disabled={startDisabled}>
+            {startDisabled
+              ? (answerMode === 'typed' ? 'Pick at least one row' : 'Pick enough rows for 4 choices')
+              : 'Start · ' + Math.min(QUESTION_COUNT, poolSize) + ' questions'}
           </PrimaryButton>
         </div>
       </div>
@@ -310,11 +322,11 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
                 ref={inputRef}
                 autoFocus
                 value={typed}
-                onChange={e => setTyped(e.target.value)}
+                onChange={e => { if (!answered) setTyped(e.target.value) }}
                 onKeyDown={e => { if (e.key === 'Enter') { if (answered) next(); else submitTyped() } }}
                 placeholder="Type the romaji"
                 aria-label="Type the romaji"
-                disabled={answered}
+                readOnly={answered}
                 style={{
                   flex: 1, minWidth: 0, height: '54px', padding: '0 18px',
                   borderRadius: '16px',
