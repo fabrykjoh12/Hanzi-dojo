@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { awardXp } from './xpService'
-import { getLevelLabel, getSystemLabel } from './utils'
+import { getLevelLabel, getSystemLabel, shuffle } from './utils'
+import { Centered, PrimaryButton, SecondaryButton } from './ui'
 import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
@@ -12,15 +13,6 @@ import {
 
 const QUESTION_COUNT = 12
 const XP_PER_CORRECT = 4
-
-function shuffle(items) {
-  const a = [...items]
-  for (let i = a.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1))
-    const t = a[i]; a[i] = a[j]; a[j] = t
-  }
-  return a
-}
 
 // Each question blanks the target word out of its example sentence. Distractors
 // are other words from the same level.
@@ -245,47 +237,5 @@ export default function FillBlank({ session, profile, track, onBack, onUpdate })
         )}
       </div>
     </div>
-  )
-}
-
-function Centered({ children, wide }) {
-  return (
-    <div style={{ maxWidth: wide ? '760px' : '520px', margin: '0 auto', minHeight: '74vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: '100%', maxWidth: '520px', textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '42px 36px', boxShadow: '0 22px 60px rgba(24,24,27,0.07)' }}>
-        {children}
-      </div>
-    </div>
-  )
-}
-
-function PrimaryButton({ onClick, children, icon: Icon }) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} style={{
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-      width: '100%', minHeight: '52px', borderRadius: '16px', border: 'none',
-      background: hovered ? '#5C7155' : '#6E8466', color: '#fff',
-      fontSize: '15px', fontWeight: 750, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-      transition: 'background 160ms ease, transform 160ms ease', transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
-    }}>
-      {Icon && <Icon size={18} strokeWidth={2.1} color="#fff" />}
-      {children}
-    </button>
-  )
-}
-
-function SecondaryButton({ onClick, children, icon: Icon }) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} style={{
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-      minHeight: '44px', padding: '0 16px', borderRadius: '12px',
-      border: '1px solid var(--border)', background: hovered ? 'var(--surface-2)' : 'var(--surface)',
-      color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
-      cursor: 'pointer', transition: 'background 160ms ease',
-    }}>
-      {Icon && <Icon size={17} strokeWidth={1.85} color="var(--text-muted)" />}
-      {children}
-    </button>
   )
 }

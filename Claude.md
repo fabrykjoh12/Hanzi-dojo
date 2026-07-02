@@ -18,6 +18,11 @@ A full product/design/code review was performed, then its Phase-1 fixes were imp
 - **Misc:** unused Vite-template `src/App.css` deleted; `og:image` is now an absolute GH-Pages URL (scrapers don't resolve relative paths).
 - Verified: `npm run build` ✓, `npx vitest run` 45/45 ✓, `npm run lint` at the pre-existing baseline (no new errors).
 
+### Batch 6 — shared UI kit (branch restarted from main after PR #4 merged)
+- **`src/ui.jsx`** — shared `Centered` / `PrimaryButton` (sage, full-width, `disabled` support) / `SecondaryButton` primitives. The six drill files (Kana, Cyrillic, Listen, FillBlank, Tones, SentenceBuilder) each carried identical copies; all migrated (−295 net lines).
+- **`src/utils.js`** — gained `shuffle` (Fisher–Yates; replaces six per-file copies AND Test.jsx's biased `sort(() => Math.random() - 0.5)` idiom) and `getAudioUrl` (was defined in Study, Listen, and Tones separately).
+- New primitives go in `ui.jsx`; new shuffling/audio-URL needs come from `utils.js` — don't re-inline them.
+
 ### Batch 5 — toasts + SW update flow (same branch, PR #4)
 - **Toast system:** `src/toast.js` (fires an `hd-toast` CustomEvent — usable from plain modules, no prop drilling) + `src/Toasts.jsx` (top-right stack, seal/level/freeze icons, 4.6s auto-dismiss, `hd-toast-in` keyframe with reduced-motion fallback) mounted in the App shell.
 - **Level-up moments in drills:** `awardXp` toasts "Level N reached" (+freeze line) — all six drills get it for free. Study keeps its recap card instead (no double celebration).

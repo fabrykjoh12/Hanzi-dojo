@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getTestStatus, getAttemptsToday } from './testLogic'
-import { getLevelLabel, getNextLevel } from './utils'
+import { getLevelLabel, getNextLevel, shuffle } from './utils'
 import { languageTheme } from './languageTheme'
 import { schedule } from './srs'
 import { TEST_UNLOCK_MASTERY_PCT } from './mastery'
@@ -13,15 +13,11 @@ import {
 } from 'lucide-react'
 
 function generateQuestions(vocabList, allVocab, language) {
-  const shuffled = [...vocabList].sort(() => Math.random() - 0.5)
-  const selected = shuffled.slice(0, Math.min(30, shuffled.length))
+  const selected = shuffle(vocabList).slice(0, Math.min(30, vocabList.length))
 
   return selected.map(v => {
     const type = Math.random() > 0.5 ? 'e_to_c' : 'c_to_e'
-    const wrong = allVocab
-      .filter(av => av.id !== v.id)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3)
+    const wrong = shuffle(allVocab.filter(av => av.id !== v.id)).slice(0, 3)
 
     let prompt, correctAnswer, options, promptLabel, answerLabel, optionReadings
 
@@ -30,10 +26,10 @@ function generateQuestions(vocabList, allVocab, language) {
       correctAnswer = v.word
       promptLabel = 'English'
       answerLabel = language === 'japanese' ? 'Japanese' : 'Chinese'
-      const wordOptions = [
+      const wordOptions = shuffle([
         { word: v.word, reading: v.reading },
         ...wrong.map(w => ({ word: w.word, reading: w.reading })),
-      ].sort(() => Math.random() - 0.5)
+      ])
       options = wordOptions.map(o => o.word)
       optionReadings = language === 'japanese'
         ? wordOptions.reduce((acc, o) => { acc[o.word] = o.reading; return acc }, {})
@@ -43,7 +39,7 @@ function generateQuestions(vocabList, allVocab, language) {
       correctAnswer = v.meaning
       promptLabel = language === 'japanese' ? 'Japanese' : 'Chinese'
       answerLabel = 'English'
-      options = [v.meaning, ...wrong.map(w => w.meaning)].sort(() => Math.random() - 0.5)
+      options = shuffle([v.meaning, ...wrong.map(w => w.meaning)])
       optionReadings = null
     }
 
