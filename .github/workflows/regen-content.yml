@@ -11,7 +11,7 @@ on:
         description: What to regenerate
         type: choice
         default: both
-        options: [meanings, examples, examples-fill, both, comprehension, comprehension-prune, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk2, stories-hsk2, seed-n4, audio-n4, stories-n4, seed-russian, audio-russian, examples-russian, stories-russian, stories-hsk1-replace, stories-hsk2-replace, audio-jlpt1, audio-jlpt2, story-audio-hsk1, story-audio-hsk2, story-audio-jlpt1, story-audio-jlpt2, story-audio-n4, story-audio-russian]
+        options: [meanings, examples, examples-fill, both, comprehension, comprehension-prune, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk2, stories-hsk2, seed-n4, audio-n4, stories-n4, seed-russian, audio-russian, examples-russian, stories-russian, stories-hsk1-replace, stories-hsk2-replace, audio-jlpt1, audio-jlpt2, story-audio-hsk1, story-audio-hsk2, story-audio-jlpt1, story-audio-jlpt2, story-audio-n4, story-audio-russian, serial-hsk1, serial-hsk2, serial-jlpt1, serial-n4, serial-russian]
       language:
         description: Which language
         type: choice
@@ -46,6 +46,10 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           LLM_MODEL: ${{ vars.LLM_MODEL }}
+          # Premium tier for the serial-story pipeline only (see llm.mjs's
+          # premiumLlm) — bulk tasks never use this key.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LLM_MODEL_PREMIUM: ${{ vars.LLM_MODEL_PREMIUM }}
           GOOGLE_TTS_KEY: ${{ secrets.VITE_GOOGLE_TTS_KEY }}
         run: |
           set -e
@@ -215,5 +219,35 @@ jobs:
           if [ "${{ inputs.task }}" = "story-audio-russian" ]; then
             echo "::group::Generate narration for Russian A1 stories (Google TTS)"
             node generate-story-audio.mjs --language russian --system russian --level 1
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "serial-hsk1" ]; then
+            echo "::group::REPLACE HSK 1 stories with serial chapters (multi-pass pipeline)"
+            node generate-serial-stories.mjs --language chinese --system hsk_3 --level 1 --replace
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "serial-hsk2" ]; then
+            echo "::group::REPLACE HSK 2 stories with serial chapters (multi-pass pipeline)"
+            node generate-serial-stories.mjs --language chinese --system hsk_3 --level 2 --replace
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "serial-jlpt1" ]; then
+            echo "::group::REPLACE JLPT N5 Part 1 stories with serial chapters (multi-pass pipeline)"
+            node generate-serial-stories.mjs --language japanese --system jlpt --level 1 --replace
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "serial-n4" ]; then
+            echo "::group::REPLACE JLPT N4 stories with serial chapters (multi-pass pipeline)"
+            node generate-serial-stories.mjs --language japanese --system jlpt --level 3 --replace
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "serial-russian" ]; then
+            echo "::group::REPLACE Russian A1 stories with serial chapters (multi-pass pipeline)"
+            node generate-serial-stories.mjs --language russian --system russian --level 1 --replace
             echo "::endgroup::"
           fi

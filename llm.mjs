@@ -52,3 +52,29 @@ export const LLM_MODEL = cfg.model
 export const LLM_PROVIDER = cfg.provider
 
 console.log(`[llm] provider=${cfg.provider} model=${cfg.model}`)
+
+// Premium tier for the small, quality-critical jobs (serial story writing:
+// ~100 calls per level, so even a top model costs a dollar or two per run).
+// Prefers Anthropic via its OpenAI-compatible endpoint when ANTHROPIC_API_KEY
+// is set; otherwise falls back to the standard client above so the scripts
+// still run (at lower quality) with only a Gemini/Groq key. Deliberately NOT
+// part of pickConfig(): the bulk jobs (hundreds of example sentences) should
+// never silently switch to the expensive tier just because the key exists.
+//   ANTHROPIC_API_KEY    selects Anthropic for premium calls
+//   LLM_MODEL_PREMIUM    override the premium model id
+export function premiumLlm() {
+  const key = process.env.ANTHROPIC_API_KEY
+  if (key) {
+    return {
+      client: new OpenAI({
+        apiKey: key,
+        baseURL: process.env.LLM_BASE_URL_PREMIUM || 'https://api.anthropic.com/v1/',
+        timeout: 120000,
+        maxRetries: 2,
+      }),
+      model: process.env.LLM_MODEL_PREMIUM || 'claude-sonnet-5',
+      provider: 'anthropic',
+    }
+  }
+  return { client: llm, model: cfg.model, provider: cfg.provider }
+}

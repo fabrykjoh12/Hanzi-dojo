@@ -6,6 +6,12 @@ Read this entire file before making any change. It describes not just *what* the
 
 ## 0. LATEST SESSION — read first (2026-07-02)
 
+### Batch 17 — serial-story pipeline (user: "stories are terrible, we have a bad system")
+- Diagnosis agreed with the user: one cheap model, one overloaded prompt, nothing verified, auto-published, same 4 flavorless characters/15 stock scenes/1 plot template, choppy 15-char line caps. Decisions made together: **serial chapters** (not standalone vignettes), **premium model** (Anthropic key) for the writing passes, **auto-publish gated by validators**.
+- New `generate-serial-stories.mjs` — see the full doc in the scripts section ("the CURRENT story generator"). `generate-stories.mjs` is legacy. New `premiumLlm()` export in `llm.mjs` (Anthropic via its OpenAI-compatible endpoint when `ANTHROPIC_API_KEY` is set; falls back to standard client). New Action tasks `serial-hsk1/2`, `serial-jlpt1`, `serial-n4`, `serial-russian` (all REPLACE the level's stories).
+- Coverage validator sanity-tested offline (greedy matcher catches out-of-pool CJK runs, passes clean text, allows JP hiragana grammar while catching out-of-pool katakana).
+- **Needs before dispatch:** `ANTHROPIC_API_KEY` repo secret. Then run e.g. `serial-hsk1`, skim results, then the matching `story-audio-*` task.
+
 ### Batch 16 — opt-in daily review reminder via Web Push (product review item #16, 3 of 3 remaining — LAST original-review item)
 - New tables/columns: `push_subscriptions` (endpoint/p256dh/auth per device, RLS insert/select/delete own) and `profiles.reminder_enabled` / `profiles.reminder_hour_utc` (migration `20260702220000_add_push_reminders.sql`).
 - **No Supabase Edge Function** — this repo has no Supabase CLI/functions setup, so sending is a plain Node script (`send-review-reminders.mjs`, uses the `web-push` npm package) run hourly by a new GitHub Action (`.github/workflows/send-reminders.yml`, `cron: '0 * * * *'`). It matches profiles where `reminder_hour_utc` equals the current UTC hour, counts due cards for their active track (any level, `state in (review, learning, relearning)` and `due_at <= now`), and pushes to every subscribed device; 404/410 responses (dead subscriptions) are pruned automatically.
@@ -905,6 +911,19 @@ node --env-file=.env.script generate-story-audio.mjs --language japanese --syste
 ```
 
 **Current state:** Same voice map as `generate-audio.mjs`, but speaks each line AS WRITTEN (kanji included — Google's sentence-level Japanese voice handles context fine, unlike single vocab words). Strips a leading `Speaker：`/`Speaker:` label the same way `StoryReaderImmersive.jsx`'s `splitSpeaker` does. Uploads each line to `stories/{story_id}/{line_index}.mp3` in the `audio` bucket; sets `stories.has_audio = true` ONLY if every line for that story succeeded — a partial failure leaves it `false` so the reader keeps using speechSynthesis for that story rather than serving a story with silent gaps. Action tasks: `story-audio-hsk1`, `story-audio-hsk2`, `story-audio-jlpt1`, `story-audio-jlpt2`, `story-audio-n4`, `story-audio-russian`.
+
+### generate-serial-stories.mjs — the CURRENT story generator
+
+The replacement for `generate-stories.mjs` (which is now legacy — kept for reference, don't dispatch its tasks for new content). Each tier becomes one continuing storyline ("season") of 4–6 chapters with recurring characters, produced by a multi-pass pipeline instead of a one-shot prompt:
+
+1. **PLAN** (1 call, English): season premise + per-chapter outlines with chapter-ending hooks, woven around code-assigned focus words (the tier's newest vocabulary, chunked per chapter — i+1 by construction).
+2. **DRAFT** (per chapter, target language) from the outline, with the focus words + the allowed pool.
+3. **VALIDATE in code, not vibes**: greedy longest-match segmentation computes REAL vocabulary coverage against the full pool (Japanese: unmatched hiragana counts as allowed grammar; readings are indexed alongside words; Russian: token-level with a 4-letter prefix allowance for inflection + a function-word allowlist); dialogue speakers checked against the character bible; line counts checked.
+4. **REVISE targeted** (max 3 rounds): the model is told exactly which out-of-pool words to replace, not asked to regenerate blind.
+5. **CRITIQUE**: rubric-scored 1–10 (naturalness / actual-story / character voice / level fit); below 7 → one quality revision, then re-validate + re-critique.
+6. **TRANSLATE**: separate line-aligned pass, count-checked, one retry.
+
+Chapters passing every gate insert with `is_published=true`; failures insert `is_published=false` (review in the dashboard, fix, flip). Character bibles live in the script; Chinese names MUST stay within `src/characterNames.js`'s `CHARACTER_READINGS` map (name-tap detection) — currently 李明, 小红, 小明, 大毛 (妈妈 is a role noun and deliberately not in that map). Uses the **premium LLM tier** — `premiumLlm()` in `llm.mjs`, which picks Anthropic when `ANTHROPIC_API_KEY` is set (repo secret; `LLM_MODEL_PREMIUM` variable overrides the model) and falls back to the standard Gemini/Groq client otherwise. ~100 calls per level ≈ a dollar or two on a premium model. Bulk tasks (examples/meanings) never use the premium tier. Action tasks (all `--replace`: they DELETE the level's existing stories first): `serial-hsk1`, `serial-hsk2`, `serial-jlpt1`, `serial-n4`, `serial-russian`. After a run, dispatch the matching `story-audio-*` task to regenerate narration.
 
 ### generate-examples.mjs
 
