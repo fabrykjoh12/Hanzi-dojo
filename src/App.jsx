@@ -6,6 +6,7 @@ import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
 // Eager: the app shell + first-paint screens.
 import Auth from './Auth'
+import PasswordReset from './PasswordReset'
 import Onboarding from './Onboarding'
 import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
@@ -65,6 +66,9 @@ export default function App() {
   const [track, setTrack] = useState(null)
   const [counts, setCounts] = useState({ newCount: 0, learnCount: 0, dueCount: 0, easyCount: 0, totalWords: 0, learnedCount: 0, masteredCount: 0, masteredPct: 0 })
   const [loading, setLoading] = useState(true)
+  // True while the user arrived via a password-recovery email link and hasn't
+  // set a new password yet (Supabase signs them in and fires PASSWORD_RECOVERY).
+  const [recovery, setRecovery] = useState(false)
   const [theme, setThemeState] = useState(initialTheme)
   const isMobile = useIsMobile()
   const routerNavigate = useNavigate()
@@ -126,6 +130,7 @@ export default function App() {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === 'PASSWORD_RECOVERY') setRecovery(true)
       setSession(session)
       if (session) loadProfile(session.user.id)
       else { setProfile(null); setTrack(null); setLoading(false) }
@@ -157,6 +162,15 @@ export default function App() {
       <>
         <Background language="chinese" />
         <Auth />
+      </>
+    )
+  }
+
+  if (recovery) {
+    return (
+      <>
+        <Background language="chinese" />
+        <PasswordReset onDone={() => setRecovery(false)} />
       </>
     )
   }

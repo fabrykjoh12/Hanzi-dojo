@@ -4,7 +4,23 @@ Read this entire file before making any change. It describes not just *what* the
 
 ---
 
-## 0. LATEST SESSION — read first (2026-07-01)
+## 0. LATEST SESSION — read first (2026-07-02)
+
+### Product-review fix batch (branch `claude/product-design-review-kfwlx2` — NOT yet on main)
+A full product/design/code review was performed, then its Phase-1 fixes were implemented on this branch:
+- **Study.jsx:** double-grade race guard (`gradingRef` around `handleGrade`); **`review_logs` now written on every grade** (best-effort insert — enables future FSRS tuning/retention stats); desktop **keyboard shortcuts** (Space/Enter reveal, 1–4 grade, R replay, hint row under the buttons); queue pills use translucent accent tints (dark-mode correct).
+- **Auth:** full **password-reset flow** — "Forgot password?" → `resetPasswordForEmail`; new `src/PasswordReset.jsx` set-new-password screen rendered by App on the `PASSWORD_RECOVERY` auth event. Success messages green (were error-red), Enter submits.
+- **Stories.jsx:** `CATEGORIES_RUSSIAN` added (Russian no longer sees "HSK 1" copy); tier map keyed by language; progress denominator computed from the real level deck size (was hardcoded 300/400).
+- **Level gating:** Onboarding + LanguageSwitcher disable levels with no seeded vocabulary ("Coming soon") — no more empty-queue dead ends; Onboarding also nudges beginners to level 1.
+- **Drill fixes:** SentenceBuilder accepts any tile order that reproduces the sentence (duplicate tokens) and no longer penalizes "Show answer" via `markWordDue`; FillBlank blanks **every** occurrence of the word (`parts` array replaces before/after); Tones `toneOf` parses numeric pinyin (`pin1`) and excludes tone-indeterminate words instead of mislabeling neutral; YouTube gets shorts/embed URL parsing, theme-aware loading glyph (was 学 for all languages), 1-col mobile grid.
+- **A11y:** Sidebar NavItem + theme toggle and Home FlowStep are real `<button>`s (aria-current on active); global `:focus-visible` outline in index.css; `outline:none` overrides removed from inputs.
+- **Perf:** backgrounds converted to WebP (`bg-*.webp`, 1.2–1.8 MB PNGs → 9–50 KB; imports updated in Background/Auth/Onboarding — PNG originals kept in assets but unbundled); Google Fonts moved from CSS `@import` to preconnect+`<link>` in index.html.
+- **Misc:** unused Vite-template `src/App.css` deleted; `og:image` is now an absolute GH-Pages URL (scrapers don't resolve relative paths).
+- Verified: `npm run build` ✓, `npx vitest run` 45/45 ✓, `npm run lint` at the pre-existing baseline (no new errors).
+
+---
+
+## 0b. PREVIOUS SESSION (2026-07-01)
 
 Most recent round of work, so a fresh chat has current context. Everything below is **shipped to `main`** (Vercel production auto-deploys from `main`; hard-refresh to clear the service-worker cache after a deploy). The dev branch `claude/language-app-analysis-jl41s4` is kept in sync with `main`. Where this section conflicts with older text below, **this section wins.**
 

@@ -199,6 +199,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const [gradeId, setGradeId] = useState(0)              // bumps to restart the flash
   const audioRef = useRef(null)
   const [audioSpeed, setAudioSpeed] = useState(1)   // TTS playback rate (1× / 0.75× / 0.5×)
+  // Guards against a rapid double-click/double-keypress grading the same card
+  // twice while the first save is still in flight (which would double-schedule
+  // it and, for new cards, attempt a duplicate insert).
+  const gradingRef = useRef(false)
   // Running counts of today's study session, persisted to daily_activity so the
   // Profile calendar can show which days were studied.
   const activityRef = useRef({ studied: 0, newC: 0, learn: 0, review: 0 })
@@ -371,6 +375,16 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   }, [done, recap])
 
   const handleGrade = async (grade) => {
+    if (gradingRef.current) return
+    gradingRef.current = true
+    try {
+      await applyGrade(grade)
+    } finally {
+      gradingRef.current = false
+    }
+  }
+
+  const applyGrade = async (grade) => {
     const card = queue[0]
     const res = schedule(card, grade)
 
@@ -439,6 +453,19 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
     recordActivity(card.state)
 
+    // Log the review so FSRS parameters can be tuned and retention stats built
+    // later. Best-effort: history is nice-to-have, grading must never block on it.
+    supabase.from('review_logs').insert({
+      user_id: session.user.id,
+      card_id: cardId,
+      vocab_id: card.vocab_id,
+      grade,
+      previous_state: card.state,
+      next_state: res.updates.state,
+      previous_interval_days: card.interval_days || 0,
+      next_interval_days: res.updates.interval_days,
+    }).then(() => {})
+
     // Persist lifetime XP (best-effort; harmless if the column doesn't exist yet)
     // and reflect it in the in-memory profile so Home/Profile update live.
     supabase.from('profiles').update({ total_xp: xpRef.current }).eq('id', session.user.id).then(() => {})
@@ -462,6 +489,33 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       return rest
     })
   }
+
+  // Desktop keyboard flow: Space/Enter reveals, 1–4 grades, R replays audio.
+  // Rebinds each render so the handler always sees current state. The typed-mode
+  // input owns its own keys (Enter submits there), so key events from inputs are
+  // ignored.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (loading || done || queue.length === 0) return
+      const tag = e.target && e.target.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      if (!flipped) {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault()
+          setFlipped(true)
+        }
+        return
+      }
+      if (e.key >= '1' && e.key <= '4') {
+        e.preventDefault()
+        handleGrade(Number(e.key) - 1)
+      } else if (e.key === 'r' || e.key === 'R') {
+        playAudio()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
 
   const newCount = queue.filter(c => c.state === 'new').length
   const learnCount = queue.filter(c => c.state === 'learning' || c.state === 'relearning').length
@@ -688,9 +742,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         </div>
 
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <QueuePill label="New" value={newCount} color="#3E63DD" background="#EEF2FF" />
-          <QueuePill label="Learn" value={learnCount} color="#D97706" background="#FFFBEB" />
-          <QueuePill label="Due" value={dueCount} color="#2F9E6D" background="var(--success-bg)" />
+          <QueuePill label="New" value={newCount} color="#3E63DD" background="#3E63DD14" />
+          <QueuePill label="Learn" value={learnCount} color="#D97706" background="#D9770614" />
+          <QueuePill label="Due" value={dueCount} color="#2F9E6D" background="#2F9E6D14" />
         </div>
       </div>
 
@@ -882,7 +936,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                       flex: 1, minWidth: 0, height: '54px', padding: '0 18px',
                       borderRadius: '16px', border: '1px solid var(--border)',
                       background: 'var(--surface)', color: 'var(--text)',
-                      fontSize: '16px', fontFamily: 'Inter, sans-serif', outline: 'none',
+                      fontSize: '16px', fontFamily: 'Inter, sans-serif',
                     }}
                   />
                   <button
@@ -951,6 +1005,13 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                   />
                 ))}
               </div>
+            </div>
+          )}
+          {!isMobile && (
+            <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '12px', color: 'var(--text-faint)', fontWeight: 550 }}>
+              {flipped
+                ? '1–4 to grade · R to replay audio'
+                : (isTyped ? 'Enter to check' : 'Space to reveal')}
             </div>
           )}
         </div>

@@ -51,13 +51,14 @@ function FlowStep({ icon, label, accentHex, active, onClick }) {
   const [hovered, setHovered] = useState(false)
   const Icon = icon
   return (
-    <div
+    <button
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
         padding: '14px 10px', borderRadius: '14px', cursor: 'pointer',
+        fontFamily: 'Inter, sans-serif',
         background: active ? `${accentHex}0D` : (hovered ? 'var(--surface-2)' : 'transparent'),
         border: '1px solid ' + (active ? accentHex + '33' : 'transparent'),
         transition: 'background 140ms ease', minWidth: '76px',
@@ -71,7 +72,7 @@ function FlowStep({ icon, label, accentHex, active, onClick }) {
         <Icon size={20} strokeWidth={1.75} color={active ? '#fff' : accentHex} />
       </div>
       <span style={{ fontSize: '12px', fontWeight: active ? 700 : 500, color: active ? accentHex : 'var(--text-muted)' }}>{label}</span>
-    </div>
+    </button>
   )
 }
 

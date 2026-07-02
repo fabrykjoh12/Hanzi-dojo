@@ -26,6 +26,18 @@ const CATEGORIES_JAPANESE = [
   { tier: 3, minWords: 200, label: 'Fluent',      wordRange: '1–400', description: 'All 400 N5 Part 1 words in use' },
 ]
 
+const CATEGORIES_RUSSIAN = [
+  { tier: 1, minWords: 0,   label: 'First Steps', wordRange: '1–50',  description: 'Stories using the first 50 most common A1 words' },
+  { tier: 2, minWords: 50,  label: 'Growing',     wordRange: '1–100', description: 'Stories using the first 100 most common A1 words' },
+  { tier: 3, minWords: 100, label: 'Fluent',      wordRange: 'all',   description: 'The full A1 starter deck in use' },
+]
+
+const CATEGORIES_BY_LANGUAGE = {
+  chinese: CATEGORIES_CHINESE,
+  japanese: CATEGORIES_JAPANESE,
+  russian: CATEGORIES_RUSSIAN,
+}
+
 // ─── CONSTANTS ─────────────────────────────────────────────────────────────
 
 function getLanguageDetails(profile, track) {
@@ -238,9 +250,11 @@ export default function Stories({ session, profile, track, onBack }) {
   const isMobile = useIsMobile()
 
   const languageDetails = getLanguageDetails(profile, track)
-  const { isJapanese, accentHex, nativeName, fontFamily } = languageDetails
-  const totalWords = track.language === 'japanese' ? 400 : 300
-  const CATEGORIES = isJapanese ? CATEGORIES_JAPANESE : CATEGORIES_CHINESE
+  const { accentHex, nativeName, fontFamily } = languageDetails
+  // Real size of the current level's deck (set in loadData) — not a hardcoded
+  // per-language guess, so the progress denominator is right for every language.
+  const [totalWords, setTotalWords] = useState(0)
+  const CATEGORIES = CATEGORIES_BY_LANGUAGE[track.language] || CATEGORIES_CHINESE
 
   async function loadData() {
     setLoading(true)
@@ -270,6 +284,7 @@ export default function Stories({ session, profile, track, onBack }) {
     const currentLevelIds = new Set(
       (vocabData || []).filter(v => v.level === track.current_level).map(v => v.id)
     )
+    setTotalWords(currentLevelIds.size)
     const learned = (cardsData || []).filter(c => currentLevelIds.has(c.vocab_id) && isLearned(c)).length
     setLearnedCount(learned)
 

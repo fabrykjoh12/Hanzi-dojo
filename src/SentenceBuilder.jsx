@@ -136,7 +136,11 @@ export default function SentenceBuilder({ session, profile, track, onBack, onUpd
   }
 
   function check() {
-    const ok = placed.length === q.tokens.length && placed.every((id, i) => id === i)
+    // Compare the built *sentence*, not tile identity — duplicate tokens (two
+    // identical particles, repeated words) are interchangeable, so any order
+    // that reproduces the target string is correct.
+    const ok = placed.length === q.tokens.length
+      && placed.map(id => q.tokens[id]).join('') === q.tokens.join('')
     setResult(ok ? 'correct' : 'wrong')
     if (ok) setCorrectCount(c => c + 1)
     else markWordDue(session, q.vocab.id)
@@ -147,7 +151,8 @@ export default function SentenceBuilder({ session, profile, track, onBack, onUpd
     for (let i = 0; i < q.tokens.length; i += 1) target.push(i)
     setPlaced(target)
     setResult('wrong')
-    markWordDue(session, q.vocab.id)
+    // Deliberately no markWordDue here: asking to see the answer is curiosity,
+    // not a failed recall — punishing it teaches users to avoid the button.
   }
 
   function finish(finalCorrect) {

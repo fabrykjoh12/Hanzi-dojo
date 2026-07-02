@@ -131,32 +131,35 @@ function LanguageCard({ lang, track, prog, levelProgress, isActive, saving, onCl
             {lang.levels.map(lvl => {
               const levelProg = levelProgress[lvl] || { masteredCount: 0, totalWords: 0, unlocked: false }
               const current = track.current_level === lvl
+              // Levels with no seeded vocabulary are "Coming soon" — switching
+              // into one would land the user in an empty study queue.
+              const hasContent = (levelProg.totalWords || 0) > 0
               return (
                 <button
                   key={lvl}
                   onClick={e => {
                     e.stopPropagation()
-                    if (!current && !saving) onLevelSelect(lvl)
+                    if (!current && !saving && hasContent) onLevelSelect(lvl)
                   }}
-                  disabled={current || saving}
+                  disabled={current || saving || !hasContent}
                   style={{
                     minHeight: '60px',
                     padding: '8px 6px',
                     borderRadius: '13px',
                     border: '1.5px solid ' + (current ? lang.accent : 'var(--border)'),
                     background: current ? lang.accent + '10' : 'var(--surface)',
-                    color: current ? lang.accent : 'var(--text)',
-                    cursor: current || saving ? 'default' : 'pointer',
+                    color: current ? lang.accent : (hasContent ? 'var(--text)' : 'var(--text-faint)'),
+                    cursor: current || saving || !hasContent ? 'default' : 'pointer',
                     fontFamily: 'Inter, sans-serif',
                     textAlign: 'center',
-                    opacity: saving && !current ? 0.55 : 1,
+                    opacity: (saving && !current) || !hasContent ? 0.55 : 1,
                   }}
                 >
                   <div style={{ fontSize: '12px', fontWeight: 800, lineHeight: 1.2 }}>
                     {lang.levelLabel(lvl)}
                   </div>
                   <div style={{ fontSize: '10px', color: levelProg.unlocked ? '#2F9E6D' : 'var(--text-muted)', marginTop: '5px', fontWeight: 700 }}>
-                    {levelProg.unlocked ? 'Passed' : levelProg.masteredCount + '/' + (levelProg.totalWords || 0)}
+                    {!hasContent ? 'Coming soon' : levelProg.unlocked ? 'Passed' : levelProg.masteredCount + '/' + (levelProg.totalWords || 0)}
                   </div>
                 </button>
               )
@@ -219,6 +222,28 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
   const [starting, setStarting] = useState(null)
   const [selectedLevel, setSelectedLevel] = useState(null)
   const [saving, setSaving] = useState(false)
+  // Levels with seeded vocabulary for the language being started. Keyed by
+  // language code so a stale result never gates the wrong language; while
+  // loading (or on fetch failure) everything stays selectable (fail open).
+  const [seededData, setSeededData] = useState(null)   // { lang, levels: Set }
+
+  useEffect(() => {
+    if (!starting) return
+    let cancelled = false
+    const lang = LANGUAGES.find(l => l.code === starting)
+    supabase
+      .from('vocabulary')
+      .select('level')
+      .eq('language', lang.code)
+      .eq('system', lang.system)
+      .eq('is_active', true)
+      .then(({ data }) => {
+        if (cancelled || !data) return
+        setSeededData({ lang: lang.code, levels: new Set(data.map(r => r.level)) })
+      })
+    return () => { cancelled = true }
+  }, [starting])
+  const seededLevels = seededData && seededData.lang === starting ? seededData.levels : null
 
   const activeLang = LANGUAGES.find(lang => lang.code === profile.active_language) || LANGUAGES[0]
 
@@ -378,27 +403,37 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '22px' }}>
-          {lang.levels.map(lvl => (
-            <button
-              key={lvl}
-              onClick={() => setSelectedLevel(lvl)}
-              style={{
-                minHeight: '68px',
-                borderRadius: '16px',
-                border: '1.5px solid ' + (selectedLevel === lvl ? lang.accent : 'var(--border)'),
-                background: selectedLevel === lvl ? lang.accent + '10' : 'var(--surface)',
-                color: selectedLevel === lvl ? lang.accent : 'var(--text)',
-                fontSize: '15px',
-                fontWeight: 800,
-                cursor: 'pointer',
-                transition: 'all 180ms ease',
-                fontFamily: 'Inter, sans-serif',
-                boxShadow: '0 8px 22px rgba(24,24,27,0.04)',
-              }}
-            >
-              {lang.levelLabel(lvl)}
-            </button>
-          ))}
+          {lang.levels.map(lvl => {
+            const seeded = !seededLevels || seededLevels.has(lvl)
+            return (
+              <button
+                key={lvl}
+                onClick={() => seeded && setSelectedLevel(lvl)}
+                disabled={!seeded}
+                style={{
+                  minHeight: '68px',
+                  borderRadius: '16px',
+                  border: '1.5px solid ' + (selectedLevel === lvl ? lang.accent : 'var(--border)'),
+                  background: selectedLevel === lvl ? lang.accent + '10' : 'var(--surface)',
+                  color: selectedLevel === lvl ? lang.accent : (seeded ? 'var(--text)' : 'var(--text-faint)'),
+                  fontSize: '15px',
+                  fontWeight: 800,
+                  cursor: seeded ? 'pointer' : 'not-allowed',
+                  opacity: seeded ? 1 : 0.6,
+                  transition: 'all 180ms ease',
+                  fontFamily: 'Inter, sans-serif',
+                  boxShadow: '0 8px 22px rgba(24,24,27,0.04)',
+                }}
+              >
+                {lang.levelLabel(lvl)}
+                {!seeded && (
+                  <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-faint)', marginTop: '4px' }}>
+                    Coming soon
+                  </div>
+                )}
+              </button>
+            )
+          })}
         </div>
 
         <button

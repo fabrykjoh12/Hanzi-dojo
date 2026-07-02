@@ -13,18 +13,25 @@ const ACCENT = '#B83A24'
 const QUESTION_COUNT = 15
 const XP_PER_CORRECT = 4
 
-// Accented pinyin vowel → Mandarin tone number. Neutral (no mark) = 5.
+// Accented pinyin vowel → Mandarin tone number. Falls back to numeric pinyin
+// ("pin1"). Neutral = 5 only when the reading explicitly says so (trailing 5,
+// or diacritic-free pinyin that contains a vowel — the standard way neutral is
+// written). Returns 0 when the tone genuinely can't be determined, so callers
+// can exclude the word instead of asking a silently-wrong question.
 const TONE1 = 'āēīōūǖ', TONE2 = 'áéíóúǘ', TONE3 = 'ǎěǐǒǔǚ', TONE4 = 'àèìòùǜ'
 function toneOf(reading) {
   const r = reading || ''
+  let sawVowel = false
   for (let i = 0; i < r.length; i += 1) {
     const c = r[i]
     if (TONE1.indexOf(c) !== -1) return 1
     if (TONE2.indexOf(c) !== -1) return 2
     if (TONE3.indexOf(c) !== -1) return 3
     if (TONE4.indexOf(c) !== -1) return 4
+    if (c >= '1' && c <= '5') return Number(c)
+    if ('aeiouü'.indexOf(c.toLowerCase()) !== -1) sawVowel = true
   }
-  return 5
+  return sawVowel ? 5 : 0
 }
 
 // A single Chinese character is exactly one syllable — the clean unit for a
@@ -85,6 +92,7 @@ export default function Tones({ session, profile, track, onBack, onUpdate }) {
     const pool = (vocab || [])
       .filter(v => isSingleHanzi(v.word) && v.reading)
       .map(v => ({ ...v, tone: toneOf(v.reading) }))
+      .filter(v => v.tone > 0)
     setQuestions(shuffle(pool).slice(0, Math.min(QUESTION_COUNT, pool.length)))
     setLoading(false)
   }
