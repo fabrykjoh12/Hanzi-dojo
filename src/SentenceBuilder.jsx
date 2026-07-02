@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { awardXp } from './xpService'
-import { getLevelLabel, getSystemLabel } from './utils'
+import { getLevelLabel, getSystemLabel, shuffle } from './utils'
+import { Centered, PrimaryButton, SecondaryButton } from './ui'
 import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { markWordDue } from './practiceSignal'
@@ -42,15 +43,6 @@ function tokenize(sentence, segmenter) {
     }
   }
   return out
-}
-
-function shuffle(items) {
-  const a = [...items]
-  for (let i = a.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1))
-    const t = a[i]; a[i] = a[j]; a[j] = t
-  }
-  return a
 }
 
 // Scramble [0..n-1] into a different order than sorted.
@@ -322,48 +314,6 @@ function Tile({ text, font, accent, onClick, disabled }) {
       boxShadow: accent ? '0 2px 8px rgba(24,24,27,0.06)' : 'none',
     }}>
       {text}
-    </button>
-  )
-}
-
-function Centered({ children, wide }) {
-  return (
-    <div style={{ maxWidth: wide ? '760px' : '520px', margin: '0 auto', minHeight: '74vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: '100%', maxWidth: '520px', textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '42px 36px', boxShadow: '0 22px 60px rgba(24,24,27,0.07)' }}>
-        {children}
-      </div>
-    </div>
-  )
-}
-
-function PrimaryButton({ onClick, children, icon: Icon, disabled }) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <button onClick={onClick} disabled={disabled} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} style={{
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-      width: '100%', minHeight: '52px', borderRadius: '16px', border: 'none',
-      background: disabled ? '#A8B5A1' : (hovered ? '#5C7155' : '#6E8466'), color: '#fff',
-      fontSize: '15px', fontWeight: 750, fontFamily: 'Inter, sans-serif', cursor: disabled ? 'default' : 'pointer',
-      transition: 'background 160ms ease, transform 160ms ease', transform: hovered && !disabled ? 'translateY(-1px)' : 'translateY(0)',
-    }}>
-      {Icon && <Icon size={18} strokeWidth={2.1} color="#fff" />}
-      {children}
-    </button>
-  )
-}
-
-function SecondaryButton({ onClick, children, icon: Icon }) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} style={{
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-      minHeight: '52px', padding: '0 18px', borderRadius: '14px',
-      border: '1px solid var(--border)', background: hovered ? 'var(--surface-2)' : 'var(--surface)',
-      color: 'var(--text-muted)', fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
-      cursor: 'pointer', transition: 'background 160ms ease',
-    }}>
-      {Icon && <Icon size={17} strokeWidth={1.85} color="var(--text-muted)" />}
-      {children}
     </button>
   )
 }

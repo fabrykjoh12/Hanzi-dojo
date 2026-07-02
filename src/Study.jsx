@@ -7,7 +7,7 @@ import { computeAward } from './xpService'
 import { updateStreak, todayStr, liveStreak } from './streak'
 import { evaluateAchievements } from './achievements'
 import { toast } from './toast'
-import { getLevelLabel, getSystemLabel } from './utils'
+import { getLevelLabel, getSystemLabel, getAudioUrl } from './utils'
 import { languageTheme } from './languageTheme'
 import { normalizePinyin } from './testLogic'
 import { toRomaji } from 'wanakana'
@@ -36,16 +36,10 @@ function checkTyped(input, v, isJapanese) {
   return target !== '' && strip(input) === target
 }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SAGE = '#6E8466'
 const SAGE_DARK = '#5C7155'
 // Grade → feedback color (Again / Hard / Good / Easy)
 const GRADE_COLORS = ['#DC2626', '#D97706', '#3E63DD', '#2F9E6D']
-
-function getAudioUrl(audioPath) {
-  if (!audioPath) return null
-  return SUPABASE_URL + '/storage/v1/object/public/audio/' + audioPath
-}
 
 function hasKanji(text) {
   const value = text || ''

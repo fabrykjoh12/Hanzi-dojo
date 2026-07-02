@@ -55,6 +55,24 @@ export function getNextLevel(language, system, level) {
   return level < max ? level + 1 : level
 }
 
+// Fisher–Yates shuffle (returns a new array). Replaces the copy in every drill
+// file and the biased `sort(() => Math.random() - 0.5)` idiom in Test.jsx.
+export function shuffle(items) {
+  const a = [...items]
+  for (let i = a.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const t = a[i]; a[i] = a[j]; a[j] = t
+  }
+  return a
+}
+
+// Public URL for a TTS file in the Supabase audio bucket.
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+export function getAudioUrl(audioPath) {
+  if (!audioPath) return null
+  return SUPABASE_URL + '/storage/v1/object/public/audio/' + audioPath
+}
+
 export function normalizeRecallInput(value) {
   return (value || '')
     .toLowerCase()
