@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
+import { awardXp } from './xpService'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
@@ -83,9 +84,7 @@ export default function FillBlank({ session, profile, track, onBack, onUpdate })
     setDone(true)
     const gain = finalCorrect * XP_PER_CORRECT
     if (gain > 0) {
-      const newTotal = (profile.total_xp || 0) + gain
-      supabase.from('profiles').update({ total_xp: newTotal }).eq('id', session.user.id).then(() => {})
-      if (onUpdate) onUpdate({ total_xp: newTotal })
+      awardXp(session, profile, gain, onUpdate)
     }
   }
 

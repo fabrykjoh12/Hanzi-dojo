@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
+import { getTrackCards } from './data'
 import { schedule, previewLabels } from './srs'
-import { xpForGrade, levelInfo } from './xp'
+import { xpForGrade } from './xp'
+import { computeAward } from './xpService'
 import { updateStreak, todayStr } from './streak'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
@@ -13,9 +15,6 @@ import {
   Volume2, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
   Sparkles, CheckCircle2, Layers, BookOpenCheck, Sunrise, X, Snowflake, TrendingUp,
 } from 'lucide-react'
-
-// Level-ups award a streak freeze, capped so they can't be hoarded indefinitely.
-const MAX_FREEZES = 5
 
 // Does the typed input match the card's reading (or the word itself)?
 // Japanese accepts romaji or kana; Chinese accepts tone-insensitive pinyin.
@@ -257,10 +256,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       .eq('is_active', true)
       .order('sort_order', { ascending: true })
 
-    const { data: cards } = await supabase
-      .from('cards')
-      .select('*')
-      .eq('user_id', session.user.id)
+    // Server-side scoped to this level — never the whole cross-language table.
+    const cards = await getTrackCards(session.user.id, track, { level: track.current_level })
 
     const vocabById = {}
     ;(vocab || []).forEach(v => { vocabById[v.id] = v })
@@ -349,10 +346,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       .eq('system', track.system)
       .eq('level', track.current_level)
       .eq('is_active', true)
-    const { data: cards } = await supabase
-      .from('cards')
-      .select('vocab_id, state, due_at')
-      .eq('user_id', session.user.id)
+    const cards = await getTrackCards(session.user.id, track, {
+      level: track.current_level,
+      columns: 'vocab_id, state, due_at',
+    })
 
     const vocabIds = new Set((vocab || []).map(v => v.id))
     const started = new Set((cards || []).map(c => c.vocab_id))
@@ -403,10 +400,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       if (grade >= 1) s.reviewedRight += 1
     }
     const xpGain = xpForGrade(grade)
-    const prevLevel = levelInfo(xpRef.current).level
-    s.xpEarned += xpGain
-    xpRef.current += xpGain
-    const newLevel = levelInfo(xpRef.current).level
 
     if (!streakDone) {
       setStreakDone(true)
@@ -415,15 +408,17 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       if (onStreakUpdate) onStreakUpdate(newStreak)
     }
 
-    // Level-up reward: each level gained grants a streak freeze (capped). This is
-    // the tangible payoff for the steeper XP curve — progress you can spend.
-    if (newLevel > prevLevel) {
-      const before = freezesRef.current
-      freezesRef.current = Math.min(MAX_FREEZES, before + (newLevel - prevLevel))
-      const earned = freezesRef.current - before
-      s.leveledTo = newLevel
-      s.freezesEarned += earned
-      if (earned > 0) {
+    // Award XP through the shared rulebook (level-ups grant capped streak
+    // freezes — same rules as the practice drills), tracked against this
+    // session's running XP/freeze balances.
+    const award = computeAward(xpRef.current, xpGain, freezesRef.current)
+    s.xpEarned += xpGain
+    xpRef.current = award.newXp
+    if (award.leveled) {
+      freezesRef.current = award.freezes
+      s.leveledTo = award.newLevel
+      s.freezesEarned += award.freezesEarned
+      if (award.freezesEarned > 0) {
         supabase.from('profiles').update({ streak_freezes: freezesRef.current }).eq('id', session.user.id).then(() => {})
         if (onStreakUpdate) onStreakUpdate({ streak_freezes: freezesRef.current })
       }

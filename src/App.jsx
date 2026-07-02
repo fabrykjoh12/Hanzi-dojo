@@ -139,11 +139,14 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Navigate between views (updates the URL) and refresh counts so the
-  // dashboard stays current.
+  // Navigate between views (updates the URL). Profile/track/counts reload only
+  // when landing on Home — the dashboard is the one view that renders them, and
+  // study/practice screens patch the in-memory profile live via their
+  // onUpdate/onStreakUpdate callbacks. (Previously every view switch refired
+  // ~5 queries, so opening Settings cost a full dashboard reload.)
   const navigate = (key) => {
     routerNavigate(viewToPath(key))
-    if (session) loadProfile(session.user.id)
+    if (session && key === 'home') loadProfile(session.user.id)
   }
 
   const handleLogout = () => supabase.auth.signOut()

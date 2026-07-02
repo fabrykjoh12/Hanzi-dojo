@@ -18,6 +18,11 @@ A full product/design/code review was performed, then its Phase-1 fixes were imp
 - **Misc:** unused Vite-template `src/App.css` deleted; `og:image` is now an absolute GH-Pages URL (scrapers don't resolve relative paths).
 - Verified: `npm run build` ✓, `npx vitest run` 45/45 ✓, `npm run lint` at the pre-existing baseline (no new errors).
 
+### Phase 2 (same branch, PR #4)
+- **`src/data.js`** — `getTrackCards(userId, track, { level, columns })`: cards scoped **server-side** via a `vocabulary!inner` join (language/system/level filters in PostgREST). Migrated: `Study.loadQueue` + `loadForecast`, `homeCounts` (which also dropped its now-redundant language-vocab query), `testLogic.getTestStatus`. Screens no longer pull the user's whole cross-language cards table. Rows carry a nested `vocabulary: {id, level}` — harmless, never written back. Profile.jsx intentionally NOT migrated (achievements legitimately need lifetime cross-language cards).
+- **Navigation refetch diet** — `App.navigate()` reloads profile/track/counts only when landing on `home` (was: every view switch = ~5 queries). Study/practice screens already patch the in-memory profile via `onUpdate`/`onStreakUpdate`.
+- **`src/xpService.js`** — one XP rulebook: pure `computeAward(prevXp, gain, prevFreezes)` (level-up → capped streak-freeze grant, `MAX_FREEZES=5` moved here) + `awardXp(session, profile, gain, onUpdate)` (persists, patches). All six drills (Listen/FillBlank/Tones/Kana/Cyrillic/SentenceBuilder) now call `awardXp` — **drill level-ups now grant freezes** (previously only Study did). Study uses `computeAward` against its running session refs. Tests in `xpService.test.js` (supabase stubbed like streak.test) → suite is now **49 passing**.
+
 ---
 
 ## 0b. PREVIOUS SESSION (2026-07-01)
