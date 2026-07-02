@@ -5,7 +5,9 @@ import { getHomeCounts } from './homeCounts'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
 // Eager: the app shell + first-paint screens.
-import Auth from './Auth'
+import Landing from './Landing'
+import PasswordReset from './PasswordReset'
+import Toasts from './Toasts'
 import Onboarding from './Onboarding'
 import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
@@ -65,6 +67,9 @@ export default function App() {
   const [track, setTrack] = useState(null)
   const [counts, setCounts] = useState({ newCount: 0, learnCount: 0, dueCount: 0, easyCount: 0, totalWords: 0, learnedCount: 0, masteredCount: 0, masteredPct: 0 })
   const [loading, setLoading] = useState(true)
+  // True while the user arrived via a password-recovery email link and hasn't
+  // set a new password yet (Supabase signs them in and fires PASSWORD_RECOVERY).
+  const [recovery, setRecovery] = useState(false)
   const [theme, setThemeState] = useState(initialTheme)
   const isMobile = useIsMobile()
   const routerNavigate = useNavigate()
@@ -126,6 +131,9 @@ export default function App() {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === 'PASSWORD_RECOVERY') setRecovery(true)
+      // A stale recovery flag must not survive into the next normal login.
+      if (_event === 'SIGNED_OUT') setRecovery(false)
       setSession(session)
       if (session) loadProfile(session.user.id)
       else { setProfile(null); setTrack(null); setLoading(false) }
@@ -134,11 +142,14 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Navigate between views (updates the URL) and refresh counts so the
-  // dashboard stays current.
+  // Navigate between views (updates the URL). Profile/track/counts reload only
+  // when landing on Home — the dashboard is the one view that renders them, and
+  // study/practice screens patch the in-memory profile live via their
+  // onUpdate/onStreakUpdate callbacks. (Previously every view switch refired
+  // ~5 queries, so opening Settings cost a full dashboard reload.)
   const navigate = (key) => {
     routerNavigate(viewToPath(key))
-    if (session) loadProfile(session.user.id)
+    if (session && key === 'home') loadProfile(session.user.id)
   }
 
   const handleLogout = () => supabase.auth.signOut()
@@ -153,10 +164,14 @@ export default function App() {
   }
 
   if (!session) {
+    return <Landing />
+  }
+
+  if (recovery) {
     return (
       <>
         <Background language="chinese" />
-        <Auth />
+        <PasswordReset onDone={() => setRecovery(false)} />
       </>
     )
   }
@@ -377,6 +392,7 @@ export default function App() {
           </Suspense>
         </div>
         {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} />}
+        <Toasts />
       </div>
     </ThemeContext.Provider>
   )

@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
+import { getTrackCards } from './data'
 import { schedule, previewLabels } from './srs'
 import { xpForGrade, levelInfo } from './xp'
-import { updateStreak, todayStr } from './streak'
+import { computeAward } from './xpService'
+import { updateStreak, todayStr, liveStreak } from './streak'
+import { evaluateAchievements } from './achievements'
+import { toast } from './toast'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { normalizePinyin } from './testLogic'
@@ -13,9 +17,6 @@ import {
   Volume2, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
   Sparkles, CheckCircle2, Layers, BookOpenCheck, Sunrise, X, Snowflake, TrendingUp,
 } from 'lucide-react'
-
-// Level-ups award a streak freeze, capped so they can't be hoarded indefinitely.
-const MAX_FREEZES = 5
 
 // Does the typed input match the card's reading (or the word itself)?
 // Japanese accepts romaji or kana; Chinese accepts tone-insensitive pinyin.
@@ -132,7 +133,7 @@ function IconButton({ icon: Icon, label, onClick, color, background, border }) {
   )
 }
 
-function GradeButton({ grade, label, interval, color, icon: Icon, onClick }) {
+function GradeButton({ grade, label, interval, color, icon: Icon, onClick, suggested }) {
   const [hovered, setHovered] = useState(false)
   return (
     <button
@@ -142,8 +143,9 @@ function GradeButton({ grade, label, interval, color, icon: Icon, onClick }) {
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         gap: '6px', minHeight: '76px', padding: '12px 8px',
-        borderRadius: '16px', border: '1px solid ' + color + (hovered ? '66' : '30'),
-        background: hovered ? color + '14' : color + '0D',
+        borderRadius: '16px',
+        border: suggested ? '2px solid ' + color + '99' : '1px solid ' + color + (hovered ? '66' : '30'),
+        background: hovered || suggested ? color + '14' : color + '0D',
         color, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
         transition: 'background 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease',
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
@@ -199,6 +201,20 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const [gradeId, setGradeId] = useState(0)              // bumps to restart the flash
   const audioRef = useRef(null)
   const [audioSpeed, setAudioSpeed] = useState(1)   // TTS playback rate (1× / 0.75× / 0.5×)
+  // Guards against a rapid double-click/double-keypress grading the same card
+  // twice while the first save is still in flight (which would double-schedule
+  // it and, for new cards, attempt a duplicate insert).
+  const gradingRef = useRef(false)
+  // Snapshot of everything the last grade mutated, so a misclicked "Easy" can
+  // be undone for a few seconds instead of silently mis-scheduling the card.
+  const undoRef = useRef(null)
+  const undoTimerRef = useRef(null)
+  const [undoVisible, setUndoVisible] = useState(false)
+  // Achievement stats at session start, so newly crossed thresholds can be
+  // celebrated at the recap (same live-derived inputs Profile uses).
+  const achieveBeforeRef = useRef(null)
+  const streakAfterRef = useRef(null)
+  const achieveToastedRef = useRef(false)
   // Running counts of today's study session, persisted to daily_activity so the
   // Profile calendar can show which days were studied.
   const activityRef = useRef({ studied: 0, newC: 0, learn: 0, review: 0 })
@@ -253,10 +269,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       .eq('is_active', true)
       .order('sort_order', { ascending: true })
 
-    const { data: cards } = await supabase
-      .from('cards')
-      .select('*')
-      .eq('user_id', session.user.id)
+    // Server-side scoped to this level — never the whole cross-language table.
+    const cards = await getTrackCards(session.user.id, track, { level: track.current_level })
 
     const vocabById = {}
     ;(vocab || []).forEach(v => { vocabById[v.id] = v })
@@ -307,9 +321,36 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     setLoading(false)
   }
 
+  // Lifetime stats that feed achievements (cross-language, like Profile).
+  // Two cheap queries: two columns of the cards table + a row count.
+  async function loadAchievementStats() {
+    const [cardsResult, daysResult] = await Promise.all([
+      supabase.from('cards').select('learned, stability').eq('user_id', session.user.id),
+      supabase.from('daily_activity')
+        .select('activity_date', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .gt('studied_cards', 0),
+    ])
+    const rows = cardsResult.data || []
+    return {
+      learned: rows.filter(c => c.learned).length,
+      mastered: rows.filter(c => (c.stability || 0) >= 21).length,
+      daysStudied: daysResult.count || 0,
+    }
+  }
+
   useEffect(() => {
     const timer = setTimeout(loadQueue, 0)
+    // Non-blocking before-snapshot for end-of-session achievement toasts.
+    loadAchievementStats().then(stats => {
+      achieveBeforeRef.current = {
+        ...stats,
+        streak: liveStreak(profile),
+        level: levelInfo(xpRef.current).level,
+      }
+    })
     return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -345,10 +386,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       .eq('system', track.system)
       .eq('level', track.current_level)
       .eq('is_active', true)
-    const { data: cards } = await supabase
-      .from('cards')
-      .select('vocab_id, state, due_at')
-      .eq('user_id', session.user.id)
+    const cards = await getTrackCards(session.user.id, track, {
+      level: track.current_level,
+      columns: 'vocab_id, state, due_at',
+    })
 
     const vocabIds = new Set((vocab || []).map(v => v.id))
     const started = new Set((cards || []).map(c => c.vocab_id))
@@ -363,16 +404,67 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     setForecast({ reviews, newAvail })
   }
 
+  // Toast any achievement seals newly earned this session (compare the live
+  // stats against the snapshot taken at session start).
+  async function celebrateAchievements() {
+    const before = achieveBeforeRef.current
+    const stats = await loadAchievementStats()
+    const after = {
+      ...stats,
+      streak: streakAfterRef.current != null ? streakAfterRef.current : before.streak,
+      level: levelInfo(xpRef.current).level,
+    }
+    const beforeEarned = new Set(
+      evaluateAchievements(before).filter(a => a.earned).map(a => a.id)
+    )
+    evaluateAchievements(after)
+      .filter(a => a.earned && !beforeEarned.has(a.id))
+      .forEach(a => toast({ kind: 'seal', title: 'Seal earned — ' + a.title, body: a.desc }))
+  }
+
   useEffect(() => {
     if (done && recap && recap.graded > 0 && !forecast) {
       loadForecast()
+    }
+    if (done && recap && recap.graded > 0 && achieveBeforeRef.current && !achieveToastedRef.current) {
+      achieveToastedRef.current = true
+      celebrateAchievements()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done, recap])
 
   const handleGrade = async (grade) => {
+    if (gradingRef.current) return
+    gradingRef.current = true
+    try {
+      await applyGrade(grade)
+    } finally {
+      gradingRef.current = false
+    }
+  }
+
+  const applyGrade = async (grade) => {
     const card = queue[0]
     const res = schedule(card, grade)
+
+    // A new grade invalidates any pending undo — its snapshot predates this one.
+    clearTimeout(undoTimerRef.current)
+    undoRef.current = null
+    setUndoVisible(false)
+
+    // Snapshot the pre-grade world for undo. `card`/`queue` are the pre-grade
+    // values; the running refs are copied before this grade's tallies land.
+    const snapshot = {
+      card: { ...card },
+      prevQueue: queue.slice(),
+      session: { ...sessionRef.current },
+      activity: { ...activityRef.current },
+      xp: xpRef.current,
+      freezes: freezesRef.current,
+      wasNew: !card.id,
+      cardId: null,
+      logId: null,
+    }
 
     // Fire the colored grade-feedback ring (restarts via the bumped key).
     setGradeColor(GRADE_COLORS[grade])
@@ -389,27 +481,26 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       if (grade >= 1) s.reviewedRight += 1
     }
     const xpGain = xpForGrade(grade)
-    const prevLevel = levelInfo(xpRef.current).level
-    s.xpEarned += xpGain
-    xpRef.current += xpGain
-    const newLevel = levelInfo(xpRef.current).level
 
     if (!streakDone) {
       setStreakDone(true)
       const newStreak = await updateStreak(profile)
+      if (typeof newStreak.streak === 'number') streakAfterRef.current = newStreak.streak
       if (typeof newStreak.streak_freezes === 'number') freezesRef.current = newStreak.streak_freezes
       if (onStreakUpdate) onStreakUpdate(newStreak)
     }
 
-    // Level-up reward: each level gained grants a streak freeze (capped). This is
-    // the tangible payoff for the steeper XP curve — progress you can spend.
-    if (newLevel > prevLevel) {
-      const before = freezesRef.current
-      freezesRef.current = Math.min(MAX_FREEZES, before + (newLevel - prevLevel))
-      const earned = freezesRef.current - before
-      s.leveledTo = newLevel
-      s.freezesEarned += earned
-      if (earned > 0) {
+    // Award XP through the shared rulebook (level-ups grant capped streak
+    // freezes — same rules as the practice drills), tracked against this
+    // session's running XP/freeze balances.
+    const award = computeAward(xpRef.current, xpGain, freezesRef.current)
+    s.xpEarned += xpGain
+    xpRef.current = award.newXp
+    if (award.leveled) {
+      freezesRef.current = award.freezes
+      s.leveledTo = award.newLevel
+      s.freezesEarned += award.freezesEarned
+      if (award.freezesEarned > 0) {
         supabase.from('profiles').update({ streak_freezes: freezesRef.current }).eq('id', session.user.id).then(() => {})
         if (onStreakUpdate) onStreakUpdate({ streak_freezes: freezesRef.current })
       }
@@ -437,7 +528,36 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       cardId = data?.id
     }
 
+    // Offer undo for a few seconds — except when this grade completes the
+    // session (the recap snapshot has already been taken by then).
+    snapshot.cardId = cardId
+    const willComplete = !res.stay && queue.length === 1
+    if (!willComplete) {
+      undoRef.current = snapshot
+      setUndoVisible(true)
+      undoTimerRef.current = setTimeout(() => {
+        undoRef.current = null
+        setUndoVisible(false)
+      }, 6000)
+    }
+
     recordActivity(card.state)
+
+    // Log the review so FSRS parameters can be tuned and retention stats built
+    // later. Best-effort: history is nice-to-have, grading must never block on
+    // it. The log id is captured onto the snapshot so undo can remove the entry.
+    supabase.from('review_logs').insert({
+      user_id: session.user.id,
+      card_id: cardId,
+      vocab_id: card.vocab_id,
+      grade,
+      previous_state: card.state,
+      next_state: res.updates.state,
+      previous_interval_days: card.interval_days || 0,
+      next_interval_days: res.updates.interval_days,
+    }).select('id').single().then(({ data }) => {
+      snapshot.logId = data && data.id
+    })
 
     // Persist lifetime XP (best-effort; harmless if the column doesn't exist yet)
     // and reflect it in the in-memory profile so Home/Profile update live.
@@ -462,6 +582,118 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       return rest
     })
   }
+
+  // Undo the last grade: restore the card row, queue order, XP/freeze balances,
+  // session tallies, and daily activity to their pre-grade snapshot. The streak
+  // itself is deliberately NOT reverted — the user did show up and study.
+  const undoLast = async () => {
+    const u = undoRef.current
+    if (!u || gradingRef.current) return
+    gradingRef.current = true
+    clearTimeout(undoTimerRef.current)
+    undoRef.current = null
+    setUndoVisible(false)
+    try {
+      if (u.wasNew) {
+        // This grade created the row; the user's explicit undo removes it again
+        // (the card returns to the queue as a brand-new item).
+        if (u.cardId) {
+          await supabase.from('cards').delete().eq('id', u.cardId).eq('user_id', session.user.id)
+        }
+      } else {
+        const c = u.card
+        await supabase.from('cards').update({
+          state: c.state,
+          interval_days: c.interval_days,
+          due_at: c.due_at,
+          is_easy: c.is_easy,
+          learned: c.learned,
+          stability: c.stability,
+          difficulty: c.difficulty,
+          reps: c.reps,
+          lapses: c.lapses,
+          last_review: c.last_review,
+          scheduled_days: c.scheduled_days,
+          elapsed_days: c.elapsed_days,
+          learning_step: c.learning_step,
+        }).eq('id', u.cardId)
+      }
+      if (u.logId) supabase.from('review_logs').delete().eq('id', u.logId).then(() => {})
+
+      sessionRef.current = u.session
+      activityRef.current = u.activity
+      xpRef.current = u.xp
+      const restore = { total_xp: u.xp }
+      if (freezesRef.current !== u.freezes) restore.streak_freezes = u.freezes
+      freezesRef.current = u.freezes
+      supabase.from('profiles').update(restore).eq('id', session.user.id).then(() => {})
+      if (onStreakUpdate) onStreakUpdate(restore)
+      supabase.from('daily_activity').upsert({
+        user_id: session.user.id,
+        activity_date: todayStr(),
+        studied_cards: u.activity.studied,
+        new_cards: u.activity.newC,
+        learning_cards: u.activity.learn,
+        review_cards: u.activity.review,
+      }, { onConflict: 'user_id,activity_date' }).then(() => {})
+
+      setFlipped(false)
+      setTypedValue('')
+      setTypedResult(null)
+      setQueue(u.prevQueue)
+    } finally {
+      gradingRef.current = false
+    }
+  }
+
+  // Clear a pending undo timer if the screen unmounts mid-window.
+  useEffect(() => () => clearTimeout(undoTimerRef.current), [])
+
+  // In typed mode the check result implies a grade — highlight it and let Enter
+  // confirm it. Flip mode defaults Enter to "Good" (the Anki convention).
+  const suggestedGrade = isTyped && typedResult ? (typedResult === 'correct' ? 2 : 0) : null
+
+  // Desktop keyboard flow: Space/Enter reveals, 1–4 grades, Enter takes the
+  // suggested/Good grade, R replays audio, U undoes the last grade. Rebinds
+  // each render so the handler always sees current state. The typed-mode input
+  // owns its own keys (Enter submits there), so key events from inputs are
+  // ignored.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (loading || done || queue.length === 0) return
+      const el = e.target
+      const tag = el && el.tagName
+      // Typing contexts own the keyboard entirely.
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (el && el.isContentEditable)) return
+      // A focused button/link keeps its native Space/Enter activation; the
+      // non-activating shortcuts (1–4, R, U) still work so the mouse+keyboard
+      // mixed flow isn't broken by focus resting on the last-clicked button.
+      const onActivatable = tag === 'BUTTON' || tag === 'A'
+      if ((e.key === 'u' || e.key === 'U') && undoRef.current) {
+        e.preventDefault()
+        undoLast()
+        return
+      }
+      if (!flipped) {
+        if (!onActivatable && (e.key === ' ' || e.key === 'Enter')) {
+          e.preventDefault()
+          setFlipped(true)
+        }
+        return
+      }
+      if (e.key >= '1' && e.key <= '4') {
+        e.preventDefault()
+        handleGrade(Number(e.key) - 1)
+      } else if (!onActivatable && e.key === 'Enter') {
+        e.preventDefault()
+        handleGrade(suggestedGrade != null ? suggestedGrade : 2)
+      } else if (e.key === 'r' || e.key === 'R') {
+        playAudio()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
 
   const newCount = queue.filter(c => c.state === 'new').length
   const learnCount = queue.filter(c => c.state === 'learning' || c.state === 'relearning').length
@@ -655,6 +887,24 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
   return (
     <div style={pageShell}>
+      {undoVisible && (
+        <button
+          onClick={undoLast}
+          style={{
+            position: 'fixed', left: '50%', transform: 'translateX(-50%)',
+            bottom: isMobile ? 'calc(74px + env(safe-area-inset-bottom))' : '26px',
+            zIndex: 30, display: 'inline-flex', alignItems: 'center', gap: '8px',
+            padding: '10px 16px', borderRadius: '999px',
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            color: 'var(--text)', fontSize: '13px', fontWeight: 650,
+            fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+            boxShadow: '0 12px 32px rgba(24,24,27,0.16)',
+          }}
+        >
+          <RotateCcw size={15} strokeWidth={2} color="var(--text-muted)" />
+          Undo last grade
+        </button>
+      )}
       {saveError && (
         <div style={{
           maxWidth: '680px', margin: '0 auto 18px',
@@ -688,9 +938,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         </div>
 
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <QueuePill label="New" value={newCount} color="#3E63DD" background="#EEF2FF" />
-          <QueuePill label="Learn" value={learnCount} color="#D97706" background="#FFFBEB" />
-          <QueuePill label="Due" value={dueCount} color="#2F9E6D" background="var(--success-bg)" />
+          <QueuePill label="New" value={newCount} color="#3E63DD" background="#3E63DD14" />
+          <QueuePill label="Learn" value={learnCount} color="#D97706" background="#D9770614" />
+          <QueuePill label="Due" value={dueCount} color="#2F9E6D" background="#2F9E6D14" />
         </div>
       </div>
 
@@ -882,7 +1132,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                       flex: 1, minWidth: 0, height: '54px', padding: '0 18px',
                       borderRadius: '16px', border: '1px solid var(--border)',
                       background: 'var(--surface)', color: 'var(--text)',
-                      fontSize: '16px', fontFamily: 'Inter, sans-serif', outline: 'none',
+                      fontSize: '16px', fontFamily: 'Inter, sans-serif',
                     }}
                   />
                   <button
@@ -948,9 +1198,17 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                     color={item.color}
                     icon={item.icon}
                     onClick={handleGrade}
+                    suggested={suggestedGrade === item.grade}
                   />
                 ))}
               </div>
+            </div>
+          )}
+          {!isMobile && (
+            <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '12px', color: 'var(--text-faint)', fontWeight: 550 }}>
+              {flipped
+                ? '1–4 to grade · Enter = ' + (suggestedGrade === 0 ? 'Again' : 'Good') + ' · R to replay'
+                : (isTyped ? 'Enter to check' : 'Space to reveal')}
             </div>
           )}
         </div>

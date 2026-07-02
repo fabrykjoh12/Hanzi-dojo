@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
+import { awardXp } from './xpService'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
@@ -136,7 +137,11 @@ export default function SentenceBuilder({ session, profile, track, onBack, onUpd
   }
 
   function check() {
-    const ok = placed.length === q.tokens.length && placed.every((id, i) => id === i)
+    // Compare the built *sentence*, not tile identity — duplicate tokens (two
+    // identical particles, repeated words) are interchangeable, so any order
+    // that reproduces the target string is correct.
+    const ok = placed.length === q.tokens.length
+      && placed.map(id => q.tokens[id]).join('') === q.tokens.join('')
     setResult(ok ? 'correct' : 'wrong')
     if (ok) setCorrectCount(c => c + 1)
     else markWordDue(session, q.vocab.id)
@@ -147,17 +152,14 @@ export default function SentenceBuilder({ session, profile, track, onBack, onUpd
     for (let i = 0; i < q.tokens.length; i += 1) target.push(i)
     setPlaced(target)
     setResult('wrong')
-    markWordDue(session, q.vocab.id)
+    // Deliberately no markWordDue here: asking to see the answer is curiosity,
+    // not a failed recall — punishing it teaches users to avoid the button.
   }
 
   function finish(finalCorrect) {
     setDone(true)
     const gain = finalCorrect * XP_PER_CORRECT
-    if (gain > 0) {
-      const newTotal = (profile.total_xp || 0) + gain
-      supabase.from('profiles').update({ total_xp: newTotal }).eq('id', session.user.id).then(() => {})
-      if (onUpdate) onUpdate({ total_xp: newTotal })
-    }
+    if (gain > 0) awardXp(session, profile, gain, onUpdate)
   }
 
   function next() {

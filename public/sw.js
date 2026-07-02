@@ -10,11 +10,31 @@
  * This file is served verbatim from /public (no bundler transform). Plain JS.
  */
 
-var VERSION = 'v2'
+var VERSION = 'v3'
 var SHELL_CACHE = 'hanzi-shell-' + VERSION
 var ASSET_CACHE = 'hanzi-assets-' + VERSION
 var AUDIO_CACHE = 'hanzi-audio-' + VERSION
 var KEEP = [SHELL_CACHE, ASSET_CACHE, AUDIO_CACHE]
+
+// Cache-first caches grow forever without a cap: every deploy adds new hashed
+// bundles, every studied word adds an MP3. Oldest entries (insertion order)
+// are evicted past these limits.
+var CACHE_LIMITS = {}
+CACHE_LIMITS[ASSET_CACHE] = 80
+CACHE_LIMITS[AUDIO_CACHE] = 400
+
+function trimCache(cacheName) {
+  var max = CACHE_LIMITS[cacheName]
+  if (!max) return Promise.resolve()
+  return caches.open(cacheName).then(function (cache) {
+    return cache.keys().then(function (keys) {
+      if (keys.length <= max) return null
+      return Promise.all(keys.slice(0, keys.length - max).map(function (k) {
+        return cache.delete(k)
+      }))
+    })
+  })
+}
 
 // Scope-relative shell URL (works under /Hanzi-dojo/ and /).
 var SHELL_URL = new URL('./index.html', self.registration.scope).toString()
@@ -48,13 +68,16 @@ function isSupabaseRest(url) {
   return url.indexOf('/rest/v1/') !== -1 || url.indexOf('/auth/v1/') !== -1
 }
 
-// Cache-first: serve from cache, else fetch and store a copy.
+// Cache-first: serve from cache, else fetch and store a copy (then trim the
+// cache back under its cap, oldest-first).
 function cacheFirst(request, cacheName) {
   return caches.open(cacheName).then(function (cache) {
     return cache.match(request).then(function (hit) {
       if (hit) return hit
       return fetch(request).then(function (resp) {
-        if (resp && (resp.ok || resp.type === 'opaque')) cache.put(request, resp.clone())
+        if (resp && (resp.ok || resp.type === 'opaque')) {
+          cache.put(request, resp.clone()).then(function () { return trimCache(cacheName) })
+        }
         return resp
       })
     })

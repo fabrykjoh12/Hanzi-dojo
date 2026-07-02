@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
+import { awardXp } from './xpService'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
@@ -27,11 +28,12 @@ function buildQuestions(pool) {
   const usable = pool.filter(v => v.example_sentence && v.example_sentence.indexOf(v.word) !== -1)
   if (usable.length < 4) return []
   return shuffle(usable).slice(0, Math.min(QUESTION_COUNT, usable.length)).map(v => {
-    const idx = v.example_sentence.indexOf(v.word)
-    const before = v.example_sentence.slice(0, idx)
-    const after = v.example_sentence.slice(idx + v.word.length)
+    // Blank EVERY occurrence of the word — if it appears twice, a visible second
+    // occurrence would give the answer away. `parts` are the fragments between
+    // blanks (split never misses: usable guarantees at least one occurrence).
+    const parts = v.example_sentence.split(v.word)
     const distractors = shuffle(pool.filter(o => o.id !== v.id && o.word !== v.word)).slice(0, 3)
-    return { vocab: v, before, after, options: shuffle([v, ...distractors]) }
+    return { vocab: v, parts, options: shuffle([v, ...distractors]) }
   })
 }
 
@@ -82,9 +84,7 @@ export default function FillBlank({ session, profile, track, onBack, onUpdate })
     setDone(true)
     const gain = finalCorrect * XP_PER_CORRECT
     if (gain > 0) {
-      const newTotal = (profile.total_xp || 0) + gain
-      supabase.from('profiles').update({ total_xp: newTotal }).eq('id', session.user.id).then(() => {})
-      if (onUpdate) onUpdate({ total_xp: newTotal })
+      awardXp(session, profile, gain, onUpdate)
     }
   }
 
@@ -185,7 +185,9 @@ export default function FillBlank({ session, profile, track, onBack, onUpdate })
         {/* Sentence with blank */}
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px 22px', marginBottom: '12px', textAlign: 'center', boxShadow: '0 10px 30px rgba(24,24,27,0.05)' }}>
           <div style={{ fontSize: isMobile ? '22px' : '26px', lineHeight: 1.7, fontFamily: langFont, color: 'var(--text)' }}>
-            {q.before}
+            {q.parts.map((part, i) => (
+              <span key={i}>
+                {i > 0 && (
             <span style={{
               display: 'inline-block', minWidth: '64px', textAlign: 'center',
               borderBottom: '2px solid ' + (answered ? '#2F9E6D' : accentHex),
@@ -193,7 +195,10 @@ export default function FillBlank({ session, profile, track, onBack, onUpdate })
             }}>
               {answered ? q.vocab.word : ' '}
             </span>
-            {q.after}
+                )}
+                {part}
+              </span>
+            ))}
           </div>
         </div>
         {q.vocab.example_translation && (

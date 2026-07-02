@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getTrackCards } from './data'
 import { countMastery } from './mastery'
 
 export async function getHomeCounts(userId, track, dailyNewCards) {
@@ -10,20 +11,12 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
     .eq('level', track.current_level)
     .eq('is_active', true)
 
-  // All vocab ids for the ACTIVE language (every level) — the fluency score is
-  // scoped to this so studying a second language never inflates the first.
-  const { data: langVocab } = await supabase
-    .from('vocabulary')
-    .select('id')
-    .eq('language', track.language)
-    .eq('system', track.system)
-    .eq('is_active', true)
-  const langVocabIds = new Set((langVocab || []).map(v => v.id))
-
-  const { data: cards } = await supabase
-    .from('cards')
-    .select('vocab_id, state, due_at, created_at, is_easy, learned, stability, lapses')
-    .eq('user_id', userId)
+  // Cards scoped server-side to the ACTIVE language (every level): the level
+  // counts filter further below, and the fluency score wants exactly this scope
+  // so studying a second language never inflates the first.
+  const cards = await getTrackCards(userId, track, {
+    columns: 'vocab_id, state, due_at, created_at, is_easy, learned, stability, lapses',
+  })
 
   const vocabIds = new Set((vocab || []).map(v => v.id))
 
@@ -69,10 +62,10 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   const { learnedCount, masteredCount, masteredPct } = countMastery(levelCards, totalWords)
 
   // Fluency counts: every level of the ACTIVE language only (not other
-  // languages the user also studies). Named "lifetime" for continuity.
-  const langCards = (cards || []).filter(c => langVocabIds.has(c.vocab_id))
-  const lifetimeLearned = langCards.filter(c => c.learned).length
-  const lifetimeMastered = langCards.filter(c => (c.stability || 0) >= 21).length
+  // languages the user also studies) — which is exactly the scope of the
+  // server-side fetch above. Named "lifetime" for continuity.
+  const lifetimeLearned = (cards || []).filter(c => c.learned).length
+  const lifetimeMastered = (cards || []).filter(c => (c.stability || 0) >= 21).length
 
   return {
     newCount, learnCount, dueCount, easyCount, totalWords,

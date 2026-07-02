@@ -20,13 +20,17 @@ function NavItem({ item, active, collapsed, onClick }) {
   const Icon = item.icon
   const isActive = active === item.key
   return (
-    <div
+    <button
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      aria-current={isActive ? 'page' : undefined}
+      aria-label={item.label}
       style={{
         position: 'relative',
         display: 'flex', alignItems: 'center', gap: '12px',
+        width: '100%', border: 'none', textAlign: 'left',
+        fontFamily: 'Inter, sans-serif',
         padding: collapsed ? '10px' : '10px 14px',
         justifyContent: collapsed ? 'center' : 'flex-start',
         borderRadius: '11px',
@@ -57,7 +61,7 @@ function NavItem({ item, active, collapsed, onClick }) {
           {item.label}
         </span>
       )}
-    </div>
+    </button>
   )
 }
 
@@ -137,11 +141,14 @@ export default function Sidebar({ view, onNavigate, onLogout }) {
       <div style={{ flex: 1 }} />
 
       {/* Theme toggle */}
-      <div
+      <button
         onClick={toggleTheme}
         title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         style={{
           display: 'flex', alignItems: 'center', gap: '12px',
+          width: '100%', border: 'none', background: 'transparent',
+          textAlign: 'left', fontFamily: 'Inter, sans-serif',
           padding: collapsed ? '10px' : '10px 14px',
           justifyContent: collapsed ? 'center' : 'flex-start',
           borderRadius: '11px', cursor: 'pointer', color: 'var(--text-muted)',
@@ -152,7 +159,7 @@ export default function Sidebar({ view, onNavigate, onLogout }) {
           ? <Sun size={19} strokeWidth={1.85} color="var(--text-muted)" style={{ flexShrink: 0 }} />
           : <Moon size={19} strokeWidth={1.85} color="var(--text-muted)" style={{ flexShrink: 0 }} />}
         {!collapsed && <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>}
-      </div>
+      </button>
 
       {/* Divider */}
       <div style={{ height: '1px', background: 'var(--border)', margin: '12px 8px' }} />

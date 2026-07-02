@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import bgChinese from './assets/bg-chinese.png'
-import bgJapanese from './assets/bg-japanese.png'
-import bgRussian from './assets/bg-russian.png'
+import bgChinese from './assets/bg-chinese.webp'
+import bgJapanese from './assets/bg-japanese.webp'
+import bgRussian from './assets/bg-russian.webp'
 import { languageTheme } from './languageTheme'
 
 const baseStyle = {

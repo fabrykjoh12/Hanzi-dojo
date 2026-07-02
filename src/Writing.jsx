@@ -753,7 +753,6 @@ export default function Writing({ session, track, onBack }) {
           fontSize: '20px',
           color: 'var(--text)',
           fontFamily: toEnglish ? 'Inter, sans-serif' : fontFamily,
-          outline: 'none',
           marginTop: '18px',
           boxShadow: '0 8px 26px rgba(24,24,27,0.045)',
         }}

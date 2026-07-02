@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getTrackCards } from './data'
 import { isMastered, TEST_UNLOCK_MASTERY_PCT } from './mastery'
 
 // Normalize for tone-insensitive comparison
@@ -33,7 +34,7 @@ export function checkAnswer(userInput, vocab) {
 
 // Returns { masteredCount, totalWords, masteredPct, testUnlocked, levelPassed }
 export async function getTestStatus(userId, track) {
-  const [vocabResult, cardsResult, unlockResult] = await Promise.all([
+  const [vocabResult, levelCards, unlockResult] = await Promise.all([
     supabase
       .from('vocabulary')
       .select('id')
@@ -41,10 +42,10 @@ export async function getTestStatus(userId, track) {
       .eq('system', track.system)
       .eq('level', track.current_level)
       .eq('is_active', true),
-    supabase
-      .from('cards')
-      .select('vocab_id, stability')
-      .eq('user_id', userId),
+    getTrackCards(userId, track, {
+      level: track.current_level,
+      columns: 'vocab_id, stability',
+    }),
     supabase
       .from('level_unlocks')
       .select('level')
@@ -56,9 +57,7 @@ export async function getTestStatus(userId, track) {
   ])
 
   const vocab = vocabResult.data
-  const cards = cardsResult.data
   const vocabIds = new Set((vocab || []).map(v => v.id))
-  const levelCards = (cards || []).filter(c => vocabIds.has(c.vocab_id))
 
   const totalWords = vocabIds.size
   const masteredCount = levelCards.filter(c => isMastered(c)).length

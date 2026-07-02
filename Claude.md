@@ -4,7 +4,45 @@ Read this entire file before making any change. It describes not just *what* the
 
 ---
 
-## 0. LATEST SESSION — read first (2026-07-01)
+## 0. LATEST SESSION — read first (2026-07-02)
+
+### Product-review fix batch (branch `claude/product-design-review-kfwlx2` — NOT yet on main)
+A full product/design/code review was performed, then its Phase-1 fixes were implemented on this branch:
+- **Study.jsx:** double-grade race guard (`gradingRef` around `handleGrade`); **`review_logs` now written on every grade** (best-effort insert — enables future FSRS tuning/retention stats); desktop **keyboard shortcuts** (Space/Enter reveal, 1–4 grade, R replay, hint row under the buttons); queue pills use translucent accent tints (dark-mode correct).
+- **Auth:** full **password-reset flow** — "Forgot password?" → `resetPasswordForEmail`; new `src/PasswordReset.jsx` set-new-password screen rendered by App on the `PASSWORD_RECOVERY` auth event. Success messages green (were error-red), Enter submits.
+- **Stories.jsx:** `CATEGORIES_RUSSIAN` added (Russian no longer sees "HSK 1" copy); tier map keyed by language; progress denominator computed from the real level deck size (was hardcoded 300/400).
+- **Level gating:** Onboarding + LanguageSwitcher disable levels with no seeded vocabulary ("Coming soon") — no more empty-queue dead ends; Onboarding also nudges beginners to level 1.
+- **Drill fixes:** SentenceBuilder accepts any tile order that reproduces the sentence (duplicate tokens) and no longer penalizes "Show answer" via `markWordDue`; FillBlank blanks **every** occurrence of the word (`parts` array replaces before/after); Tones `toneOf` parses numeric pinyin (`pin1`) and excludes tone-indeterminate words instead of mislabeling neutral; YouTube gets shorts/embed URL parsing, theme-aware loading glyph (was 学 for all languages), 1-col mobile grid.
+- **A11y:** Sidebar NavItem + theme toggle and Home FlowStep are real `<button>`s (aria-current on active); global `:focus-visible` outline in index.css; `outline:none` overrides removed from inputs.
+- **Perf:** backgrounds converted to WebP (`bg-*.webp`, 1.2–1.8 MB PNGs → 9–50 KB; imports updated in Background/Auth/Onboarding — PNG originals kept in assets but unbundled); Google Fonts moved from CSS `@import` to preconnect+`<link>` in index.html.
+- **Misc:** unused Vite-template `src/App.css` deleted; `og:image` is now an absolute GH-Pages URL (scrapers don't resolve relative paths).
+- Verified: `npm run build` ✓, `npx vitest run` 45/45 ✓, `npm run lint` at the pre-existing baseline (no new errors).
+
+### Batch 5 — toasts + SW update flow (same branch, PR #4)
+- **Toast system:** `src/toast.js` (fires an `hd-toast` CustomEvent — usable from plain modules, no prop drilling) + `src/Toasts.jsx` (top-right stack, seal/level/freeze icons, 4.6s auto-dismiss, `hd-toast-in` keyframe with reduced-motion fallback) mounted in the App shell.
+- **Level-up moments in drills:** `awardXp` toasts "Level N reached" (+freeze line) — all six drills get it for free. Study keeps its recap card instead (no double celebration).
+- **Achievement seals toast at session end:** Study snapshots `{learned, mastered, daysStudied, streak, level}` at queue load (2 cheap queries — cross-language like Profile), re-fetches at recap, and toasts any newly earned seals via `evaluateAchievements` diff.
+- **SW update pill:** `main.jsx` listens for `controllerchange` (guarded so first-install doesn't prompt) and shows a vanilla-DOM "Update ready — tap to refresh" pill — **the hard-refresh-after-deploy ritual is no longer needed** for users with the page open; a plain reload always got fresh HTML already.
+- **SW cache caps:** `sw.js` bumped to `v3`; `ASSET_CACHE` capped at 80 entries, `AUDIO_CACHE` at 400 (oldest-first eviction after each put) — hashed bundles from old deploys no longer accumulate forever.
+
+### Batch 4 — public landing page (same branch, PR #4)
+- **`src/Landing.jsx`** — signed-out visitors now get a marketing page instead of a bare login card: top bar (logo + wordmark + "Log in"), hero ("Learn Chinese, Japanese, and Russian the way that actually works." + FSRS/stories positioning + free-forever chip), language chips from `languageList()`, **two stylized product mocks built in JSX** (flashcard with grade buttons + FSRS intervals; story reader with the % known bar and underlined new/learning words), three method cards (Real spaced repetition / Stories you can read / Honest progression), the daily-loop strip, bottom CTA, and the donations-never-paywall mission line. "Log in"/"Start learning free" switch to the existing `<Auth />` (untouched) with a fixed Back chip. `App.jsx` renders `<Landing />` when `!session`.
+- Verified visually via `vite preview` + Playwright screenshots at 1400px and 390px (mobile loop strip tightened to fit one row).
+
+### Batch 3 (same branch, PR #4)
+- **Undo last grade (Study.jsx):** every grade snapshots the pre-grade card row, queue, session tallies, XP/freeze balances, and daily-activity counts; a floating "Undo last grade" chip (6s, or `U` key) restores all of it. Undoing a brand-new card's first grade deletes the row that grade created (explicit user request — the card returns as new). The undone grade's `review_logs` entry is deleted too — **apply migration `20260702090000_allow_review_log_delete.sql`** (review_logs previously had no delete policy, so the cleanup silently no-ops until it's applied). The streak is deliberately not reverted. No undo on the session-completing grade (recap already snapshotted).
+- **Suggested grade + Enter:** typed mode highlights Good/Again from the check result (2px accent border on the `GradeButton`); Enter grades it. Flip mode: Enter = Good (Anki convention). Hint row shows the mapping.
+- **Test.jsx:** `window.confirm` replaced with an inline two-step End-quiz confirm (`confirmingEnd` state).
+- **StoryReaderImmersive.jsx:** story segmentation (`parsed`/`speakerColors`) and coverage stats are now `useMemo`'d — previously every toggle/sheet interaction re-ran `Intl.Segmenter` over the whole story.
+
+### Phase 2 (same branch, PR #4)
+- **`src/data.js`** — `getTrackCards(userId, track, { level, columns })`: cards scoped **server-side** via a `vocabulary!inner` join (language/system/level filters in PostgREST). Migrated: `Study.loadQueue` + `loadForecast`, `homeCounts` (which also dropped its now-redundant language-vocab query), `testLogic.getTestStatus`. Screens no longer pull the user's whole cross-language cards table. Rows carry a nested `vocabulary: {id, level}` — harmless, never written back. Profile.jsx intentionally NOT migrated (achievements legitimately need lifetime cross-language cards).
+- **Navigation refetch diet** — `App.navigate()` reloads profile/track/counts only when landing on `home` (was: every view switch = ~5 queries). Study/practice screens already patch the in-memory profile via `onUpdate`/`onStreakUpdate`.
+- **`src/xpService.js`** — one XP rulebook: pure `computeAward(prevXp, gain, prevFreezes)` (level-up → capped streak-freeze grant, `MAX_FREEZES=5` moved here) + `awardXp(session, profile, gain, onUpdate)` (persists, patches). All six drills (Listen/FillBlank/Tones/Kana/Cyrillic/SentenceBuilder) now call `awardXp` — **drill level-ups now grant freezes** (previously only Study did). Study uses `computeAward` against its running session refs. Tests in `xpService.test.js` (supabase stubbed like streak.test) → suite is now **49 passing**.
+
+---
+
+## 0b. PREVIOUS SESSION (2026-07-01)
 
 Most recent round of work, so a fresh chat has current context. Everything below is **shipped to `main`** (Vercel production auto-deploys from `main`; hard-refresh to clear the service-worker cache after a deploy). The dev branch `claude/language-app-analysis-jl41s4` is kept in sync with `main`. Where this section conflicts with older text below, **this section wins.**
 

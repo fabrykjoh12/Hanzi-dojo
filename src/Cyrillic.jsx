@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from './supabase'
+import { awardXp } from './xpService'
 import { useIsMobile } from './useIsMobile'
 import { languageTheme } from './languageTheme'
 import {
@@ -82,11 +82,7 @@ export default function Cyrillic({ session, profile, onBack, onUpdate }) {
   function finish(finalCorrect) {
     setDone(true)
     const gain = finalCorrect * XP_PER_CORRECT
-    if (gain > 0) {
-      const newTotal = (profile.total_xp || 0) + gain
-      supabase.from('profiles').update({ total_xp: newTotal }).eq('id', session.user.id).then(() => {})
-      if (onUpdate) onUpdate({ total_xp: newTotal })
-    }
+    if (gain > 0) awardXp(session, profile, gain, onUpdate)
   }
 
   function next() {

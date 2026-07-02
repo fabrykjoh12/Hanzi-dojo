@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, getLevels } from './utils'
 import { languageList, languageTheme } from './languageTheme'
 import logo from './assets/Hanzi-logo.png'
-import bgLogin from './assets/bg-login.png'
+import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 
 export default function Onboarding({ session, onComplete }) {
@@ -20,6 +20,28 @@ export default function Onboarding({ session, onComplete }) {
   const selectedTheme = language ? languageTheme(language) : null
   const accentHex = selectedTheme ? selectedTheme.accentHex : '#B83A24'
   const levels = selectedTheme ? getLevels(language, selectedTheme.system) : []
+
+  // Which levels actually have vocabulary seeded. Levels without content are
+  // shown as "Coming soon" instead of dropping a new user into an empty queue.
+  // Keyed by language so a stale result never gates the wrong language; while
+  // loading (or on fetch failure) everything stays selectable (fail open).
+  const [seededData, setSeededData] = useState(null)   // { lang, levels: Set }
+  useEffect(() => {
+    if (!language) return
+    let cancelled = false
+    supabase
+      .from('vocabulary')
+      .select('level')
+      .eq('language', language)
+      .eq('system', languageTheme(language).system)
+      .eq('is_active', true)
+      .then(({ data }) => {
+        if (cancelled || !data) return
+        setSeededData({ lang: language, levels: new Set(data.map(r => r.level)) })
+      })
+    return () => { cancelled = true }
+  }, [language])
+  const seededLevels = seededData && seededData.lang === language ? seededData.levels : null
 
   const handleFinish = async () => {
     setSaving(true)
@@ -170,37 +192,50 @@ export default function Onboarding({ session, onComplete }) {
             <h1 style={{ fontSize: '22px', fontWeight: 700, textAlign: 'center', color: 'var(--text)', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
               What's your level?
             </h1>
-            <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '28px', fontSize: '14px' }}>
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '10px', fontSize: '14px' }}>
               Pick your {getSystemLabel(selectedTheme.system)} level. Starting higher assumes you know all earlier vocabulary.
             </p>
+            <p style={{ textAlign: 'center', color: accentHex, marginBottom: '22px', fontSize: '13px', fontWeight: 600 }}>
+              New to {selectedTheme.languageName}? Start with {getLevelLabel(language, selectedTheme.system, levels[0])}.
+            </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-              {levels.map(lvl => (
-                <button
-                  key={lvl}
-                  onClick={() => setLevel(lvl)}
-                  style={{
-                    padding: '18px 8px',
-                    borderRadius: '12px',
-                    border: level === lvl ? ('2px solid ' + accentHex) : '2px solid var(--border)',
-                    background: level === lvl ? (accentHex + '0D') : 'var(--surface)',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    color: level === lvl ? accentHex : 'var(--text)',
-                    transition: 'all 0.2s',
-                    fontFamily: 'Inter, sans-serif',
-                    lineHeight: 1.3,
-                  }}
-                >
-                  {getLevelLabel(language, selectedTheme.system, lvl)}
-                </button>
-              ))}
+              {levels.map(lvl => {
+                const seeded = !seededLevels || seededLevels.has(lvl)
+                return (
+                  <button
+                    key={lvl}
+                    onClick={() => seeded && setLevel(lvl)}
+                    disabled={!seeded}
+                    style={{
+                      padding: '18px 8px',
+                      borderRadius: '12px',
+                      border: level === lvl ? ('2px solid ' + accentHex) : '2px solid var(--border)',
+                      background: level === lvl ? (accentHex + '0D') : 'var(--surface)',
+                      cursor: seeded ? 'pointer' : 'not-allowed',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: level === lvl ? accentHex : (seeded ? 'var(--text)' : 'var(--text-faint)'),
+                      opacity: seeded ? 1 : 0.6,
+                      transition: 'all 0.2s',
+                      fontFamily: 'Inter, sans-serif',
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {getLevelLabel(language, selectedTheme.system, lvl)}
+                    {!seeded && (
+                      <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-faint)', marginTop: '3px' }}>
+                        Coming soon
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
             </div>
             <div style={{ display: 'flex', gap: '12px', marginTop: '28px' }}>
               <button onClick={() => setStep(1)} style={backBtn}>Back</button>
               <button
                 onClick={() => setStep(3)}
-                disabled={!level}
+                disabled={!level || (seededLevels && !seededLevels.has(level))}
                 style={{
                   flex: 2,
                   padding: '13px',

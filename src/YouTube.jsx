@@ -9,6 +9,12 @@ function getVideoId(url) {
   if (url.includes('youtu.be/')) {
     return url.split('youtu.be/')[1].split('?')[0].split('#')[0]
   }
+  if (url.includes('/shorts/')) {
+    return url.split('/shorts/')[1].split('?')[0].split('#')[0]
+  }
+  if (url.includes('/embed/')) {
+    return url.split('/embed/')[1].split('?')[0].split('#')[0]
+  }
   if (url.includes('v=')) {
     return url.split('v=')[1].split('&')[0].split('#')[0]
   }
@@ -107,7 +113,8 @@ export default function YouTube({ profile, track, onBack }) {
   const [loading, setLoading] = useState(true)
   const isMobile = useIsMobile()
 
-  const accentHex = languageTheme(profile.active_language).accentHex
+  const theme = languageTheme(profile.active_language)
+  const accentHex = theme.accentHex
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
 
@@ -136,8 +143,8 @@ export default function YouTube({ profile, track, onBack }) {
         alignItems: 'center',
         justifyContent: 'center',
       }}>
-        <div style={{ fontSize: '32px', color: accentHex }}>
-          学
+        <div style={{ fontSize: '32px', color: accentHex, fontFamily: theme.font }}>
+          {theme.nativeName}
         </div>
       </div>
     )
@@ -183,7 +190,7 @@ export default function YouTube({ profile, track, onBack }) {
         )}
 
         {videos.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '18px' }}>
             {videos.map(function(video) {
               return (
                 <VideoCard

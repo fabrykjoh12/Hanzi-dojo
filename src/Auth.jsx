@@ -1,15 +1,22 @@
 import { useState } from 'react'
 import { supabase } from './supabase'
 import logo from './assets/Hanzi-logo.png'
-import bgLogin from './assets/bg-login.png'
+import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 
 export default function Auth() {
   const [isSignup, setIsSignup] = useState(false)
+  const [resetMode, setResetMode] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [messageKind, setMessageKind] = useState('error')   // 'error' | 'success'
+
+  // Return to wherever the app is actually running — the GitHub Pages URL in
+  // production, localhost in dev — instead of Supabase's default Site URL.
+  // BASE_URL is '/Hanzi-dojo/' in the prod build and '/' during dev.
+  const redirectTo = window.location.origin + import.meta.env.BASE_URL
 
   const handleAuth = async (e) => {
     e.preventDefault()
@@ -20,27 +27,54 @@ export default function Auth() {
       if (isSignup) {
         const { error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
+        setMessageKind('success')
         setMessage('Check your email to confirm your account!')
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
       }
     } catch (error) {
+      setMessageKind('error')
       setMessage(error.message)
     }
     setLoading(false)
   }
 
+  const handleReset = async (e) => {
+    e.preventDefault()
+    const normalizedEmail = email.trim()
+    if (!normalizedEmail) {
+      setMessageKind('error')
+      setMessage('Enter your email first.')
+      return
+    }
+    setLoading(true)
+    setMessage('')
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo })
+    if (error) {
+      setMessageKind('error')
+      setMessage(error.message)
+    } else {
+      setMessageKind('success')
+      setMessage('Check your email for a password reset link.')
+    }
+    setLoading(false)
+  }
+
+  // Enter mirrors the submit button, including its disabled-while-loading state
+  // (otherwise held Enter fires duplicate auth/reset requests mid-flight).
+  const submit = (e) => {
+    if (loading) { e.preventDefault(); return }
+    return (resetMode ? handleReset : handleAuth)(e)
+  }
+  const onEnter = (e) => { if (e.key === 'Enter') submit(e) }
+
   const handleGoogle = async () => {
-    // Return to wherever the app is actually running — the GitHub Pages URL in
-    // production, localhost in dev — instead of Supabase's default Site URL.
-    // BASE_URL is '/Hanzi-dojo/' in the prod build and '/' during dev.
-    const redirectTo = window.location.origin + import.meta.env.BASE_URL
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo },
     })
-    if (error) setMessage(error.message)
+    if (error) { setMessageKind('error'); setMessage(error.message) }
   }
 
   return (
@@ -96,7 +130,7 @@ export default function Auth() {
         {/* Tab toggle */}
         <div style={{ display: 'flex', marginBottom: '24px', borderBottom: '1px solid var(--border)' }}>
           <button
-            onClick={() => { setIsSignup(false); setMessage('') }}
+            onClick={() => { setIsSignup(false); setResetMode(false); setMessage('') }}
             style={{
               flex: 1,
               padding: '10px 0',
@@ -115,7 +149,7 @@ export default function Auth() {
             Log in
           </button>
           <button
-            onClick={() => { setIsSignup(true); setMessage('') }}
+            onClick={() => { setIsSignup(true); setResetMode(false); setMessage('') }}
             style={{
               flex: 1,
               padding: '10px 0',
@@ -142,23 +176,33 @@ export default function Auth() {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={onEnter}
             required
             style={inputStyle}
           />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            style={inputStyle}
-          />
+          {!resetMode && (
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={onEnter}
+              required
+              minLength={6}
+              style={inputStyle}
+            />
+          )}
         </div>
+
+        {resetMode && (
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '14px', lineHeight: 1.5 }}>
+            Enter your email and we’ll send you a link to set a new password.
+          </p>
+        )}
 
         {/* Submit */}
         <button
-          onClick={handleAuth}
+          onClick={submit}
           disabled={loading}
           style={{
             width: '100%',
@@ -175,17 +219,34 @@ export default function Auth() {
             transition: 'opacity 0.2s',
           }}
         >
-          {loading ? 'Please wait...' : isSignup ? 'Create account' : 'Log in'}
+          {loading ? 'Please wait...' : resetMode ? 'Send reset link' : isSignup ? 'Create account' : 'Log in'}
         </button>
 
+        {/* Forgot password / back link */}
+        {!isSignup && (
+          <button
+            onClick={() => { setResetMode(prev => !prev); setMessage('') }}
+            style={{
+              width: '100%', marginTop: '12px', background: 'none', border: 'none',
+              color: 'var(--text-muted)', fontSize: '13px', fontWeight: 500,
+              cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            {resetMode ? '← Back to log in' : 'Forgot password?'}
+          </button>
+        )}
+
         {/* OR divider */}
+        {!resetMode && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '20px 0' }}>
           <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
           <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>or continue with</span>
           <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
         </div>
+        )}
 
         {/* Google */}
+        {!resetMode && (
         <button onClick={handleGoogle} style={{
           width: '100%',
           padding: '12px',
@@ -210,10 +271,14 @@ export default function Auth() {
           </svg>
           Continue with Google
         </button>
+        )}
 
         {/* Message */}
         {message && (
-          <p style={{ textAlign: 'center', fontSize: '13px', color: '#DC2626', marginTop: '16px' }}>
+          <p style={{
+            textAlign: 'center', fontSize: '13px', marginTop: '16px',
+            color: messageKind === 'success' ? 'var(--success)' : '#DC2626',
+          }}>
             {message}
           </p>
         )}
@@ -232,7 +297,6 @@ const inputStyle = {
   borderRadius: '10px',
   border: '1px solid var(--border)',
   fontSize: '15px',
-  outline: 'none',
   fontFamily: 'Inter, sans-serif',
   color: 'var(--text)',
   background: 'var(--bg)',

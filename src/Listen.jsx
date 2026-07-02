@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
+import { awardXp } from './xpService'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
@@ -114,11 +115,7 @@ export default function Listen({ session, profile, track, onBack, onUpdate }) {
     if (!xpAwardedRef.current) {
       xpAwardedRef.current = true
       const gain = correctCount * XP_PER_CORRECT
-      if (gain > 0) {
-        const newTotal = (profile.total_xp || 0) + gain
-        supabase.from('profiles').update({ total_xp: newTotal }).eq('id', session.user.id).then(() => {})
-        if (onUpdate) onUpdate({ total_xp: newTotal })
-      }
+      if (gain > 0) awardXp(session, profile, gain, onUpdate)
     }
   }
 
