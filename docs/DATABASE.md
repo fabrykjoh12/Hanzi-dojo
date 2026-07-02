@@ -152,6 +152,12 @@ This stores which levels the user has unlocked.
 
 This stores stories by language, system, and level.
 
+`has_audio` (bool, default false): set true by `generate-story-audio.mjs`
+only once every line synthesized successfully. Per-line MP3s live in the
+`audio` storage bucket at `stories/{story_id}/{line_index}.mp3`. The reader
+uses bucket audio when true, otherwise falls back to the browser's
+speechSynthesis with no added latency (no per-line network probe needed).
+
 ### story_vocab
 
 This connects stories to vocabulary words.

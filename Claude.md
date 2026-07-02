@@ -6,6 +6,12 @@ Read this entire file before making any change. It describes not just *what* the
 
 ## 0. LATEST SESSION — read first (2026-07-02)
 
+### Batch 14 — real story audio via TTS (product review item #12, 1 of 3 remaining)
+- New `stories.has_audio` column (migration `20260702200000_add_story_audio.sql`, apply in SQL editor) — set true by `generate-story-audio.mjs` ONLY once every line for that story synthesizes successfully, so the reader can trust it without a per-line network probe.
+- New `generate-story-audio.mjs` — same voice map as `generate-audio.mjs`, speaks each line as written (kanji included; Google's sentence-level Japanese voice handles context fine, unlike single vocab words), strips speaker labels the same way the reader's `splitSpeaker` does. Uploads to `stories/{story_id}/{line_index}.mp3` in the `audio` bucket. New Action tasks: `story-audio-hsk1`, `story-audio-hsk2`, `story-audio-jlpt1`, `story-audio-jlpt2`, `story-audio-n4`, `story-audio-russian`.
+- `StoryReaderImmersive.jsx`: `speakFrom` now tries real bucket narration first when `story.has_audio` (via `playAudioEl`, same iOS-safe fallback used everywhere else), falling back per-line to `speechSynthesis` only if that line's file is missing/broken — stories without any generated audio yet behave exactly as before, zero added latency. Play bar subtitle reads "Listen" (vs. "Listen (text-to-speech)") once real narration exists.
+- Still to run: dispatch `story-audio-*` for each level once this merges (not yet run this batch).
+
 ### Batch 13 — in-app feedback widget (user request)
 - New `feedback` table (migration `20260702180000_add_feedback.sql`, apply in SQL editor): `user_id`, `email` (snapshot at submit time), `category` (bug|idea|other), `message`, `page` (current view), `language`, `created_at`. RLS: users insert/read their own rows only; append-only (no update/delete policy). No in-app admin view yet — read submissions via the Supabase dashboard Table Editor or SQL editor (`select * from feedback order by created_at desc`).
 - New `src/Feedback.jsx` — a small floating button (bottom-right, sage, sits above the mobile nav bar) present on every signed-in screen, opening a modal: pick a category (Bug / Idea / Something else), write a message, send. No `<form>` tag (plain controlled textarea + button per project rules). Success shows a toast; auto-captures the current view and active language for context. Mounted once in App.jsx alongside `<Toasts />`.
@@ -874,6 +880,18 @@ node --env-file=.env.script generate-audio.mjs
 - Russian: `languageCode: 'ru-RU'`, `name: 'ru-RU-Wavenet-C'`, input = `v.word` (the Cyrillic word)
 
 To regenerate without skipping existing files: delete the storage folder in Supabase first, then run the script (`upsert: true` is set but storage skips existing paths by default in some configurations).
+
+### generate-story-audio.mjs
+
+Script for generating per-line TTS narration for published stories (product review item #12). Not in app bundle.
+
+**Run with:**
+```bash
+node --env-file=.env.script generate-story-audio.mjs --language chinese --system hsk_3 --level 1
+node --env-file=.env.script generate-story-audio.mjs --language japanese --system jlpt --level 1 --story-id <uuid>  # single story
+```
+
+**Current state:** Same voice map as `generate-audio.mjs`, but speaks each line AS WRITTEN (kanji included — Google's sentence-level Japanese voice handles context fine, unlike single vocab words). Strips a leading `Speaker：`/`Speaker:` label the same way `StoryReaderImmersive.jsx`'s `splitSpeaker` does. Uploads each line to `stories/{story_id}/{line_index}.mp3` in the `audio` bucket; sets `stories.has_audio = true` ONLY if every line for that story succeeded — a partial failure leaves it `false` so the reader keeps using speechSynthesis for that story rather than serving a story with silent gaps. Action tasks: `story-audio-hsk1`, `story-audio-hsk2`, `story-audio-jlpt1`, `story-audio-jlpt2`, `story-audio-n4`, `story-audio-russian`.
 
 ### generate-examples.mjs
 
