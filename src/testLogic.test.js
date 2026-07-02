@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from 'vitest'
 // helpers can be tested in isolation.
 vi.mock('./supabase', () => ({ supabase: {} }))
 
-import { normalizePinyin, checkAnswer } from './testLogic'
+import { normalizePinyin, checkAnswer, lenientPinyin } from './testLogic'
 
 describe('normalizePinyin', () => {
   it('strips tone marks, spaces and case', () => {
@@ -36,5 +36,20 @@ describe('checkAnswer', () => {
   it('rejects a wrong answer and empty input', () => {
     expect(checkAnswer('bad', vocab)).toBe(false)
     expect(checkAnswer('', vocab)).toBe(false)
+  })
+})
+
+describe('lenientPinyin', () => {
+  it('treats tone marks, tone numbers, and case as equivalent', () => {
+    expect(lenientPinyin('hǎi')).toBe('hai')
+    expect(lenientPinyin('hai3')).toBe('hai')
+    expect(lenientPinyin('HAI')).toBe('hai')
+    expect(lenientPinyin('hai')).toBe('hai')
+  })
+  it('ignores spaces, apostrophes, and punctuation', () => {
+    expect(lenientPinyin("xi'an")).toBe('xian')
+    expect(lenientPinyin('ni hao')).toBe('nihao')
+    expect(lenientPinyin('nǚ')).toBe('nu')
+    expect(lenientPinyin('nv')).toBe('nu')
   })
 })

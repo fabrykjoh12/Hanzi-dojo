@@ -89,9 +89,9 @@ const CONFIGS = {
     maxLineChars: 20,
     prereqLevel: null, prereqMax: 0,
     tiers: [
-      { tier: 1, label: 'First Steps', maxSortOrder: 100, minWords: 30, stories: 5 },
-      { tier: 2, label: 'Growing', maxSortOrder: 200, minWords: 100, stories: 5 },
-      { tier: 3, label: 'Fluent', maxSortOrder: 400, minWords: 200, stories: 5 },
+      { tier: 1, label: 'First Steps', maxSortOrder: 100, minWords: 30, stories: 5, lines: '14-20' },
+      { tier: 2, label: 'Growing', maxSortOrder: 200, minWords: 100, stories: 5, lines: '16-24' },
+      { tier: 3, label: 'Fluent', maxSortOrder: 400, minWords: 200, stories: 5, lines: '20-28' },
     ],
   },
   'japanese|jlpt|3': {
@@ -102,9 +102,22 @@ const CONFIGS = {
     maxLineChars: 22,
     prereqLevel: 1, prereqMax: 150,   // include the 150 most basic N5 Part 1 words
     tiers: [
-      { tier: 1, label: 'First Steps', maxSortOrder: 200, minWords: 30, stories: 5 },
-      { tier: 2, label: 'Growing', maxSortOrder: 400, minWords: 150, stories: 5 },
-      { tier: 3, label: 'Fluent', maxSortOrder: 636, minWords: 300, stories: 5 },
+      { tier: 1, label: 'First Steps', maxSortOrder: 200, minWords: 30, stories: 5, lines: '14-20' },
+      { tier: 2, label: 'Growing', maxSortOrder: 400, minWords: 150, stories: 5, lines: '16-24' },
+      { tier: 3, label: 'Fluent', maxSortOrder: 636, minWords: 300, stories: 5, lines: '20-28' },
+    ],
+  },
+  'chinese|hsk_3|1': {
+    scenes: CHINESE_SCENES,
+    promptLang: 'Chinese', level: 'HSK 1',
+    names: '- 李明 (Lǐ Míng, a boy)\n- 小红 (Xiǎo Hóng, a girl)\n- 小明 (Xiǎo Míng, a boy)\n- 妈妈 (Mother)',
+    nameNote: 'Chinese personal names in characters',
+    maxLineChars: 15,
+    prereqLevel: null, prereqMax: 0,
+    tiers: [
+      { tier: 1, label: 'First Steps', maxSortOrder: 100, minWords: 0, stories: 6, lines: '14-20' },
+      { tier: 2, label: 'Growing', maxSortOrder: 200, minWords: 100, stories: 6, lines: '16-24' },
+      { tier: 3, label: 'Fluent', maxSortOrder: 300, minWords: 200, stories: 6, lines: '20-28' },
     ],
   },
   'chinese|hsk_3|2': {
@@ -115,9 +128,9 @@ const CONFIGS = {
     maxLineChars: 15,
     prereqLevel: 1, prereqMax: 150,   // include the 150 most frequent HSK 1 words
     tiers: [
-      { tier: 1, label: 'First Steps', maxSortOrder: 66, minWords: 30, stories: 5 },
-      { tier: 2, label: 'Growing', maxSortOrder: 132, minWords: 80, stories: 5 },
-      { tier: 3, label: 'Fluent', maxSortOrder: 198, minWords: 130, stories: 5 },
+      { tier: 1, label: 'First Steps', maxSortOrder: 66, minWords: 30, stories: 5, lines: '14-20' },
+      { tier: 2, label: 'Growing', maxSortOrder: 132, minWords: 80, stories: 5, lines: '16-24' },
+      { tier: 3, label: 'Fluent', maxSortOrder: 198, minWords: 130, stories: 5, lines: '20-28' },
     ],
   },
   'russian|russian|1': {
@@ -129,9 +142,9 @@ const CONFIGS = {
     colon: ':',
     prereqLevel: null, prereqMax: 0,
     tiers: [
-      { tier: 1, label: 'First Steps', maxSortOrder: 50, minWords: 15, stories: 4 },
-      { tier: 2, label: 'Growing', maxSortOrder: 100, minWords: 40, stories: 4 },
-      { tier: 3, label: 'Fluent', maxSortOrder: 147, minWords: 80, stories: 4 },
+      { tier: 1, label: 'First Steps', maxSortOrder: 50, minWords: 15, stories: 4, lines: '12-18' },
+      { tier: 2, label: 'Growing', maxSortOrder: 100, minWords: 40, stories: 4, lines: '14-20' },
+      { tier: 3, label: 'Fluent', maxSortOrder: 147, minWords: 80, stories: 4, lines: '16-24' },
     ],
   },
 }
@@ -164,19 +177,22 @@ async function fetchVocab(maxSortOrder) {
   return rows
 }
 
-function buildPrompt(vocab, tierLabel, sceneIndex) {
+function buildPrompt(vocab, tier, sceneIndex) {
   const scene = cfg.scenes[sceneIndex % cfg.scenes.length]
   const colon = cfg.colon || '：'
   const colonNote = colon === '：' ? 'full-width colon, no space before text' : 'regular colon'
   const wordList = vocab.map(v => v.word + ' (' + v.reading + ' = ' + v.meaning + ')').join(', ')
-  return 'You are writing a short ' + cfg.promptLang + ' story for ' + cfg.level + ' beginners.\n\n' +
-    'Tier: ' + tierLabel + '\n' +
+  const lineRange = tier.lines || '14-20'
+  return 'You are writing an engaging ' + cfg.promptLang + ' story for ' + cfg.level + ' learners.\n\n' +
+    'Tier: ' + tier.label + '\n' +
     'Scene: ' + scene.en + ' -- the ENTIRE story MUST be set here.\n' +
-    'Available vocabulary (use ONLY these words for ' + cfg.promptLang + ' content): ' + wordList + '\n\n' +
+    'Core vocabulary (build the story around these): ' + wordList + '\n\n' +
     'Allowed character names (' + cfg.nameNote + '):\n' + cfg.names + '\n\n' +
     'Rules:\n' +
-    '- 8-14 lines total\n' +
-    '- Use ONLY words from the vocabulary list above, plus basic particles and grammar\n' +
+    '- ' + lineRange + ' lines total -- a real story, not a sketch\n' +
+    '- Tell an actual STORY: someone wants something small, hits a complication, and it resolves. No shopping-list narration.\n' +
+    '- Build at least 90% of the ' + cfg.promptLang + ' text from the core vocabulary (plus particles and basic grammar). You MAY use a few extra common words where the story genuinely needs them -- a natural, memorable story matters more than perfect list coverage; readers can tap any unknown word for its meaning.\n' +
+    '- Use as MANY DIFFERENT core-vocabulary words as you can, and reuse the important ones in different sentence patterns so learners meet them in several contexts\n' +
     '- Mix dialogue and narration. Dialogue format: NAME' + colon + 'text (' + colonNote + ')\n' +
     '- Narration lines have no speaker prefix\n' +
     '- Each line must be under ' + cfg.maxLineChars + ' characters\n' +
@@ -187,11 +203,11 @@ function buildPrompt(vocab, tierLabel, sceneIndex) {
     'english_content must have the SAME number of lines as content, in the same order. Keep dialogue format: speaker' + colon + 'English text'
 }
 
-async function generateStory(vocab, tierLabel, sceneIndex, attempt = 0) {
+async function generateStory(vocab, tier, sceneIndex, attempt = 0) {
   try {
     const response = await groq.chat.completions.create({
-      model: LLM_MODEL, max_tokens: 1024,
-      messages: [{ role: 'user', content: buildPrompt(vocab, tierLabel, sceneIndex) }],
+      model: LLM_MODEL, max_tokens: 2560,
+      messages: [{ role: 'user', content: buildPrompt(vocab, tier, sceneIndex) }],
     })
     const text = response.choices[0].message.content.trim()
     const json = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
@@ -201,7 +217,7 @@ async function generateStory(vocab, tierLabel, sceneIndex, attempt = 0) {
       const wait = Math.min(15 * Math.pow(2, attempt), 60)
       process.stdout.write('(retry ' + wait + 's) ')
       await sleep(wait * 1000)
-      return generateStory(vocab, tierLabel, sceneIndex, attempt + 1)
+      return generateStory(vocab, tier, sceneIndex, attempt + 1)
     }
     throw err
   }
@@ -231,7 +247,7 @@ async function main() {
       const scene = cfg.scenes[sceneIndex % cfg.scenes.length]
       process.stdout.write('Story ' + (i + 1) + '/' + tier.stories + ' [' + scene.title + ']... ')
       try {
-        const story = await generateStory(vocab, tier.label, sceneIndex)
+        const story = await generateStory(vocab, tier, sceneIndex)
         const { error } = await supabase.from('stories').insert({
           language, system, level,
           tier: tier.tier, tier_min_words: tier.minWords, story_number: nextNum,

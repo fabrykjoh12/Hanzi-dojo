@@ -7,6 +7,15 @@ import { ArrowLeft, BookMarked, ChevronRight, GraduationCap } from 'lucide-react
 // Beginner grammar guide for the active language. Reference content the learner
 // can open any time — accordion topics, each with plain-language points and
 // concrete examples (target text + reading + English).
+
+function exampleHasKanji(text) {
+  const v = text || ''
+  for (let i = 0; i < v.length; i += 1) {
+    const c = v.charCodeAt(i)
+    if (c >= 0x3400 && c <= 0x9FFF) return true
+  }
+  return false
+}
 export default function Grammar({ profile, track, onBack }) {
   const isMobile = useIsMobile()
   const theme = languageTheme(profile.active_language)
@@ -86,18 +95,30 @@ export default function Grammar({ profile, track, onBack }) {
                     {topic.points.map((p, pi) => (
                       <div key={pi} style={{ paddingLeft: '54px' }}>
                         <div style={{ fontSize: '14px', color: 'var(--text)', lineHeight: 1.6 }}>{p.text}</div>
-                        {p.ex && (
-                          <div style={{
-                            marginTop: '10px', padding: '12px 14px', borderRadius: '12px',
-                            background: 'var(--surface-2)', border: '1px solid var(--border)',
-                          }}>
-                            <div style={{ fontSize: '20px', fontFamily: font, color: 'var(--text)', lineHeight: 1.3 }}>{p.ex.target}</div>
-                            {p.ex.reading && (
-                              <div style={{ fontSize: '13px', color: accentHex, marginTop: '4px', fontWeight: 600 }}>{p.ex.reading}</div>
-                            )}
-                            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>{p.ex.en}</div>
-                          </div>
-                        )}
+                        {p.ex && (() => {
+                          // Japanese reading behaves like furigana: shown ABOVE
+                          // the sentence, and only when there's kanji to gloss —
+                          // a kana-only example already IS its own reading.
+                          const isJa = profile.active_language === 'japanese'
+                          const kanji = exampleHasKanji(p.ex.target)
+                          const readingAbove = isJa && kanji && p.ex.reading
+                          const readingBelow = !isJa && p.ex.reading
+                          return (
+                            <div style={{
+                              marginTop: '10px', padding: '12px 14px', borderRadius: '12px',
+                              background: 'var(--surface-2)', border: '1px solid var(--border)',
+                            }}>
+                              {readingAbove && (
+                                <div style={{ fontSize: '12px', color: accentHex, marginBottom: '2px', fontWeight: 600 }}>{p.ex.reading}</div>
+                              )}
+                              <div style={{ fontSize: '20px', fontFamily: font, color: 'var(--text)', lineHeight: 1.3 }}>{p.ex.target}</div>
+                              {readingBelow && (
+                                <div style={{ fontSize: '13px', color: accentHex, marginTop: '4px', fontWeight: 600 }}>{p.ex.reading}</div>
+                              )}
+                              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>{p.ex.en}</div>
+                            </div>
+                          )
+                        })()}
                       </div>
                     ))}
                   </div>

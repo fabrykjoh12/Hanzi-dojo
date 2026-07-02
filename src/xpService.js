@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { levelInfo } from './xp'
+import { levelInfo, levelTitle } from './xp'
 import { toast } from './toast'
 
 // One rulebook for account XP awards, used by Study AND every practice drill.
@@ -39,10 +39,14 @@ export function awardXp(session, profile, gain, onUpdate) {
   // Celebrate the level-up in the moment (drills have no recap card for it).
   // Study grades through computeAward directly and shows its own recap instead.
   if (res.leveled) {
+    const prevLevel = levelInfo(profile.total_xp || 0).level
+    const newRank = levelTitle(res.newLevel) !== levelTitle(prevLevel) ? levelTitle(res.newLevel) : null
     toast({
       kind: 'level',
       accent: '#6E8466',
-      title: 'Level ' + res.newLevel + ' reached',
+      title: newRank
+        ? 'Level ' + res.newLevel + ' — you are now ' + newRank
+        : 'Level ' + res.newLevel + ' reached',
       body: res.freezesEarned > 0
         ? '+' + res.freezesEarned + ' streak freeze' + (res.freezesEarned === 1 ? '' : 's') + ' earned'
         : 'Earned through real answers — nice work.',

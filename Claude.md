@@ -18,6 +18,18 @@ A full product/design/code review was performed, then its Phase-1 fixes were imp
 - **Misc:** unused Vite-template `src/App.css` deleted; `og:image` is now an absolute GH-Pages URL (scrapers don't resolve relative paths).
 - Verified: `npm run build` ✓, `npx vitest run` 45/45 ✓, `npm run lint` at the pre-existing baseline (no new errors).
 
+### Batch 11 — user's 13-item feedback list (2026-07-02)
+- **Leniency (items 1/8):** `lenientPinyin` in testLogic (tone marks + tone NUMBERS + punctuation/space/ü-v insensitive) now backs both Study typed mode and Writing; Writing's Japanese path runs the INPUT through toRomaji so kana↔romaji↔katakana all match. Tests added.
+- **Word list (item 2):** new `src/Words.jsx` (view `words`, Practice-hub card "Word list") — every current-level word with live status (New/Learning/Learned/Mastered), count chips, search.
+- **Fluency (item 3):** card is now titled "{Language} fluency" — the score was already language-scoped since the data-layer change; the label made it look global.
+- **XP (items 4/5):** curve steepened — `spanForLevel = 250 + (level-1)*170` (was 150/+110); tests updated. New rank ladder in xp.js (`levelTitle`/`nextTitle`: Novice→Student(3)→Adept(6)→Wanderer(10)→Scholar(15)→Master(20)→Sensei(30)) shown on the Home pill, in the Study level-up recap (with next-rank preview), and in the awardXp toast.
+- **Item 6:** `comprehension-prune` (chinese) dispatched via the Action. Also ran `clean-meanings` (both) and `deactivate-awkward` — both succeeded.
+- **Sentence builder (item 7):** sentences now scored by their HARDEST word (max in-level sort_order; off-list tokens cost 400 each) instead of just the target word; token window tightened to 3–8.
+- **Stories (item 12):** `generate-stories.mjs` prompt reworked — per-tier line ranges (14–20 / 16–24 / 20–28), story-arc requirement, 90%-list rule with a few extra common words allowed, max_tokens 2560. New `chinese|hsk_3|1` config; workflow gained `stories-hsk1-replace` / `stories-hsk2-replace` tasks (they DELETE + regenerate).
+- **Grammar (item 10):** Japanese example readings render ABOVE the sentence and only when it contains kanji (kana-only examples show no reading line). Chinese/Russian keep reading below.
+- **Kana (item 13):** rebuilt Kana!-style — gojūon ROW picker grid (hira+kata labels, dakuten rows), session-miss dots per row (drillMemory), Basics/All/None quick-selects, answer mode toggle: Tap choices or TYPE romaji (Hepburn/kunrei variants accepted: shi/si, tsu/tu, fu/hu, ji/zi), Enter-driven typed flow.
+- Item 11 (replay): root-caused earlier — the poisoned audio cache; fixed by SW v4 (needs one hard refresh). Item 9 (Russian bg): generated via Higgsfield — see assets if the CDN allowed download.
+
 ### Batch 10 — polish: count-ups, persisted audio speed, tone pairs
 - **`CountUp`** in `ui.jsx` (rAF ease-out, ~650ms; reduced-motion renders the final value instantly). Used on the Study recap tiles + XP badge and Home's fluency score.
 - **`audio_speed` preference** — migration `20260702150000_add_audio_speed.sql` (apply in SQL editor); Study's speed cycler now persists (best-effort) and seeds from the profile; Settings gained an Audio speed segmented control (1×/0.75×/0.5×).

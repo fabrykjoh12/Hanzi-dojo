@@ -2,14 +2,14 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { schedule, previewLabels } from './srs'
-import { xpForGrade, levelInfo } from './xp'
+import { xpForGrade, levelInfo, levelTitle, nextTitle } from './xp'
 import { computeAward } from './xpService'
 import { updateStreak, todayStr, liveStreak } from './streak'
 import { evaluateAchievements } from './achievements'
 import { toast } from './toast'
 import { getLevelLabel, getSystemLabel, getAudioUrl } from './utils'
 import { languageTheme } from './languageTheme'
-import { normalizePinyin } from './testLogic'
+import { lenientPinyin } from './testLogic'
 import { toRomaji } from 'wanakana'
 import { useIsMobile } from './useIsMobile'
 import { CountUp } from './ui'
@@ -32,9 +32,13 @@ function checkTyped(input, v, isJapanese) {
     const target = norm(reading)
     return target !== '' && norm(input) === target
   }
-  const strip = s => normalizePinyin(s || '').split(' ').join('').toLowerCase()
-  const target = strip(v.reading_plain || reading)
-  return target !== '' && strip(input) === target
+  // Chinese: tone-mark AND tone-number insensitive, punctuation/space tolerant —
+  // "hai", "hǎi", "hai3" are all the same answer. Both stored forms accepted.
+  const typed = lenientPinyin(input)
+  if (!typed) return false
+  return [v.reading_plain, reading]
+    .filter(Boolean)
+    .some(r => lenientPinyin(r) === typed)
 }
 
 const SAGE = '#6E8466'
@@ -797,12 +801,17 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: accentHex, fontSize: '17px', fontWeight: 850 }}>
                   <TrendingUp size={19} strokeWidth={2.2} color={accentHex} />
-                  Level {s.leveledTo}!
+                  Level {s.leveledTo} — {levelTitle(s.leveledTo)}
                 </div>
                 {s.freezesEarned > 0 && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: '#3E63DD', fontSize: '13px', fontWeight: 700 }}>
                     <Snowflake size={15} strokeWidth={2} color="#3E63DD" />
                     +{s.freezesEarned} streak freeze{s.freezesEarned === 1 ? '' : 's'} earned
+                  </div>
+                )}
+                {nextTitle(s.leveledTo) && (
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                    Next rank: {nextTitle(s.leveledTo).name} at level {nextTitle(s.leveledTo).min}
                   </div>
                 )}
               </div>

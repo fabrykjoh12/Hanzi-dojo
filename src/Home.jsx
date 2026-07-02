@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { liveStreak, streakStatus } from './streak'
-import { levelInfo } from './xp'
+import { levelInfo, levelTitle } from './xp'
 import InfoTip from './InfoTip'
 import { CountUp } from './ui'
 import { useIsMobile } from './useIsMobile'
@@ -166,7 +166,9 @@ export default function Home({ profile, track, counts, onNavigate }) {
             padding: '8px 14px', borderRadius: '20px',
             background: `${accentHex}12`, border: '1px solid ' + accentHex + '2E',
           }}>
-            <span style={{ fontSize: '13px', fontWeight: 750, color: accentHex }}>Lv {levelInfo(profile.total_xp).level}</span>
+            <span style={{ fontSize: '13px', fontWeight: 750, color: accentHex }}>
+              Lv {levelInfo(profile.total_xp).level} · {levelTitle(levelInfo(profile.total_xp).level)}
+            </span>
             <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)' }}>{levelInfo(profile.total_xp).pct}%</span>
           </div>
         </div>
@@ -259,7 +261,7 @@ export default function Home({ profile, track, counts, onNavigate }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
             <Gauge size={17} strokeWidth={1.9} color={accentHex} />
-            Fluency score
+            {theme.languageName} fluency
           </span>
           <span style={{
             fontSize: '12px', fontWeight: 700, color: accentHex,

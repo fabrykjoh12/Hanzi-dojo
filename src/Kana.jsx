@@ -1,55 +1,62 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { awardXp } from './xpService'
 import { shuffle } from './utils'
-import { recordMiss, weightedSample } from './drillMemory'
+import { recordMiss, missCount, weightedSample } from './drillMemory'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
 import { useIsMobile } from './useIsMobile'
 import {
-  ArrowLeft, Languages, Check, X, RotateCcw, CheckCircle2, Sparkles,
+  ArrowLeft, Languages, Check, X, RotateCcw, CheckCircle2, Sparkles, Keyboard, MousePointerClick,
 } from 'lucide-react'
 
 const ACCENT = '#2E3A6E'
 const QUESTION_COUNT = 15
 const XP_PER_CORRECT = 4
 
-// Basic gojūon + dakuten/handakuten. [kana, romaji].
-const HIRA = [
-  ['あ', 'a'], ['い', 'i'], ['う', 'u'], ['え', 'e'], ['お', 'o'],
-  ['か', 'ka'], ['き', 'ki'], ['く', 'ku'], ['け', 'ke'], ['こ', 'ko'],
-  ['さ', 'sa'], ['し', 'shi'], ['す', 'su'], ['せ', 'se'], ['そ', 'so'],
-  ['た', 'ta'], ['ち', 'chi'], ['つ', 'tsu'], ['て', 'te'], ['と', 'to'],
-  ['な', 'na'], ['に', 'ni'], ['ぬ', 'nu'], ['ね', 'ne'], ['の', 'no'],
-  ['は', 'ha'], ['ひ', 'hi'], ['ふ', 'fu'], ['へ', 'he'], ['ほ', 'ho'],
-  ['ま', 'ma'], ['み', 'mi'], ['む', 'mu'], ['め', 'me'], ['も', 'mo'],
-  ['や', 'ya'], ['ゆ', 'yu'], ['よ', 'yo'],
-  ['ら', 'ra'], ['り', 'ri'], ['る', 'ru'], ['れ', 're'], ['ろ', 'ro'],
-  ['わ', 'wa'], ['を', 'wo'], ['ん', 'n'],
-  ['が', 'ga'], ['ぎ', 'gi'], ['ぐ', 'gu'], ['げ', 'ge'], ['ご', 'go'],
-  ['ざ', 'za'], ['じ', 'ji'], ['ず', 'zu'], ['ぜ', 'ze'], ['ぞ', 'zo'],
-  ['だ', 'da'], ['で', 'de'], ['ど', 'do'],
-  ['ば', 'ba'], ['び', 'bi'], ['ぶ', 'bu'], ['べ', 'be'], ['ぼ', 'bo'],
-  ['ぱ', 'pa'], ['ぴ', 'pi'], ['ぷ', 'pu'], ['ぺ', 'pe'], ['ぽ', 'po'],
-]
-const KATA = [
-  ['ア', 'a'], ['イ', 'i'], ['ウ', 'u'], ['エ', 'e'], ['オ', 'o'],
-  ['カ', 'ka'], ['キ', 'ki'], ['ク', 'ku'], ['ケ', 'ke'], ['コ', 'ko'],
-  ['サ', 'sa'], ['シ', 'shi'], ['ス', 'su'], ['セ', 'se'], ['ソ', 'so'],
-  ['タ', 'ta'], ['チ', 'chi'], ['ツ', 'tsu'], ['テ', 'te'], ['ト', 'to'],
-  ['ナ', 'na'], ['ニ', 'ni'], ['ヌ', 'nu'], ['ネ', 'ne'], ['ノ', 'no'],
-  ['ハ', 'ha'], ['ヒ', 'hi'], ['フ', 'fu'], ['ヘ', 'he'], ['ホ', 'ho'],
-  ['マ', 'ma'], ['ミ', 'mi'], ['ム', 'mu'], ['メ', 'me'], ['モ', 'mo'],
-  ['ヤ', 'ya'], ['ユ', 'yu'], ['ヨ', 'yo'],
-  ['ラ', 'ra'], ['リ', 'ri'], ['ル', 'ru'], ['レ', 're'], ['ロ', 'ro'],
-  ['ワ', 'wa'], ['ヲ', 'wo'], ['ン', 'n'],
-  ['ガ', 'ga'], ['ギ', 'gi'], ['グ', 'gu'], ['ゲ', 'ge'], ['ゴ', 'go'],
-  ['ザ', 'za'], ['ジ', 'ji'], ['ズ', 'zu'], ['ゼ', 'ze'], ['ゾ', 'zo'],
-  ['ダ', 'da'], ['デ', 'de'], ['ド', 'do'],
-  ['バ', 'ba'], ['ビ', 'bi'], ['ブ', 'bu'], ['ベ', 'be'], ['ボ', 'bo'],
-  ['パ', 'pa'], ['ピ', 'pi'], ['プ', 'pu'], ['ペ', 'pe'], ['ポ', 'po'],
+// Gojūon rows (+ dakuten/handakuten), hiragana and katakana side by side —
+// so learners can pick exactly which rows to drill, Kana!-app style.
+// Each item: [hiragana, katakana, romaji].
+const ROWS = [
+  { key: 'a',  label: 'あ・ア', items: [['あ','ア','a'],['い','イ','i'],['う','ウ','u'],['え','エ','e'],['お','オ','o']] },
+  { key: 'ka', label: 'か・カ', items: [['か','カ','ka'],['き','キ','ki'],['く','ク','ku'],['け','ケ','ke'],['こ','コ','ko']] },
+  { key: 'sa', label: 'さ・サ', items: [['さ','サ','sa'],['し','シ','shi'],['す','ス','su'],['せ','セ','se'],['そ','ソ','so']] },
+  { key: 'ta', label: 'た・タ', items: [['た','タ','ta'],['ち','チ','chi'],['つ','ツ','tsu'],['て','テ','te'],['と','ト','to']] },
+  { key: 'na', label: 'な・ナ', items: [['な','ナ','na'],['に','ニ','ni'],['ぬ','ヌ','nu'],['ね','ネ','ne'],['の','ノ','no']] },
+  { key: 'ha', label: 'は・ハ', items: [['は','ハ','ha'],['ひ','ヒ','hi'],['ふ','フ','fu'],['へ','ヘ','he'],['ほ','ホ','ho']] },
+  { key: 'ma', label: 'ま・マ', items: [['ま','マ','ma'],['み','ミ','mi'],['む','ム','mu'],['め','メ','me'],['も','モ','mo']] },
+  { key: 'ya', label: 'や・ヤ', items: [['や','ヤ','ya'],['ゆ','ユ','yu'],['よ','ヨ','yo']] },
+  { key: 'ra', label: 'ら・ラ', items: [['ら','ラ','ra'],['り','リ','ri'],['る','ル','ru'],['れ','レ','re'],['ろ','ロ','ro']] },
+  { key: 'wa', label: 'わ・ワ', items: [['わ','ワ','wa'],['を','ヲ','wo'],['ん','ン','n']] },
+  { key: 'ga', label: 'が・ガ', items: [['が','ガ','ga'],['ぎ','ギ','gi'],['ぐ','グ','gu'],['げ','ゲ','ge'],['ご','ゴ','go']] },
+  { key: 'za', label: 'ざ・ザ', items: [['ざ','ザ','za'],['じ','ジ','ji'],['ず','ズ','zu'],['ぜ','ゼ','ze'],['ぞ','ゾ','zo']] },
+  { key: 'da', label: 'だ・ダ', items: [['だ','ダ','da'],['で','デ','de'],['ど','ド','do']] },
+  { key: 'ba', label: 'ば・バ', items: [['ば','バ','ba'],['び','ビ','bi'],['ぶ','ブ','bu'],['べ','ベ','be'],['ぼ','ボ','bo']] },
+  { key: 'pa', label: 'ぱ・パ', items: [['ぱ','パ','pa'],['ぴ','ピ','pi'],['ぷ','プ','pu'],['ぺ','ペ','pe'],['ぽ','ポ','po']] },
 ]
 
-// Each question: a kana + 4 distinct-romaji options (correct + 3 distractors).
-// Sampling is weighted toward kana missed earlier this session (drillMemory).
+// Typed answers accept the common Hepburn/kunrei spellings interchangeably.
+const ROMAJI_VARIANTS = {
+  shi: ['si'], chi: ['ti'], tsu: ['tu'], fu: ['hu'], ji: ['zi'], wo: ['o'],
+}
+function romajiMatches(input, romaji) {
+  const t = (input || '').trim().toLowerCase()
+  if (t === romaji) return true
+  return (ROMAJI_VARIANTS[romaji] || []).indexOf(t) !== -1
+}
+
+// Build the drill pool from selected rows + script choice.
+function buildPool(rowKeys, script) {
+  const pool = []
+  for (const row of ROWS) {
+    if (!rowKeys.has(row.key)) continue
+    for (const [h, k, r] of row.items) {
+      if (script === 'hira' || script === 'both') pool.push([h, r])
+      if (script === 'kata' || script === 'both') pool.push([k, r])
+    }
+  }
+  return pool
+}
+
+// Multiple-choice options: correct + 3 distinct-romaji distractors.
 function buildQuestions(pool) {
   const allRomaji = pool.map(p => p[1])
   return weightedSample(pool, p => p[0], 'kana', Math.min(QUESTION_COUNT, pool.length), shuffle).map(([kana, romaji]) => {
@@ -66,29 +73,59 @@ function buildQuestions(pool) {
 export default function Kana({ session, profile, track, onBack, onUpdate }) {
   const isMobile = useIsMobile()
   const isJapanese = profile.active_language === 'japanese'
-  const [script, setScript] = useState(null)   // 'hira' | 'kata' | 'both'
+  const [script, setScript] = useState('hira')            // 'hira' | 'kata' | 'both'
+  const [answerMode, setAnswerMode] = useState('choice')  // 'choice' | 'typed'
+  const [selectedRows, setSelectedRows] = useState(() => new Set(['a', 'ka', 'sa', 'ta', 'na']))
+  const [started, setStarted] = useState(false)
   const [questions, setQuestions] = useState([])
   const [idx, setIdx] = useState(0)
-  const [picked, setPicked] = useState(null)
+  const [picked, setPicked] = useState(null)     // choice mode: chosen romaji
+  const [typed, setTyped] = useState('')         // typed mode: input value
+  const [typedResult, setTypedResult] = useState(null)   // null | 'correct' | 'wrong'
   const [correctCount, setCorrectCount] = useState(0)
   const [done, setDone] = useState(false)
+  const inputRef = useRef(null)
 
   const pageShell = {
     minHeight: '100vh', position: 'relative', overflow: 'hidden',
     padding: isMobile ? '16px 14px 28px' : '20px 32px 36px',
   }
 
-  function start(which) {
-    const pool = which === 'hira' ? HIRA : which === 'kata' ? KATA : [...HIRA, ...KATA]
-    setScript(which)
+  function toggleRow(key) {
+    setSelectedRows(prev => {
+      const nx = new Set(prev)
+      if (nx.has(key)) nx.delete(key)
+      else nx.add(key)
+      return nx
+    })
+  }
+  function selectAll() { setSelectedRows(new Set(ROWS.map(r => r.key))) }
+  function selectBasics() { setSelectedRows(new Set(['a', 'ka', 'sa', 'ta', 'na', 'ha', 'ma', 'ya', 'ra', 'wa'])) }
+
+  function start() {
+    const pool = buildPool(selectedRows, script)
+    if (pool.length < 4) return
     setQuestions(buildQuestions(pool))
-    setIdx(0); setPicked(null); setCorrectCount(0); setDone(false)
+    setIdx(0); setPicked(null); setTyped(''); setTypedResult(null)
+    setCorrectCount(0); setDone(false)
+    setStarted(true)
   }
 
-  function choose(opt) {
-    if (picked !== null) return
+  const q = questions[idx]
+  const answered = picked !== null || typedResult !== null
+
+  function chooseOption(opt) {
+    if (answered) return
     setPicked(opt)
     if (opt === q.romaji) setCorrectCount(c => c + 1)
+    else recordMiss('kana', q.kana)
+  }
+
+  function submitTyped() {
+    if (answered || !typed.trim()) return
+    const ok = romajiMatches(typed, q.romaji)
+    setTypedResult(ok ? 'correct' : 'wrong')
+    if (ok) setCorrectCount(c => c + 1)
     else recordMiss('kana', q.kana)
   }
 
@@ -100,10 +137,12 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
 
   function next() {
     if (idx + 1 >= questions.length) finish(correctCount)
-    else { setPicked(null); setIdx(i => i + 1) }
+    else {
+      setPicked(null); setTyped(''); setTypedResult(null)
+      setIdx(i => i + 1)
+      if (answerMode === 'typed' && inputRef.current) setTimeout(() => inputRef.current && inputRef.current.focus(), 0)
+    }
   }
-
-  const q = questions[idx]
 
   if (!isJapanese) {
     return (
@@ -120,42 +159,91 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
     )
   }
 
-  // Setup: choose a script.
-  if (!script) {
-    const choices = [
-      { key: 'hira', label: 'Hiragana', sample: 'あ い う' },
-      { key: 'kata', label: 'Katakana', sample: 'ア イ ウ' },
-      { key: 'both', label: 'Both', sample: 'あ ア' },
-    ]
+  // ── Setup: script + rows + answer mode ────────────────────────────────────
+  if (!started) {
+    const poolSize = buildPool(selectedRows, script).length
     return (
       <div style={pageShell}>
-        <div style={{ maxWidth: '560px', margin: '0 auto', paddingTop: isMobile ? '8px' : '20px' }}>
+        <div style={{ maxWidth: '620px', margin: '0 auto', paddingTop: isMobile ? '8px' : '20px' }}>
           <SecondaryButton onClick={onBack} icon={ArrowLeft}>Exit</SecondaryButton>
-          <div style={{ textAlign: 'center', margin: '24px 0 28px' }}>
+          <div style={{ textAlign: 'center', margin: '22px 0 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: ACCENT, fontSize: '13px', fontWeight: 750 }}>
               <Languages size={17} strokeWidth={1.8} color={ACCENT} /> Kana practice
             </div>
-            <h1 style={{ fontSize: '26px', fontWeight: 780, color: 'var(--text)', marginTop: '8px' }}>Which script?</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '6px' }}>See a kana, choose its sound.</p>
+            <h1 style={{ fontSize: '26px', fontWeight: 780, color: 'var(--text)', marginTop: '8px' }}>Choose your rows</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '6px' }}>
+              Pick the gojūon rows to drill. Rows you've missed this session are marked.
+            </p>
           </div>
-          <div style={{ display: 'grid', gap: '12px' }}>
-            {choices.map(c => (
-              <button key={c.key} onClick={() => start(c.key)} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '20px 22px', borderRadius: '16px', border: '1px solid var(--border)',
-                background: 'var(--surface)', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                boxShadow: '0 6px 18px rgba(24,24,27,0.05)',
+
+          {/* Script + answer-mode toggles */}
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
+            {[['hira', 'Hiragana'], ['kata', 'Katakana'], ['both', 'Both']].map(([key, label]) => (
+              <button key={key} onClick={() => setScript(key)} style={{
+                padding: '8px 16px', borderRadius: '999px', cursor: 'pointer',
+                border: '1px solid ' + (script === key ? ACCENT + '66' : 'var(--border)'),
+                background: script === key ? ACCENT + '14' : 'var(--surface)',
+                color: script === key ? ACCENT : 'var(--text-muted)',
+                fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+              }}>{label}</button>
+            ))}
+            <span style={{ width: '1px', background: 'var(--border)', margin: '4px 2px' }} />
+            {[['choice', 'Tap', MousePointerClick], ['typed', 'Type', Keyboard]].map(([key, label, Icon]) => (
+              <button key={key} onClick={() => setAnswerMode(key)} style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                padding: '8px 16px', borderRadius: '999px', cursor: 'pointer',
+                border: '1px solid ' + (answerMode === key ? ACCENT + '66' : 'var(--border)'),
+                background: answerMode === key ? ACCENT + '14' : 'var(--surface)',
+                color: answerMode === key ? ACCENT : 'var(--text-muted)',
+                fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
               }}>
-                <span style={{ fontSize: '16px', fontWeight: 750, color: 'var(--text)' }}>{c.label}</span>
-                <span style={{ fontSize: '24px', color: ACCENT, fontFamily: "'Noto Sans JP'" }}>{c.sample}</span>
+                <Icon size={14} strokeWidth={2} />
+                {label}
               </button>
             ))}
           </div>
+
+          {/* Row grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)', gap: '8px', marginBottom: '12px' }}>
+            {ROWS.map(row => {
+              const active = selectedRows.has(row.key)
+              const missed = row.items.some(([h, k]) => missCount('kana', h) > 0 || missCount('kana', k) > 0)
+              return (
+                <button key={row.key} onClick={() => toggleRow(row.key)} style={{
+                  position: 'relative', padding: '12px 6px', borderRadius: '13px', cursor: 'pointer',
+                  border: '1.5px solid ' + (active ? ACCENT : 'var(--border)'),
+                  background: active ? ACCENT + '10' : 'var(--surface)',
+                  fontFamily: "'Noto Sans JP'", fontSize: '16px',
+                  color: active ? ACCENT : 'var(--text)', fontWeight: 600,
+                }}>
+                  {row.label}
+                  {missed && (
+                    <span title="Missed this session" style={{
+                      position: 'absolute', top: '6px', right: '7px',
+                      width: '8px', height: '8px', borderRadius: '50%',
+                      background: '#D97706',
+                    }} />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '20px' }}>
+            <button onClick={selectBasics} style={quickBtn}>Basics (あ–わ)</button>
+            <button onClick={selectAll} style={quickBtn}>All rows</button>
+            <button onClick={() => setSelectedRows(new Set())} style={quickBtn}>None</button>
+          </div>
+
+          <PrimaryButton onClick={start} icon={Sparkles} disabled={poolSize < 4}>
+            {poolSize < 4 ? 'Pick at least one row' : 'Start · ' + Math.min(QUESTION_COUNT, poolSize) + ' questions'}
+          </PrimaryButton>
         </div>
       </div>
     )
   }
 
+  // ── Recap ─────────────────────────────────────────────────────────────────
   if (done) {
     const pct = Math.round((correctCount / questions.length) * 100)
     return (
@@ -179,21 +267,20 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <SecondaryButton onClick={() => setScript(null)} icon={ArrowLeft}>Change script</SecondaryButton>
-            <PrimaryButton onClick={() => start(script)} icon={RotateCcw}>Again</PrimaryButton>
+            <SecondaryButton onClick={() => setStarted(false)} icon={ArrowLeft}>Rows</SecondaryButton>
+            <PrimaryButton onClick={start} icon={RotateCcw}>Again</PrimaryButton>
           </div>
         </Centered>
       </div>
     )
   }
 
-  const answered = picked !== null
-
+  // ── Quiz ──────────────────────────────────────────────────────────────────
   return (
     <div style={pageShell}>
       <div style={{ maxWidth: '560px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-          <SecondaryButton onClick={() => setScript(null)} icon={ArrowLeft}>Exit</SecondaryButton>
+          <SecondaryButton onClick={() => setStarted(false)} icon={ArrowLeft}>Rows</SecondaryButton>
           <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{idx + 1} / {questions.length}</span>
         </div>
 
@@ -201,38 +288,93 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
           <div style={{ height: '100%', borderRadius: '999px', background: ACCENT, width: Math.round((idx / questions.length) * 100) + '%', transition: 'width .4s ease' }} />
         </div>
 
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{ fontSize: '110px', fontWeight: 400, color: 'var(--text)', fontFamily: "'Noto Sans JP'", lineHeight: 1.1 }}>{q.kana}</div>
+        <div style={{ textAlign: 'center', marginBottom: '26px' }}>
+          <div style={{ fontSize: '110px', fontFamily: "'Noto Sans JP'", color: 'var(--text)', lineHeight: 1.1 }}>{q.kana}</div>
+          {answered && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: '7px', marginTop: '10px',
+              fontSize: '15px', fontWeight: 750,
+              color: (picked === q.romaji || typedResult === 'correct') ? 'var(--success)' : '#DC2626',
+            }}>
+              {(picked === q.romaji || typedResult === 'correct')
+                ? <><Check size={17} strokeWidth={2.4} /> {q.romaji}</>
+                : <><X size={17} strokeWidth={2.4} /> {q.romaji}</>}
+            </div>
+          )}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          {q.options.map(opt => {
-            const isCorrect = opt === q.romaji
-            const isPicked = opt === picked
-            let bc = 'var(--border)', bg = 'var(--surface)'
-            if (answered && isCorrect) { bc = '#2F9E6D'; bg = 'var(--success-bg)' }
-            else if (answered && isPicked && !isCorrect) { bc = '#DC2626'; bg = 'var(--danger-bg)' }
-            return (
-              <button key={opt} onClick={() => choose(opt)} disabled={answered} style={{
-                position: 'relative', minHeight: '64px', padding: '14px', borderRadius: '14px',
-                border: '1.5px solid ' + bc, background: bg, cursor: answered ? 'default' : 'pointer',
-                fontSize: '20px', fontWeight: 600, color: 'var(--text)', fontFamily: 'Inter, sans-serif',
-                transition: 'border-color 140ms ease, background 140ms ease',
-              }}>
-                {opt}
-                {answered && isCorrect && <Check size={17} strokeWidth={2.4} color="#2F9E6D" style={{ position: 'absolute', top: '10px', right: '10px' }} />}
-                {answered && isPicked && !isCorrect && <X size={17} strokeWidth={2.4} color="#DC2626" style={{ position: 'absolute', top: '10px', right: '10px' }} />}
+        {answerMode === 'typed' ? (
+          <div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <input
+                ref={inputRef}
+                autoFocus
+                value={typed}
+                onChange={e => setTyped(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { if (answered) next(); else submitTyped() } }}
+                placeholder="Type the romaji"
+                aria-label="Type the romaji"
+                disabled={answered}
+                style={{
+                  flex: 1, minWidth: 0, height: '54px', padding: '0 18px',
+                  borderRadius: '16px',
+                  border: '1.5px solid ' + (typedResult === 'correct' ? 'var(--success)' : typedResult === 'wrong' ? '#DC2626' : 'var(--border)'),
+                  background: 'var(--surface)', color: 'var(--text)',
+                  fontSize: '18px', fontFamily: 'Inter, sans-serif',
+                }}
+              />
+              <button
+                onClick={answered ? next : submitTyped}
+                style={{
+                  flexShrink: 0, minWidth: '110px', height: '54px', borderRadius: '16px',
+                  border: 'none', background: '#6E8466', color: '#fff',
+                  fontSize: '15px', fontWeight: 750, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+                }}
+              >
+                {answered ? (idx + 1 >= questions.length ? 'Results' : 'Next') : 'Check'}
               </button>
-            )
-          })}
-        </div>
-
-        {answered && (
-          <div style={{ marginTop: '22px' }}>
-            <PrimaryButton onClick={next} icon={Sparkles}>{idx + 1 >= questions.length ? 'See results' : 'Next'}</PrimaryButton>
+            </div>
+            <div style={{ textAlign: 'center', marginTop: '10px', fontSize: '12px', color: 'var(--text-faint)', fontWeight: 600 }}>
+              Enter to {answered ? 'continue' : 'check'} · shi/si, tsu/tu, fu/hu all accepted
+            </div>
           </div>
+        ) : (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+              {q.options.map(opt => {
+                const isCorrect = opt === q.romaji
+                const isPicked = opt === picked
+                let bc = 'var(--border)', bg = 'var(--surface)'
+                if (answered && isCorrect) { bc = 'var(--success)'; bg = 'var(--success-bg)' }
+                else if (answered && isPicked && !isCorrect) { bc = '#DC2626'; bg = 'var(--danger-bg)' }
+                return (
+                  <button key={opt} onClick={() => chooseOption(opt)} disabled={answered} style={{
+                    minHeight: '62px', borderRadius: '15px', cursor: answered ? 'default' : 'pointer',
+                    border: '1.5px solid ' + bc, background: bg,
+                    fontSize: '20px', fontWeight: 700, color: 'var(--text)', fontFamily: 'Inter, sans-serif',
+                    transition: 'border-color 140ms ease, background 140ms ease',
+                  }}>
+                    {opt}
+                  </button>
+                )
+              })}
+            </div>
+            {answered && (
+              <div style={{ marginTop: '16px' }}>
+                <PrimaryButton onClick={next} icon={Sparkles}>
+                  {idx + 1 >= questions.length ? 'See results' : 'Next'}
+                </PrimaryButton>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
   )
+}
+
+const quickBtn = {
+  padding: '7px 14px', borderRadius: '999px', cursor: 'pointer',
+  border: '1px solid var(--border)', background: 'var(--surface)',
+  color: 'var(--text-muted)', fontSize: '12.5px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
 }

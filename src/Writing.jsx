@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, isRecallMatch } from './utils'
 import { languageTheme } from './languageTheme'
-import { normalizePinyin } from './testLogic'
+import { lenientPinyin } from './testLogic'
 import { useIsMobile } from './useIsMobile'
 import { toRomaji } from 'wanakana'
 import {
@@ -29,12 +29,9 @@ function stripChars(value, chars) {
   return output
 }
 
+// One lenient pinyin normalization shared with Study's typed mode (testLogic).
 function normalizeChinesePinyin(value) {
-  const withoutTones = normalizePinyin(value)
-    .split('')
-    .filter(ch => ch < '1' || ch > '5')
-    .join('')
-  return stripChars(withoutTones, ' .,!?;:\'"()-_').toLowerCase()
+  return lenientPinyin(value)
 }
 
 // Drop a leading article / infinitive marker so "to run", "a dog", "the sun"
@@ -110,7 +107,10 @@ function isWritingMatch(input, vocab, direction, isJapanese) {
     if (isRecallMatch(input, vocab.reading)) return true
     const reading = vocab.reading || ''
     const expectedRomaji = normalizeRomaji(toRomaji(reading))
-    const inputRomaji = normalizeRomaji(input)
+    // Convert the INPUT through toRomaji too, so typing katakana for a word
+    // stored with a hiragana reading (or vice versa) also matches — romaji
+    // passes through toRomaji unchanged.
+    const inputRomaji = normalizeRomaji(toRomaji(input))
     return inputRomaji.length > 0 && inputRomaji === expectedRomaji
   }
 
