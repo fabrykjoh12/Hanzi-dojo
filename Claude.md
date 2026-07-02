@@ -6,6 +6,10 @@ Read this entire file before making any change. It describes not just *what* the
 
 ## 0. LATEST SESSION — read first (2026-07-02)
 
+### Batch 15 — retention % + reviews/day in Profile (product review item #17b, 2 of 3 remaining)
+- New `ReviewAccuracy` component in `Profile.jsx`, rendered as its own panel right after the existing 6-month `StudyCalendar` heatmap (which already covered item #17's other half). Queries `review_logs` scoped to the current track (`vocabulary!inner(language, system)` filter, same pattern as `src/data.js`'s `getTrackCards`) and computes: retention % (grade 0 = "Again"/forgotten counts against it, grades 1–3 all count as recalled) and a 30-day reviews-per-day bar chart.
+- Empty state (not a misleading "0%") when `review_logs` has no rows yet for the track — expected for any account predating Batch 6, which is when review-log writes started.
+
 ### Batch 14 — real story audio via TTS (product review item #12, 1 of 3 remaining)
 - New `stories.has_audio` column (migration `20260702200000_add_story_audio.sql`, apply in SQL editor) — set true by `generate-story-audio.mjs` ONLY once every line for that story synthesizes successfully, so the reader can trust it without a per-line network probe.
 - New `generate-story-audio.mjs` — same voice map as `generate-audio.mjs`, speaks each line as written (kanji included; Google's sentence-level Japanese voice handles context fine, unlike single vocab words), strips speaker labels the same way the reader's `splitSpeaker` does. Uploads to `stories/{story_id}/{line_index}.mp3` in the `audio` bucket. New Action tasks: `story-audio-hsk1`, `story-audio-hsk2`, `story-audio-jlpt1`, `story-audio-jlpt2`, `story-audio-n4`, `story-audio-russian`.
