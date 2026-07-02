@@ -18,6 +18,12 @@ A full product/design/code review was performed, then its Phase-1 fixes were imp
 - **Misc:** unused Vite-template `src/App.css` deleted; `og:image` is now an absolute GH-Pages URL (scrapers don't resolve relative paths).
 - Verified: `npm run build` ✓, `npx vitest run` 45/45 ✓, `npm run lint` at the pre-existing baseline (no new errors).
 
+### Batch 7 — story completion tracking (PR after the UI kit)
+- **Migration `20260702120000_add_story_reads.sql`** (apply in SQL editor): `story_reads` table (user_id+story_id PK, select/insert RLS) + the progress-reset RPC replaced to also clear story reads per language.
+- **Reader:** "Finish story · +10 XP" `PrimaryButton` at the end (before Next story) → upserts `story_reads`, awards `STORY_FINISH_XP = 10` via `awardXp` (once — button becomes a green "Story finished" chip via the `isRead` prop; state lives in Stories' `readIds` Set, no local reader state).
+- **Stories list:** read stories get a green `CheckCircle2` icon + "Read" pill; tier cards show "N of M read" and a check when a tier is complete.
+- Defensive pre-migration: `story_reads` reads/writes fail silently into the old behavior (no checkmarks, button just doesn't stick).
+
 ### Batch 6 — shared UI kit (branch restarted from main after PR #4 merged)
 - **`src/ui.jsx`** — shared `Centered` / `PrimaryButton` (sage, full-width, `disabled` support) / `SecondaryButton` primitives. The six drill files (Kana, Cyrillic, Listen, FillBlank, Tones, SentenceBuilder) each carried identical copies; all migrated (−295 net lines).
 - **`src/utils.js`** — gained `shuffle` (Fisher–Yates; replaces six per-file copies AND Test.jsx's biased `sort(() => Math.random() - 0.5)` idiom) and `getAudioUrl` (was defined in Study, Listen, and Tones separately).

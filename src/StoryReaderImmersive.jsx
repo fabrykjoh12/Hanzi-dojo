@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from './supabase'
+import { awardXp } from './xpService'
+import { PrimaryButton } from './ui'
 import { CHARACTER_READINGS } from './characterNames'
 import { getLevelLabel } from './utils'
 import { languageTheme } from './languageTheme'
@@ -18,6 +20,10 @@ const GOLD = '#B45309'
 const HILITE = 'rgba(217, 164, 62, 0.32)'
 
 const SPEAKER_PALETTE = ['#B83A24', '#2E6FB8', '#2F9E6D', '#C2680E', '#7C5CD0', '#B83A7A']
+
+// One-time XP for finishing a story (kept small next to per-card review XP —
+// the real reward for reading is the vocabulary reinforcement itself).
+const STORY_FINISH_XP = 10
 
 // Single-kana grammatical particles. They collide with homograph nouns stored in
 // kana (は = topic marker 'wa' vs 歯 'teeth'), so exclude them from word lookup —
@@ -200,7 +206,7 @@ function Token({ token, isSelected, showReading, isJapanese, adaptive, status, a
   )
 }
 
-export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, track, onBack, nextStory, onNextStory }) {
+export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, profile, track, onBack, nextStory, onNextStory, isRead, onMarkRead }) {
   const [selected, setSelected] = useState(null)
   const [showReading, setShowReading] = useState(false)
   const [showKnown, setShowKnown] = useState(false)
@@ -305,6 +311,22 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   // Comprehension scoring.
   const answeredCount = Object.keys(answers).length
   const correctCount = questions.filter(q => answers[q.id] === q.correct_index).length
+
+  // Finishing a story records it (story_reads) and pays a small one-time XP
+  // reward — reading is half the method, it should count for something.
+  const [finishing, setFinishing] = useState(false)
+  const finishStory = async () => {
+    if (finishing || isRead) return
+    setFinishing(true)
+    const { error } = await supabase
+      .from('story_reads')
+      .upsert({ user_id: session.user.id, story_id: story.id })
+    if (!error) {
+      if (profile) awardXp(session, profile, STORY_FINISH_XP)
+      if (onMarkRead) onMarkRead(story.id)
+    }
+    setFinishing(false)
+  }
 
   const addAllNewWords = async () => {
     if (adding || newWords.length === 0) return
@@ -594,9 +616,28 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
           </div>
         )}
 
+        {/* Finish story: records the read + one-time XP. */}
+        <div style={{ marginTop: '20px' }}>
+          {isRead ? (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              padding: '15px', borderRadius: '16px',
+              background: 'var(--success-bg)', border: '1px solid var(--success-border)',
+              color: 'var(--success)', fontSize: '14px', fontWeight: 750,
+            }}>
+              <Check size={17} strokeWidth={2.3} />
+              Story finished
+            </div>
+          ) : (
+            <PrimaryButton onClick={finishStory} icon={Check} disabled={finishing}>
+              Finish story · +{STORY_FINISH_XP} XP
+            </PrimaryButton>
+          )}
+        </div>
+
         {nextStory && (
           <button onClick={onNextStory} style={{
-            marginTop: '20px', width: '100%', background: PANEL, border: '1px solid var(--border)',
+            marginTop: '14px', width: '100%', background: PANEL, border: '1px solid var(--border)',
             borderRadius: '16px', padding: '18px 20px', cursor: 'pointer', textAlign: 'left',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: TEXT,
           }}>

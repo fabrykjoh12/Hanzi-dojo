@@ -6,7 +6,7 @@ import { isLearned } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import StoryReaderImmersive from './StoryReaderImmersive'
 import {
-  ArrowLeft, ArrowRight, BookOpen, Circle, Library, Lock,
+  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Circle, Library, Lock,
 } from 'lucide-react'
 
 // ─── CATEGORIES ────────────────────────────────────────────────────────────
@@ -131,7 +131,7 @@ function ProgressCard({ learnedCount, totalWords, accentHex }) {
 
 // ─── LIST / CATEGORY COMPONENTS ────────────────────────────────────────────
 
-function StoryListCard({ story, accentHex, fontFamily, onClick }) {
+function StoryListCard({ story, read, accentHex, fontFamily, onClick }) {
   const [hovered, setHovered] = useState(false)
   return (
     <button
@@ -151,14 +151,24 @@ function StoryListCard({ story, accentHex, fontFamily, onClick }) {
     >
       <div style={{
         width: '44px', height: '44px', borderRadius: '15px',
-        background: accentHex + '10', border: '1px solid ' + accentHex + '18',
+        background: read ? 'var(--success-bg)' : accentHex + '10',
+        border: '1px solid ' + (read ? 'var(--success-border)' : accentHex + '18'),
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <BookOpen size={21} strokeWidth={1.8} color={accentHex} />
+        {read
+          ? <CheckCircle2 size={21} strokeWidth={1.9} color="var(--success)" />
+          : <BookOpen size={21} strokeWidth={1.8} color={accentHex} />}
       </div>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: '18px', fontWeight: 750, marginBottom: '5px', fontFamily, color: 'var(--text)' }}>
-          {story.title}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '18px', fontWeight: 750, fontFamily, color: 'var(--text)' }}>
+            {story.title}
+          </span>
+          {read && (
+            <span style={pillStyle('var(--success)', 'var(--success-bg)', 'var(--success-border)')}>
+              Read
+            </span>
+          )}
         </div>
         <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
           {story.english_summary}
@@ -169,7 +179,7 @@ function StoryListCard({ story, accentHex, fontFamily, onClick }) {
   )
 }
 
-function CategoryCard({ cat, unlocked, hasStories, isClickable, storyCount, learnedCount, accentHex, onClick }) {
+function CategoryCard({ cat, unlocked, hasStories, isClickable, storyCount, readCount, learnedCount, accentHex, onClick }) {
   const [hovered, setHovered] = useState(false)
   const Icon = unlocked ? BookOpen : Lock
   const remaining = Math.max(0, cat.minWords - learnedCount)
@@ -205,8 +215,13 @@ function CategoryCard({ cat, unlocked, hasStories, isClickable, storyCount, lear
           <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>{cat.label}</span>
           {hasStories && unlocked && (
             <span style={pillStyle(accentHex, accentHex + '10', accentHex + '25')}>
-              {storyCount} {storyCount === 1 ? 'story' : 'stories'}
+              {readCount > 0
+                ? readCount + ' of ' + storyCount + ' read'
+                : storyCount + ' ' + (storyCount === 1 ? 'story' : 'stories')}
             </span>
+          )}
+          {hasStories && unlocked && readCount >= storyCount && storyCount > 0 && (
+            <CheckCircle2 size={16} strokeWidth={2} color="var(--success)" />
           )}
         </div>
         <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
@@ -243,6 +258,9 @@ export default function Stories({ session, profile, track, onBack }) {
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [selectedStory, setSelectedStory] = useState(null)
   const [stories, setStories] = useState([])
+  // Story ids the user has finished (story_reads) — drives read checkmarks,
+  // per-tier progress, and the once-only finish XP.
+  const [readIds, setReadIds] = useState(new Set())
   const [learnedCount, setLearnedCount] = useState(0)
   const [vocabMap, setVocabMap] = useState({})
   const [userCards, setUserCards] = useState({})
@@ -299,6 +317,14 @@ export default function Stories({ session, profile, track, onBack }) {
       .order('story_number', { ascending: true })
 
     setStories(storiesData || [])
+
+    // Finished stories (absent table before the migration → empty set).
+    const { data: readsData } = await supabase
+      .from('story_reads')
+      .select('story_id')
+      .eq('user_id', session.user.id)
+    setReadIds(new Set((readsData || []).map(r => r.story_id)))
+
     setLoading(false)
   }
 
@@ -338,10 +364,13 @@ export default function Stories({ session, profile, track, onBack }) {
         userCards={userCards}
         setUserCards={setUserCards}
         session={session}
+        profile={profile}
         track={track}
         onBack={() => setView('list')}
         nextStory={nextStory}
         onNextStory={() => setSelectedStory(nextStory)}
+        isRead={readIds.has(selectedStory.id)}
+        onMarkRead={(id) => setReadIds(prev => { const nx = new Set(prev); nx.add(id); return nx })}
       />
     )
   }
@@ -374,6 +403,7 @@ export default function Stories({ session, profile, track, onBack }) {
                 <StoryListCard
                   key={story.id}
                   story={story}
+                  read={readIds.has(story.id)}
                   accentHex={accentHex}
                   fontFamily={fontFamily}
                   onClick={() => { setSelectedStory(story); setView('reader') }}
@@ -428,6 +458,7 @@ export default function Stories({ session, profile, track, onBack }) {
                   hasStories={hasStories}
                   isClickable={isClickable}
                   storyCount={catStories.length}
+                  readCount={catStories.filter(s => readIds.has(s.id)).length}
                   learnedCount={learnedCount}
                   accentHex={accentHex}
                   onClick={() => {

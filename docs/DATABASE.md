@@ -158,6 +158,12 @@ This connects stories to vocabulary words.
 
 Used for hover tooltips.
 
+### story_reads
+
+Which stories a user has finished (user_id + story_id, insert-once).
+Drives read checkmarks, per-tier "N of M read" progress, and the one-time
+finish XP. Cleared per language by the progress-reset RPC.
+
 ### youtube_recommendations
 
 This stores curated YouTube videos for each level.
