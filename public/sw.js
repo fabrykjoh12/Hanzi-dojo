@@ -10,7 +10,11 @@
  * This file is served verbatim from /public (no bundler transform). Plain JS.
  */
 
-var VERSION = 'v3'
+// v4: audio requests carrying a Range header bypass the cache entirely —
+// answering them from a cached full response breaks Safari's media stack, and
+// caching an opaque partial response poisons that file for every later play.
+// The version bump also wipes any already-poisoned audio caches.
+var VERSION = 'v4'
 var SHELL_CACHE = 'hanzi-shell-' + VERSION
 var ASSET_CACHE = 'hanzi-assets-' + VERSION
 var AUDIO_CACHE = 'hanzi-audio-' + VERSION
@@ -105,7 +109,17 @@ self.addEventListener('fetch', function (event) {
     return
   }
 
-  if (isAudio(url)) { event.respondWith(cacheFirst(request, AUDIO_CACHE)); return }
+  if (isAudio(url)) {
+    // Ranged media requests must go straight to the network: a cached FULL
+    // response to a ranged request breaks Safari/iOS playback, and a cached
+    // PARTIAL response (opaque, so its 206 status is invisible here) would
+    // poison every subsequent play of this file. Only full, un-ranged
+    // responses are safe to cache — Chrome's first fetch has no Range header,
+    // so offline replay still works there.
+    if (request.headers.get('range')) return
+    event.respondWith(cacheFirst(request, AUDIO_CACHE))
+    return
+  }
   if (isFont(url)) { event.respondWith(cacheFirst(request, ASSET_CACHE)); return }
 
   // Same-origin static assets (hashed JS/CSS, icons, background images).

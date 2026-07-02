@@ -18,6 +18,12 @@ A full product/design/code review was performed, then its Phase-1 fixes were imp
 - **Misc:** unused Vite-template `src/App.css` deleted; `og:image` is now an absolute GH-Pages URL (scrapers don't resolve relative paths).
 - Verified: `npm run build` ✓, `npx vitest run` 45/45 ✓, `npm run lint` at the pre-existing baseline (no new errors).
 
+### Batch 9 — flashcard audio bug fix (user-reported: "sound doesn't work")
+- **Root cause (verified with a Playwright + local-storage-mimic harness):** the SW served **ranged** media requests from a cached *full* response (breaks Safari/iOS playback) and could cache an **opaque partial** response (its 206 status is invisible to the SW), permanently poisoning that file's cache. Chromium worked in testing only because its first fetch carries no Range header.
+- **`sw.js` → `v4`:** audio requests with a `Range` header now bypass the cache entirely (straight to network); only full un-ranged responses are cached. The version bump wipes any already-poisoned production caches. Harness confirmed: play ✓, ranged → 206 from network ✓, no partials cached ✓.
+- **Study.jsx:** `playAudio` no longer fails silently — `onerror`/non-autoplay `play()` rejections set `audioBroken`, and the Replay button becomes a muted **"No audio"** chip (VolumeX), reset on every card change/undo. Makes missing content (e.g. levels whose TTS generation hasn't run) visible instead of mute.
+- Note: sandbox network policy blocks supabase.co, so production storage couldn't be probed directly — if sound is still dead on a specific level after v4 deploys, check the "No audio" chip: it now distinguishes *file missing* from *playback broken*.
+
 ### Batch 8 — engagement polish (PR after story tracking)
 - **`src/drillMemory.js`** — session-scoped miss memory (module state; localStorage is banned here). `recordMiss`/`weightedSample`: Kana + Cyrillic now sample missed items with up to 7× tickets (cap 3 misses), so today's slips get extra practice today. Tested (`drillMemory.test.js`, suite now **52 passing**).
 - **YouTube:** cards play **inline** via a `youtube-nocookie.com` embed panel (autoplay, fullscreen, "Open on YouTube ↗" link, Close) instead of kicking users out of the app.

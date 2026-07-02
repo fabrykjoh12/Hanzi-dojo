@@ -14,7 +14,7 @@ import { toRomaji } from 'wanakana'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import {
-  Volume2, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
+  Volume2, VolumeX, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
   Sparkles, CheckCircle2, Layers, BookOpenCheck, Sunrise, X, Snowflake, TrendingUp,
 } from 'lucide-react'
 
@@ -195,6 +195,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const [gradeId, setGradeId] = useState(0)              // bumps to restart the flash
   const audioRef = useRef(null)
   const [audioSpeed, setAudioSpeed] = useState(1)   // TTS playback rate (1× / 0.75× / 0.5×)
+  const [audioBroken, setAudioBroken] = useState(false)   // current card's audio failed to load
   // Guards against a rapid double-click/double-keypress grading the same card
   // twice while the first save is still in flight (which would double-schedule
   // it and, for new cards, attempt a duplicate insert).
@@ -241,9 +242,17 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       audioRef.current.pause()
       audioRef.current.currentTime = 0
     }
-    audioRef.current = new Audio(url)
-    audioRef.current.playbackRate = audioSpeed
-    audioRef.current.play().catch(() => {})
+    const el = new Audio(url)
+    // Surface a broken/missing file instead of failing silently — "the sound
+    // doesn't work" with no signal is undebuggable for the user.
+    el.onerror = () => setAudioBroken(true)
+    el.playbackRate = audioSpeed
+    audioRef.current = el
+    el.play().catch((e) => {
+      // Autoplay-policy rejections are expected (user just taps Replay);
+      // anything else means the file didn't load.
+      if (e && e.name !== 'NotAllowedError' && e.name !== 'AbortError') setAudioBroken(true)
+    })
   }
 
   const SPEEDS = [1, 0.75, 0.5]
@@ -561,6 +570,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     setFlipped(false)
     setTypedValue('')
     setTypedResult(null)
+    setAudioBroken(false)
 
     setQueue(prev => {
       const rest = prev.slice(1)
@@ -634,6 +644,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       setFlipped(false)
       setTypedValue('')
       setTypedResult(null)
+      setAudioBroken(false)
       setQueue(u.prevQueue)
     } finally {
       gradingRef.current = false
@@ -992,6 +1003,20 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
           {audioUrl && flipped && (
             <div style={{ position: 'absolute', top: '76px', right: '24px', display: 'flex', gap: '8px' }}>
+              {audioBroken ? (
+                <span
+                  title="This word's audio file couldn't be loaded"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '7px',
+                    height: '40px', padding: '0 14px', borderRadius: '13px',
+                    background: 'var(--surface-2)', border: '1px solid var(--border)',
+                    color: 'var(--text-faint)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  <VolumeX size={18} strokeWidth={2} />
+                  No audio
+                </span>
+              ) : (
               <button
                 onClick={e => { e.stopPropagation(); playAudio() }}
                 style={{
@@ -1007,6 +1032,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                 <Volume2 size={18} strokeWidth={2} />
                 Replay
               </button>
+              )}
               <button
                 onClick={e => { e.stopPropagation(); cycleSpeed() }}
                 style={{
