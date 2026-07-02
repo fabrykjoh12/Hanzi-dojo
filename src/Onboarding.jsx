@@ -5,6 +5,7 @@ import { languageList, languageTheme } from './languageTheme'
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
+import { ArrowRight, BookOpen, Layers, PenLine, Play } from 'lucide-react'
 
 export default function Onboarding({ session, onComplete }) {
   const [step, setStep] = useState(1)
@@ -108,7 +109,7 @@ export default function Onboarding({ session, onComplete }) {
       }}>
         {/* Progress dots */}
         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '32px' }}>
-          {[1, 2, 3].map(n => (
+          {[1, 2, 3, 4].map(n => (
             <div key={n} style={{
               width: step === n ? '24px' : '8px',
               height: '8px',
@@ -299,9 +300,76 @@ export default function Onboarding({ session, onComplete }) {
                 </button>
               ))}
             </div>
-            {error && <p style={{ color: '#DC2626', fontSize: '13px', marginTop: '12px', textAlign: 'center' }}>{error}</p>}
             <div style={{ display: 'flex', gap: '12px', marginTop: '28px' }}>
               <button onClick={() => setStep(2)} style={backBtn}>Back</button>
+              <button
+                onClick={() => setStep(4)}
+                style={{
+                  flex: 2,
+                  padding: '13px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: accentHex,
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  fontFamily: 'Inter, sans-serif',
+                  transition: 'opacity 0.2s',
+                }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: What happens next */}
+        {step === 4 && (
+          <div>
+            <h1 style={{ fontSize: '22px', fontWeight: 700, textAlign: 'center', color: 'var(--text)', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
+              Here's your daily loop
+            </h1>
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '26px', fontSize: '14px', lineHeight: 1.6 }}>
+              Review your flashcards, then read a story with the words you just
+              practiced. About 15 focused minutes a day.
+            </p>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap', marginBottom: '26px' }}>
+              {[
+                { icon: Layers, label: 'Flashcards' },
+                { icon: BookOpen, label: 'Stories' },
+                { icon: Play, label: 'Videos' },
+                { icon: PenLine, label: 'Writing' },
+              ].map((s, i, arr) => (
+                <span key={s.label} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '7px', minWidth: '66px' }}>
+                    <span style={{
+                      width: '40px', height: '40px', borderRadius: '12px',
+                      background: accentHex + '10', border: '1px solid ' + accentHex + '22',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <s.icon size={19} strokeWidth={1.8} color={accentHex} />
+                    </span>
+                    <span style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-muted)' }}>{s.label}</span>
+                  </span>
+                  {i < arr.length - 1 && <ArrowRight size={14} strokeWidth={2} color="var(--text-faint)" />}
+                </span>
+              ))}
+            </div>
+
+            <div style={{
+              padding: '14px 16px', borderRadius: '12px', marginBottom: '4px',
+              background: accentHex + '0A', border: '1px solid ' + accentHex + '20',
+              fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, textAlign: 'center',
+            }}>
+              Your first session introduces {goal} new words. Words come back for
+              review right before you'd forget them — that's the whole trick.
+            </div>
+
+            {error && <p style={{ color: '#DC2626', fontSize: '13px', marginTop: '12px', textAlign: 'center' }}>{error}</p>}
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+              <button onClick={() => setStep(3)} style={backBtn}>Back</button>
               <button
                 onClick={handleFinish}
                 disabled={saving}

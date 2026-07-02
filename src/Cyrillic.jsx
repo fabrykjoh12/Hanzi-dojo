@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { awardXp } from './xpService'
 import { shuffle } from './utils'
+import { recordMiss, weightedSample } from './drillMemory'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
 import { useIsMobile } from './useIsMobile'
 import { languageTheme } from './languageTheme'
@@ -31,9 +32,10 @@ const CONSONANTS = [
 const ALL = [...VOWELS, ...CONSONANTS]
 
 // Each question: a letter + 4 distinct-sound options (correct + 3 distractors).
+// Sampling is weighted toward letters missed earlier this session (drillMemory).
 function buildQuestions(pool) {
   const allSounds = pool.map(p => p[1])
-  return shuffle(pool).slice(0, Math.min(QUESTION_COUNT, pool.length)).map(([letter, sound]) => {
+  return weightedSample(pool, p => p[0], 'cyrillic', Math.min(QUESTION_COUNT, pool.length), shuffle).map(([letter, sound]) => {
     const distractors = []
     const used = new Set([sound])
     const bag = shuffle(allSounds)
@@ -70,6 +72,7 @@ export default function Cyrillic({ session, profile, onBack, onUpdate }) {
     if (picked !== null) return
     setPicked(opt)
     if (opt === q.sound) setCorrectCount(c => c + 1)
+    else recordMiss('cyrillic', q.letter)
   }
 
   function finish(finalCorrect) {
