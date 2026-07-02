@@ -438,7 +438,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
 
         <button
           onClick={() => startLanguage(lang)}
-          disabled={!selectedLevel || saving}
+          disabled={!selectedLevel || saving || (seededLevels && !seededLevels.has(selectedLevel))}
           style={{
             width: '100%',
             minHeight: '52px',

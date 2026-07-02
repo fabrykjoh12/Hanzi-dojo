@@ -235,7 +235,7 @@ export default function Onboarding({ session, onComplete }) {
               <button onClick={() => setStep(1)} style={backBtn}>Back</button>
               <button
                 onClick={() => setStep(3)}
-                disabled={!level}
+                disabled={!level || (seededLevels && !seededLevels.has(level))}
                 style={{
                   flex: 2,
                   padding: '13px',

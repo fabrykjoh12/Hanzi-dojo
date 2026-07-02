@@ -661,15 +661,21 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   useEffect(() => {
     const onKey = (e) => {
       if (loading || done || queue.length === 0) return
-      const tag = e.target && e.target.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      const el = e.target
+      const tag = el && el.tagName
+      // Typing contexts own the keyboard entirely.
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (el && el.isContentEditable)) return
+      // A focused button/link keeps its native Space/Enter activation; the
+      // non-activating shortcuts (1–4, R, U) still work so the mouse+keyboard
+      // mixed flow isn't broken by focus resting on the last-clicked button.
+      const onActivatable = tag === 'BUTTON' || tag === 'A'
       if ((e.key === 'u' || e.key === 'U') && undoRef.current) {
         e.preventDefault()
         undoLast()
         return
       }
       if (!flipped) {
-        if (e.key === ' ' || e.key === 'Enter') {
+        if (!onActivatable && (e.key === ' ' || e.key === 'Enter')) {
           e.preventDefault()
           setFlipped(true)
         }
@@ -678,7 +684,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       if (e.key >= '1' && e.key <= '4') {
         e.preventDefault()
         handleGrade(Number(e.key) - 1)
-      } else if (e.key === 'Enter') {
+      } else if (!onActivatable && e.key === 'Enter') {
         e.preventDefault()
         handleGrade(suggestedGrade != null ? suggestedGrade : 2)
       } else if (e.key === 'r' || e.key === 'R') {

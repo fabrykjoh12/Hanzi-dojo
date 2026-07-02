@@ -42,14 +42,15 @@ export default function Auth() {
 
   const handleReset = async (e) => {
     e.preventDefault()
-    if (!email.trim()) {
+    const normalizedEmail = email.trim()
+    if (!normalizedEmail) {
       setMessageKind('error')
       setMessage('Enter your email first.')
       return
     }
     setLoading(true)
     setMessage('')
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo })
     if (error) {
       setMessageKind('error')
       setMessage(error.message)
@@ -60,7 +61,12 @@ export default function Auth() {
     setLoading(false)
   }
 
-  const submit = resetMode ? handleReset : handleAuth
+  // Enter mirrors the submit button, including its disabled-while-loading state
+  // (otherwise held Enter fires duplicate auth/reset requests mid-flight).
+  const submit = (e) => {
+    if (loading) { e.preventDefault(); return }
+    return (resetMode ? handleReset : handleAuth)(e)
+  }
   const onEnter = (e) => { if (e.key === 'Enter') submit(e) }
 
   const handleGoogle = async () => {

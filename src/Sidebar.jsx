@@ -25,6 +25,7 @@ function NavItem({ item, active, collapsed, onClick }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       aria-current={isActive ? 'page' : undefined}
+      aria-label={item.label}
       style={{
         position: 'relative',
         display: 'flex', alignItems: 'center', gap: '12px',
@@ -143,6 +144,7 @@ export default function Sidebar({ view, onNavigate, onLogout }) {
       <button
         onClick={toggleTheme}
         title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         style={{
           display: 'flex', alignItems: 'center', gap: '12px',
           width: '100%', border: 'none', background: 'transparent',

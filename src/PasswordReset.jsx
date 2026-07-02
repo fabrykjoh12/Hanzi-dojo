@@ -54,6 +54,8 @@ export default function PasswordReset({ onDone }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
           <input
             type="password"
+            aria-label="New password"
+            autoComplete="new-password"
             placeholder="New password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -63,6 +65,8 @@ export default function PasswordReset({ onDone }) {
           />
           <input
             type="password"
+            aria-label="Confirm new password"
+            autoComplete="new-password"
             placeholder="Confirm new password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
@@ -86,7 +90,7 @@ export default function PasswordReset({ onDone }) {
         </button>
 
         {error && (
-          <p style={{ textAlign: 'center', fontSize: '13px', color: '#DC2626', marginTop: '14px' }}>
+          <p role="alert" style={{ textAlign: 'center', fontSize: '13px', color: '#DC2626', marginTop: '14px' }}>
             {error}
           </p>
         )}

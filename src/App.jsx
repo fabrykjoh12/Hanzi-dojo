@@ -132,6 +132,8 @@ export default function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (_event === 'PASSWORD_RECOVERY') setRecovery(true)
+      // A stale recovery flag must not survive into the next normal login.
+      if (_event === 'SIGNED_OUT') setRecovery(false)
       setSession(session)
       if (session) loadProfile(session.user.id)
       else { setProfile(null); setTrack(null); setLoading(false) }
