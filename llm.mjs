@@ -76,5 +76,8 @@ export function premiumLlm() {
       provider: 'anthropic',
     }
   }
-  return { client: llm, model: cfg.model, provider: cfg.provider }
+  // No Anthropic key: reuse the standard client, but still honor
+  // LLM_MODEL_PREMIUM — so story runs can use e.g. gemini-2.5-pro while the
+  // bulk jobs stay on flash-lite, without any Anthropic account at all.
+  return { client: llm, model: process.env.LLM_MODEL_PREMIUM || cfg.model, provider: cfg.provider }
 }
