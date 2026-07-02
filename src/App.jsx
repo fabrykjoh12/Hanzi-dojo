@@ -5,7 +5,7 @@ import { getHomeCounts } from './homeCounts'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
 // Eager: the app shell + first-paint screens.
-import Auth from './Auth'
+import Landing from './Landing'
 import PasswordReset from './PasswordReset'
 import Onboarding from './Onboarding'
 import Sidebar from './Sidebar'
@@ -161,12 +161,7 @@ export default function App() {
   }
 
   if (!session) {
-    return (
-      <>
-        <Background language="chinese" />
-        <Auth />
-      </>
-    )
+    return <Landing />
   }
 
   if (recovery) {
