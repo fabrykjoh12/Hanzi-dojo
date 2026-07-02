@@ -2,9 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { schedule, previewLabels } from './srs'
-import { xpForGrade } from './xp'
+import { xpForGrade, levelInfo } from './xp'
 import { computeAward } from './xpService'
-import { updateStreak, todayStr } from './streak'
+import { updateStreak, todayStr, liveStreak } from './streak'
+import { evaluateAchievements } from './achievements'
+import { toast } from './toast'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { normalizePinyin } from './testLogic'
@@ -208,6 +210,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const undoRef = useRef(null)
   const undoTimerRef = useRef(null)
   const [undoVisible, setUndoVisible] = useState(false)
+  // Achievement stats at session start, so newly crossed thresholds can be
+  // celebrated at the recap (same live-derived inputs Profile uses).
+  const achieveBeforeRef = useRef(null)
+  const streakAfterRef = useRef(null)
+  const achieveToastedRef = useRef(false)
   // Running counts of today's study session, persisted to daily_activity so the
   // Profile calendar can show which days were studied.
   const activityRef = useRef({ studied: 0, newC: 0, learn: 0, review: 0 })
@@ -314,9 +321,36 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     setLoading(false)
   }
 
+  // Lifetime stats that feed achievements (cross-language, like Profile).
+  // Two cheap queries: two columns of the cards table + a row count.
+  async function loadAchievementStats() {
+    const [cardsResult, daysResult] = await Promise.all([
+      supabase.from('cards').select('learned, stability').eq('user_id', session.user.id),
+      supabase.from('daily_activity')
+        .select('activity_date', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .gt('studied_cards', 0),
+    ])
+    const rows = cardsResult.data || []
+    return {
+      learned: rows.filter(c => c.learned).length,
+      mastered: rows.filter(c => (c.stability || 0) >= 21).length,
+      daysStudied: daysResult.count || 0,
+    }
+  }
+
   useEffect(() => {
     const timer = setTimeout(loadQueue, 0)
+    // Non-blocking before-snapshot for end-of-session achievement toasts.
+    loadAchievementStats().then(stats => {
+      achieveBeforeRef.current = {
+        ...stats,
+        streak: liveStreak(profile),
+        level: levelInfo(xpRef.current).level,
+      }
+    })
     return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -370,9 +404,31 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     setForecast({ reviews, newAvail })
   }
 
+  // Toast any achievement seals newly earned this session (compare the live
+  // stats against the snapshot taken at session start).
+  async function celebrateAchievements() {
+    const before = achieveBeforeRef.current
+    const stats = await loadAchievementStats()
+    const after = {
+      ...stats,
+      streak: streakAfterRef.current != null ? streakAfterRef.current : before.streak,
+      level: levelInfo(xpRef.current).level,
+    }
+    const beforeEarned = new Set(
+      evaluateAchievements(before).filter(a => a.earned).map(a => a.id)
+    )
+    evaluateAchievements(after)
+      .filter(a => a.earned && !beforeEarned.has(a.id))
+      .forEach(a => toast({ kind: 'seal', title: 'Seal earned — ' + a.title, body: a.desc }))
+  }
+
   useEffect(() => {
     if (done && recap && recap.graded > 0 && !forecast) {
       loadForecast()
+    }
+    if (done && recap && recap.graded > 0 && achieveBeforeRef.current && !achieveToastedRef.current) {
+      achieveToastedRef.current = true
+      celebrateAchievements()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done, recap])
@@ -429,6 +485,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     if (!streakDone) {
       setStreakDone(true)
       const newStreak = await updateStreak(profile)
+      if (typeof newStreak.streak === 'number') streakAfterRef.current = newStreak.streak
       if (typeof newStreak.streak_freezes === 'number') freezesRef.current = newStreak.streak_freezes
       if (onStreakUpdate) onStreakUpdate(newStreak)
     }

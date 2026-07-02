@@ -18,6 +18,13 @@ A full product/design/code review was performed, then its Phase-1 fixes were imp
 - **Misc:** unused Vite-template `src/App.css` deleted; `og:image` is now an absolute GH-Pages URL (scrapers don't resolve relative paths).
 - Verified: `npm run build` ✓, `npx vitest run` 45/45 ✓, `npm run lint` at the pre-existing baseline (no new errors).
 
+### Batch 5 — toasts + SW update flow (same branch, PR #4)
+- **Toast system:** `src/toast.js` (fires an `hd-toast` CustomEvent — usable from plain modules, no prop drilling) + `src/Toasts.jsx` (top-right stack, seal/level/freeze icons, 4.6s auto-dismiss, `hd-toast-in` keyframe with reduced-motion fallback) mounted in the App shell.
+- **Level-up moments in drills:** `awardXp` toasts "Level N reached" (+freeze line) — all six drills get it for free. Study keeps its recap card instead (no double celebration).
+- **Achievement seals toast at session end:** Study snapshots `{learned, mastered, daysStudied, streak, level}` at queue load (2 cheap queries — cross-language like Profile), re-fetches at recap, and toasts any newly earned seals via `evaluateAchievements` diff.
+- **SW update pill:** `main.jsx` listens for `controllerchange` (guarded so first-install doesn't prompt) and shows a vanilla-DOM "Update ready — tap to refresh" pill — **the hard-refresh-after-deploy ritual is no longer needed** for users with the page open; a plain reload always got fresh HTML already.
+- **SW cache caps:** `sw.js` bumped to `v3`; `ASSET_CACHE` capped at 80 entries, `AUDIO_CACHE` at 400 (oldest-first eviction after each put) — hashed bundles from old deploys no longer accumulate forever.
+
 ### Batch 4 — public landing page (same branch, PR #4)
 - **`src/Landing.jsx`** — signed-out visitors now get a marketing page instead of a bare login card: top bar (logo + wordmark + "Log in"), hero ("Learn Chinese, Japanese, and Russian the way that actually works." + FSRS/stories positioning + free-forever chip), language chips from `languageList()`, **two stylized product mocks built in JSX** (flashcard with grade buttons + FSRS intervals; story reader with the % known bar and underlined new/learning words), three method cards (Real spaced repetition / Stories you can read / Honest progression), the daily-loop strip, bottom CTA, and the donations-never-paywall mission line. "Log in"/"Start learning free" switch to the existing `<Auth />` (untouched) with a fixed Back chip. `App.jsx` renders `<Landing />` when `!session`.
 - Verified visually via `vite preview` + Playwright screenshots at 1400px and 390px (mobile loop strip tightened to fit one row).

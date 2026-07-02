@@ -7,6 +7,7 @@ import { ThemeContext } from './ThemeContext'
 // Eager: the app shell + first-paint screens.
 import Landing from './Landing'
 import PasswordReset from './PasswordReset'
+import Toasts from './Toasts'
 import Onboarding from './Onboarding'
 import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
@@ -389,6 +390,7 @@ export default function App() {
           </Suspense>
         </div>
         {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} />}
+        <Toasts />
       </div>
     </ThemeContext.Provider>
   )

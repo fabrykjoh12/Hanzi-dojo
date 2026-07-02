@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { levelInfo } from './xp'
+import { toast } from './toast'
 
 // One rulebook for account XP awards, used by Study AND every practice drill.
 // Before this existed, the persist-XP block was copy-pasted across five drills
@@ -35,5 +36,17 @@ export function awardXp(session, profile, gain, onUpdate) {
   if (res.freezesEarned > 0) updates.streak_freezes = res.freezes
   supabase.from('profiles').update(updates).eq('id', session.user.id).then(() => {})
   if (onUpdate) onUpdate(updates)
+  // Celebrate the level-up in the moment (drills have no recap card for it).
+  // Study grades through computeAward directly and shows its own recap instead.
+  if (res.leveled) {
+    toast({
+      kind: 'level',
+      accent: '#6E8466',
+      title: 'Level ' + res.newLevel + ' reached',
+      body: res.freezesEarned > 0
+        ? '+' + res.freezesEarned + ' streak freeze' + (res.freezesEarned === 1 ? '' : 's') + ' earned'
+        : 'Earned through real answers — nice work.',
+    })
+  }
   return res
 }
