@@ -18,6 +18,12 @@ A full product/design/code review was performed, then its Phase-1 fixes were imp
 - **Misc:** unused Vite-template `src/App.css` deleted; `og:image` is now an absolute GH-Pages URL (scrapers don't resolve relative paths).
 - Verified: `npm run build` ✓, `npx vitest run` 45/45 ✓, `npm run lint` at the pre-existing baseline (no new errors).
 
+### Batch 10 — polish: count-ups, persisted audio speed, tone pairs
+- **`CountUp`** in `ui.jsx` (rAF ease-out, ~650ms; reduced-motion renders the final value instantly). Used on the Study recap tiles + XP badge and Home's fluency score.
+- **`audio_speed` preference** — migration `20260702150000_add_audio_speed.sql` (apply in SQL editor); Study's speed cycler now persists (best-effort) and seeds from the profile; Settings gained an Audio speed segmented control (1×/0.75×/0.5×).
+- **Tone pairs (Tones.jsx):** mode picker (Single syllables / Tone pairs). Pairs = two-hanzi words whose reading splits into two space-separated syllables with determinable tones (`pairTones` → "3·1"); 4 pattern options drawn from the level's real patterns, topped up randomly. Modes hide when their pool has <4 words. Question shape unified: `{ kind, answer: string, options? }` — single-tone answers are strings now.
+- Vite chunk warning: main chunk is 501.9kB (1.9kB over the 500k warn line) — benign, noted.
+
 ### Batch 9 — flashcard audio bug fix (user-reported: "sound doesn't work")
 - **Root cause (verified with a Playwright + local-storage-mimic harness):** the SW served **ranged** media requests from a cached *full* response (breaks Safari/iOS playback) and could cache an **opaque partial** response (its 206 status is invisible to the SW), permanently poisoning that file's cache. Chromium worked in testing only because its first fetch carries no Range header.
 - **`sw.js` → `v4`:** audio requests with a `Range` header now bypass the cache entirely (straight to network); only full un-ranged responses are cached. The version bump wipes any already-poisoned production caches. Harness confirmed: play ✓, ranged → 206 from network ✓, no partials cached ✓.

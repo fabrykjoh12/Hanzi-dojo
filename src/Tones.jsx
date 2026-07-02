@@ -44,6 +44,29 @@ function isSingleHanzi(word) {
   return code >= 0x3400 && code <= 0x9FFF
 }
 
+// Two-character words drive the tone-PAIR drill (where sandhi and rhythm live).
+function isTwoHanzi(word) {
+  const w = word || ''
+  if (w.length !== 2) return false
+  for (let i = 0; i < 2; i += 1) {
+    const c = w.charCodeAt(i)
+    if (c < 0x3400 || c > 0x9FFF) return false
+  }
+  return true
+}
+
+// "nǐ hǎo" → "3·3". Requires the reading to be space-separated into exactly two
+// syllables with determinable tones; anything else returns null (excluded).
+function pairTones(reading) {
+  const parts = (reading || '').trim().split(' ').filter(Boolean)
+  if (parts.length !== 2) return null
+  const t1 = toneOf(parts[0])
+  const t2 = toneOf(parts[1])
+  return t1 > 0 && t2 > 0 ? t1 + '·' + t2 : null
+}
+
+const MARK_OF = { 1: 'ˉ', 2: 'ˊ', 3: 'ˇ', 4: 'ˋ', 5: '·' }
+
 const TONES = [
   { n: 1, mark: 'ˉ', label: 'high, flat' },
   { n: 2, mark: 'ˊ', label: 'rising' },
@@ -56,6 +79,8 @@ export default function Tones({ session, profile, track, onBack, onUpdate }) {
   const isMobile = useIsMobile()
   const isChinese = profile.active_language === 'chinese'
   const [loading, setLoading] = useState(true)
+  const [mode, setMode] = useState(null)                       // null → picker · 'single' | 'pairs'
+  const [pools, setPools] = useState({ single: [], pairs: [] })
   const [questions, setQuestions] = useState([])
   const [idx, setIdx] = useState(0)
   const [picked, setPicked] = useState(null)
@@ -76,12 +101,36 @@ export default function Tones({ session, profile, track, onBack, onUpdate }) {
       .eq('system', track.system)
       .eq('level', track.current_level)
       .eq('is_active', true)
-    const pool = (vocab || [])
+    const single = (vocab || [])
       .filter(v => isSingleHanzi(v.word) && v.reading)
-      .map(v => ({ ...v, tone: toneOf(v.reading) }))
-      .filter(v => v.tone > 0)
-    setQuestions(shuffle(pool).slice(0, Math.min(QUESTION_COUNT, pool.length)))
+      .map(v => ({ ...v, kind: 'single', answer: String(toneOf(v.reading)) }))
+      .filter(v => v.answer !== '0')
+    const pairs = (vocab || [])
+      .filter(v => isTwoHanzi(v.word) && v.reading)
+      .map(v => ({ ...v, kind: 'pair', answer: pairTones(v.reading) }))
+      .filter(v => v.answer)
+    setPools({ single, pairs })
     setLoading(false)
+  }
+
+  // Build a round for the chosen mode. Pair questions get 4 options: the answer
+  // plus distinct distractor patterns from the pool (topped up with random
+  // combinations when the level has few distinct patterns).
+  function start(which) {
+    const pool = which === 'pairs' ? pools.pairs : pools.single
+    const qs = shuffle(pool).slice(0, Math.min(QUESTION_COUNT, pool.length)).map(q => {
+      if (q.kind !== 'pair') return q
+      const others = shuffle([...new Set(pool.map(p => p.answer))].filter(a => a !== q.answer)).slice(0, 3)
+      while (others.length < 3) {
+        const cand = (1 + Math.floor(Math.random() * 4)) + '·' + (1 + Math.floor(Math.random() * 4))
+        if (cand !== q.answer && others.indexOf(cand) === -1) others.push(cand)
+      }
+      return { ...q, options: shuffle([q.answer, ...others]) }
+    })
+    setMode(which)
+    setQuestions(qs)
+    setIdx(0); setPicked(null); setCorrectCount(0); setDone(false)
+    xpAwardedRef.current = false
   }
 
   useEffect(() => {
@@ -106,10 +155,10 @@ export default function Tones({ session, profile, track, onBack, onUpdate }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, loading])
 
-  function choose(toneN) {
+  function choose(val) {
     if (picked !== null) return
-    setPicked(toneN)
-    if (toneN === q.tone) setCorrectCount(c => c + 1)
+    setPicked(val)
+    if (val === q.answer) setCorrectCount(c => c + 1)
     else markWordDue(session, q.id)
   }
 
@@ -130,9 +179,7 @@ export default function Tones({ session, profile, track, onBack, onUpdate }) {
   }
 
   function restart() {
-    xpAwardedRef.current = false
-    setIdx(0); setPicked(null); setCorrectCount(0); setDone(false)
-    load()
+    start(mode)
   }
 
   const pageShell = {
@@ -169,17 +216,58 @@ export default function Tones({ session, profile, track, onBack, onUpdate }) {
     )
   }
 
-  if (questions.length === 0) {
+  const canSingle = pools.single.length >= 4
+  const canPairs = pools.pairs.length >= 4
+
+  if (!canSingle && !canPairs) {
     return (
       <div style={pageShell}>
         <div style={{ maxWidth: '520px', margin: '0 auto', minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ width: '100%', textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '44px 36px', boxShadow: '0 22px 60px rgba(24,24,27,0.07)' }}>
             <Music2 size={30} strokeWidth={1.8} color={ACCENT} style={{ marginBottom: '14px' }} />
-            <h1 style={{ fontSize: '22px', fontWeight: 750, color: 'var(--text)', marginBottom: '8px' }}>No single-character words here</h1>
+            <h1 style={{ fontSize: '22px', fontWeight: 750, color: 'var(--text)', marginBottom: '8px' }}>No tone-drill words here</h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
-              This level has no single-character words to drill tones with yet.
+              This level has no suitable words to drill tones with yet.
             </p>
             <PrimaryButton onClick={onBack} icon={ArrowLeft}>Back home</PrimaryButton>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Mode picker: single syllables (the on-ramp) or tone pairs (rhythm/sandhi).
+  if (!mode) {
+    const choices = [
+      canSingle && { key: 'single', label: 'Single syllables', desc: 'One character, one tone', sample: '好' },
+      canPairs && { key: 'pairs', label: 'Tone pairs', desc: 'Two-character words — hear the rhythm', sample: '朋友' },
+    ].filter(Boolean)
+    return (
+      <div style={pageShell}>
+        <div style={{ maxWidth: '560px', margin: '0 auto', paddingTop: isMobile ? '8px' : '20px' }}>
+          <SecondaryButton onClick={onBack} icon={ArrowLeft}>Exit</SecondaryButton>
+          <div style={{ textAlign: 'center', margin: '24px 0 28px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: ACCENT, fontSize: '13px', fontWeight: 750 }}>
+              <Music2 size={17} strokeWidth={1.8} color={ACCENT} /> Tone practice
+            </div>
+            <h1 style={{ fontSize: '26px', fontWeight: 780, color: 'var(--text)', marginTop: '8px' }}>Which drill?</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '6px' }}>Hear a word, name its tone{canPairs ? 's' : ''}.</p>
+          </div>
+          <div style={{ display: 'grid', gap: '12px' }}>
+            {choices.map(c => (
+              <button key={c.key} onClick={() => start(c.key)} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '20px 22px', borderRadius: '16px', border: '1px solid var(--border)',
+                background: 'var(--surface)', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                boxShadow: '0 6px 18px rgba(24,24,27,0.05)', textAlign: 'left', gap: '14px',
+              }}>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: '16px', fontWeight: 750, color: 'var(--text)' }}>{c.label}</span>
+                  <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '3px' }}>{c.desc}</span>
+                </span>
+                <span style={{ fontSize: '24px', color: ACCENT, fontFamily: "'Noto Sans SC'", flexShrink: 0 }}>{c.sample}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -258,15 +346,42 @@ export default function Tones({ session, profile, track, onBack, onUpdate }) {
         </div>
 
         {/* Tone options */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(5, 1fr)' : 'repeat(5, 1fr)', gap: '8px' }}>
+        {q.kind === 'pair' ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+            {q.options.map(opt => {
+              const isCorrect = opt === q.answer
+              const isPicked = opt === picked
+              let bc = 'var(--border)', bg = 'var(--surface)'
+              if (answered && isCorrect) { bc = '#2F9E6D'; bg = 'var(--success-bg)' }
+              else if (answered && isPicked && !isCorrect) { bc = '#DC2626'; bg = 'var(--danger-bg)' }
+              const parts = opt.split('·').map(Number)
+              return (
+                <button key={opt} onClick={() => choose(opt)} disabled={answered} style={{
+                  position: 'relative', minHeight: '76px', padding: '10px 4px', borderRadius: '14px',
+                  border: '1.5px solid ' + bc, background: bg, cursor: answered ? 'default' : 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                  transition: 'border-color 140ms ease, background 140ms ease',
+                }}>
+                  <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text)', lineHeight: 1, letterSpacing: '6px' }}>
+                    {MARK_OF[parts[0]]}{MARK_OF[parts[1]]}
+                  </span>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)' }}>{opt}</span>
+                  {answered && isCorrect && <Check size={15} strokeWidth={2.4} color="#2F9E6D" style={{ position: 'absolute', top: '7px', right: '7px' }} />}
+                  {answered && isPicked && !isCorrect && <X size={15} strokeWidth={2.4} color="#DC2626" style={{ position: 'absolute', top: '7px', right: '7px' }} />}
+                </button>
+              )
+            })}
+          </div>
+        ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
           {TONES.map(t => {
-            const isCorrect = t.n === q.tone
-            const isPicked = t.n === picked
+            const isCorrect = String(t.n) === q.answer
+            const isPicked = String(t.n) === picked
             let bc = 'var(--border)', bg = 'var(--surface)'
             if (answered && isCorrect) { bc = '#2F9E6D'; bg = 'var(--success-bg)' }
             else if (answered && isPicked && !isCorrect) { bc = '#DC2626'; bg = 'var(--danger-bg)' }
             return (
-              <button key={t.n} onClick={() => choose(t.n)} disabled={answered} style={{
+              <button key={t.n} onClick={() => choose(String(t.n))} disabled={answered} style={{
                 position: 'relative', minHeight: '84px', padding: '10px 4px', borderRadius: '14px',
                 border: '1.5px solid ' + bc, background: bg, cursor: answered ? 'default' : 'pointer',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px',
@@ -281,6 +396,7 @@ export default function Tones({ session, profile, track, onBack, onUpdate }) {
             )
           })}
         </div>
+        )}
 
         {answered && (
           <div style={{ marginTop: '20px' }}>
