@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { awardXp } from './xpService'
 import { shuffle } from './utils'
+import { recordMiss, weightedSample } from './drillMemory'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
 import { useIsMobile } from './useIsMobile'
 import {
@@ -48,9 +49,10 @@ const KATA = [
 ]
 
 // Each question: a kana + 4 distinct-romaji options (correct + 3 distractors).
+// Sampling is weighted toward kana missed earlier this session (drillMemory).
 function buildQuestions(pool) {
   const allRomaji = pool.map(p => p[1])
-  return shuffle(pool).slice(0, Math.min(QUESTION_COUNT, pool.length)).map(([kana, romaji]) => {
+  return weightedSample(pool, p => p[0], 'kana', Math.min(QUESTION_COUNT, pool.length), shuffle).map(([kana, romaji]) => {
     const distractors = []
     const used = new Set([romaji])
     const bag = shuffle(allRomaji)
@@ -87,6 +89,7 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
     if (picked !== null) return
     setPicked(opt)
     if (opt === q.romaji) setCorrectCount(c => c + 1)
+    else recordMiss('kana', q.kana)
   }
 
   function finish(finalCorrect) {

@@ -18,6 +18,11 @@ A full product/design/code review was performed, then its Phase-1 fixes were imp
 - **Misc:** unused Vite-template `src/App.css` deleted; `og:image` is now an absolute GH-Pages URL (scrapers don't resolve relative paths).
 - Verified: `npm run build` ✓, `npx vitest run` 45/45 ✓, `npm run lint` at the pre-existing baseline (no new errors).
 
+### Batch 8 — engagement polish (PR after story tracking)
+- **`src/drillMemory.js`** — session-scoped miss memory (module state; localStorage is banned here). `recordMiss`/`weightedSample`: Kana + Cyrillic now sample missed items with up to 7× tickets (cap 3 misses), so today's slips get extra practice today. Tested (`drillMemory.test.js`, suite now **52 passing**).
+- **YouTube:** cards play **inline** via a `youtube-nocookie.com` embed panel (autoplay, fullscreen, "Open on YouTube ↗" link, Close) instead of kicking users out of the app.
+- **Onboarding step 4** — "Here's your daily loop": icon strip (Flashcards → Stories → Videos → Writing), the 15-minutes framing, and a note that the first session introduces `goal` new words and reviews return right before forgetting. "Start Learning" moved here (error display too); step 3 now just continues.
+
 ### Batch 7 — story completion tracking (PR after the UI kit)
 - **Migration `20260702120000_add_story_reads.sql`** (apply in SQL editor): `story_reads` table (user_id+story_id PK, select/insert RLS) + the progress-reset RPC replaced to also clear story reads per language.
 - **Reader:** "Finish story · +10 XP" `PrimaryButton` at the end (before Next story) → upserts `story_reads`, awards `STORY_FINISH_XP = 10` via `awardXp` (once — button becomes a green "Story finished" chip via the `isRead` prop; state lives in Stories' `readIds` Set, no local reader state).

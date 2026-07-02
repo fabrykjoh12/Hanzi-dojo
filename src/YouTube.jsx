@@ -21,7 +21,7 @@ function getVideoId(url) {
   return null
 }
 
-function VideoCard({ video, accentHex }) {
+function VideoCard({ video, accentHex, onPlay }) {
   const [hovered, setHovered] = useState(false)
   const videoId = getVideoId(video.video_url)
   const thumbnail = videoId
@@ -29,11 +29,9 @@ function VideoCard({ video, accentHex }) {
     : null
 
   return (
-    <a
-      href={video.video_url}
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{ textDecoration: 'none', display: 'block' }}
+    <button
+      onClick={onPlay}
+      style={{ display: 'block', width: '100%', padding: 0, border: 'none', background: 'none', textAlign: 'left', fontFamily: 'Inter, sans-serif' }}
     >
       <div
         onMouseEnter={function() { setHovered(true) }}
@@ -104,13 +102,68 @@ function VideoCard({ video, accentHex }) {
           )}
         </div>
       </div>
-    </a>
+    </button>
+  )
+}
+
+// Inline player: watching stays inside the app (immersion shouldn't require
+// leaving for youtube.com and its recommendations rabbit hole). The privacy
+// (nocookie) embed host is used; a plain external link remains for those who
+// want captions/settings on YouTube itself.
+function PlayerPanel({ video, accentHex, onClose }) {
+  const videoId = getVideoId(video.video_url)
+  if (!videoId) return null
+  return (
+    <div style={{
+      background: 'var(--surface)', border: '1px solid ' + accentHex + '33',
+      borderRadius: '18px', overflow: 'hidden', marginBottom: '24px',
+      boxShadow: '0 18px 48px rgba(24,24,27,0.10)',
+    }}>
+      <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
+        <iframe
+          src={'https://www.youtube-nocookie.com/embed/' + videoId + '?autoplay=1&rel=0'}
+          title={video.title}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+        />
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '13px 16px', flexWrap: 'wrap' }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>{video.title}</div>
+          {video.channel_name && (
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{video.channel_name}</div>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexShrink: 0 }}>
+          <a
+            href={video.video_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: '12.5px', fontWeight: 650, color: accentHex, textDecoration: 'none' }}
+          >
+            Open on YouTube ↗
+          </a>
+          <button
+            onClick={onClose}
+            style={{
+              border: '1px solid var(--border)', background: 'var(--surface)',
+              color: 'var(--text-muted)', borderRadius: '10px', padding: '7px 12px',
+              fontSize: '12.5px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+            }}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 
 export default function YouTube({ profile, track, onBack }) {
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
+  const [playing, setPlaying] = useState(null)   // video being watched inline
   const isMobile = useIsMobile()
 
   const theme = languageTheme(profile.active_language)
@@ -189,6 +242,10 @@ export default function YouTube({ profile, track, onBack }) {
           </div>
         )}
 
+        {playing && (
+          <PlayerPanel video={playing} accentHex={accentHex} onClose={() => setPlaying(null)} />
+        )}
+
         {videos.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '18px' }}>
             {videos.map(function(video) {
@@ -197,6 +254,7 @@ export default function YouTube({ profile, track, onBack }) {
                   key={video.id}
                   video={video}
                   accentHex={accentHex}
+                  onPlay={() => { setPlaying(video); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
                 />
               )
             })}
