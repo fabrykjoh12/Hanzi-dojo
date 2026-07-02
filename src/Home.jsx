@@ -4,6 +4,7 @@ import { languageTheme } from './languageTheme'
 import { liveStreak, streakStatus } from './streak'
 import { levelInfo } from './xp'
 import InfoTip from './InfoTip'
+import { CountUp } from './ui'
 import { useIsMobile } from './useIsMobile'
 import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, Gauge, Dumbbell, Snowflake } from 'lucide-react'
 import { fluencyScore, fluencyRank } from './fluency'
@@ -269,7 +270,9 @@ export default function Home({ profile, track, counts, onNavigate }) {
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '6px' }}>
-          <span style={{ fontSize: '40px', fontWeight: 750, color: 'var(--text)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{fScore}</span>
+          <span style={{ fontSize: '40px', fontWeight: 750, color: 'var(--text)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+            <CountUp value={fScore} />
+          </span>
           <span style={{ fontSize: '13px', color: 'var(--text-faint)', fontWeight: 600 }}>pts</span>
         </div>
         <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: fRank.next ? '14px' : 0 }}>

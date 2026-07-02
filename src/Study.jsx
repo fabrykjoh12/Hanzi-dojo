@@ -12,6 +12,7 @@ import { languageTheme } from './languageTheme'
 import { normalizePinyin } from './testLogic'
 import { toRomaji } from 'wanakana'
 import { useIsMobile } from './useIsMobile'
+import { CountUp } from './ui'
 import { cleanMeaning } from './cleanMeaning'
 import {
   Volume2, VolumeX, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
@@ -194,7 +195,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const [gradeColor, setGradeColor] = useState(null)     // feedback ring color
   const [gradeId, setGradeId] = useState(0)              // bumps to restart the flash
   const audioRef = useRef(null)
-  const [audioSpeed, setAudioSpeed] = useState(1)   // TTS playback rate (1× / 0.75× / 0.5×)
+  // TTS playback rate (1× / 0.75× / 0.5×), seeded from the saved preference.
+  const [audioSpeed, setAudioSpeed] = useState(
+    profile.audio_speed === 0.75 || profile.audio_speed === 0.5 ? profile.audio_speed : 1
+  )
   const [audioBroken, setAudioBroken] = useState(false)   // current card's audio failed to load
   // Guards against a rapid double-click/double-keypress grading the same card
   // twice while the first save is still in flight (which would double-schedule
@@ -257,7 +261,14 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
   const SPEEDS = [1, 0.75, 0.5]
   function cycleSpeed() {
-    setAudioSpeed(prev => SPEEDS[(SPEEDS.indexOf(prev) + 1) % SPEEDS.length])
+    setAudioSpeed(prev => {
+      const next = SPEEDS[(SPEEDS.indexOf(prev) + 1) % SPEEDS.length]
+      // Persist as a preference (best-effort) and patch the in-memory profile
+      // so the choice survives reloads instead of resetting to 1×.
+      supabase.from('profiles').update({ audio_speed: next }).eq('id', session.user.id).then(() => {})
+      if (onStreakUpdate) onStreakUpdate({ audio_speed: next })
+      return next
+    })
   }
 
   async function loadQueue() {
@@ -737,7 +748,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       { label: 'New learned', value: s.newLearned, color: '#3E63DD' },
       { label: 'To review', value: s.graduated, color: '#2F9E6D' },
     ] : []
-    if (accuracy !== null) recapStats.push({ label: 'Accuracy', value: accuracy + '%', color: '#D97706' })
+    if (accuracy !== null) recapStats.push({ label: 'Accuracy', value: accuracy, suffix: '%', color: '#D97706' })
 
     return (
       <div style={pageShell}>
@@ -774,7 +785,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                 color: '#5C7155', fontSize: '14px', fontWeight: 750,
               }}>
                 <Sparkles size={15} strokeWidth={2} color="#6E8466" />
-                +{s.xpEarned} XP
+                +<CountUp value={s.xpEarned} /> XP
               </div>
             )}
 
@@ -808,7 +819,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                     padding: '16px 10px', borderRadius: '14px',
                     background: st.color + '0D', border: '1px solid ' + st.color + '22',
                   }}>
-                    <div style={{ fontSize: '26px', fontWeight: 760, color: st.color, lineHeight: 1 }}>{st.value}</div>
+                    <div style={{ fontSize: '26px', fontWeight: 760, color: st.color, lineHeight: 1 }}>
+                      <CountUp value={st.value} suffix={st.suffix || ''} />
+                    </div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>{st.label}</div>
                   </div>
                 ))}

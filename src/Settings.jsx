@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import {
   Palette, SlidersHorizontal, Sun, Moon, Keyboard, Eye,
-  Volume2, BookOpenCheck,
+  Volume2, BookOpenCheck, Gauge,
 } from 'lucide-react'
 import { useIsMobile } from './useIsMobile'
 import { useTheme } from './ThemeContext'
@@ -25,6 +25,7 @@ export default function Settings({ session, profile, onUpdate }) {
   const recallMode = profile.recall_mode === 'typed' ? 'typed' : 'flip'
   const audioAutoplay = profile.audio_autoplay !== false
   const furiganaDefault = profile.furigana_default !== false
+  const audioSpeed = profile.audio_speed === 0.75 || profile.audio_speed === 0.5 ? profile.audio_speed : 1
 
   // Persist a single preference column (best-effort) and reflect it live.
   const savePref = (patch) => {
@@ -85,6 +86,20 @@ export default function Settings({ session, profile, onUpdate }) {
           {/* Audio autoplay */}
           <Card icon={Volume2} title="Audio on flip" text="Automatically play the word's pronunciation when you reveal a card." accentHex={accentHex}>
             <Toggle accentHex={accentHex} checked={audioAutoplay} onChange={(v) => savePref({ audio_autoplay: v })} />
+          </Card>
+
+          {/* Audio speed */}
+          <Card icon={Gauge} title="Audio speed" text="Playback speed for flashcard pronunciation. The speed toggle on the card changes this too." accentHex={accentHex}>
+            <Segmented
+              accentHex={accentHex}
+              value={audioSpeed}
+              onChange={(v) => savePref({ audio_speed: v })}
+              options={[
+                { key: 1, label: '1×', icon: Gauge },
+                { key: 0.75, label: '0.75×', icon: Gauge },
+                { key: 0.5, label: '0.5×', icon: Gauge },
+              ]}
+            />
           </Card>
 
           {/* Furigana default — Japanese only */}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 // Shared UI primitives for the practice drills (and anything else that fits).
 // These were copy-pasted per file (Kana/Cyrillic/Listen/FillBlank/Tones/
@@ -44,6 +44,34 @@ export function PrimaryButton({ onClick, children, icon: Icon, disabled }) {
       {children}
     </button>
   )
+}
+
+// Animated number: counts up from 0 to `value` on mount with an ease-out, so
+// recap stats land with a little weight. Renders the final value immediately
+// for reduced-motion users and non-finite values.
+export function CountUp({ value, duration = 650, suffix = '' }) {
+  const reduced = typeof window !== 'undefined'
+    && window.matchMedia
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const skip = reduced || !Number.isFinite(value)
+  // Skip path renders the final value from the start (initial state) — no
+  // effect write needed, and reduced-motion users see no animation at all.
+  const [display, setDisplay] = useState(skip ? value : 0)
+  useEffect(() => {
+    if (skip) return undefined
+    let raf
+    const start = performance.now()
+    const tick = (t) => {
+      const p = Math.min(1, (t - start) / duration)
+      const eased = 1 - Math.pow(1 - p, 3)
+      setDisplay(Math.round(value * eased))
+      if (p < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
+  return <>{display}{suffix}</>
 }
 
 // Quiet bordered button (Exit / Home / secondary actions). Grid rows stretch
