@@ -246,13 +246,17 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     if (!card?.vocab?.audio_path) return
     const url = getAudioUrl(card.vocab.audio_path)
     if (!url) return
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.currentTime = 0
-    }
-    const el = new Audio()
+    // ONE element, reused for every play — iOS caches a fallback-fetched clip
+    // on the element so Replay works even when the direct load fails (see
+    // playAudioEl). A fresh element per tap threw that away, which is why the
+    // Replay button did nothing on iPhones.
+    if (!audioRef.current) audioRef.current = new Audio()
+    const el = audioRef.current
+    el.pause()
+    // Both: playbackRate for the already-loaded clip, defaultPlaybackRate so a
+    // fresh load doesn't reset the speed back to 1x.
     el.playbackRate = audioSpeed
-    audioRef.current = el
+    el.defaultPlaybackRate = audioSpeed
     // Surface a broken/missing file instead of failing silently — "the sound
     // doesn't work" with no signal is undebuggable for the user. playAudioEl
     // already retries once via a blob fetch (works around iOS WebKit Range
