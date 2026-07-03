@@ -43,6 +43,10 @@ const doReplace = args.includes('--replace')
 const language = arg('language', 'chinese')
 const system = arg('system', 'hsk_3')
 const level = parseInt(arg('level', '1'), 10)
+// Optional taste-test: generate ONLY this tier's season (1/2/3). With --replace
+// it deletes just that tier's stories, leaving the others intact — so you can
+// sample one season cheaply before committing to the whole level.
+const onlyTier = arg('tier', null) ? parseInt(arg('tier', null), 10) : null
 
 // ── Character bibles ─────────────────────────────────────────────────────────
 // Recurring characters with actual personalities and speech habits — the thing
@@ -89,51 +93,59 @@ const SEASON_SEEDS = [
 // pools stay consistent. maxLineChars is a SOFT target now — the reader wraps
 // text fine and choppy 15-char baby prose was a big part of why stories read
 // badly. Only egregiously long lines (2x) get flagged for revision.
+//
+// Per-tier knobs for "longer + richer" (user request):
+//   lines      target line count — bumped ~50% so chapters read like real scenes
+//   minCov     min in-pool vocabulary coverage. GRADUATED: rank beginners
+//              (tier 1) need near-full comprehension; by tier 3 the reader can
+//              handle a few reach words, which surface as tappable "new words".
+//   maxMisses  cap on DISTINCT out-of-pool words — lets a chapter reach for a
+//              handful of vivid words without turning into a word salad.
 
 const CONFIGS = {
   'chinese|hsk_3|1': {
     bible: BIBLE_CHINESE, promptLang: 'Chinese', levelName: 'HSK 1',
     maxLineChars: 30, prereqLevel: null, prereqMax: 0,
     tiers: [
-      { tier: 1, minWords: 0, prevCap: 0, cap: 100, chapters: 6, lines: [14, 20] },
-      { tier: 2, minWords: 100, prevCap: 100, cap: 200, chapters: 6, lines: [16, 24] },
-      { tier: 3, minWords: 200, prevCap: 200, cap: 300, chapters: 6, lines: [20, 28] },
+      { tier: 1, minWords: 0, prevCap: 0, cap: 100, chapters: 6, lines: [18, 26], minCov: 0.90, maxMisses: 6 },
+      { tier: 2, minWords: 100, prevCap: 100, cap: 200, chapters: 6, lines: [24, 34], minCov: 0.88, maxMisses: 9 },
+      { tier: 3, minWords: 200, prevCap: 200, cap: 300, chapters: 6, lines: [30, 42], minCov: 0.85, maxMisses: 12 },
     ],
   },
   'chinese|hsk_3|2': {
     bible: BIBLE_CHINESE, promptLang: 'Chinese', levelName: 'HSK 2',
     maxLineChars: 32, prereqLevel: 1, prereqMax: 150,
     tiers: [
-      { tier: 1, minWords: 30, prevCap: 0, cap: 66, chapters: 5, lines: [14, 20] },
-      { tier: 2, minWords: 80, prevCap: 66, cap: 132, chapters: 5, lines: [16, 24] },
-      { tier: 3, minWords: 130, prevCap: 132, cap: 198, chapters: 5, lines: [20, 28] },
+      { tier: 1, minWords: 30, prevCap: 0, cap: 66, chapters: 5, lines: [18, 26], minCov: 0.90, maxMisses: 6 },
+      { tier: 2, minWords: 80, prevCap: 66, cap: 132, chapters: 5, lines: [24, 34], minCov: 0.88, maxMisses: 9 },
+      { tier: 3, minWords: 130, prevCap: 132, cap: 198, chapters: 5, lines: [30, 42], minCov: 0.85, maxMisses: 12 },
     ],
   },
   'japanese|jlpt|1': {
     bible: BIBLE_JAPANESE, promptLang: 'Japanese', levelName: 'JLPT N5',
     kanaOnly: true, maxLineChars: 36, prereqLevel: null, prereqMax: 0,
     tiers: [
-      { tier: 1, minWords: 30, prevCap: 0, cap: 100, chapters: 5, lines: [14, 20] },
-      { tier: 2, minWords: 100, prevCap: 100, cap: 200, chapters: 5, lines: [16, 24] },
-      { tier: 3, minWords: 200, prevCap: 200, cap: 400, chapters: 5, lines: [20, 28] },
+      { tier: 1, minWords: 30, prevCap: 0, cap: 100, chapters: 5, lines: [18, 26], minCov: 0.90, maxMisses: 6 },
+      { tier: 2, minWords: 100, prevCap: 100, cap: 200, chapters: 5, lines: [24, 34], minCov: 0.88, maxMisses: 9 },
+      { tier: 3, minWords: 200, prevCap: 200, cap: 400, chapters: 5, lines: [30, 42], minCov: 0.85, maxMisses: 12 },
     ],
   },
   'japanese|jlpt|3': {
     bible: BIBLE_JAPANESE, promptLang: 'Japanese', levelName: 'JLPT N4',
     maxLineChars: 40, prereqLevel: 1, prereqMax: 150,
     tiers: [
-      { tier: 1, minWords: 30, prevCap: 0, cap: 200, chapters: 5, lines: [14, 20] },
-      { tier: 2, minWords: 150, prevCap: 200, cap: 400, chapters: 5, lines: [16, 24] },
-      { tier: 3, minWords: 300, prevCap: 400, cap: 636, chapters: 5, lines: [20, 28] },
+      { tier: 1, minWords: 30, prevCap: 0, cap: 200, chapters: 5, lines: [18, 26], minCov: 0.90, maxMisses: 7 },
+      { tier: 2, minWords: 150, prevCap: 200, cap: 400, chapters: 5, lines: [24, 34], minCov: 0.87, maxMisses: 10 },
+      { tier: 3, minWords: 300, prevCap: 400, cap: 636, chapters: 5, lines: [30, 42], minCov: 0.84, maxMisses: 14 },
     ],
   },
   'russian|russian|1': {
     bible: BIBLE_RUSSIAN, promptLang: 'Russian', levelName: 'CEFR A1',
     colon: ':', maxLineChars: 70, prereqLevel: null, prereqMax: 0,
     tiers: [
-      { tier: 1, minWords: 15, prevCap: 0, cap: 50, chapters: 4, lines: [12, 18] },
-      { tier: 2, minWords: 40, prevCap: 50, cap: 100, chapters: 4, lines: [14, 20] },
-      { tier: 3, minWords: 80, prevCap: 100, cap: 147, chapters: 4, lines: [16, 24] },
+      { tier: 1, minWords: 15, prevCap: 0, cap: 50, chapters: 4, lines: [16, 24], minCov: 0.88, maxMisses: 8 },
+      { tier: 2, minWords: 40, prevCap: 50, cap: 100, chapters: 4, lines: [20, 30], minCov: 0.86, maxMisses: 11 },
+      { tier: 3, minWords: 80, prevCap: 100, cap: 147, chapters: 4, lines: [26, 38], minCov: 0.83, maxMisses: 14 },
     ],
   },
 }
@@ -294,8 +306,14 @@ function validateStory(content, pool, tier) {
     if (language === 'chinese') dict.add('大毛')
     cov = cjkCoverage(lines, dict, 8, language === 'japanese')
   }
-  if (cov.coverage < 0.9) {
-    problems.push('Vocabulary coverage ' + Math.round(cov.coverage * 100) + '% (need 90%). Out-of-pool: ' + cov.misses.slice(0, 25).join('、'))
+  const minCov = tier.minCov != null ? tier.minCov : 0.9
+  const maxMisses = tier.maxMisses != null ? tier.maxMisses : 8
+  if (cov.coverage < minCov) {
+    problems.push('Vocabulary coverage ' + Math.round(cov.coverage * 100) + '% (need ' + Math.round(minCov * 100) + '%). Out-of-pool: ' + cov.misses.slice(0, 25).join('、'))
+  } else if (cov.misses.length > maxMisses) {
+    // Coverage is fine by ratio, but too many DISTINCT reach words — trim the
+    // least essential ones so a chapter teaches a few new words, not dozens.
+    problems.push(cov.misses.length + ' distinct out-of-pool words (max ' + maxMisses + '). Replace the less important ones: ' + cov.misses.slice(0, 25).join('、'))
   }
   return { ok: problems.length === 0, problems, coverage: cov.coverage, misses: cov.misses, lineCount: lines.length }
 }
@@ -343,19 +361,20 @@ async function draftChapter(tier, plan, chapterIdx, focusWords, pool, prevRecap)
     'Characters (voices must match):\n' + cfg.bible.text + '\n\n' +
     'FOCUS WORDS — every one of these must appear naturally, most of them more than once:\n' +
     focusWords.map(v => v.word + ' (' + v.reading + ' = ' + v.meaning + ')').join(', ') + '\n\n' +
-    'ALLOWED VOCABULARY — build the text from these words plus names, particles and basic grammar. Do not use content words outside this list:\n' +
+    'ALLOWED VOCABULARY — build the text mainly from these words plus names, particles and basic grammar:\n' +
     poolForPrompt(pool) + '\n\n' +
     'Rules:\n' +
     kanaNote +
-    '- ' + minL + '-' + maxL + ' lines, one sentence or dialogue turn per line\n' +
+    '- ' + minL + '-' + maxL + ' lines, one sentence or dialogue turn per line — a full scene, not a sketch\n' +
     '- Natural sentences around ' + cfg.maxLineChars + ' characters per line — vary the rhythm, avoid choppy three-word lines\n' +
     '- Mix narration and dialogue. Dialogue format: NAME' + COLON + 'text — speakers ONLY from: ' + cfg.bible.speakers.join(', ') + '\n' +
     '- Narration lines have no speaker prefix\n' +
-    '- Reuse focus words in different sentence patterns so learners meet them in several contexts\n' +
-    '- Write something a reader would actually enjoy: concrete detail, a little humor, real character voice\n\n' +
+    '- Use a WIDE VARIETY of the allowed vocabulary — draw on the whole list, not the same handful of words. Reuse the focus words especially, in different sentence patterns.\n' +
+    '- You MAY reach for up to ' + (tier.maxMisses != null ? Math.max(3, Math.floor(tier.maxMisses / 2)) : 4) + ' vivid words outside the list where the story genuinely needs them (a sound, a feeling, a specific object) — the reader can tap any word for its meaning. Keep at least ' + Math.round((tier.minCov != null ? tier.minCov : 0.9) * 100) + '% of the words from the allowed list.\n' +
+    '- Write something a reader would actually enjoy: a real narrative arc, concrete sensory detail, a little humor, genuine character voice and feelings\n\n' +
     'Return ONLY valid JSON, no markdown fences:\n' +
     '{"title":"short ' + cfg.promptLang + ' chapter title, no chapter number","content":"line1\\nline2\\n..."}'
-  return callJson(prompt, 4000)
+  return callJson(prompt, 6000)
 }
 
 async function reviseForCoverage(tier, draft, validation, focusWords, pool) {
@@ -370,7 +389,7 @@ async function reviseForCoverage(tier, draft, validation, focusWords, pool) {
     (cfg.kanaOnly ? 'Write ONLY in hiragana and katakana (no kanji).\n' : '') +
     'Keep ' + minL + '-' + maxL + ' lines, dialogue format NAME' + COLON + 'text, speakers only from: ' + cfg.bible.speakers.join(', ') + '\n\n' +
     'Return ONLY valid JSON, no markdown fences: {"title":"...","content":"line1\\nline2\\n..."}'
-  return callJson(prompt, 4000)
+  return callJson(prompt, 6000)
 }
 
 async function critiqueStory(draft) {
@@ -398,7 +417,7 @@ async function reviseForQuality(tier, draft, feedback, focusWords, pool) {
     '- Focus words that must stay present: ' + focusWords.map(v => v.word).join(', ') + '\n' +
     '- ALLOWED VOCABULARY (plus names, particles, basic grammar):\n' + poolForPrompt(pool) + '\n\n' +
     'Return ONLY valid JSON, no markdown fences: {"title":"...","content":"line1\\nline2\\n..."}'
-  return callJson(prompt, 4000)
+  return callJson(prompt, 6000)
 }
 
 async function translateStory(draft, attempt = 0) {
@@ -411,7 +430,7 @@ async function translateStory(draft, attempt = 0) {
     '- Keep dialogue format: Speaker' + COLON + 'English text (translate the speaker name to romanized form, e.g. 李明 → Li Ming)\n' +
     '- Natural English, not word-by-word\n\n' +
     'Return ONLY valid JSON, no markdown fences: {"lines": ["...", "..."]}'
-  const res = await callJson(prompt, 4000)
+  const res = await callJson(prompt, 6000)
   const out = (res.lines || []).map(l => String(l).trim()).filter(Boolean)
   if (out.length !== lines.length && attempt < 1) return translateStory(draft, attempt + 1)
   return { ok: out.length === lines.length, english: out.join('\n') }
@@ -420,12 +439,18 @@ async function translateStory(draft, attempt = 0) {
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('=== Serial stories: ' + language + '/' + system + '/level ' + level + ' ===')
+  const tiersToRun = onlyTier ? cfg.tiers.filter(t => t.tier === onlyTier) : cfg.tiers
+  if (tiersToRun.length === 0) { console.error('No tier ' + onlyTier + ' in this config.'); process.exit(1) }
+  console.log('=== Serial stories: ' + language + '/' + system + '/level ' + level + (onlyTier ? ' — TIER ' + onlyTier + ' only' : '') + ' ===')
+
   if (doReplace) {
-    const { error } = await supabase.from('stories').delete()
+    let del = supabase.from('stories').delete()
       .eq('language', language).eq('system', system).eq('level', level)
+    // Taste-test run: only wipe the tier we're regenerating, keep the rest.
+    if (onlyTier) del = del.eq('tier', onlyTier)
+    const { error } = await del
     if (error) throw new Error('Delete error: ' + error.message)
-    console.log('Deleted existing stories for this level.')
+    console.log('Deleted existing stories for this ' + (onlyTier ? 'tier.' : 'level.'))
   }
 
   const { data: existing } = await supabase.from('stories').select('story_number')
@@ -435,13 +460,13 @@ async function main() {
 
   let published = 0, held = 0
 
-  for (const tier of cfg.tiers) {
+  for (const tier of tiersToRun) {
     console.log('\n=== Tier ' + tier.tier + ' — season of ' + tier.chapters + ' chapters ===')
     const pool = await fetchVocab(tier.cap)
     // Focus words: the tier's NEWEST vocabulary (between the previous tier's cap
     // and this one), chunked across chapters so each chapter teaches its slice.
     const newWords = pool.filter(v => v.sort_order > tier.prevCap && v.sort_order <= tier.cap)
-    const chunkSize = Math.min(18, Math.max(8, Math.ceil(newWords.length / tier.chapters)))
+    const chunkSize = Math.min(22, Math.max(10, Math.ceil(newWords.length / tier.chapters)))
     const focusChunks = []
     for (let i = 0; i < tier.chapters; i += 1) {
       const chunk = newWords.slice(i * chunkSize, (i + 1) * chunkSize)

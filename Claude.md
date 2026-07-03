@@ -6,6 +6,12 @@ Read this entire file before making any change. It describes not just *what* the
 
 ## 0. LATEST SESSION — read first (2026-07-02)
 
+### Batch 18 — serial-story tuning: longer + richer (user: "longer, more vocabulary, very interesting")
+- `generate-serial-stories.mjs` tuned after the user added Gemini billing. Per-tier `lines` bumped ~50% (HSK1/HSK2/JLPT1/N4 now 18–26 / 24–34 / 30–42; Russian 16–24 / 20–30 / 26–38). Draft/revise/translate `max_tokens` 4000→6000 for the longer output. Focus-word chunk 10–22/chapter (was 8–18).
+- New per-tier vocabulary knobs: `minCov` (graduated coverage floor — tier1 0.90 down to tier3 0.83–0.85, since rank beginners need near-full comprehension but advanced tiers can handle a few reach words) and `maxMisses` (cap on DISTINCT out-of-pool words, 6→14 by tier). Validator enforces both; the draft prompt now explicitly permits ~half of maxMisses as "vivid reach words" (tappable in the reader) and pushes for WIDE vocabulary variety instead of the same handful.
+- `llm.mjs premiumLlm()`: with no Anthropic key but Gemini provider, premium tier now defaults to **gemini-2.5-pro** (bulk jobs stay on flash-lite via LLM_MODEL) — so enabling billing on the Gemini key is enough, no repo variable needed. `LLM_MODEL_PREMIUM` still overrides; ANTHROPIC_API_KEY still wins.
+- New `story_tier` workflow input (blank / 1 / 2 / 3) + `--tier` script flag: generates only that tier's season and, with `--replace`, deletes only that tier — a cheap taste test before committing a whole level. After a serial run, dispatch the matching `story-audio-*` task.
+
 ### Batch 17 — serial-story pipeline (user: "stories are terrible, we have a bad system")
 - Diagnosis agreed with the user: one cheap model, one overloaded prompt, nothing verified, auto-published, same 4 flavorless characters/15 stock scenes/1 plot template, choppy 15-char line caps. Decisions made together: **serial chapters** (not standalone vignettes), **premium model** (Anthropic key) for the writing passes, **auto-publish gated by validators**.
 - New `generate-serial-stories.mjs` — see the full doc in the scripts section ("the CURRENT story generator"). `generate-stories.mjs` is legacy. New `premiumLlm()` export in `llm.mjs` (Anthropic via its OpenAI-compatible endpoint when `ANTHROPIC_API_KEY` is set; falls back to standard client). New Action tasks `serial-hsk1/2`, `serial-jlpt1`, `serial-n4`, `serial-russian` (all REPLACE the level's stories).

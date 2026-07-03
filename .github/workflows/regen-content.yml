@@ -17,6 +17,11 @@ on:
         type: choice
         default: both
         options: [both, japanese, chinese]
+      story_tier:
+        description: "serial-* only: generate just this tier (1/2/3) as a taste test. Blank = whole level."
+        type: choice
+        default: ''
+        options: ['', '1', '2', '3']
 
 permissions:
   contents: read
@@ -58,6 +63,9 @@ jobs:
             japanese) LANG_FLAG="--japanese" ;;
             chinese)  LANG_FLAG="--chinese" ;;
           esac
+          # serial-* taste test: restrict to one tier when story_tier is set.
+          TIER_FLAG=""
+          if [ -n "${{ inputs.story_tier }}" ]; then TIER_FLAG="--tier ${{ inputs.story_tier }}"; fi
 
           if [ "${{ inputs.task }}" = "meanings" ] || [ "${{ inputs.task }}" = "both" ]; then
             echo "::group::Meanings"
@@ -224,30 +232,30 @@ jobs:
 
           if [ "${{ inputs.task }}" = "serial-hsk1" ]; then
             echo "::group::REPLACE HSK 1 stories with serial chapters (multi-pass pipeline)"
-            node generate-serial-stories.mjs --language chinese --system hsk_3 --level 1 --replace
+            node generate-serial-stories.mjs --language chinese --system hsk_3 --level 1 --replace $TIER_FLAG
             echo "::endgroup::"
           fi
 
           if [ "${{ inputs.task }}" = "serial-hsk2" ]; then
             echo "::group::REPLACE HSK 2 stories with serial chapters (multi-pass pipeline)"
-            node generate-serial-stories.mjs --language chinese --system hsk_3 --level 2 --replace
+            node generate-serial-stories.mjs --language chinese --system hsk_3 --level 2 --replace $TIER_FLAG
             echo "::endgroup::"
           fi
 
           if [ "${{ inputs.task }}" = "serial-jlpt1" ]; then
             echo "::group::REPLACE JLPT N5 Part 1 stories with serial chapters (multi-pass pipeline)"
-            node generate-serial-stories.mjs --language japanese --system jlpt --level 1 --replace
+            node generate-serial-stories.mjs --language japanese --system jlpt --level 1 --replace $TIER_FLAG
             echo "::endgroup::"
           fi
 
           if [ "${{ inputs.task }}" = "serial-n4" ]; then
             echo "::group::REPLACE JLPT N4 stories with serial chapters (multi-pass pipeline)"
-            node generate-serial-stories.mjs --language japanese --system jlpt --level 3 --replace
+            node generate-serial-stories.mjs --language japanese --system jlpt --level 3 --replace $TIER_FLAG
             echo "::endgroup::"
           fi
 
           if [ "${{ inputs.task }}" = "serial-russian" ]; then
             echo "::group::REPLACE Russian A1 stories with serial chapters (multi-pass pipeline)"
-            node generate-serial-stories.mjs --language russian --system russian --level 1 --replace
+            node generate-serial-stories.mjs --language russian --system russian --level 1 --replace $TIER_FLAG
             echo "::endgroup::"
           fi

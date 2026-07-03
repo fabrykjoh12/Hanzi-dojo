@@ -76,8 +76,11 @@ export function premiumLlm() {
       provider: 'anthropic',
     }
   }
-  // No Anthropic key: reuse the standard client, but still honor
-  // LLM_MODEL_PREMIUM — so story runs can use e.g. gemini-2.5-pro while the
-  // bulk jobs stay on flash-lite, without any Anthropic account at all.
-  return { client: llm, model: process.env.LLM_MODEL_PREMIUM || cfg.model, provider: cfg.provider }
+  // No Anthropic key: reuse the standard client. On Gemini, default the
+  // premium tier to gemini-2.5-pro (a real step up from the flash-lite the
+  // bulk jobs use) so enabling billing on the Gemini key is enough — no repo
+  // variable required. LLM_MODEL_PREMIUM still overrides. Bulk jobs keep using
+  // LLM_MODEL (flash-lite), so this never inflates their cost.
+  const premiumDefault = cfg.provider === 'gemini' ? 'gemini-2.5-pro' : cfg.model
+  return { client: llm, model: process.env.LLM_MODEL_PREMIUM || premiumDefault, provider: cfg.provider }
 }
