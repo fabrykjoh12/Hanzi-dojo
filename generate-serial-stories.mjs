@@ -174,6 +174,30 @@ function extractText(response) {
   return { text: typeof text === 'string' ? text : '', finish: choice && choice.finish_reason }
 }
 
+// gemini keeps emitting raw control characters (newlines, tabs) INSIDE JSON
+// string values, which is invalid JSON and was the dominant cause of retries
+// (and 40-minute runs). Walk the text and escape any raw control char that
+// falls inside a string literal, so JSON.parse succeeds without a re-request.
+function repairJson(s) {
+  let out = '', inStr = false, esc = false
+  for (let i = 0; i < s.length; i += 1) {
+    const ch = s[i]
+    if (esc) { out += ch; esc = false; continue }
+    if (ch === '\\') { out += ch; esc = true; continue }
+    if (ch === '"') { inStr = !inStr; out += ch; continue }
+    if (inStr && ch === '\n') { out += '\\n'; continue }
+    if (inStr && ch === '\r') { out += '\\r'; continue }
+    if (inStr && ch === '\t') { out += '\\t'; continue }
+    out += ch
+  }
+  return out
+}
+
+function parseJsonLoose(text) {
+  const json = text.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+  try { return JSON.parse(json) } catch { return JSON.parse(repairJson(json)) }
+}
+
 async function callJson(prompt, maxTokens, attempt = 0) {
   const budget = attempt >= 3 ? maxTokens * 2 : maxTokens
   try {
@@ -183,8 +207,7 @@ async function callJson(prompt, maxTokens, attempt = 0) {
     })
     const { text, finish } = extractText(response)
     if (!text.trim()) throw new Error('empty response (finish_reason=' + finish + ', budget=' + budget + ')')
-    const json = text.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-    return JSON.parse(json)
+    return parseJsonLoose(text)
   } catch (err) {
     if (attempt < 4) {
       const wait = Math.min(8 * Math.pow(2, attempt), 45)
