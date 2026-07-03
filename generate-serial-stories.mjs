@@ -335,6 +335,16 @@ function validateStory(content, pool, tier) {
 
 // ── Pipeline passes ──────────────────────────────────────────────────────────
 
+// Chapters come back as a `lines` ARRAY, not a single newline-embedded string:
+// gemini often emits raw newlines inside a JSON string value, which breaks
+// JSON.parse ("Unterminated string") and triggered dozens of slow retries.
+// An array of per-line strings sidesteps that entirely (the translate pass,
+// which always used this shape, never had the problem).
+function toContent(res) {
+  if (res && Array.isArray(res.lines)) return res.lines.map(l => String(l).trim()).filter(Boolean).join('\n')
+  return (res && res.content) || ''
+}
+
 function poolForPrompt(pool) {
   // Small pools go in whole. Big ones would drown the prompt, so only the most
   // common slice is listed — the chapter's focus words travel separately in
@@ -387,15 +397,16 @@ async function draftChapter(tier, plan, chapterIdx, focusWords, pool, prevRecap)
     '- Use a WIDE VARIETY of the allowed vocabulary — draw on the whole list, not the same handful of words. Reuse the focus words especially, in different sentence patterns.\n' +
     '- You MAY reach for up to ' + (tier.maxMisses != null ? Math.max(3, Math.floor(tier.maxMisses / 2)) : 4) + ' vivid words outside the list where the story genuinely needs them (a sound, a feeling, a specific object) — the reader can tap any word for its meaning. Keep at least ' + Math.round((tier.minCov != null ? tier.minCov : 0.9) * 100) + '% of the words from the allowed list.\n' +
     '- Write something a reader would actually enjoy: a real narrative arc, concrete sensory detail, a little humor, genuine character voice and feelings\n\n' +
-    'Return ONLY valid JSON, no markdown fences:\n' +
-    '{"title":"short ' + cfg.promptLang + ' chapter title, no chapter number","content":"line1\\nline2\\n..."}'
-  return callJson(prompt, 6000)
+    'Return ONLY valid JSON, no markdown fences — content is an ARRAY of line strings:\n' +
+    '{"title":"short ' + cfg.promptLang + ' chapter title, no chapter number","lines":["line1","line2","..."]}'
+  const res = await callJson(prompt, 6000)
+  return { title: res.title, content: toContent(res) }
 }
 
 async function reviseForCoverage(tier, draft, validation, focusWords, pool) {
   const [minL, maxL] = tier.lines
   const prompt =
-    'This ' + cfg.levelName + ' ' + cfg.promptLang + ' graded-reader chapter breaks its vocabulary constraints. Fix ONLY the problems listed; keep the plot, characters, and everything already compliant unchanged.\n\n' +
+    'This ' + cfg.levelName + ' ' + cfg.promptLang + ' graded-reader chapter breaks its vocabulary constraints. Fix ONLY the problems listed; keep the plot, characters, and everything already compliant unchanged. Preserve the natural, story-like flow — do not make it stiff.\n\n' +
     'Problems:\n- ' + validation.problems.join('\n- ') + '\n\n' +
     'Chapter:\n' + draft.content + '\n\n' +
     'ALLOWED VOCABULARY (replace out-of-pool words using ONLY these plus names, particles and basic grammar):\n' +
@@ -403,8 +414,9 @@ async function reviseForCoverage(tier, draft, validation, focusWords, pool) {
     'Focus words that must stay present: ' + focusWords.map(v => v.word).join(', ') + '\n' +
     (cfg.kanaOnly ? 'Write ONLY in hiragana and katakana (no kanji).\n' : '') +
     'Keep ' + minL + '-' + maxL + ' lines, dialogue format NAME' + COLON + 'text, speakers only from: ' + cfg.bible.speakers.join(', ') + '\n\n' +
-    'Return ONLY valid JSON, no markdown fences: {"title":"...","content":"line1\\nline2\\n..."}'
-  return callJson(prompt, 6000)
+    'Return ONLY valid JSON, no markdown fences — lines is an ARRAY: {"title":"...","lines":["line1","line2","..."]}'
+  const res = await callJson(prompt, 6000)
+  return { title: res.title, content: toContent(res) }
 }
 
 async function critiqueStory(draft) {
@@ -433,8 +445,9 @@ async function reviseForQuality(tier, draft, feedback, focusWords, pool) {
     '- ' + minL + '-' + maxL + ' lines; dialogue format NAME' + COLON + 'text; speakers only from: ' + cfg.bible.speakers.join(', ') + '\n' +
     '- Focus words that must stay present: ' + focusWords.map(v => v.word).join(', ') + '\n' +
     '- ALLOWED VOCABULARY (plus names, particles, basic grammar):\n' + poolForPrompt(pool) + '\n\n' +
-    'Return ONLY valid JSON, no markdown fences: {"title":"...","content":"line1\\nline2\\n..."}'
-  return callJson(prompt, 6000)
+    'Return ONLY valid JSON, no markdown fences — lines is an ARRAY: {"title":"...","lines":["line1","line2","..."]}'
+  const res = await callJson(prompt, 6000)
+  return { title: res.title, content: toContent(res) }
 }
 
 async function translateStory(draft, attempt = 0) {
@@ -477,9 +490,18 @@ async function main() {
 
   let published = 0, held = 0
 
+  // Allowed vocabulary = the WHOLE level, for every tier. Capping the pool at
+  // the tier boundary (first 100 words for tier 1) starved the writer — drafts
+  // came in at 60-64% in-pool, and forcing them up to 95% flattened the prose
+  // into stiff, low-scoring text. It's all the same level and every word is
+  // tappable, so a generous pool lets the model write naturally and hit
+  // coverage without mangling. Focus words stay the tier's own slice.
+  const fullCap = cfg.tiers[cfg.tiers.length - 1].cap
+  const fullPool = await fetchVocab(fullCap)
+
   for (const tier of tiersToRun) {
     console.log('\n=== Tier ' + tier.tier + ' — season of ' + tier.chapters + ' chapters ===')
-    const pool = await fetchVocab(tier.cap)
+    const pool = fullPool
     // Focus words: the tier's NEWEST vocabulary (between the previous tier's cap
     // and this one), chunked across chapters so each chapter teaches its slice.
     const newWords = pool.filter(v => v.sort_order > tier.prevCap && v.sort_order <= tier.cap)
@@ -512,10 +534,12 @@ async function main() {
           rounds += 1
         }
 
-        // Quality gate: one rubric critique; below 7 → one revision, re-checked.
+        // Quality gate: a solid graded reader scores ~6+. Below that → one
+        // quality revision, re-checked (and re-covered if the rewrite drifts).
+        const PUBLISH_SCORE = 6
         process.stdout.write('critique... ')
         let crit = await critiqueStory(draft)
-        if ((crit.score || 0) < 7) {
+        if ((crit.score || 0) < PUBLISH_SCORE) {
           process.stdout.write('revise(' + crit.score + ')... ')
           draft = await reviseForQuality(tier, draft, crit.feedback || '', focus, pool)
           v = validateStory(draft.content, pool, tier)
@@ -526,7 +550,7 @@ async function main() {
         process.stdout.write('translate... ')
         const tr = await translateStory(draft)
 
-        const pass = v.ok && (crit.score || 0) >= 7 && tr.ok
+        const pass = v.ok && (crit.score || 0) >= PUBLISH_SCORE && tr.ok
         const title = (i + 1) + '. ' + (draft.title || plan.chapters[i].title_en)
         const { error } = await supabase.from('stories').insert({
           language, system, level,
