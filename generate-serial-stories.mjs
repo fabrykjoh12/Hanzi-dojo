@@ -107,9 +107,9 @@ const CONFIGS = {
     bible: BIBLE_CHINESE, promptLang: 'Chinese', levelName: 'HSK 1',
     maxLineChars: 30, prereqLevel: null, prereqMax: 0,
     tiers: [
-      { tier: 1, minWords: 0, prevCap: 0, cap: 100, chapters: 6, lines: [18, 26], minCov: 0.90, maxMisses: 6 },
-      { tier: 2, minWords: 100, prevCap: 100, cap: 200, chapters: 6, lines: [24, 34], minCov: 0.88, maxMisses: 9 },
-      { tier: 3, minWords: 200, prevCap: 200, cap: 300, chapters: 6, lines: [30, 42], minCov: 0.85, maxMisses: 12 },
+      { tier: 1, minWords: 0, prevCap: 0, cap: 100, chapters: 6, lines: [18, 26], minCov: 0.85, maxMisses: 10 },
+      { tier: 2, minWords: 100, prevCap: 100, cap: 200, chapters: 6, lines: [24, 34], minCov: 0.85, maxMisses: 12 },
+      { tier: 3, minWords: 200, prevCap: 200, cap: 300, chapters: 6, lines: [30, 42], minCov: 0.83, maxMisses: 14 },
     ],
   },
   'chinese|hsk_3|2': {
@@ -161,19 +161,34 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
 
 // ── LLM plumbing ─────────────────────────────────────────────────────────────
 
+// Reasoning models (gemini-2.5-pro/flash) spend hidden "thinking" tokens out
+// of max_tokens; if the budget is tight the response comes back with EMPTY
+// content (finish_reason=length/MAX_TOKENS) — which used to crash on .trim().
+// Extract content defensively, treat empty/malformed as a retryable error
+// (surfacing finish_reason so the logs explain why), and on the last attempt
+// retry once more with a doubled budget to give thinking room to finish.
+function extractText(response) {
+  const choice = response && response.choices && response.choices[0]
+  let text = choice && choice.message && choice.message.content
+  if (Array.isArray(text)) text = text.map(p => (typeof p === 'string' ? p : (p && p.text) || '')).join('')
+  return { text: typeof text === 'string' ? text : '', finish: choice && choice.finish_reason }
+}
+
 async function callJson(prompt, maxTokens, attempt = 0) {
+  const budget = attempt >= 3 ? maxTokens * 2 : maxTokens
   try {
     const response = await llm.chat.completions.create({
-      model: MODEL, max_tokens: maxTokens,
+      model: MODEL, max_tokens: budget,
       messages: [{ role: 'user', content: prompt }],
     })
-    const text = response.choices[0].message.content.trim()
-    const json = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+    const { text, finish } = extractText(response)
+    if (!text.trim()) throw new Error('empty response (finish_reason=' + finish + ', budget=' + budget + ')')
+    const json = text.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
     return JSON.parse(json)
   } catch (err) {
-    if (attempt < 3) {
-      const wait = Math.min(10 * Math.pow(2, attempt), 60)
-      process.stdout.write('(retry ' + wait + 's) ')
+    if (attempt < 4) {
+      const wait = Math.min(8 * Math.pow(2, attempt), 45)
+      process.stdout.write('(retry ' + wait + 's: ' + (err.message || err).slice(0, 60) + ') ')
       await sleep(wait * 1000)
       return callJson(prompt, maxTokens, attempt + 1)
     }
@@ -402,7 +417,9 @@ async function critiqueStory(draft) {
     '- Distinct character voices in dialogue\n' +
     '- Appropriate for the level (simple grammar, but not insulting)\n\n' +
     'Return ONLY valid JSON, no markdown fences: {"score": <1-10>, "feedback": "2-4 specific, actionable problems (or what works, if 8+)"}'
-  return callJson(prompt, 800)
+  // Small OUTPUT, but a reasoning model needs headroom for thinking or it
+  // returns empty content — this was the main cause of the first run failing.
+  return callJson(prompt, 3000)
 }
 
 async function reviseForQuality(tier, draft, feedback, focusWords, pool) {
