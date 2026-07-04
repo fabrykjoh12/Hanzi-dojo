@@ -14,9 +14,12 @@ import { toRomaji } from 'wanakana'
 import { useIsMobile } from './useIsMobile'
 import { CountUp } from './ui'
 import { cleanMeaning } from './cleanMeaning'
+import ChatMission from './ChatMission'
+import { pickMission } from './chatMissions'
 import {
   Volume2, VolumeX, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
   Sparkles, CheckCircle2, Layers, BookOpenCheck, Sunrise, X, Snowflake, TrendingUp,
+  MessageCircleMore, ChevronRight,
 } from 'lucide-react'
 
 // Does the typed input match the card's reading (or the word itself)?
@@ -247,6 +250,32 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const freezesRef = useRef(profile.streak_freezes || 0)
   const [forecast, setForecast] = useState(null)
   const [recap, setRecap] = useState(null)   // snapshot of sessionRef at completion
+  // Word-to-World chat mission: the level's vocab (for tap lookups) and a record
+  // of which words were touched this session, so the mission can reuse today's
+  // learned / weak / review words.
+  const vocabRef = useRef([])
+  const sessionVocabRef = useRef([])
+  const [missionOffer, setMissionOffer] = useState(null)   // snapshot at completion
+  const [mission, setMission] = useState(null)              // active running mission
+
+  // Snapshot the session's words into a chat-mission offer (buckets + vocab)
+  // when the queue empties. Reads refs from a callback, never during render.
+  function buildMissionOffer() {
+    const seen = new Map()
+    sessionVocabRef.current.forEach(e => {
+      const p = seen.get(e.word) || { weak: false, review: false }
+      seen.set(e.word, { weak: p.weak || e.weak, review: p.review || e.review })
+    })
+    if (seen.size === 0) return null
+    const dayBuckets = { learned: [], weak: [], review: [] }
+    seen.forEach((val, w) => {
+      if (val.weak) dayBuckets.weak.push(w)
+      else if (val.review) dayBuckets.review.push(w)
+      else dayBuckets.learned.push(w)
+    })
+    const picked = pickMission({ language: track.language, level: track.current_level, dayWords: [...seen.keys()], seed: seen.size })
+    return picked ? { mission: picked, dayBuckets, vocab: vocabRef.current } : null
+  }
   const isMobile = useIsMobile()
   const isTyped = profile.recall_mode === 'typed'
 
@@ -296,6 +325,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
   async function loadQueue() {
     setLoading(true)
+    sessionVocabRef.current = []
 
     const { data: vocab } = await supabase
       .from('vocabulary')
@@ -305,6 +335,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       .eq('level', track.current_level)
       .eq('is_active', true)
       .order('sort_order', { ascending: true })
+    vocabRef.current = vocab || []
 
     // Server-side scoped to this level — never the whole cross-language table.
     const cards = await getTrackCards(session.user.id, track, { level: track.current_level })
@@ -511,6 +542,16 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     setGradeColor(GRADE_COLORS[grade])
     setGradeId(id => id + 1)
 
+    // Record the word for the end-of-session chat mission: grade 0 (Again) marks
+    // it weak; a review-state card is a mature word; otherwise it's learned today.
+    if (card.vocab && card.vocab.word) {
+      sessionVocabRef.current.push({
+        word: card.vocab.word,
+        weak: grade === 0,
+        review: card.state === 'review',
+      })
+    }
+
     // Tally this card for the session recap (before the queue mutates).
     const s = sessionRef.current
     s.graded += 1
@@ -619,6 +660,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       }
       if (rest.length === 0) {
         setRecap({ ...sessionRef.current })
+        setMissionOffer(buildMissionOffer())
         setDone(true)
       }
       return rest
@@ -769,6 +811,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   if (done || queue.length === 0) {
     const s = recap
     const didStudy = Boolean(s && s.graded > 0)
+
+    // Word-to-World chat mission offer (snapshotted at completion, above).
+    const availableMission = missionOffer ? missionOffer.mission : null
     const accuracy = s && s.reviewedTotal > 0 ? Math.round((s.reviewedRight / s.reviewedTotal) * 100) : null
     const recapStats = s ? [
       { label: 'Cards studied', value: s.graded, color: accentHex },
@@ -879,11 +924,42 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               </div>
             )}
 
+            {availableMission && (
+              <button onClick={() => setMission(availableMission)} style={{
+                width: '100%', marginBottom: '12px', textAlign: 'left', cursor: 'pointer',
+                background: accentHex + '0D', border: '1px solid ' + accentHex + '2A', borderRadius: '18px',
+                padding: '16px 18px', display: 'flex', alignItems: 'center', gap: '14px',
+              }}>
+                <div style={{ width: '44px', height: '44px', borderRadius: '14px', flexShrink: 0, background: accentHex + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <MessageCircleMore size={22} strokeWidth={1.9} color={accentHex} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text)' }}>Use today’s words</div>
+                  <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '2px' }}>
+                    {availableMission.scenario.en} · ~{availableMission.estimatedTime} min
+                  </div>
+                </div>
+                <ChevronRight size={20} color={accentHex} />
+              </button>
+            )}
+
             <PrimaryButton onClick={onBack} icon={ArrowLeft}>
               Back home
             </PrimaryButton>
           </div>
         </div>
+
+        {mission && missionOffer && (
+          <ChatMission
+            mission={mission}
+            vocab={missionOffer.vocab}
+            session={session}
+            profile={profile}
+            track={track}
+            dayBuckets={missionOffer.dayBuckets}
+            onClose={() => setMission(null)}
+          />
+        )}
       </div>
     )
   }
