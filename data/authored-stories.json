@@ -1,72 +1,167 @@
 [
   {
-    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
-    "title": "1. 大毛不见了",
-    "english_summary": "One morning Da Mao the white cat is gone. Li Ming looks all over the house and can't find her. His friend Xiao Ming arrives, and together they decide to search on the way to school.",
-    "content": "早上，李明起床了。\n他想看大毛。\n大毛是一只白猫。\n可是，大毛不在家。\n李明：妈妈，大毛在哪儿？\n妈妈：我不知道。\n妈妈：大毛早上不在这儿。\n李明不高兴。\n他去房间找大毛。\n房间里没有大毛。\n桌子下也没有大毛。\n李明：大毛，你在哪儿？\n小明来了。\n小明：李明，我们去学校吧。\n李明：好，可是大毛不见了。\n小明：没关系，我们一起找。\n大毛在哪儿呢？",
-    "english_content": "In the morning, Li Ming got up.\nHe wanted to see Da Mao.\nDa Mao is a white cat.\nBut Da Mao was not home.\nLi Ming: Mom, where is Da Mao?\nMom: I don't know.\nMom: Da Mao wasn't here this morning.\nLi Ming was unhappy.\nHe went to his room to look for Da Mao.\nDa Mao was not in the room.\nDa Mao was not under the table either.\nLi Ming: Da Mao, where are you?\nXiao Ming came.\nXiao Ming: Li Ming, let's go to school.\nLi Ming: Okay, but Da Mao is missing.\nXiao Ming: It's okay, let's look together.\nWhere is Da Mao?"
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
+    "title": "1. 下雪了",
+    "english_summary": "Li Ming wakes to find everything white — the first snow. He's thrilled, bundles up, and heads outside to play while Da Mao the cat stays home.",
+    "content": "早上，李明看外边。\n外边都是白的。\n李明：妈妈！下雪了！\n妈妈：是的，今天很冷。\n李明很高兴。\n他想去外边玩。\n妈妈：穿衣服，外边冷。\n李明穿了衣服。\n大毛也想去。\n李明：大毛，你在家吧。\n李明去外边了。\n雪很大，很漂亮。",
+    "english_content": "In the morning, Li Ming looked outside.\nOutside was all white.\nLi Ming: Mom! It's snowing!\nMom: Yes, it's very cold today.\nLi Ming was very happy.\nHe wanted to go outside and play.\nMom: Put on clothes, it's cold outside.\nLi Ming put on his clothes.\nDa Mao wanted to go too.\nLi Ming: Da Mao, stay home.\nLi Ming went outside.\nThe snow was heavy and very pretty."
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
-    "title": "2. 学校里",
-    "english_summary": "At school Li Ming asks his classmates about Da Mao. Xiao Hong joins the search and spots a small cat outside — but it isn't Da Mao. They head to the shop to ask.",
-    "content": "在学校，李明看同学。\n李明：你们看见大毛了吗？\n一个同学：没有。\n小红来了。\n小红：李明，怎么了？\n李明：大毛不见了。\n小红：我也帮你找。\n下课了。\n他们在学校外边找。\n小红看见一只小猫。\n小红：那是大毛吗？\n李明：不是，那不是大毛。\n李明：大毛是白的，大一点儿。\n小红：我们去商店问问吧。\n李明：好。\n大毛在商店吗？",
-    "english_content": "At school, Li Ming looked at his classmates.\nLi Ming: Did you see Da Mao?\nA classmate: No.\nXiao Hong came.\nXiao Hong: Li Ming, what's wrong?\nLi Ming: Da Mao is missing.\nXiao Hong: I'll help you look too.\nClass ended.\nThey looked outside the school.\nXiao Hong saw a small cat.\nXiao Hong: Is that Da Mao?\nLi Ming: No, that's not Da Mao.\nLi Ming: Da Mao is white, and a bit bigger.\nXiao Hong: Let's go ask at the shop.\nLi Ming: Okay.\nIs Da Mao at the shop?"
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
+    "title": "2. 和朋友玩",
+    "english_summary": "Xiao Ming and Xiao Hong are already outside. They build a cat out of snow, laugh, and play for an hour until Li Ming starts to feel cold.",
+    "content": "小明和小红也在外边。\n小明：李明，你来了！\n小红：我们一起玩吧。\n他们玩雪。\n小红：看，这是一只猫！\n她用雪做了一只猫。\n李明：真好看！\n小明：我也做一个。\n他们都很高兴。\n天气很冷，可是他们不冷。\n玩了一个小时。\n李明：我有点儿冷了。",
+    "english_content": "Xiao Ming and Xiao Hong were outside too.\nXiao Ming: Li Ming, you came!\nXiao Hong: Let's play together.\nThey played in the snow.\nXiao Hong: Look, this is a cat!\nShe made a cat out of snow.\nLi Ming: So pretty!\nXiao Ming: I'll make one too.\nThey were all very happy.\nThe weather was cold, but they were not cold.\nThey played for an hour.\nLi Ming: I'm a little cold now."
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
-    "title": "3. 商店",
-    "english_summary": "The shopkeeper saw a white cat that morning and points them onward. They follow, but Da Mao isn't there — and then it starts to rain.",
-    "content": "他们到商店了。\n商店里有一个先生。\n李明：请问，您看见一只白猫了吗？\n先生：白猫？\n先生：今天早上，我看见一只白猫。\n李明：真的吗？在哪儿？\n先生：在商店外边。\n先生：它去那边了。\n小红：谢谢您！\n他们去那边找。\n可是，那儿没有大毛。\n小明：大毛，你在哪儿？\n天气不好了。\n下雨了。\n李明：大毛冷不冷？\n他们还找大毛。",
-    "english_content": "They arrived at the shop.\nThere was a man in the shop.\nLi Ming: Excuse me, did you see a white cat?\nMan: A white cat?\nMan: This morning, I saw a white cat.\nLi Ming: Really? Where?\nMan: Outside the shop.\nMan: It went over there.\nXiao Hong: Thank you!\nThey went to look over there.\nBut Da Mao was not there.\nXiao Ming: Da Mao, where are you?\nThe weather turned bad.\nIt started to rain.\nLi Ming: Is Da Mao cold?\nThey kept looking for Da Mao."
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
+    "title": "3. 回家",
+    "english_summary": "The children head home. Mom warms Li Ming with hot tea while Da Mao naps on the chair, and Li Ming settles in to rest.",
+    "content": "李明的手很冷。\n小红：我们回家吧。\n小明：好。明天再玩。\n李明回家了。\n妈妈：你冷不冷？\n李明：有点儿冷。\n妈妈：喝一点儿热茶。\n李明喝了茶。\n茶很热，很好。\n李明：谢谢妈妈。\n大毛在椅子上睡觉。\n李明也想休息。",
+    "english_content": "Li Ming's hands were cold.\nXiao Hong: Let's go home.\nXiao Ming: Okay. Let's play again tomorrow.\nLi Ming went home.\nMom: Are you cold?\nLi Ming: A little cold.\nMom: Drink a little hot tea.\nLi Ming drank the tea.\nThe tea was hot and good.\nLi Ming: Thank you, Mom.\nDa Mao was sleeping on the chair.\nLi Ming wanted to rest too."
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
-    "title": "4. 下雨了",
-    "english_summary": "The rain is heavy and everyone is downhearted. Mom sends them home, promising Da Mao knows the way back. Li Ming waits, still worried.",
-    "content": "雨很大。\n他们都不高兴。\n小红：李明，你回家吧。\n小红：大毛也想回家。\n李明：好吧。\n他们回家了。\n李明的衣服都是水。\n妈妈：你们找大毛了吗？\n李明：找了，可是没有大毛。\n妈妈：不要着急。\n妈妈：大毛认识家。\n妈妈：它会回来的。\n李明喝了一点儿茶。\n可是他还想大毛。\n李明：大毛，你回家吧。\n大毛回家了吗？",
-    "english_content": "The rain was heavy.\nThey were all unhappy.\nXiao Hong: Li Ming, go home.\nXiao Hong: Da Mao wants to go home too.\nLi Ming: Okay.\nThey went home.\nLi Ming's clothes were all wet.\nMom: Did you find Da Mao?\nLi Ming: We looked, but no Da Mao.\nMom: Don't worry.\nMom: Da Mao knows home.\nMom: It will come back.\nLi Ming drank a little tea.\nBut he still thought about Da Mao.\nLi Ming: Da Mao, come home.\nDid Da Mao come home?"
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
+    "title": "4. 妈妈做饭",
+    "english_summary": "Mom cooks noodles and eggs. Dad comes home from the cold, and the whole family eats a warm dinner together, hoping the snow lasts.",
+    "content": "妈妈在做饭。\n李明：妈妈，今天吃什么？\n妈妈：吃面条儿。\n李明：太好了！我很喜欢。\n妈妈做了面条儿和鸡蛋。\n李明：真好吃！\n爸爸也回家了。\n爸爸：外边很冷，家里很热。\n大家一起吃饭。\n李明：今天很高兴。\n妈妈：明天还下雪吗？\n李明：我想还下。",
+    "english_content": "Mom was cooking.\nLi Ming: Mom, what are we eating today?\nMom: We're having noodles.\nLi Ming: Great! I like them a lot.\nMom made noodles and eggs.\nLi Ming: So delicious!\nDad came home too.\nDad: It's cold outside, warm at home.\nEveryone ate together.\nLi Ming: Today was happy.\nMom: Will it snow again tomorrow?\nLi Ming: I think it will."
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
-    "title": "5. 大毛回来了",
-    "english_summary": "That evening a sound leads Li Ming to the chair — Da Mao is back, with three tiny kittens. She was never lost; she was home being a mother. Everyone is overjoyed.",
-    "content": "晚上，李明听见了一个声音。\n李明：那是什么？\n他去房间看。\n大毛在椅子下！\n李明：大毛！你回来了！\n李明很高兴。\n可是，椅子下有一，二，三只小猫。\n李明：妈妈！你看！\n妈妈来了。\n妈妈：大毛有小猫了！\n小红和小明也来了。\n小红：大毛不是不见了。\n小红：大毛在家做妈妈呢。\n大家都很高兴。\n李明：大毛，这是你的家。\n大毛喜欢它的小猫。",
-    "english_content": "In the evening, Li Ming heard a sound.\nLi Ming: What is that?\nHe went to look in the room.\nDa Mao was under the chair!\nLi Ming: Da Mao! You're back!\nLi Ming was very happy.\nBut under the chair were one, two, three kittens.\nLi Ming: Mom! Look!\nMom came.\nMom: Da Mao has kittens!\nXiao Hong and Xiao Ming came too.\nXiao Hong: Da Mao wasn't missing.\nXiao Hong: Da Mao was at home being a mom.\nEveryone was very happy.\nLi Ming: Da Mao, this is your home.\nDa Mao loves her kittens."
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
+    "title": "5. 晚上",
+    "english_summary": "It's still snowing at night. Sleepy and content, Li Ming plans to watch the snow with Da Mao tomorrow and drifts off to sleep.",
+    "content": "晚上，外边还下雪。\n李明看外边的雪。\n李明：雪真漂亮。\n妈妈：明天你还去玩吗？\n李明：去！和小明、小红一起。\n李明有点儿想睡觉了。\n妈妈：早点儿睡觉吧。\n李明：好。\n大毛在李明的房间。\n李明：大毛，明天我们一起看雪。\n李明睡觉了。\n明天还是下雪天。",
+    "english_content": "In the evening, it was still snowing outside.\nLi Ming looked at the snow outside.\nLi Ming: The snow is really pretty.\nMom: Will you go play again tomorrow?\nLi Ming: Yes! Together with Xiao Ming and Xiao Hong.\nLi Ming was getting a little sleepy.\nMom: Go to sleep early.\nLi Ming: Okay.\nDa Mao was in Li Ming's room.\nLi Ming: Da Mao, tomorrow we'll watch the snow together.\nLi Ming went to sleep.\nTomorrow will be another snowy day."
   },
   {
-    "language": "japanese", "system": "jlpt", "level": 1, "tier": 1, "tier_min_words": 0,
-    "title": "1. はなの たんじょうび",
-    "english_summary": "Takashi learns it's Hana's birthday tomorrow. At the shop he can't decide between cheap sweets and an expensive book — and he barely has any money. Then Hana appears and invites him to her party.",
-    "content": "きょうは いい てんきです。\nたかしは がっこうへ いきます。\nきょうは はなの たんじょうびです。\nたかし：はなに なにを かいますか。\nたかしは みせへ いきました。\nみせには おかしが あります。\nほんも あります。\nたかし：うーん、どれが いいですか。\nおかしは やすいです。\nほんは たかいです。\nたかしの おかねは すくないです。\nたかし：むずかしいですね。\nその とき、はなが きました。\nはな：たかしさん、こんにちは！\nたかしは おかしを かくしました。\nはな：あした、パーティーを します。きて ください。\nたかしは 「はい」と いいました。\nたかしは どう しますか。",
-    "english_content": "Today the weather is nice.\nTakashi goes to school.\nToday is Hana's birthday.\nTakashi: What should I buy for Hana?\nTakashi went to a shop.\nThere are sweets in the shop.\nThere are books too.\nTakashi: Hmm, which one is good?\nThe sweets are cheap.\nThe book is expensive.\nTakashi has little money.\nTakashi: This is difficult.\nAt that moment, Hana came.\nHana: Takashi, hello!\nTakashi hid the sweets.\nHana: Tomorrow I'm having a party. Please come.\nTakashi said, \"Yes.\"\nWhat will Takashi do?"
+    "language": "japanese",
+    "system": "jlpt",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
+    "title": "1. うみへ いきます",
+    "english_summary": "On a sunny summer day, Takashi and Hana decide to go to the sea by train. Hana packs a boxed lunch, Mother adds a little extra, and they set off for the station.",
+    "content": "なつです。てんきは はれです。\nたかし：きょう、うみへ いきませんか。\nはな：いいですね！ いきましょう。\nたかし：でんしゃで いきます。\nはな：おべんとうを つくります。\nおかあさん：これも たべて ください。\nはな：ありがとうございます。\nたかし：えきは あそこです。\nふたりは えきへ あるきます。\nきょうは たのしい ひです。",
+    "english_content": "It's summer. The weather is sunny.\nTakashi: Shall we go to the sea today?\nHana: Nice! Let's go.\nTakashi: We'll go by train.\nHana: I'll make a boxed lunch.\nMother: Take this and eat it too.\nHana: Thank you very much.\nTakashi: The station is over there.\nThe two walk to the station.\nToday is a fun day."
   },
   {
-    "language": "japanese", "system": "jlpt", "level": 1, "tier": 1, "tier_min_words": 0,
-    "title": "2. おかあさんに ききます",
-    "english_summary": "At home, Takashi tells his mother his money problem. She says a present he makes himself is the best kind — and reminds him Hana loves songs and pictures. An idea begins to form.",
-    "content": "たかしは うちへ かえりました。\nたかし：おかあさん、ちょっと いいですか。\nおかあさん：なんですか。\nたかし：あした、はなの たんじょうびです。\nたかし：でも、おかねが すくないです。\nおかあさん：そうですか。\nおかあさん：プレゼントは たかい ものが いいですか。\nたかし：いいえ…\nおかあさん：たかしが つくった ものは、いちばん いいですよ。\nたかし：ぼくが つくった もの？\nおかあさん：はなさんは なにが すきですか。\nたかし：はなさんは うたと えが すきです。\nおかあさん：じゃあ、わかりますね。\nたかしは すこし わかりました。\nたかし：ありがとう、おかあさん！\nたかしは なにを つくりますか。",
-    "english_content": "Takashi returned home.\nTakashi: Mom, do you have a moment?\nMom: What is it?\nTakashi: Tomorrow is Hana's birthday.\nTakashi: But I have little money.\nMom: I see.\nMom: Does a present have to be an expensive thing?\nTakashi: No...\nMom: Something Takashi makes is the best.\nTakashi: Something I make?\nMom: What does Hana like?\nTakashi: Hana likes songs and pictures.\nMom: Then, you understand, right?\nTakashi understood a little.\nTakashi: Thank you, Mom!\nWhat will Takashi make?"
+    "language": "japanese",
+    "system": "jlpt",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
+    "title": "2. えきで",
+    "english_summary": "At the station Takashi buys the tickets. They board the train, and through the window the blue sea comes into view.",
+    "content": "えきに きました。\nたかし：きっぷを かいます。\nはな：いくらですか。\nたかし：ひとり ごひゃくえんです。\nでんしゃが きました。\nふたりは でんしゃに のりました。\nまどから うみを みます。\nはな：わあ、うみだ！\nたかし：きれいですね。\nうみは ちかいです。",
+    "english_content": "They came to the station.\nTakashi: I'll buy tickets.\nHana: How much is it?\nTakashi: Five hundred yen each.\nThe train came.\nThe two got on the train.\nFrom the window they see the sea.\nHana: Wow, the sea!\nTakashi: It's beautiful.\nThe sea is close."
   },
   {
-    "language": "japanese", "system": "jlpt", "level": 1, "tier": 1, "tier_min_words": 0,
-    "title": "3. おじいさんの はなし",
-    "english_summary": "The next morning Takashi meets old Ojii-san on the road. Talking about the day he and Hana went to the sea, Ojii-san suggests he paint that — and reminds him his feelings matter most.",
-    "content": "つぎの あさ、たかしは そとへ でました。\nおじいさんは みちに いました。\nたかし：おじいさん、おはようございます。\nおじいさん：たかし、はやいですね。\nたかし：きょうは はなの たんじょうびです。\nたかし：え を かきます。でも、むずかしいです。\nおじいさん：なにを かきますか。\nたかし：うーん、わかりません。\nおじいさん：はなさんと なにを しましたか。\nたかし：うみへ いきました。たのしかったです。\nおじいさん：じゃあ、うみの え は どうですか。\nたかし：あ！ いいですね！\nおじいさん：たかしの きもちが いちばん たいせつですよ。\nたかし：ありがとうございます！\nたかしは うちへ かえりました。\nたかしは え を かきます。",
-    "english_content": "The next morning, Takashi went outside.\nOjii-san was on the road.\nTakashi: Grandpa, good morning.\nGrandpa: Takashi, you're early.\nTakashi: Today is Hana's birthday.\nTakashi: I'm drawing a picture. But it's difficult.\nGrandpa: What will you draw?\nTakashi: Hmm, I don't know.\nGrandpa: What did you do with Hana?\nTakashi: We went to the sea. It was fun.\nGrandpa: Then, how about a picture of the sea?\nTakashi: Ah! That's good!\nGrandpa: Takashi's feelings are the most important.\nTakashi: Thank you very much!\nTakashi returned home.\nTakashi draws a picture."
+    "language": "japanese",
+    "system": "jlpt",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
+    "title": "3. うみで",
+    "english_summary": "They reach the beautiful blue sea, eat their lunches at noon, and build sandcastles together. A day at the sea is a good day.",
+    "content": "うみに きました。\nうみは あおいです。とても きれいです。\nはな：さかなが いますか。\nたかし：います。ほら、みて！\nおひるです。おべんとうを たべます。\nはな：おいしい！\nたかし：すなで しろを つくります。\nはな：わたしも つくります。\nふたりは とても たのしいです。\nうみの ひは いい ひです。",
+    "english_content": "They came to the sea.\nThe sea is blue. It's very beautiful.\nHana: Are there fish?\nTakashi: Yes. Look, look!\nIt's noon. They eat their boxed lunches.\nHana: Delicious!\nTakashi: I'll make a castle in the sand.\nHana: I'll make one too.\nThe two are very happy.\nA day at the sea is a good day."
   },
   {
-    "language": "japanese", "system": "jlpt", "level": 1, "tier": 1, "tier_min_words": 0,
-    "title": "4. え を かきます",
-    "english_summary": "Takashi paints the blue sea and writes a small birthday letter. He works late, worrying whether Hana will like it, then packs the picture into his bag for tomorrow.",
-    "content": "たかしは へやで え を かきます。\nそれは うみの え です。\nうみは あおいです。\nたかしは あかい いろも つかいます。\nたかし：うーん、むずかしいです。\nたかしは え を みます。\nたかし：これは いい え ですか。\nそれから、たかしは ちいさい てがみも かきます。\nてがみに 「たんじょうび、おめでとう」と かきました。\nおかあさん：たかし、もう よるですよ。\nたかし：はい、もう すこしです。\nたかしは え と てがみを かばんに いれました。\nたかし：あした、はなさんは たのしいですか。\nたかしは やすみました。\nあした、パーティーです。",
-    "english_content": "Takashi draws a picture in his room.\nIt is a picture of the sea.\nThe sea is blue.\nTakashi uses red color too.\nTakashi: Hmm, this is difficult.\nTakashi looks at the picture.\nTakashi: Is this a good picture?\nThen, Takashi also writes a small letter.\nOn the letter he wrote, \"Happy birthday.\"\nMom: Takashi, it's night already.\nTakashi: Yes, just a little more.\nTakashi put the picture and letter in his bag.\nTakashi: Tomorrow, will Hana be happy?\nTakashi rested.\nTomorrow is the party."
+    "language": "japanese",
+    "system": "jlpt",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
+    "title": "4. ちいさい かい",
+    "english_summary": "In the sand Takashi finds a small white shell and gives it to Hana, who calls it a treasure. They take a photo of their day together.",
+    "content": "たかしは すなの なかを みます。\nちいさい しろい かいが あります。\nたかし：はなさん、これを どうぞ。\nはな：わあ、きれい！ ありがとう。\nはな：これは たからものです。\nふたりは しゃしんを とりました。\nたかし：いい ひですね。\nはな：はい、とても たのしいです。",
+    "english_content": "Takashi looks in the sand.\nThere is a small white shell.\nTakashi: Hana, here you go.\nHana: Wow, beautiful! Thank you.\nHana: This is a treasure.\nThe two took a photo.\nTakashi: It's a good day.\nHana: Yes, very fun."
   },
   {
-    "language": "japanese", "system": "jlpt", "level": 1, "tier": 1, "tier_min_words": 0,
-    "title": "5. パーティー",
-    "english_summary": "At the sunny Sunday party, Takashi gives Hana the sea painting and letter. She calls it the best present of all. Everyone listens to her song, and it turns into a wonderful birthday.",
-    "content": "にちようびです。てんきは はれです。\nたかしは はなの うちへ いきます。\nうちには ともだちが みんな います。\nはな：たかしさん、こんにちは！ ありがとう！\nみんなで おかしを たべます。\nおちゃも のみます。\nたかし：はなさん、これを どうぞ。\nたかしは え と てがみを はなに あげます。\nはな：わあ！ うみの え ですね！\nはな：とても きれいです！\nはな：これは いちばん いい プレゼントです。\nたかし：たんじょうび、おめでとう、はなさん。\nはなは とても たのしいです。\nたかしも たのしいです。\nいい たんじょうびでした。",
-    "english_content": "It's Sunday. The weather is sunny.\nTakashi goes to Hana's house.\nAll their friends are at the house.\nHana: Takashi, hello! Thank you!\nEveryone eats sweets.\nThey drink tea too.\nTakashi: Hana, here you go.\nTakashi gives the picture and letter to Hana.\nHana: Wow! It's a picture of the sea!\nHana: It's very beautiful!\nHana: This is the best present.\nTakashi: Happy birthday, Hana.\nHana is very happy.\nTakashi is happy too.\nIt was a good birthday."
+    "language": "japanese",
+    "system": "jlpt",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
+    "title": "5. かえります",
+    "english_summary": "As evening falls they take the train home, promising to return. Mother welcomes them back — it was a good summer day.",
+    "content": "よるに なりました。\nたかし：もう かえりましょう。\nふたりは でんしゃに のります。\nはな：きょうは とても たのしかったです。\nたかし：また うみへ きましょう。\nはな：はい！ なつは いいですね。\nうちに かえりました。\nおかあさん：おかえり。たのしかった？\nはな：はい！ とても！\nいい なつの ひでした。",
+    "english_content": "It became evening.\nTakashi: Let's go home now.\nThe two get on the train.\nHana: Today was very fun.\nTakashi: Let's come to the sea again.\nHana: Yes! Summer is nice.\nThey returned home.\nMother: Welcome back. Was it fun?\nHana: Yes! Very!\nIt was a good summer day."
+  },
+  {
+    "language": "russian",
+    "system": "russian",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
+    "title": "1. Где кошка?",
+    "english_summary": "Ivan can't find his little cat one morning. It was on the table, but now it's gone. He asks Mom, then sets out to find it.",
+    "content": "Утро. Иван дома.\nИван: Где кошка?\nИван не видит кошку.\nИван: Мама, ты видишь кошку?\nМама: Нет. Кошки нет.\nИван: Кошка была на столе.\nМама: Сейчас на столе её нет.\nИван думает: где кошка?\nКошка маленькая и красивая.\nИван хочет найти кошку.",
+    "english_content": "Morning. Ivan is home.\nIvan: Where is the cat?\nIvan doesn't see the cat.\nIvan: Mom, do you see the cat?\nMom: No. The cat isn't here.\nIvan: The cat was on the table.\nMom: It's not on the table now.\nIvan thinks: where is the cat?\nThe cat is small and beautiful.\nIvan wants to find the cat."
+  },
+  {
+    "language": "russian",
+    "system": "russian",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
+    "title": "2. Аня помогает",
+    "english_summary": "Ivan's friend Anya arrives and offers to help. Together they look under the table and the chair, but the cat isn't there.",
+    "content": "Аня — друг Ивана.\nАня: Привет, Иван! Что делаешь?\nИван: Я не вижу кошку.\nАня: Я тоже хочу помогать.\nОни смотрят в доме.\nАня: Кошка под столом?\nИван: Нет, там кошки нет.\nАня: А под стулом?\nИван: Тоже нет.\nГде кошка?",
+    "english_content": "Anya is Ivan's friend.\nAnya: Hi, Ivan! What are you doing?\nIvan: I don't see the cat.\nAnya: I want to help too.\nThey look around the house.\nAnya: Is the cat under the table?\nIvan: No, the cat isn't there.\nAnya: And under the chair?\nIvan: Not there either.\nWhere is the cat?"
+  },
+  {
+    "language": "russian",
+    "system": "russian",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
+    "title": "3. У окна",
+    "english_summary": "Anya remembers the cat loves the window. They go to the window and find the little cat sleeping in the warm sunlight.",
+    "content": "Иван и Аня смотрят в доме.\nНа столе книга и телефон.\nАня: Кошка любит окно.\nИван: Да! Кошка часто у окна.\nОни идут к окну.\nАня: Смотри, Иван!\nУ окна маленькая кошка.\nИван: Кошка! Ты здесь!\nИван очень рад.\nКошка спит у тёплого окна.",
+    "english_content": "Ivan and Anya look around the house.\nOn the table are a book and a phone.\nAnya: The cat loves the window.\nIvan: Yes! The cat is often by the window.\nThey go to the window.\nAnya: Look, Ivan!\nBy the window is the little cat.\nIvan: Cat! You're here!\nIvan is very happy.\nThe cat sleeps by the warm window."
+  },
+  {
+    "language": "russian",
+    "system": "russian",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
+    "title": "4. Мама и чай",
+    "english_summary": "Ivan tells Mom the cat is safe. She makes warm tea and bread for the children, and Ivan gives the cat some milk.",
+    "content": "Иван: Мама! Кошка у окна!\nМама: Хорошо! Это хорошо.\nМама: Вы хотите чай?\nАня: Да, спасибо.\nМама даёт чай и хлеб.\nЧай тёплый и вкусный.\nИван: Спасибо, мама.\nКошка тоже хочет молоко.\nИван даёт кошке молоко.\nКошка пьёт молоко.",
+    "english_content": "Ivan: Mom! The cat is by the window!\nMom: Good! That's good.\nMom: Do you want tea?\nAnya: Yes, thank you.\nMom gives tea and bread.\nThe tea is warm and tasty.\nIvan: Thank you, Mom.\nThe cat wants milk too.\nIvan gives the cat milk.\nThe cat drinks the milk."
+  },
+  {
+    "language": "russian",
+    "system": "russian",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
+    "title": "5. Вечер",
+    "english_summary": "In the evening the cat sleeps on the chair. Anya heads home, and Ivan, content that the cat is safe, settles in for the night.",
+    "content": "Вечер. Иван и Аня дома.\nКошка спит на стуле.\nАня: Кошка очень красивая.\nИван: Да. Я люблю кошку.\nАня: Мне пора домой. Пока!\nИван: Пока, Аня! Спасибо.\nИван смотрит на кошку.\nИван: Кошка, ты дома. Хорошо.\nСегодня хороший день.\nИван и кошка спят.",
+    "english_content": "Evening. Ivan and Anya are home.\nThe cat sleeps on the chair.\nAnya: The cat is very beautiful.\nIvan: Yes. I love the cat.\nAnya: It's time for me to go home. Bye!\nIvan: Bye, Anya! Thank you.\nIvan looks at the cat.\nIvan: Cat, you're home. Good.\nToday is a good day.\nIvan and the cat sleep."
   }
 ]
