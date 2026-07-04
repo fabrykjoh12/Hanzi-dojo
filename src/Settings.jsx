@@ -187,6 +187,7 @@ export default function Settings({ session, profile, onUpdate }) {
                   value={localHour}
                   onChange={(e) => changeReminderHour(Number(e.target.value))}
                   disabled={reminderBusy}
+                  aria-label="Daily reminder time"
                   style={{
                     height: '36px', padding: '0 10px', borderRadius: '10px',
                     border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text)',

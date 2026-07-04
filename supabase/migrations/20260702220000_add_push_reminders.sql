@@ -30,6 +30,16 @@ on public.push_subscriptions
 for delete to authenticated
 using ((select auth.uid()) = user_id);
 
+-- src/push.js upserts on the unique `endpoint`; PostgREST turns that into
+-- INSERT ... ON CONFLICT DO UPDATE, whose UPDATE branch needs its own policy
+-- (re-enabling reminders reuses the browser's existing subscription, so the
+-- write hits the conflict path).
+create policy "users can update own push subscriptions"
+on public.push_subscriptions
+for update to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
 -- reminder_hour_utc is a plain 0-23 hour, not a full timezone — the Settings
 -- picker converts the user's local hour choice to UTC at save time, so this
 -- can drift by an hour across a DST change. Acceptable for a v1.

@@ -63,18 +63,28 @@ function splitSpeaker(line) {
 }
 
 async function synthesize(text) {
-  const response = await fetch(
-    'https://texttospeech.googleapis.com/v1beta1/text:synthesize?key=' + GOOGLE_TTS_KEY,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        input: { text },
-        voice: { languageCode: voice.languageCode, name: voice.name },
-        audioConfig: { audioEncoding: 'MP3' },
-      }),
-    }
-  )
+  // Per-request timeout so a hung TTS call fails fast instead of stalling the
+  // whole dispatch until the 180-minute job-level timeout.
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 15000)
+  let response
+  try {
+    response = await fetch(
+      'https://texttospeech.googleapis.com/v1beta1/text:synthesize?key=' + GOOGLE_TTS_KEY,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          input: { text },
+          voice: { languageCode: voice.languageCode, name: voice.name },
+          audioConfig: { audioEncoding: 'MP3' },
+        }),
+        signal: controller.signal,
+      }
+    )
+  } finally {
+    clearTimeout(timer)
+  }
   const data = await response.json()
   if (data.error) throw new Error(`TTS error: ${data.error.message}`)
   if (!data.audioContent) throw new Error('No audio returned')

@@ -141,7 +141,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     // the panel shows an honest empty state rather than a misleading 0%.
     const { data: reviewLogs } = await supabase
       .from('review_logs')
-      .select('grade, created_at, vocabulary!inner(language, system)')
+      .select('grade, reviewed_at, vocabulary!inner(language, system)')
       .eq('user_id', session.user.id)
       .eq('vocabulary.language', track.language)
       .eq('vocabulary.system', track.system)
@@ -149,7 +149,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     let correct = 0
     ;(reviewLogs || []).forEach(r => {
       if (r.grade > 0) correct += 1
-      const d = (r.created_at || '').slice(0, 10)
+      const d = (r.reviewed_at || '').slice(0, 10)
       if (d) days[d] = (days[d] || 0) + 1
     })
     setReviewStats({ total: (reviewLogs || []).length, correct, days })

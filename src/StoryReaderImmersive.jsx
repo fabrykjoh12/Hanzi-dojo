@@ -247,7 +247,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   }, [])
 
   useEffect(() => () => {
-    try { window.speechSynthesis.cancel() } catch (e) { /* noop */ }
+    try { window.speechSynthesis.cancel() } catch { /* noop */ }
     if (storyAudioRef.current) storyAudioRef.current.pause()
   }, [])
 

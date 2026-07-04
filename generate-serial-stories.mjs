@@ -535,6 +535,20 @@ async function main() {
   if (tiersToRun.length === 0) { console.error('No tier ' + onlyTier + ' in this config.'); process.exit(1) }
   console.log('=== Serial stories: ' + language + '/' + system + '/level ' + level + (onlyTier ? ' — TIER ' + onlyTier + ' only' : '') + ' ===')
 
+  // Allowed vocabulary = the WHOLE level, for every tier. Capping the pool at
+  // the tier boundary (first 100 words for tier 1) starved the writer — drafts
+  // came in at 60-64% in-pool, and forcing them up to 95% flattened the prose
+  // into stiff, low-scoring text. It's all the same level and every word is
+  // tappable, so a generous pool lets the model write naturally and hit
+  // coverage without mangling. Focus words stay the tier's own slice.
+  //
+  // Fetched BEFORE the --replace delete on purpose: if the vocab query fails,
+  // we abort without having deleted anything, so a transient error can't leave
+  // the level empty.
+  const fullCap = cfg.tiers[cfg.tiers.length - 1].cap
+  const fullPool = await fetchVocab(fullCap)
+  if (fullPool.length === 0) { console.error('No vocabulary found — refusing to delete/regenerate.'); process.exit(1) }
+
   if (doReplace) {
     let del = supabase.from('stories').delete()
       .eq('language', language).eq('system', system).eq('level', level)
@@ -552,15 +566,6 @@ async function main() {
 
   let published = 0, held = 0
 
-  // Allowed vocabulary = the WHOLE level, for every tier. Capping the pool at
-  // the tier boundary (first 100 words for tier 1) starved the writer — drafts
-  // came in at 60-64% in-pool, and forcing them up to 95% flattened the prose
-  // into stiff, low-scoring text. It's all the same level and every word is
-  // tappable, so a generous pool lets the model write naturally and hit
-  // coverage without mangling. Focus words stay the tier's own slice.
-  const fullCap = cfg.tiers[cfg.tiers.length - 1].cap
-  const fullPool = await fetchVocab(fullCap)
-
   for (const tier of tiersToRun) {
     console.log('\n=== Tier ' + tier.tier + ' — season of ' + tier.chapters + ' chapters ===')
     const pool = fullPool
@@ -575,9 +580,18 @@ async function main() {
     }
     console.log('Pool: ' + pool.length + ' words · new this tier: ' + newWords.length + ' · ~' + chunkSize + ' focus words/chapter')
 
-    process.stdout.write('Planning season... ')
-    const plan = await planSeason(tier, focusChunks)
-    console.log('"' + plan.season_title_en + '"')
+    // Isolate the season plan: if it fails after its retries, skip this tier
+    // rather than crashing the whole run (which, mid-level, would leave earlier
+    // tiers' fresh stories intact but abandon the rest).
+    let plan
+    try {
+      process.stdout.write('Planning season... ')
+      plan = await planSeason(tier, focusChunks)
+      console.log('"' + plan.season_title_en + '"')
+    } catch (err) {
+      console.log('Tier ' + tier.tier + ' planning FAILED, skipping: ' + (err.message || err))
+      continue
+    }
 
     let prevRecap = ''
     for (let i = 0; i < tier.chapters; i += 1) {

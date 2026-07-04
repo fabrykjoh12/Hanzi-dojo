@@ -109,9 +109,12 @@ export function playAudioEl(el, url, onFail) {
     })
   }
 
-  // This element already has this exact clip loaded (a cached fallback blob,
-  // or a direct load that didn't error): replay it in place, synchronously.
-  if (el.__hdBlobFor === url || (el.__hdSrcFor === url && !el.error)) {
+  // This element already has this exact clip fully loaded (a cached fallback
+  // blob, or a direct load that reached HAVE_CURRENT_DATA without erroring):
+  // replay it in place, synchronously. readyState >= 2 guards against a rapid
+  // second tap taking the fast path while the first direct load is still in
+  // flight — in that case we fall through and (re)load, keeping the fallback.
+  if (el.__hdBlobFor === url || (el.__hdSrcFor === url && !el.error && el.readyState >= 2)) {
     playCurrent()
     return
   }
