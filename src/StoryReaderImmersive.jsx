@@ -48,6 +48,20 @@ function hasKanji(text) {
   return false
 }
 function isKana(c) { return c >= 0x3040 && c <= 0x30FF }
+// Is a token an actual word (letters/CJK/kana/Cyrillic/digits) vs. pure
+// punctuation or spacing? Word-like tokens are all tappable, even when they
+// aren't in the learner's vocabulary list (conjugated verbs, grammar, particles)
+// — you can still hear them and read the sentence translation.
+function isWordChar(c) {
+  return (c >= 0x30 && c <= 0x39) || (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A)
+    || (c >= 0x3040 && c <= 0x30FF) || (c >= 0x3400 && c <= 0x9FFF)
+    || (c >= 0x0400 && c <= 0x04FF) || (c >= 0xFF66 && c <= 0xFF9D)
+}
+function isWordlike(text) {
+  const v = text || ''
+  for (let i = 0; i < v.length; i += 1) if (isWordChar(v.charCodeAt(i))) return true
+  return false
+}
 function furiganaParts(word, reading) {
   const w = word || ''
   const r = reading || ''
@@ -156,7 +170,9 @@ function segmentLine(text, vocabMap, segmenter, names, particles) {
 function Token({ token, isSelected, showReading, isJapanese, adaptive, status, accent, onSelect }) {
   const [hover, setHover] = useState(false)
   const reading = token.vocab ? token.vocab.reading : (token.name ? token.name.reading : null)
-  const clickable = Boolean(token.vocab || token.name)
+  // Vocabulary and names carry data; plain word-like tokens are still tappable
+  // (hear them / see the sentence). Only punctuation and whitespace are inert.
+  const clickable = Boolean(token.vocab || token.name) || isWordlike(token.text)
   if (!clickable) {
     if (showReading) return <ruby>{token.text}<rt>&nbsp;</rt></ruby>
     return <span>{token.text}</span>
@@ -186,6 +202,10 @@ function Token({ token, isSelected, showReading, isJapanese, adaptive, status, a
     } else {
       body = <ruby>{token.text}<rt style={{ fontSize: '0.42em', color: GOLD, fontWeight: 500 }}>{reading}</rt></ruby>
     }
+  } else if (showReading) {
+    // Clickable word with no reading (grammar / out-of-list): keep an empty
+    // furigana row so its baseline lines up with words that do show a reading.
+    body = <ruby>{token.text}<rt>&nbsp;</rt></ruby>
   }
   return (
     <span
@@ -371,6 +391,25 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     playAudioEl(wordAudioRef.current, url, () => { /* ignore */ })
   }
 
+  // Pronounce an arbitrary word (grammar / out-of-list) that has no recorded
+  // vocabulary audio, via the browser's speech synthesis. Cancels any in-flight
+  // read-along so the single word is heard clearly.
+  const speakWord = (text) => {
+    if (!text) return
+    try {
+      const synth = window.speechSynthesis
+      if (!synth) return
+      runRef.current += 1
+      synth.cancel()
+      if (storyAudioRef.current) storyAudioRef.current.pause()
+      setSpeaking(false); setSpeakingLine(-1); speakingLineRef.current = -1
+      const u = new SpeechSynthesisUtterance(text)
+      u.lang = ttsLang
+      u.rate = 0.9
+      synth.speak(u)
+    } catch { /* not available */ }
+  }
+
   // Read the story aloud line-by-line so the sentence currently being spoken can
   // be highlighted (read-along). Per-word boundary events are unreliable for
   // CJK, so line granularity is the robust choice. `runRef` tags each playback
@@ -448,11 +487,13 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
 
   const selectToken = (lineIndex, tokenKey, token) => {
     setShowSentence(false)
-    setSelected({ lineIndex, tokenKey, vocab: token.vocab || null, name: token.name || null })
+    setSelected({ lineIndex, tokenKey, vocab: token.vocab || null, name: token.name || null, text: token.text })
   }
 
   const sel = selected
   const isName = Boolean(sel && sel.name)
+  const isPlain = Boolean(sel && !sel.vocab && !sel.name)   // tapped a grammar / out-of-list word
+  const selWord = sel ? (isName ? sel.name.word : (sel.vocab ? sel.vocab.word : sel.text)) : ''
   const selStatus = sel && sel.vocab ? wordStatus(sel.vocab.id, userCards) : 'not_started'
   const selInDeck = sel && sel.vocab ? Boolean(userCards[sel.vocab.id]) : false
   const bottomOffset = isMobile ? 'calc(62px + env(safe-area-inset-bottom))' : '0px'
@@ -513,53 +554,70 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             )}
           </div>
         )}
-        {parsed.map(({ speaker, tokens }, li) => (
-          <div key={li} style={{ marginBottom: speaker ? '22px' : '18px' }}>
-            {speaker && (
-              <div
-                onClick={names[speaker] ? () => selectToken(li, 'sp', { name: { word: speaker, reading: names[speaker] } }) : undefined}
-                style={{
-                  fontSize: '13px', fontWeight: 700, letterSpacing: '0.4px',
-                  color: speakerColors[speaker], marginBottom: '5px',
-                  fontFamily: font, display: 'inline-block',
-                  cursor: names[speaker] ? 'pointer' : 'default',
-                }}
-              >
-                {speaker}
+        {parsed.map(({ speaker, tokens }, li) => {
+          // Group consecutive lines from the same speaker: label only the first
+          // of a run, and keep same-speaker lines tight. Bigger breathing room
+          // opens up only when the speaker changes (or narration ↔ dialogue).
+          const prevSpeaker = li > 0 ? parsed[li - 1].speaker : undefined
+          const speakerChanged = speaker !== prevSpeaker
+          const showLabel = Boolean(speaker) && speakerChanged
+          const topGap = li === 0 ? 0 : (speakerChanged ? (isMobile ? '18px' : '24px') : (isMobile ? '7px' : '10px'))
+          const rule = speaker ? speakerColors[speaker] : null
+          return (
+            <div key={li} style={{ marginTop: topGap }}>
+              {showLabel && (
+                <div
+                  onClick={names[speaker] ? () => selectToken(li, 'sp', { name: { word: speaker, reading: names[speaker] } }) : undefined}
+                  style={{
+                    fontSize: '12.5px', fontWeight: 800, letterSpacing: '0.4px',
+                    color: speakerColors[speaker], marginBottom: '4px',
+                    fontFamily: font, display: 'inline-block',
+                    paddingLeft: isMobile ? '12px' : '16px',
+                    cursor: names[speaker] ? 'pointer' : 'default',
+                  }}
+                >
+                  {speaker}
+                </div>
+              )}
+              <div style={{
+                // Dialogue gets a subtle speaker-colored left rule + indent so
+                // it reads distinctly from narration without a label on every line.
+                borderLeft: rule ? '3px solid ' + rule + '66' : 'none',
+                paddingLeft: rule ? (isMobile ? '11px' : '15px') : (isMobile ? '2px' : '4px'),
+              }}>
+                <p style={{
+                  margin: 0,
+                  fontSize: isMobile ? '19px' : '22px', lineHeight: showReading ? 1.95 : 1.7,
+                  fontFamily: font, color: TEXT, fontWeight: 400,
+                  // Read-along highlight: the line the TTS is currently speaking.
+                  background: li === speakingLine ? HILITE : 'transparent',
+                  borderRadius: '8px',
+                  boxShadow: li === speakingLine ? '0 0 0 6px ' + HILITE : 'none',
+                  transition: 'background 200ms ease, box-shadow 200ms ease',
+                }}>
+                  {tokens.map((tk, ti) => (
+                    <Token
+                      key={ti}
+                      token={tk}
+                      showReading={showReading}
+                      isJapanese={isJapanese}
+                      adaptive={showKnown}
+                      status={tk.vocab ? wordStatus(tk.vocab.id, userCards) : 'not_started'}
+                      accent={accent}
+                      isSelected={Boolean(sel) && sel.lineIndex === li && sel.tokenKey === ti}
+                      onSelect={() => selectToken(li, ti, tk)}
+                    />
+                  ))}
+                </p>
+                {showEnglish && englishLines[li] && (
+                  <p style={{ margin: '5px 0 0', fontSize: isMobile ? '13.5px' : '15px', lineHeight: 1.5, color: MUTED, fontStyle: 'italic' }}>
+                    {speaker ? splitSpeaker(englishLines[li]).text : englishLines[li]}
+                  </p>
+                )}
               </div>
-            )}
-            <p style={{
-              margin: 0,
-              fontSize: isMobile ? '20px' : '25px', lineHeight: showReading ? 2.05 : 1.75,
-              fontFamily: font, color: TEXT, fontWeight: 400,
-              paddingLeft: isMobile ? '2px' : '4px',
-              // Read-along highlight: the line the TTS is currently speaking.
-              background: li === speakingLine ? HILITE : 'transparent',
-              borderRadius: '8px',
-              boxShadow: li === speakingLine ? '0 0 0 6px ' + HILITE : 'none',
-              transition: 'background 200ms ease, box-shadow 200ms ease',
-            }}>
-              {tokens.map((tk, ti) => (
-                <Token
-                  key={ti}
-                  token={tk}
-                  showReading={showReading}
-                  isJapanese={isJapanese}
-                  adaptive={showKnown}
-                  status={tk.vocab ? wordStatus(tk.vocab.id, userCards) : 'not_started'}
-                  accent={accent}
-                  isSelected={Boolean(sel) && sel.lineIndex === li && sel.tokenKey === ti}
-                  onSelect={() => selectToken(li, ti, tk)}
-                />
-              ))}
-            </p>
-            {showEnglish && englishLines[li] && (
-              <p style={{ margin: '6px 0 0', fontSize: isMobile ? '14px' : '15px', lineHeight: 1.55, color: MUTED, fontStyle: 'italic', paddingLeft: speaker ? (isMobile ? '2px' : '4px') : 0 }}>
-                {speaker ? splitSpeaker(englishLines[li]).text : englishLines[li]}
-              </p>
-            )}
-          </div>
-        ))}
+            </div>
+          )
+        })}
 
         {/* New-words recap */}
         {newWords.length > 0 && (
@@ -692,9 +750,9 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0, flex: 1, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '24px', fontWeight: 800, color: accent, fontFamily: font, lineHeight: 1.2, overflowWrap: 'anywhere' }}>
-                  {isName ? sel.name.word : sel.vocab.word}
+                  {selWord}
                 </span>
-                {!isName && (
+                {sel.vocab && (
                   <span style={{ width: '8px', height: '8px', borderRadius: '999px', background: STATUS_COLOR[selStatus], flexShrink: 0 }} />
                 )}
               </div>
@@ -707,20 +765,21 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                   display: 'inline-flex', alignItems: 'center', gap: '5px',
                 }}>
                   {isName && <UserRound size={12} strokeWidth={2.2} color={accent} />}
-                  {isName ? 'Name' : levelLabel}
+                  {isName ? 'Name' : (isPlain ? 'Word' : levelLabel)}
                 </span>
-                {!isName && (
+                {sel.vocab && (
                   <button onClick={() => !selInDeck && addToDeck(sel.vocab)} aria-label="Add to deck"
                     style={{ background: 'none', border: 'none', cursor: selInDeck ? 'default' : 'pointer', padding: '4px', display: 'flex' }}>
                     <Bookmark size={20} strokeWidth={2} color={selInDeck ? accent : MUTED} fill={selInDeck ? accent : 'none'} />
                   </button>
                 )}
-                {!isName && sel.vocab.audio_path && (
-                  <button onClick={() => playWord(sel.vocab.audio_path)} aria-label="Play audio"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex' }}>
-                    <Volume2 size={20} strokeWidth={2} color={MUTED} />
-                  </button>
-                )}
+                {/* Always pronounceable: recorded vocab audio when we have it, else speech synthesis. */}
+                <button
+                  onClick={() => (sel.vocab && sel.vocab.audio_path ? playWord(sel.vocab.audio_path) : speakWord(selWord))}
+                  aria-label="Play audio"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex' }}>
+                  <Volume2 size={20} strokeWidth={2} color={MUTED} />
+                </button>
                 <button onClick={() => setSelected(null)} aria-label="Close"
                   style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', color: MUTED, fontSize: '18px', lineHeight: 1 }}>
                   ✕
@@ -728,11 +787,17 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               </div>
             </div>
 
-            <div style={{ fontSize: '17px', color: GOLD, fontWeight: 600, marginTop: '6px' }}>
-              {isName ? sel.name.reading : sel.vocab.reading}
-            </div>
+            {!isPlain && (
+              <div style={{ fontSize: '17px', color: GOLD, fontWeight: 600, marginTop: '6px' }}>
+                {isName ? sel.name.reading : sel.vocab.reading}
+              </div>
+            )}
             <div style={{ fontSize: '15px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
-              {isName ? 'Proper noun — a character’s name.' : cleanMeaning(sel.vocab.meaning)}
+              {isName
+                ? 'Proper noun — a character’s name.'
+                : (isPlain
+                    ? 'Grammar or a word beyond this level’s list — tap the speaker to hear it, or open the sentence translation below.'
+                    : cleanMeaning(sel.vocab.meaning))}
             </div>
 
             {story.english_content && englishLines[sel.lineIndex] && (
