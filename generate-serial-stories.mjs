@@ -174,31 +174,12 @@ function extractText(response) {
   return { text: typeof text === 'string' ? text : '', finish: choice && choice.finish_reason }
 }
 
-// gemini keeps emitting raw control characters (newlines, tabs) INSIDE JSON
-// string values, which is invalid JSON and was the dominant cause of retries
-// (and 40-minute runs). Walk the text and escape any raw control char that
-// falls inside a string literal, so JSON.parse succeeds without a re-request.
-function repairJson(s) {
-  let out = '', inStr = false, esc = false
-  for (let i = 0; i < s.length; i += 1) {
-    const ch = s[i]
-    if (esc) { out += ch; esc = false; continue }
-    if (ch === '\\') { out += ch; esc = true; continue }
-    if (ch === '"') { inStr = !inStr; out += ch; continue }
-    if (inStr && ch === '\n') { out += '\\n'; continue }
-    if (inStr && ch === '\r') { out += '\\r'; continue }
-    if (inStr && ch === '\t') { out += '\\t'; continue }
-    out += ch
-  }
-  return out
-}
-
-function parseJsonLoose(text) {
-  const json = text.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-  try { return JSON.parse(json) } catch { return JSON.parse(repairJson(json)) }
-}
-
-async function callJson(prompt, maxTokens, attempt = 0) {
+// Plain-text call for ALL passes (story content, plan, critique, translation). JSON is the wrong container
+// for multi-line CJK prose — the model kept breaking it with raw newlines and
+// unescaped quotes, causing endless retries and multi-hour runs. Plain text
+// with a leading marker line can't have that failure mode. `check` validates
+// the parsed result; a falsy return retries (empty/garbled response).
+async function callText(prompt, maxTokens, check, attempt = 0) {
   const budget = attempt >= 3 ? maxTokens * 2 : maxTokens
   try {
     const response = await llm.chat.completions.create({
@@ -207,16 +188,37 @@ async function callJson(prompt, maxTokens, attempt = 0) {
     })
     const { text, finish } = extractText(response)
     if (!text.trim()) throw new Error('empty response (finish_reason=' + finish + ', budget=' + budget + ')')
-    return parseJsonLoose(text)
+    const parsed = check(text.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, ''))
+    if (!parsed) throw new Error('unparseable text response')
+    return parsed
   } catch (err) {
     if (attempt < 4) {
       const wait = Math.min(8 * Math.pow(2, attempt), 45)
       process.stdout.write('(retry ' + wait + 's: ' + (err.message || err).slice(0, 60) + ') ')
       await sleep(wait * 1000)
-      return callJson(prompt, maxTokens, attempt + 1)
+      return callText(prompt, maxTokens, check, attempt + 1)
     }
     throw err
   }
+}
+
+// Parse a chapter returned as: "TITLE: xxx" then one story line per line.
+function parseChapter(text) {
+  const raw = text.split('\n').map(l => l.trim()).filter(Boolean)
+  if (raw.length < 2) return null
+  let title = ''
+  const lines = []
+  for (const line of raw) {
+    const up = line.toUpperCase()
+    if (!title && (up.startsWith('TITLE:') || up.startsWith('TITLE：'))) {
+      const ci = line.indexOf(':') >= 0 ? line.indexOf(':') : line.indexOf('：')
+      title = line.slice(ci + 1).trim()
+      continue
+    }
+    lines.push(line)
+  }
+  if (lines.length < 3) return null
+  return { title: title || null, content: lines.join('\n') }
 }
 
 // ── Vocabulary ───────────────────────────────────────────────────────────────
@@ -358,15 +360,11 @@ function validateStory(content, pool, tier) {
 
 // ── Pipeline passes ──────────────────────────────────────────────────────────
 
-// Chapters come back as a `lines` ARRAY, not a single newline-embedded string:
-// gemini often emits raw newlines inside a JSON string value, which breaks
-// JSON.parse ("Unterminated string") and triggered dozens of slow retries.
-// An array of per-line strings sidesteps that entirely (the translate pass,
-// which always used this shape, never had the problem).
-function toContent(res) {
-  if (res && Array.isArray(res.lines)) return res.lines.map(l => String(l).trim()).filter(Boolean).join('\n')
-  return (res && res.content) || ''
-}
+// Every chapter pass emits plain text in this shape (never JSON — see callText).
+const CHAPTER_FORMAT =
+  'Output format — plain text, NOT JSON, no markdown, no quotes around lines:\n' +
+  'First line exactly: TITLE: <short chapter title, no chapter number>\n' +
+  'Then each story line on its OWN line — nothing else (no numbering, no blank lines).'
 
 function poolForPrompt(pool) {
   // Small pools go in whole. Big ones would drown the prompt, so only the most
@@ -391,9 +389,31 @@ async function planSeason(tier, focusChunks) {
     '- Every chapter ends on a small hook (a question, a discovery, a decision) except the last, which resolves warmly.\n' +
     '- Characters act like THEMSELVES (use the personality notes).\n' +
     '- Keep plots concrete and physical — things characters can see, do, eat, find. No abstractions.\n\n' +
-    'Return ONLY valid JSON, no markdown fences:\n' +
-    '{"season_title_en":"...","premise_en":"2-3 sentences","chapters":[{"title_en":"...","summary_en":"3-5 sentences of concrete beats","hook_en":"the chapter-ending hook (empty string for the last chapter)"}]}'
-  return callJson(prompt, 4000)
+    'Output format — plain text, NOT JSON. Keep every field on ONE line:\n' +
+    'SEASON: <english season title>\n' +
+    'PREMISE: <2-3 sentences>\n' +
+    'then for EACH of the ' + tier.chapters + ' chapters, three lines:\n' +
+    'CHAPTER: <english chapter title>\n' +
+    'SUMMARY: <3-5 sentences of concrete beats, all on one line>\n' +
+    'HOOK: <the chapter-ending hook, or "none" for the last chapter>'
+  return callText(prompt, 4000, (text) => parsePlan(text, tier.chapters))
+}
+
+function parsePlan(text, expectedChapters) {
+  const out = { season_title_en: '', premise_en: '', chapters: [] }
+  let cur = null
+  const valOf = (t) => { const ci = t.indexOf(':') >= 0 ? t.indexOf(':') : t.indexOf('：'); return ci >= 0 ? t.slice(ci + 1).trim() : '' }
+  for (const line of text.split('\n')) {
+    const t = line.trim()
+    if (!t) continue
+    const up = t.toUpperCase()
+    if (up.startsWith('SEASON')) out.season_title_en = valOf(t)
+    else if (up.startsWith('PREMISE')) out.premise_en = valOf(t)
+    else if (up.startsWith('CHAPTER')) { cur = { title_en: valOf(t), summary_en: '', hook_en: '' }; out.chapters.push(cur) }
+    else if (up.startsWith('SUMMARY') && cur) cur.summary_en = valOf(t)
+    else if (up.startsWith('HOOK') && cur) { const h = valOf(t); cur.hook_en = (h.toLowerCase() === 'none' || h === '-') ? '' : h }
+  }
+  return out.chapters.length >= expectedChapters ? out : null
 }
 
 async function draftChapter(tier, plan, chapterIdx, focusWords, pool, prevRecap) {
@@ -420,10 +440,8 @@ async function draftChapter(tier, plan, chapterIdx, focusWords, pool, prevRecap)
     '- Use a WIDE VARIETY of the allowed vocabulary — draw on the whole list, not the same handful of words. Reuse the focus words especially, in different sentence patterns.\n' +
     '- You MAY reach for up to ' + (tier.maxMisses != null ? Math.max(3, Math.floor(tier.maxMisses / 2)) : 4) + ' vivid words outside the list where the story genuinely needs them (a sound, a feeling, a specific object) — the reader can tap any word for its meaning. Keep at least ' + Math.round((tier.minCov != null ? tier.minCov : 0.9) * 100) + '% of the words from the allowed list.\n' +
     '- Write something a reader would actually enjoy: a real narrative arc, concrete sensory detail, a little humor, genuine character voice and feelings\n\n' +
-    'Return ONLY valid JSON, no markdown fences — content is an ARRAY of line strings:\n' +
-    '{"title":"short ' + cfg.promptLang + ' chapter title, no chapter number","lines":["line1","line2","..."]}'
-  const res = await callJson(prompt, 6000)
-  return { title: res.title, content: toContent(res) }
+    CHAPTER_FORMAT
+  return callText(prompt, 6000, parseChapter)
 }
 
 async function reviseForCoverage(tier, draft, validation, focusWords, pool) {
@@ -437,9 +455,8 @@ async function reviseForCoverage(tier, draft, validation, focusWords, pool) {
     'Focus words that must stay present: ' + focusWords.map(v => v.word).join(', ') + '\n' +
     (cfg.kanaOnly ? 'Write ONLY in hiragana and katakana (no kanji).\n' : '') +
     'Keep ' + minL + '-' + maxL + ' lines, dialogue format NAME' + COLON + 'text, speakers only from: ' + cfg.bible.speakers.join(', ') + '\n\n' +
-    'Return ONLY valid JSON, no markdown fences — lines is an ARRAY: {"title":"...","lines":["line1","line2","..."]}'
-  const res = await callJson(prompt, 6000)
-  return { title: res.title, content: toContent(res) }
+    CHAPTER_FORMAT
+  return callText(prompt, 6000, parseChapter)
 }
 
 async function critiqueStory(draft) {
@@ -451,10 +468,24 @@ async function critiqueStory(draft) {
     '- An actual story: concrete events, cause and effect, a reason to keep reading\n' +
     '- Distinct character voices in dialogue\n' +
     '- Appropriate for the level (simple grammar, but not insulting)\n\n' +
-    'Return ONLY valid JSON, no markdown fences: {"score": <1-10>, "feedback": "2-4 specific, actionable problems (or what works, if 8+)"}'
-  // Small OUTPUT, but a reasoning model needs headroom for thinking or it
-  // returns empty content — this was the main cause of the first run failing.
-  return callJson(prompt, 3000)
+    'Output format — plain text, NOT JSON. Exactly two lines:\n' +
+    'SCORE: <a single number 1-10>\n' +
+    'FEEDBACK: <2-4 specific, actionable problems (or what works, if 8+)>'
+  return callText(prompt, 3000, (text) => {
+    let score = null, feedback = ''
+    for (const line of text.split('\n')) {
+      const t = line.trim()
+      const up = t.toUpperCase()
+      if (up.startsWith('SCORE')) {
+        const digits = t.replace(/[^0-9]/g, '')
+        if (digits) score = Math.min(10, parseInt(digits.slice(0, 2), 10))
+      } else if (up.startsWith('FEEDBACK')) {
+        const ci = t.indexOf(':') >= 0 ? t.indexOf(':') : t.indexOf('：')
+        feedback = ci >= 0 ? t.slice(ci + 1).trim() : ''
+      } else if (feedback) { feedback += ' ' + t }
+    }
+    return score != null ? { score, feedback } : null
+  })
 }
 
 async function reviseForQuality(tier, draft, feedback, focusWords, pool) {
@@ -468,12 +499,11 @@ async function reviseForQuality(tier, draft, feedback, focusWords, pool) {
     '- ' + minL + '-' + maxL + ' lines; dialogue format NAME' + COLON + 'text; speakers only from: ' + cfg.bible.speakers.join(', ') + '\n' +
     '- Focus words that must stay present: ' + focusWords.map(v => v.word).join(', ') + '\n' +
     '- ALLOWED VOCABULARY (plus names, particles, basic grammar):\n' + poolForPrompt(pool) + '\n\n' +
-    'Return ONLY valid JSON, no markdown fences — lines is an ARRAY: {"title":"...","lines":["line1","line2","..."]}'
-  const res = await callJson(prompt, 6000)
-  return { title: res.title, content: toContent(res) }
+    CHAPTER_FORMAT
+  return callText(prompt, 6000, parseChapter)
 }
 
-async function translateStory(draft, attempt = 0) {
+async function translateStory(draft) {
   const lines = draft.content.split('\n').map(l => l.trim()).filter(Boolean)
   const prompt =
     'Translate this ' + cfg.promptLang + ' graded-reader chapter to natural English, line by line.\n\n' +
@@ -482,11 +512,20 @@ async function translateStory(draft, attempt = 0) {
     '- EXACTLY ' + lines.length + ' lines, same order, one translation per line\n' +
     '- Keep dialogue format: Speaker' + COLON + 'English text (translate the speaker name to romanized form, e.g. 李明 → Li Ming)\n' +
     '- Natural English, not word-by-word\n\n' +
-    'Return ONLY valid JSON, no markdown fences: {"lines": ["...", "..."]}'
-  const res = await callJson(prompt, 6000)
-  const out = (res.lines || []).map(l => String(l).trim()).filter(Boolean)
-  if (out.length !== lines.length && attempt < 1) return translateStory(draft, attempt + 1)
-  return { ok: out.length === lines.length, english: out.join('\n') }
+    'Output format — plain text, NOT JSON: exactly ' + lines.length + ' lines, one English translation per line, in order, nothing else (no numbering).'
+  try {
+    const english = await callText(prompt, 6000, (text) => {
+      const out = text.split('\n').map(l => l.trim()).filter(Boolean)
+      // Tolerate ±2 lines (the model occasionally merges/splits a line); pad or
+      // trim to match so the reader's line-alignment holds.
+      if (Math.abs(out.length - lines.length) > 2) return null
+      while (out.length < lines.length) out.push('')
+      return out.slice(0, lines.length).join('\n')
+    })
+    return { ok: true, english }
+  } catch {
+    return { ok: false, english: null }
+  }
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
