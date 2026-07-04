@@ -534,6 +534,15 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         maxWidth: '740px', margin: '0 auto', position: 'relative', zIndex: 2,
         padding: isMobile ? '14px 18px 200px' : '22px 28px 220px',
       }}>
+        {story.image_path && (
+          <div style={{
+            marginBottom: '20px', borderRadius: '18px', overflow: 'hidden',
+            border: '1px solid var(--border)', aspectRatio: '16 / 7',
+            background: accent + '10', boxShadow: '0 8px 26px rgba(24,24,27,0.06)',
+          }}>
+            <img src={getAudioUrl(story.image_path)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          </div>
+        )}
         {totalUnique > 0 && (
           <div style={{ marginBottom: '20px', background: PANEL, border: '1px solid var(--border)', borderRadius: '14px', padding: '12px 16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '9px', gap: '10px' }}>
