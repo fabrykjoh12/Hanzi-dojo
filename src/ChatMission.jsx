@@ -20,15 +20,31 @@ function isPunctChar(ch) {
   return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9')
 }
 
-// Greedy longest-match segmentation against the known-word dictionary, so target
-// words tokenize as whole units and everything else falls back to single chars.
-function segment(text, dict) {
+// Tokenize a message into tappable words. CJK (Chinese/Japanese kana) uses
+// greedy longest-match against the known-word dictionary; space-delimited scripts
+// (Russian) split on whitespace and peel punctuation. Every token exposes `key`
+// (the dictionary entry to look up) or null for punctuation/unknowns.
+function segment(text, dict, spaced) {
   const tokens = []
+  if (spaced) {
+    let i = 0
+    while (i < text.length) {
+      const ch = text[i]
+      if (ch === ' ' || isPunctChar(ch)) { tokens.push({ text: ch, key: null }); i += 1; continue }
+      let j = i
+      while (j < text.length && text[j] !== ' ' && !isPunctChar(text[j])) j += 1
+      const word = text.slice(i, j)
+      const key = dict[word] ? word : (dict[word.toLowerCase()] ? word.toLowerCase() : null)
+      tokens.push({ text: word, key })
+      i = j
+    }
+    return tokens
+  }
   let i = 0
   while (i < text.length) {
     if (isPunctChar(text[i])) { tokens.push({ text: text[i], key: null }); i += 1; continue }
     let matched = null
-    const maxLen = Math.min(4, text.length - i)
+    const maxLen = Math.min(6, text.length - i)
     for (let len = maxLen; len >= 1; len -= 1) {
       const cand = text.slice(i, i + len)
       if (dict[cand]) { matched = cand; break }
@@ -37,6 +53,18 @@ function segment(text, dict) {
     else { tokens.push({ text: text[i], key: null }); i += 1 }
   }
   return tokens
+}
+
+// Deterministic shuffle (no Math.random — keeps renders stable) seeded by length.
+function shuffleStable(arr, seed) {
+  const a = arr.slice()
+  let s = seed || a.length
+  for (let i = a.length - 1; i > 0; i -= 1) {
+    s = (s * 9301 + 49297) % 233280
+    const j = Math.floor((s / 233280) * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
 }
 
 export default function ChatMission({ mission, vocab, session, profile, track, dayBuckets, onClose }) {
@@ -62,22 +90,33 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
   const [phase, setPhase] = useState('chat')          // chat | questions | reply | result
   const [answers, setAnswers] = useState({})          // qIndex -> chosen option
   const [replyChoice, setReplyChoice] = useState(null)
+  const [replyCorrect, setReplyCorrect] = useState(null)   // set by MCQ or tiles
+  const [tilePicked, setTilePicked] = useState([])         // chosen tile pool-indices, in order
+  const [tileChecked, setTileChecked] = useState(false)
   const awardedRef = useRef(false)
   const audioElRef = useRef(null)
   const tappedForHelp = useRef(new Set())             // words the learner needed help on
 
   useEffect(() => () => { try { window.speechSynthesis.cancel() } catch { /* noop */ } }, [])
 
+  const isJapanese = track.language === 'japanese'
+  const spaced = track.language === 'russian'
+
   // word -> { reading, meaning, audio_path?, vocabId? }. Real vocab wins over the
-  // mission glossary so tapped words carry audio + can be added to the deck.
+  // mission glossary so tapped words carry audio + can be added to the deck. For
+  // Japanese the reading is indexed too (kana text vs kanji vocab); for spaced
+  // languages a lowercase alias lets sentence-start words resolve.
   const dict = useMemo(() => {
     const d = {}
-    Object.entries(mission.glossary || {}).forEach(([w, info]) => { d[w] = { ...info } })
+    const put = (k, info) => { if (!k) return; d[k] = info; if (spaced) d[k.toLowerCase()] = info }
+    Object.entries(mission.glossary || {}).forEach(([w, info]) => put(w, { ...info }))
     ;(vocab || []).forEach(v => {
-      d[v.word] = { reading: v.reading, meaning: v.meaning, audio_path: v.audio_path, vocabId: v.id }
+      const info = { reading: v.reading, meaning: v.meaning, audio_path: v.audio_path, vocabId: v.id }
+      put(v.word, info)
+      if (isJapanese && v.reading) put(v.reading, info)
     })
     return d
-  }, [mission, vocab])
+  }, [mission, vocab, isJapanese, spaced])
 
   const buckets = useMemo(() => classifyMissionWords(mission, dayBuckets || {}), [mission, dayBuckets])
   const learnedSet = useMemo(() => new Set(buckets.learned), [buckets])
@@ -110,6 +149,9 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
     tappedForHelp.current.add(word)
     setSelected({ word, info })
   }
+
+  // Mark all target words as needing review (called when a reply is missed).
+  const markTargetsWeak = () => { mission.targetWords.forEach(w => tappedForHelp.current.add(w)) }
 
   const addToDeck = async (word, info) => {
     if (!info || !info.vocabId || known[info.vocabId]) return
@@ -155,7 +197,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
 
   // ── Word token rendering (tap for lookup, subtle learned/weak highlight) ────
   function Sentence({ text }) {
-    const tokens = segment(text, dict)
+    const tokens = segment(text, dict, spaced)
     return (
       <span style={{ fontFamily: font, lineHeight: 1.7 }}>
         {tokens.map((tk, i) => {
@@ -314,33 +356,80 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
             <div style={{ fontSize: '15px', color: 'var(--text)', marginBottom: '16px', fontFamily: font, lineHeight: 1.6 }}>
               {mission.replyChallenge.prompt}
             </div>
-            <div style={{ display: 'grid', gap: '10px' }}>
-              {mission.replyChallenge.options.map((opt, oi) => {
-                const chosen = replyChoice === oi
-                const answered = replyChoice !== null
-                let bc = 'var(--border)', bgc = 'var(--surface)'
-                if (answered && opt.correct) { bc = '#2F9E6D'; bgc = 'var(--success-bg)' }
-                else if (answered && chosen) { bc = '#DC2626'; bgc = 'var(--danger-bg)' }
+
+            {mission.replyChallenge.tiles ? (
+              (() => {
+                const t = mission.replyChallenge.tiles
+                const pool = shuffleStable([...t.answer, ...(t.distractors || [])].map((w, i) => ({ w, id: i })), t.answer.length + (t.distractors || []).length)
+                const built = tilePicked.map(id => pool.find(p => p.id === id))
+                const builtStr = built.map(p => p.w).join('')
+                const answerStr = t.answer.join('')
+                const correct = builtStr === answerStr
                 return (
-                  <button key={oi} disabled={answered}
-                    onClick={() => { setReplyChoice(oi); if (!opt.correct) mission.targetWords.forEach(w => tappedForHelp.current.add(w)) }}
-                    style={{
-                      textAlign: 'left', padding: '14px 16px', borderRadius: '14px',
-                      border: '1.5px solid ' + bc, background: bgc, color: 'var(--text)',
-                      cursor: answered ? 'default' : 'pointer', fontFamily: font,
-                    }}>
-                    <div style={{ fontSize: '18px' }}>{opt.text}</div>
-                    {showPinyin && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px' }}>{opt.pinyin}</div>}
-                  </button>
+                  <>
+                    {/* Built sentence tray */}
+                    <div style={{ minHeight: '52px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', padding: '10px 12px', borderRadius: '13px', border: '1.5px dashed var(--border)', background: 'var(--surface)', marginBottom: '14px' }}>
+                      {built.length === 0 && <span style={{ color: 'var(--text-faint)', fontSize: '13px' }}>Tap the words to build your reply…</span>}
+                      {built.map((p, k) => (
+                        <button key={k} disabled={tileChecked} onClick={() => setTilePicked(prev => prev.filter((_, idx) => idx !== k))}
+                          style={tileStyle(tileChecked ? (correct ? '#2F9E6D' : '#DC2626') : accent, font)}>{p.w}</button>
+                      ))}
+                    </div>
+                    {/* Available tiles */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                      {pool.filter(p => !tilePicked.includes(p.id)).map(p => (
+                        <button key={p.id} disabled={tileChecked} onClick={() => setTilePicked(prev => [...prev, p.id])}
+                          style={tileStyle('var(--text-muted)', font)}>{p.w}</button>
+                      ))}
+                    </div>
+                    {tileChecked && (
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: correct ? '#2F9E6D' : '#DC2626', marginTop: '6px' }}>
+                        {correct ? '✓ Nice — that works!' : '✗ Not quite. A natural reply is: ' + answerStr}
+                      </div>
+                    )}
+                    <BottomBar>
+                      {!tileChecked ? (
+                        <button disabled={built.length === 0}
+                          onClick={() => { setTileChecked(true); const ok = correct; setReplyCorrect(ok); if (!ok) markTargetsWeak() }}
+                          style={{ ...primary(accent), opacity: built.length === 0 ? 0.5 : 1 }}>Check reply</button>
+                      ) : (
+                        <button onClick={finishMission} style={primary(accent)}>See result</button>
+                      )}
+                    </BottomBar>
+                  </>
                 )
-              })}
-            </div>
+              })()
+            ) : (
+              <>
+                <div style={{ display: 'grid', gap: '10px' }}>
+                  {mission.replyChallenge.options.map((opt, oi) => {
+                    const chosen = replyChoice === oi
+                    const answered = replyChoice !== null
+                    let bc = 'var(--border)', bgc = 'var(--surface)'
+                    if (answered && opt.correct) { bc = '#2F9E6D'; bgc = 'var(--success-bg)' }
+                    else if (answered && chosen) { bc = '#DC2626'; bgc = 'var(--danger-bg)' }
+                    return (
+                      <button key={oi} disabled={answered}
+                        onClick={() => { setReplyChoice(oi); setReplyCorrect(opt.correct); if (!opt.correct) markTargetsWeak() }}
+                        style={{
+                          textAlign: 'left', padding: '14px 16px', borderRadius: '14px',
+                          border: '1.5px solid ' + bc, background: bgc, color: 'var(--text)',
+                          cursor: answered ? 'default' : 'pointer', fontFamily: font,
+                        }}>
+                        <div style={{ fontSize: '18px' }}>{opt.text}</div>
+                        {showPinyin && opt.pinyin && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px' }}>{opt.pinyin}</div>}
+                      </button>
+                    )
+                  })}
+                </div>
+                {replyChoice !== null && (
+                  <BottomBar>
+                    <button onClick={finishMission} style={primary(accent)}>See result</button>
+                  </BottomBar>
+                )}
+              </>
+            )}
           </div>
-          {replyChoice !== null && (
-            <BottomBar>
-              <button onClick={finishMission} style={primary(accent)}>See result</button>
-            </BottomBar>
-          )}
         </div>
       )}
 
@@ -354,7 +443,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
             <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: '0 0 22px' }}>You used today’s words in a real conversation. +{MISSION_XP} XP</p>
 
             <ResultRow label="Comprehension" value={`${correctCount}/${questions.length}`} accent={accent} />
-            <ResultRow label="Reply" value={mission.replyChallenge.options[replyChoice]?.correct ? 'Correct' : 'Try again next time'} accent={accent} />
+            <ResultRow label="Reply" value={replyCorrect ? 'Correct' : 'Keep practicing'} accent={accent} />
 
             <ResultBlock title="Words you used">
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
@@ -476,6 +565,14 @@ function primary(accent) {
     width: '100%', minHeight: '50px', borderRadius: '15px', border: 'none',
     background: accent, color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 800,
     fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+  }
+}
+
+function tileStyle(color, font) {
+  return {
+    padding: '9px 14px', borderRadius: '11px', cursor: 'pointer',
+    border: '1.5px solid ' + color + '55', background: color + '12', color: 'var(--text)',
+    fontSize: '18px', fontFamily: font, fontWeight: 600,
   }
 }
 
