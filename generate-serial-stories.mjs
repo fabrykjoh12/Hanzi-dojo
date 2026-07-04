@@ -528,7 +528,49 @@ async function translateStory(draft) {
   }
 }
 
-// ── Main ─────────────────────────────────────────────────────────────────────
+// A solid graded reader scores ~6+. Chapters below this are held unpublished.
+const PUBLISH_SCORE = 6
+// A serial can't have gaps — a held opener means readers start mid-story. So
+// every chapter gets several from-scratch attempts (fresh drafts vary a lot;
+// revising a weak draft often doesn't rescue it) and we keep the best one.
+const MAX_CHAPTER_ATTEMPTS = 3
+
+// One full attempt at a chapter: draft → coverage/format fixes → quality
+// critique → at most one targeted quality revision. Returns the draft plus its
+// final validation and critique so the caller can compare attempts.
+async function attemptChapter(tier, plan, i, focus, pool, prevRecap) {
+  let draft = await draftChapter(tier, plan, i, focus, pool, prevRecap)
+
+  // Coverage/format loop: targeted fixes, max 3 rounds.
+  let v = validateStory(draft.content, pool, tier)
+  let rounds = 0
+  while (!v.ok && rounds < 3) {
+    process.stdout.write('fix(' + Math.round(v.coverage * 100) + '%)... ')
+    draft = await reviseForCoverage(tier, draft, v, focus, pool)
+    v = validateStory(draft.content, pool, tier)
+    rounds += 1
+  }
+
+  // Quality gate: below the bar → one quality revision, re-checked (and
+  // re-covered if the rewrite drifts out of the vocabulary pool).
+  process.stdout.write('critique... ')
+  let crit = await critiqueStory(draft)
+  if ((crit.score || 0) < PUBLISH_SCORE) {
+    process.stdout.write('revise(' + crit.score + ')... ')
+    draft = await reviseForQuality(tier, draft, crit.feedback || '', focus, pool)
+    v = validateStory(draft.content, pool, tier)
+    if (!v.ok) { draft = await reviseForCoverage(tier, draft, v, focus, pool); v = validateStory(draft.content, pool, tier) }
+    crit = await critiqueStory(draft)
+  }
+  return { draft, v, crit }
+}
+
+// Rank an attempt so we can keep the strongest across retries: a
+// coverage-valid chapter always beats an invalid one, then higher critique
+// score, then higher coverage as the tie-breaker.
+function attemptRank(a) {
+  return (a.v.ok ? 1000 : 0) + (a.crit.score || 0) * 10 + Math.round(a.v.coverage * 100) / 100
+}
 
 async function main() {
   const tiersToRun = onlyTier ? cfg.tiers.filter(t => t.tier === onlyTier) : cfg.tiers
@@ -596,32 +638,19 @@ async function main() {
     let prevRecap = ''
     for (let i = 0; i < tier.chapters; i += 1) {
       const focus = focusChunks[i]
-      process.stdout.write('Ch ' + (i + 1) + '/' + tier.chapters + ': draft... ')
+      process.stdout.write('Ch ' + (i + 1) + '/' + tier.chapters + ': ')
       try {
-        let draft = await draftChapter(tier, plan, i, focus, pool, prevRecap)
-
-        // Coverage/format loop: targeted fixes, max 3 rounds.
-        let v = validateStory(draft.content, pool, tier)
-        let rounds = 0
-        while (!v.ok && rounds < 3) {
-          process.stdout.write('fix(' + Math.round(v.coverage * 100) + '%)... ')
-          draft = await reviseForCoverage(tier, draft, v, focus, pool)
-          v = validateStory(draft.content, pool, tier)
-          rounds += 1
+        // Retry the whole chapter from scratch until one clears the bar, then
+        // keep the strongest attempt. Passing on the first try costs one draft;
+        // only weak chapters (like a held opener) pay for extra tries.
+        let best = null
+        for (let attempt = 0; attempt < MAX_CHAPTER_ATTEMPTS; attempt += 1) {
+          process.stdout.write(attempt === 0 ? 'draft... ' : 'retry ' + (attempt + 1) + '... ')
+          const cand = await attemptChapter(tier, plan, i, focus, pool, prevRecap)
+          if (!best || attemptRank(cand) > attemptRank(best)) best = cand
+          if (best.v.ok && (best.crit.score || 0) >= PUBLISH_SCORE) break
         }
-
-        // Quality gate: a solid graded reader scores ~6+. Below that → one
-        // quality revision, re-checked (and re-covered if the rewrite drifts).
-        const PUBLISH_SCORE = 6
-        process.stdout.write('critique... ')
-        let crit = await critiqueStory(draft)
-        if ((crit.score || 0) < PUBLISH_SCORE) {
-          process.stdout.write('revise(' + crit.score + ')... ')
-          draft = await reviseForQuality(tier, draft, crit.feedback || '', focus, pool)
-          v = validateStory(draft.content, pool, tier)
-          if (!v.ok) { draft = await reviseForCoverage(tier, draft, v, focus, pool); v = validateStory(draft.content, pool, tier) }
-          crit = await critiqueStory(draft)
-        }
+        const { draft, v, crit } = best
 
         process.stdout.write('translate... ')
         const tr = await translateStory(draft)
