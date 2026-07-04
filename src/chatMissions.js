@@ -74,6 +74,7 @@ const CN_HSK1 = [
     ],
     replyChallenge: {
       prompt: '小明说他的朋友也想去。你怎么回答？',
+      tiles: { answer: ['好', '，', '一起', '去', '吧'], distractors: ['不', '咖啡'] },
       options: [
         { text: '好，一起去吧！', pinyin: 'Hǎo, yìqǐ qù ba!', correct: true },
         { text: '我不是学生。', pinyin: 'Wǒ bú shì xuéshēng.', correct: false },
@@ -121,6 +122,7 @@ const CN_HSK1 = [
     ],
     replyChallenge: {
       prompt: '小红问几点去。你怎么说？',
+      tiles: { answer: ['上午', '九', '点'], distractors: ['明天', '买'] },
       options: [
         { text: '上午九点。', pinyin: 'Shàngwǔ jiǔ diǎn.', correct: true },
         { text: '我不喝茶。', pinyin: 'Wǒ bù hē chá.', correct: false },
@@ -168,6 +170,7 @@ const CN_HSK1 = [
     ],
     replyChallenge: {
       prompt: '小明让你休息。你怎么回答？',
+      tiles: { answer: ['谢谢', '你'], distractors: ['医院', '休息'] },
       options: [
         { text: '谢谢你。', pinyin: 'Xièxie nǐ.', correct: true },
         { text: '苹果多少钱？', pinyin: 'Píngguǒ duōshao qián?', correct: false },
@@ -178,7 +181,175 @@ const CN_HSK1 = [
   },
 ]
 
-const BANK = { 'chinese|1': CN_HSK1 }
+// ── Japanese JLPT N5 mission bank (kana, LINE-style skin) ────────────────────
+const JP_N5 = [
+  {
+    id: 'jp-n5-tea',
+    language: 'japanese', level: 1,
+    scenario: { title: 'えきで', en: 'A friend asks if you want tea after school.' },
+    targetWords: ['きょう', 'がっこう', 'えき', 'おちゃ', 'のみます', 'ともだち', 'いま'],
+    messages: [
+      { from: 'them', name: 'はな', text: 'きょう、がっこうへ いきますか。' },
+      { from: 'me', name: 'わたし', text: 'はい。いま、えきに います。' },
+      { from: 'them', name: 'はな', text: 'わたしも えきに います。おちゃを のみますか。' },
+      { from: 'me', name: 'わたし', text: 'はい。なんじに いきますか。' },
+      { from: 'them', name: 'はな', text: 'さんじ。ともだちも きます。' },
+    ],
+    pinyin: [
+      'Kyō, gakkō e ikimasu ka.',
+      'Hai. Ima, eki ni imasu.',
+      'Watashi mo eki ni imasu. Ocha o nomimasu ka.',
+      'Hai. Nanji ni ikimasu ka.',
+      'Sanji. Tomodachi mo kimasu.',
+    ],
+    translations: [
+      'Are you going to school today?',
+      "Yes. I'm at the station now.",
+      "I'm at the station too. Shall we get tea?",
+      'Yes. What time shall we go?',
+      'Three o’clock. My friend is coming too.',
+    ],
+    glossary: {
+      'はな': { reading: 'Hana', meaning: 'Hana (a name)' }, 'たかし': { reading: 'Takashi', meaning: 'Takashi (a name)' },
+      'きょう': { reading: 'kyō', meaning: 'today' }, 'がっこう': { reading: 'gakkō', meaning: 'school' },
+      'いきます': { reading: 'ikimasu', meaning: 'to go' }, 'はい': { reading: 'hai', meaning: 'yes' },
+      'いま': { reading: 'ima', meaning: 'now' }, 'えき': { reading: 'eki', meaning: 'station' },
+      'います': { reading: 'imasu', meaning: 'to be (living things)' }, 'わたし': { reading: 'watashi', meaning: 'I, me' },
+      'おちゃ': { reading: 'ocha', meaning: 'tea' }, 'のみます': { reading: 'nomimasu', meaning: 'to drink' },
+      'なんじ': { reading: 'nanji', meaning: 'what time' }, 'さんじ': { reading: 'sanji', meaning: 'three o’clock' },
+      'ともだち': { reading: 'tomodachi', meaning: 'friend' }, 'きます': { reading: 'kimasu', meaning: 'to come' },
+    },
+    comprehensionQuestions: [
+      { question: 'はなは なにを のみますか。', options: ['おちゃ', 'みず', 'コーヒー'], answer: 0 },
+      { question: 'なんじに いきますか。', options: ['さんじ', 'くじ', 'いちじ'], answer: 0 },
+      { question: 'だれが きますか。', options: ['ともだち', 'せんせい', 'おかあさん'], answer: 0 },
+    ],
+    replyChallenge: {
+      prompt: 'はなが「ともだちも きます」と いいました。なんと こたえますか。',
+      tiles: { answer: ['はい', 'いきます'], distractors: ['みず', 'たべます'] },
+      options: [
+        { text: 'はい、いきます。', correct: true },
+        { text: 'みずを のみます。', correct: false },
+        { text: 'わかりません。', correct: false },
+      ],
+    },
+    estimatedTime: '2',
+  },
+  {
+    id: 'jp-n5-shop',
+    language: 'japanese', level: 1,
+    scenario: { title: 'かいもの', en: 'Planning to buy bread at the shop tomorrow.' },
+    targetWords: ['あした', 'みせ', 'パン', 'かいます', 'すき', 'やすい', 'いくら'],
+    messages: [
+      { from: 'them', name: 'はな', text: 'あした、みせへ いきますか。' },
+      { from: 'me', name: 'わたし', text: 'はい。パンを かいます。' },
+      { from: 'them', name: 'はな', text: 'わたしも パンが すきです。いくらですか。' },
+      { from: 'me', name: 'わたし', text: 'やすいです。ひとつ ひゃくえんです。' },
+      { from: 'them', name: 'はな', text: 'いいですね。いっしょに いきます。' },
+    ],
+    pinyin: [
+      'Ashita, mise e ikimasu ka.',
+      'Hai. Pan o kaimasu.',
+      'Watashi mo pan ga suki desu. Ikura desu ka.',
+      'Yasui desu. Hitotsu hyaku en desu.',
+      'Ii desu ne. Issho ni ikimasu.',
+    ],
+    translations: [
+      'Are you going to the shop tomorrow?',
+      "Yes. I'll buy bread.",
+      'I like bread too. How much is it?',
+      'It’s cheap. One is a hundred yen.',
+      'Nice. Let’s go together.',
+    ],
+    glossary: {
+      'はな': { reading: 'Hana', meaning: 'Hana (a name)' },
+      'あした': { reading: 'ashita', meaning: 'tomorrow' }, 'みせ': { reading: 'mise', meaning: 'shop' },
+      'いきます': { reading: 'ikimasu', meaning: 'to go' }, 'はい': { reading: 'hai', meaning: 'yes' },
+      'パン': { reading: 'pan', meaning: 'bread' }, 'かいます': { reading: 'kaimasu', meaning: 'to buy' },
+      'わたし': { reading: 'watashi', meaning: 'I, me' }, 'すき': { reading: 'suki', meaning: 'to like' },
+      'いくら': { reading: 'ikura', meaning: 'how much' }, 'やすい': { reading: 'yasui', meaning: 'cheap' },
+      'ひとつ': { reading: 'hitotsu', meaning: 'one (thing)' }, 'ひゃく': { reading: 'hyaku', meaning: 'hundred' },
+      'えん': { reading: 'en', meaning: 'yen' }, 'いい': { reading: 'ii', meaning: 'good, nice' },
+      'いっしょに': { reading: 'issho ni', meaning: 'together' },
+    },
+    comprehensionQuestions: [
+      { question: 'わたしは なにを かいますか。', options: ['パン', 'みず', 'にく'], answer: 0 },
+      { question: 'パンは たかいですか。', options: ['やすいです', 'たかいです', 'わかりません'], answer: 0 },
+      { question: 'いつ いきますか。', options: ['あした', 'きょう', 'きのう'], answer: 0 },
+    ],
+    replyChallenge: {
+      prompt: 'はなが「いっしょに いきます」と いいました。こたえて ください。',
+      tiles: { answer: ['はい', 'いきます'], distractors: ['くるま', 'たべます'] },
+      options: [
+        { text: 'はい、いきます。', correct: true },
+        { text: 'くるまが すきです。', correct: false },
+        { text: 'いま、ねます。', correct: false },
+      ],
+    },
+    estimatedTime: '2',
+  },
+]
+
+// ── Russian CEFR A1 mission bank (Cyrillic, Telegram-style skin) ─────────────
+const RU_A1 = [
+  {
+    id: 'ru-a1-park',
+    language: 'russian', level: 1,
+    scenario: { title: 'В парке', en: 'A friend asks if you want coffee at the park.' },
+    targetWords: ['парк', 'сейчас', 'кофе', 'друг', 'хочешь', 'идёшь'],
+    messages: [
+      { from: 'them', name: 'Аня', text: 'Привет! Ты идёшь в парк?' },
+      { from: 'me', name: 'Я', text: 'Да. Я сейчас иду.' },
+      { from: 'them', name: 'Аня', text: 'Хорошо. Хочешь кофе?' },
+      { from: 'me', name: 'Я', text: 'Да. Во сколько?' },
+      { from: 'them', name: 'Аня', text: 'В три. Мой друг тоже идёт.' },
+    ],
+    pinyin: [
+      'Privet! Ty idyosh v park?',
+      'Da. Ya seychas idu.',
+      'Khorosho. Khochesh kofe?',
+      'Da. Vo skolko?',
+      'V tri. Moy drug tozhe idyot.',
+    ],
+    translations: [
+      'Hi! Are you going to the park?',
+      "Yes. I'm walking there now.",
+      'Great. Do you want coffee?',
+      'Yes. At what time?',
+      'At three. My friend is coming too.',
+    ],
+    glossary: {
+      'Аня': { reading: 'Anya', meaning: 'Anya (a name)' },
+      'привет': { reading: 'privet', meaning: 'hi, hello' }, 'ты': { reading: 'ty', meaning: 'you' },
+      'идёшь': { reading: 'idyosh', meaning: 'you go / are going' }, 'в': { reading: 'v', meaning: 'in, to, at' },
+      'парк': { reading: 'park', meaning: 'park' }, 'да': { reading: 'da', meaning: 'yes' },
+      'я': { reading: 'ya', meaning: 'I' }, 'сейчас': { reading: 'seychas', meaning: 'now' },
+      'иду': { reading: 'idu', meaning: 'I go / am going' }, 'хорошо': { reading: 'khorosho', meaning: 'good, okay' },
+      'хочешь': { reading: 'khochesh', meaning: 'you want' }, 'кофе': { reading: 'kofe', meaning: 'coffee' },
+      'во': { reading: 'vo', meaning: 'at, in' }, 'сколько': { reading: 'skolko', meaning: 'how much, what (time)' },
+      'три': { reading: 'tri', meaning: 'three' }, 'мой': { reading: 'moy', meaning: 'my' },
+      'друг': { reading: 'drug', meaning: 'friend' }, 'тоже': { reading: 'tozhe', meaning: 'also, too' },
+      'идёт': { reading: 'idyot', meaning: 'he/she goes / is going' },
+    },
+    comprehensionQuestions: [
+      { question: 'Куда идёт Аня?', options: ['В парк', 'В школу', 'Домой'], answer: 0 },
+      { question: 'Что хочет Аня?', options: ['Кофе', 'Воду', 'Хлеб'], answer: 0 },
+      { question: 'Во сколько?', options: ['В три', 'В пять', 'В два'], answer: 0 },
+    ],
+    replyChallenge: {
+      prompt: 'Аня спросила: «Хочешь кофе?» Что ты ответишь?',
+      tiles: { answer: ['Да', 'хочу'], distractors: ['нет', 'дом'] },
+      options: [
+        { text: 'Да, хочу.', correct: true },
+        { text: 'Я не студент.', correct: false },
+        { text: 'Это дорого.', correct: false },
+      ],
+    },
+    estimatedTime: '2',
+  },
+]
+
+const BANK = { 'chinese|1': CN_HSK1, 'japanese|1': JP_N5, 'russian|1': RU_A1 }
 
 // Pick the mission that best reuses the words the learner actually met today.
 // Overlap with today's learned/weak/review words wins; ties and the no-overlap
