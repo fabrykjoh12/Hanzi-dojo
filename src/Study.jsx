@@ -185,6 +185,24 @@ function PrimaryButton({ onClick, children, icon: Icon }) {
   )
 }
 
+// Spread `insert` items evenly through `base` so the two kinds of card arrive
+// mixed, not as back-to-back blocks. Used to weave new cards into the due-review
+// backbone: reviews still lead (a review shows before the first new card), but
+// new cards no longer sit stranded at the very end of the session.
+function interleave(base, insert) {
+  if (insert.length === 0) return base.slice()
+  if (base.length === 0) return insert.slice()
+  const out = []
+  const step = base.length / (insert.length + 1)
+  let si = 0
+  for (let i = 0; i < base.length; i += 1) {
+    out.push(base[i])
+    while (si < insert.length && (si + 1) * step <= i + 1) { out.push(insert[si]); si += 1 }
+  }
+  while (si < insert.length) { out.push(insert[si]); si += 1 }
+  return out
+}
+
 export default function Study({ session, profile, track, mode = 'review', onBack, onStreakUpdate }) {
   const isWeak = mode === 'weak'
   const [queue, setQueue] = useState([])
@@ -334,7 +352,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         state: 'new', ease_factor: 2.5, interval_days: 0, learning_step: 0,
       }))
 
-    const newQueue = [...dueLearning, ...newItems, ...dueReview]
+    // Due reviews are the SRS priority, so they lead; new cards are woven in
+    // evenly rather than piled in front of the reviews (which used to make every
+    // due review wait until all new cards were cleared). Learning/relearning
+    // cards are time-sensitive re-tries, so they stay at the very front.
+    const newQueue = [...dueLearning, ...interleave(dueReview, newItems)]
     setQueue(newQueue)
     setDone(newQueue.length === 0)
     setLoading(false)
