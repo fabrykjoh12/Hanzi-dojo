@@ -52,3 +52,37 @@ export const LLM_MODEL = cfg.model
 export const LLM_PROVIDER = cfg.provider
 
 console.log(`[llm] provider=${cfg.provider} model=${cfg.model}`)
+
+// Premium tier for the small, quality-critical jobs (serial story writing:
+// ~100 calls per level, so even a top model costs a dollar or two per run).
+// Prefers Anthropic via its OpenAI-compatible endpoint when ANTHROPIC_API_KEY
+// is set; otherwise falls back to the standard client above so the scripts
+// still run (at lower quality) with only a Gemini/Groq key. Deliberately NOT
+// part of pickConfig(): the bulk jobs (hundreds of example sentences) should
+// never silently switch to the expensive tier just because the key exists.
+//   ANTHROPIC_API_KEY    selects Anthropic for premium calls
+//   LLM_MODEL_PREMIUM    override the premium model id
+export function premiumLlm() {
+  const key = process.env.ANTHROPIC_API_KEY
+  if (key) {
+    return {
+      client: new OpenAI({
+        apiKey: key,
+        baseURL: process.env.LLM_BASE_URL_PREMIUM || 'https://api.anthropic.com/v1/',
+        timeout: 120000,
+        maxRetries: 2,
+      }),
+      model: process.env.LLM_MODEL_PREMIUM || 'claude-sonnet-5',
+      provider: 'anthropic',
+    }
+  }
+  // No Anthropic key: reuse the standard client. On Gemini, default the
+  // premium tier to gemini-2.5-flash — a real step up from the flash-lite the
+  // bulk jobs use, but far faster and far less prone to the empty-"thinking"
+  // responses that gemini-2.5-pro returns on smaller calls (pro made the first
+  // serial run take 31 min and produce nothing). Set LLM_MODEL_PREMIUM to
+  // gemini-2.5-pro to opt into the slower, top-quality tier. Bulk jobs keep
+  // using LLM_MODEL (flash-lite), so this never inflates their cost.
+  const premiumDefault = cfg.provider === 'gemini' ? 'gemini-2.5-flash' : cfg.model
+  return { client: llm, model: process.env.LLM_MODEL_PREMIUM || premiumDefault, provider: cfg.provider }
+}

@@ -6,6 +6,43 @@ Read this entire file before making any change. It describes not just *what* the
 
 ## 0. LATEST SESSION — read first (2026-07-02)
 
+### Batch 19 — serial-story pipeline made to actually work (plain-text protocol)
+- The big lesson: **JSON is the wrong container for multi-line CJK prose.** gemini (pro AND flash) constantly emitted raw newlines + unescaped quotes inside JSON string values ("Unterminated string in JSON"), which (a) triggered endless slow retries — a full HSK1 level took **2h46m** — and (b) silently broke the revise steps, so quality fixes never applied and scores stuck at 3-4. A `repairJson` escape pass did NOT fully fix it (unescaped quotes + truncation remained).
+- **Fix that worked:** replaced JSON with a **plain-text protocol** for every LLM pass in `generate-serial-stories.mjs`. `callText(prompt, tokens, check)` + per-pass string-op parsers: `parseChapter` (a `TITLE:` line then one story line per line), `parsePlan` (`SEASON:`/`PREMISE:`/`CHAPTER:`/`SUMMARY:`/`HOOK:`), critique (`SCORE:`/`FEEDBACK:`), translate (N lines, ±2 tolerated). `callJson`/`parseJsonLoose`/`repairJson` deleted. Result: runtime **2h46m → ~12 min/tier**, and yield jumped because revises finally apply.
+- **Other fixes this arc:** empty-"thinking"-response crash guarded in extract/retry (gemini reasoning models eat the token budget → empty content); premium default switched pro → **gemini-2.5-flash** (LLM_MODEL_PREMIUM=gemini-2.5-pro opts back to the slow top tier); allowed pool widened to the WHOLE level (was choking on the first-100 words → 60% coverage → over-revision flattened prose); publish bar 7 → 6; HSK1 coverage floor relaxed to 0.85/0.83.
+- **Result:** HSK1 tier-1 taste test = **5/6 published** (scores 6-7). Full HSK1 level = **7 published, 11 held** (~48 min) — tier 1 strong, tiers 2-3 (longer 30-42-line stories) weaker on flash so more held. User chose to **keep the 7 and move on** rather than re-run tiers 2-3 on pro. The 11 held rows are `is_published=false` (invisible to users); regenerate on `gemini-2.5-pro` later to raise tier-2/3 yield. `story-audio-hsk1` dispatched for the 7 published.
+
+### Batch 18 — serial-story tuning: longer + richer (user: "longer, more vocabulary, very interesting")
+- `generate-serial-stories.mjs` tuned after the user added Gemini billing. Per-tier `lines` bumped ~50% (HSK1/HSK2/JLPT1/N4 now 18–26 / 24–34 / 30–42; Russian 16–24 / 20–30 / 26–38). Draft/revise/translate `max_tokens` 4000→6000 for the longer output. Focus-word chunk 10–22/chapter (was 8–18).
+- New per-tier vocabulary knobs: `minCov` (graduated coverage floor — tier1 0.90 down to tier3 0.83–0.85, since rank beginners need near-full comprehension but advanced tiers can handle a few reach words) and `maxMisses` (cap on DISTINCT out-of-pool words, 6→14 by tier). Validator enforces both; the draft prompt now explicitly permits ~half of maxMisses as "vivid reach words" (tappable in the reader) and pushes for WIDE vocabulary variety instead of the same handful.
+- `llm.mjs premiumLlm()`: with no Anthropic key but Gemini provider, premium tier now defaults to **gemini-2.5-pro** (bulk jobs stay on flash-lite via LLM_MODEL) — so enabling billing on the Gemini key is enough, no repo variable needed. `LLM_MODEL_PREMIUM` still overrides; ANTHROPIC_API_KEY still wins.
+- New `story_tier` workflow input (blank / 1 / 2 / 3) + `--tier` script flag: generates only that tier's season and, with `--replace`, deletes only that tier — a cheap taste test before committing a whole level. After a serial run, dispatch the matching `story-audio-*` task.
+
+### Batch 17 — serial-story pipeline (user: "stories are terrible, we have a bad system")
+- Diagnosis agreed with the user: one cheap model, one overloaded prompt, nothing verified, auto-published, same 4 flavorless characters/15 stock scenes/1 plot template, choppy 15-char line caps. Decisions made together: **serial chapters** (not standalone vignettes), **premium model** (Anthropic key) for the writing passes, **auto-publish gated by validators**.
+- New `generate-serial-stories.mjs` — see the full doc in the scripts section ("the CURRENT story generator"). `generate-stories.mjs` is legacy. New `premiumLlm()` export in `llm.mjs` (Anthropic via its OpenAI-compatible endpoint when `ANTHROPIC_API_KEY` is set; falls back to standard client). New Action tasks `serial-hsk1/2`, `serial-jlpt1`, `serial-n4`, `serial-russian` (all REPLACE the level's stories).
+- Coverage validator sanity-tested offline (greedy matcher catches out-of-pool CJK runs, passes clean text, allows JP hiragana grammar while catching out-of-pool katakana).
+- **Needs before dispatch:** `ANTHROPIC_API_KEY` repo secret. Then run e.g. `serial-hsk1`, skim results, then the matching `story-audio-*` task.
+
+### Batch 16 — opt-in daily review reminder via Web Push (product review item #16, 3 of 3 remaining — LAST original-review item)
+- New tables/columns: `push_subscriptions` (endpoint/p256dh/auth per device, RLS insert/select/delete own) and `profiles.reminder_enabled` / `profiles.reminder_hour_utc` (migration `20260702220000_add_push_reminders.sql`).
+- **No Supabase Edge Function** — this repo has no Supabase CLI/functions setup, so sending is a plain Node script (`send-review-reminders.mjs`, uses the `web-push` npm package) run hourly by a new GitHub Action (`.github/workflows/send-reminders.yml`, `cron: '0 * * * *'`). It matches profiles where `reminder_hour_utc` equals the current UTC hour, counts due cards for their active track (any level, `state in (review, learning, relearning)` and `due_at <= now`), and pushes to every subscribed device; 404/410 responses (dead subscriptions) are pruned automatically.
+- `src/push.js`: `enableReminders` (requests Notification permission, subscribes via `registration.pushManager`, upserts the subscription + hour), `setReminderHour` (change hour without re-subscribing), `disableReminders` (best-effort unsubscribe + clears the DB rows/flag), `pushSupported()` capability check.
+- `sw.js` → **v5**: added `push` (shows the notification from the JSON payload `{title, body, url}`) and `notificationclick` (focuses an existing tab at that URL or opens one) handlers. No caching behavior changed.
+- Settings.jsx: new "Daily review reminder" card — toggle + an hour `<select>` labeled in the user's **local** time (converted to/from UTC at the boundary; a plain hour number, not a full IANA timezone, so it can drift ~1h across a DST change — noted as a known v1 limitation) — inline error text if the browser denies/lacks push support.
+- **Setup required before this does anything** (see the deployment section further down for exact steps): a VAPID keypair was generated this session (private key given to the user in chat only — never committed) — needs `VAPID_PRIVATE_KEY` + `VITE_VAPID_PUBLIC_KEY` as GitHub repo secrets, `VITE_VAPID_PUBLIC_KEY` as a Vercel env var, and optionally a `VAPID_SUBJECT` repo variable (`mailto:` contact).
+- Not verified end-to-end from this sandbox (no live browser/device here) — needs a real device test after the secrets are in place.
+
+### Batch 15 — retention % + reviews/day in Profile (product review item #17b, 2 of 3 remaining)
+- New `ReviewAccuracy` component in `Profile.jsx`, rendered as its own panel right after the existing 6-month `StudyCalendar` heatmap (which already covered item #17's other half). Queries `review_logs` scoped to the current track (`vocabulary!inner(language, system)` filter, same pattern as `src/data.js`'s `getTrackCards`) and computes: retention % (grade 0 = "Again"/forgotten counts against it, grades 1–3 all count as recalled) and a 30-day reviews-per-day bar chart.
+- Empty state (not a misleading "0%") when `review_logs` has no rows yet for the track — expected for any account predating Batch 6, which is when review-log writes started.
+
+### Batch 14 — real story audio via TTS (product review item #12, 1 of 3 remaining)
+- New `stories.has_audio` column (migration `20260702200000_add_story_audio.sql`, apply in SQL editor) — set true by `generate-story-audio.mjs` ONLY once every line for that story synthesizes successfully, so the reader can trust it without a per-line network probe.
+- New `generate-story-audio.mjs` — same voice map as `generate-audio.mjs`, speaks each line as written (kanji included; Google's sentence-level Japanese voice handles context fine, unlike single vocab words), strips speaker labels the same way the reader's `splitSpeaker` does. Uploads to `stories/{story_id}/{line_index}.mp3` in the `audio` bucket. New Action tasks: `story-audio-hsk1`, `story-audio-hsk2`, `story-audio-jlpt1`, `story-audio-jlpt2`, `story-audio-n4`, `story-audio-russian`.
+- `StoryReaderImmersive.jsx`: `speakFrom` now tries real bucket narration first when `story.has_audio` (via `playAudioEl`, same iOS-safe fallback used everywhere else), falling back per-line to `speechSynthesis` only if that line's file is missing/broken — stories without any generated audio yet behave exactly as before, zero added latency. Play bar subtitle reads "Listen" (vs. "Listen (text-to-speech)") once real narration exists.
+- Still to run: dispatch `story-audio-*` for each level once this merges (not yet run this batch).
+
 ### Batch 13 — in-app feedback widget (user request)
 - New `feedback` table (migration `20260702180000_add_feedback.sql`, apply in SQL editor): `user_id`, `email` (snapshot at submit time), `category` (bug|idea|other), `message`, `page` (current view), `language`, `created_at`. RLS: users insert/read their own rows only; append-only (no update/delete policy). No in-app admin view yet — read submissions via the Supabase dashboard Table Editor or SQL editor (`select * from feedback order by created_at desc`).
 - New `src/Feedback.jsx` — a small floating button (bottom-right, sage, sits above the mobile nav bar) present on every signed-in screen, opening a modal: pick a category (Bug / Idea / Something else), write a message, send. No `<form>` tag (plain controlled textarea + button per project rules). Success shows a toast; auto-captures the current view and active language for context. Mounted once in App.jsx alongside `<Toasts />`.
@@ -875,6 +912,31 @@ node --env-file=.env.script generate-audio.mjs
 
 To regenerate without skipping existing files: delete the storage folder in Supabase first, then run the script (`upsert: true` is set but storage skips existing paths by default in some configurations).
 
+### generate-story-audio.mjs
+
+Script for generating per-line TTS narration for published stories (product review item #12). Not in app bundle.
+
+**Run with:**
+```bash
+node --env-file=.env.script generate-story-audio.mjs --language chinese --system hsk_3 --level 1
+node --env-file=.env.script generate-story-audio.mjs --language japanese --system jlpt --level 1 --story-id <uuid>  # single story
+```
+
+**Current state:** Same voice map as `generate-audio.mjs`, but speaks each line AS WRITTEN (kanji included — Google's sentence-level Japanese voice handles context fine, unlike single vocab words). Strips a leading `Speaker：`/`Speaker:` label the same way `StoryReaderImmersive.jsx`'s `splitSpeaker` does. Uploads each line to `stories/{story_id}/{line_index}.mp3` in the `audio` bucket; sets `stories.has_audio = true` ONLY if every line for that story succeeded — a partial failure leaves it `false` so the reader keeps using speechSynthesis for that story rather than serving a story with silent gaps. Action tasks: `story-audio-hsk1`, `story-audio-hsk2`, `story-audio-jlpt1`, `story-audio-jlpt2`, `story-audio-n4`, `story-audio-russian`.
+
+### generate-serial-stories.mjs — the CURRENT story generator
+
+The replacement for `generate-stories.mjs` (which is now legacy — kept for reference, don't dispatch its tasks for new content). Each tier becomes one continuing storyline ("season") of 4–6 chapters with recurring characters, produced by a multi-pass pipeline instead of a one-shot prompt:
+
+1. **PLAN** (1 call, English): season premise + per-chapter outlines with chapter-ending hooks, woven around code-assigned focus words (the tier's newest vocabulary, chunked per chapter — i+1 by construction).
+2. **DRAFT** (per chapter, target language) from the outline, with the focus words + the allowed pool.
+3. **VALIDATE in code, not vibes**: greedy longest-match segmentation computes REAL vocabulary coverage against the full pool (Japanese: unmatched hiragana counts as allowed grammar; readings are indexed alongside words; Russian: token-level with a 4-letter prefix allowance for inflection + a function-word allowlist); dialogue speakers checked against the character bible; line counts checked.
+4. **REVISE targeted** (max 3 rounds): the model is told exactly which out-of-pool words to replace, not asked to regenerate blind.
+5. **CRITIQUE**: rubric-scored 1–10 (naturalness / actual-story / character voice / level fit); below 7 → one quality revision, then re-validate + re-critique.
+6. **TRANSLATE**: separate line-aligned pass, count-checked, one retry.
+
+Chapters passing every gate insert with `is_published=true`; failures insert `is_published=false` (review in the dashboard, fix, flip). Character bibles live in the script; Chinese names MUST stay within `src/characterNames.js`'s `CHARACTER_READINGS` map (name-tap detection) — currently 李明, 小红, 小明, 大毛 (妈妈 is a role noun and deliberately not in that map). Uses the **premium LLM tier** — `premiumLlm()` in `llm.mjs`, which picks Anthropic when `ANTHROPIC_API_KEY` is set (repo secret; `LLM_MODEL_PREMIUM` variable overrides the model) and falls back to the standard Gemini/Groq client otherwise. ~100 calls per level ≈ a dollar or two on a premium model. Bulk tasks (examples/meanings) never use the premium tier. Action tasks (all `--replace`: they DELETE the level's existing stories first): `serial-hsk1`, `serial-hsk2`, `serial-jlpt1`, `serial-n4`, `serial-russian`. After a run, dispatch the matching `story-audio-*` task to regenerate narration.
+
 ### generate-examples.mjs
 
 Script for generating AI example sentences and uploading to Supabase vocabulary rows. Not in app bundle. Uses Groq (`llama-3.3-70b-versatile` via `openai` SDK pointed at `https://api.groq.com/openai/v1`).
@@ -1100,7 +1162,14 @@ The app is **live** and deployed to two static hosts, both building from `main`.
 ### Vercel (secondary)
 - **URL:** https://hanzi-dojo-jet.vercel.app/ (served from root `/`).
 - **How:** Vercel project `hanzi-dojo` auto-deploys; the **Production** environment tracks the `main` branch. Framework preset = Vite, build `npm run build`, output `dist`.
-- **Env vars:** set per-environment under Settings → Environments → Production: the same three `VITE_` vars. Vercel bakes them in at build time and only applies them to **new** builds — after adding/changing, redeploy (Deployments → ⋯ → Redeploy, uncheck build cache).
+- **Env vars:** set per-environment under Settings → Environments → Production: the same three `VITE_` vars, plus **`VITE_VAPID_PUBLIC_KEY`** (push reminders, item #16 — see below). Vercel bakes them in at build time and only applies them to **new** builds — after adding/changing, redeploy (Deployments → ⋯ → Redeploy, uncheck build cache).
+
+### Push reminders (item #16) — one-time secret setup
+`send-review-reminders.mjs` runs hourly via `.github/workflows/send-reminders.yml` and needs its own secrets, separate from the `regen-content` ones:
+- **GitHub repository secrets:** `VAPID_PRIVATE_KEY` (keep this one secret — never in the frontend), `VITE_VAPID_PUBLIC_KEY` (same value as the Vercel one below — the workflow reads it as `VAPID_PUBLIC_KEY`).
+- **GitHub repository variable** (Settings → Secrets and variables → Actions → Variables): `VAPID_SUBJECT`, a `mailto:` contact address some push services require — defaults to a placeholder if unset.
+- **Vercel env var:** `VITE_VAPID_PUBLIC_KEY` — same public key as above; the frontend needs it to call `pushManager.subscribe()`.
+- The keypair itself is generated once with `web-push`'s `generateVAPIDKeys()` — it isn't regenerated by any script in this repo, so store both halves somewhere safe (rotating them invalidates every existing subscription, requiring users to re-enable reminders).
 
 ### Routing (react-router BrowserRouter)
 - `main.jsx` wraps `<App>` in `<BrowserRouter basename=…>` (basename = `BASE_URL` minus the trailing slash, so it matches each host's base path). `App.jsx` derives `view` from `useLocation().pathname` (`pathToView`) and `navigate(key)` calls `useNavigate()` with `viewToPath(key)`. Each top-level screen is its own URL (`/study`, `/profile`, …); home is `/`. Browser back/forward and refresh-keeps-place now work. (Stories' internal list↔reader is still local state, not routed.)

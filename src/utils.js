@@ -80,19 +80,46 @@ export function getAudioUrl(audioPath) {
 // by fetching the whole file as a blob, which sidesteps Range entirely.
 // `onFail` is called only if both attempts fail.
 //
-// Elements get reused across calls (e.g. StoryReaderImmersive's single
-// wordAudioRef for every word tap), so each call is tagged with an attempt
-// id on the element itself — a fallback that resolves after a newer call
-// has already taken over the same element is stale and must not touch
-// `el.src` or fire `onFail` for the wrong clip.
+// Callers must REUSE one element across plays (create it once, keep it in a
+// ref) — never a fresh `new Audio()` per tap. Two iOS behaviors depend on it:
+//  - The blob a fallback fetched is cached on the element (`__hdBlobFor`), so
+//    when the blob arrives AFTER the tap's user activation expired (fetch is
+//    async; iOS then blocks play with NotAllowedError), the clip stays loaded
+//    and the NEXT tap plays it synchronously — which iOS allows. A per-tap
+//    element threw that work away and every replay failed the same way.
+//  - A successfully direct-loaded clip replays via a seek instead of a full
+//    reload (iOS Range requests bypass the SW cache, so reloading re-hits
+//    the network every tap).
+// Each call tags the element with an attempt id: a fallback resolving after a
+// newer call has taken over the element is stale and must not touch `el.src`
+// or fire `onFail` for the wrong clip.
 let nextAttempt = 1
 export function playAudioEl(el, url, onFail) {
   const attempt = nextAttempt
   nextAttempt += 1
   el.__hdAttempt = attempt
   const stale = () => el.__hdAttempt !== attempt
-  let fallbackStarted = false
+  const fail = () => { if (!stale() && onFail) onFail() }
+  const playCurrent = () => {
+    el.onerror = fail
+    try { el.currentTime = 0 } catch { /* not seekable yet — play() handles it */ }
+    el.play().catch(e => {
+      if (e && (e.name === 'NotAllowedError' || e.name === 'AbortError')) return
+      fail()
+    })
+  }
 
+  // This element already has this exact clip fully loaded (a cached fallback
+  // blob, or a direct load that reached HAVE_CURRENT_DATA without erroring):
+  // replay it in place, synchronously. readyState >= 2 guards against a rapid
+  // second tap taking the fast path while the first direct load is still in
+  // flight — in that case we fall through and (re)load, keeping the fallback.
+  if (el.__hdBlobFor === url || (el.__hdSrcFor === url && !el.error && el.readyState >= 2)) {
+    playCurrent()
+    return
+  }
+
+  let fallbackStarted = false
   function fallback() {
     if (stale() || fallbackStarted) return
     fallbackStarted = true
@@ -101,13 +128,27 @@ export function playAudioEl(el, url, onFail) {
       .then(blob => {
         const blobUrl = URL.createObjectURL(blob)
         if (stale()) { URL.revokeObjectURL(blobUrl); return }
-        el.onerror = () => { if (!stale() && onFail) onFail() }
-        el.addEventListener('ended', () => URL.revokeObjectURL(blobUrl), { once: true })
+        if (el.__hdBlobUrl) URL.revokeObjectURL(el.__hdBlobUrl)
+        el.__hdBlobUrl = blobUrl
+        el.__hdBlobFor = url
+        el.onerror = fail
         el.src = blobUrl
         return el.play()
       })
-      .catch(() => { if (!stale() && onFail) onFail() })
+      .catch(e => {
+        // NotAllowedError here means the blob arrived after the tap's user
+        // activation expired (iOS). The clip is loaded and cached on the
+        // element now, so the next tap plays it instantly — not a broken file.
+        if (e && e.name === 'NotAllowedError') return
+        fail()
+      })
   }
+
+  // Fresh clip for this element: direct URL first (fast path everywhere),
+  // blob fallback on error. Drop any previously cached blob.
+  if (el.__hdBlobUrl) { URL.revokeObjectURL(el.__hdBlobUrl); el.__hdBlobUrl = null }
+  el.__hdBlobFor = null
+  el.__hdSrcFor = url
   el.onerror = fallback
   el.src = url
   el.play().catch(e => {

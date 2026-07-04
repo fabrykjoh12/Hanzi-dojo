@@ -42,6 +42,11 @@ Example things stored here:
 
 Important: use `daily_new_cards`, not `daily_card_goal`.
 
+`reminder_enabled` (bool) + `reminder_hour_utc` (smallint 0-23): opt-in daily
+review reminder (product review item #16). Set by `src/push.js`. Read hourly
+by `send-review-reminders.mjs` — see `docs/DATABASE.md`'s `push_subscriptions`
+entry and Claude.md's deployment section for the Web Push setup.
+
 ### language_tracks
 
 This stores the user's current level.
@@ -152,6 +157,12 @@ This stores which levels the user has unlocked.
 
 This stores stories by language, system, and level.
 
+`has_audio` (bool, default false): set true by `generate-story-audio.mjs`
+only once every line synthesized successfully. Per-line MP3s live in the
+`audio` storage bucket at `stories/{story_id}/{line_index}.mp3`. The reader
+uses bucket audio when true, otherwise falls back to the browser's
+speechSynthesis with no added latency (no per-line network probe needed).
+
 ### story_vocab
 
 This connects stories to vocabulary words.
@@ -174,6 +185,14 @@ In-app bug reports / ideas / notes from users (user_id, email snapshot,
 category: bug|idea|other, message, page, language, created_at). Users can
 insert and read their own rows; there's no in-app admin view yet — read
 submissions via the Supabase dashboard Table Editor or SQL editor.
+
+### push_subscriptions
+
+Web Push subscriptions for the opt-in daily review reminder (product review
+item #16): `user_id`, `endpoint` (unique), `p256dh`, `auth`, `created_at`.
+Users manage their own rows (insert/select/delete). `send-review-reminders.mjs`
+(hourly GitHub Action) reads these with the service key and prunes any that
+the push service reports as gone (404/410).
 
 ## Audio
 

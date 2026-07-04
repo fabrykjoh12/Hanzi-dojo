@@ -11,12 +11,17 @@ on:
         description: What to regenerate
         type: choice
         default: both
-        options: [meanings, examples, examples-fill, both, comprehension, comprehension-prune, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk2, stories-hsk2, seed-n4, audio-n4, stories-n4, seed-russian, audio-russian, examples-russian, stories-russian, stories-hsk1-replace, stories-hsk2-replace, audio-jlpt1, audio-jlpt2]
+        options: [meanings, examples, examples-fill, both, comprehension, comprehension-prune, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk2, stories-hsk2, seed-n4, audio-n4, stories-n4, seed-russian, audio-russian, examples-russian, stories-russian, stories-hsk1-replace, stories-hsk2-replace, audio-jlpt1, audio-jlpt2, story-audio-hsk1, story-audio-hsk2, story-audio-jlpt1, story-audio-jlpt2, story-audio-n4, story-audio-russian, serial-hsk1, serial-hsk2, serial-jlpt1, serial-n4, serial-russian]
       language:
         description: Which language
         type: choice
         default: both
         options: [both, japanese, chinese]
+      story_tier:
+        description: "serial-* only: generate just this tier (1/2/3) as a taste test. Blank = whole level."
+        type: choice
+        default: ''
+        options: ['', '1', '2', '3']
 
 permissions:
   contents: read
@@ -46,6 +51,10 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           LLM_MODEL: ${{ vars.LLM_MODEL }}
+          # Premium tier for the serial-story pipeline only (see llm.mjs's
+          # premiumLlm) — bulk tasks never use this key.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LLM_MODEL_PREMIUM: ${{ vars.LLM_MODEL_PREMIUM }}
           GOOGLE_TTS_KEY: ${{ secrets.VITE_GOOGLE_TTS_KEY }}
         run: |
           set -e
@@ -54,6 +63,9 @@ jobs:
             japanese) LANG_FLAG="--japanese" ;;
             chinese)  LANG_FLAG="--chinese" ;;
           esac
+          # serial-* taste test: restrict to one tier when story_tier is set.
+          TIER_FLAG=""
+          if [ -n "${{ inputs.story_tier }}" ]; then TIER_FLAG="--tier ${{ inputs.story_tier }}"; fi
 
           if [ "${{ inputs.task }}" = "meanings" ] || [ "${{ inputs.task }}" = "both" ]; then
             echo "::group::Meanings"
@@ -179,5 +191,71 @@ jobs:
           if [ "${{ inputs.task }}" = "stories-russian" ]; then
             echo "::group::Generate Russian A1 stories"
             node generate-stories.mjs --language russian --system russian --level 1
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "story-audio-hsk1" ]; then
+            echo "::group::Generate narration for HSK 3.0 level 1 stories (Google TTS)"
+            node generate-story-audio.mjs --language chinese --system hsk_3 --level 1
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "story-audio-hsk2" ]; then
+            echo "::group::Generate narration for HSK 3.0 level 2 stories (Google TTS)"
+            node generate-story-audio.mjs --language chinese --system hsk_3 --level 2
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "story-audio-jlpt1" ]; then
+            echo "::group::Generate narration for JLPT N5 Part 1 (japanese level 1) stories (Google TTS)"
+            node generate-story-audio.mjs --language japanese --system jlpt --level 1
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "story-audio-jlpt2" ]; then
+            echo "::group::Generate narration for JLPT N5 Part 2 (japanese level 2) stories (Google TTS)"
+            node generate-story-audio.mjs --language japanese --system jlpt --level 2
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "story-audio-n4" ]; then
+            echo "::group::Generate narration for JLPT N4 (japanese level 3) stories (Google TTS)"
+            node generate-story-audio.mjs --language japanese --system jlpt --level 3
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "story-audio-russian" ]; then
+            echo "::group::Generate narration for Russian A1 stories (Google TTS)"
+            node generate-story-audio.mjs --language russian --system russian --level 1
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "serial-hsk1" ]; then
+            echo "::group::REPLACE HSK 1 stories with serial chapters (multi-pass pipeline)"
+            node generate-serial-stories.mjs --language chinese --system hsk_3 --level 1 --replace $TIER_FLAG
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "serial-hsk2" ]; then
+            echo "::group::REPLACE HSK 2 stories with serial chapters (multi-pass pipeline)"
+            node generate-serial-stories.mjs --language chinese --system hsk_3 --level 2 --replace $TIER_FLAG
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "serial-jlpt1" ]; then
+            echo "::group::REPLACE JLPT N5 Part 1 stories with serial chapters (multi-pass pipeline)"
+            node generate-serial-stories.mjs --language japanese --system jlpt --level 1 --replace $TIER_FLAG
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "serial-n4" ]; then
+            echo "::group::REPLACE JLPT N4 stories with serial chapters (multi-pass pipeline)"
+            node generate-serial-stories.mjs --language japanese --system jlpt --level 3 --replace $TIER_FLAG
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "serial-russian" ]; then
+            echo "::group::REPLACE Russian A1 stories with serial chapters (multi-pass pipeline)"
+            node generate-serial-stories.mjs --language russian --system russian --level 1 --replace $TIER_FLAG
             echo "::endgroup::"
           fi

@@ -11,7 +11,7 @@ import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
 import {
   ArrowLeft, Flame, Layers, LogOut, RotateCcw, Save,
-  Shield, Sparkles, Target, User, Trophy, CalendarCheck, Award, Share2, Check, AlertTriangle,
+  Shield, Sparkles, Target, User, Trophy, CalendarCheck, Award, Share2, Check, AlertTriangle, TrendingUp,
 } from 'lucide-react'
 
 const ACH_ICONS = { flame: Flame, layers: Layers, sparkles: Sparkles, trophy: Trophy, calendar: CalendarCheck }
@@ -77,6 +77,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   const [activity, setActivity] = useState({})
   const [shared, setShared] = useState(false)
   const [leeches, setLeeches] = useState([])
+  const [reviewStats, setReviewStats] = useState({ total: 0, correct: 0, days: {} })
 
   const isMobile = useIsMobile()
   const { accentHex, fontFamily, nativeName } = getLanguageDetails(profile)
@@ -132,6 +133,26 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         && l.vocabulary.level === track.current_level)
       .slice(0, 6)
     setLeeches(leechList)
+
+    // Retention (item #17b): grade 0 = "Again" (forgotten), grades 1–3 all
+    // count as a successful recall. Scoped to the current track, same as
+    // everything else on this page. review_logs only started being written
+    // recently, so early accounts may simply have nothing yet — that's fine,
+    // the panel shows an honest empty state rather than a misleading 0%.
+    const { data: reviewLogs } = await supabase
+      .from('review_logs')
+      .select('grade, reviewed_at, vocabulary!inner(language, system)')
+      .eq('user_id', session.user.id)
+      .eq('vocabulary.language', track.language)
+      .eq('vocabulary.system', track.system)
+    const days = {}
+    let correct = 0
+    ;(reviewLogs || []).forEach(r => {
+      if (r.grade > 0) correct += 1
+      const d = (r.reviewed_at || '').slice(0, 10)
+      if (d) days[d] = (days[d] || 0) + 1
+    })
+    setReviewStats({ total: (reviewLogs || []).length, correct, days })
 
     setLoading(false)
   }
@@ -395,6 +416,12 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
 
       {!loading && (
         <Panel>
+          <ReviewAccuracy stats={reviewStats} accentHex={accentHex} />
+        </Panel>
+      )}
+
+      {!loading && (
+        <Panel>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
               Level mastery
@@ -622,6 +649,84 @@ export function StudyCalendar({ activity, accentHex }) {
           <span key={i} style={{ width: '11px', height: '11px', borderRadius: '3px', background: bg }} />
         ))}
         <span>More</span>
+      </div>
+    </div>
+  )
+}
+
+// Retention rate + a 30-day reviews bar, both from review_logs (product
+// review item #17b — the calendar above already covered the 6-month
+// heatmap half of that item). Grade 0 = "Again" (forgotten); grades 1–3
+// all count as a successful recall.
+export function ReviewAccuracy({ stats, accentHex }) {
+  const isMobile = useIsMobile()
+  if (stats.total === 0) {
+    return (
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)', marginBottom: '8px' }}>
+          <TrendingUp size={17} strokeWidth={1.85} color={accentHex} />
+          Review accuracy
+        </div>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+          Once you've graded a few cards, your retention rate and daily review count will show up here.
+        </div>
+      </div>
+    )
+  }
+
+  const pct = Math.round((stats.correct / stats.total) * 100)
+
+  // Last 30 calendar days, oldest to newest.
+  const today = new Date()
+  const last30 = []
+  for (let i = 29; i >= 0; i -= 1) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    const ds = d.toISOString().slice(0, 10)
+    last30.push({ ds, count: stats.days[ds] || 0 })
+  }
+  const max = Math.max(1, ...last30.map(d => d.count))
+  const barW = isMobile ? 6 : 8
+  const gap = isMobile ? 2 : 3
+  const maxBarH = 46
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)', marginBottom: '16px' }}>
+        <TrendingUp size={17} strokeWidth={1.85} color={accentHex} />
+        Review accuracy
+      </div>
+
+      <div style={{ display: 'flex', gap: '14px', alignItems: 'stretch', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
+        <div style={{
+          flexShrink: 0, minWidth: isMobile ? '100%' : '150px', textAlign: 'center',
+          padding: '16px 12px', borderRadius: '14px', background: accentHex + '0D', border: '1px solid ' + accentHex + '22',
+        }}>
+          <div style={{ fontSize: '30px', fontWeight: 800, color: accentHex, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{pct}%</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 650 }}>
+            Recalled successfully — {stats.total} review{stats.total === 1 ? '' : 's'}
+          </div>
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 650, marginBottom: '10px' }}>Last 30 days</div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: gap + 'px', height: maxBarH + 'px' }}>
+            {last30.map(d => (
+              <div
+                key={d.ds}
+                title={d.ds + (d.count > 0 ? ' · ' + d.count + ' review' + (d.count === 1 ? '' : 's') : '')}
+                style={{
+                  width: barW + 'px',
+                  height: Math.max(2, Math.round((d.count / max) * maxBarH)) + 'px',
+                  borderRadius: '2px',
+                  background: d.count > 0 ? accentHex : 'var(--border)',
+                  opacity: d.count > 0 ? 0.85 : 0.5,
+                  flexShrink: 0,
+                }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )

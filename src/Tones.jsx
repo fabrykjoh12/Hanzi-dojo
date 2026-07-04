@@ -143,10 +143,10 @@ export default function Tones({ session, profile, track, onBack, onUpdate }) {
   function playAudio(path) {
     const url = getAudioUrl(path)
     if (!url) return
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current.currentTime = 0 }
-    const el = new Audio()
-    audioRef.current = el
-    playAudioEl(el, url, () => {})
+    // One reused element (required by playAudioEl's iOS replay caching).
+    if (!audioRef.current) audioRef.current = new Audio()
+    audioRef.current.pause()
+    playAudioEl(audioRef.current, url, () => {})
   }
 
   const q = questions[idx]

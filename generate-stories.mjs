@@ -1,6 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { llm, LLM_MODEL } from './llm.mjs'
 
+// LEGACY — superseded by generate-serial-stories.mjs (multi-pass pipeline with
+// real validation, serial chapters, premium model). Kept for reference only;
+// don't generate new content with this.
+//
 // Generate level-matched immersion stories via Groq and insert them into the
 // stories table. Config-driven per language/system/level so it works for both
 // Japanese JLPT and Chinese HSK. Each tier draws from a vocab pool (prerequisite

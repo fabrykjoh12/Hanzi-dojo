@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import { awardXp } from './xpService'
 import { PrimaryButton } from './ui'
 import { CHARACTER_READINGS } from './characterNames'
-import { getLevelLabel, playAudioEl } from './utils'
+import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
 import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRight, UserRound, Highlighter, Check, X } from 'lucide-react'
@@ -224,6 +224,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const [adding, setAdding] = useState(false)
   const segmenterRef = useRef(null)
   const wordAudioRef = useRef(null)
+  const storyAudioRef = useRef(null)
 
   const theme = languageTheme(track.language)
   const isJapanese = track.language === 'japanese'
@@ -245,7 +246,10 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  useEffect(() => () => { try { window.speechSynthesis.cancel() } catch (e) { /* noop */ } }, [])
+  useEffect(() => () => {
+    try { window.speechSynthesis.cancel() } catch { /* noop */ }
+    if (storyAudioRef.current) storyAudioRef.current.pause()
+  }, [])
 
   // Load end-of-story comprehension questions (no-op until content is generated).
   useEffect(() => {
@@ -371,29 +375,51 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   // be highlighted (read-along). Per-word boundary events are unreliable for
   // CJK, so line granularity is the robust choice. `runRef` tags each playback
   // so a stopped/restarted read ignores callbacks from the previous one.
+  //
+  // Real narration (Google TTS, same pipeline as vocabulary audio) is used
+  // whenever the story has it — `story.has_audio` is only set once every line
+  // synthesized successfully, so there's no per-line network probe needed.
+  // Everything else falls straight back to the browser's speechSynthesis,
+  // unchanged from before.
   const RATES = [0.6, 0.85, 1.1]
   const ttsLang = isJapanese ? 'ja-JP' : isChinese ? 'zh-CN' : 'ru-RU'
 
-  const speakFrom = (index, runId) => {
+  const speakLineViaSynth = (index, runId) => {
     const synth = window.speechSynthesis
-    if (!synth || runId !== runRef.current) return
-    if (index >= lines.length) { setSpeaking(false); setSpeakingLine(-1); speakingLineRef.current = -1; return }
+    if (!synth) { setSpeaking(false); setSpeakingLine(-1); speakingLineRef.current = -1; return }
     const u = new SpeechSynthesisUtterance(splitSpeaker(lines[index]).text)
     u.lang = ttsLang
     u.rate = rateRef.current
     u.onend = () => { if (runId === runRef.current) speakFrom(index + 1, runId) }
     u.onerror = () => { if (runId === runRef.current) { setSpeaking(false); setSpeakingLine(-1); speakingLineRef.current = -1 } }
-    setSpeakingLine(index)
-    speakingLineRef.current = index
     synth.speak(u)
   }
 
+  const speakFrom = (index, runId) => {
+    if (runId !== runRef.current) return
+    if (index >= lines.length) { setSpeaking(false); setSpeakingLine(-1); speakingLineRef.current = -1; return }
+    setSpeakingLine(index)
+    speakingLineRef.current = index
+
+    if (story.has_audio) {
+      const url = getAudioUrl('stories/' + story.id + '/' + index + '.mp3')
+      if (!storyAudioRef.current) storyAudioRef.current = new Audio()
+      const el = storyAudioRef.current
+      el.playbackRate = rateRef.current
+      el.onended = () => { if (runId === runRef.current) speakFrom(index + 1, runId) }
+      playAudioEl(el, url, () => { if (runId === runRef.current) speakLineViaSynth(index, runId) })
+      return
+    }
+    speakLineViaSynth(index, runId)
+  }
+
+  const cancelSynth = () => { try { window.speechSynthesis.cancel() } catch { /* not available */ } }
+
   const toggleStoryAudio = () => {
-    const synth = window.speechSynthesis
-    if (!synth) return
     if (speaking) {
       runRef.current += 1
-      synth.cancel()
+      cancelSynth()
+      if (storyAudioRef.current) storyAudioRef.current.pause()
       setSpeaking(false)
       setSpeakingLine(-1)
       speakingLineRef.current = -1
@@ -401,7 +427,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     }
     runRef.current += 1
     const runId = runRef.current
-    synth.cancel()
+    cancelSynth()
     setSpeaking(true)
     speakFrom(0, runId)
   }
@@ -414,7 +440,8 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     if (speaking) {
       runRef.current += 1
       const runId = runRef.current
-      window.speechSynthesis.cancel()
+      cancelSynth()
+      if (storyAudioRef.current) storyAudioRef.current.pause()
       speakFrom(Math.max(0, speakingLineRef.current), runId)
     }
   }
@@ -744,7 +771,9 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
           </button>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontSize: '15px', fontWeight: 700, color: TEXT, fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{story.title}</div>
-            <div style={{ fontSize: '12px', color: MUTED }}>{speaking ? 'Reading aloud…' : 'Listen (text-to-speech)'}</div>
+            <div style={{ fontSize: '12px', color: MUTED }}>
+              {speaking ? 'Reading aloud…' : (story.has_audio ? 'Listen' : 'Listen (text-to-speech)')}
+            </div>
           </div>
           <button onClick={cycleRate} aria-label="Playback speed" title="Playback speed"
             style={{
