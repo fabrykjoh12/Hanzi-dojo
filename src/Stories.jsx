@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import { getLevelLabel, getSystemLabel } from './utils'
+import { getLevelLabel, getSystemLabel, getAudioUrl } from './utils'
 import { languageTheme } from './languageTheme'
 import { isLearned } from './mastery'
 import { useIsMobile } from './useIsMobile'
@@ -133,6 +133,7 @@ function ProgressCard({ learnedCount, totalWords, accentHex }) {
 
 function StoryListCard({ story, read, accentHex, fontFamily, onClick }) {
   const [hovered, setHovered] = useState(false)
+  const coverUrl = story.image_path ? getAudioUrl(story.image_path) : null
   return (
     <button
       onClick={onClick}
@@ -145,20 +146,39 @@ function StoryListCard({ story, read, accentHex, fontFamily, onClick }) {
         boxShadow: hovered ? '0 16px 36px rgba(24,24,27,0.09)' : '0 8px 26px rgba(24,24,27,0.05)',
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
         transition: 'all 180ms ease',
-        display: 'grid', gridTemplateColumns: '44px minmax(0, 1fr) 28px',
+        display: 'grid', gridTemplateColumns: (coverUrl ? '84px' : '44px') + ' minmax(0, 1fr) 28px',
         gap: '16px', alignItems: 'center',
       }}
     >
-      <div style={{
-        width: '44px', height: '44px', borderRadius: '15px',
-        background: read ? 'var(--success-bg)' : accentHex + '10',
-        border: '1px solid ' + (read ? 'var(--success-border)' : accentHex + '18'),
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        {read
-          ? <CheckCircle2 size={21} strokeWidth={1.9} color="var(--success)" />
-          : <BookOpen size={21} strokeWidth={1.8} color={accentHex} />}
-      </div>
+      {coverUrl ? (
+        <div style={{
+          position: 'relative', width: '84px', height: '60px', borderRadius: '13px',
+          overflow: 'hidden', border: '1px solid var(--border)', background: accentHex + '10',
+        }}>
+          <img src={coverUrl} alt="" loading="lazy"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          {read && (
+            <div style={{
+              position: 'absolute', top: '4px', right: '4px', width: '20px', height: '20px',
+              borderRadius: '999px', background: 'var(--success)', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+            }}>
+              <CheckCircle2 size={13} strokeWidth={2.4} color="#fff" />
+            </div>
+          )}
+        </div>
+      ) : (
+        <div style={{
+          width: '44px', height: '44px', borderRadius: '15px',
+          background: read ? 'var(--success-bg)' : accentHex + '10',
+          border: '1px solid ' + (read ? 'var(--success-border)' : accentHex + '18'),
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {read
+            ? <CheckCircle2 size={21} strokeWidth={1.9} color="var(--success)" />
+            : <BookOpen size={21} strokeWidth={1.8} color={accentHex} />}
+        </div>
+      )}
       <div style={{ minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '18px', fontWeight: 750, fontFamily, color: 'var(--text)' }}>

@@ -11,7 +11,7 @@ on:
         description: What to regenerate
         type: choice
         default: both
-        options: [meanings, examples, examples-fill, both, comprehension, comprehension-prune, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk2, stories-hsk2, seed-n4, audio-n4, stories-n4, seed-russian, audio-russian, examples-russian, stories-russian, stories-hsk1-replace, stories-hsk2-replace, audio-jlpt1, audio-jlpt2, story-audio-hsk1, story-audio-hsk2, story-audio-jlpt1, story-audio-jlpt2, story-audio-n4, story-audio-russian, serial-hsk1, serial-hsk2, serial-jlpt1, serial-n4, serial-russian]
+        options: [meanings, examples, examples-fill, both, comprehension, comprehension-prune, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk2, stories-hsk2, seed-n4, audio-n4, stories-n4, seed-russian, audio-russian, examples-russian, stories-russian, stories-hsk1-replace, stories-hsk2-replace, audio-jlpt1, audio-jlpt2, story-audio-hsk1, story-audio-hsk2, story-audio-jlpt1, story-audio-jlpt2, story-audio-n4, story-audio-russian, serial-hsk1, serial-hsk2, serial-jlpt1, serial-n4, serial-russian, story-images-list, story-images-apply]
       language:
         description: Which language
         type: choice
@@ -257,5 +257,17 @@ jobs:
           if [ "${{ inputs.task }}" = "serial-russian" ]; then
             echo "::group::REPLACE Russian A1 stories with serial chapters (multi-pass pipeline)"
             node generate-serial-stories.mjs --language russian --system russian --level 1 --replace $TIER_FLAG
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "story-images-list" ]; then
+            echo "::group::List published stories as JSON (for authoring cover art)"
+            node generate-story-images.mjs --list
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "story-images-apply" ]; then
+            echo "::group::Apply story cover art from data/story-covers.json"
+            node generate-story-images.mjs --apply data/story-covers.json
             echo "::endgroup::"
           fi
