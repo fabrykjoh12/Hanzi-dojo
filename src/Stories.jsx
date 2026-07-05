@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, getAudioUrl } from './utils'
+import { cacheSet, cacheGet } from './offline'
 import { languageTheme } from './languageTheme'
 import { isLearned } from './mastery'
 import { useIsMobile } from './useIsMobile'
@@ -297,22 +298,47 @@ export default function Stories({ session, profile, track, onBack }) {
   async function loadData() {
     setLoading(true)
 
-    // Load all levels so every word in a story is clickable, not just current level
-    const { data: vocabData } = await supabase
-      .from('vocabulary')
-      .select('*')
-      .eq('language', track.language)
-      .eq('system', track.system)
-      .eq('is_active', true)
+    // Everything the stories screen needs is fetched, then mirrored into
+    // IndexedDB so the whole library (list + text + read markers) opens offline.
+    // If the network is down, the last good snapshot is served instead.
+    const snapKey = 'storiesdata:' + track.language + ':' + track.system + ':' + track.current_level
+    let vocabData = null, cardsData = null, storiesData = null, readsData = null
+    try {
+      // Load all levels so every word in a story is clickable, not just current level
+      const vres = await supabase
+        .from('vocabulary').select('*')
+        .eq('language', track.language).eq('system', track.system).eq('is_active', true)
+      vocabData = vres.data
+      const cres = await supabase
+        .from('cards').select('vocab_id, is_easy, state, learned')
+        .eq('user_id', session.user.id)
+      cardsData = cres.data
+      const sres = await supabase
+        .from('stories').select('*')
+        .eq('language', track.language).eq('system', track.system)
+        .eq('level', track.current_level).eq('is_published', true)
+        .order('tier', { ascending: true }).order('story_number', { ascending: true })
+      storiesData = sres.data
+      const rres = await supabase
+        .from('story_reads').select('story_id').eq('user_id', session.user.id)
+      readsData = rres.data
+    } catch { /* offline — fall back to the cached snapshot below */ }
+
+    if (storiesData && storiesData.length) {
+      cacheSet(snapKey, { vocabData, cardsData, storiesData, readsData })
+    } else {
+      const snap = await cacheGet(snapKey)
+      if (snap) {
+        vocabData = vocabData || snap.vocabData
+        cardsData = cardsData || snap.cardsData
+        storiesData = snap.storiesData
+        readsData = readsData || snap.readsData
+      }
+    }
 
     const map = {}
     ;(vocabData || []).forEach(v => { map[v.word] = v })
     setVocabMap(map)
-
-    const { data: cardsData } = await supabase
-      .from('cards')
-      .select('vocab_id, is_easy, state, learned')
-      .eq('user_id', session.user.id)
 
     const cardsMap = {}
     ;(cardsData || []).forEach(c => { cardsMap[c.vocab_id] = c })
@@ -326,23 +352,7 @@ export default function Stories({ session, profile, track, onBack }) {
     const learned = (cardsData || []).filter(c => currentLevelIds.has(c.vocab_id) && isLearned(c)).length
     setLearnedCount(learned)
 
-    const { data: storiesData } = await supabase
-      .from('stories')
-      .select('*')
-      .eq('language', track.language)
-      .eq('system', track.system)
-      .eq('level', track.current_level)
-      .eq('is_published', true)
-      .order('tier', { ascending: true })
-      .order('story_number', { ascending: true })
-
     setStories(storiesData || [])
-
-    // Finished stories (absent table before the migration → empty set).
-    const { data: readsData } = await supabase
-      .from('story_reads')
-      .select('story_id')
-      .eq('user_id', session.user.id)
     setReadIds(new Set((readsData || []).map(r => r.story_id)))
 
     setLoading(false)

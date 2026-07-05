@@ -4,7 +4,19 @@ Read this entire file before making any change. It describes not just *what* the
 
 ---
 
-## 0. LATEST SESSION — read first (2026-07-02)
+## 0. LATEST SESSION — read first (2026-07-05)
+
+### Offline support — additive layer, online path untouched
+- **Design rule:** offline is strictly additive. The normal online code path is byte-for-byte unchanged; offline branches only run when `navigator.onLine === false`, and every helper no-ops safely if IndexedDB is missing. Verified: `npm run build` ✓, vitest **63** ✓, eslint total errors **24 = baseline** (added none).
+- **`src/offline.js`** — dependency-free IndexedDB wrapper (`hanzi-offline` db, stores `cache`/`outbox`/`audio`). All ops resolve to harmless defaults on any failure. (localStorage is still banned — IndexedDB is the sanctioned store.)
+- **`src/syncQueue.js`** — durable write outbox replayed on reconnect. Idempotency: card writes are upserts to a known next-state; **new cards de-dupe on (user_id, vocab_id)** before insert (offline new cards use a throwaway `local-…` id in-session, the op carries `cardId:null`); XP is reconciled as a **delta** against the live server total (worst case on a mid-flush crash is a little LOST XP, never inflated). `review_logs`/`daily_activity` are best-effort. Pure helpers (`xpTotalOf`/`dayCountsOf`/`reconcileAward`) unit-tested in `syncQueue.test.js`.
+- **`src/data.js`** `getTrackCards` — read-through cache: mirrors every good fetch to IndexedDB, serves the last copy when a fetch comes back empty (offline). Transparent to Study/Home/Test.
+- **`src/Study.jsx`** — offline: `loadQueue` rebuilds from cached vocab+cards; `applyGrade` grades locally (FSRS already client-side) and enqueues the write; undo drops the queued op (`snapshot.outboxId`) instead of hitting the network. **`OfflineSaveButton`** on the done screen prefetches the level's vocab + audio (`src/prefetch.js`).
+- **`src/Stories.jsx`** caches its whole snapshot (list+text+reads) for offline reading; **`StoryReaderImmersive.finishStory`** queues the read + XP offline.
+- **`src/OfflineBar.jsx`** (mounted in App) — calm status pill: "Offline — saved on this device" / "Syncing N reviews…"; it also drives `flushOutbox` on mount and on every `online` event.
+- **KNOWN GAPS (need a real-device pass — can't test browser/live-Supabase from the sandbox):** (1) **offline writes** (grade replay, XP delta reconcile) verified only by unit tests + build; exercise on a real device before trusting. (2) **iOS offline audio** still fails — Safari ranges every media request and the SW bypasses ranged requests (same root cause as the v4 audio saga); prefetch warms the cache for Chromium engines only. (3) Offline level-ups don't grant the streak-freeze reward in-session (reconciled on flush via the XP delta).
+
+## 0.1 PREVIOUS SESSION (2026-07-02)
 
 ### Batch 19 — serial-story pipeline made to actually work (plain-text protocol)
 - The big lesson: **JSON is the wrong container for multi-line CJK prose.** gemini (pro AND flash) constantly emitted raw newlines + unescaped quotes inside JSON string values ("Unterminated string in JSON"), which (a) triggered endless slow retries — a full HSK1 level took **2h46m** — and (b) silently broke the revise steps, so quality fixes never applied and scores stuck at 3-4. A `repairJson` escape pass did NOT fully fix it (unescaped quotes + truncation remained).

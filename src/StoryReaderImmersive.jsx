@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from './supabase'
 import { awardXp } from './xpService'
+import { isOnline } from './useOnline'
+import { enqueueStoryRead } from './syncQueue'
 import { PrimaryButton } from './ui'
 import { CHARACTER_READINGS } from './characterNames'
 import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
@@ -342,11 +344,17 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const finishStory = async () => {
     if (finishing || isRead) return
     setFinishing(true)
-    const { error } = await supabase
-      .from('story_reads')
-      .upsert({ user_id: session.user.id, story_id: story.id })
-    if (!error) {
-      if (profile) awardXp(session, profile, STORY_FINISH_XP)
+    if (isOnline()) {
+      const { error } = await supabase
+        .from('story_reads')
+        .upsert({ user_id: session.user.id, story_id: story.id })
+      if (!error) {
+        if (profile) awardXp(session, profile, STORY_FINISH_XP)
+        if (onMarkRead) onMarkRead(story.id)
+      }
+    } else {
+      // Offline: queue the read + its XP; both land when the outbox flushes.
+      await enqueueStoryRead({ userId: session.user.id, storyId: story.id, xpDelta: STORY_FINISH_XP })
       if (onMarkRead) onMarkRead(story.id)
     }
     setFinishing(false)
