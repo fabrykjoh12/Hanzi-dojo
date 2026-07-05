@@ -124,6 +124,30 @@ export function audioHas(path) {
   return tx('audio', 'readonly', (s) => s.getKey ? s.getKey(path) : s.get(path), null).then(Boolean)
 }
 
+// ── Storage management (Settings) ───────────────────────────────────────────
+export function audioCount() {
+  return tx('audio', 'readonly', (s) => s.count(), 0).then((n) => n || 0)
+}
+
+// Remove downloaded audio + cached snapshots. Deliberately leaves the outbox
+// intact so unsynced offline writes are never lost.
+export function clearDownloads() {
+  return Promise.all([
+    tx('cache', 'readwrite', (s) => s.clear(), null),
+    tx('audio', 'readwrite', (s) => s.clear(), null),
+  ])
+}
+
+// { usage, quota } bytes from the Storage API, or null if unsupported.
+export function estimateStorage() {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.estimate) {
+      return navigator.storage.estimate().catch(() => null)
+    }
+  } catch { /* noop */ }
+  return Promise.resolve(null)
+}
+
 // Date.now is fine at runtime (the scripting ban on it is a workflow-script
 // constraint, not a browser one). Guarded so it can't throw.
 function nowStamp() {

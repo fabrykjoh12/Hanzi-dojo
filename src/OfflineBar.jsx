@@ -4,11 +4,21 @@ import { supabase } from './supabase'
 import { flushOutbox, pendingWrites } from './syncQueue'
 import { useOnline } from './useOnline'
 
+// Ask the browser to replay the outbox when connectivity returns, even if the
+// page is backgrounded (the SW 'sync' handler wakes clients to flush). No-op
+// where Background Sync is unsupported — the online/onload flush still covers it.
+function registerFlushSync() {
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return
+  navigator.serviceWorker.ready
+    .then(reg => (reg.sync ? reg.sync.register('hd-flush') : null))
+    .catch(() => { /* Background Sync unavailable — fine */ })
+}
+
 // A calm status pill that appears only when it has something to say:
 //  - offline  → reassure that progress is saved locally and will sync,
 //  - online with queued writes → flush the outbox and show a brief "syncing".
-// It also drives the flush: on mount and every time the connection returns, any
-// grades made offline are replayed to Supabase. Sits above the mobile nav.
+// It also drives the flush: on mount, every time the connection returns, and
+// when the service worker's background-sync handler pings. Sits above the nav.
 export default function OfflineBar({ session }) {
   const online = useOnline()
   const [pending, setPending] = useState(0)
@@ -23,8 +33,12 @@ export default function OfflineBar({ session }) {
     async function run() {
       if (!session) { setPending(0); return }
       await refresh()
-      if (!online) return
       const count = await pendingWrites()
+      if (!online) {
+        // Queue a background sync so a backgrounded page still flushes on reconnect.
+        if (count > 0) registerFlushSync()
+        return
+      }
       if (count > 0) {
         if (!cancelled) setSyncing(true)
         await flushOutbox(supabase)
@@ -35,6 +49,21 @@ export default function OfflineBar({ session }) {
     run()
     return () => { cancelled = true }
   }, [online, session])
+
+  // Flush when the service worker's background-sync handler wakes us.
+  useEffect(() => {
+    if (!session || typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return undefined
+    const onMessage = async (e) => {
+      if (e.data && e.data.type === 'hd-flush') {
+        setSyncing(true)
+        await flushOutbox(supabase)
+        setSyncing(false)
+        setPending(await pendingWrites())
+      }
+    }
+    navigator.serviceWorker.addEventListener('message', onMessage)
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage)
+  }, [session])
 
   if (online && pending === 0) return null
 

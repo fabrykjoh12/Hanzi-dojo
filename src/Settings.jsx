@@ -1,13 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import {
   Palette, SlidersHorizontal, Sun, Moon, Keyboard, Eye,
-  Volume2, BookOpenCheck, Gauge, Bell,
+  Volume2, BookOpenCheck, Gauge, Bell, HardDrive, Trash2, CheckCircle2,
 } from 'lucide-react'
 import { useIsMobile } from './useIsMobile'
 import { useTheme } from './ThemeContext'
 import { languageTheme } from './languageTheme'
 import { pushSupported, enableReminders, disableReminders, setReminderHour } from './push'
+import { audioCount, estimateStorage, clearDownloads, offlineAvailable } from './offline'
+import { pendingWrites } from './syncQueue'
 
 // The picker shows times the user actually recognizes ("9:00 AM" local),
 // while reminder_hour_utc stores UTC for the sender script — convert at the
@@ -204,9 +206,76 @@ export default function Settings({ session, profile, onUpdate }) {
               <div style={{ fontSize: '12.5px', color: 'var(--danger)', marginTop: '10px', lineHeight: 1.5 }}>{reminderError}</div>
             )}
           </Card>
+
+          {/* Offline downloads + storage */}
+          <OfflineStorageCard accentHex={accentHex} />
         </div>
       </div>
     </div>
+  )
+}
+
+function OfflineStorageCard({ accentHex }) {
+  const [stats, setStats] = useState(null)
+  const [confirming, setConfirming] = useState(false)
+  const [cleared, setCleared] = useState(false)
+
+  async function load() {
+    const [clips, est, pend] = await Promise.all([audioCount(), estimateStorage(), pendingWrites()])
+    setStats({ clips, usage: est && typeof est.usage === 'number' ? est.usage : null, pending: pend })
+  }
+  useEffect(() => {
+    const t = setTimeout(load, 0)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  if (!offlineAvailable()) return null
+
+  const doClear = async () => {
+    if (!confirming) {
+      setConfirming(true)
+      setTimeout(() => setConfirming(false), 3000)
+      return
+    }
+    setConfirming(false)
+    await clearDownloads()
+    setCleared(true)
+    load()
+  }
+
+  const mb = stats && stats.usage != null ? (stats.usage / (1024 * 1024)).toFixed(1) + ' MB' : null
+  const rows = []
+  if (mb) rows.push('About ' + mb + ' stored on this device')
+  if (stats) rows.push(stats.clips + ' pronunciation clip' + (stats.clips === 1 ? '' : 's') + ' saved for offline')
+  if (stats && stats.pending > 0) rows.push(stats.pending + ' review' + (stats.pending === 1 ? '' : 's') + ' waiting to sync (kept when you clear)')
+
+  return (
+    <Card
+      icon={HardDrive}
+      title="Offline storage"
+      text="Reviews, stories and audio are cached on this device so the app works without a connection. Clearing frees space — your progress and any unsynced reviews are kept."
+      accentHex={accentHex}
+    >
+      <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: '14px' }}>
+        {stats ? rows.map((r, i) => <div key={i}>{r}</div>) : 'Checking…'}
+      </div>
+      <button
+        onClick={doClear}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: '8px',
+          height: '40px', padding: '0 16px', borderRadius: '12px', cursor: 'pointer',
+          border: '1px solid ' + (confirming ? '#DC262655' : 'var(--border)'),
+          background: confirming ? '#DC26260D' : 'var(--surface-2)',
+          color: confirming ? '#DC2626' : 'var(--text)',
+          fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+        }}
+      >
+        {cleared
+          ? <><CheckCircle2 size={16} strokeWidth={2} color="#2F9E6D" /> Cleared</>
+          : <><Trash2 size={16} strokeWidth={2} /> {confirming ? 'Tap again to clear' : 'Clear downloaded data'}</>}
+      </button>
+    </Card>
   )
 }
 
