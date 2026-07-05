@@ -8,6 +8,7 @@ import { ThemeContext } from './ThemeContext'
 import Landing from './Landing'
 import PasswordReset from './PasswordReset'
 import Toasts from './Toasts'
+import OfflineBar from './OfflineBar'
 import Feedback from './Feedback'
 import Onboarding from './Onboarding'
 import Sidebar from './Sidebar'
@@ -411,6 +412,7 @@ export default function App() {
           <Feedback session={session} profile={profile} view={view} />
         )}
         <Toasts />
+        <OfflineBar session={session} />
       </div>
     </ThemeContext.Provider>
   )

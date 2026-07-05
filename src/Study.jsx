@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
+import { isOnline } from './useOnline'
+import { enqueueGrade } from './syncQueue'
+import { cacheSet, cacheGet, outboxDelete, offlineAvailable } from './offline'
 import { getTrackCards } from './data'
 import { schedule, previewLabels } from './srs'
 import { xpForGrade, levelInfo, levelTitle, nextTitle } from './xp'
@@ -16,10 +19,11 @@ import { CountUp } from './ui'
 import { cleanMeaning } from './cleanMeaning'
 import ChatMission from './ChatMission'
 import { pickMission } from './chatMissions'
+import { prefetchLevel } from './prefetch'
 import {
   Volume2, VolumeX, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
   Sparkles, CheckCircle2, Layers, BookOpenCheck, Sunrise, X, Snowflake, TrendingUp,
-  MessageCircleMore, ChevronRight,
+  MessageCircleMore, ChevronRight, Download, CheckCheck,
 } from 'lucide-react'
 
 // Does the typed input match the card's reading (or the word itself)?
@@ -327,14 +331,23 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     setLoading(true)
     sessionVocabRef.current = []
 
-    const { data: vocab } = await supabase
-      .from('vocabulary')
-      .select('*')
-      .eq('language', track.language)
-      .eq('system', track.system)
-      .eq('level', track.current_level)
-      .eq('is_active', true)
-      .order('sort_order', { ascending: true })
+    const vocabKey = 'vocab:' + track.language + ':' + track.system + ':' + track.current_level
+    let vocab = null
+    try {
+      const res = await supabase
+        .from('vocabulary')
+        .select('*')
+        .eq('language', track.language)
+        .eq('system', track.system)
+        .eq('level', track.current_level)
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true })
+      vocab = res.data
+    } catch { /* offline — fall back to the cached vocabulary below */ }
+    // Mirror the level's vocabulary for offline; fall back to it when the fetch
+    // came back empty because the network is down.
+    if (vocab && vocab.length) cacheSet(vocabKey, vocab)
+    else { const cached = await cacheGet(vocabKey); if (cached) vocab = cached }
     vocabRef.current = vocab || []
 
     // Server-side scoped to this level — never the whole cross-language table.
@@ -439,14 +452,18 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     if (cardState === 'new') a.newC += 1
     else if (cardState === 'review') a.review += 1
     else a.learn += 1
-    supabase.from('daily_activity').upsert({
-      user_id: session.user.id,
-      activity_date: todayStr(),
-      studied_cards: a.studied,
-      new_cards: a.newC,
-      learning_cards: a.learn,
-      review_cards: a.review,
-    }, { onConflict: 'user_id,activity_date' }).then(() => {})
+    // Offline, these counts ride along in the queued grade op and are folded
+    // into the server row when the outbox flushes.
+    if (isOnline()) {
+      supabase.from('daily_activity').upsert({
+        user_id: session.user.id,
+        activity_date: todayStr(),
+        studied_cards: a.studied,
+        new_cards: a.newC,
+        learning_cards: a.learn,
+        review_cards: a.review,
+      }, { onConflict: 'user_id,activity_date' }).then(() => {})
+    }
   }
 
   // Recompute the next-day forecast (reviews + new) for the recap card.
@@ -518,6 +535,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const applyGrade = async (grade) => {
     const card = queue[0]
     const res = schedule(card, grade)
+    const online = isOnline()
 
     // A new grade invalidates any pending undo — its snapshot predates this one.
     clearTimeout(undoTimerRef.current)
@@ -566,10 +584,14 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
     if (!streakDone) {
       setStreakDone(true)
-      const newStreak = await updateStreak(profile)
-      if (typeof newStreak.streak === 'number') streakAfterRef.current = newStreak.streak
-      if (typeof newStreak.streak_freezes === 'number') freezesRef.current = newStreak.streak_freezes
-      if (onStreakUpdate) onStreakUpdate(newStreak)
+      if (online) {
+        try {
+          const newStreak = await updateStreak(profile)
+          if (typeof newStreak.streak === 'number') streakAfterRef.current = newStreak.streak
+          if (typeof newStreak.streak_freezes === 'number') freezesRef.current = newStreak.streak_freezes
+          if (onStreakUpdate) onStreakUpdate(newStreak)
+        } catch { /* offline — the streak reconciles on the next online session */ }
+      }
     }
 
     // Award XP through the shared rulebook (level-ups grant capped streak
@@ -583,36 +605,62 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       s.leveledTo = award.newLevel
       s.freezesEarned += award.freezesEarned
       if (award.freezesEarned > 0) {
-        supabase.from('profiles').update({ streak_freezes: freezesRef.current }).eq('id', session.user.id).then(() => {})
+        if (online) supabase.from('profiles').update({ streak_freezes: freezesRef.current }).eq('id', session.user.id).then(() => {})
         if (onStreakUpdate) onStreakUpdate({ streak_freezes: freezesRef.current })
       }
     }
 
     let cardId = card.id
-    if (cardId) {
-      const { error } = await supabase.from('cards').update(res.updates).eq('id', cardId)
-      if (error) {
-        console.error('[Study] card update failed', error)
-        setSaveError(error.message)
-        return
+    let outboxId = null
+    if (online) {
+      if (cardId) {
+        const { error } = await supabase.from('cards').update(res.updates).eq('id', cardId)
+        if (error) {
+          console.error('[Study] card update failed', error)
+          setSaveError(error.message)
+          return
+        }
+      } else {
+        const { data, error } = await supabase
+          .from('cards')
+          .insert({ user_id: session.user.id, vocab_id: card.vocab_id, ...res.updates })
+          .select('id')
+          .single()
+        if (error) {
+          console.error('[Study] card insert failed', error)
+          setSaveError(error.message)
+          return
+        }
+        cardId = data?.id
       }
     } else {
-      const { data, error } = await supabase
-        .from('cards')
-        .insert({ user_id: session.user.id, vocab_id: card.vocab_id, ...res.updates })
-        .select('id')
-        .single()
-      if (error) {
-        console.error('[Study] card insert failed', error)
-        setSaveError(error.message)
-        return
-      }
-      cardId = data?.id
+      // Offline: grade locally (FSRS already ran above) and queue the write.
+      // A brand-new card gets a throwaway local id for this session only; the
+      // outbox op carries cardId:null so replay inserts it (de-duped by vocab)
+      // and assigns the real server id then.
+      if (!cardId) cardId = 'local-' + Date.now() + '-' + card.vocab_id
+      outboxId = await enqueueGrade({
+        userId: session.user.id,
+        vocabId: card.vocab_id,
+        cardId: card.id || null,
+        updates: res.updates,
+        log: {
+          grade,
+          previous_state: card.state,
+          next_state: res.updates.state,
+          previous_interval_days: card.interval_days || 0,
+          next_interval_days: res.updates.interval_days,
+        },
+        xpDelta: xpGain,
+        day: todayStr(),
+        state: card.state,
+      })
     }
 
     // Offer undo for a few seconds — except when this grade completes the
     // session (the recap snapshot has already been taken by then).
     snapshot.cardId = cardId
+    snapshot.outboxId = outboxId
     const willComplete = !res.stay && queue.length === 1
     if (!willComplete) {
       undoRef.current = snapshot
@@ -628,22 +676,24 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     // Log the review so FSRS parameters can be tuned and retention stats built
     // later. Best-effort: history is nice-to-have, grading must never block on
     // it. The log id is captured onto the snapshot so undo can remove the entry.
-    supabase.from('review_logs').insert({
-      user_id: session.user.id,
-      card_id: cardId,
-      vocab_id: card.vocab_id,
-      grade,
-      previous_state: card.state,
-      next_state: res.updates.state,
-      previous_interval_days: card.interval_days || 0,
-      next_interval_days: res.updates.interval_days,
-    }).select('id').single().then(({ data }) => {
-      snapshot.logId = data && data.id
-    })
+    if (online) {
+      supabase.from('review_logs').insert({
+        user_id: session.user.id,
+        card_id: cardId,
+        vocab_id: card.vocab_id,
+        grade,
+        previous_state: card.state,
+        next_state: res.updates.state,
+        previous_interval_days: card.interval_days || 0,
+        next_interval_days: res.updates.interval_days,
+      }).select('id').single().then(({ data }) => {
+        snapshot.logId = data && data.id
+      })
+    }
 
     // Persist lifetime XP (best-effort; harmless if the column doesn't exist yet)
     // and reflect it in the in-memory profile so Home/Profile update live.
-    supabase.from('profiles').update({ total_xp: xpRef.current }).eq('id', session.user.id).then(() => {})
+    if (online) supabase.from('profiles').update({ total_xp: xpRef.current }).eq('id', session.user.id).then(() => {})
     if (onStreakUpdate) onStreakUpdate({ total_xp: xpRef.current })
 
     setFlipped(false)
@@ -678,7 +728,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     undoRef.current = null
     setUndoVisible(false)
     try {
-      if (u.wasNew) {
+      if (u.outboxId != null) {
+        // The grade was only queued offline and never reached the server — just
+        // drop it from the outbox. Local session state is restored below.
+        outboxDelete(u.outboxId)
+      } else if (u.wasNew) {
         // This grade created the row; the user's explicit undo removes it again
         // (the card returns to the queue as a brand-new item).
         if (u.cardId) {
@@ -702,7 +756,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           learning_step: c.learning_step,
         }).eq('id', u.cardId)
       }
-      if (u.logId) supabase.from('review_logs').delete().eq('id', u.logId).then(() => {})
+      const serverPersisted = u.outboxId == null && isOnline()
+      if (serverPersisted && u.logId) supabase.from('review_logs').delete().eq('id', u.logId).then(() => {})
 
       sessionRef.current = u.session
       activityRef.current = u.activity
@@ -710,16 +765,18 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       const restore = { total_xp: u.xp }
       if (freezesRef.current !== u.freezes) restore.streak_freezes = u.freezes
       freezesRef.current = u.freezes
-      supabase.from('profiles').update(restore).eq('id', session.user.id).then(() => {})
+      if (serverPersisted) {
+        supabase.from('profiles').update(restore).eq('id', session.user.id).then(() => {})
+        supabase.from('daily_activity').upsert({
+          user_id: session.user.id,
+          activity_date: todayStr(),
+          studied_cards: u.activity.studied,
+          new_cards: u.activity.newC,
+          learning_cards: u.activity.learn,
+          review_cards: u.activity.review,
+        }, { onConflict: 'user_id,activity_date' }).then(() => {})
+      }
       if (onStreakUpdate) onStreakUpdate(restore)
-      supabase.from('daily_activity').upsert({
-        user_id: session.user.id,
-        activity_date: todayStr(),
-        studied_cards: u.activity.studied,
-        new_cards: u.activity.newC,
-        learning_cards: u.activity.learn,
-        review_cards: u.activity.review,
-      }, { onConflict: 'user_id,activity_date' }).then(() => {})
 
       setFlipped(false)
       setTypedValue('')
@@ -942,6 +999,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                 <ChevronRight size={20} color={accentHex} />
               </button>
             )}
+
+            <OfflineSaveButton track={track} accentHex={accentHex} />
 
             <PrimaryButton onClick={onBack} icon={ArrowLeft}>
               Back home
@@ -1359,5 +1418,46 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         </div>
       </div>
     </div>
+  )
+}
+
+// "Save this level for offline": warms the vocabulary snapshot and every
+// pronunciation MP3 into the offline caches so a later no-network session has
+// its cards and audio. Hidden when IndexedDB isn't available.
+function OfflineSaveButton({ track, accentHex }) {
+  const [state, setState] = useState('idle') // idle | saving | done
+  const [pct, setPct] = useState(0)
+  if (!offlineAvailable()) return null
+
+  const run = async () => {
+    if (state === 'saving') return
+    setState('saving')
+    setPct(0)
+    try {
+      await prefetchLevel(track, track.current_level, (done, total) => {
+        setPct(total ? Math.round((done / total) * 100) : 100)
+      })
+      setState('done')
+    } catch {
+      setState('idle')
+    }
+  }
+
+  const label = state === 'saving'
+    ? 'Saving for offline… ' + pct + '%'
+    : state === 'done'
+      ? 'Saved — reviews and audio work offline'
+      : 'Save this level for offline'
+  const Icon = state === 'done' ? CheckCheck : Download
+
+  return (
+    <button onClick={run} disabled={state !== 'idle'} style={{
+      width: '100%', marginBottom: '10px', padding: '12px 16px', borderRadius: '14px',
+      border: '1px solid ' + accentHex + '2A', background: accentHex + '0D', color: accentHex,
+      cursor: state === 'idle' ? 'pointer' : 'default', font: '700 13.5px Inter, sans-serif',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+    }}>
+      <Icon size={16} strokeWidth={2.2} /> {label}
+    </button>
   )
 }
