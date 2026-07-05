@@ -96,6 +96,46 @@ export const SENTENCE_BANK = {
     {
       "text": "我要回家了。",
       "en": "I'm going home."
+    },
+    {
+      "text": "我想去中国旅游。",
+      "en": "I want to travel to China."
+    },
+    {
+      "text": "你会做饭吗？",
+      "en": "Can you cook?"
+    },
+    {
+      "text": "他每天都很开心。",
+      "en": "He is happy every day."
+    },
+    {
+      "text": "我们的学校很大。",
+      "en": "Our school is very big."
+    },
+    {
+      "text": "今天是星期几？",
+      "en": "What day is it today?"
+    },
+    {
+      "text": "我的手机没电了。",
+      "en": "My phone is out of battery."
+    },
+    {
+      "text": "你想吃点什么？",
+      "en": "What would you like to eat?"
+    },
+    {
+      "text": "我们下午去看电影。",
+      "en": "We're going to a movie this afternoon."
+    },
+    {
+      "text": "他不在办公室。",
+      "en": "He is not in the office."
+    },
+    {
+      "text": "我很高兴认识你。",
+      "en": "I'm glad to meet you."
     }
   ],
   "chinese|hsk_3|2": [
@@ -290,6 +330,92 @@ export const SENTENCE_BANK = {
       "en": "I'm a little tired."
     }
   ],
+  "japanese|jlpt|2": [
+    {
+      "text": "昨日は忙しかったです。",
+      "en": "Yesterday was busy."
+    },
+    {
+      "text": "この店は安いです。",
+      "en": "This shop is cheap."
+    },
+    {
+      "text": "家族と旅行に行きます。",
+      "en": "I'll travel with my family."
+    },
+    {
+      "text": "週末は何をしますか。",
+      "en": "What do you do on the weekend?"
+    },
+    {
+      "text": "図書館で本を読みます。",
+      "en": "I read books at the library."
+    },
+    {
+      "text": "少し休みましょう。",
+      "en": "Let's rest a little."
+    },
+    {
+      "text": "部屋を掃除します。",
+      "en": "I clean my room."
+    },
+    {
+      "text": "財布をなくしました。",
+      "en": "I lost my wallet."
+    },
+    {
+      "text": "手を洗ってください。",
+      "en": "Please wash your hands."
+    },
+    {
+      "text": "病院はどこにありますか。",
+      "en": "Where is the hospital?"
+    },
+    {
+      "text": "音楽を聞くのが好きです。",
+      "en": "I like listening to music."
+    },
+    {
+      "text": "明日は雨が降るでしょう。",
+      "en": "It will probably rain tomorrow."
+    },
+    {
+      "text": "一緒に写真を撮りましょう。",
+      "en": "Let's take a photo together."
+    },
+    {
+      "text": "電気を消してください。",
+      "en": "Please turn off the light."
+    },
+    {
+      "text": "夏休みに海へ行きます。",
+      "en": "I'll go to the sea over summer break."
+    },
+    {
+      "text": "私は魚が好きです。",
+      "en": "I like fish."
+    },
+    {
+      "text": "駅の前で待っています。",
+      "en": "I'm waiting in front of the station."
+    },
+    {
+      "text": "今晩何を食べますか。",
+      "en": "What will you eat tonight?"
+    },
+    {
+      "text": "道を教えてください。",
+      "en": "Please tell me the way."
+    },
+    {
+      "text": "来週試験があります。",
+      "en": "There's an exam next week."
+    },
+    {
+      "text": "彼はとても親切です。",
+      "en": "He is very kind."
+    }
+  ],
   "japanese|jlpt|3": [
     {
       "text": "趣味は漫画を書くことです。",
@@ -342,6 +468,54 @@ export const SENTENCE_BANK = {
     {
       "text": "日本語が上手になりました。",
       "en": "My Japanese has improved."
+    },
+    {
+      "text": "私は日本に住みたいです。",
+      "en": "I want to live in Japan."
+    },
+    {
+      "text": "早く元気になってください。",
+      "en": "Please get well soon."
+    },
+    {
+      "text": "会議は三時に始まります。",
+      "en": "The meeting starts at three."
+    },
+    {
+      "text": "この問題は難しすぎます。",
+      "en": "This problem is too difficult."
+    },
+    {
+      "text": "荷物を持ちましょうか。",
+      "en": "Shall I carry your bags?"
+    },
+    {
+      "text": "将来医者になりたいです。",
+      "en": "I want to become a doctor in the future."
+    },
+    {
+      "text": "母に電話をかけました。",
+      "en": "I called my mother."
+    },
+    {
+      "text": "予約を取ってください。",
+      "en": "Please make a reservation."
+    },
+    {
+      "text": "今日は仕事を休みました。",
+      "en": "I took the day off work today."
+    },
+    {
+      "text": "彼女は歌を歌っています。",
+      "en": "She is singing a song."
+    },
+    {
+      "text": "約束の時間に遅れました。",
+      "en": "I was late for the appointment."
+    },
+    {
+      "text": "この料理は作り方が簡単です。",
+      "en": "This dish is easy to make."
     }
   ],
   "russian|russian|1": [
@@ -440,6 +614,46 @@ export const SENTENCE_BANK = {
     {
       "text": "Спасибо большое за помощь.",
       "en": "Thank you very much for the help."
+    },
+    {
+      "text": "Я работаю каждый день.",
+      "en": "I work every day."
+    },
+    {
+      "text": "Мы идём в кино.",
+      "en": "We're going to the cinema."
+    },
+    {
+      "text": "Где ты живёшь?",
+      "en": "Where do you live?"
+    },
+    {
+      "text": "У меня есть собака.",
+      "en": "I have a dog."
+    },
+    {
+      "text": "Сегодня очень холодно.",
+      "en": "It's very cold today."
+    },
+    {
+      "text": "Я не говорю по-английски.",
+      "en": "I don't speak English."
+    },
+    {
+      "text": "Мой друг живёт в Петербурге.",
+      "en": "My friend lives in Petersburg."
+    },
+    {
+      "text": "Что ты делаешь вечером?",
+      "en": "What are you doing this evening?"
+    },
+    {
+      "text": "Я люблю русскую музыку.",
+      "en": "I love Russian music."
+    },
+    {
+      "text": "Позвони мне завтра.",
+      "en": "Call me tomorrow."
     }
   ]
 }
