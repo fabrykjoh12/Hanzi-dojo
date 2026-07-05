@@ -13,6 +13,9 @@ import { X, Volume2, Bookmark, Check, Type, Languages, SplitSquareHorizontal, Me
 // behave exactly like the flashcards and story reader.
 
 const MISSION_XP = 8
+// The chat runner is a self-contained "messaging app" surface: it stays on its
+// own warm-light palette in both app themes (a half-dark chat would read as a
+// bug), so it pins colors instead of using the app's light/dark CSS vars.
 const PUNCT = new Set('，。！？：；、“”‘’（）《》…—·,.!?:;"\'()[] \t\n'.split(''))
 
 function isPunctChar(ch) {
@@ -164,7 +167,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
 
   // Comprehension scoring.
   const questions = mission.comprehensionQuestions || []
-  const answeredAll = questions.length > 0 && questions.every((_, i) => answers[i] !== undefined)
+  const answeredAll = questions.length === 0 || questions.every((_, i) => answers[i] !== undefined)
   const correctCount = questions.filter((q, i) => answers[i] === q.answer).length
 
   // Weak words handed to SRS: target words the learner tapped for help on (or all
@@ -233,16 +236,16 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
   const header = (
     <div style={{
       display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px',
-      background: 'var(--surface)', borderBottom: '1px solid var(--border)', flexShrink: 0,
+      background: '#FFFFFF', borderBottom: '1px solid rgba(0,0,0,0.09)', flexShrink: 0,
     }}>
       <button onClick={onClose} aria-label="Close" style={ghost}>
-        <X size={20} strokeWidth={2} color="var(--text-muted)" />
+        <X size={20} strokeWidth={2} color="#6B6660" />
       </button>
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text)', fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: '15px', fontWeight: 800, color: '#1A1A1A', fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {mission.scenario.title}
         </div>
-        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>~{mission.estimatedTime} min · {mission.targetWords.length} words</div>
+        <div style={{ fontSize: '12px', color: '#6B6660' }}>~{mission.estimatedTime} min · {mission.targetWords.length} words</div>
       </div>
       <MessageCircleMore size={20} strokeWidth={2} color={accent} />
     </div>
@@ -270,7 +273,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
                 const mine = m.from === 'me'
                 return (
                   <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', marginBottom: '14px' }}>
-                    {!mine && <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: 700, margin: '0 0 4px 8px', fontFamily: font }}>{m.name}</div>}
+                    {!mine && <div style={{ fontSize: '11.5px', color: '#6B6660', fontWeight: 700, margin: '0 0 4px 8px', fontFamily: font }}>{m.name}</div>}
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', maxWidth: '86%', flexDirection: mine ? 'row-reverse' : 'row' }}>
                       <div style={{
                         background: mine ? skin.myBubble : skin.theirBubble,
@@ -290,7 +293,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
                         )}
                       </div>
                       <button onClick={() => speakSentence(m.text)} aria-label="Play" style={{ ...ghost, padding: '5px' }}>
-                        <Volume2 size={16} strokeWidth={2} color="var(--text-faint)" />
+                        <Volume2 size={16} strokeWidth={2} color="#A6A29B" />
                       </button>
                     </div>
                   </div>
@@ -299,8 +302,8 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
             </div>
           </div>
           <BottomBar>
-            <button onClick={() => setPhase('questions')} style={primary(accent)}>
-              Check understanding
+            <button onClick={() => setPhase(questions.length ? 'questions' : 'reply')} style={primary(accent)}>
+              {questions.length ? 'Check understanding' : 'Your turn to reply'}
             </button>
           </BottomBar>
         </>
@@ -315,19 +318,19 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
               const answered = chosen !== undefined
               return (
                 <div key={qi} style={{ marginBottom: '22px' }}>
-                  <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginBottom: '10px', fontFamily: font }}>{qi + 1}. {q.question}</div>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: '#1A1A1A', marginBottom: '10px', fontFamily: font }}>{qi + 1}. {q.question}</div>
                   <div style={{ display: 'grid', gap: '9px' }}>
                     {q.options.map((opt, oi) => {
-                      let bc = 'var(--border)', bgc = 'var(--surface)'
-                      if (answered && oi === q.answer) { bc = '#2F9E6D'; bgc = 'var(--success-bg)' }
-                      else if (answered && oi === chosen) { bc = '#DC2626'; bgc = 'var(--danger-bg)' }
+                      let bc = 'rgba(0,0,0,0.09)', bgc = '#FFFFFF'
+                      if (answered && oi === q.answer) { bc = '#2F9E6D'; bgc = '#E7F6EE' }
+                      else if (answered && oi === chosen) { bc = '#DC2626'; bgc = '#FBEAEA' }
                       return (
                         <button key={oi} disabled={answered}
                           onClick={() => setAnswers(a => ({ ...a, [qi]: oi }))}
                           style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px',
                             textAlign: 'left', padding: '13px 15px', borderRadius: '13px',
-                            border: '1.5px solid ' + bc, background: bgc, color: 'var(--text)',
+                            border: '1.5px solid ' + bc, background: bgc, color: '#1A1A1A',
                             cursor: answered ? 'default' : 'pointer', fontSize: '17px', fontFamily: font,
                           }}>
                           <span>{opt}</span>
@@ -353,7 +356,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px 120px' }}>
           <div style={{ maxWidth: '560px', margin: '0 auto' }}>
             <SectionTitle>Your reply</SectionTitle>
-            <div style={{ fontSize: '15px', color: 'var(--text)', marginBottom: '16px', fontFamily: font, lineHeight: 1.6 }}>
+            <div style={{ fontSize: '15px', color: '#1A1A1A', marginBottom: '16px', fontFamily: font, lineHeight: 1.6 }}>
               {mission.replyChallenge.prompt}
             </div>
 
@@ -362,14 +365,15 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
                 const t = mission.replyChallenge.tiles
                 const pool = shuffleStable([...t.answer, ...(t.distractors || [])].map((w, i) => ({ w, id: i })), t.answer.length + (t.distractors || []).length)
                 const built = tilePicked.map(id => pool.find(p => p.id === id))
-                const builtStr = built.map(p => p.w).join('')
-                const answerStr = t.answer.join('')
+                const sep = spaced ? ' ' : ''
+                const builtStr = built.map(p => p.w).join(sep)
+                const answerStr = t.answer.join(sep)
                 const correct = builtStr === answerStr
                 return (
                   <>
                     {/* Built sentence tray */}
-                    <div style={{ minHeight: '52px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', padding: '10px 12px', borderRadius: '13px', border: '1.5px dashed var(--border)', background: 'var(--surface)', marginBottom: '14px' }}>
-                      {built.length === 0 && <span style={{ color: 'var(--text-faint)', fontSize: '13px' }}>Tap the words to build your reply…</span>}
+                    <div style={{ minHeight: '52px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', padding: '10px 12px', borderRadius: '13px', border: '1.5px dashed rgba(0,0,0,0.09)', background: '#FFFFFF', marginBottom: '14px' }}>
+                      {built.length === 0 && <span style={{ color: '#A6A29B', fontSize: '13px' }}>Tap the words to build your reply…</span>}
                       {built.map((p, k) => (
                         <button key={k} disabled={tileChecked} onClick={() => setTilePicked(prev => prev.filter((_, idx) => idx !== k))}
                           style={tileStyle(tileChecked ? (correct ? '#2F9E6D' : '#DC2626') : accent, font)}>{p.w}</button>
@@ -379,7 +383,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
                       {pool.filter(p => !tilePicked.includes(p.id)).map(p => (
                         <button key={p.id} disabled={tileChecked} onClick={() => setTilePicked(prev => [...prev, p.id])}
-                          style={tileStyle('var(--text-muted)', font)}>{p.w}</button>
+                          style={tileStyle('#6B6660', font)}>{p.w}</button>
                       ))}
                     </div>
                     {tileChecked && (
@@ -405,19 +409,19 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
                   {mission.replyChallenge.options.map((opt, oi) => {
                     const chosen = replyChoice === oi
                     const answered = replyChoice !== null
-                    let bc = 'var(--border)', bgc = 'var(--surface)'
-                    if (answered && opt.correct) { bc = '#2F9E6D'; bgc = 'var(--success-bg)' }
-                    else if (answered && chosen) { bc = '#DC2626'; bgc = 'var(--danger-bg)' }
+                    let bc = 'rgba(0,0,0,0.09)', bgc = '#FFFFFF'
+                    if (answered && opt.correct) { bc = '#2F9E6D'; bgc = '#E7F6EE' }
+                    else if (answered && chosen) { bc = '#DC2626'; bgc = '#FBEAEA' }
                     return (
                       <button key={oi} disabled={answered}
                         onClick={() => { setReplyChoice(oi); setReplyCorrect(opt.correct); if (!opt.correct) markTargetsWeak() }}
                         style={{
                           textAlign: 'left', padding: '14px 16px', borderRadius: '14px',
-                          border: '1.5px solid ' + bc, background: bgc, color: 'var(--text)',
+                          border: '1.5px solid ' + bc, background: bgc, color: '#1A1A1A',
                           cursor: answered ? 'default' : 'pointer', fontFamily: font,
                         }}>
                         <div style={{ fontSize: '18px' }}>{opt.text}</div>
-                        {showPinyin && opt.pinyin && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px' }}>{opt.pinyin}</div>}
+                        {showPinyin && opt.pinyin && <div style={{ fontSize: '12px', color: '#6B6660', marginTop: '3px' }}>{opt.pinyin}</div>}
                       </button>
                     )
                   })}
@@ -439,8 +443,8 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
             <div style={{ width: '58px', height: '58px', borderRadius: '18px', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: accent + '12', border: '1px solid ' + accent + '22' }}>
               <Trophy size={28} strokeWidth={1.9} color={accent} />
             </div>
-            <h2 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text)', margin: '0 0 6px' }}>Mission complete</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: '0 0 22px' }}>You used today’s words in a real conversation. +{MISSION_XP} XP</p>
+            <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#1A1A1A', margin: '0 0 6px' }}>Mission complete</h2>
+            <p style={{ color: '#6B6660', fontSize: '14px', margin: '0 0 22px' }}>You used today’s words in a real conversation. +{MISSION_XP} XP</p>
 
             <ResultRow label="Comprehension" value={`${correctCount}/${questions.length}`} accent={accent} />
             <ResultRow label="Reply" value={replyCorrect ? 'Correct' : 'Keep practicing'} accent={accent} />
@@ -455,7 +459,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
 
             {weakOut.length > 0 && (
               <ResultBlock title="Saved for review">
-                <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '8px' }}>Words you looked up are added to your deck so they come back in flashcards.</div>
+                <div style={{ fontSize: '12.5px', color: '#6B6660', marginBottom: '8px' }}>Words you looked up are added to your deck so they come back in flashcards.</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
                   {weakOut.map(w => <span key={w} style={pill('#DC2626', font)}>{w}</span>)}
                 </div>
@@ -464,7 +468,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
 
             <ResultBlock title="Sentences to reuse">
               {mission.messages.filter(m => m.from === 'me').map((m, i) => (
-                <div key={i} style={{ fontSize: '16px', color: 'var(--text)', fontFamily: font, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>{m.text}</div>
+                <div key={i} style={{ fontSize: '16px', color: '#1A1A1A', fontFamily: font, padding: '6px 0', borderBottom: '1px solid rgba(0,0,0,0.09)' }}>{m.text}</div>
               ))}
             </ResultBlock>
 
@@ -477,7 +481,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
       {selected && (
         <div onClick={() => setSelected(null)} style={{ position: 'fixed', inset: 0, zIndex: 70, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.12)' }}>
           <div onClick={e => e.stopPropagation()} style={{
-            width: '100%', maxWidth: '560px', background: 'var(--surface)', border: '1px solid var(--border)',
+            width: '100%', maxWidth: '560px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.09)',
             borderRadius: '20px 20px 0 0', boxShadow: '0 -10px 40px rgba(24,24,27,0.16)', padding: '16px 18px 26px',
           }}>
             <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: '#D4D4D8', margin: '0 auto 14px' }} />
@@ -488,16 +492,16 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button onClick={() => playWordAudio(selected.info, selected.word)} aria-label="Play audio" style={ghost}>
-                  <Volume2 size={20} strokeWidth={2} color="var(--text-muted)" />
+                  <Volume2 size={20} strokeWidth={2} color="#6B6660" />
                 </button>
                 {selected.info.vocabId && (
                   <button onClick={() => addToDeck(selected.word, selected.info)} aria-label="Add to deck" style={ghost}>
-                    <Bookmark size={20} strokeWidth={2} color={known[selected.info.vocabId] ? accent : 'var(--text-muted)'} fill={known[selected.info.vocabId] ? accent : 'none'} />
+                    <Bookmark size={20} strokeWidth={2} color={known[selected.info.vocabId] ? accent : '#6B6660'} fill={known[selected.info.vocabId] ? accent : 'none'} />
                   </button>
                 )}
               </div>
             </div>
-            <div style={{ fontSize: '15px', color: 'var(--text-muted)', marginTop: '8px', lineHeight: 1.5 }}>{cleanMeaning(selected.info.meaning)}</div>
+            <div style={{ fontSize: '15px', color: '#6B6660', marginTop: '8px', lineHeight: 1.5 }}>{cleanMeaning(selected.info.meaning)}</div>
           </div>
         </div>
       )}
@@ -510,8 +514,8 @@ function Chip({ on, onClick, icon: Icon, label, accent }) {
     <button onClick={onClick} style={{
       display: 'inline-flex', alignItems: 'center', gap: '6px',
       padding: '7px 12px', borderRadius: '999px', cursor: 'pointer',
-      border: '1px solid ' + (on ? accent + '66' : 'var(--border)'),
-      background: on ? accent + '14' : 'var(--surface)', color: on ? accent : 'var(--text-muted)',
+      border: '1px solid ' + (on ? accent + '66' : 'rgba(0,0,0,0.09)'),
+      background: on ? accent + '14' : '#FFFFFF', color: on ? accent : '#6B6660',
       fontSize: '12.5px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
     }}>
       <Icon size={14} strokeWidth={2} /> {label}
@@ -531,13 +535,13 @@ function BottomBar({ children }) {
 }
 
 function SectionTitle({ children }) {
-  return <div style={{ fontSize: '13px', fontWeight: 850, letterSpacing: '0.5px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '16px' }}>{children}</div>
+  return <div style={{ fontSize: '13px', fontWeight: 850, letterSpacing: '0.5px', textTransform: 'uppercase', color: '#6B6660', marginBottom: '16px' }}>{children}</div>
 }
 
 function ResultRow({ label, value, accent }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '14px', background: 'var(--surface)', border: '1px solid var(--border)', marginBottom: '10px' }}>
-      <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: 600 }}>{label}</span>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '14px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.09)', marginBottom: '10px' }}>
+      <span style={{ fontSize: '14px', color: '#6B6660', fontWeight: 600 }}>{label}</span>
       <span style={{ fontSize: '16px', color: accent, fontWeight: 800 }}>{value}</span>
     </div>
   )
@@ -545,8 +549,8 @@ function ResultRow({ label, value, accent }) {
 
 function ResultBlock({ title, children }) {
   return (
-    <div style={{ textAlign: 'left', marginTop: '18px', padding: '16px 18px', borderRadius: '16px', background: 'var(--surface)', border: '1px solid var(--border)' }}>
-      <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)', marginBottom: '10px' }}>{title}</div>
+    <div style={{ textAlign: 'left', marginTop: '18px', padding: '16px 18px', borderRadius: '16px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.09)' }}>
+      <div style={{ fontSize: '13px', fontWeight: 800, color: '#1A1A1A', marginBottom: '10px' }}>{title}</div>
       {children}
     </div>
   )
@@ -571,7 +575,7 @@ function primary(accent) {
 function tileStyle(color, font) {
   return {
     padding: '9px 14px', borderRadius: '11px', cursor: 'pointer',
-    border: '1.5px solid ' + color + '55', background: color + '12', color: 'var(--text)',
+    border: '1.5px solid ' + color + '55', background: color + '12', color: '#1A1A1A',
     fontSize: '18px', fontFamily: font, fontWeight: 600,
   }
 }
