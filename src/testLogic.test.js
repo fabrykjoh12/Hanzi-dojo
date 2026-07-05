@@ -20,6 +20,23 @@ describe('normalizePinyin', () => {
     expect(normalizePinyin('')).toBe('')
     expect(normalizePinyin(null)).toBe('')
   })
+  it('accepts a decomposed (NFD) tone mark the same as precomposed', () => {
+    // base letter + combining caron (U+030C) vs the precomposed ǎ — this
+    // mismatch is what silently made "hai" get marked wrong before.
+    const decomposed = 'ha' + '̌' + 'i'
+    const precomposed = 'hǎi'
+    expect(normalizePinyin(decomposed)).toBe('hai')
+    expect(normalizePinyin(precomposed)).toBe('hai')
+    expect(normalizePinyin('hai')).toBe('hai')
+  })
+})
+
+describe('lenientPinyin', () => {
+  it('strips numeric tones and matches the plain / decomposed forms', () => {
+    expect(lenientPinyin('hai3')).toBe('hai')
+    expect(lenientPinyin('hǎi')).toBe('hai')
+    expect(lenientPinyin('ha' + '̌' + 'i')).toBe('hai')
+  })
 })
 
 describe('checkAnswer', () => {

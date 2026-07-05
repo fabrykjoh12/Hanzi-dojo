@@ -1165,7 +1165,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           {/* State pill + audio controls share one header row: the controls
               used to float absolutely over the card, which covered the word's
               furigana on narrow screens. In flow they can't cover anything. */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', flexShrink: 0, position: 'relative', zIndex: 2 }}>
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
               padding: '8px 12px', borderRadius: '999px',
@@ -1228,7 +1228,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           <div
             key={flipped ? 'back' : 'front'}
             style={{
-              flex: 1, display: 'flex', flexDirection: 'column',
+              flex: 1, minHeight: 0, overflowY: 'auto',
+              display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center',
               textAlign: 'center', padding: '34px 24px',
               transformOrigin: 'center', willChange: 'transform',

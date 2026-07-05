@@ -85,7 +85,10 @@ function isMeaningMatch(input, meaning) {
 }
 
 function normalizeRomaji(value) {
-  return stripChars((value || '').toLowerCase().trim(), ' ')
+  // Ignore the separators people sprinkle through romaji — spaces, the
+  // syllable apostrophe (kon'nichiwa), and hyphens — so they never cost a
+  // "wrong". wanakana emits none of these, so this only ever accepts more.
+  return stripChars((value || '').toLowerCase().trim(), ' \'’‘-')
 }
 
 function hasKanji(str) {
