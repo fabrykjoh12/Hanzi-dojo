@@ -2,24 +2,26 @@ import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { isMastered, TEST_UNLOCK_MASTERY_PCT } from './mastery'
 
-// Normalize for tone-insensitive comparison
+// Normalize for tone-insensitive comparison.
+//
+// Uses Unicode NFD so a tone mark is accepted whether it's stored precomposed
+// (ǎ = U+01CE) OR decomposed (a + combining caron U+030C) — the latter silently
+// broke matches like "hai" vs "hǎi" before, because a precomposed-only tone map
+// never saw the base letter. After decomposing, every combining mark (U+0300–
+// U+036F) is dropped, then ü/v → u and apostrophes/spaces are stripped.
 export function normalizePinyin(str) {
   if (!str) return ''
-  const toneMap = {
-    'ā':'a','á':'a','ǎ':'a','à':'a',
-    'ē':'e','é':'e','ě':'e','è':'e',
-    'ī':'i','í':'i','ǐ':'i','ì':'i',
-    'ō':'o','ó':'o','ǒ':'o','ò':'o',
-    'ū':'u','ú':'u','ǔ':'u','ù':'u',
-    'ǖ':'u','ǘ':'u','ǚ':'u','ǜ':'u','ü':'u',
+  const decomposed = str.normalize('NFD').toLowerCase()
+  let out = ''
+  for (let i = 0; i < decomposed.length; i += 1) {
+    const ch = decomposed[i]
+    const code = ch.charCodeAt(0)
+    if (code >= 0x300 && code <= 0x36f) continue           // combining diacritics (tones)
+    if (ch === 'v' || ch === 'ü') { out += 'u'; continue }  // ü / v → u
+    if (ch === '’' || ch === '‘' || ch === '\'' || ch === ' ' || ch === '\t') continue
+    out += ch
   }
-  return str
-    .toLowerCase()
-    .split('')
-    .map(ch => toneMap[ch] || ch)
-    .join('')
-    .replace(/v/g, 'u')
-    .replace(/[''\s]/g, '')
+  return out
 }
 
 // The most lenient pinyin form we accept everywhere: tone marks stripped,
@@ -37,13 +39,17 @@ export function lenientPinyin(value) {
   return out
 }
 
-// Accept: exact character match OR reading_plain match OR normalized reading match
+// Accept: exact character match, OR the reading in its most lenient form —
+// tone marks (precomposed or decomposed), numeric tones (hao3), ü/v, and
+// spacing all ignored, matched against reading_plain or reading.
 export function checkAnswer(userInput, vocab) {
   const input = (userInput || '').trim()
   if (!input) return false
   if (input === vocab.word) return true
-  if (vocab.reading_plain && input.toLowerCase().replace(/\s/g, '') === vocab.reading_plain.toLowerCase().replace(/\s/g, '')) return true
-  if (normalizePinyin(input) === normalizePinyin(vocab.reading)) return true
+  const li = lenientPinyin(input)
+  if (!li) return false
+  if (vocab.reading_plain && li === lenientPinyin(vocab.reading_plain)) return true
+  if (li === lenientPinyin(vocab.reading)) return true
   return false
 }
 
