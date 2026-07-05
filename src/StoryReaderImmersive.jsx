@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import { awardXp } from './xpService'
 import { isOnline } from './useOnline'
 import { enqueueStoryRead } from './syncQueue'
+import { ensureAudio } from './audioCache'
 import { PrimaryButton } from './ui'
 import { CHARACTER_READINGS } from './characterNames'
 import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
@@ -398,6 +399,15 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     if (!wordAudioRef.current) wordAudioRef.current = new Audio()
     playAudioEl(wordAudioRef.current, url, () => { /* ignore */ })
   }
+
+  // Warm the tapped word's audio as soon as the lookup sheet opens, so the play
+  // button in it works offline (iOS can't fetch/await audio inside the gesture).
+  useEffect(() => {
+    if (selected && selected.vocab && selected.vocab.audio_path) {
+      ensureAudio(audioUrlFor(selected.vocab.audio_path))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected])
 
   // Pronounce an arbitrary word (grammar / out-of-list) that has no recorded
   // vocabulary audio, via the browser's speech synthesis. Cancels any in-flight

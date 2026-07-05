@@ -1,3 +1,5 @@
+import { readyUrl } from './audioCache'
+
 export function getLevelLabel(language, system, level) {
   if (language === 'japanese' || system === 'jlpt') {
     const map = {
@@ -150,7 +152,11 @@ export function playAudioEl(el, url, onFail) {
   el.__hdBlobFor = null
   el.__hdSrcFor = url
   el.onerror = fallback
-  el.src = url
+  // If this clip was preloaded (audioCache), play the in-memory object URL
+  // directly — that's the only thing that works offline on iOS, where a ranged
+  // network request bypasses the SW cache. The object URL is owned by
+  // audioCache (never revoked here); the logical clip id stays the remote url.
+  el.src = readyUrl(url) || url
   el.play().catch(e => {
     // Expected, not a real failure: autoplay blocked, or play() interrupted
     // by a pause()/src swap from a rapid second tap.
