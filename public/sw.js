@@ -10,10 +10,11 @@
  * This file is served verbatim from /public (no bundler transform). Plain JS.
  */
 
-// v5: adds push notification handling (opt-in daily review reminders) — no
-// caching behavior changed, the bump just gives the new SW code a clean
-// install/activate cycle.
-var VERSION = 'v5'
+// v6: adds a Background Sync handler ('hd-flush') that wakes open clients to
+// replay the offline write queue when connectivity returns — even if the page
+// was backgrounded. Caching behavior is unchanged; the bump gives the new SW a
+// clean install/activate cycle.
+var VERSION = 'v6'
 var SHELL_CACHE = 'hanzi-shell-' + VERSION
 var ASSET_CACHE = 'hanzi-assets-' + VERSION
 var AUDIO_CACHE = 'hanzi-audio-' + VERSION
@@ -154,6 +155,23 @@ self.addEventListener('notificationclick', function (event) {
       }
       if (self.clients.openWindow) return self.clients.openWindow(target)
       return null
+    })
+  )
+})
+
+// Background Sync: the browser fires this when connectivity returns (with
+// backoff, even after the page was backgrounded). The offline write queue
+// lives in the app and needs the user's Supabase session to replay, which the
+// SW doesn't hold — so it wakes any open client to flush. If no client is
+// open, the app flushes on its next launch (main.jsx / OfflineBar). No
+// credentials ever live in the worker.
+self.addEventListener('sync', function (event) {
+  if (event.tag !== 'hd-flush') return
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clients) {
+      for (var i = 0; i < clients.length; i += 1) {
+        clients[i].postMessage({ type: 'hd-flush' })
+      }
     })
   )
 })
