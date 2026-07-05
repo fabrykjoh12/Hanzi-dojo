@@ -658,7 +658,271 @@ const RU_A1 = [
   },
 ]
 
-const BANK = { 'chinese|1': CN_HSK1, 'japanese|1': JP_N5, 'russian|1': RU_A1 }
+// ── Chinese HSK 2 mission bank ───────────────────────────────────────────────
+const CN_HSK2 = [
+  {
+    id: 'cn-hsk2-birthday',
+    language: 'chinese', level: 2,
+    scenario: { title: '生日礼物', en: "A friend asks what to get for another friend's birthday." },
+    targetWords: ['明天', '生日', '送', '一起', '商场', '手表'],
+    messages: [
+      { from: 'them', name: '小明', text: '明天是小红的生日。' },
+      { from: 'me', name: '我', text: '我们送她什么好？' },
+      { from: 'them', name: '小明', text: '她喜欢手表。我们一起去商场吧。' },
+      { from: 'me', name: '我', text: '好。商场里的手表贵吗？' },
+      { from: 'them', name: '小明', text: '不太贵。我们下午去。' },
+    ],
+    pinyin: [
+      'Míngtiān shì Xiǎo Hóng de shēngrì.',
+      'Wǒmen sòng tā shénme hǎo?',
+      'Tā xǐhuan shǒubiǎo. Wǒmen yìqǐ qù shāngchǎng ba.',
+      'Hǎo. Shāngchǎng lǐ de shǒubiǎo guì ma?',
+      'Bú tài guì. Wǒmen xiàwǔ qù.',
+    ],
+    translations: [
+      "Tomorrow is Xiao Hong's birthday.",
+      'What should we give her?',
+      "She likes watches. Let's go to the mall together.",
+      'Okay. Are the watches at the mall expensive?',
+      "Not too expensive. Let's go this afternoon.",
+    ],
+    glossary: {
+      '小明': { reading: 'Xiǎo Míng', meaning: 'Xiao Ming (a name)' },
+      '小红': { reading: 'Xiǎo Hóng', meaning: 'Xiao Hong (a name)' },
+      '手表': { reading: 'shǒubiǎo', meaning: 'watch' },
+      '商场': { reading: 'shāngchǎng', meaning: 'shopping mall' },
+    },
+    comprehensionQuestions: [
+      { question: '明天是谁的生日？', options: ['小红', '小明', '老师'], answer: 0 },
+      { question: '他们想买什么？', options: ['手表', '衣服', '水果'], answer: 0 },
+      { question: '他们什么时候去？', options: ['下午', '上午', '晚上'], answer: 0 },
+    ],
+    replyChallenge: {
+      prompt: '小明说下午去商场。你怎么回答？',
+      tiles: { answer: ['好', '，', '一起', '去', '吧'], distractors: ['不', '手表'] },
+      options: [
+        { text: '好，一起去吧！', pinyin: 'Hǎo, yìqǐ qù ba!', correct: true },
+        { text: '我不想买。', pinyin: 'Wǒ bù xiǎng mǎi.', correct: false },
+        { text: '手表很贵。', pinyin: 'Shǒubiǎo hěn guì.', correct: false },
+      ],
+    },
+    estimatedTime: '2',
+  },
+  {
+    id: 'cn-hsk2-sick',
+    language: 'chinese', level: 2,
+    scenario: { title: '不舒服', en: 'A friend notices you look unwell.' },
+    targetWords: ['今天', '身体', '舒服', '疼', '休息', '药店'],
+    messages: [
+      { from: 'them', name: '小明', text: '你今天怎么了？' },
+      { from: 'me', name: '我', text: '我身体不舒服，头很疼。' },
+      { from: 'them', name: '小明', text: '你去药店买药了吗？' },
+      { from: 'me', name: '我', text: '还没有。我想先休息一下。' },
+      { from: 'them', name: '小明', text: '好。多喝水，早点休息。' },
+    ],
+    pinyin: [
+      'Nǐ jīntiān zěnme le?',
+      'Wǒ shēntǐ bù shūfu, tóu hěn téng.',
+      'Nǐ qù yàodiàn mǎi yào le ma?',
+      'Hái méiyǒu. Wǒ xiǎng xiān xiūxi yíxià.',
+      'Hǎo. Duō hē shuǐ, zǎodiǎn xiūxi.',
+    ],
+    translations: [
+      "What's wrong today?",
+      "I don't feel well, my head hurts.",
+      'Did you go to the pharmacy to buy medicine?',
+      'Not yet. I want to rest a bit first.',
+      'Okay. Drink lots of water and rest early.',
+    ],
+    glossary: {
+      '小明': { reading: 'Xiǎo Míng', meaning: 'Xiao Ming (a name)' },
+      '舒服': { reading: 'shūfu', meaning: 'comfortable' },
+      '疼': { reading: 'téng', meaning: 'painful, sore' },
+      '药店': { reading: 'yàodiàn', meaning: 'pharmacy' },
+    },
+    comprehensionQuestions: [
+      { question: '我今天怎么了？', options: ['身体不舒服', '很高兴', '很忙'], answer: 0 },
+      { question: '我哪里疼？', options: ['头', '手', '脚'], answer: 0 },
+      { question: '小明让我做什么？', options: ['多喝水，休息', '去学校', '买手表'], answer: 0 },
+    ],
+    replyChallenge: {
+      prompt: '小明让你多休息。你怎么回答？',
+      tiles: { answer: ['谢谢', '你'], distractors: ['药店', '疼'] },
+      options: [
+        { text: '谢谢你。', pinyin: 'Xièxie nǐ.', correct: true },
+        { text: '我很快乐。', pinyin: 'Wǒ hěn kuàilè.', correct: false },
+        { text: '一起去吧。', pinyin: 'Yìqǐ qù ba.', correct: false },
+      ],
+    },
+    estimatedTime: '2',
+  },
+  {
+    id: 'cn-hsk2-sports',
+    language: 'chinese', level: 2,
+    scenario: { title: '一起运动', en: 'A friend invites you to play soccer.' },
+    targetWords: ['下午', '踢', '足球', '运动', '跑步', '一起'],
+    messages: [
+      { from: 'them', name: '小明', text: '下午我们去踢足球吧。' },
+      { from: 'me', name: '我', text: '好啊！我最喜欢运动。' },
+      { from: 'them', name: '小明', text: '你常常跑步吗？' },
+      { from: 'me', name: '我', text: '对，我每天早上跑步。' },
+      { from: 'them', name: '小明', text: '那我们一起玩吧。' },
+    ],
+    pinyin: [
+      'Xiàwǔ wǒmen qù tī zúqiú ba.',
+      'Hǎo a! Wǒ zuì xǐhuan yùndòng.',
+      'Nǐ chángcháng pǎobù ma?',
+      'Duì, wǒ měitiān zǎoshang pǎobù.',
+      'Nà wǒmen yìqǐ wán ba.',
+    ],
+    translations: [
+      "Let's go play soccer this afternoon.",
+      'Sure! I love sports the most.',
+      'Do you often go running?',
+      'Yes, I run every morning.',
+      "Then let's play together.",
+    ],
+    glossary: {
+      '小明': { reading: 'Xiǎo Míng', meaning: 'Xiao Ming (a name)' },
+      '踢': { reading: 'tī', meaning: 'to kick' },
+      '足球': { reading: 'zúqiú', meaning: 'soccer' },
+      '运动': { reading: 'yùndòng', meaning: 'sports, exercise' },
+      '跑步': { reading: 'pǎobù', meaning: 'to run, jogging' },
+    },
+    comprehensionQuestions: [
+      { question: '小明想做什么？', options: ['踢足球', '看书', '睡觉'], answer: 0 },
+      { question: '我每天早上做什么？', options: ['跑步', '上课', '做饭'], answer: 0 },
+      { question: '我最喜欢什么？', options: ['运动', '音乐', '画画'], answer: 0 },
+    ],
+    replyChallenge: {
+      prompt: '小明约你下午踢足球。你怎么回答？',
+      tiles: { answer: ['好', '，', '一起', '踢', '吧'], distractors: ['不', '足球'] },
+      options: [
+        { text: '好，一起踢吧！', pinyin: 'Hǎo, yìqǐ tī ba!', correct: true },
+        { text: '我不喜欢运动。', pinyin: 'Wǒ bù xǐhuan yùndòng.', correct: false },
+        { text: '我头很疼。', pinyin: 'Wǒ tóu hěn téng.', correct: false },
+      ],
+    },
+    estimatedTime: '2',
+  },
+]
+
+// ── Japanese JLPT N5 Part 2 mission bank (kana, LINE-style skin) ──────────────
+const JP_N5B = [
+  {
+    id: 'jp-n5b-shopping',
+    language: 'japanese', level: 2,
+    scenario: { title: 'デパート', en: 'Planning to go shopping for shoes.' },
+    targetWords: ['あした', 'デパート', 'くつ', 'かいたい', 'いっしょに', 'えき'],
+    messages: [
+      { from: 'them', name: 'はな', text: 'あした、デパートへ いきますか。' },
+      { from: 'me', name: 'わたし', text: 'はい。くつを かいたいです。' },
+      { from: 'them', name: 'はな', text: 'いいですね。わたしも いきたいです。' },
+      { from: 'me', name: 'わたし', text: 'じゃあ、いっしょに いきましょう。' },
+      { from: 'them', name: 'はな', text: 'なんじに えきで あいますか。' },
+      { from: 'me', name: 'わたし', text: 'じゅうじに あいましょう。' },
+    ],
+    pinyin: [
+      'Ashita, depāto e ikimasu ka.',
+      'Hai. Kutsu o kaitai desu.',
+      'Ii desu ne. Watashi mo ikitai desu.',
+      'Jā, issho ni ikimashō.',
+      'Nanji ni eki de aimasu ka.',
+      'Jūji ni aimashō.',
+    ],
+    translations: [
+      'Are you going to the department store tomorrow?',
+      'Yes. I want to buy shoes.',
+      'Nice. I want to go too.',
+      "Then let's go together.",
+      'What time shall we meet at the station?',
+      "Let's meet at ten.",
+    ],
+    glossary: {
+      'はな': { reading: 'Hana', meaning: 'Hana (a name)' },
+      'あした': { reading: 'ashita', meaning: 'tomorrow' }, 'デパート': { reading: 'depāto', meaning: 'department store' },
+      'いきます': { reading: 'ikimasu', meaning: 'to go' }, 'はい': { reading: 'hai', meaning: 'yes' },
+      'くつ': { reading: 'kutsu', meaning: 'shoes' }, 'かいたい': { reading: 'kaitai', meaning: 'want to buy' },
+      'いい': { reading: 'ii', meaning: 'good, nice' }, 'わたし': { reading: 'watashi', meaning: 'I, me' },
+      'いきたい': { reading: 'ikitai', meaning: 'want to go' }, 'いっしょに': { reading: 'issho ni', meaning: 'together' },
+      'なんじ': { reading: 'nanji', meaning: 'what time' }, 'えき': { reading: 'eki', meaning: 'station' },
+      'あいます': { reading: 'aimasu', meaning: 'to meet' }, 'じゅうじ': { reading: 'jūji', meaning: 'ten o’clock' },
+    },
+    comprehensionQuestions: [
+      { question: 'わたしは なにを かいますか。', options: ['くつ', 'ぼうし', 'かばん'], answer: 0 },
+      { question: 'だれと いきますか。', options: ['はな', 'せんせい', 'ひとり'], answer: 0 },
+      { question: 'どこで あいますか。', options: ['えき', 'デパート', 'がっこう'], answer: 0 },
+    ],
+    replyChallenge: {
+      prompt: 'はなが「なんじに あいますか」と ききました。こたえて ください。',
+      tiles: { answer: ['じゅうじに', 'あいましょう'], distractors: ['みず', 'たべます'] },
+      options: [
+        { text: 'じゅうじに あいましょう。', correct: true },
+        { text: 'くるまが すきです。', correct: false },
+        { text: 'いいえ、いきません。', correct: false },
+      ],
+    },
+    estimatedTime: '2',
+  },
+  {
+    id: 'jp-n5b-ramen',
+    language: 'japanese', level: 2,
+    scenario: { title: 'さむい ひ', en: "It's cold — a friend suggests warm food." },
+    targetWords: ['きょう', 'さむい', 'あたたかい', 'ラーメン', 'みせ', 'たべたい'],
+    messages: [
+      { from: 'them', name: 'はな', text: 'きょうは さむいですね。' },
+      { from: 'me', name: 'わたし', text: 'はい。あたたかい ものが たべたいです。' },
+      { from: 'them', name: 'はな', text: 'ラーメンは どうですか。' },
+      { from: 'me', name: 'わたし', text: 'いいですね。たべに いきましょう。' },
+      { from: 'them', name: 'はな', text: 'ちかくに おいしい みせが あります。' },
+    ],
+    pinyin: [
+      'Kyō wa samui desu ne.',
+      'Hai. Atatakai mono ga tabetai desu.',
+      'Rāmen wa dō desu ka.',
+      'Ii desu ne. Tabe ni ikimashō.',
+      'Chikaku ni oishii mise ga arimasu.',
+    ],
+    translations: [
+      "It's cold today, isn't it?",
+      'Yes. I want to eat something warm.',
+      'How about ramen?',
+      "Sounds good. Let's go eat.",
+      "There's a delicious place nearby.",
+    ],
+    glossary: {
+      'はな': { reading: 'Hana', meaning: 'Hana (a name)' },
+      'きょう': { reading: 'kyō', meaning: 'today' }, 'さむい': { reading: 'samui', meaning: 'cold' },
+      'はい': { reading: 'hai', meaning: 'yes' }, 'あたたかい': { reading: 'atatakai', meaning: 'warm' },
+      'もの': { reading: 'mono', meaning: 'thing' }, 'たべたい': { reading: 'tabetai', meaning: 'want to eat' },
+      'ラーメン': { reading: 'rāmen', meaning: 'ramen' }, 'いい': { reading: 'ii', meaning: 'good, nice' },
+      'たべに': { reading: 'tabe ni', meaning: 'to eat (purpose)' }, 'いきましょう': { reading: 'ikimashō', meaning: "let's go" },
+      'ちかく': { reading: 'chikaku', meaning: 'nearby' }, 'おいしい': { reading: 'oishii', meaning: 'delicious' },
+      'みせ': { reading: 'mise', meaning: 'shop, restaurant' }, 'あります': { reading: 'arimasu', meaning: 'there is' },
+    },
+    comprehensionQuestions: [
+      { question: 'きょうの てんきは どうですか。', options: ['さむい', 'あつい', 'あめ'], answer: 0 },
+      { question: 'なにを たべますか。', options: ['ラーメン', 'パン', 'すし'], answer: 0 },
+      { question: 'おいしい みせは どこに ありますか。', options: ['ちかく', 'とおく', 'えき'], answer: 0 },
+    ],
+    replyChallenge: {
+      prompt: 'はなが「ラーメンは どうですか」と ききました。こたえて ください。',
+      tiles: { answer: ['たべに', 'いきましょう'], distractors: ['みず', 'ねます'] },
+      options: [
+        { text: 'たべに いきましょう。', correct: true },
+        { text: 'いいえ、いきません。', correct: false },
+        { text: 'くるまが ほしいです。', correct: false },
+      ],
+    },
+    estimatedTime: '2',
+  },
+]
+
+const BANK = {
+  'chinese|1': CN_HSK1, 'chinese|2': CN_HSK2,
+  'japanese|1': JP_N5, 'japanese|2': JP_N5B,
+  'russian|1': RU_A1,
+}
 
 // Pick the mission that best reuses the words the learner actually met today.
 // Overlap with today's learned/weak/review words wins; ties and the no-overlap

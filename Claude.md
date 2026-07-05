@@ -6,6 +6,9 @@ Read this entire file before making any change. It describes not just *what* the
 
 ## 0. LATEST SESSION — read first (2026-07-05)
 
+### Chat Missions — higher-level banks
+- `src/chatMissions.js` BANK gained **`chinese|2` (HSK2, 3 missions)** and **`japanese|2` (N5 Part 2, 2 missions)** so the post-study chat now reaches the higher levels (was level-1 only for CN/JP/RU). Same mission shape; `targetWords` were aligned to words that actually appear as tappable tokens (so in-chat highlight + weak-marking work). Japanese missions stay all-kana like the other JP banks.
+
 ### Sentence Builder — curated common-sentence bank
 - The builder used to draw ONLY on per-word LLM `example_sentence` values (often stilted / uncommon-word). Added **`src/sentenceBank.js`** — hand-written everyday sentences keyed `language|system|level`, `{ text, en }`. `SentenceBuilder.buildQuestions(pool, seg, curated)` now builds curated questions first (as pseudo-vocab so the render is unchanged), shuffles them, and tops up with the best vocab examples — so a level with a full bank is entirely natural sentences; levels with no bank fall back to the old behavior unchanged.
 - Banks (158 sentences): `chinese|hsk_3|1` (31), `chinese|hsk_3|2` (24), `japanese|jlpt|1`/N5·Pt1 (23), `japanese|jlpt|2`/N5·Pt2 (21), `japanese|jlpt|3`/N4 (25), `russian|russian|1` (34) — covers every seeded level. **Every sentence was verified with Node's `Intl.Segmenter` to tokenize to 3–8 content tiles** (same isContent/PUNCT logic as the app). **Japanese must use kanji** — all-kana fragments into single-character tiles under the word segmenter; kanji compounds segment into clean word tiles (and match the existing example-sentence style). `markWordDue` on a curated miss targets the hardest level word present, or is skipped if none map. Tested (`sentenceBank.test.js`; suite **66**).
