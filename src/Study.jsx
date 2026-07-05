@@ -20,6 +20,7 @@ import { cleanMeaning } from './cleanMeaning'
 import ChatMission from './ChatMission'
 import { pickMission } from './chatMissions'
 import { prefetchLevel } from './prefetch'
+import { ensureAudio } from './audioCache'
 import {
   Volume2, VolumeX, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
   Sparkles, CheckCircle2, Layers, BookOpenCheck, Sunrise, X, Snowflake, TrendingUp,
@@ -443,6 +444,16 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       playAudio()
     }
   }, [flipped])
+
+  // Warm the current + next card's audio into an in-memory object URL so tap
+  // playback works offline — on iOS especially, where a ranged network request
+  // bypasses the SW cache and can't be awaited inside the play() gesture.
+  useEffect(() => {
+    [queue[0], queue[1]].forEach(c => {
+      if (c && c.vocab && c.vocab.audio_path) ensureAudio(getAudioUrl(c.vocab.audio_path))
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queue])
 
   // Upsert today's study counts so the Profile calendar can show studied days.
   // Counts are this session's running totals (presence is always correct).

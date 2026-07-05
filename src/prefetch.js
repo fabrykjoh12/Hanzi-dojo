@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import { getAudioUrl } from './utils'
 import { cacheSet } from './offline'
+import { ensureAudio } from './audioCache'
 
 // Deliberately warm the offline caches for one level so a plane/subway session
 // has everything: the vocabulary snapshot (so the Study queue can build) and
@@ -35,7 +36,10 @@ export async function prefetchLevel(track, level, onProgress) {
     while (cursor < urls.length) {
       const i = cursor
       cursor += 1
-      try { await fetch(urls[i], { cache: 'force-cache' }) } catch { /* skip */ }
+      // ensureAudio persists the full file to IndexedDB — the only form that
+      // replays offline on iOS (the SW audio cache is bypassed for ranged
+      // requests there).
+      try { await ensureAudio(urls[i]) } catch { /* skip */ }
       done += 1
       if (onProgress) onProgress(done, total)
     }
