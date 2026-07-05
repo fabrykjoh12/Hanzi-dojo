@@ -6,6 +6,10 @@ Read this entire file before making any change. It describes not just *what* the
 
 ## 0. LATEST SESSION — read first (2026-07-05)
 
+### Sentence Builder — curated common-sentence bank
+- The builder used to draw ONLY on per-word LLM `example_sentence` values (often stilted / uncommon-word). Added **`src/sentenceBank.js`** — hand-written everyday sentences keyed `language|system|level`, `{ text, en }`. `SentenceBuilder.buildQuestions(pool, seg, curated)` now builds curated questions first (as pseudo-vocab so the render is unchanged), shuffles them, and tops up with the best vocab examples — so a level with a full bank is entirely natural sentences; levels with no bank fall back to the old behavior unchanged.
+- Banks (105 sentences): `chinese|hsk_3|1` (21), `chinese|hsk_3|2` (24), `japanese|jlpt|1` (23), `japanese|jlpt|3`/N4 (13), `russian|russian|1` (24). **Every sentence was verified with Node's `Intl.Segmenter` to tokenize to 3–8 content tiles** (same isContent/PUNCT logic as the app). **Japanese must use kanji** — all-kana fragments into single-character tiles under the word segmenter; kanji compounds segment into clean word tiles (and match the existing example-sentence style). `markWordDue` on a curated miss targets the hardest level word present, or is skipped if none map. Tested (`sentenceBank.test.js`; suite **66**).
+
 ### Offline support — additive layer, online path untouched
 - **Design rule:** offline is strictly additive. The normal online code path is byte-for-byte unchanged; offline branches only run when `navigator.onLine === false`, and every helper no-ops safely if IndexedDB is missing. Verified: `npm run build` ✓, vitest **63** ✓, eslint total errors **24 = baseline** (added none).
 - **`src/offline.js`** — dependency-free IndexedDB wrapper (`hanzi-offline` db, stores `cache`/`outbox`/`audio`). All ops resolve to harmless defaults on any failure. (localStorage is still banned — IndexedDB is the sanctioned store.)

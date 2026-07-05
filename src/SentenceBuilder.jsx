@@ -6,6 +6,7 @@ import { Centered, PrimaryButton, SecondaryButton } from './ui'
 import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { markWordDue } from './practiceSignal'
+import { getSentenceBank } from './sentenceBank'
 import {
   ArrowLeft, Blocks, Check, X, RotateCcw, CheckCircle2, Sparkles, Eye,
 } from 'lucide-react'
@@ -69,10 +70,28 @@ function sentenceScore(tokens, orderByWord) {
   return worst + unknown * 400
 }
 
-function buildQuestions(pool, segmenter) {
+function buildQuestions(pool, segmenter, curated) {
   const orderByWord = {}
-  for (const v of pool) orderByWord[v.word] = v.sort_order || 0
+  const idByWord = {}
+  for (const v of pool) { orderByWord[v.word] = v.sort_order || 0; idByWord[v.word] = v.id }
 
+  // Curated everyday sentences (hand-written, natural, common) — always
+  // preferred over the per-word LLM examples. Each becomes a pseudo-vocab so
+  // the render (English goal + answer reveal) is unchanged; the target word for
+  // the practice signal is the hardest level word in the sentence, if any.
+  const curatedQs = []
+  for (const s of (curated || [])) {
+    const tokens = tokenize(s.text, segmenter)
+    if (tokens.length < 3 || tokens.length > 8) continue
+    let targetId = null
+    let worst = -1
+    for (const t of tokens) {
+      if (orderByWord[t] !== undefined && orderByWord[t] > worst) { worst = orderByWord[t]; targetId = idByWord[t] }
+    }
+    curatedQs.push({ vocab: { id: targetId, example_sentence: s.text, example_translation: s.en }, tokens })
+  }
+
+  // Per-word vocab examples — the fallback pool when a level has no bank.
   const usable = []
   for (const v of pool) {
     if (!v.example_sentence) continue
@@ -87,8 +106,12 @@ function buildQuestions(pool, segmenter) {
   // Most-everyday sentences first (lowest worst-word rank, fewest off-list
   // tokens), then shuffle within that pool for variety each round.
   usable.sort((a, b) => a.score - b.score)
-  const commonPool = usable.slice(0, Math.max(QUESTION_COUNT * 3, 30))
-  return shuffle(commonPool).slice(0, Math.min(QUESTION_COUNT, commonPool.length)).map(q => ({
+  const vocabPool = usable.slice(0, Math.max(QUESTION_COUNT * 3, 30))
+
+  // Curated first (shuffled for variety), topped up with the most-everyday
+  // vocab examples — so a level with a full bank is entirely natural sentences.
+  const combined = [...shuffle(curatedQs), ...shuffle(vocabPool)]
+  return combined.slice(0, Math.min(QUESTION_COUNT, combined.length)).map(q => ({
     ...q, order: scrambleIds(q.tokens.length),
   }))
 }
@@ -125,7 +148,8 @@ export default function SentenceBuilder({ session, profile, track, onBack, onUpd
       .eq('system', track.system)
       .eq('level', track.current_level)
       .eq('is_active', true)
-    setQuestions(buildQuestions(vocab || [], segRef.current))
+    const curated = getSentenceBank(track.language, track.system, track.current_level)
+    setQuestions(buildQuestions(vocab || [], segRef.current, curated))
     setIdx(0); setPlaced([]); setResult(null); setCorrectCount(0); setDone(false)
     setLoading(false)
   }
@@ -155,7 +179,7 @@ export default function SentenceBuilder({ session, profile, track, onBack, onUpd
       && placed.map(id => q.tokens[id]).join('') === q.tokens.join('')
     setResult(ok ? 'correct' : 'wrong')
     if (ok) setCorrectCount(c => c + 1)
-    else markWordDue(session, q.vocab.id)
+    else if (q.vocab.id) markWordDue(session, q.vocab.id)
   }
 
   function reveal() {
