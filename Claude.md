@@ -6,6 +6,13 @@ Read this entire file before making any change. It describes not just *what* the
 
 ## 0. LATEST SESSION — read first (2026-07-05)
 
+### Typing leniency, flashcard overlap, grammar audio, kana chart
+- **Leniency (items 1 & 3, "hai marked wrong"):** `testLogic.normalizePinyin` now NFD-decomposes and strips combining marks — a tone stored **decomposed** (a + U+030C) is accepted like precomposed ǎ (the silent cause). `checkAnswer` uses `lenientPinyin` (numeric tones too). Writing's `normalizeRomaji` ignores the syllable apostrophe + hyphens. Strictly more lenient. Tests added.
+- **Flashcard (item 6, "Replay covers furigana"):** the flipped side's tall content could bleed up over the header controls; header is now `flex-shrink:0` and the content area scrolls (`minHeight:0`/`overflow-y:auto`).
+- **Grammar guide (item 4a):** every example got a **play button** (browser TTS via `speakText`, correct per-language lang) so you can hear it — grammar examples have no recorded audio.
+- **Kana (item 5):** added a **browsable Chart view** (Practice | Chart tabs) — the full gojūon grid (hiragana/katakana), tap any kana to hear it (`speakKana`, ja-JP TTS). The signature Kana-app reference feature the drill lacked.
+- **Item 4b (furigana on kana):** could NOT reproduce — the grammar guide's 23 JP examples all carry `segs`, so furigana renders over kanji only (kana get none); flashcards/reader use the same kanji-only `furiganaParts`. Need the exact screen from the user.
+
 ### Chat Missions — higher-level banks
 - `src/chatMissions.js` BANK gained **`chinese|2` (HSK2, 3 missions)** and **`japanese|2` (N5 Part 2, 2 missions)** so the post-study chat now reaches the higher levels (was level-1 only for CN/JP/RU). Same mission shape; `targetWords` were aligned to words that actually appear as tappable tokens (so in-chat highlight + weak-marking work). Japanese missions stay all-kana like the other JP banks.
 

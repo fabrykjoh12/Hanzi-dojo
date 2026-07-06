@@ -43,6 +43,65 @@ function romajiMatches(input, romaji) {
   return (ROMAJI_VARIANTS[romaji] || []).indexOf(t) !== -1
 }
 
+// Say one kana aloud with the browser's Japanese TTS — the tap-to-hear of a
+// reference chart, no recorded audio needed.
+function speakKana(text) {
+  try {
+    const s = window.speechSynthesis
+    if (!s) return
+    s.cancel()
+    const u = new SpeechSynthesisUtterance(text)
+    u.lang = 'ja-JP'
+    u.rate = 0.8
+    s.speak(u)
+  } catch { /* speech not available */ }
+}
+
+// Practice | Chart tab switch, shown at the top of both setup views.
+function ViewTabs({ view, setView, accent }) {
+  const tab = (key, label) => (
+    <button key={key} onClick={() => setView(key)} style={{
+      padding: '8px 20px', borderRadius: '999px', cursor: 'pointer',
+      border: '1px solid ' + (view === key ? accent + '66' : 'var(--border)'),
+      background: view === key ? accent + '14' : 'var(--surface)',
+      color: view === key ? accent : 'var(--text-muted)',
+      fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+    }}>{label}</button>
+  )
+  return (
+    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
+      {tab('practice', 'Practice')}
+      {tab('chart', 'Chart')}
+    </div>
+  )
+}
+
+// Browsable gojūon chart — every kana of the chosen script, tap to hear.
+function KanaChart({ script }) {
+  const useKata = script === 'kata'
+  return (
+    <div style={{ display: 'grid', gap: '8px' }}>
+      {ROWS.map(row => (
+        <div key={row.key} style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+          {row.items.map(([h, k, r]) => {
+            const kana = useKata ? k : h
+            return (
+              <button key={r + kana} onClick={() => speakKana(kana)} aria-label={'Play ' + r} style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
+                padding: '12px 4px', borderRadius: '13px', cursor: 'pointer',
+                border: '1px solid var(--border)', background: 'var(--surface)',
+              }}>
+                <span style={{ fontFamily: "'Noto Sans JP'", fontSize: '24px', color: 'var(--text)', lineHeight: 1 }}>{kana}</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>{r}</span>
+              </button>
+            )
+          })}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // Build the drill pool from selected rows + script choice.
 function buildPool(rowKeys, script) {
   const pool = []
@@ -74,6 +133,7 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
   const isMobile = useIsMobile()
   const isJapanese = profile.active_language === 'japanese'
   const [script, setScript] = useState('hira')            // 'hira' | 'kata' | 'both'
+  const [view, setView] = useState('practice')            // 'practice' | 'chart'
   const [answerMode, setAnswerMode] = useState('choice')  // 'choice' | 'typed'
   const [selectedRows, setSelectedRows] = useState(() => new Set(['a', 'ka', 'sa', 'ta', 'na']))
   const [started, setStarted] = useState(false)
@@ -167,6 +227,36 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
     )
   }
 
+  // ── Chart: browsable gojūon grid, tap any kana to hear it ─────────────────
+  if (!started && view === 'chart') {
+    return (
+      <div style={pageShell}>
+        <div style={{ maxWidth: '620px', margin: '0 auto', paddingTop: isMobile ? '8px' : '20px' }}>
+          <SecondaryButton onClick={onBack} icon={ArrowLeft}>Exit</SecondaryButton>
+          <div style={{ textAlign: 'center', margin: '22px 0 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: ACCENT, fontSize: '13px', fontWeight: 750 }}>
+              <Languages size={17} strokeWidth={1.8} color={ACCENT} /> Kana chart
+            </div>
+            <h1 style={{ fontSize: '26px', fontWeight: 780, color: 'var(--text)', marginTop: '8px' }}>Tap a kana to hear it</h1>
+          </div>
+          <ViewTabs view={view} setView={setView} accent={ACCENT} />
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
+            {[['hira', 'Hiragana'], ['kata', 'Katakana']].map(([key, label]) => (
+              <button key={key} onClick={() => setScript(key)} style={{
+                padding: '8px 16px', borderRadius: '999px', cursor: 'pointer',
+                border: '1px solid ' + (script === key ? ACCENT + '66' : 'var(--border)'),
+                background: script === key ? ACCENT + '14' : 'var(--surface)',
+                color: script === key ? ACCENT : 'var(--text-muted)',
+                fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+              }}>{label}</button>
+            ))}
+          </div>
+          <KanaChart script={script === 'kata' ? 'kata' : 'hira'} />
+        </div>
+      </div>
+    )
+  }
+
   // ── Setup: script + rows + answer mode ────────────────────────────────────
   if (!started) {
     const pool = buildPool(selectedRows, script)
@@ -185,6 +275,8 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
               Pick the gojūon rows to drill. Rows you've missed this session are marked.
             </p>
           </div>
+
+          <ViewTabs view={view} setView={setView} accent={ACCENT} />
 
           {/* Script + answer-mode toggles */}
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
