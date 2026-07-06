@@ -4,7 +4,22 @@ import { languageTheme } from './languageTheme'
 import { grammarFor } from './grammarGuides'
 import { awardXp } from './xpService'
 import { useIsMobile } from './useIsMobile'
-import { ArrowLeft, BookMarked, BookOpen, Check, ChevronRight, GraduationCap, Sparkles, X } from 'lucide-react'
+import { ArrowLeft, BookMarked, BookOpen, Check, ChevronRight, GraduationCap, Sparkles, X, Volume2 } from 'lucide-react'
+
+// Speak an example aloud with the browser's TTS — grammar examples are
+// arbitrary sentences with no recorded audio, so this is the practical way to
+// let learners hear them (same approach as the story reader / chat missions).
+function speakText(text, language) {
+  try {
+    const synth = window.speechSynthesis
+    if (!synth) return
+    synth.cancel()
+    const u = new SpeechSynthesisUtterance(text)
+    u.lang = language === 'japanese' ? 'ja-JP' : language === 'russian' ? 'ru-RU' : 'zh-CN'
+    u.rate = 0.9
+    synth.speak(u)
+  } catch { /* speech not available */ }
+}
 
 // Beginner grammar guide for the active language. Each topic is a mini-lesson:
 // a pattern chip (the formula), plain-language points with examples, real lines
@@ -237,7 +252,20 @@ function Example({ ex, language, font, accentHex }) {
       {readingBelow && (
         <div style={{ fontSize: '13px', color: accentHex, marginTop: '4px', fontWeight: 600 }}>{ex.reading}</div>
       )}
-      <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>{ex.en}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginTop: '6px' }}>
+        <button
+          onClick={() => speakText(ex.target, language)}
+          aria-label="Play example"
+          style={{
+            flexShrink: 0, width: '28px', height: '28px', borderRadius: '9px', cursor: 'pointer',
+            border: '1px solid ' + accentHex + '2A', background: accentHex + '10',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <Volume2 size={14} strokeWidth={2} color={accentHex} />
+        </button>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{ex.en}</div>
+      </div>
     </div>
   )
 }
