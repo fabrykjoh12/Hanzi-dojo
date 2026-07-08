@@ -6,6 +6,7 @@ import { Centered, PrimaryButton, SecondaryButton } from './ui'
 import { useIsMobile } from './useIsMobile'
 import {
   ArrowLeft, Languages, Check, X, RotateCcw, CheckCircle2, Sparkles, Keyboard, MousePointerClick,
+  GraduationCap, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 
 const ACCENT = '#2E3A6E'
@@ -69,7 +70,8 @@ function ViewTabs({ view, setView, accent }) {
     }}>{label}</button>
   )
   return (
-    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
+    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
+      {tab('learn', 'Learn')}
       {tab('practice', 'Practice')}
       {tab('chart', 'Chart')}
     </div>
@@ -115,9 +117,18 @@ function buildPool(rowKeys, script) {
   return pool
 }
 
-// Multiple-choice options: correct + 3 distinct-romaji distractors.
-function buildQuestions(pool) {
-  const allRomaji = pool.map(p => p[1])
+// Lessons for the guided learn-then-quiz flow: one gojūon row at a time, base
+// rows first, then the dakuten/handakuten rows.
+const LESSONS = ['a', 'ka', 'sa', 'ta', 'na', 'ha', 'ma', 'ya', 'ra', 'wa', 'ga', 'za', 'da', 'ba', 'pa']
+// Every romaji, used as the distractor bag in learn mode so even a 3-kana row
+// (や, わ) can still be quizzed with 4 tap-choices.
+const ALL_ROMAJI = ROWS.flatMap(r => r.items.map(it => it[2]))
+function rowByKey(key) { return ROWS.find(r => r.key === key) }
+
+// Multiple-choice options: correct + 3 distinct-romaji distractors. `distractorRomaji`
+// widens the distractor bag beyond the question pool (learn mode).
+function buildQuestions(pool, distractorRomaji) {
+  const allRomaji = distractorRomaji && distractorRomaji.length ? distractorRomaji : pool.map(p => p[1])
   return weightedSample(pool, p => p[0], 'kana', Math.min(QUESTION_COUNT, pool.length), shuffle).map(([kana, romaji]) => {
     const distractors = []
     const used = new Set([romaji])
@@ -133,7 +144,8 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
   const isMobile = useIsMobile()
   const isJapanese = profile.active_language === 'japanese'
   const [script, setScript] = useState('hira')            // 'hira' | 'kata' | 'both'
-  const [view, setView] = useState('practice')            // 'practice' | 'chart'
+  const [view, setView] = useState('practice')            // 'practice' | 'chart' | 'learn'
+  const [learnLesson, setLearnLesson] = useState(0)       // index into LESSONS
   const [answerMode, setAnswerMode] = useState('choice')  // 'choice' | 'typed'
   const [selectedRows, setSelectedRows] = useState(() => new Set(['a', 'ka', 'sa', 'ta', 'na']))
   const [started, setStarted] = useState(false)
@@ -174,6 +186,19 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
     const pool = buildPool(selectedRows, script)
     if (!canStart(pool)) return
     setQuestions(buildQuestions(pool))
+    setIdx(0); setPicked(null); setTyped(''); setTypedResult(null)
+    setCorrectCount(0); setDone(false)
+    setStarted(true)
+  }
+
+  // Learn flow: quiz just the current lesson's row (both scripts), with
+  // distractors drawn from all kana so even short rows are quizzable in tap mode.
+  function startLesson() {
+    const row = rowByKey(LESSONS[learnLesson])
+    if (!row) return
+    const pool = []
+    for (const [h, k, r] of row.items) { pool.push([h, r]); pool.push([k, r]) }
+    setQuestions(buildQuestions(pool, ALL_ROMAJI))
     setIdx(0); setPicked(null); setTyped(''); setTypedResult(null)
     setCorrectCount(0); setDone(false)
     setStarted(true)
@@ -223,6 +248,61 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
           </p>
           <PrimaryButton onClick={onBack} icon={ArrowLeft}>Back home</PrimaryButton>
         </Centered>
+      </div>
+    )
+  }
+
+  // ── Learn: study a lesson's row (tap to hear), then quiz just those ────────
+  if (!started && view === 'learn') {
+    const row = rowByKey(LESSONS[learnLesson]) || ROWS[0]
+    const atFirst = learnLesson <= 0
+    const atLast = learnLesson >= LESSONS.length - 1
+    const navBtn = (disabled) => ({
+      display: 'inline-flex', alignItems: 'center', gap: '4px',
+      padding: '8px 14px', borderRadius: '999px',
+      border: '1px solid var(--border)', background: 'var(--surface)',
+      color: disabled ? 'var(--text-faint)' : 'var(--text-muted)',
+      fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+      cursor: disabled ? 'default' : 'pointer',
+    })
+    return (
+      <div style={pageShell}>
+        <div style={{ maxWidth: '620px', margin: '0 auto', paddingTop: isMobile ? '8px' : '20px' }}>
+          <SecondaryButton onClick={onBack} icon={ArrowLeft}>Exit</SecondaryButton>
+          <div style={{ textAlign: 'center', margin: '22px 0 14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: ACCENT, fontSize: '13px', fontWeight: 750 }}>
+              <GraduationCap size={17} strokeWidth={1.8} color={ACCENT} /> Learn kana
+            </div>
+            <h1 style={{ fontSize: '26px', fontWeight: 780, color: 'var(--text)', marginTop: '8px' }}>Lesson {learnLesson + 1} of {LESSONS.length}</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '6px' }}>
+              Tap each kana to hear it, then quiz yourself on this set.
+            </p>
+          </div>
+          <ViewTabs view={view} setView={setView} accent={ACCENT} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', marginBottom: '16px' }}>
+            {row.items.map(([h, k, r]) => (
+              <button key={r} onClick={() => speakKana(h)} aria-label={'Play ' + r} style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px',
+                padding: '14px 4px', borderRadius: '14px', cursor: 'pointer',
+                border: '1px solid ' + ACCENT + '22', background: ACCENT + '08',
+              }}>
+                <span style={{ fontFamily: "'Noto Sans JP'", fontSize: '26px', color: 'var(--text)', lineHeight: 1 }}>{h}</span>
+                <span style={{ fontFamily: "'Noto Sans JP'", fontSize: '16px', color: 'var(--text-muted)', lineHeight: 1 }}>{k}</span>
+                <span style={{ fontSize: '11px', color: ACCENT, fontWeight: 700 }}>{r}</span>
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <button disabled={atFirst} onClick={() => !atFirst && setLearnLesson(l => l - 1)} style={navBtn(atFirst)}>
+              <ChevronLeft size={15} strokeWidth={2.2} /> Prev
+            </button>
+            <span style={{ fontFamily: "'Noto Sans JP'", fontSize: '14px', color: 'var(--text-muted)', fontWeight: 600 }}>{row.label}</span>
+            <button disabled={atLast} onClick={() => !atLast && setLearnLesson(l => l + 1)} style={navBtn(atLast)}>
+              Next <ChevronRight size={15} strokeWidth={2.2} />
+            </button>
+          </div>
+          <PrimaryButton onClick={startLesson} icon={Sparkles}>Quiz these kana</PrimaryButton>
+        </div>
       </div>
     )
   }
@@ -371,8 +451,14 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <SecondaryButton onClick={() => setStarted(false)} icon={ArrowLeft}>Rows</SecondaryButton>
-            <PrimaryButton onClick={start} icon={RotateCcw}>Again</PrimaryButton>
+            <SecondaryButton onClick={() => setStarted(false)} icon={ArrowLeft}>
+              {view === 'learn' ? 'Lessons' : 'Rows'}
+            </SecondaryButton>
+            {view === 'learn' && learnLesson < LESSONS.length - 1 ? (
+              <PrimaryButton onClick={() => { setLearnLesson(l => l + 1); setDone(false); setStarted(false) }} icon={ChevronRight}>Next lesson</PrimaryButton>
+            ) : (
+              <PrimaryButton onClick={view === 'learn' ? startLesson : start} icon={RotateCcw}>Again</PrimaryButton>
+            )}
           </div>
         </Centered>
       </div>
@@ -384,7 +470,7 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
     <div style={pageShell}>
       <div style={{ maxWidth: '560px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-          <SecondaryButton onClick={() => setStarted(false)} icon={ArrowLeft}>Rows</SecondaryButton>
+          <SecondaryButton onClick={() => setStarted(false)} icon={ArrowLeft}>{view === 'learn' ? 'Lessons' : 'Rows'}</SecondaryButton>
           <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{idx + 1} / {questions.length}</span>
         </div>
 
