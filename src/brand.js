@@ -6,9 +6,9 @@ export const BRAND_NAME = 'Hanzi Dojo'
 
 export const BRAND_FONT = "'Poppins', 'Inter', sans-serif"
 
-// Brush-script face for the big brand moments (login / onboarding hero). Evokes
-// the ensō brush-circle logo. Kept off the small sidebar chrome where a clean
-// sans stays more legible.
+// (Retired) brush-script face — its Latin letterforms read thin and uneven for
+// the "Hanzi Dojo" wordmark, so the hero moments now use the clean Poppins
+// wordmark below. Kept exported for back-compat; no longer referenced.
 export const BRAND_BRUSH_FONT = "'Nanum Brush Script', 'Poppins', cursive"
 
 // The brand red from the ensō logo — used to tint the brush wordmark.
@@ -27,14 +27,17 @@ export function wordmarkStyle(fontSize = '18px') {
   }
 }
 
-// Inline style for the large brush wordmark on hero screens.
+// Inline style for the large wordmark on hero screens (login / onboarding /
+// landing). A clean, tightly-tracked Poppins bold — modern and legible, letting
+// the red ensō logo carry the brand color rather than a hard-to-read script.
 export function heroWordmarkStyle(fontSize = '44px') {
   return {
-    fontFamily: BRAND_BRUSH_FONT,
+    fontFamily: BRAND_FONT,
     fontSize,
-    fontWeight: 400,
-    color: BRAND_INK,
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
+    color: 'var(--text)',
     whiteSpace: 'nowrap',
-    lineHeight: 1.05,
+    lineHeight: 1.1,
   }
 }

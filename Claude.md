@@ -6,6 +6,9 @@ Read this entire file before making any change. It describes not just *what* the
 
 ## 0. LATEST SESSION — read first (2026-07-05)
 
+### Brand wordmark — retired the brush script
+- The "Hanzi Dojo" wordmark used `Nanum Brush Script` (a Korean brush font whose Latin letters read thin/uneven — user called it "awful"). `brand.js` `heroWordmarkStyle` now uses **Poppins 700**, `-0.02em` tracking, `var(--text)` color — clean and legible, letting the red ensō logo carry the brand color. Fixes all hero placements (landing / auth / onboarding / password-reset) at once. Dropped `Nanum+Brush+Script` from the `index.html` font link (unused now); `BRAND_BRUSH_FONT` kept exported for back-compat but unreferenced.
+
 ### Typing leniency, flashcard overlap, grammar audio, kana chart
 - **Leniency (items 1 & 3, "hai marked wrong"):** `testLogic.normalizePinyin` now NFD-decomposes and strips combining marks — a tone stored **decomposed** (a + U+030C) is accepted like precomposed ǎ (the silent cause). `checkAnswer` uses `lenientPinyin` (numeric tones too). Writing's `normalizeRomaji` ignores the syllable apostrophe + hyphens. Strictly more lenient. Tests added.
 - **Flashcard (item 6, "Replay covers furigana"):** the flipped side's tall content could bleed up over the header controls; header is now `flex-shrink:0` and the content area scrolls (`minHeight:0`/`overflow-y:auto`).
