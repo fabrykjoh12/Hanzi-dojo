@@ -20,6 +20,7 @@ import { cleanMeaning } from './cleanMeaning'
 import { isLearned } from './mastery'
 import { pickRecapStory } from './storyMatch'
 import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
+import { buildStudyQueue, reinsertSoon, queueSeed } from './studyQueue'
 import ChatMission from './ChatMission'
 import { pickMission } from './chatMissions'
 import { prefetchLevel } from './prefetch'
@@ -194,24 +195,6 @@ function PrimaryButton({ onClick, children, icon: Icon }) {
       {children}
     </button>
   )
-}
-
-// Spread `insert` items evenly through `base` so the two kinds of card arrive
-// mixed, not as back-to-back blocks. Used to weave new cards into the due-review
-// backbone: reviews still lead (a review shows before the first new card), but
-// new cards no longer sit stranded at the very end of the session.
-function interleave(base, insert) {
-  if (insert.length === 0) return base.slice()
-  if (base.length === 0) return insert.slice()
-  const out = []
-  const step = base.length / (insert.length + 1)
-  let si = 0
-  for (let i = 0; i < base.length; i += 1) {
-    out.push(base[i])
-    while (si < insert.length && (si + 1) * step <= i + 1) { out.push(insert[si]); si += 1 }
-  }
-  while (si < insert.length) { out.push(insert[si]); si += 1 }
-  return out
 }
 
 export default function Study({ session, profile, track, mode = 'review', onBack, onNavigate, onStreakUpdate }) {
@@ -403,11 +386,19 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         state: 'new', ease_factor: 2.5, interval_days: 0, learning_step: 0,
       }))
 
-    // Due reviews are the SRS priority, so they lead; new cards are woven in
-    // evenly rather than piled in front of the reviews (which used to make every
-    // due review wait until all new cards were cleared). Learning/relearning
-    // cards are time-sensitive re-tries, so they stay at the very front.
-    const newQueue = [...dueLearning, ...interleave(dueReview, newItems)]
+    // Order the session with the seeded queue builder (studyQueue.js): learning
+    // leads, reviews are the backbone, new cards are woven through — never a
+    // block of new up front, never 3 new in a row while a review remains. The
+    // seed is stable per user/level/day, so a reload the same day keeps the
+    // order and different days feel fresh.
+    const seed = queueSeed({
+      userId: session.user.id,
+      language: track.language,
+      system: track.system,
+      level: track.current_level,
+      day: todayStr(),
+    })
+    const newQueue = buildStudyQueue({ dueLearning, dueReview, newItems, seed })
     setQueue(newQueue)
     setDone(newQueue.length === 0)
     setLoading(false)
@@ -772,11 +763,12 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     setAudioBroken(false)
 
     setQueue(prev => {
-      const rest = prev.slice(1)
+      let rest = prev.slice(1)
       if (res.stay) {
+        // Reinsert an "Again"-graded card soon (SRS gap), but not as the very
+        // next card unless the queue is too short to allow it.
         const item = { ...card, ...res.updates, id: cardId }
-        const pos = Math.min(res.gap, rest.length)
-        rest.splice(pos, 0, item)
+        rest = reinsertSoon(rest, item, res.gap)
       }
       if (rest.length === 0) {
         setRecap({ ...sessionRef.current })
