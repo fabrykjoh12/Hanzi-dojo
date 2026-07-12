@@ -7,44 +7,13 @@ import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { markWordDue } from './practiceSignal'
 import { getSentenceBank } from './sentenceBank'
+import { tokenize, makeSegmenter } from './segment'
 import {
   ArrowLeft, Blocks, Check, X, RotateCcw, CheckCircle2, Sparkles, Eye,
 } from 'lucide-react'
 
 const QUESTION_COUNT = 10
 const XP_PER_CORRECT = 4
-const PUNCT = '、。，．！？；：「」『』（）()【】…—~～·,.!?;:\'"-– '
-
-function isContent(t) {
-  const s = (t || '').trim()
-  if (!s) return false
-  for (let i = 0; i < s.length; i += 1) {
-    if (PUNCT.indexOf(s[i]) === -1) return true
-  }
-  return false
-}
-
-function makeSegmenter(locale) {
-  try {
-    if (typeof Intl !== 'undefined' && Intl.Segmenter) return new Intl.Segmenter(locale, { granularity: 'word' })
-  } catch (e) { /* unsupported */ }
-  return null
-}
-
-function tokenize(sentence, segmenter) {
-  const out = []
-  if (segmenter) {
-    for (const seg of segmenter.segment(sentence)) {
-      if (isContent(seg.segment)) out.push(seg.segment)
-    }
-  } else {
-    // Fallback: one tile per character (works for Chinese; rough for Japanese).
-    for (let i = 0; i < sentence.length; i += 1) {
-      if (isContent(sentence[i])) out.push(sentence[i])
-    }
-  }
-  return out
-}
 
 // Scramble [0..n-1] into a different order than sorted.
 function scrambleIds(n) {

@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabase'
 import { languageTheme } from './languageTheme'
 import { grammarFor } from './grammarGuides'
 import { awardXp } from './xpService'
 import { useIsMobile } from './useIsMobile'
+import { shuffle } from './utils'
+import { tokenize, makeSegmenter, isContent, scrambleIndices } from './segment'
 import { ArrowLeft, BookMarked, BookOpen, Check, ChevronRight, GraduationCap, Sparkles, X, Volume2 } from 'lucide-react'
 
 // Speak an example aloud with the browser's TTS — grammar examples are
@@ -197,6 +199,8 @@ export default function Grammar({ session, profile, track, onBack, onUpdate }) {
 
                     <StoryLines topic={topic} stories={stories} font={font} accentHex={accentHex} isMobile={isMobile} />
 
+                    <TryIt topic={topic} language={profile.active_language} font={font} accentHex={accentHex} />
+
                     <SelfCheck
                       topic={topic}
                       picked={answers[topic.id] || {}}
@@ -265,6 +269,96 @@ function Example({ ex, language, font, accentHex }) {
           <Volume2 size={14} strokeWidth={2} color={accentHex} />
         </button>
         <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{ex.en}</div>
+      </div>
+    </div>
+  )
+}
+
+function langLocale(language) {
+  return language === 'japanese' ? 'ja' : language === 'russian' ? 'ru' : 'zh'
+}
+
+// Pick a topic example that makes a good reorder puzzle (3–8 word tiles).
+// Japanese uses the hand-authored `segs` for clean word tiles; other languages
+// segment the target sentence.
+function buildPuzzle(topic, language, seg) {
+  for (const p of (topic.points || [])) {
+    const ex = p.ex
+    if (!ex || !ex.target) continue
+    let tokens
+    if (language === 'japanese' && Array.isArray(ex.segs) && ex.segs.length) {
+      tokens = ex.segs.filter(s => isContent(s[0])).map(s => s[0])
+    } else {
+      tokens = tokenize(ex.target, seg)
+    }
+    if (tokens.length >= 3 && tokens.length <= 8) return { tokens, en: ex.en }
+  }
+  return null
+}
+
+function tryBtn(accent) {
+  return {
+    height: '38px', padding: '0 18px', borderRadius: '11px', border: 'none',
+    background: accent, color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+  }
+}
+const tryGhostBtn = {
+  height: '38px', padding: '0 14px', borderRadius: '11px', border: '1px solid var(--border)',
+  background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+}
+
+// "Try it": rebuild the topic's example from scrambled word tiles — active
+// practice of the pattern's word order, from an example already on the page.
+function TryIt({ topic, language, font, accentHex }) {
+  const seg = useMemo(() => makeSegmenter(langLocale(language)), [language])
+  const puzzle = useMemo(() => buildPuzzle(topic, language, seg), [topic, language, seg])
+  // Each topic is a stable, keyed instance, so the scramble is initialized once.
+  const [order, setOrder] = useState(() => (puzzle ? scrambleIndices(puzzle.tokens.length, shuffle) : []))
+  const [placed, setPlaced] = useState([])
+  const [result, setResult] = useState(null)   // null | 'correct' | 'wrong'
+
+  if (!puzzle) return null
+  const tokens = puzzle.tokens
+  const bankIds = order.filter(id => placed.indexOf(id) === -1)
+  const solved = result === 'correct'
+
+  const check = () => {
+    const ok = placed.length === tokens.length && placed.map(id => tokens[id]).join('') === tokens.join('')
+    setResult(ok ? 'correct' : 'wrong')
+  }
+  const reset = () => { setOrder(scrambleIndices(tokens.length, shuffle)); setPlaced([]); setResult(null) }
+
+  const tile = (id, inBank) => (
+    <button key={id} disabled={solved}
+      onClick={() => { if (solved) return; setResult(null); setPlaced(inBank ? [...placed, id] : placed.filter(x => x !== id)) }}
+      style={{
+        padding: '8px 13px', borderRadius: '11px', cursor: solved ? 'default' : 'pointer',
+        border: '1.5px solid ' + accentHex + (inBank ? '55' : '99'),
+        background: accentHex + (inBank ? '10' : '1E'), color: 'var(--text)',
+        fontFamily: font, fontSize: '17px', fontWeight: 600,
+      }}>{tokens[id]}</button>
+  )
+
+  return (
+    <div style={{ marginTop: '14px', padding: '14px 16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+      <div style={{ fontSize: '12px', fontWeight: 850, letterSpacing: '0.4px', textTransform: 'uppercase', color: accentHex, marginBottom: '4px' }}>Try it</div>
+      <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '10px', fontStyle: 'italic' }}>Build: “{puzzle.en}”</div>
+      <div style={{ minHeight: '46px', display: 'flex', flexWrap: 'wrap', gap: '7px', alignItems: 'center', padding: '9px 11px', borderRadius: '12px', border: '1.5px dashed ' + (result === 'correct' ? '#2F9E6D' : result === 'wrong' ? '#DC2626' : 'var(--border)'), background: 'var(--surface)', marginBottom: '10px' }}>
+        {placed.length === 0 && <span style={{ color: 'var(--text-faint)', fontSize: '13px' }}>Tap the words in order…</span>}
+        {placed.map(id => tile(id, false))}
+      </div>
+      {bankIds.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '10px' }}>
+          {bankIds.map(id => tile(id, true))}
+        </div>
+      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+        {!solved && (
+          <button onClick={check} disabled={placed.length === 0} style={{ ...tryBtn(accentHex), opacity: placed.length === 0 ? 0.5 : 1 }}>Check</button>
+        )}
+        {result && <button onClick={reset} style={tryGhostBtn}>Shuffle</button>}
+        {result === 'correct' && <span style={{ fontSize: '13px', fontWeight: 750, color: '#2F9E6D' }}>Nice — that’s the order!</span>}
+        {result === 'wrong' && <span style={{ fontSize: '13px', fontWeight: 700, color: '#DC2626' }}>Not yet — try again.</span>}
       </div>
     </div>
   )
