@@ -65,6 +65,9 @@ export default function App() {
   const [track, setTrack] = useState(null)
   const [counts, setCounts] = useState({ newCount: 0, learnCount: 0, dueCount: 0, easyCount: 0, totalWords: 0, learnedCount: 0, masteredCount: 0, masteredPct: 0 })
   const [loading, setLoading] = useState(true)
+  // A story to open directly when navigating to Stories (set by the post-study
+  // recap's "Read unlocked story" CTA). Consumed and cleared by Stories on load.
+  const [pendingStoryId, setPendingStoryId] = useState(null)
   // True while the user arrived via a password-recovery email link and hasn't
   // set a new password yet (Supabase signs them in and fires PASSWORD_RECOVERY).
   const [recovery, setRecovery] = useState(false)
@@ -145,7 +148,8 @@ export default function App() {
   // study/practice screens patch the in-memory profile live via their
   // onUpdate/onStreakUpdate callbacks. (Previously every view switch refired
   // ~5 queries, so opening Settings cost a full dashboard reload.)
-  const navigate = (key) => {
+  const navigate = (key, opts) => {
+    if (opts && opts.storyId) setPendingStoryId(opts.storyId)
     routerNavigate(viewToPath(key))
     if (session && key === 'home') loadProfile(session.user.id)
   }
@@ -192,6 +196,7 @@ export default function App() {
         profile={profile}
         track={track}
         onBack={() => navigate('home')}
+        onNavigate={navigate}
         onStreakUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
@@ -203,6 +208,7 @@ export default function App() {
         track={track}
         mode="weak"
         onBack={() => navigate('home')}
+        onNavigate={navigate}
         onStreakUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
@@ -328,6 +334,8 @@ export default function App() {
         profile={profile}
         track={track}
         onBack={() => navigate('home')}
+        initialStoryId={pendingStoryId}
+        onInitialStoryConsumed={() => setPendingStoryId(null)}
       />
     )
   } else if (view === 'profile') {

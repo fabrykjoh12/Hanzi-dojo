@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, getAudioUrl } from './utils'
 import { cacheSet, cacheGet } from './offline'
 import { languageTheme } from './languageTheme'
+import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
 import { isLearned } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import StoryReaderImmersive from './StoryReaderImmersive'
@@ -10,34 +11,9 @@ import {
   ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Circle, Library, Lock,
 } from 'lucide-react'
 
-// ─── CATEGORIES ────────────────────────────────────────────────────────────
-
-// Tier 1 is unlocked from day one (minWords 0) so a brand-new learner can start
-// reading immediately — every word is tappable and addable to their deck, which
-// is itself a gentle way to learn. Later tiers still gate on learned-word count.
-const CATEGORIES_CHINESE = [
-  { tier: 1, minWords: 0,   label: 'First Steps', wordRange: '1–100', description: 'Stories using the first 100 most common HSK 1 words' },
-  { tier: 2, minWords: 100, label: 'Growing',     wordRange: '1–200', description: 'Stories using the first 200 most common HSK 1 words' },
-  { tier: 3, minWords: 200, label: 'Fluent',      wordRange: '1–300', description: 'All 300 HSK 1 words in use' },
-]
-
-const CATEGORIES_JAPANESE = [
-  { tier: 1, minWords: 0,   label: 'First Steps', wordRange: '1–100', description: 'Stories using the first 100 most common JLPT N5 words' },
-  { tier: 2, minWords: 100, label: 'Growing',     wordRange: '1–200', description: 'Stories using the first 200 most common JLPT N5 words' },
-  { tier: 3, minWords: 200, label: 'Fluent',      wordRange: '1–400', description: 'All 400 N5 Part 1 words in use' },
-]
-
-const CATEGORIES_RUSSIAN = [
-  { tier: 1, minWords: 0,   label: 'First Steps', wordRange: '1–50',  description: 'Stories using the first 50 most common A1 words' },
-  { tier: 2, minWords: 50,  label: 'Growing',     wordRange: '1–100', description: 'Stories using the first 100 most common A1 words' },
-  { tier: 3, minWords: 100, label: 'Fluent',      wordRange: 'all',   description: 'The full A1 starter deck in use' },
-]
-
-const CATEGORIES_BY_LANGUAGE = {
-  chinese: CATEGORIES_CHINESE,
-  japanese: CATEGORIES_JAPANESE,
-  russian: CATEGORIES_RUSSIAN,
-}
+// Story tier definitions live in ./storyTiers (shared with the post-study
+// recap's story matcher).
+const CATEGORIES_CHINESE = CATEGORIES_BY_LANGUAGE.chinese
 
 // ─── CONSTANTS ─────────────────────────────────────────────────────────────
 
@@ -274,7 +250,7 @@ function EmptyPanel({ icon: Icon, title, text }) {
 
 // ─── MAIN STORIES COMPONENT ────────────────────────────────────────────────
 
-export default function Stories({ session, profile, track, onBack }) {
+export default function Stories({ session, profile, track, onBack, initialStoryId, onInitialStoryConsumed }) {
   const [view, setView] = useState('categories')
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [selectedStory, setSelectedStory] = useState(null)
@@ -354,6 +330,19 @@ export default function Stories({ session, profile, track, onBack }) {
 
     setStories(storiesData || [])
     setReadIds(new Set((readsData || []).map(r => r.story_id)))
+
+    // Deep-link from the post-study recap ("Read unlocked story"): open the
+    // recommended story straight into the reader instead of the category list.
+    if (initialStoryId) {
+      const target = (storiesData || []).find(s => s.id === initialStoryId)
+      if (target) {
+        const cat = CATEGORIES.find(c => c.tier === target.tier) || null
+        setSelectedCategory(cat)
+        setSelectedStory(target)
+        setView('reader')
+      }
+      if (onInitialStoryConsumed) onInitialStoryConsumed()
+    }
 
     setLoading(false)
   }

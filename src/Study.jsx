@@ -17,6 +17,9 @@ import { toRomaji } from 'wanakana'
 import { useIsMobile } from './useIsMobile'
 import { CountUp } from './ui'
 import { cleanMeaning } from './cleanMeaning'
+import { isLearned } from './mastery'
+import { pickRecapStory } from './storyMatch'
+import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
 import ChatMission from './ChatMission'
 import { pickMission } from './chatMissions'
 import { prefetchLevel } from './prefetch'
@@ -24,7 +27,7 @@ import { ensureAudio } from './audioCache'
 import {
   Volume2, VolumeX, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
   Sparkles, CheckCircle2, Layers, BookOpenCheck, Sunrise, X, Snowflake, TrendingUp,
-  MessageCircleMore, ChevronRight, Download, CheckCheck,
+  MessageCircleMore, ChevronRight, Download, CheckCheck, BookOpen,
 } from 'lucide-react'
 
 // Does the typed input match the card's reading (or the word itself)?
@@ -211,7 +214,7 @@ function interleave(base, insert) {
   return out
 }
 
-export default function Study({ session, profile, track, mode = 'review', onBack, onStreakUpdate }) {
+export default function Study({ session, profile, track, mode = 'review', onBack, onNavigate, onStreakUpdate }) {
   const isWeak = mode === 'weak'
   const [queue, setQueue] = useState([])
   const [loading, setLoading] = useState(true)
@@ -255,6 +258,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const freezesRef = useRef(profile.streak_freezes || 0)
   const [forecast, setForecast] = useState(null)
   const [recap, setRecap] = useState(null)   // snapshot of sessionRef at completion
+  // "First Story Unlocked" recommendation for the recap (null until computed;
+  // stays null offline or when no story library exists — module stays hidden).
+  const [storyUnlock, setStoryUnlock] = useState(null)
   // Word-to-World chat mission: the level's vocab (for tap lookups) and a record
   // of which words were touched this session, so the mission can reuse today's
   // learned / weak / review words.
@@ -504,6 +510,56 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     setForecast({ reviews, newAvail })
   }
 
+  // Connect this session's words to a story the user can now read — the "First
+  // Story Unlocked" recap module. Best-effort and purely additive: any failure
+  // (or offline) just leaves the module hidden. Reuses the pure matcher in
+  // storyMatch.js so the "% known" mirrors what the reader then shows.
+  async function loadStoryUnlock() {
+    try {
+      const [vres, sres, cres, rres] = await Promise.all([
+        supabase.from('vocabulary').select('id, word, level')
+          .eq('language', track.language).eq('system', track.system).eq('is_active', true),
+        supabase.from('stories').select('id, title, content, tier, story_number')
+          .eq('language', track.language).eq('system', track.system)
+          .eq('level', track.current_level).eq('is_published', true),
+        supabase.from('cards').select('vocab_id, is_easy, state, learned')
+          .eq('user_id', session.user.id),
+        supabase.from('story_reads').select('story_id').eq('user_id', session.user.id),
+      ])
+      const stories = sres.data || []
+      if (stories.length === 0) { setStoryUnlock(null); return }
+
+      const vocabRows = vres.data || []
+      const cards = cres.data || []
+      const vocabMap = {}
+      vocabRows.forEach(v => { vocabMap[v.word] = v })
+      const userCards = {}
+      cards.forEach(c => { userCards[c.vocab_id] = c })
+
+      // Tier gating mirrors Stories: learned words at the CURRENT level only.
+      const currentLevelIds = new Set(
+        vocabRows.filter(v => v.level === track.current_level).map(v => v.id)
+      )
+      const learnedCount = cards.filter(c => currentLevelIds.has(c.vocab_id) && isLearned(c)).length
+
+      // Distinct words actually studied this session.
+      const sessionWords = [...new Set(sessionVocabRef.current.map(e => e.word))]
+
+      const rec = pickRecapStory({
+        stories,
+        vocabMap,
+        userCards,
+        sessionWords,
+        readIds: new Set((rres.data || []).map(r => r.story_id)),
+        learnedCount,
+        categories: CATEGORIES_BY_LANGUAGE[track.language] || CATEGORIES_BY_LANGUAGE.chinese,
+      })
+      setStoryUnlock(rec)
+    } catch {
+      setStoryUnlock(null)
+    }
+  }
+
   // Toast any achievement seals newly earned this session (compare the live
   // stats against the snapshot taken at session start).
   async function celebrateAchievements() {
@@ -525,6 +581,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   useEffect(() => {
     if (done && recap && recap.graded > 0 && !forecast) {
       loadForecast()
+    }
+    if (done && recap && recap.graded > 0 && !storyUnlock) {
+      loadStoryUnlock()
     }
     if (done && recap && recap.graded > 0 && achieveBeforeRef.current && !achieveToastedRef.current) {
       achieveToastedRef.current = true
@@ -992,6 +1051,15 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               </div>
             )}
 
+            {didStudy && storyUnlock && (
+              <StoryUnlockCard
+                unlock={storyUnlock}
+                accentHex={accentHex}
+                langFont={langFont}
+                onRead={(storyId) => onNavigate && onNavigate('stories', storyId ? { storyId } : undefined)}
+              />
+            )}
+
             {availableMission && (
               <button onClick={() => setMission(availableMission)} style={{
                 width: '100%', marginBottom: '12px', textAlign: 'left', cursor: 'pointer',
@@ -1429,6 +1497,88 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+// "First Story Unlocked" recap module — connects the words just studied to a
+// story the user can now read (the core product loop, made felt). Renders a
+// readable-story CTA when one is available, or a calm "learn N more" nudge when
+// the next tier is still locked. Given only when the session had graded cards.
+function StoryUnlockCard({ unlock, accentHex, langFont, onRead }) {
+  const [hovered, setHovered] = useState(false)
+  const { story, knownPct, sessionWordsInStory, isRead, wordsToUnlock, nextTierLabel } = unlock
+
+  // No unlocked story yet: gentle progress nudge toward the next tier.
+  if (!story) {
+    if (!wordsToUnlock || wordsToUnlock <= 0) return null
+    return (
+      <div style={{
+        width: '100%', marginBottom: '12px', textAlign: 'left',
+        background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '18px',
+        padding: '16px 18px', display: 'flex', alignItems: 'center', gap: '14px',
+      }}>
+        <div style={{ width: '44px', height: '44px', borderRadius: '14px', flexShrink: 0, background: accentHex + '12', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <BookOpen size={22} strokeWidth={1.9} color={accentHex} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text)' }}>Keep going</div>
+          <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '2px' }}>
+            Learn {wordsToUnlock} more word{wordsToUnlock === 1 ? '' : 's'} to unlock{nextTierLabel ? ' ' + nextTierLabel : ' your next story'}.
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const hits = sessionWordsInStory.length
+  return (
+    <div style={{
+      width: '100%', marginBottom: '12px', textAlign: 'left',
+      background: accentHex + '0D', border: '1px solid ' + accentHex + '2A', borderRadius: '18px',
+      padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ width: '44px', height: '44px', borderRadius: '14px', flexShrink: 0, background: accentHex + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <BookOpen size={22} strokeWidth={1.9} color={accentHex} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '0.3px', textTransform: 'uppercase', color: accentHex }}>
+            {isRead ? 'Read next' : 'Story unlocked'}
+          </div>
+          <div style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text)', fontFamily: langFont, marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {story.title}
+          </div>
+        </div>
+        <div style={{
+          flexShrink: 0, textAlign: 'center', padding: '6px 12px', borderRadius: '12px',
+          background: 'var(--surface)', border: '1px solid ' + accentHex + '2A',
+        }}>
+          <div style={{ fontSize: '18px', fontWeight: 850, color: accentHex, lineHeight: 1 }}>{knownPct}%</div>
+          <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginTop: '2px' }}>known</div>
+        </div>
+      </div>
+      <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+        {hits > 0
+          ? <><strong style={{ color: 'var(--text)', fontWeight: 700 }}>{hits}</strong> of today’s word{hits === 1 ? '' : 's'} appear{hits === 1 ? 's' : ''} here — read it now to lock {hits === 1 ? 'it' : 'them'} in.</>
+          : <>You can read <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{knownPct}%</strong> of this story — read it to reinforce today’s words.</>}
+      </div>
+      <button
+        onClick={() => onRead(story.id)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
+          width: '100%', minHeight: '48px', borderRadius: '14px', border: 'none',
+          background: hovered ? accentHex : accentHex + 'E6', color: '#fff',
+          fontSize: '14.5px', fontWeight: 800, fontFamily: 'Inter, sans-serif',
+          cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease',
+          transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
+        }}
+      >
+        <BookOpen size={18} strokeWidth={2.1} color="#fff" />
+        {isRead ? 'Read it again' : 'Read unlocked story'}
+      </button>
     </div>
   )
 }
