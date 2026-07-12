@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
 import { getHomeCounts } from './homeCounts'
+import { pathToView, viewToPath, isKnownView } from './routes'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
 // Eager: the app shell + first-paint screens.
@@ -35,6 +36,7 @@ const Profile = lazy(() => import('./Profile'))
 const YouTube = lazy(() => import('./YouTube'))
 const LanguageSwitcher = lazy(() => import('./LanguageSwitcher'))
 const Settings = lazy(() => import('./Settings'))
+const NotFound = lazy(() => import('./NotFound'))
 
 // Calm centered fallback while a lazy screen loads.
 function ViewFallback() {
@@ -45,15 +47,8 @@ function ViewFallback() {
   )
 }
 
-// Map between the internal view key and the URL path. Home is '/', every other
-// view is '/<key>' (e.g. 'study' → '/study').
-function viewToPath(key) { return key === 'home' ? '/' : '/' + key }
-function pathToView(pathname) {
-  let p = pathname || '/'
-  if (p.startsWith('/')) p = p.slice(1)
-  const seg = p.split('/')[0]
-  return seg || 'home'
-}
+// Route ⇄ view mapping lives in ./routes (testable, and shared with the
+// unknown-route guard below).
 
 // Initial theme before a profile loads: always start light. A signed-in user's
 // saved preference (loaded from their profile) takes over once it arrives, so a
@@ -371,7 +366,8 @@ export default function App() {
         onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
-  } else {
+  } else if (isKnownView(view)) {
+    // Only 'home' reaches here (every other known view has a branch above).
     content = (
       <Home
         profile={profile}
@@ -380,6 +376,10 @@ export default function App() {
         onNavigate={navigate}
       />
     )
+  } else {
+    // A genuinely unknown path — show an explicit 404 instead of silently
+    // falling through to Home, which used to hide typos and dead links.
+    content = <NotFound onHome={() => navigate('home')} />
   }
 
   // ── App shell: persistent sidebar + content area ──────────────────────────

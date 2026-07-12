@@ -228,25 +228,25 @@ export default function Landing() {
             background: '#6E846614', border: '1px solid #6E846630',
             color: SAGE_DARK, fontSize: '12.5px', fontWeight: 700, marginBottom: '22px',
           }}>
-            Free forever · No ads · No paywall
+            Reading-first Chinese, Japanese & Russian
           </div>
           <h1 style={{
             fontSize: isMobile ? '34px' : '46px', fontWeight: 800, color: 'var(--text)',
             lineHeight: 1.15, letterSpacing: '-0.02em', margin: '0 0 18px',
             fontFamily: 'Inter, sans-serif',
           }}>
-            Learn Chinese, Japanese, and Russian the way that actually works.
+            Learn words. Unlock stories you can actually read.
           </h1>
           <p style={{ fontSize: isMobile ? '15px' : '17px', color: 'var(--text-muted)', lineHeight: 1.65, margin: '0 auto 28px', maxWidth: '560px' }}>
-            {BRAND_NAME} pairs real spaced repetition (FSRS) with stories matched
-            to the words you already know — every session builds memory, and
-            every story is one you can actually read.
+            {BRAND_NAME} pairs FSRS flashcards with graded mini-stories matched to
+            your known vocabulary — so every study session turns into real reading,
+            not another streak.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '14px' }}>
-            <CtaButton big onClick={() => setMode('auth')}>Start learning free</CtaButton>
+            <CtaButton big onClick={() => setMode('auth')}>Start your first story</CtaButton>
           </div>
           <div style={{ fontSize: '12.5px', color: 'var(--text-faint)', fontWeight: 600, marginBottom: isMobile ? '40px' : '56px' }}>
-            No credit card. No trial clock. Sign up and study.
+            Start free. No credit card. Learn your first words and unlock your first story in minutes.
           </div>
 
           {/* Language chips */}
@@ -335,11 +335,11 @@ export default function Landing() {
         {/* Bottom CTA */}
         <div style={{ textAlign: 'center' }}>
           <h2 style={{ fontSize: isMobile ? '22px' : '26px', fontWeight: 800, color: 'var(--text)', margin: '0 0 20px', letterSpacing: '-0.01em' }}>
-            Fifteen minutes a day. Genuinely free.
+            Fifteen minutes a day. Real reading you can feel.
           </h2>
-          <CtaButton big onClick={() => setMode('auth')}>Start learning free</CtaButton>
+          <CtaButton big onClick={() => setMode('auth')}>Build my reading path</CtaButton>
           <div style={{ fontSize: '12.5px', color: 'var(--text-faint)', fontWeight: 600, marginTop: '26px' }}>
-            {BRAND_NAME} is a community project. If it ever needs money, it will ask for donations — never put learning behind a paywall.
+            Start free · Core learning is free · No credit card required
           </div>
         </div>
       </div>
