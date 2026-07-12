@@ -10,7 +10,7 @@ import { computeAward } from './xpService'
 import { updateStreak, todayStr, liveStreak } from './streak'
 import { evaluateAchievements } from './achievements'
 import { toast } from './toast'
-import { getLevelLabel, getSystemLabel, getAudioUrl, playAudioEl } from './utils'
+import { getLevelLabel, getSystemLabel, getAudioUrl } from './utils'
 import { languageTheme } from './languageTheme'
 import { lenientPinyin } from './testLogic'
 import { toRomaji } from 'wanakana'
@@ -23,7 +23,7 @@ import { buildStudyQueue, reinsertSoon, queueSeed } from './studyQueue'
 import SessionRecap from './SessionRecap'
 import ChatMission from './ChatMission'
 import { pickMission } from './chatMissions'
-import { ensureAudio } from './audioCache'
+import { useStudyAudio } from './useStudyAudio'
 import {
   Volume2, VolumeX, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
   Sparkles, Layers, BookOpenCheck, X,
@@ -208,12 +208,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const [typedResult, setTypedResult] = useState(null)   // null | 'correct' | 'wrong'
   const [gradeColor, setGradeColor] = useState(null)     // feedback ring color
   const [gradeId, setGradeId] = useState(0)              // bumps to restart the flash
-  const audioRef = useRef(null)
-  // TTS playback rate (1× / 0.75× / 0.5×), seeded from the saved preference.
-  const [audioSpeed, setAudioSpeed] = useState(
-    profile.audio_speed === 0.75 || profile.audio_speed === 0.5 ? profile.audio_speed : 1
-  )
-  const [audioBroken, setAudioBroken] = useState(false)   // current card's audio failed to load
   // Guards against a rapid double-click/double-keypress grading the same card
   // twice while the first save is still in flight (which would double-schedule
   // it and, for new cards, attempt a duplicate insert).
@@ -280,40 +274,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
 
-  function playAudio() {
-    const card = queue[0]
-    if (!card?.vocab?.audio_path) return
-    const url = getAudioUrl(card.vocab.audio_path)
-    if (!url) return
-    // ONE element, reused for every play — iOS caches a fallback-fetched clip
-    // on the element so Replay works even when the direct load fails (see
-    // playAudioEl). A fresh element per tap threw that away, which is why the
-    // Replay button did nothing on iPhones.
-    if (!audioRef.current) audioRef.current = new Audio()
-    const el = audioRef.current
-    el.pause()
-    // Both: playbackRate for the already-loaded clip, defaultPlaybackRate so a
-    // fresh load doesn't reset the speed back to 1x.
-    el.playbackRate = audioSpeed
-    el.defaultPlaybackRate = audioSpeed
-    // Surface a broken/missing file instead of failing silently — "the sound
-    // doesn't work" with no signal is undebuggable for the user. playAudioEl
-    // already retries once via a blob fetch (works around iOS WebKit Range
-    // quirks against the storage CDN) before giving up.
-    playAudioEl(el, url, () => setAudioBroken(true))
-  }
-
-  const SPEEDS = [1, 0.75, 0.5]
-  function cycleSpeed() {
-    setAudioSpeed(prev => {
-      const next = SPEEDS[(SPEEDS.indexOf(prev) + 1) % SPEEDS.length]
-      // Persist as a preference (best-effort) and patch the in-memory profile
-      // so the choice survives reloads instead of resetting to 1×.
-      supabase.from('profiles').update({ audio_speed: next }).eq('id', session.user.id).then(() => {})
-      if (onStreakUpdate) onStreakUpdate({ audio_speed: next })
-      return next
-    })
-  }
+  // Audio (speed pref, iOS-safe playback + fallback, autoplay-on-flip, and
+  // current+next prefetch) lives in a focused hook. Behavior is unchanged.
+  const { audioSpeed, audioBroken, playAudio, cycleSpeed, resetAudioBroken } = useStudyAudio({
+    queue, flipped, profile, session, onStreakUpdate,
+  })
 
   async function loadQueue() {
     setLoading(true)
@@ -433,22 +398,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  useEffect(() => {
-    if (flipped && queue.length > 0 && profile.audio_autoplay !== false) {
-      playAudio()
-    }
-  }, [flipped])
-
-  // Warm the current + next card's audio into an in-memory object URL so tap
-  // playback works offline — on iOS especially, where a ranged network request
-  // bypasses the SW cache and can't be awaited inside the play() gesture.
-  useEffect(() => {
-    [queue[0], queue[1]].forEach(c => {
-      if (c && c.vocab && c.vocab.audio_path) ensureAudio(getAudioUrl(c.vocab.audio_path))
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queue])
 
   // Upsert today's study counts so the Profile calendar can show studied days.
   // Counts are this session's running totals (presence is always correct).
@@ -758,7 +707,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     setFlipped(false)
     setTypedValue('')
     setTypedResult(null)
-    setAudioBroken(false)
+    resetAudioBroken()
 
     setQueue(prev => {
       let rest = prev.slice(1)
@@ -841,7 +790,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       setFlipped(false)
       setTypedValue('')
       setTypedResult(null)
-      setAudioBroken(false)
+      resetAudioBroken()
       setQueue(u.prevQueue)
     } finally {
       gradingRef.current = false
