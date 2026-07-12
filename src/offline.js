@@ -14,9 +14,11 @@
 //   cache   { k, v }          arbitrary JSON snapshots (queues, story lists…)
 //   outbox  { id++, op }      writes made offline, replayed when back online
 //   audio   { path, blob }    full audio files saved for offline playback
+//   prefs   { k, v }          durable local prefs/progress — NOT wiped by
+//                             "Clear downloads" (unlike `cache`)
 
 const DB_NAME = 'hanzi-offline'
-const DB_VERSION = 1
+const DB_VERSION = 2
 const HAS_IDB = typeof indexedDB !== 'undefined'
 
 let dbPromise = null
@@ -37,6 +39,7 @@ function openDb() {
       if (!db.objectStoreNames.contains('cache')) db.createObjectStore('cache', { keyPath: 'k' })
       if (!db.objectStoreNames.contains('outbox')) db.createObjectStore('outbox', { keyPath: 'id', autoIncrement: true })
       if (!db.objectStoreNames.contains('audio')) db.createObjectStore('audio', { keyPath: 'path' })
+      if (!db.objectStoreNames.contains('prefs')) db.createObjectStore('prefs', { keyPath: 'k' })
     }
     req.onsuccess = () => resolve(req.result)
     req.onerror = () => resolve(null)
@@ -91,6 +94,15 @@ export function cacheGet(key) {
 
 export function cacheDelete(key) {
   return tx('cache', 'readwrite', (s) => s.delete(key), null)
+}
+
+// ── Durable prefs/progress (survives "Clear downloads") ─────────────────────
+export function prefsSet(key, value) {
+  return tx('prefs', 'readwrite', (s) => s.put({ k: key, v: value }), null)
+}
+
+export function prefsGet(key) {
+  return tx('prefs', 'readonly', (s) => s.get(key), null).then((row) => (row ? row.v : null))
 }
 
 // ── Outbox (offline writes awaiting replay) ─────────────────────────────────

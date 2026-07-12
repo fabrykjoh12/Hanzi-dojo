@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { awardXp } from './xpService'
 import { shuffle } from './utils'
+import { prefsGet, prefsSet } from './offline'
 import { recordMiss, missCount, weightedSample } from './drillMemory'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
 import { useIsMobile } from './useIsMobile'
@@ -120,6 +121,7 @@ function buildPool(rowKeys, script) {
 // Lessons for the guided learn-then-quiz flow: one gojūon row at a time, base
 // rows first, then the dakuten/handakuten rows.
 const LESSONS = ['a', 'ka', 'sa', 'ta', 'na', 'ha', 'ma', 'ya', 'ra', 'wa', 'ga', 'za', 'da', 'ba', 'pa']
+const PROGRESS_KEY = 'kanaLessonsDone'
 // Every romaji, used as the distractor bag in learn mode so even a 3-kana row
 // (や, わ) can still be quizzed with 4 tap-choices.
 const ALL_ROMAJI = ROWS.flatMap(r => r.items.map(it => it[2]))
@@ -156,7 +158,36 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
   const [typedResult, setTypedResult] = useState(null)   // null | 'correct' | 'wrong'
   const [correctCount, setCorrectCount] = useState(0)
   const [done, setDone] = useState(false)
+  const [doneLessons, setDoneLessons] = useState(() => new Set())
   const inputRef = useRef(null)
+
+  // Restore completed-lesson progress once on mount, and resume at the first
+  // lesson the learner hasn't cleared yet. Durable across sessions and NOT wiped
+  // by "Clear downloads" (prefs store). Degrades to no-op if IndexedDB is absent.
+  useEffect(() => {
+    let live = true
+    prefsGet(PROGRESS_KEY).then((saved) => {
+      if (!live || !Array.isArray(saved) || !saved.length) return
+      const done = new Set(saved.filter((k) => LESSONS.includes(k)))
+      setDoneLessons(done)
+      const firstOpen = LESSONS.findIndex((k) => !done.has(k))
+      if (firstOpen > 0) setLearnLesson(firstOpen)
+    })
+    return () => { live = false }
+  }, [])
+
+  // Pass mark for a learn lesson: two-thirds correct. Meaningful enough that the
+  // checkmark means "I can read these", forgiving enough not to feel punishing.
+  function markLessonDone(finalCorrect, total) {
+    if (view !== 'learn' || total === 0) return
+    if (finalCorrect / total < 2 / 3) return
+    const key = LESSONS[learnLesson]
+    if (!key || doneLessons.has(key)) return
+    const nx = new Set(doneLessons)
+    nx.add(key)
+    setDoneLessons(nx)
+    prefsSet(PROGRESS_KEY, [...nx])
+  }
 
   const pageShell = {
     minHeight: '100vh', position: 'relative', overflow: 'hidden',
@@ -224,6 +255,7 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
 
   function finish(finalCorrect) {
     setDone(true)
+    markLessonDone(finalCorrect, questions.length)
     const gain = finalCorrect * XP_PER_CORRECT
     if (gain > 0) awardXp(session, profile, gain, onUpdate)
   }
@@ -273,12 +305,37 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: ACCENT, fontSize: '13px', fontWeight: 750 }}>
               <GraduationCap size={17} strokeWidth={1.8} color={ACCENT} /> Learn kana
             </div>
-            <h1 style={{ fontSize: '26px', fontWeight: 780, color: 'var(--text)', marginTop: '8px' }}>Lesson {learnLesson + 1} of {LESSONS.length}</h1>
+            <h1 style={{ fontSize: '26px', fontWeight: 780, color: 'var(--text)', marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+              Lesson {learnLesson + 1} of {LESSONS.length}
+              {doneLessons.has(LESSONS[learnLesson]) && (
+                <span aria-label="Lesson cleared" title="Lesson cleared" style={{ display: 'inline-flex', width: '24px', height: '24px', borderRadius: '999px', background: '#5C7155', alignItems: 'center', justifyContent: 'center' }}>
+                  <Check size={15} strokeWidth={3} color="#fff" />
+                </span>
+              )}
+            </h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '6px' }}>
-              Tap each kana to hear it, then quiz yourself on this set.
+              {doneLessons.size} of {LESSONS.length} lessons cleared · tap a kana to hear it, then quiz yourself.
             </p>
           </div>
           <ViewTabs view={view} setView={setView} accent={ACCENT} />
+          {/* Lesson map — filled = cleared, ringed = current. Tap to jump. */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'center', marginBottom: '16px' }}>
+            {LESSONS.map((key, i) => {
+              const cleared = doneLessons.has(key)
+              const current = i === learnLesson
+              const initial = (rowByKey(key) || ROWS[0]).items[0][0]
+              return (
+                <button key={key} onClick={() => setLearnLesson(i)} aria-label={'Lesson ' + (i + 1) + (cleared ? ' (cleared)' : '')} style={{
+                  width: '34px', height: '34px', borderRadius: '10px', cursor: 'pointer',
+                  fontFamily: "'Noto Sans JP'", fontSize: '16px', lineHeight: 1,
+                  border: '1.5px solid ' + (current ? ACCENT : cleared ? '#5C715544' : 'var(--border)'),
+                  background: cleared ? '#5C715518' : current ? ACCENT + '12' : 'var(--surface)',
+                  color: cleared ? '#5C7155' : current ? ACCENT : 'var(--text-muted)',
+                  fontWeight: current ? 800 : 600,
+                }}>{cleared ? '✓' : initial}</button>
+              )
+            })}
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', marginBottom: '16px' }}>
             {row.items.map(([h, k, r]) => (
               <button key={r} onClick={() => speakKana(h)} aria-label={'Play ' + r} style={{
@@ -436,7 +493,9 @@ export default function Kana({ session, profile, track, onBack, onUpdate }) {
           <div style={{ width: '58px', height: '58px', borderRadius: '18px', margin: '0 auto 18px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: ACCENT + '10', border: '1px solid ' + ACCENT + '18' }}>
             <CheckCircle2 size={28} strokeWidth={1.9} color={ACCENT} />
           </div>
-          <h1 style={{ fontSize: '26px', fontWeight: 750, marginBottom: '8px', color: 'var(--text)' }}>Kana complete</h1>
+          <h1 style={{ fontSize: '26px', fontWeight: 750, marginBottom: '8px', color: 'var(--text)' }}>
+            {view === 'learn' && doneLessons.has(LESSONS[learnLesson]) ? 'Lesson cleared!' : 'Kana complete'}
+          </h1>
           <p style={{ color: 'var(--text-muted)', marginBottom: '22px', fontSize: '15px' }}>
             You read <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {questions.length} correctly.
           </p>
