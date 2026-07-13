@@ -45,7 +45,7 @@ function PrimaryButton({ onClick, children, icon: Icon }) {
 // story the user can now read (the core product loop, made felt). Renders a
 // readable-story CTA when one is available, or a calm "learn N more" nudge when
 // the next tier is still locked. Given only when the session had graded cards.
-function StoryUnlockCard({ unlock, accentHex, langFont, onRead }) {
+function StoryUnlockCard({ unlock, accentHex, langFont, firstRun, onRead }) {
   const [hovered, setHovered] = useState(false)
   const { story, knownPct, sessionWordsInStory, isRead, wordsToUnlock, nextTierLabel } = unlock
 
@@ -117,7 +117,7 @@ function StoryUnlockCard({ unlock, accentHex, langFont, onRead }) {
         }}
       >
         <BookOpen size={18} strokeWidth={2.1} color="#fff" />
-        {isRead ? 'Read it again' : 'Read unlocked story'}
+        {isRead ? 'Read it again' : (firstRun ? 'Read your first story' : 'Read unlocked story')}
       </button>
     </div>
   )
@@ -168,11 +168,14 @@ function OfflineSaveButton({ track, accentHex }) {
 // still renders the chat-mission modal itself (it owns that state); this
 // component renders the card and calls back for read-story / open-mission / back.
 export default function SessionRecap({
-  recap, isWeak, accentHex, langFont, forecast, storyUnlock, track,
+  recap, isWeak, firstRun, accentHex, langFont, forecast, storyUnlock, track,
   mission, onOpenMission, onReadStory, onBack,
 }) {
   const s = recap
   const didStudy = Boolean(s && s.graded > 0)
+  // A brand-new learner's first session gets framing that names the milestone
+  // and points at the story their words just unlocked.
+  const firstDone = Boolean(firstRun && didStudy)
 
   const accuracy = s && s.reviewedTotal > 0 ? Math.round((s.reviewedRight / s.reviewedTotal) * 100) : null
   const recapStats = s ? [
@@ -198,14 +201,16 @@ export default function SessionRecap({
           <CheckCircle2 size={28} strokeWidth={1.9} color={accentHex} />
         </div>
         <h1 style={{ fontSize: '26px', fontWeight: 750, marginBottom: '8px', color: 'var(--text)' }}>
-          {didStudy ? 'Session complete' : 'All done for now'}
+          {firstDone ? 'Your first words, learned' : (didStudy ? 'Session complete' : 'All done for now')}
         </h1>
         <p style={{ color: 'var(--text-muted)', marginBottom: didStudy ? '26px' : '28px', fontSize: '15px', lineHeight: 1.6 }}>
-          {didStudy
-            ? 'Nice, steady work. Every review nudges these words further into memory.'
-            : isWeak
-              ? 'No weak words to clean up right now — your tricky cards are settling.'
-              : 'No cards are waiting. Come back later, or continue the loop with stories.'}
+          {firstDone
+            ? 'You learned your first ' + s.newLearned + ' word' + (s.newLearned === 1 ? '' : 's') + '. These words appear in your first story below — read it to lock them in.'
+            : didStudy
+              ? 'Nice, steady work. Every review nudges these words further into memory.'
+              : isWeak
+                ? 'No weak words to clean up right now — your tricky cards are settling.'
+                : 'No cards are waiting. Come back later, or continue the loop with stories.'}
         </p>
 
         {didStudy && s.xpEarned > 0 && (
@@ -288,6 +293,7 @@ export default function SessionRecap({
             unlock={storyUnlock}
             accentHex={accentHex}
             langFont={langFont}
+            firstRun={firstDone}
             onRead={onReadStory}
           />
         )}

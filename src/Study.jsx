@@ -19,6 +19,7 @@ import { isLearned } from './mastery'
 import { pickRecapStory } from './storyMatch'
 import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
 import { buildStudyQueue, reinsertSoon, queueSeed } from './studyQueue'
+import { isFirstRunSession, firstRunNewTarget } from './firstRun'
 import SessionRecap from './SessionRecap'
 import ChatMission from './ChatMission'
 import { buildMissionOffer } from './missionOffer'
@@ -215,6 +216,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // "First Story Unlocked" recommendation for the recap (null until computed;
   // stays null offline or when no story library exists — module stays hidden).
   const [storyUnlock, setStoryUnlock] = useState(null)
+  // True for a brand-new learner's very first session (detected in loadQueue):
+  // shows first-session framing and gently caps the new-card count.
+  const [firstRun, setFirstRun] = useState(false)
   // Word-to-World chat mission: the level's vocab (for tap lookups) and a record
   // of which words were touched this session, so the mission can reuse today's
   // learned / weak / review words.
@@ -302,9 +306,26 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     const dueReview = levelCards
       .filter(c => c.state === 'review' && new Date(c.due_at) <= now)
 
+    // First-run detection: a brand-new learner (no cards ANYWHERE on the
+    // account) gets a gentle, capped first session. The account-wide count is
+    // only queried when this level is empty (the common returning-user path
+    // skips it), and a track switch — cards on another language — is excluded.
+    // Best-effort: any failure (offline) falls back to a normal session.
+    let isFirst = false
+    if ((cards || []).length === 0) {
+      try {
+        const { count } = await supabase
+          .from('cards').select('id', { count: 'exact', head: true })
+          .eq('user_id', session.user.id)
+        isFirst = isFirstRunSession({ mode, accountCardCount: count || 0 })
+      } catch { /* offline / error — treat as a normal session (no cap) */ }
+    }
+    setFirstRun(isFirst)
+    const newTarget = firstRunNewTarget(isFirst, remainingNew)
+
     const newItems = (vocab || [])
       .filter(v => !startedVocab.has(v.id))
-      .slice(0, remainingNew)
+      .slice(0, newTarget)
       .map(v => ({
         id: null, vocab_id: v.id, vocab: v,
         state: 'new', ease_factor: 2.5, interval_days: 0, learning_step: 0,
@@ -818,6 +839,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         <SessionRecap
           recap={recap}
           isWeak={isWeak}
+          firstRun={firstRun}
           accentHex={accentHex}
           langFont={langFont}
           forecast={forecast}
@@ -919,13 +941,13 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             color: accentHex, fontSize: '13px', fontWeight: 750, marginBottom: '6px',
           }}>
             <Layers size={17} strokeWidth={1.8} color={accentHex} />
-            {isWeak ? 'Weak word cleanup' : langChars + ' flashcards'}
+            {firstRun ? 'Your first session' : (isWeak ? 'Weak word cleanup' : langChars + ' flashcards')}
           </div>
           <h1 style={{ fontSize: '28px', color: 'var(--text)', fontWeight: 780, lineHeight: 1.1 }}>
-            {isWeak ? 'Weak words' : 'Study session'}
+            {firstRun ? 'Learn your first words' : (isWeak ? 'Weak words' : 'Study session')}
           </h1>
           <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: 550, marginTop: '5px' }}>
-            {systemLabel} · {levelLabel}
+            {firstRun ? 'These words will unlock your first story' : (systemLabel + ' · ' + levelLabel)}
           </div>
         </div>
 

@@ -186,7 +186,7 @@ export default function App() {
     return (
       <>
         <Background language="chinese" />
-        <Onboarding session={session} onComplete={() => loadProfile(session.user.id)} />
+        <Onboarding session={session} onComplete={() => { loadProfile(session.user.id); navigate('study') }} />
       </>
     )
   }
