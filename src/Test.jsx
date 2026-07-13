@@ -58,7 +58,7 @@ function getLanguageDetails(profile, track) {
   }
 }
 
-function Shell({ children, accentHex, fontFamily, narrow }) {
+function Shell({ children, narrow }) {
   const isMobile = useIsMobile()
   return (
     <div style={{
@@ -200,7 +200,7 @@ function ProgressBar({ pct, accentHex }) {
   )
 }
 
-export default function Test({ session, profile, track, onBack }) {
+export default function Test({ session, profile, track }) {
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState(null)
   const [attempts, setAttempts] = useState({ count: 0, passed: false })

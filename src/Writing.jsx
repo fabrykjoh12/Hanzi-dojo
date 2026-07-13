@@ -163,7 +163,7 @@ function getLanguageDetails(track) {
   }
 }
 
-function Shell({ children, accentHex, fontFamily, narrow }) {
+function Shell({ children, narrow }) {
   const isMobile = useIsMobile()
   return (
     <div style={{

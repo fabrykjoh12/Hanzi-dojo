@@ -99,7 +99,7 @@ function makeSegmenter(locale) {
     if (typeof Intl !== 'undefined' && Intl.Segmenter) {
       return new Intl.Segmenter(locale, { granularity: 'word' })
     }
-  } catch (e) { /* not supported */ }
+  } catch { /* not supported */ }
   return null
 }
 
@@ -236,7 +236,6 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const [questions, setQuestions] = useState([])
   const [answers, setAnswers] = useState({})   // question id → chosen option index
   const [adding, setAdding] = useState(false)
-  const segmenterRef = useRef(null)
   const wordAudioRef = useRef(null)
   const storyAudioRef = useRef(null)
 
@@ -252,7 +251,9 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const levelLabel = getLevelLabel(track.language, track.system, track.current_level)
 
   const segLocale = isJapanese ? 'ja' : isChinese ? 'zh' : 'ru'
-  if (!segmenterRef.current) segmenterRef.current = makeSegmenter(segLocale)
+  // Memoized (once per locale) instead of a lazily-initialized ref, so no ref
+  // is read/written during render. Same instance reused across renders.
+  const segmenter = useMemo(() => makeSegmenter(segLocale), [segLocale])
 
   useEffect(() => {
     function onResize() { setWinWidth(window.innerWidth) }
@@ -268,8 +269,13 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   // Load end-of-story comprehension questions (no-op until content is generated).
   useEffect(() => {
     let active = true
+    // Intentional: the reader stays mounted while `story.id` changes (Next
+    // story swaps in place), so the previous story's answers/questions must be
+    // cleared here before the new ones load — otherwise stale Q&A would flash.
+    /* eslint-disable react-hooks/set-state-in-effect */
     setAnswers({})
     setQuestions([])
+    /* eslint-enable react-hooks/set-state-in-effect */
     supabase.from('story_questions').select('*').eq('story_id', story.id).order('question_number', { ascending: true })
       .then(({ data }) => { if (active) setQuestions(data || []) })
     return () => { active = false }
@@ -285,14 +291,13 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const { parsed, speakerColors } = useMemo(() => {
     const storyLines = story.content.split('\n').filter(Boolean)
     const colors = {}
-    let speakerN = 0
     const parsedLines = storyLines.map(line => {
       const { speaker, text } = splitSpeaker(line)
       if (speaker && colors[speaker] === undefined) {
-        colors[speaker] = SPEAKER_PALETTE[speakerN % SPEAKER_PALETTE.length]
-        speakerN += 1
+        // Nth distinct speaker → palette[N]; N = speakers already assigned.
+        colors[speaker] = SPEAKER_PALETTE[Object.keys(colors).length % SPEAKER_PALETTE.length]
       }
-      return { speaker, tokens: segmentLine(text, vocabMap, segmenterRef.current, names, particles) }
+      return { speaker, tokens: segmentLine(text, vocabMap, segmenter, names, particles) }
     })
     return { parsed: parsedLines, speakerColors: colors }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -385,7 +390,6 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     if (selected && selected.vocab && selected.vocab.audio_path) {
       ensureAudio(audioUrlFor(selected.vocab.audio_path))
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected])
 
   // Pronounce an arbitrary word (grammar / out-of-list) that has no recorded

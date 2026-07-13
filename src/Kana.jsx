@@ -142,7 +142,7 @@ function buildQuestions(pool, distractorRomaji) {
   })
 }
 
-export default function Kana({ session, profile, track, onBack, onUpdate }) {
+export default function Kana({ session, profile, onBack, onUpdate }) {
   const isMobile = useIsMobile()
   const isJapanese = profile.active_language === 'japanese'
   const [script, setScript] = useState('hira')            // 'hira' | 'kata' | 'both'

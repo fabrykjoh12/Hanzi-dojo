@@ -31,6 +31,11 @@ export default function Background({ language }) {
 
   useEffect(() => {
     if (src === current) return
+    // Intentional: this drives a timed crossfade. When the language background
+    // changes, we fade the current image OUT now, then swap + fade the new one
+    // IN after 500ms. The fade-out must be triggered here, on the prop change —
+    // it's animation state, not derivable during render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVisible(false)
     const timer = setTimeout(() => {
       setCurrent(src)

@@ -39,7 +39,6 @@ export default function Listen({ session, profile, track, onBack, onUpdate }) {
 
   const theme = languageTheme(profile.active_language)
   const accentHex = theme.accentHex
-  const isJapanese = profile.active_language === 'japanese'
   const langFont = theme.font
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)

@@ -500,7 +500,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   }
 
   useEffect(() => {
+    // These are async data fetches that run once the session completes; each
+    // setState happens later, inside the awaited body, not synchronously here.
+    // Guards (!forecast / !storyUnlock / a ref) keep them one-shot.
     if (done && recap && recap.graded > 0 && !forecast) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadForecast()
     }
     if (done && recap && recap.graded > 0 && !storyUnlock) {

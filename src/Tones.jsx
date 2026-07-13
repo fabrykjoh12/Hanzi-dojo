@@ -78,7 +78,10 @@ const TONES = [
 export default function Tones({ session, profile, track, onBack, onUpdate }) {
   const isMobile = useIsMobile()
   const isChinese = profile.active_language === 'chinese'
-  const [loading, setLoading] = useState(true)
+  // Only Chinese has tones to load; other languages render an early message and
+  // never wait, so they start un-loaded (this also keeps the mount effect from
+  // synchronously setting state).
+  const [loading, setLoading] = useState(isChinese)
   const [mode, setMode] = useState(null)                       // null → picker · 'single' | 'pairs'
   const [pools, setPools] = useState({ single: [], pairs: [] })
   const [questions, setQuestions] = useState([])
@@ -134,7 +137,7 @@ export default function Tones({ session, profile, track, onBack, onUpdate }) {
   }
 
   useEffect(() => {
-    if (!isChinese) { setLoading(false); return }
+    if (!isChinese) return
     const t = setTimeout(load, 0)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
