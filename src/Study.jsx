@@ -12,8 +12,7 @@ import { evaluateAchievements } from './achievements'
 import { toast } from './toast'
 import { getLevelLabel, getSystemLabel, getAudioUrl } from './utils'
 import { languageTheme } from './languageTheme'
-import { lenientPinyin } from './testLogic'
-import { toRomaji } from 'wanakana'
+import { checkTypedAnswer } from './typedAnswer'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import { isLearned } from './mastery'
@@ -29,28 +28,6 @@ import {
   Volume2, VolumeX, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
   Sparkles, Layers, BookOpenCheck, X,
 } from 'lucide-react'
-
-// Does the typed input match the card's reading (or the word itself)?
-// Japanese accepts romaji or kana; Chinese accepts tone-insensitive pinyin.
-function checkTyped(input, v, isJapanese) {
-  const t = (input || '').trim().toLowerCase()
-  if (!t) return false
-  if (t === (v.word || '').toLowerCase()) return true
-  const reading = v.reading || ''
-  if (t === reading.toLowerCase()) return true
-  if (isJapanese) {
-    const norm = s => (toRomaji(s || '') || '').toLowerCase().split(' ').join('')
-    const target = norm(reading)
-    return target !== '' && norm(input) === target
-  }
-  // Chinese: tone-mark AND tone-number insensitive, punctuation/space tolerant —
-  // "hai", "hǎi", "hai3" are all the same answer. Both stored forms accepted.
-  const typed = lenientPinyin(input)
-  if (!typed) return false
-  return [v.reading_plain, reading]
-    .filter(Boolean)
-    .some(r => lenientPinyin(r) === typed)
-}
 
 const SAGE = '#6E8466'
 const SAGE_DARK = '#5C7155'
@@ -918,7 +895,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
   function submitTyped() {
     if (!typedValue.trim()) return
-    setTypedResult(checkTyped(typedValue, v, isJapanese) ? 'correct' : 'wrong')
+    setTypedResult(checkTypedAnswer(typedValue, v, isJapanese) ? 'correct' : 'wrong')
     setFlipped(true)
   }
 
