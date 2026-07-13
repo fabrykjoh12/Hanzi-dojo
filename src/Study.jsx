@@ -20,6 +20,7 @@ import { pickRecapStory } from './storyMatch'
 import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
 import { buildStudyQueue, reinsertSoon, queueSeed } from './studyQueue'
 import { isFirstRunSession, firstRunNewTarget } from './firstRun'
+import { firstMissionCardHint } from './firstMission'
 import SessionRecap from './SessionRecap'
 import ChatMission from './ChatMission'
 import { buildMissionOffer } from './missionOffer'
@@ -219,6 +220,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // True for a brand-new learner's very first session (detected in loadQueue):
   // shows first-session framing and gently caps the new-card count.
   const [firstRun, setFirstRun] = useState(false)
+  // Cards graded this session (reactive), so the guided first-mission hint knows
+  // which card the user is on. Only consulted during the first run.
+  const [studied, setStudied] = useState(0)
   // Word-to-World chat mission: the level's vocab (for tap lookups) and a record
   // of which words were touched this session, so the mission can reuse today's
   // learned / weak / review words.
@@ -577,6 +581,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     s.graduated += tally.graduated
     s.reviewedTotal += tally.reviewedTotal
     s.reviewedRight += tally.reviewedRight
+    // Reactive card counter for the guided first-mission hint (no effect on SRS).
+    setStudied(n => n + 1)
     const xpGain = xpForGrade(grade)
 
     if (!streakDone) {
@@ -787,6 +793,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       setTypedValue('')
       setTypedResult(null)
       resetAudioBroken()
+      setStudied(n => Math.max(0, n - 1))
       setQueue(u.prevQueue)
     } finally {
       gradingRef.current = false
@@ -856,6 +863,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             storyId,
             // Today's studied words → highlighted + reinforced inside the reader.
             todayWords: [...new Set(sessionVocabRef.current.map(e => e.word).filter(Boolean))],
+            // Carry the first-mission flag so the reader shows the first-story hint.
+            firstMission: firstRun,
           } : undefined)}
           onBack={onBack}
         />
@@ -916,6 +925,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   }
   const stateLabel = card.state === 'new' ? 'New card' : (card.state === 'review' ? 'Review' : 'Learning')
 
+  // Guided first-mission coaching for the current card (progressive disclosure).
+  // Null except during the first run's early cards. A calm banner above the
+  // card — never over the grade buttons; auto-advances as `studied` grows.
+  const firstMissionHint = firstRun ? firstMissionCardHint(studied, { flipped, isTyped }) : null
+
   function submitTyped() {
     if (!typedValue.trim()) return
     setTypedResult(checkTypedAnswer(typedValue, v, isJapanese) ? 'correct' : 'wrong')
@@ -973,6 +987,23 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             background={showFurigana ? accentHex + '10' : 'var(--surface)'}
             border={'1px solid ' + (showFurigana ? accentHex + '30' : 'var(--border)')}
           />
+        </div>
+      )}
+
+      {firstMissionHint && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            maxWidth: '680px', margin: '0 auto 14px',
+            display: 'flex', alignItems: 'center', gap: '9px',
+            padding: '11px 15px', borderRadius: '14px',
+            background: accentHex + '10', border: '1px solid ' + accentHex + '2A',
+            color: accentHex, fontSize: '13.5px', fontWeight: 650, lineHeight: 1.45,
+          }}
+        >
+          <Sparkles size={16} strokeWidth={2} color={accentHex} style={{ flexShrink: 0 }} />
+          <span>{firstMissionHint}</span>
         </div>
       )}
 

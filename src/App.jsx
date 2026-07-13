@@ -12,6 +12,7 @@ import Toasts from './Toasts'
 import OfflineBar from './OfflineBar'
 import Feedback from './Feedback'
 import Onboarding from './Onboarding'
+import FirstMissionWelcome from './FirstMissionWelcome'
 import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
 import Background from './Background'
@@ -71,6 +72,11 @@ export default function App() {
   // Today's studied words to highlight in the reader (set alongside a deep-link
   // from the post-study recap; consumed by Stories with the story id).
   const [pendingStoryWords, setPendingStoryWords] = useState(null)
+  // First mission: true from onboarding completion until the welcome hands off
+  // to the guided first session; and carried into the reader (via the deep-link)
+  // for the "first story" reading hint + completion line.
+  const [justOnboarded, setJustOnboarded] = useState(false)
+  const [pendingStoryFirstMission, setPendingStoryFirstMission] = useState(false)
   // True while the user arrived via a password-recovery email link and hasn't
   // set a new password yet (Supabase signs them in and fires PASSWORD_RECOVERY).
   const [recovery, setRecovery] = useState(false)
@@ -154,6 +160,7 @@ export default function App() {
   const navigate = (key, opts) => {
     if (opts && opts.storyId) setPendingStoryId(opts.storyId)
     if (opts && opts.todayWords) setPendingStoryWords(opts.todayWords)
+    if (opts && opts.firstMission) setPendingStoryFirstMission(true)
     routerNavigate(viewToPath(key))
     if (session && key === 'home') loadProfile(session.user.id)
   }
@@ -186,7 +193,18 @@ export default function App() {
     return (
       <>
         <Background language="chinese" />
-        <Onboarding session={session} onComplete={() => { loadProfile(session.user.id); navigate('study') }} />
+        <Onboarding session={session} onComplete={() => { loadProfile(session.user.id); setJustOnboarded(true) }} />
+      </>
+    )
+  }
+
+  // First Mission — a clean welcome, then straight into the guided first session
+  // (Study self-detects first-run and caps it to 5 words).
+  if (justOnboarded) {
+    return (
+      <>
+        <Background language={profile.active_language} />
+        <FirstMissionWelcome onStart={() => { setJustOnboarded(false); navigate('study') }} />
       </>
     )
   }
@@ -340,7 +358,8 @@ export default function App() {
         onBack={() => navigate('home')}
         initialStoryId={pendingStoryId}
         initialStoryWords={pendingStoryWords}
-        onInitialStoryConsumed={() => { setPendingStoryId(null); setPendingStoryWords(null) }}
+        initialStoryFirstMission={pendingStoryFirstMission}
+        onInitialStoryConsumed={() => { setPendingStoryId(null); setPendingStoryWords(null); setPendingStoryFirstMission(false) }}
       />
     )
   } else if (view === 'profile') {

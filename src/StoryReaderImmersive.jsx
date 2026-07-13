@@ -10,6 +10,7 @@ import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
 import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, matchName, JP_PARTICLES } from './storyReading'
+import { FIRST_MISSION_READER_HINT, firstMissionCompletion } from './firstMission'
 import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRight, UserRound, Highlighter, Check, X, Sparkles, Home } from 'lucide-react'
 
 // HSKStory-inspired immersion reader for BOTH languages. Light theme. Tap a word
@@ -220,7 +221,7 @@ function Token({ token, isSelected, showReading, isJapanese, adaptive, status, t
   )
 }
 
-export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, profile, track, onBack, onHome, nextStory, onNextStory, isRead, onMarkRead, todayWords = [] }) {
+export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, profile, track, onBack, onHome, nextStory, onNextStory, isRead, onMarkRead, todayWords = [], firstMission = false }) {
   const [selected, setSelected] = useState(null)
   const [showReading, setShowReading] = useState(false)
   const [showKnown, setShowKnown] = useState(false)
@@ -568,7 +569,9 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 650, color: accent, marginTop: '10px', lineHeight: 1.5 }}>
                 <Sparkles size={14} strokeWidth={2} color={accent} />
                 <span>
-                  {todayInStory.length} word{todayInStory.length === 1 ? '' : 's'} from today appear{todayInStory.length === 1 ? 's' : ''} here — read to reinforce {todayInStory.length === 1 ? 'it' : 'them'}.
+                  {firstMission
+                    ? FIRST_MISSION_READER_HINT
+                    : <>{todayInStory.length} word{todayInStory.length === 1 ? '' : 's'} from today appear{todayInStory.length === 1 ? 's' : ''} here — read to reinforce {todayInStory.length === 1 ? 'it' : 'them'}.</>}
                 </span>
               </div>
             )}
@@ -737,6 +740,11 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               </span>
               <span style={{ fontSize: '17px', fontWeight: 800, color: TEXT }}>Story finished</span>
             </div>
+            {firstMission && (
+              <div style={{ fontSize: '15px', fontWeight: 750, color: accent, lineHeight: 1.5, marginBottom: '10px' }}>
+                {firstMissionCompletion(theme.languageName)}
+              </div>
+            )}
             <div style={{ fontSize: '14px', color: MUTED, lineHeight: 1.6, marginBottom: '16px' }}>
               You can read <strong style={{ color: TEXT, fontWeight: 700 }}>{knownPct}%</strong> of this story.
               {todayInStory.length > 0 && (
