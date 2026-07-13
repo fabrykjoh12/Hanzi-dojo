@@ -110,12 +110,12 @@ export default function Home({ profile, track, counts, onNavigate }) {
   // move to reading immersion. This turns Home from a menu into a coach.
   const rec = totalDue > 0
     ? {
-        key: 'study', label: 'Review & learn', icon: Layers,
-        reason: totalDue + ' card' + (totalDue === 1 ? '' : 's') + ' waiting in your queue',
+        key: 'study', label: 'Review & unlock', icon: Layers,
+        reason: totalDue + ' card' + (totalDue === 1 ? '' : 's') + ' to clear — then read what you know',
       }
     : {
         key: 'stories', label: 'Read a story', icon: BookOpen,
-        reason: 'Flashcards are clear — immerse to lock the words in',
+        reason: 'Queue clear — read a story to lock today’s words in',
       }
 
   return (
@@ -182,7 +182,7 @@ export default function Home({ profile, track, counts, onNavigate }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-              <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)' }}>Today</span>
+              <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)' }}>Today’s Dojo</span>
               <span style={{
                 fontSize: '12px', color: totalDue > 0 ? accentHex : 'var(--text-muted)',
                 background: totalDue > 0 ? `${accentHex}10` : 'var(--surface-2)',

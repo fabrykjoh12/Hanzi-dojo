@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from './supabase'
+import { normalizeEmail } from './utils'
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
@@ -23,14 +24,18 @@ export default function Auth() {
     setLoading(true)
     setMessage('')
 
+    // Normalize so " Me@Example.com " and "me@example.com" are one account —
+    // otherwise a mobile auto-capital creates a second, unreachable user.
+    const cleanEmail = normalizeEmail(email)
+
     try {
       if (isSignup) {
-        const { error } = await supabase.auth.signUp({ email, password })
+        const { error } = await supabase.auth.signUp({ email: cleanEmail, password })
         if (error) throw error
         setMessageKind('success')
         setMessage('Check your email to confirm your account!')
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password })
         if (error) throw error
       }
     } catch (error) {
@@ -42,7 +47,7 @@ export default function Auth() {
 
   const handleReset = async (e) => {
     e.preventDefault()
-    const normalizedEmail = email.trim()
+    const normalizedEmail = normalizeEmail(email)
     if (!normalizedEmail) {
       setMessageKind('error')
       setMessage('Enter your email first.')
@@ -121,7 +126,7 @@ export default function Auth() {
 
         {/* Tagline */}
         <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '28px', marginTop: '4px' }}>
-          Learn a language. Grow every day.
+          Learn words. Unlock stories you can actually read.
         </p>
 
         {/* Divider */}
@@ -286,7 +291,7 @@ export default function Auth() {
 
       {/* Below card */}
       <p style={{ position: 'relative', zIndex: 1, marginTop: '20px', fontSize: '13px', color: 'var(--text-muted)' }}>
-        Free forever. No credit card.
+        Start free. Core learning is free — no credit card required.
       </p>
     </div>
   )

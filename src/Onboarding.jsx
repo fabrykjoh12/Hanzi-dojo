@@ -363,8 +363,9 @@ export default function Onboarding({ session, onComplete }) {
               background: accentHex + '0A', border: '1px solid ' + accentHex + '20',
               fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, textAlign: 'center',
             }}>
-              Your first session introduces {goal} new words. Words come back for
-              review right before you'd forget them — that's the whole trick.
+              Your first session starts with 5 words — just enough to unlock your
+              first story. After that you'll learn {goal} new words a day, and each
+              word comes back for review right before you'd forget it.
             </div>
 
             {error && <p style={{ color: '#DC2626', fontSize: '13px', marginTop: '12px', textAlign: 'center' }}>{error}</p>}
@@ -388,7 +389,7 @@ export default function Onboarding({ session, onComplete }) {
                   transition: 'opacity 0.2s',
                 }}
               >
-                {saving ? 'Setting up...' : 'Start Learning'}
+                {saving ? 'Setting up...' : 'Start your first session'}
               </button>
             </div>
           </div>

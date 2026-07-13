@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
 import { getHomeCounts } from './homeCounts'
+import { pathToView, viewToPath, isKnownView } from './routes'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
 // Eager: the app shell + first-paint screens.
@@ -35,6 +36,7 @@ const Profile = lazy(() => import('./Profile'))
 const YouTube = lazy(() => import('./YouTube'))
 const LanguageSwitcher = lazy(() => import('./LanguageSwitcher'))
 const Settings = lazy(() => import('./Settings'))
+const NotFound = lazy(() => import('./NotFound'))
 
 // Calm centered fallback while a lazy screen loads.
 function ViewFallback() {
@@ -45,15 +47,8 @@ function ViewFallback() {
   )
 }
 
-// Map between the internal view key and the URL path. Home is '/', every other
-// view is '/<key>' (e.g. 'study' → '/study').
-function viewToPath(key) { return key === 'home' ? '/' : '/' + key }
-function pathToView(pathname) {
-  let p = pathname || '/'
-  if (p.startsWith('/')) p = p.slice(1)
-  const seg = p.split('/')[0]
-  return seg || 'home'
-}
+// Route ⇄ view mapping lives in ./routes (testable, and shared with the
+// unknown-route guard below).
 
 // Initial theme before a profile loads: always start light. A signed-in user's
 // saved preference (loaded from their profile) takes over once it arrives, so a
@@ -70,6 +65,12 @@ export default function App() {
   const [track, setTrack] = useState(null)
   const [counts, setCounts] = useState({ newCount: 0, learnCount: 0, dueCount: 0, easyCount: 0, totalWords: 0, learnedCount: 0, masteredCount: 0, masteredPct: 0 })
   const [loading, setLoading] = useState(true)
+  // A story to open directly when navigating to Stories (set by the post-study
+  // recap's "Read unlocked story" CTA). Consumed and cleared by Stories on load.
+  const [pendingStoryId, setPendingStoryId] = useState(null)
+  // Today's studied words to highlight in the reader (set alongside a deep-link
+  // from the post-study recap; consumed by Stories with the story id).
+  const [pendingStoryWords, setPendingStoryWords] = useState(null)
   // True while the user arrived via a password-recovery email link and hasn't
   // set a new password yet (Supabase signs them in and fires PASSWORD_RECOVERY).
   const [recovery, setRecovery] = useState(false)
@@ -150,7 +151,9 @@ export default function App() {
   // study/practice screens patch the in-memory profile live via their
   // onUpdate/onStreakUpdate callbacks. (Previously every view switch refired
   // ~5 queries, so opening Settings cost a full dashboard reload.)
-  const navigate = (key) => {
+  const navigate = (key, opts) => {
+    if (opts && opts.storyId) setPendingStoryId(opts.storyId)
+    if (opts && opts.todayWords) setPendingStoryWords(opts.todayWords)
     routerNavigate(viewToPath(key))
     if (session && key === 'home') loadProfile(session.user.id)
   }
@@ -183,7 +186,7 @@ export default function App() {
     return (
       <>
         <Background language="chinese" />
-        <Onboarding session={session} onComplete={() => loadProfile(session.user.id)} />
+        <Onboarding session={session} onComplete={() => { loadProfile(session.user.id); navigate('study') }} />
       </>
     )
   }
@@ -197,6 +200,7 @@ export default function App() {
         profile={profile}
         track={track}
         onBack={() => navigate('home')}
+        onNavigate={navigate}
         onStreakUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
@@ -208,6 +212,7 @@ export default function App() {
         track={track}
         mode="weak"
         onBack={() => navigate('home')}
+        onNavigate={navigate}
         onStreakUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
@@ -333,6 +338,9 @@ export default function App() {
         profile={profile}
         track={track}
         onBack={() => navigate('home')}
+        initialStoryId={pendingStoryId}
+        initialStoryWords={pendingStoryWords}
+        onInitialStoryConsumed={() => { setPendingStoryId(null); setPendingStoryWords(null) }}
       />
     )
   } else if (view === 'profile') {
@@ -371,7 +379,8 @@ export default function App() {
         onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
-  } else {
+  } else if (isKnownView(view)) {
+    // Only 'home' reaches here (every other known view has a branch above).
     content = (
       <Home
         profile={profile}
@@ -380,6 +389,10 @@ export default function App() {
         onNavigate={navigate}
       />
     )
+  } else {
+    // A genuinely unknown path — show an explicit 404 instead of silently
+    // falling through to Home, which used to hide typos and dead links.
+    content = <NotFound onHome={() => navigate('home')} />
   }
 
   // ── App shell: persistent sidebar + content area ──────────────────────────

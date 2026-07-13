@@ -2,52 +2,34 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { isOnline } from './useOnline'
 import { enqueueGrade } from './syncQueue'
-import { cacheSet, cacheGet, outboxDelete, offlineAvailable } from './offline'
+import { cacheSet, cacheGet, outboxDelete } from './offline'
 import { getTrackCards } from './data'
 import { schedule, previewLabels } from './srs'
-import { xpForGrade, levelInfo, levelTitle, nextTitle } from './xp'
+import { xpForGrade, levelInfo } from './xp'
 import { computeAward } from './xpService'
 import { updateStreak, todayStr, liveStreak } from './streak'
 import { evaluateAchievements } from './achievements'
 import { toast } from './toast'
-import { getLevelLabel, getSystemLabel, getAudioUrl, playAudioEl } from './utils'
+import { getLevelLabel, getSystemLabel, getAudioUrl } from './utils'
 import { languageTheme } from './languageTheme'
-import { lenientPinyin } from './testLogic'
-import { toRomaji } from 'wanakana'
+import { checkTypedAnswer } from './typedAnswer'
 import { useIsMobile } from './useIsMobile'
-import { CountUp } from './ui'
 import { cleanMeaning } from './cleanMeaning'
+import { isLearned } from './mastery'
+import { pickRecapStory } from './storyMatch'
+import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
+import { buildStudyQueue, reinsertSoon, queueSeed } from './studyQueue'
+import { isFirstRunSession, firstRunNewTarget } from './firstRun'
+import SessionRecap from './SessionRecap'
 import ChatMission from './ChatMission'
-import { pickMission } from './chatMissions'
-import { prefetchLevel } from './prefetch'
-import { ensureAudio } from './audioCache'
+import { buildMissionOffer } from './missionOffer'
+import { computeStudyTally } from './studyTally'
+import { useStudyAudio } from './useStudyAudio'
+import { useStudyKeyboardShortcuts } from './useStudyKeyboardShortcuts'
 import {
   Volume2, VolumeX, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
-  Sparkles, CheckCircle2, Layers, BookOpenCheck, Sunrise, X, Snowflake, TrendingUp,
-  MessageCircleMore, ChevronRight, Download, CheckCheck,
+  Sparkles, Layers, BookOpenCheck, X,
 } from 'lucide-react'
-
-// Does the typed input match the card's reading (or the word itself)?
-// Japanese accepts romaji or kana; Chinese accepts tone-insensitive pinyin.
-function checkTyped(input, v, isJapanese) {
-  const t = (input || '').trim().toLowerCase()
-  if (!t) return false
-  if (t === (v.word || '').toLowerCase()) return true
-  const reading = v.reading || ''
-  if (t === reading.toLowerCase()) return true
-  if (isJapanese) {
-    const norm = s => (toRomaji(s || '') || '').toLowerCase().split(' ').join('')
-    const target = norm(reading)
-    return target !== '' && norm(input) === target
-  }
-  // Chinese: tone-mark AND tone-number insensitive, punctuation/space tolerant —
-  // "hai", "hǎi", "hai3" are all the same answer. Both stored forms accepted.
-  const typed = lenientPinyin(input)
-  if (!typed) return false
-  return [v.reading_plain, reading]
-    .filter(Boolean)
-    .some(r => lenientPinyin(r) === typed)
-}
 
 const SAGE = '#6E8466'
 const SAGE_DARK = '#5C7155'
@@ -193,25 +175,7 @@ function PrimaryButton({ onClick, children, icon: Icon }) {
   )
 }
 
-// Spread `insert` items evenly through `base` so the two kinds of card arrive
-// mixed, not as back-to-back blocks. Used to weave new cards into the due-review
-// backbone: reviews still lead (a review shows before the first new card), but
-// new cards no longer sit stranded at the very end of the session.
-function interleave(base, insert) {
-  if (insert.length === 0) return base.slice()
-  if (base.length === 0) return insert.slice()
-  const out = []
-  const step = base.length / (insert.length + 1)
-  let si = 0
-  for (let i = 0; i < base.length; i += 1) {
-    out.push(base[i])
-    while (si < insert.length && (si + 1) * step <= i + 1) { out.push(insert[si]); si += 1 }
-  }
-  while (si < insert.length) { out.push(insert[si]); si += 1 }
-  return out
-}
-
-export default function Study({ session, profile, track, mode = 'review', onBack, onStreakUpdate }) {
+export default function Study({ session, profile, track, mode = 'review', onBack, onNavigate, onStreakUpdate }) {
   const isWeak = mode === 'weak'
   const [queue, setQueue] = useState([])
   const [loading, setLoading] = useState(true)
@@ -224,12 +188,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const [typedResult, setTypedResult] = useState(null)   // null | 'correct' | 'wrong'
   const [gradeColor, setGradeColor] = useState(null)     // feedback ring color
   const [gradeId, setGradeId] = useState(0)              // bumps to restart the flash
-  const audioRef = useRef(null)
-  // TTS playback rate (1× / 0.75× / 0.5×), seeded from the saved preference.
-  const [audioSpeed, setAudioSpeed] = useState(
-    profile.audio_speed === 0.75 || profile.audio_speed === 0.5 ? profile.audio_speed : 1
-  )
-  const [audioBroken, setAudioBroken] = useState(false)   // current card's audio failed to load
   // Guards against a rapid double-click/double-keypress grading the same card
   // twice while the first save is still in flight (which would double-schedule
   // it and, for new cards, attempt a duplicate insert).
@@ -255,6 +213,12 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const freezesRef = useRef(profile.streak_freezes || 0)
   const [forecast, setForecast] = useState(null)
   const [recap, setRecap] = useState(null)   // snapshot of sessionRef at completion
+  // "First Story Unlocked" recommendation for the recap (null until computed;
+  // stays null offline or when no story library exists — module stays hidden).
+  const [storyUnlock, setStoryUnlock] = useState(null)
+  // True for a brand-new learner's very first session (detected in loadQueue):
+  // shows first-session framing and gently caps the new-card count.
+  const [firstRun, setFirstRun] = useState(false)
   // Word-to-World chat mission: the level's vocab (for tap lookups) and a record
   // of which words were touched this session, so the mission can reuse today's
   // learned / weak / review words.
@@ -263,24 +227,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const [missionOffer, setMissionOffer] = useState(null)   // snapshot at completion
   const [mission, setMission] = useState(null)              // active running mission
 
-  // Snapshot the session's words into a chat-mission offer (buckets + vocab)
-  // when the queue empties. Reads refs from a callback, never during render.
-  function buildMissionOffer() {
-    const seen = new Map()
-    sessionVocabRef.current.forEach(e => {
-      const p = seen.get(e.word) || { weak: false, review: false }
-      seen.set(e.word, { weak: p.weak || e.weak, review: p.review || e.review })
-    })
-    if (seen.size === 0) return null
-    const dayBuckets = { learned: [], weak: [], review: [] }
-    seen.forEach((val, w) => {
-      if (val.weak) dayBuckets.weak.push(w)
-      else if (val.review) dayBuckets.review.push(w)
-      else dayBuckets.learned.push(w)
-    })
-    const picked = pickMission({ language: track.language, level: track.current_level, dayWords: [...seen.keys()], seed: seen.size })
-    return picked ? { mission: picked, dayBuckets, vocab: vocabRef.current } : null
-  }
   const isMobile = useIsMobile()
   const isTyped = profile.recall_mode === 'typed'
 
@@ -293,40 +239,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
 
-  function playAudio() {
-    const card = queue[0]
-    if (!card?.vocab?.audio_path) return
-    const url = getAudioUrl(card.vocab.audio_path)
-    if (!url) return
-    // ONE element, reused for every play — iOS caches a fallback-fetched clip
-    // on the element so Replay works even when the direct load fails (see
-    // playAudioEl). A fresh element per tap threw that away, which is why the
-    // Replay button did nothing on iPhones.
-    if (!audioRef.current) audioRef.current = new Audio()
-    const el = audioRef.current
-    el.pause()
-    // Both: playbackRate for the already-loaded clip, defaultPlaybackRate so a
-    // fresh load doesn't reset the speed back to 1x.
-    el.playbackRate = audioSpeed
-    el.defaultPlaybackRate = audioSpeed
-    // Surface a broken/missing file instead of failing silently — "the sound
-    // doesn't work" with no signal is undebuggable for the user. playAudioEl
-    // already retries once via a blob fetch (works around iOS WebKit Range
-    // quirks against the storage CDN) before giving up.
-    playAudioEl(el, url, () => setAudioBroken(true))
-  }
-
-  const SPEEDS = [1, 0.75, 0.5]
-  function cycleSpeed() {
-    setAudioSpeed(prev => {
-      const next = SPEEDS[(SPEEDS.indexOf(prev) + 1) % SPEEDS.length]
-      // Persist as a preference (best-effort) and patch the in-memory profile
-      // so the choice survives reloads instead of resetting to 1×.
-      supabase.from('profiles').update({ audio_speed: next }).eq('id', session.user.id).then(() => {})
-      if (onStreakUpdate) onStreakUpdate({ audio_speed: next })
-      return next
-    })
-  }
+  // Audio (speed pref, iOS-safe playback + fallback, autoplay-on-flip, and
+  // current+next prefetch) lives in a focused hook. Behavior is unchanged.
+  const { audioSpeed, audioBroken, playAudio, cycleSpeed, resetAudioBroken } = useStudyAudio({
+    queue, flipped, profile, session, onStreakUpdate,
+  })
 
   async function loadQueue() {
     setLoading(true)
@@ -389,19 +306,44 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     const dueReview = levelCards
       .filter(c => c.state === 'review' && new Date(c.due_at) <= now)
 
+    // First-run detection: a brand-new learner (no cards ANYWHERE on the
+    // account) gets a gentle, capped first session. The account-wide count is
+    // only queried when this level is empty (the common returning-user path
+    // skips it), and a track switch — cards on another language — is excluded.
+    // Best-effort: any failure (offline) falls back to a normal session.
+    let isFirst = false
+    if ((cards || []).length === 0) {
+      try {
+        const { count } = await supabase
+          .from('cards').select('id', { count: 'exact', head: true })
+          .eq('user_id', session.user.id)
+        isFirst = isFirstRunSession({ mode, accountCardCount: count || 0 })
+      } catch { /* offline / error — treat as a normal session (no cap) */ }
+    }
+    setFirstRun(isFirst)
+    const newTarget = firstRunNewTarget(isFirst, remainingNew)
+
     const newItems = (vocab || [])
       .filter(v => !startedVocab.has(v.id))
-      .slice(0, remainingNew)
+      .slice(0, newTarget)
       .map(v => ({
         id: null, vocab_id: v.id, vocab: v,
         state: 'new', ease_factor: 2.5, interval_days: 0, learning_step: 0,
       }))
 
-    // Due reviews are the SRS priority, so they lead; new cards are woven in
-    // evenly rather than piled in front of the reviews (which used to make every
-    // due review wait until all new cards were cleared). Learning/relearning
-    // cards are time-sensitive re-tries, so they stay at the very front.
-    const newQueue = [...dueLearning, ...interleave(dueReview, newItems)]
+    // Order the session with the seeded queue builder (studyQueue.js): learning
+    // leads, reviews are the backbone, new cards are woven through — never a
+    // block of new up front, never 3 new in a row while a review remains. The
+    // seed is stable per user/level/day, so a reload the same day keeps the
+    // order and different days feel fresh.
+    const seed = queueSeed({
+      userId: session.user.id,
+      language: track.language,
+      system: track.system,
+      level: track.current_level,
+      day: todayStr(),
+    })
+    const newQueue = buildStudyQueue({ dueLearning, dueReview, newItems, seed })
     setQueue(newQueue)
     setDone(newQueue.length === 0)
     setLoading(false)
@@ -438,22 +380,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  useEffect(() => {
-    if (flipped && queue.length > 0 && profile.audio_autoplay !== false) {
-      playAudio()
-    }
-  }, [flipped])
-
-  // Warm the current + next card's audio into an in-memory object URL so tap
-  // playback works offline — on iOS especially, where a ranged network request
-  // bypasses the SW cache and can't be awaited inside the play() gesture.
-  useEffect(() => {
-    [queue[0], queue[1]].forEach(c => {
-      if (c && c.vocab && c.vocab.audio_path) ensureAudio(getAudioUrl(c.vocab.audio_path))
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queue])
 
   // Upsert today's study counts so the Profile calendar can show studied days.
   // Counts are this session's running totals (presence is always correct).
@@ -504,6 +430,57 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     setForecast({ reviews, newAvail })
   }
 
+  // Connect this session's words to a story the user can now read — the "First
+  // Story Unlocked" recap module. Best-effort and purely additive: any failure
+  // (or offline) just leaves the module hidden. Reuses the pure matcher in
+  // storyMatch.js so the "% known" mirrors what the reader then shows.
+  async function loadStoryUnlock() {
+    try {
+      const [vres, sres, cres, rres] = await Promise.all([
+        supabase.from('vocabulary').select('id, word, level')
+          .eq('language', track.language).eq('system', track.system).eq('is_active', true),
+        supabase.from('stories').select('id, title, content, tier, story_number')
+          .eq('language', track.language).eq('system', track.system)
+          .eq('level', track.current_level).eq('is_published', true),
+        supabase.from('cards').select('vocab_id, is_easy, state, learned')
+          .eq('user_id', session.user.id),
+        supabase.from('story_reads').select('story_id').eq('user_id', session.user.id),
+      ])
+      const stories = sres.data || []
+      if (stories.length === 0) { setStoryUnlock(null); return }
+
+      const vocabRows = vres.data || []
+      const cards = cres.data || []
+      const vocabMap = {}
+      vocabRows.forEach(v => { vocabMap[v.word] = v })
+      const userCards = {}
+      cards.forEach(c => { userCards[c.vocab_id] = c })
+
+      // Tier gating mirrors Stories: learned words at the CURRENT level only.
+      const currentLevelIds = new Set(
+        vocabRows.filter(v => v.level === track.current_level).map(v => v.id)
+      )
+      const learnedCount = cards.filter(c => currentLevelIds.has(c.vocab_id) && isLearned(c)).length
+
+      // Distinct words actually studied this session.
+      const sessionWords = [...new Set(sessionVocabRef.current.map(e => e.word))]
+
+      const rec = pickRecapStory({
+        stories,
+        vocabMap,
+        userCards,
+        sessionWords,
+        readIds: new Set((rres.data || []).map(r => r.story_id)),
+        learnedCount,
+        categories: CATEGORIES_BY_LANGUAGE[track.language] || CATEGORIES_BY_LANGUAGE.chinese,
+        language: track.language,
+      })
+      setStoryUnlock(rec)
+    } catch {
+      setStoryUnlock(null)
+    }
+  }
+
   // Toast any achievement seals newly earned this session (compare the live
   // stats against the snapshot taken at session start).
   async function celebrateAchievements() {
@@ -525,6 +502,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   useEffect(() => {
     if (done && recap && recap.graded > 0 && !forecast) {
       loadForecast()
+    }
+    if (done && recap && recap.graded > 0 && !storyUnlock) {
+      loadStoryUnlock()
     }
     if (done && recap && recap.graded > 0 && achieveBeforeRef.current && !achieveToastedRef.current) {
       achieveToastedRef.current = true
@@ -571,26 +551,28 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     setGradeColor(GRADE_COLORS[grade])
     setGradeId(id => id + 1)
 
+    // Pure decision: how this grade changes the session recap counters + the
+    // chat-mission word metadata (see studyTally.js). The ref mutations below
+    // stay here — the helper only decides, it never mutates.
+    const { tally, sessionWord } = computeStudyTally({
+      grade,
+      previousState: card.state,
+      nextState: res.updates.state,
+      vocab: card.vocab,
+    })
+
     // Record the word for the end-of-session chat mission: grade 0 (Again) marks
     // it weak; a review-state card is a mature word; otherwise it's learned today.
-    if (card.vocab && card.vocab.word) {
-      sessionVocabRef.current.push({
-        word: card.vocab.word,
-        weak: grade === 0,
-        review: card.state === 'review',
-      })
-    }
+    if (sessionWord) sessionVocabRef.current.push(sessionWord)
 
     // Tally this card for the session recap (before the queue mutates).
     const s = sessionRef.current
-    s.graded += 1
-    if (card.state === 'new') s.newLearned += 1
-    if (grade === 0) s.again += 1
-    if (res.updates.state === 'review' && card.state !== 'review') s.graduated += 1
-    if (card.state === 'review') {
-      s.reviewedTotal += 1
-      if (grade >= 1) s.reviewedRight += 1
-    }
+    s.graded += tally.graded
+    s.newLearned += tally.newLearned
+    s.again += tally.again
+    s.graduated += tally.graduated
+    s.reviewedTotal += tally.reviewedTotal
+    s.reviewedRight += tally.reviewedRight
     const xpGain = xpForGrade(grade)
 
     if (!streakDone) {
@@ -710,18 +692,26 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     setFlipped(false)
     setTypedValue('')
     setTypedResult(null)
-    setAudioBroken(false)
+    resetAudioBroken()
 
     setQueue(prev => {
-      const rest = prev.slice(1)
+      let rest = prev.slice(1)
       if (res.stay) {
+        // Reinsert an "Again"-graded card soon (SRS gap), but not as the very
+        // next card unless the queue is too short to allow it.
         const item = { ...card, ...res.updates, id: cardId }
-        const pos = Math.min(res.gap, rest.length)
-        rest.splice(pos, 0, item)
+        rest = reinsertSoon(rest, item, res.gap)
       }
       if (rest.length === 0) {
         setRecap({ ...sessionRef.current })
-        setMissionOffer(buildMissionOffer())
+        // Snapshot the session's words into a chat-mission offer (buckets +
+        // vocab). Reads refs here, never during render.
+        setMissionOffer(buildMissionOffer({
+          sessionVocab: sessionVocabRef.current,
+          vocab: vocabRef.current,
+          language: track.language,
+          level: track.current_level,
+        }))
         setDone(true)
       }
       return rest
@@ -792,7 +782,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       setFlipped(false)
       setTypedValue('')
       setTypedResult(null)
-      setAudioBroken(false)
+      resetAudioBroken()
       setQueue(u.prevQueue)
     } finally {
       gradingRef.current = false
@@ -806,46 +796,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // confirm it. Flip mode defaults Enter to "Good" (the Anki convention).
   const suggestedGrade = isTyped && typedResult ? (typedResult === 'correct' ? 2 : 0) : null
 
-  // Desktop keyboard flow: Space/Enter reveals, 1–4 grades, Enter takes the
-  // suggested/Good grade, R replays audio, U undoes the last grade. Rebinds
-  // each render so the handler always sees current state. The typed-mode input
-  // owns its own keys (Enter submits there), so key events from inputs are
-  // ignored.
-  useEffect(() => {
-    const onKey = (e) => {
-      if (loading || done || queue.length === 0) return
-      const el = e.target
-      const tag = el && el.tagName
-      // Typing contexts own the keyboard entirely.
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (el && el.isContentEditable)) return
-      // A focused button/link keeps its native Space/Enter activation; the
-      // non-activating shortcuts (1–4, R, U) still work so the mouse+keyboard
-      // mixed flow isn't broken by focus resting on the last-clicked button.
-      const onActivatable = tag === 'BUTTON' || tag === 'A'
-      if ((e.key === 'u' || e.key === 'U') && undoRef.current) {
-        e.preventDefault()
-        undoLast()
-        return
-      }
-      if (!flipped) {
-        if (!onActivatable && (e.key === ' ' || e.key === 'Enter')) {
-          e.preventDefault()
-          setFlipped(true)
-        }
-        return
-      }
-      if (e.key >= '1' && e.key <= '4') {
-        e.preventDefault()
-        handleGrade(Number(e.key) - 1)
-      } else if (!onActivatable && e.key === 'Enter') {
-        e.preventDefault()
-        handleGrade(suggestedGrade != null ? suggestedGrade : 2)
-      } else if (e.key === 'r' || e.key === 'R') {
-        playAudio()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+  // Desktop keyboard flow lives in a focused hook (behavior unchanged; the
+  // typed-mode input owns its own keys since inputs are ignored there).
+  useStudyKeyboardShortcuts({
+    loading, done, queue, flipped, suggestedGrade, undoRef,
+    setFlipped, handleGrade, playAudio, undoLast,
   })
 
   const newCount = queue.filter(c => c.state === 'new').length
@@ -877,147 +832,29 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   }
 
   if (done || queue.length === 0) {
-    const s = recap
-    const didStudy = Boolean(s && s.graded > 0)
-
     // Word-to-World chat mission offer (snapshotted at completion, above).
     const availableMission = missionOffer ? missionOffer.mission : null
-    const accuracy = s && s.reviewedTotal > 0 ? Math.round((s.reviewedRight / s.reviewedTotal) * 100) : null
-    const recapStats = s ? [
-      { label: 'Cards studied', value: s.graded, color: accentHex },
-      { label: 'New learned', value: s.newLearned, color: '#3E63DD' },
-      { label: 'To review', value: s.graduated, color: '#2F9E6D' },
-    ] : []
-    if (accuracy !== null) recapStats.push({ label: 'Accuracy', value: accuracy, suffix: '%', color: '#D97706' })
 
     return (
       <div style={pageShell}>
-        <div style={{ maxWidth: '760px', margin: '0 auto', minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{
-            width: '100%', maxWidth: '520px', textAlign: 'center',
-            background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: '24px', padding: '40px 34px',
-            boxShadow: '0 22px 60px rgba(24,24,27,0.07)',
-          }}>
-            <div style={{
-              width: '58px', height: '58px', borderRadius: '18px',
-              margin: '0 auto 18px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: accentHex + '10', border: '1px solid ' + accentHex + '18',
-            }}>
-              <CheckCircle2 size={28} strokeWidth={1.9} color={accentHex} />
-            </div>
-            <h1 style={{ fontSize: '26px', fontWeight: 750, marginBottom: '8px', color: 'var(--text)' }}>
-              {didStudy ? 'Session complete' : 'All done for now'}
-            </h1>
-            <p style={{ color: 'var(--text-muted)', marginBottom: didStudy ? '26px' : '28px', fontSize: '15px', lineHeight: 1.6 }}>
-              {didStudy
-                ? 'Nice, steady work. Every review nudges these words further into memory.'
-                : isWeak
-                  ? 'No weak words to clean up right now — your tricky cards are settling.'
-                  : 'No cards are waiting. Come back later, or continue the loop with stories.'}
-            </p>
-
-            {didStudy && s.xpEarned > 0 && (
-              <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: '7px',
-                margin: '0 auto 20px', padding: '8px 16px', borderRadius: '999px',
-                background: '#6E84661A', border: '1px solid #6E846633',
-                color: '#5C7155', fontSize: '14px', fontWeight: 750,
-              }}>
-                <Sparkles size={15} strokeWidth={2} color="#6E8466" />
-                +<CountUp value={s.xpEarned} /> XP
-              </div>
-            )}
-
-            {didStudy && s.leveledTo > 0 && (
-              <div style={{
-                margin: '0 auto 22px', padding: '16px 18px', borderRadius: '18px',
-                background: accentHex + '0D', border: '1px solid ' + accentHex + '2A',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: accentHex, fontSize: '17px', fontWeight: 850 }}>
-                  <TrendingUp size={19} strokeWidth={2.2} color={accentHex} />
-                  Level {s.leveledTo} — {levelTitle(s.leveledTo)}
-                </div>
-                {s.freezesEarned > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: '#3E63DD', fontSize: '13px', fontWeight: 700 }}>
-                    <Snowflake size={15} strokeWidth={2} color="#3E63DD" />
-                    +{s.freezesEarned} streak freeze{s.freezesEarned === 1 ? '' : 's'} earned
-                  </div>
-                )}
-                {nextTitle(s.leveledTo) && (
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
-                    Next rank: {nextTitle(s.leveledTo).name} at level {nextTitle(s.leveledTo).min}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {didStudy && (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: recapStats.length === 4 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
-                gap: '10px', marginBottom: '22px',
-              }}>
-                {recapStats.map(st => (
-                  <div key={st.label} style={{
-                    padding: '16px 10px', borderRadius: '14px',
-                    background: st.color + '0D', border: '1px solid ' + st.color + '22',
-                  }}>
-                    <div style={{ fontSize: '26px', fontWeight: 760, color: st.color, lineHeight: 1 }}>
-                      <CountUp value={st.value} suffix={st.suffix || ''} />
-                    </div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>{st.label}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {didStudy && forecast && (forecast.reviews > 0 || forecast.newAvail > 0) && (
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                marginBottom: '24px', padding: '12px 16px', borderRadius: '14px',
-                background: 'var(--surface-2)', border: '1px solid var(--border)',
-                fontSize: '13px', color: 'var(--text-muted)', flexWrap: 'wrap',
-              }}>
-                <Sunrise size={16} strokeWidth={1.9} color="#D97706" />
-                <span>
-                  Tomorrow:&nbsp;
-                  <strong style={{ color: 'var(--text)', fontWeight: 650 }}>{forecast.reviews}</strong> review{forecast.reviews === 1 ? '' : 's'}
-                  {forecast.newAvail > 0 && (
-                    <> + <strong style={{ color: 'var(--text)', fontWeight: 650 }}>{forecast.newAvail}</strong> new</>
-                  )}
-                  &nbsp;waiting
-                </span>
-              </div>
-            )}
-
-            {availableMission && (
-              <button onClick={() => setMission(availableMission)} style={{
-                width: '100%', marginBottom: '12px', textAlign: 'left', cursor: 'pointer',
-                background: accentHex + '0D', border: '1px solid ' + accentHex + '2A', borderRadius: '18px',
-                padding: '16px 18px', display: 'flex', alignItems: 'center', gap: '14px',
-              }}>
-                <div style={{ width: '44px', height: '44px', borderRadius: '14px', flexShrink: 0, background: accentHex + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <MessageCircleMore size={22} strokeWidth={1.9} color={accentHex} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text)' }}>Use today’s words</div>
-                  <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '2px' }}>
-                    {availableMission.scenario.en} · ~{availableMission.estimatedTime} min
-                  </div>
-                </div>
-                <ChevronRight size={20} color={accentHex} />
-              </button>
-            )}
-
-            <OfflineSaveButton track={track} accentHex={accentHex} />
-
-            <PrimaryButton onClick={onBack} icon={ArrowLeft}>
-              Back home
-            </PrimaryButton>
-          </div>
-        </div>
+        <SessionRecap
+          recap={recap}
+          isWeak={isWeak}
+          firstRun={firstRun}
+          accentHex={accentHex}
+          langFont={langFont}
+          forecast={forecast}
+          storyUnlock={storyUnlock}
+          track={track}
+          mission={availableMission}
+          onOpenMission={() => setMission(availableMission)}
+          onReadStory={(storyId) => onNavigate && onNavigate('stories', storyId ? {
+            storyId,
+            // Today's studied words → highlighted + reinforced inside the reader.
+            todayWords: [...new Set(sessionVocabRef.current.map(e => e.word).filter(Boolean))],
+          } : undefined)}
+          onBack={onBack}
+        />
 
         {mission && missionOffer && (
           <ChatMission
@@ -1077,7 +914,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
   function submitTyped() {
     if (!typedValue.trim()) return
-    setTypedResult(checkTyped(typedValue, v, isJapanese) ? 'correct' : 'wrong')
+    setTypedResult(checkTypedAnswer(typedValue, v, isJapanese) ? 'correct' : 'wrong')
     setFlipped(true)
   }
 
@@ -1105,13 +942,13 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             color: accentHex, fontSize: '13px', fontWeight: 750, marginBottom: '6px',
           }}>
             <Layers size={17} strokeWidth={1.8} color={accentHex} />
-            {isWeak ? 'Weak word cleanup' : langChars + ' flashcards'}
+            {firstRun ? 'Your first session' : (isWeak ? 'Weak word cleanup' : langChars + ' flashcards')}
           </div>
           <h1 style={{ fontSize: '28px', color: 'var(--text)', fontWeight: 780, lineHeight: 1.1 }}>
-            {isWeak ? 'Weak words' : 'Study session'}
+            {firstRun ? 'Learn your first words' : (isWeak ? 'Weak words' : 'Study session')}
           </h1>
           <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: 550, marginTop: '5px' }}>
-            {systemLabel} · {levelLabel}
+            {firstRun ? 'These words will unlock your first story' : (systemLabel + ' · ' + levelLabel)}
           </div>
         </div>
 
@@ -1430,46 +1267,5 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         </div>
       </div>
     </div>
-  )
-}
-
-// "Save this level for offline": warms the vocabulary snapshot and every
-// pronunciation MP3 into the offline caches so a later no-network session has
-// its cards and audio. Hidden when IndexedDB isn't available.
-function OfflineSaveButton({ track, accentHex }) {
-  const [state, setState] = useState('idle') // idle | saving | done
-  const [pct, setPct] = useState(0)
-  if (!offlineAvailable()) return null
-
-  const run = async () => {
-    if (state === 'saving') return
-    setState('saving')
-    setPct(0)
-    try {
-      await prefetchLevel(track, track.current_level, (done, total) => {
-        setPct(total ? Math.round((done / total) * 100) : 100)
-      })
-      setState('done')
-    } catch {
-      setState('idle')
-    }
-  }
-
-  const label = state === 'saving'
-    ? 'Saving for offline… ' + pct + '%'
-    : state === 'done'
-      ? 'Saved — reviews and audio work offline'
-      : 'Save this level for offline'
-  const Icon = state === 'done' ? CheckCheck : Download
-
-  return (
-    <button onClick={run} disabled={state !== 'idle'} style={{
-      width: '100%', marginBottom: '10px', padding: '12px 16px', borderRadius: '14px',
-      border: '1px solid ' + accentHex + '2A', background: accentHex + '0D', color: accentHex,
-      cursor: state === 'idle' ? 'pointer' : 'default', font: '700 13.5px Inter, sans-serif',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-    }}>
-      <Icon size={16} strokeWidth={2.2} /> {label}
-    </button>
   )
 }

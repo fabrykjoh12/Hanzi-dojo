@@ -165,6 +165,15 @@ export function playAudioEl(el, url, onFail) {
   })
 }
 
+// Canonical form for an auth email: trim surrounding whitespace and lowercase.
+// Used by every auth entry point (login / signup / password reset) so the same
+// address typed as " Me@Example.com " always resolves to one account — mobile
+// keyboards love to auto-capitalize the first letter, which would otherwise
+// create a second, unreachable Supabase user on signup.
+export function normalizeEmail(value) {
+  return (value || '').trim().toLowerCase()
+}
+
 export function normalizeRecallInput(value) {
   return (value || '')
     .toLowerCase()
