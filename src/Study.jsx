@@ -24,6 +24,7 @@ import SessionRecap from './SessionRecap'
 import ChatMission from './ChatMission'
 import { pickMission } from './chatMissions'
 import { useStudyAudio } from './useStudyAudio'
+import { useStudyKeyboardShortcuts } from './useStudyKeyboardShortcuts'
 import {
   Volume2, VolumeX, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
   Sparkles, Layers, BookOpenCheck, X,
@@ -804,46 +805,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // confirm it. Flip mode defaults Enter to "Good" (the Anki convention).
   const suggestedGrade = isTyped && typedResult ? (typedResult === 'correct' ? 2 : 0) : null
 
-  // Desktop keyboard flow: Space/Enter reveals, 1–4 grades, Enter takes the
-  // suggested/Good grade, R replays audio, U undoes the last grade. Rebinds
-  // each render so the handler always sees current state. The typed-mode input
-  // owns its own keys (Enter submits there), so key events from inputs are
-  // ignored.
-  useEffect(() => {
-    const onKey = (e) => {
-      if (loading || done || queue.length === 0) return
-      const el = e.target
-      const tag = el && el.tagName
-      // Typing contexts own the keyboard entirely.
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (el && el.isContentEditable)) return
-      // A focused button/link keeps its native Space/Enter activation; the
-      // non-activating shortcuts (1–4, R, U) still work so the mouse+keyboard
-      // mixed flow isn't broken by focus resting on the last-clicked button.
-      const onActivatable = tag === 'BUTTON' || tag === 'A'
-      if ((e.key === 'u' || e.key === 'U') && undoRef.current) {
-        e.preventDefault()
-        undoLast()
-        return
-      }
-      if (!flipped) {
-        if (!onActivatable && (e.key === ' ' || e.key === 'Enter')) {
-          e.preventDefault()
-          setFlipped(true)
-        }
-        return
-      }
-      if (e.key >= '1' && e.key <= '4') {
-        e.preventDefault()
-        handleGrade(Number(e.key) - 1)
-      } else if (!onActivatable && e.key === 'Enter') {
-        e.preventDefault()
-        handleGrade(suggestedGrade != null ? suggestedGrade : 2)
-      } else if (e.key === 'r' || e.key === 'R') {
-        playAudio()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+  // Desktop keyboard flow lives in a focused hook (behavior unchanged; the
+  // typed-mode input owns its own keys since inputs are ignored there).
+  useStudyKeyboardShortcuts({
+    loading, done, queue, flipped, suggestedGrade, undoRef,
+    setFlipped, handleGrade, playAudio, undoLast,
   })
 
   const newCount = queue.filter(c => c.state === 'new').length
