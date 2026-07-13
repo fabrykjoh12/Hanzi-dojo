@@ -21,7 +21,7 @@ import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
 import { buildStudyQueue, reinsertSoon, queueSeed } from './studyQueue'
 import SessionRecap from './SessionRecap'
 import ChatMission from './ChatMission'
-import { pickMission } from './chatMissions'
+import { buildMissionOffer } from './missionOffer'
 import { useStudyAudio } from './useStudyAudio'
 import { useStudyKeyboardShortcuts } from './useStudyKeyboardShortcuts'
 import {
@@ -222,24 +222,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const [missionOffer, setMissionOffer] = useState(null)   // snapshot at completion
   const [mission, setMission] = useState(null)              // active running mission
 
-  // Snapshot the session's words into a chat-mission offer (buckets + vocab)
-  // when the queue empties. Reads refs from a callback, never during render.
-  function buildMissionOffer() {
-    const seen = new Map()
-    sessionVocabRef.current.forEach(e => {
-      const p = seen.get(e.word) || { weak: false, review: false }
-      seen.set(e.word, { weak: p.weak || e.weak, review: p.review || e.review })
-    })
-    if (seen.size === 0) return null
-    const dayBuckets = { learned: [], weak: [], review: [] }
-    seen.forEach((val, w) => {
-      if (val.weak) dayBuckets.weak.push(w)
-      else if (val.review) dayBuckets.review.push(w)
-      else dayBuckets.learned.push(w)
-    })
-    const picked = pickMission({ language: track.language, level: track.current_level, dayWords: [...seen.keys()], seed: seen.size })
-    return picked ? { mission: picked, dayBuckets, vocab: vocabRef.current } : null
-  }
   const isMobile = useIsMobile()
   const isTyped = profile.recall_mode === 'typed'
 
@@ -697,7 +679,14 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       }
       if (rest.length === 0) {
         setRecap({ ...sessionRef.current })
-        setMissionOffer(buildMissionOffer())
+        // Snapshot the session's words into a chat-mission offer (buckets +
+        // vocab). Reads refs here, never during render.
+        setMissionOffer(buildMissionOffer({
+          sessionVocab: sessionVocabRef.current,
+          vocab: vocabRef.current,
+          language: track.language,
+          level: track.current_level,
+        }))
         setDone(true)
       }
       return rest
