@@ -10,6 +10,7 @@ import { languageTheme } from './languageTheme'
 import { pushSupported, enableReminders, disableReminders, setReminderHour } from './push'
 import { audioCount, estimateStorage, clearDownloads, offlineAvailable } from './offline'
 import { pendingWrites } from './syncQueue'
+import { buildLabel } from './version'
 
 // The picker shows times the user actually recognizes ("9:00 AM" local),
 // while reminder_hour_utc stores UTC for the sender script — convert at the
@@ -209,6 +210,11 @@ export default function Settings({ session, profile, onUpdate }) {
 
           {/* Offline downloads + storage */}
           <OfflineStorageCard accentHex={accentHex} />
+
+          {/* Build stamp — confirms which version is running. */}
+          <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--text-faint)', fontWeight: 600, marginTop: '4px' }}>
+            Version <span style={{ fontFamily: 'ui-monospace, monospace' }}>{buildLabel()}</span>
+          </div>
         </div>
       </div>
     </div>
