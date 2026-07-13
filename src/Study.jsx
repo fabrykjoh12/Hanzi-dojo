@@ -22,6 +22,7 @@ import { buildStudyQueue, reinsertSoon, queueSeed } from './studyQueue'
 import SessionRecap from './SessionRecap'
 import ChatMission from './ChatMission'
 import { buildMissionOffer } from './missionOffer'
+import { computeStudyTally } from './studyTally'
 import { useStudyAudio } from './useStudyAudio'
 import { useStudyKeyboardShortcuts } from './useStudyKeyboardShortcuts'
 import {
@@ -528,26 +529,28 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     setGradeColor(GRADE_COLORS[grade])
     setGradeId(id => id + 1)
 
+    // Pure decision: how this grade changes the session recap counters + the
+    // chat-mission word metadata (see studyTally.js). The ref mutations below
+    // stay here — the helper only decides, it never mutates.
+    const { tally, sessionWord } = computeStudyTally({
+      grade,
+      previousState: card.state,
+      nextState: res.updates.state,
+      vocab: card.vocab,
+    })
+
     // Record the word for the end-of-session chat mission: grade 0 (Again) marks
     // it weak; a review-state card is a mature word; otherwise it's learned today.
-    if (card.vocab && card.vocab.word) {
-      sessionVocabRef.current.push({
-        word: card.vocab.word,
-        weak: grade === 0,
-        review: card.state === 'review',
-      })
-    }
+    if (sessionWord) sessionVocabRef.current.push(sessionWord)
 
     // Tally this card for the session recap (before the queue mutates).
     const s = sessionRef.current
-    s.graded += 1
-    if (card.state === 'new') s.newLearned += 1
-    if (grade === 0) s.again += 1
-    if (res.updates.state === 'review' && card.state !== 'review') s.graduated += 1
-    if (card.state === 'review') {
-      s.reviewedTotal += 1
-      if (grade >= 1) s.reviewedRight += 1
-    }
+    s.graded += tally.graded
+    s.newLearned += tally.newLearned
+    s.again += tally.again
+    s.graduated += tally.graduated
+    s.reviewedTotal += tally.reviewedTotal
+    s.reviewedRight += tally.reviewedRight
     const xpGain = xpForGrade(grade)
 
     if (!streakDone) {
