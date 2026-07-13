@@ -250,7 +250,7 @@ function EmptyPanel({ icon: Icon, title, text }) {
 
 // ─── MAIN STORIES COMPONENT ────────────────────────────────────────────────
 
-export default function Stories({ session, profile, track, onBack, initialStoryId, initialStoryWords, onInitialStoryConsumed }) {
+export default function Stories({ session, profile, track, onBack, initialStoryId, initialStoryWords, initialStoryFirstMission, onInitialStoryConsumed }) {
   const [view, setView] = useState('categories')
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [selectedStory, setSelectedStory] = useState(null)
@@ -272,6 +272,7 @@ export default function Stories({ session, profile, track, onBack, initialStoryI
   // Today's studied words (from the post-study deep-link), highlighted in the
   // reader. Captured into state so it survives App clearing the pending value.
   const [todayWords, setTodayWords] = useState([])
+  const [firstMission, setFirstMission] = useState(false)
   const CATEGORIES = CATEGORIES_BY_LANGUAGE[track.language] || CATEGORIES_CHINESE
 
   async function loadData() {
@@ -344,6 +345,7 @@ export default function Stories({ session, profile, track, onBack, initialStoryI
         setSelectedStory(target)
         setView('reader')
         if (initialStoryWords && initialStoryWords.length) setTodayWords(initialStoryWords)
+        if (initialStoryFirstMission) setFirstMission(true)
       }
       if (onInitialStoryConsumed) onInitialStoryConsumed()
     }
@@ -392,6 +394,7 @@ export default function Stories({ session, profile, track, onBack, initialStoryI
         onBack={() => setView('list')}
         onHome={onBack}
         todayWords={todayWords}
+        firstMission={firstMission}
         nextStory={nextStory}
         onNextStory={() => setSelectedStory(nextStory)}
         isRead={readIds.has(selectedStory.id)}
