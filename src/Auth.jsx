@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from './supabase'
 import { normalizeEmail } from './utils'
+import { track, EVENTS } from './analytics'
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
@@ -30,8 +31,10 @@ export default function Auth() {
 
     try {
       if (isSignup) {
+        track(EVENTS.SIGNUP_STARTED)
         const { error } = await supabase.auth.signUp({ email: cleanEmail, password })
         if (error) throw error
+        track(EVENTS.SIGNUP_COMPLETED)
         setMessageKind('success')
         setMessage('Check your email to confirm your account!')
       } else {

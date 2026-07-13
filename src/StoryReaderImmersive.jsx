@@ -11,6 +11,7 @@ import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
 import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, matchName, JP_PARTICLES } from './storyReading'
 import { FIRST_MISSION_READER_HINT, firstMissionCompletion } from './firstMission'
+import { track as trackEvent, trackOnce, EVENTS } from './analytics'
 import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRight, UserRound, Highlighter, Check, X, Sparkles, Home } from 'lucide-react'
 
 // HSKStory-inspired immersion reader for BOTH languages. Light theme. Tap a word
@@ -320,6 +321,14 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const todaySet = useMemo(() => new Set(todayWords || []), [todayWords])
   const todayInStory = useMemo(() => todayWordsInStory(storyWords, todayWords), [storyWords, todayWords])
 
+  // Analytics: story opened (once per story). Fires with the current readability
+  // so drop-off vs. difficulty is analyzable. Intentionally keyed on story.id.
+  useEffect(() => {
+    trackEvent(EVENTS.STORY_OPENED, { tier: story.tier, known_pct: knownPct })
+    if (firstMission) trackOnce(EVENTS.FIRST_STORY_OPENED, { known_pct: knownPct })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story.id])
+
   // Comprehension scoring.
   const answeredCount = Object.keys(answers).length
   const correctCount = questions.filter(q => answers[q.id] === q.correct_index).length
@@ -343,6 +352,8 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
       await enqueueStoryRead({ userId: session.user.id, storyId: story.id, xpDelta: STORY_FINISH_XP })
       if (onMarkRead) onMarkRead(story.id)
     }
+    trackEvent(EVENTS.STORY_COMPLETED, { tier: story.tier, known_pct: knownPct })
+    if (firstMission) trackOnce(EVENTS.FIRST_STORY_COMPLETED, { known_pct: knownPct })
     setFinishing(false)
   }
 

@@ -4,6 +4,7 @@ create extension if not exists "pgcrypto";
 -- This resets the app database tables.
 -- It does not delete auth.users.
 
+drop table if exists public.analytics_events cascade;
 drop table if exists public.story_vocab cascade;
 drop table if exists public.youtube_recommendations cascade;
 drop table if exists public.stories cascade;
@@ -352,6 +353,30 @@ create table public.youtube_recommendations (
 );
 
 
+-- 15. Analytics events
+-- Lightweight, privacy-friendly product analytics: one append-only event log for
+-- the learning journey (funnel steps, session metrics). Never stores personal
+-- text — no story contents, typed answers, or email addresses. `props` is a small
+-- JSON bag of counts / enums / ids only.
+create table public.analytics_events (
+  id          bigint generated always as identity primary key,
+  -- Null for pre-signup funnel steps (Landing viewed / Signup started), else the
+  -- signed-in user. `set null` keeps the funnel intact if an account is deleted.
+  user_id     uuid references auth.users(id) on delete set null,
+  session_id  text,                 -- per app-load id (client-generated, not a login session)
+  name        text not null,        -- event name, e.g. 'onboarding_completed'
+  language    text,                 -- 'chinese' | 'japanese' | 'russian' | null
+  level       int,                  -- current track level, or null
+  app_version text,                 -- build sha, so events can be attributed to a release
+  props       jsonb not null default '{}'::jsonb,
+  created_at  timestamptz not null default now()
+);
+
+create index analytics_events_name_created_idx on public.analytics_events (name, created_at);
+create index analytics_events_user_created_idx on public.analytics_events (user_id, created_at);
+create index analytics_events_session_idx on public.analytics_events (session_id);
+
+
 -- Enable RLS
 alter table public.content_sources enable row level security;
 alter table public.profiles enable row level security;
@@ -367,6 +392,7 @@ alter table public.level_unlocks enable row level security;
 alter table public.stories enable row level security;
 alter table public.story_vocab enable row level security;
 alter table public.youtube_recommendations enable row level security;
+alter table public.analytics_events enable row level security;
 
 
 -- RLS policies
@@ -544,6 +570,19 @@ create policy "users can insert own level unlocks"
 on public.level_unlocks
 for insert to authenticated
 with check ((select auth.uid()) = user_id);
+
+
+-- Analytics events
+-- Append-only for clients. Signed-in users may insert rows attributed to
+-- themselves; signed-out clients (anon key) may insert user_id-null events so the
+-- top of the funnel (Landing -> Signup) is measurable. No client SELECT/UPDATE/
+-- DELETE — dashboards read with the service role. Trade-off: because the anon key
+-- is public, anonymous rows are effectively world-insertable, which is acceptable
+-- for product analytics (it never exposes user data and cannot modify rows).
+create policy "analytics insert own or anon"
+on public.analytics_events
+for insert
+with check (user_id is null or auth.uid() = user_id);
 
 
 -- Progress reset

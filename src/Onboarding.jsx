@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, getLevels } from './utils'
+import { track, EVENTS } from './analytics'
 import { languageList, languageTheme } from './languageTheme'
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
@@ -14,6 +15,8 @@ export default function Onboarding({ session, onComplete }) {
   const [goal, setGoal] = useState(10)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => { track(EVENTS.ONBOARDING_STARTED) }, [])
 
   // Data-driven: the language cards + level grid come from the shared config, so
   // adding a language needs no changes here.
@@ -66,6 +69,7 @@ export default function Onboarding({ session, onComplete }) {
       })
       if (trackError) throw trackError
 
+      track(EVENTS.ONBOARDING_COMPLETED, { language, level, goal })
       onComplete()
     } catch (e) {
       setError(e.message)

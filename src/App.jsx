@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
 import { getHomeCounts } from './homeCounts'
 import { pathToView, viewToPath, isKnownView } from './routes'
+import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
 // Eager: the app shell + first-paint screens.
@@ -130,13 +131,29 @@ export default function App() {
 
     setProfile(finalProf)
     setTrack(finalTrack)
+    // Analytics context — so every subsequent event carries who / language / level.
+    setAnalyticsContext({
+      userId,
+      language: finalProf.active_language,
+      level: finalTrack ? finalTrack.current_level : null,
+    })
     setLoading(false)
   }
+
+  // Analytics session envelope: one "session started" per app-load, and a
+  // "session ended" (with duration) when the tab is hidden/closed. Best-effort.
+  useEffect(() => {
+    startSession()
+    const end = () => endSession()
+    window.addEventListener('pagehide', end)
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') end() })
+    return () => window.removeEventListener('pagehide', end)
+  }, [])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
-      if (session) loadProfile(session.user.id)
+      if (session) { setAnalyticsContext({ userId: session.user.id }); loadProfile(session.user.id) }
       else setLoading(false)
     })
 
@@ -204,7 +221,7 @@ export default function App() {
     return (
       <>
         <Background language={profile.active_language} />
-        <FirstMissionWelcome onStart={() => { setJustOnboarded(false); navigate('study') }} />
+        <FirstMissionWelcome onStart={() => { trackOnce(EVENTS.FIRST_MISSION_STARTED); setJustOnboarded(false); navigate('study') }} />
       </>
     )
   }
