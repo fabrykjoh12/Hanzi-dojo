@@ -825,7 +825,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           track={track}
           mission={availableMission}
           onOpenMission={() => setMission(availableMission)}
-          onReadStory={(storyId) => onNavigate && onNavigate('stories', storyId ? { storyId } : undefined)}
+          onReadStory={(storyId) => onNavigate && onNavigate('stories', storyId ? {
+            storyId,
+            // Today's studied words → highlighted + reinforced inside the reader.
+            todayWords: [...new Set(sessionVocabRef.current.map(e => e.word).filter(Boolean))],
+          } : undefined)}
           onBack={onBack}
         />
 

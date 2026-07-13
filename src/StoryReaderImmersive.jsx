@@ -9,7 +9,8 @@ import { CHARACTER_READINGS } from './characterNames'
 import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
-import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRight, UserRound, Highlighter, Check, X } from 'lucide-react'
+import { wordStatus, todayWordsInStory } from './storyReading'
+import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRight, UserRound, Highlighter, Check, X, Sparkles, Home } from 'lucide-react'
 
 // HSKStory-inspired immersion reader for BOTH languages. Light theme. Tap a word
 // for a bottom-sheet definition; pinyin (Chinese) / furigana (Japanese) and
@@ -39,6 +40,15 @@ const STATUS_COLOR = {
   learning: '#CA8A04',
   review: '#3E63DD',
   mastered: '#2F9E6D',
+}
+
+// Plain-language status label for the lookup sheet, so learning state is legible
+// (not conveyed by the color dot alone).
+const STATUS_LABEL = {
+  not_started: 'New word',
+  learning: 'Learning',
+  review: 'Known',
+  mastered: 'Mastered',
 }
 
 // ── Japanese furigana helpers (reading only over kanji) ─────────────────────
@@ -77,14 +87,6 @@ function furiganaParts(word, reading) {
   const coreReading = r.slice(rS, rE)
   if (!core || !coreReading || !hasKanji(core)) return null
   return { lead: w.slice(0, wS), core, coreReading, trail: w.slice(wE) }
-}
-
-function wordStatus(vocabId, userCards) {
-  const card = userCards[vocabId]
-  if (!card) return 'not_started'
-  if (card.is_easy) return 'mastered'
-  if (card.state === 'review') return 'review'
-  return 'learning'
 }
 
 function audioUrlFor(path) {
@@ -170,7 +172,7 @@ function segmentLine(text, vocabMap, segmenter, names, particles) {
   return tokens
 }
 
-function Token({ token, isSelected, showReading, isJapanese, adaptive, status, accent, onSelect }) {
+function Token({ token, isSelected, showReading, isJapanese, adaptive, status, today, accent, onSelect }) {
   const [hover, setHover] = useState(false)
   const reading = token.vocab ? token.vocab.reading : (token.name ? token.name.reading : null)
   // Vocabulary and names carry data; plain word-like tokens are still tappable
@@ -191,6 +193,14 @@ function Token({ token, isSelected, showReading, isJapanese, adaptive, status, a
     if (status === 'not_started') { decoBorder = '2px solid ' + accent + '70'; decoBg = accent + '12' }
     else if (status === 'learning') { decoBorder = '2px solid #CA8A0466' }
     else { faded = true }   // review / mastered → learned, so fade it back
+  }
+  // Words studied today get the strongest, always-on emphasis (independent of
+  // the Known toggle): a SOLID accent underline + tint + bolder weight — three
+  // cues, so it reads as "today's word" without relying on color alone.
+  if (today && token.vocab) {
+    decoBorder = '2px solid ' + accent
+    decoBg = accent + '18'
+    faded = false
   }
   let body = token.text
   if (showReading && reading) {
@@ -220,6 +230,7 @@ function Token({ token, isSelected, showReading, isJapanese, adaptive, status, a
         background: isSelected ? HILITE : (hover ? 'rgba(0,0,0,0.05)' : decoBg),
         boxShadow: isSelected ? '0 0 0 1px rgba(202,138,4,0.45)' : 'none',
         borderBottom: decoBorder,
+        fontWeight: today && token.vocab ? 600 : 'inherit',
         opacity: faded && !hover && !isSelected ? 0.4 : 1,
         transition: 'background 120ms ease, opacity 120ms ease',
       }}
@@ -229,7 +240,7 @@ function Token({ token, isSelected, showReading, isJapanese, adaptive, status, a
   )
 }
 
-export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, profile, track, onBack, nextStory, onNextStory, isRead, onMarkRead }) {
+export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, profile, track, onBack, onHome, nextStory, onNextStory, isRead, onMarkRead, todayWords = [] }) {
   const [selected, setSelected] = useState(null)
   const [showReading, setShowReading] = useState(false)
   const [showKnown, setShowKnown] = useState(false)
@@ -309,13 +320,15 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
 
   // Word-coverage stats over the unique vocabulary that appears in this story.
   // Recomputes only when the parse or the user's card map changes.
-  const { totalUnique, knownCount, learningCount, newCount, knownPct, newWords } = useMemo(() => {
+  const { totalUnique, knownCount, learningCount, newCount, knownPct, newWords, storyWords } = useMemo(() => {
     const vocabSeen = new Map()
     const newWordsMap = new Map()   // not-yet-started words → vocab object (for the recap)
+    const words = new Set()         // distinct vocab words present (for today-word matching)
     parsed.forEach(p => p.tokens.forEach(tk => {
       if (tk.vocab) {
         const st = wordStatus(tk.vocab.id, userCards)
         vocabSeen.set(tk.vocab.id, st)
+        words.add(tk.vocab.word)
         if (st === 'not_started') newWordsMap.set(tk.vocab.id, tk.vocab)
       }
     }))
@@ -332,8 +345,14 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
       newCount: fresh,
       knownPct: vocabSeen.size ? Math.round((known / vocabSeen.size) * 100) : 0,
       newWords: [...newWordsMap.values()],
+      storyWords: [...words],
     }
   }, [parsed, userCards])
+
+  // Which of today's studied words appear in this story — the "3 words from
+  // today appear here" thread that connects the study session to this reading.
+  const todaySet = useMemo(() => new Set(todayWords || []), [todayWords])
+  const todayInStory = useMemo(() => todayWordsInStory(storyWords, todayWords), [storyWords, todayWords])
 
   // Comprehension scoring.
   const answeredCount = Object.keys(answers).length
@@ -564,7 +583,14 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         {totalUnique > 0 && (
           <div style={{ marginBottom: '20px', background: PANEL, border: '1px solid var(--border)', borderRadius: '14px', padding: '12px 16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '9px', gap: '10px' }}>
-              <span style={{ fontSize: '14px', fontWeight: 700, color: TEXT }}>{knownPct}% known</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: TEXT }}>{knownPct}% known</span>
+                {isRead && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 700, color: '#2F9E6D' }}>
+                    <Check size={13} strokeWidth={2.6} color="#2F9E6D" /> Finished
+                  </span>
+                )}
+              </span>
               <span style={{ fontSize: '12px', color: MUTED }}>
                 {newCount} new · {learningCount} learning · {knownCount} known
               </span>
@@ -574,9 +600,18 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               <div style={{ width: Math.round((learningCount / totalUnique) * 100) + '%', background: '#CA8A04' }} />
               <div style={{ width: Math.round((newCount / totalUnique) * 100) + '%', background: accent + '55' }} />
             </div>
+            {todayInStory.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 650, color: accent, marginTop: '10px', lineHeight: 1.5 }}>
+                <Sparkles size={14} strokeWidth={2} color={accent} />
+                <span>
+                  {todayInStory.length} word{todayInStory.length === 1 ? '' : 's'} from today appear{todayInStory.length === 1 ? 's' : ''} here — read to reinforce {todayInStory.length === 1 ? 'it' : 'them'}.
+                </span>
+              </div>
+            )}
             {showKnown && (
               <div style={{ fontSize: '12px', color: MUTED, marginTop: '9px', lineHeight: 1.5 }}>
-                New words are boxed; amber are still learning; words you already know are dimmed so the rest stands out. Tap any word to add it to your deck.
+                New words are boxed; amber are still learning; words you already know are dimmed so the rest stands out.
+                {todayInStory.length > 0 && ' Today’s words carry a bold accent underline.'} Tap any word to add it to your deck.
               </div>
             )}
           </div>
@@ -630,6 +665,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                       isJapanese={isJapanese}
                       adaptive={showKnown}
                       status={tk.vocab ? wordStatus(tk.vocab.id, userCards) : 'not_started'}
+                      today={Boolean(tk.vocab && todaySet.has(tk.vocab.word))}
                       accent={accent}
                       isSelected={Boolean(sel) && sel.lineIndex === li && sel.tokenKey === ti}
                       onSelect={() => selectToken(li, ti, tk)}
@@ -727,37 +763,69 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
           </div>
         )}
 
-        {/* Finish story: records the read + one-time XP. */}
-        <div style={{ marginTop: '20px' }}>
-          {isRead ? (
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              padding: '15px', borderRadius: '16px',
-              background: 'var(--success-bg)', border: '1px solid var(--success-border)',
-              color: 'var(--success)', fontSize: '14px', fontWeight: 750,
-            }}>
-              <Check size={17} strokeWidth={2.3} />
-              Story finished
+        {/* Finish story: records the read + one-time XP. Once finished, this
+            becomes a compact recap that closes the loop and points forward. */}
+        {isRead ? (
+          <div style={{ marginTop: '20px', background: PANEL, border: '1px solid var(--border)', borderRadius: '18px', padding: '20px 20px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '10px' }}>
+              <span style={{ width: '32px', height: '32px', borderRadius: '999px', flexShrink: 0, background: 'var(--success-bg)', border: '1px solid var(--success-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Check size={18} strokeWidth={2.6} color="var(--success)" />
+              </span>
+              <span style={{ fontSize: '17px', fontWeight: 800, color: TEXT }}>Story finished</span>
             </div>
-          ) : (
-            <PrimaryButton onClick={finishStory} icon={Check} disabled={finishing}>
-              Finish story · +{STORY_FINISH_XP} XP
-            </PrimaryButton>
-          )}
-        </div>
-
-        {nextStory && (
-          <button onClick={onNextStory} style={{
-            marginTop: '14px', width: '100%', background: PANEL, border: '1px solid var(--border)',
-            borderRadius: '16px', padding: '18px 20px', cursor: 'pointer', textAlign: 'left',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: TEXT,
-          }}>
-            <span>
-              <span style={{ display: 'block', fontSize: '12px', color: MUTED, fontWeight: 600, marginBottom: '3px' }}>Next story</span>
-              <span style={{ fontSize: '17px', fontWeight: 700, fontFamily: font }}>{nextStory.title}</span>
-            </span>
-            <ChevronRight size={22} color={accent} />
-          </button>
+            <div style={{ fontSize: '14px', color: MUTED, lineHeight: 1.6, marginBottom: '16px' }}>
+              You can read <strong style={{ color: TEXT, fontWeight: 700 }}>{knownPct}%</strong> of this story.
+              {todayInStory.length > 0 && (
+                <> <strong style={{ color: TEXT, fontWeight: 700 }}>{todayInStory.length}</strong> of today’s word{todayInStory.length === 1 ? '' : 's'} appeared here — nicely reinforced.</>
+              )}
+              {newWords.length > 0 && (
+                <> There {newWords.length === 1 ? 'is' : 'are'} <strong style={{ color: TEXT, fontWeight: 700 }}>{newWords.length}</strong> new word{newWords.length === 1 ? '' : 's'} you can add to your deck above.</>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              {nextStory && (
+                <button onClick={onNextStory} style={{
+                  flex: '1 1 200px', minHeight: '48px', borderRadius: '14px', border: 'none',
+                  background: accent, color: '#fff', cursor: 'pointer',
+                  fontSize: '14px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                }}>
+                  Read next story <ChevronRight size={18} strokeWidth={2.2} color="#fff" />
+                </button>
+              )}
+              {onHome && (
+                <button onClick={onHome} style={{
+                  flex: '1 1 200px', minHeight: '48px', borderRadius: '14px',
+                  border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)',
+                  cursor: 'pointer', fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                }}>
+                  <Home size={17} strokeWidth={2} color="var(--text-muted)" /> Back to Today’s Dojo
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div style={{ marginTop: '20px' }}>
+              <PrimaryButton onClick={finishStory} icon={Check} disabled={finishing}>
+                Finish story · +{STORY_FINISH_XP} XP
+              </PrimaryButton>
+            </div>
+            {nextStory && (
+              <button onClick={onNextStory} style={{
+                marginTop: '14px', width: '100%', background: PANEL, border: '1px solid var(--border)',
+                borderRadius: '16px', padding: '18px 20px', cursor: 'pointer', textAlign: 'left',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: TEXT,
+              }}>
+                <span>
+                  <span style={{ display: 'block', fontSize: '12px', color: MUTED, fontWeight: 600, marginBottom: '3px' }}>Next story</span>
+                  <span style={{ fontSize: '17px', fontWeight: 700, fontFamily: font }}>{nextStory.title}</span>
+                </span>
+                <ChevronRight size={22} color={accent} />
+              </button>
+            )}
+          </>
         )}
       </div>
 
@@ -780,7 +848,13 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                   {selWord}
                 </span>
                 {sel.vocab && (
-                  <span style={{ width: '8px', height: '8px', borderRadius: '999px', background: STATUS_COLOR[selStatus], flexShrink: 0 }} />
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '999px', background: STATUS_COLOR[selStatus] }} />
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: STATUS_COLOR[selStatus] }}>{STATUS_LABEL[selStatus]}</span>
+                    {todaySet.has(selWord) && (
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: accent }}>· studied today</span>
+                    )}
+                  </span>
                 )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0, paddingTop: '2px' }}>

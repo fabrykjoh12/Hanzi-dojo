@@ -250,7 +250,7 @@ function EmptyPanel({ icon: Icon, title, text }) {
 
 // ─── MAIN STORIES COMPONENT ────────────────────────────────────────────────
 
-export default function Stories({ session, profile, track, onBack, initialStoryId, onInitialStoryConsumed }) {
+export default function Stories({ session, profile, track, onBack, initialStoryId, initialStoryWords, onInitialStoryConsumed }) {
   const [view, setView] = useState('categories')
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [selectedStory, setSelectedStory] = useState(null)
@@ -269,6 +269,9 @@ export default function Stories({ session, profile, track, onBack, initialStoryI
   // Real size of the current level's deck (set in loadData) — not a hardcoded
   // per-language guess, so the progress denominator is right for every language.
   const [totalWords, setTotalWords] = useState(0)
+  // Today's studied words (from the post-study deep-link), highlighted in the
+  // reader. Captured into state so it survives App clearing the pending value.
+  const [todayWords, setTodayWords] = useState([])
   const CATEGORIES = CATEGORIES_BY_LANGUAGE[track.language] || CATEGORIES_CHINESE
 
   async function loadData() {
@@ -340,6 +343,7 @@ export default function Stories({ session, profile, track, onBack, initialStoryI
         setSelectedCategory(cat)
         setSelectedStory(target)
         setView('reader')
+        if (initialStoryWords && initialStoryWords.length) setTodayWords(initialStoryWords)
       }
       if (onInitialStoryConsumed) onInitialStoryConsumed()
     }
@@ -386,6 +390,8 @@ export default function Stories({ session, profile, track, onBack, initialStoryI
         profile={profile}
         track={track}
         onBack={() => setView('list')}
+        onHome={onBack}
+        todayWords={todayWords}
         nextStory={nextStory}
         onNextStory={() => setSelectedStory(nextStory)}
         isRead={readIds.has(selectedStory.id)}

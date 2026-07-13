@@ -68,6 +68,9 @@ export default function App() {
   // A story to open directly when navigating to Stories (set by the post-study
   // recap's "Read unlocked story" CTA). Consumed and cleared by Stories on load.
   const [pendingStoryId, setPendingStoryId] = useState(null)
+  // Today's studied words to highlight in the reader (set alongside a deep-link
+  // from the post-study recap; consumed by Stories with the story id).
+  const [pendingStoryWords, setPendingStoryWords] = useState(null)
   // True while the user arrived via a password-recovery email link and hasn't
   // set a new password yet (Supabase signs them in and fires PASSWORD_RECOVERY).
   const [recovery, setRecovery] = useState(false)
@@ -150,6 +153,7 @@ export default function App() {
   // ~5 queries, so opening Settings cost a full dashboard reload.)
   const navigate = (key, opts) => {
     if (opts && opts.storyId) setPendingStoryId(opts.storyId)
+    if (opts && opts.todayWords) setPendingStoryWords(opts.todayWords)
     routerNavigate(viewToPath(key))
     if (session && key === 'home') loadProfile(session.user.id)
   }
@@ -335,7 +339,8 @@ export default function App() {
         track={track}
         onBack={() => navigate('home')}
         initialStoryId={pendingStoryId}
-        onInitialStoryConsumed={() => setPendingStoryId(null)}
+        initialStoryWords={pendingStoryWords}
+        onInitialStoryConsumed={() => { setPendingStoryId(null); setPendingStoryWords(null) }}
       />
     )
   } else if (view === 'profile') {
