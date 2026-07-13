@@ -9,9 +9,11 @@ import { CHARACTER_READINGS } from './characterNames'
 import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
-import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, matchName, JP_PARTICLES } from './storyReading'
+import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, matchName, JP_PARTICLES, readingVisibleFor, isDueSoon } from './storyReading'
+import { prefsGet, prefsSet } from './offline'
 import { FIRST_MISSION_READER_HINT, firstMissionCompletion } from './firstMission'
-import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRight, UserRound, Highlighter, Check, X, Sparkles, Home } from 'lucide-react'
+import { track as trackEvent, trackOnce, EVENTS } from './analytics'
+import { ArrowLeft, Bookmark, Volume2, Play, Pause, Languages, ChevronRight, UserRound, Check, X, Sparkles, Home, Sliders, Eye, Clock, Repeat } from 'lucide-react'
 
 // HSKStory-inspired immersion reader for BOTH languages. Light theme. Tap a word
 // for a bottom-sheet definition; pinyin (Chinese) / furigana (Japanese) and
@@ -29,6 +31,24 @@ const SPEAKER_PALETTE = ['#B83A24', '#2E6FB8', '#2F9E6D', '#C2680E', '#7C5CD0', 
 // One-time XP for finishing a story (kept small next to per-card review XP —
 // the real reward for reading is the vocabulary reinforcement itself).
 const STORY_FINISH_XP = 10
+
+// Durable reader preferences (furigana mode, Learning Lens, translation). Stored
+// in the prefs store so a reader's chosen scaffolding survives reloads without a
+// round-trip to the server. Default: scaffold only unknown words, lens off — the
+// page reads like a book until the learner asks for more help.
+const READER_PREFS_KEY = 'reader:prefs'
+const DEFAULT_PREFS = { furiganaMode: 'unknown', lens: false, showEnglish: false }
+
+const FURIGANA_OPTIONS = [
+  { value: 'always', label: 'Always' },
+  { value: 'learning', label: 'Learning' },
+  { value: 'unknown', label: 'Unknown' },
+  { value: 'hidden', label: 'Off' },
+]
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia
+  && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 // Single-kana grammatical particles. They collide with homograph nouns stored in
 // kana (は = topic marker 'wa' vs 歯 'teeth'), so exclude them from word lookup —
@@ -153,57 +173,65 @@ function segmentLine(text, vocabMap, segmenter, names, particles) {
   return tokens
 }
 
-function Token({ token, isSelected, showReading, isJapanese, adaptive, status, today, accent, onSelect }) {
+// Furigana over a token. Kept as a small pure helper so both real vocab (kanji
+// core only) and name/kana readings render consistently, at a legible size.
+function rubyFor(text, reading, isJapanese) {
+  const rt = (r) => <rt style={{ fontSize: '0.56em', color: GOLD, fontWeight: 500, letterSpacing: '0.02em' }}>{r}</rt>
+  if (isJapanese) {
+    const fp = furiganaParts(text, reading)
+    if (fp) return <>{fp.lead}<ruby>{fp.core}{rt(fp.coreReading)}</ruby>{fp.trail}</>
+    return <ruby>{text}{rt(reading)}</ruby>
+  }
+  return <ruby>{text}{rt(reading)}</ruby>
+}
+
+function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens, status, today, accent, onSelect }) {
   const [hover, setHover] = useState(false)
   const reading = token.vocab ? token.vocab.reading : (token.name ? token.name.reading : null)
   // Vocabulary and names carry data; plain word-like tokens are still tappable
   // (hear them / see the sentence). Only punctuation and whitespace are inert.
   const clickable = Boolean(token.vocab || token.name) || isWordlike(token.text)
   if (!clickable) {
-    if (showReading) return <ruby>{token.text}<rt>&nbsp;</rt></ruby>
+    // Reserve an empty furigana row so punctuation sits on the same baseline as
+    // neighboring words that carry a reading (no vertical jitter).
+    if (reserveRuby) return <ruby>{token.text}<rt>&nbsp;</rt></ruby>
     return <span>{token.text}</span>
   }
 
-  // Adaptive reading: spotlight the words the user hasn't learned yet so the eye
-  // lands on the learning frontier. Words you already know are dimmed ("seen
-  // through") so the new and still-learning words visually pop.
+  // Furigana visibility is decided per word from the chosen mode and this word's
+  // learning status (shared, tested rule) — so "Unknown" scaffolds only new
+  // words, "Learning" only in-progress ones, etc. Names carry no card → treated
+  // as not_started, so they read as "unknown" words.
+  const showReading = readingVisibleFor(furiganaMode, status) && Boolean(reading)
+
+  // Learning Lens: quiet the words you know and spotlight the frontier. Today's
+  // words get the strongest, always-on cue (solid underline + tint + weight) so
+  // the study→read thread is visible without relying on color alone.
   let decoBorder = 'none'
   let decoBg = 'transparent'
   let faded = false
-  if (adaptive && token.vocab) {
+  if (lens && token.vocab) {
     if (status === 'not_started') { decoBorder = '2px solid ' + accent + '70'; decoBg = accent + '12' }
     else if (status === 'learning') { decoBorder = '2px solid #CA8A0466' }
     else { faded = true }   // review / mastered → learned, so fade it back
   }
-  // Words studied today get the strongest, always-on emphasis (independent of
-  // the Known toggle): a SOLID accent underline + tint + bolder weight — three
-  // cues, so it reads as "today's word" without relying on color alone.
   if (today && token.vocab) {
     decoBorder = '2px solid ' + accent
     decoBg = accent + '18'
     faded = false
   }
+
   let body = token.text
-  if (showReading && reading) {
-    if (isJapanese) {
-      const fp = furiganaParts(token.text, reading)
-      // Names (no kanji core) and kana words just show the reading over the whole token.
-      body = fp
-        ? <>{fp.lead}<ruby>{fp.core}<rt style={{ fontSize: '0.5em', color: GOLD, fontWeight: 500 }}>{fp.coreReading}</rt></ruby>{fp.trail}</>
-        : (token.name
-            ? <ruby>{token.text}<rt style={{ fontSize: '0.42em', color: GOLD, fontWeight: 500 }}>{reading}</rt></ruby>
-            : token.text)
-    } else {
-      body = <ruby>{token.text}<rt style={{ fontSize: '0.42em', color: GOLD, fontWeight: 500 }}>{reading}</rt></ruby>
-    }
-  } else if (showReading) {
-    // Clickable word with no reading (grammar / out-of-list): keep an empty
-    // furigana row so its baseline lines up with words that do show a reading.
+  if (showReading) {
+    body = rubyFor(token.text, reading, isJapanese)
+  } else if (reserveRuby) {
+    // No reading shown for this word, but the line reserves furigana space — keep
+    // an empty row so its baseline lines up with words that do show a reading.
     body = <ruby>{token.text}<rt>&nbsp;</rt></ruby>
   }
   return (
     <span
-      onClick={onSelect}
+      onClick={(e) => { e.stopPropagation(); onSelect() }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
@@ -223,10 +251,12 @@ function Token({ token, isSelected, showReading, isJapanese, adaptive, status, t
 
 export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, profile, track, onBack, onHome, nextStory, onNextStory, isRead, onMarkRead, todayWords = [], firstMission = false }) {
   const [selected, setSelected] = useState(null)
-  const [showReading, setShowReading] = useState(false)
-  const [showKnown, setShowKnown] = useState(false)
-  const [showEnglish, setShowEnglish] = useState(false)
+  const [furiganaMode, setFuriganaMode] = useState(DEFAULT_PREFS.furiganaMode)
+  const [lens, setLens] = useState(DEFAULT_PREFS.lens)
+  const [showEnglish, setShowEnglish] = useState(DEFAULT_PREFS.showEnglish)
   const [showSentence, setShowSentence] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [focusedLine, setFocusedLine] = useState(null)   // sentence-focus: dim the rest
   const [speaking, setSpeaking] = useState(false)
   const [speakingLine, setSpeakingLine] = useState(-1)   // which line the TTS is reading (for read-along highlight)
   const [rate, setRate] = useState(0.85)                 // TTS playback rate
@@ -239,6 +269,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const [adding, setAdding] = useState(false)
   const wordAudioRef = useRef(null)
   const storyAudioRef = useRef(null)
+  const settingsAnchorRef = useRef(null)
 
   const theme = languageTheme(track.language)
   const isJapanese = track.language === 'japanese'
@@ -261,6 +292,38 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+
+  // Restore saved reader preferences once on mount, then persist any change.
+  // `prefsReady` gates the save effect so the initial restore doesn't immediately
+  // re-write defaults over what we just loaded. Degrades to defaults if the prefs
+  // store is unavailable (never blocks reading).
+  const prefsReady = useRef(false)
+  useEffect(() => {
+    let live = true
+    prefsGet(READER_PREFS_KEY).then((saved) => {
+      if (live && saved && typeof saved === 'object') {
+        if (FURIGANA_OPTIONS.some(o => o.value === saved.furiganaMode)) setFuriganaMode(saved.furiganaMode)
+        if (typeof saved.lens === 'boolean') setLens(saved.lens)
+        if (typeof saved.showEnglish === 'boolean') setShowEnglish(saved.showEnglish)
+      }
+    }).finally(() => { prefsReady.current = true })
+    return () => { live = false }
+  }, [])
+  useEffect(() => {
+    if (!prefsReady.current) return
+    prefsSet(READER_PREFS_KEY, { furiganaMode, lens, showEnglish })
+  }, [furiganaMode, lens, showEnglish])
+
+  // Close the desktop settings popover on an outside click (the mobile sheet has
+  // its own tap-to-close scrim, so this only matters on desktop).
+  useEffect(() => {
+    if (!settingsOpen) return undefined
+    const onDown = (e) => {
+      if (settingsAnchorRef.current && !settingsAnchorRef.current.contains(e.target)) setSettingsOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [settingsOpen])
 
   useEffect(() => () => {
     try { window.speechSynthesis.cancel() } catch { /* noop */ }
@@ -310,15 +373,28 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   // ranks with, so the "% known" here matches the recap exactly. It re-parses
   // the story text with the identical name/particle/speaker rules `parsed` uses
   // for rendering, so the panel number always agrees with the highlighted words.
-  const { totalUnique, knownCount, learningCount, newCount, knownPct, newWords, storyWords } = useMemo(
+  const { totalUnique, knownCount, learningCount, newCount, knownPct, newWords, storyWords, counts } = useMemo(
     () => calculateStoryReadability({ content: story.content, vocabMap, cards: userCards, language: track.language }),
     [story.content, vocabMap, userCards, track.language]
   )
+
+  // Furigana space is reserved on every line while any mode other than "Off" is
+  // active, so readings appearing/disappearing per word never shift the baseline.
+  const reserveRuby = furiganaMode !== 'hidden'
+  const reduceMotion = useMemo(() => prefersReducedMotion(), [])
 
   // Which of today's studied words appear in this story — the "3 words from
   // today appear here" thread that connects the study session to this reading.
   const todaySet = useMemo(() => new Set(todayWords || []), [todayWords])
   const todayInStory = useMemo(() => todayWordsInStory(storyWords, todayWords), [storyWords, todayWords])
+
+  // Analytics: story opened (once per story). Fires with the current readability
+  // so drop-off vs. difficulty is analyzable. Intentionally keyed on story.id.
+  useEffect(() => {
+    trackEvent(EVENTS.STORY_OPENED, { tier: story.tier, known_pct: knownPct })
+    if (firstMission) trackOnce(EVENTS.FIRST_STORY_OPENED, { known_pct: knownPct })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story.id])
 
   // Comprehension scoring.
   const answeredCount = Object.keys(answers).length
@@ -343,6 +419,8 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
       await enqueueStoryRead({ userId: session.user.id, storyId: story.id, xpDelta: STORY_FINISH_XP })
       if (onMarkRead) onMarkRead(story.id)
     }
+    trackEvent(EVENTS.STORY_COMPLETED, { tier: story.tier, known_pct: knownPct })
+    if (firstMission) trackOnce(EVENTS.FIRST_STORY_COMPLETED, { known_pct: knownPct })
     setFinishing(false)
   }
 
@@ -489,8 +567,16 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
 
   const selectToken = (lineIndex, tokenKey, token) => {
     setShowSentence(false)
+    setFocusedLine(lineIndex)   // tapping a word also focuses its sentence
     setSelected({ lineIndex, tokenKey, vocab: token.vocab || null, name: token.name || null, text: token.text })
   }
+
+  // Sentence focus: tapping a line's whitespace (not a word) fades the rest of
+  // the story so the current sentence carries the eye — tap it again to release.
+  const toggleFocus = (lineIndex) => {
+    setFocusedLine(prev => (prev === lineIndex ? null : lineIndex))
+  }
+  const clearReading = () => { setSelected(null); setFocusedLine(null) }
 
   const sel = selected
   const isName = Boolean(sel && sel.name)
@@ -498,6 +584,12 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const selWord = sel ? (isName ? sel.name.word : (sel.vocab ? sel.vocab.word : sel.text)) : ''
   const selStatus = sel && sel.vocab ? wordStatus(sel.vocab.id, userCards) : 'not_started'
   const selInDeck = sel && sel.vocab ? Boolean(userCards[sel.vocab.id]) : false
+  // Context chips in the lookup sheet, all from data already in memory (no query):
+  // how often the word appears here, whether it was studied today, and whether a
+  // review is coming up soon.
+  const selCount = sel && sel.vocab ? (counts.get(sel.vocab.word) || 0) : 0
+  const selCard = sel && sel.vocab ? userCards[sel.vocab.id] : null
+  const selDueSoon = Boolean(selCard && selStatus !== 'not_started' && isDueSoon(selCard.due_at))
   const bottomOffset = isMobile ? 'calc(62px + env(safe-area-inset-bottom))' : '0px'
 
   return (
@@ -509,11 +601,12 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         </>
       )}
 
-      {/* Top bar */}
+      {/* Top bar — z-index above the reading column so the desktop settings
+          popover (a descendant) is never painted under the story text. */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         gap: '12px', padding: isMobile ? '16px 16px 6px' : '22px 28px 8px',
-        maxWidth: '900px', margin: '0 auto', position: 'relative', zIndex: 2,
+        maxWidth: '900px', margin: '0 auto', position: 'relative', zIndex: 26,
       }}>
         <button onClick={onBack} style={ghostBtn} aria-label="Back to stories">
           <ArrowLeft size={18} strokeWidth={2} color={MUTED} />
@@ -522,19 +615,25 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         <div style={{ color: MUTED, fontSize: '13px', fontWeight: 600, textAlign: 'center', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {levelLabel} · <span style={{ color: 'var(--text-muted)' }}>{story.title}</span>
         </div>
-        <div style={{ display: 'flex', gap: '6px' }}>
-          <TopToggle active={showReading} onClick={() => setShowReading(v => !v)} icon={Type} label={readingLabel} accent={accent} isMobile={isMobile} />
-          <TopToggle active={showKnown} onClick={() => setShowKnown(v => !v)} icon={Highlighter} label="Known" accent={accent} isMobile={isMobile} />
-          {story.english_content && (
-            <TopToggle active={showEnglish} onClick={() => setShowEnglish(v => !v)} icon={Languages} label="EN" accent={accent} isMobile={isMobile} />
+        <div ref={settingsAnchorRef} style={{ display: 'flex', gap: '6px', position: 'relative' }}>
+          <TopToggle active={lens} onClick={() => setLens(v => !v)} icon={Eye} label="Lens" accent={accent} isMobile={isMobile} />
+          <TopToggle active={settingsOpen} onClick={() => setSettingsOpen(v => !v)} icon={Sliders} label={isMobile ? '' : 'Reader'} accent={accent} isMobile={isMobile} aria-label="Reader settings" />
+          {settingsOpen && !isMobile && (
+            <ReaderSettings
+              furiganaMode={furiganaMode} setFuriganaMode={setFuriganaMode}
+              lens={lens} setLens={setLens}
+              showEnglish={showEnglish} setShowEnglish={setShowEnglish}
+              hasEnglish={Boolean(story.english_content)} readingLabel={readingLabel}
+              accent={accent} onClose={() => setSettingsOpen(false)} isMobile={false}
+            />
           )}
         </div>
       </div>
 
       {/* Reading column */}
       <div style={{
-        maxWidth: '740px', margin: '0 auto', position: 'relative', zIndex: 2,
-        padding: isMobile ? '14px 18px 200px' : '22px 28px 220px',
+        maxWidth: '700px', margin: '0 auto', position: 'relative', zIndex: 2,
+        padding: isMobile ? '14px 20px 200px' : '22px 28px 220px',
       }}>
         {story.image_path && (
           <div style={{
@@ -575,9 +674,9 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                 </span>
               </div>
             )}
-            {showKnown && (
+            {lens && (
               <div style={{ fontSize: '12px', color: MUTED, marginTop: '9px', lineHeight: 1.5 }}>
-                New words are boxed; amber are still learning; words you already know are dimmed so the rest stands out.
+                <strong style={{ color: TEXT, fontWeight: 650 }}>Learning Lens on.</strong> New words are boxed; amber are still learning; words you already know fade back so the rest stands out.
                 {todayInStory.length > 0 && ' Today’s words carry a bold accent underline.'} Tap any word to add it to your deck.
               </div>
             )}
@@ -592,6 +691,10 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
           const showLabel = Boolean(speaker) && speakerChanged
           const topGap = li === 0 ? 0 : (speakerChanged ? (isMobile ? '18px' : '24px') : (isMobile ? '7px' : '10px'))
           const rule = speaker ? speakerColors[speaker] : null
+          // Sentence focus: when a line is focused, fade the others back so the
+          // current sentence carries the eye. Not a blur — just a calm dim.
+          const dimmed = focusedLine !== null && focusedLine !== li
+          const focusTransition = reduceMotion ? 'none' : 'opacity 220ms ease'
           return (
             <div key={li} style={{ marginTop: topGap }}>
               {showLabel && (
@@ -599,25 +702,34 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                   onClick={names[speaker] ? () => selectToken(li, 'sp', { name: { word: speaker, reading: names[speaker] } }) : undefined}
                   style={{
                     fontSize: '12.5px', fontWeight: 800, letterSpacing: '0.4px',
-                    color: speakerColors[speaker], marginBottom: '4px',
+                    color: speakerColors[speaker], marginBottom: '5px',
                     fontFamily: font, display: 'inline-block',
                     paddingLeft: isMobile ? '12px' : '16px',
                     cursor: names[speaker] ? 'pointer' : 'default',
+                    opacity: dimmed ? 0.32 : 1, transition: focusTransition,
                   }}
                 >
                   {speaker}
                 </div>
               )}
-              <div style={{
-                // Dialogue gets a subtle speaker-colored left rule + indent so
-                // it reads distinctly from narration without a label on every line.
-                borderLeft: rule ? '3px solid ' + rule + '66' : 'none',
-                paddingLeft: rule ? (isMobile ? '11px' : '15px') : (isMobile ? '2px' : '4px'),
-              }}>
+              <div
+                onClick={() => toggleFocus(li)}
+                style={{
+                  // Dialogue gets a subtle speaker-colored left rule + indent so
+                  // it reads distinctly from narration without a label on every line.
+                  borderLeft: rule ? '3px solid ' + rule + '66' : 'none',
+                  paddingLeft: rule ? (isMobile ? '11px' : '15px') : (isMobile ? '2px' : '4px'),
+                  opacity: dimmed ? 0.32 : 1, transition: focusTransition,
+                  // Cursor stays default so the page reads like text, not a grid of
+                  // buttons; words (Token) show the pointer that invites a tap.
+                }}
+              >
                 <p style={{
                   margin: 0,
-                  fontSize: isMobile ? '19px' : '22px', lineHeight: showReading ? 1.95 : 1.7,
+                  fontSize: isMobile ? '20px' : '22px',
+                  lineHeight: reserveRuby ? 2.15 : 1.9,
                   fontFamily: font, color: TEXT, fontWeight: 400,
+                  letterSpacing: isJapanese || isChinese ? '0.01em' : 'normal',
                   // Read-along highlight: the line the TTS is currently speaking.
                   background: li === speakingLine ? HILITE : 'transparent',
                   borderRadius: '8px',
@@ -628,9 +740,10 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                     <Token
                       key={ti}
                       token={tk}
-                      showReading={showReading}
+                      furiganaMode={furiganaMode}
+                      reserveRuby={reserveRuby}
                       isJapanese={isJapanese}
-                      adaptive={showKnown}
+                      lens={lens}
                       status={tk.vocab ? wordStatus(tk.vocab.id, userCards) : 'not_started'}
                       today={Boolean(tk.vocab && todaySet.has(tk.vocab.word))}
                       accent={accent}
@@ -640,7 +753,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                   ))}
                 </p>
                 {showEnglish && englishLines[li] && (
-                  <p style={{ margin: '5px 0 0', fontSize: isMobile ? '13.5px' : '15px', lineHeight: 1.5, color: MUTED, fontStyle: 'italic' }}>
+                  <p style={{ margin: '6px 0 0', fontSize: isMobile ? '14px' : '15px', lineHeight: 1.55, color: MUTED, fontStyle: 'italic' }}>
                     {speaker ? splitSpeaker(englishLines[li]).text : englishLines[li]}
                   </p>
                 )}
@@ -735,7 +848,12 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         {isRead ? (
           <div style={{ marginTop: '20px', background: PANEL, border: '1px solid var(--border)', borderRadius: '18px', padding: '20px 20px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '10px' }}>
-              <span style={{ width: '32px', height: '32px', borderRadius: '999px', flexShrink: 0, background: 'var(--success-bg)', border: '1px solid var(--success-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{
+                width: '32px', height: '32px', borderRadius: '999px', flexShrink: 0,
+                background: 'var(--success-bg)', border: '1px solid var(--success-border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                animation: reduceMotion ? 'none' : 'hd-pop-check 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+              }}>
                 <Check size={18} strokeWidth={2.6} color="var(--success)" />
               </span>
               <span style={{ fontSize: '17px', fontWeight: 800, color: TEXT }}>Story finished</span>
@@ -801,7 +919,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         )}
       </div>
 
-      {/* Word bottom sheet */}
+      {/* Word lookup sheet */}
       {sel && (
         <div style={{
           position: 'fixed', left: 0, right: 0, bottom: 'calc(64px + ' + bottomOffset + ')', zIndex: 25,
@@ -809,63 +927,66 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         }}>
           <div style={{
             width: '100%', maxWidth: '760px', background: PANEL, border: '1px solid var(--border)',
-            borderRadius: '18px', boxShadow: '0 -10px 40px rgba(24,24,27,0.14)', padding: '14px 18px 16px',
+            borderRadius: '20px', boxShadow: '0 -12px 44px rgba(24,24,27,0.16)', padding: '12px 18px 16px',
             pointerEvents: 'auto',
+            animation: reduceMotion ? 'none' : 'hd-sheet-up 240ms cubic-bezier(0.22, 1, 0.36, 1)',
           }}>
-            <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: '#D4D4D8', margin: '0 auto 12px' }} />
+            <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: 'var(--border)', margin: '0 auto 12px' }} />
 
+            {/* Header: word + reading on the left, actions on the right */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0, flex: 1, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '24px', fontWeight: 800, color: accent, fontFamily: font, lineHeight: 1.2, overflowWrap: 'anywhere' }}>
-                  {selWord}
-                </span>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '26px', fontWeight: 800, color: accent, fontFamily: font, lineHeight: 1.15, overflowWrap: 'anywhere' }}>
+                    {selWord}
+                  </span>
+                  {!isPlain && (
+                    <span style={{ fontSize: '17px', color: GOLD, fontWeight: 600 }}>
+                      {isName ? sel.name.reading : sel.vocab.reading}
+                    </span>
+                  )}
+                </div>
                 {sel.vocab && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
                     <span style={{ width: '8px', height: '8px', borderRadius: '999px', background: STATUS_COLOR[selStatus] }} />
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: STATUS_COLOR[selStatus] }}>{STATUS_LABEL[selStatus]}</span>
-                    {todaySet.has(selWord) && (
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: accent }}>· studied today</span>
-                    )}
+                    <span style={{ fontSize: '12.5px', fontWeight: 700, color: STATUS_COLOR[selStatus] }}>{STATUS_LABEL[selStatus]}</span>
+                  </span>
+                )}
+                {(isName || isPlain) && (
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '5px', marginTop: '6px',
+                    fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '3px 9px',
+                    color: isName ? accent : MUTED,
+                    border: '1px solid ' + (isName ? accent + '40' : 'var(--border)'),
+                    background: isName ? accent + '12' : 'transparent',
+                  }}>
+                    {isName && <UserRound size={12} strokeWidth={2.2} color={accent} />}
+                    {isName ? 'Name' : 'Word'}
                   </span>
                 )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0, paddingTop: '2px' }}>
-                <span style={{
-                  fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '3px 9px',
-                  color: isName ? accent : MUTED,
-                  border: '1px solid ' + (isName ? accent + '40' : 'var(--border)'),
-                  background: isName ? accent + '12' : 'transparent',
-                  display: 'inline-flex', alignItems: 'center', gap: '5px',
-                }}>
-                  {isName && <UserRound size={12} strokeWidth={2.2} color={accent} />}
-                  {isName ? 'Name' : (isPlain ? 'Word' : levelLabel)}
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
                 {sel.vocab && (
-                  <button onClick={() => !selInDeck && addToDeck(sel.vocab)} aria-label="Add to deck"
-                    style={{ background: 'none', border: 'none', cursor: selInDeck ? 'default' : 'pointer', padding: '4px', display: 'flex' }}>
-                    <Bookmark size={20} strokeWidth={2} color={selInDeck ? accent : MUTED} fill={selInDeck ? accent : 'none'} />
+                  <button onClick={() => !selInDeck && addToDeck(sel.vocab)} aria-label={selInDeck ? 'In your deck' : 'Add to deck'} title={selInDeck ? 'In your deck' : 'Add to deck'}
+                    style={{ background: 'none', border: 'none', cursor: selInDeck ? 'default' : 'pointer', minWidth: '40px', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Bookmark size={21} strokeWidth={2} color={selInDeck ? accent : MUTED} fill={selInDeck ? accent : 'none'} />
                   </button>
                 )}
                 {/* Always pronounceable: recorded vocab audio when we have it, else speech synthesis. */}
                 <button
                   onClick={() => (sel.vocab && sel.vocab.audio_path ? playWord(sel.vocab.audio_path) : speakWord(selWord))}
                   aria-label="Play audio"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex' }}>
-                  <Volume2 size={20} strokeWidth={2} color={MUTED} />
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', minWidth: '40px', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Volume2 size={21} strokeWidth={2} color={MUTED} />
                 </button>
-                <button onClick={() => setSelected(null)} aria-label="Close"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', color: MUTED, fontSize: '18px', lineHeight: 1 }}>
-                  ✕
+                <button onClick={clearReading} aria-label="Close"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', minWidth: '40px', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED }}>
+                  <X size={20} strokeWidth={2.2} color={MUTED} />
                 </button>
               </div>
             </div>
 
-            {!isPlain && (
-              <div style={{ fontSize: '17px', color: GOLD, fontWeight: 600, marginTop: '6px' }}>
-                {isName ? sel.name.reading : sel.vocab.reading}
-              </div>
-            )}
-            <div style={{ fontSize: '15px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
+            <div style={{ fontSize: '15.5px', color: 'var(--text)', marginTop: '10px', lineHeight: 1.5, fontWeight: 500 }}>
               {isName
                 ? 'Proper noun — a character’s name.'
                 : (isPlain
@@ -873,14 +994,23 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                     : cleanMeaning(sel.vocab.meaning))}
             </div>
 
+            {/* Context chips — all from data already loaded, no extra queries */}
+            {sel.vocab && (selCount > 0 || todaySet.has(selWord) || selDueSoon) && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '11px' }}>
+                {selCount > 0 && <MetaChip icon={Repeat} accent={accent}>{selCount === 1 ? 'Appears once here' : 'Appears ' + selCount + '× here'}</MetaChip>}
+                {todaySet.has(selWord) && <MetaChip icon={Sparkles} accent={accent} strong>Studied today</MetaChip>}
+                {selDueSoon && <MetaChip icon={Clock} accent={accent}>Review due soon</MetaChip>}
+              </div>
+            )}
+
             {story.english_content && englishLines[sel.lineIndex] && (
               <div style={{ marginTop: '12px', borderTop: '1px solid var(--border)', paddingTop: '10px' }}>
                 <button onClick={() => setShowSentence(v => !v)}
-                  style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: MUTED, fontSize: '13px', fontWeight: 600, padding: 0 }}>
+                  style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: MUTED, fontSize: '13px', fontWeight: 600, padding: '4px 0', minHeight: '32px' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
                     <Languages size={15} strokeWidth={2} color={MUTED} /> Translate sentence
                   </span>
-                  <ChevronRight size={16} color={MUTED} style={{ transform: showSentence ? 'rotate(90deg)' : 'none', transition: 'transform 150ms' }} />
+                  <ChevronRight size={16} color={MUTED} style={{ transform: showSentence ? 'rotate(90deg)' : 'none', transition: reduceMotion ? 'none' : 'transform 150ms' }} />
                 </button>
                 {showSentence && (
                   <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '8px', lineHeight: 1.55 }}>
@@ -889,6 +1019,33 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Reader settings — bottom sheet on mobile (with a tap-to-close scrim) */}
+      {settingsOpen && isMobile && (
+        <div
+          onClick={() => setSettingsOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 30, background: 'rgba(24,24,27,0.28)', display: 'flex', alignItems: 'flex-end' }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%', background: PANEL, borderTopLeftRadius: '22px', borderTopRightRadius: '22px',
+              borderTop: '1px solid var(--border)', boxShadow: '0 -12px 44px rgba(24,24,27,0.20)',
+              padding: '12px 18px calc(20px + env(safe-area-inset-bottom))',
+              animation: reduceMotion ? 'none' : 'hd-sheet-up 260ms cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+          >
+            <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: 'var(--border)', margin: '0 auto 14px' }} />
+            <ReaderSettings
+              furiganaMode={furiganaMode} setFuriganaMode={setFuriganaMode}
+              lens={lens} setLens={setLens}
+              showEnglish={showEnglish} setShowEnglish={setShowEnglish}
+              hasEnglish={Boolean(story.english_content)} readingLabel={readingLabel}
+              accent={accent} onClose={() => setSettingsOpen(false)} isMobile
+            />
           </div>
         </div>
       )}
@@ -929,17 +1086,131 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   )
 }
 
-function TopToggle({ active, onClick, icon: Icon, label, accent, isMobile }) {
+function TopToggle({ active, onClick, icon: Icon, label, accent, isMobile, ...rest }) {
   return (
-    <button onClick={onClick} style={{
-      display: 'flex', alignItems: 'center', gap: '6px',
+    <button onClick={onClick} {...rest} style={{
+      display: 'flex', alignItems: 'center', gap: label ? '6px' : 0,
       background: active ? accent + '1A' : 'transparent',
       border: '1px solid ' + (active ? accent + '66' : 'var(--border)'),
       color: active ? accent : MUTED, borderRadius: '999px',
-      padding: isMobile ? '6px 10px' : '7px 13px', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
+      minHeight: '36px', padding: isMobile ? (label ? '6px 12px' : '6px 9px') : (label ? '7px 13px' : '7px 10px'),
+      cursor: 'pointer', fontSize: '13px', fontWeight: 600,
     }}>
       <Icon size={15} strokeWidth={2} />
       {label}
+    </button>
+  )
+}
+
+// A small labelled chip for the lookup sheet's context row (occurrences, studied
+// today, review due). `strong` gives today's-word chips the accent treatment.
+function MetaChip({ icon: Icon, children, accent, strong = false }) {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: '5px',
+      fontSize: '12px', fontWeight: 650, borderRadius: '999px', padding: '4px 10px',
+      color: strong ? accent : 'var(--text-muted)',
+      background: strong ? accent + '14' : 'var(--surface-2)',
+      border: '1px solid ' + (strong ? accent + '3A' : 'var(--border)'),
+    }}>
+      <Icon size={13} strokeWidth={2} color={strong ? accent : 'var(--text-muted)'} />
+      {children}
+    </span>
+  )
+}
+
+// Reader preferences: furigana mode, Learning Lens, translation. Shared by the
+// desktop popover and the mobile bottom sheet. Kept presentational — all state
+// lives in the reader so the choices persist and never reload the story.
+function ReaderSettings({ furiganaMode, setFuriganaMode, lens, setLens, showEnglish, setShowEnglish, hasEnglish, readingLabel, accent, onClose, isMobile }) {
+  const wrap = isMobile
+    ? { width: '100%' }
+    : {
+        position: 'absolute', top: 'calc(100% + 10px)', right: 0, zIndex: 30, width: '280px',
+        background: PANEL, border: '1px solid var(--border)', borderRadius: '16px',
+        boxShadow: '0 14px 44px rgba(24,24,27,0.18)', padding: '16px',
+        animation: prefersReducedMotion() ? 'none' : 'hd-pop-in 160ms ease',
+      }
+  return (
+    <div style={wrap} role="menu" aria-label="Reader settings">
+      {/* Furigana mode */}
+      <div style={{ fontSize: '12px', fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '9px' }}>
+        {readingLabel}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px' }}>
+        {FURIGANA_OPTIONS.map(opt => {
+          const on = furiganaMode === opt.value
+          return (
+            <button key={opt.value} onClick={() => setFuriganaMode(opt.value)} role="menuitemradio" aria-checked={on}
+              style={{
+                minHeight: '42px', borderRadius: '11px', cursor: 'pointer',
+                fontSize: '13.5px', fontWeight: on ? 750 : 600, fontFamily: 'Inter, sans-serif',
+                color: on ? accent : 'var(--text)',
+                background: on ? accent + '14' : 'var(--surface-2)',
+                border: '1px solid ' + (on ? accent + '66' : 'var(--border)'),
+              }}>
+              {opt.label}
+            </button>
+          )
+        })}
+      </div>
+      <div style={{ fontSize: '11.5px', color: MUTED, marginTop: '8px', lineHeight: 1.45 }}>
+        Show readings for every word, only the ones you’re still learning, only new words, or never.
+      </div>
+
+      {/* Learning Lens */}
+      <div style={{ height: '1px', background: 'var(--border)', margin: '15px 0' }} />
+      <SettingRow
+        label="Learning Lens"
+        hint="Spotlight new and learning words; quiet the ones you know."
+        on={lens} onToggle={() => setLens(v => !v)} accent={accent}
+      />
+
+      {/* Translation */}
+      {hasEnglish && (
+        <>
+          <div style={{ height: '1px', background: 'var(--border)', margin: '15px 0' }} />
+          <SettingRow
+            label="Show translation"
+            hint="Print the English line under each sentence."
+            on={showEnglish} onToggle={() => setShowEnglish(v => !v)} accent={accent}
+          />
+        </>
+      )}
+
+      {isMobile && (
+        <button onClick={onClose} style={{
+          marginTop: '18px', width: '100%', minHeight: '46px', borderRadius: '13px', border: 'none',
+          background: accent, color: '#fff', fontSize: '14px', fontWeight: 750, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+        }}>
+          Done
+        </button>
+      )}
+    </div>
+  )
+}
+
+// A labelled switch row used inside ReaderSettings. The track/knob is a plain
+// button so it's a large, obvious tap target (mobile-first).
+function SettingRow({ label, hint, on, onToggle, accent }) {
+  return (
+    <button onClick={onToggle} role="switch" aria-checked={on} aria-label={label}
+      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: 'block', fontSize: '14.5px', fontWeight: 700, color: 'var(--text)' }}>{label}</span>
+        <span style={{ display: 'block', fontSize: '11.5px', color: MUTED, marginTop: '2px', lineHeight: 1.4 }}>{hint}</span>
+      </span>
+      <span style={{
+        flexShrink: 0, width: '46px', height: '28px', borderRadius: '999px', position: 'relative',
+        background: on ? accent : 'var(--surface-2)', border: '1px solid ' + (on ? accent : 'var(--border)'),
+        transition: 'background 160ms ease',
+      }}>
+        <span style={{
+          position: 'absolute', top: '2px', left: on ? '20px' : '2px', width: '22px', height: '22px',
+          borderRadius: '999px', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+          transition: 'left 160ms cubic-bezier(0.22, 1, 0.36, 1)',
+        }} />
+      </span>
     </button>
   )
 }

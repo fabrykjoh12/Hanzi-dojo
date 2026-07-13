@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Auth from './Auth'
+import { track, EVENTS } from './analytics'
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
@@ -168,6 +169,8 @@ export default function Landing() {
   const [mode, setMode] = useState('landing')   // 'landing' | 'auth'
   const isMobile = useIsMobile()
   const languages = languageList()
+
+  useEffect(() => { track(EVENTS.LANDING_VIEWED) }, [])
 
   if (mode === 'auth') {
     return (

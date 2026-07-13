@@ -5,6 +5,7 @@ import { languageList } from './languageTheme'
 import { isMastered } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import { ArrowLeft, ArrowRight, Globe2, Plus } from 'lucide-react'
+import { track, EVENTS } from './analytics'
 
 // Built from the shared language config so a new language shows up here for free.
 const LANGUAGES = languageList().map(t => ({
@@ -311,6 +312,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
       .from('profiles')
       .update({ active_language: langCode })
       .eq('id', session.user.id)
+    if (langCode !== profile.active_language) track(EVENTS.LANGUAGE_SWITCHED, { from: profile.active_language, to: langCode })
     onSwitch(langCode)
   }
 
@@ -354,6 +356,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
       .update({ active_language: lang.code })
       .eq('id', session.user.id)
 
+    if (lang.code !== profile.active_language) track(EVENTS.LANGUAGE_SWITCHED, { from: profile.active_language, to: lang.code })
     onSwitch(lang.code)
   }
 

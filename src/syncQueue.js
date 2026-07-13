@@ -26,6 +26,13 @@ export function enqueueStoryRead(op) {
   return outboxAdd({ kind: 'storyRead', ...op })
 }
 
+// Analytics events queued while offline. Reuses this outbox (no second queue);
+// on flush they're best-effort inserted and ALWAYS dropped — analytics is lossy
+// by design and must never wedge the critical grade/XP writes.
+export function enqueueAnalytics(event) {
+  return outboxAdd({ kind: 'analytics', event })
+}
+
 export function pendingWrites() {
   return outboxCount()
 }
@@ -67,6 +74,14 @@ export function reconcileAward(prevXp, delta, prevFreezes) {
 // ── Replay one op. Returns true if it may be removed from the outbox. ────────
 async function replayOp(supabase, op) {
   if (!op) return true // unknown/empty — drop it, don't wedge the queue
+  if (op.kind === 'analytics') {
+    // Best-effort, and ALWAYS drop (return true) — never retry/block on analytics.
+    try {
+      const p = supabase.from('analytics_events').insert(op.event)
+      if (p && typeof p.then === 'function') await p
+    } catch { /* lossy by design */ }
+    return true
+  }
   if (op.kind === 'storyRead') {
     const { error } = await supabase
       .from('story_reads')

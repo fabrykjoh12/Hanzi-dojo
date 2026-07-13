@@ -21,6 +21,7 @@ import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
 import { buildStudyQueue, reinsertSoon, queueSeed } from './studyQueue'
 import { isFirstRunSession, firstRunNewTarget } from './firstRun'
 import { firstMissionCardHint } from './firstMission'
+import { track as trackEvent, trackOnce, EVENTS } from './analytics'
 import SessionRecap from './SessionRecap'
 import ChatMission from './ChatMission'
 import { buildMissionOffer } from './missionOffer'
@@ -223,6 +224,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // Cards graded this session (reactive), so the guided first-mission hint knows
   // which card the user is on. Only consulted during the first run.
   const [studied, setStudied] = useState(0)
+  // Once-per-session analytics guards (session-scoped, not app-load-scoped).
+  const analyticsRef = useRef({ started: false, completed: false })
   // Word-to-World chat mission: the level's vocab (for tap lookups) and a record
   // of which words were touched this session, so the mission can reuse today's
   // learned / weak / review words.
@@ -302,6 +305,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       setQueue(weakQueue)
       setDone(weakQueue.length === 0)
       setLoading(false)
+      if (weakQueue.length > 0 && !analyticsRef.current.started) {
+        analyticsRef.current.started = true
+        trackEvent(EVENTS.STUDY_SESSION_STARTED, { mode: 'weak' })
+      }
       return
     }
 
@@ -351,6 +358,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     setQueue(newQueue)
     setDone(newQueue.length === 0)
     setLoading(false)
+    if (newQueue.length > 0 && !analyticsRef.current.started) {
+      analyticsRef.current.started = true
+      trackEvent(EVENTS.STUDY_SESSION_STARTED, { mode: 'review', first_run: isFirst })
+    }
   }
 
   // Lifetime stats that feed achievements (cross-language, like Profile).
@@ -500,10 +511,29 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     )
     evaluateAchievements(after)
       .filter(a => a.earned && !beforeEarned.has(a.id))
-      .forEach(a => toast({ kind: 'seal', title: 'Seal earned — ' + a.title, body: a.desc }))
+      .forEach(a => {
+        toast({ kind: 'seal', title: 'Seal earned — ' + a.title, body: a.desc })
+        trackEvent(EVENTS.ACHIEVEMENT_UNLOCKED, { id: a.id })
+      })
   }
 
   useEffect(() => {
+    // Session-completed analytics — once per session, with the metrics.
+    if (done && recap && recap.graded > 0 && !analyticsRef.current.completed) {
+      analyticsRef.current.completed = true
+      const accuracy = recap.reviewedTotal > 0 ? Math.round((recap.reviewedRight / recap.reviewedTotal) * 100) : null
+      trackEvent(EVENTS.STUDY_SESSION_COMPLETED, {
+        mode: isWeak ? 'weak' : 'review',
+        first_run: firstRun,
+        cards_studied: recap.graded,
+        cards_learned: recap.newLearned,
+        cards_reviewed: recap.reviewedTotal,
+        graduated: recap.graduated,
+        xp_earned: recap.xpEarned,
+        ...(accuracy !== null ? { accuracy } : {}),
+      })
+      if (firstRun) trackOnce(EVENTS.FIRST_MISSION_COMPLETED, { words_learned: recap.newLearned })
+    }
     // These are async data fetches that run once the session completes; each
     // setState happens later, inside the awaited body, not synchronously here.
     // Guards (!forecast / !storyUnlock / a ref) keep them one-shot.
@@ -589,9 +619,13 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       setStreakDone(true)
       if (online) {
         try {
+          const before = liveStreak(profile)
           const newStreak = await updateStreak(profile)
           if (typeof newStreak.streak === 'number') streakAfterRef.current = newStreak.streak
           if (typeof newStreak.streak_freezes === 'number') freezesRef.current = newStreak.streak_freezes
+          if (typeof newStreak.streak === 'number' && newStreak.streak > before) {
+            trackEvent(EVENTS.STREAK_INCREASED, { streak: newStreak.streak })
+          }
           if (onStreakUpdate) onStreakUpdate(newStreak)
         } catch { /* offline — the streak reconciles on the next online session */ }
       }
