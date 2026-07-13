@@ -69,7 +69,6 @@ export function useStudyAudio({ queue, flipped, profile, session, onStreakUpdate
     [queue[0], queue[1]].forEach(c => {
       if (c && c.vocab && c.vocab.audio_path) ensureAudio(getAudioUrl(c.vocab.audio_path))
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queue])
 
   return {

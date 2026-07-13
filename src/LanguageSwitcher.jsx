@@ -19,7 +19,7 @@ const LANGUAGES = languageList().map(t => ({
   accent: t.accentHex,
 }))
 
-function Shell({ children, accentHex }) {
+function Shell({ children }) {
   const isMobile = useIsMobile()
   return (
     <div style={{

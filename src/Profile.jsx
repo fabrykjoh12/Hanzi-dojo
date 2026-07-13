@@ -25,7 +25,7 @@ function getLanguageDetails(profile) {
   }
 }
 
-function Shell({ children, accentHex, fontFamily }) {
+function Shell({ children }) {
   const isMobile = useIsMobile()
   return (
     <div style={{
@@ -233,12 +233,12 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       + lang + '. https://fabrykjoh12.github.io/Hanzi-dojo/'
     try {
       if (navigator.share) { await navigator.share({ text }); return }
-    } catch (e) { return /* user cancelled */ }
+    } catch { return /* user cancelled */ }
     try {
       await navigator.clipboard.writeText(text)
       setShared(true)
       setTimeout(() => setShared(false), 2000)
-    } catch (e) { /* clipboard unavailable */ }
+    } catch { /* clipboard unavailable */ }
   }
 
   return (

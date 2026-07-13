@@ -242,7 +242,7 @@ function Ghost({ onClick, icon: Icon, label }) {
   )
 }
 
-function Action({ onClick, icon: Icon, label, accentHex, primary }) {
+function Action({ onClick, icon: Icon, label, primary }) {
   const [h, setH] = useState(false)
   return (
     <button onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)} style={{

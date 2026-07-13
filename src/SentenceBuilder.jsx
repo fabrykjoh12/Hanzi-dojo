@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabase'
 import { awardXp } from './xpService'
 import { getLevelLabel, getSystemLabel, shuffle } from './utils'
@@ -94,7 +94,6 @@ export default function SentenceBuilder({ session, profile, track, onBack, onUpd
   const [result, setResult] = useState(null)    // null | 'correct' | 'wrong'
   const [correctCount, setCorrectCount] = useState(0)
   const [done, setDone] = useState(false)
-  const segRef = useRef(null)
 
   const theme = languageTheme(profile.active_language)
   const accentHex = theme.accentHex
@@ -102,11 +101,13 @@ export default function SentenceBuilder({ session, profile, track, onBack, onUpd
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
 
-  if (!segRef.current) {
+  // Memoized (once per language) instead of a lazily-initialized ref, so no ref
+  // is read/written during render.
+  const segmenter = useMemo(() => {
     const segLocale = profile.active_language === 'japanese' ? 'ja'
       : profile.active_language === 'russian' ? 'ru' : 'zh'
-    segRef.current = makeSegmenter(segLocale)
-  }
+    return makeSegmenter(segLocale)
+  }, [profile.active_language])
 
   async function load() {
     setLoading(true)
@@ -118,7 +119,7 @@ export default function SentenceBuilder({ session, profile, track, onBack, onUpd
       .eq('level', track.current_level)
       .eq('is_active', true)
     const curated = getSentenceBank(track.language, track.system, track.current_level)
-    setQuestions(buildQuestions(vocab || [], segRef.current, curated))
+    setQuestions(buildQuestions(vocab || [], segmenter, curated))
     setIdx(0); setPlaced([]); setResult(null); setCorrectCount(0); setDone(false)
     setLoading(false)
   }

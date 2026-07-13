@@ -15,7 +15,7 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     // Best-effort logging; never throw from here.
-    try { console.error('[Hanzi Dojo] render error', error, info) } catch (e) { /* noop */ }
+    try { console.error('[Hanzi Dojo] render error', error, info) } catch { /* noop */ }
   }
 
   render() {
