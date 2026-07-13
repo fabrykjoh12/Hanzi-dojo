@@ -1,6 +1,21 @@
 import process from 'node:process'
+import { execSync } from 'node:child_process'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+
+// Build stamp so a running app can prove which commit it is. Sources, in order:
+// the CI-provided commit SHA (GitHub Actions / Vercel), else the local git HEAD,
+// else 'dev'. Exposed to the app via import.meta.env and written to
+// /version.json at the site root for scripted checks. Best-effort — never fails
+// the build.
+function buildInfo() {
+  const env = process.env
+  let sha = env.GITHUB_SHA || env.VERCEL_GIT_COMMIT_SHA || ''
+  if (!sha) {
+    try { sha = execSync('git rev-parse HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() } catch { sha = '' }
+  }
+  return { sha: sha ? sha.slice(0, 7) : 'dev', fullSha: sha || 'dev', builtAt: new Date().toISOString() }
+}
 
 // https://vite.dev/config/
 // Base path differs per host:
@@ -10,8 +25,23 @@ import react from '@vitejs/plugin-react'
 // production builds get the subpath; everything else uses /.
 export default defineConfig(({ command }) => {
   const isGitHubPages = command === 'build' && !process.env.VERCEL
+  const info = buildInfo()
   return {
     base: isGitHubPages ? '/Hanzi-dojo/' : '/',
-    plugins: [react()],
+    define: {
+      'import.meta.env.VITE_BUILD_SHA': JSON.stringify(info.sha),
+      'import.meta.env.VITE_BUILD_TIME': JSON.stringify(info.builtAt),
+    },
+    plugins: [
+      react(),
+      {
+        // Emit /version.json into the build so the deployed commit is checkable
+        // with `curl <site>/version.json` (no devtools needed).
+        name: 'hd-version-json',
+        generateBundle() {
+          this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify(info, null, 2) + '\n' })
+        },
+      },
+    ],
   }
 })
