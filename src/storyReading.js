@@ -33,6 +33,36 @@ export function wordStatus(vocabId, userCards) {
   return 'learning'
 }
 
+// Furigana display modes. Reading a book means seeing the reading only where you
+// still need it; these let the learner tune how much scaffolding shows without
+// re-parsing the story. Reuses the existing status buckets so "learning" /
+// "unknown" mean exactly what they mean everywhere else.
+export const FURIGANA_MODES = ['always', 'learning', 'unknown', 'hidden']
+
+// Should a word at `status` show its reading in the given furigana `mode`?
+// Pure so the reader can decide per-token during render (and so it's tested).
+//   always   — every word with a reading
+//   learning — only words you're still learning
+//   unknown  — only words you haven't started (includes names, which carry no card)
+//   hidden   — never
+export function readingVisibleFor(mode, status) {
+  if (mode === 'always') return true
+  if (mode === 'hidden') return false
+  if (mode === 'learning') return status === 'learning'
+  if (mode === 'unknown') return status === 'not_started'
+  return false
+}
+
+// Is a card's next review within `withinMs` of `now`? Used for the "review due
+// soon" hint in the lookup sheet. Returns false for missing/invalid dates so a
+// card with no due_at (freshly added in the reader) simply doesn't flag.
+export function isDueSoon(dueAt, now = Date.now(), withinMs = 24 * 60 * 60 * 1000) {
+  if (!dueAt) return false
+  const t = new Date(dueAt).getTime()
+  if (!Number.isFinite(t)) return false
+  return t - now <= withinMs
+}
+
 // Split "Speaker：line" into { speaker, text }. The colon (full-width or ASCII)
 // must sit within the first few characters to count as a label. Verbatim from
 // the reader so counting and rendering strip labels identically.
@@ -101,15 +131,18 @@ export function todayWordsInStory(storyWords, todayWords) {
 // object, as both the reader and the recap already build it); `cards` is keyed
 // by vocab id. Returns everything both callers need:
 //   { totalUnique, knownCount, learningCount, newCount, knownPct,
-//     newWords, storyWords, statuses }
+//     newWords, storyWords, statuses, counts }
 //   - newWords: not-yet-started vocab objects, distinct, first-seen order
 //   - storyWords: distinct vocab words present, first-seen order
 //   - statuses: Map word → status (for today/session-word matching)
+//   - counts: Map word → how many times it appears (with duplicates) — powers the
+//     "appears N× in this story" hint without a second parse.
 export function calculateStoryReadability({ content, vocabMap = {}, cards = {}, language } = {}) {
   const names = namesFor(language)
   const particles = particlesFor(language)
 
   const statuses = new Map()   // word → status (distinct by word)
+  const counts = new Map()     // word → occurrence count (with duplicates)
   const storyWords = []
   const newWords = []
 
@@ -118,6 +151,7 @@ export function calculateStoryReadability({ content, vocabMap = {}, cards = {}, 
     const matches = []
     scanLineVocab(text, vocabMap, names, particles, matches)
     matches.forEach(v => {
+      counts.set(v.word, (counts.get(v.word) || 0) + 1)
       if (statuses.has(v.word)) return
       const st = wordStatus(v.id, cards)
       statuses.set(v.word, st)
@@ -143,5 +177,6 @@ export function calculateStoryReadability({ content, vocabMap = {}, cards = {}, 
     newWords,
     storyWords,
     statuses,
+    counts,
   }
 }

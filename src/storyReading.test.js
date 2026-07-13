@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker } from './storyReading'
+import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, readingVisibleFor, isDueSoon } from './storyReading'
 
 // ── wordStatus ──────────────────────────────────────────────────────────────
 describe('wordStatus', () => {
@@ -79,6 +79,12 @@ describe('calculateStoryReadability — general', () => {
     expect(r.totalUnique).toBe(1)
     expect(r.storyWords).toEqual(['我'])
   })
+  it('counts total occurrences (with duplicates) per word', () => {
+    const r = calculateStoryReadability({ content: '我我今天', vocabMap: VOCAB, cards: {} })
+    expect(r.counts.get('我')).toBe(2)
+    expect(r.counts.get('今天')).toBe(1)
+    expect(r.counts.get('公园')).toBeUndefined()
+  })
   it('ignores punctuation and whitespace', () => {
     const r = calculateStoryReadability({ content: '今天，我。\n和 去', vocabMap: VOCAB, cards: {} })
     expect(r.totalUnique).toBe(4)   // 今天 我 和 去
@@ -157,5 +163,56 @@ describe('calculateStoryReadability — status rules', () => {
       const r = calculateStoryReadability({ content: '今天', vocabMap: VOCAB, cards })
       expect(r.knownPct).toBe(pct)
     })
+  })
+})
+
+// ── readingVisibleFor (furigana modes) ───────────────────────────────────────
+describe('readingVisibleFor', () => {
+  it('always → every status shows a reading', () => {
+    for (const st of ['not_started', 'learning', 'review', 'mastered']) {
+      expect(readingVisibleFor('always', st)).toBe(true)
+    }
+  })
+  it('hidden → nothing shows a reading', () => {
+    for (const st of ['not_started', 'learning', 'review', 'mastered']) {
+      expect(readingVisibleFor('hidden', st)).toBe(false)
+    }
+  })
+  it('learning → only still-learning words', () => {
+    expect(readingVisibleFor('learning', 'learning')).toBe(true)
+    expect(readingVisibleFor('learning', 'not_started')).toBe(false)
+    expect(readingVisibleFor('learning', 'review')).toBe(false)
+    expect(readingVisibleFor('learning', 'mastered')).toBe(false)
+  })
+  it('unknown → only not-yet-started words (and name-like, cardless tokens)', () => {
+    expect(readingVisibleFor('unknown', 'not_started')).toBe(true)
+    expect(readingVisibleFor('unknown', 'learning')).toBe(false)
+    expect(readingVisibleFor('unknown', 'review')).toBe(false)
+    expect(readingVisibleFor('unknown', 'mastered')).toBe(false)
+  })
+  it('an unknown mode string is treated as hidden', () => {
+    expect(readingVisibleFor('nonsense', 'not_started')).toBe(false)
+  })
+})
+
+// ── isDueSoon ────────────────────────────────────────────────────────────────
+describe('isDueSoon', () => {
+  const now = new Date('2026-07-13T12:00:00Z').getTime()
+  it('false for missing / invalid dates', () => {
+    expect(isDueSoon(null, now)).toBe(false)
+    expect(isDueSoon(undefined, now)).toBe(false)
+    expect(isDueSoon('not-a-date', now)).toBe(false)
+  })
+  it('true when due within the window (including overdue)', () => {
+    expect(isDueSoon('2026-07-13T18:00:00Z', now)).toBe(true)   // 6h out
+    expect(isDueSoon('2026-07-10T00:00:00Z', now)).toBe(true)   // overdue
+  })
+  it('false when due beyond the window', () => {
+    expect(isDueSoon('2026-07-20T12:00:00Z', now)).toBe(false)  // a week out
+  })
+  it('honors a custom window', () => {
+    const inTwoHours = '2026-07-13T14:00:00Z'
+    expect(isDueSoon(inTwoHours, now, 60 * 60 * 1000)).toBe(false)      // 1h window
+    expect(isDueSoon(inTwoHours, now, 3 * 60 * 60 * 1000)).toBe(true)   // 3h window
   })
 })

@@ -290,7 +290,7 @@ export default function Stories({ session, profile, track, onBack, initialStoryI
         .eq('language', track.language).eq('system', track.system).eq('is_active', true)
       vocabData = vres.data
       const cres = await supabase
-        .from('cards').select('vocab_id, is_easy, state, learned')
+        .from('cards').select('vocab_id, is_easy, state, learned, due_at')
         .eq('user_id', session.user.id)
       cardsData = cres.data
       const sres = await supabase
