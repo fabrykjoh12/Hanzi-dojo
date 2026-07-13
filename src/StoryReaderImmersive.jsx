@@ -9,7 +9,7 @@ import { CHARACTER_READINGS } from './characterNames'
 import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
-import { wordStatus, todayWordsInStory } from './storyReading'
+import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, matchName, JP_PARTICLES } from './storyReading'
 import { ArrowLeft, Bookmark, Volume2, Play, Pause, Type, Languages, ChevronRight, UserRound, Highlighter, Check, X, Sparkles, Home } from 'lucide-react'
 
 // HSKStory-inspired immersion reader for BOTH languages. Light theme. Tap a word
@@ -32,7 +32,6 @@ const STORY_FINISH_XP = 10
 // Single-kana grammatical particles. They collide with homograph nouns stored in
 // kana (は = topic marker 'wa' vs 歯 'teeth'), so exclude them from word lookup —
 // in a sentence they're almost always the particle, not the noun.
-const JP_PARTICLES = new Set(['は', 'が', 'を', 'に', 'へ', 'と', 'も', 'の', 'で', 'か', 'ね', 'よ', 'わ', 'や', 'な', 'ば'])
 const NO_PARTICLES = new Set()
 
 const STATUS_COLOR = {
@@ -104,27 +103,8 @@ function makeSegmenter(locale) {
   return null
 }
 
-function splitSpeaker(line) {
-  const full = line.indexOf('：')
-  const ascii = line.indexOf(':')
-  let idx = -1
-  if (full > 0) idx = full
-  if (idx < 0 && ascii > 0) idx = ascii
-  if (idx > 0 && idx <= 6) {
-    return { speaker: line.slice(0, idx).trim(), text: line.slice(idx + 1).trim() }
-  }
-  return { speaker: null, text: line }
-}
-
-// A proper name is one in the curated map that ISN'T a normal vocab word.
-function matchName(text, i, vocabMap, names) {
-  const maxLen = Math.min(4, text.length - i)
-  for (let len = maxLen; len >= 2; len -= 1) {
-    const cand = text.slice(i, i + len)
-    if (names[cand] && !vocabMap[cand]) return cand
-  }
-  return null
-}
+// splitSpeaker + matchName now live in ./storyReading (shared with the recap's
+// readability so counting and rendering strip labels / skip names identically).
 
 // Names → greedy vocab match → Intl.Segmenter for the rest, so known words stay
 // tappable as whole units and everything else has clean word boundaries.
@@ -320,34 +300,14 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
 
   // Word-coverage stats over the unique vocabulary that appears in this story.
   // Recomputes only when the parse or the user's card map changes.
-  const { totalUnique, knownCount, learningCount, newCount, knownPct, newWords, storyWords } = useMemo(() => {
-    const vocabSeen = new Map()
-    const newWordsMap = new Map()   // not-yet-started words → vocab object (for the recap)
-    const words = new Set()         // distinct vocab words present (for today-word matching)
-    parsed.forEach(p => p.tokens.forEach(tk => {
-      if (tk.vocab) {
-        const st = wordStatus(tk.vocab.id, userCards)
-        vocabSeen.set(tk.vocab.id, st)
-        words.add(tk.vocab.word)
-        if (st === 'not_started') newWordsMap.set(tk.vocab.id, tk.vocab)
-      }
-    }))
-    let known = 0, learning = 0, fresh = 0
-    vocabSeen.forEach(st => {
-      if (st === 'review' || st === 'mastered') known += 1
-      else if (st === 'learning') learning += 1
-      else fresh += 1
-    })
-    return {
-      totalUnique: vocabSeen.size,
-      knownCount: known,
-      learningCount: learning,
-      newCount: fresh,
-      knownPct: vocabSeen.size ? Math.round((known / vocabSeen.size) * 100) : 0,
-      newWords: [...newWordsMap.values()],
-      storyWords: [...words],
-    }
-  }, [parsed, userCards])
+  // Canonical readability (storyReading.js) — the SAME computation the recap
+  // ranks with, so the "% known" here matches the recap exactly. It re-parses
+  // the story text with the identical name/particle/speaker rules `parsed` uses
+  // for rendering, so the panel number always agrees with the highlighted words.
+  const { totalUnique, knownCount, learningCount, newCount, knownPct, newWords, storyWords } = useMemo(
+    () => calculateStoryReadability({ content: story.content, vocabMap, cards: userCards, language: track.language }),
+    [story.content, vocabMap, userCards, track.language]
+  )
 
   // Which of today's studied words appear in this story — the "3 words from
   // today appear here" thread that connects the study session to this reading.

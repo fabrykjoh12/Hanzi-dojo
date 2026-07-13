@@ -473,6 +473,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         readIds: new Set((rres.data || []).map(r => r.story_id)),
         learnedCount,
         categories: CATEGORIES_BY_LANGUAGE[track.language] || CATEGORIES_BY_LANGUAGE.chinese,
+        language: track.language,
       })
       setStoryUnlock(rec)
     } catch {
