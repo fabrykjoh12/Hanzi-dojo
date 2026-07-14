@@ -7,7 +7,7 @@
 
 import { normalizeEmail } from './utils'
 
-const DEFAULT_DEV_EMAILS = 'fabrykjoh12@gmail.com'
+const DEFAULT_DEV_EMAILS = 'fabrykjoh@gmail.com'
 
 export function devEmailList(raw) {
   const src = raw != null

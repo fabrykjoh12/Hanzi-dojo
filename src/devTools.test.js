@@ -11,7 +11,7 @@ describe('devEmailList / isDevUser', () => {
     expect(isDevUser(null, 'a@x.com')).toBe(false)
   })
   it('defaults to the repo developer', () => {
-    expect(isDevUser('fabrykjoh12@gmail.com')).toBe(true)
+    expect(isDevUser('fabrykjoh@gmail.com')).toBe(true)
     expect(isDevUser('someone-else@gmail.com')).toBe(false)
   })
 })
