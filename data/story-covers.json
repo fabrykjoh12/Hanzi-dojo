@@ -453,5 +453,40 @@
     "level": 1,
     "story_number": 15,
     "url": "https://raw.githubusercontent.com/fabrykjoh12/Hanzi-dojo/main/data/covers/jlpt1/season3.png"
+  },
+  {
+    "language": "japanese",
+    "system": "jlpt",
+    "level": 1,
+    "story_number": 24,
+    "url": "https://raw.githubusercontent.com/fabrykjoh12/Hanzi-dojo/main/data/covers/jlpt1/season-cat.png"
+  },
+  {
+    "language": "japanese",
+    "system": "jlpt",
+    "level": 1,
+    "story_number": 25,
+    "url": "https://raw.githubusercontent.com/fabrykjoh12/Hanzi-dojo/main/data/covers/jlpt1/season-cat.png"
+  },
+  {
+    "language": "japanese",
+    "system": "jlpt",
+    "level": 1,
+    "story_number": 26,
+    "url": "https://raw.githubusercontent.com/fabrykjoh12/Hanzi-dojo/main/data/covers/jlpt1/season-cat.png"
+  },
+  {
+    "language": "japanese",
+    "system": "jlpt",
+    "level": 1,
+    "story_number": 27,
+    "url": "https://raw.githubusercontent.com/fabrykjoh12/Hanzi-dojo/main/data/covers/jlpt1/season-cat.png"
+  },
+  {
+    "language": "japanese",
+    "system": "jlpt",
+    "level": 1,
+    "story_number": 28,
+    "url": "https://raw.githubusercontent.com/fabrykjoh12/Hanzi-dojo/main/data/covers/jlpt1/season-cat.png"
   }
 ]
