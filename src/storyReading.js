@@ -112,6 +112,11 @@ function lastKanjiIndex(word) {
   return idx
 }
 
+function hasKanjiChar(word) {
+  for (let i = 0; i < (word || '').length; i += 1) if (isKanjiCode(word.charCodeAt(i))) return true
+  return false
+}
+
 // The leading run of `word` up to and including its last kanji (okurigana
 // stripped). '' for kana-only words — those can't be stem-matched without
 // colliding with grammar/particles.
@@ -127,26 +132,100 @@ function commonPrefixLen(a, b) {
   return n
 }
 
+// Vocabulary keys as stored are often decorated: set phrases keep their period
+// ("すみません。"), determiners carry a placeholder ("この～"), optional particles
+// ride in parentheses ("後(で)", "いっしょ(に)"). None of these ever appear
+// verbatim in story text, so normalize them away and expand the variants.
+export function normalizeVocabForm(form) {
+  return String(form || '')
+    .trim()
+    .replace(/[～〜]/g, '')
+    .replace(/[。．.、，,!！?？\s]+$/g, '')
+}
+
+// "後(で)" → ["後で", "後"]; plain forms pass through as [form].
+function expandParenVariants(form) {
+  const m = form.match(/^(.+?)[（(](.+?)[）)]$/)
+  if (m) return [m[1] + m[2], m[1]]
+  return [form]
+}
+
+// ます-form → dictionary-form guesses for kana verb stems. The final い-row
+// kana shifts to its う-row (かえり → かえる, つかい → つかう); ichidan verbs just
+// re-attach る (たべ → たべる). Wrong guesses are harmless — they simply never
+// occur in real text.
+const MASU_ROW_SHIFT = {
+  い: 'う', き: 'く', ぎ: 'ぐ', し: 'す', ち: 'つ', に: 'ぬ', ひ: 'ふ', び: 'ぶ', み: 'む', り: 'る',
+}
+
+// The everyday irregulars whose conjugations share no usable kana stem.
+const MASU_IRREGULAR = {
+  します: ['する', 'した', 'して', 'しない', 'しよう', 'しましょう'],
+  きます: ['くる', 'きた', 'きて', 'こない'],
+  あります: ['ある', 'あった', 'あって', 'ありません'],
+  います: ['いる', 'いた', 'いて', 'いない'],
+}
+
 // Build a reusable matcher over a word-keyed vocab map.
-//   exact  — the original keys plus any alternate spellings split out of
-//            multi-form entries ("やはり; やっぱり" → both forms).
-//   stems  — kanji stem → the forms that share it (Japanese only).
+//   exact  — normalized keys, alternate spellings from multi-form entries
+//            ("やはり; やっぱり"), paren variants, readings (Japanese), and
+//            dictionary-form guesses for ます-form verbs.
+//   stems  — kanji stems AND kana verb stems → the forms that share them
+//            (Japanese only; matched only when kana follows, so a compound
+//            like 見物 is never mistaken for 見る).
 export function buildVocabMatcher(vocabMap = {}, language) {
   const exact = {}
   const stems = new Map()
   const isJapanese = language === 'japanese'
+
+  const addExact = (f, v) => { if (f && f.length > 1 && !exact[f]) exact[f] = v }
+  // Single-char exact entries are allowed only for the original stored key
+  // (real one-char vocab like 人 or 手) — derived guesses must not add them.
+  const addExactAny = (f, v) => { if (f && !exact[f]) exact[f] = v }
+  const addStem = (stem, form, v) => {
+    if (!stem || stem.length < 1) return
+    // Kana-only stems shorter than 2 chars would collide with grammar.
+    if (!hasKanjiChar(stem) && stem.length < 2) return
+    const list = stems.get(stem) || []
+    list.push({ v, form })
+    stems.set(stem, list)
+  }
+
+  const addJapaneseDerived = (f, v) => {
+    const ks = kanjiStem(f)
+    if (ks) addStem(ks, f, v)
+    if (f.endsWith('ます') && f.length > 2) {
+      for (const alt of MASU_IRREGULAR[f] || []) addExact(alt, v)
+      const stem = f.slice(0, -2)                       // 食べ / かえり / つかい
+      addStem(stem, f, v)
+      if (!hasKanjiChar(stem)) {
+        // Kana verb: index dictionary-form guesses and the shortened stem so
+        // past/te forms still connect (かえり→かえ matches かえった).
+        addExact(stem + 'る', v)                        // ichidan guess
+        const last = stem[stem.length - 1]
+        if (MASU_ROW_SHIFT[last]) addExact(stem.slice(0, -1) + MASU_ROW_SHIFT[last], v)   // godan guess
+        addStem(stem.slice(0, -1), f, v)
+      }
+    }
+  }
+
   for (const key in vocabMap) {
     const v = vocabMap[key]
-    const forms = String(key).split(/[;；、]/).map(s => s.trim()).filter(Boolean)
+    const forms = String(key).split(/[;；]/).map(s => normalizeVocabForm(s)).filter(Boolean)
     if (!forms.length) forms.push(key)
-    for (const f of forms) {
-      if (!exact[f]) exact[f] = v
-      if (isJapanese) {
-        const stem = kanjiStem(f)
-        if (!stem) continue
-        const list = stems.get(stem) || []
-        list.push({ v, form: f })
-        stems.set(stem, list)
+    for (const raw of forms) {
+      for (const f of expandParenVariants(raw)) {
+        addExactAny(f, v)
+        if (isJapanese) addJapaneseDerived(f, v)
+      }
+    }
+    if (isJapanese && v && v.reading) {
+      // Index readings too (some stories echo the kana; some vocab is kana-only
+      // while its reading carries variants like "まいげつ/まいつき").
+      const readings = String(v.reading).split(/[;；/／・]/).map(s => normalizeVocabForm(s)).filter(Boolean)
+      for (const r of readings) {
+        addExact(r, v)
+        addJapaneseDerived(r, v)
       }
     }
   }
@@ -154,18 +233,19 @@ export function buildVocabMatcher(vocabMap = {}, language) {
 }
 
 // matchVocabAt(text, i, matcher, particles) → { vocab, len } | null.
-// Exact greedy longest match first; then, for Japanese, a conjugation-tolerant
-// kanji-stem match (only when the char after the stem is kana, so a kanji
-// compound like 見物 isn't mistaken for a conjugated 見る).
+// Exact greedy longest match first (long enough for set phrases like
+// ありがとうございます); then, for Japanese, a conjugation-tolerant stem match
+// (only when the char after the stem is kana, so a kanji compound like 見物
+// isn't mistaken for a conjugated 見る).
 export function matchVocabAt(text, i, matcher, particles = NO_PARTICLES) {
   const isVocab = (cand) => matcher.exact[cand] && !(cand.length === 1 && particles.has(cand))
-  const maxLen = Math.min(6, text.length - i)
+  const maxLen = Math.min(12, text.length - i)
   for (let len = maxLen; len >= 1; len -= 1) {
     const cand = text.slice(i, i + len)
     if (isVocab(cand)) return { vocab: matcher.exact[cand], len }
   }
   if (matcher.isJapanese) {
-    for (let len = Math.min(6, text.length - i); len >= 1; len -= 1) {
+    for (let len = Math.min(8, text.length - i); len >= 1; len -= 1) {
       const cand = text.slice(i, i + len)
       const list = matcher.stems.get(cand)
       if (!list) continue
