@@ -11,7 +11,7 @@ on:
         description: What to run
         type: choice
         default: story-images-apply
-        options: [story-images-apply, publish-held]
+        options: [story-images-apply, publish-held, fix-collisions]
       language:
         description: "publish-held only: language of the level to publish"
         type: string
@@ -24,6 +24,10 @@ on:
         description: "publish-held only: level number to publish"
         type: string
         default: '1'
+      tier:
+        description: "publish-held only: restrict to one tier (blank = all)"
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -53,5 +57,10 @@ jobs:
             node generate-story-images.mjs --apply data/story-covers.json
           fi
           if [ "${{ inputs.task }}" = "publish-held" ]; then
-            node publish-stories.mjs --language "${{ inputs.language }}" --system "${{ inputs.system }}" --level "${{ inputs.level }}" --apply
+            TIER_FLAG=""
+            if [ -n "${{ inputs.tier }}" ]; then TIER_FLAG="--tier ${{ inputs.tier }}"; fi
+            node publish-stories.mjs --language "${{ inputs.language }}" --system "${{ inputs.system }}" --level "${{ inputs.level }}" $TIER_FLAG --apply
+          fi
+          if [ "${{ inputs.task }}" = "fix-collisions" ]; then
+            node publish-stories.mjs --language "${{ inputs.language }}" --system "${{ inputs.system }}" --level "${{ inputs.level }}" --fix-collisions --apply
           fi
