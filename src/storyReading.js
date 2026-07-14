@@ -284,10 +284,14 @@ export function buildVocabMatcher(vocabMap = {}, language) {
 }
 
 // matchVocabAt(text, i, matcher, particles, atBoundary) → { vocab, len } | null.
-// Exact greedy longest match first (long enough for set phrases like
-// ありがとうございます); then, for Japanese, a conjugation-tolerant stem match
-// (only when the char after the stem is kana, so a kanji compound like 見物
-// isn't mistaken for a conjugated 見る).
+// Considers exact matches (long enough for set phrases like ありがとうございます)
+// AND, for Japanese, conjugation-tolerant stem matches (only when the char
+// after the stem is kana, so a kanji compound like 見物 isn't mistaken for a
+// conjugated 見る) — then returns whichever interpretation CONSUMES THE MOST
+// text (exact wins ties). Longest-consumption matters: in あるいて, the exact
+// word ある ("exist") explains 2 chars but the stem of 歩きます explains all 4
+// (あるいて = "walked") — taking the first hit instead of the longest left an
+// orphaned いて that fell apart into kana fragments.
 //
 // `atBoundary`: hiragana-initial matches are only taken at a word boundary
 // (line start, after punctuation/kanji/katakana, after a particle, or right
@@ -296,11 +300,15 @@ export function buildVocabMatcher(vocabMap = {}, language) {
 export function matchVocabAt(text, i, matcher, particles = NO_PARTICLES, atBoundary = true) {
   if (!atBoundary && isHiraganaChar(text[i])) return null
   const isVocab = (cand) => matcher.exact[cand] && !(cand.length === 1 && particles.has(cand))
+
+  let exactMatch = null
   const maxLen = Math.min(12, text.length - i)
   for (let len = maxLen; len >= 1; len -= 1) {
     const cand = text.slice(i, i + len)
-    if (isVocab(cand)) return { vocab: matcher.exact[cand], len }
+    if (isVocab(cand)) { exactMatch = { vocab: matcher.exact[cand], len }; break }
   }
+
+  let stemMatch = null
   if (matcher.isJapanese) {
     for (let len = Math.min(8, text.length - i); len >= 1; len -= 1) {
       const cand = text.slice(i, i + len)
@@ -322,11 +330,14 @@ export function matchVocabAt(text, i, matcher, particles = NO_PARTICLES, atBound
         // Extend across the conjugation so the whole inflected word is one
         // token (食べました, not 食 + kana fragments).
         const ext = conjugationExtension(tail, best.form.slice(len))
-        return { vocab: best.v, len: len + ext }
+        const total = len + ext
+        if (!stemMatch || total > stemMatch.len) stemMatch = { vocab: best.v, len: total }
       }
     }
   }
-  return null
+
+  if (exactMatch && stemMatch) return stemMatch.len > exactMatch.len ? stemMatch : exactMatch
+  return exactMatch || stemMatch
 }
 
 // Is `ch` a boundary-maker when skipped unmatched: punctuation/space (any

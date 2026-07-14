@@ -63,6 +63,13 @@ const JA = {
   たとえば: { reading: 'tatoeba', gloss: '"For example".' },
 
   // ── Common fragments learners tap ──────────────────────────────────────
+  お: { reading: 'o', gloss: 'Polite prefix — attaches to nouns (お茶, おだんご) to sound respectful.' },
+  ご: { reading: 'go', gloss: 'Polite prefix for Sino-Japanese nouns (ご飯, ご家族).' },
+  て: { reading: 'te', gloss: 'Verb て-form ending — links actions ("…and"), or makes requests with ください.' },
+  た: { reading: 'ta', gloss: 'Plain past-tense verb ending.' },
+  そう: { reading: 'sou', gloss: '"So / that way" (そうです = that’s right); after a stem, "looks like …".' },
+  こう: { reading: 'kou', gloss: '"Like this / this way".' },
+  ほう: { reading: 'hou', gloss: '"Side / direction" — …のほうが = comparisons ("X is more …").' },
   こと: { reading: 'koto', gloss: 'Abstract "thing / fact" — turns a verb phrase into a noun.' },
   ん: { reading: 'n', gloss: 'Contraction of の — adds explanatory tone (…んです = "it’s that …").' },
   さん: { reading: 'san', gloss: 'Polite name suffix — Mr / Ms.' },
