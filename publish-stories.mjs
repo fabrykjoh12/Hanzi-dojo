@@ -26,18 +26,70 @@ const val = (flag) => { const i = args.indexOf(flag); return i >= 0 ? args[i + 1
 const language = val('--language')
 const system = val('--system')
 const level = parseInt(val('--level') || '', 10)
+const tier = val('--tier') ? parseInt(val('--tier'), 10) : null
 const apply = args.includes('--apply')
+const fixCollisions = args.includes('--fix-collisions')
 if (!language || !system || !Number.isFinite(level)) {
-  console.error('Required: --language <l> --system <s> --level <n>')
+  console.error('Required: --language <l> --system <s> --level <n>  [--tier <t>] [--apply] [--fix-collisions]')
   process.exit(1)
 }
 
-const { data: held, error } = await supabase
+// --fix-collisions: two writers can race the same story_number (a serial run
+// reads its counter once at start; an authored insert mid-run grabs the same
+// range). Held duplicates are invisible, so they get renumbered past the
+// level's max — published rows always keep their numbers.
+if (fixCollisions) {
+  const { data: all, error: qErr } = await supabase
+    .from('stories')
+    .select('id, story_number, is_published, title')
+    .eq('language', language).eq('system', system).eq('level', level)
+    .order('story_number', { ascending: true })
+  if (qErr) { console.error('Query error: ' + qErr.message); process.exit(1) }
+  const byNum = new Map()
+  let maxNum = 0
+  for (const s of all || []) {
+    maxNum = Math.max(maxNum, s.story_number)
+    const list = byNum.get(s.story_number) || []
+    list.push(s)
+    byNum.set(s.story_number, list)
+  }
+  const toMove = []
+  for (const [, list] of byNum) {
+    if (list.length < 2) continue
+    // Keep one row on the number — a published one if any — move the rest.
+    const keepIdx = Math.max(0, list.findIndex(s => s.is_published))
+    list.forEach((s, i) => { if (i !== keepIdx) toMove.push(s) })
+  }
+  if (toMove.length === 0) { console.log('No story_number collisions.'); process.exit(0) }
+  const stillPublished = toMove.filter(s => s.is_published)
+  if (stillPublished.length > 0) {
+    console.error('Refusing: colliding PUBLISHED rows need a human decision: '
+      + stillPublished.map(s => '#' + s.story_number + ' ' + s.title).join(' | '))
+    process.exit(1)
+  }
+  console.log(toMove.length + ' held duplicate(s) to renumber (level max ' + maxNum + '):')
+  let next = maxNum + 1
+  for (const s of toMove) {
+    console.log('  #' + s.story_number + ' "' + s.title + '" → #' + next)
+    if (apply) {
+      const { error: upErr } = await supabase.from('stories')
+        .update({ story_number: next }).eq('id', s.id)
+      if (upErr) { console.error('Update error: ' + upErr.message); process.exit(1) }
+    }
+    next += 1
+  }
+  console.log(apply ? '\nRenumbered.' : '\nDry run — pass --apply to renumber.')
+  process.exit(0)
+}
+
+let heldQuery = supabase
   .from('stories')
   .select('id, tier, story_number, title')
   .eq('language', language).eq('system', system).eq('level', level)
   .eq('is_published', false)
   .order('story_number', { ascending: true })
+if (tier != null) heldQuery = heldQuery.eq('tier', tier)
+const { data: held, error } = await heldQuery
 if (error) { console.error('Query error: ' + error.message); process.exit(1) }
 
 if (!held || held.length === 0) {
@@ -53,10 +105,12 @@ if (!apply) {
   process.exit(0)
 }
 
-const { error: upErr } = await supabase
+let pubQuery = supabase
   .from('stories')
   .update({ is_published: true })
   .eq('language', language).eq('system', system).eq('level', level)
   .eq('is_published', false)
+if (tier != null) pubQuery = pubQuery.eq('tier', tier)
+const { error: upErr } = await pubQuery
 if (upErr) { console.error('Update error: ' + upErr.message); process.exit(1) }
 console.log('\nPublished all ' + held.length + '.')
