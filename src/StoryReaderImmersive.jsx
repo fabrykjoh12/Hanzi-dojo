@@ -9,7 +9,7 @@ import { CHARACTER_READINGS } from './characterNames'
 import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
-import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, matchName, JP_PARTICLES, readingVisibleFor, isDueSoon } from './storyReading'
+import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, matchName, JP_PARTICLES, readingVisibleFor, isDueSoon, buildVocabMatcher, matchVocabAt } from './storyReading'
 import { prefsGet, prefsSet } from './offline'
 import { FIRST_MISSION_READER_HINT, firstMissionCompletion } from './firstMission'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
@@ -127,39 +127,31 @@ function makeSegmenter(locale) {
 // splitSpeaker + matchName now live in ./storyReading (shared with the recap's
 // readability so counting and rendering strip labels / skip names identically).
 
-// Names → greedy vocab match → Intl.Segmenter for the rest, so known words stay
-// tappable as whole units and everything else has clean word boundaries.
-function segmentLine(text, vocabMap, segmenter, names, particles) {
-  const isVocab = (cand) => vocabMap[cand] && !(cand.length === 1 && particles.has(cand))
+// Names → greedy/deinflection vocab match → Intl.Segmenter for the rest, so known
+// words (including conjugated Japanese verbs, via the shared matcher) stay
+// tappable as whole units and everything else has clean word boundaries. The
+// matcher is prebuilt once per render (buildVocabMatcher) and shared with the
+// readability count so what's tappable and what's counted stay in lockstep.
+function segmentLine(text, matcher, segmenter, names, particles) {
   const tokens = []
   let i = 0
   while (i < text.length) {
-    const name = matchName(text, i, vocabMap, names)
+    const name = matchName(text, i, matcher.exact, names)
     if (name) {
       tokens.push({ text: name, name: { word: name, reading: names[name] } })
       i += name.length
       continue
     }
-    let matched = null
-    const maxLen = Math.min(6, text.length - i)
-    for (let len = maxLen; len >= 1; len -= 1) {
-      const cand = text.slice(i, i + len)
-      if (isVocab(cand)) { matched = cand; break }
-    }
-    if (matched) {
-      tokens.push({ text: matched, vocab: vocabMap[matched] })
-      i += matched.length
+    const m = matchVocabAt(text, i, matcher, particles)
+    if (m) {
+      tokens.push({ text: text.slice(i, i + m.len), vocab: m.vocab })
+      i += m.len
       continue
     }
     let j = i
     while (j < text.length) {
-      if (matchName(text, j, vocabMap, names)) break
-      let isVocabStart = false
-      const maxL = Math.min(6, text.length - j)
-      for (let len = maxL; len >= 1; len -= 1) {
-        if (isVocab(text.slice(j, j + len))) { isVocabStart = true; break }
-      }
-      if (isVocabStart) break
+      if (matchName(text, j, matcher.exact, names)) break
+      if (matchVocabAt(text, j, matcher, particles)) break
       j += 1
     }
     const run = text.slice(i, j)
@@ -353,6 +345,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   // so toggles/sheet interactions don't re-run Intl.Segmenter over every line.
   // `names`/`particles` derive from track.language, so it stands in for both.
   const { parsed, speakerColors } = useMemo(() => {
+    const matcher = buildVocabMatcher(vocabMap, track.language)
     const storyLines = story.content.split('\n').filter(Boolean)
     const colors = {}
     const parsedLines = storyLines.map(line => {
@@ -361,7 +354,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         // Nth distinct speaker → palette[N]; N = speakers already assigned.
         colors[speaker] = SPEAKER_PALETTE[Object.keys(colors).length % SPEAKER_PALETTE.length]
       }
-      return { speaker, tokens: segmentLine(text, vocabMap, segmenter, names, particles) }
+      return { speaker, tokens: segmentLine(text, matcher, segmenter, names, particles) }
     })
     return { parsed: parsedLines, speakerColors: colors }
     // eslint-disable-next-line react-hooks/exhaustive-deps

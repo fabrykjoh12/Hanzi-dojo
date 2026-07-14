@@ -93,22 +93,110 @@ export function matchName(text, i, vocabMap, names) {
 function namesFor(language) { return language === 'chinese' ? CHARACTER_READINGS.chinese : {} }
 function particlesFor(language) { return language === 'japanese' ? JP_PARTICLES : NO_PARTICLES }
 
+// ── Japanese deinflection-lite matching ──────────────────────────────────────
+// Japanese story text uses conjugated surface forms (書いて, 見せました) and
+// okurigana that never match the dictionary vocab key (書く, 見せる) by exact
+// substring — so the reader used to drop them to a "grammar / beyond this level"
+// fallback and leave them untappable. We index each kanji-bearing vocab word by
+// its "kanji stem" (the word truncated after its last kanji, okurigana dropped),
+// so an inflected form whose kanji stem is intact still resolves to its
+// dictionary entry. Stem matches consume ONLY the kanji stem, never trailing
+// kana, so a following particle can't be swallowed.
+
+function isKanjiCode(c) { return c >= 0x3400 && c <= 0x9FFF }
+function isKanaCode(c) { return c >= 0x3040 && c <= 0x30FF }
+
+function lastKanjiIndex(word) {
+  let idx = -1
+  for (let i = 0; i < word.length; i += 1) if (isKanjiCode(word.charCodeAt(i))) idx = i
+  return idx
+}
+
+// The leading run of `word` up to and including its last kanji (okurigana
+// stripped). '' for kana-only words — those can't be stem-matched without
+// colliding with grammar/particles.
+export function kanjiStem(word) {
+  const w = word || ''
+  const idx = lastKanjiIndex(w)
+  return idx < 0 ? '' : w.slice(0, idx + 1)
+}
+
+function commonPrefixLen(a, b) {
+  let n = 0
+  while (n < a.length && n < b.length && a[n] === b[n]) n += 1
+  return n
+}
+
+// Build a reusable matcher over a word-keyed vocab map.
+//   exact  — the original keys plus any alternate spellings split out of
+//            multi-form entries ("やはり; やっぱり" → both forms).
+//   stems  — kanji stem → the forms that share it (Japanese only).
+export function buildVocabMatcher(vocabMap = {}, language) {
+  const exact = {}
+  const stems = new Map()
+  const isJapanese = language === 'japanese'
+  for (const key in vocabMap) {
+    const v = vocabMap[key]
+    const forms = String(key).split(/[;；、]/).map(s => s.trim()).filter(Boolean)
+    if (!forms.length) forms.push(key)
+    for (const f of forms) {
+      if (!exact[f]) exact[f] = v
+      if (isJapanese) {
+        const stem = kanjiStem(f)
+        if (!stem) continue
+        const list = stems.get(stem) || []
+        list.push({ v, form: f })
+        stems.set(stem, list)
+      }
+    }
+  }
+  return { exact, stems, isJapanese }
+}
+
+// matchVocabAt(text, i, matcher, particles) → { vocab, len } | null.
+// Exact greedy longest match first; then, for Japanese, a conjugation-tolerant
+// kanji-stem match (only when the char after the stem is kana, so a kanji
+// compound like 見物 isn't mistaken for a conjugated 見る).
+export function matchVocabAt(text, i, matcher, particles = NO_PARTICLES) {
+  const isVocab = (cand) => matcher.exact[cand] && !(cand.length === 1 && particles.has(cand))
+  const maxLen = Math.min(6, text.length - i)
+  for (let len = maxLen; len >= 1; len -= 1) {
+    const cand = text.slice(i, i + len)
+    if (isVocab(cand)) return { vocab: matcher.exact[cand], len }
+  }
+  if (matcher.isJapanese) {
+    for (let len = Math.min(6, text.length - i); len >= 1; len -= 1) {
+      const cand = text.slice(i, i + len)
+      const list = matcher.stems.get(cand)
+      if (!list) continue
+      const tail = text.slice(i + len)
+      // Only treat this as a conjugation when okurigana (kana) follows the stem.
+      if (tail.length && !isKanaCode(tail.charCodeAt(0))) continue
+      // Disambiguate homographs by okurigana: prefer the form whose kana tail
+      // best matches the surface text; tie-break the shorter dictionary word.
+      let best = null, bestScore = -1
+      for (const e of list) {
+        const score = commonPrefixLen(e.form.slice(len), tail)
+        if (score > bestScore || (score === bestScore && (!best || e.form.length < best.form.length))) {
+          best = e; bestScore = score
+        }
+      }
+      if (best) return { vocab: best.v, len }   // consume only the kanji stem
+    }
+  }
+  return null
+}
+
 // Greedy vocab scan of one (speaker-stripped) line, mirroring the reader's
 // segmentLine vocab matching without the Intl.Segmenter rendering pass. Pushes
 // the matched vocab objects (in order, with duplicates) into `out`.
-function scanLineVocab(text, vocabMap, names, particles, out) {
-  const isVocab = (cand) => vocabMap[cand] && !(cand.length === 1 && particles.has(cand))
+function scanLineVocab(text, matcher, names, particles, out) {
   let i = 0
   while (i < text.length) {
-    const name = matchName(text, i, vocabMap, names)
+    const name = matchName(text, i, matcher.exact, names)
     if (name) { i += name.length; continue }
-    let matched = null
-    const maxLen = Math.min(6, text.length - i)
-    for (let len = maxLen; len >= 1; len -= 1) {
-      const cand = text.slice(i, i + len)
-      if (isVocab(cand)) { matched = cand; break }
-    }
-    if (matched) { out.push(vocabMap[matched]); i += matched.length; continue }
+    const m = matchVocabAt(text, i, matcher, particles)
+    if (m) { out.push(m.vocab); i += m.len; continue }
     i += 1
   }
 }
@@ -140,6 +228,7 @@ export function todayWordsInStory(storyWords, todayWords) {
 export function calculateStoryReadability({ content, vocabMap = {}, cards = {}, language } = {}) {
   const names = namesFor(language)
   const particles = particlesFor(language)
+  const matcher = buildVocabMatcher(vocabMap, language)
 
   const statuses = new Map()   // word → status (distinct by word)
   const counts = new Map()     // word → occurrence count (with duplicates)
@@ -149,7 +238,7 @@ export function calculateStoryReadability({ content, vocabMap = {}, cards = {}, 
   ;(content || '').split('\n').filter(Boolean).forEach(line => {
     const { text } = splitSpeaker(line)
     const matches = []
-    scanLineVocab(text, vocabMap, names, particles, matches)
+    scanLineVocab(text, matcher, names, particles, matches)
     matches.forEach(v => {
       counts.set(v.word, (counts.get(v.word) || 0) + 1)
       if (statuses.has(v.word)) return

@@ -90,6 +90,7 @@ const CONFIGS = {
     promptLang: 'Japanese', level: 'JLPT N5',
     names: '- たかし (Takashi)\n- はな (Hana)\n- おかあさん (Mother)\n- みせのひと (Shop or station worker)',
     nameNote: 'write in hiragana, not kanji',
+    scriptNote: 'Write words in their standard Japanese form using kanji where a word is normally written with kanji (e.g. 学校, 食べる, 見る) — the reader shows furigana over kanji. Use kana only for words normally written in kana. Do NOT write the whole story in kana.',
     maxLineChars: 20,
     prereqLevel: null, prereqMax: 0,
     tiers: [
@@ -103,6 +104,7 @@ const CONFIGS = {
     promptLang: 'Japanese', level: 'JLPT N4',
     names: '- たかし (Takashi)\n- はな (Hana)\n- おかあさん (Mother)\n- せんせい (Teacher)',
     nameNote: 'write in hiragana, not kanji',
+    scriptNote: 'Write words in their standard Japanese form using kanji where a word is normally written with kanji (e.g. 学校, 食べる, 見る) — the reader shows furigana over kanji. Use kana only for words normally written in kana. Do NOT write the whole story in kana.',
     maxLineChars: 22,
     prereqLevel: 1, prereqMax: 150,   // include the 150 most basic N5 Part 1 words
     tiers: [
@@ -200,6 +202,7 @@ function buildPrompt(vocab, tier, sceneIndex) {
     '- Mix dialogue and narration. Dialogue format: NAME' + colon + 'text (' + colonNote + ')\n' +
     '- Narration lines have no speaker prefix\n' +
     '- Each line must be under ' + cfg.maxLineChars + ' characters\n' +
+    (cfg.scriptNote ? '- ' + cfg.scriptNote + '\n' : '') +
     '- Title: use "' + scene.title + '" or another 2-6 character word that reflects the scene\n' +
     '- english_summary: 1-2 sentences describing what happens\n\n' +
     'Return ONLY valid JSON with no markdown fences:\n' +

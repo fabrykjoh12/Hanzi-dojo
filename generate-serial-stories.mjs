@@ -122,8 +122,11 @@ const CONFIGS = {
     ],
   },
   'japanese|jlpt|1': {
+    // N5 stories use kanji (with furigana in the reader) so they match the
+    // kanji-keyed vocabulary and words stay tappable — a kana-only story fails
+    // both (looks wrong, and can't be looked up). Was kanaOnly: true.
     bible: BIBLE_JAPANESE, promptLang: 'Japanese', levelName: 'JLPT N5',
-    kanaOnly: true, maxLineChars: 36, prereqLevel: null, prereqMax: 0,
+    maxLineChars: 36, prereqLevel: null, prereqMax: 0,
     tiers: [
       { tier: 1, minWords: 30, prevCap: 0, cap: 100, chapters: 5, lines: [18, 26], minCov: 0.90, maxMisses: 6 },
       { tier: 2, minWords: 100, prevCap: 100, cap: 200, chapters: 5, lines: [24, 34], minCov: 0.88, maxMisses: 9 },
