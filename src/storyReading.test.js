@@ -293,6 +293,49 @@ describe('matchVocabAt — conjugated token boundaries', () => {
   })
 })
 
+// ── Screenshot regressions: names + kana word boundaries ────────────────────
+// Real bug: tapping かし inside たかし (the name Takashi) showed かします
+// "lend", and お～ split おだんご. Kana matches must respect word boundaries
+// and Japanese character names must be protected like Chinese ones.
+describe('calculateStoryReadability — Japanese names and kana boundaries', () => {
+  const v = (word, id, reading) => ({ id, word, reading })
+  const V = {
+    'かします': v('かします', 'lend', 'かします'),
+    '学生': v('学生', 'stud', 'がくせい'),
+    '花': v('花', 'flower', 'はな'),
+    'お～': v('お～', 'hon', 'お～'),
+    '食べます': v('食べます', 'eat', 'たべます'),
+  }
+  const run = (content) => calculateStoryReadability({ content, vocabMap: V, cards: {}, language: 'japanese' })
+
+  it('does not match かします inside the name たかし', () => {
+    const r = run('たかしは 学生です。')
+    expect(r.storyWords).not.toContain('かします')
+    expect(r.storyWords).toContain('学生')
+  })
+
+  it('treats はな as the name Hana, not the flower vocabulary', () => {
+    const r = run('はなは 学生です。')
+    expect(r.storyWords).not.toContain('花')
+  })
+
+  it('a decorated single-char key (お～) never splits a longer word', () => {
+    const r = run('おだんごを 食べました。')
+    expect(r.storyWords).not.toContain('お～')
+    expect(r.storyWords).toContain('食べます')
+  })
+
+  it('kana matches still fire after particles and at line start', () => {
+    expect(run('本をかします。').storyWords).toContain('かします')
+    expect(run('かします。').storyWords).toContain('かします')
+  })
+
+  it('kana matches do not fire mid-word after ordinary hiragana', () => {
+    // わたしかします — かし… preceded by し (not a particle/punct) must not match.
+    expect(run('あしたかしません。').storyWords).not.toContain('かします')
+  })
+})
+
 describe('calculateStoryReadability — Russian', () => {
   const RV = { кот: zh('кот', 'k'), дом: zh('дом', 'd') }
   it('counts whitespace-separated words, ignoring punctuation', () => {

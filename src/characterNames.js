@@ -9,5 +9,8 @@ export const CHARACTER_READINGS = {
     '小明': 'Xiǎo Míng', '小红': 'Xiǎo Hóng', '大毛': 'Dà Máo',
     '林雨晴': 'Lín Yǔqíng', '林小川': 'Lín Xiǎochuān', '小川': 'Xiǎochuān',
   },
-  japanese: {},
+  // Japanese story protagonists (serial + legacy story sets). Role nouns
+  // (おかあさん、おじいさん、せんせい…) are ordinary vocabulary and resolve
+  // through the vocab lookup instead — do not list them here.
+  japanese: { 'たかし': 'Takashi', 'はな': 'Hana' },
 }
