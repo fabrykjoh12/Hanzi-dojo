@@ -4,6 +4,7 @@ import { isOnline } from './useOnline'
 import { enqueueGrade } from './syncQueue'
 import { cacheSet, cacheGet, outboxDelete } from './offline'
 import { getTrackCards } from './data'
+import { studyFloorLevel } from './levelScope'
 import { schedule, previewLabels } from './srs'
 import { xpForGrade, levelInfo } from './xp'
 import { computeAward } from './xpService'
@@ -256,7 +257,14 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     setLoading(true)
     sessionVocabRef.current = []
 
-    const vocabKey = 'vocab:' + track.language + ':' + track.system + ':' + track.current_level
+    // Cumulative deck: fetch the user's cards first so we can derive the study
+    // floor (the lowest level they actually study), then load every level's
+    // vocabulary from that floor up to the current level. Advancing a level
+    // keeps earlier levels in the deck for review instead of dropping them.
+    const cards = await getTrackCards(session.user.id, track, { maxLevel: track.current_level })
+    const floorLevel = studyFloorLevel(cards, track.current_level)
+
+    const vocabKey = 'vocab:' + track.language + ':' + track.system + ':' + floorLevel + '-' + track.current_level
     let vocab = null
     try {
       const res = await supabase
@@ -264,19 +272,18 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         .select('*')
         .eq('language', track.language)
         .eq('system', track.system)
-        .eq('level', track.current_level)
+        .gte('level', floorLevel)
+        .lte('level', track.current_level)
         .eq('is_active', true)
+        .order('level', { ascending: true })
         .order('sort_order', { ascending: true })
       vocab = res.data
     } catch { /* offline — fall back to the cached vocabulary below */ }
-    // Mirror the level's vocabulary for offline; fall back to it when the fetch
-    // came back empty because the network is down.
+    // Mirror the cumulative vocabulary for offline; fall back to it when the
+    // fetch came back empty because the network is down.
     if (vocab && vocab.length) cacheSet(vocabKey, vocab)
     else { const cached = await cacheGet(vocabKey); if (cached) vocab = cached }
     vocabRef.current = vocab || []
-
-    // Server-side scoped to this level — never the whole cross-language table.
-    const cards = await getTrackCards(session.user.id, track, { level: track.current_level })
 
     const vocabById = {}
     ;(vocab || []).forEach(v => { vocabById[v.id] = v })
@@ -420,17 +427,19 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
   // Recompute the next-day forecast (reviews + new) for the recap card.
   async function loadForecast() {
+    const cards = await getTrackCards(session.user.id, track, {
+      maxLevel: track.current_level,
+      columns: 'vocab_id, state, due_at',
+    })
+    const floorLevel = studyFloorLevel(cards, track.current_level)
     const { data: vocab } = await supabase
       .from('vocabulary')
       .select('id')
       .eq('language', track.language)
       .eq('system', track.system)
-      .eq('level', track.current_level)
+      .gte('level', floorLevel)
+      .lte('level', track.current_level)
       .eq('is_active', true)
-    const cards = await getTrackCards(session.user.id, track, {
-      level: track.current_level,
-      columns: 'vocab_id, state, due_at',
-    })
 
     const vocabIds = new Set((vocab || []).map(v => v.id))
     const started = new Set((cards || []).map(c => c.vocab_id))

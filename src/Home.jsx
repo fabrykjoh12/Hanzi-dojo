@@ -183,13 +183,28 @@ export default function Home({ profile, track, counts, onNavigate }) {
           <div style={{ minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
               <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)' }}>Today’s Dojo</span>
-              <span style={{
-                fontSize: '12px', color: totalDue > 0 ? accentHex : 'var(--text-muted)',
-                background: totalDue > 0 ? `${accentHex}10` : 'var(--surface-2)',
-                padding: '4px 12px', borderRadius: '20px', fontWeight: 500,
-              }}>
-                {totalDue > 0 ? 'Cards waiting' : 'All caught up ✓'}
-              </span>
+              {totalDue > 0 ? (
+                // Clickable: same destination as the "Review & unlock" CTA below.
+                <button
+                  onClick={() => onNavigate(rec.key)}
+                  style={{
+                    fontSize: '12px', color: accentHex, background: `${accentHex}10`,
+                    padding: '4px 12px', borderRadius: '20px', fontWeight: 500,
+                    border: '1px solid ' + accentHex + '26', cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  Cards waiting
+                </button>
+              ) : (
+                <span style={{
+                  fontSize: '12px', color: 'var(--text-muted)',
+                  background: 'var(--surface-2)',
+                  padding: '4px 12px', borderRadius: '20px', fontWeight: 500,
+                }}>
+                  All caught up ✓
+                </span>
+              )}
             </div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
               {goalComplete

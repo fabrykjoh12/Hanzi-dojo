@@ -1,22 +1,27 @@
 import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { countMastery } from './mastery'
+import { studyFloorLevel } from './levelScope'
 
 export async function getHomeCounts(userId, track, dailyNewCards) {
-  const { data: vocab } = await supabase
-    .from('vocabulary')
-    .select('id')
-    .eq('language', track.language)
-    .eq('system', track.system)
-    .eq('level', track.current_level)
-    .eq('is_active', true)
-
   // Cards scoped server-side to the ACTIVE language (every level): the level
   // counts filter further below, and the fluency score wants exactly this scope
   // so studying a second language never inflates the first.
   const cards = await getTrackCards(userId, track, {
     columns: 'vocab_id, state, due_at, created_at, is_easy, learned, stability, lapses',
   })
+
+  // Cumulative deck: every level from the study floor up to the current level,
+  // so advancing a level keeps the earlier levels' words in the counts.
+  const floorLevel = studyFloorLevel(cards, track.current_level)
+  const { data: vocab } = await supabase
+    .from('vocabulary')
+    .select('id')
+    .eq('language', track.language)
+    .eq('system', track.system)
+    .gte('level', floorLevel)
+    .lte('level', track.current_level)
+    .eq('is_active', true)
 
   const vocabIds = new Set((vocab || []).map(v => v.id))
 

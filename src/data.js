@@ -18,8 +18,9 @@ import { cacheGet, cacheSet } from './offline'
 // served instead. This is transparent to callers (Study, Home, Test) and is a
 // no-op when IndexedDB is unavailable.
 
-export async function getTrackCards(userId, track, { level, columns = '*' } = {}) {
-  const key = 'cards:' + userId + ':' + track.language + ':' + track.system + ':' + (level == null ? 'all' : level) + ':' + columns
+export async function getTrackCards(userId, track, { level, maxLevel, columns = '*' } = {}) {
+  const scope = level != null ? String(level) : (maxLevel != null ? 'lte' + maxLevel : 'all')
+  const key = 'cards:' + userId + ':' + track.language + ':' + track.system + ':' + scope + ':' + columns
   try {
     let query = supabase
       .from('cards')
@@ -27,7 +28,10 @@ export async function getTrackCards(userId, track, { level, columns = '*' } = {}
       .eq('user_id', userId)
       .eq('vocabulary.language', track.language)
       .eq('vocabulary.system', track.system)
+    // `level` pins one exact level; `maxLevel` includes every level up to it
+    // (the cumulative deck). They're mutually exclusive — `level` wins.
     if (level != null) query = query.eq('vocabulary.level', level)
+    else if (maxLevel != null) query = query.lte('vocabulary.level', maxLevel)
     const { data, error } = await query
     if (error || !data) {
       const cached = await cacheGet(key)

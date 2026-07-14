@@ -3,15 +3,19 @@ import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, getLevels } from './utils'
 import { track, EVENTS } from './analytics'
 import { languageList, languageTheme } from './languageTheme'
+import { resolveTiers, TIER_META } from './tiers'
+import PlacementTest from './PlacementTest'
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
-import { ArrowRight, BookOpen, Layers, PenLine, Play } from 'lucide-react'
+import { ArrowRight, BookOpen, GraduationCap, Layers, Lock, PenLine, Play } from 'lucide-react'
 
 export default function Onboarding({ session, onComplete }) {
   const [step, setStep] = useState(1)
   const [language, setLanguage] = useState(null)
   const [level, setLevel] = useState(null)
+  const [tier, setTier] = useState(null)         // selected tier { key, level, test }
+  const [placement, setPlacement] = useState(false)  // showing the placement test
   const [goal, setGoal] = useState(10)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -23,13 +27,12 @@ export default function Onboarding({ session, onComplete }) {
   const languages = languageList()
   const selectedTheme = language ? languageTheme(language) : null
   const accentHex = selectedTheme ? selectedTheme.accentHex : '#B83A24'
-  const levels = selectedTheme ? getLevels(language, selectedTheme.system) : []
 
   // Which levels actually have vocabulary seeded. Levels without content are
   // shown as "Coming soon" instead of dropping a new user into an empty queue.
   // Keyed by language so a stale result never gates the wrong language; while
   // loading (or on fetch failure) everything stays selectable (fail open).
-  const [seededData, setSeededData] = useState(null)   // { lang, levels: Set }
+  const [seededData, setSeededData] = useState(null)   // { lang, levels: Set|null }
   useEffect(() => {
     if (!language) return
     let cancelled = false
@@ -40,12 +43,24 @@ export default function Onboarding({ session, onComplete }) {
       .eq('system', languageTheme(language).system)
       .eq('is_active', true)
       .then(({ data }) => {
-        if (cancelled || !data) return
-        setSeededData({ lang: language, levels: new Set(data.map(r => r.level)) })
+        if (cancelled) return
+        // On a fetch failure, record levels: null (unknown) so the UI fails open
+        // to the full level range instead of getting stuck on a spinner.
+        setSeededData({ lang: language, levels: data ? new Set(data.map(r => r.level)) : null })
       })
     return () => { cancelled = true }
   }, [language])
-  const seededLevels = seededData && seededData.lang === language ? seededData.levels : null
+  const seededResolved = Boolean(seededData && seededData.lang === language)
+  const seededLevels = seededResolved ? seededData.levels : null
+
+  // The proficiency tiers (Beginner / Intermediate / Professional) offered for
+  // this language, derived from the levels that actually have seeded content.
+  // While the seeded set is still loading we fall back to the full level range.
+  const availableLevels = seededLevels
+    ? Array.from(seededLevels)
+    : (selectedTheme ? getLevels(language, selectedTheme.system) : [])
+  const tiers = resolveTiers(availableLevels)
+  const tierLevelLabel = (t) => getLevelLabel(language, selectedTheme.system, t.level)
 
   const handleFinish = async () => {
     setSaving(true)
@@ -144,7 +159,7 @@ export default function Onboarding({ session, onComplete }) {
                 return (
                   <button
                     key={lang.key}
-                    onClick={() => { setLanguage(lang.key); setLevel(null) }}
+                    onClick={() => { setLanguage(lang.key); setLevel(null); setTier(null); setPlacement(false) }}
                     style={{
                       flex: 1,
                       padding: '24px 12px',
@@ -191,73 +206,126 @@ export default function Onboarding({ session, onComplete }) {
           </div>
         )}
 
-        {/* STEP 2: Level */}
+        {/* STEP 2: Proficiency tier (+ placement test to prove higher tiers) */}
         {step === 2 && (
           <div>
-            <h1 style={{ fontSize: '22px', fontWeight: 700, textAlign: 'center', color: 'var(--text)', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
-              What's your level?
-            </h1>
-            <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '10px', fontSize: '14px' }}>
-              Pick your {getSystemLabel(selectedTheme.system)} level. Starting higher assumes you know all earlier vocabulary.
-            </p>
-            <p style={{ textAlign: 'center', color: accentHex, marginBottom: '22px', fontSize: '13px', fontWeight: 600 }}>
-              New to {selectedTheme.languageName}? Start with {getLevelLabel(language, selectedTheme.system, levels[0])}.
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-              {levels.map(lvl => {
-                const seeded = !seededLevels || seededLevels.has(lvl)
-                return (
+            {placement && tier ? (
+              <PlacementTest
+                language={language}
+                system={selectedTheme.system}
+                level={tier.level}
+                accentHex={accentHex}
+                fontFamily={selectedTheme.font}
+                tierLabel={TIER_META[tier.key].label}
+                levelLabel={tierLevelLabel(tier)}
+                onPass={(lvl) => { setLevel(lvl); setPlacement(false); setStep(3) }}
+                onCancel={() => { setPlacement(false); setTier(null); setLevel(null) }}
+                onFallback={() => {
+                  // Failed the placement — start at the Beginner tier's level.
+                  const beginner = tiers[0]
+                  setTier(beginner)
+                  setLevel(beginner.level)
+                  setPlacement(false)
+                  setStep(3)
+                }}
+              />
+            ) : (
+              <>
+                <h1 style={{ fontSize: '22px', fontWeight: 700, textAlign: 'center', color: 'var(--text)', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
+                  What's your level?
+                </h1>
+                <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '22px', fontSize: '14px', lineHeight: 1.5 }}>
+                  Choose where to start. Higher tiers assume you already know the earlier {getSystemLabel(selectedTheme.system)} vocabulary — a quick test proves it.
+                </p>
+
+                {!seededResolved ? (
+                  <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--text-muted)', fontSize: '14px' }}>
+                    Loading levels…
+                  </div>
+                ) : tiers.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6 }}>
+                    Content for {selectedTheme.languageName} is coming soon. Please pick another language for now.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {tiers.map(t => {
+                      const meta = TIER_META[t.key]
+                      const TierIcon = t.key === 'beginner' ? Play : t.key === 'intermediate' ? BookOpen : GraduationCap
+                      const selected = tier && tier.key === t.key
+                      return (
+                        <button
+                          key={t.key}
+                          onClick={() => setTier(t)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '14px', textAlign: 'left',
+                            padding: '16px 18px', borderRadius: '14px',
+                            border: selected ? ('2px solid ' + accentHex) : '2px solid var(--border)',
+                            background: selected ? (accentHex + '0D') : 'var(--surface)',
+                            cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'Inter, sans-serif',
+                          }}
+                        >
+                          <span style={{
+                            width: '42px', height: '42px', borderRadius: '12px', flexShrink: 0,
+                            background: accentHex + '12', border: '1px solid ' + accentHex + '22',
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <TierIcon size={20} strokeWidth={1.85} color={accentHex} />
+                          </span>
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '15px', fontWeight: 700, color: selected ? accentHex : 'var(--text)' }}>{meta.label}</span>
+                              {t.test && (
+                                <span style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: '3px',
+                                  fontSize: '10px', fontWeight: 700, color: accentHex,
+                                  background: accentHex + '14', borderRadius: '999px', padding: '2px 7px',
+                                }}>
+                                  <Lock size={9} strokeWidth={2.4} color={accentHex} /> Placement test
+                                </span>
+                              )}
+                            </span>
+                            <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '3px', lineHeight: 1.4 }}>
+                              {meta.blurb}
+                            </span>
+                          </span>
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>
+                            {tierLevelLabel(t)}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '12px', marginTop: '28px' }}>
+                  <button onClick={() => { setStep(1); setTier(null); setLevel(null) }} style={backBtn}>Back</button>
                   <button
-                    key={lvl}
-                    onClick={() => seeded && setLevel(lvl)}
-                    disabled={!seeded}
+                    onClick={() => {
+                      if (!tier) return
+                      if (tier.test) { setPlacement(true); return }
+                      setLevel(tier.level)
+                      setStep(3)
+                    }}
+                    disabled={!tier}
                     style={{
-                      padding: '18px 8px',
+                      flex: 2,
+                      padding: '13px',
                       borderRadius: '12px',
-                      border: level === lvl ? ('2px solid ' + accentHex) : '2px solid var(--border)',
-                      background: level === lvl ? (accentHex + '0D') : 'var(--surface)',
-                      cursor: seeded ? 'pointer' : 'not-allowed',
-                      fontSize: '13px',
+                      border: 'none',
+                      background: tier ? accentHex : 'var(--border)',
+                      color: tier ? 'var(--surface)' : 'var(--text-muted)',
+                      cursor: tier ? 'pointer' : 'not-allowed',
+                      fontSize: '15px',
                       fontWeight: 600,
-                      color: level === lvl ? accentHex : (seeded ? 'var(--text)' : 'var(--text-faint)'),
-                      opacity: seeded ? 1 : 0.6,
-                      transition: 'all 0.2s',
                       fontFamily: 'Inter, sans-serif',
-                      lineHeight: 1.3,
+                      transition: 'all 0.2s',
                     }}
                   >
-                    {getLevelLabel(language, selectedTheme.system, lvl)}
-                    {!seeded && (
-                      <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-faint)', marginTop: '3px' }}>
-                        Coming soon
-                      </div>
-                    )}
+                    {tier && tier.test ? 'Take placement test' : 'Continue'}
                   </button>
-                )
-              })}
-            </div>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '28px' }}>
-              <button onClick={() => setStep(1)} style={backBtn}>Back</button>
-              <button
-                onClick={() => setStep(3)}
-                disabled={!level || (seededLevels && !seededLevels.has(level))}
-                style={{
-                  flex: 2,
-                  padding: '13px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  background: level ? accentHex : 'var(--border)',
-                  color: level ? 'var(--surface)' : 'var(--text-muted)',
-                  cursor: level ? 'pointer' : 'not-allowed',
-                  fontSize: '15px',
-                  fontWeight: 600,
-                  fontFamily: 'Inter, sans-serif',
-                  transition: 'all 0.2s',
-                }}
-              >
-                Continue
-              </button>
-            </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 
