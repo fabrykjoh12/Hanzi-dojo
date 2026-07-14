@@ -8,6 +8,13 @@ bottom and you'll have a clean, spam‑resistant server in ~30 minutes.
 Once the permanent invite exists, paste it into [`src/community.js`](../src/community.js)
 (`DISCORD_INVITE_URL`) and the in‑app links light up automatically.
 
+> **Want it built automatically?** Skip the clicking — run
+> [`scripts/setup-discord.mjs`](../scripts/setup-discord.mjs) and it creates
+> every role, category, channel, topic and permission below in one pass. See
+> [§7 Automated setup](#7-automated-setup-optional). You'll still do the
+> Community-mode toggle, onboarding question, and rules text by hand (those
+> aren't exposed to bots).
+
 ---
 
 ## 0. First: server-wide settings
@@ -218,3 +225,42 @@ Don't share the invite until the server feels alive:
 The in‑app links (Settings + landing footer) are already wired. Also add it to:
 the README (badge + Community section), the session‑recap screen ("share your
 win in Discord"), and any email/push reminders. Meet learners where they already are.
+
+---
+
+## 7. Automated setup (optional)
+
+[`scripts/setup-discord.mjs`](../scripts/setup-discord.mjs) builds the roles and
+the whole channel tree above for you — no manual clicking. It's idempotent
+(skips anything that already exists), so you can tweak the config in the script
+and re‑run safely.
+
+**1. Create a bot.** Go to <https://discord.com/developers/applications> → **New
+Application** → **Bot** → **Reset Token** and copy the token.
+
+**2. Invite the bot** to your server with **Administrator** permission (OAuth2 →
+URL Generator → scope `bot`, permission `Administrator`, open the generated URL).
+
+**3. Get the server ID.** Discord → Settings → Advanced → **Developer Mode** on,
+then right‑click the server icon → **Copy Server ID**.
+
+**4. Run it** (Node 18+):
+
+```bash
+# Preview without changing anything:
+DISCORD_BOT_TOKEN=your_token DISCORD_GUILD_ID=your_server_id DRY_RUN=1 node scripts/setup-discord.mjs
+
+# For real:
+DISCORD_BOT_TOKEN=your_token DISCORD_GUILD_ID=your_server_id node scripts/setup-discord.mjs
+```
+
+**What the bot can't do (do these by hand afterward — 5 min):**
+
+- Enabling **Community mode** and the **rules screening gate** (§0).
+- The **onboarding question** that assigns language roles (§2).
+- Posting the **welcome / rules / intro** message text (§4).
+- Generating the **permanent invite** (§5).
+
+> The bot token is a password for your server — never commit it. Pass it as an
+> environment variable as shown, and reset it in the Developer Portal if it
+> ever leaks.
