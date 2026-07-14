@@ -11,7 +11,7 @@ on:
         description: What to regenerate
         type: choice
         default: both
-        options: [meanings, examples, examples-fill, both, comprehension, comprehension-prune, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk2, stories-hsk2, seed-n4, audio-n4, stories-n4, seed-russian, audio-russian, examples-russian, stories-russian, stories-hsk1-replace, stories-hsk2-replace, stories-jlpt1-replace, audio-jlpt1, audio-jlpt2, story-audio-hsk1, story-audio-hsk2, story-audio-jlpt1, story-audio-jlpt2, story-audio-n4, story-audio-russian, serial-hsk1, serial-hsk2, serial-jlpt1, serial-n4, serial-russian, story-images-list, story-images-apply, authored-vocab-hsk1, authored-vocab-hsk2, authored-vocab-jlpt1, authored-vocab-n4, authored-vocab-russian, authored-insert]
+        options: [meanings, examples, examples-fill, both, comprehension, comprehension-prune, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk2, stories-hsk2, seed-n4, audio-n4, stories-n4, seed-russian, audio-russian, examples-russian, stories-russian, stories-hsk1-replace, stories-hsk2-replace, stories-jlpt1-replace, publish-held-jlpt1, audio-jlpt1, audio-jlpt2, story-audio-hsk1, story-audio-hsk2, story-audio-jlpt1, story-audio-jlpt2, story-audio-n4, story-audio-russian, serial-hsk1, serial-hsk2, serial-jlpt1, serial-n4, serial-russian, story-images-list, story-images-apply, authored-vocab-hsk1, authored-vocab-hsk2, authored-vocab-jlpt1, authored-vocab-n4, authored-vocab-russian, authored-insert]
       language:
         description: Which language
         type: choice
@@ -143,6 +143,12 @@ jobs:
           if [ "${{ inputs.task }}" = "stories-jlpt1-replace" ]; then
             echo "::group::REPLACE JLPT N5 Part 1 (japanese level 1) stories (deletes existing kana-only stories, regenerates in kanji)"
             node generate-stories.mjs --language japanese --system jlpt --level 1 --replace
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "publish-held-jlpt1" ]; then
+            echo "::group::Publish held (is_published=false) JLPT N5 Part 1 stories"
+            node publish-stories.mjs --language japanese --system jlpt --level 1 --apply
             echo "::endgroup::"
           fi
 
