@@ -4,7 +4,55 @@ Read this entire file before making any change. It describes not just *what* the
 
 ---
 
-## 0. LATEST SESSION — read first (2026-07-05)
+## 0. LATEST SESSION — read first (2026-07-14)
+
+Everything below is **shipped to `main`** (PRs #39–#43), so a fresh chat has current context. Where this section conflicts with older text, **this section wins.** The whole arc was one "overhaul" branch (`claude/hanzi-dojo-overhaul-kxutp5`), themed around the **first-run activation funnel** (land → learn a few words → read your first story → come back) and turning the **story reader into the app's strongest feature**.
+
+### Premium story-reader redesign (PR #43)
+Reworked `StoryReaderImmersive.jsx` to read like a book, reusing all existing parsing / readability / highlighting / SRS / tap-to-define — no rewrite.
+- **Furigana modes** — Always / Learning / Unknown / Off — decided **per word** from the shared status buckets via the new pure `readingVisibleFor(mode, status)` in `storyReading.js`. Furigana space is reserved per line (`reserveRuby`) so readings appearing/disappearing never shift the baseline. Default **Unknown** (scaffold only new words). Replaces the old binary furigana toggle.
+- **Learning Lens** toggle (replaces the old "Known" toggle / `adaptive`): spotlight new + learning words, quiet the ones you know, keep **today's** words strongly emphasized (solid accent underline + tint + weight — three cues, not color alone).
+- **Sentence focus:** tapping a line calmly dims the rest (opacity, not blur; second tap releases). Cursor stays default so it still reads like text; words (Token) keep the pointer.
+- **Redesigned lookup sheet:** word + reading + status + meaning, plus context chips from data already in memory — "appears N× here" (new `counts` Map from `calculateStoryReadability`), "studied today", "review due soon" (`isDueSoon` + `due_at`, which was added to the existing `cards` select in Stories.jsx — **no new query**). Slide-up animation.
+- **Quieter controls:** the three always-on top toggles collapsed into one **Lens** pill + one **Reader** settings control (desktop popover / mobile bottom sheet, `ReaderSettings`/`SettingRow`/`MetaChip` components). Top bar z-index raised above the reading column so the popover isn't painted under the text.
+- **Preferences persist** in the IndexedDB prefs store (`READER_PREFS_KEY`, via `prefsGet`/`prefsSet`) and **never reload the story**. Typography roomier (line-height 2.15 w/ furigana, larger 0.56em furigana, 700px measure). Animations (`hd-sheet-up`/`hd-pop-in`/`hd-pop-check` in index.css) are subtle, fast, and reduced-motion-aware.
+- New pure logic unit-tested in `storyReading.test.js` (`readingVisibleFor`, `isDueSoon`, occurrence counts). Suite **224**.
+
+### Privacy-friendly learning-journey analytics (PR #43)
+- **Single service `src/analytics.js`** — clean API (`track`, `trackOnce`, `startSession`/`endSession`, `setAnalyticsContext`, `EVENTS`). Components call it; they never touch Supabase directly. **No third-party trackers, no personal data.** Every path is try/caught and inserts fire-and-forget, so **analytics can never break learning**.
+- **`sanitizeProps`** keeps only finite numbers, booleans, and strings ≤40 chars — objects / arrays / long text are dropped, so story text, typed answers, and emails can't leak even by mistake. Events carry timestamp, language, level, user id (if signed in), session id, app version (build sha).
+- **New append-only table `analytics_events`** (migration `20260713120000_add_analytics_events.sql` **+ mirrored into `schema.sql`**). RLS is **insert-only** with `user_id is null OR auth.uid() = user_id` — anonymous rows capture the pre-signup top of funnel (Landing → Signup); no client SELECT/UPDATE/DELETE (dashboards read with the service role). ⚠️ **Apply the migration in the Supabase SQL editor** before events collect (until then inserts fail silently, by design).
+- **Offline reuses the existing outbox** (`enqueueAnalytics` in `syncQueue.js`) — no second queue. Analytics replay is **lossy by design** (always returns done) so it can never wedge critical grade/XP writes.
+- Instrumented across Landing, Auth, Onboarding, App (session start/end + first-mission), Study (session + streak + achievements), StoryReaderImmersive (story open/complete + first-story), LanguageSwitcher. Events consolidated daily/weak/review into `STUDY_SESSION_*` with a `mode` prop; kept explicit FIRST_MISSION / FIRST_STORY milestone events for the activation funnel. Tests in `analytics.test.js` (event build, sanitize, offline queue, missing user/language, duplicate-session guard).
+
+### First Mission — interactive teach-by-doing onboarding (PR #42)
+- `src/firstMission.js` + `src/FirstMissionWelcome.jsx`: a brand-new account is walked through its very first study session and first story as a guided "mission" (the `firstMission` prop threads through Study and the reader — first-run hints, the reader guidance line, the completion copy). Interactive, not a slideshow.
+
+### Build/version stamp (PR #41)
+- `src/version.js` exposes **`BUILD_SHA`** (injected via `vite.config` `define: import.meta.env.VITE_BUILD_SHA`, from `version.json` at build). Surfaced in **Settings** and logged to the console on boot, so "am I on the latest deploy?" is answerable. Analytics stamps every event with it.
+
+### ESLint baseline eliminated (PR #40)
+- The long-standing **24-error** lint baseline is gone — `npx eslint .` is now **0 errors / 6 warnings** (the 6 are intentional `react-hooks/exhaustive-deps` on mount-load effects + audio autoplay). **Do not add new errors.** The cleanup was behavior-preserving.
+
+### Study.jsx refactor — pure logic extracted + tested (PR #39)
+Study.jsx was large and hard to test; carved into focused, unit-tested pieces (behavior unchanged):
+- `SessionRecap.jsx` (recap UI), `useStudyAudio.js` (audio hook), `useStudyKeyboardShortcuts.js` (desktop shortcuts), `typedAnswer.js` (typed-mode matching), `missionOffer.js` (post-session chat-mission bucketing), `studyTally.js` (session-tally decisions). Each has a `*.test.js`.
+
+### Unified story readability — one canonical "% known" (PR #39)
+- **`calculateStoryReadability({ content, vocabMap, cards, language })`** in `storyReading.js` is now the **single source of truth** for coverage: the reader shows it AND the post-study recap ranks/recommends with it, so they always agree. It mirrors exactly what the reader visibly counts (strips speaker labels, treats Chinese proper names as names, excludes JP single-kana particles, greedy longest-match). Pure token/status helpers (`wordStatus`, `splitSpeaker`, `matchName`, `todayWordsInStory`) live here too. Well tested (`storyReading.test.js`).
+
+### First-run onboarding & activation funnel (PR #39)
+- **First-run onboarding** (`src/firstRun.js`): a fresh account's very first session is capped small (5 cards) and pointed at learning its first words → unlocking its first story.
+- **"First Story Unlocked" recap module** + deep-link: after the first study session, the recap surfaces the newly-readable story and links straight into it.
+- **Seeded review-first queue ordering** (`studyQueue.js`): replaced the fixed new/review interleave with a seeded review-first ordering.
+- **Reader today-words thread:** the reader surfaces "N words from today appear here", guidance, and an end-of-story recap that closes the study→read loop.
+
+### Product identity hardening (PR #39)
+- Reading-first landing/marketing copy; rewritten README; **auth email normalization** (`normalizeEmail` in utils — trims + lowercases so " Me@X.com " and "me@x.com" are one account, preventing an unreachable duplicate from a mobile auto-capital); NotFound routing (`src/NotFound.jsx`) for unknown paths.
+
+---
+
+## 0a. SESSION (2026-07-05)
 
 ### Brand wordmark — retired the brush script
 - The "Hanzi Dojo" wordmark used `Nanum Brush Script` (a Korean brush font whose Latin letters read thin/uneven — user called it "awful"). `brand.js` `heroWordmarkStyle` now uses **Poppins 700**, `-0.02em` tracking, `var(--text)` color — clean and legible, letting the red ensō logo carry the brand color. Fixes all hero placements (landing / auth / onboarding / password-reset) at once. Dropped `Nanum+Brush+Script` from the `index.html` font link (unused now); `BRAND_BRUSH_FONT` kept exported for back-compat but unreferenced.
@@ -1133,28 +1181,34 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 
 ## 17. Roadmap
 
-**Status:** The app is now **live** on GitHub Pages + Vercel (section 19), so real users can reach it. That raises the priority of mobile layout and content breadth.
+**Status:** The app is **live** on GitHub Pages + Vercel (section 19). The most recent arc focused on the **first-run activation funnel** and the **story reader**; with analytics now instrumented (0a), the next priorities shift toward **acting on that data** (a dashboard, FSRS tuning) and **content breadth**.
 
-Done:
-- ~~**Fix example_reading column reference in Study.jsx**~~
-- ~~**Japanese example sentences**~~ (798/800 words; 2 stragglers remain).
-- ~~**Japanese stories**~~ — 15 stories across 3 tiers for JLPT N5 level 1, with English translations.
-- ~~**Deploy to the web**~~ — GitHub Pages + Vercel, auto-deploy from `main`, graceful missing-config screen, OAuth redirect handling.
-- ~~**Mobile navigation**~~ — bottom tab bar (MobileNav.jsx) replaces the sidebar below 768px.
-- ~~**Mobile per-screen padding**~~ — every top-level screen tightens horizontal padding on mobile via useIsMobile().
-- ~~**Furigana on Japanese flashcard main word**~~ — showFurigana defaults true; showRuby shows the reading above kanji on front (by default) and back. Furigana is okurigana-aware (Study.jsx `furiganaParts`): the reading sits only over the kanji core, with leading/trailing kana left bare, and pure hiragana/katakana words (incl. katakana loanwords) get no furigana at all. Applies to both the big card word and the example-sentence target word.
-- ~~**LanguageSwitcher mastery count**~~ — progress display now uses mastery (FSRS stability) instead of the old `is_easy` count, consistent with the rest of the app.
-- ~~**Installable PWA**~~ — web manifest + icons, real page title/description, theme-color, and social-share (og) tags; fixed the favicon 404 on the Pages subpath (section 19).
+### Immediate action items (one-time setup — nothing collects until these are done)
+- ⚠️ **Apply the analytics migration** `supabase/migrations/20260713120000_add_analytics_events.sql` in the Supabase SQL editor. Until applied, every analytics insert fails silently (by design) and **no events are recorded**.
+- **Push-reminder VAPID secrets** (item #16) — still required before daily reminders send: `VAPID_PRIVATE_KEY` + `VITE_VAPID_PUBLIC_KEY` GitHub secrets, `VITE_VAPID_PUBLIC_KEY` Vercel env var, optional `VAPID_SUBJECT` variable (section 19).
 
-Priority order (most impactful first):
+### Done (recent)
+- ~~**Premium story-reader redesign**~~ — furigana modes, Learning Lens, sentence focus, redesigned lookup sheet with context chips, persisted prefs, typography + animation polish (0a, PR #43).
+- ~~**Privacy-friendly analytics**~~ — single `analytics.js` service + append-only `analytics_events` table capturing the activation funnel + session metrics, offline via the existing outbox (0a, PR #43). *(still needs the migration applied — see action items above)*
+- ~~**First Mission interactive onboarding**~~ + **first-run activation funnel** (first-session cap, "First Story Unlocked" recap + deep-link, seeded review-first queue, reader today-words thread) (0a, PRs #39/#42).
+- ~~**Unified story readability**~~ — one canonical `calculateStoryReadability` shared by reader + recap (0a, PR #39).
+- ~~**Build/version stamp**~~ (`BUILD_SHA` in Settings + console) and ~~**ESLint baseline eliminated**~~ (0 errors) (0a, PRs #40/#41).
+- ~~**Study.jsx refactor**~~ — pure logic extracted into tested modules (0a, PR #39).
+- ~~**Offline support**~~ — service worker + durable write outbox (background-sync queue), offline study/reading, iOS audio blobs (this replaces the old "follow-up: offline grading" item, now done).
+- ~~Deploy to web, mobile nav + padding, installable PWA, furigana on flashcards, LanguageSwitcher mastery count, Japanese example sentences + stories~~ (older sessions).
 
-1. **Japanese YouTube recommendations:** At least a few curated videos for JLPT N5. *(content task — needs video URLs)*
-2. **HSK 2 vocabulary + audio + stories:** Next Chinese level content. *(content task — needs vocab data + API keys)*
-3. **FSRS parameter tuning:** Once real user data exists, optimize parameters beyond library defaults.
-4. ~~**Offline support:** Service worker~~ — done (`public/sw.js`, runtime caching). Follow-up: offline grading via a background-sync queue.
-5. **Russian (CEFR):** Added as the third language — frontend + DB migration + A1 starter deck are in place; **seed + generate content** to make it live (see Known issues → Russian). The language-agnostic `src/languageTheme.js` refactor makes further languages (Spanish, …) mostly data + content.
+### Priority order (most impactful first)
+1. **Analytics dashboard:** the `analytics_events` table is structured for it, but there's **no dashboard yet**. Build the activation funnel (Landing→Signup→Onboarding→First Mission→First Story→return), DAU/WAU, retention, and story-completion views (service-role read; e.g. a Supabase SQL view / external dashboard). *(depends on the migration being applied + real traffic)*
+2. **FSRS parameter tuning:** `review_logs` + analytics now give real data — optimize scheduler parameters beyond library defaults.
+3. **Real-device verification pass** (can't be done from the sandbox): offline grade-replay + XP-delta reconcile, iOS/Safari flashcard + reader audio, and push reminders end-to-end. All were built and unit-tested but never exercised on a live device/browser.
+4. **Content breadth:**
+   - **Japanese YouTube recommendations** for JLPT N5 *(needs video URLs)*.
+   - **HSK 2 vocabulary + audio + stories** — next Chinese level *(needs vocab data + API keys)*.
+   - **Story yield:** regenerate the held/weaker tier-2/3 rows on `gemini-2.5-pro` (the `is_published=false` rows are invisible to users meanwhile).
+   - **Russian (CEFR):** frontend + migration + A1 starter deck are in place; seed + generate more content to deepen it.
+5. **Reader follow-ups** (nice-to-have): a first-time hint for sentence-focus (currently discovered by tapping), an optional serif reading font, per-story furigana overrides.
 
-(Practice mode is intentionally *not* on the roadmap — Writing.jsx already serves as the low-stakes practice/active-recall page.)
+New languages (Spanish, …) stay mostly **data + content** thanks to the language-agnostic `src/languageTheme.js` refactor. (Practice mode is intentionally *not* on the roadmap — Writing.jsx already serves as the low-stakes practice/active-recall page.)
 
 ---
 
