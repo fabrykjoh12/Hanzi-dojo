@@ -10,6 +10,7 @@ import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
 import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, matchName, JP_PARTICLES, readingVisibleFor, isDueSoon, buildVocabMatcher, matchVocabAt } from './storyReading'
+import { glossaryLookup } from './grammarGlossary'
 import { prefsGet, prefsSet } from './offline'
 import { FIRST_MISSION_READER_HINT, firstMissionCompletion } from './firstMission'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
@@ -576,6 +577,9 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const isPlain = Boolean(sel && !sel.vocab && !sel.name)   // tapped a grammar / out-of-list word
   const selWord = sel ? (isName ? sel.name.word : (sel.vocab ? sel.vocab.word : sel.text)) : ''
   const selStatus = sel && sel.vocab ? wordStatus(sel.vocab.id, userCards) : 'not_started'
+  // Built-in grammar glossary: a plain tap on a particle / copula / conjugation
+  // fragment gets a real explanation instead of the generic fallback line.
+  const selGrammar = isPlain ? glossaryLookup(track.language, sel.text) : null
   const selInDeck = sel && sel.vocab ? Boolean(userCards[sel.vocab.id]) : false
   // Context chips in the lookup sheet, all from data already in memory (no query):
   // how often the word appears here, whether it was studied today, and whether a
@@ -933,9 +937,9 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                   <span style={{ fontSize: '26px', fontWeight: 800, color: accent, fontFamily: font, lineHeight: 1.15, overflowWrap: 'anywhere' }}>
                     {selWord}
                   </span>
-                  {!isPlain && (
+                  {(!isPlain || selGrammar) && (
                     <span style={{ fontSize: '17px', color: GOLD, fontWeight: 600 }}>
-                      {isName ? sel.name.reading : sel.vocab.reading}
+                      {isName ? sel.name.reading : (selGrammar ? selGrammar.reading : sel.vocab.reading)}
                     </span>
                   )}
                 </div>
@@ -954,7 +958,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                     background: isName ? accent + '12' : 'transparent',
                   }}>
                     {isName && <UserRound size={12} strokeWidth={2.2} color={accent} />}
-                    {isName ? 'Name' : 'Word'}
+                    {isName ? 'Name' : (selGrammar ? 'Grammar' : 'Word')}
                   </span>
                 )}
               </div>
@@ -983,7 +987,9 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               {isName
                 ? 'Proper noun — a character’s name.'
                 : (isPlain
-                    ? 'Grammar or a word beyond this level’s list — tap the speaker to hear it, or open the sentence translation below.'
+                    ? (selGrammar
+                        ? selGrammar.gloss
+                        : 'A word beyond this level’s list — tap the speaker to hear it, or open the sentence translation below.')
                     : cleanMeaning(sel.vocab.meaning))}
             </div>
 

@@ -166,6 +166,49 @@ const MASU_IRREGULAR = {
   います: ['いる', 'いた', 'いて', 'いない'],
 }
 
+// Common conjugation endings, longest first. After a stem match, the token
+// extends across the okurigana it shares with the stored form plus one of
+// these endings — so 食べました is ONE tappable token, not 食 + べました split
+// into kana fragments by the fallback segmenter. Verb polite/plain/te/ta/nai
+// families plus い-adjective forms, and the bare godan dictionary endings.
+const CONJ_ENDINGS = [
+  'ていませんでした', 'ませんでした', 'てください', 'ていました', 'ています', 'ましょう',
+  'たかった', 'なかった', 'ちゃった', 'かった', 'くない', 'ました', 'ません', 'ないで',
+  'ている', 'ていた', 'たい', 'ない', 'ます', 'った', 'んだ', 'んで', 'いた', 'いて',
+  'いだ', 'して', 'くて', 'た', 'て', 'る', 'う', 'く', 'ぐ', 'す', 'つ', 'ぬ', 'ぶ', 'む',
+]
+
+function isHiraganaChar(ch) {
+  const c = (ch || '').charCodeAt(0)
+  return c >= 0x3040 && c <= 0x309F
+}
+
+// How many extra chars of `tail` beyond a matched stem belong to the same
+// word: okurigana shared with the stored form, then a conjugation ending —
+// optionally with one inflected kana in between (the godan row shift:
+// 行かない = 行 + か + ない). The shared prefix is capped so the form's own
+// final ます / dictionary kana is claimed by the endings table, not blindly
+// copied (食べます vs 食べました must diverge at べ, not べま).
+function conjugationExtension(tail, formTail) {
+  const cap = formTail.endsWith('ます')
+    ? Math.max(0, formTail.length - 2)
+    : Math.max(0, formTail.length - 1)
+  const maxShared = Math.min(commonPrefixLen(tail, formTail), cap)
+  for (let k = maxShared; k >= 0; k -= 1) {
+    const rest = tail.slice(k)
+    for (const end of CONJ_ENDINGS) {
+      if (rest.startsWith(end)) return k + end.length
+    }
+    if (isHiraganaChar(rest[0])) {
+      const shifted = rest.slice(1)
+      for (const end of CONJ_ENDINGS) {
+        if (shifted.startsWith(end)) return k + 1 + end.length
+      }
+    }
+  }
+  return maxShared
+}
+
 // Build a reusable matcher over a word-keyed vocab map.
 //   exact  — normalized keys, alternate spellings from multi-form entries
 //            ("やはり; やっぱり"), paren variants, readings (Japanese), and
@@ -261,7 +304,12 @@ export function matchVocabAt(text, i, matcher, particles = NO_PARTICLES) {
           best = e; bestScore = score
         }
       }
-      if (best) return { vocab: best.v, len }   // consume only the kanji stem
+      if (best) {
+        // Extend across the conjugation so the whole inflected word is one
+        // token (食べました, not 食 + kana fragments).
+        const ext = conjugationExtension(tail, best.form.slice(len))
+        return { vocab: best.v, len: len + ext }
+      }
     }
   }
   return null
