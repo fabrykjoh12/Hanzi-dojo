@@ -341,10 +341,33 @@ function validateStory(content, pool, tier) {
   if (language === 'russian') {
     cov = russianCoverage(lines, pool.map(v => v.word), cfg.bible.speakers)
   } else {
-    const dict = new Set(pool.map(v => v.word))
-    // Japanese vocab is often listed in kana while stories may echo the reading;
-    // index readings too so those count as in-pool rather than as misses.
-    if (language === 'japanese') pool.forEach(v => { if (v.reading) dict.add(v.reading) })
+    // Stored vocab forms carry decorations story text never has ("この～",
+    // "すみません。", "後(で)") — normalize them, and for Japanese also index
+    // readings, kanji stems, and ます-stems so a naturally conjugated pool verb
+    // (食べます → 食べた) counts as in-pool rather than as a miss. Mirrors the
+    // reader's matcher (src/storyReading.js) so "validates" ⇒ "tappable".
+    const dict = new Set()
+    const norm = (s) => String(s || '').trim().replace(/[～〜]/g, '').replace(/[。．.、，,!！?？\s]+$/g, '')
+    const addForms = (raw) => {
+      const f = norm(raw)
+      if (!f) return
+      const pm = f.match(/^(.+?)[（(](.+?)[）)]$/)
+      const variants = pm ? [pm[1] + pm[2], pm[1]] : [f]
+      for (const w of variants) {
+        dict.add(w)
+        if (language !== 'japanese') continue
+        // kanji stem (行きます → 行) — cjkCoverage treats trailing okurigana as
+        // allowed hiragana, so the stem alone is enough to count the word.
+        let lastK = -1
+        for (let i = 0; i < w.length; i += 1) { const c = w.charCodeAt(i); if (c >= 0x3400 && c <= 0x9FFF) lastK = i }
+        if (lastK >= 0) dict.add(w.slice(0, lastK + 1))
+        if (w.endsWith('ます') && w.length > 4) dict.add(w.slice(0, -2))   // かえります → かえり
+      }
+    }
+    pool.forEach(v => {
+      addForms(v.word)
+      if (language === 'japanese' && v.reading) String(v.reading).split(/[/／・;；]/).forEach(addForms)
+    })
     cfg.bible.speakers.forEach(n => dict.add(n))
     if (language === 'chinese') dict.add('大毛')
     cov = cjkCoverage(lines, dict, 8, language === 'japanese')
@@ -419,10 +442,22 @@ function parsePlan(text, expectedChapters) {
   return out.chapters.length >= expectedChapters ? out : null
 }
 
+// Per-language script rule injected into every writing/revision pass. Japanese
+// must mirror the pool's exact written forms: the reader matches story words
+// against the stored vocabulary, so a kana-listed word written in kanji (or
+// vice versa) becomes untappable. kanaOnly is the legacy all-kana switch.
+function scriptNote() {
+  if (cfg.kanaOnly) return '- Write ONLY in hiragana and katakana (no kanji at all)\n'
+  if (language === 'japanese') {
+    return '- Script: write every allowed-vocabulary word EXACTLY as listed — kanji words in kanji (学校, 食べます), kana-listed words in kana (こうえん, としょかん — do NOT convert them to kanji). Verbs listed in ます-form may be conjugated naturally (食べます → 食べました, 食べて). Words outside the list: prefer hiragana.\n'
+  }
+  return ''
+}
+
 async function draftChapter(tier, plan, chapterIdx, focusWords, pool, prevRecap) {
   const ch = plan.chapters[chapterIdx]
   const [minL, maxL] = tier.lines
-  const kanaNote = cfg.kanaOnly ? '- Write ONLY in hiragana and katakana (no kanji at all)\n' : ''
+  const kanaNote = scriptNote()
   const prompt =
     'Write chapter ' + (chapterIdx + 1) + ' of a serialized ' + cfg.promptLang + ' graded reader for ' + cfg.levelName + ' learners.\n\n' +
     'Season premise: ' + plan.premise_en + '\n' +
@@ -456,7 +491,7 @@ async function reviseForCoverage(tier, draft, validation, focusWords, pool) {
     'ALLOWED VOCABULARY (replace out-of-pool words using ONLY these plus names, particles and basic grammar):\n' +
     poolForPrompt(pool) + '\n\n' +
     'Focus words that must stay present: ' + focusWords.map(v => v.word).join(', ') + '\n' +
-    (cfg.kanaOnly ? 'Write ONLY in hiragana and katakana (no kanji).\n' : '') +
+    scriptNote() +
     'Keep ' + minL + '-' + maxL + ' lines, dialogue format NAME' + COLON + 'text, speakers only from: ' + cfg.bible.speakers.join(', ') + '\n\n' +
     CHAPTER_FORMAT
   return callText(prompt, 6000, parseChapter)
@@ -498,7 +533,7 @@ async function reviseForQuality(tier, draft, feedback, focusWords, pool) {
     'Editor feedback:\n' + feedback + '\n\n' +
     'Chapter:\n' + draft.content + '\n\n' +
     'Constraints (unchanged):\n' +
-    (cfg.kanaOnly ? '- ONLY hiragana and katakana (no kanji)\n' : '') +
+    scriptNote() +
     '- ' + minL + '-' + maxL + ' lines; dialogue format NAME' + COLON + 'text; speakers only from: ' + cfg.bible.speakers.join(', ') + '\n' +
     '- Focus words that must stay present: ' + focusWords.map(v => v.word).join(', ') + '\n' +
     '- ALLOWED VOCABULARY (plus names, particles, basic grammar):\n' + poolForPrompt(pool) + '\n\n' +

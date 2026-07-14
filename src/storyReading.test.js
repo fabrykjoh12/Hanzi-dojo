@@ -193,6 +193,64 @@ describe('calculateStoryReadability — Japanese conjugation', () => {
   })
 })
 
+// ── Real N5 vocabulary shapes (as stored in the DB) ──────────────────────────
+// The live vocab keeps verbs in ます-form, set phrases with a trailing 。,
+// determiners with a ～ placeholder, and optional particles in parentheses.
+// Story text uses none of those decorations — the matcher must bridge them.
+describe('calculateStoryReadability — stored N5 vocab shapes', () => {
+  const v = (word, id, reading) => ({ id, word, reading })
+  const N5 = {
+    '食べます': v('食べます', 'tabe', 'たべます'),
+    '行きます': v('行きます', 'iku', 'いきます'),
+    'かえります': v('かえります', 'kaeri', 'かえります'),
+    'します': v('します', 'shi', 'します'),
+    'あります': v('あります', 'ari', 'あります'),
+    'すみません。': v('すみません。', 'sumi', 'すみません。'),
+    'ありがとうございます。': v('ありがとうございます。', 'arigato', 'ありがとうございます。'),
+    'この～': v('この～', 'kono', 'この～'),
+    '後(で)': v('後(で)', 'ato', 'あと(で)'),
+    '学校': v('学校', 'gakko', 'がっこう'),
+    '毎月': v('毎月', 'maitsuki', 'まいげつ/まいつき'),
+  }
+  const run = (content) => calculateStoryReadability({ content, vocabMap: N5, cards: {}, language: 'japanese' })
+
+  it('matches ます-form vocab through conjugation (食べた → 食べます)', () => {
+    expect(run('パンを食べた。').storyWords).toContain('食べます')
+    expect(run('学校に行った。').storyWords).toContain('行きます')
+  })
+
+  it('matches kana ます-verbs through conjugation (かえった → かえります)', () => {
+    expect(run('うちにかえった。').storyWords).toContain('かえります')
+    expect(run('うちにかえる。').storyWords).toContain('かえります')
+  })
+
+  it('matches irregular する/ある forms to します/あります', () => {
+    expect(run('しゅくだいをした。').storyWords).toContain('します')
+    expect(run('本がある。').storyWords).toContain('あります')
+  })
+
+  it('matches set phrases with the stored trailing 。 stripped', () => {
+    expect(run('すみません、駅はどこですか。').storyWords).toContain('すみません。')
+    expect(run('ありがとうございます。').storyWords).toContain('ありがとうございます。')
+  })
+
+  it('matches ～-decorated determiners (この本 → この～)', () => {
+    expect(run('この本はいいです。').storyWords).toContain('この～')
+  })
+
+  it('matches parenthesized-particle entries both ways (後(で))', () => {
+    expect(run('後で行きます。').storyWords).toContain('後(で)')
+  })
+
+  it('matches a kanji word written in kana via its reading (がっこう → 学校)', () => {
+    expect(run('がっこうは近い。').storyWords).toContain('学校')
+  })
+
+  it('matches either reading variant of a multi-reading word', () => {
+    expect(run('まいつき本を買う。').storyWords).toContain('毎月')
+  })
+})
+
 describe('calculateStoryReadability — Russian', () => {
   const RV = { кот: zh('кот', 'k'), дом: zh('дом', 'd') }
   it('counts whitespace-separated words, ignoring punctuation', () => {

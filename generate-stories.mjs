@@ -90,7 +90,7 @@ const CONFIGS = {
     promptLang: 'Japanese', level: 'JLPT N5',
     names: '- たかし (Takashi)\n- はな (Hana)\n- おかあさん (Mother)\n- みせのひと (Shop or station worker)',
     nameNote: 'write in hiragana, not kanji',
-    scriptNote: 'Write words in their standard Japanese form using kanji where a word is normally written with kanji (e.g. 学校, 食べる, 見る) — the reader shows furigana over kanji. Use kana only for words normally written in kana. Do NOT write the whole story in kana.',
+    scriptNote: 'Script: write every core-vocabulary word EXACTLY as it appears in the list — kanji words in kanji (学校, 食べます), kana-listed words in kana (こうえん, としょかん — do NOT convert them to kanji). Verbs are listed in ます-form; conjugate them naturally (食べます → 食べました, 食べて). The reader shows furigana over kanji, so do not avoid kanji that the list itself uses.',
     maxLineChars: 20,
     prereqLevel: null, prereqMax: 0,
     tiers: [
@@ -104,7 +104,7 @@ const CONFIGS = {
     promptLang: 'Japanese', level: 'JLPT N4',
     names: '- たかし (Takashi)\n- はな (Hana)\n- おかあさん (Mother)\n- せんせい (Teacher)',
     nameNote: 'write in hiragana, not kanji',
-    scriptNote: 'Write words in their standard Japanese form using kanji where a word is normally written with kanji (e.g. 学校, 食べる, 見る) — the reader shows furigana over kanji. Use kana only for words normally written in kana. Do NOT write the whole story in kana.',
+    scriptNote: 'Script: write every core-vocabulary word EXACTLY as it appears in the list — kanji words in kanji (学校, 食べます), kana-listed words in kana (こうえん, としょかん — do NOT convert them to kanji). Verbs are listed in ます-form; conjugate them naturally (食べます → 食べました, 食べて). The reader shows furigana over kanji, so do not avoid kanji that the list itself uses.',
     maxLineChars: 22,
     prereqLevel: 1, prereqMax: 150,   // include the 150 most basic N5 Part 1 words
     tiers: [
