@@ -10,6 +10,7 @@ export const KNOWN_VIEWS = [
   'study', 'weak', 'test', 'writing', 'listen', 'kana', 'cyrillic',
   'practice', 'words', 'grammar', 'strokes', 'builder', 'fillblank',
   'tones', 'stories', 'profile', 'languages', 'youtube', 'settings',
+  'dev',
 ]
 
 // Map the internal view key to a URL path. Home is '/', every other view is

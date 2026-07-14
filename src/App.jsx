@@ -38,6 +38,7 @@ const Profile = lazy(() => import('./Profile'))
 const YouTube = lazy(() => import('./YouTube'))
 const LanguageSwitcher = lazy(() => import('./LanguageSwitcher'))
 const Settings = lazy(() => import('./Settings'))
+const Dev = lazy(() => import('./Dev'))
 const NotFound = lazy(() => import('./NotFound'))
 
 // Calm centered fallback while a lazy screen loads.
@@ -413,6 +414,18 @@ export default function App() {
         session={session}
         profile={profile}
         onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
+      />
+    )
+  } else if (view === 'dev') {
+    // Developer tools — email-gated inside the component; every action is
+    // RLS-scoped to the signed-in account. Not linked from the main nav.
+    content = (
+      <Dev
+        session={session}
+        profile={profile}
+        track={track}
+        onBack={() => navigate('home')}
+        onNavigate={navigate}
       />
     )
   } else if (isKnownView(view)) {
