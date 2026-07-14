@@ -37,6 +37,17 @@ Consequences: story text must use pool words **in their stored written form** (n
 - ⚠️ `--replace` regeneration **resets story_number to 1** and orphans `data/story-covers.json` entries (JP level 1 covers were keyed 11–35 → images vanished) and drops comprehension questions + recorded narration. After any story regen, re-run: covers (`story-images-list` → author → `story-images-apply`), `comprehension` (japanese), `story-audio-jlpt1`.
 - No `ANTHROPIC_API_KEY` secret is set — the serial pipeline's premium tier falls back to `gemini-2.5-flash`.
 
+### Claude-authored stories lane (PRs #56–#58, #61–#62 — the preferred quality path)
+- **Write seasons directly in chat** → `data/authored-stories.json` → merge → run the **`authored-insert` workflow** (own file + concurrency group, so it never queues behind generation runs). `src/authoredStories.test.js` validates every chapter with the PRODUCTION matcher + Intl.Segmenter against `data/jlpt1-vocab-snapshot.json` (kanji must resolve; ≤4 unexplained kana reach words/chapter) — tappable by construction.
+- First authored season: **「しろいねこ」The White Cat** (jlpt/1 #24–28, tier 1). しろ is a protected character name (characterNames.js).
+- **`content-utils` workflow** (own concurrency group): `story-images-apply`, parameterized `publish-held` (`--tier` capable), `fix-collisions`.
+- ⚠️ **story_number collision hazard**: serial runs read their number counter ONCE at start — an authored insert mid-run grabs the same range. Fixed with `publish-stories.mjs --fix-collisions` (renumbers held duplicates past the level max). Don't run `authored-insert` while a serial run is mid-flight.
+- ⚠️ **GitHub concurrency queues hold ONE pending run** — queuing a third run silently cancels the older pending one (lost a comprehension run this way). Utility tasks live in separate workflows for this reason.
+- Gemini serial-run quality is uneven: the append run's tier 2–3 seasons scored 3–5 and were left HELD (whole seasons hidden = no visible gaps; jlpt/1 shows only the good seasons). Level 2 published in full (each tier already had visible chapters). Replacing weak seasons with authored ones is the standing plan.
+
+### Developer page /dev (PR #59–#60)
+- Hidden route (KNOWN_VIEWS, no nav link), gated to dev emails (`devTools.js`, default `fabrykjoh@gmail.com`, override `VITE_DEV_EMAILS`). Self-service, RLS-scoped: level jump, master-all vocab (level / ≤current), start-as-learning, delete level cards, FULL reset (existing RPC), story reads, test attempts, XP/streak/freezes, cache clear. Replaces the manual /reset & /unlock SQL flows.
+
 ---
 
 ## 0.0 PREVIOUS SESSION (2026-07-14, first session)
