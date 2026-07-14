@@ -9,7 +9,7 @@ import { CHARACTER_READINGS } from './characterNames'
 import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
-import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, matchName, JP_PARTICLES, readingVisibleFor, isDueSoon, buildVocabMatcher, matchVocabAt } from './storyReading'
+import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, matchName, JP_PARTICLES, readingVisibleFor, isDueSoon, buildVocabMatcher, matchVocabAt, boundaryAfterSkip } from './storyReading'
 import { glossaryLookup } from './grammarGlossary'
 import { prefsGet, prefsSet } from './offline'
 import { FIRST_MISSION_READER_HINT, firstMissionCompletion } from './firstMission'
@@ -136,23 +136,28 @@ function makeSegmenter(locale) {
 function segmentLine(text, matcher, segmenter, names, particles) {
   const tokens = []
   let i = 0
+  let boundary = true
   while (i < text.length) {
-    const name = matchName(text, i, matcher.exact, names)
+    const name = matchName(text, i, matcher.words, names)
     if (name) {
       tokens.push({ text: name, name: { word: name, reading: names[name] } })
       i += name.length
+      boundary = true
       continue
     }
-    const m = matchVocabAt(text, i, matcher, particles)
+    const m = matchVocabAt(text, i, matcher, particles, boundary)
     if (m) {
       tokens.push({ text: text.slice(i, i + m.len), vocab: m.vocab })
       i += m.len
+      boundary = true
       continue
     }
     let j = i
+    let b = boundary
     while (j < text.length) {
-      if (matchName(text, j, matcher.exact, names)) break
-      if (matchVocabAt(text, j, matcher, particles)) break
+      if (matchName(text, j, matcher.words, names)) break
+      if (matchVocabAt(text, j, matcher, particles, b)) break
+      b = boundaryAfterSkip(text[j], particles)
       j += 1
     }
     const run = text.slice(i, j)
@@ -162,6 +167,7 @@ function segmentLine(text, matcher, segmenter, names, particles) {
       tokens.push({ text: run, vocab: null })
     }
     i = j
+    boundary = b
   }
   return tokens
 }
@@ -194,8 +200,10 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
   // Furigana visibility is decided per word from the chosen mode and this word's
   // learning status (shared, tested rule) — so "Unknown" scaffolds only new
   // words, "Learning" only in-progress ones, etc. Names carry no card → treated
-  // as not_started, so they read as "unknown" words.
+  // as not_started, so they read as "unknown" words. Japanese tokens without
+  // kanji never show furigana — kana above identical kana is pure noise.
   const showReading = readingVisibleFor(furiganaMode, status) && Boolean(reading)
+    && !(isJapanese && !hasKanji(token.text))
 
   // Learning Lens: quiet the words you know and spotlight the frontier. Today's
   // words get the strongest, always-on cue (solid underline + tint + weight) so
@@ -269,7 +277,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const isChinese = track.language === 'chinese'
   const accent = theme.accentHex
   const font = theme.font
-  const names = isChinese ? CHARACTER_READINGS.chinese : {}
+  const names = CHARACTER_READINGS[track.language] || {}
   const particles = isJapanese ? JP_PARTICLES : NO_PARTICLES
   const watermark = isJapanese ? ['読', '書'] : isChinese ? ['读', '书'] : ['А', 'Я']
   const readingLabel = isJapanese ? 'Furigana' : isChinese ? 'Pinyin' : 'Reading'
@@ -937,11 +945,18 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                   <span style={{ fontSize: '26px', fontWeight: 800, color: accent, fontFamily: font, lineHeight: 1.15, overflowWrap: 'anywhere' }}>
                     {selWord}
                   </span>
-                  {(!isPlain || selGrammar) && (
-                    <span style={{ fontSize: '17px', color: GOLD, fontWeight: 600 }}>
-                      {isName ? sel.name.reading : (selGrammar ? selGrammar.reading : sel.vocab.reading)}
-                    </span>
-                  )}
+                  {(() => {
+                    const selReading = isName ? sel.name.reading : (selGrammar ? selGrammar.reading : (sel.vocab ? sel.vocab.reading : null))
+                    // Kana vocab stores its reading as itself — repeating the
+                    // word right next to it is noise, so only show a reading
+                    // that adds information.
+                    if (!selReading || selReading === selWord) return null
+                    return (
+                      <span style={{ fontSize: '17px', color: GOLD, fontWeight: 600 }}>
+                        {selReading}
+                      </span>
+                    )
+                  })()}
                 </div>
                 {sel.vocab && (
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>

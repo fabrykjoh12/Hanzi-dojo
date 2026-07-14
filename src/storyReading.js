@@ -90,7 +90,7 @@ export function matchName(text, i, vocabMap, names) {
 }
 
 // The names/particles a language uses — the same derivation the reader makes.
-function namesFor(language) { return language === 'chinese' ? CHARACTER_READINGS.chinese : {} }
+function namesFor(language) { return CHARACTER_READINGS[language] || {} }
 function particlesFor(language) { return language === 'japanese' ? JP_PARTICLES : NO_PARTICLES }
 
 // ── Japanese deinflection-lite matching ──────────────────────────────────────
@@ -218,6 +218,7 @@ function conjugationExtension(tail, formTail) {
 //            like 見物 is never mistaken for 見る).
 export function buildVocabMatcher(vocabMap = {}, language) {
   const exact = {}
+  const words = {}          // original word forms only — the name-check lookup
   const stems = new Map()
   const isJapanese = language === 'japanese'
 
@@ -254,11 +255,18 @@ export function buildVocabMatcher(vocabMap = {}, language) {
 
   for (const key in vocabMap) {
     const v = vocabMap[key]
-    const forms = String(key).split(/[;；]/).map(s => normalizeVocabForm(s)).filter(Boolean)
-    if (!forms.length) forms.push(key)
-    for (const raw of forms) {
-      for (const f of expandParenVariants(raw)) {
+    const rawForms = String(key).split(/[;；]/).map(s => s.trim()).filter(Boolean)
+    if (!rawForms.length) rawForms.push(key)
+    for (const rawForm of rawForms) {
+      const norm = normalizeVocabForm(rawForm)
+      if (!norm) continue
+      for (const f of expandParenVariants(norm)) {
+        // A single char left over from a DECORATED key ("お～" → "お") is a
+        // prefix/fragment, not a standalone word — indexing it would split
+        // real words (お inside おだんご). Undecorated one-char vocab is fine.
+        if (f.length === 1 && norm !== rawForm) continue
         addExactAny(f, v)
+        if (!words[f]) words[f] = v
         if (isJapanese) addJapaneseDerived(f, v)
       }
     }
@@ -272,15 +280,21 @@ export function buildVocabMatcher(vocabMap = {}, language) {
       }
     }
   }
-  return { exact, stems, isJapanese }
+  return { exact, words, stems, isJapanese }
 }
 
-// matchVocabAt(text, i, matcher, particles) → { vocab, len } | null.
+// matchVocabAt(text, i, matcher, particles, atBoundary) → { vocab, len } | null.
 // Exact greedy longest match first (long enough for set phrases like
 // ありがとうございます); then, for Japanese, a conjugation-tolerant stem match
 // (only when the char after the stem is kana, so a kanji compound like 見物
 // isn't mistaken for a conjugated 見る).
-export function matchVocabAt(text, i, matcher, particles = NO_PARTICLES) {
+//
+// `atBoundary`: hiragana-initial matches are only taken at a word boundary
+// (line start, after punctuation/kanji/katakana, after a particle, or right
+// after another match). Without it, かし inside たかし matched かします —
+// a name became "lend". Kanji/katakana-initial matches are self-bounding.
+export function matchVocabAt(text, i, matcher, particles = NO_PARTICLES, atBoundary = true) {
+  if (!atBoundary && isHiraganaChar(text[i])) return null
   const isVocab = (cand) => matcher.exact[cand] && !(cand.length === 1 && particles.has(cand))
   const maxLen = Math.min(12, text.length - i)
   for (let len = maxLen; len >= 1; len -= 1) {
@@ -315,16 +329,31 @@ export function matchVocabAt(text, i, matcher, particles = NO_PARTICLES) {
   return null
 }
 
+// Is `ch` a boundary-maker when skipped unmatched: punctuation/space (any
+// non-word char) or a single-kana particle. A skipped ordinary word char means
+// we're inside an unknown word, so the next position is NOT a boundary.
+export function boundaryAfterSkip(ch, particles = NO_PARTICLES) {
+  if (!ch) return true
+  if (particles.has(ch)) return true
+  const c = ch.charCodeAt(0)
+  const isWord = (c >= 0x30 && c <= 0x39) || (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A)
+    || (c >= 0x3040 && c <= 0x30FF) || (c >= 0x3400 && c <= 0x9FFF)
+    || (c >= 0x0400 && c <= 0x04FF) || (c >= 0xFF66 && c <= 0xFF9D)
+  return !isWord
+}
+
 // Greedy vocab scan of one (speaker-stripped) line, mirroring the reader's
 // segmentLine vocab matching without the Intl.Segmenter rendering pass. Pushes
 // the matched vocab objects (in order, with duplicates) into `out`.
 function scanLineVocab(text, matcher, names, particles, out) {
   let i = 0
+  let boundary = true
   while (i < text.length) {
-    const name = matchName(text, i, matcher.exact, names)
-    if (name) { i += name.length; continue }
-    const m = matchVocabAt(text, i, matcher, particles)
-    if (m) { out.push(m.vocab); i += m.len; continue }
+    const name = matchName(text, i, matcher.words, names)
+    if (name) { i += name.length; boundary = true; continue }
+    const m = matchVocabAt(text, i, matcher, particles, boundary)
+    if (m) { out.push(m.vocab); i += m.len; boundary = true; continue }
+    boundary = boundaryAfterSkip(text[i], particles)
     i += 1
   }
 }
