@@ -4,7 +4,42 @@ Read this entire file before making any change. It describes not just *what* the
 
 ---
 
-## 0. LATEST SESSION — read first (2026-07-14)
+## 0. LATEST SESSION — read first (2026-07-14, second session: tiers, cumulative levels, Japanese story fix)
+
+Shipped to `main` as PRs #45–#48, plus content operations run via the `regen-content` GitHub Action (which holds the Supabase/LLM secrets — the dev sandbox cannot reach Supabase directly).
+
+### Tier onboarding + placement test (PR #45)
+- Onboarding step 2 now offers **Beginner / Intermediate / Professional** (`src/tiers.js` → `resolveTiers` derives tiers from the seeded levels; `TIER_META` copy). Intermediate/Professional require passing a **placement test** (`src/PlacementTest.jsx`: 12 MCQs from that level's vocab, pass ≥75%, fail → offered Beginner). Beginner never tests.
+
+### Cumulative levels (PR #45)
+- Advancing a level **keeps earlier levels' cards** (H2→H3 still reviews H1+H2). `src/levelScope.js` → `studyFloorLevel(cards, currentLevel)` derives the "study floor" from the user's existing cards (no schema change): a placed learner's assumed-known lower levels never resurface as new cards. Applied in `Study.loadQueue`/`loadForecast` + `homeCounts`; `getTrackCards` gained a `maxLevel` (≤) option alongside `level` (=).
+
+### UI (PR #45)
+- Landing language chips uniform 160×46; Home "Cards waiting" badge is a button → same target as the Review & unlock CTA.
+
+### ⚠️ Japanese N5 vocabulary — stored word shapes (PRs #46, #48 — read before touching JP stories/matching)
+A live dump (Action task `authored-vocab-jlpt1`) showed `vocabulary.word` for `japanese|jlpt|1` is **not dictionary form**:
+- verbs in **ます-form**: 食べます, 行きます, かえります (kana verbs too)
+- set phrases **include trailing 。**: すみません。, ありがとうございます。 (11 chars)
+- **～ placeholders**: この～, その～; **parenthesized particles**: 後(で), いっしょ(に)
+- many words **kana-only** (こうえん, えいが, としょかん, 友だち) even where kanji is standard; duplicates exist (水×2, 高い×2)
+
+Consequences: story text must use pool words **in their stored written form** (never blanket-kanji-ify — こうえん written as 公園 is untappable), and any matcher must normalize decorations + handle ます-conjugation.
+
+### Reader word-matching (PRs #46 + #48 — `storyReading.js`)
+- `buildVocabMatcher(vocabMap, language)` + `matchVocabAt` shared by the reader's `segmentLine` AND `calculateStoryReadability` (so tappable ⇔ counted). Normalizes keys (strip 。/～, expand 後(で)→後で+後), splits multi-form keys (やはり; やっぱり), indexes **readings** (がっこう↔学校, まいげつ/まいつき), **kanji stems** with okurigana disambiguation + kana-follows guard (食べた→食べます but 見物≠見る), **kana verb stems** (かえった→かえります), dictionary-form guesses (row shift かえり→かえる), する/ある/いる/くる irregulars, 12-char exact window for set phrases. Tests in `storyReading.test.js` include a block built from the real stored shapes. Suite **253**.
+
+### Generators made pool-faithful (PR #48)
+- `generate-stories.mjs` + `generate-serial-stories.mjs`: Japanese prompts instruct "write every pool word EXACTLY as listed" (kanji stays kanji, kana stays kana, ます-verbs conjugate naturally). N5's legacy `kanaOnly: true` removed (PR #46). Serial validator's dict mirrors the reader's normalization/stems, so "validates ⇒ tappable".
+
+### Content ops (regen-content Action, run from this session)
+- `stories-jlpt1-replace` (new task, PR #47): one-shot kanji regen — superseded the same day by the **serial pipeline** rerun (`serial-jlpt1`) after the matcher fix, since one-shot quality was poor.
+- ⚠️ `--replace` regeneration **resets story_number to 1** and orphans `data/story-covers.json` entries (JP level 1 covers were keyed 11–35 → images vanished) and drops comprehension questions + recorded narration. After any story regen, re-run: covers (`story-images-list` → author → `story-images-apply`), `comprehension` (japanese), `story-audio-jlpt1`.
+- No `ANTHROPIC_API_KEY` secret is set — the serial pipeline's premium tier falls back to `gemini-2.5-flash`.
+
+---
+
+## 0.0 PREVIOUS SESSION (2026-07-14, first session)
 
 Everything below is **shipped to `main`** (PRs #39–#43), so a fresh chat has current context. Where this section conflicts with older text, **this section wins.** The whole arc was one "overhaul" branch (`claude/hanzi-dojo-overhaul-kxutp5`), themed around the **first-run activation funnel** (land → learn a few words → read your first story → come back) and turning the **story reader into the app's strongest feature**.
 
