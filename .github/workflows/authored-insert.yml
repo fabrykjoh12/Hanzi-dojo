@@ -1,0 +1,34 @@
+name: Insert authored stories
+
+# Inserts Claude/human-authored stories from data/authored-stories.json.
+# Deliberately its OWN workflow with its own concurrency group: the long
+# regen-content pipeline runs hold that workflow's single pending slot for
+# hours, and a 15-second insert should never wait behind (or knock out) a
+# story-generation run.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: authored-insert
+  cancel-in-progress: false
+
+jobs:
+  insert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Insert authored stories
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node authored-stories.mjs --insert data/authored-stories.json
