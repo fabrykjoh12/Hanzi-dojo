@@ -96,10 +96,16 @@ async function applyManifest(file) {
       if (!res.ok) throw new Error('download ' + res.status)
       const buf = Buffer.from(await res.arrayBuffer())
 
-      const path = `stories/${storyId}/cover.webp`
+      // Keep the source format: covers may be webp (Higgsfield) or png/jpg
+      // (repo-authored art) — serving a png with an image/webp content type
+      // breaks strict decoders.
+      const extMatch = url.toLowerCase().match(/\.(webp|png|jpe?g)(\?|$)/)
+      const ext = extMatch ? (extMatch[1] === 'jpeg' ? 'jpg' : extMatch[1]) : 'webp'
+      const contentType = ext === 'png' ? 'image/png' : ext === 'jpg' ? 'image/jpeg' : 'image/webp'
+      const path = `stories/${storyId}/cover.${ext}`
       const { error: upErr } = await supabase.storage
         .from('audio')
-        .upload(path, buf, { contentType: 'image/webp', upsert: true })
+        .upload(path, buf, { contentType, upsert: true })
       if (upErr) throw new Error(upErr.message)
 
       const { error: setErr } = await supabase.from('stories').update({ image_path: path }).eq('id', storyId)
