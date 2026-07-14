@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, readingVisibleFor, isDueSoon } from './storyReading'
+import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, readingVisibleFor, isDueSoon, kanjiStem } from './storyReading'
 
 // ── wordStatus ──────────────────────────────────────────────────────────────
 describe('wordStatus', () => {
@@ -135,6 +135,61 @@ describe('calculateStoryReadability — Japanese', () => {
   it('counts multi-token kanji vocabulary as one word', () => {
     const r = calculateStoryReadability({ content: '食べる。', vocabMap: JV, cards: {}, language: 'japanese' })
     expect(r.storyWords).toEqual(['食べる'])
+  })
+})
+
+// ── kanjiStem ────────────────────────────────────────────────────────────────
+describe('kanjiStem', () => {
+  it('drops trailing okurigana after the last kanji', () => {
+    expect(kanjiStem('書く')).toBe('書')
+    expect(kanjiStem('見せる')).toBe('見')
+    expect(kanjiStem('終わる')).toBe('終')
+  })
+  it('keeps the whole word for all-kanji entries', () => {
+    expect(kanjiStem('意見')).toBe('意見')
+  })
+  it('keeps internal kana up to the last kanji', () => {
+    expect(kanjiStem('引っ越す')).toBe('引っ越')
+  })
+  it('is empty for kana-only words', () => {
+    expect(kanjiStem('これ')).toBe('')
+    expect(kanjiStem('やっぱり')).toBe('')
+    expect(kanjiStem('')).toBe('')
+  })
+})
+
+// ── Japanese conjugation-tolerant matching ───────────────────────────────────
+describe('calculateStoryReadability — Japanese conjugation', () => {
+  const v = (word, id, reading) => ({ id, word, reading })
+  const JV2 = {
+    書く: v('書く', 'w', 'かく'),
+    見る: v('見る', 'm', 'みる'),
+    見せる: v('見せる', 's', 'みせる'),
+    意見: v('意見', 'o', 'いけん'),
+  }
+
+  it('matches a conjugated verb to its dictionary entry', () => {
+    // 書いて (te-form) resolves to 書く via the kanji stem.
+    const r = calculateStoryReadability({ content: '漫画を書いています。', vocabMap: JV2, cards: {}, language: 'japanese' })
+    expect(r.storyWords).toContain('書く')
+  })
+
+  it('disambiguates homographs by okurigana (見せました → 見せる, not 見る)', () => {
+    const r = calculateStoryReadability({ content: '意見を見せました。', vocabMap: JV2, cards: {}, language: 'japanese' })
+    expect(r.storyWords).toContain('意見')
+    expect(r.storyWords).toContain('見せる')
+    expect(r.storyWords).not.toContain('見る')
+  })
+
+  it('does not stem-match across a kanji compound (見物 is not 見る)', () => {
+    const r = calculateStoryReadability({ content: '見物', vocabMap: { 見る: JV2.見る }, cards: {}, language: 'japanese' })
+    expect(r.storyWords).toEqual([])
+  })
+
+  it('matches an alternate spelling from a multi-form vocab entry', () => {
+    const V = { 'やはり; やっぱり': v('やはり; やっぱり', 'y', 'やはり') }
+    const r = calculateStoryReadability({ content: 'やっぱり', vocabMap: V, cards: {}, language: 'japanese' })
+    expect(r.totalUnique).toBe(1)
   })
 })
 
