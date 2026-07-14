@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, readingVisibleFor, isDueSoon, kanjiStem } from './storyReading'
+import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, readingVisibleFor, isDueSoon, kanjiStem, buildVocabMatcher, matchVocabAt } from './storyReading'
 
 // ── wordStatus ──────────────────────────────────────────────────────────────
 describe('wordStatus', () => {
@@ -248,6 +248,48 @@ describe('calculateStoryReadability — stored N5 vocab shapes', () => {
 
   it('matches either reading variant of a multi-reading word', () => {
     expect(run('まいつき本を買う。').storyWords).toContain('毎月')
+  })
+})
+
+// ── Whole-word token boundaries through conjugation ─────────────────────────
+// A stem match must consume the entire inflected word, so the reader shows
+// 食べました as ONE tappable token — not 食 plus loose kana fragments.
+describe('matchVocabAt — conjugated token boundaries', () => {
+  const v = (word, id, reading) => ({ id, word, reading })
+  const JP_PARTICLES2 = new Set(['は', 'が', 'を', 'に', 'で', 'と', 'も', 'の'])
+  const m = (vocab) => buildVocabMatcher(vocab, 'japanese')
+  const at = (text, matcher) => matchVocabAt(text, 0, matcher, JP_PARTICLES2)
+
+  it('consumes the full polite past of an ichidan ます-verb (食べました)', () => {
+    const r = at('食べました。', m({ '食べます': v('食べます', 'a', 'たべます') }))
+    expect(r.len).toBe(5)   // 食べました, leaving 。
+  })
+
+  it('consumes godan te/ta and negative forms (行った, 行かない)', () => {
+    const matcher = m({ '行きます': v('行きます', 'b', 'いきます') })
+    expect(at('行った。', matcher).len).toBe(3)
+    expect(at('行かない。', matcher).len).toBe(4)
+  })
+
+  it('consumes dictionary form from ます-form vocab (読む)', () => {
+    const r = at('読むのが好き。', m({ '読みます': v('読みます', 'c', 'よみます') }))
+    expect(r.len).toBe(2)   // 読む
+  })
+
+  it('consumes い-adjective past (高かった) from the plain form', () => {
+    const r = at('高かったです。', m({ '高い': v('高い', 'd', 'たかい') }))
+    expect(r.len).toBe(4)   // 高かった
+  })
+
+  it('does not swallow a following particle (見に行く keeps に free)', () => {
+    const matcher = m({ '見ます': v('見ます', 'e', 'みます') })
+    const r = at('見に行く。', matcher)
+    expect(r.len).toBe(1)   // just 見 — に stays a particle
+  })
+
+  it('N4 dictionary-form vocab conjugates too (見せて from 見せる)', () => {
+    const r = at('見せてください。', m({ '見せる': v('見せる', 'f', 'みせる') }))
+    expect(r.len).toBeGreaterThanOrEqual(3)   // at least 見せて
   })
 })
 
