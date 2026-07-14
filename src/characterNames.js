@@ -12,5 +12,5 @@ export const CHARACTER_READINGS = {
   // Japanese story protagonists (serial + legacy story sets). Role nouns
   // (おかあさん、おじいさん、せんせい…) are ordinary vocabulary and resolve
   // through the vocab lookup instead — do not list them here.
-  japanese: { 'たかし': 'Takashi', 'はな': 'Hana' },
+  japanese: { 'たかし': 'Takashi', 'はな': 'Hana', 'しろ': 'Shiro (the cat)' },
 }
