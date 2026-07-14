@@ -47,6 +47,7 @@ const level = parseInt(arg('level', '1'), 10)
 // it deletes just that tier's stories, leaving the others intact — so you can
 // sample one season cheaply before committing to the whole level.
 const onlyTier = arg('tier', null) ? parseInt(arg('tier', null), 10) : null
+const seasonOffset = arg('season-offset', null) ? parseInt(arg('season-offset', null), 10) : 0
 
 // ── Character bibles ─────────────────────────────────────────────────────────
 // Recurring characters with actual personalities and speech habits — the thing
@@ -82,10 +83,15 @@ const BIBLE_RUSSIAN = {
 }
 
 // Per-tier premise seeds so re-runs and tiers don't converge on the same plot.
+// --season-offset N rotates which seed each tier draws, so an APPEND run (no
+// --replace) gets different season shapes than the level's existing seasons.
 const SEASON_SEEDS = [
   'a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly',
   'preparing for something over several days (a trip, a festival, a small competition) with setbacks',
   'a bigger outing or adventure away from home with a genuine surprise in the middle',
+  'a new friend or visitor arrives and daily life is a little different for a while',
+  'secretly helping someone prepare a surprise without them finding out',
+  'the characters take on a small job or responsibility for the first time and almost mess it up',
 ]
 
 // ── Per-target config ─────────────────────────────────────────────────────────
@@ -131,6 +137,17 @@ const CONFIGS = {
       { tier: 1, minWords: 30, prevCap: 0, cap: 100, chapters: 5, lines: [18, 26], minCov: 0.90, maxMisses: 6 },
       { tier: 2, minWords: 100, prevCap: 100, cap: 200, chapters: 5, lines: [24, 34], minCov: 0.88, maxMisses: 9 },
       { tier: 3, minWords: 200, prevCap: 200, cap: 400, chapters: 5, lines: [30, 42], minCov: 0.85, maxMisses: 12 },
+    ],
+  },
+  'japanese|jlpt|2': {
+    // N5 Part 2 — same difficulty band as Part 1, so the same line targets and
+    // coverage knobs; the basics of Part 1 ride along as prereq vocabulary.
+    bible: BIBLE_JAPANESE, promptLang: 'Japanese', levelName: 'JLPT N5 (Part 2)',
+    maxLineChars: 36, prereqLevel: 1, prereqMax: 150,
+    tiers: [
+      { tier: 1, minWords: 30, prevCap: 0, cap: 134, chapters: 5, lines: [18, 26], minCov: 0.90, maxMisses: 6 },
+      { tier: 2, minWords: 100, prevCap: 134, cap: 268, chapters: 5, lines: [24, 34], minCov: 0.88, maxMisses: 9 },
+      { tier: 3, minWords: 200, prevCap: 268, cap: 402, chapters: 5, lines: [30, 42], minCov: 0.85, maxMisses: 12 },
     ],
   },
   'japanese|jlpt|3': {
@@ -402,7 +419,7 @@ function poolForPrompt(pool) {
 }
 
 async function planSeason(tier, focusChunks) {
-  const seed = SEASON_SEEDS[(tier.tier - 1) % SEASON_SEEDS.length]
+  const seed = SEASON_SEEDS[(tier.tier - 1 + seasonOffset) % SEASON_SEEDS.length]
   const prompt =
     'You are planning a serialized graded-reader story ("season") for ' + cfg.levelName + ' ' + cfg.promptLang + ' learners.\n\n' +
     'Recurring characters (use these, keep their personalities consistent):\n' + cfg.bible.text + '\n\n' +
