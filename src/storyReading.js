@@ -158,12 +158,14 @@ const MASU_ROW_SHIFT = {
   い: 'う', き: 'く', ぎ: 'ぐ', し: 'す', ち: 'つ', に: 'ぬ', ひ: 'ふ', び: 'ぶ', み: 'む', り: 'る',
 }
 
-// The everyday irregulars whose conjugations share no usable kana stem.
+// The everyday irregulars whose conjugations share no usable kana stem (する's
+// stem し and いる's stem い are single kana — too short to index safely), so
+// their common forms are spelled out.
 const MASU_IRREGULAR = {
-  します: ['する', 'した', 'して', 'しない', 'しよう', 'しましょう'],
-  きます: ['くる', 'きた', 'きて', 'こない'],
+  します: ['する', 'した', 'して', 'しない', 'しよう', 'しましょう', 'しました', 'しません', 'しませんでした', 'しています', 'していました'],
+  きます: ['くる', 'きた', 'きて', 'こない', 'きました', 'きません'],
   あります: ['ある', 'あった', 'あって', 'ありません'],
-  います: ['いる', 'いた', 'いて', 'いない'],
+  います: ['いる', 'いた', 'いて', 'いない', 'いました', 'いません', 'いませんでした'],
 }
 
 // Common conjugation endings, longest first. After a stem match, the token
