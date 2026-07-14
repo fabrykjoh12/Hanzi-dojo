@@ -256,8 +256,8 @@ export default function Landing() {
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: isMobile ? '44px' : '64px' }}>
             {languages.map(lang => (
               <div key={lang.key} style={{
-                display: 'inline-flex', alignItems: 'center', gap: '9px',
-                padding: '9px 16px', borderRadius: '999px',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
+                width: isMobile ? '140px' : '160px', height: '46px', padding: '0 16px', borderRadius: '999px',
                 background: 'var(--surface)', border: '1px solid ' + lang.accentHex + '33',
                 boxShadow: '0 4px 14px rgba(24,24,27,0.05)',
               }}>
