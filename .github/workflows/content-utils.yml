@@ -1,0 +1,57 @@
+name: Content utilities
+
+# Short content-maintenance tasks (seconds to a minute) in their OWN workflow
+# and concurrency group, so they never wait behind — or knock out of the
+# queue — the hours-long story-generation runs in regen-content.yml.
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: What to run
+        type: choice
+        default: story-images-apply
+        options: [story-images-apply, publish-held]
+      language:
+        description: "publish-held only: language of the level to publish"
+        type: string
+        default: japanese
+      system:
+        description: "publish-held only: system of the level to publish"
+        type: string
+        default: jlpt
+      level:
+        description: "publish-held only: level number to publish"
+        type: string
+        default: '1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: content-utils
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run task
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          set -e
+          if [ "${{ inputs.task }}" = "story-images-apply" ]; then
+            node generate-story-images.mjs --apply data/story-covers.json
+          fi
+          if [ "${{ inputs.task }}" = "publish-held" ]; then
+            node publish-stories.mjs --language "${{ inputs.language }}" --system "${{ inputs.system }}" --level "${{ inputs.level }}" --apply
+          fi
