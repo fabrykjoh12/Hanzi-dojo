@@ -336,6 +336,38 @@ describe('calculateStoryReadability — Japanese names and kana boundaries', () 
   })
 })
 
+// ── Longest-consumption wins ─────────────────────────────────────────────────
+// あるいて must resolve to 歩きます ("walk", 4 chars) even though the exact
+// word ある ("exist") matches its first 2 chars — the first-hit strategy left
+// an orphaned いて that shattered into kana fragments.
+describe('matchVocabAt — longest interpretation wins', () => {
+  const v = (word, id, reading) => ({ id, word, reading })
+  const JP = new Set(['は', 'が', 'を', 'に', 'で', 'と', 'も', 'の'])
+  const V = {
+    'あるきます': v('あるきます', 'walk', 'あるきます'),
+    'あります': v('あります', 'exist', 'あります'),
+    '見ます': v('見ます', 'see', 'みます'),
+  }
+  const matcher = buildVocabMatcher(V, 'japanese')
+
+  it('あるいて resolves to walking, consuming the whole word', () => {
+    const r = matchVocabAt('あるいて、うちへ', 0, matcher, JP)
+    expect(r.vocab.id).toBe('walk')
+    expect(r.len).toBe(4)
+  })
+
+  it('ある alone still resolves to あります', () => {
+    const r = matchVocabAt('あるから', 0, matcher, JP)
+    expect(r.vocab.id).toBe('exist')
+  })
+
+  it('あるきます exact still wins outright', () => {
+    const r = matchVocabAt('あるきます。', 0, matcher, JP)
+    expect(r.vocab.id).toBe('walk')
+    expect(r.len).toBe(5)
+  })
+})
+
 describe('calculateStoryReadability — Russian', () => {
   const RV = { кот: zh('кот', 'k'), дом: zh('дом', 'd') }
   it('counts whitespace-separated words, ignoring punctuation', () => {
