@@ -928,15 +928,24 @@ const BANK = {
 // Overlap with today's learned/weak/review words wins; ties and the no-overlap
 // case fall back to a stable rotation so repeat sessions vary. Returns null when
 // no bank exists for this language/level yet (feature simply hides itself).
-export function pickMission({ language, level, dayWords = [], seed = 0 }) {
+//
+// `knownWords` (when provided) is a hard gate: a mission is eligible ONLY if
+// every one of its target words is in the set — the chat reinforces what the
+// learner knows, it never smuggles in unknown vocabulary. Callers should pass
+// the set already alias-expanded (kanji + reading) — see missionOffer.js.
+export function pickMission({ language, level, dayWords = [], knownWords = null, seed = 0 }) {
   const bank = BANK[language + '|' + level]
   if (!bank || bank.length === 0) return null
+  const eligible = knownWords
+    ? bank.filter(m => m.targetWords.every(w => knownWords.has(w)))
+    : bank
+  if (eligible.length === 0) return null
   const want = new Set(dayWords)
   let best = null, bestScore = -1
-  bank.forEach((m, i) => {
+  eligible.forEach((m, i) => {
     const score = m.targetWords.reduce((n, w) => n + (want.has(w) ? 1 : 0), 0)
     // Rotation tie-breaker keeps it from always showing mission 0.
-    const tie = (i + seed) % bank.length
+    const tie = (i + seed) % eligible.length
     if (score > bestScore || (score === bestScore && best && tie < best._tie)) {
       best = { ...m, _tie: tie }; bestScore = score
     }

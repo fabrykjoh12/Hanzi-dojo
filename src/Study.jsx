@@ -232,6 +232,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // learned / weak / review words.
   const vocabRef = useRef([])
   const sessionVocabRef = useRef([])
+  // Words the learner has a card for (any state) — the chat-mission offer only
+  // shows missions built entirely from these (plus today's words).
+  const knownWordsRef = useRef([])
   const [missionOffer, setMissionOffer] = useState(null)   // snapshot at completion
   const [mission, setMission] = useState(null)              // active running mission
 
@@ -301,6 +304,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       .map(c => ({ ...c, vocab: vocabById[c.vocab_id] }))
       .filter(c => c.vocab)
     levelCards.forEach(c => startedVocab.add(c.vocab_id))
+    knownWordsRef.current = levelCards.map(c => c.vocab.word)
 
     // Weak-words drill: focus the cards the user keeps lapsing on, regardless of
     // their due date. No new cards; grading still feeds FSRS normally.
@@ -762,6 +766,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         setMissionOffer(buildMissionOffer({
           sessionVocab: sessionVocabRef.current,
           vocab: vocabRef.current,
+          knownWords: knownWordsRef.current,
           language: track.language,
           level: track.current_level,
         }))

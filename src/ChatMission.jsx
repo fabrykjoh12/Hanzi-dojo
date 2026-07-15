@@ -254,7 +254,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
   // Toggle chips shared across the chat phase.
   const toggles = (
     <div style={{ display: 'flex', gap: '8px', padding: '10px 16px', flexWrap: 'wrap', background: bg }}>
-      <Chip on={showPinyin} onClick={() => setShowPinyin(v => !v)} icon={Type} label="Pinyin" accent={accent} />
+      <Chip on={showPinyin} onClick={() => setShowPinyin(v => !v)} icon={Type} label={isJapanese ? 'Romaji' : track.language === 'chinese' ? 'Pinyin' : 'Reading'} accent={accent} />
       <Chip on={showEnglish} onClick={() => setShowEnglish(v => !v)} icon={Languages} label="English" accent={accent} />
       <Chip on={showSegment} onClick={() => setShowSegment(v => !v)} icon={SplitSquareHorizontal} label="Spacing" accent={accent} />
     </div>
