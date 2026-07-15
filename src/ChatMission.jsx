@@ -267,7 +267,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
       {phase === 'chat' && (
         <>
           {toggles}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 20px' }}>
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '8px 16px 20px' }}>
             <div style={{ maxWidth: '620px', margin: '0 auto' }}>
               {mission.messages.map((m, i) => {
                 const mine = m.from === 'me'
@@ -310,7 +310,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
       )}
 
       {phase === 'questions' && (
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px 120px' }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '20px 16px 120px' }}>
           <div style={{ maxWidth: '560px', margin: '0 auto' }}>
             <SectionTitle>Understanding</SectionTitle>
             {questions.map((q, qi) => {
@@ -353,7 +353,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
       )}
 
       {phase === 'reply' && (
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px 120px' }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '20px 16px 120px' }}>
           <div style={{ maxWidth: '560px', margin: '0 auto' }}>
             <SectionTitle>Your reply</SectionTitle>
             <div style={{ fontSize: '15px', color: '#1A1A1A', marginBottom: '16px', fontFamily: font, lineHeight: 1.6 }}>
@@ -438,7 +438,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
       )}
 
       {phase === 'result' && (
-        <div style={{ flex: 1, overflowY: 'auto', padding: '28px 16px 40px' }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '28px 16px 40px' }}>
           <div style={{ maxWidth: '520px', margin: '0 auto', textAlign: 'center' }}>
             <div style={{ width: '58px', height: '58px', borderRadius: '18px', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: accent + '12', border: '1px solid ' + accent + '22' }}>
               <Trophy size={28} strokeWidth={1.9} color={accent} />

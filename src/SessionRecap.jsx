@@ -177,6 +177,19 @@ export default function SessionRecap({
   // and points at the story their words just unlocked.
   const firstDone = Boolean(firstRun && didStudy)
 
+  // The single most useful next action, so the recap ends with a direct
+  // "do this next" instead of a menu the learner has to weigh. Priority:
+  // read the just-unlocked story that holds today's words → use them in the
+  // chat conversation → re-read a story → (nothing actionable) go home.
+  const story = storyUnlock && storyUnlock.story
+  const nextStep = story && !storyUnlock.isRead
+    ? { label: 'Read “' + story.title + '” now', sub: 'Lock in the words you just studied', icon: BookOpen, onClick: () => onReadStory(story.id) }
+    : mission
+      ? { label: 'Use today’s words in a chat', sub: mission.scenario.en, icon: MessageCircleMore, onClick: onOpenMission }
+      : story
+        ? { label: 'Read it again', sub: 'Re-reading cements the vocabulary', icon: BookOpen, onClick: () => onReadStory(story.id) }
+        : null
+
   const accuracy = s && s.reviewedTotal > 0 ? Math.round((s.reviewedRight / s.reviewedTotal) * 100) : null
   const recapStats = s ? [
     { label: 'Cards studied', value: s.graded, color: accentHex },
@@ -288,6 +301,36 @@ export default function SessionRecap({
           </div>
         )}
 
+        {nextStep && (
+          <div style={{ marginBottom: '14px', textAlign: 'left' }}>
+            <div style={{
+              fontSize: '11px', fontWeight: 850, letterSpacing: '0.5px', textTransform: 'uppercase',
+              color: accentHex, marginBottom: '8px', paddingLeft: '2px',
+            }}>
+              Recommended next
+            </div>
+            <button
+              onClick={nextStep.onClick}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: '14px',
+                textAlign: 'left', cursor: 'pointer',
+                background: accentHex, border: '1px solid ' + accentHex, borderRadius: '18px',
+                padding: '16px 18px', color: '#fff',
+                boxShadow: '0 10px 26px ' + accentHex + '33',
+              }}
+            >
+              <div style={{ width: '44px', height: '44px', borderRadius: '14px', flexShrink: 0, background: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <nextStep.icon size={22} strokeWidth={2} color="#fff" />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '15.5px', fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nextStep.label}</div>
+                <div style={{ fontSize: '12.5px', opacity: 0.9, lineHeight: 1.4, marginTop: '2px' }}>{nextStep.sub}</div>
+              </div>
+              <ChevronRight size={22} color="#fff" style={{ flexShrink: 0, opacity: 0.9 }} />
+            </button>
+          </div>
+        )}
+
         {didStudy && storyUnlock && (
           <StoryUnlockCard
             unlock={storyUnlock}
@@ -319,9 +362,24 @@ export default function SessionRecap({
 
         <OfflineSaveButton track={track} accentHex={accentHex} />
 
-        <PrimaryButton onClick={onBack} icon={ArrowLeft}>
-          Back home
-        </PrimaryButton>
+        {nextStep ? (
+          <button
+            onClick={onBack}
+            style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              width: '100%', minHeight: '46px', borderRadius: '14px',
+              background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)',
+              fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+            }}
+          >
+            <ArrowLeft size={16} strokeWidth={2.1} color="var(--text-muted)" />
+            Back home
+          </button>
+        ) : (
+          <PrimaryButton onClick={onBack} icon={ArrowLeft}>
+            Back home
+          </PrimaryButton>
+        )}
       </div>
     </div>
   )
