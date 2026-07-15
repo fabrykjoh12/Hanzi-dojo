@@ -211,6 +211,13 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
   let decoBorder = 'none'
   let decoBg = 'transparent'
   let faded = false
+  // Always surface words you don't know yet (new vocab) with a light dotted
+  // underline, so unknown words stand out even with the Learning Lens off. The
+  // Lens (below) upgrades this to a full box and additionally fades known words.
+  if (token.vocab && status === 'not_started') {
+    decoBorder = '2px dotted ' + accent + '99'
+    decoBg = accent + '0A'
+  }
   if (lens && token.vocab) {
     if (status === 'not_started') { decoBorder = '2px solid ' + accent + '70'; decoBg = accent + '12' }
     else if (status === 'learning') { decoBorder = '2px solid #CA8A0466' }
