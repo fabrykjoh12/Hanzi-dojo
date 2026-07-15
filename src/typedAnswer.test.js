@@ -83,3 +83,54 @@ describe('checkTypedAnswer — Japanese kana/romaji', () => {
     expect(checkTypedAnswer('ねこ', neko, true)).toBe(true)
   })
 })
+
+// From user report: 何 (stored なん) rejected "nani"; 水 exists as two cards
+// (すい and みず) and each rejected the other's reading.
+describe('checkTypedAnswer — Japanese alternate readings', () => {
+  it('accepts なに and なん for 何', () => {
+    const nan = { word: '何', reading: 'なん' }
+    expect(checkTypedAnswer('nan', nan, true)).toBe(true)
+    expect(checkTypedAnswer('nani', nan, true)).toBe(true)
+    expect(checkTypedAnswer('なに', nan, true)).toBe(true)
+  })
+  it('accepts mizu and sui for either 水 card', () => {
+    expect(checkTypedAnswer('sui', { word: '水', reading: 'みず' }, true)).toBe(true)
+    expect(checkTypedAnswer('mizu', { word: '水', reading: 'すい' }, true)).toBe(true)
+  })
+  it('accepts yon and shi for 四, kyuu and ku for 九', () => {
+    const four = { word: '四', reading: 'し' }
+    expect(checkTypedAnswer('yon', four, true)).toBe(true)
+    expect(checkTypedAnswer('shi', four, true)).toBe(true)
+    const nine = { word: '九', reading: 'きゅう' }
+    expect(checkTypedAnswer('ku', nine, true)).toBe(true)
+    expect(checkTypedAnswer('kyuu', nine, true)).toBe(true)
+  })
+  it('still rejects wrong answers for alt-reading words', () => {
+    expect(checkTypedAnswer('nana', { word: '何', reading: 'なん' }, true)).toBe(false)
+    expect(checkTypedAnswer('kawa', { word: '水', reading: 'みず' }, true)).toBe(false)
+  })
+})
+
+// Stored N5 forms carry decorations the learner should not have to type.
+describe('checkTypedAnswer — decorated stored forms', () => {
+  it('accepts a phrase without its trailing 。', () => {
+    const sumimasen = { word: 'すみません。', reading: 'すみません。' }
+    expect(checkTypedAnswer('sumimasen', sumimasen, true)).toBe(true)
+    expect(checkTypedAnswer('すみません', sumimasen, true)).toBe(true)
+  })
+  it('accepts ～-placeholder words without the ～', () => {
+    const kono = { word: 'この～', reading: 'この～' }
+    expect(checkTypedAnswer('kono', kono, true)).toBe(true)
+    expect(checkTypedAnswer('この', kono, true)).toBe(true)
+  })
+  it('accepts parenthesized-optional forms with and without the option', () => {
+    const ato = { word: '後(で)', reading: 'あと(で)' }
+    expect(checkTypedAnswer('ato', ato, true)).toBe(true)
+    expect(checkTypedAnswer('atode', ato, true)).toBe(true)
+    expect(checkTypedAnswer('あとで', ato, true)).toBe(true)
+    expect(checkTypedAnswer('後で', ato, true)).toBe(true)
+  })
+  it('ignores trailing punctuation in the typed input itself', () => {
+    expect(checkTypedAnswer('たべる。', ja, true)).toBe(true)
+  })
+})
