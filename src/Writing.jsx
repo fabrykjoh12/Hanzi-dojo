@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
-import { getLevelLabel, getSystemLabel, isRecallMatch } from './utils'
+import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
-import { lenientPinyin } from './testLogic'
+import { isWritingMatch, normalizeRomaji, hasKanji } from './writingMatch'
 import { useIsMobile } from './useIsMobile'
 import { toRomaji } from 'wanakana'
 import {
@@ -18,109 +18,6 @@ const MAX_MULTIPLIER = 3
 
 function shuffle(items) {
   return [...items].sort(() => Math.random() - 0.5)
-}
-
-function stripChars(value, chars) {
-  let output = ''
-  const source = value || ''
-  for (let i = 0; i < source.length; i += 1) {
-    if (!chars.includes(source[i])) output += source[i]
-  }
-  return output
-}
-
-// One lenient pinyin normalization shared with Study's typed mode (testLogic).
-function normalizeChinesePinyin(value) {
-  return lenientPinyin(value)
-}
-
-// Drop a leading article / infinitive marker so "to run", "a dog", "the sun"
-// all match a bare "run" / "dog" / "sun". Word-boundary aware (needs the space).
-function stripLead(value) {
-  const leads = ['to ', 'a ', 'an ', 'the ']
-  let s = value
-  for (let i = 0; i < leads.length; i += 1) {
-    if (s.startsWith(leads[i])) return s.slice(leads[i].length)
-  }
-  return s
-}
-
-function normalizeEnglish(value) {
-  const lowered = stripLead((value || '').toLowerCase().trim())
-  return stripChars(lowered, '。、「」，,.!?！？;:\'"()-_ ')
-}
-
-function stripParentheses(value) {
-  const source = value || ''
-  let output = ''
-  let depth = 0
-  for (let i = 0; i < source.length; i += 1) {
-    const ch = source[i]
-    if (ch === '(') {
-      depth += 1
-    } else if (ch === ')') {
-      if (depth > 0) depth -= 1
-    } else if (depth === 0) {
-      output += ch
-    }
-  }
-  return output
-}
-
-function isMeaningMatch(input, meaning) {
-  const normalizedInput = normalizeEnglish(input)
-  if (!normalizedInput) return false
-
-  const withoutParens = stripParentheses(meaning)
-
-  const variants = withoutParens
-    .split(',')
-    .flatMap(part => part.split(';'))
-    .flatMap(part => part.split('/'))
-    .flatMap(part => part.split(' or '))
-    .map(part => normalizeEnglish(part))
-    .filter(Boolean)
-
-  return normalizeEnglish(withoutParens) === normalizedInput || variants.includes(normalizedInput)
-}
-
-function normalizeRomaji(value) {
-  // Ignore the separators people sprinkle through romaji — spaces, the
-  // syllable apostrophe (kon'nichiwa), and hyphens — so they never cost a
-  // "wrong". wanakana emits none of these, so this only ever accepts more.
-  return stripChars((value || '').toLowerCase().trim(), ' \'’‘-')
-}
-
-function hasKanji(str) {
-  const value = str || ''
-  for (let i = 0; i < value.length; i += 1) {
-    const code = value.charCodeAt(i)
-    if (code >= 0x4e00 && code <= 0x9faf) return true
-  }
-  return false
-}
-
-function isWritingMatch(input, vocab, direction, isJapanese) {
-  if (direction === 'to_english') return isMeaningMatch(input, vocab.meaning)
-
-  const word = (vocab.word || '').replace('。', '')
-  if (isRecallMatch(input, word)) return true
-
-  if (isJapanese) {
-    if (isRecallMatch(input, vocab.reading)) return true
-    const reading = vocab.reading || ''
-    const expectedRomaji = normalizeRomaji(toRomaji(reading))
-    // Convert the INPUT through toRomaji too, so typing katakana for a word
-    // stored with a hiragana reading (or vice versa) also matches — romaji
-    // passes through toRomaji unchanged.
-    const inputRomaji = normalizeRomaji(toRomaji(input))
-    return inputRomaji.length > 0 && inputRomaji === expectedRomaji
-  }
-
-  const normalizedInput = normalizeChinesePinyin(input)
-  return [vocab.reading_plain, vocab.reading]
-    .filter(Boolean)
-    .some(reading => normalizedInput === normalizeChinesePinyin(reading))
 }
 
 function getLevel(xp = 0) {
@@ -372,6 +269,10 @@ export default function Writing({ session, track, onBack }) {
   const [index, setIndex] = useState(0)
   const [input, setInput] = useState('')
   const [result, setResult] = useState(null)
+  // Missing a word no longer schedules the real flashcard on its own — the
+  // learner opts in with the "Add to due list" button. This tracks that click
+  // for the current card so the button can confirm and disable.
+  const [addedToDue, setAddedToDue] = useState(false)
   const [questionMode, setQuestionMode] = useState('mixed')
   const [showFurigana, setShowFurigana] = useState(true)
   const [roundStats, setRoundStats] = useState({ correct: 0, missed: 0 })
@@ -467,6 +368,7 @@ export default function Writing({ session, track, onBack }) {
     setIndex(0)
     setInput('')
     setResult(null)
+    setAddedToDue(false)
     setRoundStats({ correct: 0, missed: 0 })
     setPhase('practice')
   }
@@ -501,31 +403,41 @@ export default function Writing({ session, track, onBack }) {
     return { xpGain, multiplier, streak: nextStreak }
   }
 
+  // Score the current card as missed and reveal the answer, without touching the
+  // SRS card. Shared by a wrong typed answer and the "I don't know" button.
+  const reveal = async () => {
+    if (!current || result) return
+    setResult({ status: 'missed', xpGain: 0, multiplier: 0, streak: 0 })
+    setRoundStats(prev => ({ ...prev, missed: prev.missed + 1 }))
+    await saveWritingStat(current, false)
+  }
+
   const submit = async () => {
     if (!current || result || !input.trim()) return
 
     const correct = isWritingMatch(input, current, currentDirection, isJapanese)
-    setResult(correct ? { status: 'correct', xpGain: XP_PER_CORRECT, multiplier: 1, streak: 1 } : { status: 'missed', xpGain: 0, multiplier: 0, streak: 0 })
-    setRoundStats(prev => ({
-      correct: prev.correct + (correct ? 1 : 0),
-      missed: prev.missed + (correct ? 0 : 1),
-    }))
+    if (!correct) { await reveal(); return }
 
-    const streakResult = await saveWritingStat(current, correct)
-    if (correct) {
-      setResult({ status: 'correct', ...streakResult })
-    }
+    setResult({ status: 'correct', xpGain: XP_PER_CORRECT, multiplier: 1, streak: 1 })
+    setRoundStats(prev => ({ ...prev, correct: prev.correct + 1 }))
+    const streakResult = await saveWritingStat(current, true)
+    setResult({ status: 'correct', ...streakResult })
+  }
 
-    if (!correct && cardsByVocab[current.id]) {
-      await supabase
-        .from('cards')
-        .update({ is_easy: false, due_at: new Date().toISOString() })
-        .eq('user_id', session.user.id)
-        .eq('vocab_id', current.id)
-    }
+  // Explicit opt-in: only when the learner asks does a missed word get pushed
+  // back into their real review queue (un-mastered + due now).
+  const addToDueList = async () => {
+    if (addedToDue || !current || !cardsByVocab[current.id]) return
+    setAddedToDue(true)
+    await supabase
+      .from('cards')
+      .update({ is_easy: false, due_at: new Date().toISOString() })
+      .eq('user_id', session.user.id)
+      .eq('vocab_id', current.id)
   }
 
   const next = () => {
+    setAddedToDue(false)
     if (index + 1 >= queue.length) {
       setIndex(queue.length)
       setInput('')
@@ -806,9 +718,44 @@ export default function Writing({ session, track, onBack }) {
 
       <div style={{ display: 'flex', gap: '12px', marginTop: '18px' }}>
         {!result ? (
-          <PrimaryButton disabled={!input.trim()} onClick={submit} accentHex={accentHex} icon={Check}>Check</PrimaryButton>
+          <>
+            <PrimaryButton disabled={!input.trim()} onClick={submit} accentHex={accentHex} icon={Check}>Check</PrimaryButton>
+            <button
+              onClick={reveal}
+              style={{
+                flexShrink: 0, height: '52px', padding: '0 20px', borderRadius: '16px',
+                border: '1px solid var(--border)', background: 'var(--surface)',
+                color: 'var(--text-muted)', fontSize: '15px', fontWeight: 700,
+                fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              }}
+            >
+              I don't know
+            </button>
+          </>
         ) : (
-          <PrimaryButton onClick={next} accentHex={accentHex} icon={ArrowRight}>Next</PrimaryButton>
+          <>
+            <PrimaryButton onClick={next} accentHex={accentHex} icon={ArrowRight}>Next</PrimaryButton>
+            {result.status === 'missed' && cardsByVocab[current.id] && (
+              <button
+                onClick={addToDueList}
+                disabled={addedToDue}
+                style={{
+                  flexShrink: 0, height: '52px', padding: '0 20px', borderRadius: '16px',
+                  border: '1px solid ' + (addedToDue ? 'var(--success-border)' : 'var(--border)'),
+                  background: addedToDue ? 'var(--success-bg)' : 'var(--surface)',
+                  color: addedToDue ? '#2F9E6D' : 'var(--text-muted)',
+                  fontSize: '15px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+                  cursor: addedToDue ? 'default' : 'pointer',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                }}
+              >
+                {addedToDue
+                  ? <><CheckCircle2 size={17} strokeWidth={2.2} /> Added to due list</>
+                  : <><RotateCcw size={16} strokeWidth={2.2} /> Add to due list</>}
+              </button>
+            )}
+          </>
         )}
       </div>
     </Shell>
