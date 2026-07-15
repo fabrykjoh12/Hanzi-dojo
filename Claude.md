@@ -1361,3 +1361,23 @@ Russian is the first **space-delimited, inflected** language in the reader, and 
 - **Normalization** (`normalizeRussian`): lowercase + strip stress accents + ё→е, applied to both vocab and text, so sentence-initial capitals match (this replaced the old case-sensitive behavior the reader shipped with).
 - Hard suppletive irregulars (люблю, идёт) fall through unmatched — the `ru` Intl.Segmenter still tokenizes them as whole tappable words (hear / sentence translation), never letter fragments.
 - Only Russian routes through this path (`matcher.isRussian`); Chinese/Japanese matching is unchanged. Tests in `storyReading.test.js` (describe: "matchVocabAt — Russian whole-token + inflection").
+
+## Writing practice fixes (PR #68, 2026-07-15)
+
+`src/Writing.jsx` is the typing practice drill (Practice → words). Three fixes from user feedback; the pure matcher moved to `src/writingMatch.js` so Writing.jsx stays a components-only file (react-refresh):
+
+- **Punctuation-tolerant answers**: `normalizeRomaji` now strips sentence punctuation, so a phrase stored as いただきます。 (romaji "itadakimasu.") matches a typed "Itadakimasu". Previously the trailing period made every phrase-card an automatic miss.
+- **A miss no longer auto-adds to the SRS deck**: the old code silently did `cards.update({ is_easy:false, due_at:now })` on every miss. Removed — after a miss an explicit **"Add to due list"** button appears; the card is only un-mastered and made due when the learner presses it.
+- **"I don't know" button**: reveals the answer without typing (counts as a miss for the practice multiplier, does not touch the SRS card).
+- Tests: `src/writingMatch.test.js`.
+
+## Recap next-step, chat scroll, unknown-word highlight (PR #70, 2026-07-15)
+
+- **`SessionRecap.jsx`** — ends with a direct **"Recommended next"** CTA naming the single best action (read the just-unlocked story with today's words → use them in a chat → re-read), instead of a menu. "Back home" demotes to a secondary link when a recommendation exists.
+- **`ChatMission.jsx`** — fixed the conversation not scrolling: the `flex:1` scroll areas in the fixed-height flex column lacked `min-height:0`, so they grew to fit content (flexbox `min-height:auto`) and the overflow was clipped by the shell. Added `min-height:0` to the chat/questions/reply/result scroll containers. **General rule for this codebase: any `flex:1` scroll area inside a `position:fixed`/fixed-height flex column needs `min-height:0`.**
+- **`StoryReaderImmersive.jsx`** — new vocab (not_started) words now always get a light dotted underline so unknown words stand out even with the Learning Lens off; the Lens still upgrades to a full box and fades known words.
+
+## Russian track status (2026-07-15)
+
+- A1 is the only Russian level: `data/russian-a1.json` (147 words — function words, ~25 common verbs, family, food, places, time, numbers 1–10, adjectives). 6 pipeline-generated stories exist at `russian/russian/level 1` with covers.
+- The reader matcher now handles Russian well (PR #69). The remaining "beyond this level's list" taps come from the existing stories using vocabulary **outside** the 147-word A1 pool. Two future paths: author new stories strictly in-pool (authored-stories.mjs is language-agnostic — insert `{language:'russian', system:'russian', level:1}`; a Russian validation block + `data/russian-a1` snapshot would enforce in-pool coverage the way `authoredStories.test.js` does for Japanese), or expand the A1 vocab to cover what the stories already use. **Not yet done.**
