@@ -1342,3 +1342,12 @@ Changing `base` to a fixed value will break one of the two hosts (assets 404 →
 
 ### Secrets / keys
 - The `VITE_SUPABASE_ANON_KEY` is **public by design** (it ships in the client bundle); data is protected by RLS, not by hiding the key. Never put the Supabase **service key** in any `VITE_` var or frontend code — it belongs only in `.env.script` for the content scripts.
+
+## Typed-answer acceptance (PR #66, 2026-07-15)
+
+`src/typedAnswer.js` is deliberately lenient about how vocab is STORED, not about what the learner knows:
+
+- **`JA_ALT_READINGS`** (exported from typedAnswer.js): curated table of Japanese words with more than one standard reading — 何 なん/なに, 水 みず/すい (the N5 pool literally has TWO 水 cards, one per reading), 四 よん/し, 七 なな/しち, 九 きゅう/く, 日/月/時/人/国/車/山/中/外/上/下/前, 明日 あした/あす, 今日/昨日, weekday kanji 木/金/火/土. Any listed reading (kana or romaji) is accepted for the card. Extend this table when users report a rejected-but-valid reading.
+- **Decoration stripping**: stored N5 forms carry decorations (trailing 。 on phrases, ～ placeholders, parenthesized options like 後(で)) — every stored word/reading is expanded through `normalizeVocabForm` + `expandParenVariants` (both from storyReading.js, the same helpers the story matcher uses), so "sumimasen", "kono", "ato"/"atode" all pass. Typed trailing punctuation is ignored too.
+- Chinese path (lenientPinyin over reading/reading_plain) is unchanged.
+- Regression tests in `src/typedAnswer.test.js` include the exact user-reported cases (nani for 何, sui/mizu cross-acceptance).
