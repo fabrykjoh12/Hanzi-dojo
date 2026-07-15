@@ -85,14 +85,16 @@ begin
       from e where name = 'first_story_completed'
     union all
     select 'returned', (
+      -- Scoped to the same window as the other stages (via the range-limited
+      -- `e` CTE) so the count is comparable and can never exceed the stages above.
       select count(distinct s.user_id) from (
         select user_id, min(created_at)::date as signup_day
-        from analytics_events
+        from e
         where name = 'signup_completed' and user_id is not null
         group by user_id
       ) s
       where exists (
-        select 1 from analytics_events a
+        select 1 from e a
         where a.user_id = s.user_id and a.created_at::date > s.signup_day
       )
     )::bigint, 6
@@ -173,8 +175,16 @@ begin
 end;
 $$;
 
--- 8. Grants: any authenticated user may CALL the functions, but each function
--- refuses non-admins via assert_admin(). No table SELECT is granted.
+-- 8. Grants: only authenticated users may CALL these functions, and each still
+-- refuses non-admins via assert_admin(). Revoke the implicit PUBLIC execute
+-- (which would otherwise let anon call them — harmless since assert_admin raises
+-- for a null auth.uid(), but the smaller surface matches intent) before granting
+-- to authenticated. No table SELECT is granted.
+revoke execute on function public.admin_overview(timestamptz, timestamptz) from public;
+revoke execute on function public.admin_funnel(timestamptz, timestamptz) from public;
+revoke execute on function public.admin_active_users(timestamptz, timestamptz) from public;
+revoke execute on function public.admin_retention(timestamptz, timestamptz) from public;
+revoke execute on function public.admin_story_stats(timestamptz, timestamptz) from public;
 grant execute on function public.admin_overview(timestamptz, timestamptz) to authenticated;
 grant execute on function public.admin_funnel(timestamptz, timestamptz) to authenticated;
 grant execute on function public.admin_active_users(timestamptz, timestamptz) to authenticated;

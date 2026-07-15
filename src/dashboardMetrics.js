@@ -22,13 +22,6 @@ export function withConversion(stages) {
   })
 }
 
-export function median(nums) {
-  if (!nums || nums.length === 0) return 0
-  const sorted = [...nums].sort((a, b) => a - b)
-  const mid = Math.floor(sorted.length / 2)
-  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid]
-}
-
 // Continuous daily series with 0-filled gaps, [fromISO, toISO). Days are
 // 'YYYY-MM-DD' strings; iteration is UTC-safe by stepping calendar dates.
 export function fillDailySeries(rows, fromISO, toISO) {

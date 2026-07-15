@@ -23,11 +23,16 @@ function rangeBounds(days) {
   const to = new Date()
   const from = new Date()
   from.setUTCDate(from.getUTCDate() - days)
+  // toTs is "now" (the RPC upper bound is exclusive, so today's events up to now
+  // are included). fillDailySeries takes a half-open [fromISO, toISO), so the
+  // daily series' exclusive upper bound must be TOMORROW for today to be plotted.
+  const toExclusive = new Date(to)
+  toExclusive.setUTCDate(toExclusive.getUTCDate() + 1)
   return {
     fromTs: from.toISOString(),
     toTs: to.toISOString(),
     fromISO: from.toISOString().slice(0, 10),
-    toISO: to.toISOString().slice(0, 10),
+    toISO: toExclusive.toISOString().slice(0, 10),
   }
 }
 

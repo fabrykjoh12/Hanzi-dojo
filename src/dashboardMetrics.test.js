@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pct, withConversion, median, fillDailySeries, storyCompletionRate } from './dashboardMetrics'
+import { pct, withConversion, fillDailySeries, storyCompletionRate } from './dashboardMetrics'
 
 describe('pct', () => {
   it('rounds a ratio to an integer percent', () => {
@@ -27,18 +27,6 @@ describe('withConversion', () => {
     const out = withConversion([{ stage: 'landing', count: 0 }, { stage: 'signup', count: 0 }])
     expect(out[1].pctOfTop).toBe(0)
     expect(out[1].pctOfPrev).toBe(0)
-  })
-})
-
-describe('median', () => {
-  it('returns the middle of an odd-length set', () => {
-    expect(median([3, 1, 2])).toBe(2)
-  })
-  it('averages the two middles of an even-length set', () => {
-    expect(median([1, 2, 3, 4])).toBe(2.5)
-  })
-  it('is 0 for an empty set', () => {
-    expect(median([])).toBe(0)
   })
 })
 
