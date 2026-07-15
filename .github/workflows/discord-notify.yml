@@ -1,8 +1,9 @@
 name: Discord notifications
 
 # Posts to Discord automatically:
-#   • every push to main  → a "🚀 Update shipped" card in #announcements
-#   • whenever ROADMAP.md changes → a "🗺️ Roadmap updated" card in #roadmap
+#   • every push to main       → a "🚀 Update shipped" card in #announcements
+#   • whenever ROADMAP.md changes → the full roadmap list in #roadmap,
+#                                    edited IN PLACE so it's always one current post
 #
 # Setup (one time):
 #   1. In Discord, for BOTH #announcements and #roadmap:
@@ -15,6 +16,9 @@ name: Discord notifications
 on:
   push:
     branches: [main]
+
+permissions:
+  contents: write   # lets the roadmap step remember its message id across runs
 
 jobs:
   notify:
@@ -44,23 +48,59 @@ jobs:
             > announce.json
           curl -sS -H "Content-Type: application/json" -d @announce.json "$WEBHOOK"
 
-      - name: Post roadmap change to #roadmap
+      - name: Sync roadmap to #roadmap
         env:
           WEBHOOK: ${{ secrets.DISCORD_ROADMAP_WEBHOOK }}
           BEFORE: ${{ github.event.before }}
           AFTER: ${{ github.sha }}
-          REPO: ${{ github.repository }}
         run: |
           if [ -z "$WEBHOOK" ]; then echo "DISCORD_ROADMAP_WEBHOOK not set — skipping"; exit 0; fi
+
+          # Only act when ROADMAP.md actually changed in this push.
           if git rev-parse --verify "$BEFORE^{commit}" >/dev/null 2>&1; then
             CHANGED=$(git diff --name-only "$BEFORE" "$AFTER")
           else
             CHANGED=$(git show --name-only --pretty=format: "$AFTER")
           fi
           if ! printf '%s\n' "$CHANGED" | grep -qx 'ROADMAP.md'; then echo "ROADMAP.md not changed — skipping"; exit 0; fi
-          jq -n \
-            --arg url "https://github.com/$REPO/blob/main/ROADMAP.md" \
-            --arg desc "The roadmap just changed — see what we're building next." \
-            '{embeds:[{title:"🗺️ Roadmap updated", description:$desc, url:$url, color:12073508, footer:{text:"Hanzi Dojo"}}]}' \
-            > roadmap.json
-          curl -sS -H "Content-Type: application/json" -d @roadmap.json "$WEBHOOK"
+
+          # Turn ROADMAP.md into a Discord-friendly list: headings → bold,
+          # "- [x]" → ✅, "- [ ]" → •, dropping the H1 title, intro, and footer.
+          DESC=$(awk '
+            /^---/ { exit }
+            /^## / { started=1; sub(/^## /,""); print "\n**" $0 "**"; next }
+            started != 1 { next }
+            /^- \[x\] / { sub(/^- \[x\] /,"✅ "); print; next }
+            /^- \[X\] / { sub(/^- \[X\] /,"✅ "); print; next }
+            /^- \[ \] / { sub(/^- \[ \] /,"• "); print; next }
+            /^_/ { next }
+            { print }
+          ' ROADMAP.md)
+          DESC=${DESC:0:4000}
+          if [ -z "$DESC" ]; then echo "Parsed roadmap was empty — skipping"; exit 0; fi
+
+          PAYLOAD=$(jq -n --arg desc "$DESC" \
+            '{embeds:[{title:"🗺️ Hanzi Dojo Roadmap", description:$desc, color:12073508, footer:{text:"Updates automatically when the roadmap changes"}}]}')
+
+          ID_FILE=".github/roadmap-message.id"
+          MID=""; [ -f "$ID_FILE" ] && MID=$(cat "$ID_FILE")
+
+          EDITED=0
+          if [ -n "$MID" ]; then
+            CODE=$(curl -sS -o /dev/null -w '%{http_code}' -X PATCH \
+              -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK/messages/$MID")
+            if [ "$CODE" = "200" ]; then EDITED=1; echo "Edited existing roadmap message $MID"; else echo "Edit returned $CODE — posting a fresh message"; fi
+          fi
+
+          if [ "$EDITED" = "0" ]; then
+            NEWID=$(curl -sS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK?wait=true" | jq -r '.id')
+            if [ -n "$NEWID" ] && [ "$NEWID" != "null" ]; then
+              echo "$NEWID" > "$ID_FILE"
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git add "$ID_FILE"
+              git commit -m "chore: track roadmap Discord message id [skip ci]" || true
+              git push origin HEAD:main || echo "Could not persist message id (branch protection?); a new post may appear next change."
+              echo "Posted new roadmap message $NEWID"
+            fi
+          fi
