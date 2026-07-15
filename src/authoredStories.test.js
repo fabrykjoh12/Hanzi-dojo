@@ -24,7 +24,8 @@ function vocabMapFor(key) {
   return map
 }
 
-const KNOWN_SPEAKERS = new Set(['たかし', 'はな', 'おかあさん', 'おじいさん', 'せんせい', 'みせのひと'])
+// Character bible plus the chorus label みんな ("everyone") for group lines.
+const KNOWN_SPEAKERS = new Set(['たかし', 'はな', 'おかあさん', 'おじいさん', 'せんせい', 'みせのひと', 'みんな'])
 
 function hasKanjiOrKatakana(s) {
   for (let i = 0; i < s.length; i += 1) {

@@ -81,10 +81,37 @@ describe('buildMissionOffer — prioritization & dedup', () => {
     })
     expect(res.dayBuckets.weak).toEqual(['书'])
     expect(res.dayBuckets.learned).toEqual([])
-    // Deduped word count feeds pickMission's dayWords + seed.
+    // Deduped word count feeds pickMission's dayWords + seed; today's words are
+    // always part of the known-words gate.
     expect(pickMission).toHaveBeenCalledWith({
-      language: 'chinese', level: 1, dayWords: ['书'], seed: 1,
+      language: 'chinese', level: 1, dayWords: ['书'], knownWords: new Set(['书']), seed: 1,
     })
+  })
+})
+
+describe('buildMissionOffer — kanji↔kana aliasing and the known-words gate', () => {
+  const JVOCAB = [
+    { id: 'v1', word: '学校', reading: 'がっこう' },
+    { id: 'v2', word: '食べます', reading: 'たべます' },
+  ]
+
+  it('expands day words and known words with their kana readings', () => {
+    buildMissionOffer({
+      sessionVocab: [{ word: '学校', weak: false, review: false }],
+      vocab: JVOCAB, knownWords: ['食べます'], language: 'japanese', level: 1,
+    })
+    const call = pickMission.mock.calls[0][0]
+    expect(call.dayWords.sort()).toEqual(['がっこう', '学校'])
+    expect(call.knownWords.has('たべます')).toBe(true)
+    expect(call.knownWords.has('がっこう')).toBe(true)
+  })
+
+  it('buckets carry both spellings so kana chat text highlights', () => {
+    const res = buildMissionOffer({
+      sessionVocab: [{ word: '学校', weak: true, review: false }],
+      vocab: JVOCAB, language: 'japanese', level: 1,
+    })
+    expect(res.dayBuckets.weak.sort()).toEqual(['がっこう', '学校'])
   })
 })
 
