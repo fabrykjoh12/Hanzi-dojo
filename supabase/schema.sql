@@ -1,3 +1,26 @@
+-- ⛔ DANGER: THIS FILE IS A DESTRUCTIVE FULL RESET. ⛔
+-- It DROPs every app table — vocabulary, stories, cards (all user SRS
+-- progress), profiles, everything except auth.users — and recreates them
+-- EMPTY. It is for standing up a BRAND-NEW, EMPTY project only. Running it
+-- against a project that has data wipes that data. (It already happened once:
+-- a paste-and-run into the prod SQL editor emptied production; recovery was
+-- only possible via a Supabase daily backup.)
+--
+-- To make accidental runs impossible, everything below is gated behind an
+-- explicit opt-in. Running this file as-is ABORTS before dropping anything.
+-- To intentionally reset a project, run this first, in the same session:
+--
+--     set hanzi.confirm_reset = 'yes';
+--
+-- then run this file. Anything short of that leaves your data untouched.
+do $$
+begin
+  if current_setting('hanzi.confirm_reset', true) is distinct from 'yes' then
+    raise exception
+      'schema.sql is a DESTRUCTIVE reset (drops all app tables incl. user data). Aborting to protect existing data. To proceed intentionally: run  set hanzi.confirm_reset = ''yes'';  in this session first, then re-run.';
+  end if;
+end $$;
+
 create extension if not exists "pgcrypto";
 
 -- WARNING:

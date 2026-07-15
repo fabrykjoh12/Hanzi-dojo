@@ -147,7 +147,7 @@ The suite (Vitest) focuses on **meaningful behavior**, not string smoke tests: F
 
 - Static SPA build (`npm run build`) deployable to Vercel (config in `vercel.json`) or GitHub Pages. The build emits a `404.html` fallback so deep links resolve on static hosts.
 - Set the `VITE_*` env vars in your host's environment.
-- Supabase: apply `supabase/schema.sql` and the `supabase/migrations/`. Auth redirect URLs must include your deployed origin.
+- Supabase: for a **brand-new, empty** project only, apply `supabase/schema.sql` (a destructive full reset — it is guarded and aborts unless you first `set hanzi.confirm_reset = 'yes';`), then the `supabase/migrations/`. **Never run `schema.sql` against a project that has data** — it drops every table incl. all user progress. To evolve an existing project, add a migration under `supabase/migrations/` instead. Auth redirect URLs must include your deployed origin.
 - Daily reminders run as a scheduled GitHub Action (`send-review-reminders.mjs`) — needs the VAPID + Supabase service secrets above.
 
 ---
