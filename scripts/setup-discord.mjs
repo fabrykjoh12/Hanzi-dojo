@@ -78,7 +78,7 @@ const TREE = [
       { name: 'introductions', type: T.TEXT, topic: 'New here? Tell us: which language, your goal, and how far along you are.' },
       { name: 'general', type: T.TEXT, topic: 'Off-topic hangout for Hanzi Dojo learners. Be kind.' },
       { name: 'wins', type: T.TEXT, topic: 'Celebrate progress — streaks, first story read, a level test passed, "82% known!" screenshots welcome.' },
-      { name: 'study-hall', type: T.VOICE, topic: 'Silent co-study / body-doubling. Hop in, mute, and do your reps.' },
+      { name: 'study-hall', type: T.VOICE, topic: 'Silent co-study. Hop in, mute, and do your reps together.' },
     ],
   },
   {
@@ -194,14 +194,27 @@ async function main() {
       if (ch.botCanSend && ids.bot) overwrites.push({ id: ids.bot, type: 0, allow: P.SEND_MESSAGES.toString(), deny: '0' })
 
       if (DRY_RUN) { console.log(`  + #${ch.name}${ch.readOnly ? ' (read-only)' : ''}`); continue }
-      await api('POST', `/guilds/${GUILD}/channels`, {
+      const payload = {
         name: ch.name,
         type: ch.type,
         topic: ch.topic,
         parent_id: parentId,
         permission_overwrites: overwrites.length ? overwrites : undefined,
-      })
-      console.log(`  + #${ch.name}${ch.readOnly ? ' (read-only)' : ''}`)
+      }
+      try {
+        await api('POST', `/guilds/${GUILD}/channels`, payload)
+        console.log(`  + #${ch.name}${ch.readOnly ? ' (read-only)' : ''}`)
+      } catch (e) {
+        // Community servers run channel topics through a word filter. If a topic
+        // trips it, create the channel without a topic and flag it — don't abort
+        // the whole build over one description.
+        if (String(e.message).includes('CHANNEL_TOPIC_INVALID')) {
+          await api('POST', `/guilds/${GUILD}/channels`, { ...payload, topic: undefined })
+          console.log(`  + #${ch.name} (created — a word in its topic was filtered; set the topic by hand)`)
+        } else {
+          console.log(`  ! #${ch.name} skipped: ${e.message}`)
+        }
+      }
       await sleep(350)
     }
   }
