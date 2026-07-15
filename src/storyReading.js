@@ -211,6 +211,87 @@ function conjugationExtension(tail, formTail) {
   return maxShared
 }
 
+// ── Russian (space-delimited, inflected) matching ────────────────────────────
+// Russian text is whitespace-tokenized and heavily inflected: nouns decline for
+// case/number, verbs conjugate, adjectives agree — so the dictionary form стored
+// as vocab (вода, книга, читать) rarely appears verbatim. Two problems fell out
+// of treating it like Chinese (greedy substring, exact-only):
+//   1. one-letter function words (в, с, к, и, а, о, у, я) matched INSIDE longer
+//      words — "в" lit up the в of "вода" — so a whole word highlighted as a
+//      single letter.
+//   2. any inflected form ("воду", "книги", "читает") missed the exact key and
+//      fell to the "beyond this level" fallback, untappable.
+// The fix matches WHOLE whitespace-delimited tokens only, and resolves inflected
+// forms to their dictionary entry by a shared stem (common prefix + a plausible
+// inflectional ending on each side). Precision guard: the token's trailing
+// difference must be a real inflectional ending, so a derivation like столица
+// never resolves to стол.
+
+function isCyrillicOrLatinCode(c) {
+  return (c >= 0x0400 && c <= 0x04FF)     // Cyrillic
+    || (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A)   // Latin
+    || (c >= 0x30 && c <= 0x39)           // digits
+}
+function isRuWordChar(ch) { return isCyrillicOrLatinCode((ch || '').charCodeAt(0)) }
+
+// Lowercase, drop combining stress accents, fold ё→е (stories spell it either
+// way). The single normalization applied to both vocab forms and story tokens.
+export function normalizeRussian(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/́/g, '')
+    .replace(/ё/g, 'е')
+    .trim()
+}
+
+// Inflectional endings that may differ between a story token and its dictionary
+// form: noun case/number, adjective agreement, verb person/tense, past tense,
+// infinitive/reflexive markers. Used as a precision gate — the leftover suffix
+// after the shared stem must be one of these (or empty), so книг|и matches
+// книг|а but столиц|а never matches стол.
+const RU_INFLECTION = new Set([
+  '',
+  // nominal / adjectival case & agreement
+  'а', 'я', 'о', 'е', 'у', 'ю', 'ы', 'и', 'ь', 'й',
+  'ой', 'ей', 'ый', 'ий', 'ая', 'яя', 'ое', 'ее', 'ые', 'ие', 'ом', 'ем',
+  'ах', 'ях', 'ов', 'ев', 'ам', 'ям', 'ми', 'ью', 'ей',
+  'ого', 'его', 'ому', 'ему', 'ыми', 'ими', 'ами', 'ями', 'иях', 'иям',
+  // verbal — present/future personal endings, including the short forms left
+  // when the theme vowel is absorbed into the shared stem (говор|и + м → "м").
+  'м', 'т', 'шь', 'те',
+  'ешь', 'ёшь', 'ишь', 'ет', 'ёт', 'ит', 'ем', 'им', 'ете', 'ёте',
+  'ите', 'ут', 'ют', 'ат', 'ят',
+  // infinitive markers (a verb's dictionary form ends in one of these)
+  'ть', 'ти', 'чь', 'ать', 'ять', 'еть', 'ить', 'ыть', 'уть', 'оть',
+  // past tense + reflexive
+  'л', 'ла', 'ло', 'ли', 'лся', 'лась', 'лись', 'ся', 'сь', 'ться', 'тся',
+])
+
+// Longest common prefix length of two strings.
+function ruLcp(a, b) {
+  let n = 0
+  while (n < a.length && n < b.length && a[n] === b[n]) n += 1
+  return n
+}
+
+// The prefix-index key for a normalized form: its first RU_KEY_LEN letters.
+// Forms shorter than that are exact-match only (function words like в, не, это).
+const RU_KEY_LEN = 3
+const RU_MAX_ENDING = 4   // an inflectional ending is at most this many chars (e.g. -ться)
+
+// Does story token `tl` inflect dictionary form `fl`? (both normalized)
+// They must share a stem of at least RU_KEY_LEN, and the leftover on EACH side
+// must be a short, real inflectional ending. Symmetric so it catches both a
+// longer surface form (воду vs вода) and a shorter one (иду vs идут).
+function ruInflects(tl, fl) {
+  const lcp = ruLcp(tl, fl)
+  if (lcp < RU_KEY_LEN) return false
+  const tEnd = tl.slice(lcp)
+  const fEnd = fl.slice(lcp)
+  if (tEnd.length > RU_MAX_ENDING || fEnd.length > RU_MAX_ENDING) return false
+  return RU_INFLECTION.has(tEnd) && RU_INFLECTION.has(fEnd)
+}
+
 // Build a reusable matcher over a word-keyed vocab map.
 //   exact  — normalized keys, alternate spellings from multi-form entries
 //            ("やはり; やっぱり"), paren variants, readings (Japanese), and
@@ -223,6 +304,23 @@ export function buildVocabMatcher(vocabMap = {}, language) {
   const words = {}          // original word forms only — the name-check lookup
   const stems = new Map()
   const isJapanese = language === 'japanese'
+  const isRussian = language === 'russian'
+
+  // Russian: whole-token exact map (normalized) + a first-letters prefix index
+  // of forms, for the stem/inflection match.
+  const ruExact = new Map()       // normalized form → vocab
+  const ruPrefix = new Map()      // first RU_KEY_LEN letters → [{ v, fl }]
+  const addRussian = (rawForm, v) => {
+    const fl = normalizeRussian(rawForm)
+    if (!fl) return
+    if (!ruExact.has(fl)) ruExact.set(fl, v)
+    if (fl.length >= RU_KEY_LEN) {
+      const key = fl.slice(0, RU_KEY_LEN)
+      const list = ruPrefix.get(key) || []
+      list.push({ v, fl })
+      ruPrefix.set(key, list)
+    }
+  }
 
   const addExact = (f, v) => { if (f && f.length > 1 && !exact[f]) exact[f] = v }
   // Single-char exact entries are allowed only for the original stored key
@@ -270,6 +368,7 @@ export function buildVocabMatcher(vocabMap = {}, language) {
         addExactAny(f, v)
         if (!words[f]) words[f] = v
         if (isJapanese) addJapaneseDerived(f, v)
+        if (isRussian) addRussian(f, v)
       }
     }
     if (isJapanese && v && v.reading) {
@@ -282,7 +381,42 @@ export function buildVocabMatcher(vocabMap = {}, language) {
       }
     }
   }
-  return { exact, words, stems, isJapanese }
+  return { exact, words, stems, isJapanese, isRussian, ruExact, ruPrefix }
+}
+
+// Match a whole Russian token at text[i]. Reads the full whitespace/punctuation
+// -delimited word, then resolves it to a vocab entry by exact spelling or by
+// stem/inflection. Always consumes the WHOLE token (never a single letter), and
+// only starts at a word boundary — so "в" can't match inside "вода", and "воду"
+// resolves to "вода". Returns { vocab, len } | null.
+function matchRussianAt(text, i, matcher, atBoundary) {
+  if (!atBoundary) return null
+  if (!isRuWordChar(text[i])) return null
+  let j = i
+  while (j < text.length && isRuWordChar(text[j])) j += 1
+  const token = text.slice(i, j)
+  const tl = normalizeRussian(token)
+  if (!tl) return null
+
+  const exactHit = matcher.ruExact.get(tl)
+  if (exactHit) return { vocab: exactHit, len: token.length }
+
+  if (tl.length >= RU_KEY_LEN) {
+    const list = matcher.ruPrefix.get(tl.slice(0, RU_KEY_LEN))
+    if (list) {
+      let best = null, bestLcp = -1
+      for (const e of list) {
+        if (!ruInflects(tl, e.fl)) continue
+        const lcp = ruLcp(tl, e.fl)
+        // Prefer the closest stem; tie-break the shorter dictionary form.
+        if (lcp > bestLcp || (lcp === bestLcp && (!best || e.fl.length < best.fl.length))) {
+          best = e; bestLcp = lcp
+        }
+      }
+      if (best) return { vocab: best.v, len: token.length }
+    }
+  }
+  return null
 }
 
 // matchVocabAt(text, i, matcher, particles, atBoundary) → { vocab, len } | null.
@@ -300,6 +434,9 @@ export function buildVocabMatcher(vocabMap = {}, language) {
 // after another match). Without it, かし inside たかし matched かします —
 // a name became "lend". Kanji/katakana-initial matches are self-bounding.
 export function matchVocabAt(text, i, matcher, particles = NO_PARTICLES, atBoundary = true) {
+  // Russian is whole-token, whitespace-delimited, and inflected — a different
+  // matching model from CJK substring scanning (see matchRussianAt).
+  if (matcher.isRussian) return matchRussianAt(text, i, matcher, atBoundary)
   if (!atBoundary && isHiraganaChar(text[i])) return null
   const isVocab = (cand) => matcher.exact[cand] && !(cand.length === 1 && particles.has(cand))
 
