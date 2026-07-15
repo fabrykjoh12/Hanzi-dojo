@@ -28,6 +28,7 @@ so the community always sees the latest. Keep it current — move things to
 - [x] Real TTS audio for vocabulary and stories
 - [x] Community Discord + in-app "Join our Discord" links
 - [x] Auto-posting of releases and roadmap updates to Discord
+- [x] Admin analytics dashboard — activation funnel, DAU/WAU & story-completion views (internal, admin-only `/dashboard`)
 
 ---
 

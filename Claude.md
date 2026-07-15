@@ -8,7 +8,11 @@ When you ship a meaningful, user-facing change, update **`ROADMAP.md`** in the s
 
 ---
 
-## 0. LATEST SESSION — read first (2026-07-14, second session: tiers, cumulative levels, Japanese story fix)
+## 0. LATEST SESSION — read first (2026-07-16: admin analytics dashboard shipped to main)
+
+**Admin analytics dashboard (v1) — shipped.** New admin-only `/dashboard` (`src/Dashboard.jsx`), gated by a new `profiles.is_admin` flag. It reads the existing `analytics_events` table through five `security definer` RPCs — `admin_overview`, `admin_funnel`, `admin_active_users`, `admin_retention`, `admin_story_stats` — in migration `supabase/migrations/20260715000000_add_admin_analytics.sql`. Each RPC asserts the caller is an admin and returns **only aggregates** (no raw event rows leave the DB); the table's insert-only RLS is unchanged, so a normal client still can't read it. Pure metric transforms live in `src/dashboardMetrics.js` (+`dashboardMetrics.test.js`). `seed-analytics.mjs` inserts synthetic events (tagged `app_version='seed'`; `--apply` / `--purge --apply`) so the dashboard is buildable/demoable before real traffic. The nav entry (Sidebar + MobileNav "More") appears only when `profile.is_admin`; the `/make-admin` slash command hands over the SQL to set the flag. Retention + language-filter UI are intentionally deferred (data paths ready). Design + plan: `docs/superpowers/{specs,plans}/2026-07-15-analytics-dashboard*`. **Not live until:** the migration is applied, an account is flagged admin (`/make-admin`), and events exist (real traffic or the seeder). Reviewed (no Critical findings); two correctness fixes applied (windowed `returned` funnel stage; DAU chart plots today). Full details in §16/§17.
+
+## 0.00 PREVIOUS SESSION (2026-07-14, second session: tiers, cumulative levels, Japanese story fix)
 
 Shipped to `main` as PRs #45–#48, plus content operations run via the `regen-content` GitHub Action (which holds the Supabase/LLM secrets — the dev sandbox cannot reach Supabase directly).
 
