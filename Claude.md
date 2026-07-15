@@ -1235,6 +1235,7 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 
 ### Immediate action items (one-time setup — nothing collects until these are done)
 - ⚠️ **Apply the analytics migration** `supabase/migrations/20260713120000_add_analytics_events.sql` in the Supabase SQL editor. Until applied, every analytics insert fails silently (by design) and **no events are recorded**.
+- **Admin analytics dashboard (new):** Apply `supabase/migrations/20260715000000_add_admin_analytics.sql`, then set your account admin (`/make-admin` slash command → `update profiles set is_admin = true`). Visit `/dashboard` (visible only to admins). Develop/demo with `node --env-file=.env.script seed-analytics.mjs --apply` (purge with `--purge --apply`). Reads via `admin_*` security-definer RPCs; no raw events leave the DB.
 - **Push-reminder VAPID secrets** (item #16) — still required before daily reminders send: `VAPID_PRIVATE_KEY` + `VITE_VAPID_PUBLIC_KEY` GitHub secrets, `VITE_VAPID_PUBLIC_KEY` Vercel env var, optional `VAPID_SUBJECT` variable (section 19).
 
 ### Done (recent)
@@ -1248,7 +1249,7 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 - ~~Deploy to web, mobile nav + padding, installable PWA, furigana on flashcards, LanguageSwitcher mastery count, Japanese example sentences + stories~~ (older sessions).
 
 ### Priority order (most impactful first)
-1. **Analytics dashboard:** the `analytics_events` table is structured for it, but there's **no dashboard yet**. Build the activation funnel (Landing→Signup→Onboarding→First Mission→First Story→return), DAU/WAU, retention, and story-completion views (service-role read; e.g. a Supabase SQL view / external dashboard). *(depends on the migration being applied + real traffic)*
+1. **Analytics dashboard — v1 BUILT** (`src/Dashboard.jsx`, admin-only `/dashboard`): activation funnel (Landing→Signup→Onboarding→First Mission→First Story→return), DAU/WAU, and story-completion views, backed by `admin_*` security-definer RPCs (migration `20260715000000_add_admin_analytics.sql`). Retention + language filter have data paths ready but no UI yet. *(still depends on the migration being applied + real traffic before it shows data)*
 2. **FSRS parameter tuning:** `review_logs` + analytics now give real data — optimize scheduler parameters beyond library defaults.
 3. **Real-device verification pass** (can't be done from the sandbox): offline grade-replay + XP-delta reconcile, iOS/Safari flashcard + reader audio, and push reminders end-to-end. All were built and unit-tested but never exercised on a live device/browser.
 4. **Content breadth:**
