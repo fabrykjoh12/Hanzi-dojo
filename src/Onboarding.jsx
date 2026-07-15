@@ -42,8 +42,17 @@ export default function Onboarding({ session, onComplete }) {
       .eq('language', language)
       .eq('system', languageTheme(language).system)
       .eq('is_active', true)
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (cancelled) return
+        // A genuine error → levels: null (fail open to the full range). But an
+        // *empty* result for a language that should have content silently bricks
+        // the flow with "coming soon", so log both cases — this is the only
+        // signal that the deployed app is pointed at a DB missing that content.
+        if (error) {
+          console.warn('[onboarding] failed to load seeded levels for', language, '—', error.message)
+        } else if (!data || data.length === 0) {
+          console.warn('[onboarding] no active vocabulary for', language, '/', languageTheme(language).system, '— onboarding will show "coming soon". Check the vocabulary table in this Supabase project (see scripts/check-vocabulary.sql).')
+        }
         // On a fetch failure, record levels: null (unknown) so the UI fails open
         // to the full level range instead of getting stuck on a spinner.
         setSeededData({ lang: language, levels: data ? new Set(data.map(r => r.level)) : null })
