@@ -3,7 +3,9 @@ import { supabase } from './supabase'
 import {
   Palette, SlidersHorizontal, Sun, Moon, Keyboard, Eye,
   Volume2, BookOpenCheck, Gauge, Bell, HardDrive, Trash2, CheckCircle2,
+  MessagesSquare, ArrowUpRight,
 } from 'lucide-react'
+import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
 import { useIsMobile } from './useIsMobile'
 import { useTheme } from './ThemeContext'
 import { languageTheme } from './languageTheme'
@@ -210,6 +212,33 @@ export default function Settings({ session, profile, onUpdate }) {
 
           {/* Offline downloads + storage */}
           <OfflineStorageCard accentHex={accentHex} />
+
+          {/* Community — hidden until a real Discord invite is set in community.js */}
+          {isDiscordConfigured() && (
+            <Card
+              icon={MessagesSquare}
+              title="Join the community"
+              text="Hanzi Dojo is built with its learners. Trade study tips, report bugs, suggest features, and help shape what we build next."
+              accentHex={accentHex}
+            >
+              <a
+                href={DISCORD_INVITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  height: '40px', padding: '0 16px', borderRadius: '12px',
+                  border: '1px solid ' + accentHex + '40', background: accentHex + '10',
+                  color: accentHex, fontSize: '13px', fontWeight: 750,
+                  fontFamily: 'Inter, sans-serif', textDecoration: 'none',
+                }}
+              >
+                <MessagesSquare size={16} strokeWidth={2} color={accentHex} />
+                Join our Discord
+                <ArrowUpRight size={15} strokeWidth={2} color={accentHex} />
+              </a>
+            </Card>
+          )}
 
           {/* Build stamp — confirms which version is running. */}
           <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--text-faint)', fontWeight: 600, marginTop: '4px' }}>

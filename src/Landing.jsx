@@ -8,7 +8,9 @@ import { languageList } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import {
   ArrowLeft, ArrowRight, BookOpen, GraduationCap, Layers, PenLine, Play, Sparkles,
+  MessagesSquare,
 } from 'lucide-react'
+import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
 
 const SAGE = '#6E8466'
 const SAGE_DARK = '#5C7155'
@@ -345,6 +347,33 @@ export default function Landing() {
             Start free · Core learning is free · No credit card required
           </div>
         </div>
+
+        {/* Footer — community link, hidden until a real Discord invite is set in community.js */}
+        {isDiscordConfigured() && (
+          <div style={{
+            marginTop: isMobile ? '48px' : '72px', paddingTop: '28px',
+            borderTop: '1px solid var(--border)', textAlign: 'center',
+          }}>
+            <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '16px' }}>
+              {BRAND_NAME} is community-driven. Join learners shaping what we build next.
+            </div>
+            <a
+              href={DISCORD_INVITE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                minHeight: '42px', padding: '0 18px', borderRadius: '14px',
+                border: '1px solid var(--border)', background: 'var(--surface)',
+                color: 'var(--text)', fontSize: '14px', fontWeight: 650,
+                fontFamily: 'Inter, sans-serif', textDecoration: 'none',
+              }}
+            >
+              <MessagesSquare size={16} strokeWidth={2} color={SAGE_DARK} />
+              Join our Discord
+            </a>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -1,0 +1,66 @@
+name: Discord notifications
+
+# Posts to Discord automatically:
+#   • every push to main  → a "🚀 Update shipped" card in #announcements
+#   • whenever ROADMAP.md changes → a "🗺️ Roadmap updated" card in #roadmap
+#
+# Setup (one time):
+#   1. In Discord, for BOTH #announcements and #roadmap:
+#      channel ⚙ → Integrations → Webhooks → New Webhook → Copy Webhook URL
+#   2. In GitHub: repo Settings → Secrets and variables → Actions → New secret
+#        DISCORD_ANNOUNCE_WEBHOOK = the #announcements webhook URL
+#        DISCORD_ROADMAP_WEBHOOK  = the #roadmap webhook URL
+#   Steps whose secret is missing simply skip, so it's safe to add one at a time.
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Post changelog to #announcements
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_ANNOUNCE_WEBHOOK }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          COMPARE: ${{ github.event.compare }}
+        run: |
+          if [ -z "$WEBHOOK" ]; then echo "DISCORD_ANNOUNCE_WEBHOOK not set — skipping"; exit 0; fi
+          if git rev-parse --verify "$BEFORE^{commit}" >/dev/null 2>&1; then
+            NOTES=$(git log --no-merges --pretty=format:'• %s' "$BEFORE..$AFTER" | head -20)
+          else
+            NOTES=$(git log --no-merges --pretty=format:'• %s' -1 "$AFTER")
+          fi
+          if [ -z "$NOTES" ]; then echo "No non-merge commits to report"; exit 0; fi
+          jq -n --arg desc "$NOTES" --arg url "$COMPARE" \
+            '{embeds:[{title:"🚀 Update shipped", description:$desc, url:$url, color:12073508, footer:{text:"Hanzi Dojo"}}]}' \
+            > announce.json
+          curl -sS -H "Content-Type: application/json" -d @announce.json "$WEBHOOK"
+
+      - name: Post roadmap change to #roadmap
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_ROADMAP_WEBHOOK }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -z "$WEBHOOK" ]; then echo "DISCORD_ROADMAP_WEBHOOK not set — skipping"; exit 0; fi
+          if git rev-parse --verify "$BEFORE^{commit}" >/dev/null 2>&1; then
+            CHANGED=$(git diff --name-only "$BEFORE" "$AFTER")
+          else
+            CHANGED=$(git show --name-only --pretty=format: "$AFTER")
+          fi
+          if ! printf '%s\n' "$CHANGED" | grep -qx 'ROADMAP.md'; then echo "ROADMAP.md not changed — skipping"; exit 0; fi
+          jq -n \
+            --arg url "https://github.com/$REPO/blob/main/ROADMAP.md" \
+            --arg desc "The roadmap just changed — see what we're building next." \
+            '{embeds:[{title:"🗺️ Roadmap updated", description:$desc, url:$url, color:12073508, footer:{text:"Hanzi Dojo"}}]}' \
+            > roadmap.json
+          curl -sS -H "Content-Type: application/json" -d @roadmap.json "$WEBHOOK"
