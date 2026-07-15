@@ -144,7 +144,7 @@ export function normalizeVocabForm(form) {
 }
 
 // "後(で)" → ["後で", "後"]; plain forms pass through as [form].
-function expandParenVariants(form) {
+export function expandParenVariants(form) {
   const m = form.match(/^(.+?)[（(](.+?)[）)]$/)
   if (m) return [m[1] + m[2], m[1]]
   return [form]
