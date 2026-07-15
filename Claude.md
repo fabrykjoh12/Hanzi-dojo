@@ -2,6 +2,10 @@
 
 Read this entire file before making any change. It describes not just *what* the project is, but *why* it exists and *how* it should feel. When a decision isn't covered here, choose the option that best serves the vision and learning philosophy below.
 
+### Keep the roadmap current (every session)
+
+When you ship a meaningful, user-facing change, update **`ROADMAP.md`** in the same PR: move the finished item to **✅ Shipped** and add any newly planned work under **Now** / **Next**. This is not optional bookkeeping — a GitHub Action (`.github/workflows/discord-notify.yml`) posts every `ROADMAP.md` change to the community Discord's **#roadmap** channel (as a self-updating list) and every merge to `main` to **#announcements**. Keeping the roadmap honest is literally how the community sees progress. Write a descriptive PR title too: for squash-merged PRs the title becomes the text of the Discord update.
+
 ---
 
 ## 0. LATEST SESSION — read first (2026-07-14, second session: tiers, cumulative levels, Japanese story fix)
