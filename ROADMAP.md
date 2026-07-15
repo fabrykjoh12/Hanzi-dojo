@@ -14,6 +14,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] Known-Word Map & Reading Ladder (visualize what you can read as vocabulary grows)
 - [ ] Word-to-World chat missions expanded across levels
 - [ ] Known-Content Analyzer — paste text, see % known + words to learn next
+- [ ] In-app feedback → Discord auto-posting (submissions land in #feedback-feed)
 
 ## 🧱 Technical
 - [ ] Collapse the multi-write grading path into a single Supabase RPC/transaction
