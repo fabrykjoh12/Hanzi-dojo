@@ -375,9 +375,66 @@ describe('calculateStoryReadability — Russian', () => {
     expect(r.storyWords.slice().sort()).toEqual(['дом', 'кот'].sort())
     expect(r.totalUnique).toBe(2)
   })
-  it('is case-sensitive (no normalization / stemming — preserves current behavior)', () => {
+  it('matches a sentence-initial capital (case-insensitive)', () => {
     const r = calculateStoryReadability({ content: 'Кот', vocabMap: RV, cards: {}, language: 'russian' })
-    expect(r.totalUnique).toBe(0)   // 'Кот' ≠ vocab 'кот'
+    expect(r.totalUnique).toBe(1)   // 'Кот' resolves to vocab 'кот'
+  })
+})
+
+// The two user-reported problems: (1) a one-letter word like "в" lighting up
+// INSIDE a longer word, and (2) inflected forms falling to "beyond this level".
+describe('matchVocabAt — Russian whole-token + inflection', () => {
+  const rv = (word, id) => ({ id, word })
+  const V = {
+    'вода': rv('вода', 'water'),
+    'книга': rv('книга', 'book'),
+    'читать': rv('читать', 'read'),
+    'стол': rv('стол', 'table'),
+    'дом': rv('дом', 'house'),
+    'в': rv('в', 'in'),
+    'я': rv('я', 'I'),
+    'это': rv('это', 'this'),
+  }
+  const matcher = buildVocabMatcher(V, 'russian')
+  const at = (text, i = 0, boundary = true) => matchVocabAt(text, i, matcher, undefined, boundary)
+
+  it('matches a whole word, not a one-letter prefix inside it', () => {
+    const r = at('вода')
+    expect(r.vocab.id).toBe('water')
+    expect(r.len).toBe(4)          // whole "вода", never just "в"
+  })
+
+  it('does not start a match mid-word', () => {
+    expect(at('вода', 1, false)).toBeNull()   // "ода" — inside the word
+  })
+
+  it('resolves inflected noun forms to the dictionary entry', () => {
+    expect(at('воду').vocab.id).toBe('water')     // accusative
+    expect(at('водой').vocab.id).toBe('water')    // instrumental
+    expect(at('книги').vocab.id).toBe('book')     // genitive/plural
+    expect(at('книгу').vocab.id).toBe('book')     // accusative
+    expect(at('столе').vocab.id).toBe('table')    // prepositional
+  })
+
+  it('resolves conjugated verb forms', () => {
+    expect(at('читаю').vocab.id).toBe('read')
+    expect(at('читает').vocab.id).toBe('read')
+    expect(at('читала').vocab.id).toBe('read')
+  })
+
+  it('still matches a one-letter word when it stands alone', () => {
+    const r = at('в доме')
+    expect(r.vocab.id).toBe('in')
+    expect(r.len).toBe(1)
+  })
+
+  it('does not resolve a different lemma that merely shares a prefix', () => {
+    expect(at('столица')).toBeNull()   // capital city ≠ table (derivation -ица)
+    expect(at('домашний')).toBeNull()  // homely ≠ house
+  })
+
+  it('leaves an unknown word unmatched (tappable, not fragmented)', () => {
+    expect(at('привет')).toBeNull()
   })
 })
 

@@ -1351,3 +1351,13 @@ Changing `base` to a fixed value will break one of the two hosts (assets 404 →
 - **Decoration stripping**: stored N5 forms carry decorations (trailing 。 on phrases, ～ placeholders, parenthesized options like 後(で)) — every stored word/reading is expanded through `normalizeVocabForm` + `expandParenVariants` (both from storyReading.js, the same helpers the story matcher uses), so "sumimasen", "kono", "ato"/"atode" all pass. Typed trailing punctuation is ignored too.
 - Chinese path (lenientPinyin over reading/reading_plain) is unchanged.
 - Regression tests in `src/typedAnswer.test.js` include the exact user-reported cases (nani for 何, sui/mizu cross-acceptance).
+
+## Russian story matching (PR — 2026-07-15)
+
+Russian is the first **space-delimited, inflected** language in the reader, and needed a different matching model from CJK (which scans characters greedily). Added to `src/storyReading.js`:
+
+- **Whole-token matching** (`matchRussianAt`): reads the entire whitespace/punctuation-delimited word and only starts at a boundary. This fixed the "highlights a single letter" bug — one-letter vocab words (в, с, к, и, а, о, у, я) were matching *inside* longer words (the в of вода). Now в only matches when it's a standalone token.
+- **Inflection resolution**: nouns/verbs/adjectives appear declined/conjugated in text (воду, книги, читает, столе) but vocab stores the dictionary form. `ruInflects` matches a token to a vocab form when they share a stem (common prefix ≥ 3) and the leftover on each side is a real inflectional ending (`RU_INFLECTION` set) — so книги→книга, читает→читать, школу→школа, but derivations like столица→стол and домашний→дом are rejected (their suffix isn't inflectional).
+- **Normalization** (`normalizeRussian`): lowercase + strip stress accents + ё→е, applied to both vocab and text, so sentence-initial capitals match (this replaced the old case-sensitive behavior the reader shipped with).
+- Hard suppletive irregulars (люблю, идёт) fall through unmatched — the `ru` Intl.Segmenter still tokenizes them as whole tappable words (hear / sentence translation), never letter fragments.
+- Only Russian routes through this path (`matcher.isRussian`); Chinese/Japanese matching is unchanged. Tests in `storyReading.test.js` (describe: "matchVocabAt — Russian whole-token + inflection").
