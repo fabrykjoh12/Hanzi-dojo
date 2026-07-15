@@ -8,13 +8,13 @@ so the community always sees the latest. Keep it current — move things to
 ## 🚧 Now — in progress
 - [ ] First-session onboarding that ends in an unlocked story + recap ("First story unlocked")
 - [ ] Story-reader polish — book-like typography, clearer "learn N more to unlock the next story"
+- [ ] In-app feedback → Discord auto-posting (Supabase trigger → #feedback-feed)
 
 ## 🔜 Next — planned
 - [ ] Shareable reading-recap card ("I can read 82% of this Chinese story")
 - [ ] Known-Word Map & Reading Ladder (visualize what you can read as vocabulary grows)
 - [ ] Word-to-World chat missions expanded across levels
 - [ ] Known-Content Analyzer — paste text, see % known + words to learn next
-- [ ] In-app feedback → Discord auto-posting (submissions land in #feedback-feed)
 
 ## 🧱 Technical
 - [ ] Collapse the multi-write grading path into a single Supabase RPC/transaction
