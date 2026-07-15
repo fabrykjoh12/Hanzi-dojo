@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { MoreHorizontal, X } from 'lucide-react'
-import { MOBILE_PRIMARY, MOBILE_MORE } from './navConfig'
+import { MOBILE_PRIMARY, MOBILE_MORE, ADMIN_NAV } from './navConfig'
 
 const SAGE_BG = '#E7EDE4'
 const SAGE_TEXT = '#4F6047'
@@ -10,8 +10,6 @@ const MUTED = 'var(--text-muted)'
 // sheet. Study/practice modes are reached through the Practice tab.
 const PRIMARY = MOBILE_PRIMARY
 const MORE_ITEMS = MOBILE_MORE
-
-const MORE_KEYS = MORE_ITEMS.map(i => i.key)
 
 function Tab({ icon: Icon, label, active, onClick }) {
   return (
@@ -34,8 +32,10 @@ function Tab({ icon: Icon, label, active, onClick }) {
   )
 }
 
-export default function MobileNav({ view, onNavigate, onLogout }) {
+export default function MobileNav({ view, onNavigate, onLogout, isAdmin }) {
   const [moreOpen, setMoreOpen] = useState(false)
+  const moreItems = isAdmin ? [ADMIN_NAV, ...MORE_ITEMS] : MORE_ITEMS
+  const moreKeys = moreItems.map(i => i.key)
 
   const go = (key) => {
     setMoreOpen(false)
@@ -43,7 +43,7 @@ export default function MobileNav({ view, onNavigate, onLogout }) {
     else onNavigate(key)
   }
 
-  const moreActive = MORE_KEYS.indexOf(view) !== -1
+  const moreActive = moreKeys.indexOf(view) !== -1
 
   return (
     <>
@@ -68,7 +68,7 @@ export default function MobileNav({ view, onNavigate, onLogout }) {
                 <X size={20} strokeWidth={1.9} color={MUTED} />
               </button>
             </div>
-            {MORE_ITEMS.map(item => {
+            {moreItems.map(item => {
               const Icon = item.icon
               const active = view === item.key
               const danger = item.key === 'logout'

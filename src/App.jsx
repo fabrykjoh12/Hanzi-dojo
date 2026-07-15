@@ -40,6 +40,7 @@ const LanguageSwitcher = lazy(() => import('./LanguageSwitcher'))
 const Settings = lazy(() => import('./Settings'))
 const Dev = lazy(() => import('./Dev'))
 const NotFound = lazy(() => import('./NotFound'))
+const Dashboard = lazy(() => import('./Dashboard'))
 
 // Calm centered fallback while a lazy screen loads.
 function ViewFallback() {
@@ -428,6 +429,10 @@ export default function App() {
         onNavigate={navigate}
       />
     )
+  } else if (view === 'dashboard') {
+    content = profile.is_admin
+      ? <Dashboard onBack={() => navigate('home')} />
+      : <NotFound onHome={() => navigate('home')} />
   } else if (isKnownView(view)) {
     // Only 'home' reaches here (every other known view has a branch above).
     content = (
@@ -455,7 +460,7 @@ export default function App() {
         <Background language={profile.active_language} />
         {!isMobile && (
           <div style={{ position: 'relative', zIndex: 10 }}>
-            <Sidebar view={view} onNavigate={navigate} onLogout={handleLogout} />
+            <Sidebar view={view} onNavigate={navigate} onLogout={handleLogout} isAdmin={!!profile.is_admin} />
           </div>
         )}
         <div style={{
@@ -467,7 +472,7 @@ export default function App() {
             {content}
           </Suspense>
         </div>
-        {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} />}
+        {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} isAdmin={!!profile.is_admin} />}
         {/* Calm screens only — floating over Study it covered the Easy grade
             button, and the story reader has its own bottom audio bar. */}
         {['home', 'practice', 'profile', 'settings', 'words', 'grammar', 'languages'].indexOf(view) !== -1 && (

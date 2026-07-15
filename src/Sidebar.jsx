@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ChevronsLeft, ChevronsRight, Sun, Moon } from 'lucide-react'
 import logo from './assets/Hanzi-logo.png'
 import { useTheme } from './ThemeContext'
-import { PRIMARY_NAV, BOTTOM_NAV } from './navConfig'
+import { PRIMARY_NAV, BOTTOM_NAV, ADMIN_NAV } from './navConfig'
 import { BRAND_NAME, wordmarkStyle } from './brand'
 
 // Neutral sage green used for active-state pill (see CLAUDE.md redesign spec)
@@ -65,7 +65,7 @@ function NavItem({ item, active, collapsed, onClick }) {
   )
 }
 
-export default function Sidebar({ view, onNavigate, onLogout }) {
+export default function Sidebar({ view, onNavigate, onLogout, isAdmin }) {
   const [collapsed, setCollapsed] = useState(false)
   const { theme, toggleTheme } = useTheme()
 
@@ -166,7 +166,7 @@ export default function Sidebar({ view, onNavigate, onLogout }) {
 
       {/* Bottom section */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        {BOTTOM_ITEMS.map(item => (
+        {(isAdmin ? [ADMIN_NAV, ...BOTTOM_ITEMS] : BOTTOM_ITEMS).map(item => (
           <NavItem
             key={item.key}
             item={item}

@@ -1,6 +1,6 @@
 import {
   Home, Layers, BookOpen, Dumbbell, GraduationCap,
-  User, Settings, Globe, LogOut,
+  User, Settings, Globe, LogOut, BarChart3,
 } from 'lucide-react'
 
 // Single source of truth for navigation, consumed by both Sidebar (desktop) and
@@ -39,3 +39,8 @@ export const MOBILE_MORE = [
   { key: 'settings', label: 'Settings', icon: Settings },
   { key: 'logout', label: 'Log out', icon: LogOut },
 ]
+
+// Admin-only entry — prepended to the bottom nav (Sidebar) / "More" sheet
+// (MobileNav) only when profile.is_admin is true. Kept out of the default
+// arrays so it never renders for regular users.
+export const ADMIN_NAV = { key: 'dashboard', label: 'Dashboard', icon: BarChart3 }
