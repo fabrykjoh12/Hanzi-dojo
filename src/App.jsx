@@ -218,6 +218,13 @@ export default function App() {
     return <Landing />
   }
 
+  // A signed-in visitor on /read/:id is being redirected into the reader by the
+  // effect above; render the loading fallback (not the view switch) so the
+  // NotFound branch never flashes before the redirect commits.
+  if (publicStoryId) {
+    return <ViewFallback />
+  }
+
   if (recovery) {
     return (
       <>
