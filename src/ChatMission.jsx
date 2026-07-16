@@ -229,8 +229,13 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
   }
 
   const bg = '#F7F5F1'
+  // top/left/right pin it; height comes from `.app-overlay-viewport` (100dvh)
+  // so the column is exactly the VISIBLE viewport tall — the bottom action bar
+  // and last messages stay reachable above the mobile browser toolbar. Using
+  // `inset: 0` (100vh) instead pushes them behind it, which reads as "can't
+  // scroll down in the conversation".
   const shell = {
-    position: 'fixed', inset: 0, zIndex: 60, background: bg,
+    position: 'fixed', top: 0, left: 0, right: 0, zIndex: 60, background: bg,
     display: 'flex', flexDirection: 'column', overflow: 'hidden',
   }
   const header = (
@@ -261,7 +266,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
   )
 
   return (
-    <div style={shell}>
+    <div style={shell} className="app-overlay-viewport">
       {header}
 
       {phase === 'chat' && (
@@ -479,7 +484,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
 
       {/* Word lookup sheet */}
       {selected && (
-        <div onClick={() => setSelected(null)} style={{ position: 'fixed', inset: 0, zIndex: 70, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.12)' }}>
+        <div onClick={() => setSelected(null)} className="app-overlay-viewport" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 70, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.12)' }}>
           <div onClick={e => e.stopPropagation()} style={{
             width: '100%', maxWidth: '560px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.09)',
             borderRadius: '20px 20px 0 0', boxShadow: '0 -10px 40px rgba(24,24,27,0.16)', padding: '16px 18px 26px',
