@@ -9,6 +9,7 @@ import { evaluateAchievements } from './achievements'
 import { todayStr, liveStreak } from './streak'
 import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
+import { BRAND_URL } from './brand'
 import {
   ArrowLeft, Flame, Layers, LogOut, RotateCcw, Save,
   Shield, Sparkles, Target, User, Trophy, CalendarCheck, Award, Share2, Check, AlertTriangle, TrendingUp,
@@ -230,7 +231,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       : profile.active_language === 'russian' ? 'Russian' : 'Chinese'
     const text = 'My ' + monthName + ' on Hanzi Dojo: ' + activeDays + ' active days, '
       + cardsThisMonth + ' reviews, ' + (stats.lifetimeMastered || 0) + ' words mastered learning '
-      + lang + '. https://fabrykjoh12.github.io/Hanzi-dojo/'
+      + lang + '. ' + BRAND_URL
     try {
       if (navigator.share) { await navigator.share({ text }); return }
     } catch { return /* user cancelled */ }
