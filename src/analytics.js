@@ -23,6 +23,10 @@ export const EVENTS = {
   LANDING_VIEWED: 'landing_viewed',
   SIGNUP_STARTED: 'signup_started',
   SIGNUP_COMPLETED: 'signup_completed',
+  // Public story links (pre-auth, anonymous funnel)
+  PUBLIC_STORY_VIEWED: 'public_story_viewed',
+  PUBLIC_STORY_LEVEL_PICKED: 'public_story_level_picked',
+  PUBLIC_STORY_SIGNUP_CLICKED: 'public_story_signup_clicked',
   // Activation
   ONBOARDING_STARTED: 'onboarding_started',
   ONBOARDING_COMPLETED: 'onboarding_completed',

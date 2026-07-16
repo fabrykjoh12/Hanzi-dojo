@@ -2,7 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
 import { getHomeCounts } from './homeCounts'
-import { pathToView, viewToPath, isKnownView } from './routes'
+import { pathToView, viewToPath, isKnownView, readStoryId } from './routes'
 import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
@@ -39,6 +39,9 @@ const Profile = lazy(() => import('./Profile'))
 const YouTube = lazy(() => import('./YouTube'))
 const LanguageSwitcher = lazy(() => import('./LanguageSwitcher'))
 const Settings = lazy(() => import('./Settings'))
+// Public story page: only reached via a shared /read/:id link, so code-split it
+// out of the first-paint bundle (it pulls in storyReading.js).
+const PublicStory = lazy(() => import('./PublicStory'))
 const Dev = lazy(() => import('./Dev'))
 const NotFound = lazy(() => import('./NotFound'))
 const Dashboard = lazy(() => import('./Dashboard'))
@@ -89,6 +92,7 @@ export default function App() {
   const routerNavigate = useNavigate()
   const location = useLocation()
   const view = pathToView(location.pathname)
+  const publicStoryId = readStoryId(location.pathname)
 
   // Apply the theme to the document so the CSS variables (index.css) switch.
   useEffect(() => {
@@ -172,6 +176,19 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
+  // A signed-in user who opens a public /read/:id link goes to the in-app
+  // reader for that story (the loading gate below guarantees session is known,
+  // so this never flashes for a genuine anonymous visitor).
+  useEffect(() => {
+    if (!loading && session && publicStoryId) {
+      // Intentional: hand the story id to the deep-link machinery, then redirect
+      // into the reader. Same sanctioned pattern as Background/StoryReader.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPendingStoryId(publicStoryId)
+      routerNavigate(viewToPath('stories'), { replace: true })
+    }
+  }, [loading, session, publicStoryId, routerNavigate])
+
   // Navigate between views (updates the URL). Profile/track/counts reload only
   // when landing on Home — the dashboard is the one view that renders them, and
   // study/practice screens patch the in-memory profile live via their
@@ -196,8 +213,25 @@ export default function App() {
     )
   }
 
+  // Public story link — works signed-out. (Signed-in visitors are redirected
+  // into the reader by the effect above.)
+  if (publicStoryId && !session) {
+    return (
+      <Suspense fallback={<ViewFallback />}>
+        <PublicStory storyId={publicStoryId} />
+      </Suspense>
+    )
+  }
+
   if (!session) {
     return <Landing />
+  }
+
+  // A signed-in visitor on /read/:id is being redirected into the reader by the
+  // effect above; render the loading fallback (not the view switch) so the
+  // NotFound branch never flashes before the redirect commits.
+  if (publicStoryId) {
+    return <ViewFallback />
   }
 
   if (recovery) {
