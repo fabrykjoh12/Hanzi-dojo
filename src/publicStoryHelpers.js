@@ -32,7 +32,7 @@ export function buildVocabMap(vocabPool) {
 export function assumedKnownCards(vocabPool, choice, storyLevel) {
   const cards = {}
   ;(vocabPool || []).forEach(v => {
-    let known = false
+    let known
     if (choice === 'lots') known = v.level <= storyLevel
     else if (choice === 'some') known = v.level === 1
     else known = v.level === 1 && v.sort_order <= BEGINNER_WORD_CAP

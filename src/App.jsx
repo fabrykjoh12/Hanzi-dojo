@@ -179,10 +179,13 @@ export default function App() {
   // so this never flashes for a genuine anonymous visitor).
   useEffect(() => {
     if (!loading && session && publicStoryId) {
+      // Intentional: hand the story id to the deep-link machinery, then redirect
+      // into the reader. Same sanctioned pattern as Background/StoryReader.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPendingStoryId(publicStoryId)
       routerNavigate(viewToPath('stories'), { replace: true })
     }
-  }, [loading, session, publicStoryId])
+  }, [loading, session, publicStoryId, routerNavigate])
 
   // Navigate between views (updates the URL). Profile/track/counts reload only
   // when landing on Home — the dashboard is the one view that renders them, and
