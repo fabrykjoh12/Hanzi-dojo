@@ -2,12 +2,13 @@ import { useState, useEffect, lazy, Suspense } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
 import { getHomeCounts } from './homeCounts'
-import { pathToView, viewToPath, isKnownView } from './routes'
+import { pathToView, viewToPath, isKnownView, readStoryId } from './routes'
 import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
 // Eager: the app shell + first-paint screens.
 import Landing from './Landing'
+import PublicStory from './PublicStory'
 import PasswordReset from './PasswordReset'
 import Toasts from './Toasts'
 import OfflineBar from './OfflineBar'
@@ -89,6 +90,7 @@ export default function App() {
   const routerNavigate = useNavigate()
   const location = useLocation()
   const view = pathToView(location.pathname)
+  const publicStoryId = readStoryId(location.pathname)
 
   // Apply the theme to the document so the CSS variables (index.css) switch.
   useEffect(() => {
@@ -172,6 +174,16 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
+  // A signed-in user who opens a public /read/:id link goes to the in-app
+  // reader for that story (the loading gate below guarantees session is known,
+  // so this never flashes for a genuine anonymous visitor).
+  useEffect(() => {
+    if (!loading && session && publicStoryId) {
+      setPendingStoryId(publicStoryId)
+      routerNavigate(viewToPath('stories'), { replace: true })
+    }
+  }, [loading, session, publicStoryId])
+
   // Navigate between views (updates the URL). Profile/track/counts reload only
   // when landing on Home — the dashboard is the one view that renders them, and
   // study/practice screens patch the in-memory profile live via their
@@ -194,6 +206,12 @@ export default function App() {
         <div style={{ fontSize: '32px', color: 'var(--chinese-accent)', fontFamily: "'Noto Sans SC'" }}>学</div>
       </div>
     )
+  }
+
+  // Public story link — works signed-out. (Signed-in visitors are redirected
+  // into the reader by the effect above.)
+  if (publicStoryId && !session) {
+    return <PublicStory storyId={publicStoryId} />
   }
 
   if (!session) {
