@@ -147,6 +147,7 @@ export default function Auth() {
         <div style={{ display: 'flex', marginBottom: '24px', borderBottom: '1px solid var(--border)' }}>
           <button
             onClick={() => { setIsSignup(false); setResetMode(false); setMessage('') }}
+            aria-pressed={!isSignup}
             style={{
               flex: 1,
               padding: '10px 0',
@@ -166,6 +167,7 @@ export default function Auth() {
           </button>
           <button
             onClick={() => { setIsSignup(true); setResetMode(false); setMessage('') }}
+            aria-pressed={isSignup}
             style={{
               flex: 1,
               padding: '10px 0',
@@ -190,6 +192,7 @@ export default function Auth() {
           <input
             type="email"
             placeholder="Email"
+            aria-label="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={onEnter}
@@ -200,6 +203,7 @@ export default function Auth() {
             <input
               type="password"
               placeholder="Password"
+              aria-label="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={onEnter}

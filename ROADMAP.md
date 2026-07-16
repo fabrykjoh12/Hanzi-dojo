@@ -43,6 +43,15 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] Tune the FSRS scheduler from real review data
 - [ ] Continue extracting the large `Study` screen into focused hooks/components
 - [ ] Supabase generated types; centralize design tokens
+- [ ] Home bootstrap RPC — replace the 4-query load waterfall (profile → track → counts) with one call, and stop refetching it on every return to Home
+- [ ] Finish the bundle/font diet — load only the active language's font family (the `vendor-supabase` chunk split has shipped)
+- [ ] Data-cache correctness — normalize the column-keyed cache in `data.js` and invalidate/patch on writes
+- [ ] Centralize direct `supabase.from(...)` calls (esp. in `Study`) into a thin per-table data layer
+- [ ] Server-authoritative progression — move level-unlock / test-pass / XP writes into a validating RPC
+
+**Accessibility (WCAG 2.2 AA)**
+- [ ] Flashcard reveal surface as a fully focusable control (answer `aria-live` announcements have shipped)
+- [ ] `ChatMission` overlay: `role="dialog"` + focus trap (the mobile "More" sheet is done)
 
 ## ✅ Shipped
 - [x] Reader comfort — optional serif "book" font for stories, and a one-time tip teaching tap-to-focus a line

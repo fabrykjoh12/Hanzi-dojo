@@ -1061,6 +1061,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       }}>
         <div
           onClick={() => !flipped && setFlipped(true)}
+          aria-live="polite"
           style={{
             width: '100%', maxWidth: '680px', minHeight: '420px',
             background: 'linear-gradient(180deg, var(--surface) 0%, var(--surface) 100%)',
@@ -1302,7 +1303,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               }}>
                 {[
                   { grade: 0, label: 'Again', color: '#DC2626', icon: RotateCcw },
-                  { grade: 1, label: 'Hard', color: '#D97706', icon: AlertTriangle },
+                  { grade: 1, label: 'Hard', color: '#B45309', icon: AlertTriangle },
                   { grade: 2, label: 'Good', color: '#3E63DD', icon: Check },
                   { grade: 3, label: 'Easy', color: '#2F9E6D', icon: Sparkles },
                 ].map(item => (

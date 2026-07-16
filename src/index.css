@@ -35,7 +35,7 @@ body {
   --border: #E7E5E4;
   --text: #18181B;
   --text-muted: #71717A;
-  --text-faint: #A1A1AA;
+  --text-faint: #6B6B72;
   --reader-watermark: rgba(24, 24, 27, 0.04);
   --bg-image-opacity: 0.4;
 
@@ -102,6 +102,37 @@ body {
   @keyframes hd-sheet-up { from { opacity: 0; } to { opacity: 1; } }
   @keyframes hd-pop-in { from { opacity: 0; } to { opacity: 1; } }
   @keyframes hd-pop-check { from { opacity: 0; } to { opacity: 1; } }
+
+  /* Catch-all: neutralize any remaining animation/transition (inline hover
+     transitions, the grade-flash, the background crossfade, etc.) so
+     motion-sensitive users aren't affected by anything the named keyframes
+     above miss. */
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Skip link — first focusable element; visually hidden until focused so
+   keyboard users can jump straight to the main content. */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -48px;
+  z-index: 1000;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font: 600 14px Inter, sans-serif;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+.skip-link:focus {
+  top: 8px;
 }
 
 /* Keyboard users get a visible focus ring everywhere. Pointer interaction
@@ -119,7 +150,7 @@ body {
   --border: #2B2F38;
   --text: #E8E8EA;
   --text-muted: #9AA0A8;
-  --text-faint: #797F88;
+  --text-faint: #8C929C;
   --reader-watermark: rgba(255, 255, 255, 0.05);
   /* The language background image is bright; keep it barely-there on dark so it
      blends instead of glowing. */

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { MoreHorizontal, X } from 'lucide-react'
 import { MOBILE_PRIMARY, MOBILE_MORE, ADMIN_NAV } from './navConfig'
 
@@ -43,6 +43,14 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin }) {
     else onNavigate(key)
   }
 
+  // Escape closes the "More" sheet (keyboard parity with the backdrop tap).
+  useEffect(() => {
+    if (!moreOpen) return
+    const onKey = (e) => { if (e.key === 'Escape') setMoreOpen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [moreOpen])
+
   const moreActive = moreKeys.indexOf(view) !== -1
 
   return (
@@ -52,9 +60,10 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin }) {
         <>
           <div
             onClick={() => setMoreOpen(false)}
+            aria-hidden
             style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, background: 'rgba(0,0,0,0.32)', zIndex: 40 }}
           />
-          <div style={{
+          <div role="dialog" aria-modal="true" aria-label="More menu" style={{
             position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 41,
             background: 'var(--surface)',
             borderTopLeftRadius: '18px', borderTopRightRadius: '18px',
