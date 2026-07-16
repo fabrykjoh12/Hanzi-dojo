@@ -14,7 +14,10 @@ import { glossaryLookup } from './grammarGlossary'
 import { prefsGet, prefsSet } from './offline'
 import { FIRST_MISSION_READER_HINT, firstMissionCompletion } from './firstMission'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
-import { ArrowLeft, Bookmark, Volume2, Play, Pause, Languages, ChevronRight, UserRound, Check, X, Sparkles, Home, Sliders, Eye, Clock, Repeat, Lock } from 'lucide-react'
+import { shareReadingCard } from './shareCard'
+import { toast } from './toast'
+import { BRAND_URL } from './brand'
+import { ArrowLeft, Bookmark, Volume2, Play, Pause, Languages, ChevronRight, UserRound, Check, X, Sparkles, Home, Sliders, Eye, Clock, Repeat, Lock, Share2 } from 'lucide-react'
 
 // HSKStory-inspired immersion reader for BOTH languages. Light theme. Tap a word
 // for a bottom-sheet definition; pinyin (Chinese) / furigana (Japanese) and
@@ -431,6 +434,29 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     trackEvent(EVENTS.STORY_COMPLETED, { tier: story.tier, known_pct: knownPct })
     if (firstMission) trackOnce(EVENTS.FIRST_STORY_COMPLETED, { known_pct: knownPct })
     setFinishing(false)
+  }
+
+  // Share a "% known" recap card for this story. Best-effort: native share with
+  // the generated image where supported, otherwise a downloaded PNG + copied
+  // caption. Feedback via a toast so the desktop (non-native-share) path isn't
+  // silent.
+  const [sharing, setSharing] = useState(false)
+  const onShare = async () => {
+    if (sharing) return
+    setSharing(true)
+    const res = await shareReadingCard({
+      knownPct,
+      languageName: theme.languageName,
+      storyTitle: story.title,
+      accentHex: accent,
+      langFont: font,
+      url: BRAND_URL,
+    })
+    setSharing(false)
+    trackEvent(EVENTS.STORY_SHARED, { known_pct: knownPct, method: res.method })
+    if (res.method === 'downloaded') toast({ title: 'Card saved', body: 'Image downloaded + caption copied', accent })
+    else if (res.method === 'copied') toast({ title: 'Caption copied to clipboard', accent })
+    else if (res.method === 'failed') toast({ title: 'Couldn’t open the share sheet', accent })
   }
 
   const addAllNewWords = async () => {
@@ -910,6 +936,20 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                 <> There {newWords.length === 1 ? 'is' : 'are'} <strong style={{ color: TEXT, fontWeight: 700 }}>{newWords.length}</strong> new word{newWords.length === 1 ? '' : 's'} you can add to your deck above.</>
               )}
             </div>
+            <button
+              onClick={onShare}
+              disabled={sharing}
+              style={{
+                width: '100%', minHeight: '46px', marginBottom: '12px', borderRadius: '14px',
+                border: '1px solid ' + accent + '55', background: accent + '0D', color: accent,
+                cursor: sharing ? 'default' : 'pointer', fontSize: '14px', fontWeight: 750,
+                fontFamily: 'Inter, sans-serif', opacity: sharing ? 0.7 : 1,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              }}
+            >
+              <Share2 size={17} strokeWidth={2.1} color={accent} />
+              {sharing ? 'Preparing card…' : `Share that you can read ${knownPct}%`}
+            </button>
             {!nextStory && nextTierUnlock && (
               <NextTierUnlockCard unlock={nextTierUnlock} accent={accent} langFont={font} onKeepLearning={onHome} />
             )}
