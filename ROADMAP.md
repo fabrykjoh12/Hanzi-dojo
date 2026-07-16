@@ -44,19 +44,15 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] Tune the FSRS scheduler from real review data
 - [ ] Continue extracting the large `Study` screen into focused hooks/components
 - [ ] Supabase generated types; centralize design tokens
-- [ ] Fix the red test suite — `supabase.js` throws at import under vitest; lazy-init the client so `npm test` / CI stays green
 - [ ] Home bootstrap RPC — replace the 4-query load waterfall (profile → track → counts) with one call, and stop refetching it on every return to Home
-- [ ] Per-route error boundaries — a stale lazy chunk after a deploy should degrade one screen, not crash the whole app
-- [ ] Bundle diet — split a `vendor-supabase` chunk; load only the active language's fonts
+- [ ] Finish the bundle/font diet — load only the active language's font family (the `vendor-supabase` chunk split has shipped)
 - [ ] Data-cache correctness — normalize the column-keyed cache in `data.js` and invalidate/patch on writes
 - [ ] Centralize direct `supabase.from(...)` calls (esp. in `Study`) into a thin per-table data layer
+- [ ] Server-authoritative progression — move level-unlock / test-pass / XP writes into a validating RPC
 
 **Accessibility (WCAG 2.2 AA)**
-- [ ] Flashcard reveal as a real focusable `<button>` + `aria-live` answer announcements
-- [ ] Focus management on navigation — a `<main>` landmark, focus reset, and a skip link
-- [ ] Contrast fixes — faint instructional text (`--text-faint`) and the "Hard" grade label fall below 4.5:1
-- [ ] Modals: `role="dialog"` + focus trap + Escape; complete `prefers-reduced-motion` coverage
-- [ ] Label the stroke-order canvas and the auth/practice form inputs
+- [ ] Flashcard reveal surface as a fully focusable control (answer `aria-live` announcements have shipped)
+- [ ] `ChatMission` overlay: `role="dialog"` + focus trap (the mobile "More" sheet is done)
 
 ## ✅ Shipped
 - [x] Graded mini-stories with live "% known"

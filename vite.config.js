@@ -29,6 +29,19 @@ export default defineConfig(() => {
       'import.meta.env.VITE_BUILD_SHA': JSON.stringify(info.sha),
       'import.meta.env.VITE_BUILD_TIME': JSON.stringify(info.builtAt),
     },
+    build: {
+      rollupOptions: {
+        output: {
+          // Split the Supabase client into its own chunk so it caches
+          // independently of app code across deploys (app changes far more
+          // often than the SDK), and doesn't bloat the entry chunk.
+          // (Rolldown/Vite 8 requires the function form.)
+          manualChunks(id) {
+            if (id.includes('@supabase/supabase-js')) return 'vendor-supabase'
+          },
+        },
+      },
+    },
     plugins: [
       react(),
       {

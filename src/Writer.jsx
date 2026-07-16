@@ -154,7 +154,7 @@ export default function Writer({ profile, track, onBack }) {
             }}>
               {/* Faint grid guide */}
               <div aria-hidden style={{ position: 'absolute', inset: 0, border: '1px solid var(--border)', borderRadius: '12px', backgroundImage: 'linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)', backgroundSize: '50% 50%', opacity: 0.5 }} />
-              <div ref={targetRef} style={{ position: 'relative', zIndex: 1 }} />
+              <div ref={targetRef} role="img" aria-label={`Stroke order animation for ${selected}`} style={{ position: 'relative', zIndex: 1 }} />
               {loadState === 'loading' && (
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '64px', color: 'var(--text-faint)', fontFamily: langFont }}>{selected}</div>
               )}

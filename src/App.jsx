@@ -1,6 +1,7 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
+import ErrorBoundary from './ErrorBoundary'
 import { getHomeCounts } from './homeCounts'
 import { pathToView, viewToPath, isKnownView } from './routes'
 import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
@@ -55,14 +56,6 @@ function ViewFallback() {
 // Route ⇄ view mapping lives in ./routes (testable, and shared with the
 // unknown-route guard below).
 
-// Initial theme before a profile loads: always start light. A signed-in user's
-// saved preference (loaded from their profile) takes over once it arrives, so a
-// deliberate dark-mode choice is still respected — only the very first paint and
-// signed-out visitors default to light.
-function initialTheme() {
-  return 'light'
-}
-
 // ── Main app ──────────────────────────────────────────────────────────────
 export default function App() {
   const [session, setSession] = useState(null)
@@ -84,7 +77,9 @@ export default function App() {
   // True while the user arrived via a password-recovery email link and hasn't
   // set a new password yet (Supabase signs them in and fires PASSWORD_RECOVERY).
   const [recovery, setRecovery] = useState(false)
-  const [theme, setThemeState] = useState(initialTheme)
+  // Start light before a profile loads; a signed-in user's saved preference
+  // takes over once their profile arrives, so a deliberate dark choice is kept.
+  const [theme, setThemeState] = useState('light')
   const isMobile = useIsMobile()
   const routerNavigate = useNavigate()
   const location = useLocation()
@@ -94,6 +89,14 @@ export default function App() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
+
+  // Move focus to the main content region when the view changes, so keyboard
+  // and screen-reader users land on the new screen instead of being stranded on
+  // the nav item they clicked. No-op on views without the shell (e.g. Landing).
+  const mainRef = useRef(null)
+  useEffect(() => {
+    if (mainRef.current) mainRef.current.focus({ preventScroll: true })
+  }, [view])
 
   const setTheme = (next) => {
     setThemeState(next)
@@ -461,6 +464,7 @@ export default function App() {
   // ── App shell: persistent sidebar + content area ──────────────────────────
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+      <a href="#main-content" className="skip-link">Skip to content</a>
       <div style={{
         display: 'flex', minHeight: '100vh', alignItems: 'stretch',
         position: 'relative',
@@ -472,15 +476,20 @@ export default function App() {
             <Sidebar view={view} onNavigate={navigate} onLogout={handleLogout} isAdmin={!!profile.is_admin} />
           </div>
         )}
-        <div style={{
-          flex: 1, minWidth: 0, position: 'relative', zIndex: 1,
+        <main id="main-content" tabIndex={-1} ref={mainRef} style={{
+          flex: 1, minWidth: 0, position: 'relative', zIndex: 1, outline: 'none',
           // Leave room for the fixed bottom bar so content isn't hidden behind it.
           paddingBottom: isMobile ? 'calc(62px + env(safe-area-inset-bottom))' : 0,
         }}>
+          {/* Per-view boundary keyed on `view`: a screen that throws (or a stale
+              lazy chunk after a deploy) degrades to the recovery UI without
+              taking down the shell, and recovers on the next navigation. */}
           <Suspense fallback={<ViewFallback />}>
-            {content}
+            <ErrorBoundary key={view}>
+              {content}
+            </ErrorBoundary>
           </Suspense>
-        </div>
+        </main>
         {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} isAdmin={!!profile.is_admin} />}
         {/* Calm screens only — floating over Study it covered the Easy grade
             button, and the story reader has its own bottom audio bar. */}
