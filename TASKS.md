@@ -6,7 +6,6 @@ _Vedlikeholdes i Fabipilot. Jobb gjennom de åpne punktene under._
 
 ## Høy prioritet
 - [ ] Change the tts because now its not saying correct in the chinese version atleast
-- [ ] make it easier to join the discord, or easier to see the discord
 
 ## Medium
 - [ ] Be more direct on what do to after your reviews
@@ -19,6 +18,7 @@ Expected: To be able to scroll down
 - [ ] rework the youtube tab, maybe come with some idea
 
 ## Ferdig
+- [x] make it easier to join the discord, or easier to see the discord (persistent "Join our Discord" card on Home)
 - [x] make a light mode version for the chinese stories, because now its dark even without dark mode
 - [x] you cant replay the tts on the flashcards
 - [x] Names in the stories become weird because it translates wrong and is not clickable names should be clickable and say its a name and the pinyin of the name when you click it

@@ -6,8 +6,9 @@ import { levelInfo, levelTitle } from './xp'
 import InfoTip from './InfoTip'
 import { CountUp } from './ui'
 import { useIsMobile } from './useIsMobile'
-import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, Gauge, Dumbbell, Snowflake } from 'lucide-react'
+import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, Gauge, Dumbbell, Snowflake, MessagesSquare } from 'lucide-react'
 import { fluencyScore, fluencyRank } from './fluency'
+import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
 
 // Neutral sage green for the primary CTA (see CLAUDE.md redesign spec)
 const SAGE = '#6E8466'
@@ -370,6 +371,36 @@ export default function Home({ profile, track, counts, onNavigate }) {
           <FlowStep icon={PenLine} label="Writing" accentHex={accentHex} onClick={() => onNavigate('writing')} />
         </div>
       </div>
+
+      {/* ── Community — always-visible Discord entry (hidden until a real invite is set) ── */}
+      {isDiscordConfigured() && (
+        <a
+          href={DISCORD_INVITE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'flex', alignItems: 'center', gap: '14px', marginTop: '16px',
+            background: 'var(--surface)', borderRadius: '18px', border: '1px solid var(--border)',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.04)', padding: '18px 20px',
+            textDecoration: 'none', fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          <div style={{
+            width: '44px', height: '44px', borderRadius: '13px', flexShrink: 0,
+            background: '#5865F214', border: '1px solid #5865F233',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <MessagesSquare size={22} strokeWidth={1.9} color="#5865F2" />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text)' }}>Join our Discord</div>
+            <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '2px' }}>
+              Trade study tips, get help, and help shape what we build next.
+            </div>
+          </div>
+          <ArrowRight size={19} strokeWidth={2.1} color="#5865F2" style={{ flexShrink: 0 }} />
+        </a>
+      )}
     </div>
   )
 }
