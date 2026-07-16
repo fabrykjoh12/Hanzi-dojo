@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, getAudioUrl } from './utils'
 import { cacheSet, cacheGet } from './offline'
 import { languageTheme } from './languageTheme'
-import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
+import { CATEGORIES_BY_LANGUAGE, nextLockedTier } from './storyTiers'
 import { isLearned } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import StoryReaderImmersive from './StoryReaderImmersive'
@@ -381,6 +381,11 @@ export default function Stories({ session, profile, track, onBack, initialStoryI
     const currentIdx = catStories.findIndex(s => s.id === selectedStory.id)
     const nextStory = currentIdx >= 0 && currentIdx < catStories.length - 1
       ? catStories[currentIdx + 1] : null
+    // When there's no next story left to read in this tier, point the reader at
+    // the next locked tier so finishing ends in "learn N more to unlock…" rather
+    // than a dead end. Only tiers that actually have stories are offered.
+    const tiersWithStories = new Set(stories.map(s => s.tier))
+    const nextTierUnlock = nextStory ? null : nextLockedTier(CATEGORIES, learnedCount, tiersWithStories)
 
     return (
       <StoryReaderImmersive
@@ -396,6 +401,7 @@ export default function Stories({ session, profile, track, onBack, initialStoryI
         todayWords={todayWords}
         firstMission={firstMission}
         nextStory={nextStory}
+        nextTierUnlock={nextTierUnlock}
         onNextStory={() => setSelectedStory(nextStory)}
         isRead={readIds.has(selectedStory.id)}
         onMarkRead={(id) => setReadIds(prev => { const nx = new Set(prev); nx.add(id); return nx })}

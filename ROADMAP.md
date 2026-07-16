@@ -6,9 +6,7 @@ so the community always sees the latest. Keep it current — move things to
 **Shipped** as they land.
 
 ## 🚧 Now — in progress
-- [ ] First-session onboarding that ends in an unlocked story + recap ("First story unlocked")
 - [ ] Story-reader polish — book-like typography, clearer "learn N more to unlock the next story"
-- [ ] In-app feedback → Discord auto-posting (Supabase trigger → #feedback-feed)
 
 ## 🔜 Next — planned
 - [ ] Shareable reading-recap card ("I can read 82% of this Chinese story")
@@ -29,6 +27,8 @@ so the community always sees the latest. Keep it current — move things to
 - [x] Community Discord + in-app "Join our Discord" links
 - [x] Auto-posting of releases and roadmap updates to Discord
 - [x] Admin analytics dashboard — activation funnel, DAU/WAU & story-completion views (internal, admin-only `/dashboard`)
+- [x] First-session onboarding that ends in an unlocked story + recap ("First story unlocked")
+- [x] In-app feedback → Discord auto-posting (Supabase trigger → #feedback-feed)
 
 ---
 

@@ -14,7 +14,7 @@ import { glossaryLookup } from './grammarGlossary'
 import { prefsGet, prefsSet } from './offline'
 import { FIRST_MISSION_READER_HINT, firstMissionCompletion } from './firstMission'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
-import { ArrowLeft, Bookmark, Volume2, Play, Pause, Languages, ChevronRight, UserRound, Check, X, Sparkles, Home, Sliders, Eye, Clock, Repeat } from 'lucide-react'
+import { ArrowLeft, Bookmark, Volume2, Play, Pause, Languages, ChevronRight, UserRound, Check, X, Sparkles, Home, Sliders, Eye, Clock, Repeat, Lock } from 'lucide-react'
 
 // HSKStory-inspired immersion reader for BOTH languages. Light theme. Tap a word
 // for a bottom-sheet definition; pinyin (Chinese) / furigana (Japanese) and
@@ -257,7 +257,7 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
   )
 }
 
-export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, profile, track, onBack, onHome, nextStory, onNextStory, isRead, onMarkRead, todayWords = [], firstMission = false }) {
+export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, profile, track, onBack, onHome, nextStory, nextTierUnlock = null, onNextStory, isRead, onMarkRead, todayWords = [], firstMission = false }) {
   const [selected, setSelected] = useState(null)
   const [furiganaMode, setFuriganaMode] = useState(DEFAULT_PREFS.furiganaMode)
   const [lens, setLens] = useState(DEFAULT_PREFS.lens)
@@ -656,6 +656,29 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             <img src={getAudioUrl(story.image_path)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
           </div>
         )}
+
+        {/* Chapter opening — a proper title on the page (not just the top bar),
+            so the reader reads like a book turning to a new story. */}
+        <header style={{ marginBottom: '22px' }}>
+          <div style={{
+            fontSize: '11px', fontWeight: 800, letterSpacing: '0.8px', textTransform: 'uppercase',
+            color: accent, marginBottom: '8px',
+          }}>
+            {levelLabel}
+          </div>
+          <h1 style={{
+            margin: 0, fontFamily: font, color: TEXT,
+            fontSize: isMobile ? '29px' : '37px', fontWeight: 800,
+            lineHeight: 1.18, letterSpacing: '-0.01em', textWrap: 'balance',
+          }}>
+            {story.title}
+          </h1>
+          <div style={{
+            width: '46px', height: '3px', borderRadius: '999px',
+            background: accent + '99', marginTop: '16px',
+          }} />
+        </header>
+
         {totalUnique > 0 && (
           <div style={{ marginBottom: '20px', background: PANEL, border: '1px solid var(--border)', borderRadius: '14px', padding: '12px 16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '9px', gap: '10px' }}>
@@ -742,6 +765,9 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                   lineHeight: reserveRuby ? 2.15 : 1.9,
                   fontFamily: font, color: TEXT, fontWeight: 400,
                   letterSpacing: isJapanese || isChinese ? '0.01em' : 'normal',
+                  // Alphabetic scripts read more book-like with even measure and no
+                  // stranded last word; CJK wraps per-character so leave it default.
+                  textWrap: isJapanese || isChinese ? 'initial' : 'pretty',
                   // Read-along highlight: the line the TTS is currently speaking.
                   background: li === speakingLine ? HILITE : 'transparent',
                   borderRadius: '8px',
@@ -884,7 +910,10 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                 <> There {newWords.length === 1 ? 'is' : 'are'} <strong style={{ color: TEXT, fontWeight: 700 }}>{newWords.length}</strong> new word{newWords.length === 1 ? '' : 's'} you can add to your deck above.</>
               )}
             </div>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {!nextStory && nextTierUnlock && (
+              <NextTierUnlockCard unlock={nextTierUnlock} accent={accent} langFont={font} onKeepLearning={onHome} />
+            )}
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: nextTierUnlock && !nextStory ? '14px' : 0 }}>
               {nextStory && (
                 <button onClick={onNextStory} style={{
                   flex: '1 1 200px', minHeight: '48px', borderRadius: '14px', border: 'none',
@@ -926,6 +955,9 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                 </span>
                 <ChevronRight size={22} color={accent} />
               </button>
+            )}
+            {!nextStory && nextTierUnlock && (
+              <NextTierUnlockCard unlock={nextTierUnlock} accent={accent} langFont={font} onKeepLearning={onHome} />
             )}
           </>
         )}
@@ -1103,6 +1135,54 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+// Shown when the reader has finished every story they can currently read: turns
+// the dead end into a concrete "learn N more to unlock the next set" nudge that
+// points back at studying (where the words come from). Rendered only when there's
+// no next story left in this tier and a locked tier with stories is waiting.
+function NextTierUnlockCard({ unlock, accent, langFont, onKeepLearning }) {
+  const [hovered, setHovered] = useState(false)
+  const { remaining, label } = unlock
+  return (
+    <div style={{
+      marginTop: '14px', background: accent + '0D', border: '1px solid ' + accent + '2A',
+      borderRadius: '18px', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '14px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ width: '44px', height: '44px', borderRadius: '14px', flexShrink: 0, background: accent + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Lock size={21} strokeWidth={1.9} color={accent} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '0.3px', textTransform: 'uppercase', color: accent }}>
+            Keep going
+          </div>
+          <div style={{ fontSize: '15px', fontWeight: 750, color: 'var(--text)', marginTop: '3px', lineHeight: 1.45 }}>
+            Learn <strong style={{ fontWeight: 850 }}>{remaining}</strong> more word{remaining === 1 ? '' : 's'} to unlock{' '}
+            <span style={{ fontFamily: langFont }}>“{label}”</span> stories
+          </div>
+        </div>
+      </div>
+      {onKeepLearning && (
+        <button
+          onClick={onKeepLearning}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
+            width: '100%', minHeight: '48px', borderRadius: '14px', border: 'none',
+            background: hovered ? accent : accent + 'E6', color: '#fff',
+            fontSize: '14.5px', fontWeight: 800, fontFamily: 'Inter, sans-serif',
+            cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease',
+            transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
+          }}
+        >
+          Keep learning
+          <ChevronRight size={18} strokeWidth={2.2} color="#fff" />
+        </button>
+      )}
     </div>
   )
 }
