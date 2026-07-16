@@ -10,7 +10,8 @@ ones to the roadmap).
 - [ ] **Custom SMTP** — send auth mail from `no-reply@hanzi-dojo.com` (add SPF/DKIM/DMARC DNS) so sign-in emails aren't the default `mail.app.supabase.io` sender. Supabase → Authentication → Emails → SMTP Settings. *(dashboard)*
 - [ ] **Auth URL config** — set Site URL = `https://hanzi-dojo.com` and add redirect allowlist `https://hanzi-dojo.com/**` + `http://localhost:5173/**`. Fixes the login redirect that jumps to the raw github.io host. *(dashboard)*
 - [ ] **Turn off the retired GitHub Pages site** — repo Settings → Pages → Source → None. The deploy workflow is already removed; this disables the last-built site.
-- Code half already shipped: `signUp` now sends `emailRedirectTo`; hardcoded github.io links replaced with `BRAND_URL`; app consolidated on Vercel (base `/`).
+
+Already shipped (code side): `signUp` now sends `emailRedirectTo`; hardcoded github.io links replaced with `BRAND_URL`; app consolidated on Vercel (base `/`).
 
 ## Data safety
 - [ ] **Transactional grading** — collapse the separate writes (card update, review log, daily activity, XP) into a single Supabase RPC/transaction so a mid-write failure can't leave partial state. See the data-safety note in `README.md` and `src/syncQueue.js`.
