@@ -31,3 +31,14 @@ export function pathToView(pathname) {
 export function isKnownView(view) {
   return KNOWN_VIEWS.indexOf(view) !== -1
 }
+
+// Recognize the public story route (/read/<id>), which works signed-out.
+// Returns the story id, or null for any other path. Kept here (not in App)
+// so it's covered by the same route-mapping tests.
+export function readStoryId(pathname) {
+  let p = pathname || '/'
+  if (p.startsWith('/')) p = p.slice(1)
+  const segs = p.split('/')
+  if (segs[0] === 'read' && segs[1]) return segs[1]
+  return null
+}

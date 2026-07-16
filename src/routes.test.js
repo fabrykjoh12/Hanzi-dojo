@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pathToView, viewToPath, isKnownView, KNOWN_VIEWS } from './routes'
+import { pathToView, viewToPath, isKnownView, KNOWN_VIEWS, readStoryId } from './routes'
 
 describe('pathToView', () => {
   it('maps root and empty to home', () => {
@@ -42,5 +42,22 @@ describe('isKnownView', () => {
     expect(isKnownView('storeis')).toBe(false)
     expect(isKnownView('random-page')).toBe(false)
     expect(isKnownView('')).toBe(false)
+  })
+})
+
+describe('readStoryId', () => {
+  it('extracts the id from a /read/<id> path', () => {
+    expect(readStoryId('/read/abc-123')).toBe('abc-123')
+  })
+  it('ignores trailing segments', () => {
+    expect(readStoryId('/read/abc-123/extra')).toBe('abc-123')
+  })
+  it('returns null for /read with no id', () => {
+    expect(readStoryId('/read')).toBe(null)
+    expect(readStoryId('/read/')).toBe(null)
+  })
+  it('returns null for unrelated paths', () => {
+    expect(readStoryId('/stories')).toBe(null)
+    expect(readStoryId('/')).toBe(null)
   })
 })
