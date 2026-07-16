@@ -32,6 +32,10 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] Personalized stories built from the exact words in your deck
 - [ ] Word-to-World chat missions expanded across levels
 
+**Your words & tools**
+- [ ] **Add your own flashcards** — custom cards / decks for words the app doesn't have yet, scheduled by the same FSRS engine
+- [ ] **Built-in dictionary** — search any word, hear it, and add it to your deck (future)
+
 **Polish**
 - [ ] Cleaner sign-in emails — branded sender from hanzi-dojo.com, links that stay on the domain
 

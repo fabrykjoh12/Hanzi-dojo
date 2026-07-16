@@ -41,6 +41,10 @@ Turn the current recommended-videos list (`YouTube.jsx`, `youtube_recommendation
 - [ ] **Pre-teach flow**: surface the top-N unknown words as quick flashcards before watching.
 - [ ] **Level-matched library**: tag recommendations with level + a computed "% you'll understand" badge so browsing mirrors the graded-story ladder.
 
+## Your words & tools
+- [ ] **Custom flashcards**: let users add their own cards (word, reading, meaning, optional TTS audio). Store as user-owned vocab (a `custom_vocab` table or a `source` flag on `vocabulary`), feed them into the study queue + FSRS exactly like seeded cards, and optionally group into named decks. Reuse the existing card/grading path so scheduling, offline, and XP work unchanged.
+- [ ] **Built-in dictionary**: a searchable lookup over the vocabulary table, extended with an open dataset per language (CC-CEDICT for Chinese, JMdict for Japanese, an A1+ list for Russian). Search screen → result shows reading + meaning + a play button (recorded audio or TTS) + "add to deck" (which creates a custom card). Bundle/cache the dataset for offline. Pairs with the tap-to-define that already exists in the reader.
+
 ## Frontend cleanup
 - [ ] Continue extracting the large `Study` screen into focused hooks/components.
 - [ ] Supabase generated types (gradual TypeScript adoption).
