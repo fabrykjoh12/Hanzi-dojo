@@ -6,6 +6,11 @@ _Vedlikeholdes i Fabipilot. Jobb gjennom de åpne punktene under._
 
 ## Høy prioritet
 - [ ] Change the tts because now its not saying correct in the chinese version atleast
+  - Code fix DONE (pinyin SSML phoneme pinning — src/pinyin.js + generate-audio.mjs).
+    Audio still needs REGENERATING with the real keys to take effect:
+    1. Supabase → Storage → audio bucket → delete chinese/hsk_3/level_<n>/ folder
+    2. node --env-file=.env.script generate-audio.mjs --language chinese --system hsk_3 --level <n>
+    3. Spot-check polyphones: 长, 行, 重, 觉, 银行. Repeat per level.
 
 ## Medium
 - [ ] Be more direct on what do to after your reviews
