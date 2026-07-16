@@ -33,6 +33,7 @@ const SentenceBuilder = lazy(() => import('./SentenceBuilder'))
 const Writer = lazy(() => import('./Writer'))
 const Practice = lazy(() => import('./Practice'))
 const Words = lazy(() => import('./Words'))
+const Analyzer = lazy(() => import('./Analyzer'))
 const Grammar = lazy(() => import('./Grammar'))
 const Profile = lazy(() => import('./Profile'))
 const YouTube = lazy(() => import('./YouTube'))
@@ -316,6 +317,14 @@ export default function App() {
       <Words
         session={session}
         profile={profile}
+        track={track}
+        onBack={() => navigate('practice')}
+      />
+    )
+  } else if (view === 'analyzer') {
+    content = (
+      <Analyzer
+        session={session}
         track={track}
         onBack={() => navigate('practice')}
       />

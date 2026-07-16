@@ -36,6 +36,7 @@ export const EVENTS = {
   STORY_OPENED: 'story_opened',
   STORY_COMPLETED: 'story_completed',
   STORY_SHARED: 'story_shared',
+  TEXT_ANALYZED: 'text_analyzed',
   // Signals
   ACHIEVEMENT_UNLOCKED: 'achievement_unlocked',
   STREAK_INCREASED: 'streak_increased',
