@@ -4,13 +4,17 @@ name: Discord notifications
 #   • every push to main       → a "🚀 Update shipped" card in #announcements
 #   • whenever ROADMAP.md changes → the full roadmap list in #roadmap,
 #                                    edited IN PLACE so it's always one current post
+#   • whenever docs/BACKLOG.md changes → the engineering backlog in #backlog,
+#                                    edited IN PLACE (use a PRIVATE/team channel —
+#                                    it carries internal bug + ops detail)
 #
 # Setup (one time):
-#   1. In Discord, for BOTH #announcements and #roadmap:
+#   1. In Discord, for #announcements, #roadmap, and a private #backlog channel:
 #      channel ⚙ → Integrations → Webhooks → New Webhook → Copy Webhook URL
 #   2. In GitHub: repo Settings → Secrets and variables → Actions → New secret
 #        DISCORD_ANNOUNCE_WEBHOOK = the #announcements webhook URL
 #        DISCORD_ROADMAP_WEBHOOK  = the #roadmap webhook URL
+#        DISCORD_BACKLOG_WEBHOOK  = the (private) #backlog webhook URL
 #   Steps whose secret is missing simply skip, so it's safe to add one at a time.
 
 on:
@@ -102,5 +106,62 @@ jobs:
               git commit -m "chore: track roadmap Discord message id [skip ci]" || true
               git push origin HEAD:main || echo "Could not persist message id (branch protection?); a new post may appear next change."
               echo "Posted new roadmap message $NEWID"
+            fi
+          fi
+
+      - name: Sync backlog to #backlog
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_BACKLOG_WEBHOOK }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          if [ -z "$WEBHOOK" ]; then echo "DISCORD_BACKLOG_WEBHOOK not set — skipping"; exit 0; fi
+
+          # Only act when docs/BACKLOG.md actually changed in this push.
+          if git rev-parse --verify "$BEFORE^{commit}" >/dev/null 2>&1; then
+            CHANGED=$(git diff --name-only "$BEFORE" "$AFTER")
+          else
+            CHANGED=$(git show --name-only --pretty=format: "$AFTER")
+          fi
+          if ! printf '%s\n' "$CHANGED" | grep -qx 'docs/BACKLOG.md'; then echo "docs/BACKLOG.md not changed — skipping"; exit 0; fi
+
+          # Same rendering as the roadmap: headings → bold, "- [x]" → ✅,
+          # "- [ ]" → •, dropping the H1 title, intro, and any footer.
+          DESC=$(awk '
+            /^---/ { exit }
+            /^## / { started=1; sub(/^## /,""); print "\n**" $0 "**"; next }
+            started != 1 { next }
+            /^- \[x\] / { sub(/^- \[x\] /,"✅ "); print; next }
+            /^- \[X\] / { sub(/^- \[X\] /,"✅ "); print; next }
+            /^- \[ \] / { sub(/^- \[ \] /,"• "); print; next }
+            /^_/ { next }
+            { print }
+          ' docs/BACKLOG.md)
+          DESC=${DESC:0:4000}
+          if [ -z "$DESC" ]; then echo "Parsed backlog was empty — skipping"; exit 0; fi
+
+          PAYLOAD=$(jq -n --arg desc "$DESC" \
+            '{embeds:[{title:"🛠️ Engineering backlog", description:$desc, color:6982195, footer:{text:"Internal — updates automatically when the backlog changes"}}]}')
+
+          ID_FILE=".github/backlog-message.id"
+          MID=""; [ -f "$ID_FILE" ] && MID=$(cat "$ID_FILE")
+
+          EDITED=0
+          if [ -n "$MID" ]; then
+            CODE=$(curl -sS -o /dev/null -w '%{http_code}' -X PATCH \
+              -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK/messages/$MID")
+            if [ "$CODE" = "200" ]; then EDITED=1; echo "Edited existing backlog message $MID"; else echo "Edit returned $CODE — posting a fresh message"; fi
+          fi
+
+          if [ "$EDITED" = "0" ]; then
+            NEWID=$(curl -sS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK?wait=true" | jq -r '.id')
+            if [ -n "$NEWID" ] && [ "$NEWID" != "null" ]; then
+              echo "$NEWID" > "$ID_FILE"
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git add "$ID_FILE"
+              git commit -m "chore: track backlog Discord message id [skip ci]" || true
+              git push origin HEAD:main || echo "Could not persist message id (branch protection?); a new post may appear next change."
+              echo "Posted new backlog message $NEWID"
             fi
           fi
