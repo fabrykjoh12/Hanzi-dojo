@@ -27,7 +27,6 @@ so the community always sees the latest. Keep it current — move things to
 
 **Reading & video**
 - [ ] **Graded YouTube** — turn any video into a lesson matched to your vocabulary: see "% you'll understand," tap words in a transcript synced to playback, pre-learn the key new words, then watch. (Not just recommended videos — the video version of graded stories.)
-- [ ] Known-Content Analyzer — paste any text, see % known + the words to learn next
 - [ ] Known-Word Map & Reading Ladder — visualize what you can read as your vocabulary grows
 - [ ] Personalized stories built from the exact words in your deck
 - [ ] Word-to-World chat missions expanded across levels
@@ -58,6 +57,7 @@ so the community always sees the latest. Keep it current — move things to
 - [x] Story-reader polish — book-like chapter header + clearer "learn N more to unlock the next story"
 - [x] Onboarding polish — equal-width language cards
 - [x] Shareable reading-recap card — share "I can read N% of this story" as a branded image
+- [x] Known-Content Analyzer — paste any text, see how much you can read + the words to learn next (Practice → Analyze text)
 
 ---
 
