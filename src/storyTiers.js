@@ -30,3 +30,28 @@ export const CATEGORIES_BY_LANGUAGE = {
   japanese: CATEGORIES_JAPANESE,
   russian: CATEGORIES_RUSSIAN,
 }
+
+// The next tier the learner hasn't unlocked yet that actually has stories
+// waiting, plus how many more learned words unlock it. Pure and tested — the
+// reader uses it to turn "you've read everything you can" into a concrete
+// "learn N more to unlock the next story" nudge instead of a dead end.
+//
+// `tiersWithStories` is the set of tier numbers that have published stories, so
+// a locked-but-empty tier never becomes a nudge that leads nowhere. Returns null
+// when every tier that has stories is already unlocked (nothing left to aim at).
+export function nextLockedTier(categories, learnedCount, tiersWithStories) {
+  if (!Array.isArray(categories)) return null
+  const has = tiersWithStories instanceof Set ? tiersWithStories : new Set(tiersWithStories || [])
+  const learned = Math.max(0, learnedCount || 0)
+  const locked = categories
+    .filter(c => learned < c.minWords && has.has(c.tier))
+    .sort((a, b) => a.minWords - b.minWords)
+  if (locked.length === 0) return null
+  const t = locked[0]
+  return {
+    tier: t.tier,
+    label: t.label,
+    wordRange: t.wordRange,
+    remaining: Math.max(1, t.minWords - learned),
+  }
+}
