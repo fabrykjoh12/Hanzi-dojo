@@ -43,3 +43,8 @@ $$;
 -- Only the function runs as its owner; lock down who may call it.
 revoke all on function public.public_story(uuid) from public;
 grant execute on function public.public_story(uuid) to anon, authenticated;
+
+-- Refresh PostgREST's schema cache so the RPC is callable immediately after
+-- apply (otherwise the first /rest/v1/rpc/public_story call may 404 until the
+-- cache refreshes). Matches the pattern in the other recent migrations.
+notify pgrst, 'reload schema';
