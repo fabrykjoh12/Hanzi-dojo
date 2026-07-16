@@ -161,7 +161,11 @@ export default function Onboarding({ session, onComplete }) {
                     key={lang.key}
                     onClick={() => { setLanguage(lang.key); setLevel(null); setTier(null); setPlacement(false) }}
                     style={{
-                      flex: 1,
+                      // flex-basis 0 + minWidth 0 keeps all three cards exactly
+                      // equal; without it the wider "Русский" label stretched the
+                      // Russian card past the two CJK ones.
+                      flex: '1 1 0',
+                      minWidth: 0,
                       padding: '24px 12px',
                       borderRadius: '14px',
                       border: selected ? ('2px solid ' + lang.accentHex) : '2px solid var(--border)',
@@ -176,7 +180,9 @@ export default function Onboarding({ session, onComplete }) {
                     }}
                   >
                     <span style={{ fontSize: '34px', lineHeight: 1 }}>{lang.flag}</span>
-                    <span style={{ fontSize: '26px', fontWeight: 700, color: lang.accentHex, fontFamily: lang.font + ', sans-serif', lineHeight: 1 }}>{lang.nativeName}</span>
+                    {/* Native name sizes down a touch and never wraps, so a longer
+                        label (Русский) fits the equal-width card like the CJK ones. */}
+                    <span style={{ fontSize: '23px', fontWeight: 700, color: lang.accentHex, fontFamily: lang.font + ', sans-serif', lineHeight: 1, whiteSpace: 'nowrap', maxWidth: '100%' }}>{lang.nativeName}</span>
                     <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', fontFamily: 'Inter, sans-serif' }}>{lang.languageName}</span>
                   </button>
                 )
