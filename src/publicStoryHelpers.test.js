@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildVocabMap, assumedKnownCards, teaserLines, LEVEL_CHOICES, BEGINNER_WORD_CAP } from './publicStory'
+import { buildVocabMap, assumedKnownCards, teaserLines, LEVEL_CHOICES, BEGINNER_WORD_CAP } from './publicStoryHelpers'
 
 const pool = [
   { id: 'a', word: '你', reading: 'nǐ', meaning: 'you', level: 1, sort_order: 1 },

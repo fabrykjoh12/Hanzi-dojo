@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from './supabase'
-import { buildVocabMap, assumedKnownCards, teaserLines, LEVEL_CHOICES } from './publicStory'
-import { calculateStoryReadability, buildVocabMatcher, matchVocabAt, wordStatus, splitSpeaker, boundaryAfterSkip, JP_PARTICLES } from './storyReading'
+import { buildVocabMap, assumedKnownCards, teaserLines, LEVEL_CHOICES } from './publicStoryHelpers'
+import { calculateStoryReadability, buildVocabMatcher, matchVocabAt, matchName, wordStatus, splitSpeaker, boundaryAfterSkip, JP_PARTICLES } from './storyReading'
 import { getAudioUrl, getLevelLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { BRAND_NAME } from './brand'
 import { track, EVENTS } from './analytics'
+import { CHARACTER_READINGS } from './characterNames'
 
 const NO_PARTICLES = new Set()
 
@@ -158,15 +159,26 @@ function ctaStyle(accent) {
 // matcher (buildVocabMatcher/matchVocabAt/boundaryAfterSkip) so highlighting
 // matches the counted percentage. matchVocabAt returns { vocab, len } (NOT a
 // { text, length } pair) — the matched substring is derived via text.slice.
+// Mirrors scanLineVocab's ordering (storyReading.js): try matchName first at
+// each position (skip over a personal-name fragment without highlighting it,
+// same as the counted % does), then fall back to matchVocabAt.
 function TeaserLine({ line, vocabMap, language, knownCards, accent }) {
   const matcher = useMemo(() => buildVocabMatcher(vocabMap, language), [vocabMap, language])
   const particles = language === 'japanese' ? JP_PARTICLES : NO_PARTICLES
+  const names = CHARACTER_READINGS[language] || {}
   const { speaker, text } = splitSpeaker(line)
   const parts = []
   let i = 0
   let key = 0
   let boundary = true
   while (i < text.length) {
+    const name = matchName(text, i, matcher.words, names)
+    if (name) {
+      parts.push(<span key={key++}>{name}</span>)
+      i += name.length
+      boundary = true
+      continue
+    }
     const m = matchVocabAt(text, i, matcher, particles, boundary)
     if (m && m.vocab) {
       const word = text.slice(i, i + m.len)
