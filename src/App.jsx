@@ -8,7 +8,6 @@ import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
 // Eager: the app shell + first-paint screens.
 import Landing from './Landing'
-import PublicStory from './PublicStory'
 import PasswordReset from './PasswordReset'
 import Toasts from './Toasts'
 import OfflineBar from './OfflineBar'
@@ -40,6 +39,9 @@ const Profile = lazy(() => import('./Profile'))
 const YouTube = lazy(() => import('./YouTube'))
 const LanguageSwitcher = lazy(() => import('./LanguageSwitcher'))
 const Settings = lazy(() => import('./Settings'))
+// Public story page: only reached via a shared /read/:id link, so code-split it
+// out of the first-paint bundle (it pulls in storyReading.js).
+const PublicStory = lazy(() => import('./PublicStory'))
 const Dev = lazy(() => import('./Dev'))
 const NotFound = lazy(() => import('./NotFound'))
 const Dashboard = lazy(() => import('./Dashboard'))
@@ -214,7 +216,11 @@ export default function App() {
   // Public story link — works signed-out. (Signed-in visitors are redirected
   // into the reader by the effect above.)
   if (publicStoryId && !session) {
-    return <PublicStory storyId={publicStoryId} />
+    return (
+      <Suspense fallback={<ViewFallback />}>
+        <PublicStory storyId={publicStoryId} />
+      </Suspense>
+    )
   }
 
   if (!session) {

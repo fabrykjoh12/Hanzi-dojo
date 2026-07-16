@@ -33,6 +33,12 @@ as $$
       where v.language = s.language
         and v.system = s.system
         and v.is_active = true
+        -- Data minimization: an anon caller only needs the vocab a reader of
+        -- THIS story could know (levels up to the story's own). Capping here
+        -- keeps the computed % identical (words above the story level can't be
+        -- "known" by any level chip and don't occur in an in-level story) while
+        -- not exposing the whole language's word list through one shared link.
+        and v.level <= s.level
     ), '[]'::jsonb)
   )
   from public.stories s

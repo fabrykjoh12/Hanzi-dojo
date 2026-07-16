@@ -22,13 +22,17 @@ export default function PublicStory({ storyId }) {
     let alive = true
     ;(async () => {
       try {
-        const { data } = await supabase.rpc('public_story', { p_story_id: storyId })
+        const { data, error } = await supabase.rpc('public_story', { p_story_id: storyId })
         if (!alive) return
         if (data && data.id) {
           setStory(data)
           setStatus('ready')
           track(EVENTS.PUBLIC_STORY_VIEWED, { language: data.language, level: data.level })
         } else {
+          // Distinguish "migration not applied / RPC error" from a genuinely
+          // missing/unpublished story — both land on the same UI, but only the
+          // former leaves a console signal to diagnose.
+          if (error) console.error('public_story RPC failed', error)
           setStatus('missing')
         }
       } catch {
