@@ -4,6 +4,11 @@
 
 export const BRAND_NAME = 'Hanzi Dojo'
 
+// The canonical public origin. Used for share links and absolute social-preview
+// URLs so nothing points users at the raw GitHub Pages host. Auth redirects use
+// the live origin (window.location.origin) instead, so dev/preview still work.
+export const BRAND_URL = 'https://hanzi-dojo.com'
+
 export const BRAND_FONT = "'Poppins', 'Inter', sans-serif"
 
 // (Retired) brush-script face — its Latin letterforms read thin and uneven for

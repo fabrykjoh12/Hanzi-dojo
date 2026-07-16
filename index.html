@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <!-- %BASE_URL% is replaced by Vite per host: /Hanzi-dojo/ on GitHub Pages, / on Vercel.
-         Using it keeps every asset path correct on both (and fixes the favicon 404 on the subpath). -->
+    <!-- %BASE_URL% is replaced by Vite with the configured base ('/'). Kept as a
+         placeholder so asset paths stay correct if the base ever changes. -->
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
     <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png" />
     <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
@@ -20,13 +20,14 @@
     <title>Hanzi Dojo — Learn Chinese, Japanese &amp; Russian free</title>
     <meta name="description" content="Learn Chinese, Japanese, and Russian with SRS flashcards and level-matched immersion reading and listening. Free forever, no credit card." />
 
-    <!-- Social share preview. og:image must be an ABSOLUTE URL — scrapers
-         (Twitter, Discord, iMessage) don't resolve relative paths. The GitHub
-         Pages copy works as the image host for shares of either deployment. -->
+    <!-- Social share preview. og:url / og:image must be ABSOLUTE URLs — scrapers
+         (Twitter, Discord, iMessage) don't resolve relative paths. Point them at
+         the canonical domain so previews never surface the raw GitHub Pages host. -->
     <meta property="og:title" content="Hanzi Dojo" />
     <meta property="og:description" content="Learn Chinese, Japanese, and Russian with SRS flashcards and level-matched immersion. Free forever." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://fabrykjoh12.github.io/Hanzi-dojo/icon-512.png" />
+    <meta property="og:url" content="https://hanzi-dojo.com/" />
+    <meta property="og:image" content="https://hanzi-dojo.com/icon-512.png" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Hanzi Dojo" />
     <meta name="twitter:description" content="Learn Chinese, Japanese, and Russian with SRS flashcards and immersion. Free forever." />

@@ -32,7 +32,15 @@ export default function Auth() {
     try {
       if (isSignup) {
         track(EVENTS.SIGNUP_STARTED)
-        const { error } = await supabase.auth.signUp({ email: cleanEmail, password })
+        // emailRedirectTo pins the confirmation link back to the origin the user
+        // signed up from. Without it, Supabase falls back to the project's Site
+        // URL — which is why confirmation emails were sending people to the raw
+        // GitHub Pages host instead of the domain they signed up on.
+        const { error } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: { emailRedirectTo: redirectTo },
+        })
         if (error) throw error
         track(EVENTS.SIGNUP_COMPLETED)
         setMessageKind('success')

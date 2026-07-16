@@ -58,7 +58,7 @@ Everything that isn't part of that loop is tucked into a secondary **Practice La
 | Backend | Supabase (Postgres + Auth + Storage + RLS) |
 | Script helpers | `wanakana` (kana), `hanzi-writer` (stroke order), `web-push` (reminders) |
 | Tests | Vitest |
-| Hosting | Static SPA (Vercel / GitHub Pages) |
+| Hosting | Static SPA (Vercel) |
 
 ---
 
@@ -104,7 +104,7 @@ The app expects a Supabase project with the schema in [`supabase/schema.sql`](su
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Start the Vite dev server |
-| `npm run build` | Production build (also copies `index.html` → `404.html` for SPA fallback) |
+| `npm run build` | Production build (static SPA into `dist/`) |
 | `npm run preview` | Preview the production build locally |
 | `npm run lint` | ESLint over the project |
 | `npm test` | Run the Vitest suite once |
@@ -145,9 +145,9 @@ The suite (Vitest) focuses on **meaningful behavior**, not string smoke tests: F
 
 ## Deployment
 
-- Static SPA build (`npm run build`) deployable to Vercel (config in `vercel.json`) or GitHub Pages. The build emits a `404.html` fallback so deep links resolve on static hosts.
+- Static SPA build (`npm run build`) deployed to Vercel (config in `vercel.json`), which serves from the root and rewrites deep links to `index.html`. The canonical origin is `https://hanzi-dojo.com`.
 - Set the `VITE_*` env vars in your host's environment.
-- Supabase: apply `supabase/schema.sql` and the `supabase/migrations/`. Auth redirect URLs must include your deployed origin.
+- Supabase: apply `supabase/schema.sql` and the `supabase/migrations/`. In the Supabase dashboard, set Auth → **Site URL** to `https://hanzi-dojo.com` and add it to the Redirect URL allowlist (plus `http://localhost:5173/**` for dev).
 - Daily reminders run as a scheduled GitHub Action (`send-review-reminders.mjs`) — needs the VAPID + Supabase service secrets above.
 
 ---

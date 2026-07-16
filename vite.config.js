@@ -18,16 +18,13 @@ function buildInfo() {
 }
 
 // https://vite.dev/config/
-// Base path differs per host:
-//   - GitHub Pages serves under /Hanzi-dojo/ (the repo name).
-//   - Vercel (and local dev) serve from the root /.
-// Vercel sets the VERCEL env var during its build, so only GitHub Pages
-// production builds get the subpath; everything else uses /.
-export default defineConfig(({ command }) => {
-  const isGitHubPages = command === 'build' && !process.env.VERCEL
+// The app is served from the root on its canonical host (Vercel → hanzi-dojo.com)
+// and in local dev, so the base is always '/'. (A former GitHub Pages deployment
+// served under the /Hanzi-dojo/ repo subpath; that host has been retired.)
+export default defineConfig(() => {
   const info = buildInfo()
   return {
-    base: isGitHubPages ? '/Hanzi-dojo/' : '/',
+    base: '/',
     define: {
       'import.meta.env.VITE_BUILD_SHA': JSON.stringify(info.sha),
       'import.meta.env.VITE_BUILD_TIME': JSON.stringify(info.builtAt),

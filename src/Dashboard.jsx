@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Users, Activity, Clock, BookOpen } from 'lucide-react'
+import { ArrowLeft, Users, Activity, Clock, BookOpen, Repeat } from 'lucide-react'
 import { supabase } from './supabase'
 import { useIsMobile } from './useIsMobile'
-import { withConversion, fillDailySeries, storyCompletionRate } from './dashboardMetrics'
+import { languageTheme } from './languageTheme'
+import {
+  withConversion, fillDailySeries, storyCompletionRate,
+  filterStoryRows, storyLanguageBreakdown, retentionSummary, retentionAverages,
+} from './dashboardMetrics'
 
 const RANGES = [
   { key: 7, label: '7 days' },
@@ -94,11 +98,129 @@ function DauChart({ series }) {
   )
 }
 
+const ACCENT = '#4F6047'
+
+function langLabel(lang) {
+  if (lang === 'unknown' || !lang) return 'Unknown'
+  try { return languageTheme(lang).languageName } catch { return lang }
+}
+
+// Blended D1/D7/D30 headline + a per-cohort table. Cells that haven't had enough
+// days elapse yet show "—" rather than a misleading 0% (see retentionSummary).
+function RetentionPanel({ rows, todayISO }) {
+  const summary = retentionSummary(rows, todayISO)
+  const avg = retentionAverages(rows, todayISO)
+  const cell = (c) => (c && c.matured ? c.pct + '%' : '—')
+  const headline = (v) => (v === null || v === undefined ? '—' : v + '%')
+
+  if (summary.length === 0) {
+    return <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>No signup cohorts in this range yet.</span>
+  }
+
+  const cols = '1.4fr repeat(4, 1fr)'
+  const th = { fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, textAlign: 'right' }
+  const td = { fontSize: '13px', color: 'var(--text)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: '18px', marginBottom: '14px', flexWrap: 'wrap' }}>
+        {[['D1', avg.d1], ['D7', avg.d7], ['D30', avg.d30]].map(([k, v]) => (
+          <div key={k}>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{k} retention</div>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)' }}>{headline(v)}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: cols, gap: '4px 10px', alignItems: 'center' }}>
+        <span style={{ ...th, textAlign: 'left' }}>Cohort</span>
+        <span style={th}>Size</span>
+        <span style={th}>D1</span>
+        <span style={th}>D7</span>
+        <span style={th}>D30</span>
+        {summary.map(r => (
+          <Row key={r.day} cells={[r.day, r.size, cell(r.d1), cell(r.d7), cell(r.d30)]} td={td} />
+        ))}
+      </div>
+      <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '10px 0 0' }}>
+        “—” means not enough days have elapsed for that cohort yet.
+      </p>
+    </div>
+  )
+}
+
+function Row({ cells, td }) {
+  return (
+    <>
+      <span style={{ ...td, textAlign: 'left', color: 'var(--text-muted)' }}>{cells[0]}</span>
+      {cells.slice(1).map((c, i) => <span key={i} style={td}>{c}</span>)}
+    </>
+  )
+}
+
+// Story open→complete, filterable by language. Top line is the selected scope's
+// completion rate; the list below always shows every language so relative
+// performance stays visible (the active one emphasized).
+function StoriesPanel({ rows, language, onLanguage }) {
+  const breakdown = storyLanguageBreakdown(rows)
+  const languages = breakdown.map(b => b.language)
+  const scoped = filterStoryRows(rows, language)
+  const opened = scoped.reduce((s, r) => s + (Number(r.opened) || 0), 0)
+  const completed = scoped.reduce((s, r) => s + (Number(r.completed) || 0), 0)
+  const rate = storyCompletionRate(scoped)
+
+  const chip = (key, label) => {
+    const on = (key || null) === language
+    return (
+      <button key={key || 'all'} onClick={() => onLanguage(key || null)} style={{
+        padding: '4px 10px', borderRadius: '999px', cursor: 'pointer', fontSize: '12px',
+        border: '1px solid var(--border)', fontWeight: on ? 600 : 500,
+        background: on ? '#E7EDE4' : 'transparent', color: on ? ACCENT : 'var(--text-muted)',
+      }}>{label}</button>
+    )
+  }
+
+  if (breakdown.length === 0) {
+    return <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>No story activity yet.</span>
+  }
+
+  return (
+    <div>
+      {languages.length > 1 && (
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
+          {chip(null, 'All')}
+          {languages.map(l => chip(l, langLabel(l)))}
+        </div>
+      )}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '14px' }}>
+        <span style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text)' }}>{rate}%</span>
+        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>completed · {completed}/{opened} stories</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
+        {breakdown.map(b => {
+          const active = !language || language === b.language
+          return (
+            <div key={b.language} style={{ opacity: active ? 1 : 0.4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '3px' }}>
+                <span>{langLabel(b.language)}</span>
+                <span>{b.rate}% · {b.completed}/{b.opened}</span>
+              </div>
+              <div style={{ background: 'var(--surface-2)', borderRadius: '6px', height: '8px', overflow: 'hidden' }}>
+                <div style={{ width: b.rate + '%', height: '100%', background: ACCENT, borderRadius: '6px' }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function Dashboard({ onBack }) {
   const isMobile = useIsMobile()
   const [days, setDays] = useState(30)
   const [state, setState] = useState('loading') // loading | ready | empty | error
   const [data, setData] = useState(null)
+  const [storyLang, setStoryLang] = useState(null) // null = all languages
 
   useEffect(() => {
     let cancelled = false
@@ -106,14 +228,15 @@ export default function Dashboard({ onBack }) {
     const { fromTs, toTs, fromISO, toISO } = rangeBounds(days)
     async function load() {
       try {
-        const [overview, funnel, active, story] = await Promise.all([
+        const [overview, funnel, active, story, retention] = await Promise.all([
           supabase.rpc('admin_overview', { from_ts: fromTs, to_ts: toTs }),
           supabase.rpc('admin_funnel', { from_ts: fromTs, to_ts: toTs }),
           supabase.rpc('admin_active_users', { from_ts: fromTs, to_ts: toTs }),
           supabase.rpc('admin_story_stats', { from_ts: fromTs, to_ts: toTs }),
+          supabase.rpc('admin_retention', { cohort_from: fromTs, cohort_to: toTs }),
         ])
         if (cancelled) return
-        const firstErr = overview.error || funnel.error || active.error || story.error
+        const firstErr = overview.error || funnel.error || active.error || story.error || retention.error
         if (firstErr) { setState('error'); return }
         const ov = (overview.data && overview.data[0]) || {}
         const funnelRows = funnel.data || []
@@ -124,6 +247,7 @@ export default function Dashboard({ onBack }) {
           funnel: funnelRows,
           series: fillDailySeries(active.data || [], fromISO, toISO),
           story: story.data || [],
+          retention: retention.data || [],
         })
         setState('ready')
       } catch {
@@ -135,6 +259,7 @@ export default function Dashboard({ onBack }) {
   }, [days])
 
   const pad = isMobile ? '16px' : '32px'
+  const todayISO = new Date().toISOString().slice(0, 10)
 
   return (
     <div style={{ padding: pad, maxWidth: '960px', margin: '0 auto' }}>
@@ -182,16 +307,15 @@ export default function Dashboard({ onBack }) {
           </Card>
 
           <Card>
-            <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', margin: '0 0 12px' }}>Stories by language</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {data.story.length === 0 && <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>No story activity yet.</span>}
-              {data.story.map(s => (
-                <div key={s.language} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--text-muted)' }}>
-                  <span style={{ textTransform: 'capitalize' }}>{s.language}</span>
-                  <span>{s.completed}/{s.opened} completed</span>
-                </div>
-              ))}
-            </div>
+            <h2 style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '15px', fontWeight: 600, color: 'var(--text)', margin: '0 0 12px' }}>
+              <Repeat size={16} strokeWidth={1.85} /> Retention by signup cohort
+            </h2>
+            <RetentionPanel rows={data.retention} todayISO={todayISO} />
+          </Card>
+
+          <Card>
+            <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', margin: '0 0 12px' }}>Stories</h2>
+            <StoriesPanel rows={data.story} language={storyLang} onLanguage={setStoryLang} />
           </Card>
         </div>
       )}
