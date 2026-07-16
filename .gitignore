@@ -29,3 +29,8 @@ dist-ssr
 # Throwaway component previews
 preview.html
 src/__preview.jsx
+
+# Playwright
+playwright-report
+test-results
+artifacts
