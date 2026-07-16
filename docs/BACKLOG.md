@@ -24,7 +24,22 @@ Already shipped (code side): `signUp` now sends `emailRedirectTo`; hardcoded git
 - [ ] **FSRS parameter tuning** — optimize scheduler parameters beyond library defaults once `review_logs` + analytics have real data.
 
 ## Content
-- [ ] Grow **Japanese (JLPT)** and **Russian (CEFR)** vocabulary + story depth toward parity with Chinese (HSK), which is the most mature track.
+- [ ] **Chinese → HSK 3**: seed the HSK 3 vocab band, then run `generate-meanings` → `generate-examples` → `generate-serial-stories` → `generate-audio`/`generate-story-audio`. Add HSK 3 tiers to `storyTiers.js` and level labels in `utils.js`.
+- [ ] **Japanese JLPT N4+ / Russian A2+**: same pipeline per new level; extend the level/tier config so onboarding offers them (Onboarding gates on seeded levels already).
+- [ ] More graded stories at existing levels (volume, not just new levels) — improves the "read next" ladder density.
+- [ ] **Spanish track**: add a `spanish` entry to `languageTheme.js` (accent, font, system=CEFR), level list + tiers in `storyTiers.js`, seed CEFR vocab, generate content. Onboarding/data layers are already data-driven, so most of the app picks it up for free.
+
+## Media
+- [ ] **Pictures on flashcards**: generate/source one image per vocab item (image-gen pipeline → Supabase Storage `images/` bucket, mirror of the audio flow), add `image_path` to `vocabulary`, render lazily on the card back. Keep it optional so a missing image degrades cleanly.
+- [ ] **Better TTS**: current narration is Google TTS (`generate-audio.mjs`, `generate-story-audio.mjs`). Evaluate more natural voices (e.g. Azure Neural, ElevenLabs, OpenAI TTS) per language, pick voices, regenerate vocab + story audio; watch blob size / offline-cache cost. A/B a sample before mass regen.
+
+## Video (graded YouTube — the flagship idea)
+Turn the current recommended-videos list (`YouTube.jsx`, `youtube_recommendations`) into graded comprehensible input — the video analog of the story reader:
+- [ ] Fetch a video's **caption/transcript** by video id (YouTube timedtext / caption tracks); handle the no-captions case gracefully.
+- [ ] Reuse `storyReading.js` to compute **% known** over the transcript and make words **tappable** (define / add to deck), exactly like the reader.
+- [ ] **Sync the transcript to playback** (YouTube IFrame API `getCurrentTime`/state events) — highlight the current line, tap a line to seek.
+- [ ] **Pre-teach flow**: surface the top-N unknown words as quick flashcards before watching.
+- [ ] **Level-matched library**: tag recommendations with level + a computed "% you'll understand" badge so browsing mirrors the graded-story ladder.
 
 ## Frontend cleanup
 - [ ] Continue extracting the large `Study` screen into focused hooks/components.
