@@ -13,7 +13,6 @@ _Vedlikeholdes i Fabipilot. Jobb gjennom de åpne punktene under._
     3. Spot-check polyphones: 长, 行, 重, 觉, 银行. Repeat per level.
 
 ## Medium
-- [ ] Be more direct on what do to after your reviews
 - [ ] Fix this bug: You cant scroll down in the conversation after your reviews
 Expected: To be able to scroll down
 - [ ] add better story reader, maybe a better way to read.
@@ -23,6 +22,7 @@ Expected: To be able to scroll down
 - [ ] rework the youtube tab, maybe come with some idea
 
 ## Ferdig
+- [x] Be more direct on what to do after your reviews (recap always ends with a direct "Recommended next" action — falls back to "Read a story" instead of a dead-end Back home)
 - [x] make it easier to join the discord, or easier to see the discord (persistent "Join our Discord" card on Home)
 - [x] make a light mode version for the chinese stories, because now its dark even without dark mode
 - [x] you cant replay the tts on the flashcards

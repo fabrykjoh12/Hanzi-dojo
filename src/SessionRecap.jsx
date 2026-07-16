@@ -177,10 +177,12 @@ export default function SessionRecap({
   // and points at the story their words just unlocked.
   const firstDone = Boolean(firstRun && didStudy)
 
-  // The single most useful next action, so the recap ends with a direct
-  // "do this next" instead of a menu the learner has to weigh. Priority:
-  // read the just-unlocked story that holds today's words → use them in the
-  // chat conversation → re-read a story → (nothing actionable) go home.
+  // The single most useful next action, so the recap ALWAYS ends with a direct
+  // "do this next" instead of a menu the learner has to weigh — or, worse, a
+  // dead-end "Back home" with no direction. Priority: read the just-unlocked
+  // story that holds today's words → use them in the chat conversation →
+  // re-read a story → fall back to the story hub (the core loop is review →
+  // read, so "go read" is always a sensible, non-dead-end next step).
   const story = storyUnlock && storyUnlock.story
   const nextStep = story && !storyUnlock.isRead
     ? { label: 'Read “' + story.title + '” now', sub: 'Lock in the words you just studied', icon: BookOpen, onClick: () => onReadStory(story.id) }
@@ -188,7 +190,7 @@ export default function SessionRecap({
       ? { label: 'Use today’s words in a chat', sub: mission.scenario.en, icon: MessageCircleMore, onClick: onOpenMission }
       : story
         ? { label: 'Read it again', sub: 'Re-reading cements the vocabulary', icon: BookOpen, onClick: () => onReadStory(story.id) }
-        : null
+        : { label: 'Read a story', sub: 'Reading is where today’s words stick — pick one that’s unlocked', icon: BookOpen, onClick: () => onReadStory(null) }
 
   const accuracy = s && s.reviewedTotal > 0 ? Math.round((s.reviewedRight / s.reviewedTotal) * 100) : null
   const recapStats = s ? [

@@ -15,4 +15,29 @@ test.describe('Study session (flashcards)', () => {
     await expect(study.gradeGood).toBeVisible();
     await expect(study.gradeEasy).toBeVisible();
   });
+
+  // The recap must always end with a direct "do this next" action — never a
+  // dead-end "Back home" — even when no story is unlocked and no chat mission
+  // is offered (the mock fixtures have neither), which falls back to the story
+  // hub.
+  test('recap always offers a direct next step', async ({ page }) => {
+    const study = new StudyPage(page);
+    await study.goto();
+
+    const recap = page.getByText('Session complete');
+
+    // Grade through the whole queue until the session recap appears.
+    for (let i = 0; i < 80; i += 1) {
+      if (await recap.isVisible().catch(() => false)) break;
+      if (await study.showAnswer.isVisible().catch(() => false)) {
+        await study.showAnswer.click();
+        await study.gradeGood.click();
+      }
+      await page.waitForTimeout(100);
+    }
+
+    await expect(recap).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/Recommended next/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /Read a story/i })).toBeVisible();
+  });
 });
