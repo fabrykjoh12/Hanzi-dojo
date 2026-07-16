@@ -6,12 +6,11 @@ so the community always sees the latest. Keep it current — move things to
 **Shipped** as they land.
 
 ## 🚧 Now — in progress
-- [ ] Public story links — open a story without an account, see "you'd understand ~X%", with a "learn to read this" invite
+- [ ] "How much can you read?" — a 60-second public assessment with a shareable result (builds on public story links)
 
 ## 🔜 Next — planned
 
 **Growth — let the product introduce itself**
-- [ ] "How much can you read?" — a 60-second public assessment with a shareable result
 
 **Habit & re-engagement**
 - [ ] Timezone-correct daily reminders (no more ~1h drift across DST changes)
@@ -58,6 +57,7 @@ so the community always sees the latest. Keep it current — move things to
 - [x] Onboarding polish — equal-width language cards
 - [x] Shareable reading-recap card — share "I can read N% of this story" as a branded image
 - [x] Known-Content Analyzer — paste any text, see how much you can read + the words to learn next (Practice → Analyze text)
+- [x] Public story links — open a shared story without an account, pick your level, see "you'd understand ~X%" + a taste of the story, then sign up free to read the rest
 
 ---
 
