@@ -37,6 +37,13 @@ export function fillDailySeries(rows, fromISO, toISO) {
   return out
 }
 
+// Story open/complete rows, optionally scoped to one language. Passing a null /
+// falsy language keeps every row (the "All languages" view).
+export function filterStoryRows(rows, language) {
+  if (!language) return rows || []
+  return (rows || []).filter(r => r.language === language)
+}
+
 export function storyCompletionRate(rows) {
   let opened = 0, completed = 0
   for (const r of rows || []) {
@@ -44,4 +51,59 @@ export function storyCompletionRate(rows) {
     completed += Number(r.completed) || 0
   }
   return pct(completed, opened)
+}
+
+// Per-language story rows with a completion percentage, sorted by volume, so the
+// dashboard can show a real breakdown instead of a bare "completed/opened" line.
+export function storyLanguageBreakdown(rows) {
+  return (rows || [])
+    .map(r => {
+      const opened = Number(r.opened) || 0
+      const completed = Number(r.completed) || 0
+      return { language: r.language, opened, completed, rate: pct(completed, opened) }
+    })
+    .sort((a, b) => b.opened - a.opened)
+}
+
+// Retention rows (one per signup-day cohort) → display cells for D1 / D7 / D30.
+// A cohort's dN only becomes meaningful once N days have actually elapsed since
+// the cohort day; before that the cell is `matured: false` (rendered as "—") so a
+// too-recent cohort never reads as 0% retention. `todayISO` is 'YYYY-MM-DD'.
+export function retentionSummary(rows, todayISO) {
+  const today = new Date(todayISO + 'T00:00:00Z')
+  return (rows || []).map(r => {
+    const size = Number(r.cohort_size) || 0
+    const cohortDay = new Date(r.cohort_day + 'T00:00:00Z')
+    const daysElapsed = Math.floor((today - cohortDay) / 86400000)
+    const cell = (n, count) =>
+      daysElapsed < n
+        ? { matured: false, pct: null, count: null }
+        : { matured: true, pct: pct(Number(count) || 0, size), count: Number(count) || 0 }
+    return {
+      day: r.cohort_day,
+      size,
+      d1: cell(1, r.d1),
+      d7: cell(7, r.d7),
+      d30: cell(30, r.d30),
+    }
+  })
+}
+
+// Blended retention across every cohort that has matured for each bucket, so the
+// dashboard can show one headline D1/D7/D30 number. Immature cohorts are excluded
+// from a bucket's denominator (not counted as churned). Returns null per bucket
+// when no cohort has matured that far yet.
+export function retentionAverages(rows, todayISO) {
+  const summary = retentionSummary(rows, todayISO)
+  const bucket = (key) => {
+    let size = 0, retained = 0, any = false
+    for (const r of summary) {
+      if (!r[key].matured) continue
+      any = true
+      size += r.size
+      retained += r[key].count
+    }
+    return any ? pct(retained, size) : null
+  }
+  return { d1: bucket('d1'), d7: bucket('d7'), d30: bucket('d30') }
 }
