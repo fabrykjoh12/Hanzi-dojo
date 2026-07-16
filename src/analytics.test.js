@@ -128,3 +128,9 @@ describe('trackOnce — one-shot events (duplicate session prevention)', () => {
     expect(insertMock).toHaveBeenCalledTimes(1)
   })
 })
+
+it('defines the public-story funnel events', () => {
+  expect(EVENTS.PUBLIC_STORY_VIEWED).toBe('public_story_viewed')
+  expect(EVENTS.PUBLIC_STORY_LEVEL_PICKED).toBe('public_story_level_picked')
+  expect(EVENTS.PUBLIC_STORY_SIGNUP_CLICKED).toBe('public_story_signup_clicked')
+})
