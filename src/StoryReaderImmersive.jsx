@@ -41,7 +41,17 @@ const STORY_FINISH_XP = 10
 // round-trip to the server. Default: scaffold only unknown words, lens off — the
 // page reads like a book until the learner asks for more help.
 const READER_PREFS_KEY = 'reader:prefs'
-const DEFAULT_PREFS = { furiganaMode: 'unknown', lens: false, showEnglish: false }
+const DEFAULT_PREFS = { furiganaMode: 'unknown', lens: false, showEnglish: false, serif: false, seenFocusHint: false }
+
+// Serif reading-font stacks, per script. These lean on the OS's own serif faces
+// (genuinely book-like for CJK, and free) so we never load a web font — any named
+// face that's absent falls through to the generic `serif` keyword.
+const SERIF_FONTS = {
+  japanese: "'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',serif",
+  chinese: "'Songti SC','SimSun','Noto Serif SC',serif",
+  russian: "'Noto Serif','Georgia','Times New Roman',serif",
+  default: "'Noto Serif','Georgia','Times New Roman',serif",
+}
 
 const FURIGANA_OPTIONS = [
   { value: 'always', label: 'Always' },
@@ -265,6 +275,8 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const [furiganaMode, setFuriganaMode] = useState(DEFAULT_PREFS.furiganaMode)
   const [lens, setLens] = useState(DEFAULT_PREFS.lens)
   const [showEnglish, setShowEnglish] = useState(DEFAULT_PREFS.showEnglish)
+  const [serif, setSerif] = useState(DEFAULT_PREFS.serif)
+  const [seenFocusHint, setSeenFocusHint] = useState(DEFAULT_PREFS.seenFocusHint)
   const [showSentence, setShowSentence] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [focusedLine, setFocusedLine] = useState(null)   // sentence-focus: dim the rest
@@ -287,6 +299,9 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const isChinese = track.language === 'chinese'
   const accent = theme.accentHex
   const font = theme.font
+  // Reading-column font: the theme sans by default, or the script's system serif
+  // when the reader turns on the Serif setting (book-like, no web font loaded).
+  const readingFont = serif ? (SERIF_FONTS[track.language] || SERIF_FONTS.default) : font
   const names = CHARACTER_READINGS[track.language] || {}
   const particles = isJapanese ? JP_PARTICLES : NO_PARTICLES
   const watermark = isJapanese ? ['読', '書'] : isChinese ? ['读', '书'] : ['А', 'Я']
@@ -316,14 +331,16 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         if (FURIGANA_OPTIONS.some(o => o.value === saved.furiganaMode)) setFuriganaMode(saved.furiganaMode)
         if (typeof saved.lens === 'boolean') setLens(saved.lens)
         if (typeof saved.showEnglish === 'boolean') setShowEnglish(saved.showEnglish)
+        if (typeof saved.serif === 'boolean') setSerif(saved.serif)
+        if (typeof saved.seenFocusHint === 'boolean') setSeenFocusHint(saved.seenFocusHint)
       }
     }).finally(() => { prefsReady.current = true })
     return () => { live = false }
   }, [])
   useEffect(() => {
     if (!prefsReady.current) return
-    prefsSet(READER_PREFS_KEY, { furiganaMode, lens, showEnglish })
-  }, [furiganaMode, lens, showEnglish])
+    prefsSet(READER_PREFS_KEY, { furiganaMode, lens, showEnglish, serif, seenFocusHint })
+  }, [furiganaMode, lens, showEnglish, serif, seenFocusHint])
 
   // Close the desktop settings popover on an outside click (the mobile sheet has
   // its own tap-to-close scrim, so this only matters on desktop).
@@ -600,15 +617,21 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     }
   }
 
+  // The sentence-focus tip retires itself the moment the gesture is discovered
+  // (a word tap or a line tap both focus a line) or is dismissed by the ✕.
+  const dismissFocusHint = () => setSeenFocusHint(prev => (prev ? prev : true))
+
   const selectToken = (lineIndex, tokenKey, token) => {
     setShowSentence(false)
     setFocusedLine(lineIndex)   // tapping a word also focuses its sentence
+    dismissFocusHint()
     setSelected({ lineIndex, tokenKey, vocab: token.vocab || null, name: token.name || null, text: token.text })
   }
 
   // Sentence focus: tapping a line's whitespace (not a word) fades the rest of
   // the story so the current sentence carries the eye — tap it again to release.
   const toggleFocus = (lineIndex) => {
+    dismissFocusHint()
     setFocusedLine(prev => (prev === lineIndex ? null : lineIndex))
   }
   const clearReading = () => { setSelected(null); setFocusedLine(null) }
@@ -661,6 +684,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               furiganaMode={furiganaMode} setFuriganaMode={setFuriganaMode}
               lens={lens} setLens={setLens}
               showEnglish={showEnglish} setShowEnglish={setShowEnglish}
+              serif={serif} setSerif={setSerif}
               hasEnglish={Boolean(story.english_content)} readingLabel={readingLabel}
               accent={accent} onClose={() => setSettingsOpen(false)} isMobile={false}
             />
@@ -693,7 +717,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             {levelLabel}
           </div>
           <h1 style={{
-            margin: 0, fontFamily: font, color: TEXT,
+            margin: 0, fontFamily: readingFont, color: TEXT,
             fontSize: isMobile ? '29px' : '37px', fontWeight: 800,
             lineHeight: 1.18, letterSpacing: '-0.01em', textWrap: 'balance',
           }}>
@@ -743,6 +767,22 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             )}
           </div>
         )}
+        {!seenFocusHint && parsed.length >= 2 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '12px',
+            padding: '9px 10px 9px 14px', marginBottom: '18px',
+            animation: reduceMotion ? 'none' : 'hd-pop-in 200ms ease',
+          }}>
+            <span style={{ flex: 1, fontSize: '12.5px', color: MUTED, lineHeight: 1.5 }}>
+              <strong style={{ color: TEXT, fontWeight: 650 }}>Tip:</strong> tap any line to focus it and dim the rest. Tap it again to release.
+            </span>
+            <button onClick={dismissFocusHint} aria-label="Dismiss tip"
+              style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '8px', border: 'none', background: 'none', cursor: 'pointer' }}>
+              <X size={16} strokeWidth={2} color={MUTED} />
+            </button>
+          </div>
+        )}
         {parsed.map(({ speaker, tokens }, li) => {
           // Group consecutive lines from the same speaker: label only the first
           // of a run, and keep same-speaker lines tight. Bigger breathing room
@@ -789,7 +829,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                   margin: 0,
                   fontSize: isMobile ? '20px' : '22px',
                   lineHeight: reserveRuby ? 2.15 : 1.9,
-                  fontFamily: font, color: TEXT, fontWeight: 400,
+                  fontFamily: readingFont, color: TEXT, fontWeight: 400,
                   letterSpacing: isJapanese || isChinese ? '0.01em' : 'normal',
                   // Alphabetic scripts read more book-like with even measure and no
                   // stranded last word; CJK wraps per-character so leave it default.
@@ -1136,6 +1176,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               furiganaMode={furiganaMode} setFuriganaMode={setFuriganaMode}
               lens={lens} setLens={setLens}
               showEnglish={showEnglish} setShowEnglish={setShowEnglish}
+              serif={serif} setSerif={setSerif}
               hasEnglish={Boolean(story.english_content)} readingLabel={readingLabel}
               accent={accent} onClose={() => setSettingsOpen(false)} isMobile
             />
@@ -1263,7 +1304,7 @@ function MetaChip({ icon: Icon, children, accent, strong = false }) {
 // Reader preferences: furigana mode, Learning Lens, translation. Shared by the
 // desktop popover and the mobile bottom sheet. Kept presentational — all state
 // lives in the reader so the choices persist and never reload the story.
-function ReaderSettings({ furiganaMode, setFuriganaMode, lens, setLens, showEnglish, setShowEnglish, hasEnglish, readingLabel, accent, onClose, isMobile }) {
+function ReaderSettings({ furiganaMode, setFuriganaMode, lens, setLens, showEnglish, setShowEnglish, serif, setSerif, hasEnglish, readingLabel, accent, onClose, isMobile }) {
   const wrap = isMobile
     ? { width: '100%' }
     : {
@@ -1297,6 +1338,33 @@ function ReaderSettings({ furiganaMode, setFuriganaMode, lens, setLens, showEngl
       </div>
       <div style={{ fontSize: '11.5px', color: MUTED, marginTop: '8px', lineHeight: 1.45 }}>
         Show readings for every word, only the ones you’re still learning, only new words, or never.
+      </div>
+
+      {/* Reading font — sans (default) or a book-like serif */}
+      <div style={{ height: '1px', background: 'var(--border)', margin: '15px 0' }} />
+      <div style={{ fontSize: '12px', fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '9px' }}>
+        Reading font
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px' }}>
+        {[{ value: false, label: 'Sans' }, { value: true, label: 'Serif' }].map(opt => {
+          const on = serif === opt.value
+          return (
+            <button key={opt.label} onClick={() => setSerif(opt.value)} role="menuitemradio" aria-checked={on}
+              style={{
+                minHeight: '42px', borderRadius: '11px', cursor: 'pointer',
+                fontSize: '13.5px', fontWeight: on ? 750 : 600,
+                fontFamily: opt.value ? "'Noto Serif','Georgia',serif" : 'Inter, sans-serif',
+                color: on ? accent : 'var(--text)',
+                background: on ? accent + '14' : 'var(--surface-2)',
+                border: '1px solid ' + (on ? accent + '66' : 'var(--border)'),
+              }}>
+              {opt.label}
+            </button>
+          )
+        })}
+      </div>
+      <div style={{ fontSize: '11.5px', color: MUTED, marginTop: '8px', lineHeight: 1.45 }}>
+        Serif gives the story a calmer, book-like feel.
       </div>
 
       {/* Learning Lens */}

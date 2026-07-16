@@ -45,6 +45,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] Supabase generated types; centralize design tokens
 
 ## ✅ Shipped
+- [x] Reader comfort — optional serif "book" font for stories, and a one-time tip teaching tap-to-focus a line
 - [x] Graded mini-stories with live "% known"
 - [x] Offline-first PWA with a durable sync outbox
 - [x] Real TTS audio for vocabulary and stories
