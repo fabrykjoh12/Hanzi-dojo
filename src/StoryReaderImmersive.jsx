@@ -450,7 +450,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
       storyTitle: story.title,
       accentHex: accent,
       langFont: font,
-      url: BRAND_URL,
+      url: BRAND_URL + '/read/' + story.id,
     })
     setSharing(false)
     trackEvent(EVENTS.STORY_SHARED, { known_pct: knownPct, method: res.method })
