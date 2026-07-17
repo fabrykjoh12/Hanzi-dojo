@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { getLevelLabel } from './utils'
 import { chatStyleFor } from './chatMissions'
 import { useStoryReaderCore } from './useStoryReaderCore'
@@ -49,6 +49,8 @@ export default function InteractiveChatReader(props) {
   const gateIndex = c.cur + 1
   const gateBeat = c.beats[gateIndex]
   const isGate = !!gateBeat && gateBeat.speaker === youSpeaker && !!distractors[gateIndex] && !answered[gateIndex]
+
+  useEffect(() => { c.setAdvanceBlocked(isGate); return () => c.setAdvanceBlocked(false) }, [isGate, c])
 
   const options = useMemo(() => (
     isGate ? buildReplyOptions(gateBeat.text, pinyinOf(gateBeat), distractors[gateIndex], gateIndex).options : []

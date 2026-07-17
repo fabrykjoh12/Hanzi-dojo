@@ -125,6 +125,10 @@ test.describe('Story reader', () => {
     // Reply gate: the panel offers the correct reply + a distractor.
     await expect(page.getByText('Your reply — tap the right one')).toBeVisible();
     await expect(page.getByText('我不是学生。')).toBeVisible();
+    // Keyboard must NOT bypass the gate.
+    await page.keyboard.press('Space');
+    await expect(page.getByText('1/4')).toBeVisible();
+    await expect(page.getByText('Your reply — tap the right one')).toBeVisible();
     // Wrong pick → hint shows, does NOT advance past the gate.
     await page.getByRole('button', { name: /我不是学生/ }).click();
     await expect(page.getByText(/Not quite/)).toBeVisible();
