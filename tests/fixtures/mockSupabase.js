@@ -48,7 +48,24 @@ export const TRACK = {
   id: 'track-1', user_id: USER_ID, language: 'chinese', system: 'hsk',
   current_level: 2, is_active: true, created_at: past,
 };
-const VOCAB = Array.from({ length: 30 }, (_, i) => ({ id: `v${i + 1}`, level: (i % 2) + 1 }));
+// Word-keyed vocab the reader looks up (word/reading/meaning matter now).
+const VOCAB = [
+  { id: 'v1', word: '今天', reading: 'jīntiān', meaning: 'today', level: 2, system: 'hsk', language: 'chinese', is_active: true },
+  { id: 'v2', word: '天气', reading: 'tiānqì', meaning: 'weather', level: 2, system: 'hsk', language: 'chinese', is_active: true },
+  { id: 'v3', word: '很', reading: 'hěn', meaning: 'very', level: 2, system: 'hsk', language: 'chinese', is_active: true },
+  { id: 'v4', word: '好', reading: 'hǎo', meaning: 'good', level: 2, system: 'hsk', language: 'chinese', is_active: true },
+  { id: 'v5', word: '公园', reading: 'gōngyuán', meaning: 'park', level: 2, system: 'hsk', language: 'chinese', is_active: true },
+  { id: 'v6', word: '朋友', reading: 'péngyou', meaning: 'friend', level: 2, system: 'hsk', language: 'chinese', is_active: true },
+  { id: 'v7', word: '花', reading: 'huā', meaning: 'flower', level: 2, system: 'hsk', language: 'chinese', is_active: true },
+];
+
+// One published, Paced-Reveal story. Its lines reuse the vocab above.
+const STORIES = [{
+  id: 'st1', language: 'chinese', system: 'hsk', level: 2, tier: 1, story_number: 1,
+  title: '公园里的下午', is_published: true, presentation: 'paced', has_audio: false,
+  image_path: null, english_content: 'An afternoon at the park.',
+  content: ['今天天气很好。', '小明：我们去公园吧！', '朋友：你看，花很好！'].join('\n'),
+}];
 
 function card(n, o = {}) {
   const state = o.state || 'review';
@@ -74,7 +91,7 @@ const CARDS = [
   card(12, { state: 'learning', stability: 1, difficulty: 5, learned: false }),
 ];
 
-const TABLE_FIXTURES = { profiles: PROFILE, language_tracks: TRACK, vocabulary: VOCAB, cards: CARDS };
+const TABLE_FIXTURES = { profiles: PROFILE, language_tracks: TRACK, vocabulary: VOCAB, cards: CARDS, stories: STORIES, story_reads: [] };
 
 export const SESSION = {
   access_token: 'mock', token_type: 'bearer', expires_in: 3600, expires_at: 4102444800,
