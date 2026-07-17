@@ -15,7 +15,7 @@ export function splitScene(line) {
   const first = graphemes.segment(line)[Symbol.iterator]().next().value
   const g = first ? first.segment : ''
   if (g && /\p{Extended_Pictographic}/u.test(g)) {
-    return { emoji: g, text: line.slice(g.length).replace(/^\s/, '') }
+    return { emoji: g, text: line.slice(g.length).replace(/^\s+/, '') }
   }
   return { emoji: '', text: line }
 }
