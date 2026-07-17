@@ -117,6 +117,17 @@ describe('authored stories validate against the level vocabulary', () => {
         expect(withEmoji / lines.length, 'scene lines missing a leading emoji').toBeGreaterThanOrEqual(0.8)
       })
 
+      it('interactions reference valid you-spoken beats', () => {
+        if (!s.interactions) return
+        const you = s.interactions.you
+        expect(typeof you, 'interactions.you must be a speaker name').toBe('string')
+        for (const idx of Object.keys(s.interactions.distractors || {})) {
+          const line = lines[Number(idx)]
+          expect(line, 'distractor beat ' + idx + ' out of range').toBeTruthy()
+          expect(splitSpeaker(line).speaker, 'distractor beat ' + idx + ' is not spoken by ' + you).toBe(you)
+        }
+      })
+
       const vocabMap = vocabMapFor(key)
       if (!vocabMap) return   // no snapshot for this level — structural checks only
       const matcher = buildVocabMatcher(vocabMap, s.language)

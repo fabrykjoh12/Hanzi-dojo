@@ -103,5 +103,35 @@
     "english_summary": "An afternoon at the zoo, animal by animal.",
     "content": "🦁 这是一只狮子。\n🐼 那是一只熊猫。\n🐒 猴子在树上玩。\n🐘 大象很大很高。\n🍦 我们吃了冰淇淋。\n📸 妈妈拍了照片。",
     "english_content": "This is a lion.\nThat is a panda.\nThe monkey is playing in the tree.\nThe elephant is very big and tall.\nWe ate ice cream.\nMom took a photo."
+  },
+  {
+    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
+    "presentation": "chat",
+    "title": "放学以后聊天",
+    "english_summary": "Reply inside a chat: make an after-school plan with a friend.",
+    "content": "朋友：你今天去学校吗？\n小明：去，我现在在学校。\n朋友：放学以后你想做什么？\n小明：我想去公园。\n朋友：好啊，我们几点去？\n小明：四点，在学校门口见。",
+    "interactions": {
+      "you": "小明",
+      "distractors": {
+        "1": [{ "text": "我不去，我在家。", "pinyin": "Wǒ bú qù, wǒ zài jiā." }],
+        "3": [{ "text": "我想吃面条。", "pinyin": "Wǒ xiǎng chī miàntiáo." }],
+        "5": [{ "text": "我不知道。", "pinyin": "Wǒ bù zhīdào." }]
+      }
+    }
+  },
+  {
+    "language": "chinese", "system": "hsk_3", "level": 2, "tier": 1, "tier_min_words": 0,
+    "presentation": "chat",
+    "title": "周末的电影",
+    "english_summary": "Reply inside a chat: agree on a weekend movie.",
+    "content": "朋友：这个周末你有空吗？\n小明：有空，你想做什么？\n朋友：我想去看电影。\n小明：好主意！看什么电影？\n朋友：一个新的中国电影。\n小明：太好了，几点的？",
+    "interactions": {
+      "you": "小明",
+      "distractors": {
+        "1": [{ "text": "我没有空。", "pinyin": "Wǒ méiyǒu kòng." }],
+        "3": [{ "text": "我不喜欢电影。", "pinyin": "Wǒ bù xǐhuan diànyǐng." }],
+        "5": [{ "text": "再见！", "pinyin": "Zàijiàn!" }]
+      }
+    }
   }
 ]
