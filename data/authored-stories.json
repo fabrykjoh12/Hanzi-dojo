@@ -79,5 +79,29 @@
     "title": "周末做什么",
     "english_summary": "Two friends compare weekend plans.",
     "content": "朋友：这个周末你有空吗？\n小明：有空。你想做什么？\n朋友：我想去看电影。\n小明：好主意！看什么电影？\n朋友：一个新的中国电影，听说很好看。\n小明：几点的？\n朋友：星期六下午三点。\n小明：太好了，我们一起去！"
+  },
+  {
+    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
+    "presentation": "scene",
+    "title": "下雨天",
+    "english_summary": "A rainy-day walk in the park, told scene by scene.",
+    "content": "🌧️ 今天下雨了。\n🌂 小明拿着雨伞。\n🌳 他去公园走路。\n🐦 树上有小鸟。\n🌸 雨里的花很美。\n😊 小明很开心。",
+    "english_content": "It is raining today.\nXiaoming is holding an umbrella.\nHe goes to walk in the park.\nThere are little birds in the tree.\nThe flowers in the rain are beautiful.\nXiaoming is very happy."
+  },
+  {
+    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
+    "presentation": "scene",
+    "title": "我的早上",
+    "english_summary": "One quiet morning, one scene at a time.",
+    "content": "☀️ 早上七点了。\n🛏️ 小明起床了。\n🪥 他刷牙洗脸。\n🍞 他吃面包喝牛奶。\n🎒 他拿书包上学。\n🚌 他坐公共汽车。",
+    "english_content": "It is seven in the morning.\nXiaoming gets out of bed.\nHe brushes his teeth and washes his face.\nHe eats bread and drinks milk.\nHe takes his backpack to school.\nHe rides the bus."
+  },
+  {
+    "language": "chinese", "system": "hsk_3", "level": 2, "tier": 1, "tier_min_words": 0,
+    "presentation": "scene",
+    "title": "在动物园",
+    "english_summary": "An afternoon at the zoo, animal by animal.",
+    "content": "🦁 这是一只狮子。\n🐼 那是一只熊猫。\n🐒 猴子在树上玩。\n🐘 大象很大很高。\n🍦 我们吃了冰淇淋。\n📸 妈妈拍了照片。",
+    "english_content": "This is a lion.\nThat is a panda.\nThe monkey is playing in the tree.\nThe elephant is very big and tall.\nWe ate ice cream.\nMom took a photo."
   }
 ]
