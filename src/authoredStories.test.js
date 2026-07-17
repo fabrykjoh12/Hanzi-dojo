@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { buildVocabMatcher, matchVocabAt, boundaryAfterSkip, splitSpeaker, matchName, JP_PARTICLES } from './storyReading'
+import { splitScene } from './sceneReading'
 import { glossaryLookup } from './grammarGlossary'
 import { CHARACTER_READINGS } from './characterNames'
 
@@ -105,8 +106,15 @@ describe('authored stories validate against the level vocabulary', () => {
 
       it('keeps lines readable (≤ 40 chars)', () => {
         for (const line of lines) {
-          expect(splitSpeaker(line).text.length, 'long line: ' + line).toBeLessThanOrEqual(40)
+          const body = s.presentation === 'scene' ? splitScene(line).text : line
+          expect(splitSpeaker(body).text.length, 'long line: ' + line).toBeLessThanOrEqual(40)
         }
+      })
+
+      it('scene stories carry a leading emoji on most lines', () => {
+        if (s.presentation !== 'scene') return
+        const withEmoji = lines.filter(l => splitScene(l).emoji).length
+        expect(withEmoji / lines.length, 'scene lines missing a leading emoji').toBeGreaterThanOrEqual(0.8)
       })
 
       const vocabMap = vocabMapFor(key)

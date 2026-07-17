@@ -71,6 +71,12 @@ const STORIES = [{
   title: '朋友的问题', is_published: true, presentation: 'chat', has_audio: false,
   image_path: null, english_content: 'Two friends chat.',
   content: ['小明：你今天好吗？', '朋友：我很好！', '小明：我们去公园。'].join('\n'),
+}, {
+  id: 'st3', language: 'chinese', system: 'hsk', level: 2, tier: 1, story_number: 3,
+  title: '下雨天', is_published: true, presentation: 'scene', has_audio: false,
+  image_path: null,
+  english_content: ['The weather is not good today.', 'There are flowers in the park.', 'Friends are very good.'].join('\n'),
+  content: ['🌧️ 今天天气不好。', '🌸 公园里有花。', '😊 朋友很好。'].join('\n'),
 }];
 
 function card(n, o = {}) {

@@ -2,6 +2,7 @@ import { useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import { languageTheme } from './languageTheme'
 import { getAudioUrl, playAudioEl } from './utils'
 import { calculateStoryReadability, buildVocabMatcher, segmentLine, namesFor, particlesFor, splitSpeaker } from './storyReading'
+import { splitScene, stripSceneEmoji } from './sceneReading'
 import { supabase } from './supabase'
 import { awardXp } from './xpService'
 import { isOnline } from './useOnline'
@@ -35,13 +36,16 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   const matcher = useMemo(() => buildVocabMatcher(vocabMap, track.language), [vocabMap, track.language])
   const names = useMemo(() => namesFor(track.language), [track.language])
   const particles = useMemo(() => particlesFor(track.language), [track.language])
+  const isScene = story.presentation === 'scene'
   const beats = useMemo(() => (story.content || '').split('\n').filter(Boolean).map(line => {
-    const { speaker, text } = splitSpeaker(line)
-    return { speaker, text, tokens: segmentLine(text, matcher, names, particles) }
-  }), [story.content, matcher, names, particles])
+    const { emoji, text: body } = isScene ? splitScene(line) : { emoji: '', text: line }
+    const { speaker, text } = splitSpeaker(body)
+    return { speaker, text, emoji, tokens: segmentLine(text, matcher, names, particles) }
+  }), [story.content, isScene, matcher, names, particles])
+  const readContent = useMemo(() => (isScene ? stripSceneEmoji(story.content) : story.content), [isScene, story.content])
   const readability = useMemo(
-    () => calculateStoryReadability({ content: story.content, vocabMap, cards: userCards, language: track.language }),
-    [story.content, vocabMap, userCards, track.language])
+    () => calculateStoryReadability({ content: readContent, vocabMap, cards: userCards, language: track.language }),
+    [readContent, vocabMap, userCards, track.language])
   const total = beats.length
   const ttsLang = track.language === 'japanese' ? 'ja-JP' : track.language === 'chinese' ? 'zh-CN' : 'ru-RU'
 

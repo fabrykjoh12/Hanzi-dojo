@@ -164,6 +164,9 @@ function StoryListCard({ story, read, accentHex, fontFamily, onClick }) {
           {story.presentation === 'chat' && (
             <span style={{ marginLeft: '7px', fontSize: '10.5px', fontWeight: 800, color: '#2E6FB8', background: '#2E6FB815', border: '1px solid #2E6FB833', borderRadius: '999px', padding: '2px 7px', whiteSpace: 'nowrap' }}>💬 Chat</span>
           )}
+          {story.presentation === 'scene' && (
+            <span style={{ marginLeft: '7px', fontSize: '10.5px', fontWeight: 800, color: '#7C5CD0', background: '#7C5CD015', border: '1px solid #7C5CD033', borderRadius: '999px', padding: '2px 7px', whiteSpace: 'nowrap' }}>🎬 Scene</span>
+          )}
           {read && (
             <span style={pillStyle('var(--success)', 'var(--success-bg)', 'var(--success-border)')}>
               Read

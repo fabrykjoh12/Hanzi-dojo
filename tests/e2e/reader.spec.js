@@ -83,4 +83,29 @@ test.describe('Story reader', () => {
     await page.getByText('小明', { exact: true }).first().click();
     await expect(page.getByText('You read it')).toBeVisible();
   });
+
+  test('scene reveal: shows an emoji scene, advances, looks up a word, and finishes', async ({ page }) => {
+    const reader = new ReaderPage(page);
+    await reader.openStoryByTitle('下雨天');
+
+    await page.getByRole('button', { name: /Start reading/i }).click();
+    await expect(page.getByText('1 / 3')).toBeVisible();
+    await expect(page.getByText('🌧️')).toBeVisible();                       // emoji illustration
+    await expect(page.getByText('今天', { exact: false }).first()).toBeVisible();
+
+    // Tap a vocab word → shared lookup sheet shows its meaning (word span stops
+    // propagation, so this does NOT advance the scene).
+    await page.getByText('今天', { exact: true }).first().click();
+    await expect(page.getByText('today')).toBeVisible();
+    await page.getByRole('button', { name: 'Close' }).click();
+    await expect(page.getByText('1 / 3')).toBeVisible();
+
+    // Advance to the end with the Next control → shared finish overlay.
+    await page.getByRole('button', { name: /Next scene/i }).click();
+    await expect(page.getByText('2 / 3')).toBeVisible();
+    await page.getByRole('button', { name: /Next scene/i }).click();
+    await expect(page.getByText('3 / 3')).toBeVisible();
+    await page.getByRole('button', { name: /Next scene/i }).click();
+    await expect(page.getByText('You read it')).toBeVisible();
+  });
 });
