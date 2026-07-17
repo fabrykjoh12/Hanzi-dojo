@@ -101,7 +101,7 @@ function shuffleStable(arr, seed) {
   const out = arr.slice()
   let s = (seed * 2654435761) >>> 0 || 1
   for (let i = out.length - 1; i > 0; i -= 1) {
-    s = (s * 1103515245 + 12345) >>> 0
+    s = (Math.imul(s, 1103515245) + 12345) >>> 0   // Math.imul: 32-bit multiply, no float precision loss
     const j = s % (i + 1)
     const tmp = out[i]; out[i] = out[j]; out[j] = tmp
   }
