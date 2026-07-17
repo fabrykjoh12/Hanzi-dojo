@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import StoryReaderImmersive from './StoryReaderImmersive'
+import PacedReader from './PacedReader'
 import { resolvePresentation } from './readerMode'
 import { prefsGet } from './offline'
 
 const PREFS_KEY = 'reader:prefs'
 
 // Chooses the presentation for a story and renders it. All modes receive the
-// same props; today classic + paced both render the classic reader, so this
-// task is a pure indirection with no visible change. PacedReader lands next.
+// same props; 'paced' renders the new beat-by-beat PacedReader, everything
+// else falls back to the classic scroll reader.
 export default function StoryReader(props) {
   const [modePref, setModePref] = useState('paced')
   useEffect(() => {
@@ -17,7 +18,6 @@ export default function StoryReader(props) {
   }, [])
 
   const mode = resolvePresentation(props.story, modePref)
-  // 'paced' will switch to <PacedReader> in the next task.
-  if (mode === 'classic' || mode === 'paced') return <StoryReaderImmersive {...props} />
+  if (mode === 'paced') return <PacedReader {...props} />
   return <StoryReaderImmersive {...props} />
 }
