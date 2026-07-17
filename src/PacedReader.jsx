@@ -7,12 +7,18 @@ import {
 } from './storyReading'
 import { supabase } from './supabase'
 import { awardXp } from './xpService'
+import { isOnline } from './useOnline'
 import { enqueueStoryRead } from './syncQueue'
 import { prefsGet, prefsSet } from './offline'
 import { cleanMeaning } from './cleanMeaning'
+import { track as trackEvent, trackOnce, EVENTS } from './analytics'
 import { ArrowLeft, Play, Pause, ChevronLeft, ChevronRight, X, Volume2, Bookmark, Check } from 'lucide-react'
 
 const SAGE = '#6E8466'
+
+// One-time XP for finishing a story — same amount and name as the classic
+// reader (StoryReaderImmersive), so reading pays the same reward everywhere.
+const STORY_FINISH_XP = 10
 
 // Distance-based emphasis for the focus flow: the active beat is lit; read
 // beats recede (dim, crisp); unread beats fade + blur by distance.
@@ -24,7 +30,7 @@ function beatStyle(distance, reduceMotion) {
   return { opacity, filter: blur ? `blur(${blur}px)` : 'none' }
 }
 
-export default function PacedReader({ story, vocabMap, userCards, setUserCards, track, isRead, onBack, session, profile, onMarkRead }) {
+export default function PacedReader({ story, vocabMap, userCards, setUserCards, track, isRead, onBack, session, profile, onMarkRead, firstMission = false }) {
   const theme = languageTheme(track.language)
   const accent = theme.accentHex
   const reduceMotion = typeof window !== 'undefined' && window.matchMedia
@@ -89,29 +95,49 @@ export default function PacedReader({ story, vocabMap, userCards, setUserCards, 
 
   // Finishing marks the story read (once) and pays the same small XP reward
   // the classic reader gives — reading is half the method, it should count.
-  const finish = useCallback(() => {
+  // Mirrors StoryReaderImmersive.finishStory exactly: online writes
+  // story_reads + XP immediately; offline queues both (enqueueStoryRead's
+  // xpDelta carries the XP through the outbox) so nothing is lost.
+  const finish = useCallback(async () => {
     stopPlay()
     setDone(true)
     if (finishedRef.current) return
     finishedRef.current = true
     if (!isRead) {
-      enqueueStoryRead({ userId: session.user.id, storyId: story.id })
-      if (profile) awardXp(session, profile, 10)
-      if (onMarkRead) onMarkRead(story.id)
+      if (isOnline()) {
+        const { error } = await supabase
+          .from('story_reads')
+          .upsert({ user_id: session.user.id, story_id: story.id })
+        if (!error) {
+          if (profile) awardXp(session, profile, STORY_FINISH_XP)
+          if (onMarkRead) onMarkRead(story.id)
+        }
+      } else {
+        // Offline: queue the read + its XP; both land when the outbox flushes.
+        await enqueueStoryRead({ userId: session.user.id, storyId: story.id, xpDelta: STORY_FINISH_XP })
+        if (onMarkRead) onMarkRead(story.id)
+      }
+      trackEvent(EVENTS.STORY_COMPLETED, { tier: story.tier, known_pct: readability.knownPct })
+      if (firstMission) trackOnce(EVENTS.FIRST_STORY_COMPLETED, { known_pct: readability.knownPct })
     }
-  }, [isRead, session, story.id, profile, onMarkRead, stopPlay])
+  }, [isRead, session, story.id, story.tier, profile, onMarkRead, stopPlay, firstMission, readability.knownPct])
 
   const advance = useCallback(() => { if (cur >= total - 1) finish(); else go(cur + 1) }, [cur, total, finish, go])
 
   useEffect(() => {
     if (!started) return undefined
     const onKey = (e) => {
+      // While the word-lookup sheet or the finish overlay is up, the beat
+      // navigation must not fire underneath it — except Escape, which closes
+      // the sheet (mirrors standard sheet/dialog dismissal).
+      if (selected && e.key === 'Escape') { setSelected(null); return }
+      if (selected || done) return
       if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); advance() }
       if (e.key === 'ArrowLeft') go(cur - 1)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [started, cur, go, advance])
+  }, [started, cur, go, advance, selected, done])
 
   const speakFrom = (index, runId) => {
     if (runId !== runRef.current) return
@@ -204,12 +230,12 @@ export default function PacedReader({ story, vocabMap, userCards, setUserCards, 
   return (
     <div style={{ ...pageShell, position: 'relative' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 16px 8px' }}>
-        <button onClick={() => setStarted(false)} aria-label="Back to start" style={ghost}><ArrowLeft size={18} color="var(--text-muted)" /></button>
+        <button onClick={() => { stopPlay(); setStarted(false) }} aria-label="Back to start" style={ghost}><ArrowLeft size={18} color="var(--text-muted)" /></button>
         <div style={{ flex: 1, textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>{cur + 1} / {total}</div>
         <div style={{ width: '34px' }} />
       </div>
       <div style={{ height: '4px', background: 'var(--border)', margin: '0 16px', borderRadius: '999px', overflow: 'hidden' }}>
-        <div style={{ height: '100%', background: accent, width: `${((cur + 1) / total) * 100}%`, transition: reduceMotion ? 'none' : 'width .4s ease' }} />
+        <div style={{ height: '100%', background: accent, width: `${((cur + 1) / (total || 1)) * 100}%`, transition: reduceMotion ? 'none' : 'width .4s ease' }} />
       </div>
 
       <div
