@@ -673,9 +673,9 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
           <ArrowLeft size={18} strokeWidth={2} color={MUTED} />
           {!isMobile && <span style={{ color: MUTED, fontSize: '14px', fontWeight: 600 }}>Library</span>}
         </button>
-        <div style={{ color: MUTED, fontSize: '13px', fontWeight: 600, textAlign: 'center', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {levelLabel} · <span style={{ color: 'var(--text-muted)' }}>{story.title}</span>
-        </div>
+        {/* Title/level live in the chapter header just below — keeping them out
+            of the top bar removes the duplicate labels and calms the masthead. */}
+        <div style={{ flex: 1 }} />
         <div ref={settingsAnchorRef} style={{ display: 'flex', gap: '6px', position: 'relative' }}>
           <TopToggle active={lens} onClick={() => setLens(v => !v)} icon={Eye} label="Lens" accent={accent} isMobile={isMobile} />
           <TopToggle active={settingsOpen} onClick={() => setSettingsOpen(v => !v)} icon={Sliders} label={isMobile ? '' : 'Reader'} accent={accent} isMobile={isMobile} aria-label="Reader settings" />
@@ -730,32 +730,34 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         </header>
 
         {totalUnique > 0 && (
-          <div style={{ marginBottom: '20px', background: PANEL, border: '1px solid var(--border)', borderRadius: '14px', padding: '12px 16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '9px', gap: '10px' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 700, color: TEXT }}>{knownPct}% known</span>
+          <div style={{ marginBottom: '26px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '9px', gap: '10px' }}>
+              <span style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: TEXT }}>{knownPct}% known</span>
                 {isRead && (
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 700, color: '#2F9E6D' }}>
-                    <Check size={13} strokeWidth={2.6} color="#2F9E6D" /> Finished
+                    <Check size={12} strokeWidth={2.6} color="#2F9E6D" /> Finished
                   </span>
                 )}
               </span>
               <span style={{ fontSize: '12px', color: MUTED }}>
-                {newCount} new · {learningCount} learning · {knownCount} known
+                {knownCount} known · {learningCount} learning · {newCount} new
               </span>
             </div>
-            <div style={{ display: 'flex', height: '7px', borderRadius: '999px', overflow: 'hidden', background: 'var(--border)' }}>
+            {/* Thin, borderless progress rail — the reading, not the metadata, is
+                the page. */}
+            <div style={{ display: 'flex', height: '5px', borderRadius: '999px', overflow: 'hidden', background: 'var(--border)' }}>
               <div style={{ width: Math.round((knownCount / totalUnique) * 100) + '%', background: '#2F9E6D' }} />
               <div style={{ width: Math.round((learningCount / totalUnique) * 100) + '%', background: '#CA8A04' }} />
               <div style={{ width: Math.round((newCount / totalUnique) * 100) + '%', background: accent + '55' }} />
             </div>
             {todayInStory.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 650, color: accent, marginTop: '10px', lineHeight: 1.5 }}>
-                <Sparkles size={14} strokeWidth={2} color={accent} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: MUTED, marginTop: '11px', lineHeight: 1.5 }}>
+                <Sparkles size={13} strokeWidth={2} color={accent} />
                 <span>
                   {firstMission
                     ? FIRST_MISSION_READER_HINT
-                    : <>{todayInStory.length} word{todayInStory.length === 1 ? '' : 's'} from today appear{todayInStory.length === 1 ? 's' : ''} here — read to reinforce {todayInStory.length === 1 ? 'it' : 'them'}.</>}
+                    : <>{todayInStory.length} word{todayInStory.length === 1 ? '' : 's'} from today appear{todayInStory.length === 1 ? 's' : ''} here — reading reinforces {todayInStory.length === 1 ? 'it' : 'them'}.</>}
                 </span>
               </div>
             )}
@@ -769,17 +771,15 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         )}
         {!seenFocusHint && parsed.length >= 2 && (
           <div style={{
-            display: 'flex', alignItems: 'center', gap: '10px',
-            background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '12px',
-            padding: '9px 10px 9px 14px', marginBottom: '18px',
+            display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '22px',
             animation: reduceMotion ? 'none' : 'hd-pop-in 200ms ease',
           }}>
-            <span style={{ flex: 1, fontSize: '12.5px', color: MUTED, lineHeight: 1.5 }}>
-              <strong style={{ color: TEXT, fontWeight: 650 }}>Tip:</strong> tap any line to focus it and dim the rest. Tap it again to release.
+            <span style={{ flex: 1, fontSize: '12px', color: MUTED, lineHeight: 1.5 }}>
+              Tip: tap any line to focus it and dim the rest.
             </span>
             <button onClick={dismissFocusHint} aria-label="Dismiss tip"
-              style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '8px', border: 'none', background: 'none', cursor: 'pointer' }}>
-              <X size={16} strokeWidth={2} color={MUTED} />
+              style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '7px', border: 'none', background: 'none', cursor: 'pointer' }}>
+              <X size={14} strokeWidth={2} color={MUTED} />
             </button>
           </div>
         )}
