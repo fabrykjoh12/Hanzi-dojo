@@ -2,9 +2,11 @@
 
 Read this entire file before making any change. It describes not just *what* the project is, but *why* it exists and *how* it should feel. When a decision isn't covered here, choose the option that best serves the vision and learning philosophy below.
 
-### Keep the roadmap current (every session)
+### Keep the roadmap current (every task — it is live in Discord)
 
-When you ship a meaningful, user-facing change, update **`ROADMAP.md`** in the same PR: move the finished item to **✅ Shipped** and add any newly planned work under **Now** / **Next**. This is not optional bookkeeping — a GitHub Action (`.github/workflows/discord-notify.yml`) posts every `ROADMAP.md` change to the community Discord's **#roadmap** channel (as a self-updating list) and every merge to `main` to **#announcements**. Keeping the roadmap honest is literally how the community sees progress. Write a descriptive PR title too: for squash-merged PRs the title becomes the text of the Discord update.
+Whenever we finish or start a meaningful piece of work, edit **`ROADMAP.md`** in the same change: move finished items to **✅ Shipped** and add newly started/planned work under **🚧 Now** / **🔜 Next**. Treat this as part of "done", not optional bookkeeping — the roadmap is the community's live view of progress.
+
+**It syncs to Discord instantly, no manual merge:** any change to `ROADMAP.md` (or the internal `docs/BACKLOG.md`) on a working branch is auto-copied to `main` by **`.github/workflows/roadmap-live-sync.yml`**, and that `main` push triggers **`.github/workflows/discord-notify.yml`**, which edits the pinned **#roadmap** (and **#backlog**) message in place. So you never wait for the feature PR to merge — edit the roadmap, push your branch, and it's live. (That sync only ever moves those two doc files to `main`, never code. A merge to `main` also posts the changelog to **#announcements**, so write descriptive commit/PR titles.)
 
 ---
 

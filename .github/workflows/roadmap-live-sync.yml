@@ -1,0 +1,61 @@
+name: Roadmap live sync
+
+# Keeps the community roadmap live in Discord with no manual merge step.
+#
+# When ROADMAP.md (or the internal docs/BACKLOG.md) changes on ANY branch other
+# than main, this copies JUST those doc files onto main and pushes. That push to
+# main triggers .github/workflows/discord-notify.yml, which edits the pinned
+# #roadmap / #backlog Discord message in place — so the community always sees the
+# current plan the moment we edit it, even while the code that delivers it is
+# still on a feature branch.
+#
+# Safety: only ROADMAP.md and docs/BACKLOG.md are ever written to main here —
+# never source. It cannot move feature work to main.
+
+on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - ROADMAP.md
+      - docs/BACKLOG.md
+
+permissions:
+  contents: write
+
+concurrency:
+  group: roadmap-live-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Sync roadmap/backlog docs onto main
+        env:
+          SRC_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$SRC_BRANCH"
+
+          changed=0
+          for f in ROADMAP.md docs/BACKLOG.md; do
+            if git cat-file -e "origin/$SRC_BRANCH:$f" 2>/dev/null; then
+              git checkout "origin/$SRC_BRANCH" -- "$f"
+              changed=1
+            fi
+          done
+
+          if [ "$changed" = "0" ]; then echo "No roadmap/backlog files present — nothing to sync"; exit 0; fi
+          if git diff --cached --quiet; then echo "Docs already match main — nothing to sync"; exit 0; fi
+
+          git commit -m "docs: sync roadmap/backlog to main for live Discord (from $SRC_BRANCH)"
+          git push origin HEAD:main
