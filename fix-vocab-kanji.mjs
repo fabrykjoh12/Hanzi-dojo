@@ -41,10 +41,11 @@ for (const c of corrections.apply) {
 for (const h of corrections.homophones) {
   resolvers.set(h.kana, (meaning) => {
     const m = (meaning || '').toLowerCase()
-    for (const rule of h.rules) {
-      if (rule.meaningIncludes.some(k => m.includes(k))) return rule.kanji
-    }
-    return null
+    // Resolve ONLY when exactly one reading's keywords match. A row whose
+    // meaning matches several readings (e.g. かぜ = "wind, cold" hits both 風 and
+    // 風邪) is genuinely ambiguous — skip it rather than guess a wrong kanji.
+    const matched = [...new Set(h.rules.filter(r => r.meaningIncludes.some(k => m.includes(k))).map(r => r.kanji))]
+    return matched.length === 1 ? matched[0] : null
   })
 }
 
