@@ -14,12 +14,12 @@ _Vedlikeholdes i Fabipilot. Jobb gjennom de åpne punktene under._
 
 ## Medium
 - [ ] add better story reader, maybe a better way to read.
-- [ ] and also figure out how new words and due words arrive, because 00:00 the new cards arrivve but the due cards do not
 
 ## Lav
 - [ ] rework the youtube tab, maybe come with some idea
 
 ## Ferdig
+- [x] figure out how new words and due words arrive (00:00 new cards arrived but due cards did not): reviews now use Anki-style day-based availability — every review scheduled for today is available from the local-midnight rollover, matching new cards, instead of trickling in at the exact clock time they were last reviewed (src/srs.js isCardDue + homeCounts/Study). Follow-up: send-review-reminders.mjs still counts due at exact-now if we want the push count to match.
 - [x] Fix this bug: You cant scroll down in the conversation after your reviews (chat overlay was 100vh/inset:0 = large viewport, so its bottom sat behind the mobile browser toolbar; now sized to 100dvh visible viewport — please confirm on your phone)
 - [x] Be more direct on what to do after your reviews (recap always ends with a direct "Recommended next" action — falls back to "Read a story" instead of a dead-end Back home)
 - [x] make it easier to join the discord, or easier to see the discord (persistent "Join our Discord" card on Home)

@@ -2,6 +2,7 @@ import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { countMastery } from './mastery'
 import { studyFloorLevel } from './levelScope'
+import { isCardDue, endOfLocalDay } from './srs'
 
 export async function getHomeCounts(userId, track, dailyNewCards) {
   // Cards scoped server-side to the ACTIVE language (every level): the level
@@ -39,9 +40,11 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   const now = new Date()
   const levelCards = (cards || []).filter(c => vocabIds.has(c.vocab_id))
   const learnCount = levelCards
-    .filter(c => (c.state === 'learning' || c.state === 'relearning') && new Date(c.due_at) <= now).length
+    .filter(c => (c.state === 'learning' || c.state === 'relearning') && isCardDue(c, now)).length
+  // Review cards are due for the whole day, so all of today's reviews are
+  // available from the 00:00 rollover (matching how new cards refresh).
   const dueCount = levelCards
-    .filter(c => c.state === 'review' && new Date(c.due_at) <= now).length
+    .filter(c => c.state === 'review' && isCardDue(c, now)).length
   const easyCount = levelCards.filter(c => c.is_easy).length
   const totalWords = vocabIds.size
 
@@ -49,15 +52,17 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   // measured against their daily_new_cards goal.
   const newDoneToday = introducedToday
 
-  // Review forecast: reviews that become due between now and the end of tomorrow
-  // (drives the "waiting tomorrow" nudge). Learning/relearning cards are stored
-  // with due_at = now, so this is dominated by scheduled review cards.
+  // Review forecast: reviews that become due AFTER today and by end of tomorrow
+  // (drives the "waiting tomorrow" nudge). Reviews due today are already counted
+  // in dueCount above, so the lower bound is the end of today — not `now` — to
+  // avoid double-counting today's not-yet-cleared reviews as "tomorrow".
+  const eod = endOfLocalDay(now)
   const endOfTomorrow = new Date(); endOfTomorrow.setHours(23, 59, 59, 999)
   endOfTomorrow.setDate(endOfTomorrow.getDate() + 1)
   const dueTomorrow = levelCards.filter(c => {
     if (c.state !== 'review') return false
     const d = new Date(c.due_at)
-    return d > now && d <= endOfTomorrow
+    return d > eod && d <= endOfTomorrow
   }).length
 
   // Weak words: cards the user has lapsed on at least twice and that aren't yet
