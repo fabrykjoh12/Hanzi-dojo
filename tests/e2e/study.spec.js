@@ -38,6 +38,9 @@ test.describe('Study session (flashcards)', () => {
 
     await expect(recap).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(/Recommended next/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /Read a story/i })).toBeVisible();
+    // A direct next step is always a "Read …" action — the generic "Read a
+    // story" fallback when nothing is unlocked, or a specific 'Read "<title>"
+    // now' once a story is available (e.g. once the e2e mock seeds one).
+    await expect(page.getByRole('button', { name: /^Read/i }).first()).toBeVisible();
   });
 });
