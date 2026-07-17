@@ -23,4 +23,10 @@ describe('buildReplyOptions', () => {
     expect(options).toEqual([{ text: '好', pinyin: 'Hǎo', correct: true }])
     expect(correctIndex).toBe(0)
   })
+  it('spreads the correct answer across positions over sequential seeds', () => {
+    const d = [{ text: 'b', pinyin: '' }, { text: 'c', pinyin: '' }, { text: 'd', pinyin: '' }]
+    const indices = Array.from({ length: 80 }, (_, seed) => buildReplyOptions('a', '', d, seed).correctIndex)
+    // a 4-option set should place the correct answer in at least 3 of the 4 slots
+    expect(new Set(indices).size).toBeGreaterThanOrEqual(3)
+  })
 })
