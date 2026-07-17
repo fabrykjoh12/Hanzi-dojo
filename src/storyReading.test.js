@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, readingVisibleFor, isDueSoon, kanjiStem, buildVocabMatcher, matchVocabAt } from './storyReading'
+import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, readingVisibleFor, isDueSoon, kanjiStem, buildVocabMatcher, matchVocabAt, segmentLine, namesFor, particlesFor } from './storyReading'
 
 // ── wordStatus ──────────────────────────────────────────────────────────────
 describe('wordStatus', () => {
@@ -501,5 +501,36 @@ describe('isDueSoon', () => {
     const inTwoHours = '2026-07-13T14:00:00Z'
     expect(isDueSoon(inTwoHours, now, 60 * 60 * 1000)).toBe(false)      // 1h window
     expect(isDueSoon(inTwoHours, now, 3 * 60 * 60 * 1000)).toBe(true)   // 3h window
+  })
+})
+
+const segVocabMap = {
+  '今天': { id: 'v1', word: '今天', reading: 'jīntiān', meaning: 'today' },
+  '天气': { id: 'v2', word: '天气', reading: 'tiānqì', meaning: 'weather' },
+  '很': { id: 'v3', word: '很', reading: 'hěn', meaning: 'very' },
+  '好': { id: 'v4', word: '好', reading: 'hǎo', meaning: 'good' },
+}
+
+describe('segmentLine', () => {
+  const matcher = buildVocabMatcher(segVocabMap, 'chinese')
+  const names = namesFor('chinese')
+  const particles = particlesFor('chinese')
+
+  it('splits a line into vocab tokens and non-vocab runs, in order', () => {
+    const toks = segmentLine('今天天气很好。', matcher, names, particles)
+    expect(toks.map(t => t.text)).toEqual(['今天', '天气', '很', '好', '。'])
+    expect(toks.map(t => (t.vocab ? t.vocab.id : null))).toEqual(['v1', 'v2', 'v3', 'v4', null])
+  })
+
+  it('groups consecutive unknown characters into a single text run', () => {
+    const toks = segmentLine('ABC很', matcher, names, particles)
+    expect(toks[0]).toEqual({ text: 'ABC', vocab: null })
+    expect(toks[1].vocab.id).toBe('v3')
+  })
+
+  it('reconstructs the original text exactly', () => {
+    const line = '今天天气很好。'
+    const toks = segmentLine(line, matcher, names, particles)
+    expect(toks.map(t => t.text).join('')).toBe(line)
   })
 })
