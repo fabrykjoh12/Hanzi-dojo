@@ -130,7 +130,7 @@
       "distractors": {
         "1": [{ "text": "我没有空。", "pinyin": "Wǒ méiyǒu kòng." }],
         "3": [{ "text": "我不喜欢电影。", "pinyin": "Wǒ bù xǐhuan diànyǐng." }],
-        "5": [{ "text": "再见！", "pinyin": "Zàijiàn!" }]
+        "5": [{ "text": "我不想去了。", "pinyin": "Wǒ bù xiǎng qù le." }]
       }
     }
   }
