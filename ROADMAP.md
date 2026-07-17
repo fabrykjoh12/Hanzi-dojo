@@ -30,6 +30,8 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] **Graded YouTube** — turn any video into a lesson matched to your vocabulary: see "% you'll understand," tap words in a transcript synced to playback, pre-learn the key new words, then watch. (Not just recommended videos — the video version of graded stories.)
 - [ ] Known-Word Map & Reading Ladder — visualize what you can read as your vocabulary grows
 - [ ] Personalized stories built from the exact words in your deck
+- [ ] **Chat-format stories** — read a story as a messaging conversation that unfolds one bubble at a time
+- [ ] **Interactive chat stories** — reply inside a chat story by choosing the right response to keep the conversation going (builds on chat-format stories + Word-to-World missions)
 - [ ] Word-to-World chat missions expanded across levels
 
 **Your words & tools**
