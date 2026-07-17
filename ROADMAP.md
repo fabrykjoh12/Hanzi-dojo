@@ -6,7 +6,7 @@ so the community always sees the latest. Keep it current — move things to
 **Shipped** as they land.
 
 ## 🚧 Now — in progress
-- [ ] **More story formats** — chat-style conversations and illustrated scenes, building on the new Paced Reveal reader (new stories authored for each).
+- [ ] **Illustrated scene stories** — a picture-led story format, building on the new Paced Reveal + chat readers (new stories authored for each).
 - [ ] **More accurate Chinese pronunciation** — pinyin-guided audio so tricky multi-reading characters (长, 行, 银行 …) are spoken correctly.
 - [ ] "How much can you read?" — a 60-second public assessment with a shareable result (builds on public story links)
 
@@ -30,7 +30,6 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] **Graded YouTube** — turn any video into a lesson matched to your vocabulary: see "% you'll understand," tap words in a transcript synced to playback, pre-learn the key new words, then watch. (Not just recommended videos — the video version of graded stories.)
 - [ ] Known-Word Map & Reading Ladder — visualize what you can read as your vocabulary grows
 - [ ] Personalized stories built from the exact words in your deck
-- [ ] **Chat-format stories** — read a story as a messaging conversation that unfolds one bubble at a time
 - [ ] **Interactive chat stories** — reply inside a chat story by choosing the right response to keep the conversation going (builds on chat-format stories + Word-to-World missions)
 - [ ] Word-to-World chat missions expanded across levels
 
@@ -59,6 +58,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] `ChatMission` overlay: `role="dialog"` + focus trap (the mobile "More" sheet is done)
 
 ## ✅ Shipped
+- [x] **Chat-format stories** — read a story as a messaging conversation that reveals one bubble at a time (tap to continue), with the same read-along audio and tap-a-word lookup as every story
 - [x] **A calmer, guided story reader** — stories now play one line at a time ("Paced Reveal") with a one-tap start and read-along audio, so a page of text never feels like a wall (classic scroll still available)
 - [x] Reviews now arrive together at the start of your day (matching new cards), instead of trickling in at odd times
 - [x] A clear "what to do next" after every review session — always a direct next step, never a dead end

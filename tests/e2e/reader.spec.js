@@ -54,7 +54,7 @@ test.describe('Story reader', () => {
     await expect(page.getByText('You read it')).toBeVisible();
   });
 
-  test('chat reveal: opens a chat story and reveals bubbles on tap', async ({ page }) => {
+  test('chat reveal: reveals bubbles on tap, looks up a word, and finishes', async ({ page }) => {
     const reader = new ReaderPage(page);
     await reader.openStoryByTitle('朋友的问题');
 
@@ -62,10 +62,25 @@ test.describe('Story reader', () => {
     await expect(page.getByText('1/3')).toBeVisible();
     await expect(page.getByText('你今天好吗', { exact: false }).first()).toBeVisible();
     await expect(page.getByText(/Tap anywhere to continue/i)).toBeVisible();
+
+    // Tap a vocab word in the first bubble → shared lookup sheet shows its
+    // meaning. The word span stops propagation, so this does NOT advance.
+    await page.getByText('今天', { exact: true }).first().click();
+    await expect(page.getByText('today')).toBeVisible();
+    await page.getByRole('button', { name: 'Close' }).click();
+    await expect(page.getByText('1/3')).toBeVisible();             // still on the first bubble
+
     // Tap the thread (the speaker label is plain text, not a vocab span, so the
     // click bubbles to the thread's reveal-next-bubble handler) to advance.
     await page.getByText('小明', { exact: true }).first().click();
     await expect(page.getByText('2/3')).toBeVisible();
     await expect(page.getByText('我很好', { exact: false }).first()).toBeVisible();
+
+    // Advance to the last bubble, then one more tap → shared finish overlay.
+    await page.getByText('小明', { exact: true }).first().click();
+    await expect(page.getByText('3/3')).toBeVisible();
+    await expect(page.getByText('我们去公园', { exact: false }).first()).toBeVisible();
+    await page.getByText('小明', { exact: true }).first().click();
+    await expect(page.getByText('You read it')).toBeVisible();
   });
 });

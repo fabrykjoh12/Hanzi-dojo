@@ -29,7 +29,12 @@ export default function ReaderLaunch({ story, isRead, levelLabel, accent, theme,
           <div style={{ width: pct(newCount, totalUnique), background: accent + '55' }} />
         </div>
         <button onClick={onStart} style={startBtn}><Play size={18} color="#fff" /> Start reading</button>
-        <button onClick={readClassic} style={classicLink}>Prefer the whole page? <u>Read as classic scroll</u></button>
+        {/* Classic continuous scroll is only an alternative for paced stories;
+            fixed formats (chat, scene) ignore the pref, so don't offer a link
+            that would silently do nothing. */}
+        {(!story.presentation || story.presentation === 'paced') && (
+          <button onClick={readClassic} style={classicLink}>Prefer the whole page? <u>Read as classic scroll</u></button>
+        )}
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect, useState } from 'react'
+import { useMemo, useRef, useEffect, useLayoutEffect, useState } from 'react'
 import { getLevelLabel } from './utils'
 import { wordStatus } from './storyReading'
 import { chatStyleFor } from './chatMissions'
@@ -28,15 +28,21 @@ export default function ChatReader(props) {
   // Auto-scroll to the newest revealed bubble.
   useEffect(() => { if (endRef.current) endRef.current.scrollIntoView({ behavior: c.reduceMotion ? 'auto' : 'smooth', block: 'end' }) }, [c.cur, typing, c.reduceMotion])
 
-  // Brief "typing…" shimmer before a *character* bubble reveals (not during Play,
-  // not under reduced-motion). Purely cosmetic; the beat is already advanced.
-  useEffect(() => {
-    if (!c.started || c.playing || c.reduceMotion) return undefined
+  // Hold a *character* bubble back behind a brief "typing…" shimmer (~500ms) so
+  // it reveals *after* the indicator, not below an already-shown bubble. Skipped
+  // for the very first beat, narration lines, during Play, and under
+  // reduced-motion, where the bubble reveals immediately. useLayoutEffect (not
+  // useEffect) so the withheld bubble never flashes visible for a frame before
+  // the shimmer hides it; the reset keeps a fast tap-through from stranding the
+  // indicator on a beat that shouldn't type.
+  useLayoutEffect(() => {
     const b = c.beats[c.cur]
-    if (!b || !b.speaker || c.cur === 0) return undefined
-    // Intentional: the shimmer is purely cosmetic and must reset synchronously
-    // whenever the current beat changes, before the 500ms timeout clears it.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    const shouldType = c.started && !c.playing && !c.reduceMotion && !!b && !!b.speaker && c.cur > 0
+    if (!shouldType) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTyping(false)
+      return undefined
+    }
     setTyping(true)
     const t = setTimeout(() => setTyping(false), 500)
     return () => clearTimeout(t)
@@ -46,7 +52,9 @@ export default function ChatReader(props) {
     return <ReaderLaunch story={story} isRead={isRead} levelLabel={levelLabel} accent={accent} theme={c.theme} readability={c.readability} onStart={c.start} onBack={onBack} />
   }
 
-  const revealed = c.beats.slice(0, c.cur + 1)
+  // While the shimmer is up, the pending character bubble stays withheld.
+  const pending = c.beats[c.cur]
+  const revealed = c.beats.slice(0, typing ? c.cur : c.cur + 1)
 
   return (
     <div style={{ minHeight: '100vh', background: skin.bg, color: '#111', display: 'flex', flexDirection: 'column', position: 'relative' }}>
@@ -83,11 +91,19 @@ export default function ChatReader(props) {
               </div>
             )
           })}
-          {typing && <div style={{ alignSelf: 'flex-start', background: skin.theirBubble, borderRadius: '16px', padding: '10px 14px', fontSize: '14px', color: '#888' }}>typing…</div>}
+          {typing && pending && (() => {
+            const meta = sides[pending.speaker] || { side: 'left', color: accent }
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: meta.side === 'right' ? 'flex-end' : 'flex-start' }}>
+                <div style={{ fontSize: '11.5px', fontWeight: 700, color: meta.color, margin: '0 8px 3px', fontFamily: c.theme.font }}>{pending.speaker}</div>
+                <div style={{ background: meta.side === 'right' ? skin.myBubble : skin.theirBubble, color: meta.side === 'right' ? skin.myText : '#888', borderRadius: '16px', padding: '10px 14px', fontSize: '14px', boxShadow: '0 1px 2px rgba(0,0,0,0.07)' }}>typing…</div>
+              </div>
+            )
+          })()}
           <div ref={endRef} />
         </div>
       </div>
-      <div aria-live="polite" style={srOnly}>{c.beats[c.cur] ? c.beats[c.cur].text : ''}</div>
+      <div aria-live="polite" style={srOnly}>{revealed.length ? revealed[revealed.length - 1].text : ''}</div>
 
       <div style={{ flexShrink: 0, borderTop: '1px solid rgba(0,0,0,0.08)', background: skin.bg, padding: '12px 18px calc(14px + env(safe-area-inset-bottom))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
         <button onClick={c.togglePlay} aria-label={c.playing ? 'Pause' : 'Play'} style={{ width: '48px', height: '48px', borderRadius: '50%', border: 'none', background: accent, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{c.playing ? <Pause size={20} color="#fff" /> : <Play size={20} color="#fff" />}</button>
