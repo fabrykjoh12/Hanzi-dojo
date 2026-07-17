@@ -11,7 +11,7 @@ on:
         description: What to run
         type: choice
         default: story-images-apply
-        options: [story-images-apply, publish-held, fix-collisions]
+        options: [story-images-apply, publish-held, fix-collisions, fix-vocab-kanji, fix-vocab-kanji-apply]
       language:
         description: "publish-held only: language of the level to publish"
         type: string
@@ -63,4 +63,10 @@ jobs:
           fi
           if [ "${{ inputs.task }}" = "fix-collisions" ]; then
             node publish-stories.mjs --language "${{ inputs.language }}" --system "${{ inputs.system }}" --level "${{ inputs.level }}" --fix-collisions --apply
+          fi
+          if [ "${{ inputs.task }}" = "fix-vocab-kanji" ]; then
+            node fix-vocab-kanji.mjs
+          fi
+          if [ "${{ inputs.task }}" = "fix-vocab-kanji-apply" ]; then
+            node fix-vocab-kanji.mjs --apply
           fi
