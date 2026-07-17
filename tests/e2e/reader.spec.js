@@ -1,0 +1,56 @@
+import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
+import { ReaderPage } from '../pages/ReaderPage.js';
+
+test.describe('Story reader', () => {
+  test('opens a story from the library', async ({ page }) => {
+    const reader = new ReaderPage(page);
+    await reader.openFirstStory();
+    // The story title appears in the reader.
+    await expect(page.getByText('公园里的下午').first()).toBeVisible();
+  });
+
+  test('paced reveal: starts on one tap and advances beat by beat', async ({ page }) => {
+    const reader = new ReaderPage(page);
+    await reader.openFirstStory();
+
+    // Launch screen.
+    const start = page.getByRole('button', { name: /Start reading/i });
+    await expect(start).toBeVisible();
+    await start.click();
+
+    // First beat + progress counter.
+    await expect(page.getByText('1 / 3')).toBeVisible();
+    await expect(page.getByText('今天', { exact: false }).first()).toBeVisible();
+
+    // Advance with the Next control.
+    await page.getByRole('button', { name: /Next line/i }).click();
+    await expect(page.getByText('2 / 3')).toBeVisible();
+  });
+
+  test('paced reveal: play control toggles', async ({ page }) => {
+    const reader = new ReaderPage(page);
+    await reader.openFirstStory();
+    await page.getByRole('button', { name: /Start reading/i }).click();
+    await page.getByRole('button', { name: /^Play$/i }).click();
+    await expect(page.getByRole('button', { name: /^Pause$/i })).toBeVisible();
+    await page.getByRole('button', { name: /^Pause$/i }).click();
+    await expect(page.getByRole('button', { name: /^Play$/i })).toBeVisible();
+  });
+
+  test('paced reveal: tap a word to look it up, then finish', async ({ page }) => {
+    const reader = new ReaderPage(page);
+    await reader.openFirstStory();
+    await page.getByRole('button', { name: /Start reading/i }).click();
+
+    // Tap a known vocab word on the first beat.
+    await page.getByText('今天', { exact: true }).first().click();
+    await expect(page.getByText('today')).toBeVisible();           // meaning in the sheet
+    await page.getByRole('button', { name: 'Close' }).click();     // dismiss sheet
+
+    // Advance to the end → finish overlay.
+    await page.getByRole('button', { name: /Next line/i }).click();
+    await page.getByRole('button', { name: /Next line/i }).click();
+    await page.getByRole('button', { name: /Next line/i }).click();
+    await expect(page.getByText('You read it')).toBeVisible();
+  });
+});

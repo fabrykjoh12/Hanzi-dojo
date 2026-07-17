@@ -90,8 +90,8 @@ export function matchName(text, i, vocabMap, names) {
 }
 
 // The names/particles a language uses — the same derivation the reader makes.
-function namesFor(language) { return CHARACTER_READINGS[language] || {} }
-function particlesFor(language) { return language === 'japanese' ? JP_PARTICLES : NO_PARTICLES }
+export function namesFor(language) { return CHARACTER_READINGS[language] || {} }
+export function particlesFor(language) { return language === 'japanese' ? JP_PARTICLES : NO_PARTICLES }
 
 // ── Japanese deinflection-lite matching ──────────────────────────────────────
 // Japanese story text uses conjugated surface forms (書いて, 見せました) and
@@ -506,6 +506,29 @@ function scanLineVocab(text, matcher, names, particles, out) {
     boundary = boundaryAfterSkip(text[i], particles)
     i += 1
   }
+}
+
+// Segment one (speaker-stripped) line into renderable tokens: each vocab match
+// is its own tappable token; consecutive non-vocab characters are grouped into
+// a single plain-text run. Mirrors scanLineVocab's matching exactly, but keeps
+// the text so the reader can render it. Pure — unit-tested.
+export function segmentLine(text, matcher, names = {}, particles = NO_PARTICLES) {
+  const tokens = []
+  let run = ''
+  const flush = () => { if (run) { tokens.push({ text: run, vocab: null }); run = '' } }
+  let i = 0
+  let boundary = true
+  while (i < text.length) {
+    const name = matchName(text, i, matcher.words, names)
+    if (name) { flush(); tokens.push({ text: name, vocab: null }); i += name.length; boundary = true; continue }
+    const m = matchVocabAt(text, i, matcher, particles, boundary)
+    if (m) { flush(); tokens.push({ text: text.slice(i, i + m.len), vocab: m.vocab }); i += m.len; boundary = true; continue }
+    run += text[i]
+    boundary = boundaryAfterSkip(text[i], particles)
+    i += 1
+  }
+  flush()
+  return tokens
 }
 
 // The distinct story words the learner studied today: the intersection of the

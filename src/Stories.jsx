@@ -6,7 +6,7 @@ import { languageTheme } from './languageTheme'
 import { CATEGORIES_BY_LANGUAGE, nextLockedTier } from './storyTiers'
 import { isLearned } from './mastery'
 import { useIsMobile } from './useIsMobile'
-import StoryReaderImmersive from './StoryReaderImmersive'
+import StoryReader from './StoryReader'
 import {
   ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Circle, Library, Lock,
 } from 'lucide-react'
@@ -388,7 +388,7 @@ export default function Stories({ session, profile, track, onBack, initialStoryI
     const nextTierUnlock = nextStory ? null : nextLockedTier(CATEGORIES, learnedCount, tiersWithStories)
 
     return (
-      <StoryReaderImmersive
+      <StoryReader
         story={selectedStory}
         vocabMap={vocabMap}
         userCards={userCards}
