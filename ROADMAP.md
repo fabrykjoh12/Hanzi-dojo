@@ -6,6 +6,8 @@ so the community always sees the latest. Keep it current — move things to
 **Shipped** as they land.
 
 ## 🚧 Now — in progress
+- [ ] **A calmer, guided story reader** — read a story one line at a time ("Paced Reveal") so it never feels like a wall of text, with a big one-tap start and read-along audio. More story formats — chat conversations and illustrated scenes — to follow.
+- [ ] **More accurate Chinese pronunciation** — pinyin-guided audio so tricky multi-reading characters (长, 行, 银行 …) are spoken correctly.
 - [ ] "How much can you read?" — a 60-second public assessment with a shareable result (builds on public story links)
 
 ## 🔜 Next — planned
@@ -48,12 +50,16 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] Data-cache correctness — normalize the column-keyed cache in `data.js` and invalidate/patch on writes
 - [ ] Centralize direct `supabase.from(...)` calls (esp. in `Study`) into a thin per-table data layer
 - [ ] Server-authoritative progression — move level-unlock / test-pass / XP writes into a validating RPC
+- [ ] Split the story reader into a shared "story engine" + swappable presentation modes (unlocks Paced Reveal now, chat & scene formats later)
 
 **Accessibility (WCAG 2.2 AA)**
 - [ ] Flashcard reveal surface as a fully focusable control (answer `aria-live` announcements have shipped)
 - [ ] `ChatMission` overlay: `role="dialog"` + focus trap (the mobile "More" sheet is done)
 
 ## ✅ Shipped
+- [x] Reviews now arrive together at the start of your day (matching new cards), instead of trickling in at odd times
+- [x] A clear "what to do next" after every review session — always a direct next step, never a dead end
+- [x] Cleaner, calmer story-reading screen — less clutter above the story so you get to reading faster
 - [x] Reader comfort — optional serif "book" font for stories, and a one-time tip teaching tap-to-focus a line
 - [x] Graded mini-stories with live "% known"
 - [x] Offline-first PWA with a durable sync outbox
