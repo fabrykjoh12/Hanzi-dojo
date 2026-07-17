@@ -53,4 +53,19 @@ test.describe('Story reader', () => {
     await page.getByRole('button', { name: /Next line/i }).click();
     await expect(page.getByText('You read it')).toBeVisible();
   });
+
+  test('chat reveal: opens a chat story and reveals bubbles on tap', async ({ page }) => {
+    const reader = new ReaderPage(page);
+    await reader.openStoryByTitle('朋友的问题');
+
+    await page.getByRole('button', { name: /Start reading/i }).click();
+    await expect(page.getByText('1/3')).toBeVisible();
+    await expect(page.getByText('你今天好吗', { exact: false }).first()).toBeVisible();
+    await expect(page.getByText(/Tap anywhere to continue/i)).toBeVisible();
+    // Tap the thread (the speaker label is plain text, not a vocab span, so the
+    // click bubbles to the thread's reveal-next-bubble handler) to advance.
+    await page.getByText('小明', { exact: true }).first().click();
+    await expect(page.getByText('2/3')).toBeVisible();
+    await expect(page.getByText('我很好', { exact: false }).first()).toBeVisible();
+  });
 });

@@ -59,12 +59,18 @@ const VOCAB = [
   { id: 'v7', word: '花', reading: 'huā', meaning: 'flower', level: 2, system: 'hsk', language: 'chinese', is_active: true },
 ];
 
-// One published, Paced-Reveal story. Its lines reuse the vocab above.
+// One published, Paced-Reveal story, and one published Chat-format story.
+// Both share tier 1 so they land in the same "First Steps" story list.
 const STORIES = [{
   id: 'st1', language: 'chinese', system: 'hsk', level: 2, tier: 1, story_number: 1,
   title: '公园里的下午', is_published: true, presentation: 'paced', has_audio: false,
   image_path: null, english_content: 'An afternoon at the park.',
   content: ['今天天气很好。', '小明：我们去公园吧！', '朋友：你看，花很好！'].join('\n'),
+}, {
+  id: 'st2', language: 'chinese', system: 'hsk', level: 2, tier: 1, story_number: 2,
+  title: '朋友的问题', is_published: true, presentation: 'chat', has_audio: false,
+  image_path: null, english_content: 'Two friends chat.',
+  content: ['小明：你今天好吗？', '朋友：我很好！', '小明：我们去公园。'].join('\n'),
 }];
 
 function card(n, o = {}) {
