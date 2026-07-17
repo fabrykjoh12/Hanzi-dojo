@@ -29,7 +29,6 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] **Graded YouTube** — turn any video into a lesson matched to your vocabulary: see "% you'll understand," tap words in a transcript synced to playback, pre-learn the key new words, then watch. (Not just recommended videos — the video version of graded stories.)
 - [ ] Known-Word Map & Reading Ladder — visualize what you can read as your vocabulary grows
 - [ ] Personalized stories built from the exact words in your deck
-- [ ] **Interactive chat stories** — reply inside a chat story by choosing the right response to keep the conversation going (builds on chat-format stories + Word-to-World missions)
 - [ ] Word-to-World chat missions expanded across levels
 
 **Your words & tools**
@@ -57,6 +56,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] `ChatMission` overlay: `role="dialog"` + focus trap (the mobile "More" sheet is done)
 
 ## ✅ Shipped
+- [x] **Interactive chat stories** — reply inside a chat story by picking the right response (retry until it clicks); your choice becomes your message and the conversation keeps going
 - [x] **Scene stories** — read a story as a picture-book: each beat is a big emoji illustration above one short line, revealed a tap at a time (with the same read-along audio and tap-a-word lookup as every story)
 - [x] **Chat-format stories** — read a story as a messaging conversation that reveals one bubble at a time (tap to continue), with the same read-along audio and tap-a-word lookup as every story
 - [x] **A calmer, guided story reader** — stories now play one line at a time ("Paced Reveal") with a one-tap start and read-along audio, so a page of text never feels like a wall (classic scroll still available)
