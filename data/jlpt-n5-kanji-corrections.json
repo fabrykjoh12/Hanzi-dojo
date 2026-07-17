@@ -110,5 +110,12 @@
   "keepKana": [
     "だれ", "めがね", "わかります", "おいしい", "えんぴつ", "かばん",
     "おじいさん", "おばあさん", "そば", "おととい", "うち", "もの", "ごはん"
+  ],
+  "byId": [
+    { "id": "3bc2840c-03f8-4712-8b4f-b18c435ede7b", "kana": "かぜ", "kanji": "風", "meaning": "wind", "_ex": "かぜが強いです" },
+    { "id": "47fea17f-9aca-469e-891c-e97ac927c934", "kana": "かぜ", "kanji": "風邪", "meaning": "a cold (illness)", "_ex": "かぜをひきました" },
+    { "id": "6267a243-01a2-4b88-b2ba-0d24bdf9f8c4", "kana": "はし", "kanji": "箸", "meaning": "chopsticks", "_ex": "はしで食べます" },
+    { "id": "b60c8579-b660-402e-ae12-be055e31f4e0", "kana": "はやい", "kanji": "早い", "meaning": "early", "_ex": "父は来るのがはやい" },
+    { "id": "4be4d864-3ba0-4476-96c4-f2f262aa128c", "kana": "はやい", "kanji": "速い", "meaning": "fast, quick", "_ex": "電車ははやいです" }
   ]
 }

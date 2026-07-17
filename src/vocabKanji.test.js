@@ -16,8 +16,10 @@ const words = new Set(snapshot.map(([w]) => w))
 function hasKanji(s) { return /[㐀-鿿]/.test(s || '') }
 
 describe('N5 vocabulary uses kanji where a kanji form was corrected', () => {
-  it('no unambiguous corrected word remains stored in kana', () => {
-    const regressed = corrections.apply.filter(c => words.has(c.kana)).map(c => `${c.kana}→${c.kanji}`)
+  it('no corrected word remains stored in kana', () => {
+    // apply = unambiguous; byId = homophones resolved per-row by example context.
+    const correctedKana = [...corrections.apply, ...(corrections.byId || [])]
+    const regressed = correctedKana.filter(c => words.has(c.kana)).map(c => `${c.kana}→${c.kanji}`)
     expect(regressed, 'kana forms that should now be kanji: ' + regressed.join(', ')).toEqual([])
   })
 

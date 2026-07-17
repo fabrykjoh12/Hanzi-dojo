@@ -49,6 +49,11 @@ for (const h of corrections.homophones) {
   })
 }
 
+// Explicit per-row overrides (id → {kanji, meaning}) for rows the meaning-based
+// resolver can't safely disambiguate (homophones with conflated meanings),
+// decided from each row's example-sentence context.
+const byId = new Map((corrections.byId || []).map(e => [e.id, e]))
+
 function hasKanji(s) { return /[㐀-鿿]/.test(s || '') }
 
 async function main() {
@@ -67,13 +72,15 @@ async function main() {
   const updates = []
   for (const row of rows) {
     if (hasKanji(row.word)) { continue } // already corrected — idempotent
-    const kanji = resolvers.get(row.word)(row.meaning)
+    const override = byId.get(row.id)
+    const kanji = override ? override.kanji : resolvers.get(row.word)(row.meaning)
     if (!kanji) {
       skipped += 1
       console.log(`  SKIP  ${row.word} [id=${row.id}] — meaning "${row.meaning}" · example: ${row.example_sentence || '(none)'}`)
       continue
     }
     const patch = { word: kanji }
+    if (override && override.meaning) patch.meaning = override.meaning
     let sentenceNote = ''
     if (row.example_sentence && row.example_sentence.includes(row.word)) {
       patch.example_sentence = row.example_sentence.split(row.word).join(kanji)
