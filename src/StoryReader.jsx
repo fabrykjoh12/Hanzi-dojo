@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import StoryReaderImmersive from './StoryReaderImmersive'
 import PacedReader from './PacedReader'
 import ChatReader from './ChatReader'
+import SceneReader from './SceneReader'
 import { resolvePresentation } from './readerMode'
 import { prefsGet } from './offline'
 
@@ -19,6 +20,7 @@ export default function StoryReader(props) {
   }, [])
 
   const mode = resolvePresentation(props.story, modePref)
+  if (mode === 'scene') return <SceneReader {...props} />
   if (mode === 'chat') return <ChatReader {...props} />
   if (mode === 'paced') return <PacedReader {...props} />
   return <StoryReaderImmersive {...props} />
