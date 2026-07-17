@@ -98,6 +98,7 @@ async function insertStories(file) {
         language: s.language, system: s.system, level: s.level,
         tier: s.tier ?? 1, tier_min_words: s.tier_min_words ?? 0,
         presentation: s.presentation || 'paced',
+        interactions: s.interactions || null,
         story_number,
         title: s.title,
         english_summary: s.english_summary ?? null,

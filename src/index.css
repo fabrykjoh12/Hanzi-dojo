@@ -107,6 +107,9 @@ body {
   100% { transform: scale(1); opacity: 1; }
 }
 
+/* Interactive chat: a wrong reply pick gets a small horizontal shake. */
+@keyframes hdShake { 10%,90%{transform:translateX(-1px)} 30%,70%{transform:translateX(2px)} 50%{transform:translateX(-2px)} }
+
 @media (prefers-reduced-motion: reduce) {
   @keyframes hd-flip-in { from { opacity: 0.4; } to { opacity: 1; } }
   @keyframes hd-toast-in { from { opacity: 0; } to { opacity: 1; } }

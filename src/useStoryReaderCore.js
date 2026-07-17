@@ -32,6 +32,7 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   const finishedRef = useRef(false)
   const runRef = useRef(0)
   const audioElRef = useRef(null)
+  const advanceBlockedRef = useRef(false)
 
   const matcher = useMemo(() => buildVocabMatcher(vocabMap, track.language), [vocabMap, track.language])
   const names = useMemo(() => namesFor(track.language), [track.language])
@@ -125,12 +126,14 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   const start = () => { setCur(0); setStarted(true) }
   const backToStart = () => { stopPlay(); setStarted(false) }
 
+  const setAdvanceBlocked = useCallback((v) => { advanceBlockedRef.current = !!v }, [])
+
   useEffect(() => {
     if (!started) return undefined
     const onKey = (e) => {
       if (selected && e.key === 'Escape') { setSelected(null); return }
       if (selected || done) return
-      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); advance() }
+      if (e.key === 'ArrowRight' || e.key === ' ') { if (advanceBlockedRef.current) return; e.preventDefault(); advance() }
       if (e.key === 'ArrowLeft') go(cur - 1)
     }
     window.addEventListener('keydown', onKey)
@@ -144,6 +147,6 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     started, cur, done, playing, selected, showPy, showEn,
     setShowPy, setShowEn, setSelected,
     go, advance, finish, stopPlay, togglePlay, speakWord, selectWord, addToDeck,
-    start, backToStart,
+    start, backToStart, setAdvanceBlocked,
   }
 }
