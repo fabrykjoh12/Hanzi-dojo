@@ -19,4 +19,13 @@ export class ReaderPage {
     // Story list: click the seeded story's card by its title.
     await this.page.getByRole('button', { name: '公园里的下午' }).click();
   }
+
+  // Opens a story by its title into the reader: category grid → story list →
+  // reader. Mirrors openFirstStory's category-walk, but targets any title so
+  // tests can open a specific tier-1 story (e.g. a chat-format story).
+  async openStoryByTitle(title) {
+    await this.gotoStories();
+    await this.page.getByRole('button', { name: /First Steps/ }).click();
+    await this.page.getByRole('button', { name: title }).click();
+  }
 }

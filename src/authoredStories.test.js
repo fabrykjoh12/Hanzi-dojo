@@ -24,8 +24,14 @@ function vocabMapFor(key) {
   return map
 }
 
-// Character bible plus the chorus label みんな ("everyone") for group lines.
-const KNOWN_SPEAKERS = new Set(['たかし', 'はな', 'おかあさん', 'おじいさん', 'せんせい', 'みせのひと', 'みんな'])
+// Character bibles for the recurring authored serials, keyed by language. The
+// known-speaker check is a typo guard for a *fixed* cast (the Japanese serial's
+// characters plus the chorus label みんな, "everyone", for group lines). Lanes
+// with an open-ended cast — e.g. the chat-story library — have no bible and are
+// exempt from the check.
+const KNOWN_SPEAKERS = {
+  japanese: new Set(['たかし', 'はな', 'おかあさん', 'おじいさん', 'せんせい', 'みせのひと', 'みんな']),
+}
 
 function hasKanjiOrKatakana(s) {
   for (let i = 0; i < s.length; i += 1) {
@@ -80,14 +86,20 @@ describe('authored stories validate against the level vocabulary', () => {
       const lines = s.content.split('\n').filter(Boolean)
       const english = (s.english_content || '').split('\n').filter(Boolean)
 
-      it('has line-parallel English', () => {
+      it('English translation, when present, is line-parallel', () => {
+        // Chat-format stories are summary-only (the chat reader has no in-reader
+        // English toggle), so they carry no english_content — exempt them, but
+        // any story that *does* translate must stay line-for-line parallel.
+        if (!s.english_content) return
         expect(english.length).toBe(lines.length)
       })
 
       it('uses only known speakers', () => {
+        const bible = KNOWN_SPEAKERS[s.language]
+        if (!bible) return   // no fixed cast for this language's lane
         for (const line of lines) {
           const { speaker } = splitSpeaker(line)
-          if (speaker) expect(KNOWN_SPEAKERS.has(speaker), 'unknown speaker: ' + speaker).toBe(true)
+          if (speaker) expect(bible.has(speaker), 'unknown speaker: ' + speaker).toBe(true)
         }
       })
 

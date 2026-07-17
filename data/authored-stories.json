@@ -58,5 +58,26 @@
     "content": "お母さんは 家に 入りました。\nみんな：たんじょうび、おめでとうございます！\nおかあさん：えっ！？\nお母さんは つくえを 見ました。\n花、おかし、え、手紙…\nそれから、あの 古い しゃしん。\nおかあさん：この しゃしん…！\nおじいさん：あの こうえんですよ。\nおかあさん：私の こうえん…\nたかし：雨ですから、こうえんは ここです。\nたかし：小さい こうえんです。\nお母さんは 手紙を 読みました。\n「お母さん、いつも ありがとうございます。」\n「お母さんの 子どもで、私は たのしいです。」\nお母さんの 目に、雨が ありました。\nおかあさん：…これは 雨では ありませんよ。\nみんなは 「はは！」と 言いました。\nそれから、みんなで おかしを 食べました。\n外は 雨でした。\nでも、家の 中は はれでした。\nおかあさん：一ばん いい たんじょうびです。\n小さい お金の、大きい たんじょうびでした。",
     "english_content": "Mother came into the house.\nEveryone: Happy birthday!\nMother: What!?\nMother looked at the table.\nFlowers, sweets, a drawing, a letter…\nAnd that old photograph.\nMother: This photo…!\nOld man: That park, you know.\nMother: My park…\nTakashi: Because of the rain, the park is here.\nTakashi: It's a small park.\nMother read the letter.\n\"Mom, thank you for everything, always.\"\n\"Being your child makes me happy.\"\nIn Mother's eyes, there was rain.\nMother: …This is not rain, you know.\nEveryone said \"Haha!\"\nThen everyone ate the sweets together.\nOutside it was raining.\nBut inside the house, it was sunny.\nMother: This is the best birthday.\nA little money — a big birthday.",
     "is_published": true
+  },
+  {
+    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
+    "presentation": "chat",
+    "title": "放学以后",
+    "english_summary": "Two classmates make an after-school plan over text.",
+    "content": "小明：你好！你现在忙吗？\n朋友：不忙，怎么了？\n小明：放学以后，我们一起去公园吧。\n朋友：好啊！我也想去。\n小明：我们几点去？\n朋友：四点，好吗？\n小明：好，四点在学校门口见。\n朋友：没问题，一会儿见！"
+  },
+  {
+    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
+    "presentation": "chat",
+    "title": "今天吃什么",
+    "english_summary": "A quick chat about what to eat for dinner.",
+    "content": "妈妈：你今天想吃什么？\n小明：我想吃面条。\n妈妈：家里没有面条了。\n小明：那我们吃米饭和鸡蛋，好吗？\n妈妈：好。你饿了吗？\n小明：有一点饿。\n妈妈：那我现在做饭。\n小明：谢谢妈妈！"
+  },
+  {
+    "language": "chinese", "system": "hsk_3", "level": 2, "tier": 1, "tier_min_words": 0,
+    "presentation": "chat",
+    "title": "周末做什么",
+    "english_summary": "Two friends compare weekend plans.",
+    "content": "朋友：这个周末你有空吗？\n小明：有空。你想做什么？\n朋友：我想去看电影。\n小明：好主意！看什么电影？\n朋友：一个新的中国电影，听说很好看。\n小明：几点的？\n朋友：星期六下午三点。\n小明：太好了，我们一起去！"
   }
 ]
