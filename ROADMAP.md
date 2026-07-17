@@ -6,7 +6,6 @@ so the community always sees the latest. Keep it current — move things to
 **Shipped** as they land.
 
 ## 🚧 Now — in progress
-- [ ] **Illustrated scene stories** — a picture-led story format, building on the new Paced Reveal + chat readers (new stories authored for each).
 - [ ] **More accurate Chinese pronunciation** — pinyin-guided audio so tricky multi-reading characters (长, 行, 银行 …) are spoken correctly.
 - [ ] "How much can you read?" — a 60-second public assessment with a shareable result (builds on public story links)
 
@@ -58,6 +57,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] `ChatMission` overlay: `role="dialog"` + focus trap (the mobile "More" sheet is done)
 
 ## ✅ Shipped
+- [x] **Scene stories** — read a story as a picture-book: each beat is a big emoji illustration above one short line, revealed a tap at a time (with the same read-along audio and tap-a-word lookup as every story)
 - [x] **Chat-format stories** — read a story as a messaging conversation that reveals one bubble at a time (tap to continue), with the same read-along audio and tap-a-word lookup as every story
 - [x] **A calmer, guided story reader** — stories now play one line at a time ("Paced Reveal") with a one-tap start and read-along audio, so a page of text never feels like a wall (classic scroll still available)
 - [x] Reviews now arrive together at the start of your day (matching new cards), instead of trickling in at odd times
