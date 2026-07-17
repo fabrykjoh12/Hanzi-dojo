@@ -131,7 +131,7 @@ test.describe('Story reader', () => {
     await expect(page.getByText('Your reply — tap the right one')).toBeVisible();
     // Wrong pick → hint shows, does NOT advance past the gate.
     await page.getByRole('button', { name: /我不是学生/ }).click();
-    await expect(page.getByText(/Not quite/)).toBeVisible();
+    await expect(page.getByText('Not quite — try another reply.', { exact: true })).toBeVisible();
     await expect(page.getByText('Your reply — tap the right one')).toBeVisible();
     // Correct pick → becomes the "you" bubble, chat continues.
     await page.getByRole('button', { name: /我很好/ }).click();

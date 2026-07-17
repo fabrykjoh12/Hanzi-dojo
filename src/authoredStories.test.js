@@ -122,6 +122,7 @@ describe('authored stories validate against the level vocabulary', () => {
         const you = s.interactions.you
         expect(typeof you, 'interactions.you must be a speaker name').toBe('string')
         for (const idx of Object.keys(s.interactions.distractors || {})) {
+          expect(Number(idx), 'distractor beat ' + idx + ' cannot be beat 0 (never gates)').toBeGreaterThanOrEqual(1)
           const line = lines[Number(idx)]
           expect(line, 'distractor beat ' + idx + ' out of range').toBeTruthy()
           expect(splitSpeaker(line).speaker, 'distractor beat ' + idx + ' is not spoken by ' + you).toBe(you)

@@ -25,7 +25,7 @@ export default function InteractiveChatReader(props) {
   const levelLabel = getLevelLabel(track.language, track.system, story.level)
   const interactions = story.interactions || {}
   const youSpeaker = interactions.you
-  const distractors = interactions.distractors || {}
+  const distractors = useMemo(() => (story.interactions && story.interactions.distractors) || {}, [story.interactions])
 
   // Fixed sides: the learner ("you") is on the right; everyone else on the left,
   // each other speaker keeping a stable color.
@@ -50,7 +50,8 @@ export default function InteractiveChatReader(props) {
   const gateBeat = c.beats[gateIndex]
   const isGate = !!gateBeat && gateBeat.speaker === youSpeaker && !!distractors[gateIndex] && !answered[gateIndex]
 
-  useEffect(() => { c.setAdvanceBlocked(isGate); return () => c.setAdvanceBlocked(false) }, [isGate, c])
+  const { setAdvanceBlocked } = c
+  useEffect(() => { setAdvanceBlocked(isGate); return () => setAdvanceBlocked(false) }, [isGate, setAdvanceBlocked])
 
   const options = useMemo(() => (
     isGate ? buildReplyOptions(gateBeat.text, pinyinOf(gateBeat), distractors[gateIndex], gateIndex).options : []
@@ -87,7 +88,7 @@ export default function InteractiveChatReader(props) {
       <div onClick={advance} style={{ flex: 1, overflowY: 'auto', padding: '10px 14px 20px', cursor: isGate ? 'default' : 'pointer', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <ChatThread revealed={revealed} sides={sides} skin={skin} theme={c.theme} accent={accent} userCards={userCards} showPy={c.showPy} activeIndex={c.cur} typingBeat={null} reduceMotion={c.reduceMotion} onSelectWord={c.selectWord} />
       </div>
-      <div aria-live="polite" style={srOnly}>{isGate ? 'Your turn to reply' : (revealed.length ? revealed[revealed.length - 1].text : '')}</div>
+      <div aria-live="polite" style={srOnly}>{isGate ? (wrongPick ? 'Not quite — try another reply' : 'Your turn to reply') : (revealed.length ? revealed[revealed.length - 1].text : '')}</div>
 
       <div style={{ flexShrink: 0, borderTop: '1px solid rgba(0,0,0,0.08)', background: skin.bg, padding: '12px 16px calc(14px + env(safe-area-inset-bottom))' }}>
         {isGate ? (
