@@ -3,13 +3,16 @@ import { languageTheme } from './languageTheme'
 import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
 import {
   calculateStoryReadability, buildVocabMatcher, segmentLine,
-  namesFor, particlesFor, splitSpeaker,
+  namesFor, particlesFor, splitSpeaker, wordStatus,
 } from './storyReading'
-import { ArrowLeft, Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react'
+import { supabase } from './supabase'
+import { awardXp } from './xpService'
+import { enqueueStoryRead } from './syncQueue'
+import { prefsGet, prefsSet } from './offline'
+import { cleanMeaning } from './cleanMeaning'
+import { ArrowLeft, Play, Pause, ChevronLeft, ChevronRight, X, Volume2, Bookmark, Check } from 'lucide-react'
 
 const SAGE = '#6E8466'
-// eslint-disable-next-line no-unused-vars -- used by the hover state added in Task 8's polish.
-const SAGE_DARK = '#5C7155'
 
 // Distance-based emphasis for the focus flow: the active beat is lit; read
 // beats recede (dim, crisp); unread beats fade + blur by distance.
@@ -21,7 +24,7 @@ function beatStyle(distance, reduceMotion) {
   return { opacity, filter: blur ? `blur(${blur}px)` : 'none' }
 }
 
-export default function PacedReader({ story, vocabMap, userCards, track, isRead, onBack }) {
+export default function PacedReader({ story, vocabMap, userCards, setUserCards, track, isRead, onBack, session, profile, onMarkRead }) {
   const theme = languageTheme(track.language)
   const accent = theme.accentHex
   const reduceMotion = typeof window !== 'undefined' && window.matchMedia
@@ -32,6 +35,9 @@ export default function PacedReader({ story, vocabMap, userCards, track, isRead,
   const [showPy, setShowPy] = useState(true)
   const [showEn, setShowEn] = useState(false)
   const [playing, setPlaying] = useState(false)
+  const [selected, setSelected] = useState(null) // { word, vocab, status }
+  const [done, setDone] = useState(false)
+  const finishedRef = useRef(false)
 
   const stageRef = useRef(null)
   const trackRef = useRef(null)
@@ -72,16 +78,6 @@ export default function PacedReader({ story, vocabMap, userCards, track, isRead,
 
   const go = useCallback((i) => setCur(c => Math.max(0, Math.min(total - 1, i ?? c))), [total])
 
-  useEffect(() => {
-    if (!started) return undefined
-    const onKey = (e) => {
-      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(cur + 1) }
-      if (e.key === 'ArrowLeft') go(cur - 1)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [started, cur, go])
-
   const ttsLang = track.language === 'japanese' ? 'ja-JP' : track.language === 'chinese' ? 'zh-CN' : 'ru-RU'
 
   const stopPlay = useCallback(() => {
@@ -91,23 +87,49 @@ export default function PacedReader({ story, vocabMap, userCards, track, isRead,
     if (audioElRef.current) audioElRef.current.pause()
   }, [])
 
+  // Finishing marks the story read (once) and pays the same small XP reward
+  // the classic reader gives — reading is half the method, it should count.
+  const finish = useCallback(() => {
+    stopPlay()
+    setDone(true)
+    if (finishedRef.current) return
+    finishedRef.current = true
+    if (!isRead) {
+      enqueueStoryRead({ userId: session.user.id, storyId: story.id })
+      if (profile) awardXp(session, profile, 10)
+      if (onMarkRead) onMarkRead(story.id)
+    }
+  }, [isRead, session, story.id, profile, onMarkRead, stopPlay])
+
+  const advance = useCallback(() => { if (cur >= total - 1) finish(); else go(cur + 1) }, [cur, total, finish, go])
+
+  useEffect(() => {
+    if (!started) return undefined
+    const onKey = (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); advance() }
+      if (e.key === 'ArrowLeft') go(cur - 1)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [started, cur, go, advance])
+
   const speakFrom = (index, runId) => {
     if (runId !== runRef.current) return
-    if (index >= beats.length) { setPlaying(false); return }
+    if (index >= beats.length) { finish(); return }
     setCur(index)
-    const advance = () => { if (runId === runRef.current) speakFrom(index + 1, runId) }
+    const nextBeat = () => { if (runId === runRef.current) speakFrom(index + 1, runId) }
     const viaSynth = () => {
       try {
         const u = new SpeechSynthesisUtterance(beats[index].text)
         u.lang = ttsLang; u.rate = 0.9
-        u.onend = advance
+        u.onend = nextBeat
         window.speechSynthesis.speak(u)
       } catch { setPlaying(false) }
     }
     if (story.has_audio) {
       if (!audioElRef.current) audioElRef.current = new Audio()
       const el = audioElRef.current
-      el.onended = advance
+      el.onended = nextBeat
       playAudioEl(el, getAudioUrl('stories/' + story.id + '/' + index + '.mp3'), viaSynth)
     } else viaSynth()
   }
@@ -119,8 +141,30 @@ export default function PacedReader({ story, vocabMap, userCards, track, isRead,
     speakFrom(cur >= beats.length - 1 ? 0 : cur, runRef.current)
   }
 
+  // Pronounce a single looked-up word via speech synthesis (the lookup sheet
+  // has no per-word recorded audio, unlike the classic reader).
+  const speakWord = (text) => {
+    if (!text) return
+    try {
+      const u = new SpeechSynthesisUtterance(text)
+      u.lang = ttsLang; u.rate = 0.85
+      window.speechSynthesis.speak(u)
+    } catch { /* noop */ }
+  }
+
   // Stop audio when leaving the reading view / unmounting.
   useEffect(() => () => { stopPlay() }, [stopPlay])
+
+  // Add-to-deck from the word lookup sheet — mirrors the classic reader /
+  // ChatMission insert so a tapped word studies the same way everywhere.
+  const addToDeck = async (vocab) => {
+    if (!vocab || !vocab.id || (userCards && userCards[vocab.id])) return
+    const { error } = await supabase.from('cards').insert({
+      user_id: session.user.id, vocab_id: vocab.id,
+      state: 'new', ease_factor: 2.5, learning_step: 0, due_at: new Date().toISOString(),
+    })
+    if (!error && setUserCards) setUserCards(prev => ({ ...prev, [vocab.id]: { vocab_id: vocab.id, state: 'new' } }))
+  }
 
   const pageShell = { minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', display: 'flex', flexDirection: 'column' }
 
@@ -147,7 +191,10 @@ export default function PacedReader({ story, vocabMap, userCards, track, isRead,
           <button onClick={() => { setCur(0); setStarted(true) }} style={startBtn}>
             <Play size={18} color="#fff" /> Start reading
           </button>
-          <button onClick={onBack} style={classicLink}>Prefer the whole page? <u>Read as classic scroll</u></button>
+          {/* Persisted so the dispatcher (StoryReader.jsx) renders classic next
+              time too. A toggle to flip back lives in the classic reader's
+              settings panel — flipping it here is a follow-up. */}
+          <button onClick={async () => { const p = (await prefsGet('reader:prefs')) || {}; await prefsSet('reader:prefs', { ...p, mode: 'classic' }); onBack() }} style={classicLink}>Prefer the whole page? <u>Read as classic scroll</u></button>
         </div>
       </div>
     )
@@ -155,7 +202,7 @@ export default function PacedReader({ story, vocabMap, userCards, track, isRead,
 
   // ── Reading stage ──
   return (
-    <div style={pageShell}>
+    <div style={{ ...pageShell, position: 'relative' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 16px 8px' }}>
         <button onClick={() => setStarted(false)} aria-label="Back to start" style={ghost}><ArrowLeft size={18} color="var(--text-muted)" /></button>
         <div style={{ flex: 1, textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>{cur + 1} / {total}</div>
@@ -167,7 +214,7 @@ export default function PacedReader({ story, vocabMap, userCards, track, isRead,
 
       <div
         ref={stageRef}
-        onClick={() => { stopPlay(); go(cur + 1) }}
+        onClick={() => { stopPlay(); advance() }}
         style={{
           flex: 1, position: 'relative', overflow: 'hidden', cursor: 'pointer',
           WebkitMaskImage: 'linear-gradient(180deg,transparent,#000 16%,#000 82%,transparent)',
@@ -184,9 +231,20 @@ export default function PacedReader({ story, vocabMap, userCards, track, isRead,
                 {b.speaker && <div style={{ fontSize: '12.5px', fontWeight: 800, color: accent, marginBottom: '9px' }}>{b.speaker}</div>}
                 {showPy && i === cur && <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: 1.5 }}>{pinyinLine(b.tokens)}</div>}
                 <div style={{ fontFamily: theme.font, fontSize: '30px', lineHeight: 1.62, fontWeight: 500 }}>
-                  {b.tokens.map((t, k) => t.vocab
-                    ? <span key={k} style={{ borderRadius: '4px', padding: '0 1px', background: i === cur ? accent + '14' : 'transparent' }}>{t.text}</span>
-                    : <span key={k}>{t.text}</span>)}
+                  {b.tokens.map((t, k) => {
+                    if (!t.vocab) return <span key={k}>{t.text}</span>
+                    const status = wordStatus(t.vocab.id, userCards)
+                    const decorate = i === cur
+                    return (
+                      <span key={k}
+                        onClick={i === cur ? (e) => { e.stopPropagation(); stopPlay(); setSelected({ word: t.vocab.word, vocab: t.vocab, status }) } : undefined}
+                        style={{
+                          cursor: i === cur ? 'pointer' : 'inherit', borderRadius: '4px', padding: '0 1px',
+                          background: decorate && status === 'not_started' ? accent + '1f' : (decorate && status === 'learning' ? '#CA8A0422' : 'transparent'),
+                          boxShadow: decorate && status === 'not_started' ? 'inset 0 -2px 0 ' + accent + '66' : 'none',
+                        }}>{t.text}</span>
+                    )
+                  })}
                 </div>
                 {showEn && i === cur && story.english_content && <div style={{ fontSize: '14px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '12px' }}>{story.english_content}</div>}
               </div>
@@ -204,9 +262,44 @@ export default function PacedReader({ story, vocabMap, userCards, track, isRead,
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
           <button onClick={() => { stopPlay(); go(cur - 1) }} disabled={cur === 0} aria-label="Previous line" style={navBtn}><ChevronLeft size={18} /></button>
           <button onClick={togglePlay} aria-label={playing ? 'Pause' : 'Play'} style={{ ...navBtn, width: '52px', height: '52px', background: accent, border: 'none', color: '#fff' }}>{playing ? <Pause size={20} color="#fff" /> : <Play size={20} color="#fff" />}</button>
-          <button onClick={() => { stopPlay(); go(cur + 1) }} aria-label="Next line" style={navBtn}><ChevronRight size={18} /></button>
+          <button onClick={() => { stopPlay(); advance() }} aria-label="Next line" style={navBtn}><ChevronRight size={18} /></button>
         </div>
       </div>
+
+      {selected && (
+        <div onClick={() => setSelected(null)} className="app-overlay-viewport" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 70, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.14)' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '560px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px 20px 0 0', padding: '16px 18px 26px', boxShadow: '0 -10px 40px rgba(0,0,0,0.18)' }}>
+            <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: 'var(--border)', margin: '0 auto 14px' }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '28px', fontWeight: 800, color: accent, fontFamily: theme.font }}>{selected.word}</span>
+                <span style={{ fontSize: '16px', color: '#B45309', fontWeight: 600 }}>{selected.vocab.reading}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
+                <button onClick={() => addToDeck(selected.vocab)} aria-label="Add to deck" style={ghost}>
+                  <Bookmark size={20} color={userCards[selected.vocab.id] ? accent : 'var(--text-muted)'} fill={userCards[selected.vocab.id] ? accent : 'none'} />
+                </button>
+                <button onClick={() => speakWord(selected.word)} aria-label="Play audio" style={ghost}>
+                  <Volume2 size={20} color="var(--text-muted)" />
+                </button>
+                <button onClick={() => setSelected(null)} aria-label="Close" style={ghost}>
+                  <X size={20} color="var(--text-muted)" />
+                </button>
+              </div>
+            </div>
+            <div style={{ fontSize: '15px', color: 'var(--text-muted)', marginTop: '8px', lineHeight: 1.5 }}>{cleanMeaning(selected.vocab.meaning)}</div>
+          </div>
+        </div>
+      )}
+
+      {done && (
+        <div style={{ position: 'absolute', inset: 0, background: 'var(--surface)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '34px', gap: '8px', zIndex: 6 }}>
+          <div style={{ width: '58px', height: '58px', borderRadius: '18px', background: accent + '18', color: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '6px' }}><Check size={28} color={accent} /></div>
+          <h2 style={{ fontSize: '22px', fontWeight: 800 }}>You read it</h2>
+          <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', maxWidth: '260px', lineHeight: 1.6 }}>Nice — you read all of &ldquo;{story.title}&rdquo;.</p>
+          <button onClick={onBack} style={{ ...startBtn, width: 'auto', padding: '12px 22px', marginTop: '14px' }}>Back to library</button>
+        </div>
+      )}
     </div>
   )
 }

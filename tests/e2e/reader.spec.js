@@ -36,4 +36,21 @@ test.describe('Story reader', () => {
     await page.getByRole('button', { name: /^Pause$/i }).click();
     await expect(page.getByRole('button', { name: /^Play$/i })).toBeVisible();
   });
+
+  test('paced reveal: tap a word to look it up, then finish', async ({ page }) => {
+    const reader = new ReaderPage(page);
+    await reader.openFirstStory();
+    await page.getByRole('button', { name: /Start reading/i }).click();
+
+    // Tap a known vocab word on the first beat.
+    await page.getByText('今天', { exact: true }).first().click();
+    await expect(page.getByText('today')).toBeVisible();           // meaning in the sheet
+    await page.getByRole('button', { name: 'Close' }).click();     // dismiss sheet
+
+    // Advance to the end → finish overlay.
+    await page.getByRole('button', { name: /Next line/i }).click();
+    await page.getByRole('button', { name: /Next line/i }).click();
+    await page.getByRole('button', { name: /Next line/i }).click();
+    await expect(page.getByText('You read it')).toBeVisible();
+  });
 });
