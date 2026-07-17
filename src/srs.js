@@ -27,6 +27,30 @@ const TEXT_TO_STATE = {
   relearning: State.Relearning,
 }
 
+// ── Due-window helpers ──────────────────────────────────────────────────────
+// Anki-style day-based availability. A review card comes due on a whole DAY, so
+// every review scheduled for today should be available from the local midnight
+// rollover — the same moment the daily new-card allotment refreshes. Previously
+// reviews used an exact `due_at <= now` comparison, so they trickled in through
+// the day at whatever clock time they were last reviewed and none "arrived" at
+// 00:00 like new cards did. Learning/relearning steps are intraday (minutes /
+// hours, and are stored with due_at = now) so they keep the exact comparison.
+export function endOfLocalDay(now = new Date()) {
+  const d = new Date(now)
+  d.setHours(23, 59, 59, 999)
+  return d
+}
+
+// Is this card due to study right now?
+//   review              → due at any point today (due_at <= end of local day)
+//   learning/relearning → due_at <= now (intraday step)
+export function isCardDue(card, now = new Date()) {
+  const due = new Date(card.due_at)
+  if (card.state === 'review') return due <= endOfLocalDay(now)
+  if (card.state === 'learning' || card.state === 'relearning') return due <= now
+  return false
+}
+
 // Build an FSRS card object from a DB card row.
 // New cards (id=null or state='new') start as empty cards.
 // The existing `learning_step` column is repurposed to store FSRS's `learning_steps`

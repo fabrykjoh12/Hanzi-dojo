@@ -12,6 +12,17 @@
   box-sizing: border-box;
 }
 
+/* Full-screen overlays that own their own scroll (e.g. the Chat Mission runner)
+   must match the VISIBLE viewport. Plain 100vh / `inset: 0` resolves to the
+   LARGE viewport on mobile, so the bottom — the action bar and the last chat
+   messages — ends up behind the browser's address/toolbar and can't be
+   scrolled into view. `dvh` tracks the dynamic (currently visible) viewport;
+   the 100vh line above it is the fallback for browsers without dvh. */
+.app-overlay-viewport {
+  height: 100vh;
+  height: 100dvh;
+}
+
 body {
   font-family: 'Inter', sans-serif;
   background: var(--bg);

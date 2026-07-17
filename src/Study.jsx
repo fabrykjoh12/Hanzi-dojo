@@ -5,7 +5,7 @@ import { enqueueGrade } from './syncQueue'
 import { cacheSet, cacheGet, outboxDelete } from './offline'
 import { getTrackCards } from './data'
 import { studyFloorLevel } from './levelScope'
-import { schedule, previewLabels } from './srs'
+import { schedule, previewLabels, isCardDue, endOfLocalDay } from './srs'
 import { xpForGrade, levelInfo } from './xp'
 import { computeAward } from './xpService'
 import { updateStreak, todayStr, liveStreak } from './streak'
@@ -324,9 +324,12 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     }
 
     const dueLearning = levelCards
-      .filter(c => (c.state === 'learning' || c.state === 'relearning') && new Date(c.due_at) <= now)
+      .filter(c => (c.state === 'learning' || c.state === 'relearning') && isCardDue(c, now))
+    // Day-based: every review scheduled for today is served from the 00:00
+    // rollover, so a morning session isn't missing reviews that were last done
+    // in the afternoon (matches how the new-card allotment refreshes at midnight).
     const dueReview = levelCards
-      .filter(c => c.state === 'review' && new Date(c.due_at) <= now)
+      .filter(c => c.state === 'review' && isCardDue(c, now))
 
     // First-run detection: a brand-new learner (no cards ANYWHERE on the
     // account) gets a gentle, capped first session. The account-wide count is
@@ -447,12 +450,18 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
     const vocabIds = new Set((vocab || []).map(v => v.id))
     const started = new Set((cards || []).map(c => c.vocab_id))
+    // Reviews due AFTER today and by end of tomorrow — today's reviews are part
+    // of the session just finished, so the forecast counts only what's genuinely
+    // waiting for tomorrow.
+    const eod = endOfLocalDay()
     const endOfTomorrow = new Date(); endOfTomorrow.setHours(23, 59, 59, 999)
     endOfTomorrow.setDate(endOfTomorrow.getDate() + 1)
 
-    const reviews = (cards || []).filter(c =>
-      vocabIds.has(c.vocab_id) && c.state === 'review' && new Date(c.due_at) <= endOfTomorrow
-    ).length
+    const reviews = (cards || []).filter(c => {
+      if (!vocabIds.has(c.vocab_id) || c.state !== 'review') return false
+      const d = new Date(c.due_at)
+      return d > eod && d <= endOfTomorrow
+    }).length
     const unstarted = (vocab || []).filter(v => !started.has(v.id)).length
     const newAvail = Math.min(profile.daily_new_cards, unstarted)
     setForecast({ reviews, newAvail })

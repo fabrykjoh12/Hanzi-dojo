@@ -6,19 +6,23 @@ _Vedlikeholdes i Fabipilot. Jobb gjennom de åpne punktene under._
 
 ## Høy prioritet
 - [ ] Change the tts because now its not saying correct in the chinese version atleast
-- [ ] make it easier to join the discord, or easier to see the discord
+  - Code fix DONE (pinyin SSML phoneme pinning — src/pinyin.js + generate-audio.mjs).
+    Audio still needs REGENERATING with the real keys to take effect:
+    1. Supabase → Storage → audio bucket → delete chinese/hsk_3/level_<n>/ folder
+    2. node --env-file=.env.script generate-audio.mjs --language chinese --system hsk_3 --level <n>
+    3. Spot-check polyphones: 长, 行, 重, 觉, 银行. Repeat per level.
 
 ## Medium
-- [ ] Be more direct on what do to after your reviews
-- [ ] Fix this bug: You cant scroll down in the conversation after your reviews
-Expected: To be able to scroll down
 - [ ] add better story reader, maybe a better way to read.
-- [ ] and also figure out how new words and due words arrive, because 00:00 the new cards arrivve but the due cards do not
 
 ## Lav
 - [ ] rework the youtube tab, maybe come with some idea
 
 ## Ferdig
+- [x] figure out how new words and due words arrive (00:00 new cards arrived but due cards did not): reviews now use Anki-style day-based availability — every review scheduled for today is available from the local-midnight rollover, matching new cards, instead of trickling in at the exact clock time they were last reviewed (src/srs.js isCardDue + homeCounts/Study). Follow-up: send-review-reminders.mjs still counts due at exact-now if we want the push count to match.
+- [x] Fix this bug: You cant scroll down in the conversation after your reviews (chat overlay was 100vh/inset:0 = large viewport, so its bottom sat behind the mobile browser toolbar; now sized to 100dvh visible viewport — please confirm on your phone)
+- [x] Be more direct on what to do after your reviews (recap always ends with a direct "Recommended next" action — falls back to "Read a story" instead of a dead-end Back home)
+- [x] make it easier to join the discord, or easier to see the discord (persistent "Join our Discord" card on Home)
 - [x] make a light mode version for the chinese stories, because now its dark even without dark mode
 - [x] you cant replay the tts on the flashcards
 - [x] Names in the stories become weird because it translates wrong and is not clickable names should be clickable and say its a name and the pinyin of the name when you click it
