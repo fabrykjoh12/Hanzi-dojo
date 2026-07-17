@@ -1,11 +1,11 @@
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import { languageTheme } from './languageTheme'
-import { getLevelLabel } from './utils'
+import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
 import {
   calculateStoryReadability, buildVocabMatcher, segmentLine,
   namesFor, particlesFor, splitSpeaker,
 } from './storyReading'
-import { ArrowLeft, Play, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react'
 
 const SAGE = '#6E8466'
 // eslint-disable-next-line no-unused-vars -- used by the hover state added in Task 8's polish.
@@ -31,10 +31,13 @@ export default function PacedReader({ story, vocabMap, userCards, track, isRead,
   const [cur, setCur] = useState(0)
   const [showPy, setShowPy] = useState(true)
   const [showEn, setShowEn] = useState(false)
+  const [playing, setPlaying] = useState(false)
 
   const stageRef = useRef(null)
   const trackRef = useRef(null)
   const beatEls = useRef([])
+  const runRef = useRef(0)
+  const audioElRef = useRef(null)
 
   // Parse the story into beats once. Each beat = one line: { speaker, tokens }.
   const matcher = useMemo(() => buildVocabMatcher(vocabMap, track.language), [vocabMap, track.language])
@@ -78,6 +81,46 @@ export default function PacedReader({ story, vocabMap, userCards, track, isRead,
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [started, cur, go])
+
+  const ttsLang = track.language === 'japanese' ? 'ja-JP' : track.language === 'chinese' ? 'zh-CN' : 'ru-RU'
+
+  const stopPlay = useCallback(() => {
+    runRef.current += 1
+    setPlaying(false)
+    try { window.speechSynthesis.cancel() } catch { /* noop */ }
+    if (audioElRef.current) audioElRef.current.pause()
+  }, [])
+
+  const speakFrom = (index, runId) => {
+    if (runId !== runRef.current) return
+    if (index >= beats.length) { setPlaying(false); return }
+    setCur(index)
+    const advance = () => { if (runId === runRef.current) speakFrom(index + 1, runId) }
+    const viaSynth = () => {
+      try {
+        const u = new SpeechSynthesisUtterance(beats[index].text)
+        u.lang = ttsLang; u.rate = 0.9
+        u.onend = advance
+        window.speechSynthesis.speak(u)
+      } catch { setPlaying(false) }
+    }
+    if (story.has_audio) {
+      if (!audioElRef.current) audioElRef.current = new Audio()
+      const el = audioElRef.current
+      el.onended = advance
+      playAudioEl(el, getAudioUrl('stories/' + story.id + '/' + index + '.mp3'), viaSynth)
+    } else viaSynth()
+  }
+
+  const togglePlay = () => {
+    if (playing) { stopPlay(); return }
+    runRef.current += 1
+    setPlaying(true)
+    speakFrom(cur >= beats.length - 1 ? 0 : cur, runRef.current)
+  }
+
+  // Stop audio when leaving the reading view / unmounting.
+  useEffect(() => () => { stopPlay() }, [stopPlay])
 
   const pageShell = { minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', display: 'flex', flexDirection: 'column' }
 
@@ -124,7 +167,7 @@ export default function PacedReader({ story, vocabMap, userCards, track, isRead,
 
       <div
         ref={stageRef}
-        onClick={() => go(cur + 1)}
+        onClick={() => { stopPlay(); go(cur + 1) }}
         style={{
           flex: 1, position: 'relative', overflow: 'hidden', cursor: 'pointer',
           WebkitMaskImage: 'linear-gradient(180deg,transparent,#000 16%,#000 82%,transparent)',
@@ -159,9 +202,9 @@ export default function PacedReader({ story, vocabMap, userCards, track, isRead,
           <Chip on={showEn} onClick={() => setShowEn(v => !v)} label="English" accent={accent} />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
-          <button onClick={() => go(cur - 1)} disabled={cur === 0} aria-label="Previous line" style={navBtn}><ChevronLeft size={18} /></button>
-          <button onClick={() => go(cur + 1)} aria-label="Next line" style={{ ...navBtn, width: '52px', height: '52px', background: accent, border: 'none', color: '#fff' }}><ChevronRight size={20} color="#fff" /></button>
-          <div style={{ width: '44px' }} />
+          <button onClick={() => { stopPlay(); go(cur - 1) }} disabled={cur === 0} aria-label="Previous line" style={navBtn}><ChevronLeft size={18} /></button>
+          <button onClick={togglePlay} aria-label={playing ? 'Pause' : 'Play'} style={{ ...navBtn, width: '52px', height: '52px', background: accent, border: 'none', color: '#fff' }}>{playing ? <Pause size={20} color="#fff" /> : <Play size={20} color="#fff" />}</button>
+          <button onClick={() => { stopPlay(); go(cur + 1) }} aria-label="Next line" style={navBtn}><ChevronRight size={18} /></button>
         </div>
       </div>
     </div>

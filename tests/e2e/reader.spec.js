@@ -26,4 +26,14 @@ test.describe('Story reader', () => {
     await page.getByRole('button', { name: /Next line/i }).click();
     await expect(page.getByText('2 / 3')).toBeVisible();
   });
+
+  test('paced reveal: play control toggles', async ({ page }) => {
+    const reader = new ReaderPage(page);
+    await reader.openFirstStory();
+    await page.getByRole('button', { name: /Start reading/i }).click();
+    await page.getByRole('button', { name: /^Play$/i }).click();
+    await expect(page.getByRole('button', { name: /^Pause$/i })).toBeVisible();
+    await page.getByRole('button', { name: /^Pause$/i }).click();
+    await expect(page.getByRole('button', { name: /^Play$/i })).toBeVisible();
+  });
 });
