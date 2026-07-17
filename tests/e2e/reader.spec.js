@@ -108,4 +108,41 @@ test.describe('Story reader', () => {
     await page.getByRole('button', { name: /Next scene/i }).click();
     await expect(page.getByText('You read it')).toBeVisible();
   });
+
+  test('interactive chat: reply panel, wrong pick retries, correct advances, recap', async ({ page }) => {
+    const reader = new ReaderPage(page);
+    await reader.openStoryByTitle('一起去公园');
+    await page.getByRole('button', { name: /Start reading/i }).click();
+
+    // First bubble is a "them" turn; the reply gate for 小明's first line (a
+    // "you" beat with distractors) previews one beat ahead, so it is already
+    // showing here — tap the speaker label (plain text, not a vocab span, so
+    // the click bubbles to the thread's advance handler) to confirm the tap
+    // is inert while gated.
+    await expect(page.getByText('1/4')).toBeVisible();
+    await page.getByText('朋友', { exact: true }).first().click();
+
+    // Reply gate: the panel offers the correct reply + a distractor.
+    await expect(page.getByText('Your reply — tap the right one')).toBeVisible();
+    await expect(page.getByText('我不是学生。')).toBeVisible();
+    // Wrong pick → hint shows, does NOT advance past the gate.
+    await page.getByRole('button', { name: /我不是学生/ }).click();
+    await expect(page.getByText(/Not quite/)).toBeVisible();
+    await expect(page.getByText('Your reply — tap the right one')).toBeVisible();
+    // Correct pick → becomes the "you" bubble, chat continues.
+    await page.getByRole('button', { name: /我很好/ }).click();
+    await expect(page.getByText('2/4')).toBeVisible();
+
+    // Advance past the non-gated beat (朋友's second line) to reveal the second
+    // gate — tap the (still on-screen) 小明 speaker label to advance.
+    await page.getByText('小明', { exact: true }).first().click();
+    await expect(page.getByText('Your reply — tap the right one')).toBeVisible();
+    // Correct pick reveals the final "you" bubble; one more tap (same pattern
+    // as the observer chat reader) finishes the story.
+    await page.getByRole('button', { name: /好，一起去/ }).click();
+    await expect(page.getByText('4/4')).toBeVisible();
+    await page.getByText('小明', { exact: true }).last().click();
+    await expect(page.getByText('You read it')).toBeVisible();
+    await expect(page.getByText(/on the first try/)).toBeVisible();
+  });
 });

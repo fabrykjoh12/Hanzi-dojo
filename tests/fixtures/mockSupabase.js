@@ -77,6 +77,12 @@ const STORIES = [{
   image_path: null,
   english_content: ['The weather is not good today.', 'There are flowers in the park.', 'Friends are very good.'].join('\n'),
   content: ['🌧️ 今天天气不好。', '🌸 公园里有花。', '😊 朋友很好。'].join('\n'),
+}, {
+  id: 'st4', language: 'chinese', system: 'hsk', level: 2, tier: 1, story_number: 4,
+  title: '一起去公园', is_published: true, presentation: 'chat', has_audio: false,
+  image_path: null, english_content: 'A reply-along chat.',
+  content: ['朋友：你今天好吗？', '小明：我很好！', '朋友：我们去公园吧。', '小明：好，一起去。'].join('\n'),
+  interactions: { you: '小明', distractors: { '1': [{ text: '我不是学生。', pinyin: 'x' }], '3': [{ text: '再见。', pinyin: 'y' }] } },
 }];
 
 function card(n, o = {}) {
