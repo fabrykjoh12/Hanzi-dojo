@@ -140,7 +140,7 @@ export default function PacedReader({ story, vocabMap, userCards, track, isRead,
                 style={{ padding: '26px 0', transition: reduceMotion ? 'none' : 'opacity .45s ease, filter .45s ease', ...st }}>
                 {b.speaker && <div style={{ fontSize: '12.5px', fontWeight: 800, color: accent, marginBottom: '9px' }}>{b.speaker}</div>}
                 {showPy && i === cur && <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: 1.5 }}>{pinyinLine(b.tokens)}</div>}
-                <div aria-live={i === cur ? 'polite' : undefined} style={{ fontFamily: theme.font, fontSize: '30px', lineHeight: 1.62, fontWeight: 500 }}>
+                <div style={{ fontFamily: theme.font, fontSize: '30px', lineHeight: 1.62, fontWeight: 500 }}>
                   {b.tokens.map((t, k) => t.vocab
                     ? <span key={k} style={{ borderRadius: '4px', padding: '0 1px', background: i === cur ? accent + '14' : 'transparent' }}>{t.text}</span>
                     : <span key={k}>{t.text}</span>)}
@@ -151,6 +151,7 @@ export default function PacedReader({ story, vocabMap, userCards, track, isRead,
           })}
         </div>
       </div>
+      <div aria-live="polite" style={srOnly}>{beats[cur] ? beats[cur].text : ''}</div>
 
       <div style={{ flexShrink: 0, borderTop: '1px solid var(--border)', padding: '12px 18px calc(14px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
@@ -185,3 +186,4 @@ const ghost = { background: 'none', border: 'none', cursor: 'pointer', padding: 
 const navBtn = { width: '44px', height: '44px', borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }
 const startBtn = { marginTop: '24px', width: '100%', border: 'none', borderRadius: '16px', background: SAGE, color: '#fff', fontSize: '15.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px' }
 const classicLink = { marginTop: '14px', textAlign: 'center', fontSize: '12.5px', color: 'var(--text-faint)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif', width: '100%' }
+const srOnly = { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }
