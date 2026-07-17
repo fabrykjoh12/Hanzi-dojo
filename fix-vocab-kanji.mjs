@@ -70,7 +70,7 @@ async function main() {
     const kanji = resolvers.get(row.word)(row.meaning)
     if (!kanji) {
       skipped += 1
-      console.log(`  SKIP  ${row.word} — homophone, meaning "${row.meaning}" matched no rule (fix manually)`)
+      console.log(`  SKIP  ${row.word} [id=${row.id}] — meaning "${row.meaning}" · example: ${row.example_sentence || '(none)'}`)
       continue
     }
     const patch = { word: kanji }
