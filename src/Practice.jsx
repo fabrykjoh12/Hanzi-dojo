@@ -4,7 +4,7 @@ import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import {
   ArrowLeft, Dumbbell, AlertTriangle, Headphones, PenLine,
-  AlignLeft, Blocks, Music2, Languages, Brush, Play, GraduationCap, BookA, ScanText,
+  AlignLeft, Blocks, Music2, Languages, Brush, Play, GraduationCap, BookA, ScanText, Mic,
 } from 'lucide-react'
 
 // The Practice hub: every drill/activity in one calm place, so the top-level
@@ -33,6 +33,7 @@ export default function Practice({ profile, track, counts, onNavigate, onBack })
       badge: weak > 0 ? weak : null,
     },
     { key: 'listen', icon: Headphones, title: 'Listening', desc: 'Hear a word, pick it' },
+    { key: 'speak', icon: Mic, title: 'Speaking', desc: 'Say it aloud, get a ✓' },
     { key: 'writing', icon: PenLine, title: 'Writing', desc: 'Type words from memory' },
     { key: 'fillblank', icon: AlignLeft, title: 'Fill in the blank', desc: 'Complete the sentence' },
     { key: 'builder', icon: Blocks, title: 'Sentence builder', desc: 'Reorder the words' },

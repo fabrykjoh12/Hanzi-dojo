@@ -30,6 +30,7 @@ const Tones = lazy(() => import('./Tones'))
 const Kana = lazy(() => import('./Kana'))
 const Cyrillic = lazy(() => import('./Cyrillic'))
 const FillBlank = lazy(() => import('./FillBlank'))
+const Speaking = lazy(() => import('./Speaking'))
 const SentenceBuilder = lazy(() => import('./SentenceBuilder'))
 const Writer = lazy(() => import('./Writer'))
 const Practice = lazy(() => import('./Practice'))
@@ -418,6 +419,16 @@ export default function App() {
         track={track}
         pool={pendingPracticeWords}
         onBack={() => { setPendingPracticeWords(null); navigate(pendingPracticeWords ? 'stories' : 'home') }}
+        onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
+      />
+    )
+  } else if (view === 'speak') {
+    content = (
+      <Speaking
+        session={session}
+        profile={profile}
+        track={track}
+        onBack={() => navigate('practice')}
         onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
