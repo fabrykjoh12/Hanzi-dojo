@@ -12,7 +12,7 @@ so the community always sees the latest. Keep it current — move things to
 > you everywhere.
 
 ## 🚧 Now — in progress
-- [ ] _Picking the next focus — see **Next — planned** below._
+- [ ] _Between milestones — picking the next focus from **Next — planned** below. Ideas? Drop them in **#feedback-and-ideas**._
 
 ## 🔜 Next — planned
 
