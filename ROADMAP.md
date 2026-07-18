@@ -32,7 +32,7 @@ so the community always sees the latest. Keep it current — move things to
 
 **Smarter, calmer review**
 - [ ] **Stuck-word help** — a word that keeps slipping gets flagged and taught a different way, instead of endlessly re-appearing.
-- [ ] **A gentle forecast** — "next 7 days: ~N cards a day," plus a dial to set how hard you want to remember.
+- [ ] **A retention dial** — set how hard you want to remember (tune the memory engine's target recall) — the calm 7-day forecast has shipped.
 - [ ] **Cram mode** — temporarily study ahead for a trip or an exam.
 
 **Characters & memory** *(new)*
@@ -99,6 +99,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] `ChatMission` overlay: `role="dialog"` + focus trap (the mobile "More" sheet is done)
 
 ## ✅ Shipped
+- [x] **A gentle forecast** — a calm "next 7 days" review outlook on Home: a small per-day bar chart plus "~N reviews a day," so you can see what's coming (and plan around a busy day) without any streak pressure.
 - [x] **Smoother start** — pick your language and *why* you're learning before signing up; the choice carries into the signup screen (personalized encouragement) and pre-fills onboarding, so you're set up the moment you create an account.
 - [x] **Read your own text** — paste any text and read it with tap-to-define + add-to-deck against your known words, plus a live "% you can read" (an upgrade of *Analyze text*).
 - [x] **Speaking practice** — a new "Speaking" drill: read a word aloud and get an instant ✓ from on-device speech recognition (Chrome/Android/desktop; graceful fallback elsewhere).
