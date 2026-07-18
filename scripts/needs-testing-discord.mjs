@@ -34,6 +34,21 @@ export function parseTestingItems(md) {
   return items
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+// Discord rate-limits rapid webhook posts; retry once on 429 honoring
+// retry_after, and pace requests so a bulk sync never trips the limit.
+async function discordFetch(url, opts) {
+  let res = await fetch(url, opts)
+  if (res.status === 429) {
+    let wait = 1
+    try { wait = Number((await res.clone().json()).retry_after) || 1 } catch { /* keep default */ }
+    await sleep(Math.ceil(wait * 1000) + 250)
+    res = await fetch(url, opts)
+  }
+  return res
+}
+
 function embedFor(it) {
   return {
     title: (it.checked ? '✅ ' : '🧪 ') + it.title,
@@ -61,7 +76,7 @@ async function main() {
     const rec = ids[it.id]
     if (!rec) {
       // Forum channels require thread_name; this creates a new thread per item.
-      const res = await fetch(webhook + '?wait=true', {
+      const res = await discordFetch(webhook + '?wait=true', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ thread_name: it.title.slice(0, 95), embeds: [embed] }),
@@ -72,7 +87,7 @@ async function main() {
       changed = true
       console.log(`created thread for ${it.id} (${msg.id})`)
     } else {
-      const res = await fetch(`${webhook}/messages/${rec.messageId}?thread_id=${rec.threadId}`, {
+      const res = await discordFetch(`${webhook}/messages/${rec.messageId}?thread_id=${rec.threadId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ embeds: [embed] }),
@@ -80,6 +95,7 @@ async function main() {
       if (!res.ok) { console.error(`PATCH ${it.id} failed: ${res.status} ${await res.text()}`); continue }
       console.log(`updated ${it.id}`)
     }
+    await sleep(450) // pace requests to stay under Discord's rate limit
   }
 
   if (changed) { await writeFile(idFile, JSON.stringify(ids, null, 2) + '\n'); console.log('wrote id map') }
