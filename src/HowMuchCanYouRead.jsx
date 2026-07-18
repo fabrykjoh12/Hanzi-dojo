@@ -90,7 +90,7 @@ export default function HowMuchCanYouRead() {
       await shareReadingCard({
         knownPct: result.pct,
         languageName: theme.languageName,
-        storyTitle: null,
+        everyday: true,
         accentHex: accent,
         langFont: theme.font,
       })

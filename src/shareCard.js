@@ -20,10 +20,14 @@ export function clampPct(v) {
 
 // The caption shared alongside the image (and the whole message when a platform
 // can't take the image). Kept deterministic and free of personal data.
-export function readingShareText({ knownPct, languageName, storyTitle, url = BRAND_URL } = {}) {
+export function readingShareText({ knownPct, languageName, storyTitle, everyday, url = BRAND_URL } = {}) {
   const pct = clampPct(knownPct)
   const lang = (languageName || '').trim()
   const langBit = lang ? ' ' + lang : ''
+  // `everyday` framing is for the reading-assessment result (no story involved).
+  if (everyday) {
+    return `I can already read ${pct}% of everyday${langBit} — find out how much you can read on ${BRAND_NAME} 🥋 ${url}`
+  }
   const title = (storyTitle || '').trim()
   const titleBit = title ? ' “' + title + '”' : ' this story'
   return `I can already read ${pct}% of${titleBit} — a real${langBit} story — on ${BRAND_NAME} 🥋 ${url}`
@@ -60,7 +64,7 @@ function ellipsize(ctx, text, maxW) {
 
 // Paint the card onto `ctx` (a 2D context sized `size`×`size`). Pure with respect
 // to the context — no DOM, no async — so a fake ctx can assert its text output.
-export function drawReadingCard(ctx, { size = 1080, knownPct, languageName, storyTitle, accentHex = '#B83A24', langFont = 'sans-serif' } = {}) {
+export function drawReadingCard(ctx, { size = 1080, knownPct, languageName, storyTitle, everyday, accentHex = '#B83A24', langFont = 'sans-serif' } = {}) {
   const pct = clampPct(knownPct)
   const W = size, H = size
   const cx = W / 2
@@ -96,10 +100,13 @@ export function drawReadingCard(ctx, { size = 1080, knownPct, languageName, stor
   // Context line.
   ctx.fillStyle = '#52525B'
   ctx.font = '500 40px Inter, sans-serif'
-  ctx.fillText(lang ? `of this ${lang} story` : 'of this story', cx, 700)
+  const contextLine = everyday
+    ? (lang ? `of everyday ${lang}` : 'of everyday text')
+    : (lang ? `of this ${lang} story` : 'of this story')
+  ctx.fillText(contextLine, cx, 700)
 
-  // Story title (may be CJK — use the language font).
-  if (storyTitle) {
+  // Story title (may be CJK — use the language font). Never shown in `everyday` mode.
+  if (storyTitle && !everyday) {
     ctx.fillStyle = '#18181B'
     ctx.font = `700 60px ${langFont}, sans-serif`
     ctx.fillText(ellipsize(ctx, storyTitle, W - 220), cx, 810)
@@ -154,11 +161,11 @@ function downloadFile(file) {
 // Orchestrate the share. Returns { method } describing what happened so the UI
 // can give the right confirmation. Never throws — every branch degrades.
 //   shared-image | shared-text | downloaded | copied | cancelled | failed
-export async function shareReadingCard({ knownPct, languageName, storyTitle, accentHex, langFont, url = BRAND_URL } = {}) {
-  const text = readingShareText({ knownPct, languageName, storyTitle, url })
+export async function shareReadingCard({ knownPct, languageName, storyTitle, everyday, accentHex, langFont, url = BRAND_URL } = {}) {
+  const text = readingShareText({ knownPct, languageName, storyTitle, everyday, url })
 
   let file = null
-  try { file = await buildCardFile({ knownPct, languageName, storyTitle, accentHex, langFont }) } catch { /* fall back to text-only share below */ }
+  try { file = await buildCardFile({ knownPct, languageName, storyTitle, everyday, accentHex, langFont }) } catch { /* fall back to text-only share below */ }
 
   const nav = typeof navigator !== 'undefined' ? navigator : null
 

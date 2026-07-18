@@ -33,6 +33,12 @@ describe('readingShareText', () => {
   it('clamps the percentage in the caption', () => {
     expect(readingShareText({ knownPct: 999 })).toContain('100%')
   })
+
+  it('uses everyday framing (no "story") for the assessment result', () => {
+    const t = readingShareText({ knownPct: 42, languageName: 'Chinese', everyday: true, url: 'https://hanzi-dojo.com' })
+    expect(t).toContain('42% of everyday Chinese')
+    expect(t).not.toContain('story')
+  })
 })
 
 describe('drawReadingCard', () => {
@@ -79,5 +85,14 @@ describe('drawReadingCard', () => {
     const ctx = fakeCtx()
     drawReadingCard(ctx, { knownPct: 10, languageName: 'Japanese' })
     expect(ctx.texts.join(' | ')).toContain('10%')
+  })
+
+  it('draws everyday framing (no story line/title) for the assessment', () => {
+    const ctx = fakeCtx()
+    drawReadingCard(ctx, { knownPct: 42, languageName: 'Chinese', everyday: true, storyTitle: '小猫' })
+    const joined = ctx.texts.join(' | ')
+    expect(joined).toContain('of everyday Chinese')
+    expect(joined).not.toContain('story')
+    expect(joined).not.toContain('小猫')
   })
 })
