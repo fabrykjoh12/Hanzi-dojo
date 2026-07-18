@@ -21,6 +21,7 @@ import { pickRecapStory } from './storyMatch'
 import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
 import { buildStudyQueue, reinsertSoon, queueSeed } from './studyQueue'
 import { isFirstRunSession, firstRunNewTarget } from './firstRun'
+import { isReturningFromBreak, gentleReviewTarget } from './gentleReturn'
 import { firstMissionCardHint } from './firstMission'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
 import SessionRecap from './SessionRecap'
@@ -328,8 +329,23 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     // Day-based: every review scheduled for today is served from the 00:00
     // rollover, so a morning session isn't missing reviews that were last done
     // in the afternoon (matches how the new-card allotment refreshes at midnight).
-    const dueReview = levelCards
+    let dueReview = levelCards
       .filter(c => c.state === 'review' && isCardDue(c, now))
+
+    // Gentle return: after a multi-day break the overdue backlog can be huge.
+    // Cap it to a calm handful — oldest-due first (deterministic, and clears the
+    // most-overdue cards first) — so coming back isn't a 300-card wall. Deferred
+    // cards stay due and simply resurface next session; FSRS reschedules from the
+    // actual review time, so nothing is lost. Only in normal review mode.
+    const returning = mode === 'review' && isReturningFromBreak(profile)
+    if (returning) {
+      const cap = gentleReviewTarget({ returning, dueReviewCount: dueReview.length })
+      if (cap < dueReview.length) {
+        dueReview = [...dueReview]
+          .sort((a, b) => new Date(a.due_at) - new Date(b.due_at))
+          .slice(0, cap)
+      }
+    }
 
     // First-run detection: a brand-new learner (no cards ANYWHERE on the
     // account) gets a gentle, capped first session. The account-wide count is
