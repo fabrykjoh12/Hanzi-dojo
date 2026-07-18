@@ -14,7 +14,7 @@ so the community always sees the latest. Keep it current — move things to
 ## 🚧 Now — in progress
 - [ ] _Next up — pick from the plan below._
 
-_Recently shipped: study rhythm ring + 7-day forecast on Home._
+_Recently shipped: gentle return, study rhythm ring + 7-day forecast on Home._
 
 ## 🔜 Next — planned
 
@@ -69,7 +69,6 @@ _Recently shipped: study rhythm ring + 7-day forecast on Home._
 
 **Grow calmly — honest mechanics, not fear**
 - [ ] **A mastery ladder** — words you've truly locked in reach a permanent "mastered" state (the reward is real progress, not a number).
-- [ ] **Gentle return** — come back after a break to a right-sized queue ("welcome back — 12 words are ready"), never a 300-card wall.
 - [ ] **Your month in review** — a calm, shareable recap of what you learned.
 
 **Let the product introduce itself (growth)**
@@ -100,6 +99,7 @@ _Recently shipped: study rhythm ring + 7-day forecast on Home._
 - [ ] `ChatMission` overlay: `role="dialog"` + focus trap (the mobile "More" sheet is done)
 
 ## ✅ Shipped
+- [x] **Gentle return** — come back after a few days away to a right-sized session (a calm "welcome back — N words ready") instead of the whole overdue backlog. The rest eases back over the next sessions; nothing is lost (FSRS reschedules from your real review time).
 - [x] **Study rhythm, not a chain** — a quiet "you studied N of the last 7 days" ring on Home, filled dots for the days you showed up. Nothing to protect, nothing to lose — a missed day is just information, never a broken chain.
 - [x] **A gentle forecast** — a calm "next 7 days" review outlook on Home: a small per-day bar chart plus "~N reviews a day," so you can see what's coming (and plan around a busy day) without any streak pressure.
 - [x] **Smoother start** — pick your language and *why* you're learning before signing up; the choice carries into the signup screen (personalized encouragement) and pre-fills onboarding, so you're set up the moment you create an account.
