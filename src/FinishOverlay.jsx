@@ -4,9 +4,14 @@ import ComprehensionCheck from './ComprehensionCheck'
 const SAGE = '#6E8466'
 const btn = { border: 'none', borderRadius: '16px', background: SAGE, color: '#fff', fontSize: '15.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', width: 'auto', padding: '12px 22px', marginTop: '14px' }
 
-export default function FinishOverlay({ story, accent, onBack, note, core }) {
+export default function FinishOverlay({ story, accent, onBack, note, core, onPractice }) {
   const questions = core && core.questions ? core.questions : []
   const hasQuiz = questions.length > 0
+  // Only offer practice when enough new words have a usable example sentence to
+  // build a fill-in-the-blank drill (mirrors buildFillBlankQuestions' filter).
+  const practiceWords = ((core && core.readability && core.readability.newWords) || [])
+    .filter(w => w.example_sentence && w.example_sentence.indexOf(w.word) !== -1)
+  const canPractice = typeof onPractice === 'function' && practiceWords.length >= 4
   return (
     <div style={{
       position: 'absolute', inset: 0, background: 'var(--surface)', zIndex: 6,
@@ -26,6 +31,11 @@ export default function FinishOverlay({ story, accent, onBack, note, core }) {
           </div>
         )}
 
+        {canPractice && (
+          <button onClick={() => onPractice(practiceWords)} style={{ ...btn, background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}>
+            Practice the {practiceWords.length} new words
+          </button>
+        )}
         <button onClick={onBack} style={btn}>Back to library</button>
       </div>
     </div>

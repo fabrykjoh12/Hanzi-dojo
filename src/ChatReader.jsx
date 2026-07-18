@@ -67,7 +67,7 @@ export default function ChatReader(props) {
       </div>
 
       <WordLookupSheet selected={c.selected} theme={c.theme} accent={accent} userCards={userCards} onAddToDeck={c.addToDeck} onSpeak={c.speakWord} onClose={() => c.setSelected(null)} />
-      {c.done && <FinishOverlay story={story} accent={accent} onBack={onBack} core={c} />}
+      {c.done && <FinishOverlay story={story} accent={accent} onBack={onBack} core={c} onPractice={props.onPractice} />}
     </div>
   )
 }
