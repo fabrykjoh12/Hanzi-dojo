@@ -492,6 +492,11 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   }
 
   const addToDeck = async (vocabItem) => {
+    // Remember the exact line the word was tapped on (sel.lineIndex), so review
+    // can show the sentence the learner actually read.
+    const srcSentence = (sel && sel.vocab && sel.vocab.id === vocabItem.id && sel.lineIndex != null && lines[sel.lineIndex])
+      ? splitSpeaker(lines[sel.lineIndex]).text
+      : null
     const { error } = await supabase.from('cards').insert({
       user_id: session.user.id,
       vocab_id: vocabItem.id,
@@ -499,6 +504,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
       ease_factor: 2.5,
       learning_step: 0,
       due_at: new Date().toISOString(),
+      source_sentence: srcSentence,
     })
     if (!error) {
       setUserCards(prev => ({ ...prev, [vocabItem.id]: { vocab_id: vocabItem.id, is_easy: false, state: 'new' } }))
