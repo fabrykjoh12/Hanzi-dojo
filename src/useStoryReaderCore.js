@@ -40,11 +40,17 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   const names = useMemo(() => namesFor(track.language), [track.language])
   const particles = useMemo(() => particlesFor(track.language), [track.language])
   const isScene = story.presentation === 'scene'
-  const beats = useMemo(() => (story.content || '').split('\n').filter(Boolean).map(line => {
-    const { emoji, text: body } = isScene ? splitScene(line) : { emoji: '', text: line }
-    const { speaker, text } = splitSpeaker(body)
-    return { speaker, text, emoji, tokens: segmentLine(text, matcher, names, particles) }
-  }), [story.content, isScene, matcher, names, particles])
+  const beats = useMemo(() => {
+    // english_content is authored newline-aligned with content, so a beat's
+    // translation is the English line at the same index. Guard by index so a
+    // mismatch just yields no per-line English rather than the wrong line.
+    const englishLines = (story.english_content || '').split('\n').filter(Boolean)
+    return (story.content || '').split('\n').filter(Boolean).map((line, idx) => {
+      const { emoji, text: body } = isScene ? splitScene(line) : { emoji: '', text: line }
+      const { speaker, text } = splitSpeaker(body)
+      return { speaker, text, emoji, english: englishLines[idx] || '', tokens: segmentLine(text, matcher, names, particles) }
+    })
+  }, [story.content, story.english_content, isScene, matcher, names, particles])
   const readContent = useMemo(() => (isScene ? stripSceneEmoji(story.content) : story.content), [isScene, story.content])
   const readability = useMemo(
     () => calculateStoryReadability({ content: readContent, vocabMap, cards: userCards, language: track.language }),

@@ -192,6 +192,12 @@ export default function SessionRecap({
         ? { label: 'Read it again', sub: 'Re-reading cements the vocabulary', icon: BookOpen, onClick: () => onReadStory(story.id) }
         : { label: 'Read a story', sub: 'Reading is where today’s words stick — pick one that’s unlocked', icon: BookOpen, onClick: () => onReadStory(null) }
 
+  // When "Recommended next" is already reading this unlocked story (read-now or
+  // read-again), the separate StoryUnlockCard below would be a second box for the
+  // same action — so suppress it. It still shows when a chat mission is the top
+  // CTA, where surfacing the unlocked story adds something rather than repeating.
+  const nextStepIsUnlockStory = Boolean(story) && (!storyUnlock.isRead || !mission)
+
   const accuracy = s && s.reviewedTotal > 0 ? Math.round((s.reviewedRight / s.reviewedTotal) * 100) : null
   const recapStats = s ? [
     { label: 'Cards studied', value: s.graded, color: accentHex },
@@ -333,7 +339,7 @@ export default function SessionRecap({
           </div>
         )}
 
-        {didStudy && storyUnlock && (
+        {didStudy && storyUnlock && !nextStepIsUnlockStory && (
           <StoryUnlockCard
             unlock={storyUnlock}
             accentHex={accentHex}

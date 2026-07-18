@@ -6,7 +6,9 @@ import { levelInfo, levelTitle } from './xp'
 import InfoTip from './InfoTip'
 import { CountUp } from './ui'
 import { useIsMobile } from './useIsMobile'
-import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, Gauge, Dumbbell, Snowflake, MessagesSquare } from 'lucide-react'
+import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, Gauge, Dumbbell, Snowflake, MessagesSquare, CalendarRange, Activity } from 'lucide-react'
+import { forecastSummary } from './reviewForecast'
+import { rhythmSummary } from './studyRhythm'
 import { fluencyScore, fluencyRank } from './fluency'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
 
@@ -99,7 +101,18 @@ export default function Home({ profile, track, counts, onNavigate }) {
   const doneToday = counts.newDoneToday || 0
   const goalComplete = goal > 0 && doneToday >= goal
   const noNewLeft = !goalComplete && counts.newCount === 0
-  const dueTomorrow = counts.dueTomorrow || 0
+  // 7-day review outlook: bucketed counts from homeCounts (index 0 = today).
+  const forecast7 = counts.forecast7 || []
+  const forecast = forecastSummary(forecast7)
+  // Short weekday initials for the next 7 days, starting today.
+  const dayLabels = Array.from({ length: forecast7.length }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() + i)
+    return { key: i, letter: d.toLocaleDateString(undefined, { weekday: 'narrow' }), isToday: i === 0 }
+  })
+
+  // Study rhythm (last 7 days) — a calm "N of 7" ring, nothing to protect or lose.
+  const rhythm7 = counts.rhythm7 || []
+  const rhythm = rhythmSummary(rhythm7)
 
   // Fluency score (lifetime vocabulary command across all levels).
   const fScore = fluencyScore(counts)
@@ -256,15 +269,76 @@ export default function Home({ profile, track, counts, onNavigate }) {
           </div>
         </div>
 
-        {/* ── Tomorrow forecast ── */}
-        {dueTomorrow > 0 && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '8px', marginTop: '20px',
-            paddingTop: '16px', borderTop: '1px solid var(--border)',
-            fontSize: '13px', color: 'var(--text-muted)',
-          }}>
-            <Sunrise size={16} strokeWidth={1.9} color="#D97706" />
-            <span><strong style={{ color: 'var(--text)', fontWeight: 650 }}>{dueTomorrow}</strong> review{dueTomorrow === 1 ? '' : 's'} waiting by tomorrow</span>
+        {/* ── Study rhythm ── last 7 days, guilt-free (nothing to lose) ── */}
+        {rhythm.studiedDays > 0 && (
+          <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
+                <Activity size={15} strokeWidth={1.9} color={accentHex} />
+                Your rhythm
+              </span>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                studied <strong style={{ color: 'var(--text)', fontWeight: 650 }}>{rhythm.studiedDays}</strong> of the last {rhythm.days} days
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px' }}>
+              {rhythm7.map((d, i) => (
+                <div key={i} style={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', minWidth: 0 }}
+                  title={`${d.date}${d.studied ? ' · studied' : ''}${d.isToday ? ' · today' : ''}`}>
+                  <span style={{
+                    width: '16px', height: '16px', borderRadius: '50%',
+                    background: d.studied ? accentHex : 'transparent',
+                    border: d.studied ? `1px solid ${accentHex}` : '1.5px solid var(--border)',
+                    boxShadow: d.isToday ? `0 0 0 2px var(--surface), 0 0 0 3.5px ${accentHex}66` : 'none',
+                  }} />
+                  <span style={{ fontSize: '10px', fontWeight: d.isToday ? 700 : 500, color: d.isToday ? accentHex : 'var(--text-faint)' }}>
+                    {new Date(d.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'narrow' })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── 7-day review forecast ── a calm outlook, no streak pressure ── */}
+        {forecast.total > 0 && (
+          <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
+                <CalendarRange size={15} strokeWidth={1.9} color={accentHex} />
+                Next 7 days
+              </span>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                ~<strong style={{ color: 'var(--text)', fontWeight: 650 }}>{forecast.perDay}</strong> review{forecast.perDay === 1 ? '' : 's'} a day
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', height: '52px' }}>
+              {forecast7.map((count, i) => {
+                const pct = forecast.peak > 0 ? Math.round((count / forecast.peak) * 100) : 0
+                const day = dayLabels[i]
+                return (
+                  <div key={i} style={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', minWidth: 0 }}
+                    title={`${count} review${count === 1 ? '' : 's'}${day.isToday ? ' today' : ''}`}>
+                    <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'flex-end' }}>
+                      <div style={{
+                        width: '100%',
+                        // A faint 2px stub even for empty days keeps the row legible.
+                        height: `${Math.max(count > 0 ? 8 : 2, pct * 0.36)}%`,
+                        minHeight: count > 0 ? '6px' : '2px',
+                        borderRadius: '4px',
+                        background: count === 0
+                          ? 'var(--border)'
+                          : day.isToday ? accentHex : `${accentHex}66`,
+                        transition: 'height .6s ease',
+                      }} />
+                    </div>
+                    <span style={{ fontSize: '10px', fontWeight: day.isToday ? 700 : 500, color: day.isToday ? accentHex : 'var(--text-faint)' }}>
+                      {day.letter}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>

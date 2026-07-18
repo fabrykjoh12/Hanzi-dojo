@@ -1,12 +1,17 @@
 import { getLevelLabel } from './utils'
-import { wordStatus } from './storyReading'
+import { wordStatus, hasKanjiChar } from './storyReading'
 import { useStoryReaderCore } from './useStoryReaderCore'
 import ReaderLaunch from './ReaderLaunch'
 import WordLookupSheet from './WordLookupSheet'
 import FinishOverlay from './FinishOverlay'
 import { ArrowLeft, Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react'
 
-function pinyinLine(tokens) { return tokens.filter(t => t.vocab && t.vocab.reading).map(t => t.vocab.reading).join(' ') }
+// For Japanese, skip words already in kana — only kanji words need a reading.
+function readingLine(tokens, language) {
+  return tokens
+    .filter(t => t.vocab && t.vocab.reading && (language !== 'japanese' || hasKanjiChar(t.text)))
+    .map(t => t.vocab.reading).join(' ')
+}
 function englishLineFor(story, i) { return (story.english_content || '').split('\n').filter(Boolean)[i] || '' }
 
 // Scene-format reader: a picture-book. Each beat is a big centered emoji
@@ -42,7 +47,7 @@ export default function SceneReader(props) {
             <div aria-hidden="true" style={{ fontSize: '72px', lineHeight: 1, marginBottom: '26px' }}>{beat.emoji}</div>
           )}
           {beat && beat.speaker && <div style={{ fontSize: '12.5px', fontWeight: 800, color: accent, marginBottom: '10px' }}>{beat.speaker}</div>}
-          {c.showPy && beat && <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: 1.5 }}>{pinyinLine(beat.tokens)}</div>}
+          {c.showPy && beat && readingLine(beat.tokens, track.language) && <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: 1.5 }}>{readingLine(beat.tokens, track.language)}</div>}
           <div style={{ fontFamily: c.theme.font, fontSize: '30px', lineHeight: 1.6, fontWeight: 500 }}>
             {beat && beat.tokens.map((t, k) => {
               if (!t.vocab) return <span key={k}>{t.text}</span>

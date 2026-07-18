@@ -259,9 +259,12 @@ export default function Analyzer({ session, track, onBack }) {
                       key={k}
                       onClick={() => setSelected({ word: t.vocab.word, vocab: t.vocab, status, sentence: pl.line })}
                       style={{
+                        // Underline new/learning words (as the copy promises) rather
+                        // than filling each with a box — a paragraph of unknown words
+                        // was becoming an unreadable wall of highlights.
                         cursor: 'pointer', borderRadius: '4px', padding: '0 1px',
-                        background: status === 'not_started' ? accent + '1f' : (status === 'learning' ? '#CA8A0422' : 'transparent'),
-                        boxShadow: status === 'not_started' ? 'inset 0 -2px 0 ' + accent + '66' : 'none',
+                        boxShadow: status === 'not_started' ? 'inset 0 -2px 0 ' + accent + '99'
+                          : status === 'learning' ? 'inset 0 -2px 0 #CA8A0499' : 'none',
                       }}
                     >{t.text}</span>
                   )

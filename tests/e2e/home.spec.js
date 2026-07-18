@@ -23,4 +23,9 @@ test.describe('Home dashboard (logged in)', () => {
   test('shows the fluency panel', async () => {
     await expect(home.fluency).toBeVisible();
   });
+
+  test('shows the 7-day review forecast', async ({ page }) => {
+    await expect(page.getByText('Next 7 days')).toBeVisible();
+    await expect(page.getByText(/reviews? a day/i)).toBeVisible();
+  });
 });

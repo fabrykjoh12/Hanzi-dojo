@@ -112,7 +112,7 @@ function lastKanjiIndex(word) {
   return idx
 }
 
-function hasKanjiChar(word) {
+export function hasKanjiChar(word) {
   for (let i = 0; i < (word || '').length; i += 1) if (isKanjiCode(word.charCodeAt(i))) return true
   return false
 }

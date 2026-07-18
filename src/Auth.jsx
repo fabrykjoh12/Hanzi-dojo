@@ -6,8 +6,10 @@ import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 
-export default function Auth() {
-  const [isSignup, setIsSignup] = useState(false)
+export default function Auth({ intro = null }) {
+  // Arriving from the pre-login wizard (language + reason chosen) means the user
+  // is here to create an account, so default to the Sign-up tab in that case.
+  const [isSignup, setIsSignup] = useState(Boolean(intro))
   const [resetMode, setResetMode] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -135,9 +137,9 @@ export default function Auth() {
           </div>
         </div>
 
-        {/* Tagline */}
-        <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '28px', marginTop: '4px' }}>
-          Learn words. Unlock stories you can actually read.
+        {/* Tagline — personalized from the pre-login wizard when available */}
+        <p style={{ textAlign: 'center', fontSize: '13px', color: intro ? 'var(--text)' : 'var(--text-muted)', marginBottom: '28px', marginTop: '4px', lineHeight: 1.5 }}>
+          {intro || 'Learn words. Unlock stories you can actually read.'}
         </p>
 
         {/* Divider */}

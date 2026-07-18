@@ -2,25 +2,42 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, getLevels } from './utils'
 import { track, EVENTS } from './analytics'
-import { languageList, languageTheme } from './languageTheme'
+import { languageList, languageTheme, LANGUAGES } from './languageTheme'
 import { resolveTiers, TIER_META } from './tiers'
+import { readPreloginPrefs, clearPreloginPrefs, encouragementFor } from './prelogin'
 import PlacementTest from './PlacementTest'
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 import { ArrowRight, BookOpen, GraduationCap, Layers, Lock, PenLine, Play } from 'lucide-react'
 
+// Read the pre-login wizard choices, but only trust a known language. Pure and
+// idempotent (a plain read), so it's safe to call from useState initializers.
+function initialPrefill() {
+  const p = readPreloginPrefs()
+  return p && LANGUAGES[p.language] ? p : null
+}
+
 export default function Onboarding({ session, onComplete }) {
-  const [step, setStep] = useState(1)
-  const [language, setLanguage] = useState(null)
+  // If the visitor picked a language before signing up, skip the language step
+  // and land on "What's your level?" already set up — the choice carries over.
+  const [step, setStep] = useState(() => (initialPrefill() ? 2 : 1))
+  const [language, setLanguage] = useState(() => initialPrefill()?.language || null)
   const [level, setLevel] = useState(null)
   const [tier, setTier] = useState(null)         // selected tier { key, level, test }
   const [placement, setPlacement] = useState(false)  // showing the placement test
   const [goal, setGoal] = useState(10)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  // A one-line, reason-aware greeting shown atop the level step for pre-login users.
+  const [greeting] = useState(() => {
+    const p = initialPrefill()
+    return p ? encouragementFor(p.language, p.reason, languageTheme(p.language).languageName) : null
+  })
 
   useEffect(() => { track(EVENTS.ONBOARDING_STARTED) }, [])
+  // Consume the pre-login prefs once so returning to onboarding later starts clean.
+  useEffect(() => { clearPreloginPrefs() }, [])
 
   // Data-driven: the language cards + level grid come from the shared config, so
   // adding a language needs no changes here.
@@ -237,6 +254,15 @@ export default function Onboarding({ session, onComplete }) {
               />
             ) : (
               <>
+                {greeting && (
+                  <div style={{
+                    fontSize: '13px', color: accentHex, fontWeight: 650, textAlign: 'center',
+                    background: accentHex + '0D', border: '1px solid ' + accentHex + '22',
+                    borderRadius: '12px', padding: '10px 14px', marginBottom: '18px', lineHeight: 1.5,
+                  }}>
+                    {greeting}
+                  </div>
+                )}
                 <h1 style={{ fontSize: '22px', fontWeight: 700, textAlign: 'center', color: 'var(--text)', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
                   What's your level?
                 </h1>

@@ -3,6 +3,8 @@ import { getTrackCards } from './data'
 import { countMastery } from './mastery'
 import { studyFloorLevel } from './levelScope'
 import { isCardDue, endOfLocalDay } from './srs'
+import { reviewForecast } from './reviewForecast'
+import { studyRhythm, dateKey } from './studyRhythm'
 
 export async function getHomeCounts(userId, track, dailyNewCards) {
   // Cards scoped server-side to the ACTIVE language (every level): the level
@@ -65,6 +67,27 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
     return d > eod && d <= endOfTomorrow
   }).length
 
+  // A calm 7-day outlook: scheduled reviews bucketed by day (index 0 = today).
+  // Learning cards are excluded (they can't be honestly forecast), so this is an
+  // approximation the UI presents as "~N a day", never a hard promise.
+  const forecast7 = reviewForecast(levelCards, now, 7)
+
+  // Study rhythm (last 7 days) — which days had any study, from daily_activity
+  // (per user, all languages). Defensive: any failure just yields an empty
+  // rhythm so the home load never breaks on it. Not track-scoped: a study day
+  // is a study day. Lower-bounded to the window to keep the query small.
+  let studiedDates = []
+  try {
+    const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 6)
+    const { data: acts } = await supabase
+      .from('daily_activity')
+      .select('activity_date, studied_cards')
+      .eq('user_id', userId)
+      .gte('activity_date', dateKey(weekAgo))
+    studiedDates = (acts || []).filter(a => a.studied_cards > 0).map(a => a.activity_date)
+  } catch { /* offline / query failure — leave rhythm empty */ }
+  const rhythm7 = studyRhythm(studiedDates, now, 7)
+
   // Weak words: cards the user has lapsed on at least twice and that aren't yet
   // mastered — the cleanup-drill pool.
   const weakCount = levelCards.filter(c => (c.lapses || 0) >= 2 && (c.stability || 0) < 21).length
@@ -80,7 +103,7 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   return {
     newCount, learnCount, dueCount, easyCount, totalWords,
     learnedCount, masteredCount, masteredPct,
-    newDoneToday, dueTomorrow, weakCount,
+    newDoneToday, dueTomorrow, weakCount, forecast7, rhythm7,
     lifetimeLearned, lifetimeMastered,
   }
 }
