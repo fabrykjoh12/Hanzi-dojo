@@ -1,0 +1,57 @@
+name: Needs-testing sync
+
+# Mirrors docs/TESTING.md to the #needs-testing Discord FORUM channel — one thread
+# per item — so testers can react ✅ / reply per item. Threads are edited in place
+# via stable ids tracked in .github/needs-testing.ids.json.
+#
+# Triggers on push to main (i.e. when a TESTING.md change merges) — reliable,
+# unlike chaining off a GITHUB_TOKEN push. Also runnable manually.
+#
+# One-time setup:
+#   1. Make #needs-testing a FORUM channel in Discord.
+#   2. Channel ⚙ → Integrations → Webhooks → New Webhook → copy URL.
+#   3. GitHub → repo Settings → Secrets and variables → Actions → new secret
+#        DISCORD_TESTING_WEBHOOK = that webhook URL.
+#   Until the secret exists, the step simply skips.
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - docs/TESTING.md
+
+permissions:
+  contents: write
+
+concurrency:
+  group: needs-testing-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Post needs-testing items to Discord
+        env:
+          DISCORD_TESTING_WEBHOOK: ${{ secrets.DISCORD_TESTING_WEBHOOK }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          node scripts/needs-testing-discord.mjs
+          git add .github/needs-testing.ids.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No id-map changes to persist"
+          else
+            git commit -m "chore: track needs-testing Discord thread ids [skip ci]"
+            git push origin HEAD:main
+          fi
