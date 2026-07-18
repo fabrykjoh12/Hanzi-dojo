@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabase'
 import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
-import { calculateStoryReadability } from './storyReading'
+import { calculateStoryReadability, buildVocabMatcher, segmentLine, namesFor, particlesFor, wordStatus } from './storyReading'
+import WordLookupSheet from './WordLookupSheet'
 import { track as trackEvent, EVENTS } from './analytics'
 import { ArrowLeft, ScanText, Bookmark, Sparkles } from 'lucide-react'
 
@@ -22,6 +23,23 @@ export default function Analyzer({ session, track, onBack }) {
   const [result, setResult] = useState(null)
   const [adding, setAdding] = useState(false)
   const [addedCount, setAddedCount] = useState(0)
+  const [selected, setSelected] = useState(null)   // tapped word → lookup sheet
+
+  const ttsLang = track.language === 'japanese' ? 'ja-JP' : track.language === 'chinese' ? 'zh-CN' : 'ru-RU'
+  const speakWord = (t) => {
+    if (!t) return
+    try { const u = new SpeechSynthesisUtterance(t); u.lang = ttsLang; u.rate = 0.85; window.speechSynthesis.speak(u) } catch { /* noop */ }
+  }
+
+  // Tokenize the analyzed text for the tap-to-read view (same matcher the reader
+  // and the % use, so highlighting ⇔ the counted status).
+  const matcher = useMemo(() => (vocabMap ? buildVocabMatcher(vocabMap, track.language) : null), [vocabMap, track.language])
+  const names = useMemo(() => namesFor(track.language), [track.language])
+  const particles = useMemo(() => particlesFor(track.language), [track.language])
+  const parsedLines = useMemo(() => {
+    if (!result || !matcher) return []
+    return text.split('\n').filter(l => l.trim()).map(line => ({ line, tokens: segmentLine(line, matcher, names, particles) }))
+  }, [result, matcher, names, particles, text])
 
   // Load the track's full vocabulary + the user's cards once, mirroring the
   // Stories screen so word-matching and status are computed identically.
@@ -76,6 +94,28 @@ export default function Analyzer({ session, track, onBack }) {
       setResult(calculateStoryReadability({ content: text, vocabMap, cards: next, language: track.language }))
     }
     setAdding(false)
+  }
+
+  // Add one tapped word, remembering the sentence it was read in (mining), then
+  // re-run the breakdown so the % and highlights update live.
+  const addOne = async (vocab, sentence) => {
+    if (!vocab || !vocab.id || cards[vocab.id]) return
+    const row = {
+      user_id: session.user.id, vocab_id: vocab.id,
+      state: 'new', ease_factor: 2.5, learning_step: 0, due_at: new Date().toISOString(),
+      source_sentence: sentence || null,
+    }
+    let { error } = await supabase.from('cards').insert(row)
+    if (error && /source_sentence/.test(error.message || '')) {
+      const { source_sentence, ...rest } = row
+      void source_sentence
+      ;({ error } = await supabase.from('cards').insert(rest))
+    }
+    if (!error) {
+      const next = { ...cards, [vocab.id]: { vocab_id: vocab.id, is_easy: false, state: 'new' } }
+      setCards(next)
+      setResult(calculateStoryReadability({ content: text, vocabMap, cards: next, language: track.language }))
+    }
   }
 
   const loading = vocabMap === null
@@ -200,6 +240,47 @@ export default function Analyzer({ session, track, onBack }) {
           )}
         </div>
       )}
+
+      {/* Read it — tap any word to look it up and add it, against your known deck. */}
+      {result && result.totalUnique > 0 && parsedLines.length > 0 && (
+        <div style={{ marginTop: '18px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '22px' }}>
+          <div style={{ fontSize: '14px', fontWeight: 750, color: 'var(--text)', marginBottom: '4px' }}>Read it — tap any word</div>
+          <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+            New words are underlined. Tap any word to hear it, see the meaning, and add it to your deck.
+          </div>
+          <div style={{ fontFamily: font + ', Inter, sans-serif', fontSize: '19px', lineHeight: 2 }}>
+            {parsedLines.map((pl, li) => (
+              <p key={li} style={{ margin: '0 0 10px' }}>
+                {pl.tokens.map((t, k) => {
+                  if (!t.vocab) return <span key={k}>{t.text}</span>
+                  const status = wordStatus(t.vocab.id, cards)
+                  return (
+                    <span
+                      key={k}
+                      onClick={() => setSelected({ word: t.vocab.word, vocab: t.vocab, status, sentence: pl.line })}
+                      style={{
+                        cursor: 'pointer', borderRadius: '4px', padding: '0 1px',
+                        background: status === 'not_started' ? accent + '1f' : (status === 'learning' ? '#CA8A0422' : 'transparent'),
+                        boxShadow: status === 'not_started' ? 'inset 0 -2px 0 ' + accent + '66' : 'none',
+                      }}
+                    >{t.text}</span>
+                  )
+                })}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <WordLookupSheet
+        selected={selected}
+        theme={theme}
+        accent={accent}
+        userCards={cards}
+        onAddToDeck={(v) => addOne(v, selected && selected.sentence)}
+        onSpeak={speakWord}
+        onClose={() => setSelected(null)}
+      />
     </div>
   )
 }
