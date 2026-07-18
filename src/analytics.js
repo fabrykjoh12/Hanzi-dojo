@@ -21,6 +21,9 @@ import { BUILD_SHA } from './version'
 export const EVENTS = {
   // Top-of-funnel (pre-auth)
   LANDING_VIEWED: 'landing_viewed',
+  PRELOGIN_LANGUAGE_PICKED: 'prelogin_language_picked',
+  PRELOGIN_REASON_PICKED: 'prelogin_reason_picked',
+  PRELOGIN_SIGNUP_STARTED: 'prelogin_signup_started',
   SIGNUP_STARTED: 'signup_started',
   SIGNUP_COMPLETED: 'signup_completed',
   // Public story links (pre-auth, anonymous funnel)

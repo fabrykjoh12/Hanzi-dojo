@@ -12,7 +12,7 @@ so the community always sees the latest. Keep it current — move things to
 > you everywhere.
 
 ## 🚧 Now — in progress
-- [ ] **Smoother start** — pick your language and why you're learning *before* signing up, so you're set up the moment you create an account.
+- [ ] _Next up — pick from the plan below._
 
 ## 🔜 Next — planned
 
@@ -99,6 +99,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] `ChatMission` overlay: `role="dialog"` + focus trap (the mobile "More" sheet is done)
 
 ## ✅ Shipped
+- [x] **Smoother start** — pick your language and *why* you're learning before signing up; the choice carries into the signup screen (personalized encouragement) and pre-fills onboarding, so you're set up the moment you create an account.
 - [x] **Read your own text** — paste any text and read it with tap-to-define + add-to-deck against your known words, plus a live "% you can read" (an upgrade of *Analyze text*).
 - [x] **Speaking practice** — a new "Speaking" drill: read a word aloud and get an instant ✓ from on-device speech recognition (Chrome/Android/desktop; graceful fallback elsewhere).
 - [x] **"How much can you read?"** — a 60-second public reading test with a shareable result, no account needed.

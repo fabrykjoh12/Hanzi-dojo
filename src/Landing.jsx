@@ -4,8 +4,9 @@ import { track, EVENTS } from './analytics'
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
-import { languageList } from './languageTheme'
+import { languageList, languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
+import { REASONS, encouragementFor, savePreloginPrefs } from './prelogin'
 import {
   ArrowLeft, ArrowRight, BookOpen, GraduationCap, Layers, PenLine, Play, Sparkles,
   MessagesSquare,
@@ -143,6 +144,52 @@ function StoryMock() {
   )
 }
 
+// Centered, calm frame shared by the pre-login wizard steps (pick language, why).
+function WizardShell({ isMobile, back, title, subtitle, children }) {
+  return (
+    <div style={{ minHeight: '100vh', position: 'relative', background: 'var(--bg)' }}>
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 0,
+        backgroundImage: 'url(' + bgLogin + ')',
+        backgroundSize: 'cover', backgroundPosition: 'center',
+        opacity: 0.22, pointerEvents: 'none',
+      }} />
+      <button
+        onClick={back}
+        style={{
+          position: 'fixed', top: '18px', left: '18px', zIndex: 5,
+          display: 'inline-flex', alignItems: 'center', gap: '7px',
+          padding: '9px 14px', borderRadius: '12px',
+          border: '1px solid var(--border)', background: 'var(--surface)',
+          color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650,
+          fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+          boxShadow: '0 6px 18px rgba(24,24,27,0.08)',
+        }}
+      >
+        <ArrowLeft size={15} strokeWidth={2} color="var(--text-muted)" />
+        Back
+      </button>
+      <div style={{
+        position: 'relative', zIndex: 1, minHeight: '100vh',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: isMobile ? '72px 20px 40px' : '80px 32px 56px', textAlign: 'center',
+      }}>
+        <img src={logo} alt={BRAND_NAME + ' logo'} style={{ width: '46px', height: '46px', objectFit: 'contain', marginBottom: '18px' }} />
+        <h1 style={{
+          fontSize: isMobile ? '25px' : '32px', fontWeight: 800, color: 'var(--text)',
+          lineHeight: 1.2, letterSpacing: '-0.02em', margin: '0 0 10px', fontFamily: 'Inter, sans-serif',
+        }}>
+          {title}
+        </h1>
+        <p style={{ fontSize: isMobile ? '14px' : '15px', color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 auto 28px', maxWidth: '440px' }}>
+          {subtitle}
+        </p>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 function MethodCard({ icon: Icon, title, children, accent }) {
   return (
     <div style={{
@@ -168,31 +215,130 @@ function MethodCard({ icon: Icon, title, children, accent }) {
 // product is, who it's for, and why it's different — then hands off to the
 // existing Auth screen. Returning users get there in one click ("Log in").
 export default function Landing() {
-  const [mode, setMode] = useState('landing')   // 'landing' | 'auth'
+  // Flow: landing → pick a language → why you're learning → auth (signup).
+  // "Log in" jumps straight to auth for returning users (no wizard).
+  const [mode, setMode] = useState('landing')   // 'landing' | 'lang' | 'why' | 'auth'
+  const [pickedLang, setPickedLang] = useState(null)
+  const [pickedReason, setPickedReason] = useState(null)
   const isMobile = useIsMobile()
   const languages = languageList()
 
   useEffect(() => { track(EVENTS.LANDING_VIEWED) }, [])
 
+  // Enter the wizard, optionally pre-selecting a language (from a chip tap).
+  const startWizard = (langKey = null) => {
+    if (langKey) {
+      setPickedLang(langKey)
+      track(EVENTS.PRELOGIN_LANGUAGE_PICKED, { language: langKey })
+      setMode('why')
+    } else {
+      setMode('lang')
+    }
+  }
+
+  const chooseLanguage = (langKey) => {
+    setPickedLang(langKey)
+    track(EVENTS.PRELOGIN_LANGUAGE_PICKED, { language: langKey })
+    setMode('why')
+  }
+
+  const chooseReason = (reasonKey) => {
+    setPickedReason(reasonKey)
+    track(EVENTS.PRELOGIN_REASON_PICKED, { language: pickedLang, reason: reasonKey })
+    // Persist for the post-signup Onboarding to pre-fill language + greet by reason.
+    savePreloginPrefs({ language: pickedLang, reason: reasonKey })
+    track(EVENTS.PRELOGIN_SIGNUP_STARTED, { language: pickedLang, reason: reasonKey })
+    setMode('auth')
+  }
+
+  const backChip = (onClick) => (
+    <button
+      onClick={onClick}
+      style={{
+        position: 'fixed', top: '18px', left: '18px', zIndex: 5,
+        display: 'inline-flex', alignItems: 'center', gap: '7px',
+        padding: '9px 14px', borderRadius: '12px',
+        border: '1px solid var(--border)', background: 'var(--surface)',
+        color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650,
+        fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+        boxShadow: '0 6px 18px rgba(24,24,27,0.08)',
+      }}
+    >
+      <ArrowLeft size={15} strokeWidth={2} color="var(--text-muted)" />
+      Back
+    </button>
+  )
+
+  if (mode === 'lang') {
+    return (
+      <WizardShell isMobile={isMobile} back={() => setMode('landing')}
+        title="Which language are you learning?"
+        subtitle="Pick one to start — you can add the others any time.">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '420px' }}>
+          {languages.map(lang => (
+            <button
+              key={lang.key}
+              onClick={() => chooseLanguage(lang.key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '14px',
+                padding: '16px 18px', borderRadius: '16px', cursor: 'pointer',
+                background: 'var(--surface)', border: '1px solid ' + lang.accentHex + '33',
+                boxShadow: '0 4px 14px rgba(24,24,27,0.05)', textAlign: 'left',
+                fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              <span style={{ fontSize: '26px' }}>{lang.flag}</span>
+              <span style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '17px', fontWeight: 750, color: 'var(--text)' }}>{lang.languageName}</span>
+                <span style={{ fontSize: '14px', fontWeight: 650, color: lang.accentHex, fontFamily: lang.font }}>{lang.nativeName}</span>
+              </span>
+              <ArrowRight size={18} strokeWidth={2} color="var(--text-faint)" style={{ marginLeft: 'auto' }} />
+            </button>
+          ))}
+        </div>
+      </WizardShell>
+    )
+  }
+
+  if (mode === 'why') {
+    const lang = languageTheme(pickedLang)
+    return (
+      <WizardShell isMobile={isMobile} back={() => setMode('lang')}
+        title={`Why are you learning ${lang.languageName}?`}
+        subtitle="This tailors your first stories and encouragement. There's no wrong answer.">
+        <div style={{
+          display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+          gap: '12px', width: '100%', maxWidth: '520px',
+        }}>
+          {REASONS.map(r => (
+            <button
+              key={r.key}
+              onClick={() => chooseReason(r.key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '12px',
+                padding: '15px 16px', borderRadius: '15px', cursor: 'pointer',
+                background: 'var(--surface)', border: '1px solid var(--border)',
+                boxShadow: '0 4px 14px rgba(24,24,27,0.05)', textAlign: 'left',
+                fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              <span style={{ fontSize: '22px' }}>{r.emoji}</span>
+              <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>{r.label}</span>
+            </button>
+          ))}
+        </div>
+      </WizardShell>
+    )
+  }
+
   if (mode === 'auth') {
+    const intro = pickedLang
+      ? encouragementFor(pickedLang, pickedReason, languageTheme(pickedLang).languageName)
+      : null
     return (
       <div style={{ position: 'relative' }}>
-        <button
-          onClick={() => setMode('landing')}
-          style={{
-            position: 'fixed', top: '18px', left: '18px', zIndex: 5,
-            display: 'inline-flex', alignItems: 'center', gap: '7px',
-            padding: '9px 14px', borderRadius: '12px',
-            border: '1px solid var(--border)', background: 'var(--surface)',
-            color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650,
-            fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-            boxShadow: '0 6px 18px rgba(24,24,27,0.08)',
-          }}
-        >
-          <ArrowLeft size={15} strokeWidth={2} color="var(--text-muted)" />
-          Back
-        </button>
-        <Auth />
+        {backChip(() => setMode(pickedReason ? 'why' : 'landing'))}
+        <Auth intro={intro} />
       </div>
     )
   }
@@ -248,7 +394,7 @@ export default function Landing() {
             not another streak.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '14px' }}>
-            <CtaButton big onClick={() => setMode('auth')}>Start your first story</CtaButton>
+            <CtaButton big onClick={() => startWizard()}>Start your first story</CtaButton>
           </div>
           <div style={{ marginBottom: '14px' }}>
             <a href="/how-much-can-you-read" style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '14px', textDecoration: 'underline', textUnderlineOffset: '3px' }}>
@@ -262,15 +408,15 @@ export default function Landing() {
           {/* Language chips */}
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: isMobile ? '44px' : '64px' }}>
             {languages.map(lang => (
-              <div key={lang.key} style={{
+              <button key={lang.key} onClick={() => startWizard(lang.key)} style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
                 width: isMobile ? '140px' : '160px', height: '46px', padding: '0 16px', borderRadius: '999px',
                 background: 'var(--surface)', border: '1px solid ' + lang.accentHex + '33',
-                boxShadow: '0 4px 14px rgba(24,24,27,0.05)',
+                boxShadow: '0 4px 14px rgba(24,24,27,0.05)', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
               }}>
                 <span style={{ fontSize: '17px', fontWeight: 700, color: lang.accentHex, fontFamily: lang.font }}>{lang.nativeName}</span>
                 <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>{SYSTEM_LABELS[lang.key]}</span>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -347,7 +493,7 @@ export default function Landing() {
           <h2 style={{ fontSize: isMobile ? '22px' : '26px', fontWeight: 800, color: 'var(--text)', margin: '0 0 20px', letterSpacing: '-0.01em' }}>
             Fifteen minutes a day. Real reading you can feel.
           </h2>
-          <CtaButton big onClick={() => setMode('auth')}>Build my reading path</CtaButton>
+          <CtaButton big onClick={() => startWizard()}>Build my reading path</CtaButton>
           <div style={{ fontSize: '12.5px', color: 'var(--text-faint)', fontWeight: 600, marginTop: '26px' }}>
             Start free · Core learning is free · No credit card required
           </div>
