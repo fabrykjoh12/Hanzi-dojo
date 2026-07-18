@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
 import ErrorBoundary from './ErrorBoundary'
 import { getHomeCounts } from './homeCounts'
-import { pathToView, viewToPath, isKnownView, readStoryId } from './routes'
+import { pathToView, viewToPath, isKnownView, readStoryId, isAssessmentPath } from './routes'
 import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
@@ -43,6 +43,7 @@ const Settings = lazy(() => import('./Settings'))
 // Public story page: only reached via a shared /read/:id link, so code-split it
 // out of the first-paint bundle (it pulls in storyReading.js).
 const PublicStory = lazy(() => import('./PublicStory'))
+const HowMuchCanYouRead = lazy(() => import('./HowMuchCanYouRead'))
 const Dev = lazy(() => import('./Dev'))
 const NotFound = lazy(() => import('./NotFound'))
 const Dashboard = lazy(() => import('./Dashboard'))
@@ -88,6 +89,7 @@ export default function App() {
   const location = useLocation()
   const view = pathToView(location.pathname)
   const publicStoryId = readStoryId(location.pathname)
+  const assessment = isAssessmentPath(location.pathname)
 
   // Apply the theme to the document so the CSS variables (index.css) switch.
   useEffect(() => {
@@ -222,6 +224,17 @@ export default function App() {
     return (
       <Suspense fallback={<ViewFallback />}>
         <PublicStory storyId={publicStoryId} />
+      </Suspense>
+    )
+  }
+
+  // Public reading assessment — works for everyone (signed-in visitors get a
+  // "Back to app" CTA instead of the signup gate), so it's checked before the
+  // Landing gate.
+  if (assessment) {
+    return (
+      <Suspense fallback={<ViewFallback />}>
+        <HowMuchCanYouRead />
       </Suspense>
     )
   }

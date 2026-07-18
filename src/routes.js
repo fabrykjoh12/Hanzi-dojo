@@ -42,3 +42,12 @@ export function readStoryId(pathname) {
   if (segs[0] === 'read' && segs[1]) return segs[1]
   return null
 }
+
+// Recognize the public reading-assessment route (/how-much-can-you-read), which
+// works signed-out. Kept here (not in App) so the same route-mapping tests cover
+// it. Tolerates a trailing slash.
+export function isAssessmentPath(pathname) {
+  let p = pathname || '/'
+  if (p.startsWith('/')) p = p.slice(1)
+  return p.replace(/\/$/, '') === 'how-much-can-you-read'
+}
