@@ -16,6 +16,16 @@ test.describe('Study session (flashcards)', () => {
     await expect(study.gradeEasy).toBeVisible();
   });
 
+  // A card added from a story carries that story's sentence; the revealed card
+  // shows it as real reading context (reading -> review mining).
+  test('revealed card shows the sentence from the story it was read in', async ({ page }) => {
+    const study = new StudyPage(page);
+    await study.goto();
+    await study.reveal();
+    await expect(page.getByText('From a story you read')).toBeVisible();
+    await expect(page.getByText('我今天很开心。')).toBeVisible();
+  });
+
   // The recap must always end with a direct "do this next" action — never a
   // dead-end "Back home" — even when no story is unlocked and no chat mission
   // is offered (the mock fixtures have neither), which falls back to the story

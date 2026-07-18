@@ -91,6 +91,7 @@ function card(n, o = {}) {
   const base_ = {
     id: `c${n}`, user_id: USER_ID, vocab_id: `v${n}`, state,
     due_at: dueNow, created_at: past, last_review: past,
+    source_sentence: '我今天很开心。',
     is_easy: false, learned: true,
     stability: isNew ? 0 : 20, difficulty: isNew ? 0 : 5,
     elapsed_days: 3, scheduled_days: 9, reps: 4, lapses: 0,

@@ -949,7 +949,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const showRuby = canUseFurigana && (showFurigana || flipped)
   const wordFuri = showRuby ? furiganaParts(v.word, v.reading) : null
   const showReadingLine = flipped && v.reading && !isJapanese
-  const hasExample = Boolean(v.example_sentence || v.example_reading || v.example_translation)
+  // Prefer the sentence the learner actually read (captured when they added the
+  // word from a story) over the generic example — real context is more memorable.
+  const sourceSentence = card.source_sentence || null
+  const hasExample = Boolean(sourceSentence || v.example_sentence || v.example_reading || v.example_translation)
 
   function renderExampleSentence(sentence, word, reading) {
     if (!sentence) return null
@@ -1209,23 +1212,36 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                     width: '100%', maxWidth: '430px', marginTop: '22px', paddingTop: '18px',
                     borderTop: '1px solid var(--border)', textAlign: 'center',
                   }}>
-                    {v.example_sentence && (
-                      <div style={{
-                        fontSize: '17px', color: 'var(--text)', lineHeight: 1.5,
-                        fontFamily: langFont,
-                      }}>
-                        {renderExampleSentence(v.example_sentence, v.word, v.reading)}
-                      </div>
-                    )}
-                    {!isJapanese && v.example_reading && (
-                      <div style={{ fontSize: '13px', color: accentHex, marginTop: '7px', lineHeight: 1.45, fontWeight: 550 }}>
-                        {v.example_reading}
-                      </div>
-                    )}
-                    {v.example_translation && (
-                      <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '7px', lineHeight: 1.45 }}>
-                        {v.example_translation}
-                      </div>
+                    {sourceSentence ? (
+                      <>
+                        <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                          From a story you read
+                        </div>
+                        <div style={{ fontSize: '17px', color: 'var(--text)', lineHeight: 1.5, fontFamily: langFont }}>
+                          {renderExampleSentence(sourceSentence, v.word, v.reading)}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {v.example_sentence && (
+                          <div style={{
+                            fontSize: '17px', color: 'var(--text)', lineHeight: 1.5,
+                            fontFamily: langFont,
+                          }}>
+                            {renderExampleSentence(v.example_sentence, v.word, v.reading)}
+                          </div>
+                        )}
+                        {!isJapanese && v.example_reading && (
+                          <div style={{ fontSize: '13px', color: accentHex, marginTop: '7px', lineHeight: 1.45, fontWeight: 550 }}>
+                            {v.example_reading}
+                          </div>
+                        )}
+                        {v.example_translation && (
+                          <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '7px', lineHeight: 1.45 }}>
+                            {v.example_translation}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
