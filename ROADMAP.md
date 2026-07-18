@@ -12,7 +12,7 @@ so the community always sees the latest. Keep it current — move things to
 > you everywhere.
 
 ## 🚧 Now — in progress
-- [ ] **Read your own text** — paste an article or a link and read it with the same "% you can read" + tap-to-look-up-and-save (an upgrade of today's *Analyze text*).
+- [ ] _Between milestones — picking the next focus from **Next — planned** below. Ideas? Drop them in **#feedback-and-ideas**._
 
 ## 🔜 Next — planned
 
@@ -99,6 +99,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] `ChatMission` overlay: `role="dialog"` + focus trap (the mobile "More" sheet is done)
 
 ## ✅ Shipped
+- [x] **Read your own text** — paste any text and read it with tap-to-define + add-to-deck against your known words, plus a live "% you can read" (an upgrade of *Analyze text*).
 - [x] **Speaking practice** — a new "Speaking" drill: read a word aloud and get an instant ✓ from on-device speech recognition (Chrome/Android/desktop; graceful fallback elsewhere).
 - [x] **"How much can you read?"** — a 60-second public reading test with a shareable result, no account needed.
 - [x] **Reading feeds review** — words you save while reading carry that story's own sentence onto the review card, so you review real context.
