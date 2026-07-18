@@ -1,0 +1,34 @@
+{
+  "chinese-tts": {
+    "messageId": "1528150914504982810",
+    "threadId": "1528150914504982810"
+  },
+  "assessment": {
+    "messageId": "1528150915251441726",
+    "threadId": "1528150915251441726"
+  },
+  "comprehension": {
+    "messageId": "1528150916530700339",
+    "threadId": "1528150916530700339"
+  },
+  "story-practice": {
+    "messageId": "1528150917407314003",
+    "threadId": "1528150917407314003"
+  },
+  "review-mining": {
+    "messageId": "1528150918108024995",
+    "threadId": "1528150918108024995"
+  },
+  "speaking": {
+    "messageId": "1528150918644891671",
+    "threadId": "1528150918644891671"
+  },
+  "read-own-text": {
+    "messageId": "1528150919810912278",
+    "threadId": "1528150919810912278"
+  },
+  "email-sender": {
+    "messageId": "1528150920502972517",
+    "threadId": "1528150920502972517"
+  }
+}
