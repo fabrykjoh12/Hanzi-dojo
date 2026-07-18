@@ -56,6 +56,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] `ChatMission` overlay: `role="dialog"` + focus trap (the mobile "More" sheet is done)
 
 ## ✅ Shipped
+- [x] **More accurate Japanese vocabulary** — N5 flashcards and example sentences now show the correct kanji (去年, 部屋, 映画, 病院 …) instead of kana
 - [x] **Interactive chat stories** — reply inside a chat story by picking the right response (retry until it clicks); your choice becomes your message and the conversation keeps going
 - [x] **Scene stories** — read a story as a picture-book: each beat is a big emoji illustration above one short line, revealed a tap at a time (with the same read-along audio and tap-a-word lookup as every story)
 - [x] **Chat-format stories** — read a story as a messaging conversation that reveals one bubble at a time (tap to continue), with the same read-along audio and tap-a-word lookup as every story
