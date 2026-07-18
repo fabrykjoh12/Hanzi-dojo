@@ -54,6 +54,23 @@ test.describe('Story reader', () => {
     await expect(page.getByText('You read it')).toBeVisible();
   });
 
+  test('comprehension check appears after finishing and scores answers', async ({ page }) => {
+    const reader = new ReaderPage(page);
+    await reader.openFirstStory();
+    await page.getByRole('button', { name: /Start reading/i }).click();
+    await page.getByRole('button', { name: /Next line/i }).click();
+    await page.getByRole('button', { name: /Next line/i }).click();
+    await page.getByRole('button', { name: /Next line/i }).click();
+
+    // Finish overlay now carries the shared comprehension quiz.
+    await expect(page.getByText('You read it')).toBeVisible();
+    await expect(page.getByText('Check your understanding')).toBeVisible();
+
+    // Answer the first question correctly → running score shows.
+    await page.getByRole('button', { name: 'Good' }).click();
+    await expect(page.getByText('1/2')).toBeVisible();
+  });
+
   test('chat reveal: reveals bubbles on tap, looks up a word, and finishes', async ({ page }) => {
     const reader = new ReaderPage(page);
     await reader.openStoryByTitle('朋友的问题');

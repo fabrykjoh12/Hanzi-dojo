@@ -18,6 +18,7 @@ import { shareReadingCard } from './shareCard'
 import { toast } from './toast'
 import { BRAND_URL } from './brand'
 import { ArrowLeft, Bookmark, Volume2, Play, Pause, Languages, ChevronRight, UserRound, Check, X, Sparkles, Home, Sliders, Eye, Clock, Repeat, Lock, Share2 } from 'lucide-react'
+import ComprehensionCheck from './ComprehensionCheck'
 
 // HSKStory-inspired immersion reader for BOTH languages. Light theme. Tap a word
 // for a bottom-sheet definition; pinyin (Chinese) / furigana (Japanese) and
@@ -424,10 +425,6 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     if (firstMission) trackOnce(EVENTS.FIRST_STORY_OPENED, { known_pct: knownPct })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story.id])
-
-  // Comprehension scoring.
-  const answeredCount = Object.keys(answers).length
-  const correctCount = questions.filter(q => answers[q.id] === q.correct_index).length
 
   // Finishing a story records it (story_reads) and pays a small one-time XP
   // reward — reading is half the method, it should count for something.
@@ -896,54 +893,14 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
           </div>
         )}
 
-        {/* Comprehension check */}
+        {/* Comprehension check (shared with the new reader engine). */}
         {questions.length > 0 && (
-          <div style={{ marginTop: '20px', background: PANEL, border: '1px solid var(--border)', borderRadius: '16px', padding: '18px 20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '4px' }}>
-              <span style={{ fontSize: '15px', fontWeight: 700, color: TEXT }}>Check your understanding</span>
-              {answeredCount > 0 && (
-                <span style={{ fontSize: '13px', fontWeight: 700, color: correctCount === questions.length ? '#2F9E6D' : MUTED }}>
-                  {correctCount}/{questions.length}
-                </span>
-              )}
-            </div>
-            {questions.map((q, qi) => {
-              const chosen = answers[q.id]
-              const answered = chosen !== undefined
-              return (
-                <div key={q.id} style={{ marginTop: qi === 0 ? '14px' : '18px' }}>
-                  <div style={{ fontSize: '14px', fontWeight: 650, color: TEXT, marginBottom: '9px', lineHeight: 1.5 }}>
-                    {qi + 1}. {q.question}
-                  </div>
-                  <div style={{ display: 'grid', gap: '8px' }}>
-                    {q.options.map((opt, oi) => {
-                      const isCorrect = oi === q.correct_index
-                      const isChosen = oi === chosen
-                      let bc = 'var(--border)', bg = 'var(--surface)'
-                      if (answered && isCorrect) { bc = '#2F9E6D'; bg = 'var(--success-bg)' }
-                      else if (answered && isChosen) { bc = '#DC2626'; bg = 'var(--danger-bg)' }
-                      return (
-                        <button
-                          key={oi}
-                          onClick={() => { if (!answered) setAnswers(a => ({ ...a, [q.id]: oi })) }}
-                          disabled={answered}
-                          style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px',
-                            textAlign: 'left', padding: '11px 14px', borderRadius: '11px',
-                            border: '1.5px solid ' + bc, background: bg, color: TEXT,
-                            cursor: answered ? 'default' : 'pointer', fontSize: '14px', fontFamily: 'Inter, sans-serif',
-                          }}
-                        >
-                          <span>{opt}</span>
-                          {answered && isCorrect && <Check size={17} strokeWidth={2.4} color="#2F9E6D" />}
-                          {answered && isChosen && !isCorrect && <X size={17} strokeWidth={2.4} color="#DC2626" />}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })}
+          <div style={{ marginTop: '20px' }}>
+            <ComprehensionCheck
+              questions={questions}
+              answers={answers}
+              onAnswer={(qid, oi) => setAnswers(a => (a[qid] !== undefined ? a : { ...a, [qid]: oi }))}
+            />
           </div>
         )}
 

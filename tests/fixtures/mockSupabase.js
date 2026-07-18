@@ -109,7 +109,14 @@ const CARDS = [
   card(12, { state: 'learning', stability: 1, difficulty: 5, learned: false }),
 ];
 
-const TABLE_FIXTURES = { profiles: PROFILE, language_tracks: TRACK, vocabulary: VOCAB, cards: CARDS, stories: STORIES, story_reads: [] };
+// End-of-story comprehension questions (served for every story in tests; the
+// real RPC filters by story_id). Exercises the shared ComprehensionCheck.
+const STORY_QUESTIONS = [
+  { id: 'sq1', story_id: 'st1', question_number: 1, question: 'How is the weather?', options: ['Good', 'Bad'], correct_index: 0 },
+  { id: 'sq2', story_id: 'st1', question_number: 2, question: 'Where did they go?', options: ['Park', 'School'], correct_index: 0 },
+];
+
+const TABLE_FIXTURES = { profiles: PROFILE, language_tracks: TRACK, vocabulary: VOCAB, cards: CARDS, stories: STORIES, story_reads: [], story_questions: STORY_QUESTIONS };
 
 export const SESSION = {
   access_token: 'mock', token_type: 'bearer', expires_in: 3600, expires_at: 4102444800,
