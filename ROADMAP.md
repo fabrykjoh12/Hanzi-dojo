@@ -12,7 +12,7 @@ so the community always sees the latest. Keep it current — move things to
 > you everywhere.
 
 ## 🚧 Now — in progress
-- [ ] _Between milestones — picking the next focus from **Next — planned** below. Ideas? Drop them in **#feedback-and-ideas**._
+- [ ] **Read your own text** — paste an article or a link and read it with the same "% you can read" + tap-to-look-up-and-save (an upgrade of today's *Analyze text*).
 
 ## 🔜 Next — planned
 
@@ -20,7 +20,6 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] **Word-by-word read-along** — each word lights up as it's spoken, and you can tap any word to start the audio from there (with speed control).
 - [ ] **Pinyin only when you need it** — show pinyin just for words above your level, not all-or-nothing.
 - [ ] **Definitions that fit the sentence** — the meaning actually used here, not a dictionary dump.
-- [ ] **Read your own text** — paste an article or a link and read it with the same "% you can read" + tap-to-look-up-and-save (an upgrade of today's *Analyze text*).
 - [ ] **One "% known" everywhere** — your word knowledge follows you across stories, your own text, and (later) video.
 
 **Speak & be understood**
