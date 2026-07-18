@@ -250,6 +250,11 @@ export default function Landing() {
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '14px' }}>
             <CtaButton big onClick={() => setMode('auth')}>Start your first story</CtaButton>
           </div>
+          <div style={{ marginBottom: '14px' }}>
+            <a href="/how-much-can-you-read" style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '14px', textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+              Or find out how much Chinese you can already read — 60-second test →
+            </a>
+          </div>
           <div style={{ fontSize: '12.5px', color: 'var(--text-faint)', fontWeight: 600, marginBottom: isMobile ? '40px' : '56px' }}>
             Start free. No credit card. Learn your first words and unlock your first story in minutes.
           </div>

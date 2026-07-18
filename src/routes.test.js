@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pathToView, viewToPath, isKnownView, KNOWN_VIEWS, readStoryId } from './routes'
+import { pathToView, viewToPath, isKnownView, KNOWN_VIEWS, readStoryId, isAssessmentPath } from './routes'
 
 describe('pathToView', () => {
   it('maps root and empty to home', () => {
@@ -59,5 +59,17 @@ describe('readStoryId', () => {
   it('returns null for unrelated paths', () => {
     expect(readStoryId('/stories')).toBe(null)
     expect(readStoryId('/')).toBe(null)
+  })
+})
+
+describe('isAssessmentPath', () => {
+  it('recognizes the assessment route (with or without trailing slash)', () => {
+    expect(isAssessmentPath('/how-much-can-you-read')).toBe(true)
+    expect(isAssessmentPath('/how-much-can-you-read/')).toBe(true)
+  })
+  it('rejects other paths', () => {
+    expect(isAssessmentPath('/read/abc')).toBe(false)
+    expect(isAssessmentPath('/')).toBe(false)
+    expect(isAssessmentPath('/stories')).toBe(false)
   })
 })

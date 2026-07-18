@@ -27,6 +27,10 @@ export const EVENTS = {
   PUBLIC_STORY_VIEWED: 'public_story_viewed',
   PUBLIC_STORY_LEVEL_PICKED: 'public_story_level_picked',
   PUBLIC_STORY_SIGNUP_CLICKED: 'public_story_signup_clicked',
+  // Public reading assessment (pre-auth, anonymous funnel)
+  ASSESSMENT_STARTED: 'assessment_started',
+  ASSESSMENT_COMPLETED: 'assessment_completed',
+  ASSESSMENT_SIGNUP_CLICKED: 'assessment_signup_clicked',
   // Activation
   ONBOARDING_STARTED: 'onboarding_started',
   ONBOARDING_COMPLETED: 'onboarding_completed',
