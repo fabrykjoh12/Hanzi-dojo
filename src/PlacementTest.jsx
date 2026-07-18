@@ -1,49 +1,12 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import { shuffle } from './utils'
 import { PLACEMENT_QUESTION_COUNT, PLACEMENT_PASS_RATIO } from './tiers'
-import { cleanMeaning } from './cleanMeaning'
+import { buildMcqQuestions } from './mcq'
 import { Check, X, ShieldCheck } from 'lucide-react'
 
-// Build up to `count` multiple-choice questions from a level's vocabulary.
-// Mixes prompt→answer directions (meaning→word and word→meaning) with three
-// distractors drawn from the same level, so the test really probes command of
-// that level's words. Pure given its inputs (randomness aside).
-function buildQuestions(vocab, language, count) {
-  const usable = (vocab || []).filter(v => v.word && v.meaning)
-  if (usable.length < 4) return []
-  const picked = shuffle(usable).slice(0, Math.min(count, usable.length))
-  return picked.map(v => {
-    const wrong = shuffle(usable.filter(w => w.id !== v.id)).slice(0, 3)
-    const toEnglish = Math.random() > 0.5
-    if (toEnglish) {
-      const options = shuffle([v, ...wrong].map(w => cleanMeaning(w.meaning)))
-      return {
-        prompt: v.word,
-        promptReading: v.reading,
-        promptLabel: language === 'japanese' ? 'Japanese' : language === 'russian' ? 'Russian' : 'Chinese',
-        answerLabel: 'English',
-        options,
-        correct: cleanMeaning(v.meaning),
-        optionReadings: null,
-        big: true,
-      }
-    }
-    const wordOptions = shuffle([v, ...wrong].map(w => ({ word: w.word, reading: w.reading })))
-    return {
-      prompt: cleanMeaning(v.meaning),
-      promptReading: null,
-      promptLabel: 'English',
-      answerLabel: language === 'japanese' ? 'Japanese' : language === 'russian' ? 'Russian' : 'Chinese',
-      options: wordOptions.map(o => o.word),
-      correct: v.word,
-      optionReadings: language === 'japanese'
-        ? wordOptions.reduce((acc, o) => { acc[o.word] = o.reading; return acc }, {})
-        : null,
-      big: false,
-    }
-  })
-}
+// Multiple-choice questions for the placement quiz come from the shared MCQ
+// builder (src/mcq.js), which the public reading assessment reuses too.
+const buildQuestions = buildMcqQuestions
 
 // A short placement quiz shown when the user claims Intermediate/Professional.
 // Passing (≥ PLACEMENT_PASS_RATIO correct) proves the level and lets onboarding
