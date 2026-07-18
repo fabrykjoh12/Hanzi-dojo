@@ -94,18 +94,21 @@ async function insertStories(file) {
         throw new Error(`english_content has ${englishLines.length} lines but content has ${contentLines.length}`)
       }
       const story_number = await nextStoryNumber(s.language, s.system, s.level)
-      const { error } = await supabase.from('stories').insert({
+      const row = {
         language: s.language, system: s.system, level: s.level,
         tier: s.tier ?? 1, tier_min_words: s.tier_min_words ?? 0,
         presentation: s.presentation || 'paced',
-        interactions: s.interactions || null,
         story_number,
         title: s.title,
         english_summary: s.english_summary ?? null,
         content: contentLines.join('\n'),
         english_content: s.english_content ? englishLines.join('\n') : null,
         is_published: s.is_published !== false,
-      })
+      }
+      // Only send `interactions` for stories that have it, so seeding non-interactive
+      // stories still works before the stories.interactions migration is applied.
+      if (s.interactions) row.interactions = s.interactions
+      const { error } = await supabase.from('stories').insert(row)
       if (error) throw new Error(error.message)
       console.log(`✓ ${label} → #${story_number} (${contentLines.length} lines, ${s.is_published !== false ? 'published' : 'held'})`)
       ok += 1
