@@ -126,11 +126,19 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
 
   const addToDeck = async (vocab) => {
     if (!vocab || !vocab.id || (userCards && userCards[vocab.id])) return
-    const { error } = await supabase.from('cards').insert({
+    const row = {
       user_id: session.user.id, vocab_id: vocab.id,
       state: 'new', ease_factor: 2.5, learning_step: 0, due_at: new Date().toISOString(),
       source_sentence: sourceSentenceFor(vocab),
-    })
+    }
+    let { error } = await supabase.from('cards').insert(row)
+    // Degrade gracefully if the source_sentence migration isn't applied yet:
+    // retry without the column so add-to-deck never breaks.
+    if (error && /source_sentence/.test(error.message || '')) {
+      const { source_sentence, ...rest } = row
+      void source_sentence
+      ;({ error } = await supabase.from('cards').insert(rest))
+    }
     if (!error && setUserCards) setUserCards(prev => ({ ...prev, [vocab.id]: { vocab_id: vocab.id, state: 'new' } }))
   }
 

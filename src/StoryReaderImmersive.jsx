@@ -497,7 +497,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     const srcSentence = (sel && sel.vocab && sel.vocab.id === vocabItem.id && sel.lineIndex != null && lines[sel.lineIndex])
       ? splitSpeaker(lines[sel.lineIndex]).text
       : null
-    const { error } = await supabase.from('cards').insert({
+    const row = {
       user_id: session.user.id,
       vocab_id: vocabItem.id,
       state: 'new',
@@ -505,7 +505,14 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
       learning_step: 0,
       due_at: new Date().toISOString(),
       source_sentence: srcSentence,
-    })
+    }
+    let { error } = await supabase.from('cards').insert(row)
+    // Degrade gracefully if the source_sentence migration isn't applied yet.
+    if (error && /source_sentence/.test(error.message || '')) {
+      const { source_sentence, ...rest } = row
+      void source_sentence
+      ;({ error } = await supabase.from('cards').insert(rest))
+    }
     if (!error) {
       setUserCards(prev => ({ ...prev, [vocabItem.id]: { vocab_id: vocabItem.id, is_easy: false, state: 'new' } }))
     }
