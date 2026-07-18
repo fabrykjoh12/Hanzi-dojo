@@ -127,12 +127,29 @@ const CORS = {
 };
 
 /** Install the Supabase REST/auth interceptor on a page. */
+// Vocab returned by the anon public_assessment_vocab RPC on the reading-test
+// page: 12 words per level across levels 1–2, enough to form 4 bands of ≥4.
+export const ASSESSMENT_VOCAB = (() => {
+  const rows = []; let so = 0;
+  for (const level of [1, 2]) {
+    for (let i = 0; i < 12; i += 1) {
+      rows.push({ id: `${level}-${i}`, word: `词${level}${i}`, reading: `pin${level}${i}`, meaning: `word ${level}-${i}`, level, sort_order: so++ });
+    }
+  }
+  return rows;
+})();
+
 export async function mockSupabaseRoutes(page) {
   await page.route(`**/${REF}.supabase.co/**`, async (route) => {
     const req = route.request();
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS, body: '' });
     const url = new URL(req.url());
     const wantsObject = (req.headers()['accept'] || '').includes('pgrst.object');
+    if (url.pathname.startsWith('/rest/v1/rpc/')) {
+      const fn = url.pathname.replace('/rest/v1/rpc/', '');
+      const body = fn === 'public_assessment_vocab' ? ASSESSMENT_VOCAB : null;
+      return route.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    }
     if (url.pathname.startsWith('/rest/v1/')) {
       const table = url.pathname.replace('/rest/v1/', '').split('?')[0];
       let body;
