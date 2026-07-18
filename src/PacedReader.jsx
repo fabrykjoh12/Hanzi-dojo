@@ -101,7 +101,7 @@ export default function PacedReader(props) {
       </div>
 
       <WordLookupSheet selected={c.selected} theme={c.theme} accent={accent} userCards={userCards} onAddToDeck={c.addToDeck} onSpeak={c.speakWord} onClose={() => c.setSelected(null)} />
-      {c.done && <FinishOverlay story={story} accent={accent} onBack={onBack} />}
+      {c.done && <FinishOverlay story={story} accent={accent} onBack={onBack} core={c} />}
     </div>
   )
 }

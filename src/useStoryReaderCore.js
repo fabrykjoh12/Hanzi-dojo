@@ -24,6 +24,8 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
 
   const [started, setStarted] = useState(false)
   const [cur, setCur] = useState(0)
+  const [questions, setQuestions] = useState([])
+  const [answers, setAnswers] = useState({})
   const [showPy, setShowPy] = useState(true)
   const [showEn, setShowEn] = useState(false)
   const [playing, setPlaying] = useState(false)
@@ -128,6 +130,24 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
 
   const setAdvanceBlocked = useCallback((v) => { advanceBlockedRef.current = !!v }, [])
 
+  const answerQuestion = useCallback((qid, optIndex) => {
+    setAnswers(a => (a[qid] !== undefined ? a : { ...a, [qid]: optIndex }))
+  }, [])
+
+  // Load end-of-story comprehension questions (parity with the classic reader;
+  // a no-op for stories that have none). The reader stays mounted across a
+  // "next story" swap, so clear the prior story's Q&A before the new set loads.
+  useEffect(() => {
+    let active = true
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setAnswers({})
+    setQuestions([])
+    /* eslint-enable react-hooks/set-state-in-effect */
+    supabase.from('story_questions').select('*').eq('story_id', story.id).order('question_number', { ascending: true })
+      .then(({ data }) => { if (active) setQuestions(data || []) })
+    return () => { active = false }
+  }, [story.id])
+
   useEffect(() => {
     if (!started) return undefined
     const onKey = (e) => {
@@ -148,5 +168,6 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     setShowPy, setShowEn, setSelected,
     go, advance, finish, stopPlay, togglePlay, speakWord, selectWord, addToDeck,
     start, backToStart, setAdvanceBlocked,
+    questions, answers, answerQuestion,
   }
 }
