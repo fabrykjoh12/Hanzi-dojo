@@ -14,6 +14,8 @@ so the community always sees the latest. Keep it current — move things to
 ## 🚧 Now — in progress
 - [ ] _Next up — pick from the plan below._
 
+_Recently shipped: study rhythm ring + 7-day forecast on Home._
+
 ## 🔜 Next — planned
 
 **Read more, read deeper**
@@ -66,7 +68,6 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] **Built-in dictionary** — search any word, hear it, and add it to your deck.
 
 **Grow calmly — honest mechanics, not fear**
-- [ ] **Study rhythm, not a chain** — "you studied 4 of the last 7 days" as a quiet ring; nothing to protect, nothing to lose.
 - [ ] **A mastery ladder** — words you've truly locked in reach a permanent "mastered" state (the reward is real progress, not a number).
 - [ ] **Gentle return** — come back after a break to a right-sized queue ("welcome back — 12 words are ready"), never a 300-card wall.
 - [ ] **Your month in review** — a calm, shareable recap of what you learned.
@@ -99,6 +100,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] `ChatMission` overlay: `role="dialog"` + focus trap (the mobile "More" sheet is done)
 
 ## ✅ Shipped
+- [x] **Study rhythm, not a chain** — a quiet "you studied N of the last 7 days" ring on Home, filled dots for the days you showed up. Nothing to protect, nothing to lose — a missed day is just information, never a broken chain.
 - [x] **A gentle forecast** — a calm "next 7 days" review outlook on Home: a small per-day bar chart plus "~N reviews a day," so you can see what's coming (and plan around a busy day) without any streak pressure.
 - [x] **Smoother start** — pick your language and *why* you're learning before signing up; the choice carries into the signup screen (personalized encouragement) and pre-fills onboarding, so you're set up the moment you create an account.
 - [x] **Read your own text** — paste any text and read it with tap-to-define + add-to-deck against your known words, plus a live "% you can read" (an upgrade of *Analyze text*).

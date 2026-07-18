@@ -6,8 +6,9 @@ import { levelInfo, levelTitle } from './xp'
 import InfoTip from './InfoTip'
 import { CountUp } from './ui'
 import { useIsMobile } from './useIsMobile'
-import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, Gauge, Dumbbell, Snowflake, MessagesSquare, CalendarRange } from 'lucide-react'
+import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, Gauge, Dumbbell, Snowflake, MessagesSquare, CalendarRange, Activity } from 'lucide-react'
 import { forecastSummary } from './reviewForecast'
+import { rhythmSummary } from './studyRhythm'
 import { fluencyScore, fluencyRank } from './fluency'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
 
@@ -108,6 +109,10 @@ export default function Home({ profile, track, counts, onNavigate }) {
     const d = new Date(); d.setDate(d.getDate() + i)
     return { key: i, letter: d.toLocaleDateString(undefined, { weekday: 'narrow' }), isToday: i === 0 }
   })
+
+  // Study rhythm (last 7 days) — a calm "N of 7" ring, nothing to protect or lose.
+  const rhythm7 = counts.rhythm7 || []
+  const rhythm = rhythmSummary(rhythm7)
 
   // Fluency score (lifetime vocabulary command across all levels).
   const fScore = fluencyScore(counts)
@@ -263,6 +268,37 @@ export default function Home({ profile, track, counts, onNavigate }) {
             }} />
           </div>
         </div>
+
+        {/* ── Study rhythm ── last 7 days, guilt-free (nothing to lose) ── */}
+        {rhythm.studiedDays > 0 && (
+          <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
+                <Activity size={15} strokeWidth={1.9} color={accentHex} />
+                Your rhythm
+              </span>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                studied <strong style={{ color: 'var(--text)', fontWeight: 650 }}>{rhythm.studiedDays}</strong> of the last {rhythm.days} days
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px' }}>
+              {rhythm7.map((d, i) => (
+                <div key={i} style={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', minWidth: 0 }}
+                  title={`${d.date}${d.studied ? ' · studied' : ''}${d.isToday ? ' · today' : ''}`}>
+                  <span style={{
+                    width: '16px', height: '16px', borderRadius: '50%',
+                    background: d.studied ? accentHex : 'transparent',
+                    border: d.studied ? `1px solid ${accentHex}` : '1.5px solid var(--border)',
+                    boxShadow: d.isToday ? `0 0 0 2px var(--surface), 0 0 0 3.5px ${accentHex}66` : 'none',
+                  }} />
+                  <span style={{ fontSize: '10px', fontWeight: d.isToday ? 700 : 500, color: d.isToday ? accentHex : 'var(--text-faint)' }}>
+                    {new Date(d.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'narrow' })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── 7-day review forecast ── a calm outlook, no streak pressure ── */}
         {forecast.total > 0 && (
