@@ -3,6 +3,7 @@ import { getTrackCards } from './data'
 import { countMastery } from './mastery'
 import { studyFloorLevel } from './levelScope'
 import { isCardDue, endOfLocalDay } from './srs'
+import { reviewForecast } from './reviewForecast'
 
 export async function getHomeCounts(userId, track, dailyNewCards) {
   // Cards scoped server-side to the ACTIVE language (every level): the level
@@ -65,6 +66,11 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
     return d > eod && d <= endOfTomorrow
   }).length
 
+  // A calm 7-day outlook: scheduled reviews bucketed by day (index 0 = today).
+  // Learning cards are excluded (they can't be honestly forecast), so this is an
+  // approximation the UI presents as "~N a day", never a hard promise.
+  const forecast7 = reviewForecast(levelCards, now, 7)
+
   // Weak words: cards the user has lapsed on at least twice and that aren't yet
   // mastered — the cleanup-drill pool.
   const weakCount = levelCards.filter(c => (c.lapses || 0) >= 2 && (c.stability || 0) < 21).length
@@ -80,7 +86,7 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   return {
     newCount, learnCount, dueCount, easyCount, totalWords,
     learnedCount, masteredCount, masteredPct,
-    newDoneToday, dueTomorrow, weakCount,
+    newDoneToday, dueTomorrow, weakCount, forecast7,
     lifetimeLearned, lifetimeMastered,
   }
 }
