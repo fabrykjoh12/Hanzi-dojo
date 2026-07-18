@@ -1,5 +1,24 @@
 import { describe, it, expect } from 'vitest'
-import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, readingVisibleFor, isDueSoon, kanjiStem, buildVocabMatcher, matchVocabAt, segmentLine, namesFor, particlesFor } from './storyReading'
+import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, readingVisibleFor, isDueSoon, kanjiStem, buildVocabMatcher, matchVocabAt, segmentLine, namesFor, particlesFor, hasKanjiChar } from './storyReading'
+
+// ── hasKanjiChar (drives "no furigana over kana-only words") ─────────────────
+describe('hasKanjiChar', () => {
+  it('is true when a word contains a kanji', () => {
+    expect(hasKanjiChar('朝ごはん')).toBe(true)
+    expect(hasKanjiChar('食べる')).toBe(true)
+    expect(hasKanjiChar('学校')).toBe(true)
+  })
+  it('is false for kana-only words (no reading line needed)', () => {
+    expect(hasKanjiChar('うち')).toBe(false)
+    expect(hasKanjiChar('ください')).toBe(false)
+    expect(hasKanjiChar('カタカナ')).toBe(false)
+  })
+  it('is false for empty / nullish input', () => {
+    expect(hasKanjiChar('')).toBe(false)
+    expect(hasKanjiChar(null)).toBe(false)
+    expect(hasKanjiChar(undefined)).toBe(false)
+  })
+})
 
 // ── wordStatus ──────────────────────────────────────────────────────────────
 describe('wordStatus', () => {

@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback } from 'react'
 import { getLevelLabel } from './utils'
-import { wordStatus } from './storyReading'
+import { wordStatus, hasKanjiChar } from './storyReading'
 import { useStoryReaderCore } from './useStoryReaderCore'
 import ReaderLaunch from './ReaderLaunch'
 import WordLookupSheet from './WordLookupSheet'
@@ -14,7 +14,13 @@ function beatStyle(distance, reduceMotion) {
   const opacity = distance === 1 ? 0.5 : distance === 2 ? 0.22 : 0.08
   return { opacity, filter: blur ? `blur(${blur}px)` : 'none' }
 }
-function pinyinLine(tokens) { return tokens.filter(t => t.vocab && t.vocab.reading).map(t => t.vocab.reading).join(' ') }
+// The reading line above a beat. For Japanese, skip words already written in
+// kana — furigana over hiragana is noise; only kanji words need a reading.
+function readingLine(tokens, language) {
+  return tokens
+    .filter(t => t.vocab && t.vocab.reading && (language !== 'japanese' || hasKanjiChar(t.text)))
+    .map(t => t.vocab.reading).join(' ')
+}
 
 export default function PacedReader(props) {
   const c = useStoryReaderCore(props)
@@ -63,7 +69,7 @@ export default function PacedReader(props) {
               <div key={i} ref={el => { beatEls.current[i] = el }} aria-hidden={i !== c.cur}
                 style={{ padding: '26px 0', transition: c.reduceMotion ? 'none' : 'opacity .45s ease, filter .45s ease', ...st }}>
                 {b.speaker && <div style={{ fontSize: '12.5px', fontWeight: 800, color: accent, marginBottom: '9px' }}>{b.speaker}</div>}
-                {c.showPy && i === c.cur && <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: 1.5 }}>{pinyinLine(b.tokens)}</div>}
+                {c.showPy && i === c.cur && readingLine(b.tokens, track.language) && <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: 1.5 }}>{readingLine(b.tokens, track.language)}</div>}
                 <div style={{ fontFamily: c.theme.font, fontSize: '30px', lineHeight: 1.62, fontWeight: 500 }}>
                   {b.tokens.map((t, k) => {
                     if (!t.vocab) return <span key={k}>{t.text}</span>
@@ -80,7 +86,7 @@ export default function PacedReader(props) {
                     )
                   })}
                 </div>
-                {c.showEn && i === c.cur && story.english_content && <div style={{ fontSize: '14px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '12px' }}>{story.english_content}</div>}
+                {c.showEn && i === c.cur && b.english && <div style={{ fontSize: '14px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '12px' }}>{b.english}</div>}
               </div>
             )
           })}
