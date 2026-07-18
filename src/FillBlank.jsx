@@ -1,35 +1,22 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { awardXp } from './xpService'
-import { getLevelLabel, getSystemLabel, shuffle } from './utils'
+import { getLevelLabel, getSystemLabel } from './utils'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
 import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import { markWordDue } from './practiceSignal'
+import { buildFillBlankQuestions, FILL_BLANK_QUESTION_COUNT as QUESTION_COUNT } from './fillBlank'
 import {
   ArrowLeft, AlignLeft, Check, X, RotateCcw, CheckCircle2, Sparkles,
 } from 'lucide-react'
 
-const QUESTION_COUNT = 12
 const XP_PER_CORRECT = 4
 
-// Each question blanks the target word out of its example sentence. Distractors
-// are other words from the same level.
-function buildQuestions(pool) {
-  const usable = pool.filter(v => v.example_sentence && v.example_sentence.indexOf(v.word) !== -1)
-  if (usable.length < 4) return []
-  return shuffle(usable).slice(0, Math.min(QUESTION_COUNT, usable.length)).map(v => {
-    // Blank EVERY occurrence of the word — if it appears twice, a visible second
-    // occurrence would give the answer away. `parts` are the fragments between
-    // blanks (split never misses: usable guarantees at least one occurrence).
-    const parts = v.example_sentence.split(v.word)
-    const distractors = shuffle(pool.filter(o => o.id !== v.id && o.word !== v.word)).slice(0, 3)
-    return { vocab: v, parts, options: shuffle([v, ...distractors]) }
-  })
-}
-
-export default function FillBlank({ session, profile, track, onBack, onUpdate }) {
+// `pool` (optional): when provided (e.g. the words from a story the learner just
+// read), build the drill from it instead of loading the whole current level.
+export default function FillBlank({ session, profile, track, onBack, onUpdate, pool = null }) {
   const isMobile = useIsMobile()
   const [loading, setLoading] = useState(true)
   const [questions, setQuestions] = useState([])
@@ -46,6 +33,11 @@ export default function FillBlank({ session, profile, track, onBack, onUpdate })
 
   async function load() {
     setLoading(true)
+    if (pool && pool.length) {
+      setQuestions(buildFillBlankQuestions(pool, QUESTION_COUNT))
+      setLoading(false)
+      return
+    }
     const { data: vocab } = await supabase
       .from('vocabulary')
       .select('id, word, reading, meaning, example_sentence, example_reading, example_translation')
@@ -53,7 +45,7 @@ export default function FillBlank({ session, profile, track, onBack, onUpdate })
       .eq('system', track.system)
       .eq('level', track.current_level)
       .eq('is_active', true)
-    setQuestions(buildQuestions(vocab || []))
+    setQuestions(buildFillBlankQuestions(vocab || [], QUESTION_COUNT))
     setLoading(false)
   }
 

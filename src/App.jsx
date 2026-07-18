@@ -73,6 +73,7 @@ export default function App() {
   // Today's studied words to highlight in the reader (set alongside a deep-link
   // from the post-study recap; consumed by Stories with the story id).
   const [pendingStoryWords, setPendingStoryWords] = useState(null)
+  const [pendingPracticeWords, setPendingPracticeWords] = useState(null)
   // First mission: true from onboarding completion until the welcome hands off
   // to the guided first session; and carried into the reader (via the deep-link)
   // for the "first story" reading hint + completion line.
@@ -203,6 +204,8 @@ export default function App() {
     if (opts && opts.storyId) setPendingStoryId(opts.storyId)
     if (opts && opts.todayWords) setPendingStoryWords(opts.todayWords)
     if (opts && opts.firstMission) setPendingStoryFirstMission(true)
+    if (opts && opts.practiceWords) setPendingPracticeWords(opts.practiceWords)
+    else if (key === 'fillblank') setPendingPracticeWords(null) // normal hub open — no stale story pool
     routerNavigate(viewToPath(key))
     if (session && key === 'home') loadProfile(session.user.id)
   }
@@ -413,7 +416,8 @@ export default function App() {
         session={session}
         profile={profile}
         track={track}
-        onBack={() => navigate('home')}
+        pool={pendingPracticeWords}
+        onBack={() => { setPendingPracticeWords(null); navigate(pendingPracticeWords ? 'stories' : 'home') }}
         onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
@@ -434,6 +438,7 @@ export default function App() {
         profile={profile}
         track={track}
         onBack={() => navigate('home')}
+        onNavigate={navigate}
         initialStoryId={pendingStoryId}
         initialStoryWords={pendingStoryWords}
         initialStoryFirstMission={pendingStoryFirstMission}

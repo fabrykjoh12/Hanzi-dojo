@@ -259,7 +259,7 @@ function EmptyPanel({ icon: Icon, title, text }) {
 
 // ─── MAIN STORIES COMPONENT ────────────────────────────────────────────────
 
-export default function Stories({ session, profile, track, onBack, initialStoryId, initialStoryWords, initialStoryFirstMission, onInitialStoryConsumed }) {
+export default function Stories({ session, profile, track, onBack, onNavigate, initialStoryId, initialStoryWords, initialStoryFirstMission, onInitialStoryConsumed }) {
   const [view, setView] = useState('categories')
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [selectedStory, setSelectedStory] = useState(null)
@@ -407,6 +407,7 @@ export default function Stories({ session, profile, track, onBack, initialStoryI
         track={track}
         onBack={() => setView('list')}
         onHome={onBack}
+        onPractice={onNavigate ? (words) => onNavigate('fillblank', { practiceWords: words }) : null}
         todayWords={todayWords}
         firstMission={firstMission}
         nextStory={nextStory}
