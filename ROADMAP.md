@@ -12,15 +12,14 @@ so the community always sees the latest. Keep it current — move things to
 > you everywhere.
 
 ## 🚧 Now — in progress
-- [ ] **More accurate Chinese pronunciation** — pinyin-guided audio so tricky multi-reading characters (长, 行, 银行 …) are spoken correctly.
-- [ ] **"How much can you read?"** — a 60-second public test with a shareable result (no account needed).
+- [ ] **"How much can you read?"** — a 60-second public reading test with a shareable result, no account needed (built; applying the final database step to go live).
+- [ ] **Reading feeds review** — words you save while reading now carry that story's own sentence onto the review card, so you review real context (built; applying the final database step to go live).
 
 ## 🔜 Next — planned
 
 **Read more, read deeper**
 - [ ] **Word-by-word read-along** — each word lights up as it's spoken, and you can tap any word to start the audio from there (with speed control).
 - [ ] **Pinyin only when you need it** — show pinyin just for words above your level, not all-or-nothing.
-- [ ] **Understand-check after a story** — a couple of quick comprehension questions, not just a progress recap.
 - [ ] **Definitions that fit the sentence** — the meaning actually used here, not a dictionary dump.
 - [ ] **Read your own text** — paste an article or a link and read it with the same "% you can read" + tap-to-look-up-and-save (an upgrade of today's *Analyze text*).
 - [ ] **One "% known" everywhere** — your word knowledge follows you across stories, your own text, and (later) video.
@@ -35,7 +34,6 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] **Grammar in context** — each story flags the pattern it introduces ("this one uses 把…"), so grammar is learned from real sentences.
 
 **Smarter, calmer review**
-- [ ] **Reading feeds review** — when a word graduates from a story, its sentence + audio come along on the review card.
 - [ ] **Practice from what you just read** — auto fill-in-the-blank drills built from your latest story.
 - [ ] **Stuck-word help** — a word that keeps slipping gets flagged and taught a different way, instead of endlessly re-appearing.
 - [ ] **A gentle forecast** — "next 7 days: ~N cards a day," plus a dial to set how hard you want to remember.
@@ -105,6 +103,8 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] `ChatMission` overlay: `role="dialog"` + focus trap (the mobile "More" sheet is done)
 
 ## ✅ Shipped
+- [x] **More accurate Chinese pronunciation** — pinyin-guided audio so tricky multi-reading characters (长, 行, 银行, 重, 觉 …) are spoken correctly (all HSK vocab re-recorded).
+- [x] **Understand-check after every story** — a few quick comprehension questions at the end of a story, in every reading format (paced, chat, scene, and reply).
 - [x] **More accurate Japanese vocabulary** — N5 flashcards and example sentences now show the correct kanji (去年, 部屋, 映画, 病院 …) instead of kana
 - [x] **Interactive chat stories** — reply inside a chat story by picking the right response (retry until it clicks); your choice becomes your message and the conversation keeps going
 - [x] **Scene stories** — read a story as a picture-book: each beat is a big emoji illustration above one short line, revealed a tap at a time (with the same read-along audio and tap-a-word lookup as every story)
