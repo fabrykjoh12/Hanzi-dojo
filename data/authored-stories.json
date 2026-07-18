@@ -1,87 +1,43 @@
 [
   {
-    "language": "japanese",
-    "system": "jlpt",
+    "language": "chinese",
+    "system": "hsk_3",
     "level": 1,
-    "tier": 2,
-    "tier_min_words": 100,
-    "title": "1. 三日 あとです",
-    "english_summary": "Takashi realizes his mother's birthday is only three days away — and he has almost no money. Hana declares it a plan just between the two of them.",
-    "content": "朝ごはんの まえ、たかしは 新聞を 見ました。\n新聞の 日を 見ました。\nたかし：あ！\n日よう日は お母さんの たんじょうびです。\n三日 あとです。\nでも、たかしは 何も ありません。\n学校で、たかしは はなに 話しました。\nたかし：日よう日は 母の たんじょうびです。\nはな：えっ、いいですね！何を しますか？\nたかし：わかりません…お金も 少ないです。\nはな：うーん…\nはな：じゃあ、これは 二人だけです！\nたかし：二人だけ…？\nはな：そうです。お母さんは 何も 聞きません。\nはな：日よう日に、みんなで 「おめでとう」を 言います。\nたかし：いいですね！でも、何を しますか？\nはな：あしたも 話しましょう。\nその 夜、お母さんは たかしに 聞きました。\nおかあさん：今日、学校は どうでしたか？\nたかし：え？な、何も ありません！\nおかあさん：…そうですか。\nでも、お母さんは たかしを ちょっと 見ました。",
-    "english_content": "Before breakfast, Takashi looked at the newspaper.\nHe looked at the date on the newspaper.\nTakashi: Ah!\nSunday is his mother's birthday.\nIt's three days away.\nBut Takashi has nothing.\nAt school, Takashi told Hana.\nTakashi: Sunday is my mom's birthday.\nHana: Oh, how nice! What will you do?\nTakashi: I don't know… and I have very little money.\nHana: Hmm…\nHana: Then this is just between the two of us!\nTakashi: Just… the two of us?\nHana: Yes. Your mom must hear nothing.\nHana: On Sunday, we all say \"congratulations\".\nTakashi: Sounds great! But what will we do?\nHana: Let's talk more tomorrow.\nThat night, his mother asked Takashi:\nMother: How was school today?\nTakashi: Huh? N-nothing at all!\nMother: …I see.\nBut his mother gave Takashi a little look.",
-    "is_published": true
-  },
-  {
-    "language": "japanese",
-    "system": "jlpt",
-    "level": 1,
-    "tier": 2,
-    "tier_min_words": 100,
-    "title": "2. 小さい お金の 買いもの",
-    "english_summary": "At the shop everything nice is too expensive for Takashi's little money — until he realizes the best present might not be something you can buy.",
-    "content": "つぎの 日、二人は 店へ 行きました。\nはな：この 店は 何でも ありますよ。\nたかしは きれいな ぼうしを 見ました。\nたかし：あ、母は ぼうしが すきです。\nでも、ぼうしは とても 高いです。\nたかし：高い…買いません。\nはなは 小さい とけいを 見ました。\nはな：これは どうですか？\nたかし：それも 高いです。\n二人は 店の 中を 歩きました。\n安い ものは、いい ものでは ありません。\nいい ものは、高いです。\nたかし：私の お金は 少ないです…\nはな：うーん、そうですね。\nその あとで、たかしは 花の 店を 見ました。\n小さくて 赤い 花が ありました。\n花は 安いです。\nたかし：花と…それから、手紙は どうですか？\nたかし：手紙は、お金では 買いません。\nはな：いいですね！えも かきましょう！\nたかしは 花を 買いました。\nお金が ちょっと あります。\nはな：その お金で、おかしも 買いましょう。",
-    "english_content": "The next day, the two went to a shop.\nHana: This shop has everything.\nTakashi looked at a pretty hat.\nTakashi: Ah, my mom likes hats.\nBut the hat is very expensive.\nTakashi: Too expensive… I won't buy it.\nHana looked at a small clock.\nHana: How about this?\nTakashi: That's expensive too.\nThe two walked around the shop.\nThe cheap things are not nice things.\nThe nice things are expensive.\nTakashi: My money is so little…\nHana: Hmm, that's true.\nAfter that, Takashi saw a flower shop.\nThere were small red flowers.\nThe flowers are cheap.\nTakashi: A flower and… how about a letter?\nTakashi: A letter is something money can't buy.\nHana: Great! Let's draw a picture too!\nTakashi bought a flower.\nHe has a little money left.\nHana: With that money, let's buy sweets too.",
-    "is_published": true
-  },
-  {
-    "language": "japanese",
-    "system": "jlpt",
-    "level": 1,
-    "tier": 2,
-    "tier_min_words": 100,
-    "title": "3. おじいさんの しゃしん",
-    "english_summary": "The old neighbor shows Takashi a photo of his mother as a little girl — in the park, on her birthday, long ago. Now Takashi knows exactly where the party should be.",
-    "content": "夜、たかしは おじいさんの 家へ 行きました。\nたかし：こんばんは。ちょっと いいですか？\nおじいさん：ああ、たかしさん。どうぞ、どうぞ。\nたかし：日よう日は 母の たんじょうびです。\nおじいさん：ほう、そうですか。\nたかし：おじいさんは、子どもの 母を 見ましたか？\nおじいさん：ええ、見ましたよ。この まちの 子どもでした。\nおじいさんは 古い しゃしんを 出しました。\n小さい 女の 子が こうえんに いました。\nたかし：これは…母ですか？\nおじいさん：そうです。たんじょうびの 日ですよ。\nしゃしんの 中で、母は 花と いっしょでした。\nとても たのしい 目でした。\nおじいさん：お母さんは この こうえんが すきでした。\nおじいさん：毎年、ここで たんじょうびを しました。\nたかし：わかりました！\nたかし：日よう日、こうえんで します！\nおじいさん：いいですね。私も 行きますよ。\nたかし：この しゃしん、ちょっと いいですか？\nおじいさん：どうぞ、どうぞ。\nたかしは しゃしんと いっしょに 家へ かえりました。",
-    "english_content": "In the evening, Takashi went to the old neighbor's house.\nTakashi: Good evening. Do you have a moment?\nOld man: Ah, Takashi. Come in, come in.\nTakashi: Sunday is my mom's birthday.\nOld man: Oh, is that so.\nTakashi: Did you ever see my mom as a child?\nOld man: Yes, I did. She was a child of this town.\nThe old man took out an old photograph.\nA little girl was in the park.\nTakashi: Is this… my mom?\nOld man: Yes. On her birthday.\nIn the photo, his mother was together with flowers.\nShe had very happy eyes.\nOld man: Your mother loved this park.\nOld man: Every year, she had her birthday here.\nTakashi: I've got it!\nTakashi: On Sunday, we'll do it in the park!\nOld man: Wonderful. I will come too.\nTakashi: May I borrow this photo?\nOld man: Please, please.\nTakashi went home together with the photograph.",
-    "is_published": true
-  },
-  {
-    "language": "japanese",
-    "system": "jlpt",
-    "level": 1,
-    "tier": 2,
-    "tier_min_words": 100,
-    "title": "4. 雨、雨、雨",
-    "english_summary": "Sunday morning: rain. The park plan is ruined — or is it? While Hana takes Mother out under an umbrella, the boys turn the house into the park.",
-    "content": "日よう日の 朝でした。\nたかしは まどを 見ました。\n雨、雨、雨です。\nたかし：あ…こうえんは…\nでも、電話が ありました。\nはな：たかしさん、だいじょうぶですよ！\nたかし：えっ、どうしてですか？\nはな：今日は、家の 中が こうえんです！\nはな：私は お母さんと 外へ 行きます。\nはな：おじいさんと、へやを きれいに して ください。\nはなは たかしの 家へ 来ました。\nはな：おかあさん、いっしょに 買いものへ 行きませんか？\nおかあさん：雨ですよ？\nはな：かさが ありますから、だいじょうぶです！\n二人は 出ました。\nそれから、たかしと おじいさんは とても いそがしいです。\nつくえの 上に 白い 紙。\n紙の 上に、はなの えと たかしの 手紙。\n花と おかしと おちゃ。\nそれから、おじいさんの 古い しゃしん。\nおじいさん：いい こうえんですね。\nたかし：あ！二人が かえりました！",
-    "english_content": "It was Sunday morning.\nTakashi looked at the window.\nRain, rain, rain.\nTakashi: Ah… the park is…\nBut then, there was a phone call.\nHana: Takashi, it's all right!\nTakashi: Huh, why?\nHana: Today, the inside of the house is the park!\nHana: I will go out with your mom.\nHana: Please make the room beautiful with the old man.\nHana came to Takashi's house.\nHana: Ma'am, won't you go shopping with me?\nMother: But it's raining?\nHana: We have umbrellas, so it's fine!\nThe two went out.\nAfter that, Takashi and the old man are very busy.\nWhite paper on the table.\nOn the paper, Hana's drawing and Takashi's letter.\nFlowers, sweets and tea.\nAnd the old man's old photograph.\nOld man: A fine park, isn't it.\nTakashi: Ah! The two are coming back!",
-    "is_published": true
-  },
-  {
-    "language": "japanese",
-    "system": "jlpt",
-    "level": 1,
-    "tier": 2,
-    "tier_min_words": 100,
-    "title": "5. 小さい こうえん",
-    "english_summary": "Mother walks into a living room turned into the park of her childhood photo. The letter says what presents can't — and the rain outside doesn't matter at all.",
-    "content": "お母さんは 家に 入りました。\nみんな：たんじょうび、おめでとうございます！\nおかあさん：えっ！？\nお母さんは つくえを 見ました。\n花、おかし、え、手紙…\nそれから、あの 古い しゃしん。\nおかあさん：この しゃしん…！\nおじいさん：あの こうえんですよ。\nおかあさん：私の こうえん…\nたかし：雨ですから、こうえんは ここです。\nたかし：小さい こうえんです。\nお母さんは 手紙を 読みました。\n「お母さん、いつも ありがとうございます。」\n「お母さんの 子どもで、私は たのしいです。」\nお母さんの 目に、雨が ありました。\nおかあさん：…これは 雨では ありませんよ。\nみんなは 「はは！」と 言いました。\nそれから、みんなで おかしを 食べました。\n外は 雨でした。\nでも、家の 中は はれでした。\nおかあさん：一ばん いい たんじょうびです。\n小さい お金の、大きい たんじょうびでした。",
-    "english_content": "Mother came into the house.\nEveryone: Happy birthday!\nMother: What!?\nMother looked at the table.\nFlowers, sweets, a drawing, a letter…\nAnd that old photograph.\nMother: This photo…!\nOld man: That park, you know.\nMother: My park…\nTakashi: Because of the rain, the park is here.\nTakashi: It's a small park.\nMother read the letter.\n\"Mom, thank you for everything, always.\"\n\"Being your child makes me happy.\"\nIn Mother's eyes, there was rain.\nMother: …This is not rain, you know.\nEveryone said \"Haha!\"\nThen everyone ate the sweets together.\nOutside it was raining.\nBut inside the house, it was sunny.\nMother: This is the best birthday.\nA little money — a big birthday.",
-    "is_published": true
-  },
-  {
-    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
+    "tier": 1,
+    "tier_min_words": 0,
     "presentation": "chat",
     "title": "放学以后",
     "english_summary": "Two classmates make an after-school plan over text.",
     "content": "小明：你好！你现在忙吗？\n朋友：不忙，怎么了？\n小明：放学以后，我们一起去公园吧。\n朋友：好啊！我也想去。\n小明：我们几点去？\n朋友：四点，好吗？\n小明：好，四点在学校门口见。\n朋友：没问题，一会儿见！"
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
     "presentation": "chat",
     "title": "今天吃什么",
     "english_summary": "A quick chat about what to eat for dinner.",
     "content": "妈妈：你今天想吃什么？\n小明：我想吃面条。\n妈妈：家里没有面条了。\n小明：那我们吃米饭和鸡蛋，好吗？\n妈妈：好。你饿了吗？\n小明：有一点饿。\n妈妈：那我现在做饭。\n小明：谢谢妈妈！"
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 2, "tier": 1, "tier_min_words": 0,
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 1,
+    "tier_min_words": 0,
     "presentation": "chat",
     "title": "周末做什么",
     "english_summary": "Two friends compare weekend plans.",
     "content": "朋友：这个周末你有空吗？\n小明：有空。你想做什么？\n朋友：我想去看电影。\n小明：好主意！看什么电影？\n朋友：一个新的中国电影，听说很好看。\n小明：几点的？\n朋友：星期六下午三点。\n小明：太好了，我们一起去！"
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
     "presentation": "scene",
     "title": "下雨天",
     "english_summary": "A rainy-day walk in the park, told scene by scene.",
@@ -89,7 +45,11 @@
     "english_content": "It is raining today.\nXiaoming is holding an umbrella.\nHe goes to walk in the park.\nThere are little birds in the tree.\nThe flowers in the rain are beautiful.\nXiaoming is very happy."
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
     "presentation": "scene",
     "title": "我的早上",
     "english_summary": "One quiet morning, one scene at a time.",
@@ -97,7 +57,11 @@
     "english_content": "It is seven in the morning.\nXiaoming gets out of bed.\nHe brushes his teeth and washes his face.\nHe eats bread and drinks milk.\nHe takes his backpack to school.\nHe rides the bus."
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 2, "tier": 1, "tier_min_words": 0,
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 1,
+    "tier_min_words": 0,
     "presentation": "scene",
     "title": "在动物园",
     "english_summary": "An afternoon at the zoo, animal by animal.",
@@ -105,7 +69,11 @@
     "english_content": "This is a lion.\nThat is a panda.\nThe monkey is playing in the tree.\nThe elephant is very big and tall.\nWe ate ice cream.\nMom took a photo."
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
     "presentation": "chat",
     "title": "放学以后聊天",
     "english_summary": "Reply inside a chat: make an after-school plan with a friend.",
@@ -113,14 +81,33 @@
     "interactions": {
       "you": "小明",
       "distractors": {
-        "1": [{ "text": "我不去，我在家。", "pinyin": "Wǒ bú qù, wǒ zài jiā." }],
-        "3": [{ "text": "我想吃面条。", "pinyin": "Wǒ xiǎng chī miàntiáo." }],
-        "5": [{ "text": "我不知道。", "pinyin": "Wǒ bù zhīdào." }]
+        "1": [
+          {
+            "text": "我不去，我在家。",
+            "pinyin": "Wǒ bú qù, wǒ zài jiā."
+          }
+        ],
+        "3": [
+          {
+            "text": "我想吃面条。",
+            "pinyin": "Wǒ xiǎng chī miàntiáo."
+          }
+        ],
+        "5": [
+          {
+            "text": "我不知道。",
+            "pinyin": "Wǒ bù zhīdào."
+          }
+        ]
       }
     }
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 2, "tier": 1, "tier_min_words": 0,
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 1,
+    "tier_min_words": 0,
     "presentation": "chat",
     "title": "周末的电影",
     "english_summary": "Reply inside a chat: agree on a weekend movie.",
@@ -128,9 +115,24 @@
     "interactions": {
       "you": "小明",
       "distractors": {
-        "1": [{ "text": "我没有空。", "pinyin": "Wǒ méiyǒu kòng." }],
-        "3": [{ "text": "我不喜欢电影。", "pinyin": "Wǒ bù xǐhuan diànyǐng." }],
-        "5": [{ "text": "我不想去了。", "pinyin": "Wǒ bù xiǎng qù le." }]
+        "1": [
+          {
+            "text": "我没有空。",
+            "pinyin": "Wǒ méiyǒu kòng."
+          }
+        ],
+        "3": [
+          {
+            "text": "我不喜欢电影。",
+            "pinyin": "Wǒ bù xǐhuan diànyǐng."
+          }
+        ],
+        "5": [
+          {
+            "text": "我不想去了。",
+            "pinyin": "Wǒ bù xiǎng qù le."
+          }
+        ]
       }
     }
   }
