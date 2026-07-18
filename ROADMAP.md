@@ -12,8 +12,7 @@ so the community always sees the latest. Keep it current — move things to
 > you everywhere.
 
 ## 🚧 Now — in progress
-- [ ] **"How much can you read?"** — a 60-second public reading test with a shareable result, no account needed (built; applying the final database step to go live).
-- [ ] **Reading feeds review** — words you save while reading now carry that story's own sentence onto the review card, so you review real context (built; applying the final database step to go live).
+- [ ] _Picking the next focus — see **Next — planned** below._
 
 ## 🔜 Next — planned
 
@@ -24,8 +23,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] **Read your own text** — paste an article or a link and read it with the same "% you can read" + tap-to-look-up-and-save (an upgrade of today's *Analyze text*).
 - [ ] **One "% known" everywhere** — your word knowledge follows you across stories, your own text, and (later) video.
 
-**Speak & be understood** *(new)*
-- [ ] **Say it aloud, get a ✓** — read a line or a flashcard word and get instant "nailed it / try again" feedback.
+**Speak & be understood**
 - [ ] **Tone trainer** — see your tone shape vs. the target for Mandarin's four tones.
 - [ ] **Shadowing** — repeat-after-the-story practice built from audio you've already heard.
 
@@ -34,7 +32,6 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] **Grammar in context** — each story flags the pattern it introduces ("this one uses 把…"), so grammar is learned from real sentences.
 
 **Smarter, calmer review**
-- [ ] **Practice from what you just read** — auto fill-in-the-blank drills built from your latest story.
 - [ ] **Stuck-word help** — a word that keeps slipping gets flagged and taught a different way, instead of endlessly re-appearing.
 - [ ] **A gentle forecast** — "next 7 days: ~N cards a day," plus a dial to set how hard you want to remember.
 - [ ] **Cram mode** — temporarily study ahead for a trip or an exam.
@@ -103,6 +100,10 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] `ChatMission` overlay: `role="dialog"` + focus trap (the mobile "More" sheet is done)
 
 ## ✅ Shipped
+- [x] **Speaking practice** — a new "Speaking" drill: read a word aloud and get an instant ✓ from on-device speech recognition (Chrome/Android/desktop; graceful fallback elsewhere).
+- [x] **"How much can you read?"** — a 60-second public reading test with a shareable result, no account needed.
+- [x] **Reading feeds review** — words you save while reading carry that story's own sentence onto the review card, so you review real context.
+- [x] **Practice from what you just read** — finish a story and drill its new words with fill-in-the-blank.
 - [x] **More accurate Chinese pronunciation** — pinyin-guided audio so tricky multi-reading characters (长, 行, 银行, 重, 觉 …) are spoken correctly (all HSK vocab re-recorded).
 - [x] **Understand-check after every story** — a few quick comprehension questions at the end of a story, in every reading format (paced, chat, scene, and reply).
 - [x] **More accurate Japanese vocabulary** — N5 flashcards and example sentences now show the correct kanji (去年, 部屋, 映画, 病院 …) instead of kana
