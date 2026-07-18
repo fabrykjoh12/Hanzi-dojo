@@ -5,38 +5,87 @@ update to the `#roadmap` channel in Discord** (via `.github/workflows/discord-no
 so the community always sees the latest. Keep it current — move things to
 **Shipped** as they land.
 
+> **What we're building toward:** *No streaks. No leagues. No guilt. Just real
+> progress* — a memory engine, graded stories, and a tutor that only speaks words
+> you know, in one calm app. The theme running through the plan below: go deeper on
+> reading, add speaking and grammar practice, and let your word knowledge follow
+> you everywhere.
+
 ## 🚧 Now — in progress
 - [ ] **More accurate Chinese pronunciation** — pinyin-guided audio so tricky multi-reading characters (长, 行, 银行 …) are spoken correctly.
-- [ ] "How much can you read?" — a 60-second public assessment with a shareable result (builds on public story links)
+- [ ] **"How much can you read?"** — a 60-second public test with a shareable result (no account needed).
 
 ## 🔜 Next — planned
 
-**Growth — let the product introduce itself**
+**Read more, read deeper**
+- [ ] **Word-by-word read-along** — each word lights up as it's spoken, and you can tap any word to start the audio from there (with speed control).
+- [ ] **Pinyin only when you need it** — show pinyin just for words above your level, not all-or-nothing.
+- [ ] **Understand-check after a story** — a couple of quick comprehension questions, not just a progress recap.
+- [ ] **Definitions that fit the sentence** — the meaning actually used here, not a dictionary dump.
+- [ ] **Read your own text** — paste an article or a link and read it with the same "% you can read" + tap-to-look-up-and-save (an upgrade of today's *Analyze text*).
+- [ ] **One "% known" everywhere** — your word knowledge follows you across stories, your own text, and (later) video.
 
-**Habit & re-engagement**
-- [ ] Timezone-correct daily reminders (no more ~1h drift across DST changes)
-- [ ] Weekly progress email — "you can now read N% more"
+**Speak & be understood** *(new)*
+- [ ] **Say it aloud, get a ✓** — read a line or a flashcard word and get instant "nailed it / try again" feedback.
+- [ ] **Tone trainer** — see your tone shape vs. the target for Mandarin's four tones.
+- [ ] **Shadowing** — repeat-after-the-story practice built from audio you've already heard.
+
+**Grammar that sticks** *(new)*
+- [ ] **Grammar as spaced practice** — turn the grammar guides into quick fill-in-the-blank reviews, scheduled by the same memory engine.
+- [ ] **Grammar in context** — each story flags the pattern it introduces ("this one uses 把…"), so grammar is learned from real sentences.
+
+**Smarter, calmer review**
+- [ ] **Reading feeds review** — when a word graduates from a story, its sentence + audio come along on the review card.
+- [ ] **Practice from what you just read** — auto fill-in-the-blank drills built from your latest story.
+- [ ] **Stuck-word help** — a word that keeps slipping gets flagged and taught a different way, instead of endlessly re-appearing.
+- [ ] **A gentle forecast** — "next 7 days: ~N cards a day," plus a dial to set how hard you want to remember.
+- [ ] **Cram mode** — temporarily study ahead for a trip or an exam.
+
+**Characters & memory** *(new)*
+- [ ] **Build characters from parts** — learn shared components and sound-families (声旁) so new hanzi rest on ones you already know.
+- [ ] **Mnemonic hints** — an optional memory story or breakdown on tricky, easily-confused characters.
+- [ ] **Handwriting that fades its training wheels** — trace → dotted guide → blank as a character matures, with feedback on *which* stroke went wrong.
+
+**A tutor that only speaks your words**
+- [ ] **Comprehensible chat** — Chat Missions constrained to words you actually know (+ a few new ones), so conversation is always readable.
+- [ ] **End-of-chat recap → review** — new words and gentle corrections from a chat flow straight into your queue.
+- [ ] **Recurring characters with real goals** — "order dumplings from 老王," and the tutor knows when you've done it.
 
 **Content & languages**
-- [ ] Expand Chinese into **HSK 3** (and higher bands over time)
-- [ ] More levels for **Japanese** (JLPT N4+) and **Russian** (A2+)
-- [ ] More graded stories at every level and language
-- [ ] **Pictures on flashcards** — a visual memory hook alongside the word
-- [ ] **Higher-quality TTS voices** — research + regenerate more natural narration
-- [ ] **Spanish** track (future)
+- [ ] **Make a story from your words** — generate a story from your deck or weak words, on a topic you pick ("a detective story," "about cooking").
+- [ ] **Browse by interest** — topic tags, plus multi-chapter serials with recurring characters so vocabulary recycles across an arc.
+- [ ] **A fresh story every day** at your level (a calm daily ritual, delivered by a gentle nudge — not a streak nag).
+- [ ] Expand Chinese into **HSK 3** (and higher bands over time).
+- [ ] More levels for **Japanese** (JLPT N4+) and **Russian** (A2+); more graded stories at every level.
+- [ ] **Pictures on flashcards** — a visual memory hook alongside the word.
+- [ ] **Higher-quality TTS voices** — research + regenerate more natural narration.
+- [ ] **Spanish** track (future).
 
 **Reading & video**
-- [ ] **Graded YouTube** — turn any video into a lesson matched to your vocabulary: see "% you'll understand," tap words in a transcript synced to playback, pre-learn the key new words, then watch. (Not just recommended videos — the video version of graded stories.)
-- [ ] Known-Word Map & Reading Ladder — visualize what you can read as your vocabulary grows
-- [ ] Personalized stories built from the exact words in your deck
-- [ ] Word-to-World chat missions expanded across levels
+- [ ] **Graded YouTube** — turn any video into a lesson matched to your vocabulary: see "% you'll understand," tap words in a transcript synced to playback, pre-learn the key new words, then watch.
+- [ ] Known-Word Map & Reading Ladder — visualize what you can read as your vocabulary grows.
 
 **Your words & tools**
-- [ ] **Add your own flashcards** — custom cards / decks for words the app doesn't have yet, scheduled by the same FSRS engine
-- [ ] **Built-in dictionary** — search any word, hear it, and add it to your deck (future)
+- [ ] **Add your own flashcards** — custom cards / decks, scheduled by the same FSRS engine.
+- [ ] **Import a word list** — bring a CSV / Anki deck ("my textbook, chapter 5") into the same engine, and it unlocks stories too.
+- [ ] **Add a phrase, not just a word** — save a whole chunk or idiom from any text.
+- [ ] **Built-in dictionary** — search any word, hear it, and add it to your deck.
+
+**Grow calmly — honest mechanics, not fear**
+- [ ] **Study rhythm, not a chain** — "you studied 4 of the last 7 days" as a quiet ring; nothing to protect, nothing to lose.
+- [ ] **A mastery ladder** — words you've truly locked in reach a permanent "mastered" state (the reward is real progress, not a number).
+- [ ] **Gentle return** — come back after a break to a right-sized queue ("welcome back — 12 words are ready"), never a 300-card wall.
+- [ ] **Your month in review** — a calm, shareable recap of what you learned.
+
+**Let the product introduce itself (growth)**
+- [ ] **Free public level test** — an open-web HSK / JLPT / CEFR placement quiz that ends in a shareable result and "your first stories are ready" (builds on "How much can you read?").
+- [ ] **Word & story pages on the open web** — look up any word or read a taster, then sign up free to keep going.
+- [ ] **Weekly progress email** — "you can now read N% more."
+- [ ] **Give-a-friend** — share a month of Pro, get a month.
+- [ ] **Timezone-correct daily reminders** (no ~1h drift across DST), with gentle, value-based copy.
 
 **Polish**
-- [ ] Cleaner sign-in emails — branded sender from hanzi-dojo.com, links that stay on the domain
+- [ ] Cleaner sign-in emails — branded sender from hanzi-dojo.com, links that stay on the domain.
 
 ## 🧱 Technical
 - [ ] Collapse the multi-write grading path into a single Supabase RPC/transaction
@@ -49,7 +98,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] Data-cache correctness — normalize the column-keyed cache in `data.js` and invalidate/patch on writes
 - [ ] Centralize direct `supabase.from(...)` calls (esp. in `Study`) into a thin per-table data layer
 - [ ] Server-authoritative progression — move level-unlock / test-pass / XP writes into a validating RPC
-- [ ] Split the story reader into a shared "story engine" + swappable presentation modes (unlocks Paced Reveal now, chat & scene formats later)
+- [ ] Global word-status model — one FSRS-driven new/learning/known status per word, powering "% known" across stories, your own text, and video (the foundation for "One '% known' everywhere")
 
 **Accessibility (WCAG 2.2 AA)**
 - [ ] Flashcard reveal surface as a fully focusable control (answer `aria-live` announcements have shipped)
