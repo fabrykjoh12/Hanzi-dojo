@@ -12,7 +12,7 @@ so the community always sees the latest. Keep it current — move things to
 > you everywhere.
 
 ## 🚧 Now — in progress
-- [ ] _Between milestones — picking the next focus from **Next — planned** below. Ideas? Drop them in **#feedback-and-ideas**._
+- [ ] **Smoother start** — pick your language and why you're learning *before* signing up, so you're set up the moment you create an account.
 
 ## 🔜 Next — planned
 
