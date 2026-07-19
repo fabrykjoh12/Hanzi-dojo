@@ -7,6 +7,7 @@ import { levelInfo } from './xp'
 import { cleanMeaning } from './cleanMeaning'
 import { evaluateAchievements } from './achievements'
 import { todayStr, liveStreak } from './streak'
+import { monthReview, monthHeadline, monthShareText } from './monthReview'
 import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
 import { BRAND_URL } from './brand'
@@ -219,19 +220,19 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   const earnedCount = achievements.filter(a => a.earned).length
 
   // This-month report (from daily_activity; presence is exact, counts approximate).
-  const nowDate = new Date()
-  const ymPrefix = nowDate.getFullYear() + '-' + String(nowDate.getMonth() + 1).padStart(2, '0')
-  const monthName = nowDate.toLocaleString('en-US', { month: 'long' })
-  const monthDays = Object.keys(activity).filter(d => d.indexOf(ymPrefix) === 0)
-  const activeDays = monthDays.length
-  const cardsThisMonth = monthDays.reduce((sum, d) => sum + (activity[d] || 0), 0)
+  const mr = monthReview(activity)
+  const monthName = mr.monthName
+  const activeDays = mr.activeDays
+  const cardsThisMonth = mr.reviews
 
   const shareReport = async () => {
     const lang = profile.active_language === 'japanese' ? 'Japanese'
       : profile.active_language === 'russian' ? 'Russian' : 'Chinese'
-    const text = 'My ' + monthName + ' on Hanzi Dojo: ' + activeDays + ' active days, '
-      + cardsThisMonth + ' reviews, ' + (stats.lifetimeMastered || 0) + ' words mastered learning '
-      + lang + '. ' + BRAND_URL
+    const text = monthShareText(mr, {
+      languageName: lang,
+      mastered: stats.lifetimeMastered || 0,
+      brandUrl: BRAND_URL,
+    })
     try {
       if (navigator.share) { await navigator.share({ text }); return }
     } catch { return /* user cancelled */ }
@@ -393,6 +394,9 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
                 : <><Share2 size={15} strokeWidth={2} color="var(--text-muted)" /> Share</>}
             </button>
           </div>
+          <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: 1.5 }}>
+            {monthHeadline(mr)}
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '12px' }}>
             {[
               { label: 'Active days', value: activeDays, color: accentHex },
@@ -406,6 +410,12 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
               </div>
             ))}
           </div>
+          {mr.bestDay && mr.bestDay.count > 0 && (
+            <div style={{ fontSize: '12.5px', color: 'var(--text-faint)', marginTop: '14px', textAlign: 'center' }}>
+              Best day so far — {mr.bestDay.count} review{mr.bestDay.count === 1 ? '' : 's'} on{' '}
+              {new Date(mr.bestDay.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}.
+            </div>
+          )}
         </Panel>
       )}
 
