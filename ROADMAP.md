@@ -14,7 +14,9 @@ so the community always sees the latest. Keep it current — move things to
 ## 🚧 Now — in progress
 - [ ] _Next up — pick from the plan below._
 
-_Recently shipped: gentle return, study rhythm ring + 7-day forecast on Home._
+_Recently shipped: pre-login onboarding, 7-day forecast + study rhythm on Home,
+gentle return, built-in dictionary, a fresh story every day, an interactive word
+list, ChatMission dialog a11y, and the reading ladder._
 
 ## 🔜 Next — planned
 
