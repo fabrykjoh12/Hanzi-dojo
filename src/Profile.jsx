@@ -9,6 +9,7 @@ import { evaluateAchievements } from './achievements'
 import { todayStr, liveStreak } from './streak'
 import { monthReview, monthHeadline, monthShareText } from './monthReview'
 import { knownWordMap, readableSummary, rowA11yLabel } from './knownWordMap'
+import { last30A11yLabel } from './reviewAccuracy'
 import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
 import { BRAND_URL } from './brand'
@@ -813,7 +814,7 @@ export function ReviewAccuracy({ stats, accentHex }) {
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 650, marginBottom: '10px' }}>Last 30 days</div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: gap + 'px', height: maxBarH + 'px' }}>
+          <div role="img" aria-label={last30A11yLabel(last30.map(d => d.count))} style={{ display: 'flex', alignItems: 'flex-end', gap: gap + 'px', height: maxBarH + 'px' }}>
             {last30.map(d => (
               <div
                 key={d.ds}
