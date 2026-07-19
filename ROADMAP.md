@@ -70,7 +70,6 @@ day, an interactive word list, ChatMission dialog a11y, and the reading ladder._
 
 **Grow calmly — honest mechanics, not fear**
 - [ ] **A mastery ladder** — words you've truly locked in reach a permanent "mastered" state (the reward is real progress, not a number).
-- [ ] **Your month in review** — a calm, shareable recap of what you learned.
 
 **Let the product introduce itself (growth)**
 - [ ] **Free public level test** — an open-web HSK / JLPT / CEFR placement quiz that ends in a shareable result and "your first stories are ready" (builds on "How much can you read?").
@@ -100,6 +99,7 @@ day, an interactive word list, ChatMission dialog a11y, and the reading ladder._
 - [ ] `ChatMission` overlay: a focus trap (the `role="dialog"` + `aria-modal` + Escape-to-close + initial focus have shipped)
 
 ## ✅ Shipped
+- [x] **Your month in review** — the Profile "{month} so far" panel is now a calm recap: a warm headline ("you've shown up N of M days so far this {month}"), a best-day highlight, and the same one-tap share. Derived purely from your existing activity — no streak pressure.
 - [x] **Dictionary — recent lookups** — the Dictionary screen now remembers the last few words you opened and surfaces them under a "Recent" heading when the search box is empty (per-language, tap to reopen, one-tap Clear), so re-checking a word you just looked up is instant.
 - [x] **Reading Ladder** — the story tiers shown as rungs on the Stories screen: which you've unlocked, where you are now, and "N more words to reach <next tier>." A calm view of the reading path.
 - [x] **A fresh story every day** — the Stories screen surfaces one calm "Today's story," picked deterministically per day from the stories you can already read (prefers unread), one tap into the reader. (The optional push nudge is still planned.)
