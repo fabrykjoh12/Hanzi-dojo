@@ -7,6 +7,7 @@ import { useIsMobile } from './useIsMobile'
 import WordLookupSheet from './WordLookupSheet'
 import { readRecent, recordRecent, clearRecent } from './recentLookups'
 import { DICT_FILTERS, filterVocab, dictionaryEmptyState } from './dictionaryFilters'
+import { foldIncludes } from './searchFold'
 import { ArrowLeft, Search, Clock } from 'lucide-react'
 
 // Built-in dictionary: search ANY word in the current language (every level, not
@@ -72,9 +73,9 @@ export default function Dictionary({ session, profile, track, onBack }) {
   const q = query.trim().toLowerCase()
   const matches = useMemo(() => {
     const byQuery = !q ? vocab : vocab.filter(v =>
-      (v.word || '').toLowerCase().includes(q) ||
-      (v.reading || '').toLowerCase().includes(q) ||
-      (v.meaning || '').toLowerCase().includes(q))
+      foldIncludes(v.word, q) ||
+      foldIncludes(v.reading, q) ||
+      foldIncludes(v.meaning, q))
     return filterVocab(byQuery, v => statusOf(cardByVocab[v.id]), filter)
   }, [vocab, q, filter, cardByVocab])
   const rows = matches.slice(0, MAX_ROWS)

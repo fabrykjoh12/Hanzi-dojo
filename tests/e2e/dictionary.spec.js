@@ -25,6 +25,14 @@ test.describe('Dictionary', () => {
     await expect(page.getByRole('button', { name: /朋友/ })).toHaveCount(0);
   });
 
+  test('matches toneless pinyin', async ({ page }) => {
+    await page.goto('/dictionary');
+    // Typing without tone marks still finds 天气 (stored reading "tiānqì").
+    await page.getByLabel('Search the dictionary').fill('tianqi');
+    await expect(page.getByRole('button', { name: /天气/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /朋友/ })).toHaveCount(0);
+  });
+
   test('reachable from the Practice hub', async ({ page }) => {
     await page.goto('/practice');
     await page.getByRole('button', { name: /Dictionary/i }).click();
