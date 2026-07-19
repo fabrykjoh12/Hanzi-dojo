@@ -3,7 +3,7 @@
 // Comments start with '#'. Pinyin is space-separated syllables with a trailing
 // tone digit 1-5 (5 = neutral). We convert to tone marks for display and derive
 // a toneless form for search (via the shared searchFold).
-import { foldForSearch } from './searchFold'
+import { foldForSearch } from './searchFold.js'
 
 const VOWELS = 'aeiouü'
 // Tone marks indexed [tone-1] per vowel.
