@@ -46,3 +46,20 @@ export function dictionaryEmptyState(filterKey, hasQuery) {
   if (hasQuery) return null
   return EMPTY_COPY[filterKey] || 'No words here yet.'
 }
+
+// The distinct levels present in a vocab list, ascending — powers the level
+// filter's options so it only ever offers levels that actually exist.
+export function levelsInVocab(vocab) {
+  const set = new Set()
+  for (const v of Array.isArray(vocab) ? vocab : []) {
+    if (v && v.level != null) set.add(v.level)
+  }
+  return [...set].sort((a, b) => a - b)
+}
+
+// Keep only rows at `level` (a number). 'all' / null / undefined keeps everything.
+export function filterByLevel(vocab, level) {
+  const rows = Array.isArray(vocab) ? vocab : []
+  if (level == null || level === 'all') return rows
+  return rows.filter(v => v && v.level === level)
+}

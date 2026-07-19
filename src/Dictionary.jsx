@@ -6,7 +6,7 @@ import { getSystemLabel, getLevelLabel } from './utils'
 import { useIsMobile } from './useIsMobile'
 import WordLookupSheet from './WordLookupSheet'
 import { readRecent, recordRecent, clearRecent } from './recentLookups'
-import { DICT_FILTERS, filterVocab, dictionaryEmptyState } from './dictionaryFilters'
+import { DICT_FILTERS, filterVocab, dictionaryEmptyState, levelsInVocab, filterByLevel } from './dictionaryFilters'
 import { foldIncludes } from './searchFold'
 import { ArrowLeft, Search, Clock } from 'lucide-react'
 
@@ -42,6 +42,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
   const [selected, setSelected] = useState(null)
   const [recent, setRecent] = useState(() => readRecent(track.language))
   const [filter, setFilter] = useState('all')
+  const [levelFilter, setLevelFilter] = useState('all')
 
   useEffect(() => {
     let cancelled = false
@@ -76,8 +77,11 @@ export default function Dictionary({ session, profile, track, onBack }) {
       foldIncludes(v.word, q) ||
       foldIncludes(v.reading, q) ||
       foldIncludes(v.meaning, q))
-    return filterVocab(byQuery, v => statusOf(cardByVocab[v.id]), filter)
-  }, [vocab, q, filter, cardByVocab])
+    const byLevel = filterByLevel(byQuery, levelFilter)
+    return filterVocab(byLevel, v => statusOf(cardByVocab[v.id]), filter)
+  }, [vocab, q, filter, levelFilter, cardByVocab])
+
+  const levelOptions = useMemo(() => levelsInVocab(vocab), [vocab])
   const rows = matches.slice(0, MAX_ROWS)
 
   const vocabById = useMemo(() => {
@@ -92,7 +96,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
     () => recent.map(r => vocabById[r.id]).filter(Boolean),
     [recent, vocabById],
   )
-  const showRecent = !q && filter === 'all' && recentRows.length > 0
+  const showRecent = !q && filter === 'all' && levelFilter === 'all' && recentRows.length > 0
 
   const openWord = (v) => {
     setSelected({ word: v.word, vocab: v, status: statusOf(cardByVocab[v.id]) })
@@ -180,6 +184,28 @@ export default function Dictionary({ session, profile, track, onBack }) {
           }}
         />
       </div>
+
+      {levelOptions.length > 1 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+          <label htmlFor="dict-level" style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)' }}>Level</label>
+          <select
+            id="dict-level"
+            aria-label="Filter by level"
+            value={levelFilter}
+            onChange={(e) => setLevelFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+            style={{
+              minHeight: '36px', padding: '0 12px', borderRadius: '10px',
+              border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)',
+              fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+            }}
+          >
+            <option value="all">All levels</option>
+            {levelOptions.map(lvl => (
+              <option key={lvl} value={lvl}>{getLevelLabel(track.language, track.system, lvl)}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div role="group" aria-label="Filter by status" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '18px' }}>
         {DICT_FILTERS.map(f => {
