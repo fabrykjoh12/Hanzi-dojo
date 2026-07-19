@@ -6,6 +6,7 @@ import { getSystemLabel, getLevelLabel } from './utils'
 import { useIsMobile } from './useIsMobile'
 import WordLookupSheet from './WordLookupSheet'
 import { readRecent, recordRecent, clearRecent } from './recentLookups'
+import { DICT_FILTERS, filterVocab } from './dictionaryFilters'
 import { ArrowLeft, Search, Clock } from 'lucide-react'
 
 // Built-in dictionary: search ANY word in the current language (every level, not
@@ -39,6 +40,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(null)
   const [recent, setRecent] = useState(() => readRecent(track.language))
+  const [filter, setFilter] = useState('all')
 
   useEffect(() => {
     let cancelled = false
@@ -69,12 +71,12 @@ export default function Dictionary({ session, profile, track, onBack }) {
 
   const q = query.trim().toLowerCase()
   const matches = useMemo(() => {
-    if (!q) return vocab
-    return vocab.filter(v =>
+    const byQuery = !q ? vocab : vocab.filter(v =>
       (v.word || '').toLowerCase().includes(q) ||
       (v.reading || '').toLowerCase().includes(q) ||
       (v.meaning || '').toLowerCase().includes(q))
-  }, [vocab, q])
+    return filterVocab(byQuery, v => statusOf(cardByVocab[v.id]), filter)
+  }, [vocab, q, filter, cardByVocab])
   const rows = matches.slice(0, MAX_ROWS)
 
   const vocabById = useMemo(() => {
@@ -89,7 +91,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
     () => recent.map(r => vocabById[r.id]).filter(Boolean),
     [recent, vocabById],
   )
-  const showRecent = !q && recentRows.length > 0
+  const showRecent = !q && filter === 'all' && recentRows.length > 0
 
   const openWord = (v) => {
     setSelected({ word: v.word, vocab: v, status: statusOf(cardByVocab[v.id]) })
@@ -176,6 +178,28 @@ export default function Dictionary({ session, profile, track, onBack }) {
             fontSize: '16px', fontFamily: 'Inter, sans-serif',
           }}
         />
+      </div>
+
+      <div role="group" aria-label="Filter by status" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '18px' }}>
+        {DICT_FILTERS.map(f => {
+          const active = filter === f.key
+          return (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              aria-pressed={active}
+              style={{
+                minHeight: '34px', padding: '0 14px', borderRadius: '999px', cursor: 'pointer',
+                border: '1px solid ' + (active ? accentHex : 'var(--border)'),
+                background: active ? accentHex + '12' : 'var(--surface)',
+                color: active ? accentHex : 'var(--text-muted)',
+                fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              {f.label}
+            </button>
+          )
+        })}
       </div>
 
       {loading ? (
