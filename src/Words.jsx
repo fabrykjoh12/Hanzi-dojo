@@ -7,7 +7,12 @@ import { isLearned, isMastered } from './mastery'
 import { cleanMeaning } from './cleanMeaning'
 import { useIsMobile } from './useIsMobile'
 import { SecondaryButton } from './ui'
+import WordLookupSheet from './WordLookupSheet'
 import { ArrowLeft, BookA, Search } from 'lucide-react'
+
+function ttsLangFor(language) {
+  return language === 'japanese' ? 'ja-JP' : language === 'chinese' ? 'zh-CN' : 'ru-RU'
+}
 
 // Every word of the current level with its live SRS status — the deck, visible.
 // Filter chips + search let learners answer "which words do I actually know?"
@@ -33,10 +38,23 @@ export default function Words({ session, profile, track, onBack }) {
   const [cardByVocab, setCardByVocab] = useState({})
   const [filter, setFilter] = useState('all')
   const [query, setQuery] = useState('')
+  const [selected, setSelected] = useState(null)
 
   const theme = languageTheme(profile.active_language)
   const accentHex = theme.accentHex
   const langFont = theme.font
+  const ttsLang = ttsLangFor(track.language)
+
+  const speak = (text) => {
+    if (!text) return
+    try { const u = new SpeechSynthesisUtterance(text); u.lang = ttsLang; u.rate = 0.85; window.speechSynthesis.speak(u) } catch { /* noop */ }
+  }
+  const addToDeck = async (v) => {
+    if (!v || !v.id || cardByVocab[v.id]) return
+    const row = { user_id: session.user.id, vocab_id: v.id, state: 'new', ease_factor: 2.5, learning_step: 0, due_at: new Date().toISOString() }
+    const { error } = await supabase.from('cards').insert(row)
+    if (!error) setCardByVocab(prev => ({ ...prev, [v.id]: { vocab_id: v.id, state: 'new' } }))
+  }
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
 
@@ -189,11 +207,15 @@ export default function Words({ session, profile, track, onBack }) {
             {rows.map((v, i) => {
               const st = STATUS[v.status]
               return (
-                <div key={v.id} style={{
+                <button key={v.id} type="button"
+                  onClick={() => setSelected({ word: v.word, vocab: v, status: v.status })}
+                  style={{
+                  width: '100%', font: 'inherit', textAlign: 'left', cursor: 'pointer', background: 'none',
                   display: 'grid',
                   gridTemplateColumns: isMobile ? 'minmax(0,1fr) auto' : '110px minmax(0,1fr) auto',
                   gap: '14px', alignItems: 'center',
                   padding: '13px 18px',
+                  border: 'none',
                   borderTop: i === 0 ? 'none' : '1px solid var(--border)',
                 }}>
                   {isMobile ? (
@@ -222,12 +244,22 @@ export default function Words({ session, profile, track, onBack }) {
                   }}>
                     {st.label}
                   </span>
-                </div>
+                </button>
               )
             })}
           </div>
         )}
       </div>
+
+      <WordLookupSheet
+        selected={selected}
+        theme={theme}
+        accent={accentHex}
+        userCards={cardByVocab}
+        onAddToDeck={addToDeck}
+        onSpeak={speak}
+        onClose={() => setSelected(null)}
+      />
     </div>
   )
 }
