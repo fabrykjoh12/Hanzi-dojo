@@ -202,14 +202,18 @@ export default function Analyzer({ session, track, onBack }) {
                     Words to learn next ({result.newWords.length})
                   </div>
                   <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '12px' }}>
-                    The new words in this text, in order of appearance.
+                    In order of appearance. Tap any word to hear it and add it on its own.
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
                     {result.newWords.slice(0, 40).map(v => (
-                      <span key={v.id} style={{ display: 'inline-flex', alignItems: 'baseline', gap: '6px', padding: '5px 10px', borderRadius: '999px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                      <button
+                        key={v.id}
+                        onClick={() => setSelected({ word: v.word, vocab: v, status: wordStatus(v.id, cards), sentence: null })}
+                        style={{ display: 'inline-flex', alignItems: 'baseline', gap: '6px', padding: '5px 10px', borderRadius: '999px', background: 'var(--surface-2)', border: '1px solid var(--border)', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+                      >
                         <span style={{ fontFamily: font, fontSize: '15px', color: 'var(--text)' }}>{v.word}</span>
                         {v.reading && v.reading !== v.word && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{v.reading}</span>}
-                      </span>
+                      </button>
                     ))}
                     {result.newWords.length > 40 && (
                       <span style={{ padding: '5px 10px', fontSize: '12.5px', color: 'var(--text-muted)' }}>+{result.newWords.length - 40} more</span>
