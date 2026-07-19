@@ -137,6 +137,12 @@ const CORS = {
 /** Install the Supabase REST/auth interceptor on a page. */
 // Vocab returned by the anon public_assessment_vocab RPC on the reading-test
 // page: 12 words per level across levels 1–2, enough to form 4 bands of ≥4.
+// Reference-dictionary rows served by the dict_* RPCs (Full dictionary scope).
+export const DICT_ENTRIES = [
+  { id: 'd1', simplified: '中文', traditional: '中文', pinyin: 'zhōng wén', pinyin_plain: 'zhong wen', definitions: ['Chinese language'], hsk_level: 1 },
+  { id: 'd2', simplified: '中国', traditional: '中國', pinyin: 'zhōng guó', pinyin_plain: 'zhong guo', definitions: ['China'], hsk_level: 1 },
+];
+
 export const ASSESSMENT_VOCAB = (() => {
   const rows = []; let so = 0;
   for (const level of [1, 2]) {
@@ -155,7 +161,12 @@ export async function mockSupabaseRoutes(page) {
     const wantsObject = (req.headers()['accept'] || '').includes('pgrst.object');
     if (url.pathname.startsWith('/rest/v1/rpc/')) {
       const fn = url.pathname.replace('/rest/v1/rpc/', '');
-      const body = fn === 'public_assessment_vocab' ? ASSESSMENT_VOCAB : null;
+      let body = null;
+      if (fn === 'public_assessment_vocab') body = ASSESSMENT_VOCAB;
+      else if (fn === 'dict_search') body = DICT_ENTRIES;
+      else if (fn === 'dict_entry') body = DICT_ENTRIES[0];
+      else if (fn === 'dict_examples_for') body = [];
+      else if (fn === 'dict_words_containing') body = [];
       return route.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'application/json' }, body: JSON.stringify(body) });
     }
     if (url.pathname.startsWith('/rest/v1/')) {

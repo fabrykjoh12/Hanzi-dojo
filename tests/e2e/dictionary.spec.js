@@ -5,6 +5,7 @@ import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 test.describe('Dictionary', () => {
   test('lists words and opens the lookup sheet on tap', async ({ page }) => {
     await page.goto('/dictionary');
+    await page.getByRole('button', { name: 'My syllabus' }).click();
 
     await expect(page.getByRole('heading', { name: /Look up any word/i })).toBeVisible();
     // A known seeded word appears in the list.
@@ -19,6 +20,7 @@ test.describe('Dictionary', () => {
 
   test('search narrows the list', async ({ page }) => {
     await page.goto('/dictionary');
+    await page.getByRole('button', { name: 'My syllabus' }).click();
     await page.getByLabel('Search the dictionary').fill('weather');
     // 天气 (weather) survives; an unrelated word does not.
     await expect(page.getByRole('button', { name: /天气/ })).toBeVisible();
@@ -27,6 +29,7 @@ test.describe('Dictionary', () => {
 
   test('matches toneless pinyin', async ({ page }) => {
     await page.goto('/dictionary');
+    await page.getByRole('button', { name: 'My syllabus' }).click();
     // Typing without tone marks still finds 天气 (stored reading "tiānqì").
     await page.getByLabel('Search the dictionary').fill('tianqi');
     await expect(page.getByRole('button', { name: /天气/ })).toBeVisible();
@@ -41,6 +44,7 @@ test.describe('Dictionary', () => {
 
   test('filters the list by status', async ({ page }) => {
     await page.goto('/dictionary');
+    await page.getByRole('button', { name: 'My syllabus' }).click();
 
     // The mock deck has 今天 (v1) graduated and 朋友 (v6) still in learning.
     const filters = page.getByRole('group', { name: 'Filter by status' });
@@ -73,6 +77,7 @@ test.describe('Dictionary', () => {
     });
 
     await page.goto('/dictionary');
+    await page.getByRole('button', { name: 'My syllabus' }).click();
     await expect(page.getByRole('button', { name: /你好/ })).toBeVisible();
 
     // Narrow to level 1 → only 你好 remains.
@@ -83,6 +88,7 @@ test.describe('Dictionary', () => {
 
   test('remembers recently opened words', async ({ page }) => {
     await page.goto('/dictionary');
+    await page.getByRole('button', { name: 'My syllabus' }).click();
 
     // Open a word, then close the lookup sheet.
     await page.getByRole('button', { name: /朋友/ }).first().click();
@@ -96,10 +102,23 @@ test.describe('Dictionary', () => {
 
     // It survives a reload (persisted per-language).
     await page.reload();
+    await page.getByRole('button', { name: 'My syllabus' }).click();
     await expect(page.getByRole('region', { name: 'Recent lookups' }).getByRole('button', { name: /朋友/ })).toBeVisible();
 
     // Clearing empties the section.
     await page.getByRole('button', { name: 'Clear' }).click();
     await expect(page.getByRole('region', { name: 'Recent lookups' })).toHaveCount(0);
+  });
+
+  test('full dictionary search shows a reference entry', async ({ page }) => {
+    await page.goto('/dictionary');
+    await expect(page.getByRole('button', { name: 'Full dictionary' })).toHaveAttribute('aria-pressed', 'true');
+
+    await page.getByLabel('Search the dictionary').fill('zhong');
+    const row = page.getByRole('button').filter({ hasText: '中文' }).first();
+    await expect(row).toBeVisible();
+
+    await row.click();
+    await expect(page.getByRole('tab', { name: 'Meaning' })).toBeVisible();
   });
 });
