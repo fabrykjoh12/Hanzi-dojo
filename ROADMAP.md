@@ -102,6 +102,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] `ChatMission` overlay: a focus trap (the `role="dialog"` + `aria-modal` + Escape-to-close + initial focus have shipped)
 
 ## ✅ Shipped
+- [x] **Dictionary — level filter** — a "Level" picker (shown when your language has more than one level) narrows the dictionary to a single band (e.g. just HSK 4), composing with search and the status filters.
 - [x] **Known-Word Map — screen-reader labels** — each level's reading-reach bar now carries an accessible label ("HSK 2: 5 of 7 words readable — 0 mastered, 5 known, 2 learning, 0 not started"), so the map's numbers are available to screen readers, not just the colored segments.
 - [x] **Analyze text — tappable "words to learn next"** — the new-word chips in the text analyzer are now interactive: tap any one to hear it and add it to your deck on its own (via the shared lookup sheet), matching how words behave everywhere else in the app.
 - [x] **Grammar guide — topic search** — a search box on the Grammar guide filters its topics by title, blurb, pattern, or explanation (toneless pinyin works too), so you can jump straight to "了" or "comparisons" instead of scrolling the whole accordion.
