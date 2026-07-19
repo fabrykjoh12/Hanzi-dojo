@@ -240,7 +240,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
       .eq('is_active', true)
       .then(({ data }) => {
         if (cancelled || !data) return
-        setSeededData({ lang: lang.code, levels: new Set(data.map(r => r.level)) })
+        setSeededData({ lang: lang.code, levels: new Set(data.map(r => r.level).filter(l => l != null)) })
       })
     return () => { cancelled = true }
   }, [starting])

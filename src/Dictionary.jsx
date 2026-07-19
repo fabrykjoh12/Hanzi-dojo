@@ -86,6 +86,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
           .eq('language', track.language)
           .eq('system', track.system)
           .eq('is_active', true)
+          .not('level', 'is', null)
           .order('level', { ascending: true })
           .order('sort_order', { ascending: true }),
         getTrackCards(session.user.id, track, { columns: 'vocab_id, state, is_easy, stability' }),

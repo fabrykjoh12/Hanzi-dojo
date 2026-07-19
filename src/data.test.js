@@ -22,7 +22,6 @@ const track = { language: 'chinese', system: 'hsk_3' }
 describe('getTrackCards includeUnleveled', () => {
   it('uses lte only when includeUnleveled is false (default)', async () => {
     const { supabase, calls } = makeSupabase()
-    await getTrackCards.__setSupabase?.(supabase) // if DI is used; otherwise see Step 3
     await getTrackCards('u1', track, { maxLevel: 3 }, supabase)
     expect(calls.some(c => c[0] === 'lte' && c[1] === 'vocabulary.level' && c[2] === 3)).toBe(true)
     expect(calls.some(c => c[0] === 'or')).toBe(false)
