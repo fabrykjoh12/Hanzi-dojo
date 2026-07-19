@@ -17,7 +17,7 @@ import {
   Shield, Sparkles, Target, User, Trophy, CalendarCheck, Award, Share2, Check, AlertTriangle, TrendingUp, BookOpen,
 } from 'lucide-react'
 
-const ACH_ICONS = { flame: Flame, layers: Layers, sparkles: Sparkles, trophy: Trophy, calendar: CalendarCheck }
+const ACH_ICONS = { flame: Flame, layers: Layers, sparkles: Sparkles, trophy: Trophy, calendar: CalendarCheck, book: BookOpen }
 
 function getLanguageDetails(profile) {
   const t = languageTheme(profile.active_language)
@@ -117,6 +117,12 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     for (const c of (cards || [])) cardById[c.vocab_id] = c
     setWordMap(knownWordMap(allVocab || [], cardById))
 
+    // Stories finished (lifetime, all languages) — drives the Reading achievements.
+    const { count: storiesRead } = await supabase
+      .from('story_reads')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', session.user.id)
+
     setStats({
       learned: levelCards.filter(c => c.learned).length,
       totalCards: levelCards.length,
@@ -125,6 +131,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       // Lifetime counts (across all levels) for achievements.
       lifetimeLearned: (cards || []).filter(c => c.learned).length,
       lifetimeMastered: (cards || []).filter(c => isMastered(c)).length,
+      storiesRead: storiesRead || 0,
     })
 
     const { data: acts } = await supabase
@@ -230,6 +237,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     mastered: stats.lifetimeMastered || 0,
     level: levelInfo(profile.total_xp).level,
     daysStudied: Object.keys(activity).length,
+    storiesRead: stats.storiesRead || 0,
   })
   const earnedCount = achievements.filter(a => a.earned).length
 
