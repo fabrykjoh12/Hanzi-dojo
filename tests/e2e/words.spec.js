@@ -13,4 +13,12 @@ test.describe('Word list', () => {
     await expect(page.getByRole('button', { name: 'Add to deck' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Play audio' })).toBeVisible();
   });
+
+  test('search matches toneless pinyin', async ({ page }) => {
+    await page.goto('/words');
+    // Typing without tone marks still finds 天气 (stored reading "tiānqì").
+    await page.getByLabel('Search words').fill('tianqi');
+    await expect(page.getByRole('button', { name: /天气/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /朋友/ })).toHaveCount(0);
+  });
 });

@@ -8,6 +8,7 @@ import { cleanMeaning } from './cleanMeaning'
 import { useIsMobile } from './useIsMobile'
 import { SecondaryButton } from './ui'
 import WordLookupSheet from './WordLookupSheet'
+import { foldIncludes } from './searchFold'
 import { ArrowLeft, BookA, Search } from 'lucide-react'
 
 function ttsLangFor(language) {
@@ -94,9 +95,9 @@ export default function Words({ session, profile, track, onBack }) {
       .map(v => ({ ...v, status: statusOf(cardByVocab[v.id]) }))
       .filter(v => filter === 'all' || v.status === filter)
       .filter(v => !q
-        || (v.word || '').toLowerCase().includes(q)
-        || (v.reading || '').toLowerCase().includes(q)
-        || (v.meaning || '').toLowerCase().includes(q))
+        || foldIncludes(v.word, q)
+        || foldIncludes(v.reading, q)
+        || foldIncludes(v.meaning, q))
   }, [vocab, cardByVocab, filter, query])
 
   const counts = useMemo(() => {
