@@ -12,14 +12,15 @@ so the community always sees the latest. Keep it current — move things to
 > you everywhere.
 
 ## 🚧 Now — in progress
-- [ ] Search, discovery & progress polish across the app — shipping in small, additive PRs (see Just shipped).
+- [ ] Between features — pick the next item from the plan below.
 
 **Just shipped**
+- [x] Screen-reader summaries for every progress chart
+- [x] Dictionary: level filter
 - [x] Analyze text: tappable "words to learn next"
 - [x] Grammar guide: topic search
 - [x] Reading achievements (First Story / Bookworm / Well Read)
 - [x] Toneless pinyin search (Dictionary + Word list)
-- [x] Dictionary: recent lookups + status filters
 - [x] Known-Word Map + month-in-review on Profile
 
 ## 🔜 Next — planned

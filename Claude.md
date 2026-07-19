@@ -10,7 +10,39 @@ Whenever we finish or start a meaningful piece of work, edit **`ROADMAP.md`** in
 
 ---
 
-## 0. LATEST SESSION — read first (2026-07-19: calm-mechanics + reading tools + on-device bug fixes)
+## 0. LATEST SESSION — read first (2026-07-19, autonomous overnight: additive polish sweep — search, filters, progress viz, chart a11y)
+
+**14 items shipped across 10 PRs (#100–#109), all squash-merged to `main` by the session itself. Every change is ADDITIVE and MIGRATION-FREE — no schema, no scheduling/FSRS, no reader reading-behavior changes.** This was an all-day autonomous `send_later` loop (merge green PR → reset branch onto main → ship one safe item → open PR → re-arm). The user granted standing merge authority mid-session ("merge and continue"). Suite after: unit **623**, full Playwright e2e green (dictionary 7, profile 4, home/words/grammar/analyzer/reader/study).
+
+**New pure, unit-tested helpers (the pattern — logic in a tiny module, wired by the screen):**
+- `src/recentLookups.js` — `addRecent(list, entry, cap=8)` (dedupe-by-id, cap) + localStorage wrappers (`readRecent`/`saveRecent`/`clearRecent`/`recordRecent`, per-language key `dict:recent:<lang>`).
+- `src/monthReview.js` — `monthReview(activity, now)` (this-month active-days/reviews/best-day/day-of-month), `monthHeadline`, `monthShareText`. Profile's month panel + share route through it.
+- `src/knownWordMap.js` — `knownWordMap(vocab, cardById)` buckets every active word by status (mastered/known/learning/new) per level via `wordStatus` (uses `mastery.js`); `readableSummary`, `rowA11yLabel`.
+- `src/dictionaryFilters.js` — `DICT_FILTERS` + `matchesDictFilter`/`filterVocab` (status), `dictionaryEmptyState` (filter-aware copy), `levelsInVocab`/`filterByLevel` (level).
+- `src/searchFold.js` — `foldForSearch`/`foldIncludes`: NFD + strip U+0300–U+036F so toneless pinyin ("tianqi" ⇒ tiānqì) matches; **kana-safe** (dakuten U+3099 is outside the range). Used by Dictionary + Words search and grammarSearch.
+- `src/grammarSearch.js` — `filterTopics(topics, query)` + `topicHaystack` (title/blurb/pattern/points, foldForSearch-based).
+- `src/reviewForecast.js` — added `forecastA11yLabel(buckets, days=7)`.
+- `src/reviewAccuracy.js` — `last30A11yLabel(counts)` for the Profile 30-day chart.
+- `src/achievements.js` — new **Reading** group (`read_1/read_10/read_25`) driven by a lifetime `storiesRead` stat (0 when absent → backward-compatible); first unit coverage added (`achievements.test.js`).
+
+**By PR:**
+- **#100** (bundle of 5): Dictionary **recent lookups** (Recent section when search empty, per-language, Clear); Dictionary **status filter chips** (All/In deck/Learning/Mastered/Not started) + **filter-aware empty states**; Profile **month-in-review** recap (headline + best-day + share); **Known-Word Map** panel (per-level readable-reach stacked bars).
+- **#101 / #102** — toneless pinyin search in Dictionary / Word list.
+- **#103** — Reading achievements (Profile counts `story_reads` read-only, `head`+`count:exact`).
+- **#104** — Grammar-guide topic search (accordion `open` re-keyed by topic id so filtering is robust).
+- **#105** — Analyzer "words to learn next" chips are now tappable (open shared `WordLookupSheet`); **+ Discord roadmap-render fix** (see below).
+- **#106 / #108 / #109** — screen-reader `role="img"` + aria-label summaries for **all three** progress charts (Known-Word Map bars, Home 7-day forecast, Profile review-accuracy 30-day). Every progress chart now has a text alternative.
+- **#107** — Dictionary **level filter** (`<select>`, shown only when the language has >1 level; composes with search + status).
+
+**Discord roadmap render fix (in #105):** the pinned #roadmap message looked frozen because `.github/workflows/roadmap-live-sync.yml`'s `render()` only prints headings + `- [x]/[ ]` items — it dropped the `_Recently shipped: …_` paragraph and rendered the `_Next up — …_` line as a broken `• _Next up` (it strips ` — …`). Fix: the top of `ROADMAP.md` now has a real **"Just shipped"** `- [x]` checklist using `:` / `()` separators (which survive the ` — ` strip). The sync IS working — logs show `Edited 🗺️ Hanzi Dojo Roadmap message …750067` on every push. (If it ever looks stale again: Discord shows a CONDENSED view — titles only, Shipped capped at 10, at the very bottom; and a past failed PATCH could leave a stale *pinned* duplicate while the bot edits the current id.)
+
+**e2e mock notes (`tests/fixtures/mockSupabase.js`):** unknown tables return `[]`; specs `page.route`-override `/rest/v1/{cards,vocabulary,review_logs,daily_activity}` in-spec (GET only; non-GET → `route.fallback()`) to synthesize new words / a 2nd level / review logs / activity. Full suite ~5 min — prefer a single targeted spec per change.
+
+**Process notes for next session:** GITHUB_TOKEN git pushes do NOT fire the PR `synchronize` event, so the `playwright` check only runs on a PR's FIRST commit — later same-branch pushes are locally-verified (the push-to-main E2E validates everything at merge). Cloudflare "Workers Builds" checks fail on every PR = pre-existing deploy infra, ignore; only a RED `playwright` blocks. The session STOPPED (rather than ship filler) once the clearly-safe additive pool was exhausted — remaining roadmap needs the user's decision, a migration, content authoring, or touches readers/Study/scheduling/audio-mic.
+
+---
+
+## 0.0e PREVIOUS SESSION (2026-07-19: calm-mechanics + reading tools + on-device bug fixes)
 
 **Two PRs squash-merged to `main` this session (#97, #98). All work is additive and migration-free — no schema changes.** Theme: ship the built-but-dormant "calm progress" ideas, add reading/vocab tools, and fix a batch of on-device reader bugs. Suite after: unit **547**, e2e **31/31**.
 
