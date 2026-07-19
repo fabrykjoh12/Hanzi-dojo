@@ -98,7 +98,7 @@ day, an interactive word list, ChatMission dialog a11y, and the reading ladder._
 - [ ] `ChatMission` overlay: a focus trap (the `role="dialog"` + `aria-modal` + Escape-to-close + initial focus have shipped)
 
 ## ✅ Shipped
-- [x] **Dictionary — status filters** — filter chips (All / In deck / Learning / Mastered / Not started) above the Dictionary list, so you can jump to just the words you're still learning or the ones you haven't met yet. Composes with search.
+- [x] **Dictionary — status filters** — filter chips (All / In deck / Learning / Mastered / Not started) above the Dictionary list, so you can jump to just the words you're still learning or the ones you haven't met yet. Composes with search, with calm filter-aware empty states.
 - [x] **Known-Word Map** — a calm Profile panel that shows your reading reach across levels: per-level stacked bars of how many words you've mastered / know / are learning / haven't met yet, with a "you can read N of M words so far" summary. Progress you can see grow.
 - [x] **Your month in review** — the Profile "{month} so far" panel is now a calm recap: a warm headline ("you've shown up N of M days so far this {month}"), a best-day highlight, and the same one-tap share. Derived purely from your existing activity — no streak pressure.
 - [x] **Dictionary — recent lookups** — the Dictionary screen now remembers the last few words you opened and surfaces them under a "Recent" heading when the search box is empty (per-language, tap to reopen, one-tap Clear), so re-checking a word you just looked up is instant.
