@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DICT_FILTERS, matchesDictFilter, filterVocab } from './dictionaryFilters'
+import { DICT_FILTERS, matchesDictFilter, filterVocab, dictionaryEmptyState } from './dictionaryFilters'
 
 describe('DICT_FILTERS', () => {
   it('leads with All and covers the key states', () => {
@@ -63,5 +63,24 @@ describe('filterVocab', () => {
 
   it('tolerates a non-array input', () => {
     expect(filterVocab(null, statusFor, 'learning')).toEqual([])
+  })
+})
+
+describe('dictionaryEmptyState', () => {
+  it('returns null when a search query is active', () => {
+    expect(dictionaryEmptyState('mastered', true)).toBe(null)
+    expect(dictionaryEmptyState('all', true)).toBe(null)
+  })
+
+  it('gives filter-specific encouragement when browsing', () => {
+    expect(dictionaryEmptyState('mastered', false)).toMatch(/mastered/i)
+    expect(dictionaryEmptyState('learning', false)).toMatch(/learning/i)
+    expect(dictionaryEmptyState('in_deck', false)).toMatch(/deck/i)
+    expect(dictionaryEmptyState('not_started', false)).toMatch(/started every/i)
+  })
+
+  it('falls back for all / unknown keys', () => {
+    expect(dictionaryEmptyState('all', false)).toBe('No words here yet.')
+    expect(dictionaryEmptyState('zzz', false)).toBe('No words here yet.')
   })
 })

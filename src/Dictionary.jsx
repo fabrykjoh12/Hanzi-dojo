@@ -6,7 +6,7 @@ import { getSystemLabel, getLevelLabel } from './utils'
 import { useIsMobile } from './useIsMobile'
 import WordLookupSheet from './WordLookupSheet'
 import { readRecent, recordRecent, clearRecent } from './recentLookups'
-import { DICT_FILTERS, filterVocab } from './dictionaryFilters'
+import { DICT_FILTERS, filterVocab, dictionaryEmptyState } from './dictionaryFilters'
 import { ArrowLeft, Search, Clock } from 'lucide-react'
 
 // Built-in dictionary: search ANY word in the current language (every level, not
@@ -226,8 +226,8 @@ export default function Dictionary({ session, profile, track, onBack }) {
           )}
 
           {rows.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '14px' }}>
-              No words match{query ? ' “' + query.trim() + '”' : ''}.
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.5 }}>
+              {q ? 'No words match “' + query.trim() + '”.' : dictionaryEmptyState(filter, false)}
             </div>
           ) : (
             <>

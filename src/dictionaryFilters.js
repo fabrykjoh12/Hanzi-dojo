@@ -32,3 +32,17 @@ export function filterVocab(vocab, statusFor, filterKey) {
   if (!filterKey || filterKey === 'all') return rows
   return rows.filter(v => matchesDictFilter(statusFor(v), filterKey))
 }
+
+// Encouraging, filter-aware copy for an empty list. Returns null when a search
+// query is active (the caller keeps its own "no match for <query>" message).
+const EMPTY_COPY = {
+  in_deck: 'Nothing in your deck here yet — open any word and add it to start.',
+  learning: 'No words in learning right now. Ones you’re actively studying show up here.',
+  mastered: 'No mastered words yet — they’ll appear here as your reviews prove they’ve stuck.',
+  not_started: 'You’ve started every word here — nice work.',
+}
+
+export function dictionaryEmptyState(filterKey, hasQuery) {
+  if (hasQuery) return null
+  return EMPTY_COPY[filterKey] || 'No words here yet.'
+}
