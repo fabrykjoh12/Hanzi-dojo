@@ -34,6 +34,7 @@ if (!cedictFile) {
   process.exit(1)
 }
 
+// Larger batch than seed-vocab.mjs's 100 because CC-CEDICT corpus is ~120k rows.
 const BATCH = 500
 
 async function seedEntries() {
@@ -51,19 +52,34 @@ async function seedEntries() {
     })
   }
   console.log(`Parsed ${rows.length} entries from ${cedictFile}.`)
+
+  // Dedup by (simplified, pinyin) idempotency key, keeping first occurrence.
+  const seenKeys = new Set()
+  const deduped = []
+  for (const r of rows) {
+    const k = r.simplified + '|' + r.pinyin
+    if (seenKeys.has(k)) continue
+    seenKeys.add(k)
+    deduped.push(r)
+  }
+  if (deduped.length < rows.length) {
+    console.log(`De-duplicated ${rows.length - deduped.length} rows sharing simplified+pinyin.`)
+  }
+
   if (!apply) {
-    console.log('DRY RUN — first 3:', JSON.stringify(rows.slice(0, 3), null, 2))
+    console.log('DRY RUN — first 3:', JSON.stringify(deduped.slice(0, 3), null, 2))
     console.log('Re-run with --apply to insert.')
     return
   }
   let inserted = 0
-  for (let i = 0; i < rows.length; i += BATCH) {
-    const batch = rows.slice(i, i + BATCH)
+  for (let i = 0; i < deduped.length; i += BATCH) {
+    const batch = deduped.slice(i, i + BATCH)
     // Idempotency: skip (simplified,pinyin) already present.
-    const { data: existing } = await supabase
+    const { data: existing, error: fetchErr } = await supabase
       .from('dict_entries')
       .select('simplified, pinyin')
       .in('simplified', batch.map(r => r.simplified))
+    if (fetchErr) { console.error('Fetch error:', fetchErr.message); process.exit(1) }
     const seen = new Set((existing || []).map(r => r.simplified + '|' + r.pinyin))
     const fresh = batch.filter(r => !seen.has(r.simplified + '|' + r.pinyin))
     if (fresh.length) {
