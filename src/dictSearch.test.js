@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { normalizeQuery, searchDict } from './dictSearch'
+import { normalizeQuery, searchDict, getExamples, getWordsContaining } from './dictSearch'
 
 describe('normalizeQuery', () => {
   it('folds pinyin tones and lowercases', () => {
@@ -24,5 +24,32 @@ describe('searchDict', () => {
     const rows = await searchDict(supabase, 'Zhōng', 20)
     expect(rpc).toHaveBeenCalledWith('dict_search', { p_query: 'zhong', p_limit: 20 })
     expect(rows).toEqual([{ id: '1', simplified: '中文' }])
+  })
+})
+
+describe('getExamples', () => {
+  it('calls dict_examples_for with the word and limit', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: [{ hanzi: '我学中文', english: 'I study Chinese' }], error: null })
+    const rows = await getExamples({ rpc }, '中文', 4)
+    expect(rpc).toHaveBeenCalledWith('dict_examples_for', { p_word: '中文', p_limit: 4 })
+    expect(rows).toEqual([{ hanzi: '我学中文', english: 'I study Chinese' }])
+  })
+  it('returns [] for an empty word without calling the RPC', async () => {
+    const rpc = vi.fn()
+    expect(await getExamples({ rpc }, '')).toEqual([])
+    expect(rpc).not.toHaveBeenCalled()
+  })
+})
+
+describe('getWordsContaining', () => {
+  it('calls dict_words_containing with word, id, and limit', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: [{ id: '9', simplified: '中文' }], error: null })
+    const rows = await getWordsContaining({ rpc }, '中', 'abc', 12)
+    expect(rpc).toHaveBeenCalledWith('dict_words_containing', { p_word: '中', p_id: 'abc', p_limit: 12 })
+    expect(rows).toEqual([{ id: '9', simplified: '中文' }])
+  })
+  it('throws when the RPC returns an error', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: new Error('boom') })
+    await expect(getWordsContaining({ rpc }, '中', 'abc')).rejects.toThrow('boom')
   })
 })
