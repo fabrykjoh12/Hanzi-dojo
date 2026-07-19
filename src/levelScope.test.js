@@ -65,6 +65,9 @@ describe('levelScope excludes NULL-level (dictionary-sourced) cards', () => {
     expect(studyFloorLevel(cards, 5)).toBe(3) // null card does not drag the floor
   })
   it('inCumulativeScope is false for a null level', () => {
-    expect(inCumulativeScope(null, 1, 9)).toBe(false)
+    // floor 0 is deliberate: null >= 0 is true in JS, so this assertion only
+    // holds because inCumulativeScope has the explicit `level != null` guard —
+    // it fails if that guard is ever removed.
+    expect(inCumulativeScope(null, 0, 9)).toBe(false)
   })
 })

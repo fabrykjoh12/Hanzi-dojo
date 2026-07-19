@@ -127,7 +127,7 @@ describe('getTestStatus — level-scoped mastery math excludes NULL-level (dicti
     expect(opts.maxLevel).toBeUndefined()
   })
 
-  it('does not let a NULL-level card inflate totalWords or masteredCount', async () => {
+  it('level-scoped mastery math counts only in-level cards', async () => {
     // Level vocab is [a, b] — a dictionary-sourced word (level = null) can
     // never be one of these rows, since `.eq('level', current_level)` never
     // matches level IS NULL. getTrackCards, scoped the same way, returns only
