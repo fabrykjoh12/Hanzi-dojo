@@ -9,6 +9,7 @@ import { useIsMobile } from './useIsMobile'
 import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, Gauge, Dumbbell, Snowflake, MessagesSquare, CalendarRange, Activity } from 'lucide-react'
 import { forecastSummary } from './reviewForecast'
 import { rhythmSummary } from './studyRhythm'
+import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
 import { fluencyScore, fluencyRank } from './fluency'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
 
@@ -114,6 +115,12 @@ export default function Home({ profile, track, counts, onNavigate }) {
   const rhythm7 = counts.rhythm7 || []
   const rhythm = rhythmSummary(rhythm7)
 
+  // Gentle return: after a break, Study caps the overdue backlog to a calm
+  // handful. Surface a warm welcome-back banner only when that cap actually bites
+  // (a real backlog), so a small return doesn't get a needless message.
+  const gentleReady = Math.min(counts.dueCount || 0, GENTLE_REVIEW_CAP)
+  const gentleActive = isReturningFromBreak(profile) && (counts.dueCount || 0) > GENTLE_REVIEW_CAP
+
   // Fluency score (lifetime vocabulary command across all levels).
   const fScore = fluencyScore(counts)
   const fRank = fluencyRank(fScore)
@@ -187,6 +194,20 @@ export default function Home({ profile, track, counts, onNavigate }) {
           </div>
         </div>
       </div>
+
+      {/* ── Welcome back (gentle return) ── */}
+      {gentleActive && (
+        <div role="status" aria-live="polite" style={{
+          display: 'flex', alignItems: 'center', gap: '11px', marginBottom: '20px',
+          background: `${accentHex}0D`, border: '1px solid ' + accentHex + '2A',
+          borderRadius: '16px', padding: isMobile ? '14px 16px' : '16px 20px',
+        }}>
+          <Sunrise size={20} strokeWidth={1.9} color={accentHex} style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: '13.5px', color: 'var(--text)', fontWeight: 550, lineHeight: 1.5 }}>
+            {gentleReturnMessage(gentleReady)}
+          </span>
+        </div>
+      )}
 
       {/* ── Today card ── */}
       <div style={{

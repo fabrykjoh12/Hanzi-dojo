@@ -36,6 +36,7 @@ const Writer = lazy(() => import('./Writer'))
 const Practice = lazy(() => import('./Practice'))
 const Words = lazy(() => import('./Words'))
 const Analyzer = lazy(() => import('./Analyzer'))
+const Dictionary = lazy(() => import('./Dictionary'))
 const Grammar = lazy(() => import('./Grammar'))
 const Profile = lazy(() => import('./Profile'))
 const YouTube = lazy(() => import('./YouTube'))
@@ -379,6 +380,15 @@ export default function App() {
     content = (
       <Analyzer
         session={session}
+        track={track}
+        onBack={() => navigate('practice')}
+      />
+    )
+  } else if (view === 'dictionary') {
+    content = (
+      <Dictionary
+        session={session}
+        profile={profile}
         track={track}
         onBack={() => navigate('practice')}
       />

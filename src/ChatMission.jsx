@@ -99,6 +99,17 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
   const awardedRef = useRef(false)
   const audioElRef = useRef(null)
   const tappedForHelp = useRef(new Set())             // words the learner needed help on
+  const closeBtnRef = useRef(null)
+
+  // Dialog a11y: move focus into the overlay when it opens (so keyboard/screen-
+  // reader users land inside it), and let Escape close it — keyboard parity with
+  // the Close (X) button. No focus trap here; that's tracked separately.
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    const t = setTimeout(() => { try { closeBtnRef.current && closeBtnRef.current.focus() } catch { /* noop */ } }, 0)
+    return () => { window.removeEventListener('keydown', onKey); clearTimeout(t) }
+  }, [onClose])
 
   useEffect(() => () => { try { window.speechSynthesis.cancel() } catch { /* noop */ } }, [])
 
@@ -243,7 +254,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
       display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px',
       background: '#FFFFFF', borderBottom: '1px solid rgba(0,0,0,0.09)', flexShrink: 0,
     }}>
-      <button onClick={onClose} aria-label="Close" style={ghost}>
+      <button ref={closeBtnRef} onClick={onClose} aria-label="Close" style={ghost}>
         <X size={20} strokeWidth={2} color="#6B6660" />
       </button>
       <div style={{ minWidth: 0, flex: 1 }}>
@@ -266,7 +277,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
   )
 
   return (
-    <div style={shell} className="app-overlay-viewport">
+    <div style={shell} className="app-overlay-viewport" role="dialog" aria-modal="true" aria-label={mission.scenario.title}>
       {header}
 
       {phase === 'chat' && (

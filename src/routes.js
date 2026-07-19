@@ -8,7 +8,7 @@
 export const KNOWN_VIEWS = [
   'home',
   'study', 'weak', 'test', 'writing', 'listen', 'kana', 'cyrillic',
-  'practice', 'words', 'grammar', 'strokes', 'builder', 'fillblank', 'speak',
+  'practice', 'words', 'dictionary', 'grammar', 'strokes', 'builder', 'fillblank', 'speak',
   'tones', 'stories', 'analyzer', 'profile', 'languages', 'youtube', 'settings',
   'dev',
   'dashboard',
