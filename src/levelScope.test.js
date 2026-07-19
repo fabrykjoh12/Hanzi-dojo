@@ -50,3 +50,21 @@ describe('inCumulativeScope', () => {
     expect(inCumulativeScope(2, 3, 5)).toBe(false)
   })
 })
+
+// Regression lock: dictionary-sourced words (vocabulary.level = NULL, added via
+// the reference-dictionary "add to deck" flow) belong ONLY in the review deck
+// (getTrackCards({ includeUnleveled: true }), covered elsewhere) and must never
+// leak into a level-scoped surface — the study floor, the cumulative range
+// check, level tests, or mastery %. These two guards are what make that true.
+describe('levelScope excludes NULL-level (dictionary-sourced) cards', () => {
+  it('studyFloorLevel ignores cards whose vocabulary.level is null', () => {
+    const cards = [
+      { vocabulary: { level: 3 } },
+      { vocabulary: { level: null } }, // dictionary-sourced
+    ]
+    expect(studyFloorLevel(cards, 5)).toBe(3) // null card does not drag the floor
+  })
+  it('inCumulativeScope is false for a null level', () => {
+    expect(inCumulativeScope(null, 1, 9)).toBe(false)
+  })
+})
