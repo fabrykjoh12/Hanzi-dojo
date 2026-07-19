@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { knownWordMap, wordStatus, readableSummary, MAP_BUCKETS } from './knownWordMap'
+import { knownWordMap, wordStatus, readableSummary, rowA11yLabel, MAP_BUCKETS } from './knownWordMap'
 
 // Card shapes mirror the real columns wordStatus reads (learned + stability).
 const mastered = { learned: true, stability: 30 }   // >= 21
@@ -61,6 +61,18 @@ describe('knownWordMap', () => {
     const out = knownWordMap(vocab, {})
     expect(out.totals.new).toBe(5)
     expect(out.totals.readable).toBe(0)
+  })
+})
+
+describe('rowA11yLabel', () => {
+  it('renders the level counts as a screen-reader sentence', () => {
+    const row = { level: 2, total: 7, mastered: 0, known: 5, learning: 2, new: 0, readable: 5 }
+    expect(rowA11yLabel(row, 'HSK 2')).toBe(
+      'HSK 2: 5 of 7 words readable — 0 mastered, 5 known, 2 learning, 0 not started',
+    )
+  })
+  it('is safe with missing inputs', () => {
+    expect(rowA11yLabel(null, null)).toMatch(/Level: 0 of 0 words readable/)
   })
 })
 

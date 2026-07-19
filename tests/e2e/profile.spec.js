@@ -43,5 +43,7 @@ test.describe('Profile — month in review', () => {
     await expect(page.getByText(/You can read 5 of 7 words so far/i)).toBeVisible();
     // Its legend surfaces the buckets.
     await expect(page.getByText(/^Known \(5\)$/)).toBeVisible();
+    // The level bar exposes its numbers to screen readers.
+    await expect(page.getByRole('img', { name: /5 of 7 words readable/i })).toBeVisible();
   });
 });
