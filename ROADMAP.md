@@ -59,7 +59,7 @@ _Recently shipped: gentle return, study rhythm ring + 7-day forecast on Home._
 
 **Reading & video**
 - [ ] **Graded YouTube** — turn any video into a lesson matched to your vocabulary: see "% you'll understand," tap words in a transcript synced to playback, pre-learn the key new words, then watch.
-- [ ] Known-Word Map & Reading Ladder — visualize what you can read as your vocabulary grows.
+- [ ] Known-Word Map — visualize what you can read as your vocabulary grows (the **Reading Ladder** rungs have shipped on the Stories screen).
 
 **Your words & tools**
 - [ ] **Add your own flashcards** — custom cards / decks, scheduled by the same FSRS engine.
@@ -98,6 +98,7 @@ _Recently shipped: gentle return, study rhythm ring + 7-day forecast on Home._
 - [ ] `ChatMission` overlay: a focus trap (the `role="dialog"` + `aria-modal` + Escape-to-close + initial focus have shipped)
 
 ## ✅ Shipped
+- [x] **Reading Ladder** — the story tiers shown as rungs on the Stories screen: which you've unlocked, where you are now, and "N more words to reach <next tier>." A calm view of the reading path.
 - [x] **A fresh story every day** — the Stories screen surfaces one calm "Today's story," picked deterministically per day from the stories you can already read (prefers unread), one tap into the reader. (The optional push nudge is still planned.)
 - [x] **Built-in dictionary** — a Practice → Dictionary screen: search any word in your language (every level), hear it, and add it to your deck via the same lookup sheet the readers use.
 - [x] **Gentle return** — come back after a few days away to a right-sized session (a calm "welcome back — N words ready") instead of the whole overdue backlog. The rest eases back over the next sessions; nothing is lost (FSRS reschedules from your real review time).

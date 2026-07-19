@@ -8,6 +8,7 @@ import { isLearned } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import { todayStr } from './streak'
 import { pickDailyStory } from './dailyStory'
+import { readingLadder, nextRung } from './readingLadder'
 import StoryReader from './StoryReader'
 import {
   ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Circle, Library, Lock, Sparkles,
@@ -486,6 +487,46 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
         <div style={{ marginBottom: '28px' }}>
           <ProgressCard learnedCount={learnedCount} totalWords={totalWords} accentHex={accentHex} />
         </div>
+
+        {/* Reading ladder — the tiers as rungs, with your position and the gap
+            to the next rung. A calm view of the reading path. */}
+        {(() => {
+          const rungs = readingLadder(learnedCount, CATEGORIES)
+          if (rungs.length === 0) return null
+          const next = nextRung(learnedCount, CATEGORIES)
+          return (
+            <div style={{ marginBottom: '28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0', marginBottom: '10px' }}>
+                {rungs.map((r, i) => (
+                  <span key={r.tier} style={{ display: 'flex', alignItems: 'center', flex: i === rungs.length - 1 ? '0 0 auto' : '1 1 0' }}>
+                    <span title={r.label} style={{
+                      width: r.isCurrent ? '15px' : '12px', height: r.isCurrent ? '15px' : '12px',
+                      borderRadius: '50%', flexShrink: 0,
+                      background: r.unlocked ? accentHex : 'var(--surface)',
+                      border: '2px solid ' + (r.unlocked ? accentHex : 'var(--border)'),
+                      boxShadow: r.isCurrent ? '0 0 0 3px ' + accentHex + '33' : 'none',
+                    }} />
+                    {i < rungs.length - 1 && (
+                      <span style={{ flex: 1, height: '2px', background: rungs[i + 1].unlocked ? accentHex : 'var(--border)' }} />
+                    )}
+                  </span>
+                ))}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                {rungs.map(r => (
+                  <span key={r.tier} style={{ fontSize: '11px', fontWeight: r.isCurrent ? 750 : 500, color: r.unlocked ? 'var(--text)' : 'var(--text-faint)' }}>
+                    {r.label}
+                  </span>
+                ))}
+              </div>
+              {next && (
+                <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '10px' }}>
+                  <strong style={{ color: 'var(--text)', fontWeight: 650 }}>{next.wordsToGo}</strong> more word{next.wordsToGo === 1 ? '' : 's'} to reach <strong style={{ color: accentHex, fontWeight: 650 }}>{next.label}</strong>.
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {(() => {
           // A fresh story every day — a calm daily pick from what you can read.

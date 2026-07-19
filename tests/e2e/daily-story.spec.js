@@ -15,4 +15,9 @@ test.describe('Story of the day', () => {
     await expect(page.getByRole('button', { name: /First Steps/ })).toHaveCount(0);
     await expect(daily).toHaveCount(0);
   });
+
+  test('reading ladder shows the gap to the next rung', async ({ page }) => {
+    await page.goto('/stories');
+    await expect(page.getByText(/more words? to reach/i)).toBeVisible();
+  });
 });
