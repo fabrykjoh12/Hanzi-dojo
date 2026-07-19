@@ -26,4 +26,15 @@ test.describe('Profile — month in review', () => {
     // The recap stays shareable.
     await expect(page.getByRole('button', { name: /Share/i })).toBeVisible();
   });
+
+  test('shows the known-word map with reading reach', async ({ page }) => {
+    await page.goto('/profile');
+
+    // The map heading and a readable-of-total summary render from the mock vocab
+    // (7 active words: 5 known, 2 learning → 5 readable).
+    await expect(page.getByText('Known-word map')).toBeVisible();
+    await expect(page.getByText(/You can read 5 of 7 words so far/i)).toBeVisible();
+    // Its legend surfaces the buckets.
+    await expect(page.getByText(/^Known \(5\)$/)).toBeVisible();
+  });
 });
