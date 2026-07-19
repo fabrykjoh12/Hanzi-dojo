@@ -92,6 +92,37 @@ Sections:
 Rendering must stay resilient to entries that lack some fields (rare word with no
 examples, single-character entry with no breakdown, etc.).
 
+### Visual direction — "Refined" (approved)
+
+Chosen from three mocked directions (Paper / Slate / Refined). The build targets
+**Refined**: keep Pleco's recognizable tone colors, but apply them with restraint
+so color carries meaning instead of being everywhere.
+
+- **Tone color is scoped**, not global: color the **big headword characters** and
+  the **character-breakdown cards** (where color teaches the tone↔character link).
+  Definition text, the senses list, "words containing," and example sentences stay
+  **neutral** (the current word bolded in the app accent, not tone-colored). This
+  is the single biggest cleanliness win over the first mockup, which tone-colored
+  pinyin everywhere.
+- **Tone palette** (Pleco-style, tuned for light+dark legibility): 1 flat `#C0392B`
+  / `#E56A5A`, 2 rising `#1E9E57` / `#43C27E`, 3 dip `#2C6BD6` / `#5E9BFF`,
+  4 falling `#8E44AD` / `#C084E8`, neutral grey. Tone-1 red is deliberately kept
+  distinct from the brand accent so they don't compete.
+- **Centered headword hero**: large character(s), pinyin below, a compact meta row
+  of pills (HSK badge in accent, part-of-speech, traditional form).
+- **Action bar** of three labeled icon buttons under the hero: Audio · Strokes ·
+  Add-to-deck (filled/accent when the word is in the deck).
+- **Segmented control** (borrowed from the "Slate" direction) — `Meaning · Chars ·
+  Examples` — so the sheet stays short instead of one long scroll once examples and
+  words-containing are present. Sections map to tabs; the shared sheet still opens
+  to Meaning by default. On very short entries the tabs may collapse to a single
+  scroll (decided in plan).
+- Uppercase section labels, hairline dividers, generous spacing; reuse the app's
+  existing surface/border/text tokens and the Chinese accent `#B83A24`.
+
+The two-artifact preview (search screen + entry, and the three-direction
+comparison) informed this; the implementation matches direction **C · Refined**.
+
 ## Deck integration — "flashcard anything"
 
 Cards FK to `vocabulary` (via `cards.vocab_id`), and `getTrackCards` joins
