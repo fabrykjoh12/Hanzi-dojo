@@ -58,3 +58,13 @@ export function readableSummary(map) {
   if (t.total === 0) return 'Your reading map fills in as you learn your first words.'
   return `You can read ${t.readable} of ${t.total} words so far.`
 }
+
+// A screen-reader label for one level's stacked bar — the numbers a sighted user
+// reads off the colored segments, as text. `levelLabel` is the display label
+// (e.g. "HSK 2"), passed in so this stays pure.
+export function rowA11yLabel(row, levelLabel) {
+  const r = row || { readable: 0, total: 0, mastered: 0, known: 0, learning: 0, new: 0 }
+  const label = levelLabel || 'Level'
+  return `${label}: ${r.readable} of ${r.total} words readable — `
+    + `${r.mastered} mastered, ${r.known} known, ${r.learning} learning, ${r.new} not started`
+}

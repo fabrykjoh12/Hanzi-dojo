@@ -8,7 +8,7 @@ import { cleanMeaning } from './cleanMeaning'
 import { evaluateAchievements } from './achievements'
 import { todayStr, liveStreak } from './streak'
 import { monthReview, monthHeadline, monthShareText } from './monthReview'
-import { knownWordMap, readableSummary } from './knownWordMap'
+import { knownWordMap, readableSummary, rowA11yLabel } from './knownWordMap'
 import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
 import { BRAND_URL } from './brand'
@@ -670,7 +670,11 @@ export function KnownWordMap({ map, accentHex, language, system }) {
                 {row.readable}/{row.total} readable
               </span>
             </div>
-            <div style={{ display: 'flex', height: '12px', borderRadius: '999px', overflow: 'hidden', background: 'var(--surface-2)' }}>
+            <div
+              role="img"
+              aria-label={rowA11yLabel(row, getLevelLabel(language, system, row.level))}
+              style={{ display: 'flex', height: '12px', borderRadius: '999px', overflow: 'hidden', background: 'var(--surface-2)' }}
+            >
               {SEGMENTS.map(seg => {
                 const count = row[seg.key]
                 if (!count) return null
