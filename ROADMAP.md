@@ -61,7 +61,6 @@ day, an interactive word list, ChatMission dialog a11y, and the reading ladder._
 
 **Reading & video**
 - [ ] **Graded YouTube** — turn any video into a lesson matched to your vocabulary: see "% you'll understand," tap words in a transcript synced to playback, pre-learn the key new words, then watch.
-- [ ] Known-Word Map — visualize what you can read as your vocabulary grows (the **Reading Ladder** rungs have shipped on the Stories screen).
 
 **Your words & tools**
 - [ ] **Add your own flashcards** — custom cards / decks, scheduled by the same FSRS engine.
@@ -99,6 +98,7 @@ day, an interactive word list, ChatMission dialog a11y, and the reading ladder._
 - [ ] `ChatMission` overlay: a focus trap (the `role="dialog"` + `aria-modal` + Escape-to-close + initial focus have shipped)
 
 ## ✅ Shipped
+- [x] **Known-Word Map** — a calm Profile panel that shows your reading reach across levels: per-level stacked bars of how many words you've mastered / know / are learning / haven't met yet, with a "you can read N of M words so far" summary. Progress you can see grow.
 - [x] **Your month in review** — the Profile "{month} so far" panel is now a calm recap: a warm headline ("you've shown up N of M days so far this {month}"), a best-day highlight, and the same one-tap share. Derived purely from your existing activity — no streak pressure.
 - [x] **Dictionary — recent lookups** — the Dictionary screen now remembers the last few words you opened and surfaces them under a "Recent" heading when the search box is empty (per-language, tap to reopen, one-tap Clear), so re-checking a word you just looked up is instant.
 - [x] **Reading Ladder** — the story tiers shown as rungs on the Stories screen: which you've unlocked, where you are now, and "N more words to reach <next tier>." A calm view of the reading path.
