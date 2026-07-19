@@ -10,7 +10,39 @@ Whenever we finish or start a meaningful piece of work, edit **`ROADMAP.md`** in
 
 ---
 
-## 0. LATEST SESSION — read first (2026-07-17: story-format readers · N5 vocab fix · favicon)
+## 0. LATEST SESSION — read first (2026-07-19: calm-mechanics + reading tools + on-device bug fixes)
+
+**Two PRs squash-merged to `main` this session (#97, #98). All work is additive and migration-free — no schema changes.** Theme: ship the built-but-dormant "calm progress" ideas, add reading/vocab tools, and fix a batch of on-device reader bugs. Suite after: unit **547**, e2e **31/31**.
+
+**New pure, unit-tested helpers (the pattern to follow — logic in a tiny module, wired by the screen):**
+- `src/prelogin.js` — pre-login onboarding choices (language + reason). `REASONS`, `examLabelFor`, `encouragementFor`, `save/read/clearPreloginPrefs` (localStorage `prelogin:prefs`).
+- `src/reviewForecast.js` — `reviewForecast(cards, now, days)` buckets scheduled reviews per local day (overdue → today; learning cards excluded, hence "~N"); `forecastSummary`.
+- `src/studyRhythm.js` — `studyRhythm(studiedDates, now, days)` → last-N-days studied flags; `rhythmSummary`; `dateKey`.
+- `src/gentleReturn.js` — `isReturningFromBreak(profile,{threshold:3})` (uses `last_studied_on`), `gentleReviewTarget({returning,dueReviewCount,cap:20})`, `gentleReturnMessage`.
+- `src/dailyStory.js` — `unlockedStories` + `pickDailyStory` (deterministic per calendar day via a string hash; unread-preferred, graceful re-read).
+- `src/readingLadder.js` — `readingLadder(learnedCount, categories)` + `nextRung`.
+- Exported `hasKanjiChar` from `storyReading.js` (drives "no furigana over kana-only words").
+
+**PR #97 — pre-login onboarding + calm Home widgets + reader bug fixes:**
+- **Smoother start:** `Landing.jsx` hosts a wizard (landing → pick language → why), saves prefs, fires `prelogin_*` analytics; `Auth.jsx` takes an optional `intro` (defaults to Sign-up tab + personalized subtitle); `Onboarding.jsx` reads prefs via lazy `useState` init (skips the language step, greets by reason) then `clearPreloginPrefs()`.
+- **A gentle forecast** (Home): `homeCounts.js` returns `forecast7`; `Home.jsx` renders a 7-day per-day bar chart ("~N reviews a day").
+- **Study rhythm** (Home): `homeCounts.js` fetches `daily_activity` for the window → `rhythm7`; `Home.jsx` renders a "studied N of last 7 days" dot ring (shown only when ≥1 study day). No streak pressure.
+- **5 reader bugs** (from #bug-reports): (1) `ReaderLaunch.jsx` centered content (killed the big blank gap); (2) furigana no longer renders over kana-only JP words — `PacedReader`/`SceneReader` `readingLine(tokens, language)` gates on `hasKanjiChar`; (3) Analyzer underlines new words instead of boxing every word; (4) paced reader shows the **current line's** English — `useStoryReaderCore` attaches `beat.english` (newline-aligned with `english_content`), not the whole story; (5) `SessionRecap` no longer shows two boxes for the same unlocked story (`nextStepIsUnlockStory` guard).
+- **Word-lookup sheet mobile fix:** `WordLookupSheet.jsx` now renders through a **portal to `document.body`** — the app shell's `<main>` (position:relative + z-index) trapped the fixed sheet below the mobile nav, so it opened as a ~10px sliver. Portaling escapes the stacking context (z-index bumped to 200). e2e asserts real height at a mobile viewport.
+
+**PR #98 — reading/vocab tools + gentle return + a11y:**
+- **Gentle return:** `Study.jsx loadQueue` caps `dueReview` to 20 (oldest-due first) when `isReturningFromBreak` (review mode only); deferring is safe (FSRS reschedules from actual elapsed time, cards stay due). `Home.jsx` shows a "welcome back — N ready" banner only when the cap bites.
+- **Built-in dictionary:** new `src/Dictionary.jsx` (Practice → Dictionary) — search any active vocab in the language (all levels), tap a row to open `WordLookupSheet` (hear + add-to-deck), status dot for in-deck words. `dictionary` added to `KNOWN_VIEWS` (`routes.js`) + App route + Practice card.
+- **A fresh story every day:** `Stories.jsx` category view renders a "Today's story" card from `pickDailyStory` (sets the story's category on open so the reader's next-story/tier-unlock logic works). Push-nudge part still planned.
+- **Interactive word list:** `Words.jsx` rows are now buttons that open `WordLookupSheet` (hear + add-to-deck).
+- **Reading ladder:** `Stories.jsx` renders the tiers as rungs (unlocked/current + "N more words to reach <tier>") from its existing `learnedCount` + `CATEGORIES`.
+- **ChatMission dialog a11y:** `role="dialog"` + `aria-modal` + `aria-label`, Escape-to-close (parity with the X), initial focus to Close. **No focus trap yet** — still on the roadmap.
+
+**Process notes for next session:** autonomous overnight loop drove much of #98 via `send_later` self-wakeups (PRs only, never auto-merged to `main` — deploys/migrations/big calls left to the user). `mcp__github__actions_list` output is huge — parse the auto-saved JSON file with python instead of printing it. Deliberately **not** done (need the user's call): retention dial (needs a `profiles` column), cram mode, mastery-ladder state, graduated pinyin in the paced/scene readers (changes reader behavior), grammar-as-SRS, and anything needing content/authoring, migrations, or new infra.
+
+---
+
+## 0.0d PREVIOUS SESSION (2026-07-17: story-format readers · N5 vocab fix · favicon)
 
 **The story reader is now a shared engine with four swappable presentation formats — all shipped to `main`.** `stories.presentation` (`'paced'|'chat'|'scene'`, default `paced`) + an optional `stories.interactions` JSONB pick the renderer in `src/StoryReader.jsx` (dispatcher) via `resolvePresentation(story, modePref)` (`src/readerMode.js`). Classic continuous scroll (`StoryReaderImmersive.jsx`) stays a per-user preference for paced stories.
 
