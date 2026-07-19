@@ -57,6 +57,30 @@ test.describe('Dictionary', () => {
     await expect(page.getByRole('button', { name: /今天/ })).toBeVisible();
   });
 
+  test('filters the list by level', async ({ page }) => {
+    // Add a level-1 word so the level picker appears (mock vocab is all level 2).
+    await page.route('**/rest/v1/vocabulary*', async (route) => {
+      if (route.request().method() !== 'GET') return route.fallback();
+      return route.fulfill({
+        status: 200,
+        headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'content-range': '0-7/*' },
+        body: JSON.stringify([
+          { id: 'v8', word: '你好', reading: 'nǐhǎo', meaning: 'hello', level: 1, system: 'hsk', language: 'chinese', is_active: true },
+          { id: 'v1', word: '今天', reading: 'jīntiān', meaning: 'today', level: 2, system: 'hsk', language: 'chinese', is_active: true },
+          { id: 'v2', word: '天气', reading: 'tiānqì', meaning: 'weather', level: 2, system: 'hsk', language: 'chinese', is_active: true },
+        ]),
+      });
+    });
+
+    await page.goto('/dictionary');
+    await expect(page.getByRole('button', { name: /你好/ })).toBeVisible();
+
+    // Narrow to level 1 → only 你好 remains.
+    await page.getByLabel('Filter by level').selectOption({ label: 'HSK 1' });
+    await expect(page.getByRole('button', { name: /你好/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /天气/ })).toHaveCount(0);
+  });
+
   test('remembers recently opened words', async ({ page }) => {
     await page.goto('/dictionary');
 

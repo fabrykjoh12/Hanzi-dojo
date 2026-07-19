@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DICT_FILTERS, matchesDictFilter, filterVocab, dictionaryEmptyState } from './dictionaryFilters'
+import { DICT_FILTERS, matchesDictFilter, filterVocab, dictionaryEmptyState, levelsInVocab, filterByLevel } from './dictionaryFilters'
 
 describe('DICT_FILTERS', () => {
   it('leads with All and covers the key states', () => {
@@ -82,5 +82,31 @@ describe('dictionaryEmptyState', () => {
   it('falls back for all / unknown keys', () => {
     expect(dictionaryEmptyState('all', false)).toBe('No words here yet.')
     expect(dictionaryEmptyState('zzz', false)).toBe('No words here yet.')
+  })
+})
+
+describe('levelsInVocab', () => {
+  it('returns distinct levels ascending', () => {
+    expect(levelsInVocab([{ level: 3 }, { level: 1 }, { level: 3 }, { level: 2 }])).toEqual([1, 2, 3])
+  })
+  it('ignores rows without a level and junk input', () => {
+    expect(levelsInVocab([{ level: 2 }, {}, null, { level: 1 }])).toEqual([1, 2])
+    expect(levelsInVocab(null)).toEqual([])
+  })
+})
+
+describe('filterByLevel', () => {
+  const vocab = [{ id: 'a', level: 1 }, { id: 'b', level: 2 }, { id: 'c', level: 2 }]
+  it('keeps everything for all / nullish', () => {
+    expect(filterByLevel(vocab, 'all')).toHaveLength(3)
+    expect(filterByLevel(vocab, null)).toHaveLength(3)
+    expect(filterByLevel(vocab, undefined)).toHaveLength(3)
+  })
+  it('keeps only the requested level', () => {
+    expect(filterByLevel(vocab, 2).map(v => v.id)).toEqual(['b', 'c'])
+    expect(filterByLevel(vocab, 1).map(v => v.id)).toEqual(['a'])
+  })
+  it('tolerates a non-array', () => {
+    expect(filterByLevel(null, 1)).toEqual([])
   })
 })
