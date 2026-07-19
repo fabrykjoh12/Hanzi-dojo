@@ -65,7 +65,6 @@ _Recently shipped: gentle return, study rhythm ring + 7-day forecast on Home._
 - [ ] **Add your own flashcards** — custom cards / decks, scheduled by the same FSRS engine.
 - [ ] **Import a word list** — bring a CSV / Anki deck ("my textbook, chapter 5") into the same engine, and it unlocks stories too.
 - [ ] **Add a phrase, not just a word** — save a whole chunk or idiom from any text.
-- [ ] **Built-in dictionary** — search any word, hear it, and add it to your deck.
 
 **Grow calmly — honest mechanics, not fear**
 - [ ] **A mastery ladder** — words you've truly locked in reach a permanent "mastered" state (the reward is real progress, not a number).
@@ -99,6 +98,7 @@ _Recently shipped: gentle return, study rhythm ring + 7-day forecast on Home._
 - [ ] `ChatMission` overlay: `role="dialog"` + focus trap (the mobile "More" sheet is done)
 
 ## ✅ Shipped
+- [x] **Built-in dictionary** — a Practice → Dictionary screen: search any word in your language (every level), hear it, and add it to your deck via the same lookup sheet the readers use.
 - [x] **Gentle return** — come back after a few days away to a right-sized session (a calm "welcome back — N words ready") instead of the whole overdue backlog. The rest eases back over the next sessions; nothing is lost (FSRS reschedules from your real review time).
 - [x] **Study rhythm, not a chain** — a quiet "you studied N of the last 7 days" ring on Home, filled dots for the days you showed up. Nothing to protect, nothing to lose — a missed day is just information, never a broken chain.
 - [x] **A gentle forecast** — a calm "next 7 days" review outlook on Home: a small per-day bar chart plus "~N reviews a day," so you can see what's coming (and plan around a busy day) without any streak pressure.
