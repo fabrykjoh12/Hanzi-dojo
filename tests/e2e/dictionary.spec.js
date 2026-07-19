@@ -30,4 +30,26 @@ test.describe('Dictionary', () => {
     await page.getByRole('button', { name: /Dictionary/i }).click();
     await expect(page.getByRole('heading', { name: /Look up any word/i })).toBeVisible();
   });
+
+  test('remembers recently opened words', async ({ page }) => {
+    await page.goto('/dictionary');
+
+    // Open a word, then close the lookup sheet.
+    await page.getByRole('button', { name: /朋友/ }).first().click();
+    await expect(page.getByRole('button', { name: 'Add to deck' })).toBeVisible();
+    await page.getByRole('button', { name: 'Close' }).click();
+
+    // A "Recent" section now surfaces the word we just opened.
+    const recent = page.getByRole('region', { name: 'Recent lookups' });
+    await expect(recent).toBeVisible();
+    await expect(recent.getByRole('button', { name: /朋友/ })).toBeVisible();
+
+    // It survives a reload (persisted per-language).
+    await page.reload();
+    await expect(page.getByRole('region', { name: 'Recent lookups' }).getByRole('button', { name: /朋友/ })).toBeVisible();
+
+    // Clearing empties the section.
+    await page.getByRole('button', { name: 'Clear' }).click();
+    await expect(page.getByRole('region', { name: 'Recent lookups' })).toHaveCount(0);
+  });
 });
