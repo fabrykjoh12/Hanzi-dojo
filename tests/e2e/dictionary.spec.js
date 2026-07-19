@@ -121,4 +121,14 @@ test.describe('Dictionary', () => {
     await row.click();
     await expect(page.getByRole('tab', { name: 'Meaning' })).toBeVisible();
   });
+
+  test('adds a reference word to the deck from the entry', async ({ page }) => {
+    await page.goto('/dictionary')
+    await page.getByLabel('Search the dictionary').fill('zhong')
+    await page.getByRole('button').filter({ hasText: '中文' }).first().click()
+    const add = page.getByRole('button', { name: 'Add to deck' })
+    await expect(add).toBeVisible()
+    await add.click()
+    await expect(page.getByRole('button', { name: 'In your deck' })).toBeVisible()
+  });
 });

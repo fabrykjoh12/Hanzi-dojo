@@ -108,6 +108,12 @@ const CARDS = [
   card(10, { lapses: 3, stability: 8, difficulty: 7 }),
   card(11, { lapses: 2, stability: 10, difficulty: 6 }),
   card(12, { state: 'learning', stability: 1, difficulty: 5, learned: false }),
+  // Dictionary-sourced card: NULL level (not curriculum vocab) so it stays
+  // excluded from level-scoped views but still surfaces in the review deck.
+  card(13, {
+    vocab_id: 'dv1', state: 'review', due_at: dueNow,
+    vocabulary: { id: 'dv1', level: null, word: '中文', reading: 'zhōng wén', meaning: 'Chinese language', language: 'chinese', system: 'hsk', is_active: true },
+  }),
 ];
 
 // End-of-story comprehension questions (served for every story in tests; the
@@ -167,6 +173,7 @@ export async function mockSupabaseRoutes(page) {
       else if (fn === 'dict_entry') body = DICT_ENTRIES[0];
       else if (fn === 'dict_examples_for') body = [];
       else if (fn === 'dict_words_containing') body = [];
+      else if (fn === 'dict_add_to_deck') body = { vocab_id: 'ddeck1', source: 'dictionary', already_in_deck: false };
       return route.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'application/json' }, body: JSON.stringify(body) });
     }
     if (url.pathname.startsWith('/rest/v1/')) {
