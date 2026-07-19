@@ -34,6 +34,29 @@ test.describe('Profile — month in review', () => {
     await expect(page.getByText('Bookworm')).toBeVisible();
   });
 
+  test('exposes a screen-reader summary for the review-accuracy chart', async ({ page }) => {
+    const now = new Date();
+    const iso = (daysAgo) => {
+      const d = new Date(now); d.setDate(d.getDate() - daysAgo); return d.toISOString();
+    };
+    // Provide a few review logs so the 30-day chart renders (mock returns [] by default).
+    await page.route('**/rest/v1/review_logs*', async (route) => {
+      if (route.request().method() !== 'GET') return route.fallback();
+      return route.fulfill({
+        status: 200,
+        headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'content-range': '0-2/*' },
+        body: JSON.stringify([
+          { grade: 3, reviewed_at: iso(0), vocabulary: { language: 'chinese', system: 'hsk' } },
+          { grade: 2, reviewed_at: iso(1), vocabulary: { language: 'chinese', system: 'hsk' } },
+          { grade: 0, reviewed_at: iso(1), vocabulary: { language: 'chinese', system: 'hsk' } },
+        ]),
+      });
+    });
+
+    await page.goto('/profile');
+    await expect(page.getByRole('img', { name: /Reviews over the last 30 days/i })).toBeVisible();
+  });
+
   test('shows the known-word map with reading reach', async ({ page }) => {
     await page.goto('/profile');
 
