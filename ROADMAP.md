@@ -15,8 +15,8 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] _Next up — pick from the plan below._
 
 _Recently shipped: pre-login onboarding, 7-day forecast + study rhythm on Home,
-gentle return, built-in dictionary, a fresh story every day, an interactive word
-list, ChatMission dialog a11y, and the reading ladder._
+gentle return, built-in dictionary (with recent lookups), a fresh story every
+day, an interactive word list, ChatMission dialog a11y, and the reading ladder._
 
 ## 🔜 Next — planned
 
@@ -100,6 +100,7 @@ list, ChatMission dialog a11y, and the reading ladder._
 - [ ] `ChatMission` overlay: a focus trap (the `role="dialog"` + `aria-modal` + Escape-to-close + initial focus have shipped)
 
 ## ✅ Shipped
+- [x] **Dictionary — recent lookups** — the Dictionary screen now remembers the last few words you opened and surfaces them under a "Recent" heading when the search box is empty (per-language, tap to reopen, one-tap Clear), so re-checking a word you just looked up is instant.
 - [x] **Reading Ladder** — the story tiers shown as rungs on the Stories screen: which you've unlocked, where you are now, and "N more words to reach <next tier>." A calm view of the reading path.
 - [x] **A fresh story every day** — the Stories screen surfaces one calm "Today's story," picked deterministically per day from the stories you can already read (prefers unread), one tap into the reader. (The optional push nudge is still planned.)
 - [x] **Built-in dictionary** — a Practice → Dictionary screen: search any word in your language (every level), hear it, and add it to your deck via the same lookup sheet the readers use.
