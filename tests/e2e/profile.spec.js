@@ -27,6 +27,13 @@ test.describe('Profile — month in review', () => {
     await expect(page.getByRole('button', { name: /Share/i })).toBeVisible();
   });
 
+  test('shows reading achievements', async ({ page }) => {
+    await page.goto('/profile');
+    // The new Reading group renders its badges (locked in the mock, but present).
+    await expect(page.getByText('First Story')).toBeVisible();
+    await expect(page.getByText('Bookworm')).toBeVisible();
+  });
+
   test('shows the known-word map with reading reach', async ({ page }) => {
     await page.goto('/profile');
 
