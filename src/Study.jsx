@@ -265,7 +265,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     // floor (the lowest level they actually study), then load every level's
     // vocabulary from that floor up to the current level. Advancing a level
     // keeps earlier levels in the deck for review instead of dropping them.
-    const cards = await getTrackCards(session.user.id, track, { maxLevel: track.current_level })
+    const cards = await getTrackCards(session.user.id, track, { maxLevel: track.current_level, includeUnleveled: true })
     const floorLevel = studyFloorLevel(cards, track.current_level)
 
     const vocabKey = 'vocab:' + track.language + ':' + track.system + ':' + floorLevel + '-' + track.current_level
@@ -453,6 +453,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     const cards = await getTrackCards(session.user.id, track, {
       maxLevel: track.current_level,
       columns: 'vocab_id, state, due_at',
+      includeUnleveled: true,
     })
     const floorLevel = studyFloorLevel(cards, track.current_level)
     const { data: vocab } = await supabase
