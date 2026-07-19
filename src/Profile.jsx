@@ -7,12 +7,14 @@ import { levelInfo } from './xp'
 import { cleanMeaning } from './cleanMeaning'
 import { evaluateAchievements } from './achievements'
 import { todayStr, liveStreak } from './streak'
+import { monthReview, monthHeadline, monthShareText } from './monthReview'
+import { knownWordMap, readableSummary } from './knownWordMap'
 import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
 import { BRAND_URL } from './brand'
 import {
   ArrowLeft, Flame, Layers, LogOut, RotateCcw, Save,
-  Shield, Sparkles, Target, User, Trophy, CalendarCheck, Award, Share2, Check, AlertTriangle, TrendingUp,
+  Shield, Sparkles, Target, User, Trophy, CalendarCheck, Award, Share2, Check, AlertTriangle, TrendingUp, BookOpen,
 } from 'lucide-react'
 
 const ACH_ICONS = { flame: Flame, layers: Layers, sparkles: Sparkles, trophy: Trophy, calendar: CalendarCheck }
@@ -79,6 +81,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   const [shared, setShared] = useState(false)
   const [leeches, setLeeches] = useState([])
   const [reviewStats, setReviewStats] = useState({ total: 0, correct: 0, days: {} })
+  const [wordMap, setWordMap] = useState({ levels: [], totals: { total: 0, mastered: 0, known: 0, learning: 0, new: 0, readable: 0 } })
 
   const isMobile = useIsMobile()
   const { accentHex, fontFamily, nativeName } = getLanguageDetails(profile)
@@ -101,6 +104,18 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
 
     const vocabIds = new Set((vocab || []).map(v => v.id))
     const levelCards = (cards || []).filter(c => vocabIds.has(c.vocab_id))
+
+    // Known-Word Map: bucket every active word in the language (all levels) by
+    // how well the learner knows it, so reading reach is visible as it grows.
+    const { data: allVocab } = await supabase
+      .from('vocabulary')
+      .select('id, level')
+      .eq('language', track.language)
+      .eq('system', track.system)
+      .eq('is_active', true)
+    const cardById = {}
+    for (const c of (cards || [])) cardById[c.vocab_id] = c
+    setWordMap(knownWordMap(allVocab || [], cardById))
 
     setStats({
       learned: levelCards.filter(c => c.learned).length,
@@ -219,19 +234,19 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   const earnedCount = achievements.filter(a => a.earned).length
 
   // This-month report (from daily_activity; presence is exact, counts approximate).
-  const nowDate = new Date()
-  const ymPrefix = nowDate.getFullYear() + '-' + String(nowDate.getMonth() + 1).padStart(2, '0')
-  const monthName = nowDate.toLocaleString('en-US', { month: 'long' })
-  const monthDays = Object.keys(activity).filter(d => d.indexOf(ymPrefix) === 0)
-  const activeDays = monthDays.length
-  const cardsThisMonth = monthDays.reduce((sum, d) => sum + (activity[d] || 0), 0)
+  const mr = monthReview(activity)
+  const monthName = mr.monthName
+  const activeDays = mr.activeDays
+  const cardsThisMonth = mr.reviews
 
   const shareReport = async () => {
     const lang = profile.active_language === 'japanese' ? 'Japanese'
       : profile.active_language === 'russian' ? 'Russian' : 'Chinese'
-    const text = 'My ' + monthName + ' on Hanzi Dojo: ' + activeDays + ' active days, '
-      + cardsThisMonth + ' reviews, ' + (stats.lifetimeMastered || 0) + ' words mastered learning '
-      + lang + '. ' + BRAND_URL
+    const text = monthShareText(mr, {
+      languageName: lang,
+      mastered: stats.lifetimeMastered || 0,
+      brandUrl: BRAND_URL,
+    })
     try {
       if (navigator.share) { await navigator.share({ text }); return }
     } catch { return /* user cancelled */ }
@@ -393,6 +408,9 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
                 : <><Share2 size={15} strokeWidth={2} color="var(--text-muted)" /> Share</>}
             </button>
           </div>
+          <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: 1.5 }}>
+            {monthHeadline(mr)}
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '12px' }}>
             {[
               { label: 'Active days', value: activeDays, color: accentHex },
@@ -406,6 +424,18 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
               </div>
             ))}
           </div>
+          {mr.bestDay && mr.bestDay.count > 0 && (
+            <div style={{ fontSize: '12.5px', color: 'var(--text-faint)', marginTop: '14px', textAlign: 'center' }}>
+              Best day so far — {mr.bestDay.count} review{mr.bestDay.count === 1 ? '' : 's'} on{' '}
+              {new Date(mr.bestDay.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}.
+            </div>
+          )}
+        </Panel>
+      )}
+
+      {!loading && wordMap.totals.total > 0 && (
+        <Panel>
+          <KnownWordMap map={wordMap} accentHex={accentHex} language={track.language} system={track.system} />
         </Panel>
       )}
 
@@ -600,6 +630,66 @@ function cellColor(count, accentHex) {
 }
 
 const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+// Known-Word Map — reading reach across levels, as calm stacked bars. Each
+// level shows how many words you've mastered / know / are learning / haven't met
+// yet. Data comes from the pure knownWordMap module (fully unit-tested).
+export function KnownWordMap({ map, accentHex, language, system }) {
+  const SEGMENTS = [
+    { key: 'mastered', label: 'Mastered', color: '#2F9E6D' },
+    { key: 'known', label: 'Known', color: accentHex },
+    { key: 'learning', label: 'Learning', color: '#D97706' },
+    { key: 'new', label: 'Not yet', color: 'var(--border)' },
+  ]
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)', marginBottom: '6px' }}>
+        <BookOpen size={17} strokeWidth={1.85} color={accentHex} />
+        Known-word map
+      </div>
+      <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '18px', lineHeight: 1.5 }}>
+        {readableSummary(map)}
+      </div>
+
+      <div style={{ display: 'grid', gap: '14px' }}>
+        {map.levels.map(row => (
+          <div key={row.level}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '10px', marginBottom: '6px' }}>
+              <span style={{ fontSize: '12.5px', fontWeight: 750, color: 'var(--text)' }}>
+                {getLevelLabel(language, system, row.level)}
+              </span>
+              <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: 650, fontVariantNumeric: 'tabular-nums' }}>
+                {row.readable}/{row.total} readable
+              </span>
+            </div>
+            <div style={{ display: 'flex', height: '12px', borderRadius: '999px', overflow: 'hidden', background: 'var(--surface-2)' }}>
+              {SEGMENTS.map(seg => {
+                const count = row[seg.key]
+                if (!count) return null
+                return (
+                  <div
+                    key={seg.key}
+                    title={seg.label + ': ' + count}
+                    style={{ width: (count / row.total) * 100 + '%', background: seg.color }}
+                  />
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '16px' }}>
+        {SEGMENTS.map(seg => (
+          <span key={seg.key} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: 600 }}>
+            <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: seg.color, flexShrink: 0 }} />
+            {seg.label} ({map.totals[seg.key]})
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export function StudyCalendar({ activity, accentHex }) {
   const isMobile = useIsMobile()

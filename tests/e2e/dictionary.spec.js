@@ -30,4 +30,44 @@ test.describe('Dictionary', () => {
     await page.getByRole('button', { name: /Dictionary/i }).click();
     await expect(page.getByRole('heading', { name: /Look up any word/i })).toBeVisible();
   });
+
+  test('filters the list by status', async ({ page }) => {
+    await page.goto('/dictionary');
+
+    // The mock deck has 今天 (v1) graduated and 朋友 (v6) still in learning.
+    const filters = page.getByRole('group', { name: 'Filter by status' });
+    await filters.getByRole('button', { name: 'Learning' }).click();
+    await expect(page.getByRole('button', { name: /朋友/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /今天/ })).toHaveCount(0);
+
+    // Mastered has no matches in the mock deck → encouraging, filter-aware empty state.
+    await filters.getByRole('button', { name: 'Mastered' }).click();
+    await expect(page.getByText(/No mastered words yet/i)).toBeVisible();
+
+    // Back to All restores the full list.
+    await filters.getByRole('button', { name: 'All' }).click();
+    await expect(page.getByRole('button', { name: /今天/ })).toBeVisible();
+  });
+
+  test('remembers recently opened words', async ({ page }) => {
+    await page.goto('/dictionary');
+
+    // Open a word, then close the lookup sheet.
+    await page.getByRole('button', { name: /朋友/ }).first().click();
+    await expect(page.getByRole('button', { name: 'Add to deck' })).toBeVisible();
+    await page.getByRole('button', { name: 'Close' }).click();
+
+    // A "Recent" section now surfaces the word we just opened.
+    const recent = page.getByRole('region', { name: 'Recent lookups' });
+    await expect(recent).toBeVisible();
+    await expect(recent.getByRole('button', { name: /朋友/ })).toBeVisible();
+
+    // It survives a reload (persisted per-language).
+    await page.reload();
+    await expect(page.getByRole('region', { name: 'Recent lookups' }).getByRole('button', { name: /朋友/ })).toBeVisible();
+
+    // Clearing empties the section.
+    await page.getByRole('button', { name: 'Clear' }).click();
+    await expect(page.getByRole('region', { name: 'Recent lookups' })).toHaveCount(0);
+  });
 });
