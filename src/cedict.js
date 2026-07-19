@@ -1,5 +1,5 @@
 // Pure CC-CEDICT parsing. CC-CEDICT lines look like:
-//   傳統 管理 [chuan2 tong3] /tradition/traditional/
+//   傳統 传统 [chuan2 tong3] /tradition/traditional/
 // Comments start with '#'. Pinyin is space-separated syllables with a trailing
 // tone digit 1-5 (5 = neutral). We convert to tone marks for display and derive
 // a toneless form for search (via the shared searchFold).

@@ -14,10 +14,10 @@ describe('numberedPinyinToMarks', () => {
 
 describe('parseCedictLine', () => {
   it('parses a standard entry', () => {
-    const r = parseCedictLine('傳統 管理 [chuan2 tong3] /tradition/traditional/')
+    const r = parseCedictLine('傳統 传统 [chuan2 tong3] /tradition/traditional/')
     expect(r).toEqual({
       traditional: '傳統',
-      simplified: '管理',
+      simplified: '传统',
       pinyin: 'chuán tǒng',
       pinyinPlain: 'chuan tong',
       definitions: ['tradition', 'traditional'],
