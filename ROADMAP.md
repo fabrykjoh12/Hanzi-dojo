@@ -95,7 +95,7 @@ _Recently shipped: gentle return, study rhythm ring + 7-day forecast on Home._
 
 **Accessibility (WCAG 2.2 AA)**
 - [ ] Flashcard reveal surface as a fully focusable control (answer `aria-live` announcements have shipped)
-- [ ] `ChatMission` overlay: `role="dialog"` + focus trap (the mobile "More" sheet is done)
+- [ ] `ChatMission` overlay: a focus trap (the `role="dialog"` + `aria-modal` + Escape-to-close + initial focus have shipped)
 
 ## ✅ Shipped
 - [x] **A fresh story every day** — the Stories screen surfaces one calm "Today's story," picked deterministically per day from the stories you can already read (prefers unread), one tap into the reader. (The optional push nudge is still planned.)
