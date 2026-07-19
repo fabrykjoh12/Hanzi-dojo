@@ -98,6 +98,7 @@ day, an interactive word list, ChatMission dialog a11y, and the reading ladder._
 - [ ] `ChatMission` overlay: a focus trap (the `role="dialog"` + `aria-modal` + Escape-to-close + initial focus have shipped)
 
 ## ✅ Shipped
+- [x] **Grammar guide — topic search** — a search box on the Grammar guide filters its topics by title, blurb, pattern, or explanation (toneless pinyin works too), so you can jump straight to "了" or "comparisons" instead of scrolling the whole accordion.
 - [x] **Reading achievements** — the Profile achievements wall now has a "Reading" group (First Story / Bookworm / Well Read) that rewards finishing stories, not just flashcards — recognition for the app's core activity. Derived live from your story reads; no new tables.
 - [x] **Dictionary — status filters** — filter chips (All / In deck / Learning / Mastered / Not started) above the Dictionary list, so you can jump to just the words you're still learning or the ones you haven't met yet. Composes with search, with calm filter-aware empty states.
 - [x] **Known-Word Map** — a calm Profile panel that shows your reading reach across levels: per-level stacked bars of how many words you've mastered / know / are learning / haven't met yet, with a "you can read N of M words so far" summary. Progress you can see grow.
