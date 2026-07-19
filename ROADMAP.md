@@ -12,11 +12,15 @@ so the community always sees the latest. Keep it current — move things to
 > you everywhere.
 
 ## 🚧 Now — in progress
-- [ ] _Next up — pick from the plan below._
+- [ ] Search, discovery & progress polish across the app — shipping in small, additive PRs (see Just shipped).
 
-_Recently shipped: pre-login onboarding, 7-day forecast + study rhythm on Home,
-gentle return, built-in dictionary (with recent lookups), a fresh story every
-day, an interactive word list, ChatMission dialog a11y, and the reading ladder._
+**Just shipped**
+- [x] Analyze text: tappable "words to learn next"
+- [x] Grammar guide: topic search
+- [x] Reading achievements (First Story / Bookworm / Well Read)
+- [x] Toneless pinyin search (Dictionary + Word list)
+- [x] Dictionary: recent lookups + status filters
+- [x] Known-Word Map + month-in-review on Profile
 
 ## 🔜 Next — planned
 
