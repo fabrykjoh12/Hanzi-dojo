@@ -2,11 +2,12 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabase'
 import { languageTheme } from './languageTheme'
 import { grammarFor } from './grammarGuides'
+import { filterTopics } from './grammarSearch'
 import { awardXp } from './xpService'
 import { useIsMobile } from './useIsMobile'
 import { shuffle } from './utils'
 import { tokenize, makeSegmenter, isContent, scrambleIndices } from './segment'
-import { ArrowLeft, BookMarked, BookOpen, Check, ChevronRight, GraduationCap, Sparkles, X, Volume2 } from 'lucide-react'
+import { ArrowLeft, BookMarked, BookOpen, Check, ChevronRight, GraduationCap, Search, Sparkles, X, Volume2 } from 'lucide-react'
 
 // Speak an example aloud with the browser's TTS — grammar examples are
 // arbitrary sentences with no recorded audio, so this is the practical way to
@@ -68,7 +69,8 @@ export default function Grammar({ session, profile, track, onBack, onUpdate }) {
   const accentHex = theme.accentHex
   const font = theme.font
   const guide = grammarFor(profile.active_language)
-  const [open, setOpen] = useState(0)   // index of the expanded topic (-1 = none)
+  const [open, setOpen] = useState(null)   // id of the expanded topic (null = none)
+  const [query, setQuery] = useState('')
   const [stories, setStories] = useState([])
   // Self-check state, keyed by topic id: { [qIndex]: chosenOptionIndex }.
   // `rewarded` remembers which topics already paid XP this visit.
@@ -121,6 +123,8 @@ export default function Grammar({ session, profile, track, onBack, onUpdate }) {
     }
   }
 
+  const shownTopics = filterTopics(guide.topics, query)
+
   return (
     <div style={pageShell}>
       <div style={{ maxWidth: '780px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px', position: 'relative', zIndex: 1 }}>
@@ -138,9 +142,29 @@ export default function Grammar({ session, profile, track, onBack, onUpdate }) {
           </p>
         </div>
 
+        <div style={{ position: 'relative', marginBottom: '16px' }}>
+          <Search size={17} strokeWidth={2} color="var(--text-faint)" style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search topics"
+            aria-label="Search grammar topics"
+            style={{
+              width: '100%', boxSizing: 'border-box', height: '46px', padding: '0 16px 0 42px', borderRadius: '14px',
+              border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)',
+              fontSize: '15px', fontFamily: 'Inter, sans-serif',
+            }}
+          />
+        </div>
+
+        {shownTopics.length === 0 ? (
+          <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px 20px', fontSize: '14px' }}>
+            No topics match “{query.trim()}”.
+          </div>
+        ) : (
         <div style={{ display: 'grid', gap: '12px' }}>
-          {guide.topics.map((topic, i) => {
-            const expanded = open === i
+          {shownTopics.map((topic) => {
+            const expanded = open === topic.id
             const done = !!rewarded[topic.id]
             return (
               <div key={topic.id} style={{
@@ -150,7 +174,7 @@ export default function Grammar({ session, profile, track, onBack, onUpdate }) {
                 transition: 'border-color 160ms ease, box-shadow 160ms ease',
               }}>
                 <button
-                  onClick={() => setOpen(expanded ? -1 : i)}
+                  onClick={() => setOpen(expanded ? null : topic.id)}
                   style={{
                     width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 'none',
                     padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px', fontFamily: 'Inter, sans-serif',
@@ -216,6 +240,7 @@ export default function Grammar({ session, profile, track, onBack, onUpdate }) {
             )
           })}
         </div>
+        )}
       </div>
     </div>
   )
