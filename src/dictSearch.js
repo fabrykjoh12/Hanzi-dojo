@@ -30,3 +30,15 @@ export async function getWordsContaining(supabase, word, id, limit = 12) {
   if (error) throw error
   return data || []
 }
+
+export async function getDictEntryById(supabase, id) {
+  const { data, error } = await supabase.rpc('dict_entry', { p_id: id })
+  if (error) throw error
+  return data || null
+}
+
+// Open the best entry for a bare character/word (breakdown taps pass a hanzi).
+export async function getDictEntryByWord(supabase, word) {
+  const rows = await searchDict(supabase, word, 1)
+  return rows[0] || null
+}

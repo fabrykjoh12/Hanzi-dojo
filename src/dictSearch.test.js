@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { normalizeQuery, searchDict, getExamples, getWordsContaining } from './dictSearch'
+import { normalizeQuery, searchDict, getExamples, getWordsContaining, getDictEntryById, getDictEntryByWord } from './dictSearch'
 
 describe('normalizeQuery', () => {
   it('folds pinyin tones and lowercases', () => {
@@ -51,5 +51,25 @@ describe('getWordsContaining', () => {
   it('throws when the RPC returns an error', async () => {
     const rpc = vi.fn().mockResolvedValue({ data: null, error: new Error('boom') })
     await expect(getWordsContaining({ rpc }, '中', 'abc')).rejects.toThrow('boom')
+  })
+})
+
+describe('getDictEntryById', () => {
+  it('calls dict_entry with p_id and returns data', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: { id: 'abc', simplified: '中文' }, error: null })
+    const supabase = { rpc }
+    const entry = await getDictEntryById(supabase, 'abc')
+    expect(rpc).toHaveBeenCalledWith('dict_entry', { p_id: 'abc' })
+    expect(entry).toEqual({ id: 'abc', simplified: '中文' })
+  })
+})
+
+describe('getDictEntryByWord', () => {
+  it('delegates to searchDict and returns the first row', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: [{ id: '1', simplified: '中' }, { id: '2', simplified: '中文' }], error: null })
+    const supabase = { rpc }
+    const entry = await getDictEntryByWord(supabase, '中')
+    expect(rpc).toHaveBeenCalledWith('dict_search', { p_query: '中', p_limit: 1 })
+    expect(entry).toEqual({ id: '1', simplified: '中' })
   })
 })

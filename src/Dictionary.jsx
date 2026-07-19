@@ -8,6 +8,8 @@ import WordLookupSheet from './WordLookupSheet'
 import { readRecent, recordRecent, clearRecent } from './recentLookups'
 import { DICT_FILTERS, filterVocab, dictionaryEmptyState, levelsInVocab, filterByLevel } from './dictionaryFilters'
 import { foldIncludes } from './searchFold'
+import { searchDict, getDictEntryById, getDictEntryByWord } from './dictSearch'
+import DictEntryView from './DictEntryView'
 import { ArrowLeft, Search, Clock } from 'lucide-react'
 
 // Built-in dictionary: search ANY word in the current language (every level, not
@@ -43,6 +45,33 @@ export default function Dictionary({ session, profile, track, onBack }) {
   const [recent, setRecent] = useState(() => readRecent(track.language))
   const [filter, setFilter] = useState('all')
   const [levelFilter, setLevelFilter] = useState('all')
+
+  const [scope, setScope] = useState('full')          // 'full' | 'syllabus'
+  const [dictRows, setDictRows] = useState([])
+  const [dictLoading, setDictLoading] = useState(false)
+  const [entryStack, setEntryStack] = useState([])    // drill-down stack of dict entries
+
+  // Debounced full-dictionary search.
+  useEffect(() => {
+    if (scope !== 'full') return
+    const term = query.trim()
+    if (!term) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDictRows([])
+      return
+    }
+    let cancelled = false
+    setDictLoading(true)
+    const t = setTimeout(async () => {
+      try {
+        const rows = await searchDict(supabase, term, 60)
+        if (!cancelled) setDictRows(rows)
+      } finally {
+        if (!cancelled) setDictLoading(false)
+      }
+    }, 180)
+    return () => { cancelled = true; clearTimeout(t) }
+  }, [query, scope])
 
   useEffect(() => {
     let cancelled = false
@@ -150,6 +179,22 @@ export default function Dictionary({ session, profile, track, onBack }) {
     )
   }
 
+  const renderDictRow = (e) => (
+    <button key={e.id} onClick={() => setEntryStack([e])} style={{
+      display: 'flex', alignItems: 'center', gap: '14px', textAlign: 'left', width: '100%',
+      padding: '13px 16px', borderRadius: '14px', cursor: 'pointer',
+      background: 'var(--surface)', border: '1px solid var(--border)', fontFamily: 'Inter, sans-serif',
+    }}>
+      <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', fontFamily: langFont + ', Inter, sans-serif', flexShrink: 0 }}>{e.simplified}</span>
+      <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+        <span style={{ fontSize: '12.5px', color: accentHex, fontWeight: 600 }}>{e.pinyin}</span>
+        <span style={{ fontSize: '13px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {Array.isArray(e.definitions) ? e.definitions.join('; ') : ''}
+        </span>
+      </span>
+    </button>
+  )
+
   const shell = { maxWidth: '760px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px' }
 
   return (
@@ -185,91 +230,126 @@ export default function Dictionary({ session, profile, track, onBack }) {
         />
       </div>
 
-      {levelOptions.length > 1 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-          <label htmlFor="dict-level" style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)' }}>Level</label>
-          <select
-            id="dict-level"
-            aria-label="Filter by level"
-            value={levelFilter}
-            onChange={(e) => setLevelFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+        {['full', 'syllabus'].map(s => (
+          <button
+            key={s}
+            onClick={() => setScope(s)}
+            aria-pressed={scope === s}
             style={{
-              minHeight: '36px', padding: '0 12px', borderRadius: '10px',
-              border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)',
-              fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+              flex: 1, minHeight: '36px', borderRadius: '10px', cursor: 'pointer',
+              border: '1px solid ' + (scope === s ? accentHex : 'var(--border)'),
+              background: scope === s ? accentHex + '12' : 'var(--surface)',
+              color: scope === s ? accentHex : 'var(--text-muted)',
+              fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
             }}
           >
-            <option value="all">All levels</option>
-            {levelOptions.map(lvl => (
-              <option key={lvl} value={lvl}>{getLevelLabel(track.language, track.system, lvl)}</option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      <div role="group" aria-label="Filter by status" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '18px' }}>
-        {DICT_FILTERS.map(f => {
-          const active = filter === f.key
-          return (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              aria-pressed={active}
-              style={{
-                minHeight: '34px', padding: '0 14px', borderRadius: '999px', cursor: 'pointer',
-                border: '1px solid ' + (active ? accentHex : 'var(--border)'),
-                background: active ? accentHex + '12' : 'var(--surface)',
-                color: active ? accentHex : 'var(--text-muted)',
-                fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
-              }}
-            >
-              {f.label}
-            </button>
-          )
-        })}
+            {s === 'full' ? 'Full dictionary' : 'My syllabus'}
+          </button>
+        ))}
       </div>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '14px' }}>Loading…</div>
+      {scope === 'full' ? (
+        dictLoading ? (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '14px' }}>Loading…</div>
+        ) : dictRows.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.5 }}>
+            {q ? 'No words match “' + query.trim() + '”.' : 'Search the full dictionary by word, pinyin, or meaning.'}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {dictRows.map(renderDictRow)}
+          </div>
+        )
       ) : (
         <>
-          {showRecent && (
-            <section aria-label="Recent lookups" style={{ marginBottom: '22px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  <Clock size={14} strokeWidth={2} color="var(--text-muted)" /> Recent
-                </span>
-                <button
-                  onClick={clearRecentLookups}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', color: 'var(--text-faint)', fontSize: '12.5px', fontWeight: 650, fontFamily: 'Inter, sans-serif' }}
-                >
-                  Clear
-                </button>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {recentRows.map(renderRow)}
-              </div>
-            </section>
+          {levelOptions.length > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+              <label htmlFor="dict-level" style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)' }}>Level</label>
+              <select
+                id="dict-level"
+                aria-label="Filter by level"
+                value={levelFilter}
+                onChange={(e) => setLevelFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                style={{
+                  minHeight: '36px', padding: '0 12px', borderRadius: '10px',
+                  border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)',
+                  fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+                }}
+              >
+                <option value="all">All levels</option>
+                {levelOptions.map(lvl => (
+                  <option key={lvl} value={lvl}>{getLevelLabel(track.language, track.system, lvl)}</option>
+                ))}
+              </select>
+            </div>
           )}
 
-          {rows.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.5 }}>
-              {q ? 'No words match “' + query.trim() + '”.' : dictionaryEmptyState(filter, false)}
-            </div>
+          <div role="group" aria-label="Filter by status" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '18px' }}>
+            {DICT_FILTERS.map(f => {
+              const active = filter === f.key
+              return (
+                <button
+                  key={f.key}
+                  onClick={() => setFilter(f.key)}
+                  aria-pressed={active}
+                  style={{
+                    minHeight: '34px', padding: '0 14px', borderRadius: '999px', cursor: 'pointer',
+                    border: '1px solid ' + (active ? accentHex : 'var(--border)'),
+                    background: active ? accentHex + '12' : 'var(--surface)',
+                    color: active ? accentHex : 'var(--text-muted)',
+                    fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  {f.label}
+                </button>
+              )
+            })}
+          </div>
+
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '14px' }}>Loading…</div>
           ) : (
             <>
               {showRecent && (
-                <div style={{ fontSize: '12.5px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' }}>
-                  All words
-                </div>
+                <section aria-label="Recent lookups" style={{ marginBottom: '22px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      <Clock size={14} strokeWidth={2} color="var(--text-muted)" /> Recent
+                    </span>
+                    <button
+                      onClick={clearRecentLookups}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', color: 'var(--text-faint)', fontSize: '12.5px', fontWeight: 650, fontFamily: 'Inter, sans-serif' }}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {recentRows.map(renderRow)}
+                  </div>
+                </section>
               )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {rows.map(renderRow)}
-              </div>
-              {matches.length > MAX_ROWS && (
-                <div style={{ textAlign: 'center', padding: '16px 0 0', color: 'var(--text-faint)', fontSize: '12.5px' }}>
-                  Showing {MAX_ROWS} of {matches.length} — keep typing to narrow it down.
+
+              {rows.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.5 }}>
+                  {q ? 'No words match “' + query.trim() + '”.' : dictionaryEmptyState(filter, false)}
                 </div>
+              ) : (
+                <>
+                  {showRecent && (
+                    <div style={{ fontSize: '12.5px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' }}>
+                      All words
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {rows.map(renderRow)}
+                  </div>
+                  {matches.length > MAX_ROWS && (
+                    <div style={{ textAlign: 'center', padding: '16px 0 0', color: 'var(--text-faint)', fontSize: '12.5px' }}>
+                      Showing {MAX_ROWS} of {matches.length} — keep typing to narrow it down.
+                    </div>
+                  )}
+                </>
               )}
             </>
           )}
@@ -285,6 +365,31 @@ export default function Dictionary({ session, profile, track, onBack }) {
         onSpeak={speak}
         onClose={() => setSelected(null)}
       />
+
+      {entryStack.length > 0 && (
+        <div onClick={() => setEntryStack([])} className="app-overlay-viewport"
+             style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.14)' }}>
+          <div onClick={e => e.stopPropagation()}
+               style={{ width: '100%', maxWidth: '560px', maxHeight: '92%', overflowY: 'auto', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px 20px 0 0', padding: '16px 18px 26px' }}>
+            {entryStack.length > 1 && (
+              <button onClick={() => setEntryStack(s => s.slice(0, -1))} style={ghostBtn}>← Back</button>
+            )}
+            <DictEntryView
+              entry={entryStack[entryStack.length - 1]}
+              accentHex={accentHex}
+              langFont={langFont}
+              ttsLang={ttsLang}
+              canAddToDeck={false}
+              onOpenEntry={async (idOrWord) => {
+                const next = idOrWord && idOrWord.length <= 2 && /\p{Script=Han}/u.test(idOrWord)
+                  ? await getDictEntryByWord(supabase, idOrWord)
+                  : await getDictEntryById(supabase, idOrWord)
+                if (next) { recordRecent(track.language, { id: next.id, word: next.simplified, reading: next.pinyin, meaning: (next.definitions || [])[0] }); setEntryStack(s => [...s, next]) }
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
