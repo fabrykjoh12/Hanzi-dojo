@@ -46,7 +46,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
   const [filter, setFilter] = useState('all')
   const [levelFilter, setLevelFilter] = useState('all')
 
-  const [scope, setScope] = useState('full')          // 'full' | 'syllabus'
+  const [scope, setScope] = useState(track.language === 'chinese' ? 'full' : 'syllabus')          // 'full' | 'syllabus'
   const [dictRows, setDictRows] = useState([])
   const [dictLoading, setDictLoading] = useState(false)
   const [entryStack, setEntryStack] = useState([])    // drill-down stack of dict entries
@@ -231,24 +231,26 @@ export default function Dictionary({ session, profile, track, onBack }) {
         />
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-        {['full', 'syllabus'].map(s => (
-          <button
-            key={s}
-            onClick={() => setScope(s)}
-            aria-pressed={scope === s}
-            style={{
-              flex: 1, minHeight: '36px', borderRadius: '10px', cursor: 'pointer',
-              border: '1px solid ' + (scope === s ? accentHex : 'var(--border)'),
-              background: scope === s ? accentHex + '12' : 'var(--surface)',
-              color: scope === s ? accentHex : 'var(--text-muted)',
-              fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
-            }}
-          >
-            {s === 'full' ? 'Full dictionary' : 'My syllabus'}
-          </button>
-        ))}
-      </div>
+      {track.language === 'chinese' && (
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+          {['full', 'syllabus'].map(s => (
+            <button
+              key={s}
+              onClick={() => setScope(s)}
+              aria-pressed={scope === s}
+              style={{
+                flex: 1, minHeight: '36px', borderRadius: '10px', cursor: 'pointer',
+                border: '1px solid ' + (scope === s ? accentHex : 'var(--border)'),
+                background: scope === s ? accentHex + '12' : 'var(--surface)',
+                color: scope === s ? accentHex : 'var(--text-muted)',
+                fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              {s === 'full' ? 'Full dictionary' : 'My syllabus'}
+            </button>
+          ))}
+        </div>
+      )}
 
       {scope === 'full' ? (
         dictLoading ? (

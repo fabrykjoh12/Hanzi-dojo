@@ -13,7 +13,7 @@ const TABS = [
   { key: 'examples', label: 'Examples' },
 ]
 
-export default function DictEntryView({ entry, accentHex, langFont, ttsLang, onOpenEntry, onAddToDeck, canAddToDeck }) {
+export default function DictEntryView({ entry, accentHex, langFont, ttsLang, onOpenEntry, onAddToDeck, canAddToDeck, canShowStrokes }) {
   const [tab, setTab] = useState('meaning')
   const [examples, setExamples] = useState([])
   const [contains, setContains] = useState([])
@@ -24,6 +24,8 @@ export default function DictEntryView({ entry, accentHex, langFont, ttsLang, onO
   if (entry !== tabResetFor) {
     setTabResetFor(entry)
     setTab('meaning')
+    setExamples([])
+    setContains([])
   }
 
   useEffect(() => {
@@ -68,7 +70,9 @@ export default function DictEntryView({ entry, accentHex, langFont, ttsLang, onO
       {/* action bar */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: '22px', margin: '14px 0 4px' }}>
         <button className="dict-act" onClick={() => speak(entry.simplified)} aria-label="Play audio"><Volume2 size={19} /><span>Audio</span></button>
-        <button className="dict-act" aria-label="Stroke order"><PenLine size={19} /><span>Strokes</span></button>
+        {canShowStrokes && (
+          <button className="dict-act" aria-label="Stroke order"><PenLine size={19} /><span>Strokes</span></button>
+        )}
         {canAddToDeck && (
           <button className="dict-act" onClick={() => onAddToDeck && onAddToDeck(entry)} aria-label="Add to deck"><Bookmark size={19} /><span>Add</span></button>
         )}
