@@ -50,7 +50,7 @@ _Recently shipped: gentle return, study rhythm ring + 7-day forecast on Home._
 **Content & languages**
 - [ ] **Make a story from your words** — generate a story from your deck or weak words, on a topic you pick ("a detective story," "about cooking").
 - [ ] **Browse by interest** — topic tags, plus multi-chapter serials with recurring characters so vocabulary recycles across an arc.
-- [ ] **A fresh story every day** at your level (a calm daily ritual, delivered by a gentle nudge — not a streak nag).
+- [ ] **A fresh story every day** — *delivered by a gentle nudge* (push reminder) is still to do; the in-app daily pick has shipped.
 - [ ] Expand Chinese into **HSK 3** (and higher bands over time).
 - [ ] More levels for **Japanese** (JLPT N4+) and **Russian** (A2+); more graded stories at every level.
 - [ ] **Pictures on flashcards** — a visual memory hook alongside the word.
@@ -98,6 +98,7 @@ _Recently shipped: gentle return, study rhythm ring + 7-day forecast on Home._
 - [ ] `ChatMission` overlay: `role="dialog"` + focus trap (the mobile "More" sheet is done)
 
 ## ✅ Shipped
+- [x] **A fresh story every day** — the Stories screen surfaces one calm "Today's story," picked deterministically per day from the stories you can already read (prefers unread), one tap into the reader. (The optional push nudge is still planned.)
 - [x] **Built-in dictionary** — a Practice → Dictionary screen: search any word in your language (every level), hear it, and add it to your deck via the same lookup sheet the readers use.
 - [x] **Gentle return** — come back after a few days away to a right-sized session (a calm "welcome back — N words ready") instead of the whole overdue backlog. The rest eases back over the next sessions; nothing is lost (FSRS reschedules from your real review time).
 - [x] **Study rhythm, not a chain** — a quiet "you studied N of the last 7 days" ring on Home, filled dots for the days you showed up. Nothing to protect, nothing to lose — a missed day is just information, never a broken chain.

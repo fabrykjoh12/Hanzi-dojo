@@ -6,9 +6,11 @@ import { languageTheme } from './languageTheme'
 import { CATEGORIES_BY_LANGUAGE, nextLockedTier } from './storyTiers'
 import { isLearned } from './mastery'
 import { useIsMobile } from './useIsMobile'
+import { todayStr } from './streak'
+import { pickDailyStory } from './dailyStory'
 import StoryReader from './StoryReader'
 import {
-  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Circle, Library, Lock,
+  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Circle, Library, Lock, Sparkles,
 } from 'lucide-react'
 
 // Story tier definitions live in ./storyTiers (shared with the post-study
@@ -484,6 +486,45 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
         <div style={{ marginBottom: '28px' }}>
           <ProgressCard learnedCount={learnedCount} totalWords={totalWords} accentHex={accentHex} />
         </div>
+
+        {(() => {
+          // A fresh story every day — a calm daily pick from what you can read.
+          const daily = pickDailyStory({ stories, categories: CATEGORIES, learnedCount, readIds, dateStr: todayStr() })
+          if (!daily) return null
+          return (
+            <button
+              onClick={() => {
+                // The reader view needs the story's category set too (drives
+                // next-story / tier-unlock), so resolve it from the tier.
+                setSelectedCategory(CATEGORIES.find(c => c.tier === daily.tier) || null)
+                setSelectedStory(daily)
+                setView('reader')
+              }}
+              style={{
+                width: '100%', textAlign: 'left', cursor: 'pointer', marginBottom: '28px',
+                display: 'flex', alignItems: 'center', gap: '16px',
+                background: accentHex + '0D', border: '1px solid ' + accentHex + '2E',
+                borderRadius: '18px', padding: isMobile ? '16px 18px' : '18px 22px', fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              <div style={{
+                width: '46px', height: '46px', borderRadius: '14px', flexShrink: 0,
+                background: accentHex + '18', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Sparkles size={22} strokeWidth={1.9} color={accentHex} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '11px', fontWeight: 850, letterSpacing: '0.06em', textTransform: 'uppercase', color: accentHex, marginBottom: '3px' }}>
+                  Today’s story{readIds.has(daily.id) ? ' · revisit' : ''}
+                </div>
+                <div style={{ fontSize: '17px', fontWeight: 750, color: 'var(--text)', fontFamily: fontFamily + ', Inter, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {daily.title}
+                </div>
+              </div>
+              <ArrowRight size={20} strokeWidth={2} color={accentHex} style={{ flexShrink: 0 }} />
+            </button>
+          )
+        })()}
 
         {stories.length === 0 ? (
           <EmptyPanel icon={Library} title="No stories yet" text="Stories for this level are coming soon." />
