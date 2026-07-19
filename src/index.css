@@ -180,3 +180,27 @@ body {
 
   color-scheme: dark;
 }
+
+/* Reference dictionary entry — tone palette + Refined layout */
+.dict-entry .tone-1 { color: #C0392B; }
+.dict-entry .tone-2 { color: #1E9E57; }
+.dict-entry .tone-3 { color: #2C6BD6; }
+.dict-entry .tone-4 { color: #8E44AD; }
+.dict-entry .tone-5 { color: var(--text-muted); }
+:root[data-theme="dark"] .dict-entry .tone-1 { color: #E56A5A; }
+:root[data-theme="dark"] .dict-entry .tone-2 { color: #43C27E; }
+:root[data-theme="dark"] .dict-entry .tone-3 { color: #5E9BFF; }
+:root[data-theme="dark"] .dict-entry .tone-4 { color: #C084E8; }
+.dict-pill { font-size: 10.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px; background: var(--surface-2, var(--surface)); border: 1px solid var(--border); color: var(--text-muted); }
+.dict-pill-accent { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.dict-act { display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 11px; font-weight: 700; font-family: Inter, sans-serif; }
+.dict-tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); padding: 4px; border-radius: 11px; margin: 16px 0 6px; }
+.dict-tabs button { flex: 1; padding: 7px 0; border: none; border-radius: 8px; background: none; color: var(--text-muted); font-size: 12.5px; font-weight: 700; font-family: Inter, sans-serif; cursor: pointer; }
+.dict-tabs button.on { background: var(--bg, var(--surface)); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.dict-senses { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.dict-senses li { display: flex; gap: 11px; font-size: 15px; color: var(--text); }
+.dict-senses .i { color: var(--accent); font-weight: 800; }
+.dict-charcard { flex: 1; padding: 13px 8px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); cursor: pointer; }
+.dict-chip { display: flex; align-items: baseline; gap: 7px; padding: 8px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); cursor: pointer; }
+.dict-ex { padding: 12px 13px; border-radius: 13px; background: var(--surface); border: 1px solid var(--border); }
+.dict-label { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 10px; }
