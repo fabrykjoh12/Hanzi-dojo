@@ -29,6 +29,7 @@ declare
   v_user_id uuid := auth.uid();
   v_entry public.dict_entries;
   v_vocab_id uuid;
+  v_match_level int;
   v_source text;
   v_meaning text;
   v_already boolean := false;
@@ -53,8 +54,12 @@ begin
     raise exception 'Dictionary entry not found';
   end if;
 
+  if v_entry.language <> p_language then
+    raise exception 'Language mismatch';
+  end if;
+
   -- Existing curriculum word for this simplified form?
-  select id into v_vocab_id
+  select id, level into v_vocab_id, v_match_level
   from public.vocabulary
   where language = p_language and system = p_system
     and word = v_entry.simplified and is_active = true
@@ -62,7 +67,7 @@ begin
   limit 1;
 
   if v_vocab_id is not null then
-    v_source := 'curriculum';
+    v_source := case when v_match_level is null then 'dictionary' else 'curriculum' end;
   else
     -- New dictionary-sourced row (NULL level). meaning is required NOT NULL.
     v_meaning := coalesce(
