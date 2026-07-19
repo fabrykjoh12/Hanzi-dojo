@@ -13,7 +13,7 @@ const TABS = [
   { key: 'examples', label: 'Examples' },
 ]
 
-export default function DictEntryView({ entry, accentHex, langFont, ttsLang, onOpenEntry, onAddToDeck, canAddToDeck, canShowStrokes }) {
+export default function DictEntryView({ entry, accentHex, langFont, ttsLang, onOpenEntry, onAddToDeck, canAddToDeck, inDeck, canShowStrokes }) {
   const [tab, setTab] = useState('meaning')
   const [examples, setExamples] = useState([])
   const [contains, setContains] = useState([])
@@ -74,7 +74,10 @@ export default function DictEntryView({ entry, accentHex, langFont, ttsLang, onO
           <button className="dict-act" aria-label="Stroke order"><PenLine size={19} /><span>Strokes</span></button>
         )}
         {canAddToDeck && (
-          <button className="dict-act" onClick={() => onAddToDeck && onAddToDeck(entry)} aria-label="Add to deck"><Bookmark size={19} /><span>Add</span></button>
+          <button className="dict-act" onClick={() => !inDeck && onAddToDeck && onAddToDeck(entry)} aria-label={inDeck ? 'In your deck' : 'Add to deck'} aria-pressed={inDeck}>
+            <Bookmark size={19} color={inDeck ? accentHex : 'currentColor'} fill={inDeck ? accentHex : 'none'} />
+            <span>{inDeck ? 'In deck' : 'Add'}</span>
+          </button>
         )}
       </div>
 

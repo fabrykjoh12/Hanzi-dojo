@@ -42,3 +42,11 @@ export async function getDictEntryByWord(supabase, word) {
   const rows = await searchDict(supabase, word, 1)
   return rows[0] || null
 }
+
+export async function addDictEntryToDeck(supabase, dictEntryId, language, system) {
+  const { data, error } = await supabase.rpc('dict_add_to_deck', {
+    p_dict_entry_id: dictEntryId, p_language: language, p_system: system,
+  })
+  if (error) throw error
+  return data
+}

@@ -8,7 +8,7 @@ import WordLookupSheet from './WordLookupSheet'
 import { readRecent, recordRecent, clearRecent } from './recentLookups'
 import { DICT_FILTERS, filterVocab, dictionaryEmptyState, levelsInVocab, filterByLevel } from './dictionaryFilters'
 import { foldIncludes } from './searchFold'
-import { searchDict, getDictEntryById, getDictEntryByWord } from './dictSearch'
+import { searchDict, getDictEntryById, getDictEntryByWord, addDictEntryToDeck } from './dictSearch'
 import DictEntryView from './DictEntryView'
 import { ArrowLeft, Search, Clock } from 'lucide-react'
 
@@ -50,6 +50,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
   const [dictRows, setDictRows] = useState([])
   const [dictLoading, setDictLoading] = useState(false)
   const [entryStack, setEntryStack] = useState([])    // drill-down stack of dict entries
+  const [dictInDeck, setDictInDeck] = useState(() => new Set())
 
   // Debounced full-dictionary search.
   useEffect(() => {
@@ -146,6 +147,14 @@ export default function Dictionary({ session, profile, track, onBack }) {
     }
     const { error } = await supabase.from('cards').insert(row)
     if (!error) setCardByVocab(prev => ({ ...prev, [v.id]: { vocab_id: v.id, state: 'new' } }))
+  }
+
+  const addDictToDeck = async (entry) => {
+    if (!entry || dictInDeck.has(entry.id)) return
+    try {
+      const res = await addDictEntryToDeck(supabase, entry.id, track.language, track.system)
+      if (res) setDictInDeck(prev => new Set(prev).add(entry.id))
+    } catch { /* surfaced by the disabled→enabled state; no crash */ }
   }
 
   const systemLabel = getSystemLabel(track.system)
@@ -382,7 +391,9 @@ export default function Dictionary({ session, profile, track, onBack }) {
               accentHex={accentHex}
               langFont={langFont}
               ttsLang={ttsLang}
-              canAddToDeck={false}
+              canAddToDeck={true}
+              inDeck={dictInDeck.has(entryStack[entryStack.length - 1].id)}
+              onAddToDeck={addDictToDeck}
               onOpenEntry={async (idOrWord) => {
                 const next = idOrWord && idOrWord.length <= 2 && /\p{Script=Han}/u.test(idOrWord)
                   ? await getDictEntryByWord(supabase, idOrWord)

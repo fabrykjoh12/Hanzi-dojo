@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { normalizeQuery, searchDict, getExamples, getWordsContaining, getDictEntryById, getDictEntryByWord } from './dictSearch'
+import { normalizeQuery, searchDict, getExamples, getWordsContaining, getDictEntryById, getDictEntryByWord, addDictEntryToDeck } from './dictSearch'
 
 describe('normalizeQuery', () => {
   it('folds pinyin tones and lowercases', () => {
@@ -71,5 +71,18 @@ describe('getDictEntryByWord', () => {
     const entry = await getDictEntryByWord(supabase, '中')
     expect(rpc).toHaveBeenCalledWith('dict_search', { p_query: '中', p_limit: 1 })
     expect(entry).toEqual({ id: '1', simplified: '中' })
+  })
+})
+
+describe('addDictEntryToDeck', () => {
+  it('calls dict_add_to_deck with entry id, language, system', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: { vocab_id: 'v1', source: 'dictionary', already_in_deck: false }, error: null })
+    const res = await addDictEntryToDeck({ rpc }, 'd1', 'chinese', 'hsk_3')
+    expect(rpc).toHaveBeenCalledWith('dict_add_to_deck', { p_dict_entry_id: 'd1', p_language: 'chinese', p_system: 'hsk_3' })
+    expect(res).toEqual({ vocab_id: 'v1', source: 'dictionary', already_in_deck: false })
+  })
+  it('throws on RPC error', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: new Error('nope') })
+    await expect(addDictEntryToDeck({ rpc }, 'd1', 'chinese', 'hsk_3')).rejects.toThrow('nope')
   })
 })
