@@ -58,6 +58,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
     if (!term) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setDictRows([])
+      setDictLoading(false)
       return
     }
     let cancelled = false
