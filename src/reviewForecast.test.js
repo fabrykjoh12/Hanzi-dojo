@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { reviewForecast, forecastSummary } from './reviewForecast'
+import { reviewForecast, forecastSummary, forecastA11yLabel } from './reviewForecast'
 
 // Fixed "now" so day math is deterministic (a Wednesday, mid-morning local).
 const NOW = new Date('2026-07-15T10:00:00')
@@ -68,5 +68,19 @@ describe('forecastSummary', () => {
 
   it('rounds the average up to at least 1 when there is anything', () => {
     expect(forecastSummary([3, 0, 0, 0, 0, 0, 0]).perDay).toBe(1)
+  })
+})
+
+describe('forecastA11yLabel', () => {
+  it('summarizes the chart for screen readers', () => {
+    expect(forecastA11yLabel([2, 3, 0, 1, 0, 0, 4])).toBe(
+      'Review forecast, next 7 days: about 1 a day, 10 total, busiest day 4.',
+    )
+  })
+  it('states clearly when nothing is scheduled', () => {
+    expect(forecastA11yLabel([0, 0, 0, 0, 0, 0, 0])).toBe('No reviews scheduled in the next 7 days.')
+  })
+  it('honours a custom window length', () => {
+    expect(forecastA11yLabel([1, 1], 2)).toMatch(/next 2 days/)
   })
 })

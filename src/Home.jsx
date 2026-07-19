@@ -7,7 +7,7 @@ import InfoTip from './InfoTip'
 import { CountUp } from './ui'
 import { useIsMobile } from './useIsMobile'
 import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, Gauge, Dumbbell, Snowflake, MessagesSquare, CalendarRange, Activity } from 'lucide-react'
-import { forecastSummary } from './reviewForecast'
+import { forecastSummary, forecastA11yLabel } from './reviewForecast'
 import { rhythmSummary } from './studyRhythm'
 import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
 import { fluencyScore, fluencyRank } from './fluency'
@@ -333,7 +333,7 @@ export default function Home({ profile, track, counts, onNavigate }) {
                 ~<strong style={{ color: 'var(--text)', fontWeight: 650 }}>{forecast.perDay}</strong> review{forecast.perDay === 1 ? '' : 's'} a day
               </span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', height: '52px' }}>
+            <div role="img" aria-label={forecastA11yLabel(forecast7)} style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', height: '52px' }}>
               {forecast7.map((count, i) => {
                 const pct = forecast.peak > 0 ? Math.round((count / forecast.peak) * 100) : 0
                 const day = dayLabels[i]

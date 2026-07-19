@@ -27,5 +27,7 @@ test.describe('Home dashboard (logged in)', () => {
   test('shows the 7-day review forecast', async ({ page }) => {
     await expect(page.getByText('Next 7 days')).toBeVisible();
     await expect(page.getByText(/reviews? a day/i)).toBeVisible();
+    // The bar chart exposes a text summary to screen readers.
+    await expect(page.getByRole('img', { name: /Review forecast, next 7 days/i })).toBeVisible();
   });
 });
