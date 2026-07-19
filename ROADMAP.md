@@ -102,6 +102,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] `ChatMission` overlay: a focus trap (the `role="dialog"` + `aria-modal` + Escape-to-close + initial focus have shipped)
 
 ## ✅ Shipped
+- [x] **Review-accuracy chart — screen-reader summary** — the 30-day reviews chart in Profile now has a spoken summary ("Reviews over the last 30 days: N total, busiest day K, M active days"). With the Known-Word Map and Home forecast, every progress chart in the app now has a text alternative.
 - [x] **Home forecast — screen-reader summary** — the 7-day review forecast bar chart on Home now carries a spoken summary ("Review forecast, next 7 days: about N a day, M total, busiest day K"), so its shape is available to screen readers, not just the bars.
 - [x] **Dictionary — level filter** — a "Level" picker (shown when your language has more than one level) narrows the dictionary to a single band (e.g. just HSK 4), composing with search and the status filters.
 - [x] **Known-Word Map — screen-reader labels** — each level's reading-reach bar now carries an accessible label ("HSK 2: 5 of 7 words readable — 0 mastered, 5 known, 2 learning, 0 not started"), so the map's numbers are available to screen readers, not just the colored segments.
