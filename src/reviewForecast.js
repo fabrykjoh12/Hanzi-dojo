@@ -44,3 +44,12 @@ export function forecastSummary(buckets) {
   const perDay = total > 0 ? Math.max(1, Math.round(total / arr.length)) : 0
   return { total, peak, perDay }
 }
+
+// A screen-reader label for the forecast bar chart — the numbers a sighted user
+// reads off the bars, as a sentence. `days` is the window length (default 7).
+export function forecastA11yLabel(buckets, days = 7) {
+  const { total, perDay, peak } = forecastSummary(buckets)
+  if (total === 0) return `No reviews scheduled in the next ${days} days.`
+  return `Review forecast, next ${days} days: about ${perDay} a day, `
+    + `${total} total, busiest day ${peak}.`
+}
