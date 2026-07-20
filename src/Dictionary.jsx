@@ -190,18 +190,44 @@ export default function Dictionary({ session, profile, track, onBack }) {
     )
   }
 
+  // Open a reference entry and remember it (so it shows under Recent when the
+  // search box is empty — like Pleco).
+  const openDict = (e) => {
+    setRecent(recordRecent(track.language, { id: e.id, word: e.simplified, reading: e.pinyin, meaning: Array.isArray(e.definitions) ? e.definitions[0] : '' }))
+    setEntryStack([e])
+  }
+
+  // Re-open a recent lookup by re-fetching its entry (recent stores word text,
+  // not a live entry). Works whether it was first opened from full or syllabus.
+  const openRecentDict = async (r) => {
+    const entry = await getDictEntryByWord(supabase, r.word)
+    if (entry) openDict(entry)
+  }
+
+  const dictRowStyle = {
+    display: 'flex', alignItems: 'center', gap: '14px', textAlign: 'left', width: '100%',
+    padding: '13px 16px', borderRadius: '14px', cursor: 'pointer',
+    background: 'var(--surface)', border: '1px solid var(--border)', fontFamily: 'Inter, sans-serif',
+  }
+
   const renderDictRow = (e) => (
-    <button key={e.id} onClick={() => setEntryStack([e])} style={{
-      display: 'flex', alignItems: 'center', gap: '14px', textAlign: 'left', width: '100%',
-      padding: '13px 16px', borderRadius: '14px', cursor: 'pointer',
-      background: 'var(--surface)', border: '1px solid var(--border)', fontFamily: 'Inter, sans-serif',
-    }}>
+    <button key={e.id} onClick={() => openDict(e)} style={dictRowStyle}>
       <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', fontFamily: langFont + ', Inter, sans-serif', flexShrink: 0 }}>{e.simplified}</span>
       <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
         <span style={{ fontSize: '12.5px', color: accentHex, fontWeight: 600 }}>{e.pinyin}</span>
         <span style={{ fontSize: '13px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {Array.isArray(e.definitions) ? e.definitions.join('; ') : ''}
         </span>
+      </span>
+    </button>
+  )
+
+  const renderRecentDictRow = (r) => (
+    <button key={r.id} onClick={() => openRecentDict(r)} style={dictRowStyle}>
+      <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', fontFamily: langFont + ', Inter, sans-serif', flexShrink: 0 }}>{r.word}</span>
+      <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+        {r.reading && <span style={{ fontSize: '12.5px', color: accentHex, fontWeight: 600 }}>{r.reading}</span>}
+        <span style={{ fontSize: '13px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.meaning}</span>
       </span>
     </button>
   )
@@ -266,9 +292,23 @@ export default function Dictionary({ session, profile, track, onBack }) {
         dictLoading ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '14px' }}>Loading…</div>
         ) : dictRows.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.5 }}>
-            {q ? 'No words match “' + query.trim() + '”.' : 'Search the full dictionary by word, pinyin, or meaning.'}
-          </div>
+          (!q && recent.length > 0) ? (
+            <section aria-label="Recent lookups">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <Clock size={14} strokeWidth={2} color="var(--text-muted)" /> Recent
+                </span>
+                <button onClick={clearRecentLookups} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', color: 'var(--text-faint)', fontSize: '12.5px', fontWeight: 650, fontFamily: 'Inter, sans-serif' }}>Clear</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {recent.map(renderRecentDictRow)}
+              </div>
+            </section>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.5 }}>
+              {q ? 'No words match “' + query.trim() + '”.' : 'Search the full dictionary by word, pinyin, or meaning.'}
+            </div>
+          )
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {dictRows.map(renderDictRow)}
