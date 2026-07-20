@@ -15,6 +15,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] Between features — pick the next item from the plan below.
 
 **Just shipped**
+- [x] HSK 3-6 vocabulary: ~1,870 more Chinese words to study, search, and test (with example sentences and audio)
 - [x] Pleco-style dictionary: search 120k+ Chinese words with tone colors, character breakdown, and example sentences
 - [x] Save any dictionary word to your deck (even words outside your level)
 - [x] Example sentences with pinyin on every word (Tatoeba)
@@ -61,7 +62,8 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] **Make a story from your words** — generate a story from your deck or weak words, on a topic you pick ("a detective story," "about cooking").
 - [ ] **Browse by interest** — topic tags, plus multi-chapter serials with recurring characters so vocabulary recycles across an arc.
 - [ ] **A fresh story every day** — *delivered by a gentle nudge* (push reminder) is still to do; the in-app daily pick has shipped.
-- [ ] Expand Chinese into **HSK 3** (and higher bands over time).
+- [ ] **Stories for HSK 3-6** — the vocabulary, example sentences, and audio have shipped; graded stories for these levels are the missing piece (pending a higher LLM quota).
+- [ ] Expand Chinese into **HSK 7-9** (the advanced band).
 - [ ] More levels for **Japanese** (JLPT N4+) and **Russian** (A2+); more graded stories at every level.
 - [ ] **Pictures on flashcards** — a visual memory hook alongside the word.
 - [ ] **Higher-quality TTS voices** — research + regenerate more natural narration.
