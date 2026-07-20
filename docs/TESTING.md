@@ -9,6 +9,12 @@ the thread flips to ✅.
 Item format: `- [ ] ` + `` `stable-id` `` + `**Title**` + ` — what to check`.
 
 ## Open
+- [ ] `dict-search` **Dictionary search** — Practice → Dictionary: search by hanzi (中文), toneless pinyin (zhongwen), and English (friend). Fast results, tone-colored pinyin, and the `Full dictionary` / `My syllabus` toggle both work?
+- [ ] `dict-entry` **Dictionary entry** — open a word: numbered definitions, a tappable **Chars** breakdown (tap a character to drill into its own entry), "words containing", and an **Examples** tab (sentence + pinyin + English, with the word highlighted)?
+- [ ] `dict-strokes` **Stroke order** — in an entry, tap **Strokes**: does an animated stroke-order diagram play for each character?
+- [ ] `dict-add-deck` **Save any word (flashcard anything)** — add a word that isn't in your HSK level to your deck from the dictionary. Does it flip to "In deck", show up in your reviews, and NOT get counted in a level test?
+- [ ] `dict-recent` **Recent lookups** — open the Dictionary with the search box empty: do recently-viewed words appear under "Recent" (tap to reopen, Clear to empty)?
+- [ ] `hsk-3-6` **HSK 3–6 levels** — the new Chinese levels: can you study them (flashcards showing example sentences + audio), do their level tests work, and does onboarding/placement offer them?
 - [ ] `chinese-tts` **Chinese pronunciation** — on a flashcard, do 长 / 行 / 银行 / 重 / 觉 sound correct? Hard-refresh first (the service worker caches audio).
 - [ ] `assessment` **"How much can you read?"** — open `/how-much-can-you-read`, finish the quiz; does the % and level feel about right at both extremes (all-right vs all-wrong)?
 - [ ] `comprehension` **Story comprehension check** — finish a story in each format (paced / chat / scene / reply); do the end-of-story questions appear and score correctly?
