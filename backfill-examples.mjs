@@ -34,16 +34,29 @@ const lo = parseInt(loStr, 10)
 const hi = parseInt(hiStr || loStr, 10)
 const limit = parseInt(arg('limit', ''), 10)
 
-async function main() {
-  const { data: words, error } = await supabase
-    .from('vocabulary')
-    .select('id, word')
-    .eq('language', 'chinese').eq('system', 'hsk_3')
-    .gte('level', lo).lte('level', hi)
-    .is('example_sentence', null)
-    .order('level', { ascending: true }).order('sort_order', { ascending: true })
-  if (error) { console.error('Fetch error:', error.message); process.exit(1) }
+// PostgREST caps a single response (default 1000 rows), so page through the
+// full set — otherwise a level band of >1000 missing words silently truncates.
+async function allWordsNeedingExamples() {
+  const PAGE = 1000
+  const out = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from('vocabulary')
+      .select('id, word')
+      .eq('language', 'chinese').eq('system', 'hsk_3')
+      .gte('level', lo).lte('level', hi)
+      .is('example_sentence', null)
+      .order('level', { ascending: true }).order('sort_order', { ascending: true })
+      .range(from, from + PAGE - 1)
+    if (error) { console.error('Fetch error:', error.message); process.exit(1) }
+    out.push(...(data || []))
+    if (!data || data.length < PAGE) break
+  }
+  return out
+}
 
+async function main() {
+  const words = await allWordsNeedingExamples()
   const targets = Number.isInteger(limit) && limit > 0 ? words.slice(0, limit) : words
   console.log(`${targets.length} HSK ${lo}-${hi} words need an example.`)
 
