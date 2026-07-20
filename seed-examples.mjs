@@ -9,11 +9,13 @@
 //
 // Input: the Tatoeba "Sentence pairs" export, Mandarin Chinese -> English
 // (https://tatoeba.org/en/downloads). Tab-separated: <id> <cmn> <id> <eng>.
-// Every sentence is converted to simplified characters on ingest (opencc-js).
+// Every sentence is converted to simplified characters (opencc-js) and gets
+// tone-marked pinyin generated (pinyin-pro) on ingest.
 // Tatoeba data is CC BY 2.0 FR — attribution is shown in the app.
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'node:fs'
 import * as OpenCC from 'opencc-js'
+import { pinyin } from 'pinyin-pro'
 import { parseTatoebaPairLine } from './src/tatoeba.js'
 
 // Tatoeba's Mandarin set mixes simplified and traditional characters. The app is
@@ -60,7 +62,9 @@ async function seedExamples() {
     const k = hanzi + '|' + p.english
     if (seenKeys.has(k)) continue          // dedup AFTER conversion so trad/simp variants collapse
     seenKeys.add(k)
-    rows.push({ language: 'chinese', hanzi, english: p.english, pinyin: null })
+    // pinyin-pro is word-segmented and picks the right reading for polyphonic
+    // characters in context (银行 háng, 长大 zhǎng, 音乐 yuè), with tone marks.
+    rows.push({ language: 'chinese', hanzi, english: p.english, pinyin: pinyin(hanzi) })
   }
   if (Number.isInteger(limit) && limit > 0 && rows.length > limit) {
     rows = rows.slice(0, limit)
