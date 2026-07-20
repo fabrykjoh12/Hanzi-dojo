@@ -63,6 +63,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] **Browse by interest** — topic tags, plus multi-chapter serials with recurring characters so vocabulary recycles across an arc.
 - [ ] **A fresh story every day** — *delivered by a gentle nudge* (push reminder) is still to do; the in-app daily pick has shipped.
 - [ ] **Stories for HSK 3-6** — the vocabulary, example sentences, and audio have shipped; graded stories for these levels are the missing piece (pending a higher LLM quota).
+- [ ] **Pleco-style dictionary for Japanese** — a full reference dictionary (JMdict) with kanji/kana lookup, readings, and example sentences, like the Chinese one.
 - [ ] Expand Chinese into **HSK 7-9** (the advanced band).
 - [ ] More levels for **Japanese** (JLPT N4+) and **Russian** (A2+); more graded stories at every level.
 - [ ] **Pictures on flashcards** — a visual memory hook alongside the word.

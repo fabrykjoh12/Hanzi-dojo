@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { splitHanziWithTones, TONE_CLASS } from './toneColor'
 import { getExamples, getWordsContaining } from './dictSearch'
 import { supabase } from './supabase'
+import StrokeOrder from './StrokeOrder'
 import { Volume2, Bookmark, PenLine } from 'lucide-react'
 
 // The "Refined" entry: tone-colored headword + character cards, everything else
@@ -13,19 +14,21 @@ const TABS = [
   { key: 'examples', label: 'Examples' },
 ]
 
-export default function DictEntryView({ entry, accentHex, langFont, ttsLang, onOpenEntry, onAddToDeck, canAddToDeck, inDeck, canShowStrokes }) {
+export default function DictEntryView({ entry, accentHex, langFont, ttsLang, onOpenEntry, onAddToDeck, canAddToDeck, inDeck }) {
   const [tab, setTab] = useState('meaning')
   const [examples, setExamples] = useState([])
   const [contains, setContains] = useState([])
-  // Reset the active tab when a new entry loads. Adjusting state during
-  // render (rather than in the effect below) avoids the extra commit React
-  // would otherwise schedule for a synchronous setState-in-effect.
+  const [showStrokes, setShowStrokes] = useState(false)
+  // Reset the active tab (and stroke panel) when a new entry loads. Adjusting
+  // state during render (rather than in the effect below) avoids the extra
+  // commit React would otherwise schedule for a synchronous setState-in-effect.
   const [tabResetFor, setTabResetFor] = useState(entry)
   if (entry !== tabResetFor) {
     setTabResetFor(entry)
     setTab('meaning')
     setExamples([])
     setContains([])
+    setShowStrokes(false)
   }
 
   useEffect(() => {
@@ -70,9 +73,7 @@ export default function DictEntryView({ entry, accentHex, langFont, ttsLang, onO
       {/* action bar */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: '22px', margin: '14px 0 4px' }}>
         <button className="dict-act" onClick={() => speak(entry.simplified)} aria-label="Play audio"><Volume2 size={19} /><span>Audio</span></button>
-        {canShowStrokes && (
-          <button className="dict-act" aria-label="Stroke order"><PenLine size={19} /><span>Strokes</span></button>
-        )}
+        <button className="dict-act" onClick={() => setShowStrokes(s => !s)} aria-label="Stroke order" aria-pressed={showStrokes} style={showStrokes ? { color: accentHex } : undefined}><PenLine size={19} /><span>Strokes</span></button>
         {canAddToDeck && (
           <button className="dict-act" onClick={() => !inDeck && onAddToDeck && onAddToDeck(entry)} aria-label={inDeck ? 'In your deck' : 'Add to deck'} aria-pressed={inDeck}>
             <Bookmark size={19} color={inDeck ? accentHex : 'currentColor'} fill={inDeck ? accentHex : 'none'} />
@@ -80,6 +81,8 @@ export default function DictEntryView({ entry, accentHex, langFont, ttsLang, onO
           </button>
         )}
       </div>
+
+      {showStrokes && <StrokeOrder word={entry.simplified} accentHex={accentHex} />}
 
       {/* tabs */}
       <div role="tablist" className="dict-tabs">
