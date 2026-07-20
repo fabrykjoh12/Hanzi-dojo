@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { splitHanziWithTones, TONE_CLASS } from './toneColor'
 import { getExamples, getWordsContaining } from './dictSearch'
+import { splitOnWord } from './highlightWord'
 import { supabase } from './supabase'
 import StrokeOrder from './StrokeOrder'
 import { Volume2, Bookmark, PenLine } from 'lucide-react'
@@ -85,40 +86,67 @@ export default function DictEntryView({ entry, accentHex, langFont, ttsLang, onO
       {showStrokes && <StrokeOrder word={entry.simplified} accentHex={accentHex} />}
 
       {/* tabs */}
-      <div role="tablist" className="dict-tabs">
+      <div
+        role="tablist"
+        aria-label="Entry sections"
+        className="dict-tabs"
+        onKeyDown={(e) => {
+          if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
+          e.preventDefault()
+          const idx = TABS.findIndex(t => t.key === tab)
+          const next = e.key === 'ArrowRight' ? (idx + 1) % TABS.length : (idx - 1 + TABS.length) % TABS.length
+          setTab(TABS[next].key)
+          document.getElementById('dtab-' + TABS[next].key)?.focus()
+        }}
+      >
         {TABS.map(t => (
-          <button key={t.key} role="tab" aria-selected={tab === t.key} className={tab === t.key ? 'on' : ''} onClick={() => setTab(t.key)}>{t.label}</button>
+          <button
+            key={t.key}
+            id={'dtab-' + t.key}
+            role="tab"
+            aria-selected={tab === t.key}
+            aria-controls="dict-tabpanel"
+            tabIndex={tab === t.key ? 0 : -1}
+            className={tab === t.key ? 'on' : ''}
+            onClick={() => setTab(t.key)}
+          >{t.label}</button>
         ))}
       </div>
 
-      {tab === 'meaning' && (
-        <ol className="dict-senses">
-          {defs.map((d, i) => <li key={i}><span className="i">{i + 1}</span>{d}</li>)}
-        </ol>
-      )}
+      <div role="tabpanel" id="dict-tabpanel" aria-labelledby={'dtab-' + tab}>
+        {tab === 'meaning' && (
+          <ol className="dict-senses">
+            {defs.map((d, i) => <li key={i}><span className="i">{i + 1}</span>{d}</li>)}
+          </ol>
+        )}
 
-      {tab === 'chars' && (
-        <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
-          {chars.map((c, i) => (
-            <button key={i} className="dict-charcard" onClick={() => onOpenEntry && onOpenEntry(c.char)}>
-              <span className={TONE_CLASS[c.tone]} style={{ fontFamily: langFont + ', sans-serif', fontSize: '30px', fontWeight: 750 }}>{c.char}</span>
-            </button>
-          ))}
-        </div>
-      )}
+        {tab === 'chars' && (
+          <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
+            {chars.map((c, i) => (
+              <button key={i} className="dict-charcard" onClick={() => onOpenEntry && onOpenEntry(c.char)}>
+                <span className={TONE_CLASS[c.tone]} style={{ fontFamily: langFont + ', sans-serif', fontSize: '30px', fontWeight: 750 }}>{c.char}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
-      {tab === 'examples' && (
-        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {examples.length === 0 && <div style={{ color: 'var(--text-faint)', fontSize: '13px' }}>No example sentences yet.</div>}
-          {examples.map((ex, i) => (
-            <div key={i} className="dict-ex">
-              <div style={{ fontFamily: langFont + ', sans-serif', fontSize: '16px', lineHeight: 1.55 }}>{ex.hanzi}</div>
-              {ex.pinyin && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px' }}>{ex.pinyin}</div>}
-              <div style={{ fontSize: '13px', color: 'var(--text)', marginTop: '2px' }}>{ex.english}</div>
-            </div>
-          ))}
-        </div>
-      )}
+        {tab === 'examples' && (
+          <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {examples.length === 0 && <div style={{ color: 'var(--text-faint)', fontSize: '13px' }}>No example sentences yet.</div>}
+            {examples.map((ex, i) => (
+              <div key={i} className="dict-ex">
+                <div style={{ fontFamily: langFont + ', sans-serif', fontSize: '16px', lineHeight: 1.55 }}>
+                  {splitOnWord(ex.hanzi, entry.simplified).map((p, j) => p.hit
+                    ? <b key={j} style={{ color: accentHex }}>{p.text}</b>
+                    : <span key={j}>{p.text}</span>)}
+                </div>
+                {ex.pinyin && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px' }}>{ex.pinyin}</div>}
+                <div style={{ fontSize: '13px', color: 'var(--text)', marginTop: '2px' }}>{ex.english}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {contains.length > 0 && (
         <div style={{ marginTop: '18px' }}>
