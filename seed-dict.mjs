@@ -74,13 +74,21 @@ async function seedEntries() {
   let inserted = 0
   for (let i = 0; i < deduped.length; i += BATCH) {
     const batch = deduped.slice(i, i + BATCH)
-    // Idempotency: skip (simplified,pinyin) already present.
-    const { data: existing, error: fetchErr } = await supabase
-      .from('dict_entries')
-      .select('simplified, pinyin')
-      .in('simplified', batch.map(r => r.simplified))
-    if (fetchErr) { console.error('Fetch error:', fetchErr.message); process.exit(1) }
-    const seen = new Set((existing || []).map(r => r.simplified + '|' + r.pinyin))
+    // Idempotency: skip (simplified,pinyin) already present. The existence check
+    // is queried in small chunks: a wide `.in()` of hundreds of multibyte hanzi
+    // builds a query string too long for the gateway, which surfaces in Node as
+    // an opaque "fetch failed". CHUNK keeps each URL comfortably short.
+    const CHUNK = 60
+    const seen = new Set()
+    for (let j = 0; j < batch.length; j += CHUNK) {
+      const slice = batch.slice(j, j + CHUNK)
+      const { data: existing, error: fetchErr } = await supabase
+        .from('dict_entries')
+        .select('simplified, pinyin')
+        .in('simplified', slice.map(r => r.simplified))
+      if (fetchErr) { console.error('Fetch error:', fetchErr.message); process.exit(1) }
+      for (const r of (existing || [])) seen.add(r.simplified + '|' + r.pinyin)
+    }
     const fresh = batch.filter(r => !seen.has(r.simplified + '|' + r.pinyin))
     if (fresh.length) {
       const { error } = await supabase.from('dict_entries').insert(fresh)
