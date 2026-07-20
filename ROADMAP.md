@@ -15,6 +15,9 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] Between features — pick the next item from the plan below.
 
 **Just shipped**
+- [x] Pleco-style dictionary: search 120k+ Chinese words with tone colors, character breakdown, and example sentences
+- [x] Save any dictionary word to your deck (even words outside your level)
+- [x] Example sentences with pinyin on every word (Tatoeba)
 - [x] Screen-reader summaries for every progress chart
 - [x] Dictionary: level filter
 - [x] Analyze text: tappable "words to learn next"
