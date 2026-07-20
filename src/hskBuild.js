@@ -14,14 +14,27 @@ export function cleanHskMeaning(meanings) {
   return list.slice(0, 2).join('; ')
 }
 
+// A gloss that carries no learnable meaning on its own — a cross-reference to
+// another character, a bare surname, or a pure sound. These are usually rare
+// readings of a common character (与 "variant of 欤", 于 "surname Yu", 因 "old
+// variant of 因"); the useful sense lives on a different, lower-level entry, so
+// we skip these and let a real word take the slot.
+export function isDegenerateMeaning(meaning) {
+  const m = (meaning || '').trim().toLowerCase()
+  if (!m) return true
+  return /^(variant of |old variant of |see |surname |used in )/.test(m)
+    || /^\((onom\.?|phonetic|particle)\)/.test(m)
+}
+
 // One dataset entry → a seed row { word, reading, meaning }, or null if it's
-// missing any of the three (unusable for the curriculum).
+// missing any of the three, or its only meaning is degenerate (unusable).
 export function hskEntryToRow(entry) {
   const word = (entry?.simplified || '').trim()
   const form = (entry?.forms || [])[0]
   const reading = (form?.transcriptions?.pinyin || '').trim()
   const meaning = cleanHskMeaning(form?.meanings)
   if (!word || !reading || !meaning) return null
+  if (isDegenerateMeaning(meaning)) return null
   return { word, reading, meaning }
 }
 

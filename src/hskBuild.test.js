@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cleanHskMeaning, hskEntryToRow, buildLevelRows } from './hskBuild'
+import { cleanHskMeaning, hskEntryToRow, buildLevelRows, isDegenerateMeaning } from './hskBuild'
 
 const entry = (simplified, level, frequency, pinyin, meanings) => ({
   simplified, level, frequency, forms: [{ transcriptions: { pinyin }, meanings }],
@@ -13,6 +13,20 @@ describe('cleanHskMeaning', () => {
   })
 })
 
+describe('isDegenerateMeaning', () => {
+  it('flags cross-references, surnames, and pure sounds', () => {
+    expect(isDegenerateMeaning('variant of 欤')).toBe(true)
+    expect(isDegenerateMeaning('old variant of 因')).toBe(true)
+    expect(isDegenerateMeaning('surname Yu')).toBe(true)
+    expect(isDegenerateMeaning('(onom.) sound of singing')).toBe(true)
+    expect(isDegenerateMeaning('')).toBe(true)
+  })
+  it('keeps real meanings', () => {
+    expect(isDegenerateMeaning('to organize; organization')).toBe(false)
+    expect(isDegenerateMeaning('to see')).toBe(false) // not a "see 某" cross-ref
+  })
+})
+
 describe('hskEntryToRow', () => {
   it('maps a usable entry', () => {
     expect(hskEntryToRow(entry('吃', ['new-1'], 500, 'chī', ['to eat', 'to consume']))).toEqual({
@@ -23,6 +37,9 @@ describe('hskEntryToRow', () => {
     expect(hskEntryToRow(entry('', ['new-1'], 1, 'x', ['y']))).toBeNull()
     expect(hskEntryToRow(entry('好', ['new-1'], 1, '', ['y']))).toBeNull()
     expect(hskEntryToRow(entry('好', ['new-1'], 1, 'hǎo', []))).toBeNull()
+  })
+  it('returns null for a degenerate-only meaning', () => {
+    expect(hskEntryToRow(entry('与', ['new-6'], 100, 'yú', ['variant of 欤']))).toBeNull()
   })
 })
 
