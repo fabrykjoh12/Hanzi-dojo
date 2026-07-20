@@ -10,7 +10,30 @@ Whenever we finish or start a meaningful piece of work, edit **`ROADMAP.md`** in
 
 ---
 
-## 0. LATEST SESSION — read first (2026-07-19, autonomous overnight: additive polish sweep — search, filters, progress viz, chart a11y)
+## 0. LATEST SESSION — read first (2026-07-20 — Pleco-style reference dictionary + flashcard-anything + examples)
+
+**Shipped a full Pleco-style Chinese reference dictionary** across two plans (17 subagent-reviewed tasks + follow-ups), merged to `main`. Turns the old "search-your-syllabus" Dictionary into a real ~120k-entry reference. Built via brainstorming → writing-plans → subagent-driven-development (fresh implementer + independent reviewer per task, two opus whole-branch reviews). Suite after: unit **654**, e2e dictionary 9/9, build green.
+
+**Data model — 2 new tables, Chinese-only (`supabase/migrations/20260719120000_add_reference_dictionary.sql`):**
+- `dict_entries` (~123k CC-CEDICT rows): `simplified`, `traditional`, `pinyin` (tone-marked), `pinyin_plain` (toneless, for search), `definitions` (jsonb array), `hsk_level`. `pg_trgm` GIN indexes on simplified/traditional/pinyin_plain/(definitions::text) + btree on simplified.
+- `dict_examples` (~77k Tatoeba pairs): `hanzi` (simplified), `pinyin` (tone-marked), `english`. GIN trigram on hanzi.
+- 4 **security-definer, stable, authenticated-only** search RPCs: `dict_search(p_query,p_limit)` (ranked exact-hanzi > exact-toneless-pinyin > prefix > shorter), `dict_entry(p_id)`, `dict_examples_for(p_word,p_limit)`, `dict_words_containing(p_word,p_id,p_limit)`. Value-bound `ilike`, no dynamic SQL.
+
+**New pure/tested modules:** `src/cedict.js` (CC-CEDICT line parser + `numberedPinyinToMarks`), `src/toneColor.js` (`toneOf`/`splitHanziWithTones`/`TONE_CLASS`), `src/dictSearch.js` (RPC wrappers; `normalizeQuery` reuses `searchFold`), `src/tatoeba.js` (`parseTatoebaPairLine`).
+
+**Entry view — "Refined" direction (`src/DictEntryView.jsx`):** tone color applied ONLY to the headword + character-breakdown cards (definitions/examples/words-containing chips stay neutral); `Meaning · Chars · Examples` tabs; tappable character drill-down via an `entryStack`. Tone palette lives in `src/index.css` (light+dark). `src/Dictionary.jsx` now defaults to **full-dictionary** scope with a `Full dictionary | My syllabus` toggle — **gated to Chinese** (`track.language === 'chinese'`); non-Chinese tracks keep the old curriculum-only screen (no toggle). The `setTab` reset uses the render-phase "adjust state during render" pattern (repo lints `react-hooks/set-state-in-effect`).
+
+**Flashcard-anything (`supabase/migrations/20260719130000_flashcard_anything.sql`):** save any reference word to the FSRS deck. Non-curriculum words become dictionary-sourced `vocabulary` rows with **`level = NULL`** — the sentinel that keeps them out of every level-scoped surface (level tests filter `.eq('level',N)`, home/Study/Profile use `.gte/.lte`, `levelScope.js` guards `level != null`; all auto-exclude NULL — audited + locked in `levelScope.test.js`/`testLogic.test.js`). The review deck was the ONE place that filtered them out (`getTrackCards({maxLevel})` uses `.lte('vocabulary.level',max)`), so `getTrackCards` gained an **`includeUnleveled`** option → `.or('level.lte.X,level.is.null', {referencedTable:'vocabulary'})`, used by Study's two review/forecast fetches. Privileged insert via security-definer `dict_add_to_deck(p_dict_entry_id,p_language,p_system)` (vocabulary has NO INSERT policy); validates `auth.uid()` + track ownership + **language match** (else a Chinese entry could be written into a JP track), idempotent. **CRITICAL:** the syllabus browse query in `Dictionary.jsx` MUST keep `.not('level','is',null)` or NULL words leak cross-user into the curriculum list (vocabulary is globally shared).
+
+**Seed pipeline (operator-run with the service key — NOT in CI):** `seed-dict.mjs` (CC-CEDICT → dict_entries; existence-check chunked to avoid oversized `.in()` URLs — a wide `.in()` of hanzi builds a URL the gateway rejects as opaque "fetch failed"), `seed-examples.mjs` (Tatoeba pairs → dict_examples; converts traditional→simplified via **`opencc-js`** `{from:'t',to:'cn'}`, generates tone-marked pinyin via **`pinyin-pro`**, **insert-only + retry** since example `hanzi` are full sentences and a `.in()` of them overflows the URL). Both dry-run by default, `--apply` to write; `data/cedict.sample.u8` + `data/tatoeba.sample.tsv` fixtures. `opencc-js`/`pinyin-pro` are **devDependencies** (seed-time only, not in the client bundle). Data loaded to prod Supabase (project `bvqvturqupbggxaeihvi`): **123,465** entries + **~77,045** examples with pinyin.
+
+**Deferred follow-ups (non-blocking, tracked in docs/BACKLOG.md):** stroke-order animation wiring in the entry (button gated off via `canShowStrokes`), 得-particle pinyin edge case, capitalized-pinyin display for proper nouns, migration `drop policy if exists` idempotency + a partial unique index on dictionary-sourced words, Japanese (JMdict)/Russian reference dictionaries.
+
+**Specs/plans:** `docs/superpowers/specs/2026-07-19-pleco-style-dictionary-design.md`; `docs/superpowers/plans/2026-07-19-reference-dictionary.md` + `2026-07-19-flashcard-anything.md`.
+
+---
+
+### Previous session (2026-07-19, autonomous overnight: additive polish sweep — search, filters, progress viz, chart a11y)
 
 **14 items shipped across 10 PRs (#100–#109), all squash-merged to `main` by the session itself. Every change is ADDITIVE and MIGRATION-FREE — no schema, no scheduling/FSRS, no reader reading-behavior changes.** This was an all-day autonomous `send_later` loop (merge green PR → reset branch onto main → ship one safe item → open PR → re-arm). The user granted standing merge authority mid-session ("merge and continue"). Suite after: unit **623**, full Playwright e2e green (dictionary 7, profile 4, home/words/grammar/analyzer/reader/study).
 

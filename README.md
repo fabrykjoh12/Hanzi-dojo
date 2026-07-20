@@ -39,6 +39,7 @@ Everything that isn't part of that loop is tucked into a secondary **Practice La
 - **Honest level progression** — levels unlock through a real test (available at 90% mastery, passed at 100%).
 - **A calm daily coach** — Home surfaces one next action, why it matters, and what it unlocks.
 - **Practice Lab** — weak words, listening, writing, fill‑in‑the‑blank, sentence builder, tones/kana/Cyrillic, stroke order, grammar guides, word list, and video input.
+- **Pleco‑style dictionary** — search a 120k‑word Chinese reference (CC‑CEDICT): tone‑colored characters, tappable character breakdown, "words containing", and real example sentences (Tatoeba) with pinyin. Save *any* word — even outside your HSK level — straight to your review deck.
 - **Chat Missions** — short conversations built from the words you just learned.
 - **Offline‑first PWA** — installable, with a durable IndexedDB write outbox that replays on reconnect (see [Offline & data safety](#offline--data-safety)).
 - **Multi‑language** — Chinese (HSK 3.0), Japanese (JLPT), Russian (CEFR). Chinese is the flagship track.
