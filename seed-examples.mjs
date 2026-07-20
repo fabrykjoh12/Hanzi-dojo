@@ -1,7 +1,7 @@
 // One-time ingest of Tatoeba example sentences into public.dict_examples.
 // Populates the "Examples" tab of the reference dictionary. Dry-run by default;
-// --apply writes. Idempotent: skips (hanzi, english) pairs already present.
-// Never deletes/overwrites. Mirrors seed-dict.mjs.
+// --apply writes. Insert-only bulk load (rows are de-duplicated within the file);
+// to reload, TRUNCATE public.dict_examples first, else rows are duplicated.
 //
 //   node --env-file=.env.script seed-examples.mjs --pairs cmn-eng-pairs.tsv
 //   node --env-file=.env.script seed-examples.mjs --pairs cmn-eng-pairs.tsv --apply
@@ -44,7 +44,6 @@ if (!pairsFile) {
 }
 
 const BATCH = 500          // insert batch (POST body — no URL-length concern)
-const CHECK_CHUNK = 60     // existence-check chunk: keeps the .in() URL short
 
 async function seedExamples() {
   const lines = readFileSync(pairsFile, 'utf8').split('\n')
@@ -74,31 +73,28 @@ async function seedExamples() {
     return
   }
 
+  // Insert-only bulk load. We deliberately do NOT pre-check for existing rows:
+  // example `hanzi` are full sentences, and a wide `.in()` of them builds a URL
+  // too long for the gateway (an opaque "fetch failed"). Rows are already
+  // de-duplicated within this file, so a run never inserts the same pair twice.
+  // To reload cleanly, TRUNCATE the table first (see the --apply note below);
+  // re-running without truncating will duplicate rows.
   let inserted = 0
   for (let i = 0; i < rows.length; i += BATCH) {
     const batch = rows.slice(i, i + BATCH)
-    // Idempotency: skip (hanzi, english) already present. Query the existing
-    // rows in small chunks — a wide .in() of many multibyte sentences builds a
-    // URL too long for the gateway (surfaces in Node as an opaque "fetch failed").
-    const seen = new Set()
-    for (let j = 0; j < batch.length; j += CHECK_CHUNK) {
-      const slice = batch.slice(j, j + CHECK_CHUNK)
-      const { data: existing, error: fetchErr } = await supabase
-        .from('dict_examples')
-        .select('hanzi, english')
-        .in('hanzi', slice.map(r => r.hanzi))
-      if (fetchErr) { console.error('Fetch error:', fetchErr.message); process.exit(1) }
-      for (const r of (existing || [])) seen.add(r.hanzi + '|' + r.english)
+    // Retry a few times so a transient network blip doesn't abort a long load.
+    let attempt = 0
+    for (;;) {
+      const { error } = await supabase.from('dict_examples').insert(batch)
+      if (!error) break
+      attempt += 1
+      if (attempt >= 4) { console.error('\nInsert error:', error.message); process.exit(1) }
+      await new Promise(r => setTimeout(r, 1000 * attempt))
     }
-    const fresh = batch.filter(r => !seen.has(r.hanzi + '|' + r.english))
-    if (fresh.length) {
-      const { error } = await supabase.from('dict_examples').insert(fresh)
-      if (error) { console.error('Insert error:', error.message); process.exit(1) }
-      inserted += fresh.length
-    }
+    inserted += batch.length
     process.stdout.write(`\r  inserted ${inserted}…`)
   }
-  console.log(`\nDone. Inserted ${inserted} new example sentences.`)
+  console.log(`\nDone. Inserted ${inserted} example sentences.`)
 }
 
 seedExamples()
