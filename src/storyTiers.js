@@ -8,21 +8,21 @@
 // is itself a gentle way to learn. Later tiers gate on learned-word count.
 
 export const CATEGORIES_CHINESE = [
-  { tier: 1, minWords: 0,   label: 'First Steps', wordRange: '1–100', description: 'Stories using the first 100 most common HSK 1 words' },
-  { tier: 2, minWords: 100, label: 'Growing',     wordRange: '1–200', description: 'Stories using the first 200 most common HSK 1 words' },
-  { tier: 3, minWords: 200, label: 'Fluent',      wordRange: '1–300', description: 'All 300 HSK 1 words in use' },
+  { tier: 1, minWords: 0,   label: 'First Steps', wordRange: '1–100', description: 'Short stories from the most common words at your level.' },
+  { tier: 2, minWords: 100, label: 'Growing',     wordRange: '1–200', description: 'Stories that bring in more of your level’s vocabulary.' },
+  { tier: 3, minWords: 200, label: 'Fluent',      wordRange: '1–300', description: 'Stories that use your level’s full word list.' },
 ]
 
 export const CATEGORIES_JAPANESE = [
-  { tier: 1, minWords: 0,   label: 'First Steps', wordRange: '1–100', description: 'Stories using the first 100 most common JLPT N5 words' },
-  { tier: 2, minWords: 100, label: 'Growing',     wordRange: '1–200', description: 'Stories using the first 200 most common JLPT N5 words' },
-  { tier: 3, minWords: 200, label: 'Fluent',      wordRange: '1–400', description: 'All 400 N5 Part 1 words in use' },
+  { tier: 1, minWords: 0,   label: 'First Steps', wordRange: '1–100', description: 'Short stories from the most common words at your level.' },
+  { tier: 2, minWords: 100, label: 'Growing',     wordRange: '1–200', description: 'Stories that bring in more of your level’s vocabulary.' },
+  { tier: 3, minWords: 200, label: 'Fluent',      wordRange: '1–400', description: 'Stories that use your level’s full word list.' },
 ]
 
 export const CATEGORIES_RUSSIAN = [
-  { tier: 1, minWords: 0,   label: 'First Steps', wordRange: '1–50',  description: 'Stories using the first 50 most common A1 words' },
-  { tier: 2, minWords: 50,  label: 'Growing',     wordRange: '1–100', description: 'Stories using the first 100 most common A1 words' },
-  { tier: 3, minWords: 100, label: 'Fluent',      wordRange: 'all',   description: 'The full A1 starter deck in use' },
+  { tier: 1, minWords: 0,   label: 'First Steps', wordRange: '1–50',  description: 'Short stories from the most common words at your level.' },
+  { tier: 2, minWords: 50,  label: 'Growing',     wordRange: '1–100', description: 'Stories that bring in more of your level’s vocabulary.' },
+  { tier: 3, minWords: 100, label: 'Fluent',      wordRange: 'all',   description: 'Stories that use your level’s full word list.' },
 ]
 
 export const CATEGORIES_BY_LANGUAGE = {
