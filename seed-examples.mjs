@@ -9,10 +9,18 @@
 //
 // Input: the Tatoeba "Sentence pairs" export, Mandarin Chinese -> English
 // (https://tatoeba.org/en/downloads). Tab-separated: <id> <cmn> <id> <eng>.
+// Every sentence is converted to simplified characters on ingest (opencc-js).
 // Tatoeba data is CC BY 2.0 FR — attribution is shown in the app.
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'node:fs'
+import * as OpenCC from 'opencc-js'
 import { parseTatoebaPairLine } from './src/tatoeba.js'
+
+// Tatoeba's Mandarin set mixes simplified and traditional characters. The app is
+// simplified-first (headwords are simplified), so we normalise every sentence to
+// simplified on the way in — this makes examples display in simplified AND match
+// the simplified headword lookup. Already-simplified text passes through unchanged.
+const toSimplified = OpenCC.Converter({ from: 't', to: 'cn' })
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
@@ -49,10 +57,11 @@ async function seedExamples() {
   const seenKeys = new Set()
   let rows = []
   for (const p of parsed) {
-    const k = p.hanzi + '|' + p.english
-    if (seenKeys.has(k)) continue
+    const hanzi = toSimplified(p.hanzi)   // normalise traditional → simplified
+    const k = hanzi + '|' + p.english
+    if (seenKeys.has(k)) continue          // dedup AFTER conversion so trad/simp variants collapse
     seenKeys.add(k)
-    rows.push({ language: 'chinese', hanzi: p.hanzi, english: p.english, pinyin: null })
+    rows.push({ language: 'chinese', hanzi, english: p.english, pinyin: null })
   }
   if (Number.isInteger(limit) && limit > 0 && rows.length > limit) {
     rows = rows.slice(0, limit)
