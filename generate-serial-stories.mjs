@@ -127,6 +127,45 @@ const CONFIGS = {
       { tier: 3, minWords: 130, prevCap: 132, cap: 198, chapters: 5, lines: [30, 42], minCov: 0.85, maxMisses: 12 },
     ],
   },
+  // HSK 3-6: seeded from the reference dictionary (frequency-capped ~460-480
+  // words/level, sort_order 1..~500 after cleanup). tier-3 cap 500 captures the
+  // whole level; coverage gates loosen a touch as the vocabulary gets harder.
+  'chinese|hsk_3|3': {
+    bible: BIBLE_CHINESE, promptLang: 'Chinese', levelName: 'HSK 3',
+    maxLineChars: 34, prereqLevel: 2, prereqMax: 200,
+    tiers: [
+      { tier: 1, minWords: 40, prevCap: 0, cap: 170, chapters: 5, lines: [20, 28], minCov: 0.88, maxMisses: 8 },
+      { tier: 2, minWords: 110, prevCap: 170, cap: 340, chapters: 5, lines: [26, 36], minCov: 0.86, maxMisses: 11 },
+      { tier: 3, minWords: 220, prevCap: 340, cap: 500, chapters: 5, lines: [32, 44], minCov: 0.84, maxMisses: 14 },
+    ],
+  },
+  'chinese|hsk_3|4': {
+    bible: BIBLE_CHINESE, promptLang: 'Chinese', levelName: 'HSK 4',
+    maxLineChars: 36, prereqLevel: 3, prereqMax: 300,
+    tiers: [
+      { tier: 1, minWords: 40, prevCap: 0, cap: 170, chapters: 5, lines: [20, 28], minCov: 0.88, maxMisses: 8 },
+      { tier: 2, minWords: 110, prevCap: 170, cap: 340, chapters: 5, lines: [26, 36], minCov: 0.86, maxMisses: 11 },
+      { tier: 3, minWords: 220, prevCap: 340, cap: 500, chapters: 5, lines: [32, 44], minCov: 0.84, maxMisses: 14 },
+    ],
+  },
+  'chinese|hsk_3|5': {
+    bible: BIBLE_CHINESE, promptLang: 'Chinese', levelName: 'HSK 5',
+    maxLineChars: 38, prereqLevel: 4, prereqMax: 300,
+    tiers: [
+      { tier: 1, minWords: 40, prevCap: 0, cap: 170, chapters: 5, lines: [20, 28], minCov: 0.87, maxMisses: 9 },
+      { tier: 2, minWords: 110, prevCap: 170, cap: 340, chapters: 5, lines: [26, 36], minCov: 0.85, maxMisses: 12 },
+      { tier: 3, minWords: 220, prevCap: 340, cap: 500, chapters: 5, lines: [32, 44], minCov: 0.83, maxMisses: 15 },
+    ],
+  },
+  'chinese|hsk_3|6': {
+    bible: BIBLE_CHINESE, promptLang: 'Chinese', levelName: 'HSK 6',
+    maxLineChars: 40, prereqLevel: 5, prereqMax: 300,
+    tiers: [
+      { tier: 1, minWords: 40, prevCap: 0, cap: 170, chapters: 5, lines: [20, 28], minCov: 0.87, maxMisses: 9 },
+      { tier: 2, minWords: 110, prevCap: 170, cap: 340, chapters: 5, lines: [26, 36], minCov: 0.85, maxMisses: 12 },
+      { tier: 3, minWords: 220, prevCap: 340, cap: 500, chapters: 5, lines: [32, 44], minCov: 0.83, maxMisses: 15 },
+    ],
+  },
   'japanese|jlpt|1': {
     // N5 stories use kanji (with furigana in the reader) so they match the
     // kanji-keyed vocabulary and words stay tappable — a kana-only story fails
