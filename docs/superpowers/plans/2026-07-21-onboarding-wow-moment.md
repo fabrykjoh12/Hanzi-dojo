@@ -19,6 +19,16 @@
 - **Commit identity:** `git config user.email noreply@anthropic.com && git config user.name Claude` before the first commit.
 - **Every task ends green:** `npx vitest run` and `npm run build` both pass.
 
+> **AMENDMENT (2026-07-21, applies to Tasks 3, 4, 8):** This repo has no DOM test
+> environment — vitest runs `environment: 'node'`, includes only `src/**/*.test.js`,
+> and neither `@testing-library/react` nor `jsdom` is installed; components are
+> covered by Playwright e2e, not unit render tests. So **do NOT create the
+> `*.test.jsx` render tests** in Tasks 3, 4, 8. The testable logic is already pure
+> and unit-tested (`understandPct`, `charsToLearn`, `daysToWords`, `tastedWordsLine`);
+> component behavior is covered by the Task 9 e2e. For those tasks, "verify" means:
+> `npm run build` (component compiles), `npx vitest run` (full suite stays green),
+> and `npx eslint <new files>` (clean). Everything else in those tasks is unchanged.
+
 ---
 
 ### Task 1: Starter-sentence dataset + pure accessors
