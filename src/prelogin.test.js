@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { REASONS, examLabelFor, reasonLabel, encouragementFor } from './prelogin'
+import { REASONS, examLabelFor, reasonLabel, encouragementFor, tastedWordsLine } from './prelogin'
 
 describe('prelogin helpers', () => {
   it('exposes the reason set', () => {
@@ -25,5 +25,18 @@ describe('prelogin helpers', () => {
     expect(encouragementFor('japanese', 'exam', 'Japanese')).toContain('JLPT')
     // Unknown reason still yields a friendly, language-aware line.
     expect(encouragementFor('russian', 'zzz', 'Russian')).toMatch(/Russian/)
+  })
+})
+
+describe('tastedWordsLine', () => {
+  it('returns null for no words', () => {
+    expect(tastedWordsLine([])).toBe(null)
+    expect(tastedWordsLine(null)).toBe(null)
+  })
+  it('names one word', () => {
+    expect(tastedWordsLine(['钱'])).toBe('You already met 钱 — nice start.')
+  })
+  it('names two words and stops there', () => {
+    expect(tastedWordsLine(['我', '爱', '家'])).toBe('You already met 我 and 爱 — nice start.')
   })
 })

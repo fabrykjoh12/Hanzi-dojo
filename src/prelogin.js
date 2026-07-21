@@ -38,6 +38,15 @@ export function encouragementFor(language, reason, languageName) {
   return map[reason] || `Great choice — your first ${lang} words are moments away.`
 }
 
+// A warm one-liner for the first-session welcome, naming up to two words the
+// visitor already tasted pre-signup. Returns null when there's nothing to say.
+export function tastedWordsLine(words) {
+  const list = (words || []).filter(Boolean)
+  if (list.length === 0) return null
+  const named = list.slice(0, 2).join(' and ')
+  return `You already met ${named} — nice start.`
+}
+
 const KEY = 'prelogin:prefs'
 
 export function savePreloginPrefs(prefs) {
