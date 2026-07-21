@@ -9,6 +9,7 @@ the thread flips to ✅.
 Item format: `- [ ] ` + `` `stable-id` `` + `**Title**` + ` — what to check`.
 
 ## Open
+- [ ] `calm-home-recap` **Calmer Home & session recap** — open Home: no "day streak" badge or "study today to keep it" line anywhere, and the "Today's Dojo" card itself is tappable (whole card, not just a small pill) and opens your cards. Finish a study session: no XP or accuracy number, just two calm tiles ("Today: N reviewed, M new" / "Tomorrow: N due, M new"), then straight into the unlocked story.
 - [ ] `wow-onboarding` **First-run wow moment** — sign out (or a fresh browser) → start sign-up → pick a reason. Do you read a real Chinese sentence (tap words for pinyin + meaning; the "you understand %" meter fills to 100), then tap "Save these words" straight into sign-up (no repeat screen)? After creating the account: does the first-session welcome say "You already met …", and does the goal step read "~N days to unlock more stories"? (Audio uses the browser voice until TTS clips are generated.)
 - [ ] `dict-search` **Dictionary search** — Practice → Dictionary: search by hanzi (中文), toneless pinyin (zhongwen), and English (friend). Fast results, tone-colored pinyin, and the `Full dictionary` / `My syllabus` toggle both work?
 - [ ] `dict-entry` **Dictionary entry** — open a word: numbered definitions, a tappable **Chars** breakdown (tap a character to drill into its own entry), "words containing", and an **Examples** tab (sentence + pinyin + English, with the word highlighted)?

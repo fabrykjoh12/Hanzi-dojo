@@ -1,5 +1,6 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 import { HomePage } from '../pages/HomePage.js';
+import { StudyPage } from '../pages/StudyPage.js';
 
 // Signed-in dashboard renders profile/track/counts from the mock backend.
 test.describe('Home dashboard (logged in)', () => {
@@ -24,10 +25,15 @@ test.describe('Home dashboard (logged in)', () => {
     await expect(home.fluency).toBeVisible();
   });
 
-  test('shows the 7-day review forecast', async ({ page }) => {
-    await expect(page.getByText('Next 7 days')).toBeVisible();
-    await expect(page.getByText(/reviews? a day/i)).toBeVisible();
-    // The bar chart exposes a text summary to screen readers.
-    await expect(page.getByRole('img', { name: /Review forecast, next 7 days/i })).toBeVisible();
+  test('does not show a streak badge or "keep it" guilt copy', async ({ page }) => {
+    await expect(page.getByText(/day streak/i)).toHaveCount(0);
+    await expect(page.getByText(/study today to keep it/i)).toHaveCount(0);
+  });
+
+  test('the whole Today\'s Dojo card is tappable and opens Study', async ({ page }) => {
+    // No separate nested button for this any more — the card itself navigates.
+    await page.getByText('Today’s Dojo').click();
+    const study = new StudyPage(page);
+    await expect(study.showAnswer).toBeVisible();
   });
 });

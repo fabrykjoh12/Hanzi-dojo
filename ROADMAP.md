@@ -15,6 +15,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] Between features — pick the next item from the plan below.
 
 **Just shipped**
+- [x] A calmer Home and session recap: no streak badge, no "keep it" pressure, fewer numbers — Home leads with one obvious tap to start, and finishing a session leads straight to the story you just unlocked
 - [x] Read real Chinese before you sign up: an interactive first-sentence onboarding (tap words for pinyin, meaning, and audio; a "you understand %" meter) themed to why you're learning
 - [x] HSK 3-6 vocabulary: ~1,870 more Chinese words to study, search, and test (with example sentences and audio)
 - [x] Pleco-style dictionary: search 120k+ Chinese words with tone colors, character breakdown, and example sentences
@@ -88,7 +89,6 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] **Timezone-correct daily reminders** (no ~1h drift across DST), with gentle, value-based copy.
 
 **Polish**
-- [ ] **A calmer home & session recap** — strip the number-clutter: no "streak" badge or "study today to keep it" (that quietly broke our own *no streaks, no guilt* promise), and no daily-goal ring, rhythm dots, mastery counter, or 7-day forecast crowding the home. One obvious "start studying" tap, and end each session by going straight to the story you just unlocked — fewer numbers, less noise.
 - [ ] Cleaner sign-in emails — branded sender from hanzi-dojo.com, links that stay on the domain.
 
 ## 🧱 Technical

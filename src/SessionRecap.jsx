@@ -1,10 +1,9 @@
 import { useState } from 'react'
-import { CountUp } from './ui'
 import { levelTitle, nextTitle } from './xp'
 import { offlineAvailable } from './offline'
 import { prefetchLevel } from './prefetch'
 import {
-  ArrowLeft, CheckCircle2, Sparkles, TrendingUp, Snowflake, Sunrise,
+  ArrowLeft, CheckCircle2, TrendingUp, Snowflake,
   MessageCircleMore, ChevronRight, BookOpen, Download, CheckCheck,
 } from 'lucide-react'
 
@@ -198,13 +197,6 @@ export default function SessionRecap({
   // CTA, where surfacing the unlocked story adds something rather than repeating.
   const nextStepIsUnlockStory = Boolean(story) && (!storyUnlock.isRead || !mission)
 
-  const accuracy = s && s.reviewedTotal > 0 ? Math.round((s.reviewedRight / s.reviewedTotal) * 100) : null
-  const recapStats = s ? [
-    { label: 'Cards studied', value: s.graded, color: accentHex },
-    { label: 'New learned', value: s.newLearned, color: '#3E63DD' },
-    { label: 'To review', value: s.graduated, color: '#2F9E6D' },
-  ] : []
-  if (accuracy !== null) recapStats.push({ label: 'Accuracy', value: accuracy, suffix: '%', color: '#D97706' })
 
   return (
     <div style={{ maxWidth: '760px', margin: '0 auto', minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -234,18 +226,6 @@ export default function SessionRecap({
                 : 'No cards are waiting. Come back later, or continue the loop with stories.'}
         </p>
 
-        {didStudy && s.xpEarned > 0 && (
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '7px',
-            margin: '0 auto 20px', padding: '8px 16px', borderRadius: '999px',
-            background: '#6E84661A', border: '1px solid #6E846633',
-            color: '#5C7155', fontSize: '14px', fontWeight: 750,
-          }}>
-            <Sparkles size={15} strokeWidth={2} color="#6E8466" />
-            +<CountUp value={s.xpEarned} /> XP
-          </div>
-        )}
-
         {didStudy && s.leveledTo > 0 && (
           <div style={{
             margin: '0 auto 22px', padding: '16px 18px', borderRadius: '18px',
@@ -270,42 +250,24 @@ export default function SessionRecap({
           </div>
         )}
 
+        {/* Two calm tiles instead of a wall of numbers: what happened today,
+            what's waiting tomorrow. No XP, no accuracy — just the shape of it. */}
         {didStudy && (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: recapStats.length === 4 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
-            gap: '10px', marginBottom: '22px',
-          }}>
-            {recapStats.map(st => (
-              <div key={st.label} style={{
-                padding: '16px 10px', borderRadius: '14px',
-                background: st.color + '0D', border: '1px solid ' + st.color + '22',
-              }}>
-                <div style={{ fontSize: '26px', fontWeight: 760, color: st.color, lineHeight: 1 }}>
-                  <CountUp value={st.value} suffix={st.suffix || ''} />
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>{st.label}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '24px' }}>
+            <div style={{ padding: '14px 16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'left' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '4px' }}>Today</div>
+              <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{s.graded}</strong> reviewed
+                {s.newLearned > 0 && <>, <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{s.newLearned}</strong> new</>}
               </div>
-            ))}
-          </div>
-        )}
-
-        {didStudy && forecast && (forecast.reviews > 0 || forecast.newAvail > 0) && (
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            marginBottom: '24px', padding: '12px 16px', borderRadius: '14px',
-            background: 'var(--surface-2)', border: '1px solid var(--border)',
-            fontSize: '13px', color: 'var(--text-muted)', flexWrap: 'wrap',
-          }}>
-            <Sunrise size={16} strokeWidth={1.9} color="#D97706" />
-            <span>
-              Tomorrow:&nbsp;
-              <strong style={{ color: 'var(--text)', fontWeight: 650 }}>{forecast.reviews}</strong> review{forecast.reviews === 1 ? '' : 's'}
-              {forecast.newAvail > 0 && (
-                <> + <strong style={{ color: 'var(--text)', fontWeight: 650 }}>{forecast.newAvail}</strong> new</>
-              )}
-              &nbsp;waiting
-            </span>
+            </div>
+            <div style={{ padding: '14px 16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'left' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '4px' }}>Tomorrow</div>
+              <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{(forecast && forecast.reviews) || 0}</strong> due
+                {forecast && forecast.newAvail > 0 && <>, <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{forecast.newAvail}</strong> new</>}
+              </div>
+            </div>
           </div>
         )}
 

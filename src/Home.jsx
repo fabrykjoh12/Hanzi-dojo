@@ -1,56 +1,17 @@
 import { useState } from 'react'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
-import { liveStreak, streakStatus } from './streak'
 import { levelInfo, levelTitle } from './xp'
-import InfoTip from './InfoTip'
-import { CountUp } from './ui'
 import { useIsMobile } from './useIsMobile'
-import { Flame, Layers, BookOpen, Play, PenLine, ArrowRight, Check, Sunrise, Gauge, Dumbbell, Snowflake, MessagesSquare, CalendarRange, Activity } from 'lucide-react'
-import { forecastSummary, forecastA11yLabel } from './reviewForecast'
-import { rhythmSummary } from './studyRhythm'
+import { Layers, BookOpen, Play, PenLine, ArrowRight, Sunrise, Gauge, Dumbbell, MessagesSquare } from 'lucide-react'
 import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
 import { fluencyScore, fluencyRank } from './fluency'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
+import { CountUp } from './ui'
 
 // Neutral sage green for the primary CTA (see CLAUDE.md redesign spec)
 const SAGE = '#6E8466'
 const SAGE_DARK = '#5C7155'
-
-// Compact circular progress ring for the daily new-card goal.
-function GoalRing({ done, goal, accentHex, complete }) {
-  const size = 62
-  const stroke = 6
-  const r = (size - stroke) / 2
-  const circ = 2 * Math.PI * r
-  const pct = goal > 0 ? Math.min(1, done / goal) : 0
-  const ringColor = complete ? '#2F9E6D' : accentHex
-  return (
-    <div style={{ position: 'relative', width: size + 'px', height: size + 'px', flexShrink: 0 }}>
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
-        <circle
-          cx={size / 2} cy={size / 2} r={r} fill="none" stroke={ringColor} strokeWidth={stroke}
-          strokeLinecap="round" strokeDasharray={circ}
-          strokeDashoffset={circ * (1 - pct)}
-          style={{ transition: 'stroke-dashoffset .7s ease' }}
-        />
-      </svg>
-      <div style={{
-        position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-      }}>
-        {complete ? (
-          <Check size={24} strokeWidth={2.4} color="#2F9E6D" />
-        ) : (
-          <span style={{ fontSize: '15px', fontWeight: 750, color: 'var(--text)', lineHeight: 1 }}>
-            {done}<span style={{ color: 'var(--text-faint)', fontWeight: 600 }}>/{goal}</span>
-          </span>
-        )}
-      </div>
-    </div>
-  )
-}
 
 function FlowStep({ icon, label, accentHex, active, onClick }) {
   const [hovered, setHovered] = useState(false)
@@ -83,6 +44,7 @@ function FlowStep({ icon, label, accentHex, active, onClick }) {
 
 export default function Home({ profile, track, counts, onNavigate }) {
   const [ctaHovered, setCtaHovered] = useState(false)
+  const [dojoHovered, setDojoHovered] = useState(false)
   const isMobile = useIsMobile()
 
   const theme = languageTheme(profile.active_language)
@@ -93,27 +55,12 @@ export default function Home({ profile, track, counts, onNavigate }) {
   const levelSuffix = getLevelLabel(profile.active_language, track.system, track.current_level)
 
   const totalDue = counts.newCount + counts.learnCount + counts.dueCount
-  const masteryPct = counts.totalWords > 0
-    ? Math.min(100, Math.round((counts.masteredCount / counts.totalWords) * 100))
-    : 0
 
   // Daily new-card goal progress.
   const goal = profile.daily_new_cards || 0
   const doneToday = counts.newDoneToday || 0
   const goalComplete = goal > 0 && doneToday >= goal
   const noNewLeft = !goalComplete && counts.newCount === 0
-  // 7-day review outlook: bucketed counts from homeCounts (index 0 = today).
-  const forecast7 = counts.forecast7 || []
-  const forecast = forecastSummary(forecast7)
-  // Short weekday initials for the next 7 days, starting today.
-  const dayLabels = Array.from({ length: forecast7.length }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() + i)
-    return { key: i, letter: d.toLocaleDateString(undefined, { weekday: 'narrow' }), isToday: i === 0 }
-  })
-
-  // Study rhythm (last 7 days) — a calm "N of 7" ring, nothing to protect or lose.
-  const rhythm7 = counts.rhythm7 || []
-  const rhythm = rhythmSummary(rhythm7)
 
   // Gentle return: after a break, Study caps the overdue backlog to a calm
   // handful. Surface a warm welcome-back banner only when that cap actually bites
@@ -153,45 +100,16 @@ export default function Home({ profile, track, counts, onNavigate }) {
           </div>
         </div>
 
-        {/* Streak + account level */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '10px 16px', borderRadius: '20px',
-            background: 'rgba(217,119,6,0.13)', border: '1px solid rgba(217,119,6,0.30)',
-          }}>
-            <Flame size={17} strokeWidth={2} color="#D97706" />
-            <span style={{ fontSize: '15px', fontWeight: 700, color: '#D97706' }}>{liveStreak(profile)}</span>
-            <span style={{ fontSize: '13px', fontWeight: 500, color: '#B45309' }}>day streak</span>
-          </div>
-          {(() => {
-            const st = streakStatus(profile)
-            if (st === 'due_today') {
-              return (
-                <span style={{ fontSize: '11px', fontWeight: 650, color: '#D97706', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Sunrise size={13} strokeWidth={2} color="#D97706" /> Study today to keep it
-                </span>
-              )
-            }
-            if (st === 'frozen') {
-              return (
-                <span style={{ fontSize: '11px', fontWeight: 650, color: '#3E63DD', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Snowflake size={13} strokeWidth={2} color="#3E63DD" /> Freeze protecting your streak · {profile.streak_freezes || 0} left
-                </span>
-              )
-            }
-            return null
-          })()}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '8px 14px', borderRadius: '20px',
-            background: `${accentHex}12`, border: '1px solid ' + accentHex + '2E',
-          }}>
-            <span style={{ fontSize: '13px', fontWeight: 750, color: accentHex }}>
-              Lv {levelInfo(profile.total_xp).level} · {levelTitle(levelInfo(profile.total_xp).level)}
-            </span>
-            <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)' }}>{levelInfo(profile.total_xp).pct}%</span>
-          </div>
+        {/* Account level — a pure progress marker, not a streak: nothing to protect, nothing to lose. */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          padding: '8px 14px', borderRadius: '20px',
+          background: `${accentHex}12`, border: '1px solid ' + accentHex + '2E',
+        }}>
+          <span style={{ fontSize: '13px', fontWeight: 750, color: accentHex }}>
+            Lv {levelInfo(profile.total_xp).level} · {levelTitle(levelInfo(profile.total_xp).level)}
+          </span>
+          <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)' }}>{levelInfo(profile.total_xp).pct}%</span>
         </div>
       </div>
 
@@ -209,28 +127,36 @@ export default function Home({ profile, track, counts, onNavigate }) {
         </div>
       )}
 
-      {/* ── Today card ── */}
-      <div style={{
-        background: 'var(--surface)', borderRadius: '20px', border: '1px solid var(--border)',
-        boxShadow: '0 2px 16px rgba(0,0,0,0.05)', padding: isMobile ? '22px 18px' : '28px 32px', marginBottom: '20px',
-      }}>
+      {/* ── Today card ── the whole card is tappable (same destination as the
+          "Next up" CTA below), so starting today's cards is always one obvious
+          tap away — no separate nested button needed for that. ── */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => onNavigate(rec.key)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate(rec.key) } }}
+        onMouseEnter={() => setDojoHovered(true)}
+        onMouseLeave={() => setDojoHovered(false)}
+        style={{
+          background: 'var(--surface)', borderRadius: '20px',
+          border: '1px solid ' + (dojoHovered ? accentHex + '55' : 'var(--border)'),
+          boxShadow: dojoHovered ? '0 6px 22px rgba(0,0,0,0.08)' : '0 2px 16px rgba(0,0,0,0.05)',
+          padding: isMobile ? '22px 18px' : '28px 32px', marginBottom: '20px',
+          cursor: 'pointer', transition: 'border-color 160ms ease, box-shadow 160ms ease',
+        }}
+      >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
               <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)' }}>Today’s Dojo</span>
               {totalDue > 0 ? (
-                // Clickable: same destination as the "Review & unlock" CTA below.
-                <button
-                  onClick={() => onNavigate(rec.key)}
-                  style={{
-                    fontSize: '12px', color: accentHex, background: `${accentHex}10`,
-                    padding: '4px 12px', borderRadius: '20px', fontWeight: 500,
-                    border: '1px solid ' + accentHex + '26', cursor: 'pointer',
-                    fontFamily: 'Inter, sans-serif',
-                  }}
-                >
+                <span style={{
+                  fontSize: '12px', color: accentHex, background: `${accentHex}10`,
+                  padding: '4px 12px', borderRadius: '20px', fontWeight: 500,
+                  border: '1px solid ' + accentHex + '26',
+                }}>
                   Cards waiting
-                </button>
+                </span>
               ) : (
                 <span style={{
                   fontSize: '12px', color: 'var(--text-muted)',
@@ -249,14 +175,11 @@ export default function Home({ profile, track, counts, onNavigate }) {
                   : 'Daily goal: ' + doneToday + ' of ' + goal + ' new cards'}
             </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
-            <GoalRing done={doneToday} goal={goal} accentHex={accentHex} complete={goalComplete} />
-            <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-faint)' }}>Daily goal</span>
-          </div>
+          <ArrowRight size={20} strokeWidth={2.2} color={dojoHovered ? accentHex : 'var(--text-faint)'} style={{ flexShrink: 0, transition: 'color 160ms ease' }} />
         </div>
 
         {/* New / Learning / Due */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '28px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
           {[
             { label: 'New', value: counts.newCount, color: '#3E63DD' },
             { label: 'Learning', value: counts.learnCount, color: '#D97706' },
@@ -268,100 +191,6 @@ export default function Home({ profile, track, counts, onNavigate }) {
             </div>
           ))}
         </div>
-
-        {/* Mastery */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
-              Mastery
-              <InfoTip accentHex={accentHex} text="A word is mastered once the app predicts you'll still recall it about three weeks from now. It can't be rushed — mastery comes from reviewing correctly over time, across multiple days." />
-            </span>
-            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-              <span style={{ fontWeight: 600, color: 'var(--text)' }}>{counts.masteredCount}</span>
-              /{counts.totalWords} · {masteryPct}%
-            </span>
-          </div>
-          <div style={{ height: '7px', background: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
-            <div style={{
-              height: '100%', borderRadius: '4px',
-              background: `linear-gradient(90deg, ${accentHex}, ${accentHex}bb)`,
-              width: `${masteryPct}%`, transition: 'width .7s ease',
-            }} />
-          </div>
-        </div>
-
-        {/* ── Study rhythm ── last 7 days, guilt-free (nothing to lose) ── */}
-        {rhythm.studiedDays > 0 && (
-          <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
-                <Activity size={15} strokeWidth={1.9} color={accentHex} />
-                Your rhythm
-              </span>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                studied <strong style={{ color: 'var(--text)', fontWeight: 650 }}>{rhythm.studiedDays}</strong> of the last {rhythm.days} days
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px' }}>
-              {rhythm7.map((d, i) => (
-                <div key={i} style={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', minWidth: 0 }}
-                  title={`${d.date}${d.studied ? ' · studied' : ''}${d.isToday ? ' · today' : ''}`}>
-                  <span style={{
-                    width: '16px', height: '16px', borderRadius: '50%',
-                    background: d.studied ? accentHex : 'transparent',
-                    border: d.studied ? `1px solid ${accentHex}` : '1.5px solid var(--border)',
-                    boxShadow: d.isToday ? `0 0 0 2px var(--surface), 0 0 0 3.5px ${accentHex}66` : 'none',
-                  }} />
-                  <span style={{ fontSize: '10px', fontWeight: d.isToday ? 700 : 500, color: d.isToday ? accentHex : 'var(--text-faint)' }}>
-                    {new Date(d.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'narrow' })}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── 7-day review forecast ── a calm outlook, no streak pressure ── */}
-        {forecast.total > 0 && (
-          <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
-                <CalendarRange size={15} strokeWidth={1.9} color={accentHex} />
-                Next 7 days
-              </span>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                ~<strong style={{ color: 'var(--text)', fontWeight: 650 }}>{forecast.perDay}</strong> review{forecast.perDay === 1 ? '' : 's'} a day
-              </span>
-            </div>
-            <div role="img" aria-label={forecastA11yLabel(forecast7)} style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', height: '52px' }}>
-              {forecast7.map((count, i) => {
-                const pct = forecast.peak > 0 ? Math.round((count / forecast.peak) * 100) : 0
-                const day = dayLabels[i]
-                return (
-                  <div key={i} style={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', minWidth: 0 }}
-                    title={`${count} review${count === 1 ? '' : 's'}${day.isToday ? ' today' : ''}`}>
-                    <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'flex-end' }}>
-                      <div style={{
-                        width: '100%',
-                        // A faint 2px stub even for empty days keeps the row legible.
-                        height: `${Math.max(count > 0 ? 8 : 2, pct * 0.36)}%`,
-                        minHeight: count > 0 ? '6px' : '2px',
-                        borderRadius: '4px',
-                        background: count === 0
-                          ? 'var(--border)'
-                          : day.isToday ? accentHex : `${accentHex}66`,
-                        transition: 'height .6s ease',
-                      }} />
-                    </div>
-                    <span style={{ fontSize: '10px', fontWeight: day.isToday ? 700 : 500, color: day.isToday ? accentHex : 'var(--text-faint)' }}>
-                      {day.letter}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ── Fluency score ── */}
