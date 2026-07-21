@@ -88,6 +88,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] **Timezone-correct daily reminders** (no ~1h drift across DST), with gentle, value-based copy.
 
 **Polish**
+- [ ] **A calmer home & session recap** — strip the number-clutter: no "streak" badge or "study today to keep it" (that quietly broke our own *no streaks, no guilt* promise), and no daily-goal ring, rhythm dots, mastery counter, or 7-day forecast crowding the home. One obvious "start studying" tap, and end each session by going straight to the story you just unlocked — fewer numbers, less noise.
 - [ ] Cleaner sign-in emails — branded sender from hanzi-dojo.com, links that stay on the domain.
 
 ## 🧱 Technical

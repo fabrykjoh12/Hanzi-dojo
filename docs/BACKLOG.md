@@ -63,6 +63,13 @@ Turn the current recommended-videos list (`YouTube.jsx`, `youtube_recommendation
 - [ ] **Custom flashcards**: let users add their own cards (word, reading, meaning, optional TTS audio). Store as user-owned vocab (a `custom_vocab` table or a `source` flag on `vocabulary`), feed them into the study queue + FSRS exactly like seeded cards, and optionally group into named decks. Reuse the existing card/grading path so scheduling, offline, and XP work unchanged.
 - [ ] **Built-in dictionary**: a searchable lookup over the vocabulary table, extended with an open dataset per language (CC-CEDICT for Chinese, JMdict for Japanese, an A1+ list for Russian). Search screen → result shows reading + meaning + a play button (recorded audio or TTS) + "add to deck" (which creates a custom card). Bundle/cache the dataset for offline. Pairs with the tap-to-define that already exists in the reader.
 
+## Home & session-recap declutter (mod feedback, 2026-07-21)
+
+From Eliazu's mod-chat review (old vs new mocks): the home and session-complete screens are number-heavy and partly off-brand. Streamline toward "fewer numbers, straight to the story."
+- [ ] **Remove the "streak" from Home** — `src/Home.jsx:156-172` renders a Flame badge (`liveStreak(profile)`, "day streak") and a `streakStatus === 'due_today'` → "Study today to keep it" line. This directly contradicts the *no streaks, no guilt* promise (and the shipped "Study rhythm, not a chain"). Drop the streak badge + the "keep it" guilt copy. Keep at most the calm "studied N of the last 7 days" rhythm.
+- [ ] **Declutter the Dojo card** — `src/Home.jsx` — reduce/hide the daily-goal ring (5/10), "Your rhythm" dots, mastery counter, and "Next 7 days" forecast so home reads as a starting point, not a dashboard. Make "Today's Dojo" the obvious primary tap (it already routes to Review & unlock, Home.jsx:222) — a visible button/affordance so a new user knows to tap it to start their cards (Eliazu: "a button right under 'Next seven days', or just make it obvious you tap the box").
+- [ ] **Simplify the session recap** — `src/SessionRecap.jsx` — drop the XP and Accuracy tiles and collapse the four stat tiles to two ("Today: N reviewed, M new" · "Tomorrow: N due, M new"). Lead the recap with the story unlocked by the session ("Read 'X' — uses 5 words from today's session — Start reading →") so learners go straight to reading, not a stats page (Eliazu: "da kommer man rett til historien, pluss at det ikke er masse unødvendige tall").
+
 ## Frontend cleanup
 - [ ] Continue extracting the large `Study` screen into focused hooks/components.
 - [ ] Supabase generated types (gradual TypeScript adoption).
