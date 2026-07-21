@@ -189,6 +189,12 @@ export default function Auth({ intro = null }) {
           </button>
         </div>
 
+        {isSignup && (
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', margin: '10px 0 0', lineHeight: 1.5 }}>
+            Save your progress and unlock your first story — free, no card needed.
+          </p>
+        )}
+
         {/* Inputs */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
           <input
