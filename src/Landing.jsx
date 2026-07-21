@@ -228,11 +228,18 @@ export default function Landing() {
 
   useEffect(() => { track(EVENTS.LANDING_VIEWED) }, [])
 
+  // With non-Chinese tracks paused there's a single language, so the picker
+  // step is skipped and the wizard goes straight to "why". Un-pausing a track
+  // brings the picker back automatically (soloLang goes null).
+  const soloLang = languages.length === 1 ? languages[0].key : null
+
   // Enter the wizard, optionally pre-selecting a language (from a chip tap).
+  // Falls back to the sole language when only one is offered.
   const startWizard = (langKey = null) => {
-    if (langKey) {
-      setPickedLang(langKey)
-      track(EVENTS.PRELOGIN_LANGUAGE_PICKED, { language: langKey })
+    const chosen = langKey || soloLang
+    if (chosen) {
+      setPickedLang(chosen)
+      track(EVENTS.PRELOGIN_LANGUAGE_PICKED, { language: chosen })
       setMode('why')
     } else {
       setMode('lang')
@@ -408,20 +415,23 @@ export default function Landing() {
             Start free. No credit card. Learn your first words and unlock your first story in minutes.
           </div>
 
-          {/* Language chips */}
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: isMobile ? '44px' : '64px' }}>
-            {languages.map(lang => (
-              <button key={lang.key} onClick={() => startWizard(lang.key)} style={{
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
-                width: isMobile ? '140px' : '160px', height: '46px', padding: '0 16px', borderRadius: '999px',
-                background: 'var(--surface)', border: '1px solid ' + lang.accentHex + '33',
-                boxShadow: '0 4px 14px rgba(24,24,27,0.05)', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-              }}>
-                <span style={{ fontSize: '17px', fontWeight: 700, color: lang.accentHex, fontFamily: lang.font }}>{lang.nativeName}</span>
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>{SYSTEM_LABELS[lang.key]}</span>
-              </button>
-            ))}
-          </div>
+          {/* Language chips — a shortcut to start a specific language. Hidden
+              when only one is offered (the CTA above already covers it). */}
+          {!soloLang && (
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: isMobile ? '44px' : '64px' }}>
+              {languages.map(lang => (
+                <button key={lang.key} onClick={() => startWizard(lang.key)} style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
+                  width: isMobile ? '140px' : '160px', height: '46px', padding: '0 16px', borderRadius: '999px',
+                  background: 'var(--surface)', border: '1px solid ' + lang.accentHex + '33',
+                  boxShadow: '0 4px 14px rgba(24,24,27,0.05)', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                }}>
+                  <span style={{ fontSize: '17px', fontWeight: 700, color: lang.accentHex, fontFamily: lang.font }}>{lang.nativeName}</span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>{SYSTEM_LABELS[lang.key]}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Product mocks */}

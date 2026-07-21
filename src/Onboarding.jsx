@@ -18,11 +18,19 @@ function initialPrefill() {
   return p && LANGUAGES[p.language] ? p : null
 }
 
+// The languages onboarding offers. With non-Chinese tracks paused this is a
+// single language, so we skip the picker step and start on "What's your level?"
+// pre-selected. Un-pausing a track (see languageTheme.js) restores the picker
+// automatically — SOLO_LANGUAGE goes null and the language step reappears.
+const ONBOARDING_LANGUAGES = availableLanguages(false)
+const SOLO_LANGUAGE = ONBOARDING_LANGUAGES.length === 1 ? ONBOARDING_LANGUAGES[0].key : null
+
 export default function Onboarding({ session, onComplete }) {
-  // If the visitor picked a language before signing up, skip the language step
-  // and land on "What's your level?" already set up — the choice carries over.
-  const [step, setStep] = useState(() => (initialPrefill() ? 2 : 1))
-  const [language, setLanguage] = useState(() => initialPrefill()?.language || null)
+  // Skip the language step (start on "What's your level?") when the visitor
+  // already picked a language before signing up, OR when only one language is
+  // offered — in both cases the choice is already made.
+  const [step, setStep] = useState(() => (initialPrefill() || SOLO_LANGUAGE ? 2 : 1))
+  const [language, setLanguage] = useState(() => initialPrefill()?.language || SOLO_LANGUAGE || null)
   const [level, setLevel] = useState(null)
   const [tier, setTier] = useState(null)         // selected tier { key, level, test }
   const [placement, setPlacement] = useState(false)  // showing the placement test
@@ -39,11 +47,10 @@ export default function Onboarding({ session, onComplete }) {
   // Consume the pre-login prefs once so returning to onboarding later starts clean.
   useEffect(() => { clearPreloginPrefs() }, [])
 
-  // Data-driven: the language cards + level grid come from the shared config, so
-  // adding a language needs no changes here. New signups get the public set
-  // (Chinese-only); gated tracks are added later from the switcher on an admin
-  // account, so onboarding never needs the admin flag here.
-  const languages = availableLanguages(false)
+  // Data-driven: the language cards + level grid come from the shared config.
+  // New signups get the public set (Chinese-only); un-pausing a track restores
+  // the picker automatically.
+  const languages = ONBOARDING_LANGUAGES
   const selectedTheme = language ? languageTheme(language) : null
   const accentHex = selectedTheme ? selectedTheme.accentHex : '#B83A24'
 
@@ -145,9 +152,10 @@ export default function Onboarding({ session, onComplete }) {
         boxShadow: '0 4px 40px rgba(0,0,0,0.10)',
         padding: '40px 40px 36px',
       }}>
-        {/* Progress dots */}
+        {/* Progress dots — the language step (1) is hidden when only one
+            language is offered, so the dots start at the level step. */}
         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '32px' }}>
-          {[1, 2, 3, 4].map(n => (
+          {(SOLO_LANGUAGE ? [2, 3, 4] : [1, 2, 3, 4]).map(n => (
             <div key={n} style={{
               width: step === n ? '24px' : '8px',
               height: '8px',
@@ -256,6 +264,15 @@ export default function Onboarding({ session, onComplete }) {
               />
             ) : (
               <>
+                {/* Solo-language direct signups skip the branded step 1, so give
+                    the level step a compact welcome. Pre-login users already saw
+                    the brand on the landing wizard (they have a greeting). */}
+                {SOLO_LANGUAGE && !greeting && (
+                  <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                    <img src={logo} alt={BRAND_NAME} style={{ width: '44px', height: '44px', objectFit: 'contain', marginBottom: '4px' }} />
+                    <div style={{ ...heroWordmarkStyle('30px'), margin: 0 }}>{BRAND_NAME}</div>
+                  </div>
+                )}
                 {greeting && (
                   <div style={{
                     fontSize: '13px', color: accentHex, fontWeight: 650, textAlign: 'center',
@@ -278,7 +295,7 @@ export default function Onboarding({ session, onComplete }) {
                   </div>
                 ) : tiers.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6 }}>
-                    Content for {selectedTheme.languageName} is coming soon. Please pick another language for now.
+                    Content for {selectedTheme.languageName} is coming soon — check back shortly.
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -332,7 +349,9 @@ export default function Onboarding({ session, onComplete }) {
                 )}
 
                 <div style={{ display: 'flex', gap: '12px', marginTop: '28px' }}>
-                  <button onClick={() => { setStep(1); setTier(null); setLevel(null) }} style={backBtn}>Back</button>
+                  {!SOLO_LANGUAGE && (
+                    <button onClick={() => { setStep(1); setTier(null); setLevel(null) }} style={backBtn}>Back</button>
+                  )}
                   <button
                     onClick={() => {
                       if (!tier) return
