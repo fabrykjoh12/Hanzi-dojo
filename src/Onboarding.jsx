@@ -5,6 +5,8 @@ import { track, EVENTS } from './analytics'
 import { availableLanguages, languageTheme, LANGUAGES } from './languageTheme'
 import { resolveTiers, TIER_META } from './tiers'
 import { readPreloginPrefs, clearPreloginPrefs, encouragementFor } from './prelogin'
+import { daysToWords } from './onboardingGoal'
+import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
 import PlacementTest from './PlacementTest'
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
@@ -37,6 +39,9 @@ export default function Onboarding({ session, onComplete }) {
   const [goal, setGoal] = useState(10)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  // Tier 2's word threshold for the chosen language — the "next library" the
+  // goal step projects a days-to-unlock estimate against.
+  const nextLibraryWords = (CATEGORIES_BY_LANGUAGE[language] || [])[1]?.minWords || 100
   // A one-line, reason-aware greeting shown atop the level step for pre-login users.
   const [greeting] = useState(() => {
     const p = initialPrefill()
@@ -418,6 +423,9 @@ export default function Onboarding({ session, onComplete }) {
                       {opt.label}
                     </div>
                     <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>{opt.desc}</div>
+                    <div style={{ fontSize: '12px', color: accentHex, fontWeight: 650, marginTop: '2px' }}>
+                      ~{daysToWords(opt.val, nextLibraryWords)} days to unlock more stories
+                    </div>
                   </div>
                   <div style={{ fontSize: '13px', fontWeight: 500, color: goal === opt.val ? accentHex : 'var(--text-muted)' }}>
                     {opt.cards}
