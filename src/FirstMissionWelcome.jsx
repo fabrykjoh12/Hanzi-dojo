@@ -4,6 +4,7 @@ import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 import { FIRST_MISSION_WELCOME } from './firstMission'
 import { ArrowRight } from 'lucide-react'
+import { readPreloginPrefs, tastedWordsLine } from './prelogin'
 
 const SAGE = '#6E8466'
 const SAGE_DARK = '#5C7155'
@@ -13,6 +14,7 @@ const SAGE_DARK = '#5C7155'
 // (guided) first study session.
 export default function FirstMissionWelcome({ onStart }) {
   const [hovered, setHovered] = useState(false)
+  const tastedLine = tastedWordsLine(readPreloginPrefs()?.tastedWords)
 
   return (
     <div style={{
@@ -33,6 +35,11 @@ export default function FirstMissionWelcome({ onStart }) {
         <h1 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.01em', margin: '0 0 18px' }}>
           {FIRST_MISSION_WELCOME.title}
         </h1>
+        {tastedLine && (
+          <p style={{ textAlign: 'center', color: '#B83A24', fontSize: '14px', fontWeight: 650, margin: '0 0 12px' }}>
+            {tastedLine}
+          </p>
+        )}
         <div style={{ fontSize: '16px', color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: '34px' }}>
           {FIRST_MISSION_WELCOME.body.map((line, i) => (
             <p key={i} style={{ margin: '0 0 4px' }}>{line}</p>
