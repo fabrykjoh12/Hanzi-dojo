@@ -15,6 +15,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] Between features — pick the next item from the plan below.
 
 **Just shipped**
+- [x] Read real Chinese before you sign up: an interactive first-sentence onboarding (tap words for pinyin, meaning, and audio; a "you understand %" meter) themed to why you're learning, ending in your first characters learned
 - [x] HSK 3-6 vocabulary: ~1,870 more Chinese words to study, search, and test (with example sentences and audio)
 - [x] Pleco-style dictionary: search 120k+ Chinese words with tone colors, character breakdown, and example sentences
 - [x] Save any dictionary word to your deck (even words outside your level)
