@@ -63,12 +63,10 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] **Browse by interest** — topic tags, plus multi-chapter serials with recurring characters so vocabulary recycles across an arc.
 - [ ] **A fresh story every day** — *delivered by a gentle nudge* (push reminder) is still to do; the in-app daily pick has shipped.
 - [ ] **Stories for HSK 3-6** — the vocabulary, example sentences, and audio have shipped; graded stories for these levels are the missing piece (pending a higher LLM quota).
-- [ ] **Pleco-style dictionary for Japanese** — a full reference dictionary (JMdict) with kanji/kana lookup, readings, and example sentences, like the Chinese one.
 - [ ] Expand Chinese into **HSK 7-9** (the advanced band).
-- [ ] More levels for **Japanese** (JLPT N4+) and **Russian** (A2+); more graded stories at every level.
+- [ ] **More graded stories at every level** — greater depth and variety across the whole HSK band.
 - [ ] **Pictures on flashcards** — a visual memory hook alongside the word.
 - [ ] **Higher-quality TTS voices** — research + regenerate more natural narration.
-- [ ] **Spanish** track (future).
 
 **Reading & video**
 - [ ] **Graded YouTube** — turn any video into a lesson matched to your vocabulary: see "% you'll understand," tap words in a transcript synced to playback, pre-learn the key new words, then watch.
@@ -82,7 +80,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] **A mastery ladder** — words you've truly locked in reach a permanent "mastered" state (the reward is real progress, not a number).
 
 **Let the product introduce itself (growth)**
-- [ ] **Free public level test** — an open-web HSK / JLPT / CEFR placement quiz that ends in a shareable result and "your first stories are ready" (builds on "How much can you read?").
+- [ ] **Free public level test** — an open-web HSK placement quiz that ends in a shareable result and "your first stories are ready" (builds on "How much can you read?").
 - [ ] **Word & story pages on the open web** — look up any word or read a taster, then sign up free to keep going.
 - [ ] **Weekly progress email** — "you can now read N% more."
 - [ ] **Give-a-friend** — share a month of Pro, get a month.
@@ -135,7 +133,6 @@ so the community always sees the latest. Keep it current — move things to
 - [x] **Practice from what you just read** — finish a story and drill its new words with fill-in-the-blank.
 - [x] **More accurate Chinese pronunciation** — pinyin-guided audio so tricky multi-reading characters (长, 行, 银行, 重, 觉 …) are spoken correctly (all HSK vocab re-recorded).
 - [x] **Understand-check after every story** — a few quick comprehension questions at the end of a story, in every reading format (paced, chat, scene, and reply).
-- [x] **More accurate Japanese vocabulary** — N5 flashcards and example sentences now show the correct kanji (去年, 部屋, 映画, 病院 …) instead of kana
 - [x] **Interactive chat stories** — reply inside a chat story by picking the right response (retry until it clicks); your choice becomes your message and the conversation keeps going
 - [x] **Scene stories** — read a story as a picture-book: each beat is a big emoji illustration above one short line, revealed a tap at a time (with the same read-along audio and tap-a-word lookup as every story)
 - [x] **Chat-format stories** — read a story as a messaging conversation that reveals one bubble at a time (tap to continue), with the same read-along audio and tap-a-word lookup as every story

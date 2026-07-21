@@ -64,15 +64,15 @@ export const DEFAULT_LANGUAGE = 'chinese'
 // Display order for language pickers (Onboarding, LanguageSwitcher).
 export const LANGUAGE_ORDER = ['chinese', 'japanese', 'russian']
 
-// Languages offered to everyone. The public product is Chinese-only; the other
-// tracks are gated behind an account flag (see availableLanguages) so they don't
-// show up in onboarding, the landing wizard, or the switcher for regular users.
+// Languages offered to everyone. The product is fully focused on Chinese; the
+// other tracks (Japanese, Russian) are paused until the app has scaled, so they
+// don't show up in onboarding, the landing wizard, or the switcher.
 export const PUBLIC_LANGUAGES = ['chinese']
 
-// Languages an admin account additionally sees. Kept to Chinese + Japanese so
-// the personal/admin experience stays focused (Russian stays hidden until it's
-// wanted + seeded); widen this list to expose more tracks to admins.
-export const ADMIN_LANGUAGES = ['chinese', 'japanese']
+// Languages an admin account additionally sees. Japanese/Russian are paused, so
+// this is Chinese-only too for now. To un-pause a track later, add its key here
+// (e.g. 'japanese') — the gate + pickers pick it up automatically.
+export const ADMIN_LANGUAGES = ['chinese']
 
 // Resolve a language config, falling back to the default for unknown values.
 export function languageTheme(language) {

@@ -37,15 +37,14 @@ describe('availableLanguages (account gating)', () => {
     expect(langs.map(l => l.key)).toEqual(['chinese'])
   })
 
-  it('offers Chinese + Japanese (not Russian) to admin accounts', () => {
+  it('offers only Chinese to admin accounts too (Japanese/Russian paused)', () => {
     const langs = availableLanguages(true)
-    expect(langs.map(l => l.key)).toEqual(['chinese', 'japanese'])
+    expect(langs.map(l => l.key)).toEqual(['chinese'])
   })
 
-  it('preserves LANGUAGE_ORDER and returns real config objects', () => {
+  it('returns real config objects', () => {
     const langs = availableLanguages(true)
     expect(langs.every(l => typeof l.nativeName === 'string')).toBe(true)
-    // Chinese always comes before Japanese (display order).
     expect(langs[0].key).toBe('chinese')
   })
 })
