@@ -4,7 +4,7 @@ import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 import { FIRST_MISSION_WELCOME } from './firstMission'
 import { ArrowRight } from 'lucide-react'
-import { readPreloginPrefs, tastedWordsLine } from './prelogin'
+import { tastedWordsLine } from './prelogin'
 
 const SAGE = '#6E8466'
 const SAGE_DARK = '#5C7155'
@@ -12,9 +12,9 @@ const SAGE_DARK = '#5C7155'
 // The single welcome screen of the First Mission. One calm message, one CTA —
 // no skip, no secondary actions, no navigation. It hands straight off to the
 // (guided) first study session.
-export default function FirstMissionWelcome({ onStart }) {
+export default function FirstMissionWelcome({ onStart, tastedWords }) {
   const [hovered, setHovered] = useState(false)
-  const tastedLine = tastedWordsLine(readPreloginPrefs()?.tastedWords)
+  const tastedLine = tastedWordsLine(tastedWords)
 
   return (
     <div style={{

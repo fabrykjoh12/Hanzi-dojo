@@ -47,6 +47,9 @@ export default function Onboarding({ session, onComplete }) {
     const p = initialPrefill()
     return p ? encouragementFor(p.language, p.reason, languageTheme(p.language).languageName) : null
   })
+  // Captured during render (before the clear effect below) so the value survives
+  // to be handed to the first-session welcome after onboarding completes.
+  const [tastedWords] = useState(() => readPreloginPrefs()?.tastedWords || [])
 
   useEffect(() => { track(EVENTS.ONBOARDING_STARTED) }, [])
   // Consume the pre-login prefs once so returning to onboarding later starts clean.
@@ -116,7 +119,7 @@ export default function Onboarding({ session, onComplete }) {
       if (trackError) throw trackError
 
       track(EVENTS.ONBOARDING_COMPLETED, { language, level, goal })
-      onComplete()
+      onComplete(tastedWords)
     } catch (e) {
       setError(e.message)
       setSaving(false)

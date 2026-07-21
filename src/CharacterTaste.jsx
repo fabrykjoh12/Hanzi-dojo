@@ -12,7 +12,13 @@ export default function CharacterTaste({ words, sentenceId, accentHex, onDone })
   const w = words[idx]
   const chars = splitHanziWithTones(w.hanzi, w.pinyin)
 
-  const show = () => { setShown(true); playStarterWord(audioRef.current, sentenceId, null, w.hanzi) }
+  const show = () => {
+    setShown(true)
+    // wordIndex null → whole-sentence clip; charsToLearn doesn't carry the per-word
+    // index, so once clips exist this plays the sentence. Fine today (no clips yet →
+    // speak() fallback speaks the single character). Carry the index if per-word audio ships.
+    playStarterWord(audioRef.current, sentenceId, null, w.hanzi)
+  }
   const next = () => {
     if (idx + 1 >= words.length) { onDone(); return }
     setIdx(idx + 1); setShown(false)

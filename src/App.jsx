@@ -80,6 +80,11 @@ export default function App() {
   // to the guided first session; and carried into the reader (via the deep-link)
   // for the "first story" reading hint + completion line.
   const [justOnboarded, setJustOnboarded] = useState(false)
+  // Words the user tasted during onboarding's pre-login taste flow (if any),
+  // captured on completion so the first-session welcome can reference them —
+  // Onboarding clears the pre-login prefs itself on mount, so it can't be read
+  // back out of storage afterward.
+  const [justTastedWords, setJustTastedWords] = useState([])
   const [pendingStoryFirstMission, setPendingStoryFirstMission] = useState(false)
   // True while the user arrived via a password-recovery email link and hasn't
   // set a new password yet (Supabase signs them in and fires PASSWORD_RECOVERY).
@@ -268,7 +273,7 @@ export default function App() {
     return (
       <>
         <Background language="chinese" />
-        <Onboarding session={session} onComplete={() => { loadProfile(session.user.id); setJustOnboarded(true) }} />
+        <Onboarding session={session} onComplete={(tastedWords) => { loadProfile(session.user.id); setJustOnboarded(true); setJustTastedWords(tastedWords || []) }} />
       </>
     )
   }
@@ -279,7 +284,7 @@ export default function App() {
     return (
       <>
         <Background language={profile.active_language} />
-        <FirstMissionWelcome onStart={() => { trackOnce(EVENTS.FIRST_MISSION_STARTED); setJustOnboarded(false); navigate('study') }} />
+        <FirstMissionWelcome tastedWords={justTastedWords} onStart={() => { trackOnce(EVENTS.FIRST_MISSION_STARTED); setJustOnboarded(false); navigate('study') }} />
       </>
     )
   }
