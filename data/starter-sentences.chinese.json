@@ -1,0 +1,105 @@
+{
+  "travel": [
+    {
+      "id": "travel-1",
+      "hanzi": "这个多少钱？",
+      "translation": "How much is this?",
+      "words": [
+        { "hanzi": "这个", "pinyin": "zhège", "gloss": "this one" },
+        { "hanzi": "多少", "pinyin": "duōshao", "gloss": "how much" },
+        { "hanzi": "钱", "pinyin": "qián", "gloss": "money" },
+        { "hanzi": "？", "pinyin": "", "gloss": "", "punct": true }
+      ],
+      "learn": ["钱"]
+    }
+  ],
+  "family": [
+    {
+      "id": "family-1",
+      "hanzi": "我爱我的家。",
+      "translation": "I love my family.",
+      "words": [
+        { "hanzi": "我", "pinyin": "wǒ", "gloss": "I" },
+        { "hanzi": "爱", "pinyin": "ài", "gloss": "love" },
+        { "hanzi": "我的", "pinyin": "wǒde", "gloss": "my" },
+        { "hanzi": "家", "pinyin": "jiā", "gloss": "home, family" },
+        { "hanzi": "。", "pinyin": "", "gloss": "", "punct": true }
+      ],
+      "learn": ["爱", "家", "我"]
+    }
+  ],
+  "work": [
+    {
+      "id": "work-1",
+      "hanzi": "我在学中文。",
+      "translation": "I'm learning Chinese.",
+      "words": [
+        { "hanzi": "我", "pinyin": "wǒ", "gloss": "I" },
+        { "hanzi": "在", "pinyin": "zài", "gloss": "(in the middle of)" },
+        { "hanzi": "学", "pinyin": "xué", "gloss": "study, learn" },
+        { "hanzi": "中文", "pinyin": "zhōngwén", "gloss": "Chinese" },
+        { "hanzi": "。", "pinyin": "", "gloss": "", "punct": true }
+      ],
+      "learn": ["学", "我", "在"]
+    }
+  ],
+  "exam": [
+    {
+      "id": "exam-1",
+      "hanzi": "我要考试。",
+      "translation": "I have an exam.",
+      "words": [
+        { "hanzi": "我", "pinyin": "wǒ", "gloss": "I" },
+        { "hanzi": "要", "pinyin": "yào", "gloss": "will, need to" },
+        { "hanzi": "考试", "pinyin": "kǎoshì", "gloss": "exam, test" },
+        { "hanzi": "。", "pinyin": "", "gloss": "", "punct": true }
+      ],
+      "learn": ["要", "我"]
+    }
+  ],
+  "culture": [
+    {
+      "id": "culture-1",
+      "hanzi": "我喜欢中国电影。",
+      "translation": "I like Chinese movies.",
+      "words": [
+        { "hanzi": "我", "pinyin": "wǒ", "gloss": "I" },
+        { "hanzi": "喜欢", "pinyin": "xǐhuan", "gloss": "like" },
+        { "hanzi": "中国", "pinyin": "zhōngguó", "gloss": "China" },
+        { "hanzi": "电影", "pinyin": "diànyǐng", "gloss": "movie" },
+        { "hanzi": "。", "pinyin": "", "gloss": "", "punct": true }
+      ],
+      "learn": ["我", "喜欢", "电影"]
+    }
+  ],
+  "curious": [
+    {
+      "id": "curious-1",
+      "hanzi": "学中文很有意思。",
+      "translation": "Learning Chinese is interesting.",
+      "words": [
+        { "hanzi": "学", "pinyin": "xué", "gloss": "study, learn" },
+        { "hanzi": "中文", "pinyin": "zhōngwén", "gloss": "Chinese" },
+        { "hanzi": "很", "pinyin": "hěn", "gloss": "very" },
+        { "hanzi": "有意思", "pinyin": "yǒuyìsi", "gloss": "interesting" },
+        { "hanzi": "。", "pinyin": "", "gloss": "", "punct": true }
+      ],
+      "learn": ["学", "很"]
+    }
+  ],
+  "default": [
+    {
+      "id": "default-1",
+      "hanzi": "我喜欢学中文。",
+      "translation": "I like learning Chinese.",
+      "words": [
+        { "hanzi": "我", "pinyin": "wǒ", "gloss": "I" },
+        { "hanzi": "喜欢", "pinyin": "xǐhuan", "gloss": "like" },
+        { "hanzi": "学", "pinyin": "xué", "gloss": "study, learn" },
+        { "hanzi": "中文", "pinyin": "zhōngwén", "gloss": "Chinese" },
+        { "hanzi": "。", "pinyin": "", "gloss": "", "punct": true }
+      ],
+      "learn": ["学", "我", "喜欢"]
+    }
+  ]
+}
