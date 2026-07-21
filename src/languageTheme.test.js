@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { languageTheme, languageList, isCjk, DEFAULT_LANGUAGE } from './languageTheme'
+import { languageTheme, languageList, availableLanguages, isCjk, DEFAULT_LANGUAGE } from './languageTheme'
 import { getLevelLabel, getSystemLabel, getLevels } from './utils'
 
 describe('languageTheme', () => {
@@ -28,6 +28,25 @@ describe('languageTheme', () => {
     expect(isCjk('chinese')).toBe(true)
     expect(isCjk('japanese')).toBe(true)
     expect(isCjk('russian')).toBe(false)
+  })
+})
+
+describe('availableLanguages (account gating)', () => {
+  it('offers only Chinese to regular accounts', () => {
+    const langs = availableLanguages(false)
+    expect(langs.map(l => l.key)).toEqual(['chinese'])
+  })
+
+  it('offers Chinese + Japanese (not Russian) to admin accounts', () => {
+    const langs = availableLanguages(true)
+    expect(langs.map(l => l.key)).toEqual(['chinese', 'japanese'])
+  })
+
+  it('preserves LANGUAGE_ORDER and returns real config objects', () => {
+    const langs = availableLanguages(true)
+    expect(langs.every(l => typeof l.nativeName === 'string')).toBe(true)
+    // Chinese always comes before Japanese (display order).
+    expect(langs[0].key).toBe('chinese')
   })
 })
 

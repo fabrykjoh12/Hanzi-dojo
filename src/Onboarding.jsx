@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, getLevels } from './utils'
 import { track, EVENTS } from './analytics'
-import { languageList, languageTheme, LANGUAGES } from './languageTheme'
+import { availableLanguages, languageTheme, LANGUAGES } from './languageTheme'
 import { resolveTiers, TIER_META } from './tiers'
 import { readPreloginPrefs, clearPreloginPrefs, encouragementFor } from './prelogin'
 import PlacementTest from './PlacementTest'
@@ -40,8 +40,10 @@ export default function Onboarding({ session, onComplete }) {
   useEffect(() => { clearPreloginPrefs() }, [])
 
   // Data-driven: the language cards + level grid come from the shared config, so
-  // adding a language needs no changes here.
-  const languages = languageList()
+  // adding a language needs no changes here. New signups get the public set
+  // (Chinese-only); gated tracks are added later from the switcher on an admin
+  // account, so onboarding never needs the admin flag here.
+  const languages = availableLanguages(false)
   const selectedTheme = language ? languageTheme(language) : null
   const accentHex = selectedTheme ? selectedTheme.accentHex : '#B83A24'
 

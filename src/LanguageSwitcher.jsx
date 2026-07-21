@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, getLevels } from './utils'
-import { languageList } from './languageTheme'
+import { languageList, availableLanguages } from './languageTheme'
 import { isMastered } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import { ArrowLeft, ArrowRight, Globe2, Plus } from 'lucide-react'
@@ -248,6 +248,16 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
 
   const activeLang = LANGUAGES.find(lang => lang.code === profile.active_language) || LANGUAGES[0]
 
+  // Which languages appear in the picker grid. Regular accounts see the public
+  // set (Chinese-only); admins additionally see the gated tracks. Any language
+  // the user already has a track in stays visible regardless, so an existing
+  // track is never orphaned. Display lookups above still use the full LANGUAGES
+  // list so any code resolves.
+  const allowedCodes = new Set(availableLanguages(!!profile?.is_admin).map(l => l.key))
+  const visibleLanguages = LANGUAGES.filter(
+    l => allowedCodes.has(l.code) || tracks.some(t => t.language === l.code)
+  )
+
   async function loadTracks() {
     setLoading(true)
 
@@ -485,7 +495,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
       </div>
 
       <div style={{ display: 'grid', gap: '14px' }}>
-        {LANGUAGES.map(lang => {
+        {visibleLanguages.map(lang => {
           const track = tracks.find(t => t.language === lang.code)
           const levelProgress = progress[lang.code]
           const prog = levelProgress?.[track?.current_level]

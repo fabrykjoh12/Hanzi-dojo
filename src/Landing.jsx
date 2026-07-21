@@ -4,7 +4,7 @@ import { track, EVENTS } from './analytics'
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
-import { languageList, languageTheme } from './languageTheme'
+import { availableLanguages, languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { REASONS, encouragementFor, savePreloginPrefs } from './prelogin'
 import {
@@ -221,7 +221,10 @@ export default function Landing() {
   const [pickedLang, setPickedLang] = useState(null)
   const [pickedReason, setPickedReason] = useState(null)
   const isMobile = useIsMobile()
-  const languages = languageList()
+  // Pre-login: no account context yet, so the landing wizard always shows the
+  // public set (Chinese-only). Gated tracks appear after sign-in on an admin
+  // account via the language switcher.
+  const languages = availableLanguages(false)
 
   useEffect(() => { track(EVENTS.LANDING_VIEWED) }, [])
 
