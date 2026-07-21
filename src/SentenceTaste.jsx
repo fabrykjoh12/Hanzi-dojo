@@ -15,13 +15,12 @@ export default function SentenceTaste({ sentence, accentHex, onComplete, onSkip,
 
   const reveal = (i) => {
     const w = sentence.words[i]
-    if (w.punct) return
+    if (w.punct || revealed.has(i)) return
     playStarterWord(audioRef.current, sentence.id, i, w.hanzi)
+    if (onWordReveal) onWordReveal(i)
     setRevealed(prev => {
-      if (prev.has(i)) return prev
       const next = new Set(prev)
       next.add(i)
-      if (onWordReveal) onWordReveal(i)
       return next
     })
   }
