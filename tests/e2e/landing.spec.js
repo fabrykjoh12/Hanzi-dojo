@@ -17,8 +17,9 @@ test.describe('Landing (logged out)', () => {
 // The pre-login wizard: with Chinese as the only public language, the CTA
 // skips straight to the reason step (no language picker, no hero chips — see
 // Landing.jsx's soloLang short-circuit). Picking a reason then leads through
-// the wow-moment taste (a sentence, then its characters) before signup, and
-// those choices personalize the signup screen.
+// the wow-moment taste (read a real sentence) straight to signup — no separate
+// "learn the characters" replay step, since the words are already revealed by
+// the taste itself. Those choices personalize the signup screen.
 test.describe('Pre-login onboarding wizard', () => {
   test('CTA → reason → taste → personalized signup', async ({ page }) => {
     await page.goto('/');
@@ -28,18 +29,11 @@ test.describe('Pre-login onboarding wizard', () => {
     await expect(page.getByRole('heading', { name: /Why are you learning Chinese/i })).toBeVisible();
     await page.getByRole('button', { name: /Pass an exam/i }).click();
 
-    // Sentence taste: reveal all, confirm the wow-moment completion line.
+    // Sentence taste: reveal all, confirm the wow-moment completion line, then
+    // go straight on — no separate character-replay screen.
     await page.getByRole('button', { name: /Reveal all/i }).click();
     await expect(page.getByText(/You just read your first Chinese sentence/i)).toBeVisible();
-    await page.getByRole('button', { name: /Learn these characters/i }).click();
-
-    // Character taste: step through each card (Show → Got it, tolerant of count).
-    for (let i = 0; i < 5; i++) {
-      const show = page.getByRole('button', { name: /^Show$/i });
-      if (!(await show.isVisible().catch(() => false))) break;
-      await show.click();
-      await page.getByRole('button', { name: /Got it →|Done →/i }).click();
-    }
+    await page.getByRole('button', { name: /Save these words/i }).click();
 
     // Auth screen: Sign-up tab active + personalized, exam-aware intro.
     await expect(page.getByText(/HSK/)).toBeVisible();

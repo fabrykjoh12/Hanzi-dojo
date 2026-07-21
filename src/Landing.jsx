@@ -6,7 +6,6 @@ import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 import { availableLanguages, languageTheme } from './languageTheme'
 import SentenceTaste from './SentenceTaste'
-import CharacterTaste from './CharacterTaste'
 import { sentenceForReason, charsToLearn } from './starterSentences'
 import { FLAGS } from './flags'
 import { useIsMobile } from './useIsMobile'
@@ -272,16 +271,14 @@ export default function Landing() {
     }
   }
 
-  // Finished the sentence → go learn its characters.
-  const finishTaste = () => {
-    track(EVENTS.TASTE_COMPLETED, { reason: pickedReason })
-    setMode('learn')
-  }
-
-  // Finished the character taste (or skipped) → persist tasted words + go to auth.
-  const finishLearn = (tastedWords) => {
-    savePreloginPrefs({ language: pickedLang, reason: pickedReason, tastedWords: tastedWords || [] })
-    if (tastedWords && tastedWords.length) track(EVENTS.CHARS_TASTE_COMPLETED, { reason: pickedReason, count: tastedWords.length })
+  // Finished the sentence (fully revealed) or skipped it → the words tapped
+  // are already "learned" (pinyin + gloss + audio all shown), so there's no
+  // separate character-replay step. Persist them for the post-signup welcome
+  // and go straight to signup.
+  const finishTaste = (revealed) => {
+    const tastedWords = revealed ? charsToLearn(sentenceForReason(pickedReason)).map(w => w.hanzi) : []
+    savePreloginPrefs({ language: pickedLang, reason: pickedReason, tastedWords })
+    track(EVENTS.TASTE_COMPLETED, { reason: pickedReason, revealed: !!revealed, count: tastedWords.length })
     track(EVENTS.PRELOGIN_SIGNUP_STARTED, { language: pickedLang, reason: pickedReason })
     setMode('auth')
   }
@@ -345,25 +342,8 @@ export default function Landing() {
           sentence={sentence}
           accentHex="#B83A24"
           onWordReveal={() => track(EVENTS.TASTE_WORD_REVEALED, { reason: pickedReason })}
-          onComplete={finishTaste}
-          onSkip={() => finishLearn([])}
-        />
-      </WizardShell>
-    )
-  }
-
-  if (mode === 'learn') {
-    const sentence = sentenceForReason(pickedReason)
-    const words = charsToLearn(sentence)
-    return (
-      <WizardShell isMobile={isMobile} back={() => setMode('taste')}
-        title="Learn these characters"
-        subtitle="Keep them with a free account.">
-        <CharacterTaste
-          words={words}
-          sentenceId={sentence.id}
-          accentHex="#B83A24"
-          onDone={() => finishLearn(words.map(w => w.hanzi))}
+          onComplete={() => finishTaste(true)}
+          onSkip={() => finishTaste(false)}
         />
       </WizardShell>
     )
@@ -448,7 +428,7 @@ export default function Landing() {
             background: '#6E846614', border: '1px solid #6E846630',
             color: SAGE_DARK, fontSize: '12.5px', fontWeight: 700, marginBottom: '22px',
           }}>
-            Reading-first Chinese, Japanese & Russian
+            Reading-first Chinese
           </div>
           <h1 style={{
             fontSize: isMobile ? '34px' : '46px', fontWeight: 800, color: 'var(--text)',

@@ -27,7 +27,6 @@ export const EVENTS = {
   TASTE_SHOWN: 'taste_shown',
   TASTE_WORD_REVEALED: 'taste_word_revealed',
   TASTE_COMPLETED: 'taste_completed',
-  CHARS_TASTE_COMPLETED: 'chars_taste_completed',
   SIGNUP_STARTED: 'signup_started',
   SIGNUP_COMPLETED: 'signup_completed',
   // Public story links (pre-auth, anonymous funnel)

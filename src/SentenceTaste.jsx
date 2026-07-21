@@ -42,7 +42,7 @@ export default function SentenceTaste({ sentence, accentHex, onComplete, onSkip,
       {/* Word chips */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginBottom: '20px' }}>
         {sentence.words.map((w, i) => {
-          if (w.punct) return <span key={i} style={{ fontSize: '30px', color: 'var(--text)', alignSelf: 'flex-end' }}>{w.hanzi}</span>
+          if (w.punct) return <span key={i} style={{ fontSize: '30px', color: 'var(--text)', alignSelf: 'center' }}>{w.hanzi}</span>
           const isOpen = revealed.has(i)
           const chars = splitHanziWithTones(w.hanzi, w.pinyin)
           return (
@@ -84,7 +84,7 @@ export default function SentenceTaste({ sentence, accentHex, onComplete, onSkip,
             🎉 You just read your first Chinese sentence.
           </p>
           <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: '0 0 20px' }}>{sentence.translation}</p>
-          <button onClick={onComplete} style={primaryBtn(accentHex)}>Learn these characters →</button>
+          <button onClick={onComplete} style={primaryBtn(accentHex)}>Save these words →</button>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>

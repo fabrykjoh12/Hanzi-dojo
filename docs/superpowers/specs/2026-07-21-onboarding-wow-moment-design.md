@@ -2,6 +2,18 @@
 
 **Status:** Design approved 2026-07-21. Ready for implementation plan.
 
+> **AMENDMENT (2026-07-21, post-ship):** The separate "learn 3 characters"
+> step (originally step 4, `CharacterTaste`) was cut after a real click-through
+> found it purely redundant — it re-showed the exact same word/pinyin/gloss/
+> audio the learner had just revealed in the sentence taste, seconds earlier.
+> The sentence taste's own reveal-to-100% already **is** the character-learning
+> moment. Flow is now: taste (read the sentence) → straight to signup, with
+> the featured `learn` words from `charsToLearn` still captured as
+> `tastedWords` for the post-signup welcome line — no UI screen needed for
+> that. `CharacterTaste.jsx` was deleted (dead code); `CHARS_TASTE_COMPLETED`
+> folded into `TASTE_COMPLETED`'s props. This shortens the pre-signup funnel
+> by one step and removes the repetition that made the flow feel padded.
+
 ## Goal
 
 Replace the current tell-then-commit onboarding with a **do-the-magic-first** flow.
