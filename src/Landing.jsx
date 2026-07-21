@@ -5,6 +5,10 @@ import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 import { availableLanguages, languageTheme } from './languageTheme'
+import SentenceTaste from './SentenceTaste'
+import CharacterTaste from './CharacterTaste'
+import { sentenceForReason, charsToLearn } from './starterSentences'
+import { FLAGS } from './flags'
 import { useIsMobile } from './useIsMobile'
 import { REASONS, encouragementFor, savePreloginPrefs } from './prelogin'
 import {
@@ -215,9 +219,11 @@ function MethodCard({ icon: Icon, title, children, accent }) {
 // product is, who it's for, and why it's different — then hands off to the
 // existing Auth screen. Returning users get there in one click ("Log in").
 export default function Landing() {
-  // Flow: landing → pick a language → why you're learning → auth (signup).
-  // "Log in" jumps straight to auth for returning users (no wizard).
-  const [mode, setMode] = useState('landing')   // 'landing' | 'lang' | 'why' | 'auth'
+  // Flow: landing → pick a language → why you're learning → taste a sentence →
+  // learn its characters → auth (signup), when FLAGS.WOW_ONBOARDING is on
+  // ("why" jumps straight to auth otherwise). "Log in" jumps straight to auth
+  // for returning users (no wizard).
+  const [mode, setMode] = useState('landing')   // 'landing' | 'lang' | 'why' | 'taste' | 'learn' | 'auth'
   const [pickedLang, setPickedLang] = useState(null)
   const [pickedReason, setPickedReason] = useState(null)
   const isMobile = useIsMobile()
@@ -257,7 +263,26 @@ export default function Landing() {
     track(EVENTS.PRELOGIN_REASON_PICKED, { language: pickedLang, reason: reasonKey })
     // Persist for the post-signup Onboarding to pre-fill language + greet by reason.
     savePreloginPrefs({ language: pickedLang, reason: reasonKey })
-    track(EVENTS.PRELOGIN_SIGNUP_STARTED, { language: pickedLang, reason: reasonKey })
+    if (FLAGS.WOW_ONBOARDING) {
+      track(EVENTS.TASTE_SHOWN, { reason: reasonKey })
+      setMode('taste')
+    } else {
+      track(EVENTS.PRELOGIN_SIGNUP_STARTED, { language: pickedLang, reason: reasonKey })
+      setMode('auth')
+    }
+  }
+
+  // Finished the sentence → go learn its characters.
+  const finishTaste = () => {
+    track(EVENTS.TASTE_COMPLETED, { reason: pickedReason })
+    setMode('learn')
+  }
+
+  // Finished the character taste (or skipped) → persist tasted words + go to auth.
+  const finishLearn = (tastedWords) => {
+    savePreloginPrefs({ language: pickedLang, reason: pickedReason, tastedWords: tastedWords || [] })
+    if (tastedWords && tastedWords.length) track(EVENTS.CHARS_TASTE_COMPLETED, { reason: pickedReason, count: tastedWords.length })
+    track(EVENTS.PRELOGIN_SIGNUP_STARTED, { language: pickedLang, reason: pickedReason })
     setMode('auth')
   }
 
@@ -306,6 +331,40 @@ export default function Landing() {
             </button>
           ))}
         </div>
+      </WizardShell>
+    )
+  }
+
+  if (mode === 'taste') {
+    const sentence = sentenceForReason(pickedReason)
+    return (
+      <WizardShell isMobile={isMobile} back={() => setMode('why')}
+        title="Read your first Chinese sentence"
+        subtitle="No account needed — just tap.">
+        <SentenceTaste
+          sentence={sentence}
+          accentHex="#B83A24"
+          onWordReveal={() => track(EVENTS.TASTE_WORD_REVEALED, { reason: pickedReason })}
+          onComplete={finishTaste}
+          onSkip={() => finishLearn([])}
+        />
+      </WizardShell>
+    )
+  }
+
+  if (mode === 'learn') {
+    const sentence = sentenceForReason(pickedReason)
+    const words = charsToLearn(sentence)
+    return (
+      <WizardShell isMobile={isMobile} back={() => setMode('taste')}
+        title="Learn these characters"
+        subtitle="Keep them with a free account.">
+        <CharacterTaste
+          words={words}
+          sentenceId={sentence.id}
+          accentHex="#B83A24"
+          onDone={() => finishLearn(words.map(w => w.hanzi))}
+        />
       </WizardShell>
     )
   }
@@ -399,9 +458,9 @@ export default function Landing() {
             Learn words. Unlock stories you can actually read.
           </h1>
           <p style={{ fontSize: isMobile ? '15px' : '17px', color: 'var(--text-muted)', lineHeight: 1.65, margin: '0 auto 28px', maxWidth: '560px' }}>
-            {BRAND_NAME} pairs FSRS flashcards with graded mini-stories matched to
-            your known vocabulary — so every study session turns into real reading,
-            not another streak.
+            Read real Chinese in your first minute. No streaks. No leagues. No
+            guilt — just real progress: {BRAND_NAME} pairs a proven memory engine
+            with graded stories matched to the words you know.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '14px' }}>
             <CtaButton big onClick={() => startWizard()}>Start your first story</CtaButton>

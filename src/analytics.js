@@ -24,6 +24,10 @@ export const EVENTS = {
   PRELOGIN_LANGUAGE_PICKED: 'prelogin_language_picked',
   PRELOGIN_REASON_PICKED: 'prelogin_reason_picked',
   PRELOGIN_SIGNUP_STARTED: 'prelogin_signup_started',
+  TASTE_SHOWN: 'taste_shown',
+  TASTE_WORD_REVEALED: 'taste_word_revealed',
+  TASTE_COMPLETED: 'taste_completed',
+  CHARS_TASTE_COMPLETED: 'chars_taste_completed',
   SIGNUP_STARTED: 'signup_started',
   SIGNUP_COMPLETED: 'signup_completed',
   // Public story links (pre-auth, anonymous funnel)
