@@ -88,21 +88,53 @@ rather than the Speech SDK: the pipeline is short-lived Node scripts, the SDK is
 built for streaming scenarios we do not have, and the repo already calls a TTS
 REST endpoint with plain `fetch`. **No new dependency was added.**
 
-Mandarin pronunciation is pinned with Azure's SAPI phone set, which spells
-readings as tone-numbered pinyin. `src/pinyin.js` already produces that shape for
-Google's alphabet; `ssml.js` reuses it and applies the one spelling difference
-(`u:` → `v`).
-
 ```xml
 <speak version="1.0" xmlns="…" xmlns:mstts="…" xml:lang="zh-CN">
   <voice name="zh-CN-XiaoxiaoNeural">
-    <prosody rate="-20%">我去<phoneme alphabet="sapi" ph="yin2 hang2">银行</phoneme>。</prosody>
+    <prosody rate="-20%">我今天去银行。</prosody>
   </voice>
 </speak>
 ```
 
 At rate `1.0` the `<prosody>` element is omitted entirely, keeping the common
 case's markup — and therefore its hash — minimal.
+
+### ⚠️ `<phoneme>` does not work on zh-CN
+
+Microsoft documents a zh-CN SAPI phone set (tone-numbered pinyin, `yin2 hang2`),
+and `src/pinyin.js` already produces exactly that shape. **The service rejects
+it anyway.** Measured against a live Speech resource:
+
+| request | result |
+|---|---|
+| `<phoneme alphabet="sapi">` on `zh-CN-XiaoxiaoNeural` | **400**, empty body |
+| same on `YunxiNeural`, `XiaoyiNeural`, `XiaoxiaoMultilingualNeural` | **400** |
+| same with `alphabet="ipa"` | **400** |
+| `<phoneme alphabet="ipa">` on `en-US-JennyNeural`, same resource and key | **200** |
+| `<sub>`, `<say-as>`, `<mstts:express-as>` on zh-CN | **200** |
+
+So the element is unsupported for Mandarin — not misconfigured, and not a
+credential or quota problem. Emitting it fails the entire request, which is far
+worse than an imperfect reading, so `LOCALE_CAPABILITIES` in `constants.js`
+records `{'zh-CN': {phoneme: false}}` and `ssml.js` skips the pin. When a pin is
+skipped the reported override version is `none`, which keeps the content hash
+honest: editing a pronunciation that *cannot* be expressed must not mark audio
+stale and buy a re-render of an identical sound.
+
+**This is a real capability gap versus the Google pipeline**, where
+`<phoneme alphabet="pinyin">` works and ships today. Azure's supported route for
+Mandarin is a **hosted custom lexicon**:
+
+```xml
+<lexicon uri="https://…/lexicon.xml"/>
+```
+
+an XML file of `<lexeme><grapheme>银行</grapheme><phoneme>yin2 hang2</phoneme></lexeme>`
+entries served from a public URL — which the existing public `audio` bucket can
+host. `tts_pronunciation_overrides` already holds exactly the data such a file
+needs, so this is a generator plus one SSML line, not a redesign. Not built yet;
+judge by ear first, since Azure's zh-CN voices do their own word-level analysis
+and may read common polyphones (银行, 长城, 觉得) correctly unaided.
 
 ---
 
@@ -299,9 +331,17 @@ character counts. `--json` adds one machine-readable summary line.
 
 ## 7. Pronunciation overrides
 
-Mandarin polyphones are the main source of wrong-sounding TTS. Two mechanisms:
+Mandarin polyphones are the main source of wrong-sounding TTS.
 
-1. **Automatic, per word.** A flashcard's *word* clips are pinned to
+> **Current status on Azure zh-CN: overrides are collected and stored, but not
+> applied**, because the service rejects `<phoneme>` for Mandarin (see §2). They
+> take effect the moment the custom-lexicon path lands, or on any provider that
+> supports pinning. Everything below describes data that is already correct and
+> in place — it is the delivery mechanism that is missing.
+
+Two sources feed the same table:
+
+1. **Automatic, per word.** A flashcard's *word* clips carry
    `vocabulary.reading` — the curriculum's own authoritative pinyin. Recorded as
    `verification: 'inferred'`, never `verified`.
 2. **The override table**, for sentences, stories and names.
@@ -399,6 +439,14 @@ existing controls.
 
 ## 11. Known limitations
 
+- **Pronunciation pinning is inactive on Chinese** — the highest-priority gap.
+  Azure rejects `<phoneme>` for zh-CN (§2), so the pinyin-guided readings that
+  the Google pipeline delivers today are not reproduced here. The next step is a
+  hosted custom lexicon. **Listen before backfilling the library**: if Azure's
+  own word-level analysis handles the common polyphones, the gap is cosmetic;
+  if it does not, build the lexicon first.
+- **Throttling is easy to hit.** Concurrency 3 drew steady 429s on a standard
+  resource, so the default is 2. Raise `TTS_CONCURRENCY` only if your tier allows.
 - **Chinese only.** `SUPPORTED_LOCALES` is `['zh-CN']`. Japanese and Russian keep
   the existing Google pipeline. Adding a language means a locale, a voice list
   and a pronunciation strategy — the interfaces are already language-agnostic.

@@ -116,6 +116,9 @@ paid generation happens without an explicit `--confirm`.
 - [ ] Apply `supabase/migrations/20260722140000_add_tts_audio.sql` and `20260722150000_add_story_utterances.sql`. Until then the CLI stops with an actionable message and the app keeps playing today's audio.
 - [ ] Load the pronunciation overrides: `node --env-file=.env.script tts-overrides.mjs --apply`.
 
+**Known gap:**
+- [ ] Pronunciation pinning is inactive on Chinese: Azure rejects the SSML `phoneme` element for every zh-CN voice (measured, and confirmed working on en-US from the same account), so the pinyin-guided readings the current Google pipeline delivers are not reproduced. The corrections are stored and ready; the fix is a hosted custom lexicon. Details in `docs/TTS.md`.
+
 **Remaining:**
 - [ ] Backfill run: generate Azure audio for the HSK library (operator-run, batched, deliberately not automated).
 - [ ] Split the published stories into utterances (`story-utterances.mjs --apply`) and narrate them.
