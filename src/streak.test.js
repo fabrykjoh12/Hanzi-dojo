@@ -1,62 +1,33 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
+import { todayStr, daysBetween } from './streak'
 
-// streak.js imports the Supabase client at module load; stub it so the pure
-// liveStreak helper can be tested in isolation.
-vi.mock('./supabase', () => ({ supabase: {} }))
-
-import { liveStreak, streakStatus } from './streak'
-
-// Local YYYY-MM-DD for `daysAgo` days ago, matching streak.js's todayStr format.
-function ymd(daysAgo) {
-  const d = new Date()
-  d.setDate(d.getDate() - daysAgo)
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
-}
-
-describe('liveStreak', () => {
-  it('is 0 without a streak or study history', () => {
-    expect(liveStreak(null)).toBe(0)
-    expect(liveStreak({ streak: 0, last_studied_on: ymd(0) })).toBe(0)
-    expect(liveStreak({ streak: 5, last_studied_on: null })).toBe(0)
+describe('todayStr', () => {
+  it('formats as YYYY-MM-DD', () => {
+    expect(todayStr()).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
 
-  it('holds when studied today or yesterday', () => {
-    expect(liveStreak({ streak: 5, streak_freezes: 0, last_studied_on: ymd(0) })).toBe(5)
-    expect(liveStreak({ streak: 5, streak_freezes: 0, last_studied_on: ymd(1) })).toBe(5)
-  })
-
-  it('breaks to 0 when a missed day is not covered by a freeze', () => {
-    expect(liveStreak({ streak: 5, streak_freezes: 0, last_studied_on: ymd(2) })).toBe(0)
-  })
-
-  it('survives a missed day when a freeze covers it', () => {
-    expect(liveStreak({ streak: 5, streak_freezes: 1, last_studied_on: ymd(2) })).toBe(5)
-  })
-
-  it('breaks when missed days exceed available freezes', () => {
-    expect(liveStreak({ streak: 5, streak_freezes: 1, last_studied_on: ymd(3) })).toBe(0)
+  it('matches the current local date', () => {
+    const d = new Date()
+    const expected = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+    expect(todayStr()).toBe(expected)
   })
 })
 
-describe('streakStatus', () => {
-  it('reports none without an active streak', () => {
-    expect(streakStatus(null)).toBe('none')
-    expect(streakStatus({ streak: 0, last_studied_on: ymd(0) })).toBe('none')
+describe('daysBetween', () => {
+  it('is 0 for the same date', () => {
+    expect(daysBetween('2026-01-10', '2026-01-10')).toBe(0)
   })
 
-  it('is safe after studying today', () => {
-    expect(streakStatus({ streak: 5, streak_freezes: 0, last_studied_on: ymd(0) })).toBe('safe')
+  it('counts forward days as positive', () => {
+    expect(daysBetween('2026-01-10', '2026-01-11')).toBe(1)
+    expect(daysBetween('2026-01-10', '2026-01-13')).toBe(3)
   })
 
-  it('is due_today after studying yesterday', () => {
-    expect(streakStatus({ streak: 5, streak_freezes: 0, last_studied_on: ymd(1) })).toBe('due_today')
+  it('counts backward days as negative', () => {
+    expect(daysBetween('2026-01-13', '2026-01-10')).toBe(-3)
   })
 
-  it('is frozen when a missed day is covered by a freeze', () => {
-    expect(streakStatus({ streak: 5, streak_freezes: 1, last_studied_on: ymd(2) })).toBe('frozen')
-  })
-
-  it('is broken when missed days exceed freezes', () => {
-    expect(streakStatus({ streak: 5, streak_freezes: 0, last_studied_on: ymd(2) })).toBe('broken')
+  it('crosses a month boundary correctly', () => {
+    expect(daysBetween('2026-01-31', '2026-02-01')).toBe(1)
   })
 })

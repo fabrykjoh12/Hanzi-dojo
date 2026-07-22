@@ -14,7 +14,7 @@ import { ensureAudio } from './audioCache'
 
 const SPEEDS = [1, 0.75, 0.5]
 
-export function useStudyAudio({ queue, flipped, profile, session, onStreakUpdate }) {
+export function useStudyAudio({ queue, flipped, profile, session, onProfileUpdate }) {
   const audioRef = useRef(null)
   // TTS playback rate (1× / 0.75× / 0.5×), seeded from the saved preference.
   const [audioSpeed, setAudioSpeed] = useState(
@@ -51,7 +51,7 @@ export function useStudyAudio({ queue, flipped, profile, session, onStreakUpdate
       // Persist as a preference (best-effort) and patch the in-memory profile
       // so the choice survives reloads instead of resetting to 1×.
       supabase.from('profiles').update({ audio_speed: next }).eq('id', session.user.id).then(() => {})
-      if (onStreakUpdate) onStreakUpdate({ audio_speed: next })
+      if (onProfileUpdate) onProfileUpdate({ audio_speed: next })
       return next
     })
   }

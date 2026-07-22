@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
-import { levelInfo, levelTitle } from './xp'
 import { useIsMobile } from './useIsMobile'
 import { Layers, BookOpen, Play, PenLine, ArrowRight, Sunrise, Gauge, Dumbbell, MessagesSquare } from 'lucide-react'
 import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
@@ -89,27 +88,13 @@ export default function Home({ profile, track, counts, onNavigate }) {
   return (
     <div style={{ maxWidth: '820px', margin: '0 auto', padding: isMobile ? '28px 16px 40px' : '52px 32px 60px' }}>
 
-      {/* ── Header: language identity + streak ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '36px' }}>
-        <div>
-          <div style={{ fontSize: '52px', fontWeight: 700, color: accentHex, lineHeight: 1, fontFamily: langFont }}>
-            {langChars}
-          </div>
-          <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '8px', letterSpacing: '0.2px' }}>
-            {systemLabel} · {levelSuffix}
-          </div>
+      {/* ── Header: language identity ── */}
+      <div style={{ marginBottom: '36px' }}>
+        <div style={{ fontSize: '52px', fontWeight: 700, color: accentHex, lineHeight: 1, fontFamily: langFont }}>
+          {langChars}
         </div>
-
-        {/* Account level — a pure progress marker, not a streak: nothing to protect, nothing to lose. */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '8px',
-          padding: '8px 14px', borderRadius: '20px',
-          background: `${accentHex}12`, border: '1px solid ' + accentHex + '2E',
-        }}>
-          <span style={{ fontSize: '13px', fontWeight: 750, color: accentHex }}>
-            Lv {levelInfo(profile.total_xp).level} · {levelTitle(levelInfo(profile.total_xp).level)}
-          </span>
-          <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)' }}>{levelInfo(profile.total_xp).pct}%</span>
+        <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '8px', letterSpacing: '0.2px' }}>
+          {systemLabel} · {levelSuffix}
         </div>
       </div>
 

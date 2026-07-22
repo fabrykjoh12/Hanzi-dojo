@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
-import { awardXp } from './xpService'
 import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl } from './utils'
 import { PrimaryButton, SecondaryButton } from './ui'
 import { languageTheme } from './languageTheme'
@@ -12,7 +11,6 @@ import {
 } from 'lucide-react'
 
 const QUESTION_COUNT = 12
-const XP_PER_CORRECT = 4
 
 // Build a quiz: each question is one word (with audio) plus 3 distractors drawn
 // from the same level's vocabulary.
@@ -26,7 +24,7 @@ function buildQuestions(pool) {
   })
 }
 
-export default function Listen({ session, profile, track, onBack, onUpdate }) {
+export default function Listen({ session, profile, track, onBack }) {
   const isMobile = useIsMobile()
   const [loading, setLoading] = useState(true)
   const [questions, setQuestions] = useState([])
@@ -35,7 +33,6 @@ export default function Listen({ session, profile, track, onBack, onUpdate }) {
   const [correctCount, setCorrectCount] = useState(0)
   const [done, setDone] = useState(false)
   const audioRef = useRef(null)
-  const xpAwardedRef = useRef(false)
 
   const theme = languageTheme(profile.active_language)
   const accentHex = theme.accentHex
@@ -96,15 +93,9 @@ export default function Listen({ session, profile, track, onBack, onUpdate }) {
 
   function finish() {
     setDone(true)
-    if (!xpAwardedRef.current) {
-      xpAwardedRef.current = true
-      const gain = correctCount * XP_PER_CORRECT
-      if (gain > 0) awardXp(session, profile, gain, onUpdate)
-    }
   }
 
   function restart() {
-    xpAwardedRef.current = false
     setIdx(0); setPicked(null); setCorrectCount(0); setDone(false)
     load()
   }
@@ -174,15 +165,9 @@ export default function Listen({ session, profile, track, onBack, onUpdate }) {
             <p style={{ color: 'var(--text-muted)', marginBottom: '22px', fontSize: '15px' }}>
               You matched <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {questions.length} by ear.
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '22px' }}>
-              <div style={{ padding: '16px 10px', borderRadius: '14px', background: accentHex + '0D', border: '1px solid ' + accentHex + '22' }}>
-                <div style={{ fontSize: '26px', fontWeight: 760, color: accentHex, lineHeight: 1 }}>{pct}%</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
-              </div>
-              <div style={{ padding: '16px 10px', borderRadius: '14px', background: '#6E84660D', border: '1px solid #6E846622' }}>
-                <div style={{ fontSize: '26px', fontWeight: 760, color: '#5C7155', lineHeight: 1 }}>+{correctCount * XP_PER_CORRECT}</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>XP earned</div>
-              </div>
+            <div style={{ padding: '16px 10px', borderRadius: '14px', background: accentHex + '0D', border: '1px solid ' + accentHex + '22', marginBottom: '22px' }}>
+              <div style={{ fontSize: '26px', fontWeight: 760, color: accentHex, lineHeight: 1 }}>{pct}%</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <SecondaryButton onClick={onBack} icon={ArrowLeft}>Home</SecondaryButton>

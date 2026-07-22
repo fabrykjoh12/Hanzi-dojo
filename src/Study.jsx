@@ -6,9 +6,7 @@ import { cacheSet, cacheGet, outboxDelete } from './offline'
 import { getTrackCards } from './data'
 import { studyFloorLevel } from './levelScope'
 import { schedule, previewLabels, isCardDue, endOfLocalDay } from './srs'
-import { xpForGrade, levelInfo } from './xp'
-import { computeAward } from './xpService'
-import { updateStreak, todayStr, liveStreak } from './streak'
+import { todayStr } from './streak'
 import { evaluateAchievements } from './achievements'
 import { toast } from './toast'
 import { getLevelLabel, getSystemLabel, getAudioUrl } from './utils'
@@ -179,13 +177,12 @@ function PrimaryButton({ onClick, children, icon: Icon }) {
   )
 }
 
-export default function Study({ session, profile, track, mode = 'review', onBack, onNavigate, onStreakUpdate }) {
+export default function Study({ session, profile, track, mode = 'review', onBack, onNavigate, onProfileUpdate }) {
   const isWeak = mode === 'weak'
   const [queue, setQueue] = useState([])
   const [loading, setLoading] = useState(true)
   const [flipped, setFlipped] = useState(false)
   const [done, setDone] = useState(false)
-  const [streakDone, setStreakDone] = useState(false)
   const [showFurigana, setShowFurigana] = useState(profile.furigana_default !== false)
   const [saveError, setSaveError] = useState(null)
   const [typedValue, setTypedValue] = useState('')
@@ -204,17 +201,13 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // Achievement stats at session start, so newly crossed thresholds can be
   // celebrated at the recap (same live-derived inputs Profile uses).
   const achieveBeforeRef = useRef(null)
-  const streakAfterRef = useRef(null)
   const achieveToastedRef = useRef(false)
+  const lastStudiedRecordedRef = useRef(false)
   // Running counts of today's study session, persisted to daily_activity so the
   // Profile calendar can show which days were studied.
   const activityRef = useRef({ studied: 0, newC: 0, learn: 0, review: 0 })
   // Per-session tally for the end-of-session recap card.
-  const sessionRef = useRef({ graded: 0, newLearned: 0, graduated: 0, again: 0, reviewedRight: 0, reviewedTotal: 0, xpEarned: 0, leveledTo: 0, freezesEarned: 0 })
-  // Running lifetime XP, seeded from the profile and persisted on each grade.
-  const xpRef = useRef(profile.total_xp || 0)
-  // Running streak-freeze balance, so level-up rewards stack correctly within a session.
-  const freezesRef = useRef(profile.streak_freezes || 0)
+  const sessionRef = useRef({ graded: 0, newLearned: 0, graduated: 0, again: 0, reviewedRight: 0, reviewedTotal: 0 })
   const [forecast, setForecast] = useState(null)
   const [recap, setRecap] = useState(null)   // snapshot of sessionRef at completion
   // "First Story Unlocked" recommendation for the recap (null until computed;
@@ -254,7 +247,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // Audio (speed pref, iOS-safe playback + fallback, autoplay-on-flip, and
   // current+next prefetch) lives in a focused hook. Behavior is unchanged.
   const { audioSpeed, audioBroken, playAudio, cycleSpeed, resetAudioBroken } = useStudyAudio({
-    queue, flipped, profile, session, onStreakUpdate,
+    queue, flipped, profile, session, onProfileUpdate,
   })
 
   async function loadQueue() {
@@ -415,13 +408,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   useEffect(() => {
     const timer = setTimeout(loadQueue, 0)
     // Non-blocking before-snapshot for end-of-session achievement toasts.
-    loadAchievementStats().then(stats => {
-      achieveBeforeRef.current = {
-        ...stats,
-        streak: liveStreak(profile),
-        level: levelInfo(xpRef.current).level,
-      }
-    })
+    loadAchievementStats().then(stats => { achieveBeforeRef.current = stats })
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -539,12 +526,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // stats against the snapshot taken at session start).
   async function celebrateAchievements() {
     const before = achieveBeforeRef.current
-    const stats = await loadAchievementStats()
-    const after = {
-      ...stats,
-      streak: streakAfterRef.current != null ? streakAfterRef.current : before.streak,
-      level: levelInfo(xpRef.current).level,
-    }
+    const after = await loadAchievementStats()
     const beforeEarned = new Set(
       evaluateAchievements(before).filter(a => a.earned).map(a => a.id)
     )
@@ -568,7 +550,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         cards_learned: recap.newLearned,
         cards_reviewed: recap.reviewedTotal,
         graduated: recap.graduated,
-        xp_earned: recap.xpEarned,
         ...(accuracy !== null ? { accuracy } : {}),
       })
       if (firstRun) trackOnce(EVENTS.FIRST_MISSION_COMPLETED, { words_learned: recap.newLearned })
@@ -617,8 +598,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       prevQueue: queue.slice(),
       session: { ...sessionRef.current },
       activity: { ...activityRef.current },
-      xp: xpRef.current,
-      freezes: freezesRef.current,
       wasNew: !card.id,
       cardId: null,
       logId: null,
@@ -652,37 +631,15 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     s.reviewedRight += tally.reviewedRight
     // Reactive card counter for the guided first-mission hint (no effect on SRS).
     setStudied(n => n + 1)
-    const xpGain = xpForGrade(grade)
 
-    if (!streakDone) {
-      setStreakDone(true)
+    // Record today as a study day (once per session) — purely factual, feeds
+    // the calm "gentle return after a break" welcome, not a streak/guilt mechanic.
+    if (!lastStudiedRecordedRef.current) {
+      lastStudiedRecordedRef.current = true
       if (online) {
-        try {
-          const before = liveStreak(profile)
-          const newStreak = await updateStreak(profile)
-          if (typeof newStreak.streak === 'number') streakAfterRef.current = newStreak.streak
-          if (typeof newStreak.streak_freezes === 'number') freezesRef.current = newStreak.streak_freezes
-          if (typeof newStreak.streak === 'number' && newStreak.streak > before) {
-            trackEvent(EVENTS.STREAK_INCREASED, { streak: newStreak.streak })
-          }
-          if (onStreakUpdate) onStreakUpdate(newStreak)
-        } catch { /* offline — the streak reconciles on the next online session */ }
-      }
-    }
-
-    // Award XP through the shared rulebook (level-ups grant capped streak
-    // freezes — same rules as the practice drills), tracked against this
-    // session's running XP/freeze balances.
-    const award = computeAward(xpRef.current, xpGain, freezesRef.current)
-    s.xpEarned += xpGain
-    xpRef.current = award.newXp
-    if (award.leveled) {
-      freezesRef.current = award.freezes
-      s.leveledTo = award.newLevel
-      s.freezesEarned += award.freezesEarned
-      if (award.freezesEarned > 0) {
-        if (online) supabase.from('profiles').update({ streak_freezes: freezesRef.current }).eq('id', session.user.id).then(() => {})
-        if (onStreakUpdate) onStreakUpdate({ streak_freezes: freezesRef.current })
+        const today = todayStr()
+        supabase.from('profiles').update({ last_studied_on: today }).eq('id', session.user.id).then(() => {})
+        if (onProfileUpdate) onProfileUpdate({ last_studied_on: today })
       }
     }
 
@@ -727,7 +684,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           previous_interval_days: card.interval_days || 0,
           next_interval_days: res.updates.interval_days,
         },
-        xpDelta: xpGain,
         day: todayStr(),
         state: card.state,
       })
@@ -767,11 +723,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       })
     }
 
-    // Persist lifetime XP (best-effort; harmless if the column doesn't exist yet)
-    // and reflect it in the in-memory profile so Home/Profile update live.
-    if (online) supabase.from('profiles').update({ total_xp: xpRef.current }).eq('id', session.user.id).then(() => {})
-    if (onStreakUpdate) onStreakUpdate({ total_xp: xpRef.current })
-
     setFlipped(false)
     setTypedValue('')
     setTypedResult(null)
@@ -802,9 +753,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     })
   }
 
-  // Undo the last grade: restore the card row, queue order, XP/freeze balances,
-  // session tallies, and daily activity to their pre-grade snapshot. The streak
-  // itself is deliberately NOT reverted — the user did show up and study.
+  // Undo the last grade: restore the card row, queue order, session tallies,
+  // and daily activity to their pre-grade snapshot.
   const undoLast = async () => {
     const u = undoRef.current
     if (!u || gradingRef.current) return
@@ -846,12 +796,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
       sessionRef.current = u.session
       activityRef.current = u.activity
-      xpRef.current = u.xp
-      const restore = { total_xp: u.xp }
-      if (freezesRef.current !== u.freezes) restore.streak_freezes = u.freezes
-      freezesRef.current = u.freezes
       if (serverPersisted) {
-        supabase.from('profiles').update(restore).eq('id', session.user.id).then(() => {})
         supabase.from('daily_activity').upsert({
           user_id: session.user.id,
           activity_date: todayStr(),
@@ -861,7 +806,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           review_cards: u.activity.review,
         }, { onConflict: 'user_id,activity_date' }).then(() => {})
       }
-      if (onStreakUpdate) onStreakUpdate(restore)
 
       setFlipped(false)
       setTypedValue('')
@@ -948,7 +892,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             mission={mission}
             vocab={missionOffer.vocab}
             session={session}
-            profile={profile}
             track={track}
             dayBuckets={missionOffer.dayBuckets}
             onClose={() => setMission(null)}

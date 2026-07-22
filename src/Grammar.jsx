@@ -3,7 +3,6 @@ import { supabase } from './supabase'
 import { languageTheme } from './languageTheme'
 import { grammarFor } from './grammarGuides'
 import { filterTopics } from './grammarSearch'
-import { awardXp } from './xpService'
 import { useIsMobile } from './useIsMobile'
 import { shuffle } from './utils'
 import { tokenize, makeSegmenter, isContent, scrambleIndices } from './segment'
@@ -27,9 +26,7 @@ function speakText(text, language) {
 // Beginner grammar guide for the active language. Each topic is a mini-lesson:
 // a pattern chip (the formula), plain-language points with examples, real lines
 // from the learner's own stories that use the pattern, and a two-question
-// self-check that pays a small XP reward once per visit.
-
-const CHECK_XP = 6
+// self-check that marks the topic done once per visit.
 
 function exampleHasKanji(text) {
   const v = text || ''
@@ -63,7 +60,7 @@ function findStoryLines(stories, finds, max) {
   return out
 }
 
-export default function Grammar({ session, profile, track, onBack, onUpdate }) {
+export default function Grammar({ profile, track, onBack }) {
   const isMobile = useIsMobile()
   const theme = languageTheme(profile.active_language)
   const accentHex = theme.accentHex
@@ -119,7 +116,6 @@ export default function Grammar({ session, profile, track, onBack, onUpdate }) {
     const allCorrect = topic.check.every((c, i) => next[i] === c.correct)
     if (allCorrect && !rewarded[topic.id]) {
       setRewarded({ ...rewarded, [topic.id]: true })
-      awardXp(session, profile, CHECK_XP, onUpdate)
     }
   }
 
@@ -418,7 +414,7 @@ function StoryLines({ topic, stories, font, accentHex, isMobile }) {
 }
 
 // Two-question self-check. Options give instant right/wrong feedback; solving
-// both pays a one-time XP reward (per visit) so reading the guide counts.
+// both marks the topic done for this visit.
 function SelfCheck({ topic, picked, done, onPick, font, accentHex, isMobile }) {
   if (!topic.check || topic.check.length === 0) return null
   return (
@@ -426,7 +422,7 @@ function SelfCheck({ topic, picked, done, onPick, font, accentHex, isMobile }) {
       <div style={{ borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface-2)', padding: '14px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', fontWeight: 800, color: done ? 'var(--success)' : 'var(--text-muted)', marginBottom: '10px' }}>
           <Sparkles size={14} strokeWidth={2} color={done ? 'var(--success)' : accentHex} />
-          {done ? 'Check yourself — passed, +' + CHECK_XP + ' XP' : 'Check yourself'}
+          {done ? 'Check yourself — passed' : 'Check yourself'}
         </div>
         <div style={{ display: 'grid', gap: '14px' }}>
           {topic.check.map((c, qi) => {

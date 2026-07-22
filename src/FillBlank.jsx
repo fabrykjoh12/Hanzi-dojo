@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import { awardXp } from './xpService'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
 import { languageTheme } from './languageTheme'
@@ -12,11 +11,9 @@ import {
   ArrowLeft, AlignLeft, Check, X, RotateCcw, CheckCircle2, Sparkles,
 } from 'lucide-react'
 
-const XP_PER_CORRECT = 4
-
 // `pool` (optional): when provided (e.g. the words from a story the learner just
 // read), build the drill from it instead of loading the whole current level.
-export default function FillBlank({ session, profile, track, onBack, onUpdate, pool = null }) {
+export default function FillBlank({ session, profile, track, onBack, pool = null }) {
   const isMobile = useIsMobile()
   const [loading, setLoading] = useState(true)
   const [questions, setQuestions] = useState([])
@@ -64,16 +61,12 @@ export default function FillBlank({ session, profile, track, onBack, onUpdate, p
     else markWordDue(session, q.vocab.id)
   }
 
-  function finish(finalCorrect) {
+  function finish() {
     setDone(true)
-    const gain = finalCorrect * XP_PER_CORRECT
-    if (gain > 0) {
-      awardXp(session, profile, gain, onUpdate)
-    }
   }
 
   function next() {
-    if (idx + 1 >= questions.length) finish(correctCount)
+    if (idx + 1 >= questions.length) finish()
     else { setPicked(null); setIdx(i => i + 1) }
   }
 
@@ -126,15 +119,9 @@ export default function FillBlank({ session, profile, track, onBack, onUpdate, p
           <p style={{ color: 'var(--text-muted)', marginBottom: '22px', fontSize: '15px' }}>
             You filled <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {questions.length} correctly.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '22px' }}>
-            <div style={{ padding: '16px 10px', borderRadius: '14px', background: accentHex + '0D', border: '1px solid ' + accentHex + '22' }}>
-              <div style={{ fontSize: '26px', fontWeight: 760, color: accentHex, lineHeight: 1 }}>{pct}%</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
-            </div>
-            <div style={{ padding: '16px 10px', borderRadius: '14px', background: '#6E84660D', border: '1px solid #6E846622' }}>
-              <div style={{ fontSize: '26px', fontWeight: 760, color: '#5C7155', lineHeight: 1 }}>+{correctCount * XP_PER_CORRECT}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>XP earned</div>
-            </div>
+          <div style={{ padding: '16px 10px', borderRadius: '14px', background: accentHex + '0D', border: '1px solid ' + accentHex + '22', marginBottom: '22px' }}>
+            <div style={{ fontSize: '26px', fontWeight: 760, color: accentHex, lineHeight: 1 }}>{pct}%</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <SecondaryButton onClick={onBack} icon={ArrowLeft}>Home</SecondaryButton>

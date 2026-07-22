@@ -3,7 +3,6 @@ import { supabase } from './supabase'
 import { getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
-import { awardXp } from './xpService'
 import { chatStyleFor, classifyMissionWords } from './chatMissions'
 import { X, Volume2, Bookmark, Check, Type, Languages, SplitSquareHorizontal, MessageCircleMore, Trophy } from 'lucide-react'
 
@@ -12,7 +11,6 @@ import { X, Volume2, Bookmark, Check, Type, Languages, SplitSquareHorizontal, Me
 // challenge, and a result screen. Reuses the app's audio + vocab so tapped words
 // behave exactly like the flashcards and story reader.
 
-const MISSION_XP = 8
 // The chat runner is a self-contained "messaging app" surface: it stays on its
 // own warm-light palette in both app themes (a half-dark chat would read as a
 // bug), so it pins colors instead of using the app's light/dark CSS vars.
@@ -70,7 +68,7 @@ function shuffleStable(arr, seed) {
   return a
 }
 
-export default function ChatMission({ mission, vocab, session, profile, track, dayBuckets, onClose }) {
+export default function ChatMission({ mission, vocab, session, track, dayBuckets, onClose }) {
   const theme = languageTheme(track.language)
   const accent = theme.accentHex
   const font = theme.font
@@ -205,7 +203,6 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
       const { error } = await supabase.from('cards').insert(rows)
       if (!error) setKnown(prev => { const nx = { ...prev }; toAdd.forEach(id => { nx[id] = true }); return nx })
     }
-    if (profile) awardXp(session, profile, MISSION_XP)
     setPhase('result')
   }
 
@@ -460,7 +457,7 @@ export default function ChatMission({ mission, vocab, session, profile, track, d
               <Trophy size={28} strokeWidth={1.9} color={accent} />
             </div>
             <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#1A1A1A', margin: '0 0 6px' }}>Mission complete</h2>
-            <p style={{ color: '#6B6660', fontSize: '14px', margin: '0 0 22px' }}>You used today’s words in a real conversation. +{MISSION_XP} XP</p>
+            <p style={{ color: '#6B6660', fontSize: '14px', margin: '0 0 22px' }}>You used today’s words in a real conversation.</p>
 
             <ResultRow label="Comprehension" value={`${correctCount}/${questions.length}`} accent={accent} />
             <ResultRow label="Reply" value={replyCorrect ? 'Correct' : 'Keep practicing'} accent={accent} />

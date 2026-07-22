@@ -299,7 +299,7 @@ export default function App() {
         track={track}
         onBack={() => navigate('home')}
         onNavigate={navigate}
-        onStreakUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
+        onProfileUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
   } else if (view === 'weak') {
@@ -311,7 +311,7 @@ export default function App() {
         mode="weak"
         onBack={() => navigate('home')}
         onNavigate={navigate}
-        onStreakUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
+        onProfileUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
   } else if (view === 'test') {
@@ -339,27 +339,22 @@ export default function App() {
         profile={profile}
         track={track}
         onBack={() => navigate('home')}
-        onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
   } else if (view === 'kana') {
     content = (
       <Kana
-        session={session}
         profile={profile}
         track={track}
         onBack={() => navigate('home')}
-        onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
   } else if (view === 'cyrillic') {
     content = (
       <Cyrillic
-        session={session}
         profile={profile}
         track={track}
         onBack={() => navigate('home')}
-        onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
   } else if (view === 'practice') {
@@ -401,11 +396,9 @@ export default function App() {
   } else if (view === 'grammar') {
     content = (
       <Grammar
-        session={session}
         profile={profile}
         track={track}
         onBack={() => navigate('home')}
-        onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
   } else if (view === 'strokes') {
@@ -423,7 +416,6 @@ export default function App() {
         profile={profile}
         track={track}
         onBack={() => navigate('home')}
-        onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
   } else if (view === 'fillblank') {
@@ -434,7 +426,6 @@ export default function App() {
         track={track}
         pool={pendingPracticeWords}
         onBack={() => { setPendingPracticeWords(null); navigate(pendingPracticeWords ? 'stories' : 'home') }}
-        onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
   } else if (view === 'speak') {
@@ -444,7 +435,6 @@ export default function App() {
         profile={profile}
         track={track}
         onBack={() => navigate('practice')}
-        onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
   } else if (view === 'tones') {
@@ -454,7 +444,6 @@ export default function App() {
         profile={profile}
         track={track}
         onBack={() => navigate('home')}
-        onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
   } else if (view === 'stories') {

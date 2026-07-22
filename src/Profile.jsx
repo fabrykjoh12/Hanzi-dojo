@@ -3,10 +3,9 @@ import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { isMastered } from './mastery'
-import { levelInfo } from './xp'
 import { cleanMeaning } from './cleanMeaning'
 import { evaluateAchievements } from './achievements'
-import { todayStr, liveStreak } from './streak'
+import { todayStr } from './streak'
 import { monthReview, monthHeadline, monthShareText } from './monthReview'
 import { knownWordMap, readableSummary, rowA11yLabel } from './knownWordMap'
 import { last30A11yLabel } from './reviewAccuracy'
@@ -14,11 +13,11 @@ import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
 import { BRAND_URL } from './brand'
 import {
-  ArrowLeft, Flame, Layers, LogOut, RotateCcw, Save,
-  Shield, Sparkles, Target, User, Trophy, CalendarCheck, Award, Share2, Check, AlertTriangle, TrendingUp, BookOpen,
+  ArrowLeft, Layers, LogOut, RotateCcw, Save,
+  Sparkles, Target, User, CalendarCheck, Award, Share2, Check, AlertTriangle, TrendingUp, BookOpen,
 } from 'lucide-react'
 
-const ACH_ICONS = { flame: Flame, layers: Layers, sparkles: Sparkles, trophy: Trophy, calendar: CalendarCheck, book: BookOpen }
+const ACH_ICONS = { layers: Layers, sparkles: Sparkles, calendar: CalendarCheck, book: BookOpen }
 
 function getLanguageDetails(profile) {
   const t = languageTheme(profile.active_language)
@@ -219,10 +218,6 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       return
     }
 
-    if (onUpdate) {
-      onUpdate({ streak: 0, streak_freezes: 1, last_studied_on: null })
-    }
-
     await loadStats()
     setResetting(false)
     setConfirmingReset(false)
@@ -233,10 +228,8 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     : 0
 
   const achievements = evaluateAchievements({
-    streak: liveStreak(profile),
     learned: stats.lifetimeLearned || 0,
     mastered: stats.lifetimeMastered || 0,
-    level: levelInfo(profile.total_xp).level,
     daysStudied: Object.keys(activity).length,
     storiesRead: stats.storiesRead || 0,
   })
@@ -298,41 +291,10 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '18px' }}>
-        <StatCard label="Current streak" value={liveStreak(profile)} unit="days" icon={Flame} color="#D97706" bg="#FFFBEB" />
-        <StatCard label="Streak freezes" value={profile.streak_freezes || 0} unit="available" icon={Shield} color="#3E63DD" bg="#EEF2FF" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px', marginBottom: '18px' }}>
         <StatCard label="Words learned" value={loading ? '-' : stats.learned} unit={'of ' + stats.totalWords} icon={Layers} color={accentHex} bg={accentHex + '10'} />
         <StatCard label="Words mastered" value={loading ? '-' : stats.masteredCount} unit={masteryPct + '%'} icon={Sparkles} color="#2F9E6D" bg="var(--success-bg)" />
       </div>
-
-      <Panel>
-        {(() => {
-          const lv = levelInfo(profile.total_xp)
-          return (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
-                  <Sparkles size={17} strokeWidth={1.85} color={accentHex} />
-                  Account level {lv.level}
-                </span>
-                <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>
-                  {Math.max(0, Math.floor(profile.total_xp || 0))} XP
-                </span>
-              </div>
-              <div style={{ height: '8px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden' }}>
-                <div style={{
-                  height: '100%', borderRadius: '999px',
-                  background: 'linear-gradient(90deg, ' + accentHex + ', ' + accentHex + 'AA)',
-                  width: lv.pct + '%', transition: 'width 700ms ease',
-                }} />
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '9px' }}>
-                {lv.levelSpan - lv.intoLevel} XP to level {lv.level + 1}. Earn XP from every flashcard you review.
-              </div>
-            </div>
-          )
-        })()}
-      </Panel>
 
       {!loading && (
         <Panel>
@@ -420,11 +382,10 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
           <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: 1.5 }}>
             {monthHeadline(mr)}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
             {[
               { label: 'Active days', value: activeDays, color: accentHex },
               { label: 'Reviews', value: cardsThisMonth, color: '#3E63DD' },
-              { label: 'Day streak', value: liveStreak(profile), color: '#D97706' },
               { label: 'Words mastered', value: stats.lifetimeMastered || 0, color: '#2F9E6D' },
             ].map(s => (
               <div key={s.label} style={{ padding: '14px 12px', borderRadius: '14px', background: s.color + '0D', border: '1px solid ' + s.color + '22', textAlign: 'center' }}>
@@ -539,23 +500,12 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         )}
       </Panel>
 
-      {profile.last_studied_on && (
-        <Panel compact>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Last studied</span>
-            <span style={{ fontSize: '14px', fontWeight: 750, color: 'var(--text)' }}>
-              {new Date(profile.last_studied_on).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-            </span>
-          </div>
-        </Panel>
-      )}
-
       <Panel danger>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '18px', alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Reset progress</div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
-              Clears flashcards, tests, unlocks, and streak for this language.
+              Clears flashcards, tests, and unlocks for this language.
             </div>
           </div>
           <SmallButton onClick={resetProgress} danger filled={confirmingReset} disabled={resetting} icon={RotateCcw}>

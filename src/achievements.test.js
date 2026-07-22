@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { ACHIEVEMENTS, evaluateAchievements, countEarned } from './achievements'
 
-const ZERO = { streak: 0, learned: 0, mastered: 0, level: 1, daysStudied: 0, storiesRead: 0 }
+const ZERO = { learned: 0, mastered: 0, daysStudied: 0, storiesRead: 0 }
 
 describe('ACHIEVEMENTS definitions', () => {
   it('every entry is well-formed', () => {
@@ -39,7 +39,7 @@ describe('evaluateAchievements', () => {
   })
 
   it('treats a missing storiesRead as zero (backward compatible)', () => {
-    const stats = { streak: 0, learned: 0, mastered: 0, level: 1, daysStudied: 0 } // no storiesRead
+    const stats = { learned: 0, mastered: 0, daysStudied: 0 } // no storiesRead
     const reading = evaluateAchievements(stats).filter(a => a.group === 'Reading')
     expect(reading.every(a => !a.earned)).toBe(true)
   })
@@ -47,8 +47,8 @@ describe('evaluateAchievements', () => {
 
 describe('countEarned', () => {
   it('counts across every group', () => {
-    const stats = { streak: 7, learned: 50, mastered: 10, level: 5, daysStudied: 7, storiesRead: 1 }
-    // streak_3, streak_7, learn_10, learn_50, master_10, level_5, days_7, read_1 = 8
-    expect(countEarned(stats)).toBe(8)
+    const stats = { learned: 50, mastered: 10, daysStudied: 7, storiesRead: 1 }
+    // learn_10, learn_50, master_10, days_7, read_1 = 5
+    expect(countEarned(stats)).toBe(5)
   })
 })
