@@ -167,7 +167,7 @@ Order is a preference, not a hard dependency — either may land first.
 
 ### TASK-001 — Cumulative, level-aware story shelf
 
-**Status:** In Review
+**Status:** Complete (merged to main in PR #113, 2026-07-22)
 **Priority:** Critical
 **Owner:** Unassigned
 **Branch:** `claude/cumulative-story-shelf`
@@ -368,7 +368,7 @@ open at HSK 1 (passed) while still locked at HSK 2.
 
 ### TASK-002 — Unblock the no-LLM authored-story lane for Chinese HSK 3
 
-**Status:** In Review
+**Status:** Complete (merged to main in PR #112, 2026-07-22)
 **Priority:** High
 **Owner:** Unassigned
 **Branch:** `claude/authored-lane-hsk3`
@@ -535,7 +535,7 @@ those), no `ROADMAP.md` / `docs/BACKLOG.md` edit (TASK-003 owns those).
 
 ### TASK-003 — Integration + QA verification of M1
 
-**Status:** Blocked (needs TASK-001 and TASK-002 merged)
+**Status:** Ready (TASK-001 and TASK-002 are merged; automated verification already done — see below)
 **Priority:** High
 **Owner:** Unassigned
 **Branch:** `claude/m1-integration-qa`
@@ -572,9 +572,40 @@ roadmap/backlog updated to match reality.
 - [ ] Threshold-regression check documented (before/after table).
 - [ ] `ROADMAP.md`, `docs/BACKLOG.md`, and this board reflect the shipped state.
 
+#### Already done by the PM session (2026-07-22, do not repeat)
+
+Both PRs were verified independently before and after merge — do not re-run these
+as if they were open questions; re-run them only as a regression check.
+
+- Both branches merged locally first: `git merge-tree` clean, then the combined
+  tree ran green. Merged with **merge commits, not squash**, deliberately: both
+  PRs branched off the PM-board branch and both edited `docs/PM-BOARD.md`, so a
+  squash of the first would have destroyed the shared ancestor and forced a
+  whole-file conflict on the second.
+- On merged `main` @ `89391e7`: `npx vitest run` → **696 passed / 67 files**;
+  `npx playwright test` → **51 passed**; `npm run build` → clean.
+- Scope audited on both PRs: no forbidden file touched.
+- `ROADMAP.md`, `docs/BACKLOG.md` and this board updated to the shipped state.
+
+#### What genuinely remains
+
+1. **Manual multi-level pass on the Stories screen** — `current_level` 1, 2 and 3:
+   grouping, level headings, per-level tier gating, both empty states, mobile
+   width. This is the one thing automation did not cover.
+2. **ESLint hygiene** (found by both sessions, confirmed by the PM session): the
+   "0-error baseline" in `Claude.md` is stale. `npx eslint src` reports **2 real
+   errors** — `Dashboard.jsx` (set-state-in-effect) and `HowMuchCanYouRead.jsx`
+   (unused `useMemo`). `npx eslint .` reports **24** because it also lints
+   `.claude/skills/**` tooling scripts that should be ignored outright. Fix the 2,
+   add an ignore for `.claude/`, and correct the claim in `Claude.md`.
+3. **Rename `data/hsk3_level1.csv`** (optional) — it is HSK *level 1* data, not
+   HSK 3. `src/pinyin.test.js:71` depends on it, so a rename is a two-line change,
+   not a deletion.
+
 #### Completion notes
 
-_To be filled by the integration session._
+_Automated verification and doc updates done by the PM session (above). The
+manual pass and the lint cleanup are still open._
 
 ---
 
@@ -661,6 +692,77 @@ narration, and `story-images-list` → author covers → `story-images-apply`.
   rather than committing 26 MB of re-downloadable dumps.
 
 ---
+
+## Next Milestone
+
+### M2 — Read deeper, grade safely
+
+**Objective:** the readers people actually use stop showing pinyin as an
+all-or-nothing crutch, and the core grading write stops being able to leave
+partial state behind.
+
+**Why now:** M1 removed the reading dead-end but changed nothing about the
+reading *experience*. Audit finding: `readingVisibleFor` (per-word,
+status-driven reading display) is wired ONLY into `StoryReaderImmersive` — the
+classic scroll reader. `PacedReader`, `ChatReader` and `SceneReader` render a
+whole pinyin line behind one `showPy` boolean. Paced is the DEFAULT
+presentation, so most learners get the crude behavior and the roadmap item
+"Pinyin only when you need it" is effectively unimplemented. It is also the
+owner's own stated want in `TASKS.md` ("add better story reader").
+
+**Not in M2:** word-by-word read-along. It needs word-level audio timings, which
+means regenerating story narration with Google TTS SSML `<mark>` timepoints plus
+a storage format for them — an owner-run pipeline change with real TTS cost. It
+deserves its own milestone; do not let a session start it casually.
+
+### TASK-004 — Graduated per-word reading in the paced, chat and scene readers
+
+**Status:** Ready · **Priority:** High · **Branch:** `claude/graduated-pinyin-readers`
+**Dependencies:** None · **Conflict risk:** Low (readers only)
+
+Bring the classic reader's per-word logic to the three fixed-format readers:
+reading shown per word by status (Always / Learning / Unknown / Off) via
+`readingVisibleFor`, not one line behind a boolean. Reserve the reading's
+vertical space so revealing it never shifts the baseline (`reserveRuby` already
+does this in the classic reader). Persist the mode in the existing `reader:prefs`
+IndexedDB object alongside the current flags. Japanese must keep its kana-only
+guard (`hasKanjiChar`) so furigana never renders over kana-only words.
+
+**Owns:** `src/PacedReader.jsx`, `src/ChatReader.jsx`, `src/SceneReader.jsx`,
+`src/InteractiveChatReader.jsx`, `src/useStoryReaderCore.js`,
+`src/storyReading.js` (+ tests), reader e2e specs.
+**Must not touch:** `src/Study.jsx`, `src/Stories.jsx`, `src/storyTiers.js`,
+migrations, `.github/workflows/**`, `ROADMAP.md`, `docs/BACKLOG.md`.
+
+### TASK-005 — Transactional grading (single RPC)
+
+**Status:** Ready · **Priority:** High · **Branch:** `claude/transactional-grading`
+**Dependencies:** None · **Conflict risk:** Low (no reader files)
+
+Collapse the separate grade-path writes (card update, `review_logs` insert,
+`daily_activity` upsert) into one security-definer Supabase RPC so a mid-write
+failure cannot leave partial state. Keep the offline path working: `syncQueue`
+must replay through the same RPC, and idempotency must hold on replay. The
+migration must be additive and the client must degrade safely if the RPC is
+absent (the repo's established pattern for unapplied migrations).
+
+**Owns:** a new `supabase/migrations/*.sql`, `src/Study.jsx` (grading path only),
+`src/syncQueue.js`, `supabase/schema.sql` (+ tests).
+**Must not touch:** any reader file, `src/Stories.jsx`, `src/storyTiers.js`,
+`ROADMAP.md`, `docs/BACKLOG.md`.
+
+### TASK-006 — Lint + docs hygiene (small, optional)
+
+**Status:** Ready · **Priority:** Low · **Branch:** `claude/lint-hygiene`
+
+Fix the 2 real ESLint errors (`Dashboard.jsx` set-state-in-effect,
+`HowMuchCanYouRead.jsx` unused `useMemo`), stop linting `.claude/**`, and correct
+the stale "0-error baseline" claim in `Claude.md`. Owns only those files plus the
+eslint config. Cheap; fold into another change if you prefer.
+
+### Parallel plan
+TASK-004 and TASK-005 share no files — run both now. TASK-006 is independent of
+both but small enough to skip or bundle. Merge order: 005, then 004, then 006.
 
 ## Backlog
 
