@@ -12,7 +12,15 @@ so the community always sees the latest. Keep it current — move things to
 > you everywhere.
 
 ## 🚧 Now — in progress
-- [ ] Between features — pick the next item from the plan below.
+
+**Your story shelf should only ever grow.** Right now, moving up a level swaps
+your stories out instead of adding to them — so reaching a level whose stories
+aren't written yet leaves the shelf empty. We're fixing that first.
+
+- [ ] Every story you've unlocked stays on your shelf: reach HSK 3 and your HSK 1 and 2 stories are still there to read and re-read
+- [ ] Story tiers name the level they belong to (no more "the first 100 HSK 1 words" on every level)
+- [ ] An honest note when a level's own stories are still being written, instead of an empty screen
+- [ ] Groundwork for hand-written HSK 3 stories (so new stories don't wait on an AI quota)
 
 **Just shipped**
 - [x] Removed the streak and XP/leveling system entirely — no day-streak counter, no streak freezes, no account level, no "+N XP" anywhere. It cut against our own promise (*no streaks, no leagues, no guilt*). The calm, factual bits stayed: study-day tracking for the calendar heatmap, and the gentle "welcome back after a break" message.
