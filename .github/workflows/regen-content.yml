@@ -11,7 +11,7 @@ on:
         description: What to regenerate
         type: choice
         default: both
-        options: [meanings, examples, examples-fill, both, comprehension, comprehension-prune, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk1, audio-hsk2, stories-hsk2, examples-hsk3-6, audio-hsk3-6, serial-hsk3-6, seed-n4, audio-n4, stories-n4, seed-russian, audio-russian, examples-russian, stories-russian, stories-hsk1-replace, stories-hsk2-replace, stories-jlpt1-replace, publish-held-jlpt1, audio-jlpt1, audio-jlpt2, story-audio-hsk1, story-audio-hsk2, story-audio-jlpt1, story-audio-jlpt2, story-audio-n4, story-audio-russian, serial-hsk1, serial-hsk2, serial-jlpt1, serial-jlpt1-more, serial-jlpt2, serial-n4, serial-russian, story-images-list, story-images-apply, authored-vocab-hsk1, authored-vocab-hsk2, authored-vocab-jlpt1, authored-vocab-n4, authored-vocab-russian, authored-insert]
+        options: [meanings, examples, examples-fill, both, comprehension, comprehension-prune, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk1, audio-hsk2, stories-hsk2, examples-hsk3-6, audio-hsk3-6, serial-hsk3-6, seed-n4, audio-n4, stories-n4, seed-russian, audio-russian, examples-russian, stories-russian, stories-hsk1-replace, stories-hsk2-replace, stories-jlpt1-replace, publish-held-jlpt1, audio-jlpt1, audio-jlpt2, story-audio-hsk1, story-audio-hsk2, story-audio-jlpt1, story-audio-jlpt2, story-audio-n4, story-audio-russian, serial-hsk1, serial-hsk2, serial-jlpt1, serial-jlpt1-more, serial-jlpt2, serial-n4, serial-russian, story-images-list, story-images-apply, authored-vocab-hsk1, authored-vocab-hsk2, authored-vocab-hsk3, authored-vocab-hsk4, authored-vocab-hsk5, authored-vocab-hsk6, authored-vocab-jlpt1, authored-vocab-n4, authored-vocab-russian, authored-insert]
       language:
         description: Which language
         type: choice
@@ -335,6 +335,30 @@ jobs:
           if [ "${{ inputs.task }}" = "authored-vocab-hsk2" ]; then
             echo "::group::Dump HSK 2 vocabulary (for authoring stories)"
             node authored-stories.mjs --list-vocab --language chinese --system hsk_3 --level 2
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "authored-vocab-hsk3" ]; then
+            echo "::group::Dump HSK 3 vocabulary (for authoring stories)"
+            node authored-stories.mjs --list-vocab --language chinese --system hsk_3 --level 3
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "authored-vocab-hsk4" ]; then
+            echo "::group::Dump HSK 4 vocabulary (for authoring stories)"
+            node authored-stories.mjs --list-vocab --language chinese --system hsk_3 --level 4
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "authored-vocab-hsk5" ]; then
+            echo "::group::Dump HSK 5 vocabulary (for authoring stories)"
+            node authored-stories.mjs --list-vocab --language chinese --system hsk_3 --level 5
+            echo "::endgroup::"
+          fi
+
+          if [ "${{ inputs.task }}" = "authored-vocab-hsk6" ]; then
+            echo "::group::Dump HSK 6 vocabulary (for authoring stories)"
+            node authored-stories.mjs --list-vocab --language chinese --system hsk_3 --level 6
             echo "::endgroup::"
           fi
 
