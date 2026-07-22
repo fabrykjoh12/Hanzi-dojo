@@ -717,7 +717,7 @@ deserves its own milestone; do not let a session start it casually.
 
 ### TASK-004 — Graduated per-word reading in the paced, chat and scene readers
 
-**Status:** Ready · **Priority:** High · **Branch:** `claude/graduated-pinyin-readers`
+**Status:** In Review · **Priority:** High · **Branch:** `claude/graduated-pinyin-readers`
 **Dependencies:** None · **Conflict risk:** Low (readers only)
 
 Bring the classic reader's per-word logic to the three fixed-format readers:
@@ -733,6 +733,37 @@ guard (`hasKanjiChar`) so furigana never renders over kana-only words.
 `src/storyReading.js` (+ tests), reader e2e specs.
 **Must not touch:** `src/Study.jsx`, `src/Stories.jsx`, `src/storyTiers.js`,
 migrations, `.github/workflows/**`, `ROADMAP.md`, `docs/BACKLOG.md`.
+
+**Completion notes (In Review):**
+- The per-word rule is now one tested function, `tokenReading()` in
+  `src/storyReading.js`: `readingVisibleFor` + "has a reading at all" + the
+  Japanese `hasKanjiChar` kana guard. All four fixed-format readers call it; the
+  classic reader keeps composing the same `readingVisibleFor` inline.
+  `furiganaSplit()` (okurigana-aware kanji-core split) and
+  `normalizeReadingMode()` / `DEFAULT_READING_MODE` were lifted there too.
+- New shared component `src/ReadingScaffold.jsx`: `TokenBody` (ruby / bare text /
+  reserved row) and `ReadingSettings` (the quiet control). One implementation
+  drawn by `PacedReader`, `SceneReader` and `ChatThread` (which both chat readers
+  share) — no per-reader copies.
+- Baseline holds via an NBSP `<rt>` reserved on **every** token, including plain
+  runs and punctuation, so switching modes or advancing a beat never re-measures.
+- Mode persists to the existing `reader:prefs` IndexedDB object as `furiganaMode`
+  — read-modify-write merged, so the classic reader's `lens` / `serif` /
+  `showEnglish` / `seenFocusHint` flags survive. Default `unknown`, matching the
+  classic reader. No second storage mechanism; no localStorage.
+- Controls follow the quiet-controls pattern: the always-on Pinyin/English chip
+  row in paced/scene is replaced by one "Reader" button opening a popover
+  (desktop) / bottom sheet (mobile); the chat readers gained the same control as
+  a compact header button — they previously had no reading control at all.
+  Escape closes and restores focus; keyboard advance is suspended while open.
+- Verification: unit **710 passed / 67 files** (was 696/67; +14 new).
+  `npx eslint src` → 2 errors, both pre-existing and owned by TASK-006.
+  `npm run build` green. Playwright **52 passed** (was 51; +1 new reader test
+  asserting per-word behavior, the mode control and Escape focus return).
+- Judgement call for the reviewer: `src/ReadingScaffold.jsx` is a new file, not
+  on the task's "Owns" list. `StoryReaderImmersive.jsx` was out of scope, so its
+  private `furiganaParts`/`rubyFor` copy still exists and is now a duplicate of
+  `furiganaSplit`. Collapsing it is a clean, behavior-preserving follow-up.
 
 ### TASK-005 — Transactional grading (single RPC)
 
