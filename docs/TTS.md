@@ -489,15 +489,22 @@ Verified on the real corpus: 45 stories, 550 utterances.
 
 | | |
 |---|---|
-| Flashcard clips generated | 96 (24 words × 4 variants) |
-| Story clips generated | 26 across 2 stories |
-| Failures after the `<phoneme>` fix | 0 |
+| Vocabulary clips | **9,422** (2,370 words × up to 4 variants) |
+| Story clips | **1,100** across 45 stories |
+| Failures | **0** |
+| Characters billed | ~51,400 |
+| Wall clock | ~100 minutes at concurrency 2 |
 | Casting on the real corpus | 45 stories, 550 utterances, 3 distinct voices in a 7-line story |
-| Cache behaviour | a re-run reported the existing clips as cache hits and spent nothing |
+| Cache behaviour | after the backfill both dry runs report **0 clips remaining** |
 | Idempotency | `tts-overrides.mjs --apply` twice → `24 new`, then `0 new / 24 updated` |
 | Audio quality | judged good by ear, including 觉得 / 睡觉 |
 
-Not yet verified: a real-device (iOS) listening pass, and the full backfill.
+Every 429 during the backfill was absorbed by the retry logic; none became a
+failure. The 42 `failed` rows in `tts_jobs` are historical — the pre-fix
+`<phoneme>` 400s — and those clips were all regenerated successfully. They are
+kept as the audit trail; `tts:retry-failed` correctly reports nothing to do.
+
+Not yet verified: a real-device (iOS/Safari) listening pass.
 
 ## 14. Adding another provider (MiniMax, ElevenLabs, …)
 

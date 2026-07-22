@@ -30,7 +30,9 @@ Whenever we finish or start a meaningful piece of work, edit **`ROADMAP.md`** in
 
 **Also worth knowing:** PostgREST caps responses at 1000 rows, so `repository.js` paginates with `.range()` — without it a full-library cost estimate silently under-reports by half. And `src/storyReading.js` now imports `./characterNames.js` **with** the extension, because Node ESM (unlike Vite) requires it and the story-sync script imports that module.
 
-**Status: live and validated, backfill not yet run.** Both migrations applied, 24 pronunciation corrections loaded, 122 clips generated with 0 failures, 45 stories split into 550 utterances with gender-aware casting (妈妈/小红 female, 李明/小明 male, narrator distinct). Remaining: ~9,300 vocabulary + ~1,100 story clips (~51k characters, ~1 hour). Everything is additive: `vocabulary.audio_path`, `stories.content` and `stories.has_audio` are untouched, and `flashcardAudio()` falls back to the legacy path per word.
+**Status: LIVE, fully backfilled.** Both migrations applied, 24 pronunciation corrections loaded, and **10,522 clips generated with 0 failures** — 9,422 vocabulary (2,370 words × word/word_slow/sentence/sentence_slow) and 1,100 story lines across 45 stories, ~51k characters in ~100 minutes at concurrency 2. Both dry runs now report 0 remaining. The 42 `failed` rows in `tts_jobs` are historical (the pre-fix `<phoneme>` 400s); those clips were all regenerated and are `ready`.
+
+Everything stayed additive: `vocabulary.audio_path`, `stories.content` and `stories.has_audio` are untouched, and `flashcardAudio()` still falls back to the legacy path for any word without a generated clip. **Still to do: a real-device (iOS/Safari) listening pass.**
 
 ---
 

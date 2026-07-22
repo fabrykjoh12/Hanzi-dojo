@@ -13,7 +13,7 @@ so the community always sees the latest. Keep it current — move things to
 
 ## 🚧 Now — in progress
 - [ ] Writing the first HSK 3 stories, so the new levels have reading of their own
-- [ ] Better-sounding Chinese: new neural voices for every word, example sentence and story line, plus a slow version of each word and sentence for when a word won't stick
+- [x] Better-sounding Chinese: new neural voices for every word, example sentence and story line, plus a slow version of each word and sentence for when a word won't stick. Stories now have a narrator and separate character voices.
 
 **Just shipped**
 - [x] Pinyin only where you need it: readings now appear over the individual words you haven't learned yet, in every story format, instead of all-or-nothing for the whole line
@@ -118,8 +118,9 @@ paid generation happens without an explicit `--confirm`.
 **Known gap (cosmetic today):**
 - [ ] Pronunciation pinning is inactive on Chinese: Azure rejects the SSML `phoneme` element for every zh-CN voice (measured, and confirmed working on en-US from the same account). Azure's own analysis reads the tested polyphones correctly, so nothing sounds wrong today; the fix, if a wrong reading is ever reported, is a hosted custom lexicon. Details in `docs/TTS.md`.
 
+- [x] Backfill complete: 10,522 clips (9,422 vocabulary, 1,100 story lines), 0 failures, ~51k characters
+
 **Remaining:**
-- [ ] The backfill itself: about 9,300 vocabulary clips and 1,100 story clips (~51k characters, roughly an hour). Operator-run and batched, deliberately not automated.
 - [ ] A real-device listening pass (iOS/Safari especially).
 
 **Optional / later:**
