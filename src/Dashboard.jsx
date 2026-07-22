@@ -222,9 +222,17 @@ export default function Dashboard({ onBack }) {
   const [data, setData] = useState(null)
   const [storyLang, setStoryLang] = useState(null) // null = all languages
 
+  // Show the loading state as soon as the range changes. Adjusting state during
+  // render (rather than synchronously inside the effect below) avoids the extra
+  // commit React would otherwise schedule — same pattern as DictEntryView.
+  const [loadingFor, setLoadingFor] = useState(days)
+  if (days !== loadingFor) {
+    setLoadingFor(days)
+    setState('loading')
+  }
+
   useEffect(() => {
     let cancelled = false
-    setState('loading')
     const { fromTs, toTs, fromISO, toISO } = rangeBounds(days)
     async function load() {
       try {
