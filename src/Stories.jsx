@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, getAudioUrl } from './utils'
 import { cacheSet, cacheGet } from './offline'
 import { languageTheme } from './languageTheme'
-import { CATEGORIES_BY_LANGUAGE, nextLockedTier } from './storyTiers'
+import { tiersFor, learnedByLevel, readingGateCount, storyLevels, nextLockedTier } from './storyTiers'
 import { isLearned } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import { todayStr } from './streak'
@@ -15,8 +15,7 @@ import {
 } from 'lucide-react'
 
 // Story tier definitions live in ./storyTiers (shared with the post-study
-// recap's story matcher).
-const CATEGORIES_CHINESE = CATEGORIES_BY_LANGUAGE.chinese
+// recap's story matcher). Tiers are keyed by (language, level) — see tiersFor.
 
 // ─── CONSTANTS ─────────────────────────────────────────────────────────────
 
@@ -37,6 +36,17 @@ function getLanguageDetails(profile, track) {
 
 function pageShell() {
   return { minHeight: '100vh', position: 'relative', overflow: 'hidden' }
+}
+
+// The selected "category" is a tier *at a level* — the shelf is cumulative, so
+// tier 1 of HSK 1 and tier 1 of HSK 2 are different shelves. Returns a COPY of
+// the shared tier object (tiersFor memoizes and returns shared instances, so it
+// must never be mutated) tagged with the level it belongs to.
+function categoryForStory(story, track) {
+  if (!story) return null
+  const level = story.level == null ? track.current_level : story.level
+  const tier = tiersFor(track.language, level).find(c => c.tier === story.tier)
+  return tier ? { ...tier, level } : null
 }
 
 function pillStyle(color, background, border) {
@@ -285,7 +295,27 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
   // reader. Captured into state so it survives App clearing the pending value.
   const [todayWords, setTodayWords] = useState([])
   const [firstMission, setFirstMission] = useState(false)
-  const CATEGORIES = CATEGORIES_BY_LANGUAGE[track.language] || CATEGORIES_CHINESE
+  // Learned words per level — the cumulative shelf gates each level's stories on
+  // that level's own progress, not the current level's.
+  const [learnedPerLevel, setLearnedPerLevel] = useState({})
+
+  // Tiers for a story's own level (falls back to the current level for a story
+  // row with no level, e.g. an old cached snapshot).
+  const levelOf = (lvl) => (lvl == null ? track.current_level : lvl)
+  const tiersAt = (lvl) => tiersFor(track.language, levelOf(lvl))
+  // Learned words counting toward that level's gates. A level the learner has
+  // already passed counts as complete — see readingGateCount.
+  const learnedAt = (lvl) => readingGateCount({
+    level: levelOf(lvl),
+    currentLevel: track.current_level,
+    learnedAtLevel: learnedPerLevel[levelOf(lvl)] || 0,
+    tiers: tiersAt(lvl),
+  })
+  const CATEGORIES = tiersAt(track.current_level)
+  // Stories on one shelf = one tier at one level.
+  const storiesIn = (cat) => (cat
+    ? stories.filter(s => s.tier === cat.tier && levelOf(s.level) === cat.level)
+    : [])
 
   async function loadData() {
     setLoading(true)
@@ -305,10 +335,15 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
         .from('cards').select('vocab_id, is_easy, state, learned, due_at')
         .eq('user_id', session.user.id)
       cardsData = cres.data
+      // Reading is CUMULATIVE, the way review already is: every level the
+      // learner has reached, not just the current one. Advancing a level adds to
+      // the shelf instead of emptying it — and a level whose own stories don't
+      // exist yet still has a full shelf underneath it.
       const sres = await supabase
         .from('stories').select('*')
         .eq('language', track.language).eq('system', track.system)
-        .eq('level', track.current_level).eq('is_published', true)
+        .lte('level', track.current_level).eq('is_published', true)
+        .order('level', { ascending: false })
         .order('tier', { ascending: true }).order('story_number', { ascending: true })
       storiesData = sres.data
       const rres = await supabase
@@ -336,7 +371,10 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
     ;(cardsData || []).forEach(c => { cardsMap[c.vocab_id] = c })
     setUserCards(cardsMap)
 
-    // learnedCount uses current level only (drives tier unlock thresholds)
+    // Per-level learned counts drive each level's own tier gates; the headline
+    // progress bar still tracks the current level.
+    const perLevel = learnedByLevel(vocabData || [], cardsData || [])
+    setLearnedPerLevel(perLevel)
     const currentLevelIds = new Set(
       (vocabData || []).filter(v => v.level === track.current_level).map(v => v.id)
     )
@@ -352,7 +390,7 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
     if (initialStoryId) {
       const target = (storiesData || []).find(s => s.id === initialStoryId)
       if (target) {
-        const cat = CATEGORIES.find(c => c.tier === target.tier) || null
+        const cat = categoryForStory(target, track)
         setSelectedCategory(cat)
         setSelectedStory(target)
         setView('reader')
@@ -389,15 +427,22 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
 
   // ── Reader view ────────────────────────────────────────────────────────
   if (view === 'reader' && selectedStory && selectedCategory) {
-    const catStories = stories.filter(s => s.tier === selectedCategory.tier)
+    // "Next story" stays inside the same shelf: same tier AND same level.
+    const catStories = storiesIn(selectedCategory)
     const currentIdx = catStories.findIndex(s => s.id === selectedStory.id)
     const nextStory = currentIdx >= 0 && currentIdx < catStories.length - 1
       ? catStories[currentIdx + 1] : null
     // When there's no next story left to read in this tier, point the reader at
     // the next locked tier so finishing ends in "learn N more to unlock…" rather
-    // than a dead end. Only tiers that actually have stories are offered.
-    const tiersWithStories = new Set(stories.map(s => s.tier))
-    const nextTierUnlock = nextStory ? null : nextLockedTier(CATEGORIES, learnedCount, tiersWithStories)
+    // than a dead end. Only tiers of THIS story's level that actually have
+    // stories are offered, gated by that level's own thresholds.
+    const shelfLevel = selectedCategory.level
+    const tiersWithStories = new Set(
+      stories.filter(s => levelOf(s.level) === shelfLevel).map(s => s.tier)
+    )
+    const nextTierUnlock = nextStory
+      ? null
+      : nextLockedTier(tiersAt(shelfLevel), learnedAt(shelfLevel), tiersWithStories)
 
     return (
       <StoryReader
@@ -424,21 +469,27 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
 
   // ── Story list view ────────────────────────────────────────────────────
   if (view === 'list' && selectedCategory) {
-    const catStories = stories.filter(s => s.tier === selectedCategory.tier)
+    const catStories = storiesIn(selectedCategory)
+    const shelfLabel = getLevelLabel(track.language, track.system, selectedCategory.level)
     return (
       <div style={pageShell()}>
         <div style={{ maxWidth: '860px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px', position: 'relative', zIndex: 1 }}>
           <IconButton icon={ArrowLeft} label="Back" onClick={() => setView('categories')} />
 
           <div style={{ margin: '28px 0 24px' }}>
-            <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>
-              {selectedCategory.wordRange} words
-            </span>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>
+                {shelfLabel}
+              </span>
+              <span style={pillStyle('var(--text-muted)', 'var(--surface-2)', 'var(--border)')}>
+                {selectedCategory.wordRange} words
+              </span>
+            </div>
             <h1 style={{ fontSize: '34px', fontWeight: 800, color: 'var(--text)', margin: '14px 0 8px' }}>
               {selectedCategory.label}
             </h1>
             <p style={{ fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
-              Choose a story matched to this vocabulary tier.
+              {selectedCategory.description}
             </p>
           </div>
 
@@ -480,7 +531,7 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
             Stories
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.6, margin: 0 }}>
-            Read stories matched to your vocabulary level.
+            Everything you can read, from every level you’ve reached.
           </p>
         </div>
 
@@ -529,15 +580,19 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
         })()}
 
         {(() => {
-          // A fresh story every day — a calm daily pick from what you can read.
-          const daily = pickDailyStory({ stories, categories: CATEGORIES, learnedCount, readIds, dateStr: todayStr() })
+          // A fresh story every day — a calm daily pick from everything the
+          // learner can read, across every level they've reached.
+          const daily = pickDailyStory({
+            stories, categories: CATEGORIES, learnedCount, readIds, dateStr: todayStr(),
+            tiersFor: tiersAt, learnedFor: learnedAt,
+          })
           if (!daily) return null
           return (
             <button
               onClick={() => {
-                // The reader view needs the story's category set too (drives
-                // next-story / tier-unlock), so resolve it from the tier.
-                setSelectedCategory(CATEGORIES.find(c => c.tier === daily.tier) || null)
+                // The reader view needs the story's shelf (tier + level) too —
+                // it drives next-story and the tier-unlock nudge.
+                setSelectedCategory(categoryForStory(daily, track))
                 setSelectedStory(daily)
                 setView('reader')
               }}
@@ -567,36 +622,107 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
           )
         })()}
 
-        {stories.length === 0 ? (
-          <EmptyPanel icon={Library} title="No stories yet" text="Stories for this level are coming soon." />
-        ) : (
-          <div style={{ display: 'grid', gap: '14px' }}>
-            {CATEGORIES.map(cat => {
-              const unlocked = learnedCount >= cat.minWords
-              const catStories = stories.filter(s => s.tier === cat.tier)
-              const hasStories = catStories.length > 0
-              const isClickable = unlocked && hasStories
-              return (
-                <CategoryCard
-                  key={cat.tier}
-                  cat={cat}
-                  unlocked={unlocked}
-                  hasStories={hasStories}
-                  isClickable={isClickable}
-                  storyCount={catStories.length}
-                  readCount={catStories.filter(s => readIds.has(s.id)).length}
-                  learnedCount={learnedCount}
-                  accentHex={accentHex}
-                  onClick={() => {
-                    if (!isClickable) return
-                    setSelectedCategory(cat)
-                    setView('list')
-                  }}
-                />
-              )
-            })}
-          </div>
-        )}
+        {(() => {
+          // The cumulative shelf: one group per level the learner has reached
+          // that actually has stories, current level first, then downward.
+          const levels = storyLevels(stories, track.current_level)
+          if (levels.length === 0) {
+            return <EmptyPanel icon={Library} title="No stories yet" text="Stories are on the way. Keep learning words — they'll be here waiting." />
+          }
+          const currentHasStories = levels.indexOf(track.current_level) >= 0
+          const currentLabel = getLevelLabel(track.language, track.system, track.current_level)
+          return (
+            <div style={{ display: 'grid', gap: '30px' }}>
+              {/* Honest note: this level's own stories aren't written yet, but
+                  everything from the levels below is still on the shelf. */}
+              {!currentHasStories && (
+                <div style={{
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: '18px', padding: '18px 20px',
+                  display: 'flex', gap: '14px', alignItems: 'flex-start',
+                }}>
+                  <Library size={20} strokeWidth={1.85} color="var(--text-muted)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div>
+                    <div style={{ fontSize: '14.5px', fontWeight: 750, color: 'var(--text)', marginBottom: '4px' }}>
+                      {currentLabel} stories are on the way
+                    </div>
+                    <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                      Everything you’ve unlocked so far is still here — re-reading is one of the
+                      best ways to make vocabulary stick.
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {levels.map(level => {
+                const levelTiers = tiersAt(level)
+                const levelLearned = learnedAt(level)
+                const levelStories = stories.filter(s => levelOf(s.level) === level)
+                const readHere = levelStories.filter(s => readIds.has(s.id)).length
+                const isCurrent = level === track.current_level
+                // A learner with a single shelf (everyone at level 1) doesn't
+                // need a level heading over it — the page header already names
+                // their level. Headings appear the moment the shelf grows.
+                const showHeading = levels.length > 1 || !isCurrent
+                return (
+                  <section key={level} aria-labelledby={showHeading ? 'story-level-' + level : undefined}>
+                    {showHeading && (
+                      <div style={{
+                        display: 'flex', alignItems: 'baseline', gap: '10px',
+                        marginBottom: '12px', flexWrap: 'wrap',
+                      }}>
+                        <h2 id={'story-level-' + level} style={{
+                          fontSize: '19px', fontWeight: 800, color: 'var(--text)', margin: 0,
+                        }}>
+                          {getLevelLabel(track.language, track.system, level)}
+                        </h2>
+                        {isCurrent && (
+                          <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>Your level</span>
+                        )}
+                        <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                          {readHere > 0
+                            ? readHere + ' of ' + levelStories.length + ' read'
+                            : levelStories.length + ' ' + (levelStories.length === 1 ? 'story' : 'stories')}
+                        </span>
+                      </div>
+                    )}
+                    <div style={{ display: 'grid', gap: '14px' }}>
+                      {levelTiers.map(tier => {
+                        const cat = { ...tier, level }
+                        const unlocked = levelLearned >= cat.minWords
+                        const catStories = storiesIn(cat)
+                        const hasStories = catStories.length > 0
+                        // A level already behind the learner is finished: an
+                        // empty tier there is noise, not motivation. The current
+                        // level keeps every tier so the path ahead stays visible.
+                        if (!hasStories && !isCurrent) return null
+                        const isClickable = unlocked && hasStories
+                        return (
+                          <CategoryCard
+                            key={cat.tier}
+                            cat={cat}
+                            unlocked={unlocked}
+                            hasStories={hasStories}
+                            isClickable={isClickable}
+                            storyCount={catStories.length}
+                            readCount={catStories.filter(s => readIds.has(s.id)).length}
+                            learnedCount={levelLearned}
+                            accentHex={accentHex}
+                            onClick={() => {
+                              if (!isClickable) return
+                              setSelectedCategory(cat)
+                              setView('list')
+                            }}
+                          />
+                        )
+                      })}
+                    </div>
+                  </section>
+                )
+              })}
+            </div>
+          )
+        })()}
       </div>
     </div>
   )

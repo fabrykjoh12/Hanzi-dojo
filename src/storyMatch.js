@@ -20,7 +20,14 @@ import { calculateStoryReadability } from './storyReading'
 //
 // `language` selects the canonical readability's name/particle handling (Chinese
 // proper names, Japanese particles) so the ranking uses the reader's true
-// numbers. Returns a stable shape whether or not a story is available:
+// numbers.
+//
+// The story shelf is cumulative (every level up to the learner's current one),
+// so each story is gated by the tiers of ITS OWN level: pass `tiersFor(level)`
+// and `learnedFor(level)`. Omitting them falls back to the flat `categories` +
+// `learnedCount` pair, which is still correct for a single-level pool.
+//
+// Returns a stable shape whether or not a story is available:
 //   { story, knownPct, total, sessionWordsInStory, isRead,
 //     wordsToUnlock, nextTierLabel }
 export function pickRecapStory({
@@ -32,13 +39,19 @@ export function pickRecapStory({
   learnedCount = 0,
   categories = [],
   language,
+  tiersFor,
+  learnedFor,
 } = {}) {
-  const minWordsByTier = {}
-  categories.forEach(c => { minWordsByTier[c.tier] = c.minWords })
+  const catsAt = typeof tiersFor === 'function' ? (lvl) => tiersFor(lvl) || [] : () => categories
+  const learnedAt = typeof learnedFor === 'function' ? (lvl) => learnedFor(lvl) || 0 : () => learnedCount
+  const isUnlocked = (s) => {
+    const cat = catsAt(s.level).find(c => c.tier === s.tier)
+    return learnedAt(s.level) >= (cat ? cat.minWords : 0)
+  }
   const sessionSet = new Set(sessionWords)
 
   const scored = stories
-    .filter(s => learnedCount >= (minWordsByTier[s.tier] ?? 0))
+    .filter(isUnlocked)
     .map(s => {
       const r = calculateStoryReadability({ content: s.content, vocabMap, cards: userCards, language })
       const hits = r.storyWords.filter(w => sessionSet.has(w))

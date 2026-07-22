@@ -61,6 +61,13 @@ const VOCAB = [
 
 // One published, Paced-Reveal story, and one published Chat-format story.
 // Both share tier 1 so they land in the same "First Steps" story list.
+//
+// The track sits at current_level 2 and the shelf is cumulative, so `st5` lives
+// at level 1 — a level the learner has already passed. It exercises the grouped
+// shelf (an "HSK 1" group under the "HSK 2" one) and per-level gating: it sits
+// in tier 3, which would be locked at the learner's level-2 progress but is open
+// because level 1 is complete. It is deliberately NOT tier 1, so "First Steps"
+// stays a unique control on the screen for the existing reader specs.
 const STORIES = [{
   id: 'st1', language: 'chinese', system: 'hsk', level: 2, tier: 1, story_number: 1,
   title: '公园里的下午', is_published: true, presentation: 'paced', has_audio: false,
@@ -83,6 +90,11 @@ const STORIES = [{
   image_path: null, english_content: 'A reply-along chat.',
   content: ['朋友：你今天好吗？', '小明：我很好！', '朋友：我们去公园吧。', '小明：好，一起去。'].join('\n'),
   interactions: { you: '小明', distractors: { '1': [{ text: '我不是学生。', pinyin: 'x' }], '3': [{ text: '再见。', pinyin: 'y' }] } },
+}, {
+  id: 'st5', language: 'chinese', system: 'hsk', level: 1, tier: 3, story_number: 1,
+  title: '老朋友', is_published: true, presentation: 'paced', has_audio: false,
+  image_path: null, english_content: 'An old friend.',
+  content: ['今天我看朋友。', '朋友很好。'].join('\n'),
 }];
 
 function card(n, o = {}) {

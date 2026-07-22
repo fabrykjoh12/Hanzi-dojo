@@ -14,9 +14,8 @@ import { languageTheme } from './languageTheme'
 import { checkTypedAnswer } from './typedAnswer'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
-import { isLearned } from './mastery'
 import { pickRecapStory } from './storyMatch'
-import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
+import { tiersFor, learnedByLevel, readingGateCount } from './storyTiers'
 import { buildStudyQueue, reinsertSoon, queueSeed } from './studyQueue'
 import { isFirstRunSession, firstRunNewTarget } from './firstRun'
 import { isReturningFromBreak, gentleReviewTarget } from './gentleReturn'
@@ -480,9 +479,12 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       const [vres, sres, cres, rres] = await Promise.all([
         supabase.from('vocabulary').select('id, word, level')
           .eq('language', track.language).eq('system', track.system).eq('is_active', true),
-        supabase.from('stories').select('id, title, content, tier, story_number')
+        // Cumulative shelf: every level the learner has reached, not just the
+        // current one — so the recap still has something to recommend at a
+        // level whose own stories don't exist yet.
+        supabase.from('stories').select('id, title, content, tier, story_number, level')
           .eq('language', track.language).eq('system', track.system)
-          .eq('level', track.current_level).eq('is_published', true),
+          .lte('level', track.current_level).eq('is_published', true),
         supabase.from('cards').select('vocab_id, is_easy, state, learned')
           .eq('user_id', session.user.id),
         supabase.from('story_reads').select('story_id').eq('user_id', session.user.id),
@@ -497,11 +499,20 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       const userCards = {}
       cards.forEach(c => { userCards[c.vocab_id] = c })
 
-      // Tier gating mirrors Stories: learned words at the CURRENT level only.
-      const currentLevelIds = new Set(
-        vocabRows.filter(v => v.level === track.current_level).map(v => v.id)
-      )
-      const learnedCount = cards.filter(c => currentLevelIds.has(c.vocab_id) && isLearned(c)).length
+      // Tier gating mirrors Stories exactly: each story is gated by ITS OWN
+      // level's tiers and that level's learned-word count, with an already-passed
+      // level counting as complete.
+      const learnedPerLevel = learnedByLevel(vocabRows, cards)
+      const tiersAt = (lvl) => tiersFor(track.language, lvl == null ? track.current_level : lvl)
+      const learnedAt = (lvl) => {
+        const level = lvl == null ? track.current_level : lvl
+        return readingGateCount({
+          level,
+          currentLevel: track.current_level,
+          learnedAtLevel: learnedPerLevel[level] || 0,
+          tiers: tiersAt(level),
+        })
+      }
 
       // Distinct words actually studied this session.
       const sessionWords = [...new Set(sessionVocabRef.current.map(e => e.word))]
@@ -512,9 +523,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         userCards,
         sessionWords,
         readIds: new Set((rres.data || []).map(r => r.story_id)),
-        learnedCount,
-        categories: CATEGORIES_BY_LANGUAGE[track.language] || CATEGORIES_BY_LANGUAGE.chinese,
+        learnedCount: learnedAt(track.current_level),
+        categories: tiersAt(track.current_level),
         language: track.language,
+        tiersFor: tiersAt,
+        learnedFor: learnedAt,
       })
       setStoryUnlock(rec)
     } catch {
