@@ -693,6 +693,77 @@ narration, and `story-images-list` → author covers → `story-images-apply`.
 
 ---
 
+## Next Milestone
+
+### M2 — Read deeper, grade safely
+
+**Objective:** the readers people actually use stop showing pinyin as an
+all-or-nothing crutch, and the core grading write stops being able to leave
+partial state behind.
+
+**Why now:** M1 removed the reading dead-end but changed nothing about the
+reading *experience*. Audit finding: `readingVisibleFor` (per-word,
+status-driven reading display) is wired ONLY into `StoryReaderImmersive` — the
+classic scroll reader. `PacedReader`, `ChatReader` and `SceneReader` render a
+whole pinyin line behind one `showPy` boolean. Paced is the DEFAULT
+presentation, so most learners get the crude behavior and the roadmap item
+"Pinyin only when you need it" is effectively unimplemented. It is also the
+owner's own stated want in `TASKS.md` ("add better story reader").
+
+**Not in M2:** word-by-word read-along. It needs word-level audio timings, which
+means regenerating story narration with Google TTS SSML `<mark>` timepoints plus
+a storage format for them — an owner-run pipeline change with real TTS cost. It
+deserves its own milestone; do not let a session start it casually.
+
+### TASK-004 — Graduated per-word reading in the paced, chat and scene readers
+
+**Status:** Ready · **Priority:** High · **Branch:** `claude/graduated-pinyin-readers`
+**Dependencies:** None · **Conflict risk:** Low (readers only)
+
+Bring the classic reader's per-word logic to the three fixed-format readers:
+reading shown per word by status (Always / Learning / Unknown / Off) via
+`readingVisibleFor`, not one line behind a boolean. Reserve the reading's
+vertical space so revealing it never shifts the baseline (`reserveRuby` already
+does this in the classic reader). Persist the mode in the existing `reader:prefs`
+IndexedDB object alongside the current flags. Japanese must keep its kana-only
+guard (`hasKanjiChar`) so furigana never renders over kana-only words.
+
+**Owns:** `src/PacedReader.jsx`, `src/ChatReader.jsx`, `src/SceneReader.jsx`,
+`src/InteractiveChatReader.jsx`, `src/useStoryReaderCore.js`,
+`src/storyReading.js` (+ tests), reader e2e specs.
+**Must not touch:** `src/Study.jsx`, `src/Stories.jsx`, `src/storyTiers.js`,
+migrations, `.github/workflows/**`, `ROADMAP.md`, `docs/BACKLOG.md`.
+
+### TASK-005 — Transactional grading (single RPC)
+
+**Status:** Ready · **Priority:** High · **Branch:** `claude/transactional-grading`
+**Dependencies:** None · **Conflict risk:** Low (no reader files)
+
+Collapse the separate grade-path writes (card update, `review_logs` insert,
+`daily_activity` upsert) into one security-definer Supabase RPC so a mid-write
+failure cannot leave partial state. Keep the offline path working: `syncQueue`
+must replay through the same RPC, and idempotency must hold on replay. The
+migration must be additive and the client must degrade safely if the RPC is
+absent (the repo's established pattern for unapplied migrations).
+
+**Owns:** a new `supabase/migrations/*.sql`, `src/Study.jsx` (grading path only),
+`src/syncQueue.js`, `supabase/schema.sql` (+ tests).
+**Must not touch:** any reader file, `src/Stories.jsx`, `src/storyTiers.js`,
+`ROADMAP.md`, `docs/BACKLOG.md`.
+
+### TASK-006 — Lint + docs hygiene (small, optional)
+
+**Status:** Ready · **Priority:** Low · **Branch:** `claude/lint-hygiene`
+
+Fix the 2 real ESLint errors (`Dashboard.jsx` set-state-in-effect,
+`HowMuchCanYouRead.jsx` unused `useMemo`), stop linting `.claude/**`, and correct
+the stale "0-error baseline" claim in `Claude.md`. Owns only those files plus the
+eslint config. Cheap; fold into another change if you prefer.
+
+### Parallel plan
+TASK-004 and TASK-005 share no files — run both now. TASK-006 is independent of
+both but small enough to skip or bundle. Merge order: 005, then 004, then 006.
+
 ## Backlog
 
 Prioritized, but **not** started — do not open sessions for these without a new
