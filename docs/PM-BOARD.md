@@ -285,7 +285,7 @@ _To be filled by the implementation session._
 
 ### TASK-002 — Unblock the no-LLM authored-story lane for Chinese HSK 3
 
-**Status:** Ready
+**Status:** In Review
 **Priority:** High
 **Owner:** Unassigned
 **Branch:** `claude/authored-lane-hsk3`
@@ -372,25 +372,81 @@ absent file.
 - [ ] A short comment or doc note states that Chinese authored stories must use names present in `src/characterNames.js`.
 - [ ] The *Owner actions* section documents the full authored-lane flow for HSK 3 with exact task names.
 - [ ] `data/hsk3_level1.csv` removed, or its retention justified in the completion notes after a grep.
-- [ ] `npx eslint .` — no new errors. `npm run build` passes.
+- [x] `npx eslint .` — no new errors. `npm run build` passes.
 
 #### Required states
 
 Not a UI task. Instead:
 
-- [ ] Suite green with the snapshot absent (the state at merge time).
-- [ ] Suite green with a synthetic snapshot present (verify locally with a small fixture, then remove it).
+- [x] Suite green with the snapshot absent (the state at merge time).
+- [x] Suite green with a synthetic snapshot present (verify locally with a small fixture, then remove it).
 
 #### Validation
 
-- [ ] `npx vitest run` (both with and without a temporary snapshot fixture)
-- [ ] `npx eslint .`
-- [ ] `npm run build`
-- [ ] Workflow YAML parse check
+- [x] `npx vitest run` (both with and without a temporary snapshot fixture)
+- [x] `npx eslint .`
+- [x] `npm run build`
+- [x] Workflow YAML parse check
 
 #### Completion notes
 
-_To be filled by the implementation session._
+**Branch:** `claude/authored-lane-hsk3`. Files changed:
+`.github/workflows/regen-content.yml`, `src/authoredStories.test.js`, this file.
+
+**Workflow.** Added `authored-vocab-hsk3` / `-hsk4` / `-hsk5` / `-hsk6`, each a
+verbatim mirror of the `authored-vocab-hsk2` block with only the `--level`
+changed (`node authored-stories.mjs --list-vocab --language chinese --system
+hsk_3 --level N`). All four are in the `task` input `options` list. Verified by
+parsing the YAML and cross-checking every `options` value against every
+`if [ "…" = "<task>" ]` run block: **no run block lacks an option, and no new
+option lacks a run block.** (`meanings` and `examples` legitimately have no
+`if`-block of their own — they are handled by the earlier `both` branch. That is
+pre-existing.)
+
+**Validator.** `SNAPSHOTS` is now built from a declarative `SNAPSHOT_FILES` map
+filtered through `existsSync`, so an entry whose file is not committed is simply
+dropped and that level falls back to structural-only checks. Added
+`'chinese|hsk_3|3' → data/hsk3-vocab-snapshot.json`. **The snapshot file itself
+was deliberately NOT created** — it is the owner's dump output.
+
+Two supporting fixes were needed for the Chinese lane to actually validate:
+- The `Intl.Segmenter` was hardcoded to `'ja'`. It is now chosen per language
+  (`zh` for Chinese), matching the reader. Without this a Chinese story's
+  unmatched runs would be tokenized with Japanese word-breaking.
+- `KNOWN_SPEAKERS` gained a `chinese` bible **derived from
+  `CHARACTER_READINGS.chinese`** plus a small role-noun allowlist
+  (`妈妈/爸爸/朋友/老师/服务员/店员/医生/大家`). This makes the "Chinese authored
+  stories must use names present in `src/characterNames.js`" rule *executable*,
+  not just documented — a new personal name has to be added to
+  `characterNames.js` or the suite fails. The rationale is spelled out in a
+  comment above the constant.
+
+The `unexplained kana reach words` test was renamed to `unexplained reach words`
+since for Chinese it catches stray latin/digit runs rather than kana.
+
+**Verification.** Baseline **665 passing / 67 files** was preserved exactly with
+the snapshot absent. With a temporary synthetic Chinese pool wired in for
+`chinese|hsk_3|1` (the 8 existing Chinese authored stories), the suite ran
+**85 passing** in that file with the Chinese vocabulary checks active — and
+truncating the pool made it fail with
+`unmatched kanji/katakana: 没 | 问题 | 会 | 儿 | 见`, confirming the check is real
+and that the `zh` segmenter produces proper word units (`问题`, not per-character).
+Both temporary fixtures were deleted before committing; `git status` is clean of
+them.
+
+**`data/hsk3_level1.csv` was NOT deleted — it is still referenced.**
+`grep -rn "hsk3_level1"` returns `src/pinyin.test.js:71`, which reads it as the
+fixture for the "real HSK level-1 coverage" guard (`readingToPhonemes` must
+convert every shipped reading with no fallback). The name is misleading (it is
+HSK **1** data seeded under the `hsk_3` *system*, which is the DB's actual
+`system` value for all Chinese levels — so the name is arguably correct and only
+reads as "HSK 3"), but deleting it would break that test. Left in place. A
+rename to `data/hsk3-system-level1.csv` plus a one-line update in
+`pinyin.test.js` would be a safe follow-up if the ambiguity keeps costing time.
+
+**Not done, deliberately:** no snapshot file created, no story content authored,
+no `generate-serial-stories.mjs` change, no app-screen change (TASK-001 owns
+those), no `ROADMAP.md` / `docs/BACKLOG.md` edit (TASK-003 owns those).
 
 ---
 
@@ -455,12 +511,55 @@ Then re-run `serial-hsk3-6`, ideally with `story_tier: 1` first as a taste test.
 (`story_number` collision — `Claude.md` §0.00). Afterwards run `comprehension`
 (chinese) and the matching `story-audio-*` task.
 
-### The no-LLM alternative: the authored lane (available after TASK-002)
-1. Dispatch **`authored-vocab-hsk3`** — dumps the seeded HSK 3 pool.
-2. Commit the dump as `data/hsk3-vocab-snapshot.json`.
-3. A session authors a season into `data/authored-stories.json`; `npx vitest run`
-   validates every chapter against the real pool with the production matcher.
-4. Dispatch **`authored-insert`** (its own workflow/concurrency group).
+### The no-LLM alternative: the authored lane (wired up by TASK-002)
+
+No LLM, no quota, no API spend — the path `Claude.md` §0.00 already calls the
+preferred quality lane. Five steps, in order:
+
+**1. Dump the pool.** Actions → *Regenerate vocabulary content* → Run workflow →
+`task: authored-vocab-hsk3`. (Also available: `authored-vocab-hsk4`,
+`authored-vocab-hsk5`, `authored-vocab-hsk6`, and the pre-existing
+`authored-vocab-hsk1` / `authored-vocab-hsk2` / `authored-vocab-jlpt1` /
+`authored-vocab-n4` / `authored-vocab-russian`.) The `language` input is ignored —
+each task carries its own `--language/--system/--level`. The run prints the pool
+between `---VOCAB-JSON-START---` / `---VOCAB-JSON-END---` markers in the log.
+
+**2. Commit the snapshot as `data/hsk3-vocab-snapshot.json`.** ⚠️ The dump prints
+rows of `{word, reading, meaning, sort_order}`; the snapshot file must be the
+**reduced `[[word, reading], …]` pair array**, exactly like
+`data/jlpt1-vocab-snapshot.json`, so `buildVocabMatcher` consumes it unchanged.
+Reduce with:
+
+```
+node -e "const r=require('./raw.json');require('fs').writeFileSync('data/hsk3-vocab-snapshot.json',JSON.stringify(r.map(v=>[v.word,v.reading])))"
+```
+
+Until this file exists, `src/authoredStories.test.js` runs **structural-only**
+checks for `chinese|hsk_3|3` (line length, speakers, English parallelism) — it
+never fails for an absent snapshot. The filename and key are already wired.
+
+**3. A session authors a season into `data/authored-stories.json`.** Each entry:
+`{language:'chinese', system:'hsk_3', level:3, tier, tier_min_words, title,
+english_summary, content, english_content, is_published}`. Dialogue uses the
+**fullwidth colon `：`**. ⚠️ Every **personal name** must exist in
+`src/characterNames.js` → `CHARACTER_READINGS.chinese`, or the reader translates
+it character-by-character instead of showing the "Name" popup — the validator
+enforces this for speakers via a bible derived from that map. Role nouns
+(妈妈/朋友/老师…) are ordinary vocabulary and belong in the test's
+`CN_ROLE_SPEAKERS` allowlist, **not** in `CHARACTER_READINGS`.
+
+**4. Validate with `npx vitest run`.** With the snapshot committed, every chapter
+is checked against the real pool using the **production matcher** — each hanzi run
+must resolve to vocabulary or a known name, so the story is tappable by
+construction. No LLM involved.
+
+**5. Dispatch `authored-insert`.** It reads `data/authored-stories.json` and
+assigns `story_number` as (current max for that language/system/level) + 1.
+⚠️ **Never run it while a `serial-*` run is in flight** — serial runs read their
+number counter once at start, so a concurrent authored insert grabs the same
+range (`Claude.md` §0.00; repair with `publish-stories.mjs --fix-collisions`).
+Afterwards, optionally run `comprehension` (chinese) and `story-audio-*` for
+narration, and `story-images-list` → author covers → `story-images-apply`.
 
 ### Other outstanding one-time setup (unchanged by M1)
 - **Public story links migration** — apply
