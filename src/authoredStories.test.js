@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { buildVocabMatcher, matchVocabAt, boundaryAfterSkip, splitSpeaker, matchName, JP_PARTICLES } from './storyReading'
 import { splitScene } from './sceneReading'
 import { glossaryLookup } from './grammarGlossary'
@@ -12,8 +12,25 @@ import { CHARACTER_READINGS } from './characterNames'
 // same bar the serial pipeline enforces, applied with the production matcher.
 
 const stories = JSON.parse(readFileSync(new URL('../data/authored-stories.json', import.meta.url), 'utf8'))
-const SNAPSHOTS = {
-  'japanese|jlpt|1': new URL('../data/jlpt1-vocab-snapshot.json', import.meta.url),
+
+// Vocabulary snapshots, keyed `language|system|level`. A snapshot is a JSON
+// array of [word, reading] pairs — exactly the shape buildVocabMatcher expects
+// once expanded into a vocab map (see vocabMapFor). Produce one by dispatching
+// the matching `authored-vocab-*` task in .github/workflows/regen-content.yml
+// and reducing the dumped rows to [word, reading] pairs.
+//
+// Entries are OPTIONAL BY EXISTENCE: a level listed here with no committed
+// snapshot file simply falls back to the structural-only checks below, so the
+// suite stays green before the owner has run the dump. Never make an absent
+// snapshot a failure.
+const SNAPSHOT_FILES = {
+  'japanese|jlpt|1': '../data/jlpt1-vocab-snapshot.json',
+  'chinese|hsk_3|3': '../data/hsk3-vocab-snapshot.json',
+}
+const SNAPSHOTS = {}
+for (const key of Object.keys(SNAPSHOT_FILES)) {
+  const url = new URL(SNAPSHOT_FILES[key], import.meta.url)
+  if (existsSync(url)) SNAPSHOTS[key] = url
 }
 
 function vocabMapFor(key) {
@@ -30,8 +47,22 @@ function vocabMapFor(key) {
 // characters plus the chorus label みんな, "everyone", for group lines). Lanes
 // with an open-ended cast — e.g. the chat-story library — have no bible and are
 // exempt from the check.
+//
+// ⚠️ Chinese lane: a personal name used as a speaker (or anywhere in the story
+// text) MUST also exist in `src/characterNames.js` → CHARACTER_READINGS.chinese.
+// The reader detects names via `matchName` against that map; a name that is not
+// listed is not vocabulary either, so the reader would translate it
+// character-by-character instead of showing the "Name" popup. Hence the Chinese
+// bible is DERIVED from CHARACTER_READINGS — adding a new character to an
+// authored Chinese season means adding it to characterNames.js first.
+// Role nouns (妈妈/朋友/老师/服务员…) are ordinary vocabulary, deliberately
+// absent from CHARACTER_READINGS, and allow-listed separately as speaker
+// labels. Extend this list (not CHARACTER_READINGS) when a new season needs a
+// role-noun speaker; extend CHARACTER_READINGS when it needs a real name.
+const CN_ROLE_SPEAKERS = ['妈妈', '爸爸', '朋友', '老师', '服务员', '店员', '医生', '大家']
 const KNOWN_SPEAKERS = {
   japanese: new Set(['たかし', 'はな', 'おかあさん', 'おじいさん', 'せんせい', 'みせのひと', 'みんな']),
+  chinese: new Set([...Object.keys(CHARACTER_READINGS.chinese || {}), ...CN_ROLE_SPEAKERS]),
 }
 
 function hasKanjiOrKatakana(s) {
@@ -49,8 +80,16 @@ function isWordChar(c) {
 // Scan a line the way the reader does (same match calls, same run handling,
 // same Intl.Segmenter pass over unmatched runs) and return the resulting
 // plain word tokens — the ones that would tap without a vocabulary entry.
-const jaSegmenter = new Intl.Segmenter('ja', { granularity: 'word' })
-function unmatchedTokens(text, matcher, names, particles) {
+// The reader picks its Intl.Segmenter locale from the track language, so the
+// validator must too — 'zh' for Chinese, 'ja' for Japanese.
+const SEGMENTER_LOCALE = { japanese: 'ja', chinese: 'zh', russian: 'ru' }
+const segmenters = {}
+function segmenterFor(language) {
+  const locale = SEGMENTER_LOCALE[language] || 'ja'
+  if (!segmenters[locale]) segmenters[locale] = new Intl.Segmenter(locale, { granularity: 'word' })
+  return segmenters[locale]
+}
+function unmatchedTokens(text, matcher, names, particles, segmenter) {
   const out = []
   let i = 0
   let boundary = true
@@ -67,7 +106,7 @@ function unmatchedTokens(text, matcher, names, particles) {
       b = boundaryAfterSkip(text[j], particles)
       j += 1
     }
-    for (const seg of jaSegmenter.segment(text.slice(i, j))) {
+    for (const seg of segmenter.segment(text.slice(i, j))) {
       const t = seg.segment
       if (!t.trim()) continue
       if ([...t].every(ch => !isWordChar(ch.charCodeAt(0)))) continue   // punctuation
@@ -134,23 +173,28 @@ describe('authored stories validate against the level vocabulary', () => {
       const matcher = buildVocabMatcher(vocabMap, s.language)
       const names = CHARACTER_READINGS[s.language] || {}
       const particles = s.language === 'japanese' ? JP_PARTICLES : new Set()
+      const segmenter = segmenterFor(s.language)
 
+      // For Chinese this is the whole bar: every hanzi run must resolve to a
+      // vocabulary entry or a CHARACTER_READINGS name, or it is untappable.
       it('every kanji/katakana word resolves to vocabulary', () => {
         const bad = []
         for (const line of lines) {
           const { text } = splitSpeaker(line)
-          for (const t of unmatchedTokens(text, matcher, names, particles)) {
+          for (const t of unmatchedTokens(text, matcher, names, particles, segmenter)) {
             if (hasKanjiOrKatakana(t)) bad.push(t + ' (in: ' + text + ')')
           }
         }
         expect(bad, 'unmatched kanji/katakana: ' + bad.join(' | ')).toEqual([])
       })
 
-      it('unexplained kana reach words stay rare (≤ 4 distinct)', () => {
+      // Japanese: kana grammar/reach words. Chinese has no kana, so this only
+      // catches stray latin/digit runs — harmless, and a useful typo guard.
+      it('unexplained reach words stay rare (≤ 4 distinct)', () => {
         const reach = new Set()
         for (const line of lines) {
           const { text } = splitSpeaker(line)
-          for (const t of unmatchedTokens(text, matcher, names, particles)) {
+          for (const t of unmatchedTokens(text, matcher, names, particles, segmenter)) {
             if (hasKanjiOrKatakana(t)) continue
             if (glossaryLookup(s.language, t)) continue   // grammar tap works
             reach.add(t)
