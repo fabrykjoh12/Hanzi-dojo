@@ -54,6 +54,37 @@ test.describe('Story reader', () => {
     await expect(page.getByText('You read it')).toBeVisible();
   });
 
+  test('paced reveal: reading mode is per word, not an all-or-nothing line', async ({ page }) => {
+    const reader = new ReaderPage(page);
+    await reader.openFirstStory();
+    await page.getByRole('button', { name: /Start reading/i }).click();
+
+    // 今天 is a card in review, so the default "Unknown" mode leaves it bare —
+    // the learner already knows it. No whole-line pinyin either.
+    await expect(page.getByText('jīntiān')).toHaveCount(0);
+
+    // The reading control lives behind the quiet settings panel.
+    await page.getByRole('button', { name: /Reader settings/i }).click();
+    const panel = page.getByRole('dialog', { name: /Reader settings/i });
+    await expect(panel).toBeVisible();
+    // The four modes are their own labelled group, separate from the English
+    // toggle (which also reads "Off").
+    const modes = panel.getByRole('group', { name: /display/i });
+
+    // Always → even the known word shows its reading, as ruby over that word.
+    await modes.getByRole('button', { name: 'Always' }).click();
+    await expect(page.locator('rt', { hasText: 'jīntiān' })).toBeVisible();
+
+    // Off → readings disappear again.
+    await modes.getByRole('button', { name: 'Off' }).click();
+    await expect(page.getByText('jīntiān')).toHaveCount(0);
+
+    // Escape closes the panel and returns focus to its button.
+    await page.keyboard.press('Escape');
+    await expect(panel).toBeHidden();
+    await expect(page.getByRole('button', { name: /Reader settings/i })).toBeFocused();
+  });
+
   test('comprehension check appears after finishing and scores answers', async ({ page }) => {
     const reader = new ReaderPage(page);
     await reader.openFirstStory();
