@@ -19,7 +19,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'node:fs'
-import { normalizeOverride } from './src/tts/overrides.js'
+import { normalizeOverride, overrideKey } from './src/tts/overrides.js'
 import { OVERRIDE_VERIFICATION, HUMAN_ONLY_VERIFICATIONS } from './src/tts/constants.js'
 import { readingToPhonemes } from './src/pinyin.js'
 
@@ -94,14 +94,48 @@ async function main() {
     return
   }
 
-  const { error } = await supabase
+  // Deliberately not an upsert. The table's uniqueness guard is an expression
+  // index (coalesce(context,'')) so that a null context still dedupes, and
+  // Postgres will not accept an expression index as an ON CONFLICT arbiter.
+  // Reading first and then choosing update-or-insert is also version-agnostic,
+  // which matters for a script an operator runs against whatever Postgres their
+  // project happens to be on.
+  const { data: existing, error: loadError } = await supabase
     .from('tts_pronunciation_overrides')
-    .upsert(rows, { onConflict: 'matched_text,context,locale' })
-  if (error) {
-    console.error('Upsert failed: ' + error.message)
+    .select('id, matched_text, context, locale')
+    .eq('locale', locale)
+  if (loadError) {
+    console.error('Could not read existing overrides: ' + loadError.message)
     process.exit(1)
   }
-  console.log('\nWrote ' + rows.length + ' overrides.')
+
+  const idByKey = new Map()
+  for (const row of existing || []) idByKey.set(overrideKey(row), row.id)
+
+  const toInsert = []
+  const toUpdate = []
+  for (const row of rows) {
+    const id = idByKey.get(overrideKey(row))
+    if (id) toUpdate.push({ id, row })
+    else toInsert.push(row)
+  }
+
+  if (toInsert.length) {
+    const { error } = await supabase.from('tts_pronunciation_overrides').insert(toInsert)
+    if (error) {
+      console.error('Insert failed: ' + error.message)
+      process.exit(1)
+    }
+  }
+  for (const { id, row } of toUpdate) {
+    const { error } = await supabase.from('tts_pronunciation_overrides').update(row).eq('id', id)
+    if (error) {
+      console.error('Update failed for ' + row.matched_text + ': ' + error.message)
+      process.exit(1)
+    }
+  }
+
+  console.log('\nWrote ' + rows.length + ' overrides (' + toInsert.length + ' new, ' + toUpdate.length + ' updated).')
 
   if (markStale) {
     // Any clip whose text contains an overridden span may now sound different.

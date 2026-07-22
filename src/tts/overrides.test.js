@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   isApplicable, selectOverrides, applyOverrides, overrideVersion,
-  assertVerificationChange, normalizeOverride,
+  assertVerificationChange, normalizeOverride, overrideKey,
 } from './overrides.js'
 import { OVERRIDE_VERIFICATION } from './constants.js'
 
@@ -119,6 +119,45 @@ describe('assertVerificationChange', () => {
 
   it('allows the pipeline to record an inferred reading', () => {
     expect(assertVerificationChange(OVERRIDE_VERIFICATION.INFERRED)).toBe(OVERRIDE_VERIFICATION.INFERRED)
+  })
+})
+
+// The loader keys on this instead of using ON CONFLICT, because the table's
+// uniqueness guard is an expression index that Postgres will not accept as an
+// arbiter. Getting this wrong duplicates every override on each run.
+describe('overrideKey', () => {
+  it('treats a null and an empty context as the same override', () => {
+    const withNull = { matched_text: '银行', context: null, locale: 'zh-CN' }
+    const withEmpty = { matched_text: '银行', context: '', locale: 'zh-CN' }
+    expect(overrideKey(withNull)).toBe(overrideKey(withEmpty))
+  })
+
+  it('separates the same span in different contexts', () => {
+    const everywhere = { matched_text: '小明', context: null, locale: 'zh-CN' }
+    const storyOnly = { matched_text: '小明', context: 'story', locale: 'zh-CN' }
+    expect(overrideKey(everywhere)).not.toBe(overrideKey(storyOnly))
+  })
+
+  it('separates the same span in different locales', () => {
+    expect(overrideKey({ matched_text: '银行', locale: 'zh-CN' }))
+      .not.toBe(overrideKey({ matched_text: '银行', locale: 'zh-TW' }))
+  })
+
+  it('separates different spans', () => {
+    expect(overrideKey({ matched_text: '银行', locale: 'zh-CN' }))
+      .not.toBe(overrideKey({ matched_text: '行李', locale: 'zh-CN' }))
+  })
+
+  it('handles a missing row without throwing', () => {
+    expect(overrideKey(null)).toBe('')
+  })
+
+  it('matches what a row read back from the database keys to', () => {
+    // What the loader writes...
+    const written = normalizeOverride({ matched_text: '银行', pinyin: 'yínháng', locale: 'zh-CN' })
+    // ...and the shape the select returns (context comes back as null).
+    const readBack = { id: 'abc', matched_text: '银行', context: null, locale: 'zh-CN' }
+    expect(overrideKey(written)).toBe(overrideKey(readBack))
   })
 })
 

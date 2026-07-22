@@ -115,6 +115,19 @@ export function assertVerificationChange(next, { byHuman = false } = {}) {
   return next
 }
 
+// The identity of an override: the span, the context it applies in, and the
+// locale. A null context and an empty one are the SAME override ("applies
+// everywhere"), which is why this collapses them - matching the coalesce() in
+// the table's unique index.
+//
+// That index is an expression index, so Postgres will not accept it as an
+// ON CONFLICT arbiter. Loaders therefore key on this instead and choose between
+// update and insert themselves.
+export function overrideKey(o) {
+  if (!o) return ''
+  return [o.matched_text || '', o.context || '', o.locale || ''].join('|')
+}
+
 // Normalize a raw override row into the shape the matcher expects, defaulting
 // an unknown verification state to the most conservative one.
 export function normalizeOverride(raw) {
