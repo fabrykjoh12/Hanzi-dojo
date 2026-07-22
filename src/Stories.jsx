@@ -660,26 +660,32 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
                 const levelStories = stories.filter(s => levelOf(s.level) === level)
                 const readHere = levelStories.filter(s => readIds.has(s.id)).length
                 const isCurrent = level === track.current_level
+                // A learner with a single shelf (everyone at level 1) doesn't
+                // need a level heading over it — the page header already names
+                // their level. Headings appear the moment the shelf grows.
+                const showHeading = levels.length > 1 || !isCurrent
                 return (
-                  <section key={level} aria-labelledby={'story-level-' + level}>
-                    <div style={{
-                      display: 'flex', alignItems: 'baseline', gap: '10px',
-                      marginBottom: '12px', flexWrap: 'wrap',
-                    }}>
-                      <h2 id={'story-level-' + level} style={{
-                        fontSize: '19px', fontWeight: 800, color: 'var(--text)', margin: 0,
+                  <section key={level} aria-labelledby={showHeading ? 'story-level-' + level : undefined}>
+                    {showHeading && (
+                      <div style={{
+                        display: 'flex', alignItems: 'baseline', gap: '10px',
+                        marginBottom: '12px', flexWrap: 'wrap',
                       }}>
-                        {getLevelLabel(track.language, track.system, level)}
-                      </h2>
-                      {isCurrent && (
-                        <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>Your level</span>
-                      )}
-                      <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', fontWeight: 600 }}>
-                        {readHere > 0
-                          ? readHere + ' of ' + levelStories.length + ' read'
-                          : levelStories.length + ' ' + (levelStories.length === 1 ? 'story' : 'stories')}
-                      </span>
-                    </div>
+                        <h2 id={'story-level-' + level} style={{
+                          fontSize: '19px', fontWeight: 800, color: 'var(--text)', margin: 0,
+                        }}>
+                          {getLevelLabel(track.language, track.system, level)}
+                        </h2>
+                        {isCurrent && (
+                          <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>Your level</span>
+                        )}
+                        <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                          {readHere > 0
+                            ? readHere + ' of ' + levelStories.length + ' read'
+                            : levelStories.length + ' ' + (levelStories.length === 1 ? 'story' : 'stories')}
+                        </span>
+                      </div>
+                    )}
                     <div style={{ display: 'grid', gap: '14px' }}>
                       {levelTiers.map(tier => {
                         const cat = { ...tier, level }
