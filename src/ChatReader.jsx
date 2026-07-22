@@ -1,8 +1,9 @@
-import { useMemo, useLayoutEffect, useState } from 'react'
+import { useMemo, useLayoutEffect, useState, useCallback } from 'react'
 import { getLevelLabel } from './utils'
 import { chatStyleFor } from './chatMissions'
 import { useStoryReaderCore } from './useStoryReaderCore'
 import { assignSpeakerSides } from './chatReading'
+import { ReadingSettings } from './ReadingScaffold'
 import ChatThread from './ChatThread'
 import ReaderLaunch from './ReaderLaunch'
 import WordLookupSheet from './WordLookupSheet'
@@ -10,6 +11,9 @@ import FinishOverlay from './FinishOverlay'
 import { ArrowLeft, Play, Pause } from 'lucide-react'
 
 const ghost = { background: 'none', border: 'none', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center' }
+// The chat readers paint their own light "messaging app" chrome rather than the
+// app's theme surfaces, so the header control borrows those tones.
+const CHAT_TINT = { bg: 'rgba(255,255,255,0.7)', border: 'rgba(0,0,0,0.12)', text: '#555' }
 
 // Chat-format reader (observer): reads a conversation as tap-to-reveal bubbles,
 // no "you" replies. Shares the bubble thread with InteractiveChatReader via
@@ -23,6 +27,14 @@ export default function ChatReader(props) {
   const levelLabel = getLevelLabel(track.language, track.system, story.level)
 
   const [typing, setTyping] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+
+  // While the settings panel is open its buttons own Space/→, not the thread.
+  const { setAdvanceBlocked } = c
+  const onSettingsOpen = useCallback((open) => {
+    setSettingsOpen(open)
+    setAdvanceBlocked(open)
+  }, [setAdvanceBlocked])
 
   // Hold a character bubble behind a brief "typing…" shimmer (~500ms) so it
   // reveals after the indicator. Skipped for the first beat, narration, during
@@ -53,11 +65,17 @@ export default function ChatReader(props) {
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 16px 8px', background: skin.bg }}>
         <button onClick={c.backToStart} aria-label="Back to start" style={ghost}><ArrowLeft size={18} color="#4a4a4a" /></button>
         <div style={{ flex: 1, textAlign: 'center', fontSize: '13px', fontWeight: 700, color: '#333', fontFamily: c.theme.font }}>{story.title}</div>
+        <ReadingSettings
+          mode={c.readingMode} setMode={c.setReadingMode}
+          showEnglish={false} setShowEnglish={null} hasEnglish={false}
+          language={track.language} accent={accent} onOpenChange={onSettingsOpen}
+          compact placement="bottom" tint={CHAT_TINT}
+        />
         <div style={{ fontSize: '12px', color: '#666', minWidth: '34px', textAlign: 'right' }}>{c.cur + 1}/{c.total}</div>
       </div>
 
-      <div onClick={() => { c.stopPlay(); c.advance() }} style={{ flex: 1, overflowY: 'auto', padding: '10px 14px 20px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <ChatThread revealed={revealed} sides={sides} skin={skin} theme={c.theme} accent={accent} userCards={userCards} showPy={c.showPy} activeIndex={c.cur} typingBeat={typing ? pending : null} reduceMotion={c.reduceMotion} onSelectWord={c.selectWord} />
+      <div onClick={() => { if (settingsOpen) return; c.stopPlay(); c.advance() }} style={{ flex: 1, overflowY: 'auto', padding: '10px 14px 20px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <ChatThread revealed={revealed} sides={sides} skin={skin} theme={c.theme} accent={accent} userCards={userCards} readingMode={c.readingMode} language={track.language} activeIndex={c.cur} typingBeat={typing ? pending : null} reduceMotion={c.reduceMotion} onSelectWord={c.selectWord} />
       </div>
       <div aria-live="polite" style={srOnly}>{revealed.length ? revealed[revealed.length - 1].text : ''}</div>
 

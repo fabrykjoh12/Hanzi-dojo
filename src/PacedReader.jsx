@@ -1,7 +1,8 @@
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useState } from 'react'
 import { getLevelLabel } from './utils'
-import { wordStatus, hasKanjiChar } from './storyReading'
+import { wordStatus } from './storyReading'
 import { useStoryReaderCore } from './useStoryReaderCore'
+import { TokenBody, ReadingSettings } from './ReadingScaffold'
 import ReaderLaunch from './ReaderLaunch'
 import WordLookupSheet from './WordLookupSheet'
 import FinishOverlay from './FinishOverlay'
@@ -14,13 +15,6 @@ function beatStyle(distance, reduceMotion) {
   const opacity = distance === 1 ? 0.5 : distance === 2 ? 0.22 : 0.08
   return { opacity, filter: blur ? `blur(${blur}px)` : 'none' }
 }
-// The reading line above a beat. For Japanese, skip words already written in
-// kana — furigana over hiragana is noise; only kanji words need a reading.
-function readingLine(tokens, language) {
-  return tokens
-    .filter(t => t.vocab && t.vocab.reading && (language !== 'japanese' || hasKanjiChar(t.text)))
-    .map(t => t.vocab.reading).join(' ')
-}
 
 export default function PacedReader(props) {
   const c = useStoryReaderCore(props)
@@ -31,6 +25,19 @@ export default function PacedReader(props) {
   const stageRef = useRef(null)
   const trackRef = useRef(null)
   const beatEls = useRef([])
+  const [settingsOpen, setSettingsOpen] = useState(false)
+
+  // Every beat reserves furigana space (not just the lit one), so advancing
+  // never re-measures to a different height and the focus scroll stays smooth.
+  const reserve = c.readingMode !== 'hidden'
+
+  // Space/→ drive the reading; while the settings panel is open they belong to
+  // the panel's own buttons, so hand the keys over for as long as it is up.
+  const { setAdvanceBlocked } = c
+  const onSettingsOpen = useCallback((open) => {
+    setSettingsOpen(open)
+    setAdvanceBlocked(open)
+  }, [setAdvanceBlocked])
 
   const layout = useCallback(() => {
     const stage = stageRef.current, trk = trackRef.current, el = beatEls.current[c.cur]
@@ -38,7 +45,7 @@ export default function PacedReader(props) {
     const y = stage.clientHeight * 0.42 - (el.offsetTop + el.offsetHeight / 2)
     trk.style.transform = `translateY(${y}px)`
   }, [c.cur])
-  useEffect(() => { if (c.started) layout() }, [c.started, c.cur, c.showPy, c.showEn, layout])
+  useEffect(() => { if (c.started) layout() }, [c.started, c.cur, c.readingMode, c.showEn, layout])
   useEffect(() => {
     const onResize = () => { if (c.started) layout() }
     window.addEventListener('resize', onResize)
@@ -60,7 +67,7 @@ export default function PacedReader(props) {
         <div style={{ height: '100%', background: accent, width: `${((c.cur + 1) / (c.total || 1)) * 100}%`, transition: c.reduceMotion ? 'none' : 'width .4s ease' }} />
       </div>
 
-      <div ref={stageRef} onClick={() => { c.stopPlay(); c.advance() }}
+      <div ref={stageRef} onClick={() => { if (settingsOpen) return; c.stopPlay(); c.advance() }}
         style={{ flex: 1, position: 'relative', overflow: 'hidden', cursor: 'pointer', WebkitMaskImage: 'linear-gradient(180deg,transparent,#000 16%,#000 82%,transparent)', maskImage: 'linear-gradient(180deg,transparent,#000 16%,#000 82%,transparent)' }}>
         <div ref={trackRef} style={{ position: 'absolute', left: 0, right: 0, padding: '0 28px', maxWidth: '680px', margin: '0 auto', transition: c.reduceMotion ? 'none' : 'transform .55s cubic-bezier(.33,1,.68,1)' }}>
           {c.beats.map((b, i) => {
@@ -69,10 +76,13 @@ export default function PacedReader(props) {
               <div key={i} ref={el => { beatEls.current[i] = el }} aria-hidden={i !== c.cur}
                 style={{ padding: '26px 0', transition: c.reduceMotion ? 'none' : 'opacity .45s ease, filter .45s ease', ...st }}>
                 {b.speaker && <div style={{ fontSize: '12.5px', fontWeight: 800, color: accent, marginBottom: '9px' }}>{b.speaker}</div>}
-                {c.showPy && i === c.cur && readingLine(b.tokens, track.language) && <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: 1.5 }}>{readingLine(b.tokens, track.language)}</div>}
-                <div style={{ fontFamily: c.theme.font, fontSize: '30px', lineHeight: 1.62, fontWeight: 500 }}>
+                <div style={{ fontFamily: c.theme.font, fontSize: '30px', lineHeight: reserve ? 2.05 : 1.62, fontWeight: 500 }}>
                   {b.tokens.map((t, k) => {
-                    if (!t.vocab) return <span key={k}>{t.text}</span>
+                    // Plain runs still route through TokenBody so they reserve the
+                    // same annotation row and sit on the line's shared baseline.
+                    if (!t.vocab) {
+                      return <span key={k}><TokenBody text={t.text} reading={null} mode={c.readingMode} status="not_started" language={track.language} reserve={reserve} /></span>
+                    }
                     const status = wordStatus(t.vocab.id, userCards)
                     const decorate = i === c.cur
                     return (
@@ -82,7 +92,9 @@ export default function PacedReader(props) {
                           cursor: i === c.cur ? 'pointer' : 'inherit', borderRadius: '4px', padding: '0 1px',
                           background: decorate && status === 'not_started' ? accent + '1f' : (decorate && status === 'learning' ? '#CA8A0422' : 'transparent'),
                           boxShadow: decorate && status === 'not_started' ? 'inset 0 -2px 0 ' + accent + '66' : 'none',
-                        }}>{t.text}</span>
+                        }}>
+                        <TokenBody text={t.text} reading={t.vocab.reading} mode={c.readingMode} status={status} language={track.language} reserve={reserve} />
+                      </span>
                     )
                   })}
                 </div>
@@ -96,8 +108,12 @@ export default function PacedReader(props) {
 
       <div style={{ flexShrink: 0, borderTop: '1px solid var(--border)', padding: '12px 18px calc(14px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-          <Chip on={c.showPy} onClick={() => c.setShowPy(v => !v)} label={track.language === 'chinese' ? 'Pinyin' : 'Reading'} accent={accent} />
-          <Chip on={c.showEn} onClick={() => c.setShowEn(v => !v)} label="English" accent={accent} />
+          <ReadingSettings
+            mode={c.readingMode} setMode={c.setReadingMode}
+            showEnglish={c.showEn} setShowEnglish={c.setShowEn}
+            hasEnglish={Boolean(story.english_content)}
+            language={track.language} accent={accent} onOpenChange={onSettingsOpen}
+          />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
           <button onClick={() => { c.stopPlay(); c.go(c.cur - 1) }} disabled={c.cur === 0} aria-label="Previous line" style={navBtn}><ChevronLeft size={18} /></button>
@@ -112,11 +128,6 @@ export default function PacedReader(props) {
   )
 }
 
-function Chip({ on, onClick, label, accent }) {
-  return (
-    <button onClick={onClick} style={{ fontSize: '12px', fontWeight: 700, padding: '7px 13px', borderRadius: '999px', cursor: 'pointer', fontFamily: 'Inter, sans-serif', border: '1px solid ' + (on ? accent + '73' : 'var(--border)'), background: on ? accent + '14' : 'var(--surface)', color: on ? accent : 'var(--text-muted)' }}>{label}</button>
-  )
-}
-const ghost = { background: 'none', border: 'none', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center' }
+const ghost ={ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center' }
 const navBtn = { width: '44px', height: '44px', borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }
 const srOnly = { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }

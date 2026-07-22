@@ -1,8 +1,9 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { getLevelLabel } from './utils'
 import { chatStyleFor } from './chatMissions'
 import { useStoryReaderCore } from './useStoryReaderCore'
 import { buildReplyOptions } from './interactiveChat'
+import { ReadingSettings } from './ReadingScaffold'
 import ChatThread from './ChatThread'
 import ReaderLaunch from './ReaderLaunch'
 import WordLookupSheet from './WordLookupSheet'
@@ -11,6 +12,9 @@ import { ArrowLeft } from 'lucide-react'
 
 const ghost = { background: 'none', border: 'none', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center' }
 const PALETTE = ['#2E6FB8', '#2F9E6D', '#C2680E', '#7C5CD0', '#B83A7A']
+// The chat readers paint their own light "messaging app" chrome rather than the
+// app's theme surfaces, so the header control borrows those tones.
+const CHAT_TINT = { bg: 'rgba(255,255,255,0.7)', border: 'rgba(0,0,0,0.12)', text: '#555' }
 function pinyinOf(beat) { return beat.tokens.filter(t => t.vocab && t.vocab.reading).map(t => t.vocab.reading).join(' ') }
 
 // Interactive chat reader: the learner replies at their own turns by picking the
@@ -50,14 +54,22 @@ export default function InteractiveChatReader(props) {
   const gateBeat = c.beats[gateIndex]
   const isGate = !!gateBeat && gateBeat.speaker === youSpeaker && !!distractors[gateIndex] && !answered[gateIndex]
 
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const onSettingsOpen = useCallback((open) => setSettingsOpen(open), [])
+
+  // Keyboard advance is suspended both at a reply gate and while the settings
+  // panel is open — in each case the keys belong to the on-screen buttons.
   const { setAdvanceBlocked } = c
-  useEffect(() => { setAdvanceBlocked(isGate); return () => setAdvanceBlocked(false) }, [isGate, setAdvanceBlocked])
+  useEffect(() => {
+    setAdvanceBlocked(isGate || settingsOpen)
+    return () => setAdvanceBlocked(false)
+  }, [isGate, settingsOpen, setAdvanceBlocked])
 
   const options = useMemo(() => (
     isGate ? buildReplyOptions(gateBeat.text, pinyinOf(gateBeat), distractors[gateIndex], gateIndex).options : []
   ), [isGate, gateBeat, distractors, gateIndex])
 
-  const advance = () => { if (!isGate) { c.stopPlay(); c.advance() } }
+  const advance = () => { if (!isGate && !settingsOpen) { c.stopPlay(); c.advance() } }
   const pick = (opt) => {
     if (opt.correct) {
       setAnswered(a => ({ ...a, [gateIndex]: true }))
@@ -82,11 +94,17 @@ export default function InteractiveChatReader(props) {
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 16px 8px', background: skin.bg }}>
         <button onClick={c.backToStart} aria-label="Back to start" style={ghost}><ArrowLeft size={18} color="#4a4a4a" /></button>
         <div style={{ flex: 1, textAlign: 'center', fontSize: '13px', fontWeight: 700, color: '#333', fontFamily: c.theme.font }}>{story.title}</div>
+        <ReadingSettings
+          mode={c.readingMode} setMode={c.setReadingMode}
+          showEnglish={false} setShowEnglish={null} hasEnglish={false}
+          language={track.language} accent={accent} onOpenChange={onSettingsOpen}
+          compact placement="bottom" tint={CHAT_TINT}
+        />
         <div style={{ fontSize: '12px', color: '#666', minWidth: '34px', textAlign: 'right' }}>{c.cur + 1}/{c.total}</div>
       </div>
 
       <div onClick={advance} style={{ flex: 1, overflowY: 'auto', padding: '10px 14px 20px', cursor: isGate ? 'default' : 'pointer', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <ChatThread revealed={revealed} sides={sides} skin={skin} theme={c.theme} accent={accent} userCards={userCards} showPy={c.showPy} activeIndex={c.cur} typingBeat={null} reduceMotion={c.reduceMotion} onSelectWord={c.selectWord} />
+        <ChatThread revealed={revealed} sides={sides} skin={skin} theme={c.theme} accent={accent} userCards={userCards} readingMode={c.readingMode} language={track.language} activeIndex={c.cur} typingBeat={null} reduceMotion={c.reduceMotion} onSelectWord={c.selectWord} />
       </div>
       <div aria-live="polite" style={srOnly}>{isGate ? (wrongPick ? 'Not quite — try another reply' : 'Your turn to reply') : (revealed.length ? revealed[revealed.length - 1].text : '')}</div>
 
@@ -101,7 +119,10 @@ export default function InteractiveChatReader(props) {
                   <button key={oi} onClick={() => pick(opt)}
                     style={{ textAlign: 'left', border: '1px solid ' + (isWrong ? '#DC2626' : 'rgba(0,0,0,0.12)'), background: isWrong ? '#FEECEC' : '#fff', opacity: isWrong ? 0.6 : 1, borderRadius: '14px', padding: '10px 14px', cursor: 'pointer', fontFamily: c.theme.font, animation: (isWrong && !c.reduceMotion) ? 'hdShake 0.3s' : 'none' }}>
                     <div style={{ fontSize: '17px', color: '#111' }}>{opt.text}</div>
-                    {c.showPy && opt.pinyin && <div style={{ fontSize: '11.5px', color: '#888', marginTop: '2px' }}>{opt.pinyin}</div>}
+                    {/* A candidate reply has no per-word learning status yet, so
+                        it keeps a whole-line reading — hidden only when the
+                        learner has turned readings off entirely. */}
+                    {c.readingMode !== 'hidden' && opt.pinyin && <div style={{ fontSize: '11.5px', color: '#888', marginTop: '2px' }}>{opt.pinyin}</div>}
                   </button>
                 )
               })}
