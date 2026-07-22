@@ -204,7 +204,7 @@ Reworked `StoryReaderImmersive.jsx` to read like a book, reusing all existing pa
 - `src/version.js` exposes **`BUILD_SHA`** (injected via `vite.config` `define: import.meta.env.VITE_BUILD_SHA`, from `version.json` at build). Surfaced in **Settings** and logged to the console on boot, so "am I on the latest deploy?" is answerable. Analytics stamps every event with it.
 
 ### ESLint baseline eliminated (PR #40)
-- The long-standing **24-error** lint baseline is gone — `npx eslint .` is now **0 errors / 6 warnings** (the 6 are intentional `react-hooks/exhaustive-deps` on mount-load effects + audio autoplay). **Do not add new errors.** The cleanup was behavior-preserving.
+- The long-standing **24-error** lint baseline is gone — `npx eslint .` was **0 errors / 6 warnings** at the time of PR #40 (the 6 are intentional `react-hooks/exhaustive-deps` on mount-load effects + audio autoplay). **Do not add new errors.** The cleanup was behavior-preserving. ⚠️ **That is no longer the current number — see "ESLint baseline (current)" in §16 Known issues for the live count.**
 
 ### Study.jsx refactor — pure logic extracted + tested (PR #39)
 Study.jsx was large and hard to test; carved into focused, unit-tested pieces (behavior unchanged):
@@ -1346,6 +1346,12 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 - **Duplicate kanji + counter-suffix cleanup — script written (`deactivate-awkward-vocab.mjs`), not yet run.** Duplicate-reading kanji (何 = なん/なに, 私 = わたし/わたくし) create identical-looking options across Test/Listening/Fill-in-the-blank; counter-suffix entries (～さい/～グラム/～たち) are grammar fragments that make nonsense in the sentence modes. The script deactivates suffix entries (Japanese words starting with a wave dash) and the secondary reading of the listed duplicates (only if the word keeps another active row — never fully removes a word). Safe/reversible (`is_active=false` only, dry-run by default). Run via the Action (`task=deactivate-awkward`) or `node --env-file=.env.script deactivate-awkward-vocab.mjs --apply`. Reading is also already shown in Test.jsx Japanese options.
 - **Unified Stories reader.** Both Chinese and Japanese now use `StoryReaderImmersive.jsx` (Intl.Segmenter word tapping, furigana/pinyin, per-speaker dialogue labels, bottom-sheet definitions, audio bar). The old in-file `StoryReader` (and `CharacterGuide`/`StoryLine`/sidebar cards) in Stories.jsx are now **dead code** — safe to delete in a cleanup pass.
 - **Mobile layout.** Below 768px the left sidebar is replaced by a fixed bottom bar (MobileNav.jsx, 5 tabs + a "More" sheet); App.jsx branches the shell via useIsMobile(). Each top-level screen (Home, Study, Test, Writing, Stories, Profile, Settings, LanguageSwitcher, YouTube) reduces its horizontal padding (~32px → ~16px) on mobile via useIsMobile(). Stat/option grids use `1fr`/`minmax(0,1fr)` columns so they compress without overflow. Further polish (font scaling, 4-col → 2-col stat grids on very small phones) is optional.
+- **ESLint baseline (current): `npx eslint .` = 7 errors / 6 warnings.** The §0a "0 errors" claim from PR #40 is stale — new rules (`react-hooks` v6's `set-state-in-effect`) and new non-app files landed since. Current breakdown:
+  - **4 errors — `playwright.config.js`** (`no-undef` on `process`): the flat config only declares `globals.browser`, so Node globals in the e2e config are flagged. Harmless; fix by giving that file a Node-globals config block.
+  - **3 errors — `tests/fixtures/mockSupabase.js`** (1 `no-empty`, 2 `react-hooks/rules-of-hooks` on a Playwright `page.use(...)` call the rule mistakes for a React hook). Test fixture, not app code.
+  - **6 warnings** — the intentional `react-hooks/exhaustive-deps` on mount-load effects + audio autoplay (unchanged since PR #40).
+  - **`.claude/**` is ignored** (`eslint.config.js` `globalIgnores`) — it holds Claude Code tooling (skills/commands/worktrees), not app source; it was contributing 15 `no-undef` errors on `require`/`process`.
+  - **Zero errors remain in `src/`. Keep it that way** — don't add new ones.
 - **Existing ESLint hook-dependency warnings** in some files — don't add new ones.
 - **Legacy DB columns** `ease_factor` and old SM-2 `learning_step` semantics are kept in the cards table but unused. Do not write to `ease_factor`.
 
@@ -1365,7 +1371,7 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 - ~~**Privacy-friendly analytics**~~ — single `analytics.js` service + append-only `analytics_events` table capturing the activation funnel + session metrics, offline via the existing outbox (0a, PR #43). *(still needs the migration applied — see action items above)*
 - ~~**First Mission interactive onboarding**~~ + **first-run activation funnel** (first-session cap, "First Story Unlocked" recap + deep-link, seeded review-first queue, reader today-words thread) (0a, PRs #39/#42).
 - ~~**Unified story readability**~~ — one canonical `calculateStoryReadability` shared by reader + recap (0a, PR #39).
-- ~~**Build/version stamp**~~ (`BUILD_SHA` in Settings + console) and ~~**ESLint baseline eliminated**~~ (0 errors) (0a, PRs #40/#41).
+- ~~**Build/version stamp**~~ (`BUILD_SHA` in Settings + console) and ~~**ESLint baseline eliminated**~~ (0 errors *at the time*; current baseline is in §16) (0a, PRs #40/#41).
 - ~~**Study.jsx refactor**~~ — pure logic extracted into tested modules (0a, PR #39).
 - ~~**Offline support**~~ — service worker + durable write outbox (background-sync queue), offline study/reading, iOS audio blobs (this replaces the old "follow-up: offline grading" item, now done).
 - ~~Deploy to web, mobile nav + padding, installable PWA, furigana on flashcards, LanguageSwitcher mastery count, Japanese example sentences + stories~~ (older sessions).
