@@ -167,7 +167,7 @@ Order is a preference, not a hard dependency — either may land first.
 
 ### TASK-001 — Cumulative, level-aware story shelf
 
-**Status:** Ready
+**Status:** In Review
 **Priority:** Critical
 **Owner:** Unassigned
 **Branch:** `claude/cumulative-story-shelf`
@@ -279,7 +279,90 @@ signature; only what is passed as `categories` changes.
 
 #### Completion notes
 
-_To be filled by the implementation session._
+Branch `claude/cumulative-story-shelf`, 5 commits. Unit **696 passing across
+67 files** (baseline 665 → +31 new). Playwright **51/51 green** (baseline 44 →
++7 new). `npm run build` green.
+
+**What shipped**
+
+- **`src/storyTiers.js` rewritten around a (language, level) key.** New
+  `tiersFor(language, level)` builds the tier list with copy that names the
+  level ("Short stories from the first 170 most common HSK 3 words"), falling
+  back to the language's default table for any level with no explicit entry
+  and to Chinese for an unknown language. Chinese levels 1–6 populated exactly
+  from the pinned contract. Results are memoized per (language, level) and are
+  shared instances — callers copy before tagging (see `categoryForStory`),
+  never mutate.
+- **Three new pure helpers** so the Stories screen and the recap gate
+  identically: `learnedByLevel(vocabRows, cards)`, `storyLevels(stories,
+  currentLevel)` (current level first, then descending; rows above the current
+  level dropped), and `readingGateCount({level, currentLevel, learnedAtLevel,
+  tiers})`.
+- **`readingGateCount` — the one judgement call not spelled out in the task.**
+  A level *below* `current_level` counts as complete, so all its tiers open.
+  Rationale: to be past a level you either passed its test (100% correct at 90%
+  mastery) or were placed above it, and in the placed case your real learned
+  count at that level is 0 forever — gating on it would permanently lock HSK 1
+  stories for exactly the learners this milestone is meant to help. The current
+  level still gates on real progress. Tested both ways.
+- **`src/Stories.jsx`:** query is now `.lte('level', current_level)` ordered
+  level-desc; the category screen renders one `<section>`/`<h2>` group per
+  level with a "Your level" pill and a per-level read count; a shelf is one
+  tier *at* one level, so gating, copy, the story list, "next story" and the
+  tier-unlock nudge all resolve from the story's own level. Two refinements
+  beyond the brief: empty tiers are hidden for levels the learner has already
+  finished (noise below, motivation at the current level), and the level
+  heading is omitted when there is only one group and it is the current level
+  (every level-1 learner) so the common case gains no chrome.
+- **Consumers:** `dailyStory` (`unlockedStories`/`pickDailyStory`) and
+  `storyMatch.pickRecapStory` gained optional `tiersFor(level)` /
+  `learnedFor(level)` resolvers; omitting them preserves the old flat
+  `categories`/`learnedCount` behaviour byte-for-byte, so no other caller
+  changed. `readingLadder` needed no API change — it is a pure function of a
+  tier list, and the screen now hands it the current level's.
+
+**Scope note:** the story recommendation the task assigns ("the post-study
+recap component that recommends a story") is *computed* in `src/Study.jsx`
+`loadStoryUnlock`, not in `SessionRecap.jsx` which only renders it. That
+function was edited (query `.eq` → `.lte`, per-level gating via the shared
+helpers); `SessionRecap.jsx` was not touched. No other part of `Study.jsx`
+changed apart from dropping a now-unused `isLearned` import.
+
+**Regression check — no story became unreachable.** HSK 1 thresholds are
+byte-identical (0/100/200). HSK 2 moves 100/200 → 80/130, strictly more
+generous. Everything previously visible is still visible, and every HSK 2+
+learner gains the lower levels' shelves. The offline snapshot key
+(`storiesdata:<lang>:<system>:<current_level>`) still matches the query
+exactly, because the cumulative set is a pure function of `current_level`.
+
+**CONFIGS check (read-only, as instructed):** `generate-serial-stories.mjs`
+levels 4, 5 and 6 have identical `minWords` (40/110/220) and `cap`
+(170/340/500) to level 3 — only `minCov`/`maxMisses` differ, which the app
+never reads. The merged HSK 3–6 row in the contract table is therefore correct
+as written; no extra row needed.
+
+**Test fixture:** `tests/fixtures/mockSupabase.js` gained `st5` at level 1
+(the track was already at `current_level` 2). It is deliberately tier 3, not
+tier 1 — the mock ignores query filters, so a second tier-1 story would make
+"First Steps" ambiguous and break every existing reader spec's locator. Being
+tier 3 also makes it a live assertion of per-level gating: that threshold is
+open at HSK 1 (passed) while still locked at HSK 2.
+
+**Known limitations / not done (deliberate)**
+
+- `pickRecapStory`'s fallback nudge ("learn N more to unlock X") still reads
+  the flat `categories`/`learnedCount` pair. It only renders when *nothing* is
+  unlocked anywhere, which on a cumulative shelf means the learner is at level
+  1 — where cumulative and current-level are the same thing. Left alone rather
+  than adding a parameter for an unreachable case.
+- `npx eslint src` reports **2 errors / 6 warnings**, unchanged from the base
+  branch (`HowMuchCanYouRead.jsx` unused `useMemo`; `Dashboard.jsx`
+  set-state-in-effect). The task brief states a 0-error baseline; the actual
+  baseline on `origin/worktree-pm-hsk3-milestone` is 2, verified by stashing.
+  **No new errors were introduced** — both pre-date this branch and are outside
+  its scope.
+- Real-device / live-Supabase verification not possible from this sandbox
+  (screenshot pass done at 1280px and 390px against the mock).
 
 ---
 
