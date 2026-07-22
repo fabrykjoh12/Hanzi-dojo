@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { supabase } from './supabase'
-import { getAudioUrl, playAudioEl } from './utils'
+import { playAudioEl } from './utils'
 import { ensureAudio } from './audioCache'
+import { flashcardAudio } from './ttsAudio'
+import { claimPlayback } from './audioPlayback'
 
 // Audio for the study session, lifted out of Study.jsx verbatim so that file
 // stays focused on the card/grading loop. Behavior is unchanged: same speed
@@ -24,8 +26,11 @@ export function useStudyAudio({ queue, flipped, profile, session, onProfileUpdat
 
   function playAudio() {
     const card = queue[0]
-    if (!card?.vocab?.audio_path) return
-    const url = getAudioUrl(card.vocab.audio_path)
+    if (!card?.vocab) return
+    // Prefer the generated clip for this word; fall back to the vocabulary
+    // row's legacy audio_path when a level has not been regenerated yet, so
+    // nothing goes silent between provider migrations.
+    const url = flashcardAudio(card.vocab).word
     if (!url) return
     // ONE element, reused for every play — iOS caches a fallback-fetched clip
     // on the element so Replay works even when the direct load fails (see
@@ -33,6 +38,9 @@ export function useStudyAudio({ queue, flipped, profile, session, onProfileUpdat
     // Replay button did nothing on iPhones.
     if (!audioRef.current) audioRef.current = new Audio()
     const el = audioRef.current
+    // Silence anything else that is speaking (a slow clip, the example
+    // sentence) before starting this one.
+    claimPlayback(el)
     el.pause()
     // Both: playbackRate for the already-loaded clip, defaultPlaybackRate so a
     // fresh load doesn't reset the speed back to 1x.
@@ -67,7 +75,12 @@ export function useStudyAudio({ queue, flipped, profile, session, onProfileUpdat
   // bypasses the SW cache and can't be awaited inside the play() gesture.
   useEffect(() => {
     [queue[0], queue[1]].forEach(c => {
-      if (c && c.vocab && c.vocab.audio_path) ensureAudio(getAudioUrl(c.vocab.audio_path))
+      if (!c || !c.vocab) return
+      // Warm the word and its slow version; the sentence clips are only
+      // reached deliberately, so they load on demand.
+      const urls = flashcardAudio(c.vocab)
+      if (urls.word) ensureAudio(urls.word)
+      if (urls.word_slow) ensureAudio(urls.word_slow)
     })
   }, [queue])
 

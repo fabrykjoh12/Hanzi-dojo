@@ -5,6 +5,9 @@ import { calculateStoryReadability, buildVocabMatcher, segmentLine, namesFor, pa
 import { splitScene, stripSceneEmoji } from './sceneReading'
 import { prefsGet, prefsSet } from './offline'
 import { supabase } from './supabase'
+import { loadTtsAudio, utteranceAudio } from './ttsAudio'
+import { claimPlayback, stopAllAudio } from './audioPlayback'
+import { ensureAudio } from './audioCache'
 import { isOnline } from './useOnline'
 import { enqueueStoryRead } from './syncQueue'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
@@ -27,6 +30,10 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   const [cur, setCur] = useState(0)
   const [questions, setQuestions] = useState([])
   const [answers, setAnswers] = useState({})
+  // Beat index -> story_utterances.id, for stories that have been split into
+  // per-line narration. Empty for a story that has not been synced, which is
+  // exactly the legacy path.
+  const [utteranceIds, setUtteranceIds] = useState({})
   const [readingMode, setReadingMode] = useState(DEFAULT_READING_MODE)
   const [showEn, setShowEn] = useState(false)
   const pickedRef = useRef(false)      // the learner chose a mode this session
@@ -66,7 +73,10 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   const stopPlay = useCallback(() => {
     runRef.current += 1
     setPlaying(false)
-    try { window.speechSynthesis.cancel() } catch { /* noop */ }
+    // Silences both channels (element and speech synthesis) and clears the
+    // shared "who is speaking" registry, so leaving the reader mid-line cannot
+    // leave a voice running under the next screen.
+    stopAllAudio()
     if (audioElRef.current) audioElRef.current.pause()
   }, [])
 
@@ -90,6 +100,19 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
 
   const advance = useCallback(() => { if (cur >= total - 1) finish(); else go(cur + 1) }, [cur, total, finish, go])
 
+  // The narration for one beat, best source first:
+  //   1. the generated per-utterance clip (a real voice, correct pronunciation),
+  //   2. the legacy whole-story per-line file,
+  //   3. the browser's speech synthesis.
+  // A story part-way through generation therefore plays generated lines where
+  // they exist and falls back per line, never going silent.
+  const audioForBeat = (index) => {
+    const utteranceId = utteranceIds[index]
+    const generated = utteranceId ? utteranceAudio(utteranceId).utterance : null
+    if (generated) return generated
+    return story.has_audio ? getAudioUrl('stories/' + story.id + '/' + index + '.mp3') : null
+  }
+
   const speakFrom = (index, runId) => {
     if (runId !== runRef.current) return
     if (index >= beats.length) { finish(); return }
@@ -103,12 +126,32 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
         window.speechSynthesis.speak(u)
       } catch { setPlaying(false) }
     }
-    if (story.has_audio) {
+    const url = audioForBeat(index)
+    if (url) {
       if (!audioElRef.current) audioElRef.current = new Audio()
       const el = audioElRef.current
+      // Take the floor before playing: a word lookup or a flashcard clip must
+      // not keep speaking underneath the story.
+      claimPlayback(el)
       el.onended = nextBeat
-      playAudioEl(el, getAudioUrl('stories/' + story.id + '/' + index + '.mp3'), viaSynth)
+      playAudioEl(el, url, viaSynth)
+      // Warm the next line while this one plays, so read-along does not stutter
+      // between beats.
+      const upcoming = audioForBeat(index + 1)
+      if (upcoming) ensureAudio(upcoming)
     } else viaSynth()
+  }
+
+  // Replay a single line without disturbing the read-along position - the
+  // "say that again" affordance a learner reaches for mid-story.
+  const replayLine = (index) => {
+    const url = audioForBeat(index == null ? cur : index)
+    if (!url) { speakWord(beats[index == null ? cur : index].text); return }
+    if (!audioElRef.current) audioElRef.current = new Audio()
+    const el = audioElRef.current
+    claimPlayback(el)
+    el.onended = null
+    playAudioEl(el, url, () => speakWord(beats[index == null ? cur : index].text))
   }
 
   const togglePlay = () => {
@@ -168,9 +211,24 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     /* eslint-disable react-hooks/set-state-in-effect */
     setAnswers({})
     setQuestions([])
+    setUtteranceIds({})
     /* eslint-enable react-hooks/set-state-in-effect */
     supabase.from('story_questions').select('*').eq('story_id', story.id).order('question_number', { ascending: true })
       .then(({ data }) => { if (active) setQuestions(data || []) })
+
+    // Per-line narration, if this story has been split into utterances. Every
+    // failure mode here is benign: no rows, an unapplied migration or being
+    // offline all leave `utteranceIds` empty, and the reader falls back to the
+    // legacy per-line files and then to speech synthesis.
+    supabase.from('story_utterances').select('id, utterance_index').eq('story_id', story.id)
+      .then(async ({ data }) => {
+        if (!active || !data || data.length === 0) return
+        const byIndex = {}
+        for (const row of data) byIndex[row.utterance_index] = row.id
+        await loadTtsAudio('story_utterance', data.map(r => r.id))
+        if (active) setUtteranceIds(byIndex)
+      })
+      .catch(() => { /* legacy narration path */ })
     return () => { active = false }
   }, [story.id])
 
@@ -222,7 +280,7 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     theme, reduceMotion, beats, readability, total, ttsLang,
     started, cur, done, playing, selected, readingMode, showEn,
     setReadingMode: pickReadingMode, setShowEn, setSelected,
-    go, advance, finish, stopPlay, togglePlay, speakWord, selectWord, addToDeck,
+    go, advance, finish, stopPlay, togglePlay, speakWord, replayLine, selectWord, addToDeck,
     start, backToStart, setAdvanceBlocked,
     questions, answers, answerQuestion,
   }

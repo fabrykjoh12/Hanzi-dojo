@@ -10,7 +10,25 @@ Whenever we finish or start a meaningful piece of work, edit **`ROADMAP.md`** in
 
 ---
 
-## 0. LATEST SESSION — read first (2026-07-20 — Pleco-style reference dictionary + flashcard-anything + examples)
+## 0. LATEST SESSION — read first (2026-07-22 — Azure Chinese TTS: provider-abstracted, cached, guarded)
+
+**Full design + operator runbook: [`docs/TTS.md`](docs/TTS.md). Read that before touching anything under `src/tts/`.** Built on branch `feature/chinese-tts`. Suite after: unit **1000** (79 files, +267 new), build green, `src/` lint unchanged (2 pre-existing errors in `Dashboard.jsx` / `HowMuchCanYouRead.jsx`, both untouched).
+
+**The boundary (this is the important part):** the app is a static SPA with no backend, so paid synthesis lives where every other content pipeline already lives — a root `.mjs` script run with `--env-file=.env.script`. **Nothing under `src/` reads `process.env`**; configuration is passed *in* as an argument. `src/tts/serverOnly.test.js` fails the build if a browser-reachable file imports a server-only TTS module, uses a `node:` builtin, or so much as names a credential variable. The browser only ever reads a `storage_path` from `tts_audio` and plays it.
+
+**Domain layer (`src/tts/`, all unit-tested):** `constants.js` (variants, statuses, voices, `SYNTHESIS_CONFIG_VERSION`) · `errors.js` (typed, `retryable`, HTTP→error) · `normalize.js` · `ssml.js` (escaping + Azure SAPI phones, reuses `src/pinyin.js`, `u:`→`v`) · `overrides.js` · `request.js` · `contentHash.js` (**SERVER-ONLY**, `node:crypto`) · `config.js` (validation + redacted summary) · `retry.js` / `concurrency.js` / `log.js` · `providers/{azure,mock,index}.js` · `records.js` (cache-hit / stale / dedupe) · `sources.js` · `utterances.js` · `storage.js` / `repository.js` · `runner.js`. Client side: `src/ttsAudio.js`, `src/AudioButton.jsx`, `src/audioPlayback.js` (one voice at a time).
+
+**Cache:** the content hash covers text, locale, provider, voice, rate, override version, output format, content type and config version. Match → no request. Differ → **stale**, and the old clip keeps playing until replaced. Legacy Google audio has no hash, so it reads as stale and is regenerable with no data migration. Storage is content-addressed: `tts/{locale}/{sourceType}/{sourceId}/{variant}/{hash}.mp3`.
+
+**Cost guards:** dry run is the default (`--confirm` required), `--limit` defaults to **20 source records** (hard max 200 without `--override-max`), concurrency capped at 8, auth failures never retried, `request_count`/`character_count` recorded per clip and per job. `npm run tts:dry-run` / `tts:generate` / `tts:retry-failed`; plus `tts-overrides.mjs`, `story-utterances.mjs`, and `tts-integration-check.mjs` (opt-in real Azure, needs `TTS_INTEGRATION=1` **and** `--confirm`).
+
+**Pronunciation:** flashcard *word* clips are auto-pinned to `vocabulary.reading` (labelled `inferred`, never `verified` — only a human may set `verified`/`rejected`). `data/tts-pronunciation-overrides.json` seeds ~24 polyphone fixes (银行/行李, 长城/校长, 觉得/睡觉 …); matching is longest-first and non-overlapping, so 银行 consumes its own 行.
+
+**⚠️ NOT LIVE YET.** Two migrations must be applied (`20260722140000_add_tts_audio.sql`, `20260722150000_add_story_utterances.sql`) — until then the CLI stops with an actionable message and every screen plays exactly today's audio. **No real Azure request has been made from this repo.** Everything is additive: `vocabulary.audio_path`, `stories.content` and `stories.has_audio` are untouched, and `flashcardAudio()` falls back to the legacy path per word.
+
+---
+
+## 0.1 PREVIOUS SESSION (2026-07-20 — Pleco-style reference dictionary + flashcard-anything + examples)
 
 **Shipped a full Pleco-style Chinese reference dictionary** across two plans (17 subagent-reviewed tasks + follow-ups), merged to `main`. Turns the old "search-your-syllabus" Dictionary into a real ~120k-entry reference. Built via brainstorming → writing-plans → subagent-driven-development (fresh implementer + independent reviewer per task, two opus whole-branch reviews). Suite after: unit **654**, e2e dictionary 9/9, build green.
 
