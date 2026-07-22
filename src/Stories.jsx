@@ -686,6 +686,10 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
                         const unlocked = levelLearned >= cat.minWords
                         const catStories = storiesIn(cat)
                         const hasStories = catStories.length > 0
+                        // A level already behind the learner is finished: an
+                        // empty tier there is noise, not motivation. The current
+                        // level keeps every tier so the path ahead stays visible.
+                        if (!hasStories && !isCurrent) return null
                         const isClickable = unlocked && hasStories
                         return (
                           <CategoryCard
