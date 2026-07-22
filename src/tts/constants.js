@@ -99,6 +99,30 @@ export const MAX_SPEAKING_RATE = 2.0
 export const SUPPORTED_LOCALES = ['zh-CN']
 export const DEFAULT_LOCALE = 'zh-CN'
 
+// What the provider actually accepts per locale, as opposed to what its
+// documentation implies.
+//
+// `phoneme: false` for zh-CN is measured, not assumed: Azure returns HTTP 400
+// with an empty body for a <phoneme> element on EVERY zh-CN neural voice
+// (Xiaoxiao, Yunxi, Xiaoyi, XiaoxiaoMultilingual), with alphabet="sapi" and
+// alphabet="ipa" alike - while the same element on en-US-JennyNeural succeeds
+// on the same resource, and <sub>/<say-as>/<mstts:express-as> all succeed on
+// zh-CN. So the element is unsupported for Mandarin, not misconfigured here.
+//
+// Emitting it anyway fails the request outright, which is worse than an
+// imperfect reading, so pronunciation pinning is skipped where it is not
+// supported. See docs/TTS.md for what to do instead.
+export const LOCALE_CAPABILITIES = {
+  'zh-CN': { phoneme: false },
+}
+
+export function supportsPhoneme(locale) {
+  const caps = LOCALE_CAPABILITIES[locale]
+  // Unknown locales are assumed to support it - the failure is loud and typed,
+  // and a new locale should be measured rather than silently degraded.
+  return caps ? caps.phoneme !== false : true
+}
+
 // Default voices per role. Overridable by environment (see config.js) so a
 // deployment can change voices without a code change.
 export const DEFAULT_VOICES = {

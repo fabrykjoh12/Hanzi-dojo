@@ -84,7 +84,11 @@ export class TtsStorageError extends TtsError {
 // never retried — retrying a bad credential just burns time and can trip a
 // provider's lockout. 429 and 5xx are.
 export function providerErrorFromStatus(status, detail) {
-  const suffix = detail ? ' - ' + String(detail).slice(0, 300) : ''
+  // Azure answers a malformed-SSML 400 with an EMPTY body, so "HTTP 400" alone
+  // tells an operator nothing. Say so, and point at the usual cause.
+  const suffix = detail
+    ? ' - ' + String(detail).slice(0, 300)
+    : (status === 400 ? ' - the provider returned no detail, which usually means it rejected the SSML' : '')
   if (status === 401 || status === 403) {
     return new TtsProviderError('The TTS provider rejected the credentials (HTTP ' + status + ')' + suffix, {
       status, code: TTS_ERROR_CODES.AUTH, retryable: false,

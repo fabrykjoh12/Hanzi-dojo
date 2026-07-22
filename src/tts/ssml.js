@@ -10,6 +10,7 @@
 // the vowel u-umlaut, written "u:" for Google and "v" for Azure.
 
 import { applyOverrides, overrideVersion } from './overrides.js'
+import { supportsPhoneme } from './constants.js'
 import { readingToPhonemes } from '../pinyin.js'
 
 // XML escaping via string ops (this repo's parser is strict about regex
@@ -54,7 +55,14 @@ export function ratePercent(speakingRate) {
 // element. Returns { body, version } so the caller can hash exactly the set of
 // overrides that actually applied.
 export function buildSsmlBody(text, overrides, opts = {}) {
-  const segments = applyOverrides(text, overrides, opts)
+  // Where the provider rejects <phoneme> for this locale, no override can reach
+  // the audio - so none is applied, and the reported version is 'none'. That
+  // keeps the content hash honest: editing a pronunciation that cannot be
+  // expressed must not mark audio stale and buy a re-render of the same sound.
+  const canPin = opts.locale ? supportsPhoneme(opts.locale) : true
+  const segments = canPin
+    ? applyOverrides(text, overrides, opts)
+    : [{ kind: 'text', text: String(text || '') }]
   const body = segments.map(seg => {
     if (seg.kind !== 'phoneme') return escapeSsml(seg.text)
     const ph = overridePhones(seg.override)

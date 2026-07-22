@@ -33,10 +33,12 @@ describe('SSML injection safety', () => {
   })
 
   it('neutralizes markup smuggled in an override pronunciation', () => {
+    // Exercised at a locale that still pins, since zh-CN emits no phoneme at
+    // all - the escaping has to hold wherever the pin IS written.
     const evil = override('银行', '', { provider_representation: 'yin2"/><evil x="' })
-    const { ssml } = buildSsml({ ...zh, text: '银行', overrides: [evil] })
-    expect(ssml.indexOf('<evil')).toBe(-1)
-    expect(ssml.indexOf('&quot;')).toBeGreaterThan(-1)
+    const { body } = buildSsmlBody('银行', [evil], { locale: 'zh-XX' })
+    expect(body.indexOf('<evil')).toBe(-1)
+    expect(body.indexOf('&quot;')).toBeGreaterThan(-1)
   })
 
   it('escapes a voice name so a bad config cannot break out of the attribute', () => {
@@ -107,14 +109,50 @@ describe('buildSsml', () => {
     expect(buildSsml({ ...zh, text: '你好', style: 'cheerful' }).ssml.indexOf('<mstts:express-as style="cheerful">')).toBeGreaterThan(-1)
   })
 
-  it('pins an overridden reading with a phoneme element', () => {
-    const { ssml, overrideVersion } = buildSsml({ ...zh, text: '我去银行。', overrides: [override('银行', 'yínháng')] })
-    expect(ssml.indexOf('<phoneme alphabet="sapi" ph="yin2 hang2">银行</phoneme>')).toBeGreaterThan(-1)
-    expect(overrideVersion).toBe('银行=yínháng')
-  })
-
   it('reports "none" when no override applied', () => {
     expect(buildSsml({ ...zh, text: '你好' }).overrideVersion).toBe('none')
+  })
+})
+
+// Measured against a live Azure resource: <phoneme> returns HTTP 400 with an
+// empty body on every zh-CN neural voice and every alphabet, while the same
+// element succeeds for en-US on the same resource. Emitting it fails the whole
+// request, so Chinese must never carry one.
+describe('zh-CN cannot use <phoneme> (Azure rejects it)', () => {
+  it('emits no phoneme element even when an override matches', () => {
+    const { ssml } = buildSsml({ ...zh, text: '我去银行。', overrides: [override('银行', 'yínháng')] })
+    expect(ssml.indexOf('<phoneme')).toBe(-1)
+    expect(ssml.indexOf('银行')).toBeGreaterThan(-1)
+  })
+
+  it('reports no applied override, so an unusable pin cannot mark audio stale', () => {
+    const { overrideVersion } = buildSsml({ ...zh, text: '我去银行。', overrides: [override('银行', 'yínháng')] })
+    expect(overrideVersion).toBe('none')
+  })
+
+  it('still speaks the full text unchanged', () => {
+    const { ssml } = buildSsml({ ...zh, text: '我去银行。', overrides: [override('银行', 'yínháng')] })
+    expect(ssml.indexOf('>我去银行。<')).toBeGreaterThan(-1)
+  })
+
+  it('keeps the rate control, which zh-CN does accept', () => {
+    const { ssml } = buildSsml({ ...zh, text: '银行', speakingRate: 0.8, overrides: [override('银行', 'yínháng')] })
+    expect(ssml.indexOf('<prosody rate="-20%">')).toBeGreaterThan(-1)
+  })
+
+})
+
+describe('phoneme support gate', () => {
+  it('applies the pin for a locale with no recorded restriction', () => {
+    const { body, version } = buildSsmlBody('银行', [override('银行', 'yínháng')], { locale: 'zh-XX' })
+    expect(body.indexOf('<phoneme alphabet="sapi" ph="yin2 hang2">银行</phoneme>')).toBeGreaterThan(-1)
+    expect(version).toBe('银行=yínháng')
+  })
+
+  it('skips the pin for zh-CN', () => {
+    const { body, version } = buildSsmlBody('银行', [override('银行', 'yínháng')], { locale: 'zh-CN' })
+    expect(body).toBe('银行')
+    expect(version).toBe('none')
   })
 })
 

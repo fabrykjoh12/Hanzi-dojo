@@ -8,7 +8,9 @@
 
 import { isRetryableError, TtsCancelledError } from './errors.js'
 
-export const DEFAULT_BASE_MS = 500
+// A throttled Speech resource needs more than half a second to recover; the
+// first backoff was landing inside the same throttle window and burning a retry.
+export const DEFAULT_BASE_MS = 1000
 export const DEFAULT_MAX_MS = 15000
 
 // Full jitter: a uniform draw from [0, capped exponential]. `attempt` is

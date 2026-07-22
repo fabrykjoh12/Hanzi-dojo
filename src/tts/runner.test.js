@@ -216,10 +216,16 @@ describe('planUnits', () => {
     expect(plans[0].willGenerate).toBe(true)
   })
 
-  it('marks a clip stale once its pronunciation override changes', () => {
+  // On zh-CN a changed reading cannot change the audio, because Azure rejects
+  // <phoneme> for Mandarin - so it must NOT mark the clip stale. Spending a
+  // request to re-render an identical sound is exactly what the hash exists to
+  // prevent. (A changed reading on a pinnable locale does invalidate; that is
+  // covered in ssml.test.js.)
+  it('does not mark a clip stale when only the reading changed, since zh-CN cannot pin it', () => {
     const before = planFor([VOCAB])[0]
     const after = planFor([{ ...VOCAB, reading: 'yínxíng' }], { existingAudio: storedRow('word', before.contentHash) })
-    expect(after[0].reason).toBe(REASON.STALE)
+    expect(after[0].reason).toBe(REASON.CACHE_HIT)
+    expect(after[0].willGenerate).toBe(false)
   })
 
   it('honours --missing-only by leaving stale audio alone', () => {

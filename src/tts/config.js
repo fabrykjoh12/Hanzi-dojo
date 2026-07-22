@@ -16,8 +16,12 @@ import { SUPPORTED_LOCALES, DEFAULT_LOCALE, DEFAULT_VOICES, KNOWN_VOICES } from 
 export const PROVIDERS = ['azure', 'mock']
 
 export const DEFAULT_TIMEOUT_MS = 20000
-export const DEFAULT_MAX_RETRIES = 3
-export const DEFAULT_CONCURRENCY = 3
+export const DEFAULT_MAX_RETRIES = 4
+// Measured, not guessed: a real batch at 3 drew a steady stream of
+// "Downstream Service Throttled" 429s from a standard Speech resource. Two is
+// still faster than serial and leaves headroom under the per-minute quota;
+// raise it with TTS_CONCURRENCY if your tier allows more.
+export const DEFAULT_CONCURRENCY = 2
 // A ceiling rather than a preference: Azure throttles per-region, and a wide
 // fan-out just converts throughput into 429s and wasted retries.
 export const MAX_CONCURRENCY = 8

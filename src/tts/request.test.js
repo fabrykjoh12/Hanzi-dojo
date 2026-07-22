@@ -113,12 +113,26 @@ describe('buildTtsRequest', () => {
     expect(() => buildTtsRequest({ ...zh, text: '你好', speakingRate: 9 })).toThrow(/speakingRate/)
   })
 
-  it('records the applied override so the hash tracks pronunciation changes', () => {
+  // Azure rejects <phoneme> for every zh-CN voice, so an override cannot reach
+  // the audio there. Reporting it as applied would make the content hash lie:
+  // editing a pronunciation would mark clips stale and buy a re-render of an
+  // identical sound. See LOCALE_CAPABILITIES in constants.js.
+  it('reports no applied override on zh-CN, where pronunciation cannot be pinned', () => {
     const req = buildTtsRequest({
       ...zh, text: '银行',
       pronunciationOverrides: [{ matched_text: '银行', pinyin: 'yínháng', verification: 'verified' }],
     })
-    expect(req.overrideVersion).toBe('银行=yínháng')
+    expect(req.overrideVersion).toBe('none')
+    expect(req.ssml.indexOf('<phoneme')).toBe(-1)
+  })
+
+  it('still speaks the whole word when an override cannot be applied', () => {
+    const req = buildTtsRequest({
+      ...zh, text: '银行',
+      pronunciationOverrides: [{ matched_text: '银行', pinyin: 'yínháng', verification: 'verified' }],
+    })
+    expect(req.normalizedText).toBe('银行')
+    expect(req.ssml.indexOf('>银行<')).toBeGreaterThan(-1)
   })
 })
 
