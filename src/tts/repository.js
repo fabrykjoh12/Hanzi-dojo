@@ -25,6 +25,28 @@ function fail(context, error) {
   throw new Error(context + ': ' + (error.message || String(error)))
 }
 
+// PostgREST caps a response at 1000 rows regardless of .limit(), so a naive
+// query silently truncates a library of 2,400 words to 1,000 - and a cost
+// estimate built on that is wrong in the direction that matters. Page through
+// with .range() instead.
+//
+// `build()` must return a FRESH query each call: Supabase query builders are
+// single-use.
+const PAGE = 1000
+
+async function fetchAllPages(build, context, limit = null) {
+  const rows = []
+  for (let from = 0; ; from += PAGE) {
+    const want = limit == null ? PAGE : Math.min(PAGE, limit - rows.length)
+    if (want <= 0) break
+    const { data, error } = await build().range(from, from + want - 1)
+    if (error) fail(context, error)
+    rows.push(...(data || []))
+    if (!data || data.length < want) break
+  }
+  return rows
+}
+
 export function createTtsRepository(client) {
   return {
     // --- pronunciation overrides -------------------------------------------
@@ -39,34 +61,35 @@ export function createTtsRepository(client) {
 
     // --- source content -----------------------------------------------------
     async loadVocabulary({ language, system, level, ids = null, limit = null }) {
-      let query = client
-        .from('vocabulary')
-        .select('id, language, system, level, word, reading, example_sentence')
-        .eq('is_active', true)
-        .order('level', { ascending: true })
-        .order('sort_order', { ascending: true })
-      if (language) query = query.eq('language', language)
-      if (system) query = query.eq('system', system)
-      if (level != null) query = query.eq('level', level)
-      if (ids && ids.length) query = query.in('id', ids)
-      if (limit) query = query.limit(limit)
-      const { data, error } = await query
-      if (error) fail('Could not load vocabulary', error)
-      return data || []
+      const build = () => {
+        let query = client
+          .from('vocabulary')
+          .select('id, language, system, level, word, reading, example_sentence')
+          .eq('is_active', true)
+          .order('level', { ascending: true })
+          .order('sort_order', { ascending: true })
+        if (language) query = query.eq('language', language)
+        if (system) query = query.eq('system', system)
+        if (level != null) query = query.eq('level', level)
+        if (ids && ids.length) query = query.in('id', ids)
+        return query
+      }
+      return fetchAllPages(build, 'Could not load vocabulary', limit)
     },
 
     async loadUtterances({ storyId = null, ids = null, limit = null }) {
-      let query = client
-        .from('story_utterances')
-        .select('*')
-        .order('scene_index', { ascending: true })
-        .order('utterance_index', { ascending: true })
-      if (storyId) query = query.eq('story_id', storyId)
-      if (ids && ids.length) query = query.in('id', ids)
-      if (limit) query = query.limit(limit)
-      const { data, error } = await query
-      if (error) fail('Could not load story utterances', error)
-      return data || []
+      const build = () => {
+        let query = client
+          .from('story_utterances')
+          .select('*')
+          .order('story_id', { ascending: true })
+          .order('scene_index', { ascending: true })
+          .order('utterance_index', { ascending: true })
+        if (storyId) query = query.eq('story_id', storyId)
+        if (ids && ids.length) query = query.in('id', ids)
+        return query
+      }
+      return fetchAllPages(build, 'Could not load story utterances', limit)
     },
 
     // --- generated audio ----------------------------------------------------

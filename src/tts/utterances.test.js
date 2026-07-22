@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { parseStoryUtterances, assignSpeakerVoices, castOf, NARRATOR } from './utterances.js'
+import { parseStoryUtterances, assignSpeakerVoices, castOf, genderOf, NARRATOR } from './utterances.js'
+import { VOICE_POOLS } from './constants.js'
 
 const VOICES = {
   flashcard: 'zh-CN-XiaoxiaoNeural',
@@ -14,25 +15,65 @@ function story(content, extra = {}) {
 }
 
 describe('assignSpeakerVoices', () => {
+  const FEMALE = VOICE_POOLS['zh-CN'].female
+  const MALE = VOICE_POOLS['zh-CN'].male
+
   it('always narrates with the story voice', () => {
     expect(assignSpeakerVoices([NARRATOR, '小明'], VOICES)[NARRATOR]).toBe(VOICES.story)
   })
 
-  it('gives the first character a different voice from the narrator', () => {
-    const cast = assignSpeakerVoices([NARRATOR, '小明'], VOICES)
-    expect(cast['小明']).toBe(VOICES.male)
-    expect(cast['小明']).not.toBe(cast[NARRATOR])
+  it('never gives a character the narrator voice - dialogue must be distinguishable', () => {
+    const cast = assignSpeakerVoices([NARRATOR, '小明', '小红', '妈妈', '店员'], VOICES)
+    for (const name of ['小明', '小红', '妈妈', '店员']) {
+      expect(cast[name]).not.toBe(cast[NARRATOR])
+    }
+  })
+
+  it('casts a mother with a female voice', () => {
+    expect(FEMALE).toContain(assignSpeakerVoices([NARRATOR, '妈妈'], VOICES)['妈妈'])
+  })
+
+  it('casts the boys male and the girls female', () => {
+    const cast = assignSpeakerVoices([NARRATOR, '李明', '小明', '小红', '妈妈'], VOICES)
+    expect(MALE).toContain(cast['李明'])
+    expect(MALE).toContain(cast['小明'])
+    expect(FEMALE).toContain(cast['小红'])
+    expect(FEMALE).toContain(cast['妈妈'])
+  })
+
+  it('gives every character in a scene a different voice while any remain', () => {
+    const cast = assignSpeakerVoices([NARRATOR, '李明', '小明', '小红', '妈妈'], VOICES)
+    const voicesUsed = ['李明', '小明', '小红', '妈妈'].map(n => cast[n])
+    expect(new Set(voicesUsed).size).toBe(4)
   })
 
   it('is deterministic, so a re-sync never re-casts the story', () => {
-    const a = assignSpeakerVoices(['小红', '小明', NARRATOR], VOICES)
-    const b = assignSpeakerVoices([NARRATOR, '小明', '小红'], VOICES)
+    const a = assignSpeakerVoices(['小红', '小明', NARRATOR, '店员'], VOICES)
+    const b = assignSpeakerVoices([NARRATOR, '店员', '小明', '小红'], VOICES)
     expect(a).toEqual(b)
   })
 
-  it('distinguishes two characters in the same scene', () => {
-    const cast = assignSpeakerVoices(['小明', '小红'], VOICES)
-    expect(cast['小明']).not.toBe(cast['小红'])
+  it('does not make a crowd of anonymous roles all one gender', () => {
+    const cast = assignSpeakerVoices([NARRATOR, '店员', '服务员', '路人', '收银员'], VOICES)
+    const used = ['店员', '服务员', '路人', '收银员'].map(n => cast[n])
+    expect(used.some(v => MALE.indexOf(v) !== -1)).toBe(true)
+    expect(used.some(v => FEMALE.indexOf(v) !== -1)).toBe(true)
+  })
+
+  it('still casts everyone when a story has more speakers than voices', () => {
+    const many = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
+    const cast = assignSpeakerVoices([NARRATOR, ...many], VOICES)
+    for (const name of many) {
+      expect(typeof cast[name]).toBe('string')
+      expect(cast[name].length).toBeGreaterThan(0)
+    }
+  })
+
+  it('knows the gender of the recurring cast', () => {
+    expect(genderOf('妈妈')).toBe('female')
+    expect(genderOf('小红')).toBe('female')
+    expect(genderOf('李明')).toBe('male')
+    expect(genderOf('店员')).toBe(null)
   })
 })
 

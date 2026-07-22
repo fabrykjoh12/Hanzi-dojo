@@ -1,4 +1,7 @@
-import { CHARACTER_READINGS } from './characterNames'
+// Extension required: Vite resolves an extensionless specifier, Node ESM does
+// not, and this module is now imported by the story-utterance sync script as
+// well as by the readers.
+import { CHARACTER_READINGS } from './characterNames.js'
 
 // Canonical story readability + the pure token/status helpers the immersion
 // reader is built from. This is the single source of truth for "% known": the

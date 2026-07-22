@@ -24,7 +24,13 @@ Whenever we finish or start a meaningful piece of work, edit **`ROADMAP.md`** in
 
 **Pronunciation:** flashcard *word* clips are auto-pinned to `vocabulary.reading` (labelled `inferred`, never `verified` — only a human may set `verified`/`rejected`). `data/tts-pronunciation-overrides.json` seeds ~24 polyphone fixes (银行/行李, 长城/校长, 觉得/睡觉 …); matching is longest-first and non-overlapping, so 银行 consumes its own 行.
 
-**⚠️ NOT LIVE YET.** Two migrations must be applied (`20260722140000_add_tts_audio.sql`, `20260722150000_add_story_utterances.sql`) — until then the CLI stops with an actionable message and every screen plays exactly today's audio. **No real Azure request has been made from this repo.** Everything is additive: `vocabulary.audio_path`, `stories.content` and `stories.has_audio` are untouched, and `flashcardAudio()` falls back to the legacy path per word.
+**Two things Azure does NOT do, both measured against the live service, both easy to re-break:**
+1. **`<phoneme>` is rejected for every zh-CN voice** (400, empty body) with `sapi` *and* `ipa`, while the same element works on en-US from the same key. Recorded as `LOCALE_CAPABILITIES` in `constants.js`; the pin is skipped and `overrideVersion` reports `none` so the hash stays honest. Judged acceptable by ear (觉得/睡觉 read correctly). The real fix, if ever needed, is a hosted custom lexicon. **Do not "restore" the phoneme tag — it fails the whole request.**
+2. **Concurrency 3 gets throttled** ("Downstream Service Throttled"), so the default is 2 with a 1s first backoff.
+
+**Also worth knowing:** PostgREST caps responses at 1000 rows, so `repository.js` paginates with `.range()` — without it a full-library cost estimate silently under-reports by half. And `src/storyReading.js` now imports `./characterNames.js` **with** the extension, because Node ESM (unlike Vite) requires it and the story-sync script imports that module.
+
+**Status: live and validated, backfill not yet run.** Both migrations applied, 24 pronunciation corrections loaded, 122 clips generated with 0 failures, 45 stories split into 550 utterances with gender-aware casting (妈妈/小红 female, 李明/小明 male, narrator distinct). Remaining: ~9,300 vocabulary + ~1,100 story clips (~51k characters, ~1 hour). Everything is additive: `vocabulary.audio_path`, `stories.content` and `stories.has_audio` are untouched, and `flashcardAudio()` falls back to the legacy path per word.
 
 ---
 

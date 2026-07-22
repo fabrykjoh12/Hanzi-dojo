@@ -131,6 +131,16 @@ export const DEFAULT_VOICES = {
   male: 'zh-CN-YunxiNeural',
 }
 
+// Casting pools for story dialogue, so two characters in a scene never sound
+// identical and a mother is not voiced by a man. Ordered: the first entry is
+// the one a story reaches for first.
+export const VOICE_POOLS = {
+  'zh-CN': {
+    female: ['zh-CN-XiaoyiNeural', 'zh-CN-XiaohanNeural', 'zh-CN-XiaochenNeural', 'zh-CN-XiaoxiaoNeural'],
+    male: ['zh-CN-YunxiNeural', 'zh-CN-YunjianNeural', 'zh-CN-YunyangNeural'],
+  },
+}
+
 // Voices we know are valid for a locale. Kept as an allowlist so a typo in an
 // environment variable fails fast at startup instead of after a paid request.
 export const KNOWN_VOICES = {

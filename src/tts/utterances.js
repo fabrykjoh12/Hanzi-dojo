@@ -14,21 +14,76 @@
 import { splitSpeaker } from '../storyReading.js'
 import { splitScene } from '../sceneReading.js'
 import { normalizeTtsText, isSpeakable } from './normalize.js'
+import { VOICE_POOLS } from './constants.js'
 
 export const NARRATOR = 'narrator'
 
-// Give each speaking character a distinct voice, deterministically, so a
-// re-sync never re-casts the story. The narrator always keeps the story voice;
-// characters alternate from the other voices so two people in a scene do not
-// sound identical.
-export function assignSpeakerVoices(speakers, voices) {
-  const cast = {}
-  const others = [voices.male, voices.story].filter(Boolean)
-  const characters = Array.from(new Set(speakers))
-    .filter(s => s && s !== NARRATOR)
-    .sort()
-  characters.forEach((name, i) => { cast[name] = others[i % others.length] })
-  cast[NARRATOR] = voices.story
+// The recurring cast of the authored and generated stories (see the character
+// bibles in generate-serial-stories.mjs and characterNames.js), plus the family
+// and shop roles that appear as speakers. Only what is needed to avoid voicing
+// a mother as a man - anything unlisted is cast from the combined pool.
+export const CHARACTER_GENDER = {
+  // family roles
+  '妈妈': 'female', '母亲': 'female', '姐姐': 'female', '妹妹': 'female',
+  '奶奶': 'female', '外婆': 'female', '阿姨': 'female',
+  '爸爸': 'male', '父亲': 'male', '哥哥': 'male', '弟弟': 'male',
+  '爷爷': 'male', '外公': 'male', '叔叔': 'male',
+  // recurring named characters
+  '小红': 'female', '小花': 'female', '小雨': 'female', '林雨晴': 'female',
+  '李明': 'male', '小明': 'male', '大明': 'male', '大力': 'male', '大毛': 'male',
+}
+
+export function genderOf(name) {
+  return CHARACTER_GENDER[name] || null
+}
+
+// Cast a story.
+//
+// Rules, in order of how much they matter:
+//   1. The narrator keeps the story voice.
+//   2. No character ever shares the narrator's voice - if they did, dialogue
+//      and narration would be indistinguishable, which is the whole point of
+//      having character voices.
+//   3. A character of known gender is cast from that gender's pool.
+//   4. Two characters never share a voice while an unused one remains.
+//
+// Deterministic: the same story always casts the same way, so a re-sync never
+// silently re-voices a story the learner has already heard.
+export function assignSpeakerVoices(speakers, voices, { locale = 'zh-CN' } = {}) {
+  const pools = VOICE_POOLS[locale] || { female: [], male: [] }
+  const narratorVoice = voices.story
+  const free = {
+    female: pools.female.filter(v => v !== narratorVoice),
+    male: pools.male.filter(v => v !== narratorVoice),
+  }
+  const used = new Set()
+
+  // Take the next unused voice from a pool, falling back to the other pool and
+  // finally to reuse - a repeated voice beats no audio.
+  const take = (gender) => {
+    const order = gender === 'male'
+      ? [free.male, free.female]
+      : gender === 'female'
+        ? [free.female, free.male]
+        // Unknown gender: alternate, so a crowd of anonymous shop staff does not
+        // all come out female.
+        : (used.size % 2 === 0 ? [free.male, free.female] : [free.female, free.male])
+    for (const pool of order) {
+      const pick = pool.find(v => !used.has(v))
+      if (pick) { used.add(pick); return pick }
+    }
+    const any = [...free.female, ...free.male]
+    return any.length ? any[used.size % any.length] : (voices.male || narratorVoice)
+  }
+
+  const cast = { [NARRATOR]: narratorVoice }
+  // Named characters first, so a leading role gets the most distinct voice
+  // before the anonymous ones consume the pool.
+  const characters = Array.from(new Set(speakers)).filter(s => s && s !== NARRATOR)
+  const known = characters.filter(genderOf).sort()
+  const unknown = characters.filter(c => !genderOf(c)).sort()
+  for (const name of known) cast[name] = take(genderOf(name))
+  for (const name of unknown) cast[name] = take(null)
   return cast
 }
 
@@ -80,7 +135,7 @@ export function parseStoryUtterances(story, { voices, characterVoices = {} } = {
     }
   })
 
-  const cast = assignSpeakerVoices(parsed.map(p => p.speaker), voices)
+  const cast = assignSpeakerVoices(parsed.map(p => p.speaker), voices, { locale: story.locale || 'zh-CN' })
 
   return parsed
     // A beat with nothing sayable (an emoji-only scene line) still occupies its

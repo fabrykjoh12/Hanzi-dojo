@@ -112,17 +112,15 @@ paid generation happens without an explicit `--confirm`.
 - [x] **Phase 6 — Pronunciation overrides.** Central, versioned override table with verification states (never auto-marks anything human-verified); changing an override marks the affected audio stale.
 - [x] **Phase 7 — Story integration.** Per-utterance rows (scene / speaker / voice / pauses), narrator + character voices, one line regenerated at a time, ordered playback with active-line highlighting and cancel-on-leave.
 - [x] **Phase 8 — Docs & validation.** `docs/TTS.md`, `.env.example`, tests, lint, build.
-**Blocked on a manual step (nothing generates until these are done):**
-- [ ] Apply `supabase/migrations/20260722140000_add_tts_audio.sql` and `20260722150000_add_story_utterances.sql`. Until then the CLI stops with an actionable message and the app keeps playing today's audio.
-- [ ] Load the pronunciation overrides: `node --env-file=.env.script tts-overrides.mjs --apply`.
+- [x] Migrations applied, pronunciation corrections loaded, first clips generated and judged good by ear
+- [x] Stories split into per-line utterances with gender-aware character casting (45 stories, 550 lines)
 
-**Known gap:**
-- [ ] Pronunciation pinning is inactive on Chinese: Azure rejects the SSML `phoneme` element for every zh-CN voice (measured, and confirmed working on en-US from the same account), so the pinyin-guided readings the current Google pipeline delivers are not reproduced. The corrections are stored and ready; the fix is a hosted custom lexicon. Details in `docs/TTS.md`.
+**Known gap (cosmetic today):**
+- [ ] Pronunciation pinning is inactive on Chinese: Azure rejects the SSML `phoneme` element for every zh-CN voice (measured, and confirmed working on en-US from the same account). Azure's own analysis reads the tested polyphones correctly, so nothing sounds wrong today; the fix, if a wrong reading is ever reported, is a hosted custom lexicon. Details in `docs/TTS.md`.
 
 **Remaining:**
-- [ ] Backfill run: generate Azure audio for the HSK library (operator-run, batched, deliberately not automated).
-- [ ] Split the published stories into utterances (`story-utterances.mjs --apply`) and narrate them.
-- [ ] A real-device listening pass (iOS/Safari especially) before trusting the new clips.
+- [ ] The backfill itself: about 9,300 vocabulary clips and 1,100 story clips (~51k characters, roughly an hour). Operator-run and batched, deliberately not automated.
+- [ ] A real-device listening pass (iOS/Safari especially).
 
 **Optional / later:**
 - [ ] Admin review surface for generated audio (approve / reject / regenerate) in `/dashboard`. The schema and admin RLS policies are already in place.

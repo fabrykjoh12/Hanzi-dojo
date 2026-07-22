@@ -442,9 +442,9 @@ existing controls.
 - **Pronunciation pinning is inactive on Chinese** — the highest-priority gap.
   Azure rejects `<phoneme>` for zh-CN (§2), so the pinyin-guided readings that
   the Google pipeline delivers today are not reproduced here. The next step is a
-  hosted custom lexicon. **Listen before backfilling the library**: if Azure's
-  own word-level analysis handles the common polyphones, the gap is cosmetic;
-  if it does not, build the lexicon first.
+  hosted custom lexicon. **Judged by ear and found acceptable**: Azure's own
+  word-level analysis handles 觉得 / 睡觉 correctly, so the gap is cosmetic today.
+  Revisit if a wrong reading is reported.
 - **Throttling is easy to hit.** Concurrency 3 drew steady 429s on a standard
   resource, so the default is 2. Raise `TTS_CONCURRENCY` only if your tier allows.
 - **Chinese only.** `SUPPORTED_LOCALES` is `['zh-CN']`. Japanese and Russian keep
@@ -459,14 +459,47 @@ existing controls.
   span in a sentence, which is right for polyphones and wrong for a word that
   genuinely changes reading twice in one sentence. No such case is known in the
   current corpus.
-- **Verified against mocks only.** No real Azure request has been made from this
-  repo yet, and no real-device audio pass has been done.
+- **No real-device audio pass yet** (iOS/Safari especially). The pipeline itself
+  is verified against live Azure — see §13.
 - **The backfill has not been run.** Existing levels still serve their legacy
   Google clips.
 
 ---
 
-## 12. Adding another provider (MiniMax, ElevenLabs, …)
+## 12. Story casting
+
+Each utterance carries its own voice. `assignSpeakerVoices()` casts a story
+deterministically, so re-syncing never re-voices a story a learner has heard:
+
+1. the narrator keeps the story voice;
+2. **no character ever shares the narrator's voice** — otherwise dialogue and
+   narration are indistinguishable, which defeats the point;
+3. a character of known gender is cast from that gender's pool
+   (`VOICE_POOLS` in `constants.js`), via `CHARACTER_GENDER` in `utterances.js`
+   — 妈妈/小红/小花 female, 李明/小明/大力 male, family roles included;
+4. two characters never share a voice while an unused one remains.
+
+Unlisted speakers (店员, 服务员, 路人) alternate across both pools, so a crowd of
+anonymous roles does not all come out one gender. To fix a mis-cast character,
+add them to `CHARACTER_GENDER` and re-run `story-utterances.mjs --apply`.
+
+Verified on the real corpus: 45 stories, 550 utterances.
+
+## 13. What has been verified against live Azure
+
+| | |
+|---|---|
+| Flashcard clips generated | 96 (24 words × 4 variants) |
+| Story clips generated | 26 across 2 stories |
+| Failures after the `<phoneme>` fix | 0 |
+| Casting on the real corpus | 45 stories, 550 utterances, 3 distinct voices in a 7-line story |
+| Cache behaviour | a re-run reported the existing clips as cache hits and spent nothing |
+| Idempotency | `tts-overrides.mjs --apply` twice → `24 new`, then `0 new / 24 updated` |
+| Audio quality | judged good by ear, including 觉得 / 睡觉 |
+
+Not yet verified: a real-device (iOS) listening pass, and the full backfill.
+
+## 14. Adding another provider (MiniMax, ElevenLabs, …)
 
 The integration point is deliberately small:
 
