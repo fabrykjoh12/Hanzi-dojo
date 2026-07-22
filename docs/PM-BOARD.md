@@ -613,6 +613,41 @@ manual pass and the lint cleanup are still open._
 
 These need credentials or billing that no coding session has.
 
+### 🟠 Apply the transactional-grading migration (TASK-005)
+
+`supabase/migrations/20260722120000_transactional_grading.sql` is **unapplied** —
+no coding session can reach a live Supabase. Until it runs, grading silently uses
+the previous separate writes (nothing breaks, nothing is atomic). Paste the file
+into the Supabase SQL editor (project `bvqvturqupbggxaeihvi`) and run it; it is
+additive and safe to run twice.
+
+**Smoke test, right after applying:**
+
+1. In the SQL editor, confirm the pieces exist:
+   ```sql
+   select proname, prosecdef from pg_proc where proname = 'grade_card';
+   -- expect: grade_card | t     (t = security definer)
+   select count(*) from information_schema.columns
+   where table_name = 'review_logs' and column_name = 'client_op_id';  -- expect 1
+   ```
+2. In the app, grade one flashcard, then check all three rows landed together:
+   ```sql
+   select state, due_at, last_review from cards where user_id = auth.uid()
+     order by last_review desc nulls last limit 1;
+   select grade, client_op_id, reviewed_at from review_logs where user_id = auth.uid()
+     order by reviewed_at desc limit 1;   -- client_op_id must NOT be null
+   select * from daily_activity where user_id = auth.uid() and activity_date = current_date;
+   ```
+   A non-null `client_op_id` on the newest log is the proof the RPC ran rather
+   than the fallback path.
+3. Grade a second card and confirm `daily_activity.studied_cards` went 1 → 2, and
+   that **Undo** on a graded card removes the newest `review_logs` row.
+4. Ownership guard (should fail, not succeed):
+   ```sql
+   select public.grade_card(p_card_id => '<another account''s card id>'::uuid);
+   -- expect: ERROR "Card not found"
+   ```
+
 ### 🔴 Unblock HSK 3–6 story generation (the content blocker)
 `serial-hsk3-6` currently returns `Published 0` — the "plan season" call hits a
 Gemini free-tier 429 on every level. Either:
@@ -736,8 +771,32 @@ migrations, `.github/workflows/**`, `ROADMAP.md`, `docs/BACKLOG.md`.
 
 ### TASK-005 — Transactional grading (single RPC)
 
-**Status:** Ready · **Priority:** High · **Branch:** `claude/transactional-grading`
+**Status:** In Review · **Priority:** High · **Branch:** `claude/transactional-grading`
 **Dependencies:** None · **Conflict risk:** Low (no reader files)
+
+**Done.** One security-definer RPC `public.grade_card()` now writes the card row,
+the review log and the day's activity in a single transaction
+(`supabase/migrations/20260722120000_transactional_grading.sql`, mirrored into
+`supabase/schema.sql`). ⚠️ **The migration is unapplied** — see *Owner actions*
+for the SQL and its smoke test.
+
+- **Ownership:** the user id is always `auth.uid()`, never a client argument; the
+  update path additionally asserts the card belongs to that user, and `p_updates`
+  is applied through an explicit column whitelist so stray keys cannot steer it.
+- **Degrades safely:** `gradeCardWrite()` (in `src/syncQueue.js`) falls back to
+  the previous separate writes when the function is absent — including when a
+  backend answers the call without doing anything — and caches that so it probes
+  once per page load. Real errors (RLS, constraints) still surface.
+- **Offline replay** goes through the same helper. Every queued grade now carries
+  a `client_op_id`, and the RPC turns a repeat into a no-op, so a flush retried
+  after a successful write can neither duplicate a review log nor double-count a
+  study day. The old bulk `reconcile` pass still runs, but only for ops the RPC
+  did not account for (the fallback path).
+- **Undo** is unchanged, and slightly safer: the RPC reports whether it created
+  the card row, so an undo can no longer delete a row another device had made.
+- **FSRS untouched** — `src/srs.js` is not in the diff; this is write plumbing only.
+- Verified: vitest **718 pass / 67 files** (was 696), Playwright **51 pass**,
+  `npm run build` green, `npx eslint src` at the 2 pre-existing errors.
 
 Collapse the separate grade-path writes (card update, `review_logs` insert,
 `daily_activity` upsert) into one security-definer Supabase RPC so a mid-write

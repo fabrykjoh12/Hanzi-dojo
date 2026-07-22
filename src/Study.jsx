@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { isOnline } from './useOnline'
-import { enqueueGrade } from './syncQueue'
+import { enqueueGrade, gradeCardWrite, nextActivityCounts, newOpId } from './syncQueue'
 import { cacheSet, cacheGet, outboxDelete } from './offline'
 import { getTrackCards } from './data'
 import { studyFloorLevel } from './levelScope'
@@ -412,28 +412,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Upsert today's study counts so the Profile calendar can show studied days.
-  // Counts are this session's running totals (presence is always correct).
-  const recordActivity = (cardState) => {
-    const a = activityRef.current
-    a.studied += 1
-    if (cardState === 'new') a.newC += 1
-    else if (cardState === 'review') a.review += 1
-    else a.learn += 1
-    // Offline, these counts ride along in the queued grade op and are folded
-    // into the server row when the outbox flushes.
-    if (isOnline()) {
-      supabase.from('daily_activity').upsert({
-        user_id: session.user.id,
-        activity_date: todayStr(),
-        studied_cards: a.studied,
-        new_cards: a.newC,
-        learning_cards: a.learn,
-        review_cards: a.review,
-      }, { onConflict: 'user_id,activity_date' }).then(() => {})
-    }
-  }
-
   // Recompute the next-day forecast (reviews + new) for the recap card.
   async function loadForecast() {
     const cards = await getTrackCards(session.user.id, track, {
@@ -656,29 +634,54 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       }
     }
 
+    // The review log for this grade — written inside the same transaction as
+    // the card row, so history can never disagree with scheduling.
+    const log = {
+      grade,
+      previous_state: card.state,
+      next_state: res.updates.state,
+      previous_interval_days: card.interval_days || 0,
+      next_interval_days: res.updates.interval_days,
+    }
+    // Today's running counts AFTER this card. Committed to the ref only once
+    // the write lands, so a failed grade never inflates the day's activity.
+    const nextCounts = nextActivityCounts(activityRef.current, card.state)
+
     let cardId = card.id
     let outboxId = null
     if (online) {
-      if (cardId) {
-        const { error } = await supabase.from('cards').update(res.updates).eq('id', cardId)
-        if (error) {
-          console.error('[Study] card update failed', error)
-          setSaveError(error.message)
-          return
-        }
-      } else {
-        const { data, error } = await supabase
-          .from('cards')
-          .insert({ user_id: session.user.id, vocab_id: card.vocab_id, ...res.updates })
-          .select('id')
-          .single()
-        if (error) {
-          console.error('[Study] card insert failed', error)
-          setSaveError(error.message)
-          return
-        }
-        cardId = data?.id
+      // One transaction: card row + review log + today's activity. Falls back
+      // to the previous separate writes if the RPC isn't deployed yet.
+      const write = await gradeCardWrite(supabase, {
+        userId: session.user.id,
+        cardId: card.id || null,
+        vocabId: card.vocab_id,
+        updates: res.updates,
+        log,
+        activity: {
+          mode: 'set',
+          date: todayStr(),
+          studied: nextCounts.studied,
+          new: nextCounts.newC,
+          learning: nextCounts.learn,
+          review: nextCounts.review,
+        },
+        opId: newOpId(),
+      })
+      if (!write.ok) {
+        console.error('[Study] grade write failed', write.error)
+        setSaveError(write.error && write.error.message)
+        return
       }
+      cardId = write.cardId
+      // Captured so undo can remove the log entry. On the fallback path the
+      // insert is still non-blocking, so the id arrives a moment later.
+      snapshot.logId = write.logId
+      if (write.pendingLogId) write.pendingLogId.then(id => { if (id) snapshot.logId = id })
+      // The row may already have existed (another device started this word
+      // between load and grade). The RPC upserts rather than failing, so undo
+      // must restore that row instead of deleting someone else's progress.
+      if (write.viaRpc && !card.id && write.inserted === false) snapshot.wasNew = false
     } else {
       // Offline: grade locally (FSRS already ran above) and queue the write.
       // A brand-new card gets a throwaway local id for this session only; the
@@ -690,13 +693,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         vocabId: card.vocab_id,
         cardId: card.id || null,
         updates: res.updates,
-        log: {
-          grade,
-          previous_state: card.state,
-          next_state: res.updates.state,
-          previous_interval_days: card.interval_days || 0,
-          next_interval_days: res.updates.interval_days,
-        },
+        log,
         day: todayStr(),
         state: card.state,
       })
@@ -716,25 +713,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       }, 6000)
     }
 
-    recordActivity(card.state)
-
-    // Log the review so FSRS parameters can be tuned and retention stats built
-    // later. Best-effort: history is nice-to-have, grading must never block on
-    // it. The log id is captured onto the snapshot so undo can remove the entry.
-    if (online) {
-      supabase.from('review_logs').insert({
-        user_id: session.user.id,
-        card_id: cardId,
-        vocab_id: card.vocab_id,
-        grade,
-        previous_state: card.state,
-        next_state: res.updates.state,
-        previous_interval_days: card.interval_days || 0,
-        next_interval_days: res.updates.interval_days,
-      }).select('id').single().then(({ data }) => {
-        snapshot.logId = data && data.id
-      })
-    }
+    // The write landed (or was queued) — this card now counts toward today.
+    // Offline these counts also ride along in the queued op and are folded into
+    // the server row when the outbox flushes.
+    activityRef.current = nextCounts
 
     setFlipped(false)
     setTypedValue('')
