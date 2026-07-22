@@ -167,7 +167,7 @@ Order is a preference, not a hard dependency — either may land first.
 
 ### TASK-001 — Cumulative, level-aware story shelf
 
-**Status:** In Review
+**Status:** Complete (merged to main in PR #113, 2026-07-22)
 **Priority:** Critical
 **Owner:** Unassigned
 **Branch:** `claude/cumulative-story-shelf`
@@ -368,7 +368,7 @@ open at HSK 1 (passed) while still locked at HSK 2.
 
 ### TASK-002 — Unblock the no-LLM authored-story lane for Chinese HSK 3
 
-**Status:** In Review
+**Status:** Complete (merged to main in PR #112, 2026-07-22)
 **Priority:** High
 **Owner:** Unassigned
 **Branch:** `claude/authored-lane-hsk3`
@@ -535,7 +535,7 @@ those), no `ROADMAP.md` / `docs/BACKLOG.md` edit (TASK-003 owns those).
 
 ### TASK-003 — Integration + QA verification of M1
 
-**Status:** Blocked (needs TASK-001 and TASK-002 merged)
+**Status:** Ready (TASK-001 and TASK-002 are merged; automated verification already done — see below)
 **Priority:** High
 **Owner:** Unassigned
 **Branch:** `claude/m1-integration-qa`
@@ -572,9 +572,40 @@ roadmap/backlog updated to match reality.
 - [ ] Threshold-regression check documented (before/after table).
 - [ ] `ROADMAP.md`, `docs/BACKLOG.md`, and this board reflect the shipped state.
 
+#### Already done by the PM session (2026-07-22, do not repeat)
+
+Both PRs were verified independently before and after merge — do not re-run these
+as if they were open questions; re-run them only as a regression check.
+
+- Both branches merged locally first: `git merge-tree` clean, then the combined
+  tree ran green. Merged with **merge commits, not squash**, deliberately: both
+  PRs branched off the PM-board branch and both edited `docs/PM-BOARD.md`, so a
+  squash of the first would have destroyed the shared ancestor and forced a
+  whole-file conflict on the second.
+- On merged `main` @ `89391e7`: `npx vitest run` → **696 passed / 67 files**;
+  `npx playwright test` → **51 passed**; `npm run build` → clean.
+- Scope audited on both PRs: no forbidden file touched.
+- `ROADMAP.md`, `docs/BACKLOG.md` and this board updated to the shipped state.
+
+#### What genuinely remains
+
+1. **Manual multi-level pass on the Stories screen** — `current_level` 1, 2 and 3:
+   grouping, level headings, per-level tier gating, both empty states, mobile
+   width. This is the one thing automation did not cover.
+2. **ESLint hygiene** (found by both sessions, confirmed by the PM session): the
+   "0-error baseline" in `Claude.md` is stale. `npx eslint src` reports **2 real
+   errors** — `Dashboard.jsx` (set-state-in-effect) and `HowMuchCanYouRead.jsx`
+   (unused `useMemo`). `npx eslint .` reports **24** because it also lints
+   `.claude/skills/**` tooling scripts that should be ignored outright. Fix the 2,
+   add an ignore for `.claude/`, and correct the claim in `Claude.md`.
+3. **Rename `data/hsk3_level1.csv`** (optional) — it is HSK *level 1* data, not
+   HSK 3. `src/pinyin.test.js:71` depends on it, so a rename is a two-line change,
+   not a deletion.
+
 #### Completion notes
 
-_To be filled by the integration session._
+_Automated verification and doc updates done by the PM session (above). The
+manual pass and the lint cleanup are still open._
 
 ---
 
