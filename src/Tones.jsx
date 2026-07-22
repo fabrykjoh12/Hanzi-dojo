@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
-import { awardXp } from './xpService'
 import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl } from './utils'
 import { PrimaryButton, SecondaryButton } from './ui'
 import { useIsMobile } from './useIsMobile'
@@ -12,7 +11,6 @@ import {
 
 const ACCENT = '#B83A24'
 const QUESTION_COUNT = 15
-const XP_PER_CORRECT = 4
 
 // Accented pinyin vowel → Mandarin tone number. Falls back to numeric pinyin
 // ("pin1"). Neutral = 5 only when the reading explicitly says so (trailing 5,
@@ -75,7 +73,7 @@ const TONES = [
   { n: 5, mark: '·', label: 'neutral' },
 ]
 
-export default function Tones({ session, profile, track, onBack, onUpdate }) {
+export default function Tones({ session, profile, track, onBack }) {
   const isMobile = useIsMobile()
   const isChinese = profile.active_language === 'chinese'
   // Only Chinese has tones to load; other languages render an early message and
@@ -90,7 +88,6 @@ export default function Tones({ session, profile, track, onBack, onUpdate }) {
   const [correctCount, setCorrectCount] = useState(0)
   const [done, setDone] = useState(false)
   const audioRef = useRef(null)
-  const xpAwardedRef = useRef(false)
 
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
@@ -133,7 +130,6 @@ export default function Tones({ session, profile, track, onBack, onUpdate }) {
     setMode(which)
     setQuestions(qs)
     setIdx(0); setPicked(null); setCorrectCount(0); setDone(false)
-    xpAwardedRef.current = false
   }
 
   useEffect(() => {
@@ -168,13 +164,6 @@ export default function Tones({ session, profile, track, onBack, onUpdate }) {
 
   function finish() {
     setDone(true)
-    if (!xpAwardedRef.current) {
-      xpAwardedRef.current = true
-      const gain = correctCount * XP_PER_CORRECT
-      if (gain > 0) {
-        awardXp(session, profile, gain, onUpdate)
-      }
-    }
   }
 
   function next() {
@@ -291,15 +280,9 @@ export default function Tones({ session, profile, track, onBack, onUpdate }) {
             <p style={{ color: 'var(--text-muted)', marginBottom: '22px', fontSize: '15px' }}>
               You heard <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {questions.length} tones correctly.
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '22px' }}>
-              <div style={{ padding: '16px 10px', borderRadius: '14px', background: ACCENT + '0D', border: '1px solid ' + ACCENT + '22' }}>
-                <div style={{ fontSize: '26px', fontWeight: 760, color: ACCENT, lineHeight: 1 }}>{pct}%</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
-              </div>
-              <div style={{ padding: '16px 10px', borderRadius: '14px', background: '#6E84660D', border: '1px solid #6E846622' }}>
-                <div style={{ fontSize: '26px', fontWeight: 760, color: '#5C7155', lineHeight: 1 }}>+{correctCount * XP_PER_CORRECT}</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>XP earned</div>
-              </div>
+            <div style={{ padding: '16px 10px', borderRadius: '14px', background: ACCENT + '0D', border: '1px solid ' + ACCENT + '22', marginBottom: '22px' }}>
+              <div style={{ fontSize: '26px', fontWeight: 760, color: ACCENT, lineHeight: 1 }}>{pct}%</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <SecondaryButton onClick={onBack} icon={ArrowLeft}>Home</SecondaryButton>

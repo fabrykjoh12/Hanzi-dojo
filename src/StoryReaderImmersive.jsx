@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from './supabase'
-import { awardXp } from './xpService'
 import { isOnline } from './useOnline'
 import { enqueueStoryRead } from './syncQueue'
 import { ensureAudio } from './audioCache'
@@ -32,10 +31,6 @@ const GOLD = '#B45309'
 const HILITE = 'rgba(217, 164, 62, 0.32)'
 
 const SPEAKER_PALETTE = ['#B83A24', '#2E6FB8', '#2F9E6D', '#C2680E', '#7C5CD0', '#B83A7A']
-
-// One-time XP for finishing a story (kept small next to per-card review XP —
-// the real reward for reading is the vocabulary reinforcement itself).
-const STORY_FINISH_XP = 10
 
 // Durable reader preferences (furigana mode, Learning Lens, translation). Stored
 // in the prefs store so a reader's chosen scaffolding survives reloads without a
@@ -271,7 +266,7 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
   )
 }
 
-export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, profile, track, onBack, onHome, nextStory, nextTierUnlock = null, onNextStory, isRead, onMarkRead, todayWords = [], firstMission = false }) {
+export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, track, onBack, onHome, nextStory, nextTierUnlock = null, onNextStory, isRead, onMarkRead, todayWords = [], firstMission = false }) {
   const [selected, setSelected] = useState(null)
   const [furiganaMode, setFuriganaMode] = useState(DEFAULT_PREFS.furiganaMode)
   const [lens, setLens] = useState(DEFAULT_PREFS.lens)
@@ -426,8 +421,8 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story.id])
 
-  // Finishing a story records it (story_reads) and pays a small one-time XP
-  // reward — reading is half the method, it should count for something.
+  // Finishing a story records it (story_reads) — reading is half the method,
+  // it should count for something.
   const [finishing, setFinishing] = useState(false)
   const finishStory = async () => {
     if (finishing || isRead) return
@@ -437,12 +432,11 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         .from('story_reads')
         .upsert({ user_id: session.user.id, story_id: story.id })
       if (!error) {
-        if (profile) awardXp(session, profile, STORY_FINISH_XP)
         if (onMarkRead) onMarkRead(story.id)
       }
     } else {
-      // Offline: queue the read + its XP; both land when the outbox flushes.
-      await enqueueStoryRead({ userId: session.user.id, storyId: story.id, xpDelta: STORY_FINISH_XP })
+      // Offline: queue the read; it lands when the outbox flushes.
+      await enqueueStoryRead({ userId: session.user.id, storyId: story.id })
       if (onMarkRead) onMarkRead(story.id)
     }
     trackEvent(EVENTS.STORY_COMPLETED, { tier: story.tier, known_pct: knownPct })
@@ -990,7 +984,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
           <>
             <div style={{ marginTop: '20px' }}>
               <PrimaryButton onClick={finishStory} icon={Check} disabled={finishing}>
-                Finish story · +{STORY_FINISH_XP} XP
+                Finish story
               </PrimaryButton>
             </div>
             {nextStory && (

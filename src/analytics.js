@@ -53,7 +53,6 @@ export const EVENTS = {
   TEXT_ANALYZED: 'text_analyzed',
   // Signals
   ACHIEVEMENT_UNLOCKED: 'achievement_unlocked',
-  STREAK_INCREASED: 'streak_increased',
   LANGUAGE_SWITCHED: 'language_switched',
   // App session envelope
   SESSION_STARTED: 'session_started',

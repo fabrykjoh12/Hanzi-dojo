@@ -4,20 +4,16 @@ import { getAudioUrl, playAudioEl } from './utils'
 import { calculateStoryReadability, buildVocabMatcher, segmentLine, namesFor, particlesFor, splitSpeaker } from './storyReading'
 import { splitScene, stripSceneEmoji } from './sceneReading'
 import { supabase } from './supabase'
-import { awardXp } from './xpService'
 import { isOnline } from './useOnline'
 import { enqueueStoryRead } from './syncQueue'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
-
-// One-time XP for finishing a story — same amount/name as the classic reader.
-export const STORY_FINISH_XP = 10
 
 // Shared, presentation-independent reader behavior for the paced + chat readers:
 // beat parsing, % known, tap-to-reveal progression, per-line audio read-along,
 // finish/mark-read (online/offline parity with the classic reader), word lookup,
 // add-to-deck, and keyboard control. Each renderer draws the beats however it
 // likes; this hook owns everything else.
-export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, track, isRead, session, profile, onMarkRead, firstMission = false }) {
+export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, track, isRead, session, onMarkRead, firstMission = false }) {
   const theme = languageTheme(track.language)
   const reduceMotion = typeof window !== 'undefined' && window.matchMedia
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -75,15 +71,15 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     if (!isRead) {
       if (isOnline()) {
         const { error } = await supabase.from('story_reads').upsert({ user_id: session.user.id, story_id: story.id })
-        if (!error) { if (profile) awardXp(session, profile, STORY_FINISH_XP); if (onMarkRead) onMarkRead(story.id) }
+        if (!error) { if (onMarkRead) onMarkRead(story.id) }
       } else {
-        await enqueueStoryRead({ userId: session.user.id, storyId: story.id, xpDelta: STORY_FINISH_XP })
+        await enqueueStoryRead({ userId: session.user.id, storyId: story.id })
         if (onMarkRead) onMarkRead(story.id)
       }
       trackEvent(EVENTS.STORY_COMPLETED, { tier: story.tier, known_pct: readability.knownPct })
       if (firstMission) trackOnce(EVENTS.FIRST_STORY_COMPLETED, { known_pct: readability.knownPct })
     }
-  }, [isRead, session, story.id, story.tier, profile, onMarkRead, stopPlay, firstMission, readability.knownPct])
+  }, [isRead, session, story.id, story.tier, onMarkRead, stopPlay, firstMission, readability.knownPct])
 
   const advance = useCallback(() => { if (cur >= total - 1) finish(); else go(cur + 1) }, [cur, total, finish, go])
 

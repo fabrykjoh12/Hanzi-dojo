@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
-import { awardXp } from './xpService'
 import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl } from './utils'
 import { PrimaryButton, SecondaryButton } from './ui'
 import { languageTheme } from './languageTheme'
@@ -8,10 +7,9 @@ import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import { markWordDue } from './practiceSignal'
 import { speechMatches } from './speechScore'
-import { ArrowLeft, Mic, Volume2, Check, X, RotateCcw, CheckCircle2, Sparkles, MicOff } from 'lucide-react'
+import { ArrowLeft, Mic, Volume2, Check, X, RotateCcw, CheckCircle2, MicOff } from 'lucide-react'
 
 const QUESTION_COUNT = 10
-const XP_PER_CORRECT = 4
 
 const SR = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null
 const LANG_CODE = { chinese: 'zh-CN', japanese: 'ja-JP', russian: 'ru-RU' }
@@ -19,7 +17,7 @@ const LANG_CODE = { chinese: 'zh-CN', japanese: 'ja-JP', russian: 'ru-RU' }
 // Speaking drill: read the word aloud, get a ✓ via the browser's built-in speech
 // recognition (zero marginal cost). Accepts the word (and, for Japanese, its
 // reading). Not supported on iOS/Safari — shows a graceful fallback there.
-export default function Speaking({ session, profile, track, onBack, onUpdate }) {
+export default function Speaking({ session, profile, track, onBack }) {
   const isMobile = useIsMobile()
   const [loading, setLoading] = useState(Boolean(SR))
   const [items, setItems] = useState([])
@@ -33,7 +31,6 @@ export default function Speaking({ session, profile, track, onBack, onUpdate }) 
   const recRef = useRef(null)
   const audioRef = useRef(null)
   const scoredRef = useRef(false)                 // one score per item
-  const xpAwardedRef = useRef(false)
 
   const theme = languageTheme(profile.active_language)
   const accentHex = theme.accentHex
@@ -128,17 +125,12 @@ export default function Speaking({ session, profile, track, onBack, onUpdate }) 
 
   function finish() {
     setDone(true)
-    if (!xpAwardedRef.current) {
-      xpAwardedRef.current = true
-      const gain = correctCount * XP_PER_CORRECT
-      if (gain > 0) awardXp(session, profile, gain, onUpdate)
-    }
   }
 
   function restart() {
     stopListening()
     setIdx(0); setResult(null); setHeard(''); setCorrectCount(0); setDone(false)
-    scoredRef.current = false; xpAwardedRef.current = false
+    scoredRef.current = false
   }
 
   const pageShell = { minHeight: '100vh', position: 'relative', overflow: 'hidden', padding: isMobile ? '16px 14px 28px' : '20px 32px 36px' }
@@ -193,10 +185,9 @@ export default function Speaking({ session, profile, track, onBack, onUpdate }) 
         <Centered>
           <CheckCircle2 size={40} color={accentHex} style={{ marginBottom: '14px' }} />
           <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text)', marginBottom: '6px' }}>Nice speaking!</div>
-          <div style={{ fontSize: '15px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+          <div style={{ fontSize: '15px', color: 'var(--text-muted)', marginBottom: '22px' }}>
             You said <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {items.length} clearly ({pct}%).
           </div>
-          {correctCount > 0 && <div style={{ fontSize: '13px', color: accentHex, fontWeight: 700, marginBottom: '22px', display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'center' }}><Sparkles size={14} /> +{correctCount * XP_PER_CORRECT} XP</div>}
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
             <PrimaryButton onClick={restart} icon={RotateCcw}>Again</PrimaryButton>
             <SecondaryButton onClick={onBack} icon={ArrowLeft}>Done</SecondaryButton>

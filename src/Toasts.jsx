@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Award, TrendingUp, Snowflake } from 'lucide-react'
+import { Award } from 'lucide-react'
 
 // Calm, self-dismissing notification stack (top-right). Listens for the
 // 'hd-toast' CustomEvent fired by src/toast.js — no context or prop drilling,
-// so any module can raise a moment (level-ups, achievement seals).
-const ICONS = { seal: Award, level: TrendingUp, freeze: Snowflake }
+// so any module can raise a moment (achievement seals).
+const ICONS = { seal: Award }
 const DISMISS_MS = 4600
 
 let nextId = 1

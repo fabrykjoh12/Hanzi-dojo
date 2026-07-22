@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { awardXp } from './xpService'
 import { shuffle } from './utils'
 import { recordMiss, weightedSample } from './drillMemory'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
@@ -14,7 +13,6 @@ import {
 // romanization). No DB — the alphabet is embedded here.
 const ACCENT = languageTheme('russian').accentHex
 const QUESTION_COUNT = 15
-const XP_PER_CORRECT = 4
 
 // [letter, romanized sound]. Approximate romanization for beginner recognition;
 // the two silent signs (Ъ Ь) are omitted since they have no sound to name.
@@ -46,7 +44,7 @@ function buildQuestions(pool) {
   })
 }
 
-export default function Cyrillic({ session, profile, onBack, onUpdate }) {
+export default function Cyrillic({ profile, onBack }) {
   const isMobile = useIsMobile()
   const isRussian = profile.active_language === 'russian'
   const [group, setGroup] = useState(null)   // 'vowels' | 'consonants' | 'all'
@@ -75,14 +73,12 @@ export default function Cyrillic({ session, profile, onBack, onUpdate }) {
     else recordMiss('cyrillic', q.letter)
   }
 
-  function finish(finalCorrect) {
+  function finish() {
     setDone(true)
-    const gain = finalCorrect * XP_PER_CORRECT
-    if (gain > 0) awardXp(session, profile, gain, onUpdate)
   }
 
   function next() {
-    if (idx + 1 >= questions.length) finish(correctCount)
+    if (idx + 1 >= questions.length) finish()
     else { setPicked(null); setIdx(i => i + 1) }
   }
 
@@ -151,15 +147,9 @@ export default function Cyrillic({ session, profile, onBack, onUpdate }) {
           <p style={{ color: 'var(--text-muted)', marginBottom: '22px', fontSize: '15px' }}>
             You read <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {questions.length} correctly.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '22px' }}>
-            <div style={{ padding: '16px 10px', borderRadius: '14px', background: ACCENT + '0D', border: '1px solid ' + ACCENT + '22' }}>
-              <div style={{ fontSize: '26px', fontWeight: 760, color: ACCENT, lineHeight: 1 }}>{pct}%</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
-            </div>
-            <div style={{ padding: '16px 10px', borderRadius: '14px', background: '#6E84660D', border: '1px solid #6E846622' }}>
-              <div style={{ fontSize: '26px', fontWeight: 760, color: '#5C7155', lineHeight: 1 }}>+{correctCount * XP_PER_CORRECT}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>XP earned</div>
-            </div>
+          <div style={{ padding: '16px 10px', borderRadius: '14px', background: ACCENT + '0D', border: '1px solid ' + ACCENT + '22', marginBottom: '22px' }}>
+            <div style={{ fontSize: '26px', fontWeight: 760, color: ACCENT, lineHeight: 1 }}>{pct}%</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <SecondaryButton onClick={() => setGroup(null)} icon={ArrowLeft}>Change letters</SecondaryButton>

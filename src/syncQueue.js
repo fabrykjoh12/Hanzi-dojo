@@ -5,17 +5,11 @@
 //  - The ONLINE path never touches this file. Study/Stories only enqueue when
 //    `navigator.onLine` is false, so normal use is unaffected.
 //  - Replay is idempotent where it matters: card writes are upserts to a known
-//    next-state; new cards are de-duped by (user_id, vocab_id) before insert;
-//    XP is reconciled as a delta against the live server total. Worst case on a
-//    mid-flush crash is a little LOST XP (an op left in the outbox retries),
-//    never inflated progress.
+//    next-state; new cards are de-duped by (user_id, vocab_id) before insert.
 //  - supabase is passed in (not imported) so the pure helpers below stay
 //    unit-testable without the client or its env.
 
 import { outboxAdd, outboxAll, outboxDelete, outboxCount } from './offline'
-import { levelInfo } from './xp'
-
-const MAX_FREEZES = 5
 
 // ── Enqueue (called from the offline branch of Study / Stories) ─────────────
 export function enqueueGrade(op) {
@@ -28,7 +22,7 @@ export function enqueueStoryRead(op) {
 
 // Analytics events queued while offline. Reuses this outbox (no second queue);
 // on flush they're best-effort inserted and ALWAYS dropped — analytics is lossy
-// by design and must never wedge the critical grade/XP writes.
+// by design and must never wedge the critical grade writes.
 export function enqueueAnalytics(event) {
   return outboxAdd({ kind: 'analytics', event })
 }
@@ -38,11 +32,6 @@ export function pendingWrites() {
 }
 
 // ── Pure helpers (unit-tested) ──────────────────────────────────────────────
-// Sum of XP deltas across a set of outbox ops.
-export function xpTotalOf(ops) {
-  return ops.reduce((n, op) => n + (op && op.xpDelta ? op.xpDelta : 0), 0)
-}
-
 // Per-day study counts contributed by grade ops, for daily_activity increments.
 export function dayCountsOf(ops) {
   const days = {}
@@ -55,20 +44,6 @@ export function dayCountsOf(ops) {
     else d.learning += 1
   })
   return days
-}
-
-// New level + freeze award for adding `delta` XP on top of `prevXp` — mirrors
-// xpService.computeAward but without pulling in supabase/toast.
-export function reconcileAward(prevXp, delta, prevFreezes) {
-  const base = Math.max(0, Math.floor(prevXp || 0))
-  const newXp = base + Math.max(0, Math.floor(delta || 0))
-  const prevLevel = levelInfo(base).level
-  const newLevel = levelInfo(newXp).level
-  const updates = { total_xp: newXp }
-  if (newLevel > prevLevel) {
-    updates.streak_freezes = Math.min(MAX_FREEZES, (prevFreezes || 0) + (newLevel - prevLevel))
-  }
-  return updates
 }
 
 // ── Replay one op. Returns true if it may be removed from the outbox. ────────
@@ -127,8 +102,8 @@ async function replayOp(supabase, op) {
 let flushing = false
 
 // Replay the whole outbox against Supabase. Ops that fail are left in place for
-// the next attempt. XP and daily_activity are reconciled once at the end over
-// exactly the ops that flushed this pass.
+// the next attempt. daily_activity is reconciled once at the end over exactly
+// the ops that flushed this pass.
 export async function flushOutbox(supabase) {
   if (flushing || !supabase) return { flushed: 0 }
   flushing = true
@@ -159,19 +134,9 @@ export async function flushOutbox(supabase) {
   }
 }
 
-// Fold the flushed ops' XP + day counts into the live server rows. All
-// best-effort: a failure here loses a little XP/calendar count, never data.
+// Fold the flushed ops' day counts into the live server rows. Best-effort: a
+// failure here loses a little calendar count, never data.
 async function reconcile(supabase, userId, ops) {
-  const xp = xpTotalOf(ops)
-  if (xp > 0) {
-    try {
-      const { data } = await supabase
-        .from('profiles').select('total_xp, streak_freezes').eq('id', userId).single()
-      const updates = reconcileAward(data ? data.total_xp : 0, xp, data ? data.streak_freezes : 0)
-      await supabase.from('profiles').update(updates).eq('id', userId)
-    } catch { /* XP is best-effort even online */ }
-  }
-
   const days = dayCountsOf(ops)
   for (const day of Object.keys(days)) {
     const inc = days[day]

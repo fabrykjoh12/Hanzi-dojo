@@ -6,7 +6,7 @@ import { languageTheme } from './languageTheme'
 import { buildLabel } from './version'
 import { toast } from './toast'
 import {
-  ArrowLeft, FlaskConical, Gauge, BookOpen, Flame, Trash2, Zap, RefreshCw, ShieldCheck,
+  ArrowLeft, FlaskConical, Gauge, BookOpen, Trash2, Zap, RefreshCw, ShieldCheck,
 } from 'lucide-react'
 
 // Developer page (/dev) — self-service testing tools. Everything here runs as
@@ -180,7 +180,7 @@ export default function Dev({ session, profile, track, onBack, onNavigate }) {
           await upsertCards(ids, masteredCardRow)
           await done('Mastered ' + ids.length + ' words across all levels up to current')
         }} />
-        <Action danger confirm label="FULL reset (cards, tests, unlocks, streak)" onRun={async () => {
+        <Action danger confirm label="FULL reset (cards, tests, unlocks)" onRun={async () => {
           const { error } = await supabase.rpc('reset_current_language_progress', {
             p_language: track.language, p_system: track.system, p_reset_streak: true,
           })
@@ -219,34 +219,6 @@ export default function Dev({ session, profile, track, onBack, onNavigate }) {
         }} />
       </Section>
 
-      <Section icon={Flame} title="Streak & XP" accent={accent}>
-        <Action label="+1000 XP" onRun={async () => {
-          const { error } = await supabase.from('profiles')
-            .update({ total_xp: (profile.total_xp || 0) + 1000 }).eq('id', session.user.id)
-          if (error) throw new Error(error.message)
-          toast({ kind: 'info', title: '+1000 XP — reload Home to see it' })
-        }} />
-        <Action label="Set 30-day streak" onRun={async () => {
-          const today = new Date().toISOString().slice(0, 10)
-          const { error } = await supabase.from('profiles')
-            .update({ streak: 30, last_studied_on: today }).eq('id', session.user.id)
-          if (error) throw new Error(error.message)
-          toast({ kind: 'info', title: 'Streak set to 30' })
-        }} />
-        <Action label="+5 streak freezes" onRun={async () => {
-          const { error } = await supabase.from('profiles')
-            .update({ streak_freezes: (profile.streak_freezes || 0) + 5 }).eq('id', session.user.id)
-          if (error) throw new Error(error.message)
-          toast({ kind: 'info', title: '+5 freezes' })
-        }} />
-        <Action danger confirm label="Break streak (3 days idle)" onRun={async () => {
-          const d = new Date(); d.setDate(d.getDate() - 3)
-          const { error } = await supabase.from('profiles')
-            .update({ last_studied_on: d.toISOString().slice(0, 10) }).eq('id', session.user.id)
-          if (error) throw new Error(error.message)
-          toast({ kind: 'info', title: 'last_studied_on set to 3 days ago' })
-        }} />
-      </Section>
 
       <Section icon={Zap} title="Client" accent={accent}>
         <Action label="Reload fresh (clear caches + IndexedDB)" onRun={async () => {

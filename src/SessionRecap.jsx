@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { levelTitle, nextTitle } from './xp'
 import { offlineAvailable } from './offline'
 import { prefetchLevel } from './prefetch'
 import {
-  ArrowLeft, CheckCircle2, TrendingUp, Snowflake,
+  ArrowLeft, CheckCircle2,
   MessageCircleMore, ChevronRight, BookOpen, Download, CheckCheck,
 } from 'lucide-react'
 
@@ -225,30 +224,6 @@ export default function SessionRecap({
                 ? 'No weak words to clean up right now — your tricky cards are settling.'
                 : 'No cards are waiting. Come back later, or continue the loop with stories.'}
         </p>
-
-        {didStudy && s.leveledTo > 0 && (
-          <div style={{
-            margin: '0 auto 22px', padding: '16px 18px', borderRadius: '18px',
-            background: accentHex + '0D', border: '1px solid ' + accentHex + '2A',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: accentHex, fontSize: '17px', fontWeight: 850 }}>
-              <TrendingUp size={19} strokeWidth={2.2} color={accentHex} />
-              Level {s.leveledTo} — {levelTitle(s.leveledTo)}
-            </div>
-            {s.freezesEarned > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: '#3E63DD', fontSize: '13px', fontWeight: 700 }}>
-                <Snowflake size={15} strokeWidth={2} color="#3E63DD" />
-                +{s.freezesEarned} streak freeze{s.freezesEarned === 1 ? '' : 's'} earned
-              </div>
-            )}
-            {nextTitle(s.leveledTo) && (
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
-                Next rank: {nextTitle(s.leveledTo).name} at level {nextTitle(s.leveledTo).min}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Two calm tiles instead of a wall of numbers: what happened today,
             what's waiting tomorrow. No XP, no accuracy — just the shape of it. */}

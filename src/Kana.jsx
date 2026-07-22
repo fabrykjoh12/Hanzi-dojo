@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react'
-import { awardXp } from './xpService'
 import { shuffle } from './utils'
 import { prefsGet, prefsSet } from './offline'
 import { recordMiss, missCount, weightedSample } from './drillMemory'
@@ -12,7 +11,6 @@ import {
 
 const ACCENT = '#2E3A6E'
 const QUESTION_COUNT = 15
-const XP_PER_CORRECT = 4
 
 // Gojūon rows (+ dakuten/handakuten), hiragana and katakana side by side —
 // so learners can pick exactly which rows to drill, Kana!-app style.
@@ -142,7 +140,7 @@ function buildQuestions(pool, distractorRomaji) {
   })
 }
 
-export default function Kana({ session, profile, onBack, onUpdate }) {
+export default function Kana({ profile, onBack }) {
   const isMobile = useIsMobile()
   const isJapanese = profile.active_language === 'japanese'
   const [script, setScript] = useState('hira')            // 'hira' | 'kata' | 'both'
@@ -256,8 +254,6 @@ export default function Kana({ session, profile, onBack, onUpdate }) {
   function finish(finalCorrect) {
     setDone(true)
     markLessonDone(finalCorrect, questions.length)
-    const gain = finalCorrect * XP_PER_CORRECT
-    if (gain > 0) awardXp(session, profile, gain, onUpdate)
   }
 
   function next() {
@@ -499,15 +495,9 @@ export default function Kana({ session, profile, onBack, onUpdate }) {
           <p style={{ color: 'var(--text-muted)', marginBottom: '22px', fontSize: '15px' }}>
             You read <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {questions.length} correctly.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '22px' }}>
-            <div style={{ padding: '16px 10px', borderRadius: '14px', background: ACCENT + '0D', border: '1px solid ' + ACCENT + '22' }}>
-              <div style={{ fontSize: '26px', fontWeight: 760, color: ACCENT, lineHeight: 1 }}>{pct}%</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
-            </div>
-            <div style={{ padding: '16px 10px', borderRadius: '14px', background: '#6E84660D', border: '1px solid #6E846622' }}>
-              <div style={{ fontSize: '26px', fontWeight: 760, color: '#5C7155', lineHeight: 1 }}>+{correctCount * XP_PER_CORRECT}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>XP earned</div>
-            </div>
+          <div style={{ padding: '16px 10px', borderRadius: '14px', background: ACCENT + '0D', border: '1px solid ' + ACCENT + '22', marginBottom: '22px' }}>
+            <div style={{ fontSize: '26px', fontWeight: 760, color: ACCENT, lineHeight: 1 }}>{pct}%</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <SecondaryButton onClick={() => setStarted(false)} icon={ArrowLeft}>

@@ -15,8 +15,8 @@ ones to the roadmap).
 Already shipped (code side): `signUp` now sends `emailRedirectTo`; hardcoded github.io links replaced with `BRAND_URL`; app consolidated on Vercel (base `/`).
 
 ## Data safety
-- [ ] **Transactional grading** — collapse the separate writes (card update, review log, daily activity, XP) into a single Supabase RPC/transaction so a mid-write failure can't leave partial state. See the data-safety note in `README.md` and `src/syncQueue.js`.
-- [ ] **Real-device verification pass** — offline grade replay + XP-delta reconcile, iOS/Safari flashcard + reader audio, and Web Push reminders end-to-end. All built and unit-tested but never exercised on a live device.
+- [ ] **Transactional grading** — collapse the separate writes (card update, review log, daily activity) into a single Supabase RPC/transaction so a mid-write failure can't leave partial state. See the data-safety note in `README.md` and `src/syncQueue.js`.
+- [ ] **Real-device verification pass** — offline grade replay, iOS/Safari flashcard + reader audio, and Web Push reminders end-to-end. All built and unit-tested but never exercised on a live device.
 
 ## Scheduling
 - [ ] **Timezone-correct reminders** — `send-review-reminders.mjs` fires on a plain UTC hour, so it drifts ~1h across DST. Schedule per user timezone.
@@ -70,8 +70,9 @@ session-complete screens were number-heavy and partly off-brand. Streamlined tow
 "fewer numbers, straight to the story."
 - [x] **Remove the "streak" from Home** — the Flame badge ("day streak") and the
   "Study today to keep it" guilt line are gone (they directly contradicted the *no
-  streaks, no guilt* promise). The account-level (Lv/XP) badge stayed — a pure
-  progress marker, not a streak mechanic.
+  streaks, no guilt* promise). *(Superseded 2026-07-22: the account-level (Lv/XP)
+  badge mentioned below as staying was later removed too — see "Streak & XP system
+  removal" below.)*
 - [x] **Declutter the Dojo card** — removed the daily-goal ring, the mastery bar,
   "Your rhythm" dots, and the "Next 7 days" forecast. The New/Learning/Due counts
   stayed (functional, not decorative). The whole "Today's Dojo" card is now itself
@@ -82,7 +83,29 @@ session-complete screens were number-heavy and partly off-brand. Streamlined tow
   collapsed the stat tiles + separate "Tomorrow" banner into two calm tiles ("Today:
   N reviewed, M new" / "Tomorrow: N due, M new"). The "Recommended next" story CTA
   (already the first action after the trimmed stats) leads straight to reading.
-  Level-up card kept as-is (rare/celebratory, not routine per-session clutter).
+  *(The level-up card mentioned as "kept as-is" below was later removed too — see
+  next section.)*
+
+## Streak & XP system removal (2026-07-22)
+
+Shipped 2026-07-22. Full removal of the streak counter, streak freezes, XP totals,
+and account leveling — the mechanic itself ran against the *no streaks, no
+leagues, no guilt* promise, not just its Home/recap presentation. Deleted
+`src/xp.js` and `src/xpService.js` outright; trimmed `src/streak.js` down to the
+two plain date helpers (`todayStr`, `daysBetween`) still needed elsewhere. Removed
+the account-level badge (Home), the level-up card (session recap), the streak/
+streak-freeze/account-level stat cards (Profile), the streak/level achievement
+groups (`src/achievements.js`), the dev-only streak/XP debug actions (`src/Dev.jsx`),
+and the "+N XP" completion copy from all 11 drill/reader screens. Deliberately kept:
+`daily_activity` day-counting (feeds the Study Calendar heatmap) and a minimal
+`profiles.last_studied_on` write-back in `Study.jsx` (feeds the calm "gentle return
+after a break" welcome — the one non-gamified consumer of that field, previously
+written only by the now-removed streak updater). DB columns (`total_xp`,
+`streak_freezes`, `streak`, `longest_streak`) were left in place, unused — no
+migration to drop them, since this removed the feature, not historical data.
+- [ ] *(optional follow-up)* Drop the now-dead `profiles` columns (`total_xp`,
+  `streak_freezes`, `streak`, `longest_streak`) once we're confident nothing else
+  reads them.
 
 ## Frontend cleanup
 - [ ] Continue extracting the large `Study` screen into focused hooks/components.
