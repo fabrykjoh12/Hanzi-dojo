@@ -752,7 +752,7 @@ deserves its own milestone; do not let a session start it casually.
 
 ### TASK-004 — Graduated per-word reading in the paced, chat and scene readers
 
-**Status:** In Review · **Priority:** High · **Branch:** `claude/graduated-pinyin-readers`
+**Status:** Complete (merged to main in PR #117, 2026-07-22) · **Branch:** `claude/graduated-pinyin-readers`
 **Dependencies:** None · **Conflict risk:** Low (readers only)
 
 Bring the classic reader's per-word logic to the three fixed-format readers:
@@ -802,7 +802,13 @@ migrations, `.github/workflows/**`, `ROADMAP.md`, `docs/BACKLOG.md`.
 
 ### TASK-005 — Transactional grading (single RPC)
 
-**Status:** In Review · **Priority:** High · **Branch:** `claude/transactional-grading`
+**Status:** Complete (merged to main in PR #116, 2026-07-22) · **Branch:** `claude/transactional-grading`
+
+> ⚠️ **Merged but NOT yet live.** `supabase/migrations/20260722120000_transactional_grading.sql`
+> is unapplied, so grading still uses the old non-atomic fallback. Apply it in the
+> Supabase SQL editor, then confirm `review_logs.client_op_id` is non-null on a
+> freshly graded card. Rollback if it misbehaves: `drop function public.grade_card(...)`
+> — the client detects the missing RPC and falls back automatically, no redeploy.
 **Dependencies:** None · **Conflict risk:** Low (no reader files)
 
 **Done.** One security-definer RPC `public.grade_card()` now writes the card row,
