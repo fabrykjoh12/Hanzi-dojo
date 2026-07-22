@@ -9,7 +9,7 @@ import { schedule, previewLabels, isCardDue, endOfLocalDay } from './srs'
 import { todayStr } from './streak'
 import { evaluateAchievements } from './achievements'
 import { toast } from './toast'
-import { getLevelLabel, getSystemLabel, getAudioUrl } from './utils'
+import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { checkTypedAnswer } from './typedAnswer'
 import { useIsMobile } from './useIsMobile'
@@ -27,6 +27,8 @@ import { buildMissionOffer } from './missionOffer'
 import { computeStudyTally } from './studyTally'
 import { useStudyAudio } from './useStudyAudio'
 import { useStudyKeyboardShortcuts } from './useStudyKeyboardShortcuts'
+import AudioButton from './AudioButton'
+import { loadTtsAudio, flashcardAudio } from './ttsAudio'
 import {
   Volume2, VolumeX, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
   Sparkles, Layers, BookOpenCheck, X,
@@ -249,6 +251,17 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     queue, flipped, profile, session, onProfileUpdate,
   })
 
+  // Look up the generated clips for the cards about to be shown, before the
+  // queue renders, so the speaker buttons appear in their final state instead
+  // of popping in. Best-effort and non-blocking in spirit: if the lookup fails
+  // (offline, or the migration is not applied yet) the cards fall back to the
+  // legacy audio path and the extra controls simply stay hidden.
+  async function primeTtsAudio(cards) {
+    const ids = (cards || []).map(c => c.vocab && c.vocab.id).filter(Boolean)
+    if (ids.length === 0) return
+    try { await loadTtsAudio('vocabulary', ids) } catch { /* legacy audio still plays */ }
+  }
+
   async function loadQueue() {
     setLoading(true)
     sessionVocabRef.current = []
@@ -306,6 +319,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         .filter(c => (c.lapses || 0) >= 2 && (c.stability || 0) < 21)
         .sort((a, b) => (b.lapses - a.lapses) || ((a.stability || 0) - (b.stability || 0)))
         .slice(0, 30)
+      await primeTtsAudio(weakQueue)
       setQueue(weakQueue)
       setDone(weakQueue.length === 0)
       setLoading(false)
@@ -377,6 +391,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       day: todayStr(),
     })
     const newQueue = buildStudyQueue({ dueLearning, dueReview, newItems, seed })
+    await primeTtsAudio(newQueue)
     setQueue(newQueue)
     setDone(newQueue.length === 0)
     setLoading(false)
@@ -899,7 +914,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const card = queue[0]
   const v = card.vocab
   const labels = previewLabels(card)
-  const audioUrl = getAudioUrl(v.audio_path)
+  // Generated clips for this card (word, slow word, example sentence, slow
+  // sentence). `word` falls back to the legacy audio_path, so a level that has
+  // not been regenerated sounds exactly as it does today.
+  const cardAudio = flashcardAudio(v)
+  const audioUrl = cardAudio.word
   const canUseFurigana = isJapanese && hasKanji(v.word) && Boolean(v.reading)
   const showRuby = canUseFurigana && (showFurigana || flipped)
   const wordFuri = showRuby ? furiganaParts(v.word, v.reading) : null
@@ -1095,6 +1114,20 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                   Replay
                 </button>
                 )}
+                {/* A genuinely slower reading, not the same clip dragged out:
+                    synthesized at a slower speaking rate so the tones and the
+                    syllable boundaries stay natural. Only shown once that
+                    variant has been generated for this word. */}
+                {cardAudio.word_slow && (
+                  <AudioButton
+                    url={cardAudio.word_slow}
+                    label={'Play ' + v.word + ' slowly'}
+                    icon="slow"
+                    tone="quiet"
+                    accentHex={accentHex}
+                    preload
+                  />
+                )}
                 <button
                   onClick={e => { e.stopPropagation(); cycleSpeed() }}
                   style={{
@@ -1194,6 +1227,32 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                         {v.example_translation && (
                           <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '7px', lineHeight: 1.45 }}>
                             {v.example_translation}
+                          </div>
+                        )}
+                        {/* The sentence gets its own controls, separate from the
+                            word's: hearing the word inside a real sentence is a
+                            different exercise from hearing it alone. Kept quiet
+                            and small so the card still leads with the word. */}
+                        {cardAudio.sentence && (
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '12px' }}>
+                            <AudioButton
+                              url={cardAudio.sentence}
+                              label="Play the example sentence"
+                              text="Sentence"
+                              tone="quiet"
+                              size="sm"
+                              accentHex={accentHex}
+                            />
+                            {cardAudio.sentence_slow && (
+                              <AudioButton
+                                url={cardAudio.sentence_slow}
+                                label="Play the example sentence slowly"
+                                icon="slow"
+                                tone="quiet"
+                                size="sm"
+                                accentHex={accentHex}
+                              />
+                            )}
                           </div>
                         )}
                       </>

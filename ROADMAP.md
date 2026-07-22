@@ -13,6 +13,7 @@ so the community always sees the latest. Keep it current — move things to
 
 ## 🚧 Now — in progress
 - [ ] Writing the first HSK 3 stories, so the new levels have reading of their own
+- [ ] Better-sounding Chinese: new neural voices for every word, example sentence and story line, plus a slow version of each word and sentence for when a word won't stick
 
 **Just shipped**
 - [x] Pinyin only where you need it: readings now appear over the individual words you haven't learned yet, in every story format, instead of all-or-nothing for the whole line
@@ -97,6 +98,35 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] Cleaner sign-in emails — branded sender from hanzi-dojo.com, links that stay on the domain.
 
 ## 🧱 Technical
+
+### Chinese TTS rebuild (Azure Speech) — phased
+Full design + operator runbook: **[`docs/TTS.md`](docs/TTS.md)**. Provider-independent
+domain layer, server-only synthesis, content-hash caching, guarded batch CLI. No
+paid generation happens without an explicit `--confirm`.
+
+- [x] **Phase 1 — Inspection & architecture.** Server-only boundary confirmed (root `*.mjs` + `.env.script`; the app itself is a static SPA with no backend). Plan recorded here and in `docs/TTS.md`.
+- [x] **Phase 2 — TTS domain + Azure provider.** `TTSProvider` interface, `AzureTTSProvider` (REST, no new deps), `MockTTSProvider`, provider registry, env validation, typed errors, timeouts, exponential-backoff retries, concurrency limiter, cancellation, redacting logger.
+- [x] **Phase 3 — Storage & metadata.** `tts_audio` / `tts_pronunciation_overrides` / `tts_jobs` tables, content-addressed storage paths, content hashing, stale detection, dedupe.
+- [x] **Phase 4 — Flashcard integration.** Word / slow word / example sentence / slow sentence audio behind one accessible player; cached, never re-synthesized at play time.
+- [x] **Phase 5 — Safe batch generation.** `npm run tts:dry-run` / `tts:generate` / `tts:retry-failed` — dry-run by default, 20-record default limit, hard cap, explicit confirmation, machine-readable summary.
+- [x] **Phase 6 — Pronunciation overrides.** Central, versioned override table with verification states (never auto-marks anything human-verified); changing an override marks the affected audio stale.
+- [x] **Phase 7 — Story integration.** Per-utterance rows (scene / speaker / voice / pauses), narrator + character voices, one line regenerated at a time, ordered playback with active-line highlighting and cancel-on-leave.
+- [x] **Phase 8 — Docs & validation.** `docs/TTS.md`, `.env.example`, tests, lint, build.
+**Blocked on a manual step (nothing generates until these are done):**
+- [ ] Apply `supabase/migrations/20260722140000_add_tts_audio.sql` and `20260722150000_add_story_utterances.sql`. Until then the CLI stops with an actionable message and the app keeps playing today's audio.
+- [ ] Load the pronunciation overrides: `node --env-file=.env.script tts-overrides.mjs --apply`.
+
+**Remaining:**
+- [ ] Backfill run: generate Azure audio for the HSK library (operator-run, batched, deliberately not automated).
+- [ ] Split the published stories into utterances (`story-utterances.mjs --apply`) and narrate them.
+- [ ] A real-device listening pass (iOS/Safari especially) before trusting the new clips.
+
+**Optional / later:**
+- [ ] Admin review surface for generated audio (approve / reject / regenerate) in `/dashboard`. The schema and admin RLS policies are already in place.
+- [ ] Real clip duration (MP3 frame parsing) instead of the synthesis round-trip time.
+- [ ] A second provider (MiniMax) behind the same interface. Integration point documented in `docs/TTS.md`.
+- [ ] Extend beyond Chinese: Japanese and Russian still use the Google pipeline.
+
 - [x] Collapse the multi-write grading path into a single Supabase RPC/transaction
 - [ ] Real-device verification pass — offline replay, iOS audio, push reminders end-to-end
 - [ ] Tune the FSRS scheduler from real review data

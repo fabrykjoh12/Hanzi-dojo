@@ -1,0 +1,170 @@
+[
+  {
+    "matched_text": "银行",
+    "pinyin": "yínháng",
+    "source_text": "我今天去银行。",
+    "verification": "unreviewed",
+    "reviewer_note": "行 is háng in 银行 (bank), not xíng. The classic Mandarin TTS mistake."
+  },
+  {
+    "matched_text": "行李",
+    "pinyin": "xíngli",
+    "source_text": "他的行李很重。",
+    "verification": "unreviewed",
+    "reviewer_note": "行 is xíng here, contrasting with 银行."
+  },
+  {
+    "matched_text": "自行车",
+    "pinyin": "zìxíngchē",
+    "source_text": "我骑自行车去学校。",
+    "verification": "unreviewed",
+    "reviewer_note": "xíng, not háng."
+  },
+  {
+    "matched_text": "长城",
+    "pinyin": "chángchéng",
+    "source_text": "我们去看长城。",
+    "verification": "unreviewed",
+    "reviewer_note": "长 is cháng (long), not zhǎng (grow)."
+  },
+  {
+    "matched_text": "校长",
+    "pinyin": "xiàozhǎng",
+    "source_text": "校长在办公室。",
+    "verification": "unreviewed",
+    "reviewer_note": "长 is zhǎng (head of) here."
+  },
+  {
+    "matched_text": "长大",
+    "pinyin": "zhǎngdà",
+    "source_text": "他在北京长大。",
+    "verification": "unreviewed",
+    "reviewer_note": "zhǎng, not cháng."
+  },
+  {
+    "matched_text": "觉得",
+    "pinyin": "juéde",
+    "source_text": "我觉得很好。",
+    "verification": "unreviewed",
+    "reviewer_note": "觉 is jué here, not jiào."
+  },
+  {
+    "matched_text": "睡觉",
+    "pinyin": "shuìjiào",
+    "source_text": "我要睡觉了。",
+    "verification": "unreviewed",
+    "reviewer_note": "觉 is jiào in 睡觉."
+  },
+  {
+    "matched_text": "重要",
+    "pinyin": "zhòngyào",
+    "source_text": "这件事很重要。",
+    "verification": "unreviewed",
+    "reviewer_note": "重 is zhòng (important/heavy), not chóng (repeat)."
+  },
+  {
+    "matched_text": "重新",
+    "pinyin": "chóngxīn",
+    "source_text": "请重新开始。",
+    "verification": "unreviewed",
+    "reviewer_note": "重 is chóng here."
+  },
+  {
+    "matched_text": "音乐",
+    "pinyin": "yīnyuè",
+    "source_text": "我喜欢听音乐。",
+    "verification": "unreviewed",
+    "reviewer_note": "乐 is yuè (music), not lè (happy)."
+  },
+  {
+    "matched_text": "快乐",
+    "pinyin": "kuàilè",
+    "source_text": "生日快乐！",
+    "verification": "unreviewed",
+    "reviewer_note": "乐 is lè here."
+  },
+  {
+    "matched_text": "地方",
+    "pinyin": "dìfang",
+    "source_text": "这个地方很安静。",
+    "verification": "unreviewed",
+    "reviewer_note": "Neutral tone on 方; often mis-stressed as dìfāng."
+  },
+  {
+    "matched_text": "东西",
+    "pinyin": "dōngxi",
+    "source_text": "我买了很多东西。",
+    "verification": "unreviewed",
+    "reviewer_note": "Neutral tone on 西 when it means 'thing' rather than 'east-west'."
+  },
+  {
+    "matched_text": "还是",
+    "pinyin": "háishi",
+    "source_text": "你喝茶还是咖啡？",
+    "verification": "unreviewed",
+    "reviewer_note": "还 is hái, not huán (to return)."
+  },
+  {
+    "matched_text": "还给",
+    "pinyin": "huángěi",
+    "source_text": "请把书还给我。",
+    "verification": "unreviewed",
+    "reviewer_note": "还 is huán when it means to give back."
+  },
+  {
+    "matched_text": "会计",
+    "pinyin": "kuàijì",
+    "source_text": "她是会计。",
+    "verification": "unreviewed",
+    "reviewer_note": "会 is kuài in 会计, not huì."
+  },
+  {
+    "matched_text": "教师",
+    "pinyin": "jiàoshī",
+    "source_text": "他是一位教师。",
+    "verification": "unreviewed",
+    "reviewer_note": "教 is jiào (fourth tone) as a noun."
+  },
+  {
+    "matched_text": "教书",
+    "pinyin": "jiāoshū",
+    "source_text": "他在中学教书。",
+    "verification": "unreviewed",
+    "reviewer_note": "教 is jiāo (first tone) as a verb."
+  },
+  {
+    "matched_text": "为了",
+    "pinyin": "wèile",
+    "source_text": "为了健康，他每天跑步。",
+    "verification": "unreviewed",
+    "reviewer_note": "为 is wèi (fourth tone) here, not wéi."
+  },
+  {
+    "matched_text": "认为",
+    "pinyin": "rènwéi",
+    "source_text": "我认为他是对的。",
+    "verification": "unreviewed",
+    "reviewer_note": "为 is wéi (second tone) here."
+  },
+  {
+    "matched_text": "差不多",
+    "pinyin": "chàbuduō",
+    "source_text": "我们差不多到了。",
+    "verification": "unreviewed",
+    "reviewer_note": "差 is chà, not chāi or cī."
+  },
+  {
+    "matched_text": "头发",
+    "pinyin": "tóufa",
+    "source_text": "她的头发很长。",
+    "verification": "unreviewed",
+    "reviewer_note": "发 is fa (neutral) here, not fā."
+  },
+  {
+    "matched_text": "朋友",
+    "pinyin": "péngyou",
+    "source_text": "他是我的朋友。",
+    "verification": "unreviewed",
+    "reviewer_note": "Neutral tone on 友."
+  }
+]
