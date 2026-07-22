@@ -53,6 +53,50 @@ export function readingVisibleFor(mode, status) {
   return false
 }
 
+// Scaffold only the words you haven't started — the page reads like a book until
+// the learner asks for more help. Shared by every reader so they all open the
+// same way (the classic reader hardcodes this same value in its DEFAULT_PREFS).
+export const DEFAULT_READING_MODE = 'unknown'
+
+// Coerce a stored/unknown value to a real mode, so a corrupt or stale prefs
+// entry can never leave a reader with no reading rule at all.
+export function normalizeReadingMode(mode) {
+  return FURIGANA_MODES.indexOf(mode) >= 0 ? mode : DEFAULT_READING_MODE
+}
+
+// The reading to render above one token, or null for "show nothing here". The
+// whole per-word rule in one place:
+//   · the mode/status decision (readingVisibleFor)
+//   · a reading has to exist at all (plain text / unmatched runs carry none)
+//   · Japanese kana-only words never take furigana — kana over identical kana is
+//     pure noise, so ともだち stays bare while 友だち gets its reading.
+// Pure, so every renderer can call it per token during render.
+export function tokenReading({ text, reading, mode, status, language }) {
+  if (!reading) return null
+  if (!readingVisibleFor(mode, status)) return null
+  if (language === 'japanese' && !hasKanjiChar(text)) return null
+  return reading
+}
+
+// Split a Japanese word so the reading sits over the kanji only, trimming the
+// kana that word and reading already share at each end: 食べます / たべます →
+// { lead:'', core:'食', coreReading:'た', trail:'べます' }. Returns null when the
+// split doesn't apply (kana-only word, no kanji core, missing reading), and the
+// caller then rubies the whole token — which is what Chinese always wants.
+export function furiganaSplit(word, reading) {
+  const w = word || ''
+  const r = reading || ''
+  if (!w || !r) return null
+  let wS = 0, rS = 0
+  while (wS < w.length && rS < r.length && isKanaCode(w.charCodeAt(wS)) && w[wS] === r[rS]) { wS += 1; rS += 1 }
+  let wE = w.length, rE = r.length
+  while (wE > wS && rE > rS && isKanaCode(w.charCodeAt(wE - 1)) && w[wE - 1] === r[rE - 1]) { wE -= 1; rE -= 1 }
+  const core = w.slice(wS, wE)
+  const coreReading = r.slice(rS, rE)
+  if (!core || !coreReading || !hasKanjiChar(core)) return null
+  return { lead: w.slice(0, wS), core, coreReading, trail: w.slice(wE) }
+}
+
 // Is a card's next review within `withinMs` of `now`? Used for the "review due
 // soon" hint in the lookup sheet. Returns false for missing/invalid dates so a
 // card with no due_at (freshly added in the reader) simply doesn't flag.

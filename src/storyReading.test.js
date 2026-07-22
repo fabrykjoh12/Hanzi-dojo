@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, readingVisibleFor, isDueSoon, kanjiStem, buildVocabMatcher, matchVocabAt, segmentLine, namesFor, particlesFor, hasKanjiChar } from './storyReading'
+import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, readingVisibleFor, isDueSoon, kanjiStem, buildVocabMatcher, matchVocabAt, segmentLine, namesFor, particlesFor, hasKanjiChar, tokenReading, furiganaSplit, normalizeReadingMode, DEFAULT_READING_MODE } from './storyReading'
 
 // ── hasKanjiChar (drives "no furigana over kana-only words") ─────────────────
 describe('hasKanjiChar', () => {
@@ -498,6 +498,91 @@ describe('readingVisibleFor', () => {
   })
   it('an unknown mode string is treated as hidden', () => {
     expect(readingVisibleFor('nonsense', 'not_started')).toBe(false)
+  })
+})
+
+// ── normalizeReadingMode ─────────────────────────────────────────────────────
+describe('normalizeReadingMode', () => {
+  it('passes every real mode through untouched', () => {
+    for (const m of ['always', 'learning', 'unknown', 'hidden']) {
+      expect(normalizeReadingMode(m)).toBe(m)
+    }
+  })
+  it('falls back to the default for junk, so a corrupt pref never breaks a reader', () => {
+    expect(normalizeReadingMode('nonsense')).toBe(DEFAULT_READING_MODE)
+    expect(normalizeReadingMode(null)).toBe(DEFAULT_READING_MODE)
+    expect(normalizeReadingMode(undefined)).toBe(DEFAULT_READING_MODE)
+    expect(normalizeReadingMode(3)).toBe(DEFAULT_READING_MODE)
+  })
+  it('the default scaffolds only unknown words', () => {
+    expect(DEFAULT_READING_MODE).toBe('unknown')
+    expect(readingVisibleFor(DEFAULT_READING_MODE, 'not_started')).toBe(true)
+    expect(readingVisibleFor(DEFAULT_READING_MODE, 'review')).toBe(false)
+  })
+})
+
+// ── tokenReading ─────────────────────────────────────────────────────────────
+// The single per-word rule every reader shares: mode/status decision + "there is
+// a reading at all" + the Japanese kana-only guard.
+describe('tokenReading', () => {
+  const zh = (over) => ({ text: '今天', reading: 'jīntiān', mode: 'unknown', status: 'not_started', language: 'chinese', ...over })
+
+  it('returns the reading when the mode/status rule says to show it', () => {
+    expect(tokenReading(zh())).toBe('jīntiān')
+    expect(tokenReading(zh({ mode: 'always', status: 'mastered' }))).toBe('jīntiān')
+    expect(tokenReading(zh({ mode: 'learning', status: 'learning' }))).toBe('jīntiān')
+  })
+
+  it('returns null when the mode/status rule says to hide it', () => {
+    expect(tokenReading(zh({ status: 'review' }))).toBe(null)
+    expect(tokenReading(zh({ mode: 'hidden' }))).toBe(null)
+    expect(tokenReading(zh({ mode: 'learning', status: 'not_started' }))).toBe(null)
+  })
+
+  it('returns null when the token carries no reading (plain text, punctuation)', () => {
+    expect(tokenReading(zh({ reading: null }))).toBe(null)
+    expect(tokenReading(zh({ text: '。', reading: '' }))).toBe(null)
+  })
+
+  it('Japanese: never furigana over a kana-only word, even in Always mode', () => {
+    const kana = { text: 'ともだち', reading: 'ともだち', mode: 'always', status: 'not_started', language: 'japanese' }
+    expect(tokenReading(kana)).toBe(null)
+    expect(tokenReading({ ...kana, text: 'ください', reading: 'ください' })).toBe(null)
+    expect(tokenReading({ ...kana, text: 'カタカナ', reading: 'かたかな' })).toBe(null)
+  })
+
+  it('Japanese: kanji-bearing words still get their reading', () => {
+    const ja = { text: '友だち', reading: 'ともだち', mode: 'always', status: 'review', language: 'japanese' }
+    expect(tokenReading(ja)).toBe('ともだち')
+    expect(tokenReading({ ...ja, text: '学校', reading: 'がっこう' })).toBe('がっこう')
+  })
+
+  it('the kana guard is Japanese-only — Chinese and Russian are unaffected', () => {
+    expect(tokenReading({ text: '很', reading: 'hěn', mode: 'always', status: 'review', language: 'chinese' })).toBe('hěn')
+    expect(tokenReading({ text: 'вода', reading: 'voda', mode: 'always', status: 'review', language: 'russian' })).toBe('voda')
+  })
+})
+
+// ── furiganaSplit ────────────────────────────────────────────────────────────
+describe('furiganaSplit', () => {
+  it('trims okurigana shared by word and reading so ruby sits over the kanji', () => {
+    expect(furiganaSplit('食べます', 'たべます')).toEqual({ lead: '', core: '食', coreReading: 'た', trail: 'べます' })
+    expect(furiganaSplit('見る', 'みる')).toEqual({ lead: '', core: '見', coreReading: 'み', trail: 'る' })
+  })
+  it('keeps a leading kana run on the baseline', () => {
+    expect(furiganaSplit('お茶', 'おちゃ')).toEqual({ lead: 'お', core: '茶', coreReading: 'ちゃ', trail: '' })
+  })
+  it('rubies the whole word when there is no shared okurigana', () => {
+    expect(furiganaSplit('学校', 'がっこう')).toEqual({ lead: '', core: '学校', coreReading: 'がっこう', trail: '' })
+  })
+  it('returns null when the split does not apply, so the caller rubies the token whole', () => {
+    expect(furiganaSplit('ともだち', 'ともだち')).toBe(null)   // kana-only: no kanji core
+    expect(furiganaSplit('今天', '')).toBe(null)
+    expect(furiganaSplit('', 'jīntiān')).toBe(null)
+    expect(furiganaSplit(null, null)).toBe(null)
+  })
+  it('a Chinese word has no kana to trim, so it splits to the whole token', () => {
+    expect(furiganaSplit('今天', 'jīntiān')).toEqual({ lead: '', core: '今天', coreReading: 'jīntiān', trail: '' })
   })
 })
 
