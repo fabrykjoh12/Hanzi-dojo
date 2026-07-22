@@ -15,6 +15,8 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] Writing the first HSK 3 stories, so the new levels have reading of their own
 
 **Just shipped**
+- [x] Pinyin only where you need it: readings now appear over the individual words you haven't learned yet, in every story format, instead of all-or-nothing for the whole line
+- [x] Safer reviews: a grade is now saved in one step, so an interrupted save can't leave your progress half-recorded
 - [x] Your story shelf only grows now: reach HSK 3 and every HSK 1 and 2 story is still there to read and re-read, grouped by level
 - [x] Story tiers name the level they belong to (no more "the first 100 HSK 1 words" on every level)
 - [x] An honest note when a level's own stories are still being written, instead of an empty screen
@@ -37,7 +39,6 @@ so the community always sees the latest. Keep it current — move things to
 
 **Read more, read deeper**
 - [ ] **Word-by-word read-along** — each word lights up as it's spoken, and you can tap any word to start the audio from there (with speed control).
-- [ ] **Pinyin only when you need it** — show pinyin just for words above your level, not all-or-nothing.
 - [ ] **Definitions that fit the sentence** — the meaning actually used here, not a dictionary dump.
 - [ ] **One "% known" everywhere** — your word knowledge follows you across stories, your own text, and (later) video.
 
@@ -96,7 +97,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] Cleaner sign-in emails — branded sender from hanzi-dojo.com, links that stay on the domain.
 
 ## 🧱 Technical
-- [ ] Collapse the multi-write grading path into a single Supabase RPC/transaction
+- [x] Collapse the multi-write grading path into a single Supabase RPC/transaction
 - [ ] Real-device verification pass — offline replay, iOS audio, push reminders end-to-end
 - [ ] Tune the FSRS scheduler from real review data
 - [ ] Continue extracting the large `Study` screen into focused hooks/components
