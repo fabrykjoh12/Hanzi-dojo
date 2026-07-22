@@ -1,12 +1,17 @@
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import { languageTheme } from './languageTheme'
 import { getAudioUrl, playAudioEl } from './utils'
-import { calculateStoryReadability, buildVocabMatcher, segmentLine, namesFor, particlesFor, splitSpeaker } from './storyReading'
+import { calculateStoryReadability, buildVocabMatcher, segmentLine, namesFor, particlesFor, splitSpeaker, normalizeReadingMode, DEFAULT_READING_MODE } from './storyReading'
 import { splitScene, stripSceneEmoji } from './sceneReading'
+import { prefsGet, prefsSet } from './offline'
 import { supabase } from './supabase'
 import { isOnline } from './useOnline'
 import { enqueueStoryRead } from './syncQueue'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
+
+// The classic reader's prefs object. Shared verbatim so a reading mode picked in
+// one reader is the mode every reader opens with.
+const READER_PREFS_KEY = 'reader:prefs'
 
 // Shared, presentation-independent reader behavior for the paced + chat readers:
 // beat parsing, % known, tap-to-reveal progression, per-line audio read-along,
@@ -22,8 +27,10 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   const [cur, setCur] = useState(0)
   const [questions, setQuestions] = useState([])
   const [answers, setAnswers] = useState({})
-  const [showPy, setShowPy] = useState(true)
+  const [readingMode, setReadingMode] = useState(DEFAULT_READING_MODE)
   const [showEn, setShowEn] = useState(false)
+  const pickedRef = useRef(false)      // the learner chose a mode this session
+  const firstSaveRef = useRef(true)    // don't persist the un-loaded default
   const [playing, setPlaying] = useState(false)
   const [selected, setSelected] = useState(null)
   const [done, setDone] = useState(false)
@@ -167,6 +174,36 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     return () => { active = false }
   }, [story.id])
 
+  // Reading mode is a durable preference shared with the classic reader — same
+  // prefs object, same key — so the scaffolding a learner picks follows them
+  // between story formats. Loading it never re-parses the story (it is state of
+  // its own, not an input to the beat memo). If the learner already picked a
+  // mode while the read was in flight, their choice wins over the stored one.
+  useEffect(() => {
+    let active = true
+    prefsGet(READER_PREFS_KEY).then((saved) => {
+      if (!active || pickedRef.current) return
+      if (saved && saved.furiganaMode) setReadingMode(normalizeReadingMode(saved.furiganaMode))
+    })
+    return () => { active = false }
+  }, [])
+
+  // Persist mode changes, merged over whatever is stored, so writing our one
+  // field never clobbers the classic reader's lens / serif / English flags.
+  // Skipping only the very first run keeps the initial default from overwriting
+  // a saved value; every later change (a load or a pick) is worth writing back.
+  useEffect(() => {
+    if (firstSaveRef.current) { firstSaveRef.current = false; return }
+    prefsGet(READER_PREFS_KEY).then((saved) => {
+      prefsSet(READER_PREFS_KEY, { ...(saved || {}), furiganaMode: readingMode })
+    })
+  }, [readingMode])
+
+  const pickReadingMode = useCallback((mode) => {
+    pickedRef.current = true
+    setReadingMode(normalizeReadingMode(mode))
+  }, [])
+
   useEffect(() => {
     if (!started) return undefined
     const onKey = (e) => {
@@ -183,8 +220,8 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
 
   return {
     theme, reduceMotion, beats, readability, total, ttsLang,
-    started, cur, done, playing, selected, showPy, showEn,
-    setShowPy, setShowEn, setSelected,
+    started, cur, done, playing, selected, readingMode, showEn,
+    setReadingMode: pickReadingMode, setShowEn, setSelected,
     go, advance, finish, stopPlay, togglePlay, speakWord, selectWord, addToDeck,
     start, backToStart, setAdvanceBlocked,
     questions, answers, answerQuestion,
