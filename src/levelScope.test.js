@@ -1,6 +1,24 @@
 import { describe, it, expect } from 'vitest'
 import { studyFloorLevel, inCumulativeScope } from './levelScope'
 
+describe('studyFloorLevel — after a prior-knowledge claim', () => {
+  it('drops to the claimed level so earlier words are studied again', () => {
+    // Placed at 3, then claimed HSK 1-2: the seeded cards are real cards, so the
+    // floor follows them down and unclaimed words at 1-2 become teachable.
+    const cards = [
+      { vocabulary: { level: 1 } },
+      { vocabulary: { level: 2 } },
+      { vocabulary: { level: 3 } },
+    ]
+    expect(studyFloorLevel(cards, 3)).toBe(1)
+  })
+
+  it('is unchanged for a placed learner who declined the claim', () => {
+    const cards = [{ vocabulary: { level: 3 } }]
+    expect(studyFloorLevel(cards, 3)).toBe(3)
+  })
+})
+
 describe('studyFloorLevel', () => {
   it('is the current level when the user has no cards yet', () => {
     expect(studyFloorLevel([], 3)).toBe(3)
