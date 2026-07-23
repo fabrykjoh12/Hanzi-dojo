@@ -105,6 +105,20 @@ export function prefsGet(key) {
   return tx('prefs', 'readonly', (s) => s.get(key), null).then((row) => (row ? row.v : null))
 }
 
+// Patch a prefs object without disturbing fields we were not asked to change.
+// Pure and separately tested: the readers share one prefs object, so a careless
+// whole-object write is how one reader's setting silently erases another's.
+export function mergePrefs(saved, patch) {
+  const base = (saved && typeof saved === 'object') ? saved : {}
+  return { ...base, ...patch }
+}
+
+// Read-modify-write a prefs object. Degrades like every other helper here: if
+// IndexedDB is missing, prefsGet resolves null and prefsSet is a no-op.
+export function prefsMerge(key, patch) {
+  return prefsGet(key).then(saved => prefsSet(key, mergePrefs(saved, patch)))
+}
+
 // ── Outbox (offline writes awaiting replay) ─────────────────────────────────
 export function outboxAdd(op) {
   return tx('outbox', 'readwrite', (s) => s.add({ op, ts: nowStamp() }), null)

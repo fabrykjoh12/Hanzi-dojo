@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { getLevelLabel } from './utils'
 import { wordStatus } from './storyReading'
+import { spotlightStyle } from './readAlong'
 import { useStoryReaderCore } from './useStoryReaderCore'
 import { TokenBody, ReadingSettings } from './ReadingScaffold'
 import ReaderLaunch from './ReaderLaunch'
@@ -22,6 +23,7 @@ export default function SceneReader(props) {
   const beat = c.beats[c.cur]
   const [settingsOpen, setSettingsOpen] = useState(false)
   const reserve = c.readingMode !== 'hidden'
+  const hasActive = c.playing && c.activeToken >= 0
 
   // While the settings panel is open its buttons own Space/→, not the scene.
   const { setAdvanceBlocked } = c
@@ -57,14 +59,32 @@ export default function SceneReader(props) {
               // Plain runs reserve the same annotation row as scaffolded words,
               // so the scene's single line never shifts as modes change.
               if (!t.vocab) {
-                return <span key={k}><TokenBody text={t.text} reading={null} mode={c.readingMode} status="not_started" language={track.language} reserve={reserve} /></span>
+                return (
+                  <span key={k}
+                    onClick={(e) => {
+                      // A spotlit plain run is part of the line being read, so a
+                      // tap on it means "read from here", same as a vocab word.
+                      // No vocab entry here, so it never opens the lookup sheet;
+                      // when the seek can't happen, let the click bubble so
+                      // tap-to-advance still works.
+                      if (c.playing && c.seekToToken(k)) e.stopPropagation()
+                    }}
+                    style={spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion)}>
+                    <TokenBody text={t.text} reading={null} mode={c.readingMode} status="not_started" language={track.language} reserve={reserve} />
+                  </span>
+                )
               }
               const status = wordStatus(t.vocab.id, userCards)
               return (
-                <span key={k} onClick={(e) => { e.stopPropagation(); c.selectWord(t.vocab, status) }}
+                <span key={k} onClick={(e) => {
+                  e.stopPropagation()
+                  if (c.playing && c.seekToToken(k)) return
+                  c.selectWord(t.vocab, status)
+                }}
                   style={{ cursor: 'pointer', borderRadius: '4px', padding: '0 1px',
                     background: status === 'not_started' ? accent + '1f' : (status === 'learning' ? '#CA8A0422' : 'transparent'),
-                    boxShadow: status === 'not_started' ? 'inset 0 -2px 0 ' + accent + '66' : 'none' }}>
+                    boxShadow: status === 'not_started' ? 'inset 0 -2px 0 ' + accent + '66' : 'none',
+                    ...spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) }}>
                   <TokenBody text={t.text} reading={t.vocab.reading} mode={c.readingMode} status={status} language={track.language} reserve={reserve} />
                 </span>
               )
@@ -82,6 +102,7 @@ export default function SceneReader(props) {
             showEnglish={c.showEn} setShowEnglish={c.setShowEn}
             hasEnglish={Boolean(story.english_content)}
             language={track.language} accent={accent} onOpenChange={onSettingsOpen}
+            rate={c.rate} setRate={c.setRate}
           />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>

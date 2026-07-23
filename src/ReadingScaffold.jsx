@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { tokenReading, furiganaSplit, FURIGANA_MODES } from './storyReading'
+import { SPEED_RATES } from './readAlong'
 import { useIsMobile } from './useIsMobile'
 import { Sliders, X } from 'lucide-react'
 
@@ -55,7 +56,7 @@ export function TokenBody({ text, reading, mode, status, language, reserve, rtCo
 // The quiet control: one button that opens a small settings panel (popover on
 // desktop, bottom sheet on phones) holding the reading mode and the English
 // toggle — rather than a row of always-on switches competing with the story.
-export function ReadingSettings({ mode, setMode, showEnglish, setShowEnglish, hasEnglish, language, accent, onOpenChange, compact = false, placement = 'top', tint }) {
+export function ReadingSettings({ mode, setMode, showEnglish, setShowEnglish, hasEnglish, language, accent, onOpenChange, compact = false, placement = 'top', tint, rate, setRate }) {
   const [open, setOpen] = useState(false)
   const isMobile = useIsMobile()
   const btnRef = useRef(null)
@@ -129,6 +130,30 @@ export function ReadingSettings({ mode, setMode, showEnglish, setShowEnglish, ha
       <div style={{ fontSize: '11.5px', color: 'var(--text-faint)', marginTop: '8px', lineHeight: 1.45 }}>
         {MODE_HINTS[mode] || ''}
       </div>
+      {setRate && (
+        <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text)', letterSpacing: '0.02em', marginBottom: '8px' }}>Speed</div>
+          <div role="group" aria-label="Playback speed" style={{ display: 'flex', gap: '6px' }}>
+            {SPEED_RATES.map((value) => {
+              const on = rate === value
+              return (
+                <button
+                  key={value}
+                  onClick={() => setRate(value)}
+                  aria-pressed={on}
+                  style={{
+                    flex: '1 1 auto', fontSize: '12px', fontWeight: 700, padding: '8px 10px',
+                    borderRadius: '10px', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                    border: '1px solid ' + (on ? accent + '73' : 'var(--border)'),
+                    background: on ? accent + '14' : 'var(--surface)',
+                    color: on ? accent : 'var(--text-muted)',
+                  }}
+                >{value}×</button>
+              )
+            })}
+          </div>
+        </div>
+      )}
       {hasEnglish && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
           <span style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text)' }}>English</span>

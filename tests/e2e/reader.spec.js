@@ -197,4 +197,41 @@ test.describe('Story reader', () => {
     await expect(page.getByText('You read it')).toBeVisible();
     await expect(page.getByText(/on the first try/)).toBeVisible();
   });
+
+  // Word-by-word read-along (Tasks 1-6): every seeded story in
+  // tests/fixtures/mockSupabase.js has has_audio: false and every vocab row
+  // has audio_path: null, so no clip ever loads under Playwright — the
+  // moving-spotlight assertion (dimmed/spotlit word spans while `Play` runs)
+  // cannot be exercised end-to-end here without faking an <audio> element,
+  // which the task brief explicitly rules out. That behavior is proven at
+  // the unit level instead, in src/readAlong.test.js (buildTimeline/
+  // tokenAtTime/startOfToken invariants, 22 tests). These two tests cover
+  // only the parts of the feature that don't depend on a clip loading: the
+  // speed control UI and that a paused tap still opens the lookup sheet.
+  test('paced reveal: the reader settings panel offers a speed control', async ({ page }) => {
+    const reader = new ReaderPage(page);
+    await reader.openFirstStory();
+    await page.getByRole('button', { name: /Start reading/i }).click();
+
+    await page.getByRole('button', { name: /Reader settings/i }).click();
+    const speeds = page.getByRole('group', { name: /Playback speed/i });
+    await expect(speeds).toBeVisible();
+
+    // 1x is the default so nobody's audio silently slows.
+    await expect(speeds.getByRole('button', { name: '1×' })).toHaveAttribute('aria-pressed', 'true');
+
+    await speeds.getByRole('button', { name: '0.6×' }).click();
+    await expect(speeds.getByRole('button', { name: '0.6×' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(speeds.getByRole('button', { name: '1×' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('paced reveal: tapping a word while paused still opens the lookup sheet', async ({ page }) => {
+    const reader = new ReaderPage(page);
+    await reader.openFirstStory();
+    await page.getByRole('button', { name: /Start reading/i }).click();
+
+    // Not playing, so the tap must mean "what does that mean", unchanged.
+    await page.getByText('今天', { exact: true }).first().click();
+    await expect(page.getByRole('button', { name: /Add to deck/i })).toBeVisible();
+  });
 });
