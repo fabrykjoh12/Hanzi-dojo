@@ -12,6 +12,7 @@ so the community always sees the latest. Keep it current — move things to
 > you everywhere.
 
 ## 🚧 Now — in progress
+- [ ] Already know some Chinese? Tell us: import a word list (Anki, Pleco, or just paste one), tick off words you know, or let your placement test do it. Those words go straight into review at a pace you choose, so what you learned elsewhere stops quietly fading.
 - [ ] Writing the first HSK 3 stories, so the new levels have reading of their own
 - [x] Better-sounding Chinese: new neural voices for every word, example sentence and story line, plus a slow version of each word and sentence for when a word won't stick. Stories now have a narrator and separate character voices.
 
