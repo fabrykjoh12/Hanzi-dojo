@@ -23,7 +23,8 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
     const rtColor = meta.side === 'right' ? skin.myText : undefined
     // Only the bubble now sounding takes the spotlight; earlier bubbles stay
     // fully legible so re-reading the conversation is never dimmed.
-    const isSounding = playing && !muted && key === activeIndex && activeToken >= 0
+    const isCurrentBubble = playing && !muted && key === activeIndex
+    const isSounding = isCurrentBubble && activeToken >= 0
     return (
       <div key={key} style={{ display: 'flex', flexDirection: 'column', alignItems: meta.side === 'right' ? 'flex-end' : 'flex-start' }}>
         <div style={{ fontSize: '11.5px', fontWeight: 700, color: meta.color, margin: '0 8px 3px', fontFamily: theme.font }}>{b.speaker}</div>
@@ -36,7 +37,16 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                   // baseline is identical whether or not its words are scaffolded.
                   if (!t.vocab) {
                     return (
-                      <span key={k} style={spotlightStyle(k === activeToken, isSounding, reduceMotion)}>
+                      <span key={k}
+                        onClick={(e) => {
+                          // A spotlit plain run is part of the bubble being read,
+                          // so a tap on it means "read from here". No vocab
+                          // entry here, so it never opens the lookup sheet; when
+                          // the seek can't happen, let the click bubble so
+                          // tap-to-reveal still works.
+                          if (isCurrentBubble && onSeekToken && onSeekToken(k)) e.stopPropagation()
+                        }}
+                        style={spotlightStyle(k === activeToken, isSounding, reduceMotion)}>
                         <TokenBody text={t.text} reading={null} mode={readingMode} status="not_started" language={language} reserve={reserve} rtColor={rtColor} />
                       </span>
                     )
@@ -46,8 +56,11 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                     <span key={k} onClick={(e) => {
                       e.stopPropagation()
                       // Seek only inside the bubble being read; a tap on an
-                      // earlier bubble is a lookup, never a rewind.
-                      if (isSounding && onSeekToken && onSeekToken(k)) return
+                      // earlier bubble is a lookup, never a rewind. Gated on
+                      // isCurrentBubble (not isSounding) so a tap during the
+                      // lead-in silence still tries to seek, matching the paced
+                      // reader — seekToToken's own boolean decides success.
+                      if (isCurrentBubble && onSeekToken && onSeekToken(k)) return
                       onSelectWord(t.vocab, status)
                     }}
                       style={{ cursor: 'pointer', borderRadius: '4px', padding: '0 1px',

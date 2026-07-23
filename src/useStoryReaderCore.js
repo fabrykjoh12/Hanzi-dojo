@@ -364,12 +364,17 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     const onKey = (e) => {
       if (selected && e.key === 'Escape') { setSelected(null); return }
       if (selected || done) return
-      if (e.key === 'ArrowRight' || e.key === ' ') { if (advanceBlockedRef.current) return; e.preventDefault(); advance() }
-      if (e.key === 'ArrowLeft') go(cur - 1)
+      // Every on-screen nav control pairs movement with stopPlay (see
+      // PacedReader/SceneReader/ChatReader) so the spotlight's timeline always
+      // belongs to the line actually sounding. The keyboard path must match, or
+      // navigating away mid-narration leaves the previous line's clip (and
+      // timeline) running while `cur` has already moved to the next line.
+      if (e.key === 'ArrowRight' || e.key === ' ') { if (advanceBlockedRef.current) return; e.preventDefault(); stopPlay(); advance() }
+      if (e.key === 'ArrowLeft') { stopPlay(); go(cur - 1) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [started, cur, go, advance, selected, done])
+  }, [started, cur, go, advance, selected, done, stopPlay])
 
   useEffect(() => () => { stopPlay() }, [stopPlay])
 

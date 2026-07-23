@@ -60,7 +60,16 @@ export default function SceneReader(props) {
               // so the scene's single line never shifts as modes change.
               if (!t.vocab) {
                 return (
-                  <span key={k} style={spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion)}>
+                  <span key={k}
+                    onClick={(e) => {
+                      // A spotlit plain run is part of the line being read, so a
+                      // tap on it means "read from here", same as a vocab word.
+                      // No vocab entry here, so it never opens the lookup sheet;
+                      // when the seek can't happen, let the click bubble so
+                      // tap-to-advance still works.
+                      if (c.playing && c.seekToToken(k)) e.stopPropagation()
+                    }}
+                    style={spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion)}>
                     <TokenBody text={t.text} reading={null} mode={c.readingMode} status="not_started" language={track.language} reserve={reserve} />
                   </span>
                 )

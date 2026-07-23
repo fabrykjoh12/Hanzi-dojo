@@ -87,7 +87,17 @@ export default function PacedReader(props) {
                     // same annotation row and sit on the line's shared baseline.
                     if (!t.vocab) {
                       return (
-                        <span key={k} style={i === c.cur ? spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) : undefined}>
+                        <span key={k}
+                          onClick={i === c.cur ? (e) => {
+                            // A spotlit plain run (punctuation or an out-of-pool
+                            // word) is part of the line being read, so a tap on
+                            // it means the same thing as a tap on a word: seek
+                            // there. It carries no vocab entry, so it never opens
+                            // the lookup sheet — when the seek can't happen, let
+                            // the click bubble so tap-to-advance still works.
+                            if (c.playing && c.seekToToken(k)) e.stopPropagation()
+                          } : undefined}
+                          style={{ ...(i === c.cur ? spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) : null) }}>
                           <TokenBody text={t.text} reading={null} mode={c.readingMode} status="not_started" language={track.language} reserve={reserve} />
                         </span>
                       )

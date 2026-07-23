@@ -231,7 +231,7 @@ test.describe('Story reader', () => {
     await page.getByRole('button', { name: /Start reading/i }).click();
 
     // Not playing, so the tap must mean "what does that mean", unchanged.
-    await page.getByText('今天', { exact: false }).first().click();
+    await page.getByText('今天', { exact: true }).first().click();
     await expect(page.getByRole('button', { name: /Add to deck/i })).toBeVisible();
   });
 });
