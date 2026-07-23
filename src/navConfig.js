@@ -1,6 +1,6 @@
 import {
   Home, Layers, BookOpen, Dumbbell, GraduationCap,
-  User, Settings, Globe, LogOut, BarChart3,
+  User, Settings, Globe, LogOut, BarChart3, PanelsTopLeft,
 } from 'lucide-react'
 
 // Single source of truth for navigation, consumed by both Sidebar (desktop) and
@@ -10,6 +10,7 @@ import {
 // Desktop sidebar — primary section (the daily loop + the goal gate).
 export const PRIMARY_NAV = [
   { key: 'home', label: 'Home', icon: Home },
+  { key: 'hq', label: 'Dojo HQ', icon: PanelsTopLeft },
   { key: 'study', label: 'Flashcards', icon: Layers },
   { key: 'stories', label: 'Stories', icon: BookOpen },
   { key: 'practice', label: 'Practice', icon: Dumbbell },
@@ -33,6 +34,7 @@ export const MOBILE_PRIMARY = [
 ]
 
 export const MOBILE_MORE = [
+  { key: 'hq', label: 'Dojo HQ', icon: PanelsTopLeft },
   { key: 'test', label: 'Test', icon: GraduationCap },
   { key: 'profile', label: 'Profile', icon: User },
   { key: 'languages', label: 'Language', icon: Globe },

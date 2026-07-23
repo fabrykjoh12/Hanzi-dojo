@@ -1,5 +1,7 @@
 import process from 'node:process'
 import { execSync } from 'node:child_process'
+import { copyFile, cp, mkdir, rm } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -31,6 +33,10 @@ export default defineConfig(() => {
     },
     build: {
       rollupOptions: {
+        input: {
+          main: 'index.html',
+          hq: 'hq.html',
+        },
         output: {
           // Split the Supabase client into its own chunk so it caches
           // independently of app code across deploys (app changes far more
@@ -44,6 +50,21 @@ export default defineConfig(() => {
     },
     plugins: [
       react(),
+      {
+        name: 'dojo-sites-output',
+        apply: 'build',
+        async closeBundle() {
+          const serverDirectory = resolve('dist', 'server')
+          const metadataDirectory = resolve('dist', '.openai')
+          await rm(serverDirectory, { recursive: true, force: true })
+          await rm(metadataDirectory, { recursive: true, force: true })
+          await mkdir(serverDirectory, { recursive: true })
+          await mkdir(metadataDirectory, { recursive: true })
+          await copyFile(resolve('worker', 'index.js'), resolve(serverDirectory, 'index.js'))
+          await copyFile(resolve('.openai', 'hosting.json'), resolve(metadataDirectory, 'hosting.json'))
+          await cp(resolve('drizzle'), resolve(metadataDirectory, 'drizzle'), { recursive: true })
+        },
+      },
       {
         // Emit /version.json into the build so the deployed commit is checkable
         // with `curl <site>/version.json` (no devtools needed).

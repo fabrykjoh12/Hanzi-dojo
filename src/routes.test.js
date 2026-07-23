@@ -38,6 +38,10 @@ describe('isKnownView', () => {
     expect(isKnownView('dashboard')).toBe(true)
   })
 
+  it('accepts the shared Dojo HQ view', () => {
+    expect(isKnownView('hq')).toBe(true)
+  })
+
   it('rejects unknown / typo routes so they hit NotFound', () => {
     expect(isKnownView('storeis')).toBe(false)
     expect(isKnownView('random-page')).toBe(false)
