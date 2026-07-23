@@ -130,6 +130,10 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     if (runId !== runRef.current) return
     if (index >= beats.length) { finish(); return }
     setCur(index)
+    // Every new beat starts clean: no timeline and nothing lit. A line with no
+    // audio clip simply never gets a timeline and stays dark throughout.
+    timelineRef.current = null
+    setActiveToken(-1)
     const nextBeat = () => { if (runId === runRef.current) speakFrom(index + 1, runId) }
     const viaSynth = () => {
       try {
@@ -147,11 +151,6 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
       // not keep speaking underneath the story.
       claimPlayback(el)
       el.onended = nextBeat
-
-      // A new line starts with no timeline — nothing is lit until this clip's
-      // own metadata says how long it is.
-      timelineRef.current = null
-      setActiveToken(-1)
       // playbackRate resets to defaultPlaybackRate whenever a src loads, so
       // both are set.
       el.defaultPlaybackRate = rateRef.current
