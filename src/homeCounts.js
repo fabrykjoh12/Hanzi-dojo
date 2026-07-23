@@ -5,6 +5,7 @@ import { studyFloorLevel } from './levelScope'
 import { isCardDue, endOfLocalDay } from './srs'
 import { reviewForecast } from './reviewForecast'
 import { studyRhythm, dateKey } from './studyRhythm'
+import { countDueGrammar } from './grammarReview'
 
 export async function getHomeCounts(userId, track, dailyNewCards) {
   // Cards scoped server-side to the ACTIVE language (every level): the level
@@ -92,6 +93,10 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   // mastered — the cleanup-drill pool.
   const weakCount = levelCards.filter(c => (c.lapses || 0) >= 2 && (c.stability || 0) < 21).length
 
+  // Grammar spaced practice: how many opted-in patterns are due. Defensive
+  // (returns 0 offline or before the table is migrated), never blocks the load.
+  const grammarDueCount = await countDueGrammar({ userId, track, now })
+
   const { learnedCount, masteredCount, masteredPct } = countMastery(levelCards, totalWords)
 
   // Fluency counts: every level of the ACTIVE language only (not other
@@ -104,6 +109,6 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
     newCount, learnCount, dueCount, easyCount, totalWords,
     learnedCount, masteredCount, masteredPct,
     newDoneToday, dueTomorrow, weakCount, forecast7, rhythm7,
-    lifetimeLearned, lifetimeMastered,
+    lifetimeLearned, lifetimeMastered, grammarDueCount,
   }
 }

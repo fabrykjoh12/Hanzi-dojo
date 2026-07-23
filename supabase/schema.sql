@@ -895,3 +895,52 @@ values (
   'Verify final licensing/source attribution before public release.',
   'Master vocabulary source for Chinese HSK 3.0 Level 1.'
 );
+
+
+-- Grammar spaced practice: FSRS state per opted-in grammar TOPIC (grammar has no
+-- vocabulary row, so it can't ride `cards`). Mirror of migration
+-- 20260723120000_add_grammar_reviews.sql. Reuses src/srs.js schedule().
+create table if not exists public.grammar_reviews (
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  language text not null,
+  system text not null,
+  topic_id text not null,
+  state text not null default 'new' check (state in ('new','learning','review','relearning')),
+  due_at timestamptz,
+  stability real,
+  difficulty real,
+  reps int not null default 0,
+  lapses int not null default 0,
+  last_review timestamptz,
+  scheduled_days int,
+  elapsed_days int,
+  learning_step int,
+  created_at timestamptz not null default now(),
+  primary key (user_id, language, system, topic_id)
+);
+
+create index if not exists grammar_reviews_track_idx
+  on public.grammar_reviews (user_id, language, system);
+
+alter table public.grammar_reviews enable row level security;
+
+create policy "users can read own grammar reviews"
+on public.grammar_reviews
+for select to authenticated
+using ((select auth.uid()) = user_id);
+
+create policy "users can insert own grammar reviews"
+on public.grammar_reviews
+for insert to authenticated
+with check ((select auth.uid()) = user_id);
+
+create policy "users can update own grammar reviews"
+on public.grammar_reviews
+for update to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
+create policy "users can delete own grammar reviews"
+on public.grammar_reviews
+for delete to authenticated
+using ((select auth.uid()) = user_id);

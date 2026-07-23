@@ -4,7 +4,7 @@ import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import {
   ArrowLeft, Dumbbell, AlertTriangle, Headphones, PenLine,
-  AlignLeft, Blocks, Music2, Languages, Brush, Play, GraduationCap, BookA, ScanText, Mic, Search,
+  AlignLeft, Blocks, Music2, Languages, Brush, Play, GraduationCap, BookA, ScanText, Mic, Search, Repeat2,
 } from 'lucide-react'
 
 // The Practice hub: every drill/activity in one calm place, so the top-level
@@ -18,6 +18,7 @@ export default function Practice({ profile, track, counts, onNavigate, onBack })
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
   const weak = counts ? (counts.weakCount || 0) : 0
+  const grammarDue = counts ? (counts.grammarDueCount || 0) : 0
 
   // The script drill matches the language's writing system: Kana (Japanese),
   // Tones (Chinese), Cyrillic alphabet (Russian). Stroke order is CJK-only.
@@ -46,6 +47,11 @@ export default function Practice({ profile, track, counts, onNavigate, onBack })
     { key: 'analyzer', icon: ScanText, title: 'Analyze text', desc: 'Paste text — see % you know' },
     { key: 'youtube', icon: Play, title: 'Videos', desc: 'Curated listening' },
     { key: 'grammar', icon: GraduationCap, title: 'Grammar guide', desc: 'How the language works' },
+    {
+      key: 'grammarpractice', icon: Repeat2, title: 'Grammar review',
+      desc: grammarDue > 0 ? grammarDue + ' pattern' + (grammarDue === 1 ? '' : 's') + ' due' : 'Keep your patterns sharp',
+      badge: grammarDue > 0 ? grammarDue : null,
+    },
   ].filter(Boolean)
 
   return (
