@@ -3,10 +3,12 @@ import { supabase } from './supabase'
 import { languageTheme } from './languageTheme'
 import { grammarFor } from './grammarGuides'
 import { filterTopics } from './grammarSearch'
+import { hasDrills } from './grammarDrills'
+import { enrollTopic, getEnrolledRows } from './grammarReview'
 import { useIsMobile } from './useIsMobile'
 import { shuffle } from './utils'
 import { tokenize, makeSegmenter, isContent, scrambleIndices } from './segment'
-import { ArrowLeft, BookMarked, BookOpen, Check, ChevronRight, GraduationCap, Search, Sparkles, X, Volume2 } from 'lucide-react'
+import { ArrowLeft, BookMarked, BookOpen, Check, ChevronRight, GraduationCap, Search, Sparkles, X, Volume2, Repeat2 } from 'lucide-react'
 
 // Speak an example aloud with the browser's TTS — grammar examples are
 // arbitrary sentences with no recorded audio, so this is the practical way to
@@ -60,7 +62,7 @@ function findStoryLines(stories, finds, max) {
   return out
 }
 
-export default function Grammar({ profile, track, onBack }) {
+export default function Grammar({ session, profile, track, onBack }) {
   const isMobile = useIsMobile()
   const theme = languageTheme(profile.active_language)
   const accentHex = theme.accentHex
@@ -73,6 +75,26 @@ export default function Grammar({ profile, track, onBack }) {
   // `rewarded` remembers which topics already paid XP this visit.
   const [answers, setAnswers] = useState({})
   const [rewarded, setRewarded] = useState({})
+  // topic ids the learner has opted into spaced review for (this track).
+  const [enrolled, setEnrolled] = useState(() => new Set())
+
+  useEffect(() => {
+    let cancelled = false
+    const userId = session && session.user && session.user.id
+    if (!userId) return
+    getEnrolledRows({ userId, track })
+      .then(rows => { if (!cancelled) setEnrolled(new Set(rows.map(r => r.topic_id))) })
+      .catch(() => { /* table not migrated / offline — no enrolled state to show */ })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, track.language, track.system])
+
+  async function enroll(topicId) {
+    const userId = session && session.user && session.user.id
+    if (!userId) return
+    setEnrolled(prev => new Set(prev).add(topicId))   // optimistic
+    try { await enrollTopic({ userId, track, topicId }) } catch { /* upsert is idempotent; a retry later is safe */ }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -230,6 +252,15 @@ export default function Grammar({ profile, track, onBack }) {
                       accentHex={accentHex}
                       isMobile={isMobile}
                     />
+
+                    {hasDrills(profile.active_language, topic.id) && (
+                      <EnrollRow
+                        enrolled={enrolled.has(topic.id)}
+                        onEnroll={() => enroll(topic.id)}
+                        accentHex={accentHex}
+                        isMobile={isMobile}
+                      />
+                    )}
                   </div>
                 )}
               </div>
@@ -291,6 +322,35 @@ function Example({ ex, language, font, accentHex }) {
         </button>
         <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{ex.en}</div>
       </div>
+    </div>
+  )
+}
+
+// "Practice this pattern" — opt this topic into spaced review, or show that it's
+// already in. Calm and idempotent: one tap, and it starts coming back on the
+// same FSRS schedule as flashcards (in Practice → Grammar review).
+function EnrollRow({ enrolled, onEnroll, accentHex, isMobile }) {
+  return (
+    <div style={{ paddingLeft: isMobile ? 0 : '54px' }}>
+      {enrolled ? (
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: '8px',
+          padding: '9px 14px', borderRadius: '11px',
+          background: 'var(--success-bg)', border: '1px solid var(--success-border)',
+          color: 'var(--success)', fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+        }}>
+          <Check size={15} strokeWidth={2.4} color="var(--success)" /> In your grammar review
+        </span>
+      ) : (
+        <button onClick={onEnroll} style={{
+          display: 'inline-flex', alignItems: 'center', gap: '8px',
+          height: '40px', padding: '0 16px', borderRadius: '11px', border: 'none',
+          background: accentHex, color: '#fff', cursor: 'pointer',
+          fontSize: '13px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+        }}>
+          <Repeat2 size={16} strokeWidth={2} color="#fff" /> Practice this pattern
+        </button>
+      )}
     </div>
   )
 }

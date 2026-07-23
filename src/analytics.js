@@ -52,6 +52,9 @@ export const EVENTS = {
   STORY_COMPLETED: 'story_completed',
   STORY_SHARED: 'story_shared',
   TEXT_ANALYZED: 'text_analyzed',
+  // Grammar spaced practice
+  GRAMMAR_ENROLLED: 'grammar_enrolled',
+  GRAMMAR_REVIEWED: 'grammar_reviewed',
   // Signals
   ACHIEVEMENT_UNLOCKED: 'achievement_unlocked',
   LANGUAGE_SWITCHED: 'language_switched',

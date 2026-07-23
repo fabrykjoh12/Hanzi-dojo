@@ -36,3 +36,6 @@ src/__preview.jsx
 playwright-report
 test-results
 artifacts
+
+# Claude Code agent worktrees
+.claude/worktrees/

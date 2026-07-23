@@ -39,6 +39,7 @@ const KnownWords = lazy(() => import('./KnownWords'))
 const Analyzer = lazy(() => import('./Analyzer'))
 const Dictionary = lazy(() => import('./Dictionary'))
 const Grammar = lazy(() => import('./Grammar'))
+const GrammarPractice = lazy(() => import('./GrammarPractice'))
 const Profile = lazy(() => import('./Profile'))
 const YouTube = lazy(() => import('./YouTube'))
 const LanguageSwitcher = lazy(() => import('./LanguageSwitcher'))
@@ -406,9 +407,19 @@ export default function App() {
   } else if (view === 'grammar') {
     content = (
       <Grammar
+        session={session}
         profile={profile}
         track={track}
         onBack={() => navigate('home')}
+      />
+    )
+  } else if (view === 'grammarpractice') {
+    content = (
+      <GrammarPractice
+        session={session}
+        profile={profile}
+        track={track}
+        onBack={() => navigate('practice')}
       />
     )
   } else if (view === 'strokes') {

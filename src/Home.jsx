@@ -259,7 +259,9 @@ export default function Home({ profile, track, counts, onNavigate }) {
         <Dumbbell size={17} strokeWidth={2} color={accentHex} />
         {counts.weakCount > 0
           ? 'Practice · ' + counts.weakCount + ' weak word' + (counts.weakCount === 1 ? '' : 's')
-          : 'Practice'}
+          : (counts.grammarDueCount > 0
+            ? 'Practice · ' + counts.grammarDueCount + ' grammar due'
+            : 'Practice')}
       </button>
 
       {/* ── Keep the flow going ── */}
