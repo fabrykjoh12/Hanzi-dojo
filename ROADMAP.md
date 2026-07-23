@@ -12,7 +12,7 @@ so the community always sees the latest. Keep it current — move things to
 > you everywhere.
 
 ## 🚧 Now — in progress
-- [ ] Grammar that sticks: keep a grammar pattern sharp by opting it into review — quick fill-in-the-blank drills, scheduled by the same memory engine that runs your flashcards. Calm and opt-in, one pattern at a time.
+- [ ] Stuck-word help: when a word keeps slipping, meet it from a fresh angle — a calm coach card with slow audio, the word inside a real sentence, and a character breakdown — instead of the same flashcard coming back again and again.
 - [ ] Writing the first HSK 3 stories, so the new levels have reading of their own
 - [x] Better-sounding Chinese: new neural voices for every word, example sentence and story line, plus a slow version of each word and sentence for when a word won't stick. Stories now have a narrator and separate character voices.
 
@@ -52,7 +52,6 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] **Grammar in context** — each story flags the pattern it introduces ("this one uses 把…"), so grammar is learned from real sentences.
 
 **Smarter, calmer review**
-- [ ] **Stuck-word help** — a word that keeps slipping gets flagged and taught a different way, instead of endlessly re-appearing.
 - [ ] **A retention dial** — set how hard you want to remember (tune the memory engine's target recall) — the calm 7-day forecast has shipped.
 - [ ] **Cram mode** — temporarily study ahead for a trip or an exam.
 
@@ -146,6 +145,7 @@ paid generation happens without an explicit `--confirm`.
 - [ ] `ChatMission` overlay: a focus trap (the `role="dialog"` + `aria-modal` + Escape-to-close + initial focus have shipped)
 
 ## ✅ Shipped
+- [x] **Grammar as spaced practice** — opt a grammar pattern into review from the Grammar guide and it comes back as a quick fill-in-the-blank, scheduled by the same memory engine as your flashcards (Practice → Grammar review). Calm and opt-in, one pattern at a time.
 - [x] **Words you already know** — import a word list (Anki, Pleco, or paste one), tick off words from a browsable checklist, or let your placement test claim them. Those words go straight into review, spread across days at a pace you choose, so what you learned elsewhere stops quietly fading.
 - [x] **Review-accuracy chart — screen-reader summary** — the 30-day reviews chart in Profile now has a spoken summary ("Reviews over the last 30 days: N total, busiest day K, M active days"). With the Known-Word Map and Home forecast, every progress chart in the app now has a text alternative.
 - [x] **Home forecast — screen-reader summary** — the 7-day review forecast bar chart on Home now carries a spoken summary ("Review forecast, next 7 days: about N a day, M total, busiest day K"), so its shape is available to screen readers, not just the bars.
