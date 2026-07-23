@@ -65,6 +65,14 @@ function parseTags(value) {
   }
 }
 
+function parseJson(value, fallback = null) {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return fallback
+  }
+}
+
 function mapItem(row) {
   return {
     id: row.id,
@@ -355,12 +363,148 @@ async function deleteFile(env, workspace, path) {
   return json({ ok: true })
 }
 
+async function pairBridge(request, env) {
+  const payload = await bodyJson(request)
+  const code = normalizeCode(payload.code)
+  if (code.length < 10) return json({ error: 'Invitasjonskoden er ugyldig.' }, 400)
+  const workspace = await env.DB.prepare(
+    'SELECT id, name FROM dojo_workspaces WHERE invite_hash = ?',
+  ).bind(await sha256(code)).first()
+  if (!workspace) return json({ error: 'Fant ikke arbeidsområdet.' }, 404)
+  return json({ workspace: { id: workspace.id, name: workspace.name } })
+}
+
+async function bridgeStatus(env, workspace) {
+  const client = await env.DB.prepare(
+    `SELECT client_id, display_name, version, last_seen
+     FROM dojo_bridge_clients WHERE workspace_id = ? ORDER BY last_seen DESC LIMIT 1`,
+  ).bind(workspace.id).first()
+  const connected = Boolean(client?.last_seen && Date.now() - Date.parse(client.last_seen) < 20_000)
+  return json({
+    connected,
+    claudeReady: connected && Boolean(client?.version),
+    claudeVersion: connected ? client?.version || '' : '',
+    clientName: connected ? client?.display_name || '' : '',
+    lastSeen: client?.last_seen || null,
+    mode: 'cloud',
+  })
+}
+
+async function createBridgeCommand(request, env, workspace) {
+  const payload = await bodyJson(request)
+  const action = allowed(payload.action, ['read', 'sync', 'launch'], '')
+  if (!action) return json({ error: 'Denne brohandlingen er ikke tillatt.' }, 400)
+  const commandPayload = payload.payload && typeof payload.payload === 'object' ? payload.payload : {}
+  const payloadJson = JSON.stringify(commandPayload)
+  if (payloadJson.length > 1_800_000) return json({ error: 'Broforespørselen er for stor.' }, 413)
+
+  const id = crypto.randomUUID()
+  const now = new Date().toISOString()
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO dojo_bridge_commands
+       (id, workspace_id, action, payload_json, status, created_at)
+       VALUES (?, ?, ?, ?, 'queued', ?)`,
+    ).bind(id, workspace.id, action, payloadJson, now),
+    env.DB.prepare(
+      `DELETE FROM dojo_bridge_commands
+       WHERE workspace_id = ? AND completed_at IS NOT NULL AND completed_at < ?`,
+    ).bind(workspace.id, new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+  ])
+  return json({ command: { id, action, status: 'queued', createdAt: now } }, 202)
+}
+
+async function getBridgeCommand(env, workspace, commandId) {
+  const command = await env.DB.prepare(
+    `SELECT id, action, status, result_json, error_text, created_at, claimed_at, completed_at
+     FROM dojo_bridge_commands WHERE id = ? AND workspace_id = ?`,
+  ).bind(commandId, workspace.id).first()
+  if (!command) return json({ error: 'Fant ikke brohandlingen.' }, 404)
+  const result = command.result_json ? parseJson(command.result_json) : null
+  return json({
+    command: {
+      id: command.id,
+      action: command.action,
+      status: command.status,
+      result,
+      error: command.error_text || '',
+      createdAt: command.created_at,
+      claimedAt: command.claimed_at,
+      completedAt: command.completed_at,
+    },
+  })
+}
+
+async function pollBridge(request, env, workspace) {
+  const payload = await bodyJson(request)
+  const clientId = cleanText(payload.clientId, 100)
+  const displayName = cleanText(payload.displayName, 80, 'Lokal Claude-bro')
+  const version = cleanText(payload.version, 120)
+  if (!clientId) return json({ error: 'Broklienten mangler identitet.' }, 400)
+  const now = new Date().toISOString()
+  const staleAt = new Date(Date.now() - 2 * 60 * 1000).toISOString()
+
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO dojo_bridge_clients (workspace_id, client_id, display_name, version, last_seen)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(workspace_id, client_id) DO UPDATE SET
+         display_name = excluded.display_name,
+         version = excluded.version,
+         last_seen = excluded.last_seen`,
+    ).bind(workspace.id, clientId, displayName, version || null, now),
+    env.DB.prepare(
+      `UPDATE dojo_bridge_commands SET status = 'failed', error_text = ?, completed_at = ?
+       WHERE workspace_id = ? AND status = 'running' AND claimed_at < ?`,
+    ).bind('Broklienten ble koblet fra før handlingen ble fullført.', now, workspace.id, staleAt),
+  ])
+
+  const command = await env.DB.prepare(
+    `UPDATE dojo_bridge_commands
+     SET status = 'running', client_id = ?, claimed_at = ?
+     WHERE id = (
+       SELECT id FROM dojo_bridge_commands
+       WHERE workspace_id = ? AND status = 'queued'
+       ORDER BY created_at ASC LIMIT 1
+     ) AND status = 'queued'
+     RETURNING id, action, payload_json`,
+  ).bind(clientId, now, workspace.id).first()
+
+  if (!command) return json({ command: null })
+  const commandPayload = parseJson(command.payload_json || '{}', {})
+  return json({ command: { id: command.id, action: command.action, payload: commandPayload } })
+}
+
+async function completeBridgeCommand(request, env, workspace, commandId) {
+  const payload = await bodyJson(request)
+  const clientId = cleanText(payload.clientId, 100)
+  const succeeded = payload.ok === true
+  const resultJson = succeeded ? JSON.stringify(payload.result ?? {}) : null
+  const errorText = succeeded ? null : cleanText(payload.error, 2000, 'Brohandlingen feilet.')
+  if (!clientId || (resultJson && resultJson.length > 1_800_000)) {
+    return json({ error: 'Ugyldig resultat fra broklienten.' }, 400)
+  }
+  const now = new Date().toISOString()
+  const updated = await env.DB.prepare(
+    `UPDATE dojo_bridge_commands
+     SET status = ?, result_json = ?, error_text = ?, completed_at = ?
+     WHERE id = ? AND workspace_id = ? AND client_id = ? AND status = 'running'
+     RETURNING id`,
+  ).bind(
+    succeeded ? 'completed' : 'failed', resultJson, errorText, now,
+    commandId, workspace.id, clientId,
+  ).first()
+  if (!updated) return json({ error: 'Brohandlingen kan ikke fullføres av denne klienten.' }, 409)
+  return json({ ok: true })
+}
+
 async function dojoApi(request, env, url) {
   if (request.method === 'GET' && url.pathname === '/api/dojo/status') {
     return json({ online: true, storage: 'D1 + R2' })
   }
   if (request.method === 'POST' && url.pathname === '/api/dojo/workspaces') return createWorkspace(request, env)
   if (request.method === 'POST' && url.pathname === '/api/dojo/join') return joinWorkspace(request, env)
+  if (request.method === 'POST' && url.pathname === '/api/dojo/bridge/pair') return pairBridge(request, env)
 
   const match = url.pathname.match(/^\/api\/dojo\/workspaces\/([^/]+)(?:\/(.*))?$/)
   if (!match) return json({ error: 'Ukjent API-rute.' }, 404)
@@ -378,6 +522,9 @@ async function dojoApi(request, env, url) {
   if (request.method === 'POST' && action === 'comments') return createComment(request, env, workspace)
   if (request.method === 'POST' && action === 'attachments') return createAttachment(request, env, workspace)
   if (request.method === 'POST' && action === 'files') return uploadFile(request, env, workspace)
+  if (request.method === 'GET' && action === 'bridge/status') return bridgeStatus(env, workspace)
+  if (request.method === 'POST' && action === 'bridge/commands') return createBridgeCommand(request, env, workspace)
+  if (request.method === 'POST' && action === 'bridge/poll') return pollBridge(request, env, workspace)
 
   const itemMatch = action.match(/^items\/([^/]+)$/)
   if (itemMatch && request.method === 'PATCH') return updateItem(request, env, workspace, decodeURIComponent(itemMatch[1]))
@@ -385,6 +532,15 @@ async function dojoApi(request, env, url) {
 
   const attachmentMatch = action.match(/^attachments\/([^/]+)$/)
   if (attachmentMatch && request.method === 'DELETE') return deleteAttachment(env, workspace, decodeURIComponent(attachmentMatch[1]))
+
+  const bridgeCommandMatch = action.match(/^bridge\/commands\/([^/]+)$/)
+  if (bridgeCommandMatch && request.method === 'GET') {
+    return getBridgeCommand(env, workspace, decodeURIComponent(bridgeCommandMatch[1]))
+  }
+  const bridgeResultMatch = action.match(/^bridge\/commands\/([^/]+)\/result$/)
+  if (bridgeResultMatch && request.method === 'POST') {
+    return completeBridgeCommand(request, env, workspace, decodeURIComponent(bridgeResultMatch[1]))
+  }
 
   if (action === 'files' && request.method === 'GET') return downloadFile(env, workspace, url.searchParams.get('path') || '')
   if (action === 'files' && request.method === 'DELETE') return deleteFile(env, workspace, url.searchParams.get('path') || '')

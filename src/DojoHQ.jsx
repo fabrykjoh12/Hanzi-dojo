@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertTriangle, ArrowUpRight, Bug, CalendarDays, CalendarPlus, Check,
-  ChevronDown, ChevronLeft, ChevronRight, Circle, Code2, Download,
+  ChevronDown, ChevronLeft, ChevronRight, Circle, Code2, Copy, Download,
   BookOpenCheck, FileCheck2, FolderSync, FlaskConical, ImagePlus, LayoutGrid, Lightbulb, List, Loader2, Map,
   MessageSquare, Paperclip, Plus, Search, Send, Sparkles, Target,
   RefreshCw, Rocket, Share2, ShieldCheck, SquareTerminal, Trash2, Upload, UserPlus, UsersRound, Wrench, X,
@@ -322,7 +322,9 @@ function CollaborationModal({ overview, members, identity, workspace, online = f
   )
 }
 
-function ClaudePanel({ status, roadmapInfo, documentName, onDocumentChange, onClose, onSync, onPull, busy }) {
+function ClaudePanel({ status, roadmapInfo, documentName, onDocumentChange, onClose, onSync, onPull, onCheck, busy, online, pairCommand }) {
+  const [commandCopied, setCommandCopied] = useState(false)
+
   useEffect(() => {
     const onKey = event => { if (event.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
@@ -330,29 +332,47 @@ function ClaudePanel({ status, roadmapInfo, documentName, onDocumentChange, onCl
   }, [onClose])
 
   const connected = status.connected && status.claudeReady
+  const copyCommand = async () => {
+    try {
+      await copyText(pairCommand)
+      setCommandCopied(true)
+      window.setTimeout(() => setCommandCopied(false), 1800)
+    } catch {
+      setCommandCopied(false)
+    }
+  }
+
   return (
     <div className="dojo-modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
       <section className="dojo-modal dojo-claude-modal" role="dialog" aria-modal="true" aria-labelledby="claude-panel-title">
         <div className="dojo-modal-head">
-          <div><span className="dojo-kicker">Lokal utviklerbro</span><h2 id="claude-panel-title">HQ ↔ Claude Code</h2></div>
+          <div><span className="dojo-kicker">{online ? 'Sikker nettbro' : 'Lokal utviklerbro'}</span><h2 id="claude-panel-title">HQ ↔ Claude Code</h2></div>
           <button className="dojo-icon-btn" onClick={onClose} aria-label="Lukk"><X size={20} /></button>
         </div>
 
         <div className={`dojo-bridge-status ${connected ? 'is-online' : 'is-offline'}`}>
           <SquareTerminal size={22} />
           <div>
-            <strong>{connected ? 'Claude Code er klar' : 'Den lokale broen er ikke startet'}</strong>
-            <span>{connected ? `${status.claudeVersion} · manuelle tillatelser` : 'Start broen én gang og la terminalen stå åpen.'}</span>
+            <strong>{connected ? 'Claude Code er klar' : status.connected ? 'Broen er koblet til' : online ? 'Koble prosjektet til dette HQ-et' : 'Den lokale broen er ikke startet'}</strong>
+            <span>{connected ? `${status.claudeVersion} · ${status.clientName || 'manuelle tillatelser'}` : status.connected ? 'Claude-kommandoen ble ikke funnet i terminalens PATH.' : online ? 'Kopier kommandoen under og kjør den fra prosjektmappen.' : 'Start broen én gang og la terminalen stå åpen.'}</span>
           </div>
           <i aria-hidden="true" />
         </div>
 
         {!connected && (
           <div className="dojo-bridge-command">
-            <span>Kjør dette fra prosjektmappen:</span>
-            <code>npm run dojo:bridge</code>
+            <div>
+              <span>Kjør dette fra prosjektmappen:</span>
+              <code>{pairCommand}</code>
+            </div>
+            <button type="button" onClick={copyCommand}>
+              {commandCopied ? <Check size={16} /> : <Copy size={16} />}
+              {commandCopied ? 'Kopiert' : 'Kopier kommando'}
+            </button>
           </div>
         )}
+
+        {!connected && <button type="button" className="dojo-ghost dojo-bridge-check" onClick={onCheck}><RefreshCw size={16} />Sjekk koblingen igjen</button>}
 
         <div className="dojo-document-choice" role="group" aria-label="Velg planfil">
           <button className={documentName === 'ROADMAP.md' ? 'active' : ''} onClick={() => onDocumentChange('ROADMAP.md')}>ROADMAP.md</button>
@@ -565,7 +585,8 @@ export default function DojoHQ({ session, profile }) {
   }, [])
 
   const checkBridge = useCallback(async () => {
-    if (supabase.isRemote) {
+    dojoClaudeBridge.configure(activeWorkspace, { remote: supabase.isRemote })
+    if (!activeWorkspace) {
       const offline = { connected: false, claudeReady: false, claudeVersion: '' }
       setBridgeStatus(offline)
       return offline
@@ -579,7 +600,7 @@ export default function DojoHQ({ session, profile }) {
       setBridgeStatus(offline)
       return offline
     }
-  }, [])
+  }, [activeWorkspace])
 
   const loadWorkspaces = useCallback(async (preferredId) => {
     const { data, error } = await supabase
@@ -990,6 +1011,9 @@ export default function DojoHQ({ session, profile }) {
   const openNew = (status, dueDate = '') => { setNewItemStatus(status || 'inbox'); setNewItemDueDate(dueDate); setNewItemOpen(true) }
   const attachmentFor = itemId => attachments.filter(file => file.item_id === itemId)
   const commentCountFor = itemId => comments.filter(entry => entry.item_id === itemId).length
+  const bridgePairCommand = supabase.isRemote && activeWorkspace?.invite_code
+    ? `$p=Join-Path $env:TEMP 'dojo-cloud-bridge.mjs'; Invoke-WebRequest -UseBasicParsing '${window.location.origin}/dojo-cloud-bridge.mjs?v=${import.meta.env.VITE_BUILD_SHA}' -OutFile $p; node $p --pair '${activeWorkspace.invite_code}' --site '${window.location.origin}' --project (Get-Location)`
+    : 'npm run dojo:bridge'
 
   if (loading) return <div className="dojo-loading"><div className="dojo-loading-mark">道</div><span>Laster HQ</span></div>
   if (!activeWorkspace) return <WorkspaceGate onCreate={createWorkspace} onJoin={joinWorkspace} busy={busy} setupError={setupError} online={supabase.isRemote} />
@@ -1003,7 +1027,7 @@ export default function DojoHQ({ session, profile }) {
             <label className="dojo-workspace-picker"><span className="sr-only">Arbeidsområde</span><select value={activeWorkspace.id} onChange={event => setActiveWorkspace(workspaces.find(workspace => workspace.id === event.target.value))}>{workspaces.map(workspace => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}</select><ChevronDown size={15} /></label>
           ) : <span className="dojo-workspace-name">{activeWorkspace.name}</span>}
           <div className="dojo-avatars" aria-label={`${members.length} medlemmer`}>{members.slice(0, 4).map((member, index) => <Avatar key={member.user_id} name={memberName(member.user_id)} index={index} />)}</div>
-          <button className={`dojo-share dojo-claude-button ${bridgeStatus.connected && bridgeStatus.claudeReady ? 'is-online' : ''}`} onClick={() => setClaudePanelOpen(true)} title={supabase.isRemote ? 'Claude Code brukes fra den lokale HQ-versjonen' : 'Claude Code og roadmap'}><SquareTerminal size={16} /><span>Claude</span><i aria-hidden="true" /></button>
+          <button className={`dojo-share dojo-claude-button ${bridgeStatus.connected && bridgeStatus.claudeReady ? 'is-online' : ''}`} onClick={() => setClaudePanelOpen(true)} title="Claude Code og roadmap"><SquareTerminal size={16} /><span>Claude</span><i aria-hidden="true" /></button>
           <button className="dojo-share dojo-share-secondary dojo-sync-button" onClick={() => setCollabOpen(true)} title={supabase.isRemote ? 'Live samarbeid' : 'Samarbeid og arbeidsfil'}>{supabase.isRemote ? <UsersRound size={16} /> : <FolderSync size={16} />}<span>{supabase.isRemote ? 'Live' : 'Arbeidsfil'}</span><i aria-hidden="true" /></button>
           <input ref={importRef} className="sr-only" type="file" accept="application/json,.json,.dojo.json" onChange={event => { importWorkspace(event.target.files?.[0]); event.target.value = '' }} />
           <button className="dojo-share" onClick={shareWorkspace}>{copied ? <Check size={16} /> : <Share2 size={16} />}<span>{copied ? 'Kopiert' : 'Del'}</span></button>
@@ -1203,7 +1227,7 @@ export default function DojoHQ({ session, profile }) {
 
       {showSetup && <LaunchModal overview={overview} defaultOwnerName={localProfile.display_name} onSubmit={finishSetup} onImport={() => importRef.current?.click()} busy={busy} />}
       {collabOpen && <CollaborationModal overview={overview} members={members} identity={standaloneIdentity} workspace={activeWorkspace} online={supabase.isRemote} copied={copied} onClose={() => setCollabOpen(false)} onImport={() => importRef.current?.click()} onDownload={() => exportWorkspace(false)} onShare={shareWorkspace} onCopyCode={() => copyInvite(true)} onIdentityChange={changeIdentity} busy={busy} />}
-      {claudePanelOpen && <ClaudePanel status={bridgeStatus} roadmapInfo={roadmapInfo} documentName={roadmapDocument} onDocumentChange={setRoadmapDocument} onClose={() => setClaudePanelOpen(false)} onSync={syncRoadmap} onPull={pullRoadmapStatus} busy={bridgeBusy} />}
+      {claudePanelOpen && <ClaudePanel status={bridgeStatus} roadmapInfo={roadmapInfo} documentName={roadmapDocument} onDocumentChange={setRoadmapDocument} onClose={() => setClaudePanelOpen(false)} onSync={syncRoadmap} onPull={pullRoadmapStatus} onCheck={checkBridge} busy={bridgeBusy} online={supabase.isRemote} pairCommand={bridgePairCommand} />}
       {newItemOpen && <CreateItemModal onClose={() => setNewItemOpen(false)} onSubmit={createItem} members={members} initialStatus={newItemStatus} initialDueDate={newItemDueDate} busy={busy} maxFileMb={supabase.isRemote ? 5 : 1.5} />}
       {selectedItem && <ItemDetail key={selectedItem.id} item={selectedItem} attachments={attachments} comments={comments} members={members} memberName={memberName} onClose={() => setSelectedId(null)} onUpdate={updateItem} onDelete={deleteItem} onComment={addComment} onUpload={async (id, files) => { setBusy(true); await uploadFiles(id, files); setBusy(false); loadWorkspace(activeWorkspace) }} onRemoveAttachment={removeAttachment} onOpenClaude={openInClaude} claudeConnected={bridgeStatus.connected && bridgeStatus.claudeReady} busy={busy || bridgeBusy} />}
 
