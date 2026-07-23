@@ -12,6 +12,7 @@ import { last30A11yLabel } from './reviewAccuracy'
 import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
 import StuckWordCoach from './StuckWordCoach'
+import { STUCK_LAPSES } from './stuckWord'
 import { BRAND_URL } from './brand'
 import {
   ArrowLeft, Layers, LogOut, RotateCcw, Save,
@@ -149,7 +150,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       .from('cards')
       .select('lapses, vocabulary(id, word, reading, meaning, language, system, level, audio_path, example_sentence, example_reading, example_translation)')
       .eq('user_id', session.user.id)
-      .gte('lapses', 4)
+      .gte('lapses', STUCK_LAPSES)
       .order('lapses', { ascending: false })
     const leechList = (leechData || [])
       .filter(l => l.vocabulary
