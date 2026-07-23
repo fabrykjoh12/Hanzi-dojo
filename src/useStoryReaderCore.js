@@ -3,7 +3,8 @@ import { languageTheme } from './languageTheme'
 import { getAudioUrl, playAudioEl } from './utils'
 import { calculateStoryReadability, buildVocabMatcher, segmentLine, namesFor, particlesFor, splitSpeaker, normalizeReadingMode, DEFAULT_READING_MODE } from './storyReading'
 import { splitScene, stripSceneEmoji } from './sceneReading'
-import { prefsGet, prefsSet } from './offline'
+import { prefsGet, prefsMerge } from './offline'
+import { buildTimeline, tokenAtTime, startOfToken, DEFAULT_RATE, SPEED_RATES } from './readAlong'
 import { supabase } from './supabase'
 import { loadTtsAudio, utteranceAudio } from './ttsAudio'
 import { claimPlayback, stopAllAudio } from './audioPlayback'
@@ -45,6 +46,13 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   const runRef = useRef(0)
   const audioElRef = useRef(null)
   const advanceBlockedRef = useRef(false)
+  // Read-along: which token of the sounding line is being spoken, and the
+  // timeline that decides it. The timeline lives in a ref, not state — it is
+  // rebuilt per line from audio metadata and must never trigger a render.
+  const [activeToken, setActiveToken] = useState(-1)
+  const timelineRef = useRef(null)
+  const [rate, setRateState] = useState(DEFAULT_RATE)
+  const rateRef = useRef(DEFAULT_RATE)
 
   const matcher = useMemo(() => buildVocabMatcher(vocabMap, track.language), [vocabMap, track.language])
   const names = useMemo(() => namesFor(track.language), [track.language])
@@ -78,6 +86,10 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     // leave a voice running under the next screen.
     stopAllAudio()
     if (audioElRef.current) audioElRef.current.pause()
+    // Drop the spotlight with the sound. Clearing the timeline too means a stale
+    // one can never light a word on the next line before its metadata arrives.
+    timelineRef.current = null
+    setActiveToken(-1)
   }, [])
 
   const finish = useCallback(async () => {
@@ -134,6 +146,31 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
       // not keep speaking underneath the story.
       claimPlayback(el)
       el.onended = nextBeat
+
+      // A new line starts with no timeline — nothing is lit until this clip's
+      // own metadata says how long it is.
+      timelineRef.current = null
+      setActiveToken(-1)
+      // playbackRate resets to defaultPlaybackRate whenever a src loads, so
+      // both are set.
+      el.defaultPlaybackRate = rateRef.current
+      el.playbackRate = rateRef.current
+
+      const buildFromEl = () => {
+        // Keyed to the run id: a metadata event from a load we have already
+        // moved past must not repaint the line now showing.
+        if (runId !== runRef.current) return
+        el.playbackRate = rateRef.current
+        const seconds = el.duration
+        if (!Number.isFinite(seconds) || seconds <= 0) return
+        timelineRef.current = buildTimeline(beats[index].tokens, { durationMs: seconds * 1000 })
+      }
+      el.onloadedmetadata = buildFromEl
+      el.ondurationchange = buildFromEl
+      // A cached blob replayed in place is already loaded, so neither event
+      // will fire again — read what is there now.
+      buildFromEl()
+
       playAudioEl(el, url, viaSynth)
       // Warm the next line while this one plays, so read-along does not stutter
       // between beats.
@@ -165,6 +202,48 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     if (!text) return
     try { const u = new SpeechSynthesisUtterance(text); u.lang = ttsLang; u.rate = 0.85; window.speechSynthesis.speak(u) } catch { /* noop */ }
   }
+
+  // The ticker. rAF rather than timeupdate: timeupdate fires roughly 4x a
+  // second, which is visibly late on a one-syllable word. The functional
+  // setState bails out when the index is unchanged, so 60Hz polling causes a
+  // render only when the spotlight actually moves.
+  useEffect(() => {
+    if (!playing) return undefined
+    let raf = 0
+    const tick = () => {
+      const el = audioElRef.current
+      const tl = timelineRef.current
+      if (el && tl) {
+        const idx = tokenAtTime(tl, el.currentTime * 1000)
+        setActiveToken(prev => (prev === idx ? prev : idx))
+      }
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [playing])
+
+  // Start reading from a given word of the line now sounding. Returns false
+  // when there is no timeline (browser-speech fallback, or metadata not in
+  // yet) so a caller can fall back to opening the lookup sheet instead.
+  const seekToToken = useCallback((i) => {
+    const el = audioElRef.current
+    const tl = timelineRef.current
+    if (!el || !tl) return false
+    const start = startOfToken(tl, i)
+    if (start == null) return false
+    try { el.currentTime = start / 1000 } catch { return false }
+    setActiveToken(i)
+    return true
+  }, [])
+
+  const pickRate = useCallback((next) => {
+    if (SPEED_RATES.indexOf(next) === -1) return
+    rateRef.current = next
+    setRateState(next)
+    const el = audioElRef.current
+    if (el) { el.defaultPlaybackRate = next; el.playbackRate = next }
+  }, [])
 
   const selectWord = (vocab, status) => { stopPlay(); setSelected({ word: vocab.word, vocab, status }) }
 
@@ -242,6 +321,10 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     prefsGet(READER_PREFS_KEY).then((saved) => {
       if (!active || pickedRef.current) return
       if (saved && saved.furiganaMode) setReadingMode(normalizeReadingMode(saved.furiganaMode))
+      if (saved && SPEED_RATES.indexOf(saved.playbackRate) !== -1) {
+        setRateState(saved.playbackRate)
+        rateRef.current = saved.playbackRate
+      }
     })
     return () => { active = false }
   }, [])
@@ -252,10 +335,8 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   // a saved value; every later change (a load or a pick) is worth writing back.
   useEffect(() => {
     if (firstSaveRef.current) { firstSaveRef.current = false; return }
-    prefsGet(READER_PREFS_KEY).then((saved) => {
-      prefsSet(READER_PREFS_KEY, { ...(saved || {}), furiganaMode: readingMode })
-    })
-  }, [readingMode])
+    prefsMerge(READER_PREFS_KEY, { furiganaMode: readingMode, playbackRate: rate })
+  }, [readingMode, rate])
 
   const pickReadingMode = useCallback((mode) => {
     pickedRef.current = true
@@ -278,9 +359,10 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
 
   return {
     theme, reduceMotion, beats, readability, total, ttsLang,
-    started, cur, done, playing, selected, readingMode, showEn,
-    setReadingMode: pickReadingMode, setShowEn, setSelected,
+    started, cur, done, playing, selected, readingMode, showEn, activeToken, rate,
+    setReadingMode: pickReadingMode, setShowEn, setSelected, setRate: pickRate,
     go, advance, finish, stopPlay, togglePlay, speakWord, replayLine, selectWord, addToDeck,
+    seekToToken,
     start, backToStart, setAdvanceBlocked,
     questions, answers, answerQuestion,
   }
