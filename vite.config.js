@@ -64,6 +64,8 @@ export default defineConfig(() => {
           await copyFile(resolve('worker', 'index.js'), resolve(serverDirectory, 'index.js'))
           await copyFile(resolve('.openai', 'hosting.json'), resolve(metadataDirectory, 'hosting.json'))
           await cp(resolve('drizzle'), resolve(metadataDirectory, 'drizzle'), { recursive: true })
+          await copyFile(resolve('dist', 'client', 'hq.html'), resolve('dist', 'client', 'index.html'))
+          await rm(resolve('dist', 'client', 'sw.js'), { force: true })
         },
       },
       {
