@@ -3,9 +3,11 @@
 
 import { toneOf } from './toneColor'
 
-// A card counts as stuck at the same lapse threshold the Profile "keeps
-// slipping" (leech) panel already uses, so the two are one set.
-export const STUCK_LAPSES = 4
+// A card counts as stuck once it has lapsed this many times. Drives both the
+// Study "see it a different way" offer and the Profile "keeps slipping" panel
+// (which imports this constant), so the two stay one set. Set to 3 so help
+// surfaces while a word is still slipping, not only after it's badly stuck.
+export const STUCK_LAPSES = 3
 
 export function isStuck(card) {
   return !!(card && (card.lapses || 0) >= STUCK_LAPSES)
