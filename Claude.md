@@ -1325,22 +1325,49 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 
 ## 16. Known issues
 
-> **Content-generation status is in Section 0 (authoritative, 2026-07-01).** Summary: comprehension regenerated + de-trivialised (17 CN stories); pipeline moved to Gemini via `llm.mjs`; **N4 stories, Russian stories, Russian examples, and N4 Japanese examples are still pending/partial** because Gemini's free tier throttles bulk/story generation — finish with a paid key. Some bullets below predate that and are marked where stale.
+> **Content status is the live table below (measured 2026-07-23), not prose written months ago.**
+> The old banner here claimed Russian stories and Russian vocabulary were unseeded; both exist. What
+> is genuinely still missing: **example sentences for JLPT N4 (636 words) and Russian A1 (135)**.
+> The pipeline runs on Gemini via `llm.mjs`; the free tier throttles bulk/story generation, so a paid
+> key is what unblocks the remaining fills. **Before writing "pending" anywhere in this file, query
+> the database** — Claude Code has direct SQL access (see the migrations note below).
 
-**In progress:**
-- **Apply migration `20260630000000_add_xp_and_prefs.sql`** in the Supabase SQL Editor to enable persistence of account XP and study prefs (`total_xp`, `recall_mode`, `audio_autoplay`, `furigana_default`). The app is defensive — it runs without it (defaults applied in code), but XP/prefs won't save across reloads until the columns exist.
-- **Apply migration `20260630010000_add_story_questions.sql`**, then generate questions (Action `task=comprehension`, or `node --env-file=.env.script generate-comprehension.mjs`). The end-of-story comprehension card only appears once questions exist; the "new words" recap works without it.
-- **Japanese example sentences (N5 Part 1 + Part 2):** 798/800 words populated. Run `node --env-file=.env.script generate-examples.mjs --japanese` to fill the remaining 2.
+**Migrations: all applied. Do not re-flag these.** Verified 2026-07-23 by querying the live database
+through the Supabase MCP server (project `bvqvturqupbggxaeihvi`). Every migration this section used
+to list as "⚠️ apply in the SQL editor" is live: `analytics_events`, `story_questions`,
+`story_reads`, `push_subscriptions`, `tts_audio`, `dict_entries`, `profiles.is_admin`,
+`profiles.total_xp` / `recall_mode` / `audio_speed`, `stories.presentation` / `interactions`, and
+the Russian CHECK-constraint relaxation. `cards` carries `unique (user_id, vocab_id)`.
 
-**Russian (new language — frontend + DB ready, content pending):**
-- **Apply migration `20260701120000_add_russian_language.sql`** so the DB accepts `language='russian'` / `system='russian'` (relaxes the CHECK constraints across profiles, language_tracks, vocabulary, test_attempts, level_unlocks, stories, youtube_recommendations; RLS unchanged). Until applied, creating a Russian track fails the CHECK.
-- **Seed the starter deck** (`data/russian-a1.json`, 147 A1 words) via `seed-vocab.mjs --language russian --system russian --level 1 --apply` (needs a runner with Supabase access, like HSK 2). Then run the pipeline: `generate-audio --language russian --system russian --level 1` → `generate-examples --russian` → `generate-stories --language russian --system russian --level 1`.
-- The Cyrillic alphabet drill, gating of CJK-only modes, background, accent, and native name all ship in the frontend already.
+**Claude Code can run SQL directly** through the connected Supabase MCP server — `execute_sql` for
+queries and DML, `apply_migration` for DDL. Prefer that over asking the user to paste into the SQL
+editor. Check reality before recording a migration as pending; this section was wrong for months
+because nobody looked.
 
-**Missing content:**
-- **Japanese YouTube recommendations:** None published. Chinese HSK 1 has 3.
-- **HSK 2 vocabulary: COMPLETE** (Chinese HSK 3.0 level 2) — 198 words + audio + example sentences + 15 stories + comprehension questions, all live. Only missing extra: YouTube recommendations. Both HSK 1 and HSK 2 are now done.
-- **JLPT N4 (level 3): 636 words seeded** (`data/n4.json`); audio/examples/stories/comprehension run via the Action. **HSK 3–9 and JLPT N3–N1:** still no vocabulary — level selection exists but shows empty study queues.
+> `profiles.total_xp` still exists, but the **XP and streak systems were removed from the app**
+> (see `ROADMAP.md`). The column is vestigial — do not build on it.
+
+**Content status — live counts, active words only, 2026-07-23:**
+
+| Language | Active words | Missing example sentences |
+|---|---|---|
+| Chinese | 2,370 | 29 |
+| Japanese | 1,388 | 636 |
+| Russian | 147 | 135 |
+
+- **Chinese:** HSK 1–6 seeded (HSK 3–6 shipped after this section was last accurate). Two words
+  carry `level = NULL` — dictionary-sourced "flashcard-anything" rows, expected, and they must stay
+  excluded from every level-scoped surface (§0.1).
+- **Japanese:** the 636 missing examples are exactly JLPT N4 (level 3); N5 Parts 1 and 2 are fully
+  populated. Fill with the Action `task=examples-fill`, `language=japanese`.
+- **Russian:** A1 **is seeded** (147 words) — the old "not yet seeded to the DB" note was wrong. 135
+  of them still lack example sentences, so Russian has no Fill-blank or Sentence-builder yet. The
+  Cyrillic drill, CJK-mode gating, background, accent, and native name all ship already.
+- **Stories:** 98 published, 21 held (`is_published = false`, invisible to users — the weak
+  tier-2/3 Gemini output kept back for regeneration).
+- **YouTube recommendations:** 3 rows total, all Chinese HSK 1. None for Japanese or Russian.
+- **Still absent:** HSK 7–9 and JLPT N3–N1 vocabulary — level selection exists but shows an empty
+  study queue.
 
 **Technical debt:**
 - **Vocabulary `meaning` data is messy and sometimes wrong (TODO — deferred).**
@@ -1387,10 +1414,17 @@ These exist as `.claude/commands/*.md` and are invoked as Claude Code skills:
 
 **Status:** The app is **live** on GitHub Pages + Vercel (section 19). The most recent arc focused on the **first-run activation funnel** and the **story reader**; with analytics now instrumented (0a), the next priorities shift toward **acting on that data** (a dashboard, FSRS tuning) and **content breadth**.
 
-### Immediate action items (one-time setup — nothing collects until these are done)
-- ⚠️ **Apply the analytics migration** `supabase/migrations/20260713120000_add_analytics_events.sql` in the Supabase SQL editor. Until applied, every analytics insert fails silently (by design) and **no events are recorded**.
-- **Admin analytics dashboard (new):** Apply `supabase/migrations/20260715000000_add_admin_analytics.sql`, then set your account admin (`/make-admin` slash command → `update profiles set is_admin = true`). Visit `/dashboard` (visible only to admins). Develop/demo with `node --env-file=.env.script seed-analytics.mjs --apply` (purge with `--purge --apply`). Reads via `admin_*` security-definer RPCs; no raw events leave the DB.
-- **Push-reminder VAPID secrets** (item #16) — still required before daily reminders send: `VAPID_PRIVATE_KEY` + `VITE_VAPID_PUBLIC_KEY` GitHub secrets, `VITE_VAPID_PUBLIC_KEY` Vercel env var, optional `VAPID_SUBJECT` variable (section 19).
+### Setup status (verified live 2026-07-23 — was stale for months, re-check before trusting)
+- ✅ **Analytics is collecting.** The migration is applied and `analytics_events` holds **1,710 rows**
+  across **29 profiles**. The old "⚠️ apply this or nothing is recorded" warning was wrong.
+- ✅ **Admin dashboard is live.** All five `admin_*` security-definer RPCs exist and **2 accounts are
+  flagged `is_admin`**, so `/dashboard` works today. `/make-admin` is only needed for a new admin.
+  Develop/demo with `node --env-file=.env.script seed-analytics.mjs --apply` (purge with
+  `--purge --apply`). No raw events leave the DB.
+- ⚠️ **Push reminders still do nothing** — `push_subscriptions` is **empty (0 rows)**, which is the
+  expected symptom of the VAPID secrets never being set: `VAPID_PRIVATE_KEY` +
+  `VITE_VAPID_PUBLIC_KEY` GitHub secrets, `VITE_VAPID_PUBLIC_KEY` Vercel env var, optional
+  `VAPID_SUBJECT` variable (section 19). This is the one genuinely outstanding setup item.
 
 ### Done (recent)
 - ~~**Premium story-reader redesign**~~ — furigana modes, Learning Lens, sentence focus, redesigned lookup sheet with context chips, persisted prefs, typography + animation polish (0a, PR #43).
