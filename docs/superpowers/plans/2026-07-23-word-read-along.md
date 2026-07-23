@@ -551,7 +551,16 @@ Replace the existing `stopPlay` callback (lines 73-81) with:
 
 - [ ] **Step 4: Build a timeline for each line as it starts**
 
-In `speakFrom` (lines 116-143), replace the `if (url) { ... }` block with:
+First, in `speakFrom`, immediately after the existing `setCur(index)` near the top, add the per-beat reset. It must sit here rather than inside the clip branch below, so it runs for **both** branches — a line played through the speech-synthesis fallback would otherwise inherit the previous line's timeline and keep a word lit on it:
+
+```js
+    // Every beat starts clean: nothing lit, no timeline. A line with no clip
+    // simply never gets one.
+    timelineRef.current = null
+    setActiveToken(-1)
+```
+
+Then replace the `if (url) { ... }` block (lines 116-143) with:
 
 ```js
     const url = audioForBeat(index)
@@ -563,10 +572,6 @@ In `speakFrom` (lines 116-143), replace the `if (url) { ... }` block with:
       claimPlayback(el)
       el.onended = nextBeat
 
-      // A new line starts with no timeline — nothing is lit until this clip's
-      // own metadata says how long it is.
-      timelineRef.current = null
-      setActiveToken(-1)
       // playbackRate resets to defaultPlaybackRate whenever a src loads, so
       // both are set.
       el.defaultPlaybackRate = rateRef.current
