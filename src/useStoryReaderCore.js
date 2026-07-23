@@ -38,6 +38,7 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   const [readingMode, setReadingMode] = useState(DEFAULT_READING_MODE)
   const [showEn, setShowEn] = useState(false)
   const pickedRef = useRef(false)      // the learner chose a mode this session
+  const ratePickedRef = useRef(false)  // the learner chose a rate this session (own flag: rate and mode must not gate each other)
   const firstSaveRef = useRef(true)    // don't persist the un-loaded default
   const [playing, setPlaying] = useState(false)
   const [selected, setSelected] = useState(null)
@@ -157,8 +158,11 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
       el.playbackRate = rateRef.current
 
       const buildFromEl = () => {
-        // Keyed to the run id: a metadata event from a load we have already
-        // moved past must not repaint the line now showing.
+        // Keyed to the run id: this only drops metadata arriving after playback
+        // was stopped or restarted (runRef only changes in stopPlay/togglePlay).
+        // Per-line staleness is handled separately — onloadedmetadata is
+        // reassigned to a fresh closure on every line, so an event from a line
+        // we've already moved past can't fire this one.
         if (runId !== runRef.current) return
         el.playbackRate = rateRef.current
         const seconds = el.duration
@@ -167,11 +171,14 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
       }
       el.onloadedmetadata = buildFromEl
       el.ondurationchange = buildFromEl
-      // A cached blob replayed in place is already loaded, so neither event
-      // will fire again — read what is there now.
-      buildFromEl()
 
       playAudioEl(el, url, viaSynth)
+      // Build immediately after assigning src: covers playAudioEl's replay-in-
+      // place fast path (same clip already loaded -> just play(), no metadata
+      // event fires, but el.duration is already correct). On a fresh load,
+      // el.duration is NaN here and the guard above leaves the timeline null
+      // until onloadedmetadata fires with the new clip's real duration.
+      buildFromEl()
       // Warm the next line while this one plays, so read-along does not stutter
       // between beats.
       const upcoming = audioForBeat(index + 1)
@@ -188,6 +195,8 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     const el = audioElRef.current
     claimPlayback(el)
     el.onended = null
+    el.defaultPlaybackRate = rateRef.current
+    el.playbackRate = rateRef.current
     playAudioEl(el, url, () => speakWord(beats[index == null ? cur : index].text))
   }
 
@@ -207,6 +216,11 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   // second, which is visibly late on a one-syllable word. The functional
   // setState bails out when the index is unchanged, so 60Hz polling causes a
   // render only when the spotlight actually moves.
+  // This also runs at ~60Hz on the speech-synthesis fallback, where the
+  // timeline is permanently null (tokenAtTime is never reached) — a deliberate
+  // choice, not an oversight: rAF throttles itself when the tab is backgrounded,
+  // and the timeline arrives asynchronously from audio metadata, so gating the
+  // effect itself on "will there be a timeline" isn't possible up front.
   useEffect(() => {
     if (!playing) return undefined
     let raf = 0
@@ -239,6 +253,7 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
 
   const pickRate = useCallback((next) => {
     if (SPEED_RATES.indexOf(next) === -1) return
+    ratePickedRef.current = true
     rateRef.current = next
     setRateState(next)
     const el = audioElRef.current
@@ -319,9 +334,11 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   useEffect(() => {
     let active = true
     prefsGet(READER_PREFS_KEY).then((saved) => {
-      if (!active || pickedRef.current) return
-      if (saved && saved.furiganaMode) setReadingMode(normalizeReadingMode(saved.furiganaMode))
-      if (saved && SPEED_RATES.indexOf(saved.playbackRate) !== -1) {
+      // Each setting carries its own picked guard, checked independently — a
+      // reading-mode pick must not suppress the saved rate, and vice versa.
+      if (!active) return
+      if (!pickedRef.current && saved && saved.furiganaMode) setReadingMode(normalizeReadingMode(saved.furiganaMode))
+      if (!ratePickedRef.current && saved && SPEED_RATES.indexOf(saved.playbackRate) !== -1) {
         setRateState(saved.playbackRate)
         rateRef.current = saved.playbackRate
       }
