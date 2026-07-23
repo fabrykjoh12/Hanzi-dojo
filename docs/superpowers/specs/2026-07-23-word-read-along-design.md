@@ -121,12 +121,19 @@ with no change to the readers.
 All logic, no React, following `storyReading.js` / `stuckWord.js`.
 
 ```
-buildTimeline(tokens, { durationMs, language })  → { spans: [{start, end}], … } | null
-tokenAtTime(timeline, ms)                        → token index | -1
-startOfToken(timeline, i)                        → ms
+buildTimeline(tokens, { durationMs })  → { spans: [{start, end}], … } | null
+tokenAtTime(timeline, ms)              → token index | -1
+startOfToken(timeline, i)              → ms
+spotlightStyle(isActive, hasActive, reduceMotion) → style object
 ```
 
-Plus the constants `LEAD_IN_MS`, `TAIL_OUT_MS`, `PAUSE_WEIGHTS`, `SPEED_RATES`.
+Plus the constants `LEAD_IN_MS`, `TAIL_OUT_MS`, `SPEED_RATES`, `DEFAULT_RATE`,
+`SPOTLIGHT_DIM`. No `language` parameter: the weight rules key off the characters
+themselves, so the script decides, not the track.
+
+`spotlightStyle` lives here rather than in `ReadingScaffold.jsx` because the repo
+lints `react-refresh/only-export-components` — a `.jsx` file may export only
+components.
 
 `buildTimeline` returns `null` rather than throwing when a timeline cannot be
 formed. That is the entire degradation story: no timeline → no highlight → today's
@@ -214,11 +221,18 @@ phone, judging drift by ear across paced, chat and scene.
 
 ## Files
 
-**New:** `src/readAlong.js`, `src/readAlong.test.js`
+**New:** `src/readAlong.js`, `src/readAlong.test.js`, `src/offline.test.js`
 
 **Modified:** `src/useStoryReaderCore.js`, `src/ReadingScaffold.jsx`,
 `src/PacedReader.jsx`, `src/SceneReader.jsx`, `src/ChatThread.jsx`,
-`src/ChatReader.jsx`, `src/InteractiveChatReader.jsx`, `tests/e2e/reader.spec.js`
+`src/ChatReader.jsx`, `src/InteractiveChatReader.jsx`, `src/offline.js`,
+`tests/e2e/reader.spec.js`
+
+`src/offline.js` gains a tested `mergePrefs` / `prefsMerge` pair. Both readers
+currently hand-roll the same read-modify-write against the shared `reader:prefs`
+object, and this change adds a second field to that write — doing it once, tested,
+is what makes the "never clobber another reader's flag" requirement enforceable
+rather than a comment.
 
 **No migration, no schema change, no server-side work.**
 
