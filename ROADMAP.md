@@ -12,7 +12,6 @@ so the community always sees the latest. Keep it current — move things to
 > you everywhere.
 
 ## 🚧 Now — in progress
-- [ ] Word-by-word read-along: each word lights up as it's spoken, tap any word while a story is reading to jump the audio there, plus a speed control (0.6x / 0.8x / 1x) in every guided story format
 - [ ] Writing the first HSK 3 stories, so the new levels have reading of their own
 - [x] Better-sounding Chinese: new neural voices for every word, example sentence and story line, plus a slow version of each word and sentence for when a word won't stick. Stories now have a narrator and separate character voices.
 
@@ -144,6 +143,7 @@ paid generation happens without an explicit `--confirm`.
 - [ ] `ChatMission` overlay: a focus trap (the `role="dialog"` + `aria-modal` + Escape-to-close + initial focus have shipped)
 
 ## ✅ Shipped
+- [x] **Word-by-word read-along** — the word being spoken lights up while the rest of the line quiets, so you never lose your place mid-sentence. Tap any word while a story is reading to jump the audio there, and pick a reading speed (0.6x / 0.8x / 1x) in every guided story format.
 - [x] **Stuck-word help** — when a word keeps slipping, a calm coach card meets it from a fresh angle: slow audio, the word inside a real sentence, and (for Chinese) a character-by-character breakdown — instead of the same flashcard coming back again and again. Surfaces from the "keeps slipping" list in Profile, and in Study when you keep pressing Again on the same word.
 - [x] **Grammar as spaced practice** — opt a grammar pattern into review from the Grammar guide and it comes back as a quick fill-in-the-blank, scheduled by the same memory engine as your flashcards (Practice → Grammar review). Calm and opt-in, one pattern at a time.
 - [x] **Words you already know** — import a word list (Anki, Pleco, or paste one), tick off words from a browsable checklist, or let your placement test claim them. Those words go straight into review, spread across days at a pace you choose, so what you learned elsewhere stops quietly fading.
