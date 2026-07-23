@@ -1,10 +1,11 @@
 import { spawn, spawnSync } from 'node:child_process'
 import { createServer } from 'node:http'
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { hostname } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
-const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+let PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const BRIDGE_PORT = Number(process.env.DOJO_BRIDGE_PORT || 43127)
 const START_MARKER = '<!-- DOJO-HQ:START -->'
 const END_MARKER = '<!-- DOJO-HQ:END -->'
@@ -301,18 +302,140 @@ export function createDojoBridgeServer() {
   })
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const server = createDojoBridgeServer()
-  server.on('error', error => {
-    if (error.code === 'EADDRINUSE') {
-      console.log(`Dojo-broen kjører allerede på http://127.0.0.1:${BRIDGE_PORT}`)
-      process.exit(0)
+function commandLineOptions(argv) {
+  const options = {}
+  for (let index = 0; index < argv.length; index += 1) {
+    const value = argv[index]
+    if (!value.startsWith('--')) continue
+    options[value.slice(2)] = argv[index + 1] && !argv[index + 1].startsWith('--') ? argv[++index] : true
+  }
+  return options
+}
+
+function remoteSite(value) {
+  const site = new URL(String(value || ''))
+  const isLocal = ['localhost', '127.0.0.1'].includes(site.hostname)
+  if (site.protocol !== 'https:' && !(isLocal && site.protocol === 'http:')) {
+    throw new Error('Nettbroen krever en HTTPS-adresse.')
+  }
+  site.pathname = '/'
+  site.search = ''
+  site.hash = ''
+  return site.toString().replace(/\/$/, '')
+}
+
+async function remoteJson(site, path, options = {}, inviteCode = '') {
+  const headers = new Headers(options.headers || {})
+  headers.set('Content-Type', 'application/json')
+  if (inviteCode) headers.set('X-Dojo-Key', inviteCode)
+  const response = await fetch(`${site}${path}`, { ...options, headers })
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(payload.error || `Nettbroen svarte med HTTP ${response.status}.`)
+  return payload
+}
+
+async function runBridgeCommand(command) {
+  if (command.action === 'read') return readDocument(command.payload?.document)
+  if (command.action === 'sync') return syncDocument(command.payload || {})
+  if (command.action === 'launch') return launchClaude(command.payload || {})
+  throw new Error('Nettbroen ba om en handling denne klienten ikke støtter.')
+}
+
+async function runCloudBridge({ pair, site, project }) {
+  const inviteCode = String(pair || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+  if (inviteCode.length < 10) throw new Error('Invitasjonskoden er ugyldig.')
+  const baseUrl = remoteSite(site)
+  PROJECT_ROOT = resolve(String(project || process.cwd()))
+  const paired = await remoteJson(baseUrl, '/api/dojo/bridge/pair', {
+    method: 'POST',
+    body: JSON.stringify({ code: inviteCode }),
+  })
+  const workspace = paired.workspace
+  if (!workspace?.id) throw new Error('Arbeidsområdet kunne ikke kobles til.')
+
+  const clientId = crypto.randomUUID()
+  const version = claudeVersion() || ''
+  const displayName = `${hostname()} · Claude Code`
+  let lastConnectionWarning = 0
+
+  console.log(`Dojo-nettbroen er koblet til «${workspace.name}».`)
+  console.log(`Prosjekt: ${PROJECT_ROOT}`)
+  console.log(version ? `Claude Code: ${version}` : 'Claude Code ble ikke funnet i PATH.')
+  console.log('La dette vinduet stå åpent mens HQ brukes. Trykk Ctrl+C for å stoppe.')
+
+  for (;;) {
+    try {
+      const polled = await remoteJson(
+        baseUrl,
+        `/api/dojo/workspaces/${encodeURIComponent(workspace.id)}/bridge/poll`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ clientId, displayName, version }),
+        },
+        inviteCode,
+      )
+      const command = polled.command
+      if (command) {
+        console.log(`Utfører ${command.action} fra Dojo HQ …`)
+        try {
+          const result = await runBridgeCommand(command)
+          await remoteJson(
+            baseUrl,
+            `/api/dojo/workspaces/${encodeURIComponent(workspace.id)}/bridge/commands/${encodeURIComponent(command.id)}/result`,
+            {
+              method: 'POST',
+              body: JSON.stringify({ clientId, ok: true, result }),
+            },
+            inviteCode,
+          )
+          console.log(`Ferdig: ${command.action}`)
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Ukjent feil.'
+          await remoteJson(
+            baseUrl,
+            `/api/dojo/workspaces/${encodeURIComponent(workspace.id)}/bridge/commands/${encodeURIComponent(command.id)}/result`,
+            {
+              method: 'POST',
+              body: JSON.stringify({ clientId, ok: false, error: message }),
+            },
+            inviteCode,
+          ).catch(() => {})
+          console.error(`Kunne ikke utføre ${command.action}: ${message}`)
+        }
+      }
+      lastConnectionWarning = 0
+    } catch (error) {
+      if (!lastConnectionWarning || Date.now() - lastConnectionWarning > 30_000) {
+        console.error(`Mistet kontakt med HQ: ${error instanceof Error ? error.message : 'Ukjent feil.'}`)
+        console.error('Prøver automatisk igjen …')
+        lastConnectionWarning = Date.now()
+      }
     }
-    throw error
-  })
-  server.listen(BRIDGE_PORT, '127.0.0.1', () => {
-    console.log(`Dojo-broen er klar på http://127.0.0.1:${BRIDGE_PORT}`)
-    console.log(`Prosjekt: ${PROJECT_ROOT}`)
-    console.log('La dette vinduet stå åpent mens Dojo HQ brukes.')
-  })
+    await new Promise(resolvePromise => setTimeout(resolvePromise, 1500))
+  }
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const options = commandLineOptions(process.argv.slice(2))
+  if (options.pair || options.site) {
+    runCloudBridge(options).catch(error => {
+      console.error(`Dojo-nettbroen kunne ikke starte: ${error instanceof Error ? error.message : 'Ukjent feil.'}`)
+      process.exitCode = 1
+    })
+  } else {
+    const server = createDojoBridgeServer()
+    server.on('error', error => {
+      if (error.code === 'EADDRINUSE') {
+        console.log(`Dojo-broen kjører allerede på http://127.0.0.1:${BRIDGE_PORT}`)
+        console.log('For nettversjonen: bruk koblingskommandoen som vises i Claude-panelet.')
+        process.exit(0)
+      }
+      throw error
+    })
+    server.listen(BRIDGE_PORT, '127.0.0.1', () => {
+      console.log(`Dojo-broen er klar på http://127.0.0.1:${BRIDGE_PORT}`)
+      console.log(`Prosjekt: ${PROJECT_ROOT}`)
+      console.log('La dette vinduet stå åpent mens Dojo HQ brukes.')
+    })
+  }
 }

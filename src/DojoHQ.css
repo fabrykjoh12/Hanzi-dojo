@@ -445,8 +445,12 @@
 .dojo-bridge-status.is-online > svg { color: #536829; }
 .dojo-bridge-status.is-online > i { background: #668035; box-shadow: 0 0 0 4px rgba(102,128,53,.14); }
 .dojo-bridge-command { margin-top: 10px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-radius: 12px; background: #242521; color: #fff; }
+.dojo-bridge-command > div { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 7px; }
 .dojo-bridge-command span { color: rgba(255,255,255,.55); font-size: 9px; }
-.dojo-bridge-command code { padding: 7px 9px; border-radius: 8px; background: rgba(255,255,255,.08); color: var(--dojo-lime); font-size: 10px; }
+.dojo-bridge-command code { max-height: 68px; padding: 9px 10px; overflow: auto; border-radius: 8px; background: rgba(255,255,255,.08); color: var(--dojo-lime); font-size: 9px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.dojo-bridge-command > button { min-height: 44px; padding: 0 14px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; background: rgba(255,255,255,.08); color: #fff; cursor: pointer; font: 700 9px Inter, sans-serif; }
+.dojo-bridge-command > button:hover { background: rgba(255,255,255,.14); }
+.dojo-bridge-check { min-height: 40px; margin-top: 8px; }
 .dojo-document-choice { margin: 18px 0 12px; padding: 4px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; border-radius: 999px; background: #ece8df; }
 .dojo-document-choice button { min-height: 40px; border: 0; border-radius: 999px; background: transparent; color: #71736b; cursor: pointer; font: 700 10px Inter, sans-serif; transition: background 180ms ease, color 180ms ease; }
 .dojo-document-choice button.active { background: var(--dojo-ink); color: #fff; }
@@ -635,6 +639,7 @@
   .dojo-invite-block code { justify-content: center; font-size: 14px; }
   .dojo-sync-timeline { grid-template-columns: 1fr; }
   .dojo-bridge-command { align-items: stretch; flex-direction: column; }
+  .dojo-bridge-command > button { width: 100%; }
   .dojo-bridge-actions { display: grid; grid-template-columns: 1fr; }
   .dojo-bridge-actions > button { width: 100%; }
   .dojo-bridge-explainer { grid-template-columns: 1fr; }

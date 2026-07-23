@@ -54,3 +54,25 @@ export const dojoAttachments = sqliteTable('dojo_attachments', {
   sizeBytes: integer('size_bytes').notNull(),
   createdAt: text('created_at').notNull(),
 })
+
+export const dojoBridgeClients = sqliteTable('dojo_bridge_clients', {
+  workspaceId: text('workspace_id').notNull().references(() => dojoWorkspaces.id, { onDelete: 'cascade' }),
+  clientId: text('client_id').notNull(),
+  displayName: text('display_name').notNull(),
+  version: text('version'),
+  lastSeen: text('last_seen').notNull(),
+}, table => [primaryKey({ columns: [table.workspaceId, table.clientId] })])
+
+export const dojoBridgeCommands = sqliteTable('dojo_bridge_commands', {
+  id: text('id').primaryKey(),
+  workspaceId: text('workspace_id').notNull().references(() => dojoWorkspaces.id, { onDelete: 'cascade' }),
+  action: text('action').notNull(),
+  payloadJson: text('payload_json').notNull().default('{}'),
+  status: text('status').notNull().default('queued'),
+  resultJson: text('result_json'),
+  errorText: text('error_text'),
+  clientId: text('client_id'),
+  createdAt: text('created_at').notNull(),
+  claimedAt: text('claimed_at'),
+  completedAt: text('completed_at'),
+})
