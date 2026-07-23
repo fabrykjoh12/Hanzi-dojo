@@ -71,13 +71,21 @@ slipping.
 
 ### `src/priorKnowledge.js` (new, pure, unit-tested)
 
-- `spreadDueDates(ids, perDay, now)` → `[{ vocabId, dueAt }]`. Frequency order
-  (`vocabulary.sort_order`), `perDay` ids per calendar day, starting **today** so
-  the first check-ups land in the first session.
+- `spreadDueDates(ids, perDay, now)` → `[{ vocabId, dueAt, dayOffset }]`. **`ids`
+  must already be in frequency order** — the function preserves the order it is
+  given and does not sort; callers get that ordering from their query
+  (`order('sort_order')` on `vocabulary`), because only the caller knows the level
+  span involved. Assigns `perDay` ids to each successive calendar day starting at
+  `dayOffset = 0` (**today**), so the first check-ups land in the first session.
 - `seedCardRows(userId, spread, now)` → card rows ready for insert:
   `state: 'review'`, `learned: true`, `stability: 21`, `difficulty: 5`, `reps: 0`,
-  `lapses: 0`, `is_easy: false`, `last_review: now`, `scheduled_days: k`,
-  `due_at: now + k days`.
+  `lapses: 0`, `is_easy: false`, `last_review: now`,
+  `scheduled_days: dayOffset`, `due_at: dueAt`.
+
+  Setting `scheduled_days` to the day offset rather than to `stability` means the
+  first check-up is an *early* review relative to a 21-day stability. FSRS handles
+  that correctly and conservatively (an early success grants less stability than a
+  due one), which is the right bias for a claim we have not yet verified.
 - `PACING` → `[{ key: 'relaxed', perDay: 8 }, { key: 'steady', perDay: 15 }, { key: 'fast', perDay: 30 }]`
 - `estimateDays(count, perDay)` → for the "~33 days" label on the pacing picker.
 
