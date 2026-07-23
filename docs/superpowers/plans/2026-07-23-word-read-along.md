@@ -82,7 +82,9 @@ describe('tokenWeight', () => {
   it('counts one syllable per vowel run for latin and Cyrillic', () => {
     expect(tokenWeight('книга').syllables).toBe(2)
     expect(tokenWeight('hello').syllables).toBe(2)
-    expect(tokenWeight('queue').syllables).toBe(2)
+    // One run of vowels, one syllable — which is also the right answer for
+    // the English word.
+    expect(tokenWeight('queue').syllables).toBe(1)
   })
   it('never gives a vowel-less alphabetic token zero width', () => {
     expect(tokenWeight('gym').syllables).toBe(1)
@@ -270,13 +272,16 @@ export function tokenWeight(text) {
   let sawAlpha = false
   const chars = String(text || '')
   for (const ch of chars) {
-    if (isSyllabic(ch)) { syllables += 1; inVowelRun = false; continue }
+    // Small kana MUST be tested before isSyllabic — they live inside the kana
+    // code-point range, so the syllabic check would otherwise claim them and
+    // きょう would count as three moras instead of two.
     if (SMALL_KANA.indexOf(ch) !== -1) { inVowelRun = false; continue }
+    if (isSyllabic(ch)) { syllables += 1; inVowelRun = false; continue }
     const p = PAUSE_WEIGHTS[ch]
     if (p != null) { pause += p; inVowelRun = false; continue }
     if (isAlpha(ch)) {
       sawAlpha = true
-      // One syllable per RUN of vowels, so "queue" is two, not four.
+      // One syllable per RUN of vowels, so "queue" is one, not four.
       if (isVowel(ch)) {
         if (!inVowelRun) { syllables += 1; inVowelRun = true }
       } else {
