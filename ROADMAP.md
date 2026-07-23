@@ -12,6 +12,7 @@ so the community always sees the latest. Keep it current — move things to
 > you everywhere.
 
 ## 🚧 Now — in progress
+- [ ] Word-by-word read-along: each word lights up as it's spoken, tap any word while a story is reading to jump the audio there, plus a speed control (0.6x / 0.8x / 1x) in every guided story format
 - [ ] Writing the first HSK 3 stories, so the new levels have reading of their own
 - [x] Better-sounding Chinese: new neural voices for every word, example sentence and story line, plus a slow version of each word and sentence for when a word won't stick. Stories now have a narrator and separate character voices.
 
@@ -39,7 +40,6 @@ so the community always sees the latest. Keep it current — move things to
 ## 🔜 Next — planned
 
 **Read more, read deeper**
-- [ ] **Word-by-word read-along** — each word lights up as it's spoken, and you can tap any word to start the audio from there (with speed control).
 - [ ] **Definitions that fit the sentence** — the meaning actually used here, not a dictionary dump.
 - [ ] **One "% known" everywhere** — your word knowledge follows you across stories, your own text, and (later) video.
 
