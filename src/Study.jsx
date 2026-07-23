@@ -28,6 +28,8 @@ import { computeStudyTally } from './studyTally'
 import { useStudyAudio } from './useStudyAudio'
 import { useStudyKeyboardShortcuts } from './useStudyKeyboardShortcuts'
 import AudioButton from './AudioButton'
+import { isStuck } from './stuckWord'
+import StuckWordCoach from './StuckWordCoach'
 import { loadTtsAudio, flashcardAudio } from './ttsAudio'
 import {
   Volume2, VolumeX, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
@@ -199,6 +201,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const undoRef = useRef(null)
   const undoTimerRef = useRef(null)
   const [undoVisible, setUndoVisible] = useState(false)
+  // Stuck-word help: after grading Again on a word that keeps slipping, offer a
+  // fresh-angle coach; `coachVocab` is the word whose coach sheet is open.
+  const [stuckOffer, setStuckOffer] = useState(null)
+  const [coachVocab, setCoachVocab] = useState(null)
   // Achievement stats at session start, so newly crossed thresholds can be
   // celebrated at the recap (same live-derived inputs Profile uses).
   const achieveBeforeRef = useRef(null)
@@ -597,6 +603,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     undoRef.current = null
     setUndoVisible(false)
 
+    // Stuck-word help: pressing Again on a word that already keeps slipping
+    // (lapses >= threshold, measured pre-grade) offers a fresh-angle coach.
+    setStuckOffer(grade === 0 && isStuck(card) ? card.vocab : null)
+
     // Snapshot the pre-grade world for undo. `card`/`queue` are the pre-grade
     // values; the running refs are copied before this grade's tallies land.
     const snapshot = {
@@ -772,6 +782,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     clearTimeout(undoTimerRef.current)
     undoRef.current = null
     setUndoVisible(false)
+    setStuckOffer(null)
     try {
       if (u.outboxId != null) {
         // The grade was only queued offline and never reached the server — just
@@ -1387,8 +1398,28 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               </button>
             </div>
           )}
+
+          {stuckOffer && (
+            <div style={{ textAlign: 'center', marginTop: '10px' }}>
+              <button
+                onClick={() => setCoachVocab(stuckOffer)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  padding: '10px 16px', borderRadius: '999px',
+                  background: accentHex + '10', border: '1px solid ' + accentHex + '33',
+                  color: accentHex, fontSize: '13px', fontWeight: 700,
+                  fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+                }}
+              >
+                <Sparkles size={15} strokeWidth={2} color={accentHex} />
+                Struggling? See it a different way
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      <StuckWordCoach vocab={coachVocab} onClose={() => setCoachVocab(null)} />
     </div>
   )
 }

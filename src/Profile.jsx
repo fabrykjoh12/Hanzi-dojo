@@ -11,6 +11,7 @@ import { knownWordMap, readableSummary, rowA11yLabel } from './knownWordMap'
 import { last30A11yLabel } from './reviewAccuracy'
 import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
+import StuckWordCoach from './StuckWordCoach'
 import { BRAND_URL } from './brand'
 import {
   ArrowLeft, Layers, LogOut, RotateCcw, Save,
@@ -80,6 +81,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   const [activity, setActivity] = useState({})
   const [shared, setShared] = useState(false)
   const [leeches, setLeeches] = useState([])
+  const [coachVocab, setCoachVocab] = useState(null)   // stuck-word coach target
   const [reviewStats, setReviewStats] = useState({ total: 0, correct: 0, days: {} })
   const [wordMap, setWordMap] = useState({ levels: [], totals: { total: 0, mastered: 0, known: 0, learning: 0, new: 0, readable: 0 } })
 
@@ -145,7 +147,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     // Leeches: the words that keep lapsing, scoped to the current track.
     const { data: leechData } = await supabase
       .from('cards')
-      .select('lapses, vocabulary(word, reading, meaning, language, system, level)')
+      .select('lapses, vocabulary(id, word, reading, meaning, language, system, level, audio_path, example_sentence, example_reading, example_translation)')
       .eq('user_id', session.user.id)
       .gte('lapses', 4)
       .order('lapses', { ascending: false })
@@ -327,19 +329,23 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
           </div>
           <div style={{ display: 'grid', gap: '8px', marginBottom: '16px' }}>
             {leeches.map((l, i) => (
-              <div key={i} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+              <button key={i} onClick={() => setCoachVocab(l.vocabulary)} title="See it a different way" style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', width: '100%', textAlign: 'left',
                 padding: '10px 14px', borderRadius: '12px', background: 'var(--surface-2)', border: '1px solid var(--border)',
+                cursor: 'pointer', fontFamily: 'Inter, sans-serif',
               }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', minWidth: 0 }}>
                   <span style={{ fontSize: '20px', fontFamily, color: 'var(--text)', flexShrink: 0 }}>{l.vocabulary.word}</span>
                   <span style={{ fontSize: '12px', color: accentHex, fontWeight: 600, flexShrink: 0 }}>{l.vocabulary.reading}</span>
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cleanMeaning(l.vocabulary.meaning)}</span>
                 </div>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#D97706', background: 'rgba(217,119,6,0.12)', border: '1px solid rgba(217,119,6,0.28)', borderRadius: '999px', padding: '3px 9px', flexShrink: 0 }}>
-                  missed {l.lapses}×
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#D97706', background: 'rgba(217,119,6,0.12)', border: '1px solid rgba(217,119,6,0.28)', borderRadius: '999px', padding: '3px 9px' }}>
+                    missed {l.lapses}×
+                  </span>
+                  <Sparkles size={15} strokeWidth={2} color={accentHex} />
                 </span>
-              </div>
+              </button>
             ))}
           </div>
           {onNavigate && (
@@ -355,6 +361,8 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
           )}
         </Panel>
       )}
+
+      <StuckWordCoach vocab={coachVocab} onClose={() => setCoachVocab(null)} />
 
       {!loading && (
         <Panel>
