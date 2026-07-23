@@ -44,6 +44,7 @@ const Profile = lazy(() => import('./Profile'))
 const YouTube = lazy(() => import('./YouTube'))
 const LanguageSwitcher = lazy(() => import('./LanguageSwitcher'))
 const Settings = lazy(() => import('./Settings'))
+const DojoHQ = lazy(() => import('./DojoHQ'))
 // Public story page: only reached via a shared /read/:id link, so code-split it
 // out of the first-paint bundle (it pulls in storyReading.js).
 const PublicStory = lazy(() => import('./PublicStory'))
@@ -515,6 +516,13 @@ export default function App() {
         session={session}
         profile={profile}
         onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
+      />
+    )
+  } else if (view === 'hq') {
+    content = (
+      <DojoHQ
+        session={session}
+        profile={profile}
       />
     )
   } else if (view === 'dev') {

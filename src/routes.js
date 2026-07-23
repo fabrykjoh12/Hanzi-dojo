@@ -10,6 +10,7 @@ export const KNOWN_VIEWS = [
   'study', 'weak', 'test', 'writing', 'listen', 'kana', 'cyrillic',
   'practice', 'words', 'known', 'dictionary', 'grammar', 'grammarpractice', 'strokes', 'builder', 'fillblank', 'speak',
   'tones', 'stories', 'analyzer', 'profile', 'languages', 'youtube', 'settings',
+  'hq',
   'dev',
   'dashboard',
 ]
