@@ -1,6 +1,7 @@
 import { useRef, useEffect, useCallback, useState } from 'react'
 import { getLevelLabel } from './utils'
 import { wordStatus } from './storyReading'
+import { spotlightStyle } from './readAlong'
 import { useStoryReaderCore } from './useStoryReaderCore'
 import { TokenBody, ReadingSettings } from './ReadingScaffold'
 import ReaderLaunch from './ReaderLaunch'
@@ -30,6 +31,10 @@ export default function PacedReader(props) {
   // Every beat reserves furigana space (not just the lit one), so advancing
   // never re-measures to a different height and the focus scroll stays smooth.
   const reserve = c.readingMode !== 'hidden'
+
+  // The spotlight only engages while a line is actually sounding AND its
+  // timeline resolved — otherwise every word stays at full opacity.
+  const hasActive = c.playing && c.activeToken >= 0
 
   // Space/→ drive the reading; while the settings panel is open they belong to
   // the panel's own buttons, so hand the keys over for as long as it is up.
@@ -81,17 +86,29 @@ export default function PacedReader(props) {
                     // Plain runs still route through TokenBody so they reserve the
                     // same annotation row and sit on the line's shared baseline.
                     if (!t.vocab) {
-                      return <span key={k}><TokenBody text={t.text} reading={null} mode={c.readingMode} status="not_started" language={track.language} reserve={reserve} /></span>
+                      return (
+                        <span key={k} style={i === c.cur ? spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) : undefined}>
+                          <TokenBody text={t.text} reading={null} mode={c.readingMode} status="not_started" language={track.language} reserve={reserve} />
+                        </span>
+                      )
                     }
                     const status = wordStatus(t.vocab.id, userCards)
                     const decorate = i === c.cur
                     return (
                       <span key={k}
-                        onClick={i === c.cur ? (e) => { e.stopPropagation(); c.selectWord(t.vocab, status) } : undefined}
+                        onClick={i === c.cur ? (e) => {
+                          e.stopPropagation()
+                          // While the line is sounding, a tap means "read from
+                          // here". seekToToken reports false when there is no
+                          // timeline, and then a tap means what it always did.
+                          if (c.playing && c.seekToToken(k)) return
+                          c.selectWord(t.vocab, status)
+                        } : undefined}
                         style={{
                           cursor: i === c.cur ? 'pointer' : 'inherit', borderRadius: '4px', padding: '0 1px',
                           background: decorate && status === 'not_started' ? accent + '1f' : (decorate && status === 'learning' ? '#CA8A0422' : 'transparent'),
                           boxShadow: decorate && status === 'not_started' ? 'inset 0 -2px 0 ' + accent + '66' : 'none',
+                          ...(i === c.cur ? spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) : null),
                         }}>
                         <TokenBody text={t.text} reading={t.vocab.reading} mode={c.readingMode} status={status} language={track.language} reserve={reserve} />
                       </span>
@@ -113,6 +130,7 @@ export default function PacedReader(props) {
             showEnglish={c.showEn} setShowEnglish={c.setShowEn}
             hasEnglish={Boolean(story.english_content)}
             language={track.language} accent={accent} onOpenChange={onSettingsOpen}
+            rate={c.rate} setRate={c.setRate}
           />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
