@@ -32,6 +32,7 @@ export default defineConfig(() => {
       'import.meta.env.VITE_BUILD_TIME': JSON.stringify(info.builtAt),
     },
     build: {
+      outDir: 'dist/client',
       rollupOptions: {
         input: {
           main: 'index.html',
