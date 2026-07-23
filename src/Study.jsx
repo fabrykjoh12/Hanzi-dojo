@@ -28,7 +28,7 @@ import { computeStudyTally } from './studyTally'
 import { useStudyAudio } from './useStudyAudio'
 import { useStudyKeyboardShortcuts } from './useStudyKeyboardShortcuts'
 import AudioButton from './AudioButton'
-import { isStuck } from './stuckWord'
+import { shouldOfferCoach } from './stuckWord'
 import StuckWordCoach from './StuckWordCoach'
 import { loadTtsAudio, flashcardAudio } from './ttsAudio'
 import {
@@ -215,6 +215,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const activityRef = useRef({ studied: 0, newC: 0, learn: 0, review: 0 })
   // Per-session tally for the end-of-session recap card.
   const sessionRef = useRef({ graded: 0, newLearned: 0, graduated: 0, again: 0, reviewedRight: 0, reviewedTotal: 0 })
+  // Per-card Again presses this session (by vocab id) — drives the stuck-word
+  // coach offer for words being failed repeatedly right now (FSRS lapses stays 0
+  // for learning cards, so it can't).
+  const againCountRef = useRef({})
   const [forecast, setForecast] = useState(null)
   const [recap, setRecap] = useState(null)   // snapshot of sessionRef at completion
   // "First Story Unlocked" recommendation for the recap (null until computed;
@@ -271,6 +275,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   async function loadQueue() {
     setLoading(true)
     sessionVocabRef.current = []
+    againCountRef.current = {}
 
     // Cumulative deck: fetch the user's cards first so we can derive the study
     // floor (the lowest level they actually study), then load every level's
@@ -603,9 +608,18 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     undoRef.current = null
     setUndoVisible(false)
 
-    // Stuck-word help: pressing Again on a word that already keeps slipping
-    // (lapses >= threshold, measured pre-grade) offers a fresh-angle coach.
-    setStuckOffer(grade === 0 && isStuck(card) ? card.vocab : null)
+    // Stuck-word help: on Again, count this session's Again presses for the card
+    // and offer the coach when it's historically stuck (lapses) OR being failed
+    // repeatedly right now. A correct grade clears the offer + the card's count.
+    const vId = card.vocab && card.vocab.id
+    if (grade === 0) {
+      const n = (againCountRef.current[vId] || 0) + 1
+      againCountRef.current[vId] = n
+      setStuckOffer(shouldOfferCoach(card, n) ? card.vocab : null)
+    } else {
+      if (vId) delete againCountRef.current[vId]
+      setStuckOffer(null)
+    }
 
     // Snapshot the pre-grade world for undo. `card`/`queue` are the pre-grade
     // values; the running refs are copied before this grade's tallies land.

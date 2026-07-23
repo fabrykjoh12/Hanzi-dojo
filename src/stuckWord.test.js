@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isStuck, STUCK_LAPSES, charBreakdown } from './stuckWord'
+import { isStuck, STUCK_LAPSES, charBreakdown, shouldOfferCoach, SESSION_AGAIN_LIMIT } from './stuckWord'
 
 describe('isStuck', () => {
   it('is false below the threshold', () => {
@@ -14,6 +14,20 @@ describe('isStuck', () => {
   it('is false for a missing card', () => {
     expect(isStuck(null)).toBe(false)
     expect(isStuck(undefined)).toBe(false)
+  })
+})
+
+describe('shouldOfferCoach', () => {
+  it('offers when the card is historically stuck, regardless of session count', () => {
+    expect(shouldOfferCoach({ lapses: STUCK_LAPSES }, 0)).toBe(true)
+  })
+  it('offers when Again was pressed enough times this session, even at 0 lapses', () => {
+    expect(shouldOfferCoach({ lapses: 0 }, SESSION_AGAIN_LIMIT)).toBe(true)
+    expect(shouldOfferCoach({ lapses: 0 }, SESSION_AGAIN_LIMIT + 2)).toBe(true)
+  })
+  it('does not offer for a fresh card with few session Agains', () => {
+    expect(shouldOfferCoach({ lapses: 0 }, 0)).toBe(false)
+    expect(shouldOfferCoach({ lapses: 0 }, SESSION_AGAIN_LIMIT - 1)).toBe(false)
   })
 })
 
