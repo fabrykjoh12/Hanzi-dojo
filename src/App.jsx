@@ -35,6 +35,7 @@ const SentenceBuilder = lazy(() => import('./SentenceBuilder'))
 const Writer = lazy(() => import('./Writer'))
 const Practice = lazy(() => import('./Practice'))
 const Words = lazy(() => import('./Words'))
+const KnownWords = lazy(() => import('./KnownWords'))
 const Analyzer = lazy(() => import('./Analyzer'))
 const Dictionary = lazy(() => import('./Dictionary'))
 const Grammar = lazy(() => import('./Grammar'))
@@ -382,6 +383,15 @@ export default function App() {
         session={session}
         track={track}
         onBack={() => navigate('practice')}
+      />
+    )
+  } else if (view === 'known') {
+    content = (
+      <KnownWords
+        session={session}
+        profile={profile}
+        track={track}
+        onBack={() => navigate('home')}
       />
     )
   } else if (view === 'dictionary') {

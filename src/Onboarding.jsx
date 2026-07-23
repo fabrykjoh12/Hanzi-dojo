@@ -4,6 +4,8 @@ import { getLevelLabel, getSystemLabel, getLevels } from './utils'
 import { track, EVENTS } from './analytics'
 import { availableLanguages, languageTheme, LANGUAGES } from './languageTheme'
 import { resolveTiers, TIER_META } from './tiers'
+import { PACING } from './priorKnowledge'
+import { seedClaim } from './priorKnowledgeSeed'
 import { readPreloginPrefs, clearPreloginPrefs, encouragementFor } from './prelogin'
 import { daysToWords } from './onboardingGoal'
 import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
@@ -39,6 +41,10 @@ export default function Onboarding({ session, onComplete }) {
   const [goal, setGoal] = useState(10)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  // When the learner placed above the lowest tier, offer to bring the earlier
+  // levels into review as spread-out check-ups (prior-knowledge claim).
+  const [claimEarlier, setClaimEarlier] = useState(true)
+  const [claimPacing, setClaimPacing] = useState('steady')
   // Tier 2's word threshold for the chosen language — the "next library" the
   // goal step projects a days-to-unlock estimate against.
   const nextLibraryWords = (CATEGORIES_BY_LANGUAGE[language] || [])[1]?.minWords || 100
@@ -117,6 +123,29 @@ export default function Onboarding({ session, onComplete }) {
         is_active: true,
       })
       if (trackError) throw trackError
+
+      // Claim the levels below the placed level so prior knowledge stays sharp.
+      // Best-effort: never block onboarding if the seed write fails.
+      if (claimEarlier && level > 1) {
+        try {
+          const perDay = (PACING.find(p => p.key === claimPacing) || PACING[1]).perDay
+          const { data: earlier } = await supabase
+            .from('vocabulary')
+            .select('id')
+            .eq('language', language)
+            .eq('system', system)
+            .eq('is_active', true)
+            .lt('level', level)
+            .not('level', 'is', null)
+            .order('level').order('sort_order')
+          const ids = (earlier || []).map(v => v.id)
+          if (ids.length) {
+            await seedClaim({ userId: session.user.id, vocabIds: ids, perDay, source: 'placement' })
+          }
+        } catch (seedErr) {
+          console.error('prior-knowledge seed failed', seedErr)
+        }
+      }
 
       track(EVENTS.ONBOARDING_COMPLETED, { language, level, goal })
       onComplete(tastedWords)
@@ -503,6 +532,43 @@ export default function Onboarding({ session, onComplete }) {
               first story. After that you'll learn {goal} new words a day, and each
               word comes back for review right before you'd forget it.
             </div>
+
+            {tiers.length > 0 && level > tiers[0].level && (
+              <div style={{ border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', marginTop: '18px', background: 'var(--surface)' }}>
+                <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px' }}>
+                  Bring your earlier words into review?
+                </div>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '14px' }}>
+                  You placed at {getLevelLabel(language, languageTheme(language).system, level)}, so we treat the
+                  earlier words as known. We can check a few each day so they stay sharp instead of quietly fading.
+                </p>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                  {PACING.map(p => (
+                    <button
+                      key={p.key}
+                      onClick={() => { setClaimEarlier(true); setClaimPacing(p.key) }}
+                      style={{
+                        flex: 1, padding: '10px 8px', borderRadius: '10px', cursor: 'pointer',
+                        border: '2px solid ' + (claimEarlier && claimPacing === p.key ? accentHex : 'var(--border)'),
+                        background: 'var(--surface)', color: 'var(--text)',
+                        fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
+                      }}
+                    >
+                      {p.label}
+                      <span style={{ display: 'block', fontSize: '11px', fontWeight: 500, color: 'var(--text-muted)', marginTop: '2px' }}>
+                        {p.perDay} a day
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setClaimEarlier(v => !v)}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '12px', color: claimEarlier ? 'var(--text-muted)' : accentHex, fontFamily: 'Inter, sans-serif' }}
+                >
+                  {claimEarlier ? 'No thanks, skip this' : 'Skipped — tap to turn back on'}
+                </button>
+              </div>
+            )}
 
             {error && <p style={{ color: '#DC2626', fontSize: '13px', marginTop: '12px', textAlign: 'center' }}>{error}</p>}
             <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
