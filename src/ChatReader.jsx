@@ -70,12 +70,13 @@ export default function ChatReader(props) {
           showEnglish={false} setShowEnglish={null} hasEnglish={false}
           language={track.language} accent={accent} onOpenChange={onSettingsOpen}
           compact placement="bottom" tint={CHAT_TINT}
+          rate={c.rate} setRate={c.setRate}
         />
         <div style={{ fontSize: '12px', color: '#666', minWidth: '34px', textAlign: 'right' }}>{c.cur + 1}/{c.total}</div>
       </div>
 
       <div onClick={() => { if (settingsOpen) return; c.stopPlay(); c.advance() }} style={{ flex: 1, overflowY: 'auto', padding: '10px 14px 20px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <ChatThread revealed={revealed} sides={sides} skin={skin} theme={c.theme} accent={accent} userCards={userCards} readingMode={c.readingMode} language={track.language} activeIndex={c.cur} typingBeat={typing ? pending : null} reduceMotion={c.reduceMotion} onSelectWord={c.selectWord} />
+        <ChatThread revealed={revealed} sides={sides} skin={skin} theme={c.theme} accent={accent} userCards={userCards} readingMode={c.readingMode} language={track.language} activeIndex={c.cur} typingBeat={typing ? pending : null} reduceMotion={c.reduceMotion} onSelectWord={c.selectWord} activeToken={c.activeToken} onSeekToken={c.seekToToken} playing={c.playing} />
       </div>
       <div aria-live="polite" style={srOnly}>{revealed.length ? revealed[revealed.length - 1].text : ''}</div>
 
