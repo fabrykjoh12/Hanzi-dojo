@@ -954,7 +954,7 @@ export default function DojoHQ({ session, profile }) {
 
   const inviteLink = () => {
     if (!activeWorkspace?.invite_code) return ''
-    const url = new URL('/hq.html', window.location.origin)
+    const url = new URL('/', window.location.origin)
     url.searchParams.set('online', '1')
     url.hash = `join=${activeWorkspace.invite_code}`
     return url.toString()
