@@ -522,6 +522,11 @@ After the existing `const advanceBlockedRef = useRef(false)` (line 47), add:
   const timelineRef = useRef(null)
   const [rate, setRateState] = useState(DEFAULT_RATE)
   const rateRef = useRef(DEFAULT_RATE)
+  // The rate needs its OWN picked flag, not pickedRef. Sharing one flag makes
+  // the two settings interfere in both directions: picking a speed during the
+  // mount-time prefs load would be reverted by it, and picking a reading mode
+  // first would suppress the saved rate from ever being restored.
+  const ratePickedRef = useRef(false)
 ```
 
 - [ ] **Step 3: Clear the highlight when playback stops**
@@ -578,11 +583,19 @@ In `speakFrom` (lines 116-143), replace the `if (url) { ... }` block with:
       }
       el.onloadedmetadata = buildFromEl
       el.ondurationchange = buildFromEl
-      // A cached blob replayed in place is already loaded, so neither event
-      // will fire again — read what is there now.
-      buildFromEl()
 
       playAudioEl(el, url, viaSynth)
+      // MUST come after playAudioEl, which is what assigns the new src.
+      // Called before it, the element still holds the clip that just
+      // finished, so el.duration is the PREVIOUS line's — and this line's
+      // tokens would be scaled to it until loadedmetadata fired.
+      //
+      // This call exists only for playAudioEl's replay-in-place fast path,
+      // which plays without touching src and so fires no metadata event;
+      // there the duration is already the right one. On a fresh load src has
+      // just changed, el.duration is NaN, and the guard below returns without
+      // building — leaving the timeline null, exactly as intended.
+      buildFromEl()
       // Warm the next line while this one plays, so read-along does not stutter
       // between beats.
       const upcoming = audioForBeat(index + 1)
@@ -631,6 +644,7 @@ After the `speakWord` function (around line 167), add:
 
   const pickRate = useCallback((next) => {
     if (SPEED_RATES.indexOf(next) === -1) return
+    ratePickedRef.current = true
     rateRef.current = next
     setRateState(next)
     const el = audioElRef.current
@@ -646,9 +660,11 @@ Replace the prefs load effect (lines 240-248) with:
   useEffect(() => {
     let active = true
     prefsGet(READER_PREFS_KEY).then((saved) => {
-      if (!active || pickedRef.current) return
-      if (saved && saved.furiganaMode) setReadingMode(normalizeReadingMode(saved.furiganaMode))
-      if (saved && SPEED_RATES.indexOf(saved.playbackRate) !== -1) {
+      // Each setting carries its OWN picked guard. A single early return on
+      // pickedRef would let a reading-mode pick suppress the saved rate too.
+      if (!active) return
+      if (saved && saved.furiganaMode && !pickedRef.current) setReadingMode(normalizeReadingMode(saved.furiganaMode))
+      if (saved && !ratePickedRef.current && SPEED_RATES.indexOf(saved.playbackRate) !== -1) {
         setRateState(saved.playbackRate)
         rateRef.current = saved.playbackRate
       }
