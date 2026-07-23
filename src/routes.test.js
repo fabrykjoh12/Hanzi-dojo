@@ -38,6 +38,12 @@ describe('isKnownView', () => {
     expect(isKnownView('dashboard')).toBe(true)
   })
 
+  it('knows the prior-knowledge screen', () => {
+    expect(isKnownView('known')).toBe(true)
+    expect(viewToPath('known')).toBe('/known')
+    expect(pathToView('/known')).toBe('known')
+  })
+
   it('rejects unknown / typo routes so they hit NotFound', () => {
     expect(isKnownView('storeis')).toBe(false)
     expect(isKnownView('random-page')).toBe(false)

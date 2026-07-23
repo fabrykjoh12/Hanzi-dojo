@@ -44,6 +44,7 @@ export const EVENTS = {
   FIRST_MISSION_COMPLETED: 'first_mission_completed',
   FIRST_STORY_OPENED: 'first_story_opened',
   FIRST_STORY_COMPLETED: 'first_story_completed',
+  PRIOR_KNOWLEDGE_CLAIMED: 'prior_knowledge_claimed',
   // Recurring learning loop (mode prop distinguishes daily / weak / review)
   STUDY_SESSION_STARTED: 'study_session_started',
   STUDY_SESSION_COMPLETED: 'study_session_completed',

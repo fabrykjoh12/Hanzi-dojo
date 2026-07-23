@@ -41,6 +41,7 @@ export default function Practice({ profile, track, counts, onNavigate, onBack })
     // Stroke order only applies to CJK scripts (hanzi/kanji).
     theme.cjk ? { key: 'strokes', icon: Brush, title: 'Stroke order', desc: 'Animated writing' } : null,
     { key: 'words', icon: BookA, title: 'Word list', desc: 'Every word and its status' },
+    { key: 'known', icon: BookA, title: 'Words you already know', desc: 'Import a list or tick off what you know' },
     { key: 'dictionary', icon: Search, title: 'Dictionary', desc: 'Look up any word, hear it, save it' },
     { key: 'analyzer', icon: ScanText, title: 'Analyze text', desc: 'Paste text — see % you know' },
     { key: 'youtube', icon: Play, title: 'Videos', desc: 'Curated listening' },
