@@ -733,10 +733,24 @@ preferred quality lane. Five steps, in order:
 each task carries its own `--language/--system/--level`. The run prints the pool
 between `---VOCAB-JSON-START---` / `---VOCAB-JSON-END---` markers in the log.
 
-**2. Commit the snapshot as `data/hsk3-vocab-snapshot.json`.** ⚠️ The dump prints
-rows of `{word, reading, meaning, sort_order}`; the snapshot file must be the
-**reduced `[[word, reading], …]` pair array**, exactly like
+**2. Commit the snapshot as `data/hsk3-vocab-snapshot.json`.** ✅ **Already done
+for HSK 3** (2026-07-24) — 954 cumulative words, read from production. The notes
+below apply to the *next* level's snapshot (hsk4…hsk6).
+
+⚠️ The dump prints rows of `{word, reading, meaning, sort_order}`; the snapshot
+file must be the **reduced `[[word, reading], …]` pair array**, exactly like
 `data/jlpt1-vocab-snapshot.json`, so `buildVocabMatcher` consumes it unchanged.
+
+⚠️ **For any level above 1 the snapshot must be CUMULATIVE — concatenate levels
+1…N.** Each `authored-vocab-*` task dumps its own level alone. That is correct
+for level 1 (cumulative == the level) and wrong for every level above it: the
+reader loads vocabulary for all levels (`Stories.jsx`) and the public story page
+caps at `v.level <= s.level` (`public_story` RPC), so a level-N story can
+legitimately use 我/是/很. A level-N-only snapshot would fail such a story for
+words the reader taps fine. This bug was latent until HSK 3 became the first
+authored level above 1; the guidance here and in `src/authoredStories.test.js`
+now states it explicitly.
+
 Reduce with:
 
 ```
@@ -747,7 +761,10 @@ Until this file exists, `src/authoredStories.test.js` runs **structural-only**
 checks for `chinese|hsk_3|3` (line length, speakers, English parallelism) — it
 never fails for an absent snapshot. The filename and key are already wired.
 
-**3. A session authors a season into `data/authored-stories.json`.** Each entry:
+**3. A session authors a season into `data/authored-stories.json`.** ✅ **A first
+HSK 3 season is committed** (2026-07-24): 3 tier-1 stories — 回家的路 (paced),
+新的决定 (chat), 坚持 (paced) — all validating against the real pool with the
+production matcher. More are welcome; the lane is proven end to end. Each entry:
 `{language:'chinese', system:'hsk_3', level:3, tier, tier_min_words, title,
 english_summary, content, english_content, is_published}`. Dialogue uses the
 **fullwidth colon `：`**. ⚠️ Every **personal name** must exist in

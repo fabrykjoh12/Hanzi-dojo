@@ -19,6 +19,17 @@ const stories = JSON.parse(readFileSync(new URL('../data/authored-stories.json',
 // the matching `authored-vocab-*` task in .github/workflows/regen-content.yml
 // and reducing the dumped rows to [word, reading] pairs.
 //
+// ⚠️ For a level ABOVE 1, concatenate the dumps for levels 1…N — a snapshot must
+// be CUMULATIVE. Each `authored-vocab-*` task dumps its own level alone, which
+// is right for level 1 (where cumulative == the level) but wrong above it: the
+// reader loads vocabulary for every level (`Stories.jsx` fetches `vocabulary`
+// with no level filter, "so every word in a story is clickable") and the public
+// story page caps at `v.level <= s.level` (the `public_story` RPC). A level-N
+// story can therefore legitimately use 我/是/很, and a level-N-only snapshot
+// would fail it for words the reader can tap perfectly well. Capping at N
+// rather than dumping every level keeps the bar honest: it matches what the
+// public page guarantees, which is the stricter of the two surfaces.
+//
 // Entries are OPTIONAL BY EXISTENCE: a level listed here with no committed
 // snapshot file simply falls back to the structural-only checks below, so the
 // suite stays green before the owner has run the dump. Never make an absent
