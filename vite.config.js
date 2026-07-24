@@ -27,21 +27,20 @@ function buildInfo() {
 // The Dojo HQ "Sites" deployment needs a different shape from the public app:
 // its entry is hq.html, it ships a worker plus D1/R2 metadata, and it must not
 // register the app's service worker. Packaging it is DESTRUCTIVE — it overwrites
-// dist/client/index.html with the HQ page and deletes sw.js — so it only runs
-// when explicitly asked for, via `npm run build:sites`.
+// dist/client/index.html with the HQ page and deletes sw.js.
 //
-// It used to run on every build, including the one Vercel runs, which is why
-// hanzi-dojo.com served the HQ control room (and lost its service worker)
-// instead of the app.
+// That packaging ran on EVERY build, including the one Vercel runs, which is
+// why hanzi-dojo.com served the HQ control room with no service worker — and,
+// combined with outDir moving to dist/client, 404'd outright.
 //
-// The packaging stays ON by default, so every consumer that builds this repo
-// keeps getting byte-for-byte what it got before — the HQ Worker is deployed
-// from CI whose build command lives outside this repo, and guessing at that
+// It still runs by default, so every consumer that builds this repo keeps
+// getting byte-for-byte what it always got. The HQ Worker is deployed from CI
+// whose build command lives outside this repo, and guessing at that
 // environment is how you break someone else's deploy.
 //
-// Instead the PUBLIC build opts out, via a flag set in vercel.json's
+// The PUBLIC build is the one that opts out, via the flag set in vercel.json's
 // buildCommand — config that lives here, that we can verify, and that only
-// Vercel uses. `npm run build:public` reproduces it locally.
+// Vercel reads. `npm run build:public` reproduces it locally.
 const SITES_BUILD = process.env.DOJO_PUBLIC_BUILD !== '1'
 
 export default defineConfig(() => {
