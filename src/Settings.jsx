@@ -3,8 +3,9 @@ import { supabase } from './supabase'
 import {
   Palette, SlidersHorizontal, Sun, Moon, Keyboard, Eye,
   Volume2, BookOpenCheck, Gauge, Bell, HardDrive, Trash2, CheckCircle2,
-  MessagesSquare, ArrowUpRight,
+  MessagesSquare, ArrowUpRight, Brain,
 } from 'lucide-react'
+import { RETENTION_PRESETS, presetForRetention, setTargetRetention } from './srs'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
 import { useIsMobile } from './useIsMobile'
 import { useTheme } from './ThemeContext'
@@ -56,6 +57,10 @@ export default function Settings({ session, profile, onUpdate }) {
   const furiganaDefault = profile.furigana_default !== false
   const audioSpeed = profile.audio_speed === 0.75 || profile.audio_speed === 0.5 ? profile.audio_speed : 1
   const remindersOn = profile.reminder_enabled === true
+  // Supabase returns numeric columns as strings in some client versions, and the
+  // column is absent entirely until the migration is applied — presetForRetention
+  // falls back to the default preset for anything it can't read.
+  const retentionPreset = presetForRetention(Number(profile.target_retention))
   const localHour = utcHourToLocal(
     typeof profile.reminder_hour_utc === 'number' ? profile.reminder_hour_utc : localHourToUtc(9)
   )
@@ -66,6 +71,18 @@ export default function Settings({ session, profile, onUpdate }) {
     if (session) {
       supabase.from('profiles').update(patch).eq('id', session.user.id).then(() => {})
     }
+  }
+
+  // The scheduler is a pure module with no database access, so it keeps a
+  // device-local mirror of the chosen retention. Sync it from the profile
+  // whenever Settings opens, so signing in on a new device picks the value up.
+  useEffect(() => {
+    setTargetRetention(retentionPreset.value)
+  }, [retentionPreset.value])
+
+  const pickRetention = (value) => {
+    setTargetRetention(value)
+    savePref({ target_retention: value })
   }
 
   const toggleReminders = async (on) => {
@@ -168,6 +185,23 @@ export default function Settings({ session, profile, onUpdate }) {
               <Toggle accentHex={accentHex} checked={furiganaDefault} onChange={(v) => savePref({ furigana_default: v })} />
             </Card>
           )}
+
+          {/* How well you want to remember — the retention dial */}
+          <Card
+            icon={Brain}
+            title="How well you want to remember"
+            text="Reviews come back just before you'd forget. You can choose where that line sits — there's no right answer, and no wrong one."
+            accentHex={accentHex}
+          >
+            <PresetChoice
+              accentHex={accentHex}
+              legend="How well you want to remember"
+              name="target-retention"
+              value={retentionPreset.value}
+              onChange={pickRetention}
+              options={RETENTION_PRESETS}
+            />
+          </Card>
 
           {/* Daily review reminder — opt-in Web Push */}
           <Card
@@ -362,6 +396,50 @@ function Segmented({ value, onChange, options, accentHex }) {
         )
       })}
     </div>
+  )
+}
+
+// A stack of named presets as a real radio group: a fieldset/legend for the
+// group name, native radios so arrow keys move between choices and screen
+// readers announce "2 of 3", and the trade-off spelled out on every option.
+function PresetChoice({ legend, name, value, onChange, options, accentHex }) {
+  return (
+    <fieldset style={{ border: 0, margin: 0, padding: 0, display: 'grid', gap: '8px' }}>
+      <legend style={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' }}>
+        {legend}
+      </legend>
+      {options.map(opt => {
+        const active = value === opt.value
+        return (
+          <label
+            key={opt.key}
+            style={{
+              display: 'flex', alignItems: 'flex-start', gap: '11px',
+              padding: '12px 14px', borderRadius: '13px', cursor: 'pointer',
+              border: '1px solid ' + (active ? accentHex + '55' : 'var(--border)'),
+              background: active ? accentHex + '0D' : 'var(--surface-2)',
+            }}
+          >
+            <input
+              type="radio"
+              name={name}
+              value={opt.key}
+              checked={active}
+              onChange={() => onChange(opt.value)}
+              style={{ marginTop: '3px', accentColor: accentHex, width: '16px', height: '16px', flexShrink: 0, cursor: 'pointer' }}
+            />
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: 'block', fontSize: '13.5px', fontWeight: 750, color: 'var(--text)' }}>
+                {opt.label}
+              </span>
+              <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.55, marginTop: '2px' }}>
+                {opt.blurb}
+              </span>
+            </span>
+          </label>
+        )
+      })}
+    </fieldset>
   )
 }
 

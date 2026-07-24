@@ -10,6 +10,10 @@
 // by the root generate-audio.mjs script. It is intentionally conservative:
 // anything it can't confidently parse yields null, and the caller falls back to
 // plain-text synthesis — never worse than today's behavior.
+//
+// The file also hosts `fixDeParticlePinyin` (bottom): the same "pure helper here,
+// wired by the root ingest script" pattern, correcting the degree-complement 得
+// in generated sentence pinyin.
 
 // Vowel diacritics → [base vowel(s), tone number 1-4]. ü is written "u:" — the
 // spelling Google's pinyin alphabet uses. Neutral tone carries no mark.
@@ -176,6 +180,120 @@ export function chinesePhonemeSsml(word, reading) {
   const safeWord = escapeXml(word)
   if (!ph) return `<speak>${safeWord}</speak>`
   return `<speak><phoneme alphabet="pinyin" ph="${escapeXml(ph)}">${safeWord}</phoneme></speak>`
+}
+
+// ---------------------------------------------------------------------------
+// 得-particle correction for generated sentence pinyin.
+//
+// `pinyin-pro` reads a bare 得 as `dé`, which is right for 得到 / 值得 but wrong
+// for the degree-complement particle: 他跑得很快 is "pǎo de hěn kuài", not
+// "pǎo dé hěn kuài". 得 is genuinely three words — dé ("to obtain"), děi
+// ("must") and the neutral particle de — so a blanket rewrite would be WRONG.
+// This correction is therefore deliberately narrow: it only fires on the two
+// structurally unambiguous shapes below, and leaves every other 得 alone.
+//
+//   (a) V/Adj + 得 + degree adverb        跑得很快 · 说得非常好 · 睡得太晚
+//   (b) V/Adj + 得 + adjective complement AT THE END OF THE CLAUSE
+//                                          他跑得快。· 他学得不错 · 长得高
+//
+// Three further guards keep it honest:
+//   * only a syllable pinyin-pro rendered as exactly `dé` is ever touched — a
+//     `děi` or an already-neutral `de` is trusted as-is;
+//   * the character BEFORE 得 must be Han and must not be one that binds 得 into
+//     a word (值得, 获得, 觉得 …) or that marks the modal děi (我得走, 不得不,
+//     今天得早点睡) — see NOT_PARTICLE_PREV;
+//   * if the pinyin can't be aligned one-token-per-character with the hanzi, the
+//     input is returned untouched.
+// Anything it cannot classify safely is left exactly as pinyin-pro produced it.
+const DE_HANZI = '得'
+const DE_TONED = 'dé'
+const DE_NEUTRAL = 'de'
+
+// Characters that, immediately before 得, mean it is NOT the particle:
+// lexical words ending in 得, and subjects/adverbs that introduce modal 得 (děi).
+const NOT_PARTICLE_PREV = new Set([
+  // 得 as the second half of a word
+  '值', '获', '取', '赢', '使', '懂', '记', '觉', '免', '省', '落', '显', '舍',
+  '难', '所', '博', '变', '晓', '认', '见', '心', '求', '来', '得',
+  // subjects / modal-得 (děi) contexts: 我得走 · 不得不 · 只得 · 还得
+  '我', '你', '他', '她', '它', '们', '谁', '咱', '家', '人',
+  '不', '没', '非', '总', '只', '就', '还', '也', '都', '必', '可',
+  // time words that front a modal 得: 今天得早点睡 · 以后得小心
+  '天', '在', '后', '前', '时', '上', '午', '年', '月', '日', '号', '分',
+])
+
+// Adverbs that can only follow the particle 得 (得很 / 得非常 …).
+const DEGREE_ADVERBS = [
+  '非常', '特别', '十分', '相当', '格外', '这么', '那么', '多么', '越来越',
+  '有点', '有些', '比较', '很', '太', '真', '挺', '极', '更',
+]
+
+// Adjectival complements, accepted only when they close the clause (得快。/ 得好).
+const ADJ_COMPLEMENTS = [
+  '清楚', '流利', '不错', '干净', '漂亮', '开心', '认真', '舒服', '厉害',
+  '好听', '好看', '好吃', '完美', '快', '慢', '好', '早', '晚', '远', '近',
+  '高', '低', '多', '少', '累', '香', '熟', '棒', '对', '差',
+]
+
+const CLAUSE_ENDERS = new Set([
+  '。', '，', '、', '！', '？', '；', '：', '…', '”', '’', '）', '》',
+  ',', '.', '!', '?', ';', ':', '"', "'", ')',
+])
+
+function isHan(ch) {
+  if (!ch) return false
+  const cp = ch.codePointAt(0)
+  return (cp >= 0x4e00 && cp <= 0x9fff) || (cp >= 0x3400 && cp <= 0x4dbf)
+}
+
+function matchesAt(chars, start, word) {
+  for (let k = 0; k < word.length; k++) {
+    if (chars[start + k] !== word[k]) return false
+  }
+  return true
+}
+
+// True only for the two degree-complement shapes described above.
+function isDegreeComplementDe(chars, i) {
+  const prev = chars[i - 1]
+  if (!isHan(prev) || NOT_PARTICLE_PREV.has(prev)) return false
+  const next = chars[i + 1]
+  if (!isHan(next)) return false
+  for (const adv of DEGREE_ADVERBS) {
+    if (matchesAt(chars, i + 1, adv)) return true
+  }
+  for (const adj of ADJ_COMPLEMENTS) {
+    if (!matchesAt(chars, i + 1, adj)) continue
+    const after = chars[i + 1 + adj.length]
+    if (after === undefined || CLAUSE_ENDERS.has(after)) return true
+  }
+  return false
+}
+
+// Rewrite the degree-complement 得 to neutral `de` in a generated sentence
+// reading. `pinyinText` must be pinyin-pro's space-separated, one-syllable-per-
+// character output for `hanzi`; anything that doesn't line up is returned
+// unchanged, so the caller is never worse off than pinyin-pro's own output.
+export function fixDeParticlePinyin(hanzi, pinyinText) {
+  if (typeof hanzi !== 'string' || typeof pinyinText !== 'string') return pinyinText
+  if (!hanzi.includes(DE_HANZI) || !pinyinText.includes(DE_TONED)) return pinyinText
+
+  const chars = Array.from(hanzi).filter(ch => ch.trim() !== '')
+  // Split on a single space so runs of spaces survive the round-trip untouched.
+  const parts = pinyinText.split(' ')
+  const at = []
+  parts.forEach((p, k) => { if (p) at.push(k) })
+  if (!chars.length || chars.length !== at.length) return pinyinText
+
+  let changed = false
+  for (let i = 0; i < chars.length; i++) {
+    if (chars[i] !== DE_HANZI) continue
+    if (parts[at[i]] !== DE_TONED) continue   // trust an explicit děi / de
+    if (!isDegreeComplementDe(chars, i)) continue
+    parts[at[i]] = DE_NEUTRAL
+    changed = true
+  }
+  return changed ? parts.join(' ') : pinyinText
 }
 
 function escapeXml(s) {

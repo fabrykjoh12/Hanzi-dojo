@@ -42,7 +42,13 @@ function syllableToMarks(syl) {
   const v = letters[idx].toLowerCase()
   const marked = (MARKS[v] || [])[tone - 1]
   if (!marked) return letters
-  return letters.slice(0, idx) + marked + letters.slice(idx + 1)
+  // CC-CEDICT capitalises proper nouns ("An1 hui1", "Ou1 zhou1"). MARKS holds
+  // lower-case vowels, so a mark landing on the FIRST letter used to swallow the
+  // capital (Ānhuī → ānhuī). Restore the original case of the marked vowel — this
+  // is display-only: `pinyinPlain` goes through foldForSearch, which lower-cases,
+  // so searching "anhui" / "beijing" still matches.
+  const cased = letters[idx] === v ? marked : marked.toUpperCase()
+  return letters.slice(0, idx) + cased + letters.slice(idx + 1)
 }
 
 export function numberedPinyinToMarks(numbered) {
