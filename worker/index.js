@@ -86,9 +86,27 @@ function mapItem(row) {
     priority: row.priority,
     tags: parseTags(row.tags_json),
     due_date: row.due_date,
+    milestone_id: row.milestone_id || null,
+    depends_on: parseJson(row.depends_on_json || '[]', []),
+    blocked_reason: row.blocked_reason || '',
+    github_branch: row.github_branch || '',
+    github_pr_url: row.github_pr_url || '',
+    ci_status: row.ci_status || 'none',
     created_at: row.created_at,
     updated_at: row.updated_at,
   }
+}
+
+async function recordActivity(env, workspaceId, actorId, eventType, summary, itemId = null, metadata = {}) {
+  await env.DB.prepare(
+    `INSERT INTO dojo_activity
+     (id, workspace_id, item_id, actor_id, event_type, summary, metadata_json, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).bind(
+    crypto.randomUUID(), workspaceId, itemId, cleanText(actorId, 100, 'system'),
+    cleanText(eventType, 60, 'update'), cleanText(summary, 500, 'Oppdatert'),
+    JSON.stringify(metadata || {}), new Date().toISOString(),
+  ).run()
 }
 
 async function snapshot(env, workspace) {
@@ -207,18 +225,40 @@ async function createItem(request, env, workspace) {
     priority: allowed(payload.priority, ['low', 'medium', 'high', 'urgent'], 'medium'),
     tags: Array.isArray(payload.tags) ? payload.tags.map(tag => cleanText(tag, 40)).filter(Boolean).slice(0, 8) : [],
     due_date: /^\d{4}-\d{2}-\d{2}$/.test(payload.due_date || '') ? payload.due_date : null,
+    milestone_id: cleanText(payload.milestone_id, 100) || null,
+    depends_on: Array.isArray(payload.depends_on) ? payload.depends_on.map(value => cleanText(value, 100)).filter(Boolean).slice(0, 12) : [],
+    blocked_reason: cleanText(payload.blocked_reason, 1000),
+    github_branch: cleanText(payload.github_branch, 250),
+    github_pr_url: cleanText(payload.github_pr_url, 500),
+    ci_status: allowed(payload.ci_status, ['none', 'pending', 'passing', 'failing'], 'none'),
+  }
+  if (item.milestone_id) {
+    const milestone = await env.DB.prepare('SELECT id FROM dojo_milestones WHERE id = ? AND workspace_id = ?')
+      .bind(item.milestone_id, workspace.id).first()
+    if (!milestone) return json({ error: 'Milepælen tilhører ikke dette arbeidsområdet.' }, 400)
   }
   if (!item.title || !item.created_by) return json({ error: 'Tittel og oppretter er påkrevd.' }, 400)
   await env.DB.prepare(
     `INSERT INTO dojo_items
-     (id, workspace_id, created_by, assigned_to, title, description, item_type, status, priority, tags_json, due_date, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     (id, workspace_id, created_by, assigned_to, title, description, item_type, status, priority, tags_json,
+      due_date, milestone_id, depends_on_json, blocked_reason, github_branch, github_pr_url, ci_status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).bind(
     item.id, workspace.id, item.created_by, item.assigned_to, item.title, item.description,
-    item.item_type, item.status, item.priority, JSON.stringify(item.tags), item.due_date, now, now,
+    item.item_type, item.status, item.priority, JSON.stringify(item.tags), item.due_date,
+    item.milestone_id, JSON.stringify(item.depends_on), item.blocked_reason, item.github_branch,
+    item.github_pr_url, item.ci_status, now, now,
   ).run()
   await bumpRevision(env, workspace.id)
-  return json({ item: mapItem({ ...item, workspace_id: workspace.id, tags_json: JSON.stringify(item.tags), created_at: now, updated_at: now }) }, 201)
+  await recordActivity(env, workspace.id, item.created_by, 'item.created', `Opprettet «${item.title}»`, item.id)
+  return json({ item: mapItem({
+    ...item,
+    workspace_id: workspace.id,
+    tags_json: JSON.stringify(item.tags),
+    depends_on_json: JSON.stringify(item.depends_on),
+    created_at: now,
+    updated_at: now,
+  }) }, 201)
 }
 
 async function updateItem(request, env, workspace, itemId) {
@@ -237,17 +277,60 @@ async function updateItem(request, env, workspace, itemId) {
     priority: Object.hasOwn(payload, 'priority') ? allowed(payload.priority, ['low', 'medium', 'high', 'urgent'], current.priority) : current.priority,
     tags,
     due_date: Object.hasOwn(payload, 'due_date') ? (/^\d{4}-\d{2}-\d{2}$/.test(payload.due_date || '') ? payload.due_date : null) : current.due_date,
+    milestone_id: Object.hasOwn(payload, 'milestone_id') ? (cleanText(payload.milestone_id, 100) || null) : current.milestone_id,
+    depends_on: Object.hasOwn(payload, 'depends_on') && Array.isArray(payload.depends_on)
+      ? payload.depends_on.map(value => cleanText(value, 100)).filter(Boolean).slice(0, 12)
+      : parseJson(current.depends_on_json || '[]', []),
+    blocked_reason: Object.hasOwn(payload, 'blocked_reason') ? cleanText(payload.blocked_reason, 1000) : current.blocked_reason,
+    github_branch: Object.hasOwn(payload, 'github_branch') ? cleanText(payload.github_branch, 250) : current.github_branch,
+    github_pr_url: Object.hasOwn(payload, 'github_pr_url') ? cleanText(payload.github_pr_url, 500) : current.github_pr_url,
+    ci_status: Object.hasOwn(payload, 'ci_status') ? allowed(payload.ci_status, ['none', 'pending', 'passing', 'failing'], current.ci_status) : current.ci_status,
+  }
+  next.depends_on = [...new Set(next.depends_on)].filter(dependencyId => dependencyId !== itemId)
+  if (next.milestone_id) {
+    const milestone = await env.DB.prepare('SELECT id FROM dojo_milestones WHERE id = ? AND workspace_id = ?')
+      .bind(next.milestone_id, workspace.id).first()
+    if (!milestone) return json({ error: 'Milepælen tilhører ikke dette arbeidsområdet.' }, 400)
+  }
+  if (next.depends_on.length) {
+    const dependencies = await Promise.all(next.depends_on.map(dependencyId => (
+      env.DB.prepare('SELECT id FROM dojo_items WHERE id = ? AND workspace_id = ?')
+        .bind(dependencyId, workspace.id).first()
+    )))
+    if (dependencies.some(dependency => !dependency)) {
+      return json({ error: 'En av avhengighetene tilhører ikke dette arbeidsområdet.' }, 400)
+    }
   }
   const now = new Date().toISOString()
-  await env.DB.prepare(
-    `UPDATE dojo_items SET assigned_to = ?, title = ?, description = ?, item_type = ?, status = ?,
-     priority = ?, tags_json = ?, due_date = ?, updated_at = ? WHERE id = ? AND workspace_id = ?`,
-  ).bind(
-    next.assigned_to, next.title, next.description, next.item_type, next.status,
-    next.priority, JSON.stringify(next.tags), next.due_date, now, itemId, workspace.id,
-  ).run()
+  const actorId = cleanText(payload._actor_id, 100, current.created_by)
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO dojo_item_versions (id, workspace_id, item_id, actor_id, snapshot_json, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    ).bind(crypto.randomUUID(), workspace.id, itemId, actorId, JSON.stringify(mapItem(current)), now),
+    env.DB.prepare(
+      `UPDATE dojo_items SET assigned_to = ?, title = ?, description = ?, item_type = ?, status = ?,
+       priority = ?, tags_json = ?, due_date = ?, milestone_id = ?, depends_on_json = ?, blocked_reason = ?,
+       github_branch = ?, github_pr_url = ?, ci_status = ?, updated_at = ?
+       WHERE id = ? AND workspace_id = ?`,
+    ).bind(
+      next.assigned_to, next.title, next.description, next.item_type, next.status,
+      next.priority, JSON.stringify(next.tags), next.due_date, next.milestone_id,
+      JSON.stringify(next.depends_on), next.blocked_reason, next.github_branch, next.github_pr_url,
+      next.ci_status, now, itemId, workspace.id,
+    ),
+  ])
   await bumpRevision(env, workspace.id)
-  return json({ item: mapItem({ ...current, ...next, tags_json: JSON.stringify(next.tags), updated_at: now }) })
+  await recordActivity(env, workspace.id, actorId, 'item.updated', `Oppdaterte «${next.title}»`, itemId, {
+    status: next.status,
+  })
+  return json({ item: mapItem({
+    ...current,
+    ...next,
+    tags_json: JSON.stringify(next.tags),
+    depends_on_json: JSON.stringify(next.depends_on),
+    updated_at: now,
+  }) })
 }
 
 // Every object in R2 lives under `${workspace.id}/`. A row in dojo_attachments
@@ -258,13 +341,18 @@ function ownsPath(workspace, path) {
   return typeof path === 'string' && path.startsWith(`${workspace.id}/`)
 }
 
-async function deleteItem(env, workspace, itemId) {
+async function deleteItem(request, env, workspace, itemId) {
+  const actorId = cleanText(request.headers.get('x-dojo-user'), 100, 'system')
+  const item = await env.DB.prepare(
+    'SELECT title FROM dojo_items WHERE id = ? AND workspace_id = ?',
+  ).bind(itemId, workspace.id).first()
   const files = await env.DB.prepare(
     'SELECT storage_path FROM dojo_attachments WHERE workspace_id = ? AND item_id = ?',
   ).bind(workspace.id, itemId).all()
   await Promise.all((files.results || [])
     .filter(file => ownsPath(workspace, file.storage_path))
     .map(file => env.FILES.delete(file.storage_path)))
+  await recordActivity(env, workspace.id, actorId, 'item.deleted', `Slettet «${item?.title || 'oppgave'}»`, itemId)
   await env.DB.prepare('DELETE FROM dojo_items WHERE id = ? AND workspace_id = ?').bind(itemId, workspace.id).run()
   await bumpRevision(env, workspace.id)
   return json({ ok: true })
@@ -282,6 +370,8 @@ async function createComment(request, env, workspace) {
     'INSERT INTO dojo_comments (id, workspace_id, item_id, author_id, body, created_at) VALUES (?, ?, ?, ?, ?, ?)',
   ).bind(id, workspace.id, itemId, authorId, body, now).run()
   await bumpRevision(env, workspace.id)
+  const mentions = [...body.matchAll(/@([\p{L}\p{N}._-]+)/gu)].map(match => match[1]).slice(0, 12)
+  await recordActivity(env, workspace.id, authorId, 'comment.created', 'La til en kommentar', itemId, { mentions })
   return json({ comment: { id, workspace_id: workspace.id, item_id: itemId, author_id: authorId, body, created_at: now } }, 201)
 }
 
@@ -363,6 +453,261 @@ async function deleteFile(env, workspace, path) {
   return json({ ok: true })
 }
 
+async function hq2Snapshot(env, workspace) {
+  const [milestones, testCases, runs, activities, presence, versions] = await env.DB.batch([
+    env.DB.prepare('SELECT * FROM dojo_milestones WHERE workspace_id = ? ORDER BY target_date, created_at').bind(workspace.id),
+    env.DB.prepare('SELECT * FROM dojo_test_cases WHERE workspace_id = ? ORDER BY updated_at DESC').bind(workspace.id),
+    env.DB.prepare('SELECT * FROM dojo_agent_runs WHERE workspace_id = ? ORDER BY updated_at DESC LIMIT 100').bind(workspace.id),
+    env.DB.prepare('SELECT * FROM dojo_activity WHERE workspace_id = ? ORDER BY created_at DESC LIMIT 160').bind(workspace.id),
+    env.DB.prepare('SELECT * FROM dojo_presence WHERE workspace_id = ? ORDER BY last_seen DESC').bind(workspace.id),
+    env.DB.prepare('SELECT * FROM dojo_item_versions WHERE workspace_id = ? ORDER BY created_at DESC LIMIT 100').bind(workspace.id),
+  ])
+  const onlineSince = Date.now() - 45_000
+  return json({
+    milestones: milestones.results || [],
+    testCases: testCases.results || [],
+    runs: (runs.results || []).map(row => ({
+      ...row,
+      files: parseJson(row.files_json || '[]', []),
+      tests: parseJson(row.tests_json || '[]', []),
+    })),
+    activities: (activities.results || []).map(row => ({
+      ...row,
+      metadata: parseJson(row.metadata_json || '{}', {}),
+    })),
+    presence: (presence.results || []).filter(row => Date.parse(row.last_seen) >= onlineSince),
+    versions: (versions.results || []).map(row => ({
+      ...row,
+      snapshot: parseJson(row.snapshot_json || '{}', {}),
+    })),
+  })
+}
+
+async function createMilestone(request, env, workspace) {
+  const payload = await bodyJson(request)
+  const id = crypto.randomUUID()
+  const now = new Date().toISOString()
+  const title = cleanText(payload.title, 140)
+  const actorId = cleanText(payload.created_by, 100)
+  if (!title || !actorId) return json({ error: 'Milepælen mangler tittel eller oppretter.' }, 400)
+  const targetDate = /^\d{4}-\d{2}-\d{2}$/.test(payload.target_date || '') ? payload.target_date : null
+  const color = /^#[0-9a-fA-F]{6}$/.test(payload.color || '') ? payload.color : '#D9FF57'
+  await env.DB.prepare(
+    `INSERT INTO dojo_milestones
+     (id, workspace_id, title, description, status, target_date, color, created_by, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).bind(
+    id, workspace.id, title, cleanText(payload.description, 2000),
+    allowed(payload.status, ['planned', 'active', 'shipped'], 'planned'),
+    targetDate, color, actorId, now, now,
+  ).run()
+  await bumpRevision(env, workspace.id)
+  await recordActivity(env, workspace.id, actorId, 'milestone.created', `Opprettet milepælen «${title}»`, null, { milestoneId: id })
+  return json({ milestone: { id, workspace_id: workspace.id, title, target_date: targetDate, color } }, 201)
+}
+
+async function updateMilestone(request, env, workspace, milestoneId) {
+  const payload = await bodyJson(request)
+  const current = await env.DB.prepare(
+    'SELECT * FROM dojo_milestones WHERE id = ? AND workspace_id = ?',
+  ).bind(milestoneId, workspace.id).first()
+  if (!current) return json({ error: 'Fant ikke milepælen.' }, 404)
+  const next = {
+    title: Object.hasOwn(payload, 'title') ? cleanText(payload.title, 140) : current.title,
+    description: Object.hasOwn(payload, 'description') ? cleanText(payload.description, 2000) : current.description,
+    status: Object.hasOwn(payload, 'status') ? allowed(payload.status, ['planned', 'active', 'shipped'], current.status) : current.status,
+    target_date: Object.hasOwn(payload, 'target_date') ? (/^\d{4}-\d{2}-\d{2}$/.test(payload.target_date || '') ? payload.target_date : null) : current.target_date,
+    color: Object.hasOwn(payload, 'color') && /^#[0-9a-fA-F]{6}$/.test(payload.color || '') ? payload.color : current.color,
+  }
+  const now = new Date().toISOString()
+  await env.DB.prepare(
+    `UPDATE dojo_milestones SET title = ?, description = ?, status = ?, target_date = ?, color = ?, updated_at = ?
+     WHERE id = ? AND workspace_id = ?`,
+  ).bind(next.title, next.description, next.status, next.target_date, next.color, now, milestoneId, workspace.id).run()
+  await bumpRevision(env, workspace.id)
+  await recordActivity(
+    env, workspace.id, cleanText(payload._actor_id, 100, current.created_by),
+    'milestone.updated', `Oppdaterte milepælen «${next.title}»`, null, { milestoneId },
+  )
+  return json({ milestone: { ...current, ...next, updated_at: now } })
+}
+
+async function createTestCase(request, env, workspace) {
+  const payload = await bodyJson(request)
+  const id = crypto.randomUUID()
+  const now = new Date().toISOString()
+  const title = cleanText(payload.title, 220)
+  const itemId = cleanText(payload.item_id, 100)
+  const actorId = cleanText(payload.created_by, 100)
+  const item = itemId
+    ? await env.DB.prepare('SELECT id FROM dojo_items WHERE id = ? AND workspace_id = ?').bind(itemId, workspace.id).first()
+    : null
+  if (itemId && !item) return json({ error: 'Testen må knyttes til en oppgave i dette arbeidsområdet.' }, 400)
+  if (!title || !itemId || !actorId) return json({ error: 'Testen mangler oppgave, tittel eller oppretter.' }, 400)
+  await env.DB.prepare(
+    `INSERT INTO dojo_test_cases
+     (id, workspace_id, item_id, title, expected, notes, status, created_by, updated_by, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).bind(
+    id, workspace.id, itemId, title, cleanText(payload.expected, 3000), cleanText(payload.notes, 3000),
+    allowed(payload.status, ['pending', 'passed', 'failed'], 'pending'), actorId, actorId, now, now,
+  ).run()
+  await bumpRevision(env, workspace.id)
+  await recordActivity(env, workspace.id, actorId, 'test.created', `La til testen «${title}»`, itemId, { testCaseId: id })
+  return json({ testCase: { id, workspace_id: workspace.id, item_id: itemId, title, status: 'pending', created_at: now, updated_at: now } }, 201)
+}
+
+async function updateTestCase(request, env, workspace, testCaseId) {
+  const payload = await bodyJson(request)
+  const current = await env.DB.prepare(
+    'SELECT * FROM dojo_test_cases WHERE id = ? AND workspace_id = ?',
+  ).bind(testCaseId, workspace.id).first()
+  if (!current) return json({ error: 'Fant ikke testen.' }, 404)
+  const status = Object.hasOwn(payload, 'status') ? allowed(payload.status, ['pending', 'passed', 'failed'], current.status) : current.status
+  const title = Object.hasOwn(payload, 'title') ? cleanText(payload.title, 220) : current.title
+  const expected = Object.hasOwn(payload, 'expected') ? cleanText(payload.expected, 3000) : current.expected
+  const notes = Object.hasOwn(payload, 'notes') ? cleanText(payload.notes, 3000) : current.notes
+  const actorId = cleanText(payload.updated_by, 100, current.updated_by)
+  const now = new Date().toISOString()
+  await env.DB.prepare(
+    `UPDATE dojo_test_cases SET title = ?, expected = ?, notes = ?, status = ?, updated_by = ?, updated_at = ?
+     WHERE id = ? AND workspace_id = ?`,
+  ).bind(title, expected, notes, status, actorId, now, testCaseId, workspace.id).run()
+  await bumpRevision(env, workspace.id)
+  await recordActivity(env, workspace.id, actorId, `test.${status}`, `${status === 'passed' ? 'Godkjente' : status === 'failed' ? 'Feilet' : 'Nullstilte'} testen «${title}»`, current.item_id, { testCaseId })
+  return json({ testCase: { ...current, title, expected, notes, status, updated_by: actorId, updated_at: now } })
+}
+
+async function deleteTestCase(request, env, workspace, testCaseId) {
+  const actorId = cleanText(request.headers.get('x-dojo-user'), 100, 'system')
+  const current = await env.DB.prepare(
+    'SELECT item_id, title FROM dojo_test_cases WHERE id = ? AND workspace_id = ?',
+  ).bind(testCaseId, workspace.id).first()
+  if (!current) return json({ error: 'Fant ikke testen.' }, 404)
+  await env.DB.prepare('DELETE FROM dojo_test_cases WHERE id = ? AND workspace_id = ?').bind(testCaseId, workspace.id).run()
+  await bumpRevision(env, workspace.id)
+  await recordActivity(env, workspace.id, actorId, 'test.deleted', `Slettet testen «${current.title}»`, current.item_id)
+  return json({ ok: true })
+}
+
+async function createAgentRun(request, env, workspace) {
+  const payload = await bodyJson(request)
+  const id = crypto.randomUUID()
+  const itemId = cleanText(payload.item_id, 100)
+  const actorId = cleanText(payload.started_by, 100)
+  const item = itemId
+    ? await env.DB.prepare('SELECT id FROM dojo_items WHERE id = ? AND workspace_id = ?').bind(itemId, workspace.id).first()
+    : null
+  if (itemId && !item) return json({ error: 'Claude-økten må knyttes til en oppgave i dette arbeidsområdet.' }, 400)
+  if (!itemId || !actorId) return json({ error: 'Claude-økten mangler oppgave eller bruker.' }, 400)
+  const now = new Date().toISOString()
+  await env.DB.prepare(
+    `INSERT INTO dojo_agent_runs
+     (id, workspace_id, item_id, status, summary, files_json, tests_json, branch, pr_url, ci_status,
+      started_by, started_at, completed_at, updated_at)
+     VALUES (?, ?, ?, 'queued', '', '[]', '[]', '', '', 'none', ?, ?, NULL, ?)`,
+  ).bind(id, workspace.id, itemId, actorId, now, now).run()
+  await bumpRevision(env, workspace.id)
+  await recordActivity(env, workspace.id, actorId, 'run.queued', 'Klargjorde en Claude-økt', itemId, { runId: id })
+  return json({ run: { id, workspace_id: workspace.id, item_id: itemId, status: 'queued', started_by: actorId, started_at: now, updated_at: now } }, 201)
+}
+
+async function updateAgentRun(request, env, workspace, runId) {
+  const payload = await bodyJson(request)
+  const current = await env.DB.prepare(
+    'SELECT * FROM dojo_agent_runs WHERE id = ? AND workspace_id = ?',
+  ).bind(runId, workspace.id).first()
+  if (!current) return json({ error: 'Fant ikke Claude-økten.' }, 404)
+  const status = Object.hasOwn(payload, 'status') ? allowed(payload.status, ['queued', 'running', 'needs_input', 'testing', 'completed', 'failed'], current.status) : current.status
+  const summary = Object.hasOwn(payload, 'summary') ? cleanText(payload.summary, 5000) : current.summary
+  const files = Array.isArray(payload.files) ? payload.files.map(value => cleanText(value, 500)).filter(Boolean).slice(0, 100) : parseJson(current.files_json || '[]', [])
+  const tests = Array.isArray(payload.tests) ? payload.tests.map(value => cleanText(value, 500)).filter(Boolean).slice(0, 100) : parseJson(current.tests_json || '[]', [])
+  const branch = Object.hasOwn(payload, 'branch') ? cleanText(payload.branch, 250) : current.branch
+  const prUrl = Object.hasOwn(payload, 'pr_url') ? cleanText(payload.pr_url, 500) : current.pr_url
+  const ciStatus = Object.hasOwn(payload, 'ci_status') ? allowed(payload.ci_status, ['none', 'pending', 'passing', 'failing'], current.ci_status) : current.ci_status
+  const completedAt = ['completed', 'failed'].includes(status) ? (current.completed_at || new Date().toISOString()) : null
+  const now = new Date().toISOString()
+  await env.DB.prepare(
+    `UPDATE dojo_agent_runs SET status = ?, summary = ?, files_json = ?, tests_json = ?, branch = ?, pr_url = ?,
+     ci_status = ?, completed_at = ?, updated_at = ? WHERE id = ? AND workspace_id = ?`,
+  ).bind(status, summary, JSON.stringify(files), JSON.stringify(tests), branch, prUrl, ciStatus, completedAt, now, runId, workspace.id).run()
+  await bumpRevision(env, workspace.id)
+  await recordActivity(
+    env, workspace.id, cleanText(payload._actor_id, 100, current.started_by),
+    `run.${status}`, `Claude-økt: ${status.replace('_', ' ')}`, current.item_id, { runId },
+  )
+  return json({ run: { ...current, status, summary, files, tests, branch, pr_url: prUrl, ci_status: ciStatus, completed_at: completedAt, updated_at: now } })
+}
+
+async function heartbeatPresence(request, env, workspace) {
+  const payload = await bodyJson(request)
+  const userId = cleanText(payload.user_id, 100)
+  const displayName = cleanText(payload.display_name, 80, 'Dojo-medlem')
+  if (!userId) return json({ error: 'Tilstedeværelsen mangler bruker.' }, 400)
+  const now = new Date().toISOString()
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO dojo_presence (workspace_id, user_id, display_name, active_item_id, last_seen)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(workspace_id, user_id) DO UPDATE SET
+         display_name = excluded.display_name,
+         active_item_id = excluded.active_item_id,
+         last_seen = excluded.last_seen`,
+    ).bind(workspace.id, userId, displayName, cleanText(payload.active_item_id, 100) || null, now),
+    env.DB.prepare('DELETE FROM dojo_presence WHERE workspace_id = ? AND last_seen < ?')
+      .bind(workspace.id, new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+  ])
+  return json({ ok: true, lastSeen: now })
+}
+
+async function createManualActivity(request, env, workspace) {
+  const payload = await bodyJson(request)
+  const actorId = cleanText(payload.actor_id, 100)
+  const summary = cleanText(payload.summary, 500)
+  if (!actorId || !summary) return json({ error: 'Beslutningen mangler bruker eller tekst.' }, 400)
+  await recordActivity(env, workspace.id, actorId, allowed(payload.event_type, ['decision', 'note'], 'note'), summary, cleanText(payload.item_id, 100) || null)
+  await bumpRevision(env, workspace.id)
+  return json({ ok: true }, 201)
+}
+
+async function restoreItemVersion(request, env, workspace, itemId) {
+  const payload = await bodyJson(request)
+  const actorId = cleanText(payload.actor_id, 100)
+  const version = await env.DB.prepare(
+    'SELECT snapshot_json FROM dojo_item_versions WHERE id = ? AND item_id = ? AND workspace_id = ?',
+  ).bind(cleanText(payload.version_id, 100), itemId, workspace.id).first()
+  const current = await env.DB.prepare(
+    'SELECT * FROM dojo_items WHERE id = ? AND workspace_id = ?',
+  ).bind(itemId, workspace.id).first()
+  if (!version || !current || !actorId) return json({ error: 'Kunne ikke gjenopprette denne versjonen.' }, 404)
+  const snapshot = parseJson(version.snapshot_json || '{}', {})
+  const now = new Date().toISOString()
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO dojo_item_versions (id, workspace_id, item_id, actor_id, snapshot_json, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    ).bind(crypto.randomUUID(), workspace.id, itemId, actorId, JSON.stringify(mapItem(current)), now),
+    env.DB.prepare(
+      `UPDATE dojo_items SET assigned_to = ?, title = ?, description = ?, item_type = ?, status = ?, priority = ?,
+       tags_json = ?, due_date = ?, milestone_id = ?, depends_on_json = ?, blocked_reason = ?, github_branch = ?,
+       github_pr_url = ?, ci_status = ?, updated_at = ? WHERE id = ? AND workspace_id = ?`,
+    ).bind(
+      snapshot.assigned_to || null, cleanText(snapshot.title, 180, current.title), cleanText(snapshot.description, 5000),
+      allowed(snapshot.item_type, ['idea', 'plan', 'implement', 'test', 'fix', 'bug'], current.item_type),
+      allowed(snapshot.status, ['inbox', 'planned', 'progress', 'review', 'done'], current.status),
+      allowed(snapshot.priority, ['low', 'medium', 'high', 'urgent'], current.priority),
+      JSON.stringify(Array.isArray(snapshot.tags) ? snapshot.tags : []), snapshot.due_date || null,
+      snapshot.milestone_id || null, JSON.stringify(Array.isArray(snapshot.depends_on) ? snapshot.depends_on : []),
+      cleanText(snapshot.blocked_reason, 1000), cleanText(snapshot.github_branch, 250),
+      cleanText(snapshot.github_pr_url, 500), allowed(snapshot.ci_status, ['none', 'pending', 'passing', 'failing'], 'none'),
+      now, itemId, workspace.id,
+    ),
+  ])
+  await bumpRevision(env, workspace.id)
+  await recordActivity(env, workspace.id, actorId, 'item.restored', `Gjenopprettet «${snapshot.title || current.title}»`, itemId)
+  return json({ item: { ...snapshot, id: itemId, workspace_id: workspace.id, updated_at: now } })
+}
+
 async function pairBridge(request, env) {
   const payload = await bodyJson(request)
   const code = normalizeCode(payload.code)
@@ -376,7 +721,7 @@ async function pairBridge(request, env) {
 
 async function bridgeStatus(env, workspace) {
   const client = await env.DB.prepare(
-    `SELECT client_id, display_name, version, last_seen
+    `SELECT client_id, display_name, version, bridge_version, project_root, readme_found, documents_json, last_seen
      FROM dojo_bridge_clients WHERE workspace_id = ? ORDER BY last_seen DESC LIMIT 1`,
   ).bind(workspace.id).first()
   const connected = Boolean(client?.last_seen && Date.now() - Date.parse(client.last_seen) < 20_000)
@@ -386,6 +731,10 @@ async function bridgeStatus(env, workspace) {
     claudeVersion: connected ? client?.version || '' : '',
     clientName: connected ? client?.display_name || '' : '',
     lastSeen: client?.last_seen || null,
+    bridgeVersion: connected ? client?.bridge_version || '' : '',
+    projectRoot: connected ? client?.project_root || '' : '',
+    readmeFound: connected ? Boolean(client?.readme_found) : false,
+    documents: connected ? parseJson(client?.documents_json || '[]', []) : [],
     mode: 'cloud',
   })
 }
@@ -440,19 +789,31 @@ async function pollBridge(request, env, workspace) {
   const clientId = cleanText(payload.clientId, 100)
   const displayName = cleanText(payload.displayName, 80, 'Lokal Claude-bro')
   const version = cleanText(payload.version, 120)
+  const bridgeVersion = cleanText(payload.bridgeVersion, 80)
+  const projectRoot = cleanText(payload.projectRoot, 1000)
+  const readmeFound = payload.readmeFound ? 1 : 0
+  const documentsJson = JSON.stringify(Array.isArray(payload.documents) ? payload.documents.slice(0, 20) : [])
   if (!clientId) return json({ error: 'Broklienten mangler identitet.' }, 400)
   const now = new Date().toISOString()
   const staleAt = new Date(Date.now() - 2 * 60 * 1000).toISOString()
 
   await env.DB.batch([
     env.DB.prepare(
-      `INSERT INTO dojo_bridge_clients (workspace_id, client_id, display_name, version, last_seen)
-       VALUES (?, ?, ?, ?, ?)
+      `INSERT INTO dojo_bridge_clients
+       (workspace_id, client_id, display_name, version, bridge_version, project_root, readme_found, documents_json, last_seen)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(workspace_id, client_id) DO UPDATE SET
          display_name = excluded.display_name,
          version = excluded.version,
+         bridge_version = excluded.bridge_version,
+         project_root = excluded.project_root,
+         readme_found = excluded.readme_found,
+         documents_json = excluded.documents_json,
          last_seen = excluded.last_seen`,
-    ).bind(workspace.id, clientId, displayName, version || null, now),
+    ).bind(
+      workspace.id, clientId, displayName, version || null, bridgeVersion || null,
+      projectRoot || null, readmeFound, documentsJson, now,
+    ),
     env.DB.prepare(
       `UPDATE dojo_bridge_commands SET status = 'failed', error_text = ?, completed_at = ?
        WHERE workspace_id = ? AND status = 'running' AND claimed_at < ?`,
@@ -522,13 +883,31 @@ async function dojoApi(request, env, url) {
   if (request.method === 'POST' && action === 'comments') return createComment(request, env, workspace)
   if (request.method === 'POST' && action === 'attachments') return createAttachment(request, env, workspace)
   if (request.method === 'POST' && action === 'files') return uploadFile(request, env, workspace)
+  if (request.method === 'GET' && action === 'hq2') return hq2Snapshot(env, workspace)
+  if (request.method === 'POST' && action === 'milestones') return createMilestone(request, env, workspace)
+  if (request.method === 'POST' && action === 'test-cases') return createTestCase(request, env, workspace)
+  if (request.method === 'POST' && action === 'agent-runs') return createAgentRun(request, env, workspace)
+  if (request.method === 'POST' && action === 'presence') return heartbeatPresence(request, env, workspace)
+  if (request.method === 'POST' && action === 'activities') return createManualActivity(request, env, workspace)
   if (request.method === 'GET' && action === 'bridge/status') return bridgeStatus(env, workspace)
   if (request.method === 'POST' && action === 'bridge/commands') return createBridgeCommand(request, env, workspace)
   if (request.method === 'POST' && action === 'bridge/poll') return pollBridge(request, env, workspace)
 
   const itemMatch = action.match(/^items\/([^/]+)$/)
   if (itemMatch && request.method === 'PATCH') return updateItem(request, env, workspace, decodeURIComponent(itemMatch[1]))
-  if (itemMatch && request.method === 'DELETE') return deleteItem(env, workspace, decodeURIComponent(itemMatch[1]))
+  if (itemMatch && request.method === 'DELETE') return deleteItem(request, env, workspace, decodeURIComponent(itemMatch[1]))
+  const restoreMatch = action.match(/^items\/([^/]+)\/restore$/)
+  if (restoreMatch && request.method === 'POST') return restoreItemVersion(request, env, workspace, decodeURIComponent(restoreMatch[1]))
+
+  const milestoneMatch = action.match(/^milestones\/([^/]+)$/)
+  if (milestoneMatch && request.method === 'PATCH') return updateMilestone(request, env, workspace, decodeURIComponent(milestoneMatch[1]))
+
+  const testCaseMatch = action.match(/^test-cases\/([^/]+)$/)
+  if (testCaseMatch && request.method === 'PATCH') return updateTestCase(request, env, workspace, decodeURIComponent(testCaseMatch[1]))
+  if (testCaseMatch && request.method === 'DELETE') return deleteTestCase(request, env, workspace, decodeURIComponent(testCaseMatch[1]))
+
+  const runMatch = action.match(/^agent-runs\/([^/]+)$/)
+  if (runMatch && request.method === 'PATCH') return updateAgentRun(request, env, workspace, decodeURIComponent(runMatch[1]))
 
   const attachmentMatch = action.match(/^attachments\/([^/]+)$/)
   if (attachmentMatch && request.method === 'DELETE') return deleteAttachment(env, workspace, decodeURIComponent(attachmentMatch[1]))
