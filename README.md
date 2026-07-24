@@ -147,6 +147,7 @@ The suite (Vitest) focuses on **meaningful behavior**, not string smoke tests: F
 ## Deployment
 
 - Static SPA build (`npm run build`) deployed to Vercel (config in `vercel.json`), which serves from the root and rewrites deep links to `index.html`. The canonical origin is `https://hanzi-dojo.com`.
+- **Two build targets, one repo.** `npm run build` produces the public app in `dist/client` — that's what Vercel serves (`outputDirectory` in `vercel.json` points there, because Vite's `outDir` is `dist/client`, not the default `dist`). `npm run build:sites` sets `DOJO_SITES_BUILD=1` and additionally packages the internal Dojo HQ deploy: it swaps `index.html` for `hq.html`, drops the service worker, and emits `dist/server` + `dist/.openai`. **The Sites deploy must run `build:sites`, not `build`** — and nothing else should, since that packaging overwrites the public entry point.
 - Set the `VITE_*` env vars in your host's environment.
 - Supabase: apply `supabase/schema.sql` and the `supabase/migrations/`. In the Supabase dashboard, set Auth → **Site URL** to `https://hanzi-dojo.com` and add it to the Redirect URL allowlist (plus `http://localhost:5173/**` for dev).
 - Daily reminders run as a scheduled GitHub Action (`send-review-reminders.mjs`) — needs the VAPID + Supabase service secrets above.

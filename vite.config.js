@@ -23,6 +23,18 @@ function buildInfo() {
 // The app is served from the root on its canonical host (Vercel → hanzi-dojo.com)
 // and in local dev, so the base is always '/'. (A former GitHub Pages deployment
 // served under the /Hanzi-dojo/ repo subpath; that host has been retired.)
+
+// The Dojo HQ "Sites" deployment needs a different shape from the public app:
+// its entry is hq.html, it ships a worker plus D1/R2 metadata, and it must not
+// register the app's service worker. Packaging it is DESTRUCTIVE — it overwrites
+// dist/client/index.html with the HQ page and deletes sw.js — so it only runs
+// when explicitly asked for, via `npm run build:sites`.
+//
+// It used to run on every build, including the one Vercel runs, which is why
+// hanzi-dojo.com served the HQ control room (and lost its service worker)
+// instead of the app.
+const SITES_BUILD = process.env.DOJO_SITES_BUILD === '1'
+
 export default defineConfig(() => {
   const info = buildInfo()
   return {
@@ -34,10 +46,12 @@ export default defineConfig(() => {
     build: {
       outDir: 'dist/client',
       rollupOptions: {
-        input: {
-          main: 'index.html',
-          hq: 'hq.html',
-        },
+        // The public build ships the app only. hq.html is the internal
+        // collaboration tool and has no business being fetchable on
+        // hanzi-dojo.com, so it's built solely for the Sites deploy.
+        input: SITES_BUILD
+          ? { main: 'index.html', hq: 'hq.html' }
+          : { main: 'index.html' },
         output: {
           // Split the Supabase client into its own chunk so it caches
           // independently of app code across deploys (app changes far more
@@ -51,7 +65,7 @@ export default defineConfig(() => {
     },
     plugins: [
       react(),
-      {
+      SITES_BUILD && {
         name: 'dojo-sites-output',
         apply: 'build',
         async closeBundle() {
