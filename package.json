@@ -9,7 +9,7 @@
     "dojo:bridge": "node tools/dojo-bridge.mjs",
     "db:generate": "drizzle-kit generate",
     "build": "vite build",
-    "build:sites": "DOJO_SITES_BUILD=1 vite build",
+    "build:public": "DOJO_PUBLIC_BUILD=1 vite build",
     "lint": "eslint .",
     "test": "vitest run",
     "preview": "vite preview",

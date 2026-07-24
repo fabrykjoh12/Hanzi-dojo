@@ -34,14 +34,15 @@ function buildInfo() {
 // hanzi-dojo.com served the HQ control room (and lost its service worker)
 // instead of the app.
 //
-// Two ways to ask for it:
-//   - `npm run build:sites` sets DOJO_SITES_BUILD=1 (explicit, works anywhere).
-//   - Cloudflare Workers Builds sets WORKERS_CI in its build environment. The
-//     HQ Worker is deployed from that CI with no wrangler config in the repo,
-//     so its build command is whatever the dashboard says — most likely a plain
-//     `npm run build`. Auto-detecting the CI keeps that deploy working without
-//     anyone having to touch dashboard settings, and Vercel never sets it.
-const SITES_BUILD = process.env.DOJO_SITES_BUILD === '1' || !!process.env.WORKERS_CI
+// The packaging stays ON by default, so every consumer that builds this repo
+// keeps getting byte-for-byte what it got before — the HQ Worker is deployed
+// from CI whose build command lives outside this repo, and guessing at that
+// environment is how you break someone else's deploy.
+//
+// Instead the PUBLIC build opts out, via a flag set in vercel.json's
+// buildCommand — config that lives here, that we can verify, and that only
+// Vercel uses. `npm run build:public` reproduces it locally.
+const SITES_BUILD = process.env.DOJO_PUBLIC_BUILD !== '1'
 
 export default defineConfig(() => {
   const info = buildInfo()
