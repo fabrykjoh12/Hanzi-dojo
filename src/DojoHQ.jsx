@@ -379,6 +379,12 @@ function ClaudePanel({ status, roadmapInfo, documentName, onDocumentChange, onCl
           <button className={documentName === 'TASKS.md' ? 'active' : ''} onClick={() => onDocumentChange('TASKS.md')}>TASKS.md</button>
         </div>
 
+        <div className="dojo-context-file">
+          <BookOpenCheck size={18} />
+          <div><strong>README.md følger alltid med</strong><span>Leses på nytt fra prosjektmappen hver gang Claude åpnes.</span></div>
+          <Check size={16} aria-hidden="true" />
+        </div>
+
         <div className="dojo-bridge-actions">
           <button className="dojo-primary" onClick={onSync} disabled={!connected || busy}>
             {busy ? <Loader2 className="dojo-spin" size={17} /> : <BookOpenCheck size={17} />}
@@ -869,7 +875,9 @@ export default function DojoHQ({ session, profile }) {
     try {
       const result = await dojoClaudeBridge.launch(item, items, members, roadmapDocument)
       setRoadmapInfo(current => ({ ...(current || {}), document: result.document, itemCount: items.length }))
-      flash('Claude Code åpnes i en ny terminal med oppgaven klar.')
+      flash(result.readmeIncluded
+        ? 'Claude Code åpnes med oppgaven og README.md som kontekst.'
+        : 'Claude Code åpnes, men README.md ble ikke funnet i prosjektmappen.')
     } catch (error) {
       flash(error.message || 'Kunne ikke åpne Claude Code.')
       checkBridge()
