@@ -4,7 +4,7 @@ import { getAudioUrl, playAudioEl } from './utils'
 import { calculateStoryReadability, buildVocabMatcher, segmentLine, namesFor, particlesFor, splitSpeaker, normalizeReadingMode, DEFAULT_READING_MODE } from './storyReading'
 import { splitScene, stripSceneEmoji } from './sceneReading'
 import { prefsGet, prefsMerge } from './offline'
-import { buildTimeline, tokenAtTime, startOfToken, DEFAULT_RATE, SPEED_RATES } from './readAlong'
+import { buildTimeline, tokenAtTime, startOfToken, minDwellMs, DEFAULT_RATE, SPEED_RATES } from './readAlong'
 import { supabase } from './supabase'
 import { loadTtsAudio, utteranceAudio } from './ttsAudio'
 import { claimPlayback, stopAllAudio } from './audioPlayback'
@@ -47,6 +47,9 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   const runRef = useRef(0)
   const audioElRef = useRef(null)
   const advanceBlockedRef = useRef(false)
+  // The speech-synthesis fallback's reading-pace timer (bug: a story with no
+  // real narration used to cascade past because synth `onend` can fire instantly).
+  const synthTimerRef = useRef(null)
   // Read-along: which token of the sounding line is being spoken, and the
   // timeline that decides it. The timeline lives in a ref, not state — it is
   // rebuilt per line from audio metadata and must never trigger a render.
@@ -86,6 +89,7 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     // shared "who is speaking" registry, so leaving the reader mid-line cannot
     // leave a voice running under the next screen.
     stopAllAudio()
+    if (synthTimerRef.current) { clearTimeout(synthTimerRef.current); synthTimerRef.current = null }
     if (audioElRef.current) audioElRef.current.pause()
     // Drop the spotlight with the sound. Clearing the timeline too means a stale
     // one can never light a word on the next line before its metadata arrives.
@@ -134,14 +138,31 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     // audio clip simply never gets a timeline and stays dark throughout.
     timelineRef.current = null
     setActiveToken(-1)
+    if (synthTimerRef.current) { clearTimeout(synthTimerRef.current); synthTimerRef.current = null }
     const nextBeat = () => { if (runId === runRef.current) speakFrom(index + 1, runId) }
+    // Speech-synthesis fallback (no synthesized clip for this line). Advance only
+    // when BOTH the utterance has ended AND a reading-pace floor has elapsed —
+    // whichever is later. Without the floor, platforms that fire `onend`
+    // instantly (voices not loaded, muted, unsupported locale) blow through the
+    // whole story in a second or two. Without the speech gate, a line that DOES
+    // voice would be cut off. The floor timer also covers the case where speech
+    // never ends at all, so playback can't wedge.
     const viaSynth = () => {
+      let floorDone = false
+      let speechDone = false
+      const tryAdvance = () => { if (floorDone && speechDone) nextBeat() }
+      const floorMs = minDwellMs(beats[index].tokens, rateRef.current)
+      synthTimerRef.current = setTimeout(() => { floorDone = true; tryAdvance() }, floorMs)
       try {
         const u = new SpeechSynthesisUtterance(beats[index].text)
-        u.lang = ttsLang; u.rate = 0.9
-        u.onend = nextBeat
+        u.lang = ttsLang; u.rate = rateRef.current
+        u.onend = () => { speechDone = true; tryAdvance() }
+        u.onerror = () => { speechDone = true; tryAdvance() }
         window.speechSynthesis.speak(u)
-      } catch { setPlaying(false) }
+      } catch {
+        // No speech engine at all — the floor timer alone advances the beat.
+        speechDone = true
+      }
     }
     const url = audioForBeat(index)
     if (url) {

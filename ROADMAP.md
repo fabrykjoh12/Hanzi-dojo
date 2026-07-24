@@ -12,6 +12,7 @@ so the community always sees the latest. Keep it current — move things to
 > you everywhere.
 
 ## 🚧 Now — in progress
+- [ ] A calmer Stories library: story covers never break (a designed fallback when art is missing), narration paces itself so a story no longer races past, the classic reader follows the line it's reading, and the shelf is being regrouped into clear story arcs with a tidy card grid
 - [ ] Writing the first HSK 3 stories, so the new levels have reading of their own
 - [x] Better-sounding Chinese: new neural voices for every word, example sentence and story line, plus a slow version of each word and sentence for when a word won't stick. Stories now have a narrator and separate character voices.
 

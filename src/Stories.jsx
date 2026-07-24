@@ -10,6 +10,7 @@ import { todayStr } from './streak'
 import { pickDailyStory } from './dailyStory'
 import { readingLadder, nextRung } from './readingLadder'
 import StoryReader from './StoryReader'
+import StoryCover from './StoryCover'
 import {
   ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Circle, Library, Lock, Sparkles,
 } from 'lucide-react'
@@ -141,22 +142,19 @@ function StoryListCard({ story, read, accentHex, fontFamily, onClick }) {
       }}
     >
       {coverUrl ? (
-        <div style={{
-          position: 'relative', width: '84px', height: '60px', borderRadius: '13px',
-          overflow: 'hidden', border: '1px solid var(--border)', background: accentHex + '10',
-        }}>
-          <img src={coverUrl} alt="" loading="lazy"
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        <StoryCover story={story} path={story.image_path} accent={accentHex} radius={13}
+          style={{ width: '84px', height: '60px' }}>
           {read && (
             <div style={{
               position: 'absolute', top: '4px', right: '4px', width: '20px', height: '20px',
               borderRadius: '999px', background: 'var(--success)', display: 'flex',
               alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+              zIndex: 1,
             }}>
               <CheckCircle2 size={13} strokeWidth={2.4} color="#fff" />
             </div>
           )}
-        </div>
+        </StoryCover>
       ) : (
         <div style={{
           width: '44px', height: '44px', borderRadius: '15px',
