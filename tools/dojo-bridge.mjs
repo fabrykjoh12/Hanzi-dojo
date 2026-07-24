@@ -229,10 +229,11 @@ export function buildClaudePrompt(item, documentName, readme = {}) {
 
 async function launchClaude({ item, items = [], members = [], document: documentName }) {
   if (!item?.id || !item?.title) throw new Error('En gyldig Dojo-oppgave må velges.')
-  const [synced, readme] = await Promise.all([
-    syncDocument({ document: documentName, items, members }),
-    readProjectReadme(),
-  ])
+  const readme = await readProjectReadme()
+  if (!readme.found) {
+    throw new Error('README.md ble ikke funnet i mappen broen er startet fra. Stopp broen og kjør koblingskommandoen på nytt fra prosjektets rotmappe.')
+  }
+  const synced = await syncDocument({ document: documentName, items, members })
   const taskDirectory = resolve(PROJECT_ROOT, '.dojo')
   const taskPath = resolve(taskDirectory, 'claude-task.md')
   await mkdir(taskDirectory, { recursive: true })
