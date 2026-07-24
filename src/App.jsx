@@ -64,6 +64,23 @@ function ViewFallback() {
 // Route ⇄ view mapping lives in ./routes (testable, and shared with the
 // unknown-route guard below).
 
+// The daily review reminder is sent by an hourly server-side job, which needs
+// to know what hour it is where the learner actually is — the browser is the
+// only thing that knows. Best-effort in every direction: skipped when the
+// zone is unavailable or unchanged (so this is never a write on every load),
+// and a failed write is swallowed, because a reminder preference must never
+// break app startup.
+function recordTimezone(userId, storedTimezone) {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+    if (!tz || tz === storedTimezone) return
+    supabase.from('profiles').update({ timezone: tz }).eq('id', userId).then(() => {}, () => {})
+  } catch {
+    // No Intl zone available (or the write threw synchronously) — the sender
+    // falls back to the old UTC-hour behavior for a profile with no zone.
+  }
+}
+
 // ── Main app ──────────────────────────────────────────────────────────────
 export default function App() {
   const [session, setSession] = useState(null)
@@ -134,6 +151,13 @@ export default function App() {
 
     // Apply the user's saved theme preference, if any.
     if (prof.theme === 'dark' || prof.theme === 'light') setThemeState(prof.theme)
+
+    // Keep the profile's timezone current so the hourly reminder sender can
+    // fire at the right hour on *this* user's clock (see
+    // src/reminderSchedule.js). Written only when missing or changed, so a
+    // normal app load stays read-only, and best-effort in every direction —
+    // a reminder preference must never break startup.
+    recordTimezone(userId, prof.timezone)
 
     const { data: tr } = await supabase
       .from('language_tracks')
