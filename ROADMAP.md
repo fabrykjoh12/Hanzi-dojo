@@ -12,11 +12,11 @@ so the community always sees the latest. Keep it current — move things to
 > you everywhere.
 
 ## 🚧 Now — in progress
-- [ ] A calmer Stories library: story covers never break (a designed fallback when art is missing), narration paces itself so a story no longer races past, the classic reader follows the line it's reading, and the shelf is being regrouped into clear story arcs with a tidy card grid
 - [ ] Writing the first HSK 3 stories, so the new levels have reading of their own
 - [x] Better-sounding Chinese: new neural voices for every word, example sentence and story line, plus a slow version of each word and sentence for when a word won't stick. Stories now have a narrator and separate character voices.
 
 **Just shipped**
+- [x] A calmer Stories library: story covers never break (a designed fallback when art is missing), narration paces itself so a paged story no longer races past, the classic reader auto-follows the line it's reading, stories are grouped into clear arcs in a tidy card grid with All/Unread filters, and paged vs. scroll reading is now an equal, obvious choice
 - [x] Pinyin only where you need it: readings now appear over the individual words you haven't learned yet, in every story format, instead of all-or-nothing for the whole line
 - [x] Safer reviews: a grade is now saved in one step, so an interrupted save can't leave your progress half-recorded
 - [x] Your story shelf only grows now: reach HSK 3 and every HSK 1 and 2 story is still there to read and re-read, grouped by level
