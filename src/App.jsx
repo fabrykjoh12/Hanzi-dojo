@@ -593,7 +593,7 @@ export default function App() {
         <Background language={profile.active_language} />
         {!isMobile && (
           <div style={{ position: 'relative', zIndex: 10 }}>
-            <Sidebar view={view} onNavigate={navigate} onLogout={handleLogout} isAdmin={!!profile.is_admin} />
+            <Sidebar view={view} onNavigate={navigate} onLogout={handleLogout} isAdmin={!!profile.is_admin} language={profile.active_language} />
           </div>
         )}
         <main id="main-content" tabIndex={-1} ref={mainRef} style={{
@@ -610,7 +610,7 @@ export default function App() {
             </ErrorBoundary>
           </Suspense>
         </main>
-        {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} isAdmin={!!profile.is_admin} />}
+        {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} isAdmin={!!profile.is_admin} language={profile.active_language} />}
         {/* Calm screens only — floating over Study it covered the Easy grade
             button, and the story reader has its own bottom audio bar. */}
         {['home', 'practice', 'profile', 'settings', 'words', 'grammar', 'languages'].indexOf(view) !== -1 && (

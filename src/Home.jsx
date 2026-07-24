@@ -1,12 +1,43 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { getLevelLabel, getSystemLabel } from './utils'
-import { languageTheme } from './languageTheme'
+import { languageTheme, ink } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
-import { Layers, BookOpen, Play, PenLine, ArrowRight, Sunrise, MessagesSquare } from 'lucide-react'
+import { Layers, BookOpen, Play, PenLine, ArrowRight, Sunrise, MessagesSquare, Check } from 'lucide-react'
 import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
+import EnsoRing from './EnsoRing'
+import { dojoProgress } from './enso'
 
-function FlowStep({ icon, label, accentHex, active, onClick }) {
+// Ink palette for the three queue states. Earth tones drawn from the dojo
+// identity (the language accent, an amber ink, the nav sage) rather than the
+// default blue/orange/mint dashboard triad — they sit together instead of
+// competing.
+const AMBER_INK = '#C2803B'
+const SAGE_INK = '#4F6047'
+
+// Small caps eyebrow used for every secondary label on the screen. One rule,
+// applied consistently, is most of what makes a layout feel authored.
+const MICRO = {
+  fontSize: '10.5px', fontWeight: 800, letterSpacing: '0.14em',
+  textTransform: 'uppercase', color: 'var(--text-faint)',
+}
+
+const NUM = { fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"' }
+
+// Shared card chrome: themed surface, a lit top edge, and a two-layer shadow.
+function panelStyle({ hovered = false, accentHex, padding }) {
+  return {
+    position: 'relative',
+    background: 'var(--surface)',
+    borderRadius: '20px',
+    border: '1px solid ' + (hovered ? accentHex + '4D' : 'var(--border)'),
+    boxShadow: (hovered ? 'var(--shadow-2)' : 'var(--shadow-1)') + ', inset 0 1px 0 var(--hairline)',
+    padding,
+    overflow: 'hidden',
+  }
+}
+
+function FlowStep({ icon, label, index, accentHex, accentInk, active, onClick }) {
   const [hovered, setHovered] = useState(false)
   const Icon = icon
   return (
@@ -14,33 +45,80 @@ function FlowStep({ icon, label, accentHex, active, onClick }) {
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      className="hd-flow-step hd-press"
+      aria-current={active ? 'step' : undefined}
       style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
-        padding: '14px 10px', borderRadius: '14px', cursor: 'pointer',
-        fontFamily: 'Inter, sans-serif',
-        background: active ? `${accentHex}0D` : (hovered ? 'var(--surface-2)' : 'transparent'),
-        border: '1px solid ' + (active ? accentHex + '33' : 'transparent'),
-        transition: 'background 140ms ease', minWidth: '76px',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '9px',
+        padding: '4px 2px', border: 'none', background: 'transparent',
+        cursor: 'pointer', fontFamily: 'Inter, sans-serif', width: '74px', flexShrink: 0,
       }}
     >
-      <div style={{
-        width: '40px', height: '40px', borderRadius: '11px',
-        background: active ? accentHex : `${accentHex}12`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <Icon size={20} strokeWidth={1.75} color={active ? '#fff' : accentHex} />
+      <div
+        className="hd-flow-tile"
+        style={{
+          width: '46px', height: '46px', borderRadius: '15px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: active ? accentHex : `color-mix(in srgb, ${accentHex} 9%, var(--surface))`,
+          border: '1px solid ' + (active ? accentHex : `color-mix(in srgb, ${accentHex} 22%, var(--border))`),
+          boxShadow: active ? `0 6px 16px -8px ${accentHex}` : 'none',
+        }}
+      >
+        <Icon size={20} strokeWidth={1.8} color={active ? '#fff' : accentInk} />
       </div>
-      <span style={{ fontSize: '12px', fontWeight: active ? 700 : 500, color: active ? accentHex : 'var(--text-muted)' }}>{label}</span>
+      <span style={{
+        fontSize: '11.5px', fontWeight: active ? 750 : 550, textAlign: 'center',
+        color: active ? 'var(--text)' : (hovered ? 'var(--text)' : 'var(--text-muted)'),
+        transition: 'color 150ms ease',
+      }}>
+        {label}
+      </span>
+      <span style={{ ...MICRO, ...NUM, fontSize: '9px', letterSpacing: '0.1em', opacity: active ? 1 : 0.55, color: active ? accentInk : 'var(--text-faint)' }}>
+        {'0' + index}
+      </span>
     </button>
+  )
+}
+
+// The rail between two flow steps. Filled behind steps the learner has passed.
+function FlowLink({ done, accentHex }) {
+  return (
+    <div aria-hidden style={{
+      flex: 1, height: '2px', marginTop: '26px', borderRadius: '2px', minWidth: '8px',
+      background: done ? `color-mix(in srgb, ${accentHex} 45%, transparent)` : 'var(--border)',
+    }} />
+  )
+}
+
+// One of the three queue readouts. No pastel block — a colored tick, a tabular
+// number and a label, separated by hairlines.
+function QueueStat({ label, value, color, first }) {
+  return (
+    <div style={{
+      flex: 1, minWidth: 0, paddingLeft: first ? 0 : '18px',
+      borderLeft: first ? 'none' : '1px solid var(--border)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '5px' }}>
+        <span aria-hidden style={{ width: '3px', height: '11px', borderRadius: '2px', background: color, flexShrink: 0 }} />
+        <span style={{ ...MICRO, color: 'var(--text-muted)' }}>{label}</span>
+      </div>
+      <div style={{ ...NUM, fontSize: '30px', fontWeight: 700, lineHeight: 1, color, letterSpacing: '-0.02em' }}>
+        {value}
+      </div>
+    </div>
   )
 }
 
 export default function Home({ profile, track, counts, onNavigate }) {
   const [dojoHovered, setDojoHovered] = useState(false)
+  const [discordHovered, setDiscordHovered] = useState(false)
   const isMobile = useIsMobile()
 
   const theme = languageTheme(profile.active_language)
   const accentHex = theme.accentHex
+  // Every place the accent is used as INK (text, the ensō itself) goes
+  // through ink() so it lifts on dark surfaces; tints and borders keep the
+  // raw hex, since they already mix into the themed surface.
+  const accentInk = ink(accentHex)
   const langChars = theme.nativeName
   const langFont = theme.font
   const systemLabel = getSystemLabel(track.system)
@@ -53,6 +131,10 @@ export default function Home({ profile, track, counts, onNavigate }) {
   const doneToday = counts.newDoneToday || 0
   const goalComplete = goal > 0 && doneToday >= goal
   const noNewLeft = !goalComplete && counts.newCount === 0
+
+  // How far the ensō has closed: cards cleared today over the whole of today's
+  // ask. Nothing due reads as a finished circle, not an empty one.
+  const progress = dojoProgress({ done: doneToday, remaining: totalDue })
 
   // Gentle return: after a break, Study caps the overdue backlog to a calm
   // handful. Surface a warm welcome-back banner only when that cap actually bites
@@ -72,27 +154,51 @@ export default function Home({ profile, track, counts, onNavigate }) {
         reason: 'Queue clear — read a story to lock today’s words in',
       }
 
+  const flow = [
+    { key: 'study', label: 'Flashcards', icon: Layers },
+    { key: 'stories', label: 'Stories', icon: BookOpen },
+    { key: 'youtube', label: 'Videos', icon: Play },
+    { key: 'writing', label: 'Writing', icon: PenLine },
+  ]
+  const activeIndex = flow.findIndex(s => s.key === rec.key)
+
   return (
     <div style={{ maxWidth: '820px', margin: '0 auto', padding: isMobile ? '28px 16px 40px' : '52px 32px 60px' }}>
 
-      {/* ── Header: language identity ── */}
-      <div style={{ marginBottom: '36px' }}>
-        <div style={{ fontSize: '52px', fontWeight: 700, color: accentHex, lineHeight: 1, fontFamily: langFont }}>
+      {/* ── Header: language identity ── the native script is the mark, so it
+          gets the accent, its own face, and a hairline rule that carries the
+          level metadata out to the edge. ── */}
+      <div className="hd-rise" style={{ marginBottom: isMobile ? '26px' : '34px' }}>
+        <div style={{
+          fontSize: isMobile ? '44px' : '54px', fontWeight: 700, color: accentInk,
+          lineHeight: 1, fontFamily: langFont, letterSpacing: '-0.02em',
+        }}>
           {langChars}
         </div>
-        <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '8px', letterSpacing: '0.2px' }}>
-          {systemLabel} · {levelSuffix}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
+          <span style={{ ...MICRO, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+            {systemLabel} · {levelSuffix}
+          </span>
+          <span aria-hidden style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
         </div>
       </div>
 
       {/* ── Welcome back (gentle return) ── */}
       {gentleActive && (
-        <div role="status" aria-live="polite" style={{
-          display: 'flex', alignItems: 'center', gap: '11px', marginBottom: '20px',
-          background: `${accentHex}0D`, border: '1px solid ' + accentHex + '2A',
-          borderRadius: '16px', padding: isMobile ? '14px 16px' : '16px 20px',
-        }}>
-          <Sunrise size={20} strokeWidth={1.9} color={accentHex} style={{ flexShrink: 0 }} />
+        <div
+          role="status"
+          aria-live="polite"
+          className="hd-rise"
+          style={{
+            display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px',
+            background: `color-mix(in srgb, ${accentHex} 7%, var(--surface))`,
+            border: '1px solid ' + `color-mix(in srgb, ${accentHex} 26%, var(--border))`,
+            borderLeft: `3px solid ${accentHex}`,
+            borderRadius: '14px', padding: isMobile ? '14px 16px' : '15px 20px',
+            animationDelay: '60ms',
+          }}
+        >
+          <Sunrise size={20} strokeWidth={1.9} color={accentInk} style={{ flexShrink: 0 }} />
           <span style={{ fontSize: '13.5px', color: 'var(--text)', fontWeight: 550, lineHeight: 1.5 }}>
             {gentleReturnMessage(gentleReady)}
           </span>
@@ -108,78 +214,137 @@ export default function Home({ profile, track, counts, onNavigate }) {
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate(rec.key) } }}
         onMouseEnter={() => setDojoHovered(true)}
         onMouseLeave={() => setDojoHovered(false)}
+        className="hd-press hd-rise"
         style={{
-          background: 'var(--surface)', borderRadius: '20px',
-          border: '1px solid ' + (dojoHovered ? accentHex + '55' : 'var(--border)'),
-          boxShadow: dojoHovered ? '0 6px 22px rgba(0,0,0,0.08)' : '0 2px 16px rgba(0,0,0,0.05)',
-          padding: isMobile ? '30px 20px' : '40px 44px', marginBottom: '28px',
-          cursor: 'pointer', transition: 'border-color 160ms ease, box-shadow 160ms ease',
+          ...panelStyle({ hovered: dojoHovered, accentHex, padding: isMobile ? '26px 20px 22px' : '32px 34px 26px' }),
+          marginBottom: '18px', cursor: 'pointer', animationDelay: '80ms',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px', marginBottom: '32px' }}>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
-              <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text)' }}>Today’s Dojo</span>
+        {/* A single soft wash behind the ring, so the ensō sits in light rather
+            than on a flat white rectangle. */}
+        <div aria-hidden style={{
+          position: 'absolute', top: '-90px', left: isMobile ? '50%' : '-40px',
+          transform: isMobile ? 'translateX(-50%)' : 'none',
+          width: '320px', height: '320px', borderRadius: '50%', pointerEvents: 'none',
+          background: `radial-gradient(circle, color-mix(in srgb, ${accentHex} 9%, transparent) 0%, transparent 68%)`,
+        }} />
+
+        <div style={{
+          position: 'relative',
+          display: 'flex', flexDirection: isMobile ? 'column' : 'row',
+          alignItems: 'center', gap: isMobile ? '18px' : '30px',
+        }}>
+          {/* The ensō: closes as today's queue is cleared. */}
+          <EnsoRing size={isMobile ? 132 : 152} pct={progress.pct} color={accentInk}>
+            {totalDue > 0 ? (
+              <>
+                <span style={{ ...NUM, fontSize: isMobile ? '34px' : '38px', fontWeight: 700, color: 'var(--text)', lineHeight: 1, letterSpacing: '-0.03em' }}>
+                  {totalDue}
+                </span>
+                <span style={{ ...MICRO, fontSize: '9.5px' }}>to clear</span>
+              </>
+            ) : (
+              <>
+                <Check size={isMobile ? 30 : 34} strokeWidth={2.4} color={accentInk} />
+                <span style={{ ...MICRO, fontSize: '9.5px', marginTop: '4px' }}>circle closed</span>
+              </>
+            )}
+          </EnsoRing>
+
+          <div style={{ flex: 1, minWidth: 0, width: '100%', textAlign: isMobile ? 'center' : 'left' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px',
+              justifyContent: isMobile ? 'center' : 'flex-start', flexWrap: 'wrap',
+            }}>
+              <span style={{ fontSize: isMobile ? '21px' : '23px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+                Today’s Dojo
+              </span>
               {totalDue > 0 ? (
                 <span style={{
-                  fontSize: '13px', color: accentHex, background: `${accentHex}10`,
-                  padding: '5px 14px', borderRadius: '20px', fontWeight: 500,
-                  border: '1px solid ' + accentHex + '26',
+                  ...MICRO, fontSize: '9.5px', color: accentInk,
+                  background: `color-mix(in srgb, ${accentHex} 10%, var(--surface))`,
+                  padding: '4px 10px', borderRadius: '999px',
+                  border: '1px solid ' + `color-mix(in srgb, ${accentHex} 28%, var(--border))`,
                 }}>
                   Cards waiting
                 </span>
               ) : (
                 <span style={{
-                  fontSize: '13px', color: 'var(--text-muted)',
-                  background: 'var(--surface-2)',
-                  padding: '5px 14px', borderRadius: '20px', fontWeight: 500,
+                  ...MICRO, fontSize: '9.5px', color: 'var(--text-muted)',
+                  background: 'var(--surface-2)', padding: '4px 10px', borderRadius: '999px',
+                  border: '1px solid var(--border)',
                 }}>
-                  All caught up ✓
+                  All caught up
                 </span>
               )}
             </div>
-            <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+
+            <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
               {goalComplete
                 ? 'Daily goal complete — nice work.'
                 : noNewLeft
                   ? 'No new cards left at this level.'
                   : 'Daily goal: ' + doneToday + ' of ' + goal + ' new cards'}
             </div>
+
+            {/* New / Learning / Due */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', marginTop: '20px', textAlign: 'left' }}>
+              {[
+                { label: 'New', value: counts.newCount, color: accentInk },
+                { label: 'Learning', value: counts.learnCount, color: ink(AMBER_INK) },
+                { label: 'Due', value: counts.dueCount, color: ink(SAGE_INK) },
+              ].map(({ label, value, color }, i) => (
+                <QueueStat key={label} label={label} value={value} color={color} first={i === 0} />
+              ))}
+            </div>
           </div>
-          <ArrowRight size={24} strokeWidth={2.2} color={dojoHovered ? accentHex : 'var(--text-faint)'} style={{ flexShrink: 0, transition: 'color 160ms ease' }} />
         </div>
 
-        {/* New / Learning / Due */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-          {[
-            { label: 'New', value: counts.newCount, color: '#3E63DD' },
-            { label: 'Learning', value: counts.learnCount, color: '#D97706' },
-            { label: 'Due', value: counts.dueCount, color: '#2F9E6D' },
-          ].map(({ label, value, color }) => (
-            <div key={label} style={{ textAlign: 'center', padding: '22px 14px', background: color + '14', border: '1px solid ' + color + '26', borderRadius: '16px' }}>
-              <div style={{ fontSize: '44px', fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px', fontWeight: 500 }}>{label}</div>
-            </div>
-          ))}
+        {/* Next-step footer — reads as the card's own action bar rather than a
+            nested button (the whole card navigates). */}
+        <div style={{
+          position: 'relative',
+          display: 'flex', alignItems: 'center', gap: '12px',
+          marginTop: isMobile ? '20px' : '24px', paddingTop: '16px',
+          borderTop: '1px solid var(--border)',
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ ...MICRO, marginBottom: '4px' }}>Next up</div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>{rec.label}</div>
+            <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.45 }}>{rec.reason}</div>
+          </div>
+          <div style={{
+            width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: dojoHovered ? accentHex : `color-mix(in srgb, ${accentHex} 10%, var(--surface))`,
+            border: '1px solid ' + (dojoHovered ? accentHex : `color-mix(in srgb, ${accentHex} 24%, var(--border))`),
+            transform: dojoHovered ? 'translateX(3px)' : 'translateX(0)',
+            transition: 'background 180ms ease, transform 180ms cubic-bezier(0.22,1,0.36,1), border-color 180ms ease',
+          }}>
+            <ArrowRight size={19} strokeWidth={2.2} color={dojoHovered ? '#fff' : accentInk} />
+          </div>
         </div>
       </div>
 
-      {/* ── Keep the flow going ── */}
-      <div style={{
-        background: 'var(--surface)', borderRadius: '18px', border: '1px solid var(--border)',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.04)', padding: '22px 24px',
-      }}>
-        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', marginBottom: '14px' }}>
-          Your daily loop
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <FlowStep icon={Layers} label="Flashcards" accentHex={accentHex} active={rec.key === 'study'} onClick={() => onNavigate('study')} />
-          <ArrowRight size={16} strokeWidth={2} color="#D4D4D8" />
-          <FlowStep icon={BookOpen} label="Stories" accentHex={accentHex} active={rec.key === 'stories'} onClick={() => onNavigate('stories')} />
-          <ArrowRight size={16} strokeWidth={2} color="#D4D4D8" />
-          <FlowStep icon={Play} label="Videos" accentHex={accentHex} onClick={() => onNavigate('youtube')} />
-          <ArrowRight size={16} strokeWidth={2} color="#D4D4D8" />
-          <FlowStep icon={PenLine} label="Writing" accentHex={accentHex} onClick={() => onNavigate('writing')} />
+      {/* ── Keep the flow going ── a rail, filled up to where the learner is,
+          rather than a row of arrows. ── */}
+      <div className="hd-rise" style={{ ...panelStyle({ accentHex, padding: isMobile ? '18px 14px 16px' : '20px 26px 18px' }), animationDelay: '160ms' }}>
+        <div style={{ ...MICRO, marginBottom: '14px' }}>Your daily loop</div>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          {flow.map((step, i) => (
+            <Fragment key={step.key}>
+              {i > 0 && <FlowLink done={i <= activeIndex} accentHex={accentHex} />}
+              <FlowStep
+                icon={step.icon}
+                label={step.label}
+                index={i + 1}
+                accentHex={accentHex}
+                accentInk={accentInk}
+                active={i === activeIndex}
+                onClick={() => onNavigate(step.key)}
+              />
+            </Fragment>
+          ))}
         </div>
       </div>
 
@@ -189,27 +354,33 @@ export default function Home({ profile, track, counts, onNavigate }) {
           href={DISCORD_INVITE_URL}
           target="_blank"
           rel="noopener noreferrer"
+          onMouseEnter={() => setDiscordHovered(true)}
+          onMouseLeave={() => setDiscordHovered(false)}
+          className="hd-press hd-rise"
           style={{
-            display: 'flex', alignItems: 'center', gap: '14px', marginTop: '16px',
-            background: 'var(--surface)', borderRadius: '18px', border: '1px solid var(--border)',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.04)', padding: '18px 20px',
-            textDecoration: 'none', fontFamily: 'Inter, sans-serif',
+            ...panelStyle({ hovered: discordHovered, accentHex: '#5865F2', padding: '16px 20px' }),
+            display: 'flex', alignItems: 'center', gap: '14px', marginTop: '14px',
+            textDecoration: 'none', fontFamily: 'Inter, sans-serif', animationDelay: '220ms',
           }}
         >
           <div style={{
-            width: '44px', height: '44px', borderRadius: '13px', flexShrink: 0,
-            background: '#5865F214', border: '1px solid #5865F233',
+            width: '42px', height: '42px', borderRadius: '13px', flexShrink: 0,
+            background: 'color-mix(in srgb, #5865F2 12%, var(--surface))',
+            border: '1px solid color-mix(in srgb, #5865F2 30%, var(--border))',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <MessagesSquare size={22} strokeWidth={1.9} color="#5865F2" />
+            <MessagesSquare size={21} strokeWidth={1.9} color="#5865F2" />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text)' }}>Join our Discord</div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>Join our Discord</div>
             <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '2px' }}>
               Trade study tips, get help, and help shape what we build next.
             </div>
           </div>
-          <ArrowRight size={19} strokeWidth={2.1} color="#5865F2" style={{ flexShrink: 0 }} />
+          <ArrowRight
+            size={18} strokeWidth={2.1} color="#5865F2"
+            style={{ flexShrink: 0, transform: discordHovered ? 'translateX(3px)' : 'none', transition: 'transform 180ms cubic-bezier(0.22,1,0.36,1)' }}
+          />
         </a>
       )}
     </div>

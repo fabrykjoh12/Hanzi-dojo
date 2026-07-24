@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
 import { MoreHorizontal, X } from 'lucide-react'
+import { languageTheme, ink } from './languageTheme'
 import { MOBILE_PRIMARY, MOBILE_MORE, ADMIN_NAV } from './navConfig'
 
-const SAGE_BG = '#E7EDE4'
-const SAGE_TEXT = '#4F6047'
 const MUTED = 'var(--text-muted)'
 
 // Primary tabs live directly in the bottom bar; the rest go behind the "More"
@@ -11,20 +10,27 @@ const MUTED = 'var(--text-muted)'
 const PRIMARY = MOBILE_PRIMARY
 const MORE_ITEMS = MOBILE_MORE
 
-function Tab({ icon: Icon, label, active, onClick }) {
+function Tab({ icon: Icon, label, active, accentHex, onClick }) {
   return (
     <button
       onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      className={'hd-tab hd-press' + (active ? ' is-active' : '')}
       style={{
         flex: 1, background: 'none', border: 'none', cursor: 'pointer',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        gap: '3px', padding: '7px 0', minWidth: 0,
+        gap: '3px', padding: '9px 0 7px', minWidth: 0,
       }}
     >
-      <Icon size={22} strokeWidth={active ? 2.1 : 1.85} color={active ? SAGE_TEXT : MUTED} />
+      <Icon
+        className="hd-tab-icon"
+        size={22} strokeWidth={active ? 2.2 : 1.85}
+        color={active ? accentHex : MUTED}
+      />
       <span style={{
-        fontSize: '10.5px', fontWeight: active ? 600 : 500,
-        letterSpacing: '0.1px', color: active ? SAGE_TEXT : MUTED,
+        fontSize: '10.5px', fontWeight: active ? 700 : 500,
+        letterSpacing: '0.1px', color: active ? accentHex : MUTED,
+        transition: 'color 160ms ease',
       }}>
         {label}
       </span>
@@ -32,8 +38,10 @@ function Tab({ icon: Icon, label, active, onClick }) {
   )
 }
 
-export default function MobileNav({ view, onNavigate, onLogout, isAdmin }) {
+export default function MobileNav({ view, onNavigate, onLogout, isAdmin, language }) {
   const [moreOpen, setMoreOpen] = useState(false)
+  const accentHex = languageTheme(language).accentHex
+  const accentInk = ink(accentHex)
   const moreItems = isAdmin ? [ADMIN_NAV, ...MORE_ITEMS] : MORE_ITEMS
   const moreKeys = moreItems.map(i => i.key)
 
@@ -52,6 +60,10 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin }) {
   }, [moreOpen])
 
   const moreActive = moreKeys.indexOf(view) !== -1
+  // The bar is PRIMARY tabs plus "More"; the marker slides across that many
+  // equal columns, so adding a tab needs no other change here.
+  const columns = PRIMARY.length + 1
+  const activeColumn = moreActive ? columns - 1 : PRIMARY.findIndex(i => i.key === view)
 
   return (
     <>
@@ -61,39 +73,67 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin }) {
           <div
             onClick={() => setMoreOpen(false)}
             aria-hidden
-            style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, background: 'rgba(0,0,0,0.32)', zIndex: 40 }}
+            style={{
+              position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, zIndex: 40,
+              background: 'rgba(9, 9, 11, 0.42)', backdropFilter: 'blur(2px)',
+              animation: 'hd-fade-in 200ms ease both',
+            }}
           />
           <div role="dialog" aria-modal="true" aria-label="More menu" style={{
             position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 41,
             background: 'var(--surface)',
-            borderTopLeftRadius: '18px', borderTopRightRadius: '18px',
-            boxShadow: '0 -8px 30px rgba(0,0,0,0.18)',
-            padding: '10px 14px calc(16px + env(safe-area-inset-bottom))',
+            borderTopLeftRadius: '22px', borderTopRightRadius: '22px',
+            borderTop: '1px solid var(--border)',
+            boxShadow: '0 -12px 40px -12px rgba(0,0,0,0.35), inset 0 1px 0 var(--hairline)',
+            padding: '8px 14px calc(16px + env(safe-area-inset-bottom))',
+            animation: 'hd-sheet-up 280ms cubic-bezier(0.22, 1, 0.36, 1) both',
           }}>
+            {/* Grab handle — tells the thumb this panel belongs to the bottom edge. */}
+            <div aria-hidden style={{
+              width: '38px', height: '4px', borderRadius: '999px',
+              background: 'var(--border)', margin: '6px auto 4px',
+            }} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 6px 8px' }}>
-              <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>More</span>
-              <button onClick={() => setMoreOpen(false)} aria-label="Close menu"
+              <span style={{
+                fontSize: '10.5px', fontWeight: 800, letterSpacing: '0.14em',
+                textTransform: 'uppercase', color: 'var(--text-faint)',
+              }}>
+                More
+              </span>
+              <button onClick={() => setMoreOpen(false)} aria-label="Close menu" className="hd-press"
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex' }}>
                 <X size={20} strokeWidth={1.9} color={MUTED} />
               </button>
             </div>
-            {moreItems.map(item => {
+            {moreItems.map((item, i) => {
               const Icon = item.icon
               const active = view === item.key
               const danger = item.key === 'logout'
+              const tint = danger ? '#DC2626' : accentHex
+              const tintInk = danger ? '#DC2626' : accentInk
               return (
                 <button
                   key={item.key}
                   onClick={() => go(item.key)}
+                  aria-current={active ? 'page' : undefined}
+                  className="hd-press hd-rise"
                   style={{
-                    width: '100%', background: active ? SAGE_BG : 'none', border: 'none',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px',
-                    padding: '13px 12px', borderRadius: '11px',
-                    color: danger ? '#DC2626' : (active ? SAGE_TEXT : 'var(--text-muted)'),
-                    fontSize: '15px', fontWeight: active ? 600 : 500, textAlign: 'left',
+                    position: 'relative', width: '100%', border: 'none', cursor: 'pointer',
+                    background: active ? `color-mix(in srgb, ${tint} 11%, var(--surface))` : 'none',
+                    display: 'flex', alignItems: 'center', gap: '14px',
+                    padding: '13px 14px', borderRadius: '12px',
+                    color: danger ? '#DC2626' : (active ? tintInk : 'var(--text)'),
+                    fontSize: '15px', fontWeight: active ? 650 : 500, textAlign: 'left',
+                    animationDelay: `${40 + i * 22}ms`,
                   }}
                 >
-                  <Icon size={20} strokeWidth={1.85} color={danger ? '#DC2626' : (active ? SAGE_TEXT : MUTED)} />
+                  {active && (
+                    <span aria-hidden style={{
+                      position: 'absolute', left: 0, top: '11px', bottom: '11px',
+                      width: '3px', borderRadius: '0 3px 3px 0', background: tintInk,
+                    }} />
+                  )}
+                  <Icon size={20} strokeWidth={active ? 2.1 : 1.85} color={danger ? '#DC2626' : (active ? tintInk : MUTED)} />
                   {item.label}
                 </button>
               )
@@ -106,14 +146,29 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin }) {
       <nav style={{
         position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 30,
         display: 'flex', alignItems: 'stretch',
-        background: 'var(--surface-glass)', backdropFilter: 'blur(10px)',
+        background: 'var(--surface-glass)', backdropFilter: 'blur(14px)',
         borderTop: '1px solid var(--border)',
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}>
+        {/* One ink marker riding the top edge, sliding between columns. */}
+        <span aria-hidden style={{
+          position: 'absolute', top: 0, left: 0, height: '3px',
+          width: `${100 / columns}%`,
+          transform: `translateX(${Math.max(0, activeColumn) * 100}%)`,
+          opacity: activeColumn < 0 ? 0 : 1,
+          transition: 'transform 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease',
+          pointerEvents: 'none',
+        }}>
+          <span style={{
+            display: 'block', height: '100%', width: '42%', margin: '0 auto',
+            borderRadius: '0 0 3px 3px', background: accentInk,
+          }} />
+        </span>
+
         {PRIMARY.map(item => (
-          <Tab key={item.key} icon={item.icon} label={item.label} active={view === item.key} onClick={() => go(item.key)} />
+          <Tab key={item.key} icon={item.icon} label={item.label} accentHex={accentInk} active={view === item.key} onClick={() => go(item.key)} />
         ))}
-        <Tab icon={MoreHorizontal} label="More" active={moreActive} onClick={() => setMoreOpen(o => !o)} />
+        <Tab icon={MoreHorizontal} label="More" accentHex={accentInk} active={moreActive} onClick={() => setMoreOpen(o => !o)} />
       </nav>
     </>
   )

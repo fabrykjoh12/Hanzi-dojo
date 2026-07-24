@@ -98,3 +98,12 @@ export function availableLanguages(isAdmin) {
 export function isCjk(language) {
   return languageTheme(language).cjk
 }
+
+// Adaptive ink. The accent hexes above are picked to read on white paper, so on
+// a dark surface they sink into the background. This mixes a color toward the
+// theme's `--ink-lift` by `--ink-lift-pct` — a no-op in light mode, a lift
+// toward white in dark — which keeps ONE color expression working on both
+// themes without a second hardcoded palette to keep in sync.
+export function ink(hex) {
+  return `color-mix(in srgb, ${hex}, var(--ink-lift) var(--ink-lift-pct))`
+}

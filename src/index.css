@@ -50,6 +50,19 @@ body {
   --reader-watermark: rgba(24, 24, 27, 0.04);
   --bg-image-opacity: 0.4;
 
+  /* Elevation + edge light. Two layers (a tight contact shadow and a wide,
+     soft cast) read as a card resting on paper; a single blurred box-shadow
+     reads as a floating rectangle. `--hairline` is the lit top edge. */
+  --shadow-1: 0 1px 2px rgba(24, 24, 27, 0.04), 0 6px 18px -12px rgba(24, 24, 27, 0.16);
+  --shadow-2: 0 2px 4px rgba(24, 24, 27, 0.05), 0 18px 40px -20px rgba(24, 24, 27, 0.22);
+  --hairline: rgba(255, 255, 255, 0.75);
+
+  /* Adaptive ink. The accent hexes are tuned for white paper and go muddy on a
+     dark surface, so `ink()` in languageTheme.js mixes them toward these two
+     values — a no-op in light, a lift toward white in dark. */
+  --ink-lift: #FFFFFF;
+  --ink-lift-pct: 0%;
+
   /* Answer-feedback tokens (quizzes, typing, fill-in-the-blank). Kept as
      semantic vars so the correct/wrong panels adapt to dark mode instead of
      glowing as near-white blocks. */
@@ -83,6 +96,12 @@ body {
   to   { transform: translateX(0); opacity: 1; }
 }
 
+/* Backdrop behind the mobile "More" sheet. */
+@keyframes hd-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 /* Spinner for the offline-sync pill. */
 @keyframes hd-spin {
   to { transform: rotate(360deg); }
@@ -110,7 +129,57 @@ body {
 /* Interactive chat: a wrong reply pick gets a small horizontal shake. */
 @keyframes hdShake { 10%,90%{transform:translateX(-1px)} 30%,70%{transform:translateX(2px)} 50%{transform:translateX(-2px)} }
 
+/* ── Home / navigation motion + tactility ────────────────────────────────
+   These are classes rather than inline styles because they need `:active`,
+   `:hover` descendants and keyframes, none of which inline styles can express.
+   All of them are neutralized by the reduced-motion catch-all below. */
+
+/* The ensō closing: the inked stroke is revealed by a masked arc that sweeps
+   from nothing to the current progress. The two ends come in as CSS custom
+   properties so the component can stay stateless. */
+@keyframes hd-enso-draw {
+  from { stroke-dashoffset: var(--hd-dash-from); }
+  to   { stroke-dashoffset: var(--hd-dash-to); }
+}
+.hd-enso-draw {
+  animation: hd-enso-draw 1150ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Sections settle in from below, staggered by an inline animation-delay, so
+   Home assembles itself instead of appearing all at once. */
+@keyframes hd-rise-in {
+  from { transform: translateY(10px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.hd-rise {
+  animation: hd-rise-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Press physics: anything tappable gives under the finger and springs back.
+   Cheap, but it's most of the difference between "a div" and "a control". */
+.hd-press {
+  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 180ms ease, box-shadow 180ms ease, background 150ms ease;
+}
+.hd-press:active {
+  transform: translateY(1px) scale(0.994);
+}
+
+/* Nav rows: the icon leans toward the label on hover. */
+.hd-nav-item svg { transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1); }
+.hd-nav-item:hover svg { transform: translateX(2px); }
+.hd-nav-item.is-collapsed:hover svg { transform: scale(1.08); }
+
+/* A flow step's icon tile lifts on hover. */
+.hd-flow-step .hd-flow-tile { transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), background 160ms ease; }
+.hd-flow-step:hover .hd-flow-tile { transform: translateY(-3px); }
+
+/* The mobile bar's active icon rides up over its ink dot. */
+.hd-tab-icon { transition: transform 220ms cubic-bezier(0.34, 1.4, 0.64, 1); }
+.hd-tab.is-active .hd-tab-icon { transform: translateY(-1px); }
+
 @media (prefers-reduced-motion: reduce) {
+  @keyframes hd-rise-in { from { opacity: 0; } to { opacity: 1; } }
   @keyframes hd-flip-in { from { opacity: 0.4; } to { opacity: 1; } }
   @keyframes hd-toast-in { from { opacity: 0; } to { opacity: 1; } }
   @keyframes hd-sheet-up { from { opacity: 0; } to { opacity: 1; } }
@@ -166,6 +235,13 @@ body {
   --text-muted: #9AA0A8;
   --text-faint: #8C929C;
   --reader-watermark: rgba(255, 255, 255, 0.05);
+  /* On dark surfaces a cast shadow does nothing; depth comes from the lit top
+     edge instead, so the shadows soften and the hairline stays a whisper. */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.30), 0 6px 18px -12px rgba(0, 0, 0, 0.55);
+  --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.36), 0 18px 40px -20px rgba(0, 0, 0, 0.65);
+  --hairline: rgba(255, 255, 255, 0.045);
+  --ink-lift: #FFFFFF;
+  --ink-lift-pct: 30%;
   /* The language background image is bright; keep it barely-there on dark so it
      blends instead of glowing. */
   --bg-image-opacity: 0.06;
