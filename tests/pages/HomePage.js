@@ -2,13 +2,12 @@
 export class HomePage {
   constructor(page) {
     this.page = page;
-    this.reviewCta = page.getByRole('button', { name: /Review & unlock/i });
-    this.fluency = page.getByText(/fluency/i).first();
+    this.dojoCard = page.getByText('Today’s Dojo');
     this.cardsWaiting = page.getByText(/Cards waiting/i);
   }
   async goto() {
     await this.page.goto('/');
-    await this.reviewCta.waitFor({ state: 'visible' });
+    await this.dojoCard.waitFor({ state: 'visible' });
   }
   // The three count tiles on the dashboard, e.g. "New", "Learning", "Due".
   tile(label) {

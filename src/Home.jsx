@@ -2,15 +2,9 @@ import { useState } from 'react'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
-import { Layers, BookOpen, Play, PenLine, ArrowRight, Sunrise, Gauge, Dumbbell, MessagesSquare } from 'lucide-react'
+import { Layers, BookOpen, Play, PenLine, ArrowRight, Sunrise, MessagesSquare } from 'lucide-react'
 import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
-import { fluencyScore, fluencyRank } from './fluency'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
-import { CountUp } from './ui'
-
-// Neutral sage green for the primary CTA (see CLAUDE.md redesign spec)
-const SAGE = '#6E8466'
-const SAGE_DARK = '#5C7155'
 
 function FlowStep({ icon, label, accentHex, active, onClick }) {
   const [hovered, setHovered] = useState(false)
@@ -42,7 +36,6 @@ function FlowStep({ icon, label, accentHex, active, onClick }) {
 }
 
 export default function Home({ profile, track, counts, onNavigate }) {
-  const [ctaHovered, setCtaHovered] = useState(false)
   const [dojoHovered, setDojoHovered] = useState(false)
   const isMobile = useIsMobile()
 
@@ -66,12 +59,6 @@ export default function Home({ profile, track, counts, onNavigate }) {
   // (a real backlog), so a small return doesn't get a needless message.
   const gentleReady = Math.min(counts.dueCount || 0, GENTLE_REVIEW_CAP)
   const gentleActive = isReturningFromBreak(profile) && (counts.dueCount || 0) > GENTLE_REVIEW_CAP
-
-  // Fluency score (lifetime vocabulary command across all levels).
-  const fScore = fluencyScore(counts)
-  const fRank = fluencyRank(fScore)
-  const fMastered = counts.lifetimeMastered || 0
-  const fLearning = Math.max(0, (counts.lifetimeLearned || 0) - fMastered)
 
   // Guided "next step" in the daily loop: clear the flashcard queue first, then
   // move to reading immersion. This turns Home from a menu into a coach.
@@ -112,9 +99,8 @@ export default function Home({ profile, track, counts, onNavigate }) {
         </div>
       )}
 
-      {/* ── Today card ── the whole card is tappable (same destination as the
-          "Next up" CTA below), so starting today's cards is always one obvious
-          tap away — no separate nested button needed for that. ── */}
+      {/* ── Today card ── the whole card is tappable, so starting today's
+          cards is always one obvious tap away. ── */}
       <div
         role="button"
         tabIndex={0}
@@ -126,33 +112,33 @@ export default function Home({ profile, track, counts, onNavigate }) {
           background: 'var(--surface)', borderRadius: '20px',
           border: '1px solid ' + (dojoHovered ? accentHex + '55' : 'var(--border)'),
           boxShadow: dojoHovered ? '0 6px 22px rgba(0,0,0,0.08)' : '0 2px 16px rgba(0,0,0,0.05)',
-          padding: isMobile ? '22px 18px' : '28px 32px', marginBottom: '20px',
+          padding: isMobile ? '30px 20px' : '40px 44px', marginBottom: '28px',
           cursor: 'pointer', transition: 'border-color 160ms ease, box-shadow 160ms ease',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px', marginBottom: '32px' }}>
           <div style={{ minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-              <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)' }}>Today’s Dojo</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+              <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text)' }}>Today’s Dojo</span>
               {totalDue > 0 ? (
                 <span style={{
-                  fontSize: '12px', color: accentHex, background: `${accentHex}10`,
-                  padding: '4px 12px', borderRadius: '20px', fontWeight: 500,
+                  fontSize: '13px', color: accentHex, background: `${accentHex}10`,
+                  padding: '5px 14px', borderRadius: '20px', fontWeight: 500,
                   border: '1px solid ' + accentHex + '26',
                 }}>
                   Cards waiting
                 </span>
               ) : (
                 <span style={{
-                  fontSize: '12px', color: 'var(--text-muted)',
+                  fontSize: '13px', color: 'var(--text-muted)',
                   background: 'var(--surface-2)',
-                  padding: '4px 12px', borderRadius: '20px', fontWeight: 500,
+                  padding: '5px 14px', borderRadius: '20px', fontWeight: 500,
                 }}>
                   All caught up ✓
                 </span>
               )}
             </div>
-            <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+            <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
               {goalComplete
                 ? 'Daily goal complete — nice work.'
                 : noNewLeft
@@ -160,109 +146,23 @@ export default function Home({ profile, track, counts, onNavigate }) {
                   : 'Daily goal: ' + doneToday + ' of ' + goal + ' new cards'}
             </div>
           </div>
-          <ArrowRight size={20} strokeWidth={2.2} color={dojoHovered ? accentHex : 'var(--text-faint)'} style={{ flexShrink: 0, transition: 'color 160ms ease' }} />
+          <ArrowRight size={24} strokeWidth={2.2} color={dojoHovered ? accentHex : 'var(--text-faint)'} style={{ flexShrink: 0, transition: 'color 160ms ease' }} />
         </div>
 
         {/* New / Learning / Due */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
           {[
             { label: 'New', value: counts.newCount, color: '#3E63DD' },
             { label: 'Learning', value: counts.learnCount, color: '#D97706' },
             { label: 'Due', value: counts.dueCount, color: '#2F9E6D' },
           ].map(({ label, value, color }) => (
-            <div key={label} style={{ textAlign: 'center', padding: '16px 12px', background: color + '14', border: '1px solid ' + color + '26', borderRadius: '14px' }}>
-              <div style={{ fontSize: '34px', fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 500 }}>{label}</div>
+            <div key={label} style={{ textAlign: 'center', padding: '22px 14px', background: color + '14', border: '1px solid ' + color + '26', borderRadius: '16px' }}>
+              <div style={{ fontSize: '44px', fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px', fontWeight: 500 }}>{label}</div>
             </div>
           ))}
         </div>
       </div>
-
-      {/* ── Fluency score ── */}
-      <div style={{
-        background: 'var(--surface)', borderRadius: '20px', border: '1px solid var(--border)',
-        boxShadow: '0 2px 16px rgba(0,0,0,0.05)', padding: isMobile ? '20px 18px' : '24px 32px', marginBottom: '20px',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
-            <Gauge size={17} strokeWidth={1.9} color={accentHex} />
-            {theme.languageName} fluency
-          </span>
-          <span style={{
-            fontSize: '12px', fontWeight: 700, color: accentHex,
-            background: `${accentHex}12`, border: '1px solid ' + accentHex + '2E',
-            padding: '4px 12px', borderRadius: '20px',
-          }}>
-            {fRank.name}
-          </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '6px' }}>
-          <span style={{ fontSize: '40px', fontWeight: 750, color: 'var(--text)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-            <CountUp value={fScore} />
-          </span>
-          <span style={{ fontSize: '13px', color: 'var(--text-faint)', fontWeight: 600 }}>pts</span>
-        </div>
-        <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: fRank.next ? '14px' : 0 }}>
-          {fMastered} word{fMastered === 1 ? '' : 's'} mastered · {fLearning} learning
-        </div>
-        {fRank.next && (
-          <div>
-            <div style={{ height: '7px', background: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
-              <div style={{
-                height: '100%', borderRadius: '4px',
-                background: `linear-gradient(90deg, ${accentHex}, ${accentHex}bb)`,
-                width: `${fRank.pct}%`, transition: 'width .7s ease',
-              }} />
-            </div>
-            <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '8px' }}>
-              {fRank.next.min - fScore} pts to {fRank.next.name}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Recommended next step ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '10px' }}>
-        <span style={{ fontSize: '12px', fontWeight: 750, letterSpacing: '0.3px', textTransform: 'uppercase', color: accentHex }}>Next up</span>
-        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{rec.reason}</span>
-      </div>
-      <button
-        onClick={() => onNavigate(rec.key)}
-        onMouseEnter={() => setCtaHovered(true)}
-        onMouseLeave={() => setCtaHovered(false)}
-        style={{
-          width: '100%', padding: '18px 24px', borderRadius: '16px', border: 'none',
-          background: ctaHovered ? SAGE_DARK : SAGE, color: '#fff',
-          fontSize: '16px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
-          boxShadow: ctaHovered ? '0 8px 24px rgba(110,132,102,0.32)' : '0 2px 10px rgba(110,132,102,0.22)',
-          transform: ctaHovered ? 'translateY(-1px)' : 'translateY(0)',
-          transition: 'all 160ms ease', marginBottom: '14px',
-        }}
-      >
-        <rec.icon size={19} strokeWidth={2.1} color="#fff" />
-        {rec.label}
-        <ArrowRight size={19} strokeWidth={2.2} color="#fff" />
-      </button>
-
-      {/* ── Practice hub entry (with a weak-word nudge when relevant) ── */}
-      <button
-        onClick={() => onNavigate('practice')}
-        style={{
-          width: '100%', padding: '14px 20px', borderRadius: '14px',
-          border: '1px solid ' + accentHex + '33', background: accentHex + '0D',
-          color: accentHex, fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-          marginTop: '0', marginBottom: '28px',
-        }}
-      >
-        <Dumbbell size={17} strokeWidth={2} color={accentHex} />
-        {counts.weakCount > 0
-          ? 'Practice · ' + counts.weakCount + ' weak word' + (counts.weakCount === 1 ? '' : 's')
-          : (counts.grammarDueCount > 0
-            ? 'Practice · ' + counts.grammarDueCount + ' grammar due'
-            : 'Practice')}
-      </button>
 
       {/* ── Keep the flow going ── */}
       <div style={{

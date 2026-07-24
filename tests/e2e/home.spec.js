@@ -10,8 +10,8 @@ test.describe('Home dashboard (logged in)', () => {
     await home.goto();
   });
 
-  test('renders Today\'s Dojo with the primary review action', async () => {
-    await expect(home.reviewCta).toBeVisible();
+  test('renders Today\'s Dojo card', async () => {
+    await expect(home.dojoCard).toBeVisible();
     await expect(home.cardsWaiting).toBeVisible();
   });
 
@@ -19,10 +19,6 @@ test.describe('Home dashboard (logged in)', () => {
     await expect(home.tile('New')).toBeVisible();
     await expect(home.tile('Learning')).toBeVisible();
     await expect(home.tile('Due')).toBeVisible();
-  });
-
-  test('shows the fluency panel', async () => {
-    await expect(home.fluency).toBeVisible();
   });
 
   test('does not show a streak badge or "keep it" guilt copy', async ({ page }) => {
