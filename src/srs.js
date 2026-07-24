@@ -1,7 +1,133 @@
 import { fsrs, generatorParameters, createEmptyCard, Rating, State } from 'ts-fsrs'
 
-const params = generatorParameters({ request_retention: 0.9, enable_fuzz: true })
-const f = fsrs(params)
+// ── Target retention (the "retention dial") ─────────────────────────────────
+// FSRS schedules a card so that, when it comes due, you have roughly this
+// probability of recalling it. Higher = shorter intervals, more reviews, less
+// forgetting. Lower = longer intervals, fewer reviews, a little more forgetting.
+// 0.9 is the ts-fsrs library default and what this app always used, so it stays
+// the default here: a learner who never touches the dial sees identical intervals.
+export const DEFAULT_TARGET_RETENTION = 0.9
+export const MIN_TARGET_RETENTION = 0.8
+export const MAX_TARGET_RETENTION = 0.95
+
+// The three named presets the Settings dial offers. Plain language, no score to
+// max out — just the trade-off, stated honestly.
+export const RETENTION_PRESETS = [
+  {
+    key: 'relaxed',
+    value: 0.85,
+    label: 'Relaxed',
+    blurb: 'Fewer reviews. You will forget a little more, and that is fine.',
+  },
+  {
+    key: 'balanced',
+    value: DEFAULT_TARGET_RETENTION,
+    label: 'Balanced',
+    blurb: 'The default. A steady amount of review for steady remembering.',
+  },
+  {
+    key: 'thorough',
+    value: 0.95,
+    label: 'Thorough',
+    blurb: 'More reviews, more often. You will forget less, but there is more to do.',
+  },
+]
+
+// Snap any stored number onto the nearest preset, so the dial always shows a
+// named choice even if the column holds a hand-edited value.
+export function presetForRetention(value) {
+  const r = normalizeTargetRetention(value)
+  let best = RETENTION_PRESETS[0]
+  for (const p of RETENTION_PRESETS) {
+    if (Math.abs(p.value - r) < Math.abs(best.value - r)) best = p
+  }
+  return best
+}
+
+// Anything that isn't a real number inside the sane band falls back to the
+// default. We deliberately do NOT clamp: a null/undefined/NaN/garbage value
+// means "no preference expressed", and a wild value means something upstream is
+// wrong — in both cases today's proven scheduling is the safest answer.
+export function normalizeTargetRetention(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return DEFAULT_TARGET_RETENTION
+  if (value < MIN_TARGET_RETENTION || value > MAX_TARGET_RETENTION) return DEFAULT_TARGET_RETENTION
+  return value
+}
+
+// One FSRS instance per retention value. Building the parameters is cheap but
+// not free, and grading happens on every card.
+const schedulers = new Map()
+function schedulerFor(retention) {
+  const r = normalizeTargetRetention(retention)
+  let inst = schedulers.get(r)
+  if (!inst) {
+    inst = fsrs(generatorParameters({ request_retention: r, enable_fuzz: true }))
+    schedulers.set(r, inst)
+  }
+  return inst
+}
+
+// Device-local mirror of profiles.target_retention.
+//
+// The scheduler is a pure module with no Supabase access, and the live grading
+// call site (Study.jsx) is out of scope for this change, so the chosen value is
+// mirrored here when the learner picks it in Settings. Callers that DO have the
+// profile in hand can always pass `{ targetRetention }` explicitly, which wins.
+// The database column remains the source of truth; this is only a cache.
+const RETENTION_STORAGE_KEY = 'srs:target-retention'
+let preferred = null
+let hydrated = false
+
+function hydratePreferred() {
+  hydrated = true
+  try {
+    if (typeof localStorage === 'undefined') return
+    const raw = localStorage.getItem(RETENTION_STORAGE_KEY)
+    if (raw == null) return
+    const parsed = Number(raw)
+    preferred = Number.isFinite(parsed) ? normalizeTargetRetention(parsed) : null
+  } catch {
+    preferred = null
+  }
+}
+
+// The retention this device schedules with when no explicit value is passed.
+export function getTargetRetention() {
+  if (!hydrated) hydratePreferred()
+  return normalizeTargetRetention(preferred)
+}
+
+// Remember the learner's pick for subsequent scheduling on this device.
+export function setTargetRetention(value) {
+  const r = normalizeTargetRetention(value)
+  preferred = r
+  hydrated = true
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(RETENTION_STORAGE_KEY, String(r))
+  } catch {
+    // A blocked/full localStorage must never break grading — the in-memory
+    // value still applies for this session.
+  }
+  return r
+}
+
+// Test seam: forget the hydrated preference.
+export function resetTargetRetention() {
+  preferred = null
+  hydrated = false
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.removeItem(RETENTION_STORAGE_KEY)
+  } catch {
+    // ignore
+  }
+}
+
+// Resolve the retention for one scheduling call: an explicit option wins over
+// the device preference, which falls back to the default.
+function resolveRetention(options) {
+  if (options && options.targetRetention != null) return normalizeTargetRetention(options.targetRetention)
+  return getTargetRetention()
+}
 
 // App grade (0-3) → FSRS Rating enum
 const GRADE_TO_RATING = {
@@ -85,16 +211,19 @@ function formatLabel(resultCard, now) {
   return days === 1 ? '1 day' : days + ' days'
 }
 
-// schedule(card, grade) → { updates, stay, gap }
+// schedule(card, grade, options?) → { updates, stay, gap }
 //
 // updates: object to spread into the Supabase cards update/insert
 // stay:    true if the card should re-enter the session queue (learning/relearning)
 // gap:     position in queue at which to reinsert (if stay=true)
-export function schedule(card, grade) {
+// options: { targetRetention } — optional. Omitted (the offline replay path in
+//          syncQueue.js, and any other caller without the profile at hand) means
+//          "use this device's preference", which defaults to today's behavior.
+export function schedule(card, grade, options) {
   const rating = GRADE_TO_RATING[grade]
   const now = new Date()
   const fsrsCard = buildFsrsCard(card)
-  const scheduling = f.repeat(fsrsCard, now)
+  const scheduling = schedulerFor(resolveRetention(options)).repeat(fsrsCard, now)
   const nextCard = scheduling[rating].card
 
   const state = STATE_TO_TEXT[nextCard.state] ?? 'learning'
@@ -133,12 +262,14 @@ export function schedule(card, grade) {
   return { updates, stay, gap }
 }
 
-// previewLabels(card) → { 0: string, 1: string, 2: string, 3: string }
+// previewLabels(card, options?) → { 0: string, 1: string, 2: string, 3: string }
 // Returns human-readable interval labels for each of the four grade buttons.
-export function previewLabels(card) {
+// Uses the same retention as schedule(), so the buttons never promise an
+// interval the scheduler won't honour.
+export function previewLabels(card, options) {
   const now = new Date()
   const fsrsCard = buildFsrsCard(card)
-  const scheduling = f.repeat(fsrsCard, now)
+  const scheduling = schedulerFor(resolveRetention(options)).repeat(fsrsCard, now)
   return {
     0: formatLabel(scheduling[Rating.Again].card, now),
     1: formatLabel(scheduling[Rating.Hard].card, now),

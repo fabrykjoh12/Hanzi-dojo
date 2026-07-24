@@ -600,7 +600,12 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
   const applyGrade = async (grade) => {
     const card = queue[0]
-    const res = schedule(card, grade)
+    // The learner's retention dial lives on the profile, so pass it explicitly:
+    // that makes the account the source of truth and reduces srs.js's
+    // device-local mirror to a fallback for when the column isn't loaded yet
+    // (e.g. the migration is still unapplied). Without this a fresh device would
+    // schedule at the default until Settings was opened once.
+    const res = schedule(card, grade, { targetRetention: profile.target_retention })
     const online = isOnline()
 
     // A new grade invalidates any pending undo — its snapshot predates this one.
