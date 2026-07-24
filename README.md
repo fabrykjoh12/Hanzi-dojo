@@ -105,7 +105,8 @@ The app expects a Supabase project with the schema in [`supabase/schema.sql`](su
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Start the Vite dev server |
-| `npm run build` | Production build (static SPA into `dist/`) |
+| `npm run build` | Production build — the public app into `dist/client` (what Vercel serves) |
+| `npm run build:sites` | Production build **plus** the internal Dojo HQ / Sites packaging (see Deployment) |
 | `npm run preview` | Preview the production build locally |
 | `npm run lint` | ESLint over the project |
 | `npm test` | Run the Vitest suite once |
