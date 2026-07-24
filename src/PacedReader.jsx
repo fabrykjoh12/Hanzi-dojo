@@ -58,7 +58,7 @@ export default function PacedReader(props) {
   }, [c.started, layout])
 
   if (!c.started) {
-    return <ReaderLaunch story={story} isRead={isRead} levelLabel={levelLabel} accent={accent} theme={c.theme} readability={c.readability} onStart={c.start} onBack={onBack} />
+    return <ReaderLaunch story={story} isRead={isRead} levelLabel={levelLabel} accent={accent} theme={c.theme} readability={c.readability} onStart={c.start} onBack={onBack} readerMode={props.readerMode} onPickReaderMode={props.onPickReaderMode} />
   }
 
   return (

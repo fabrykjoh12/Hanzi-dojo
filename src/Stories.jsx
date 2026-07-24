@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import { getLevelLabel, getSystemLabel, getAudioUrl } from './utils'
+import { getLevelLabel, getSystemLabel } from './utils'
 import { cacheSet, cacheGet } from './offline'
 import { languageTheme } from './languageTheme'
 import { tiersFor, learnedByLevel, readingGateCount, storyLevels, nextLockedTier } from './storyTiers'
@@ -8,11 +8,13 @@ import { isLearned } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import { todayStr } from './streak'
 import { pickDailyStory } from './dailyStory'
-import { readingLadder, nextRung } from './readingLadder'
+import { groupIntoArcs } from './storyArcs'
+import { filterStories, STATUS_FILTERS, FORMAT_FILTERS } from './storyList'
+import { isPracticeFormat, formatLabel, formatEmoji } from './storyFormat'
 import StoryReader from './StoryReader'
 import StoryCover from './StoryCover'
 import {
-  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Circle, Library, Lock, Sparkles,
+  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Library, Lock, Sparkles,
 } from 'lucide-react'
 
 // Story tier definitions live in ./storyTiers (shared with the post-study
@@ -86,171 +88,227 @@ function IconButton({ icon: Icon, label, onClick }) {
   )
 }
 
-function ProgressCard({ learnedCount, totalWords, accentHex }) {
-  const pct = totalWords > 0 ? Math.min(100, Math.round((learnedCount / totalWords) * 100)) : 0
-  return (
-    <div style={{
-      background: 'var(--surface)', borderRadius: '20px',
-      border: '1px solid var(--border)', padding: '22px 24px',
-      boxShadow: '0 18px 48px rgba(24,24,27,0.06)',
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-        <span style={{ color: 'var(--text)', fontSize: '14px', fontWeight: 750 }}>Immersion unlocks</span>
-        <span style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650 }}>
-          <span style={{ color: 'var(--text)', fontWeight: 800 }}>{learnedCount}</span>/{totalWords} · {pct}%
-        </span>
-      </div>
-      <div style={{ height: '7px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden' }}>
-        <div style={{
-          height: '100%', width: pct + '%',
-          background: 'linear-gradient(90deg, ' + accentHex + ', ' + accentHex + 'AA)',
-          borderRadius: '999px', transition: 'width 600ms ease',
-        }} />
-      </div>
-      <p style={{ margin: '12px 0 0', color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.5 }}>
-        Stories unlock from learned words, so reading starts early and reinforces the flashcards.
-      </p>
-    </div>
-  )
+// Small neutral metadata pill used in the card footer.
+const metaTag = {
+  display: 'inline-flex', alignItems: 'center', gap: '3px',
+  fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)',
+  background: 'var(--surface-2)', border: '1px solid var(--border)',
+  borderRadius: '999px', padding: '3px 8px', lineHeight: 1, whiteSpace: 'nowrap',
 }
 
-// ─── CHARACTER GUIDE ───────────────────────────────────────────────────────
+// ─── NORMALIZED STORY CARD ─────────────────────────────────────────────────
 
-// CHARACTER_READINGS is shared with StoryReaderImmersive — see characterNames.js
-// (imported at the top of this file).
-
-
-// ─── LIST / CATEGORY COMPONENTS ────────────────────────────────────────────
-
-function StoryListCard({ story, read, accentHex, fontFamily, onClick }) {
+// One template for every card, story or practice: a fixed 16:9 cover slot (real
+// art or the designed fallback), the title on one line, a single ellipsized
+// description line (no variable-height wrapping), then a consistent meta row of
+// level tag · format tag · read/unread.
+function StoryCard({ story, read, accentHex, fontFamily, levelLabel, practice, onClick }) {
   const [hovered, setHovered] = useState(false)
-  const coverUrl = story.image_path ? getAudioUrl(story.image_path) : null
   return (
     <button
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        padding: '22px 24px', borderRadius: '20px',
+        display: 'flex', flexDirection: 'column', textAlign: 'left', width: '100%', padding: 0,
         border: '1px solid ' + (hovered ? accentHex + '55' : 'var(--border)'),
-        background: 'var(--surface)', textAlign: 'left', cursor: 'pointer', width: '100%',
-        boxShadow: hovered ? '0 16px 36px rgba(24,24,27,0.09)' : '0 8px 26px rgba(24,24,27,0.05)',
+        borderRadius: '16px', overflow: 'hidden', cursor: 'pointer',
+        background: practice ? accentHex + '0A' : 'var(--surface)',
+        boxShadow: hovered ? '0 16px 34px rgba(24,24,27,0.10)' : '0 6px 20px rgba(24,24,27,0.05)',
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
-        transition: 'all 180ms ease',
-        display: 'grid', gridTemplateColumns: (coverUrl ? '84px' : '44px') + ' minmax(0, 1fr) 28px',
-        gap: '16px', alignItems: 'center',
+        transition: 'all 170ms ease', fontFamily: 'Inter, sans-serif',
       }}
     >
-      {coverUrl ? (
-        <StoryCover story={story} path={story.image_path} accent={accentHex} radius={13}
-          style={{ width: '84px', height: '60px' }}>
-          {read && (
-            <div style={{
-              position: 'absolute', top: '4px', right: '4px', width: '20px', height: '20px',
-              borderRadius: '999px', background: 'var(--success)', display: 'flex',
-              alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-              zIndex: 1,
-            }}>
-              <CheckCircle2 size={13} strokeWidth={2.4} color="#fff" />
-            </div>
-          )}
-        </StoryCover>
-      ) : (
-        <div style={{
-          width: '44px', height: '44px', borderRadius: '15px',
-          background: read ? 'var(--success-bg)' : accentHex + '10',
-          border: '1px solid ' + (read ? 'var(--success-border)' : accentHex + '18'),
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          {read
-            ? <CheckCircle2 size={21} strokeWidth={1.9} color="var(--success)" />
-            : <BookOpen size={21} strokeWidth={1.8} color={accentHex} />}
+      <StoryCover
+        story={story} path={story.image_path} accent={accentHex} radius={0}
+        style={{ width: '100%', aspectRatio: '16 / 9', border: 'none', borderBottom: '1px solid var(--border)' }}
+      >
+        {read && (
+          <div style={{
+            position: 'absolute', top: '8px', right: '8px', width: '22px', height: '22px',
+            borderRadius: '999px', background: 'var(--success)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.3)', zIndex: 1,
+          }}>
+            <CheckCircle2 size={14} strokeWidth={2.4} color="#fff" />
+          </div>
+        )}
+        {practice && (
+          <div style={{
+            position: 'absolute', top: '8px', left: '8px', fontSize: '10.5px', fontWeight: 800,
+            color: '#fff', background: 'rgba(24,24,27,0.55)', borderRadius: '999px', padding: '3px 8px', zIndex: 1,
+          }}>Practice</div>
+        )}
+      </StoryCover>
+      <div style={{ padding: '12px 14px 13px', display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 }}>
+        <div title={story.title} style={{ fontSize: '16px', fontWeight: 750, fontFamily, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3 }}>
+          {story.title}
         </div>
-      )}
-      <div style={{ minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '18px', fontWeight: 750, fontFamily, color: 'var(--text)' }}>
-            {story.title}
+        <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.4 }}>
+          {story.english_summary || '—'}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '3px', flexWrap: 'nowrap' }}>
+          <span style={metaTag}>{levelLabel}</span>
+          <span style={metaTag}>{formatEmoji(story)} {formatLabel(story)}</span>
+          <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 700, color: read ? 'var(--success)' : 'var(--text-faint)', whiteSpace: 'nowrap' }}>
+            {read ? 'Read' : 'New'}
           </span>
-          {story.presentation === 'chat' && (
-            <span style={{ marginLeft: '7px', fontSize: '10.5px', fontWeight: 800, color: '#2E6FB8', background: '#2E6FB815', border: '1px solid #2E6FB833', borderRadius: '999px', padding: '2px 7px', whiteSpace: 'nowrap' }}>💬 Chat</span>
-          )}
-          {story.presentation === 'scene' && (
-            <span style={{ marginLeft: '7px', fontSize: '10.5px', fontWeight: 800, color: '#7C5CD0', background: '#7C5CD015', border: '1px solid #7C5CD033', borderRadius: '999px', padding: '2px 7px', whiteSpace: 'nowrap' }}>🎬 Scene</span>
-          )}
-          {story.interactions && (
-            <span style={{ marginLeft: '7px', fontSize: '10.5px', fontWeight: 800, color: '#2F9E6D', background: '#2F9E6D15', border: '1px solid #2F9E6D33', borderRadius: '999px', padding: '2px 7px', whiteSpace: 'nowrap' }}>🗨️ Reply</span>
-          )}
-          {read && (
-            <span style={pillStyle('var(--success)', 'var(--success-bg)', 'var(--success-border)')}>
-              Read
-            </span>
-          )}
-        </div>
-        <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-          {story.english_summary}
         </div>
       </div>
-      <ArrowRight size={20} strokeWidth={2} color={accentHex} />
     </button>
   )
 }
 
-function CategoryCard({ cat, unlocked, hasStories, isClickable, storyCount, readCount, learnedCount, accentHex, onClick }) {
-  const [hovered, setHovered] = useState(false)
-  const Icon = unlocked ? BookOpen : Lock
-  const remaining = Math.max(0, cat.minWords - learnedCount)
+// ─── TIER TABS (consolidated progress + navigation) ────────────────────────
 
+// Replaces the stacked "Immersion unlocks" bar + First/Growing/Fluent stepper
+// with one control: the three tiers as tabs, each showing a lock + "N more
+// words" when nothing in it is readable yet, and the overall unlock % as a small
+// label in the same bar. `tierInfo(tier)` returns the per-tab lock/summary.
+function TierTabs({ tiers, activeTier, tierInfo, pct, accentHex, onPick }) {
   return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => isClickable && setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        padding: '22px 24px', borderRadius: '20px',
-        border: '1px solid ' + (hovered ? accentHex + '55' : 'var(--border)'),
-        background: 'var(--surface)', textAlign: 'left', width: '100%',
-        cursor: isClickable ? 'pointer' : 'default',
-        opacity: unlocked ? 1 : 0.58,
-        boxShadow: hovered ? '0 16px 36px rgba(24,24,27,0.09)' : '0 8px 26px rgba(24,24,27,0.05)',
-        transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
-        transition: 'all 180ms ease',
-        display: 'grid', gridTemplateColumns: '48px minmax(0, 1fr) auto',
-        gap: '16px', alignItems: 'center',
-      }}
-    >
-      <div style={{
-        width: '48px', height: '48px', borderRadius: '16px',
-        background: unlocked ? accentHex + '10' : 'var(--surface-2)',
-        border: '1px solid ' + (unlocked ? accentHex + '18' : 'var(--border)'),
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+    <div style={{ marginBottom: '20px' }}>
+      <div role="tablist" aria-label="Story tiers" style={{
+        display: 'flex', gap: '6px', background: 'var(--surface-2)',
+        border: '1px solid var(--border)', borderRadius: '14px', padding: '6px', overflowX: 'auto',
       }}>
-        <Icon size={22} strokeWidth={1.8} color={unlocked ? accentHex : 'var(--text-faint)'} />
+        {tiers.map(t => {
+          const info = tierInfo(t.tier)
+          const active = t.tier === activeTier
+          return (
+            <button
+              key={t.tier} role="tab" aria-selected={active} onClick={() => onPick(t.tier)}
+              style={{
+                flex: '1 1 0', minWidth: '112px', border: 'none', cursor: 'pointer',
+                borderRadius: '10px', padding: '9px 10px 8px', textAlign: 'center',
+                background: active ? 'var(--surface)' : 'transparent',
+                boxShadow: active ? '0 2px 10px rgba(24,24,27,0.10)' : 'none',
+                fontFamily: 'Inter, sans-serif', transition: 'background 140ms ease',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontSize: '13.5px', fontWeight: active ? 800 : 650, color: active ? 'var(--text)' : 'var(--text-muted)' }}>
+                {info.locked && <Lock size={12} strokeWidth={2.2} color="var(--text-faint)" />}
+                {t.label}
+              </div>
+              <div style={{ fontSize: '11px', fontWeight: 600, marginTop: '3px', color: info.locked ? 'var(--text-faint)' : accentHex }}>
+                {info.locked
+                  ? info.remaining + ' more word' + (info.remaining === 1 ? '' : 's')
+                  : (info.comingSoon ? 'coming soon' : info.storyCount + ' ' + (info.storyCount === 1 ? 'story' : 'stories'))}
+              </div>
+            </button>
+          )
+        })}
       </div>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>{cat.label}</span>
-          {hasStories && unlocked && (
-            <span style={pillStyle(accentHex, accentHex + '10', accentHex + '25')}>
-              {readCount > 0
-                ? readCount + ' of ' + storyCount + ' read'
-                : storyCount + ' ' + (storyCount === 1 ? 'story' : 'stories')}
-            </span>
-          )}
-          {hasStories && unlocked && readCount >= storyCount && storyCount > 0 && (
-            <CheckCircle2 size={16} strokeWidth={2} color="var(--success)" />
-          )}
-        </div>
-        <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-          {unlocked
-            ? (hasStories ? cat.description : 'Stories coming soon')
-            : remaining + ' more learned words to unlock'}
-        </div>
+      <div style={{ textAlign: 'right', marginTop: '8px', fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
+        {pct}% of this level unlocked
       </div>
-      {isClickable
-        ? <ArrowRight size={20} strokeWidth={2} color={accentHex} />
-        : <Circle size={10} strokeWidth={2} color="#D4D4D8" />}
-    </button>
+    </div>
+  )
+}
+
+// ─── FILTER ROW ────────────────────────────────────────────────────────────
+
+function Segmented({ options, value, onChange, accentHex, label }) {
+  return (
+    <div role="group" aria-label={label} style={{ display: 'inline-flex', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '10px', padding: '3px' }}>
+      {options.map(o => {
+        const on = o.key === value
+        return (
+          <button key={o.key} onClick={() => onChange(o.key)} aria-pressed={on}
+            style={{
+              border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '6px 12px',
+              fontSize: '12.5px', fontWeight: on ? 750 : 600, fontFamily: 'Inter, sans-serif',
+              background: on ? 'var(--surface)' : 'transparent', color: on ? accentHex : 'var(--text-muted)',
+              boxShadow: on ? '0 1px 4px rgba(24,24,27,0.08)' : 'none', transition: 'background 140ms ease',
+            }}>
+            {o.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function FilterRow({ status, setStatus, format, setFormat, accentHex }) {
+  return (
+    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '22px' }}>
+      <Segmented options={STATUS_FILTERS} value={status} onChange={setStatus} accentHex={accentHex} label="Read status" />
+      <Segmented options={FORMAT_FILTERS} value={format} onChange={setFormat} accentHex={accentHex} label="Format" />
+    </div>
+  )
+}
+
+// ─── ARC + PRACTICE SECTIONS ───────────────────────────────────────────────
+
+function CardGrid({ children, isMobile }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(232px, 1fr))', gap: '16px' }}>
+      {children}
+    </div>
+  )
+}
+
+// A story arc: header ("The Missing Cat · 5 parts · 1 of 5 read") + a grid of its
+// parts, so the list reads as a grouped table of contents.
+function ArcSection({ arc, readIds, accentHex, fontFamily, levelLabelFor, isMobile, showHeader, onOpen }) {
+  const readCount = arc.parts.filter(p => readIds.has(p.id)).length
+  return (
+    <section>
+      {showHeader && (
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '9px', margin: '0 0 12px', flexWrap: 'wrap' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text)', margin: 0, fontFamily }}>{arc.title}</h3>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
+            {arc.parts.length} part{arc.parts.length === 1 ? '' : 's'}
+            {readCount > 0 ? ' · ' + readCount + ' of ' + arc.parts.length + ' read' : ''}
+          </span>
+        </div>
+      )}
+      <CardGrid isMobile={isMobile}>
+        {arc.parts.map(story => (
+          <StoryCard key={story.id} story={story} read={readIds.has(story.id)} accentHex={accentHex}
+            fontFamily={fontFamily} levelLabel={levelLabelFor(story)} onClick={() => onOpen(story)} />
+        ))}
+      </CardGrid>
+    </section>
+  )
+}
+
+// Practice scenarios (chat / scene / reply) live in their own section with a
+// tinted card, so they never look like broken story cards inside an arc.
+function PracticeSection({ stories, readIds, accentHex, fontFamily, levelLabelFor, isMobile, onOpen }) {
+  if (stories.length === 0) return null
+  return (
+    <section>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '9px', margin: '0 0 12px', flexWrap: 'wrap' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text)', margin: 0 }}>Practice Scenarios</h3>
+        <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
+          {stories.length} to try — chat, scene & reply-along
+        </span>
+      </div>
+      <CardGrid isMobile={isMobile}>
+        {stories.map(story => (
+          <StoryCard key={story.id} story={story} read={readIds.has(story.id)} accentHex={accentHex}
+            fontFamily={fontFamily} levelLabel={levelLabelFor(story)} practice onClick={() => onOpen(story)} />
+        ))}
+      </CardGrid>
+    </section>
+  )
+}
+
+// The locked state for a tier that has nothing readable yet.
+function LockedTierPanel({ remaining, accentHex }) {
+  return (
+    <div style={{
+      textAlign: 'center', padding: '48px 28px', background: 'var(--surface)',
+      border: '1px solid var(--border)', borderRadius: '22px', boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
+    }}>
+      <div style={{ width: '52px', height: '52px', borderRadius: '16px', margin: '0 auto', background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Lock size={24} strokeWidth={1.8} color="var(--text-faint)" />
+      </div>
+      <div style={{ color: 'var(--text)', fontSize: '17px', fontWeight: 800, marginTop: '14px' }}>Keep learning to unlock</div>
+      <div style={{ marginTop: '6px', color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6 }}>
+        <strong style={{ color: accentHex, fontWeight: 700 }}>{remaining}</strong> more learned word{remaining === 1 ? '' : 's'} and this tier’s stories open up.
+      </div>
+    </div>
   )
 }
 
@@ -271,7 +329,12 @@ function EmptyPanel({ icon: Icon, title, text }) {
 // ─── MAIN STORIES COMPONENT ────────────────────────────────────────────────
 
 export default function Stories({ session, profile, track, onBack, onNavigate, initialStoryId, initialStoryWords, initialStoryFirstMission, onInitialStoryConsumed }) {
-  const [view, setView] = useState('categories')
+  const [view, setView] = useState('browse')
+  // Which tier tab is open (null → resolve a sensible default once stories load),
+  // and the library filters. All three live only on the browse screen.
+  const [activeTier, setActiveTier] = useState(null)
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [formatFilter, setFormatFilter] = useState('all')
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [selectedStory, setSelectedStory] = useState(null)
   const [stories, setStories] = useState([])
@@ -451,7 +514,7 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
         session={session}
         profile={profile}
         track={track}
-        onBack={() => setView('list')}
+        onBack={() => setView('browse')}
         onHome={onBack}
         onPractice={onNavigate ? (words) => onNavigate('fillblank', { practiceWords: words }) : null}
         todayWords={todayWords}
@@ -465,60 +528,68 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
     )
   }
 
-  // ── Story list view ────────────────────────────────────────────────────
-  if (view === 'list' && selectedCategory) {
-    const catStories = storiesIn(selectedCategory)
-    const shelfLabel = getLevelLabel(track.language, track.system, selectedCategory.level)
-    return (
-      <div style={pageShell()}>
-        <div style={{ maxWidth: '860px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px', position: 'relative', zIndex: 1 }}>
-          <IconButton icon={ArrowLeft} label="Back" onClick={() => setView('categories')} />
+  // ── Browse view (tabs + arcs + practice) ────────────────────────────────
 
-          <div style={{ margin: '28px 0 24px' }}>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>
-                {shelfLabel}
-              </span>
-              <span style={pillStyle('var(--text-muted)', 'var(--surface-2)', 'var(--border)')}>
-                {selectedCategory.wordRange} words
-              </span>
-            </div>
-            <h1 style={{ fontSize: '34px', fontWeight: 800, color: 'var(--text)', margin: '14px 0 8px' }}>
-              {selectedCategory.label}
-            </h1>
-            <p style={{ fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
-              {selectedCategory.description}
-            </p>
-          </div>
-
-          {catStories.length === 0 ? (
-            <EmptyPanel icon={BookOpen} title="No stories yet" text="Stories for this tier are coming soon." />
-          ) : (
-            <div style={{ display: 'grid', gap: '12px' }}>
-              {catStories.map(story => (
-                <StoryListCard
-                  key={story.id}
-                  story={story}
-                  read={readIds.has(story.id)}
-                  accentHex={accentHex}
-                  fontFamily={fontFamily}
-                  onClick={() => { setSelectedStory(story); setView('reader') }}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    )
+  // Open a story straight into the reader, carrying its shelf (tier + level) so
+  // next-story and the tier-unlock nudge keep working.
+  const openStory = (story) => {
+    setSelectedCategory(categoryForStory(story, track))
+    setSelectedStory(story)
+    setView('reader')
   }
 
-  // ── Category view ──────────────────────────────────────────────────────
+  // The levels (current first, then down) that contribute a tier's stories, each
+  // tagged with its own unlock state — the cumulative shelf, sliced by tier.
+  const shelvesForTier = (tier) => {
+    const out = []
+    for (const level of storyLevels(stories, track.current_level)) {
+      const spec = tiersAt(level).find(t => t.tier === tier)
+      if (!spec) continue
+      const levelStories = stories.filter(s => s.tier === tier && levelOf(s.level) === level)
+      if (levelStories.length === 0 && level !== track.current_level) continue
+      const learned = learnedAt(level)
+      out.push({ level, spec, learned, unlocked: learned >= spec.minWords, stories: levelStories })
+    }
+    return out
+  }
+
+  // Per-tab lock/summary for the tab bar: locked (with the smallest remaining
+  // gap) when nothing in the tier is readable yet; else a story count, or
+  // "coming soon" when it is unlocked but no content exists.
+  const tierInfo = (tier) => {
+    const shelves = shelvesForTier(tier)
+    const readable = shelves.filter(sh => sh.unlocked && sh.stories.length > 0)
+    if (readable.length > 0) {
+      return { locked: false, comingSoon: false, storyCount: readable.reduce((n, sh) => n + sh.stories.length, 0) }
+    }
+    const lockedWithStories = shelves.filter(sh => !sh.unlocked && sh.stories.length > 0)
+    if (lockedWithStories.length > 0) {
+      const remaining = Math.min(...lockedWithStories.map(sh => sh.spec.minWords - sh.learned))
+      return { locked: true, remaining: Math.max(1, remaining), comingSoon: false, storyCount: 0 }
+    }
+    const cur = shelves.find(sh => sh.level === track.current_level)
+    if (cur && !cur.unlocked) return { locked: true, remaining: Math.max(1, cur.spec.minWords - cur.learned), comingSoon: false, storyCount: 0 }
+    return { locked: false, comingSoon: true, storyCount: 0 }
+  }
+
+  // The open tab: the learner's choice, else the first tier with readable
+  // stories, else the first tier.
+  const defaultTier = (CATEGORIES.find(t => { const i = tierInfo(t.tier); return !i.locked && !i.comingSoon }) || CATEGORIES[0] || { tier: 1 }).tier
+  const currentTier = activeTier != null ? activeTier : defaultTier
+
+  const pct = totalWords > 0 ? Math.min(100, Math.round((learnedCount / totalWords) * 100)) : 0
+  const levelLabelFor = (story) => getLevelLabel(track.language, track.system, story.level == null ? track.current_level : story.level)
+  const daily = pickDailyStory({ stories, categories: CATEGORIES, learnedCount, readIds, dateStr: todayStr(), tiersFor: tiersAt, learnedFor: learnedAt })
+  const activeShelves = shelvesForTier(currentTier)
+  const activeInfo = tierInfo(currentTier)
+  const multiLevel = activeShelves.filter(sh => sh.stories.length > 0).length > 1
+
   return (
     <div style={pageShell()}>
-      <div style={{ maxWidth: '860px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px', position: 'relative', zIndex: 1 }}>
+      <div style={{ maxWidth: isMobile ? '860px' : '1040px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px', position: 'relative', zIndex: 1 }}>
         <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
 
-        <div style={{ margin: '28px 0 28px' }}>
+        <div style={{ margin: '28px 0 22px' }}>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
             <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>{nativeName}</span>
             <span style={pillStyle('var(--text-muted)', 'var(--surface-2)', 'var(--border)')}>
@@ -533,194 +604,94 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
           </p>
         </div>
 
-        <div style={{ marginBottom: '28px' }}>
-          <ProgressCard learnedCount={learnedCount} totalWords={totalWords} accentHex={accentHex} />
-        </div>
+        {/* One control replaces the old progress bar + ladder: tiers as tabs. */}
+        <TierTabs
+          tiers={CATEGORIES} activeTier={currentTier} tierInfo={tierInfo}
+          pct={pct} accentHex={accentHex} onPick={setActiveTier}
+        />
 
-        {/* Reading ladder — the tiers as rungs, with your position and the gap
-            to the next rung. A calm view of the reading path. */}
-        {(() => {
-          const rungs = readingLadder(learnedCount, CATEGORIES)
-          if (rungs.length === 0) return null
-          const next = nextRung(learnedCount, CATEGORIES)
-          return (
-            <div style={{ marginBottom: '28px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0', marginBottom: '10px' }}>
-                {rungs.map((r, i) => (
-                  <span key={r.tier} style={{ display: 'flex', alignItems: 'center', flex: i === rungs.length - 1 ? '0 0 auto' : '1 1 0' }}>
-                    <span title={r.label} style={{
-                      width: r.isCurrent ? '15px' : '12px', height: r.isCurrent ? '15px' : '12px',
-                      borderRadius: '50%', flexShrink: 0,
-                      background: r.unlocked ? accentHex : 'var(--surface)',
-                      border: '2px solid ' + (r.unlocked ? accentHex : 'var(--border)'),
-                      boxShadow: r.isCurrent ? '0 0 0 3px ' + accentHex + '33' : 'none',
-                    }} />
-                    {i < rungs.length - 1 && (
-                      <span style={{ flex: 1, height: '2px', background: rungs[i + 1].unlocked ? accentHex : 'var(--border)' }} />
-                    )}
-                  </span>
-                ))}
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
-                {rungs.map(r => (
-                  <span key={r.tier} style={{ fontSize: '11px', fontWeight: r.isCurrent ? 750 : 500, color: r.unlocked ? 'var(--text)' : 'var(--text-faint)' }}>
-                    {r.label}
-                  </span>
-                ))}
-              </div>
-              {next && (
-                <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '10px' }}>
-                  <strong style={{ color: 'var(--text)', fontWeight: 650 }}>{next.wordsToGo}</strong> more word{next.wordsToGo === 1 ? '' : 's'} to reach <strong style={{ color: accentHex, fontWeight: 650 }}>{next.label}</strong>.
-                </div>
-              )}
+        {/* Today's story — a calm daily pick across everything readable. */}
+        {daily && (
+          <button
+            onClick={() => openStory(daily)}
+            style={{
+              width: '100%', textAlign: 'left', cursor: 'pointer', marginBottom: '22px',
+              display: 'flex', alignItems: 'center', gap: '16px',
+              background: accentHex + '0D', border: '1px solid ' + accentHex + '2E',
+              borderRadius: '18px', padding: isMobile ? '16px 18px' : '18px 22px', fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            <div style={{ width: '46px', height: '46px', borderRadius: '14px', flexShrink: 0, background: accentHex + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Sparkles size={22} strokeWidth={1.9} color={accentHex} />
             </div>
-          )
-        })()}
-
-        {(() => {
-          // A fresh story every day — a calm daily pick from everything the
-          // learner can read, across every level they've reached.
-          const daily = pickDailyStory({
-            stories, categories: CATEGORIES, learnedCount, readIds, dateStr: todayStr(),
-            tiersFor: tiersAt, learnedFor: learnedAt,
-          })
-          if (!daily) return null
-          return (
-            <button
-              onClick={() => {
-                // The reader view needs the story's shelf (tier + level) too —
-                // it drives next-story and the tier-unlock nudge.
-                setSelectedCategory(categoryForStory(daily, track))
-                setSelectedStory(daily)
-                setView('reader')
-              }}
-              style={{
-                width: '100%', textAlign: 'left', cursor: 'pointer', marginBottom: '28px',
-                display: 'flex', alignItems: 'center', gap: '16px',
-                background: accentHex + '0D', border: '1px solid ' + accentHex + '2E',
-                borderRadius: '18px', padding: isMobile ? '16px 18px' : '18px 22px', fontFamily: 'Inter, sans-serif',
-              }}
-            >
-              <div style={{
-                width: '46px', height: '46px', borderRadius: '14px', flexShrink: 0,
-                background: accentHex + '18', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Sparkles size={22} strokeWidth={1.9} color={accentHex} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '11px', fontWeight: 850, letterSpacing: '0.06em', textTransform: 'uppercase', color: accentHex, marginBottom: '3px' }}>
+                Today’s story{readIds.has(daily.id) ? ' · revisit' : ''}
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '11px', fontWeight: 850, letterSpacing: '0.06em', textTransform: 'uppercase', color: accentHex, marginBottom: '3px' }}>
-                  Today’s story{readIds.has(daily.id) ? ' · revisit' : ''}
-                </div>
-                <div style={{ fontSize: '17px', fontWeight: 750, color: 'var(--text)', fontFamily: fontFamily + ', Inter, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {daily.title}
-                </div>
+              <div style={{ fontSize: '17px', fontWeight: 750, color: 'var(--text)', fontFamily: fontFamily + ', Inter, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {daily.title}
               </div>
-              <ArrowRight size={20} strokeWidth={2} color={accentHex} style={{ flexShrink: 0 }} />
-            </button>
-          )
-        })()}
+            </div>
+            <ArrowRight size={20} strokeWidth={2} color={accentHex} style={{ flexShrink: 0 }} />
+          </button>
+        )}
 
+        <FilterRow
+          status={statusFilter} setStatus={setStatusFilter}
+          format={formatFilter} setFormat={setFormatFilter} accentHex={accentHex}
+        />
+
+        <div role="tabpanel" aria-label={(CATEGORIES.find(t => t.tier === currentTier) || {}).label || 'Stories'}>
         {(() => {
-          // The cumulative shelf: one group per level the learner has reached
-          // that actually has stories, current level first, then downward.
-          const levels = storyLevels(stories, track.current_level)
-          if (levels.length === 0) {
-            return <EmptyPanel icon={Library} title="No stories yet" text="Stories are on the way. Keep learning words — they'll be here waiting." />
-          }
-          const currentHasStories = levels.indexOf(track.current_level) >= 0
-          const currentLabel = getLevelLabel(track.language, track.system, track.current_level)
-          return (
-            <div style={{ display: 'grid', gap: '30px' }}>
-              {/* Honest note: this level's own stories aren't written yet, but
-                  everything from the levels below is still on the shelf. */}
-              {!currentHasStories && (
-                <div style={{
-                  background: 'var(--surface)', border: '1px solid var(--border)',
-                  borderRadius: '18px', padding: '18px 20px',
-                  display: 'flex', gap: '14px', alignItems: 'flex-start',
-                }}>
-                  <Library size={20} strokeWidth={1.85} color="var(--text-muted)" style={{ flexShrink: 0, marginTop: '2px' }} />
-                  <div>
-                    <div style={{ fontSize: '14.5px', fontWeight: 750, color: 'var(--text)', marginBottom: '4px' }}>
-                      {currentLabel} stories are on the way
-                    </div>
-                    <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                      Everything you’ve unlocked so far is still here — re-reading is one of the
-                      best ways to make vocabulary stick.
-                    </div>
+          const filters = { status: statusFilter, format: formatFilter }
+          const blocks = []
+          activeShelves.forEach(sh => {
+            if (!sh.unlocked) return   // a locked shelf shows nothing (only the current level can be locked → handled below)
+            const filtered = filterStories(sh.stories, filters, readIds)
+            const narrative = filtered.filter(s => !isPracticeFormat(s))
+            const practice = filtered.filter(s => isPracticeFormat(s))
+            if (narrative.length === 0 && practice.length === 0) return
+            const arcs = groupIntoArcs(narrative)
+            // An arc header earns its space when there's more than one arc, or the
+            // arc is chapter-numbered; a lone unnumbered pile just gets the grid.
+            const showArcHeaders = arcs.length > 1 || arcs.some(a => a.numbered)
+            blocks.push(
+              <section key={sh.level}>
+                {multiLevel && (
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '14px', flexWrap: 'wrap' }}>
+                    <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)', margin: 0 }}>
+                      {getLevelLabel(track.language, track.system, sh.level)}
+                    </h2>
+                    {sh.level === track.current_level && (
+                      <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>Your level</span>
+                    )}
                   </div>
+                )}
+                <div style={{ display: 'grid', gap: '28px' }}>
+                  {arcs.map(arc => (
+                    <ArcSection
+                      key={arc.key} arc={arc} readIds={readIds} accentHex={accentHex}
+                      fontFamily={fontFamily} levelLabelFor={levelLabelFor} isMobile={isMobile}
+                      showHeader={showArcHeaders} onOpen={openStory}
+                    />
+                  ))}
+                  <PracticeSection
+                    stories={practice} readIds={readIds} accentHex={accentHex}
+                    fontFamily={fontFamily} levelLabelFor={levelLabelFor} isMobile={isMobile} onOpen={openStory}
+                  />
                 </div>
-              )}
+              </section>
+            )
+          })
 
-              {levels.map(level => {
-                const levelTiers = tiersAt(level)
-                const levelLearned = learnedAt(level)
-                const levelStories = stories.filter(s => levelOf(s.level) === level)
-                const readHere = levelStories.filter(s => readIds.has(s.id)).length
-                const isCurrent = level === track.current_level
-                // A learner with a single shelf (everyone at level 1) doesn't
-                // need a level heading over it — the page header already names
-                // their level. Headings appear the moment the shelf grows.
-                const showHeading = levels.length > 1 || !isCurrent
-                return (
-                  <section key={level} aria-labelledby={showHeading ? 'story-level-' + level : undefined}>
-                    {showHeading && (
-                      <div style={{
-                        display: 'flex', alignItems: 'baseline', gap: '10px',
-                        marginBottom: '12px', flexWrap: 'wrap',
-                      }}>
-                        <h2 id={'story-level-' + level} style={{
-                          fontSize: '19px', fontWeight: 800, color: 'var(--text)', margin: 0,
-                        }}>
-                          {getLevelLabel(track.language, track.system, level)}
-                        </h2>
-                        {isCurrent && (
-                          <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>Your level</span>
-                        )}
-                        <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', fontWeight: 600 }}>
-                          {readHere > 0
-                            ? readHere + ' of ' + levelStories.length + ' read'
-                            : levelStories.length + ' ' + (levelStories.length === 1 ? 'story' : 'stories')}
-                        </span>
-                      </div>
-                    )}
-                    <div style={{ display: 'grid', gap: '14px' }}>
-                      {levelTiers.map(tier => {
-                        const cat = { ...tier, level }
-                        const unlocked = levelLearned >= cat.minWords
-                        const catStories = storiesIn(cat)
-                        const hasStories = catStories.length > 0
-                        // A level already behind the learner is finished: an
-                        // empty tier there is noise, not motivation. The current
-                        // level keeps every tier so the path ahead stays visible.
-                        if (!hasStories && !isCurrent) return null
-                        const isClickable = unlocked && hasStories
-                        return (
-                          <CategoryCard
-                            key={cat.tier}
-                            cat={cat}
-                            unlocked={unlocked}
-                            hasStories={hasStories}
-                            isClickable={isClickable}
-                            storyCount={catStories.length}
-                            readCount={catStories.filter(s => readIds.has(s.id)).length}
-                            learnedCount={levelLearned}
-                            accentHex={accentHex}
-                            onClick={() => {
-                              if (!isClickable) return
-                              setSelectedCategory(cat)
-                              setView('list')
-                            }}
-                          />
-                        )
-                      })}
-                    </div>
-                  </section>
-                )
-              })}
-            </div>
-          )
+          if (blocks.length > 0) return <div style={{ display: 'grid', gap: '38px' }}>{blocks}</div>
+          if (activeInfo.locked) return <LockedTierPanel remaining={activeInfo.remaining} accentHex={accentHex} />
+          if (statusFilter !== 'all' || formatFilter !== 'all') {
+            return <EmptyPanel icon={BookOpen} title="Nothing matches" text="No stories match these filters yet — try switching them back to All." />
+          }
+          return <EmptyPanel icon={Library} title="No stories yet" text="Stories for this tier are on the way. Keep learning words — they'll be here waiting." />
         })()}
+        </div>
       </div>
     </div>
   )

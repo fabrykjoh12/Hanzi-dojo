@@ -17,7 +17,7 @@ import { track as trackEvent, trackOnce, EVENTS } from './analytics'
 import { shareReadingCard } from './shareCard'
 import { toast } from './toast'
 import { BRAND_URL } from './brand'
-import { ArrowLeft, Bookmark, Volume2, Play, Pause, Languages, ChevronRight, UserRound, Check, X, Sparkles, Home, Sliders, Eye, Clock, Repeat, Lock, Share2 } from 'lucide-react'
+import { ArrowLeft, Bookmark, Volume2, Play, Pause, Languages, ChevronRight, UserRound, Check, X, Sparkles, Home, Sliders, Eye, Clock, Repeat, Lock, Share2, BookOpen } from 'lucide-react'
 import ComprehensionCheck from './ComprehensionCheck'
 import StoryCover from './StoryCover'
 
@@ -268,7 +268,7 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
   )
 }
 
-export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, track, onBack, onHome, nextStory, nextTierUnlock = null, onNextStory, isRead, onMarkRead, todayWords = [], firstMission = false }) {
+export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, track, onBack, onHome, nextStory, nextTierUnlock = null, onNextStory, isRead, onMarkRead, todayWords = [], firstMission = false, onPickReaderMode }) {
   const [selected, setSelected] = useState(null)
   const [furiganaMode, setFuriganaMode] = useState(DEFAULT_PREFS.furiganaMode)
   const [lens, setLens] = useState(DEFAULT_PREFS.lens)
@@ -735,6 +735,10 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             of the top bar removes the duplicate labels and calms the masthead. */}
         <div style={{ flex: 1 }} />
         <div ref={settingsAnchorRef} style={{ display: 'flex', gap: '6px', position: 'relative' }}>
+          {/* Equal-weight switch back to the paged reader (only for paced stories). */}
+          {onPickReaderMode && (!story.presentation || story.presentation === 'paced') && (
+            <TopToggle active={false} onClick={() => onPickReaderMode('paced')} icon={BookOpen} label={isMobile ? '' : 'Paged'} accent={accent} isMobile={isMobile} aria-label="Switch to paged reading" />
+          )}
           <TopToggle active={lens} onClick={() => setLens(v => !v)} icon={Eye} label="Lens" accent={accent} isMobile={isMobile} />
           <TopToggle active={settingsOpen} onClick={() => setSettingsOpen(v => !v)} icon={Sliders} label={isMobile ? '' : 'Reader'} accent={accent} isMobile={isMobile} aria-label="Reader settings" />
           {settingsOpen && !isMobile && (
