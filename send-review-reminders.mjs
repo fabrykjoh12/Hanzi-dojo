@@ -38,13 +38,34 @@ async function main() {
   // The hour filter can't be pushed into the query any more — which hour is
   // "now" depends on each profile's zone — so fetch the (small) opted-in set
   // and decide per profile.
-  const { data: profiles, error: profilesError } = await supabase
+  let { data: profiles, error: profilesError } = await supabase
     .from('profiles')
     .select('id, active_language, reminder_hour_utc, timezone, reminder_last_sent_at')
     .eq('reminder_enabled', true)
-  if (profilesError) { console.error('Fetch profiles error:', profilesError.message); process.exit(1) }
+
+  // Degrade safely while 20260724160000_add_profile_timezone.sql is unapplied.
+  // This job runs on a schedule (.github/workflows/send-reminders.yml), so it can
+  // fire against production before the owner has run the migration; selecting
+  // columns that don't exist yet would abort the run and silently stop ALL
+  // reminders. Falling back to the previous fixed-UTC-hour behaviour keeps
+  // reminders flowing (with the old ~1h DST drift) until the migration lands.
+  // Same "work without the migration" pattern the rest of the repo uses.
+  if (profilesError) {
+    const missingColumns = /column .* does not exist|timezone|reminder_last_sent_at/i.test(profilesError.message)
+    if (!missingColumns) { console.error('Fetch profiles error:', profilesError.message); process.exit(1) }
+    console.warn('[reminders] timezone columns missing — falling back to fixed-UTC-hour scheduling. Apply 20260724160000_add_profile_timezone.sql to enable per-timezone sending. Cause:', profilesError.message)
+    const legacy = await supabase
+      .from('profiles')
+      .select('id, active_language, reminder_hour_utc')
+      .eq('reminder_enabled', true)
+      .eq('reminder_hour_utc', now.getUTCHours())
+    if (legacy.error) { console.error('Fetch profiles error:', legacy.error.message); process.exit(1) }
+    profiles = (legacy.data || []).map(p => ({ ...p, timezone: null, reminder_last_sent_at: null, __legacy: true }))
+  }
 
   const due = (profiles || []).filter(p => {
+    // The legacy path already filtered on the UTC hour in the query.
+    if (p.__legacy) return true
     const targetLocalHour = intendedLocalHour(p.reminder_hour_utc, p.timezone, now)
     if (targetLocalHour === null) return false
     return shouldNotifyAt(now, p.timezone, targetLocalHour, p.reminder_last_sent_at)
@@ -117,7 +138,9 @@ async function main() {
     // Remember the send so a re-run inside the same local hour is a no-op.
     // Only stamped when something actually reached a device — a run where
     // every push failed should be allowed to try again.
-    if (deliveredToThisProfile > 0) {
+    // Nothing to stamp on the legacy fallback — the column doesn't exist there,
+    // and the UTC-hour query already gives that path its once-per-hour bound.
+    if (deliveredToThisProfile > 0 && !profile.__legacy) {
       const { error: stampError } = await supabase
         .from('profiles')
         .update({ reminder_last_sent_at: now.toISOString() })

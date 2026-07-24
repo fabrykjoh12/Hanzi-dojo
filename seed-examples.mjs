@@ -17,6 +17,7 @@ import { readFileSync } from 'node:fs'
 import * as OpenCC from 'opencc-js'
 import { pinyin } from 'pinyin-pro'
 import { parseTatoebaPairLine } from './src/tatoeba.js'
+import { fixDeParticlePinyin } from './src/pinyin.js'
 
 // Tatoeba's Mandarin set mixes simplified and traditional characters. The app is
 // simplified-first (headwords are simplified), so we normalise every sentence to
@@ -64,7 +65,11 @@ async function seedExamples() {
     seenKeys.add(k)
     // pinyin-pro is word-segmented and picks the right reading for polyphonic
     // characters in context (银行 háng, 长大 zhǎng, 音乐 yuè), with tone marks.
-    rows.push({ language: 'chinese', hanzi, english: p.english, pinyin: pinyin(hanzi) })
+    // One reading it does get wrong: the degree-complement particle 得, which it
+    // renders as `dé` where the neutral `de` is wanted (跑得快). fixDeParticlePinyin
+    // corrects only that narrow, structurally-detectable case and leaves the
+    // lexical 得到/值得 and the modal děi alone — see src/pinyin.js.
+    rows.push({ language: 'chinese', hanzi, english: p.english, pinyin: fixDeParticlePinyin(hanzi, pinyin(hanzi)) })
   }
   if (Number.isInteger(limit) && limit > 0 && rows.length > limit) {
     rows = rows.slice(0, limit)
