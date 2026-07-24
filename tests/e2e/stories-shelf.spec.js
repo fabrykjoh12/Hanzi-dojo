@@ -27,6 +27,42 @@ async function serveStories(page, rows) {
   });
 }
 
+// Move the mock track to a different current_level (GET only). Mirrors the
+// wantsObject handling in mockSupabaseRoutes(), since a `.single()` query
+// (Accept: pgrst.object) needs a bare object, not a one-item array.
+async function serveTrackLevel(page, level) {
+  await page.route('**/rest/v1/language_tracks**', async (route) => {
+    const req = route.request();
+    if (req.method() !== 'GET') return route.fallback();
+    const wantsObject = (req.headers()['accept'] || '').includes('pgrst.object');
+    const track = {
+      id: 'track-1', user_id: '00000000-0000-4000-8000-000000000001', language: 'chinese',
+      system: 'hsk', current_level: level, is_active: true, created_at: '2026-01-01T08:00:00.000Z',
+    };
+    return route.fulfill({
+      status: 200,
+      headers: { 'access-control-allow-origin': '*', 'content-type': 'application/json' },
+      body: JSON.stringify(wantsObject ? track : [track]),
+    });
+  });
+}
+
+// A level-2 tier-1 story (mirrors the default fixture's "st1") and a level-3
+// (HSK 3) tier-1 story, used together to exercise a THIRD level on the
+// cumulative shelf without displacing the existing level-1/level-2 coverage.
+const LEVEL_2_STORY = {
+  id: 'st1', language: 'chinese', system: 'hsk', level: 2, tier: 1, story_number: 1,
+  title: '公园里的下午', is_published: true, presentation: 'paced', has_audio: false,
+  image_path: null, english_content: 'An afternoon at the park.',
+  content: ['今天天气很好。', '小明：我们去公园吧！', '朋友：你看，花很好！'].join('\n'),
+};
+const LEVEL_3_STORY = {
+  id: 'st6', language: 'chinese', system: 'hsk', level: 3, tier: 1, story_number: 1,
+  title: '新的一年', is_published: true, presentation: 'paced', has_audio: false,
+  image_path: null, english_content: 'A new year.',
+  content: ['今年是新的一年。', '我们很高兴。'].join('\n'),
+};
+
 test.describe('Story library — tier tabs', () => {
   test('one tab bar replaces the old progress bar + ladder', async ({ page }) => {
     await page.goto('/stories');
@@ -94,6 +130,23 @@ test.describe('Story library — tier tabs', () => {
     await serveStories(page, []);
     await page.goto('/stories');
     await expect(page.getByText('No stories yet')).toBeVisible();
+  });
+
+  test('a third level (HSK 3) joins the cumulative shelf without displacing 1 or 2', async ({ page }) => {
+    await serveTrackLevel(page, 3);
+    await serveStories(page, [LEVEL_1_STORY, LEVEL_2_STORY, LEVEL_3_STORY]);
+    await page.goto('/stories');
+    // The header names the learner's real current level (HSK 3), not "undefined".
+    await expect(page.getByText(/hsk · HSK 3/i)).toBeVisible();
+    // Tier 1 ("First Steps") is open by default and shows the new HSK 3 story,
+    // grouped under its own "HSK 3" heading.
+    await expect(page.getByRole('heading', { name: 'HSK 3', exact: true })).toBeVisible();
+    await expect(page.getByRole('tabpanel').getByRole('button', { name: /新的一年/ })).toBeVisible();
+    // The HSK 2 tier-1 story a level below is still reachable in the same tab.
+    await expect(page.getByRole('tabpanel').getByRole('button', { name: /公园里的下午/ })).toBeVisible();
+    // The HSK 1 tier-3 story two levels below is reachable via Fluent — nothing lost.
+    await page.getByRole('tab', { name: /Fluent/ }).click();
+    await expect(page.getByRole('tabpanel').getByRole('button', { name: /老朋友/ })).toBeVisible();
   });
 
   test('reads on a phone-width viewport without horizontal overflow', async ({ page }) => {

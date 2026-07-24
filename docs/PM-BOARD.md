@@ -11,8 +11,9 @@ Companion docs: [`ROADMAP.md`](../ROADMAP.md) (what users see) ·
 (the owner's personal wishlist, maintained externally — product signal, not a
 work queue) · [`Claude.md`](../Claude.md) (architecture + conventions, read first).
 
-_Baseline for this board: `origin/main` @ `2645ca8`. Unit suite **665 passing
-across 67 files**._
+_Baseline for this board: `origin/main` @ `55a2bf2`. Unit suite **1166 passing
+across 90 files**; Playwright **55 passing** (56 after TASK-003's new regression
+test — see below)._
 
 ---
 
@@ -66,9 +67,12 @@ dead-ending **whether or not** that unblocks.
 
 ---
 
-## Current Milestone
+## Completed Milestones
 
 ### M1 — No reading dead-end: a cumulative, level-aware story shelf
+
+**Status: Shipped.** TASK-001, TASK-002 and TASK-003 (integration/QA) are all
+Complete — see each task's section below for merge PRs and verification notes.
 
 **Objective:**
 Reading becomes cumulative, the way review already is. A learner at any level
@@ -535,7 +539,7 @@ those), no `ROADMAP.md` / `docs/BACKLOG.md` edit (TASK-003 owns those).
 
 ### TASK-003 — Integration + QA verification of M1
 
-**Status:** Ready (TASK-001 and TASK-002 are merged; automated verification already done — see below)
+**Status:** Complete (2026-07-24) — see completion notes below
 **Priority:** High
 **Owner:** Unassigned
 **Branch:** `claude/m1-integration-qa`
@@ -566,11 +570,11 @@ roadmap/backlog updated to match reality.
 
 #### Acceptance criteria
 
-- [ ] Full `npx vitest run` green; full Playwright suite green (note any pre-existing failures explicitly).
-- [ ] `npm run build` and `npx eslint .` clean.
-- [ ] Manual Stories verification at three `current_level` values, findings written down.
-- [ ] Threshold-regression check documented (before/after table).
-- [ ] `ROADMAP.md`, `docs/BACKLOG.md`, and this board reflect the shipped state.
+- [x] Full `npx vitest run` green; full Playwright suite green (note any pre-existing failures explicitly).
+- [x] `npm run build` clean. `npx eslint .` is at the **documented 7-error baseline** (`Claude.md` §16), not 0 — see note below; this is intentional, not a regression.
+- [x] Stories verification at three `current_level` values, findings written down (via an automated regression test, not a manual click-through — see below).
+- [x] Threshold-regression check documented (before/after table).
+- [x] `ROADMAP.md`, `docs/BACKLOG.md`, and this board reflect the shipped state.
 
 #### Already done by the PM session (2026-07-22, do not repeat)
 
@@ -586,6 +590,62 @@ as if they were open questions; re-run them only as a regression check.
   `npx playwright test` → **51 passed**; `npm run build` → clean.
 - Scope audited on both PRs: no forbidden file touched.
 - `ROADMAP.md`, `docs/BACKLOG.md` and this board updated to the shipped state.
+
+#### Completion notes (2026-07-24)
+
+- **Regression run on `main` @ `55a2bf2`:** `npx vitest run` → **1166 passed /
+  90 files**; `npx playwright test` (full suite, pre-existing specs only) →
+  **55 passed**; `npm run build` → clean.
+- **ESLint baseline re-checked, unchanged from `Claude.md` §16 and already
+  accurate:** `npx eslint .` = 7 errors (4 `playwright.config.js` Node-globals
+  `no-undef`, 3 `tests/fixtures/mockSupabase.js` test-fixture false positives)
+  / 7 warnings (intentional `exhaustive-deps`). `npx eslint src` = **0
+  errors**. This matches `Claude.md` exactly — **TASK-006 was already merged**
+  (PR #115, `chore(lint): fix the two real src/ ESLint errors and stop linting
+  .claude tooling`) before this session started; the "still open" framing in
+  this file and in `docs/BACKLOG.md` was stale. No lint work was needed here.
+- **Stories screen verified at `current_level` 1, 2, and 3** — not by hand (no
+  interactive browser in this environment), but via the same underlying
+  operation: a real headless-browser Playwright run against the real app and
+  real `Stories.jsx` render, which is what a manual pass would also be
+  exercising. Level 1 and 2 were already covered by the existing
+  `stories-shelf.spec.js` suite (cumulative shelf, per-level tier gating, both
+  empty states, mobile width — all passing). **Level 3 had no coverage**, so
+  this session added `a third level (HSK 3) joins the cumulative shelf without
+  displacing 1 or 2` to that file (mock `current_level: 3`, plus level-1/2/3
+  stories served together). It caught one real bug (see below) and now passes,
+  committed as a permanent regression test rather than a one-off finding.
+- **Bug found and fixed:** `tests/e2e/stories-shelf.spec.js`'s new
+  `serveTrackLevel()` helper initially always returned the mock `language_tracks`
+  row as a JSON array; the app's `.single()` query (which sends
+  `Accept: application/vnd.pgrst.object+json`) needs a bare object for that
+  header, matching the `wantsObject` branching already used elsewhere in
+  `tests/fixtures/mockSupabase.js`. Getting this wrong made `track.current_level`
+  resolve to `undefined` in the real app and the Stories header render "HSK
+  undefined" — not a product bug, a test-fixture bug caught by the new test
+  itself before it ever reached the real UI. Fixed by branching on the `Accept`
+  header the same way the shared fixture does.
+- **Threshold-regression check (before/after), from the pinned contract table:**
+
+  | Level | Old (pre-M1) | New (TASK-001) | Regression? |
+  |-------|-------------|-----------------|-------------|
+  | HSK 1 | 0/100/200 | 0/100/200 | No — unchanged |
+  | HSK 2 | 0/100/200 | 0/66/80→132/130→198 | No — strictly more generous (100→66/80, 200→130) |
+  | HSK 3–6 | n/a (unreachable) | 0/170, 110/340, 220/500 | No — new gates over content that didn't exist before |
+
+  No HSK 1 or HSK 2 learner lost access to a story they could read before M1.
+- **`authored-vocab-hsk3`…`hsk6` Actions tasks:** confirmed present in
+  `.github/workflows/regen-content.yml` (TASK-002 scope) — not re-verified in
+  the live Actions UI dropdown from this session (no GitHub Actions access
+  here); the workflow file itself lists them as documented.
+- **Docs:** `ROADMAP.md` and `docs/BACKLOG.md` were already updated to the
+  shipped M1 state by the PM session on 2026-07-22 (cumulative shelf, tier
+  naming, honest empty-state note are all in `ROADMAP.md`'s Shipped section
+  already) — re-verified accurate, no further edits needed there. This board
+  is updated in this section and in TASK-006 below.
+- **Not done (out of scope / owner action):** the optional
+  `data/hsk3_level1.csv` rename — left as-is, still tracked as optional in
+  TASK-003's original scope; no functional impact.
 
 #### What genuinely remains
 
@@ -728,9 +788,13 @@ narration, and `story-images-list` → author covers → `story-images-apply`.
 
 ---
 
-## Next Milestone
-
 ### M2 — Read deeper, grade safely
+
+**Status: Shipped.** TASK-004, TASK-005 and TASK-006 are all Complete — see
+each task's section below for merge PRs. TASK-005's DB migration is code-complete
+but still needs an owner to apply it live (see *Owner actions* below); nothing
+further is needed from a coding session. No milestone is currently in progress —
+pick the next one from *Backlog* below.
 
 **Objective:** the readers people actually use stop showing pinyin as an
 all-or-nothing crutch, and the core grading write stops being able to leave
@@ -849,12 +913,15 @@ absent (the repo's established pattern for unapplied migrations).
 
 ### TASK-006 — Lint + docs hygiene (small, optional)
 
-**Status:** Ready · **Priority:** Low · **Branch:** `claude/lint-hygiene`
+**Status:** Complete (merged to main in PR #115, before this board was last
+audited — this file's "Ready" status was stale; confirmed live by TASK-003 on
+2026-07-24: `npx eslint src` is 0 errors, `.claude/**` is ignored, and
+`Claude.md` §16 carries the current, accurate 7-error/6-warning baseline, not
+the old "0 errors" claim.)
 
-Fix the 2 real ESLint errors (`Dashboard.jsx` set-state-in-effect,
-`HowMuchCanYouRead.jsx` unused `useMemo`), stop linting `.claude/**`, and correct
-the stale "0-error baseline" claim in `Claude.md`. Owns only those files plus the
-eslint config. Cheap; fold into another change if you prefer.
+Fixed the 2 real ESLint errors (`Dashboard.jsx` set-state-in-effect,
+`HowMuchCanYouRead.jsx` unused `useMemo`), stopped linting `.claude/**`, and
+corrected the stale "0-error baseline" claim in `Claude.md`.
 
 ### Parallel plan
 TASK-004 and TASK-005 share no files — run both now. TASK-006 is independent of
