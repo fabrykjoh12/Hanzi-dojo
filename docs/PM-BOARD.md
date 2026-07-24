@@ -708,6 +708,48 @@ additive and safe to run twice.
    -- expect: ERROR "Card not found"
    ```
 
+### 🟠 Fix the 54 wrong HSK 3–6 readings (then regenerate that audio)
+
+`supabase/migrations/20260724120000_fix_hsk3_6_readings.sql` is **written and
+validated against production, but unapplied** — no coding session writes to the
+live database. It corrects 54 `reading` values in the HSK 3–6 vocabulary.
+
+Root cause: HSK 1–2 was hand-curated (tone sandhi, pinyin apostrophes, joined
+syllables); HSK 3–6 came from a bulk CC-CEDICT pass and inherited its defects.
+Four classes — the ASCII `u:` for ü leaked in verbatim (忽略 "hū lu:è"), a rare
+reading beat the everyday one (厂 "hǎn" not "chǎng"), a proper-noun capital
+landed on ordinary words (成功 "Chéng gōng"), and tone sandhi was dropped on 17
+words (一切 "yī qiè" → "yíqiè") that HSK 1–2 gets right.
+
+⚠️ Scope of the audio impact, stated precisely: `readingToPhonemes` returns null
+for any reading with a space, so only the **single-character** rows actually pin
+to SSML and are therefore genuinely *spoken* wrong. For the multi-syllable
+spaced rows the pin never applied, so the defect is the **displayed** pinyin.
+(That gap is its own, larger item — see the pronunciation-pinning entry in
+`docs/BACKLOG.md`.) All 54 replacements are CC-CEDICT-attested, all 54 rows
+still match their known-bad value, and none is in a learner's deck yet.
+
+1. Paste the migration into the Supabase SQL editor and run it (idempotent).
+2. **Then** Actions → *Regenerate vocabulary content* → task `audio-hsk3-6`, or
+   the audio keeps the old pronunciation. ⚠️ Do not null `audio_path` first —
+   the generator's work list is `vocab.filter(v => v.audio_path)` with
+   `upsert: true`, so clearing the path removes the word from the regeneration.
+3. Optional follow-up: ~14 words where both readings are defensible (待, 答, 结,
+   泡, 档, 扇, 尽, 切, 挨, 晕, 杆, 踏, 码头, 眼里) are listed in the migration
+   header and left untouched — they want a native-speaker call.
+
+### 🟠 Pronunciation pinning is off for ~79% of HSK 3–6 (not yet fixed)
+
+Found while scoping the above. `chinesePhonemeSsml` pins Chinese TTS to the
+word's pinyin, but `readingToPhonemes` returns null on any reading containing a
+space and the caller silently falls back to bare hanzi. HSK 1–2 joins its
+syllables so it pins ~95% of the time; HSK 3–6 is space-separated, so HSK 3 pins
+just 97 of 457 rows and ~1,437 rows across levels 3–6 get no phoneme hint at
+all. Nothing errors — the TTS simply guesses, which is precisely where
+polyphones go wrong. Fix is a normalisation pass (join HSK 3–6 readings to the
+HSK 1–2 style, validate each row round-trips through `readingToPhonemes` to a
+syllable-aligned string, then regenerate audio once). Sized, not attempted.
+
 ### 🔴 Unblock HSK 3–6 story generation (the content blocker)
 `serial-hsk3-6` currently returns `Published 0` — the "plan season" call hits a
 Gemini free-tier 429 on every level. Either:
