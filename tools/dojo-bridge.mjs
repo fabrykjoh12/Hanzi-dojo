@@ -10,6 +10,7 @@ const BRIDGE_PORT = Number(process.env.DOJO_BRIDGE_PORT || 43127)
 const START_MARKER = '<!-- DOJO-HQ:START -->'
 const END_MARKER = '<!-- DOJO-HQ:END -->'
 const ALLOWED_DOCUMENTS = new Set(['ROADMAP.md', 'TASKS.md'])
+const README_LIMIT = 80_000
 const STATUS_LABELS = {
   inbox: 'Innboks',
   planned: 'Planlagt',
@@ -172,7 +173,20 @@ function claudeVersion() {
   return result.status === 0 ? result.stdout.trim() : null
 }
 
-function buildClaudePrompt(item, documentName) {
+async function readProjectReadme() {
+  const path = resolve(PROJECT_ROOT, 'README.md')
+  const content = await readFile(path, 'utf8').catch(error => {
+    if (error.code === 'ENOENT') return ''
+    throw error
+  })
+  return {
+    found: Boolean(content),
+    content: content.slice(0, README_LIMIT),
+    truncated: content.length > README_LIMIT,
+  }
+}
+
+export function buildClaudePrompt(item, documentName, readme = {}) {
   const target = documentPath(documentName).name
   return [
     '# Hanzi Dojo HQ task',
@@ -189,8 +203,20 @@ function buildClaudePrompt(item, documentName) {
     '## Context',
     safeInline(item.description, 'No description was provided.'),
     '',
+    '## README.md project context',
+    readme.found
+      ? 'The Dojo bridge read README.md from the selected project at launch. Treat the content below as current project context.'
+      : 'README.md was not found in the selected project. Inspect the repository for an equivalent project guide before changing code.',
+    ...(readme.found ? [
+      '',
+      '<project-readme>',
+      readme.content,
+      '</project-readme>',
+      ...(readme.truncated ? ['', '_README.md was truncated after 80,000 characters._'] : []),
+    ] : []),
+    '',
     '## Working agreement',
-    `1. Read ${target}, TASKS.md, and Claude.md before changing code.`,
+    `1. Use the embedded README.md context, then read ${target}, TASKS.md, and Claude.md before changing code.`,
     '2. Inspect the repository and make only changes needed for this item.',
     `3. Keep the matching Dojo checklist entry in ${target} current as work progresses.`,
     '4. Run relevant tests and the production build.',
@@ -203,11 +229,14 @@ function buildClaudePrompt(item, documentName) {
 
 async function launchClaude({ item, items = [], members = [], document: documentName }) {
   if (!item?.id || !item?.title) throw new Error('En gyldig Dojo-oppgave må velges.')
-  const synced = await syncDocument({ document: documentName, items, members })
+  const [synced, readme] = await Promise.all([
+    syncDocument({ document: documentName, items, members }),
+    readProjectReadme(),
+  ])
   const taskDirectory = resolve(PROJECT_ROOT, '.dojo')
   const taskPath = resolve(taskDirectory, 'claude-task.md')
   await mkdir(taskDirectory, { recursive: true })
-  await writeFile(taskPath, buildClaudePrompt(item, synced.document), 'utf8')
+  await writeFile(taskPath, buildClaudePrompt(item, synced.document, readme), 'utf8')
 
   const terminalTitle = `Claude · ${safeInline(item.title).slice(0, 42)}`
   const command = "& claude --permission-mode manual --name 'Dojo HQ task' (Get-Content -Raw -LiteralPath '.dojo\\claude-task.md')"
@@ -217,7 +246,7 @@ async function launchClaude({ item, items = [], members = [], document: document
     { cwd: PROJECT_ROOT, detached: true, stdio: 'ignore', windowsHide: false },
   )
   child.unref()
-  return { launched: true, document: synced.document, taskId: item.id }
+  return { launched: true, document: synced.document, taskId: item.id, readmeIncluded: readme.found }
 }
 
 function allowedOrigin(origin) {

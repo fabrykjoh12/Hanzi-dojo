@@ -454,6 +454,12 @@
 .dojo-document-choice { margin: 18px 0 12px; padding: 4px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; border-radius: 999px; background: #ece8df; }
 .dojo-document-choice button { min-height: 40px; border: 0; border-radius: 999px; background: transparent; color: #71736b; cursor: pointer; font: 700 10px Inter, sans-serif; transition: background 180ms ease, color 180ms ease; }
 .dojo-document-choice button.active { background: var(--dojo-ink); color: #fff; }
+.dojo-context-file { margin: 0 0 12px; min-height: 52px; padding: 10px 13px; display: flex; align-items: center; gap: 10px; border: 1px solid rgba(87,112,41,.18); border-radius: 12px; background: color-mix(in srgb, var(--dojo-lime) 11%, var(--dojo-paper)); }
+.dojo-context-file > svg:first-child { color: #536829; }
+.dojo-context-file > div { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.dojo-context-file strong { font-size: 10px; }
+.dojo-context-file span { color: #74766e; font-size: 8px; line-height: 1.45; }
+.dojo-context-file > svg:last-child { color: #668035; }
 .dojo-bridge-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .dojo-bridge-explainer { margin-top: 22px; padding-top: 19px; border-top: 1px solid var(--dojo-line); display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .dojo-bridge-explainer article { display: flex; align-items: flex-start; gap: 9px; }
@@ -545,6 +551,8 @@
 :root[data-theme='dark'] .dojo-bridge-status, :root[data-theme='dark'] .dojo-bridge-footer { background: #191a17; }
 :root[data-theme='dark'] .dojo-document-choice { background: #191a17; }
 :root[data-theme='dark'] .dojo-document-choice button.active { background: var(--dojo-lime); color: #151613; }
+:root[data-theme='dark'] .dojo-context-file { background: rgba(217,255,87,.07); }
+:root[data-theme='dark'] .dojo-context-file > svg:first-child, :root[data-theme='dark'] .dojo-context-file > svg:last-child { color: var(--dojo-lime); }
 :root[data-theme='dark'] .dojo-claude-task-card { background: rgba(217,255,87,.08); }
 :root[data-theme='dark'] .dojo-claude-task-card > div > svg { color: var(--dojo-lime); }
 :root[data-theme='dark'] .dojo-detail-fields, :root[data-theme='dark'] .dojo-comments article > div { background: #191a17; }

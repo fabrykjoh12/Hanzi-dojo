@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseManagedState, renderManagedSection, replaceManagedSection } from '../tools/dojo-bridge.mjs'
+import { buildClaudePrompt, parseManagedState, renderManagedSection, replaceManagedSection } from '../tools/dojo-bridge.mjs'
 
 const items = [
   {
@@ -47,5 +47,17 @@ describe('Dojo roadmap bridge', () => {
       completedIds: ['task-2'],
       openIds: ['task-1'],
     })
+  })
+
+  it('embeds README.md as required Claude context', () => {
+    const prompt = buildClaudePrompt(items[0], 'ROADMAP.md', {
+      found: true,
+      content: '# Hanzi Dojo\n\nAlways run the focused tests.',
+      truncated: false,
+    })
+    expect(prompt).toContain('## README.md project context')
+    expect(prompt).toContain('# Hanzi Dojo')
+    expect(prompt).toContain('Always run the focused tests.')
+    expect(prompt).toContain('Use the embedded README.md context')
   })
 })
