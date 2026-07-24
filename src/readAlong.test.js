@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   buildTimeline, tokenAtTime, startOfToken, tokenWeight, spotlightStyle,
   LEAD_IN_MS, TAIL_OUT_MS, SPEED_RATES, SPOTLIGHT_DIM,
+  minDwellMs, MIN_DWELL_MS, MS_PER_UNIT,
 } from './readAlong'
 
 const toks = (...texts) => texts.map(t => ({ text: t, vocab: null }))
@@ -28,6 +29,31 @@ describe('tokenWeight', () => {
   })
   it('never gives a vowel-less alphabetic token zero width', () => {
     expect(tokenWeight('gym').syllables).toBe(1)
+  })
+})
+
+describe('minDwellMs', () => {
+  it('never returns less than the floor, even for a one-character beat', () => {
+    expect(minDwellMs(toks('我'), 1)).toBe(MIN_DWELL_MS)
+  })
+  it('grows with the line length past the floor', () => {
+    const short = minDwellMs(toks('我'), 1)
+    const long = minDwellMs(toks('今天天气很好我们一起去公园玩吧'), 1)
+    expect(long).toBeGreaterThan(short)
+    expect(long).toBeGreaterThan(MIN_DWELL_MS)
+  })
+  it('scales inversely with rate — a slower speed dwells longer', () => {
+    const long = toks('今天天气很好我们一起去公园玩吧')
+    expect(minDwellMs(long, 0.6)).toBeCloseTo(minDwellMs(long, 1) / 0.6, 6)
+  })
+  it('uses syllable+pause units at MS_PER_UNIT past the floor', () => {
+    // 6 Han syllables = 6 units → 6 * MS_PER_UNIT, above the floor.
+    expect(minDwellMs(toks('一二三四五六'), 1)).toBe(6 * MS_PER_UNIT)
+  })
+  it('is safe on empty/garbage input', () => {
+    expect(minDwellMs([], 1)).toBe(MIN_DWELL_MS)
+    expect(minDwellMs(null, 0)).toBe(MIN_DWELL_MS)
+    expect(minDwellMs(undefined)).toBe(MIN_DWELL_MS)
   })
 })
 

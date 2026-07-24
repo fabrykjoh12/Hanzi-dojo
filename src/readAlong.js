@@ -89,6 +89,31 @@ export function tokenWeight(text) {
   return { syllables, pause }
 }
 
+// The minimum time a beat should stay on screen while auto-playing, in ms.
+//
+// Real per-line narration paces itself: the reader advances on the audio
+// element's own `ended` event. But most of the library has no synthesized
+// clip, so play falls back to the browser's speechSynthesis — whose `onend`
+// fires near-instantly on platforms that don't actually voice the text (voices
+// not loaded, muted, unsupported locale). Left ungated, a whole story cascades
+// past in a couple of seconds. This floor gives every beat enough time to be
+// read (and heard, where speech does work) regardless of the fallback.
+//
+// The estimate reuses tokenWeight's syllable/pause units — the same currency
+// buildTimeline speaks in — so a longer line dwells proportionally longer. Rate
+// scales it: a slower chosen speed reads slower.
+export const MS_PER_UNIT = 300
+export const MIN_DWELL_MS = 1400
+export function minDwellMs(tokens, rate = DEFAULT_RATE) {
+  const r = Number.isFinite(rate) && rate > 0 ? rate : DEFAULT_RATE
+  let units = 0
+  for (const t of tokens || []) {
+    const w = tokenWeight(t && t.text)
+    units += w.syllables + w.pause
+  }
+  return Math.max(MIN_DWELL_MS, units * MS_PER_UNIT) / r
+}
+
 // tokens → per-token time spans, or null when no honest timeline exists.
 // Returning null rather than throwing IS the degradation story: no timeline
 // means no highlight, and the reader behaves exactly as it did before.

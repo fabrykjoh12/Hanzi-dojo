@@ -39,3 +39,6 @@ artifacts
 
 # Claude Code agent worktrees
 .claude/worktrees/
+.playwright-mcp/
+test-results/
+playwright-report/

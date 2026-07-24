@@ -9,6 +9,7 @@ import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
 import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, matchName, JP_PARTICLES, readingVisibleFor, isDueSoon, buildVocabMatcher, matchVocabAt, boundaryAfterSkip } from './storyReading'
+import { minDwellMs } from './readAlong'
 import { glossaryLookup } from './grammarGlossary'
 import { prefsGet, prefsSet } from './offline'
 import { FIRST_MISSION_READER_HINT, firstMissionCompletion } from './firstMission'
@@ -16,8 +17,9 @@ import { track as trackEvent, trackOnce, EVENTS } from './analytics'
 import { shareReadingCard } from './shareCard'
 import { toast } from './toast'
 import { BRAND_URL } from './brand'
-import { ArrowLeft, Bookmark, Volume2, Play, Pause, Languages, ChevronRight, UserRound, Check, X, Sparkles, Home, Sliders, Eye, Clock, Repeat, Lock, Share2 } from 'lucide-react'
+import { ArrowLeft, Bookmark, Volume2, Play, Pause, Languages, ChevronRight, UserRound, Check, X, Sparkles, Home, Sliders, Eye, Clock, Repeat, Lock, Share2, BookOpen } from 'lucide-react'
 import ComprehensionCheck from './ComprehensionCheck'
+import StoryCover from './StoryCover'
 
 // HSKStory-inspired immersion reader for BOTH languages. Light theme. Tap a word
 // for a bottom-sheet definition; pinyin (Chinese) / furigana (Japanese) and
@@ -266,7 +268,7 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
   )
 }
 
-export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, track, onBack, onHome, nextStory, nextTierUnlock = null, onNextStory, isRead, onMarkRead, todayWords = [], firstMission = false }) {
+export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, track, onBack, onHome, nextStory, nextTierUnlock = null, onNextStory, isRead, onMarkRead, todayWords = [], firstMission = false, onPickReaderMode }) {
   const [selected, setSelected] = useState(null)
   const [furiganaMode, setFuriganaMode] = useState(DEFAULT_PREFS.furiganaMode)
   const [lens, setLens] = useState(DEFAULT_PREFS.lens)
@@ -289,6 +291,13 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const wordAudioRef = useRef(null)
   const storyAudioRef = useRef(null)
   const settingsAnchorRef = useRef(null)
+  // Read-along auto-scroll: one ref per rendered line so the line being spoken
+  // can be scrolled into view; suspended once the reader scrolls by hand.
+  const lineRefs = useRef([])
+  const autoScrollSuspendedRef = useRef(false)
+  // Reading-pace floor timer for the speechSynthesis fallback (some platforms
+  // fire `onend` instantly, which would otherwise race the read-along past).
+  const synthTimerRef = useRef(null)
 
   const theme = languageTheme(track.language)
   const isJapanese = track.language === 'japanese'
@@ -351,6 +360,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
 
   useEffect(() => () => {
     try { window.speechSynthesis.cancel() } catch { /* noop */ }
+    if (synthTimerRef.current) { clearTimeout(synthTimerRef.current); synthTimerRef.current = null }
     if (storyAudioRef.current) storyAudioRef.current.pause()
   }, [])
 
@@ -407,6 +417,35 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   // active, so readings appearing/disappearing per word never shift the baseline.
   const reserveRuby = furiganaMode !== 'hidden'
   const reduceMotion = useMemo(() => prefersReducedMotion(), [])
+
+  // Read-along auto-scroll: keep the line being spoken in view. Runs only while
+  // playing and only until the reader takes over by hand (a wheel or touch
+  // gesture suspends it — see below — so following never fights a manual scroll).
+  useEffect(() => {
+    if (!speaking || speakingLine < 0) return
+    if (autoScrollSuspendedRef.current) return
+    const el = lineRefs.current[speakingLine]
+    if (!el || typeof el.scrollIntoView !== 'function') return
+    try {
+      el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' })
+    } catch {
+      el.scrollIntoView()
+    }
+  }, [speakingLine, speaking, reduceMotion])
+
+  // A hand-scroll while narration plays hands control to the reader: suspend
+  // auto-scroll until the next play. Listening for wheel/touch (direct gestures)
+  // rather than 'scroll' avoids mistaking our own smooth scroll for user intent.
+  useEffect(() => {
+    if (!speaking) return undefined
+    const onManual = () => { autoScrollSuspendedRef.current = true }
+    window.addEventListener('wheel', onManual, { passive: true })
+    window.addEventListener('touchmove', onManual, { passive: true })
+    return () => {
+      window.removeEventListener('wheel', onManual)
+      window.removeEventListener('touchmove', onManual)
+    }
+  }, [speaking])
 
   // Which of today's studied words appear in this story — the "3 words from
   // today appear here" thread that connects the study session to this reading.
@@ -562,16 +601,27 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const speakLineViaSynth = (index, runId) => {
     const synth = window.speechSynthesis
     if (!synth) { setSpeaking(false); setSpeakingLine(-1); speakingLineRef.current = -1; return }
+    if (synthTimerRef.current) { clearTimeout(synthTimerRef.current); synthTimerRef.current = null }
+    // Advance only when the utterance has ended AND a reading-pace floor has
+    // elapsed — whichever is later. Platforms that fire `onend` instantly (no
+    // voice for the locale, muted) would otherwise race the highlight past every
+    // line in a second; the floor keeps each line up long enough to read.
+    let floorDone = false
+    let speechDone = false
+    const advance = () => { if (floorDone && speechDone && runId === runRef.current) speakFrom(index + 1, runId) }
+    const floorMs = minDwellMs((parsed[index] && parsed[index].tokens) || [], rateRef.current)
+    synthTimerRef.current = setTimeout(() => { floorDone = true; advance() }, floorMs)
     const u = new SpeechSynthesisUtterance(splitSpeaker(lines[index]).text)
     u.lang = ttsLang
     u.rate = rateRef.current
-    u.onend = () => { if (runId === runRef.current) speakFrom(index + 1, runId) }
-    u.onerror = () => { if (runId === runRef.current) { setSpeaking(false); setSpeakingLine(-1); speakingLineRef.current = -1 } }
+    u.onend = () => { speechDone = true; advance() }
+    u.onerror = () => { speechDone = true; advance() }
     synth.speak(u)
   }
 
   const speakFrom = (index, runId) => {
     if (runId !== runRef.current) return
+    if (synthTimerRef.current) { clearTimeout(synthTimerRef.current); synthTimerRef.current = null }
     if (index >= lines.length) { setSpeaking(false); setSpeakingLine(-1); speakingLineRef.current = -1; return }
     setSpeakingLine(index)
     speakingLineRef.current = index
@@ -594,6 +644,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     if (speaking) {
       runRef.current += 1
       cancelSynth()
+      if (synthTimerRef.current) { clearTimeout(synthTimerRef.current); synthTimerRef.current = null }
       if (storyAudioRef.current) storyAudioRef.current.pause()
       setSpeaking(false)
       setSpeakingLine(-1)
@@ -603,6 +654,9 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     runRef.current += 1
     const runId = runRef.current
     cancelSynth()
+    // A fresh play re-enables read-along auto-scroll; any earlier hand-scroll
+    // that suspended it no longer applies.
+    autoScrollSuspendedRef.current = false
     setSpeaking(true)
     speakFrom(0, runId)
   }
@@ -681,6 +735,10 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             of the top bar removes the duplicate labels and calms the masthead. */}
         <div style={{ flex: 1 }} />
         <div ref={settingsAnchorRef} style={{ display: 'flex', gap: '6px', position: 'relative' }}>
+          {/* Equal-weight switch back to the paged reader (only for paced stories). */}
+          {onPickReaderMode && (!story.presentation || story.presentation === 'paced') && (
+            <TopToggle active={false} onClick={() => onPickReaderMode('paced')} icon={BookOpen} label={isMobile ? '' : 'Paged'} accent={accent} isMobile={isMobile} aria-label="Switch to paged reading" />
+          )}
           <TopToggle active={lens} onClick={() => setLens(v => !v)} icon={Eye} label="Lens" accent={accent} isMobile={isMobile} />
           <TopToggle active={settingsOpen} onClick={() => setSettingsOpen(v => !v)} icon={Sliders} label={isMobile ? '' : 'Reader'} accent={accent} isMobile={isMobile} aria-label="Reader settings" />
           {settingsOpen && !isMobile && (
@@ -702,13 +760,10 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         padding: isMobile ? '14px 20px 200px' : '22px 28px 220px',
       }}>
         {story.image_path && (
-          <div style={{
-            marginBottom: '20px', borderRadius: '18px', overflow: 'hidden',
-            border: '1px solid var(--border)', aspectRatio: '16 / 7',
-            background: accent + '10', boxShadow: '0 8px 26px rgba(24,24,27,0.06)',
-          }}>
-            <img src={getAudioUrl(story.image_path)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-          </div>
+          <StoryCover
+            story={story} path={story.image_path} accent={accent} radius={18}
+            style={{ marginBottom: '20px', aspectRatio: '16 / 7', boxShadow: '0 8px 26px rgba(24,24,27,0.06)' }}
+          />
         )}
 
         {/* Chapter opening — a proper title on the page (not just the top bar),
@@ -801,7 +856,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
           const dimmed = focusedLine !== null && focusedLine !== li
           const focusTransition = reduceMotion ? 'none' : 'opacity 220ms ease'
           return (
-            <div key={li} style={{ marginTop: topGap }}>
+            <div key={li} ref={el => { lineRefs.current[li] = el }} style={{ marginTop: topGap }}>
               {showLabel && (
                 <div
                   onClick={names[speaker] ? () => selectToken(li, 'sp', { name: { word: speaker, reading: names[speaker] } }) : undefined}
