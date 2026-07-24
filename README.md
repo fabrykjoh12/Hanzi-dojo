@@ -105,7 +105,8 @@ The app expects a Supabase project with the schema in [`supabase/schema.sql`](su
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Start the Vite dev server |
-| `npm run build` | Production build (static SPA into `dist/`) |
+| `npm run build` | Production build **plus** the Dojo HQ / Sites packaging (the default — see Deployment) |
+| `npm run build:public` | Production build of the public app only, into `dist/client` — what Vercel runs |
 | `npm run preview` | Preview the production build locally |
 | `npm run lint` | ESLint over the project |
 | `npm test` | Run the Vitest suite once |
@@ -147,6 +148,7 @@ The suite (Vitest) focuses on **meaningful behavior**, not string smoke tests: F
 ## Deployment
 
 - Static SPA build (`npm run build`) deployed to Vercel (config in `vercel.json`), which serves from the root and rewrites deep links to `index.html`. The canonical origin is `https://hanzi-dojo.com`.
+- **Two build targets, one repo.** `npm run build` is unchanged and still emits the full Dojo HQ / Sites package (`dist/client` with `hq.html` as `index.html`, no service worker, plus `dist/server` and `dist/.openai`) — so any CI that builds this repo keeps getting exactly what it always got. **The public site opts out instead:** `vercel.json` sets `buildCommand` to `DOJO_PUBLIC_BUILD=1 npm run build`, which skips the packaging and leaves the real app at `dist/client/index.html` with its service worker intact. `npm run build:public` reproduces that locally. The opt-out lives in this repo on purpose — the HQ deploy's build command does not, and guessing at another CI's environment is how you break someone else's deploy.
 - Set the `VITE_*` env vars in your host's environment.
 - Supabase: apply `supabase/schema.sql` and the `supabase/migrations/`. In the Supabase dashboard, set Auth → **Site URL** to `https://hanzi-dojo.com` and add it to the Redirect URL allowlist (plus `http://localhost:5173/**` for dev).
 - Daily reminders run as a scheduled GitHub Action (`send-review-reminders.mjs`) — needs the VAPID + Supabase service secrets above.
