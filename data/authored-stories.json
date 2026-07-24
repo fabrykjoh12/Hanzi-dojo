@@ -60,28 +60,44 @@
     "is_published": true
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
     "presentation": "chat",
     "title": "放学以后",
     "english_summary": "Two classmates make an after-school plan over text.",
     "content": "小明：你好！你现在忙吗？\n朋友：不忙，怎么了？\n小明：放学以后，我们一起去公园吧。\n朋友：好啊！我也想去。\n小明：我们几点去？\n朋友：四点，好吗？\n小明：好，四点在学校门口见。\n朋友：没问题，一会儿见！"
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
     "presentation": "chat",
     "title": "今天吃什么",
     "english_summary": "A quick chat about what to eat for dinner.",
     "content": "妈妈：你今天想吃什么？\n小明：我想吃面条。\n妈妈：家里没有面条了。\n小明：那我们吃米饭和鸡蛋，好吗？\n妈妈：好。你饿了吗？\n小明：有一点饿。\n妈妈：那我现在做饭。\n小明：谢谢妈妈！"
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 2, "tier": 1, "tier_min_words": 0,
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 1,
+    "tier_min_words": 0,
     "presentation": "chat",
     "title": "周末做什么",
     "english_summary": "Two friends compare weekend plans.",
     "content": "朋友：这个周末你有空吗？\n小明：有空。你想做什么？\n朋友：我想去看电影。\n小明：好主意！看什么电影？\n朋友：一个新的中国电影，听说很好看。\n小明：几点的？\n朋友：星期六下午三点。\n小明：太好了，我们一起去！"
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
     "presentation": "scene",
     "title": "下雨天",
     "english_summary": "A rainy-day walk in the park, told scene by scene.",
@@ -89,7 +105,11 @@
     "english_content": "It is raining today.\nXiaoming is holding an umbrella.\nHe goes to walk in the park.\nThere are little birds in the tree.\nThe flowers in the rain are beautiful.\nXiaoming is very happy."
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
     "presentation": "scene",
     "title": "我的早上",
     "english_summary": "One quiet morning, one scene at a time.",
@@ -97,7 +117,11 @@
     "english_content": "It is seven in the morning.\nXiaoming gets out of bed.\nHe brushes his teeth and washes his face.\nHe eats bread and drinks milk.\nHe takes his backpack to school.\nHe rides the bus."
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 2, "tier": 1, "tier_min_words": 0,
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 1,
+    "tier_min_words": 0,
     "presentation": "scene",
     "title": "在动物园",
     "english_summary": "An afternoon at the zoo, animal by animal.",
@@ -105,7 +129,11 @@
     "english_content": "This is a lion.\nThat is a panda.\nThe monkey is playing in the tree.\nThe elephant is very big and tall.\nWe ate ice cream.\nMom took a photo."
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 1, "tier": 1, "tier_min_words": 0,
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 1,
+    "tier_min_words": 0,
     "presentation": "chat",
     "title": "放学以后聊天",
     "english_summary": "Reply inside a chat: make an after-school plan with a friend.",
@@ -113,14 +141,33 @@
     "interactions": {
       "you": "小明",
       "distractors": {
-        "1": [{ "text": "我不去，我在家。", "pinyin": "Wǒ bú qù, wǒ zài jiā." }],
-        "3": [{ "text": "我想吃面条。", "pinyin": "Wǒ xiǎng chī miàntiáo." }],
-        "5": [{ "text": "我不知道。", "pinyin": "Wǒ bù zhīdào." }]
+        "1": [
+          {
+            "text": "我不去，我在家。",
+            "pinyin": "Wǒ bú qù, wǒ zài jiā."
+          }
+        ],
+        "3": [
+          {
+            "text": "我想吃面条。",
+            "pinyin": "Wǒ xiǎng chī miàntiáo."
+          }
+        ],
+        "5": [
+          {
+            "text": "我不知道。",
+            "pinyin": "Wǒ bù zhīdào."
+          }
+        ]
       }
     }
   },
   {
-    "language": "chinese", "system": "hsk_3", "level": 2, "tier": 1, "tier_min_words": 0,
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 1,
+    "tier_min_words": 0,
     "presentation": "chat",
     "title": "周末的电影",
     "english_summary": "Reply inside a chat: agree on a weekend movie.",
@@ -128,10 +175,63 @@
     "interactions": {
       "you": "小明",
       "distractors": {
-        "1": [{ "text": "我没有空。", "pinyin": "Wǒ méiyǒu kòng." }],
-        "3": [{ "text": "我不喜欢电影。", "pinyin": "Wǒ bù xǐhuan diànyǐng." }],
-        "5": [{ "text": "我不想去了。", "pinyin": "Wǒ bù xiǎng qù le." }]
+        "1": [
+          {
+            "text": "我没有空。",
+            "pinyin": "Wǒ méiyǒu kòng."
+          }
+        ],
+        "3": [
+          {
+            "text": "我不喜欢电影。",
+            "pinyin": "Wǒ bù xǐhuan diànyǐng."
+          }
+        ],
+        "5": [
+          {
+            "text": "我不想去了。",
+            "pinyin": "Wǒ bù xiǎng qù le."
+          }
+        ]
       }
     }
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 1,
+    "tier_min_words": 0,
+    "is_published": true,
+    "presentation": "paced",
+    "title": "回家的路",
+    "english_summary": "After years in the city, Xiaochuan goes back to the village and finds the old bridge — and his parents — still waiting.",
+    "content": "小川在大城市工作了很久。\n每天都很忙，压力也很大。\n今天早上，他终于决定回家看看。\n火车很慢，外边的世界很美丽。\n到了村里，阳光正好。\n他看见了那个旧桥。\n桥还在，一点儿也没有变化。\n父母正在桥上等他。\n妈妈：小川，你回来了！\n母亲突然笑了，眼前都是光。\n小川心里想，这就是幸福。\n有些东西，很久也不会消失。",
+    "english_content": "Xiaochuan had worked in the big city for a long time.\nEvery day was busy, and the pressure was heavy.\nThis morning, he finally decided to go home for a visit.\nThe train was slow, and the world outside was beautiful.\nWhen he reached the village, the sunlight was just right.\nHe saw that old bridge.\nThe bridge was still there — not changed at all.\nHis parents were waiting for him on the bridge.\nMum: Xiaochuan, you are back!\nHis mother suddenly smiled, and everything before his eyes was light.\nXiaochuan thought to himself: this is happiness.\nSome things do not disappear, even after a long time."
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 1,
+    "tier_min_words": 0,
+    "is_published": true,
+    "presentation": "chat",
+    "title": "新的决定",
+    "english_summary": "Xiaochuan tells Lin Yuqing he wants to move back to the village. She hears him out — and backs him.",
+    "content": "小川：雨晴，我有一个决定。\n林雨晴：什么决定？\n小川：我想回村里工作。\n林雨晴：真的吗？你不喜欢城市了？\n小川：城市很好，但是我需要家人。\n林雨晴：我理解你。\n小川：我有点儿紧张。\n林雨晴：这是你的人生，我支持你。\n林雨晴：什么时候走？\n小川：下个月。\n林雨晴：那我们要好好庆祝一下！"
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 1,
+    "tier_min_words": 0,
+    "is_published": true,
+    "presentation": "paced",
+    "title": "坚持",
+    "english_summary": "Xiaohua runs her school race. She does not win — and finds that finishing was the point.",
+    "content": "小花是学校比赛的选手。\n昨天的训练很困难。\n她的教练说，慢慢来。\n今天早上，比赛开始了。\n前面的路还很长。\n她很紧张，也有点儿害怕。\n但是她没有停止。\n教练的建议在她心里。\n她终于到达了。\n她不是第一，但是她很高兴。\n坚持就是胜利。",
+    "english_content": "Xiaohua is a competitor in her school race.\nYesterday's training was hard.\nHer coach said: take it slowly.\nThis morning, the race began.\nThe road ahead was still long.\nShe was nervous, and a little afraid too.\nBut she did not stop.\nHer coach's advice stayed in her heart.\nAt last, she reached the end.\nShe was not first, but she was very happy.\nTo keep going is itself a victory."
   }
 ]
