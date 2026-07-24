@@ -1,15 +1,17 @@
 import { spawn, spawnSync } from 'node:child_process'
 import { createServer } from 'node:http'
-import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, stat, unlink, writeFile } from 'node:fs/promises'
 import { hostname } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 let PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const BRIDGE_PORT = Number(process.env.DOJO_BRIDGE_PORT || 43127)
+const BRIDGE_VERSION = '2.0.0'
 const START_MARKER = '<!-- DOJO-HQ:START -->'
 const END_MARKER = '<!-- DOJO-HQ:END -->'
-const ALLOWED_DOCUMENTS = new Set(['ROADMAP.md', 'TASKS.md'])
+const WRITABLE_DOCUMENTS = new Set(['ROADMAP.md', 'TASKS.md'])
+const READABLE_DOCUMENTS = new Set(['README.md', 'ROADMAP.md', 'TASKS.md', 'Claude.md'])
 const README_LIMIT = 80_000
 const STATUS_LABELS = {
   inbox: 'Innboks',
@@ -41,8 +43,9 @@ function safeInline(value, fallback = '') {
     .trim()
 }
 
-function documentPath(documentName) {
-  const name = ALLOWED_DOCUMENTS.has(documentName) ? documentName : 'ROADMAP.md'
+function documentPath(documentName, { writable = false } = {}) {
+  const allowedDocuments = writable ? WRITABLE_DOCUMENTS : READABLE_DOCUMENTS
+  const name = allowedDocuments.has(documentName) ? documentName : 'ROADMAP.md'
   return { name, path: resolve(PROJECT_ROOT, name) }
 }
 
@@ -148,7 +151,7 @@ async function readDocument(documentName) {
 }
 
 async function syncDocument({ document: documentName, items = [], members = [] }) {
-  const target = documentPath(documentName)
+  const target = documentPath(documentName, { writable: true })
   const current = await readFile(target.path, 'utf8').catch(error => {
     if (error.code === 'ENOENT') return `# ${target.name.replace('.md', '')}\n`
     throw error
@@ -186,8 +189,25 @@ async function readProjectReadme() {
   }
 }
 
+async function projectDiagnostics() {
+  const documents = await Promise.all([...READABLE_DOCUMENTS].map(async name => {
+    const fileStat = await stat(resolve(PROJECT_ROOT, name)).catch(() => null)
+    return {
+      name,
+      exists: Boolean(fileStat),
+      modifiedAt: fileStat?.mtime?.toISOString() || null,
+    }
+  }))
+  return {
+    bridgeVersion: BRIDGE_VERSION,
+    projectRoot: PROJECT_ROOT,
+    readmeFound: documents.some(document => document.name === 'README.md' && document.exists),
+    documents,
+  }
+}
+
 export function buildClaudePrompt(item, documentName, readme = {}) {
-  const target = documentPath(documentName).name
+  const target = documentPath(documentName, { writable: true }).name
   return [
     '# Hanzi Dojo HQ task',
     '',
@@ -222,8 +242,14 @@ export function buildClaudePrompt(item, documentName, readme = {}) {
     '4. Run relevant tests and the production build.',
     '5. Do not commit, push, deploy, delete unrelated files, or bypass permission prompts.',
     '6. When the work is genuinely complete, check the matching Dojo item and summarize what changed in the terminal.',
+    ...(item.dojo_run_id ? [
+      `7. Before your final response, write .dojo/run-result.json as valid JSON with this exact runId: ${safeInline(item.dojo_run_id)}.`,
+      '   Use this shape: {"runId":"...","status":"completed","summary":"short result","files":["changed/file"],"tests":["command: passed"],"branch":"","pr_url":"","ci_status":"none"}',
+      '   If work cannot be completed, use status "needs_input" or "failed" and explain why in summary.',
+    ] : []),
     '',
     `Dojo item id: ${safeInline(item.id)}`,
+    ...(item.dojo_run_id ? [`Dojo run id: ${safeInline(item.dojo_run_id)}`] : []),
   ].join('\n')
 }
 
@@ -236,7 +262,11 @@ async function launchClaude({ item, items = [], members = [], document: document
   const synced = await syncDocument({ document: documentName, items, members })
   const taskDirectory = resolve(PROJECT_ROOT, '.dojo')
   const taskPath = resolve(taskDirectory, 'claude-task.md')
+  const resultPath = resolve(taskDirectory, 'run-result.json')
   await mkdir(taskDirectory, { recursive: true })
+  await unlink(resultPath).catch(error => {
+    if (error.code !== 'ENOENT') throw error
+  })
   await writeFile(taskPath, buildClaudePrompt(item, synced.document, readme), 'utf8')
 
   const terminalTitle = `Claude · ${safeInline(item.title).slice(0, 42)}`
@@ -304,12 +334,14 @@ export function createDojoBridgeServer() {
     try {
       if (request.method === 'GET' && url.pathname === '/api/status') {
         const roadmap = await readDocument('ROADMAP.md')
+        const diagnostics = await projectDiagnostics()
         sendJson(response, 200, {
           connected: true,
           project: 'Hanzi Dojo',
           claudeReady: Boolean(version),
           claudeVersion: version,
           roadmapModifiedAt: roadmap.modifiedAt,
+          ...diagnostics,
         }, origin)
         return
       }
@@ -371,7 +403,64 @@ async function runBridgeCommand(command) {
   throw new Error('Nettbroen ba om en handling denne klienten ikke støtter.')
 }
 
-async function runCloudBridge({ pair, site, project }) {
+async function consumeRunResult(site, workspaceId, inviteCode) {
+  const resultPath = resolve(PROJECT_ROOT, '.dojo', 'run-result.json')
+  const source = await readFile(resultPath, 'utf8').catch(error => {
+    if (error.code === 'ENOENT') return ''
+    throw error
+  })
+  if (!source) return false
+  let payload
+  try {
+    payload = JSON.parse(source)
+  } catch {
+    return false
+  }
+  const runId = safeInline(payload.runId)
+  if (!runId) return false
+  const status = ['completed', 'failed', 'needs_input', 'testing'].includes(payload.status) ? payload.status : 'completed'
+  await remoteJson(
+    site,
+    `/api/dojo/workspaces/${encodeURIComponent(workspaceId)}/agent-runs/${encodeURIComponent(runId)}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({
+        status,
+        summary: payload.summary,
+        files: payload.files,
+        tests: payload.tests,
+        branch: payload.branch,
+        pr_url: payload.pr_url,
+        ci_status: payload.ci_status,
+      }),
+    },
+    inviteCode,
+  )
+  await unlink(resultPath)
+  console.log(`Claude-resultatet er sendt tilbake til HQ (${status}).`)
+  return true
+}
+
+async function selfUpdateBridge(baseUrl) {
+  const response = await fetch(`${baseUrl}/dojo-cloud-bridge.mjs?bridge-update=${Date.now()}`, { cache: 'no-store' })
+  if (!response.ok) return false
+  const source = await response.text()
+  const latestVersion = source.match(/const BRIDGE_VERSION = '([^']+)'/)?.[1]
+  if (!latestVersion || latestVersion === BRIDGE_VERSION) return false
+  const currentPath = fileURLToPath(import.meta.url)
+  await writeFile(currentPath, source, 'utf8')
+  console.log(`Oppdaterer Dojo-nettbroen fra ${BRIDGE_VERSION} til ${latestVersion} …`)
+  const next = spawn(process.execPath, [currentPath, ...process.argv.slice(2)], {
+    cwd: PROJECT_ROOT,
+    detached: false,
+    stdio: 'inherit',
+    windowsHide: false,
+  })
+  next.unref()
+  process.exit(0)
+}
+
+async function runCloudBridge({ pair, site, project, 'self-update': selfUpdate }) {
   const inviteCode = String(pair || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
   if (inviteCode.length < 10) throw new Error('Invitasjonskoden er ugyldig.')
   const baseUrl = remoteSite(site)
@@ -387,20 +476,34 @@ async function runCloudBridge({ pair, site, project }) {
   const version = claudeVersion() || ''
   const displayName = `${hostname()} · Claude Code`
   let lastConnectionWarning = 0
+  let lastDiagnosticsAt = 0
+  let diagnostics = await projectDiagnostics()
+  let lastUpdateCheck = 0
 
   console.log(`Dojo-nettbroen er koblet til «${workspace.name}».`)
   console.log(`Prosjekt: ${PROJECT_ROOT}`)
   console.log(version ? `Claude Code: ${version}` : 'Claude Code ble ikke funnet i PATH.')
+  console.log(diagnostics.readmeFound ? 'README.md: funnet og klar' : 'README.md: mangler i prosjektmappen')
+  console.log(`Broversjon: ${BRIDGE_VERSION}${selfUpdate ? ' · automatisk oppdatering på' : ''}`)
   console.log('La dette vinduet stå åpent mens HQ brukes. Trykk Ctrl+C for å stoppe.')
 
   for (;;) {
     try {
+      if (Date.now() - lastDiagnosticsAt > 10_000) {
+        diagnostics = await projectDiagnostics()
+        lastDiagnosticsAt = Date.now()
+      }
+      if (selfUpdate && Date.now() - lastUpdateCheck > 5 * 60_000) {
+        lastUpdateCheck = Date.now()
+        await selfUpdateBridge(baseUrl)
+      }
+      await consumeRunResult(baseUrl, workspace.id, inviteCode)
       const polled = await remoteJson(
         baseUrl,
         `/api/dojo/workspaces/${encodeURIComponent(workspace.id)}/bridge/poll`,
         {
           method: 'POST',
-          body: JSON.stringify({ clientId, displayName, version }),
+          body: JSON.stringify({ clientId, displayName, version, ...diagnostics }),
         },
         inviteCode,
       )

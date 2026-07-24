@@ -8,6 +8,8 @@ import {
 } from 'lucide-react'
 import { dojoClient as supabase } from './dojoClient'
 import { dojoClaudeBridge } from './dojoClaudeBridge'
+import { dojoHQ2Client } from './dojoHQ2Client'
+import { DojoCommandCenter, DojoCommandPalette } from './DojoHQ2'
 import './DojoHQ.css'
 
 const TYPES = {
@@ -37,6 +39,15 @@ const PRIORITIES = {
 const EMPTY_FORM = {
   title: '', description: '', item_type: 'idea', status: 'inbox',
   priority: 'medium', assigned_to: '', due_date: '', tags: '',
+}
+
+const EMPTY_HQ2 = {
+  milestones: [],
+  testCases: [],
+  runs: [],
+  activities: [],
+  presence: [],
+  versions: [],
 }
 
 const dateFormatter = new Intl.DateTimeFormat('nb-NO', { day: 'numeric', month: 'short' })
@@ -473,7 +484,11 @@ function CreateItemModal({ onClose, onSubmit, members, initialStatus, initialDue
   )
 }
 
-function ItemDetail({ item, attachments, comments, members, memberName, onClose, onUpdate, onDelete, onComment, onUpload, onRemoveAttachment, onOpenClaude, claudeConnected, busy }) {
+function ItemDetail({
+  item, items, attachments, comments, members, milestones, testCases, runs, memberName,
+  onClose, onUpdate, onDelete, onComment, onUpload, onRemoveAttachment, onOpenClaude,
+  onUpdateTest, claudeConnected, busy,
+}) {
   const [description, setDescription] = useState(item?.description || '')
   const [comment, setComment] = useState('')
 
@@ -502,10 +517,84 @@ function ItemDetail({ item, attachments, comments, members, memberName, onClose,
             <label><span>Frist</span><input type="date" value={item.due_date || ''} onChange={event => onUpdate(item.id, { due_date: event.target.value || null })} /></label>
           </div>
 
+          <section className="dojo-detail-section dojo-delivery-section">
+            <div className="dojo-section-title"><h3>Leveranse og avhengigheter</h3><span>{item.ci_status && item.ci_status !== 'none' ? `CI: ${item.ci_status}` : 'Klar for plan'}</span></div>
+            <div className="dojo-detail-fields">
+              <label>
+                <span>Milepæl</span>
+                <select value={item.milestone_id || ''} onChange={event => onUpdate(item.id, { milestone_id: event.target.value || null })}>
+                  <option value="">Ingen milepæl</option>
+                  {milestones.map(milestone => <option key={milestone.id} value={milestone.id}>{milestone.title}</option>)}
+                </select>
+              </label>
+              <label>
+                <span>Avhenger av</span>
+                <select
+                  value=""
+                  onChange={event => {
+                    const dependency = event.target.value
+                    if (dependency) onUpdate(item.id, { depends_on: [...new Set([...(item.depends_on || []), dependency])] })
+                  }}
+                >
+                  <option value="">Legg til avhengighet</option>
+                  {items.filter(candidate => candidate.id !== item.id && !(item.depends_on || []).includes(candidate.id)).map(candidate => <option key={candidate.id} value={candidate.id}>{candidate.title}</option>)}
+                </select>
+              </label>
+              <label><span>Git branch</span><input defaultValue={item.github_branch || ''} onBlur={event => onUpdate(item.id, { github_branch: event.target.value.trim() })} placeholder="feature/..." /></label>
+              <label><span>Pull request</span><input type="url" defaultValue={item.github_pr_url || ''} onBlur={event => onUpdate(item.id, { github_pr_url: event.target.value.trim() })} placeholder="https://github.com/..." /></label>
+              <label>
+                <span>CI-status</span>
+                <select value={item.ci_status || 'none'} onChange={event => onUpdate(item.id, { ci_status: event.target.value })}>
+                  <option value="none">Ikke satt</option>
+                  <option value="pending">Kjører</option>
+                  <option value="passing">Bestått</option>
+                  <option value="failing">Feiler</option>
+                </select>
+              </label>
+            </div>
+            {(item.depends_on || []).length > 0 && (
+              <div className="dojo-dependency-chips">
+                {(item.depends_on || []).map(dependencyId => {
+                  const dependency = items.find(candidate => candidate.id === dependencyId)
+                  return <button key={dependencyId} onClick={() => onUpdate(item.id, { depends_on: (item.depends_on || []).filter(id => id !== dependencyId) })}>{dependency?.title || 'Ukjent oppgave'}<X size={13} /></button>
+                })}
+              </div>
+            )}
+            <label className="dojo-blocked-field">
+              <span>Blokkering</span>
+              <textarea defaultValue={item.blocked_reason || ''} onBlur={event => onUpdate(item.id, { blocked_reason: event.target.value.trim() })} placeholder="Hva stopper oppgaven akkurat nå?" rows={2} />
+            </label>
+          </section>
+
           <section className="dojo-detail-section">
             <h3>Beskrivelse</h3>
             <textarea value={description} onChange={event => setDescription(event.target.value)} onBlur={() => { if (description !== item.description) onUpdate(item.id, { description }) }} placeholder="Legg til kontekst og akseptansekriterier …" rows={6} />
           </section>
+
+          <section className="dojo-detail-section">
+            <div className="dojo-section-title"><h3>Tester</h3><span>{testCases.length}</span></div>
+            <div className="dojo-item-tests">
+              {testCases.map(test => (
+                <article key={test.id} className={`is-${test.status}`}>
+                  <span>{test.title}</span>
+                  <div>
+                    <button className={test.status === 'passed' ? 'active' : ''} onClick={() => onUpdateTest(test.id, { status: 'passed' })}><Check size={14} />Bestått</button>
+                    <button className={test.status === 'failed' ? 'active' : ''} onClick={() => onUpdateTest(test.id, { status: 'failed' })}><X size={14} />Feilet</button>
+                  </div>
+                </article>
+              ))}
+              {!testCases.length && <p className="dojo-empty-copy">Legg til akseptansetester fra Testlab i kontrollrommet.</p>}
+            </div>
+          </section>
+
+          {runs.length > 0 && (
+            <section className="dojo-detail-section">
+              <div className="dojo-section-title"><h3>Claude-historikk</h3><span>{runs.length}</span></div>
+              <div className="dojo-item-runs">
+                {runs.slice(0, 5).map(run => <article key={run.id}><i className={`is-${run.status}`} /><span><strong>{run.status.replace('_', ' ')}</strong><small>{run.summary || 'Ingen oppsummering ennå'}</small></span></article>)}
+              </div>
+            </section>
+          )}
 
           <section className="dojo-detail-section">
             <div className="dojo-section-title"><h3>Vedlegg</h3><label className="dojo-mini-upload"><Upload size={15} />Last opp<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple onChange={event => onUpload(item.id, Array.from(event.target.files || []))} /></label></div>
@@ -584,6 +673,9 @@ export default function DojoHQ({ session, profile }) {
   const [bridgeStatus, setBridgeStatus] = useState({ connected: false, claudeReady: false, claudeVersion: '' })
   const [roadmapDocument, setRoadmapDocument] = useState('ROADMAP.md')
   const [roadmapInfo, setRoadmapInfo] = useState(null)
+  const [hq2Data, setHq2Data] = useState(EMPTY_HQ2)
+  const [commandOpen, setCommandOpen] = useState(false)
+  const [commandQuery, setCommandQuery] = useState('')
 
   const flash = useCallback((message) => {
     setNotice(message)
@@ -652,6 +744,26 @@ export default function DojoHQ({ session, profile }) {
     setOverview(supabase.getOverview())
   }, [flash])
 
+  const loadHQ2 = useCallback(async (workspace = activeWorkspace) => {
+    if (!supabase.isRemote || !workspace) {
+      setHq2Data(EMPTY_HQ2)
+      return EMPTY_HQ2
+    }
+    const identity = {
+      userId: localSession.user.id,
+      displayName: localProfile.display_name || localSession.user.email?.split('@')[0] || 'Dojo-medlem',
+    }
+    dojoHQ2Client.configure(workspace, identity)
+    try {
+      const snapshot = await dojoHQ2Client.snapshot()
+      setHq2Data(snapshot)
+      return snapshot
+    } catch (error) {
+      flash(error.message || 'Kunne ikke laste kontrollrommet.')
+      return null
+    }
+  }, [activeWorkspace, flash, localProfile.display_name, localSession.user.email, localSession.user.id])
+
   useEffect(() => {
     supabase.configure(localSession.user.id, localProfile.display_name || localSession.user.email?.split('@')[0])
   }, [localProfile.display_name, localSession.user.email, localSession.user.id])
@@ -689,6 +801,43 @@ export default function DojoHQ({ session, profile }) {
 
     return () => { window.clearTimeout(initialLoad); window.clearTimeout(refreshTimer); supabase.removeChannel(channel) }
   }, [activeWorkspace, loadWorkspace])
+
+  useEffect(() => {
+    if (!supabase.isRemote || !activeWorkspace) return undefined
+    const initial = window.setTimeout(() => loadHQ2(activeWorkspace), 0)
+    const timer = window.setInterval(() => loadHQ2(activeWorkspace), 7000)
+    return () => {
+      window.clearTimeout(initial)
+      window.clearInterval(timer)
+    }
+  }, [activeWorkspace, loadHQ2])
+
+  useEffect(() => {
+    if (!supabase.isRemote || !activeWorkspace) return undefined
+    const identity = {
+      userId: localSession.user.id,
+      displayName: localProfile.display_name || localSession.user.email?.split('@')[0] || 'Dojo-medlem',
+    }
+    dojoHQ2Client.configure(activeWorkspace, identity)
+    const sendHeartbeat = () => dojoHQ2Client.heartbeat(selectedId).catch(() => {})
+    const initial = window.setTimeout(sendHeartbeat, 0)
+    const timer = window.setInterval(sendHeartbeat, 12000)
+    return () => {
+      window.clearTimeout(initial)
+      window.clearInterval(timer)
+    }
+  }, [activeWorkspace, localProfile.display_name, localSession.user.email, localSession.user.id, selectedId])
+
+  useEffect(() => {
+    const onKey = event => {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'k') return
+      event.preventDefault()
+      setCommandOpen(true)
+      setCommandQuery('')
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const selectedItem = items.find(item => item.id === selectedId) || null
 
@@ -824,8 +973,10 @@ export default function DojoHQ({ session, profile }) {
 
   const updateItem = async (id, patch) => {
     setItems(current => current.map(item => item.id === id ? { ...item, ...patch } : item))
-    const { error } = await supabase.from('dojo_items').update(patch).eq('id', id)
+    const payload = supabase.isRemote ? { ...patch, _actor_id: localSession.user.id } : patch
+    const { error } = await supabase.from('dojo_items').update(payload).eq('id', id)
     if (error) { flash('Endringen ble ikke lagret.'); loadWorkspace(activeWorkspace) }
+    else if (supabase.isRemote) loadHQ2(activeWorkspace)
   }
 
   const syncRoadmap = async () => {
@@ -872,15 +1023,29 @@ export default function DojoHQ({ session, profile }) {
       return
     }
     setBridgeBusy(true)
+    let runId = null
     try {
-      const result = await dojoClaudeBridge.launch(item, items, members, roadmapDocument)
+      if (supabase.isRemote) {
+        const created = await dojoHQ2Client.createRun(item.id)
+        runId = created.run?.id || null
+      }
+      const result = await dojoClaudeBridge.launch(
+        runId ? { ...item, dojo_run_id: runId } : item,
+        items,
+        members,
+        roadmapDocument,
+      )
+      if (runId) await dojoHQ2Client.updateRun(runId, { status: 'running' })
       setRoadmapInfo(current => ({ ...(current || {}), document: result.document, itemCount: items.length }))
+      if (supabase.isRemote) loadHQ2(activeWorkspace)
       flash(result.readmeIncluded
         ? 'Claude Code åpnes med oppgaven og README.md som kontekst.'
         : 'Claude Code åpnes, men README.md ble ikke funnet i prosjektmappen.')
     } catch (error) {
       flash(error.message || 'Kunne ikke åpne Claude Code.')
+      if (runId) await dojoHQ2Client.updateRun(runId, { status: 'failed', summary: error.message }).catch(() => {})
       checkBridge()
+      if (supabase.isRemote) loadHQ2(activeWorkspace)
     } finally {
       setBridgeBusy(false)
     }
@@ -920,6 +1085,88 @@ export default function DojoHQ({ session, profile }) {
     const { error } = await supabase.from('dojo_comments').insert({ workspace_id: activeWorkspace.id, item_id: itemId, author_id: localSession.user.id, body: body.trim() })
     setBusy(false)
     if (error) flash('Kommentaren ble ikke sendt.')
+  }
+
+  const runHQ2Mutation = async (operation, successMessage) => {
+    try {
+      await operation()
+      await loadHQ2(activeWorkspace)
+      if (successMessage) flash(successMessage)
+      return true
+    } catch (error) {
+      flash(error.message || 'Endringen kunne ikke lagres.')
+      return false
+    }
+  }
+
+  const createMilestone = payload => runHQ2Mutation(
+    () => dojoHQ2Client.createMilestone(payload),
+    'Milepælen er opprettet.',
+  )
+
+  const updateMilestone = (id, payload) => runHQ2Mutation(
+    () => dojoHQ2Client.updateMilestone(id, payload),
+    'Milepælen er oppdatert.',
+  )
+
+  const createTest = payload => runHQ2Mutation(
+    () => dojoHQ2Client.createTestCase(payload),
+    'Testen er lagt i køen.',
+  )
+
+  const updateTest = (id, payload) => runHQ2Mutation(
+    () => dojoHQ2Client.updateTestCase(id, payload),
+    payload.status === 'passed' ? 'Testen er godkjent.' : payload.status === 'failed' ? 'Testen er markert som feilet.' : '',
+  )
+
+  const deleteTest = id => runHQ2Mutation(
+    () => dojoHQ2Client.deleteTestCase(id),
+    'Testen er slettet.',
+  )
+
+  const updateRun = (id, payload) => runHQ2Mutation(
+    () => dojoHQ2Client.updateRun(id, payload),
+    '',
+  )
+
+  const addDecision = summary => runHQ2Mutation(
+    () => dojoHQ2Client.addDecision(summary),
+    'Beslutningen er lagret.',
+  )
+
+  const restoreVersion = async (itemId, versionId) => {
+    if (!window.confirm('Gjenopprette denne versjonen av oppgaven? Dagens versjon beholdes i historikken.')) return
+    const restored = await runHQ2Mutation(
+      () => dojoHQ2Client.restoreItem(itemId, versionId),
+      'Oppgaven er gjenopprettet.',
+    )
+    if (restored) await loadWorkspace(activeWorkspace)
+  }
+
+  const createBugFromTest = async (test, sourceItem) => {
+    const { data, error } = await supabase.from('dojo_items').insert({
+      workspace_id: activeWorkspace.id,
+      created_by: localSession.user.id,
+      title: `Test feilet: ${test.title}`,
+      description: [
+        sourceItem ? `Opprettet fra «${sourceItem.title}».` : '',
+        test.expected ? `Forventet: ${test.expected}` : '',
+        test.notes ? `Faktisk resultat: ${test.notes}` : '',
+      ].filter(Boolean).join('\n\n'),
+      item_type: 'bug',
+      status: 'inbox',
+      priority: 'high',
+      tags: ['testfeil'],
+      assigned_to: sourceItem?.assigned_to || null,
+      due_date: null,
+    }).select().single()
+    if (error || !data) {
+      flash('Kunne ikke opprette bug fra testen.')
+      return
+    }
+    await Promise.all([loadWorkspace(activeWorkspace), loadHQ2(activeWorkspace)])
+    setSelectedId(data.id)
+    flash('Buggen er opprettet og klar for arbeid.')
   }
 
   const removeAttachment = async (file) => {
@@ -1020,7 +1267,7 @@ export default function DojoHQ({ session, profile }) {
   const attachmentFor = itemId => attachments.filter(file => file.item_id === itemId)
   const commentCountFor = itemId => comments.filter(entry => entry.item_id === itemId).length
   const bridgePairCommand = supabase.isRemote && activeWorkspace?.invite_code
-    ? `$p=Join-Path $env:TEMP 'dojo-cloud-bridge.mjs'; Invoke-WebRequest -UseBasicParsing '${window.location.origin}/dojo-cloud-bridge.mjs?v=${import.meta.env.VITE_BUILD_SHA}' -OutFile $p; node $p --pair '${activeWorkspace.invite_code}' --site '${window.location.origin}' --project (Get-Location)`
+    ? `$p=Join-Path $env:TEMP 'dojo-cloud-bridge.mjs'; Invoke-WebRequest -UseBasicParsing '${window.location.origin}/dojo-cloud-bridge.mjs?v=${import.meta.env.VITE_BUILD_SHA}' -OutFile $p; node $p --pair '${activeWorkspace.invite_code}' --site '${window.location.origin}' --project (Get-Location) --self-update`
     : 'npm run dojo:bridge'
 
   if (loading) return <div className="dojo-loading"><div className="dojo-loading-mark">道</div><span>Laster HQ</span></div>
@@ -1035,6 +1282,7 @@ export default function DojoHQ({ session, profile }) {
             <label className="dojo-workspace-picker"><span className="sr-only">Arbeidsområde</span><select value={activeWorkspace.id} onChange={event => setActiveWorkspace(workspaces.find(workspace => workspace.id === event.target.value))}>{workspaces.map(workspace => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}</select><ChevronDown size={15} /></label>
           ) : <span className="dojo-workspace-name">{activeWorkspace.name}</span>}
           <div className="dojo-avatars" aria-label={`${members.length} medlemmer`}>{members.slice(0, 4).map((member, index) => <Avatar key={member.user_id} name={memberName(member.user_id)} index={index} />)}</div>
+          <button className="dojo-share dojo-command-button" onClick={() => { setCommandQuery(''); setCommandOpen(true) }} title="Kommandopalett (Ctrl+K)"><Search size={16} /><span>Finn</span><kbd>Ctrl K</kbd></button>
           <button className={`dojo-share dojo-claude-button ${bridgeStatus.connected && bridgeStatus.claudeReady ? 'is-online' : ''}`} onClick={() => setClaudePanelOpen(true)} title="Claude Code og roadmap"><SquareTerminal size={16} /><span>Claude</span><i aria-hidden="true" /></button>
           <button className="dojo-share dojo-share-secondary dojo-sync-button" onClick={() => setCollabOpen(true)} title={supabase.isRemote ? 'Live samarbeid' : 'Samarbeid og arbeidsfil'}>{supabase.isRemote ? <UsersRound size={16} /> : <FolderSync size={16} />}<span>{supabase.isRemote ? 'Live' : 'Arbeidsfil'}</span><i aria-hidden="true" /></button>
           <input ref={importRef} className="sr-only" type="file" accept="application/json,.json,.dojo.json" onChange={event => { importWorkspace(event.target.files?.[0]); event.target.value = '' }} />
@@ -1042,7 +1290,7 @@ export default function DojoHQ({ session, profile }) {
         </div>
       </header>
 
-      <section className={`dojo-hero${viewMode === 'plan' ? ' dojo-hero-planning' : ''}`}>
+      <section className={`dojo-hero${viewMode === 'plan' || viewMode === 'control' ? ' dojo-hero-planning' : ''}${viewMode === 'control' ? ' dojo-hero-control' : ''}`}>
         <div className="dojo-hero-copy">
           <span className="dojo-eyebrow"><Circle size={8} fill="currentColor" /> {supabase.isRemote ? 'Live arbeidsrom · D1 + R2 · ingen Supabase' : 'Lokal arbeidsfil · ingen Supabase'}</span>
           <h1>Bygg. Test.<br /><em>Levér.</em></h1>
@@ -1060,6 +1308,7 @@ export default function DojoHQ({ session, profile }) {
       <main className="dojo-workspace">
         <div className="dojo-toolbar">
           <div className="dojo-view-tabs" role="tablist" aria-label="Visning">
+            <button className={viewMode === 'control' ? 'active' : ''} onClick={() => setViewMode('control')}><Sparkles size={16} />Kontrollrom</button>
             <button className={viewMode === 'board' ? 'active' : ''} onClick={() => setViewMode('board')}><LayoutGrid size={16} />Brett</button>
             <button className={viewMode === 'list' ? 'active' : ''} onClick={() => setViewMode('list')}><List size={16} />Liste</button>
             <button className={viewMode === 'plan' ? 'active' : ''} onClick={() => setViewMode('plan')}><CalendarDays size={16} />Ukeplan</button>
@@ -1070,6 +1319,31 @@ export default function DojoHQ({ session, profile }) {
             <button className="dojo-primary dojo-toolbar-add" onClick={() => openNew('inbox')}><Plus size={17} /><span>Ny oppgave</span></button>
           </div>
         </div>
+
+        {viewMode === 'control' && (
+          <DojoCommandCenter
+            data={hq2Data}
+            items={items}
+            members={members}
+            identity={{
+              userId: localSession.user.id,
+              displayName: localProfile.display_name || localSession.user.email?.split('@')[0] || 'Dojo-medlem',
+            }}
+            bridgeStatus={bridgeStatus}
+            attachments={attachments}
+            onOpenItem={setSelectedId}
+            onUpdateRun={updateRun}
+            onCreateTest={createTest}
+            onUpdateTest={updateTest}
+            onDeleteTest={deleteTest}
+            onCreateBug={createBugFromTest}
+            onReadDocument={name => dojoClaudeBridge.read(name)}
+            onAddDecision={addDecision}
+            onRestoreVersion={restoreVersion}
+            onCreateMilestone={createMilestone}
+            onUpdateMilestone={updateMilestone}
+          />
+        )}
 
         {viewMode === 'board' && (
           <div className="dojo-board">
@@ -1237,7 +1511,19 @@ export default function DojoHQ({ session, profile }) {
       {collabOpen && <CollaborationModal overview={overview} members={members} identity={standaloneIdentity} workspace={activeWorkspace} online={supabase.isRemote} copied={copied} onClose={() => setCollabOpen(false)} onImport={() => importRef.current?.click()} onDownload={() => exportWorkspace(false)} onShare={shareWorkspace} onCopyCode={() => copyInvite(true)} onIdentityChange={changeIdentity} busy={busy} />}
       {claudePanelOpen && <ClaudePanel status={bridgeStatus} roadmapInfo={roadmapInfo} documentName={roadmapDocument} onDocumentChange={setRoadmapDocument} onClose={() => setClaudePanelOpen(false)} onSync={syncRoadmap} onPull={pullRoadmapStatus} onCheck={checkBridge} busy={bridgeBusy} online={supabase.isRemote} pairCommand={bridgePairCommand} />}
       {newItemOpen && <CreateItemModal onClose={() => setNewItemOpen(false)} onSubmit={createItem} members={members} initialStatus={newItemStatus} initialDueDate={newItemDueDate} busy={busy} maxFileMb={supabase.isRemote ? 5 : 1.5} />}
-      {selectedItem && <ItemDetail key={selectedItem.id} item={selectedItem} attachments={attachments} comments={comments} members={members} memberName={memberName} onClose={() => setSelectedId(null)} onUpdate={updateItem} onDelete={deleteItem} onComment={addComment} onUpload={async (id, files) => { setBusy(true); await uploadFiles(id, files); setBusy(false); loadWorkspace(activeWorkspace) }} onRemoveAttachment={removeAttachment} onOpenClaude={openInClaude} claudeConnected={bridgeStatus.connected && bridgeStatus.claudeReady} busy={busy || bridgeBusy} />}
+      {selectedItem && <ItemDetail key={selectedItem.id} item={selectedItem} items={items} attachments={attachments} comments={comments} members={members} milestones={hq2Data.milestones} testCases={hq2Data.testCases.filter(test => test.item_id === selectedItem.id)} runs={hq2Data.runs.filter(run => run.item_id === selectedItem.id)} memberName={memberName} onClose={() => setSelectedId(null)} onUpdate={updateItem} onDelete={deleteItem} onComment={addComment} onUpload={async (id, files) => { setBusy(true); await uploadFiles(id, files); setBusy(false); loadWorkspace(activeWorkspace) }} onRemoveAttachment={removeAttachment} onOpenClaude={openInClaude} onUpdateTest={updateTest} claudeConnected={bridgeStatus.connected && bridgeStatus.claudeReady} busy={busy || bridgeBusy} />}
+
+      <DojoCommandPalette
+        open={commandOpen}
+        query={commandQuery}
+        onQuery={setCommandQuery}
+        items={items}
+        onClose={() => setCommandOpen(false)}
+        onView={setViewMode}
+        onOpenItem={setSelectedId}
+        onNewItem={() => openNew('inbox')}
+        onOpenClaude={() => setClaudePanelOpen(true)}
+      />
 
       {notice && <div className="dojo-toast" role="status"><Check size={16} />{notice}</div>}
     </div>

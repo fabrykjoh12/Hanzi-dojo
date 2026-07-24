@@ -29,9 +29,11 @@ function workspaceCredential(workspaceId) {
 
 async function api(path, options = {}, workspaceId) {
   const credential = workspaceId ? workspaceCredential(workspaceId) : null
+  const identity = readState().identity
   const headers = new Headers(options.headers || {})
   if (!headers.has('Content-Type') && options.body && !(options.body instanceof Blob)) headers.set('Content-Type', 'application/json')
   if (credential) headers.set('X-Dojo-Key', credential.invite_code)
+  if (identity?.userId) headers.set('X-Dojo-User', identity.userId)
   const response = await fetch(path, { ...options, headers })
   if (response.status === 204) return { unchanged: true }
   const payload = await response.json().catch(() => ({}))
