@@ -1,4 +1,6 @@
 {
+  "_comment": "Vite's default output is dist/, but vite.config.js sets outDir to dist/client so the Sites packaging gets a clean static root. Vercel's Vite preset does not read that, so without this line it serves dist/ — which holds only client/ and server/, no index.html — and every route 404s.",
+  "outputDirectory": "dist/client",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
