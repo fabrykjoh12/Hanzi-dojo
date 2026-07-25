@@ -49,6 +49,8 @@ body {
   --text-faint: #6B6B72;
   --reader-watermark: rgba(24, 24, 27, 0.04);
   --bg-image-opacity: 0.4;
+  /* What the above drops to while a lit hero panel is on screen. */
+  --bg-image-opacity-lit: 0.24;
 
   /* Elevation + edge light. Two layers (a tight contact shadow and a wide,
      soft cast) read as a card resting on paper; a single blurred box-shadow
@@ -189,11 +191,30 @@ body {
   }
 }
 
-/* A screen with a lit hero panel owns its atmosphere there, so the page-wide
-   background wash steps back to almost nothing. Set by HeroPanel while it is
-   mounted. Without this the containment rule doesn't read — you get atmosphere
-   in the panel AND behind the cards, which is the mush the rule prevents. */
-:root[data-lit-hero] { --bg-image-opacity: 0.04; }
+/* A screen with a lit hero panel owns its atmosphere, so the page-wide
+   background steps BACK — it does not step out. Set by HeroPanel while it is
+   mounted. Without any step-down the containment rule doesn't read: you get
+   atmosphere in the panel AND behind the cards, which is the mush the rule
+   prevents.
+
+   This was a flat 0.04 for both themes, which was wrong in light: 0.4 → 0.04 is
+   a 10× cut that erased the mountains from Home the moment it grew a hero
+   panel. The step is now proportional and per-theme — visibly quieter, still
+   unmistakably the landscape the app is set in. */
+:root[data-lit-hero] { --bg-image-opacity: var(--bg-image-opacity-lit); }
+
+/* Framing for the full-page language background (src/Background.jsx).
+   The artwork is a wide landscape: mountains along the top, bamboo in the
+   bottom-right corner, and a large expanse of empty paper through the middle
+   and lower left. `cover` on a portrait phone keeps the full height but crops
+   to about the middle 29% of the width — which is exactly the empty part, so
+   the drawing disappeared entirely on mobile while looking correct on desktop.
+   Framing the right edge below the sidebar breakpoint keeps the bamboo and the
+   tall right-hand peak in shot. */
+.hd-bg { object-fit: cover; object-position: 50% 50%; }
+@media (max-width: 767px) {
+  .hd-bg { object-position: 88% 50%; }
+}
 
 /* Skip link — first focusable element; visually hidden until focused so
    keyboard users can jump straight to the main content. */
@@ -243,6 +264,8 @@ body {
   /* The language background image is bright; keep it barely-there on dark so it
      blends instead of glowing. */
   --bg-image-opacity: 0.06;
+  /* Already faint here, so the lit-hero step is a nudge rather than a cut. */
+  --bg-image-opacity-lit: 0.04;
 
   /* Feedback tokens tuned for dark surfaces: brighter text, translucent fills. */
   --success: #34D399;
