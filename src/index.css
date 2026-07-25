@@ -129,21 +129,10 @@ body {
 /* Interactive chat: a wrong reply pick gets a small horizontal shake. */
 @keyframes hdShake { 10%,90%{transform:translateX(-1px)} 30%,70%{transform:translateX(2px)} 50%{transform:translateX(-2px)} }
 
-/* ── Home / navigation motion + tactility ────────────────────────────────
+/* ── Shared motion + tactility ────────────────────────────────
    These are classes rather than inline styles because they need `:active`,
    `:hover` descendants and keyframes, none of which inline styles can express.
    All of them are neutralized by the reduced-motion catch-all below. */
-
-/* The ensō closing: the inked stroke is revealed by a masked arc that sweeps
-   from nothing to the current progress. The two ends come in as CSS custom
-   properties so the component can stay stateless. */
-@keyframes hd-enso-draw {
-  from { stroke-dashoffset: var(--hd-dash-from); }
-  to   { stroke-dashoffset: var(--hd-dash-to); }
-}
-.hd-enso-draw {
-  animation: hd-enso-draw 1150ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
 
 /* Sections settle in from below, staggered by an inline animation-delay, so
    Home assembles itself instead of appearing all at once. */
@@ -170,10 +159,6 @@ body {
 .hd-nav-item:hover svg { transform: translateX(2px); }
 .hd-nav-item.is-collapsed:hover svg { transform: scale(1.08); }
 
-/* A flow step's icon tile lifts on hover. */
-.hd-flow-step .hd-flow-tile { transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), background 160ms ease; }
-.hd-flow-step:hover .hd-flow-tile { transform: translateY(-3px); }
-
 /* The mobile bar's active icon rides up over its ink dot. */
 .hd-tab-icon { transition: transform 220ms cubic-bezier(0.34, 1.4, 0.64, 1); }
 .hd-tab.is-active .hd-tab-icon { transform: translateY(-1px); }
@@ -198,11 +183,11 @@ body {
   }
 }
 
-/* Story-first Home: the hero panel owns the atmosphere, so the page-wide
-   background wash steps back to almost nothing. Without this the containment
-   rule doesn't read — you get atmosphere in the panel AND behind the cards,
-   which is the mush the rule exists to prevent. */
-:root[data-home="story"] { --bg-image-opacity: 0.04; }
+/* A screen with a lit hero panel owns its atmosphere there, so the page-wide
+   background wash steps back to almost nothing. Set by HeroPanel while it is
+   mounted. Without this the containment rule doesn't read — you get atmosphere
+   in the panel AND behind the cards, which is the mush the rule prevents. */
+:root[data-lit-hero] { --bg-image-opacity: 0.04; }
 
 /* Skip link — first focusable element; visually hidden until focused so
    keyboard users can jump straight to the main content. */

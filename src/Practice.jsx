@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { getSystemLabel, getLevelLabel } from './utils'
 import { languageTheme } from './languageTheme'
+import { HeroPanel, Eyebrow } from './panels'
 import { useIsMobile } from './useIsMobile'
 import {
   ArrowLeft, Dumbbell, AlertTriangle, Headphones, PenLine,
@@ -58,15 +59,29 @@ export default function Practice({ profile, track, counts, onNavigate, onBack })
     <div style={{ maxWidth: '900px', margin: '0 auto', padding: isMobile ? '28px 16px 40px' : '44px 32px 60px' }}>
       <Ghost onClick={onBack} />
 
-      <div style={{ margin: '18px 0 26px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 800 }}>
-          <Dumbbell size={17} strokeWidth={1.85} color={accentHex} /> Practice
+      {/* The screen's one lit block — same treatment as Home's hero, so the
+          app reads as one place rather than a set of differently-styled pages.
+          Not tappable: this panel is a title, not an action. */}
+      <HeroPanel
+        accentHex={accentHex}
+        seed={profile.active_language + '-practice'}
+        compact={isMobile}
+        style={{ margin: '18px 0 22px' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+          <Dumbbell size={16} strokeWidth={2} color="rgba(255,255,255,0.72)" />
+          <Eyebrow onHero>Practice</Eyebrow>
         </div>
-        <h1 style={{ margin: '8px 0 0', fontSize: isMobile ? '30px' : '36px', fontWeight: 850, color: 'var(--text)', lineHeight: 1.1 }}>
+        <h1 style={{
+          margin: 0, fontSize: isMobile ? '27px' : '33px', fontWeight: 700,
+          color: '#fff', lineHeight: 1.12, letterSpacing: '-0.02em',
+        }}>
           Sharpen your skills
         </h1>
-        <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '8px' }}>{systemLabel} · {levelLabel}</div>
-      </div>
+        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.72)', marginTop: '8px' }}>
+          {systemLabel} · {levelLabel}
+        </div>
+      </HeroPanel>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(' + (isMobile ? '150px' : '210px') + ', 1fr))', gap: '14px' }}>
         {cards.map(card => (
@@ -90,7 +105,7 @@ function Card({ card, accentHex, onClick }) {
         position: 'relative', textAlign: 'left', cursor: 'pointer',
         background: 'var(--surface)', border: '1px solid ' + (hovered ? color + '55' : 'var(--border)'),
         borderRadius: '18px', padding: '20px', fontFamily: 'Inter, sans-serif',
-        boxShadow: hovered ? '0 14px 30px rgba(24,24,27,0.08)' : '0 2px 10px rgba(24,24,27,0.04)',
+        boxShadow: (hovered ? 'var(--shadow-2)' : 'var(--shadow-1)') + ', inset 0 1px 0 var(--hairline)',
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
         transition: 'transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease',
         display: 'flex', flexDirection: 'column', gap: '12px', minHeight: '128px',

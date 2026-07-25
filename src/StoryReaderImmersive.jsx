@@ -1030,7 +1030,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                   cursor: 'pointer', fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                 }}>
-                  <Home size={17} strokeWidth={2} color="var(--text-muted)" /> Back to Today’s Dojo
+                  <Home size={17} strokeWidth={2} color="var(--text-muted)" /> Back to Today
                 </button>
               )}
             </div>
