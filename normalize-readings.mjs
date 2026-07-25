@@ -1,14 +1,20 @@
 // Normalize Chinese vocabulary.reading to the joined (space-free) pinyin style,
 // so TTS pronunciation pinning actually happens.
 //
-// THE BUG: generate-audio.mjs pins a Chinese word's pronunciation with
-// chinesePhonemeSsml(word, reading) → readingToPhonemes(reading). That parser
-// returns null for ANY reading containing a space, and chinesePhonemeSsml then
-// silently falls back to bare hanzi with no phoneme hint at all — exactly where
-// polyphones (长 cháng/zhǎng, 行 xíng/háng, 觉 jué/jiào …) go wrong. HSK 1-2 was
-// seeded with joined readings ("xièxie", "yíxià") so it pins; HSK 3-6 was bulk
-// generated with SPACE-SEPARATED readings ("jiù shì", "bù bì"), so pinning is
-// off for most of that band. Nothing errors — the voice just guesses.
+// ⚠️ THE BUG THIS WAS WRITTEN FOR IS FIXED AT THE SOURCE. readingToPhonemes
+// used to return null for ANY reading containing a space, so chinesePhonemeSsml
+// fell back to bare hanzi with no phoneme hint — exactly where polyphones
+// (长 cháng/zhǎng, 行 xíng/háng, 觉 jué/jiào …) go wrong. It now reads a space
+// (and an apostrophe) as the syllable boundary the author wrote down, so a
+// spaced reading pins correctly as it stands and NO data change is needed for
+// audio. See src/pinyin.js.
+//
+// This script therefore only enforces a house STYLE — the joined spelling HSK
+// 1-2 was seeded with ("xièxie", "yíxià") and the one fix_hsk3_6_readings
+// writes. Run it when you want that consistency, not to fix pronunciation.
+// Readings where the space carries meaning for a reader (你好 "nǐ hǎo",
+// 打电话 "dǎ diànhuà") are better left alone: they pin either way, and the
+// spaced form is the more readable one.
 //
 // THE FIX: strip the spaces between the syllables (tone marks, ü and any
 // apostrophe are preserved exactly), and — before writing anything — prove the

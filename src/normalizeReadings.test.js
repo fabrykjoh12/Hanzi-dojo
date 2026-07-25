@@ -60,13 +60,20 @@ describe('validateJoined', () => {
     expect(validateJoined('图书馆', 'túshūguǎn').ok).toBe(true)
   })
 
-  it('rejects a joined form the phoneme converter cannot parse', () => {
-    // The apostrophe of a syllable-boundary reading is unsupported upstream, so
-    // this row must be left alone rather than written blind.
-    expect(validateJoined('西安', "xī'ān")).toMatchObject({ ok: false, reason: 'unparseable pinyin' })
-    expect(validateJoined('女儿', "nǚ'ér").ok).toBe(false)
-    // Still spaced (nothing to join) — also unparseable.
-    expect(validateJoined('就是', 'jiù shì').ok).toBe(false)
+  // These three used to be the "cannot parse" cases, because readingToPhonemes
+  // rejected any reading carrying a space or an apostrophe. It now reads both as
+  // the syllable boundary the author wrote, so all three are valid — 西安 really
+  // is two syllables for two characters. The boundary only ever adds
+  // information, so accepting it cannot make a wrong reading look right.
+  it('accepts a boundary-marked reading, apostrophe or space', () => {
+    expect(validateJoined('西安', "xī'ān")).toMatchObject({ ok: true, phonemes: 'xi1 an1' })
+    expect(validateJoined('女儿', "nǚ'ér")).toMatchObject({ ok: true, phonemes: 'nu:3 er2' })
+    expect(validateJoined('就是', 'jiù shì')).toMatchObject({ ok: true, phonemes: 'jiu4 shi4' })
+  })
+
+  it('still rejects a form that is not pinyin at all', () => {
+    expect(validateJoined('就是', 'qqq')).toMatchObject({ ok: false, reason: 'unparseable pinyin' })
+    expect(validateJoined('就是', 'jiù qqq')).toMatchObject({ ok: false, reason: 'unparseable pinyin' })
   })
 
   it('rejects a syllable-count mismatch', () => {
@@ -94,8 +101,18 @@ describe('planRow', () => {
   })
 
   it('marks a row invalid rather than writing an unvalidated reading', () => {
-    expect(planRow({ word: '西安', reading: "xī 'ān" }).action).toBe('invalid')
+    // Syllable count must still match the character count — this is the check
+    // that stops a join from silently changing which word a reading describes.
     expect(planRow({ word: '一', reading: 'yī xià' }).action).toBe('invalid')
     expect(planRow({ word: '就是', reading: '' }).action).toBe('invalid')
+    expect(planRow({ word: '就是', reading: 'jiù qqq' }).action).toBe('invalid')
+  })
+
+  it('joins around a stray space without dropping the apostrophe', () => {
+    // joinReading removes whitespace only, so the boundary apostrophe survives
+    // into the written value and keeps the reading readable.
+    expect(planRow({ word: '西安', reading: "xī 'ān" })).toMatchObject({
+      action: 'change', joined: "xī'ān", phonemes: 'xi1 an1',
+    })
   })
 })

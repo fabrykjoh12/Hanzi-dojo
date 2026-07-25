@@ -42,9 +42,79 @@ describe('readingToPhonemes', () => {
   it('returns null for unparseable input so callers can fall back', () => {
     expect(readingToPhonemes('')).toBeNull()
     expect(readingToPhonemes(null)).toBeNull()
-    expect(readingToPhonemes('hello world')).toBeNull() // space
-    expect(readingToPhonemes('xī’ān')).toBeNull() // apostrophe
+    expect(readingToPhonemes('hello world')).toBeNull() // not pinyin
     expect(readingToPhonemes('123')).toBeNull()
+  })
+})
+
+// A space or apostrophe is a syllable boundary the author supplied, not noise.
+// Both used to make the entire reading unparseable — this asserted
+// `readingToPhonemes('xī’ān')` was null, and 'hello world' was listed as failing
+// "// space" rather than for not being pinyin. The cost was silent: every such
+// reading fell back to bare hanzi with no phoneme hint, so 你好 and 打电话 —
+// among the first words anyone learns — were spoken on the voice's guess.
+describe('readingToPhonemes — author-supplied syllable boundaries', () => {
+  it('reads a space as a boundary', () => {
+    expect(readingToPhonemes('nǐ hǎo')).toBe('ni3 hao3')
+    expect(readingToPhonemes('dǎ diànhuà')).toBe('da3 dian4 hua4')
+    expect(readingToPhonemes('wèi shénme')).toBe('wei4 shen2 me5')
+    expect(readingToPhonemes('bù hǎoyìsi')).toBe('bu4 hao3 yi4 si5')
+  })
+
+  it('reads an apostrophe as a boundary, both typographic forms', () => {
+    expect(readingToPhonemes("nǚ'ér")).toBe('nu:3 er2')
+    expect(readingToPhonemes('xī’ān')).toBe('xi1 an1')
+  })
+
+  it('gives the same answer whether or not the boundary is written', () => {
+    // The boundary only ever adds information, so it must never disagree with
+    // the segmenter's own reading of the joined form.
+    expect(readingToPhonemes('bàn gōng')).toBe(readingToPhonemes('bàngōng'))
+    expect(readingToPhonemes('nǐ hǎo')).toBe(readingToPhonemes('nǐhǎo'))
+    expect(readingToPhonemes('wǒ men')).toBe(readingToPhonemes('wǒmen'))
+  })
+
+  it('still rejects a reading whose chunks are not pinyin', () => {
+    expect(readingToPhonemes('nǐ qqq')).toBeNull()
+    expect(readingToPhonemes("'")).toBeNull()
+    expect(readingToPhonemes('   ')).toBeNull()
+  })
+})
+
+// The segmenter prefers the longest syllable at each position, which on its own
+// walks into dead ends: "bangong" takes "bang", is left with "ong", takes "o"
+// and dies on "ng" — never reaching the "ban" + "gong" that covers it exactly.
+// Every reading below returned null before backtracking was added, so the audio
+// pipeline dropped the phoneme hint and let the voice guess the exact words it
+// was supposed to pin. Found by normalising the HSK 3-6 readings: these were
+// the only rows the joiner refused to write.
+describe('readingToPhonemes — backtracking out of greedy dead ends', () => {
+  const cases = [
+    ['bàngōng', 'ban4 gong1', '办公'],   // greedy: bang + o + <stuck>
+    ['jìngōng', 'jin4 gong1', '进攻'],   // greedy: jing + o + <stuck>
+    ['jǐnguǎn', 'jin3 guan3', '尽管'],   // greedy: jing + <stuck>
+    ['gūniang', 'gu1 niang5', '姑娘'],   // greedy: gun + <stuck>
+    ['xǐài', 'xi3 ai4', '喜爱'],         // greedy: xia + <stuck>
+    ['qùnián', 'qu4 nian2', '去年'],
+    ['fànguǎn', 'fan4 guan3', '饭馆'],
+  ]
+  for (const [reading, expected, word] of cases) {
+    it(`parses ${reading} (${word})`, () => {
+      expect(readingToPhonemes(reading)).toBe(expected)
+    })
+  }
+
+  it('still prefers the longest syllable where greedy already succeeded', () => {
+    // If backtracking had changed the preference order these would re-segment:
+    // "xiangang" could be xian+gang, and "banjia" could be ban+jia or ba+njia.
+    expect(readingToPhonemes('xiāngǎng')).toBe('xiang1 ang3')
+    expect(readingToPhonemes('bànjià')).toBe('ban4 jia4')
+    expect(readingToPhonemes('wǒmen')).toBe('wo3 men5')
+  })
+
+  it('still gives up on input with no valid segmentation at all', () => {
+    expect(readingToPhonemes('qqq')).toBeNull()
+    expect(readingToPhonemes('zzz')).toBeNull()
   })
 })
 

@@ -130,23 +130,71 @@ function stripTones(reading) {
   return { base, toneAt }
 }
 
-// Greedy longest-match segmentation of a toneless pinyin string into syllable
-// spans. Returns [{ syl, start, end }] covering the whole string, or null if any
-// remainder has no valid syllable prefix.
+// Longest-match-first segmentation of a toneless pinyin string into syllable
+// spans, WITH BACKTRACKING. Returns [{ syl, start, end }] covering the whole
+// string, or null if no segmentation covers it.
+//
+// This was a single greedy pass that could not reconsider a choice, and that
+// made it reject readings which do segment perfectly well. "bangong" (办公) is
+// the clearest case: greedy takes the longest prefix "bang", is left with
+// "ong", takes "o", and dies on "ng" — never seeing that "ban" + "gong" covers
+// the string exactly. Same for "jingong" (进攻), "jinguan" (尽管), "guniang"
+// (姑娘) and "xiai" (喜爱). Each returned null, so chinesePhonemeSsml dropped
+// the phoneme hint and let the voice guess the very words it was meant to pin.
+//
+// Longest-first is still the preference at every position, so any string the
+// old greedy pass segmented gets exactly the same spans as before; the only
+// behaviour that changes is a dead end becoming a successful parse. `dead`
+// memoises positions already proven hopeless, which keeps a pathological
+// string from exploring the same suffix repeatedly.
 function segment(base) {
   const spans = []
-  let i = 0
-  while (i < base.length) {
-    let matched = null
+  const dead = new Set()
+
+  function from(i) {
+    if (i === base.length) return true
+    if (dead.has(i)) return false
     for (const syl of SYLLABLE_SET) {
-      if (base.startsWith(syl, i)) { matched = syl; break }
+      if (!base.startsWith(syl, i)) continue
+      spans.push({ syl, start: i, end: i + syl.length })
+      if (from(i + syl.length)) return true
+      spans.pop()
     }
-    if (!matched) return null
-    spans.push({ syl: matched, start: i, end: i + matched.length })
-    i += matched.length
+    dead.add(i)
+    return false
   }
-  return spans
+
+  return from(0) ? spans : null
 }
+
+// One whitespace/apostrophe-free chunk → its tone-numbered syllables.
+function chunkToPhonemes(chunk) {
+  const stripped = stripTones(chunk)
+  if (!stripped) return null
+  const { base, toneAt } = stripped
+
+  const spans = segment(base)
+  if (!spans) return null
+
+  return spans.map(span => {
+    // A syllable owns any tone mark that falls within its span; none → neutral.
+    const hit = toneAt.find(t => t.pos >= span.start && t.pos < span.end)
+    const tone = hit ? hit.tone : 5
+    return span.syl + tone
+  }).join(' ')
+}
+
+// A space or an apostrophe inside a reading is a SYLLABLE BOUNDARY the author
+// wrote down — "nǐ hǎo", "nǚ'ér", "xī'ān". Both used to make the whole reading
+// unparseable, so chinesePhonemeSsml dropped the phoneme hint and the voice
+// guessed: 你好 and 打电话, two of the first words anyone learns, were never
+// pinned. Splitting on them instead is strictly better than ignoring them,
+// because an author-supplied boundary is more reliable than re-deriving one by
+// segmentation — "bàn gōng" needs no backtracking once the space is read as the
+// ban|gong it already is.
+// Escaped, not literal: a raw NBSP and ideographic space in the source are
+// invisible to a reviewer (and trip no-irregular-whitespace).
+const BOUNDARY = /[\s\u00a0\u3000'\u2019]+/
 
 // Convert one word's diacritic reading into space-separated tone-numbered pinyin
 // syllables ("wǒmen" → "wo3 men2", "àihào" → "ai4 hao4"). Returns null when the
@@ -156,19 +204,15 @@ export function readingToPhonemes(reading) {
   const cleaned = reading.trim().toLowerCase()
   if (!cleaned) return null
 
-  const stripped = stripTones(cleaned)
-  if (!stripped) return null
-  const { base, toneAt } = stripped
+  const chunks = cleaned.split(BOUNDARY).filter(Boolean)
+  if (chunks.length === 0) return null
 
-  const spans = segment(base)
-  if (!spans) return null
-
-  const out = spans.map(span => {
-    // A syllable owns any tone mark that falls within its span; none → neutral.
-    const hit = toneAt.find(t => t.pos >= span.start && t.pos < span.end)
-    const tone = hit ? hit.tone : 5
-    return span.syl + tone
-  })
+  const out = []
+  for (const chunk of chunks) {
+    const part = chunkToPhonemes(chunk)
+    if (!part) return null
+    out.push(part)
+  }
   return out.join(' ')
 }
 
