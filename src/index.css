@@ -198,6 +198,12 @@ body {
   }
 }
 
+/* Story-first Home: the hero panel owns the atmosphere, so the page-wide
+   background wash steps back to almost nothing. Without this the containment
+   rule doesn't read — you get atmosphere in the panel AND behind the cards,
+   which is the mush the rule exists to prevent. */
+:root[data-home="story"] { --bg-image-opacity: 0.04; }
+
 /* Skip link — first focusable element; visually hidden until focused so
    keyboard users can jump straight to the main content. */
 .skip-link {
