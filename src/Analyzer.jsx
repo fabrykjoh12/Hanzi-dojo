@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabase'
 import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
+import { PageHeader } from './panels'
 import { calculateStoryReadability, buildVocabMatcher, segmentLine, namesFor, particlesFor, wordStatus } from './storyReading'
 import WordLookupSheet from './WordLookupSheet'
 import { track as trackEvent, EVENTS } from './analytics'
@@ -127,17 +128,14 @@ export default function Analyzer({ session, track, onBack }) {
         <ArrowLeft size={17} strokeWidth={1.85} color="var(--text-muted)" /> Practice
       </button>
 
-      <div style={{ margin: '18px 0 22px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: accent, fontSize: '13px', fontWeight: 800 }}>
-          <ScanText size={17} strokeWidth={1.85} color={accent} /> Analyze text
-        </div>
-        <h1 style={{ margin: '8px 0 0', fontSize: isMobile ? '28px' : '34px', fontWeight: 850, color: 'var(--text)', lineHeight: 1.1 }}>
-          How much can you read?
-        </h1>
-        <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '8px', lineHeight: 1.5 }}>
-          Paste any {langName} text — a message, an article, song lyrics — and see how much you already know, plus the words to learn next.
-        </p>
-      </div>
+      <PageHeader
+        title="How much can you read?"
+        meta="Analyze text"
+        style={{ margin: '18px 0 10px' }}
+      />
+      <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: '0 0 22px', lineHeight: 1.5 }}>
+        Paste any {langName} text — a message, an article, song lyrics — and see how much you already know, plus the words to learn next.
+      </p>
 
       <textarea
         value={text}

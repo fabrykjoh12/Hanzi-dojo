@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
+import { PageHeader } from './panels'
 import { isLearned, isMastered } from './mastery'
 import { cleanMeaning } from './cleanMeaning'
 import { useIsMobile } from './useIsMobile'
@@ -133,17 +134,11 @@ export default function Words({ session, profile, track, onBack }) {
       <div style={{ maxWidth: '760px', margin: '0 auto' }}>
         <SecondaryButton onClick={onBack} icon={ArrowLeft}>Back</SecondaryButton>
 
-        <div style={{ margin: '24px 0 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 800 }}>
-            <BookA size={17} strokeWidth={1.85} color={accentHex} /> Word list
-          </div>
-          <h1 style={{ margin: '8px 0 6px', fontSize: isMobile ? '30px' : '36px', fontWeight: 850, color: 'var(--text)', lineHeight: 1.1 }}>
-            Your words
-          </h1>
-          <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-            {systemLabel} · {levelLabel} · {vocab.length} words
-          </div>
-        </div>
+        <PageHeader
+          title="Your words"
+          meta={`${systemLabel} · ${levelLabel} · ${vocab.length} words`}
+          style={{ margin: '20px 0 16px' }}
+        />
 
         {/* Search */}
         <div style={{ position: 'relative', marginBottom: '14px' }}>

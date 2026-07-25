@@ -3,6 +3,12 @@ name: Send review reminders
 # Hourly cron: finds every profile whose opt-in reminder hour (stored in UTC)
 # matches the current hour, and pushes a notification if they have reviews
 # due. Also runnable by hand for testing.
+#
+# REQUIRES A VAPID KEYPAIR. Without VITE_VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY in
+# the repository secrets there is no way to sign a push, so the script logs that
+# push is not configured and exits 0 rather than failing — it ran red every hour
+# for exactly this reason, which made a real misconfiguration look like noise.
+# Generate one with `npx web-push generate-vapid-keys`.
 
 on:
   schedule:

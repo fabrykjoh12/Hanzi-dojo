@@ -5,7 +5,7 @@ import { languageTheme, ink } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
 import { getDailyStoryCard, firstContentChar } from './homeStory'
-import { HeroPanel, HeroAction, Panel, Eyebrow } from './panels'
+import { HeroPanel, HeroAction, Panel, Eyebrow, PageHeader } from './panels'
 import { rhythmSummary, weekdayInitial } from './studyRhythm'
 import { forecastSummary } from './reviewForecast'
 import { MICRO, NUM } from './designTokens'
@@ -76,15 +76,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
     <div style={{ maxWidth: '720px', margin: '0 auto', padding: isMobile ? '24px 16px 40px' : '44px 32px 60px' }}>
 
       {/* ── Where you are, and when ── */}
-      <div className="hd-rise" style={{
-        display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-        gap: '12px', marginBottom: '16px',
-      }}>
-        <h1 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
-          Today
-        </h1>
-        <Eyebrow>{levelLabel} · {WEEKDAY[today.getDay()]}</Eyebrow>
-      </div>
+      <PageHeader title="Today" meta={`${levelLabel} · ${WEEKDAY[today.getDay()]}`} />
 
       {/* ── Welcome back after a break ── */}
       {gentleActive && (

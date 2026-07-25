@@ -4,6 +4,7 @@ import { getTrackCards } from './data'
 import { languageTheme } from './languageTheme'
 import { getSystemLabel, getLevelLabel } from './utils'
 import { useIsMobile } from './useIsMobile'
+import { PageHeader } from './panels'
 import WordLookupSheet from './WordLookupSheet'
 import { readRecent, recordRecent, clearRecent } from './recentLookups'
 import { DICT_FILTERS, filterVocab, dictionaryEmptyState, levelsInVocab, filterByLevel } from './dictionaryFilters'
@@ -240,17 +241,14 @@ export default function Dictionary({ session, profile, track, onBack }) {
         <ArrowLeft size={17} strokeWidth={1.85} color="var(--text-muted)" /> Practice
       </button>
 
-      <div style={{ margin: '18px 0 20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 800 }}>
-          <Search size={17} strokeWidth={1.85} color={accentHex} /> Dictionary
-        </div>
-        <h1 style={{ margin: '8px 0 0', fontSize: isMobile ? '28px' : '34px', fontWeight: 850, color: 'var(--text)', lineHeight: 1.1 }}>
-          Look up any word
-        </h1>
-        <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '8px', lineHeight: 1.5 }}>
-          Search every {systemLabel} word, hear it, and save it to your deck.
-        </p>
-      </div>
+      <PageHeader
+        title="Look up any word"
+        meta="Dictionary"
+        style={{ margin: '18px 0 8px' }}
+      />
+      <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: '0 0 20px', lineHeight: 1.5 }}>
+        Search every {systemLabel} word, hear it, and save it to your deck.
+      </p>
 
       <div style={{ position: 'relative', marginBottom: '18px' }}>
         <Search size={17} strokeWidth={2} color="var(--text-faint)" style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)' }} />

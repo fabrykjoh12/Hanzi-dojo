@@ -137,6 +137,31 @@ export function Readout({ value, label, tone, first, compact = false }) {
   )
 }
 
+// The page header every screen wears: the screen's name, and where you are, on
+// one baseline.
+//
+// It exists because four screens had drifted into their own version — a 38px
+// title under a floating tinted icon tile on Settings, a different one on Words,
+// another on Profile — while Home and Stories had moved to this compact line.
+// A title is not the thing a screen is about; the panel below it is. Sizing the
+// title like a billboard just pushed that panel down the page.
+export function PageHeader({ title, meta, style = {} }) {
+  return (
+    <div className="hd-rise" style={{
+      display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+      gap: '12px', marginBottom: '16px', flexWrap: 'wrap', ...style,
+    }}>
+      <h1 style={{
+        margin: 0, fontSize: '19px', fontWeight: 700,
+        color: 'var(--text)', letterSpacing: '-0.02em',
+      }}>
+        {title}
+      </h1>
+      {meta && <Eyebrow>{meta}</Eyebrow>}
+    </div>
+  )
+}
+
 // The small-caps eyebrow, as a component so screens don't re-declare the style.
 export function Eyebrow({ children, onHero = false, style = {} }) {
   return (

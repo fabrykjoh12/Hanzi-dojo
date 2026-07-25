@@ -6,9 +6,10 @@ import { filterTopics } from './grammarSearch'
 import { hasDrills } from './grammarDrills'
 import { enrollTopic, getEnrolledRows } from './grammarReview'
 import { useIsMobile } from './useIsMobile'
+import { PageHeader } from './panels'
 import { shuffle } from './utils'
 import { tokenize, makeSegmenter, isContent, scrambleIndices } from './segment'
-import { ArrowLeft, BookMarked, BookOpen, Check, ChevronRight, GraduationCap, Search, Sparkles, X, Volume2, Repeat2 } from 'lucide-react'
+import { ArrowLeft, BookMarked, BookOpen, Check, ChevronRight, Search, Sparkles, X, Volume2, Repeat2 } from 'lucide-react'
 
 // Speak an example aloud with the browser's TTS — grammar examples are
 // arbitrary sentences with no recorded audio, so this is the practical way to
@@ -148,17 +149,14 @@ export default function Grammar({ session, profile, track, onBack }) {
       <div style={{ maxWidth: '780px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px', position: 'relative', zIndex: 1 }}>
         <Ghost onClick={onBack} />
 
-        <div style={{ margin: '24px 0 22px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 800 }}>
-            <GraduationCap size={17} strokeWidth={1.85} color={accentHex} /> Grammar guide
-          </div>
-          <h1 style={{ margin: '8px 0 10px', fontSize: isMobile ? '30px' : '36px', fontWeight: 850, color: 'var(--text)', lineHeight: 1.1 }}>
-            How {guide.languageName} works
-          </h1>
-          <p style={{ fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
-            {guide.intro}
-          </p>
-        </div>
+        <PageHeader
+          title={`How ${guide.languageName} works`}
+          meta="Grammar guide"
+          style={{ margin: '24px 0 8px' }}
+        />
+        <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 0 22px' }}>
+          {guide.intro}
+        </p>
 
         <div style={{ position: 'relative', marginBottom: '16px' }}>
           <Search size={17} strokeWidth={2} color="var(--text-faint)" style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)' }} />

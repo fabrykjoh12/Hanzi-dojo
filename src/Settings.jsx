@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import {
-  Palette, SlidersHorizontal, Sun, Moon, Keyboard, Eye,
+  Palette, Sun, Moon, Keyboard, Eye,
   Volume2, BookOpenCheck, Gauge, Bell, HardDrive, Trash2, CheckCircle2,
   MessagesSquare, ArrowUpRight, Brain,
 } from 'lucide-react'
@@ -10,6 +10,7 @@ import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
 import { useIsMobile } from './useIsMobile'
 import { useTheme } from './ThemeContext'
 import { languageTheme } from './languageTheme'
+import { PageHeader } from './panels'
 import { pushSupported, enableReminders, disableReminders, setReminderHour } from './push'
 import { audioCount, estimateStorage, clearDownloads, offlineAvailable } from './offline'
 import { pendingWrites } from './syncQueue'
@@ -115,21 +116,8 @@ export default function Settings({ session, profile, onUpdate }) {
   return (
     <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
       <div style={{ maxWidth: '760px', margin: '0 auto', padding: isMobile ? '32px 16px 56px' : '52px 32px 72px', position: 'relative', zIndex: 1 }}>
-        <div style={{
-          width: '68px', height: '68px', borderRadius: '22px',
-          background: accentHex + '10', border: '1px solid ' + accentHex + '20',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px',
-        }}>
-          <SlidersHorizontal size={32} strokeWidth={1.75} color={accentHex} />
-        </div>
-
-        <div style={{ color: accentHex, fontSize: '13px', fontWeight: 850, marginBottom: '10px' }}>
-          Preferences
-        </div>
-        <h1 style={{ margin: 0, fontSize: '38px', lineHeight: 1.1, fontWeight: 850, color: 'var(--text)' }}>
-          Settings
-        </h1>
-        <p style={{ fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.65, margin: '12px 0 30px', maxWidth: '560px' }}>
+        <PageHeader title="Settings" meta="Preferences" />
+        <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 0 22px', maxWidth: '560px' }}>
           Tune how studying feels. Daily goal and reset controls live in Profile.
         </p>
 

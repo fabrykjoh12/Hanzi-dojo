@@ -24,9 +24,38 @@ const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:support@example.com'
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
-  console.error('Missing env vars: SUPABASE_URL, SUPABASE_SERVICE_KEY, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY')
+// Name the vars that are ACTUALLY missing. This used to print the same
+// hardcoded list of all four whatever the cause, which reads as though nothing
+// is configured — and GitHub masks a set secret as "***" in the env dump, so
+// the log appeared to contradict itself. The two failures also want different
+// outcomes, so they are separated:
+const missingDb = [
+  ['SUPABASE_URL', SUPABASE_URL],
+  ['SUPABASE_SERVICE_KEY', SUPABASE_SERVICE_KEY],
+].filter(([, v]) => !v).map(([k]) => k)
+
+const missingPush = [
+  ['VAPID_PUBLIC_KEY', VAPID_PUBLIC_KEY],
+  ['VAPID_PRIVATE_KEY', VAPID_PRIVATE_KEY],
+].filter(([, v]) => !v).map(([k]) => k)
+
+// No database credentials is a broken job — fail loudly.
+if (missingDb.length > 0) {
+  console.error('Missing required env vars: ' + missingDb.join(', '))
   process.exit(1)
+}
+
+// No VAPID keypair means web push was never set up for this repo. There is
+// genuinely nothing to send, so this is "not enabled", not "broken" — exiting 1
+// here just painted the hourly cron red forever without moving anything closer
+// to working. Say so plainly and stop.
+if (missingPush.length > 0) {
+  console.log(
+    'Web push is not configured (' + missingPush.join(', ') + ' unset) — no reminders to send.\n' +
+    'To enable: generate a VAPID keypair (npx web-push generate-vapid-keys) and add\n' +
+    'VITE_VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY to the repository secrets.'
+  )
+  process.exit(0)
 }
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)

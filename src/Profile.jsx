@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
+import { PageHeader } from './panels'
 import { isMastered } from './mastery'
 import { cleanMeaning } from './cleanMeaning'
 import { evaluateAchievements } from './achievements'
@@ -16,7 +17,7 @@ import { STUCK_LAPSES } from './stuckWord'
 import { BRAND_URL } from './brand'
 import {
   ArrowLeft, Layers, LogOut, RotateCcw, Save,
-  Sparkles, Target, User, CalendarCheck, Award, Share2, Check, AlertTriangle, TrendingUp, BookOpen,
+  Sparkles, Target, CalendarCheck, Award, Share2, Check, AlertTriangle, TrendingUp, BookOpen,
 } from 'lucide-react'
 
 const ACH_ICONS = { layers: Layers, sparkles: Sparkles, calendar: CalendarCheck, book: BookOpen }
@@ -95,7 +96,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   const [wordMap, setWordMap] = useState({ levels: [], totals: { total: 0, mastered: 0, known: 0, learning: 0, new: 0, readable: 0 } })
 
   const isMobile = useIsMobile()
-  const { accentHex, fontFamily, nativeName } = getLanguageDetails(profile)
+  const { accentHex, fontFamily } = getLanguageDetails(profile)
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
 
@@ -295,33 +296,11 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     <Shell accentHex={accentHex} fontFamily={fontFamily}>
       <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
 
-      <div style={{ margin: '30px 0 28px', display: 'flex', alignItems: 'center', gap: '20px' }}>
-        <div style={{
-          width: '72px', height: '72px', borderRadius: '24px',
-          background: accentHex + '10',
-          border: '1px solid ' + accentHex + '20',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: accentHex,
-          fontFamily,
-          fontSize: '30px',
-          fontWeight: 850,
-          flexShrink: 0,
-        }}>
-          {nativeName[0]}
-        </div>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 800, marginBottom: '7px' }}>
-            <User size={16} strokeWidth={1.8} color={accentHex} />
-            Profile
-          </div>
-          <h1 style={{ margin: 0, fontSize: '34px', lineHeight: 1.1, fontWeight: 850, color: 'var(--text)' }}>
-            {profile.display_name || session.user.email}
-          </h1>
-          <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '8px', fontWeight: 600 }}>
-            {systemLabel} · {levelLabel}
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title={profile.display_name || session.user.email}
+        meta={`${systemLabel} · ${levelLabel}`}
+        style={{ margin: '22px 0 18px' }}
+      />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px', marginBottom: '18px' }}>
         <StatCard label="Words learned" value={loading ? '-' : stats.learned} unit={'of ' + stats.totalWords} icon={Layers} color={accentHex} bg={accentHex + '10'} />
