@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { dateKey, studyRhythm, rhythmSummary } from './studyRhythm'
+import { dateKey, studyRhythm, rhythmSummary, weekdayInitial } from './studyRhythm'
 
 // A fixed local "now" (a Wednesday) so the 7-day window is deterministic.
 const NOW = new Date('2026-07-15T10:00:00')
@@ -50,5 +50,25 @@ describe('rhythmSummary', () => {
 
   it('is 0 of N for an untouched week', () => {
     expect(rhythmSummary(studyRhythm([], NOW, 7))).toEqual({ studiedDays: 0, days: 7 })
+  })
+})
+
+describe('weekdayInitial', () => {
+  it('labels a date with its local weekday letter', () => {
+    // 2026-07-25 is a Saturday.
+    expect(weekdayInitial('2026-07-25')).toBe('S')
+    expect(weekdayInitial('2026-07-27')).toBe('M')
+  })
+
+  it('does not slip a day for timezones west of UTC', () => {
+    // Parsed as bare UTC midnight this would render as the 24th (a Friday) in
+    // any negative-offset zone. Noon-anchored, it stays Saturday everywhere.
+    expect(weekdayInitial('2026-07-25')).toBe('S')
+  })
+
+  it('is safe on junk input', () => {
+    expect(weekdayInitial('')).toBe('')
+    expect(weekdayInitial(undefined)).toBe('')
+    expect(weekdayInitial('not-a-date')).toBe('')
   })
 })
