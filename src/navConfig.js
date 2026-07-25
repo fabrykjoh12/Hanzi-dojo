@@ -10,7 +10,6 @@ import {
 // Desktop sidebar — primary section (the daily loop + the goal gate).
 export const PRIMARY_NAV = [
   { key: 'home', label: 'Home', icon: Home },
-  { key: 'hq', label: 'Dojo HQ', icon: PanelsTopLeft },
   { key: 'study', label: 'Flashcards', icon: Layers },
   { key: 'stories', label: 'Stories', icon: BookOpen },
   { key: 'practice', label: 'Practice', icon: Dumbbell },
@@ -34,7 +33,6 @@ export const MOBILE_PRIMARY = [
 ]
 
 export const MOBILE_MORE = [
-  { key: 'hq', label: 'Dojo HQ', icon: PanelsTopLeft },
   { key: 'test', label: 'Test', icon: GraduationCap },
   { key: 'profile', label: 'Profile', icon: User },
   { key: 'languages', label: 'Language', icon: Globe },
@@ -42,7 +40,15 @@ export const MOBILE_MORE = [
   { key: 'logout', label: 'Log out', icon: LogOut },
 ]
 
-// Admin-only entry — prepended to the bottom nav (Sidebar) / "More" sheet
+// Admin-only entries — prepended to the bottom nav (Sidebar) / "More" sheet
 // (MobileNav) only when profile.is_admin is true. Kept out of the default
-// arrays so it never renders for regular users.
-export const ADMIN_NAV = { key: 'dashboard', label: 'Dashboard', icon: BarChart3 }
+// arrays so they never render for regular users.
+//
+// Dojo HQ is an INTERNAL collaboration tool (workspaces, invite codes, member
+// management). It shipped in PRIMARY_NAV, which put it in front of every
+// learner; it belongs here, and App.jsx gates the route itself so typing /hq
+// doesn't get around the missing menu entry.
+export const ADMIN_NAV = [
+  { key: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+  { key: 'hq', label: 'Dojo HQ', icon: PanelsTopLeft },
+]

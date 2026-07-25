@@ -106,7 +106,7 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language 
   const accentHex = languageTheme(language).accentHex
   const accentInk = ink(accentHex)
 
-  const bottomItems = isAdmin ? [ADMIN_NAV, ...BOTTOM_ITEMS] : BOTTOM_ITEMS
+  const bottomItems = isAdmin ? [...ADMIN_NAV, ...BOTTOM_ITEMS] : BOTTOM_ITEMS
   const mainIndex = MAIN_ITEMS.findIndex(i => i.key === view)
   const bottomIndex = bottomItems.findIndex(i => i.key === view)
 

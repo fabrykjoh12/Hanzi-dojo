@@ -42,7 +42,7 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
   const [moreOpen, setMoreOpen] = useState(false)
   const accentHex = languageTheme(language).accentHex
   const accentInk = ink(accentHex)
-  const moreItems = isAdmin ? [ADMIN_NAV, ...MORE_ITEMS] : MORE_ITEMS
+  const moreItems = isAdmin ? [...ADMIN_NAV, ...MORE_ITEMS] : MORE_ITEMS
   const moreKeys = moreItems.map(i => i.key)
 
   const go = (key) => {
