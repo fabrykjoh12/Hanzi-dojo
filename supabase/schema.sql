@@ -594,11 +594,14 @@ with check (user_id is null or auth.uid() = user_id);
 
 
 -- Progress reset
--- Lets a signed-in user reset their own progress for a language/system track.
-create or replace function public.reset_current_language_progress(
+-- Lets a signed-in user reset their own progress for ONE language/system track.
+-- Mirrors 20260725120000_per_language_progress_reset.sql.
+create or replace function public.reset_language_progress(
   p_language text,
   p_system text,
-  p_reset_streak boolean default true
+  -- Account-wide, so it is opt-in. See note 1 above: there is no way to clear
+  -- study history for one language, because the table does not record one.
+  p_reset_account_history boolean default false
 )
 returns void
 language plpgsql
@@ -613,13 +616,13 @@ begin
     raise exception 'Not authenticated';
   end if;
 
+  -- Any track the account owns, active or not.
   select exists (
     select 1
     from public.language_tracks
     where user_id = v_user_id
       and language = p_language
       and system = p_system
-      and is_active = true
   )
   into v_has_track;
 
@@ -648,6 +651,13 @@ begin
     and v.language = p_language
     and v.system = p_system;
 
+  delete from public.story_reads sr
+  using public.stories s
+  where sr.user_id = v_user_id
+    and sr.story_id = s.id
+    and s.language = p_language
+    and s.system = p_system;
+
   delete from public.test_attempts
   where user_id = v_user_id
     and language = p_language
@@ -658,7 +668,15 @@ begin
     and language = p_language
     and system = p_system;
 
-  if p_reset_streak then
+  -- Back to the start of the ladder, so the track agrees with the now-empty
+  -- unlocks instead of claiming a level nothing supports.
+  update public.language_tracks
+  set current_level = 1
+  where user_id = v_user_id
+    and language = p_language
+    and system = p_system;
+
+  if p_reset_account_history then
     delete from public.daily_activity
     where user_id = v_user_id;
 
@@ -670,6 +688,26 @@ begin
   end if;
 end;
 $$;
+
+-- Compatibility shim. Same signature and same default as before, so a client
+-- from the previous deploy still gets exactly the behaviour it expects —
+-- p_reset_streak defaults to true there, and maps onto the account-history
+-- flag. New callers should use reset_language_progress directly.
+create or replace function public.reset_current_language_progress(
+  p_language text,
+  p_system text,
+  p_reset_streak boolean default true
+)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  select public.reset_language_progress(p_language, p_system, p_reset_streak);
+$$;
+
+revoke all on function public.reset_language_progress(text, text, boolean) from public;
+grant execute on function public.reset_language_progress(text, text, boolean) to authenticated;
 
 revoke all on function public.reset_current_language_progress(text, text, boolean) from public;
 grant execute on function public.reset_current_language_progress(text, text, boolean) to authenticated;

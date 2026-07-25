@@ -57,6 +57,90 @@ test.describe('Profile — month in review', () => {
     await expect(page.getByRole('img', { name: /Reviews over the last 30 days/i })).toBeVisible();
   });
 
+  // The reset used to call the RPC without p_reset_streak, and that argument
+  // defaulted to TRUE — so clearing one language also wiped daily_activity and
+  // the account streak. These pin the scope.
+  test('reset names the language it clears and leaves the others alone', async ({ page }) => {
+    await page.goto('/profile');
+    await expect(page.getByText('Reset a language')).toBeVisible();
+    await expect(page.getByText(/Clears flashcards, tests, story reads and unlocks for/i)).toBeVisible();
+    await expect(page.getByText(/Your other\s+languages are untouched/i)).toBeVisible();
+  });
+
+  test('clearing study history is opt-in, and off by default', async ({ page }) => {
+    await page.goto('/profile');
+    const box = page.getByRole('checkbox', { name: /Also clear my study history and streak/i });
+    await expect(box).toBeVisible();
+    await expect(box).not.toBeChecked();
+    // The account-wide reach is stated where the choice is made, not buried.
+    await expect(page.getByText(/This one covers every language/i)).toBeVisible();
+  });
+
+  test('a plain reset does not ask the backend to clear account history', async ({ page }) => {
+    const calls = [];
+    await page.route('**/rest/v1/rpc/reset_language_progress', async (route) => {
+      calls.push(JSON.parse(route.request().postData() || '{}'));
+      return route.fulfill({
+        status: 200,
+        headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+        body: 'null',
+      });
+    });
+
+    await page.goto('/profile');
+    await page.getByRole('button', { name: /^Reset$/ }).click();
+    await page.getByRole('button', { name: /Confirm reset/i }).click();
+
+    await expect.poll(() => calls.length).toBe(1);
+    expect(calls[0].p_language).toBe('chinese');
+    expect(calls[0].p_reset_account_history).toBe(false);
+  });
+
+  test('ticking the box passes the account-history flag through', async ({ page }) => {
+    const calls = [];
+    await page.route('**/rest/v1/rpc/reset_language_progress', async (route) => {
+      calls.push(JSON.parse(route.request().postData() || '{}'));
+      return route.fulfill({
+        status: 200,
+        headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+        body: 'null',
+      });
+    });
+
+    await page.goto('/profile');
+    await page.getByRole('checkbox', { name: /Also clear my study history and streak/i }).check();
+    await page.getByRole('button', { name: /^Reset$/ }).click();
+    await page.getByRole('button', { name: /Confirm reset/i }).click();
+
+    await expect.poll(() => calls.length).toBe(1);
+    expect(calls[0].p_reset_account_history).toBe(true);
+  });
+
+  test('a second language track turns the target into a choice', async ({ page }) => {
+    await page.route('**/rest/v1/language_tracks*', async (route) => {
+      const req = route.request();
+      if (req.method() !== 'GET') return route.fallback();
+      // `.single()` (the app's own track load) must still get one object.
+      const wantsObject = (req.headers()['accept'] || '').includes('pgrst.object');
+      const chinese = { id: 't1', user_id: 'u1', language: 'chinese', system: 'hsk', current_level: 2, is_active: true };
+      const japanese = { id: 't2', user_id: 'u1', language: 'japanese', system: 'jlpt', current_level: 1, is_active: false };
+      return route.fulfill({
+        status: 200,
+        headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'content-range': '0-1/*' },
+        body: JSON.stringify(wantsObject ? chinese : [chinese, japanese]),
+      });
+    });
+
+    await page.goto('/profile');
+    const group = page.getByRole('radiogroup', { name: 'Language to reset' });
+    await expect(group.getByRole('radio', { name: /Chinese/ })).toBeVisible();
+    // An inactive track is still resettable — the old RPC required is_active.
+    const jp = group.getByRole('radio', { name: /Japanese/ });
+    await expect(jp).toBeVisible();
+    await jp.click();
+    await expect(page.getByText(/unlocks for\s*Japanese/i)).toBeVisible();
+  });
+
   test('shows the known-word map with reading reach', async ({ page }) => {
     await page.goto('/profile');
 

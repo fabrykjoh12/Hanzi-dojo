@@ -180,9 +180,11 @@ export default function Dev({ session, profile, track, onBack, onNavigate }) {
           await upsertCards(ids, masteredCardRow)
           await done('Mastered ' + ids.length + ' words across all levels up to current')
         }} />
-        <Action danger confirm label="FULL reset (cards, tests, unlocks)" onRun={async () => {
-          const { error } = await supabase.rpc('reset_current_language_progress', {
-            p_language: track.language, p_system: track.system, p_reset_streak: true,
+        <Action danger confirm label="FULL reset (cards, tests, unlocks, history)" onRun={async () => {
+          // The dev tool wants a genuinely blank slate, so it opts into the
+          // account-wide part. Profile's user-facing reset leaves it alone.
+          const { error } = await supabase.rpc('reset_language_progress', {
+            p_language: track.language, p_system: track.system, p_reset_account_history: true,
           })
           if (error) throw new Error(error.message)
           toast({ kind: 'info', title: 'Progress reset — back to a fresh account for this language' })

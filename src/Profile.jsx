@@ -78,6 +78,14 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   const [confirmingReset, setConfirmingReset] = useState(false)
   const [resetting, setResetting] = useState(false)
   const [resetError, setResetError] = useState('')
+  const [tracks, setTracks] = useState([])
+  // Which language the reset will clear. Defaults to the one being studied;
+  // only becomes a choice for accounts that have started a second track.
+  const [resetTarget, setResetTarget] = useState(track.language)
+  // Study history and streak are account-wide (daily_activity has no language
+  // column), so clearing them is a separate, explicit decision — never a side
+  // effect of resetting one language.
+  const [clearHistory, setClearHistory] = useState(false)
   const [loading, setLoading] = useState(true)
   const [activity, setActivity] = useState({})
   const [shared, setShared] = useState(false)
@@ -200,6 +208,20 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     return () => clearTimeout(timer)
   }, [])
 
+  // Every language track the account owns, so a reset can target one of them
+  // rather than whichever happens to be active.
+  useEffect(() => {
+    let live = true
+    supabase
+      .from('language_tracks')
+      .select('language, system, current_level')
+      .eq('user_id', session.user.id)
+      .then(({ data }) => { if (live && data) setTracks(data) })
+    return () => { live = false }
+  }, [session.user.id])
+
+  const targetTrack = tracks.find(t => t.language === resetTarget) || track
+
   const resetProgress = async () => {
     if (!confirmingReset) {
       setConfirmingReset(true)
@@ -210,9 +232,10 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     setResetting(true)
     setResetError('')
 
-    const { error } = await supabase.rpc('reset_current_language_progress', {
-      p_language: track.language,
-      p_system: track.system,
+    const { error } = await supabase.rpc('reset_language_progress', {
+      p_language: targetTrack.language,
+      p_system: targetTrack.system,
+      p_reset_account_history: clearHistory,
     })
 
     if (error) {
@@ -221,9 +244,15 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       return
     }
 
-    await loadStats()
     setResetting(false)
     setConfirmingReset(false)
+    setClearHistory(false)
+
+    // Resetting the language you're on changes the level and empties the queue
+    // that Home renders, so send the reload through Home the way Dev does.
+    // Any other track only affects data this screen doesn't show.
+    if (targetTrack.language === track.language) onNavigate('home')
+    else await loadStats()
   }
 
   const masteryPct = stats.totalWords > 0
@@ -509,18 +538,76 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         )}
       </Panel>
 
+      {/* Reset is scoped to ONE language. The account-wide part — study history
+          and streak — is a separate opt-in below, because daily_activity has no
+          language column and so cannot be cleared for one track alone. */}
       <Panel danger>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '18px', alignItems: 'center' }}>
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Reset progress</div>
+            <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Reset a language</div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
-              Clears flashcards, tests, and unlocks for this language.
+              Clears flashcards, tests, story reads and unlocks for{' '}
+              <strong style={{ color: 'var(--text)', fontWeight: 700 }}>
+                {languageTheme(targetTrack.language).languageName}
+              </strong>{' '}
+              and puts that track back to{' '}
+              {getLevelLabel(targetTrack.language, targetTrack.system, 1)}. Your other
+              languages are untouched.
             </div>
           </div>
           <SmallButton onClick={resetProgress} danger filled={confirmingReset} disabled={resetting} icon={RotateCcw}>
             {resetting ? 'Resetting' : confirmingReset ? 'Confirm reset' : 'Reset'}
           </SmallButton>
         </div>
+
+        {/* Only a choice once there is something to choose between. */}
+        {tracks.length > 1 && !confirmingReset && (
+          <div role="radiogroup" aria-label="Language to reset" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '14px' }}>
+            {tracks.map(t => {
+              const on = t.language === targetTrack.language
+              return (
+                <button
+                  key={t.language}
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => setResetTarget(t.language)}
+                  style={{
+                    padding: '7px 13px', borderRadius: '9px', cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif', fontSize: '13px',
+                    fontWeight: on ? 700 : 550,
+                    border: '1px solid ' + (on ? '#DC2626' : 'var(--border)'),
+                    background: on ? 'var(--danger-bg)' : 'var(--surface)',
+                    color: on ? '#DC2626' : 'var(--text-muted)',
+                  }}
+                >
+                  {languageTheme(t.language).languageName}
+                  <span style={{ opacity: 0.7, fontWeight: 500 }}>
+                    {' · ' + getLevelLabel(t.language, t.system, t.current_level)}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        <label style={{
+          display: 'flex', alignItems: 'flex-start', gap: '9px', marginTop: '14px',
+          cursor: 'pointer', fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.45,
+        }}>
+          <input
+            type="checkbox"
+            checked={clearHistory}
+            onChange={e => setClearHistory(e.target.checked)}
+            style={{ marginTop: '2px', accentColor: '#DC2626', cursor: 'pointer' }}
+          />
+          <span>
+            Also clear my study history and streak.{' '}
+            <span style={{ color: '#DC2626', fontWeight: 650 }}>
+              This one covers every language
+            </span>{' '}
+            — the calendar records days you studied, not which language you studied.
+          </span>
+        </label>
 
         {confirmingReset && !resetting && (
           <button
