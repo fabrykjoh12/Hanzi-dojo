@@ -203,6 +203,19 @@ body {
    unmistakably the landscape the app is set in. */
 :root[data-lit-hero] { --bg-image-opacity: var(--bg-image-opacity-lit); }
 
+/* Framing for the full-page language background (src/Background.jsx).
+   The artwork is a wide landscape: mountains along the top, bamboo in the
+   bottom-right corner, and a large expanse of empty paper through the middle
+   and lower left. `cover` on a portrait phone keeps the full height but crops
+   to about the middle 29% of the width — which is exactly the empty part, so
+   the drawing disappeared entirely on mobile while looking correct on desktop.
+   Framing the right edge below the sidebar breakpoint keeps the bamboo and the
+   tall right-hand peak in shot. */
+.hd-bg { object-fit: cover; object-position: 50% 50%; }
+@media (max-width: 767px) {
+  .hd-bg { object-position: 88% 50%; }
+}
+
 /* Skip link — first focusable element; visually hidden until focused so
    keyboard users can jump straight to the main content. */
 .skip-link {

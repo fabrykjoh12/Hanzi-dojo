@@ -4,10 +4,12 @@ import bgJapanese from './assets/bg-japanese.webp'
 import bgRussian from './assets/bg-russian.webp'
 import { languageTheme } from './languageTheme'
 
+// object-fit / object-position live in index.css (.hd-bg) rather than here,
+// because the framing has to change with viewport width and a media query does
+// that without a resize listener re-rendering a full-screen image.
 const baseStyle = {
   position: 'fixed', top: 0, left: 0,
   width: '100vw', height: '100vh',
-  objectFit: 'cover',
   zIndex: 0,
   pointerEvents: 'none',
   transition: 'opacity 500ms ease',
@@ -49,6 +51,7 @@ export default function Background({ language }) {
       src={current}
       alt=""
       aria-hidden="true"
+      className="hd-bg"
       style={{ ...baseStyle, opacity: visible ? 'var(--bg-image-opacity)' : 0 }}
     />
   )
