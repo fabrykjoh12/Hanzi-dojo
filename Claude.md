@@ -556,7 +556,7 @@ Hanzi-dojo is a free language learning web app built around the two methods that
 - **Mastery system:** Two tiers — "learned" (card has ever reached review/relearning state, `learned` column = true) and "mastered" (FSRS stability ≥ 21 days). Constants in src/mastery.js.
 - **Streak system:** Updates on first grade of the day. Gap of 1 day = streak increment. Gap > 1 day = consumes one freeze per missed day, else resets to 1. The displayed streak uses `liveStreak(profile)` (computed from days since last study + freezes) so a broken streak shows 0 immediately rather than the stale stored value, which only changes on the next study. Streak freezes given back on progress reset.
 - **InfoTip:** Reusable `?` tooltip component used next to "Mastery" labels in Home, Test locked screen, and Profile. Shows explanatory text in a floating panel on click, closes on outside click.
-- **Home screen:** Language header (native script + level badge + streak pill), Today card (New/Learning/Due counts + mastery progress bar + InfoTip), "Start studying" sage green CTA, "Keep the flow going" row of 4 flow steps (Flashcards → Stories → Videos → Writing).
+- **Home screen:** Language header (native script + level metadata on a hairline rule), a tappable Today card built around the **ensō progress ring**, "Your daily loop" rail of 4 flow steps (Flashcards → Stories → Videos → Writing), and the Discord card. The ring is `src/EnsoRing.jsx` over pure geometry in `src/enso.js` (`brushRingPath` walks a tapered, slightly wobbled band so it reads as a brush stroke, not an SVG progress circle; `dojoProgress` gives the fraction — cards cleared today over today's whole ask, with an empty day counting as complete). The inked portion is revealed by a masked arc animated via the `hd-enso-draw` keyframe, so reduced-motion collapses it to the final frame for free.
 
 ---
 
@@ -1134,11 +1134,18 @@ Russian accent:   #2563C9   (royal blue)
 Success:          #2F9E6D
 Warning:          #D97706
 Error:            #DC2626
-Sage (nav active bg):   #E7EDE4
-Sage (nav active text): #4F6047
 Sage (CTA button):      #6E8466
 Sage dark (CTA hover):  #5C7155
+Sage ink (Home "Due"):  #4F6047
+Amber ink (Home "Learning"): #C2803B
 ```
+
+**Nav active state is the LANGUAGE ACCENT, not sage** (changed in the Home/nav
+polish pass). Sidebar + MobileNav take a `language` prop from `App.jsx` and
+derive the accent from `languageTheme()`, so the whole shell shifts colour with
+the active track. A single sliding ink bar marks the active row (Sidebar rows
+are a fixed `ROW_HEIGHT`/`ROW_GAP` so the bar positions from an index — no
+measurement). The retired flat sage pill (`#E7EDE4`/`#4F6047`) is gone.
 
 **CSS variables** (defined in index.css):
 `--chinese-accent: #B83A24`, `--chinese-accent-dark: #922E1C`, `--japanese-accent: #2E3A6E`, `--japanese-accent-dark: #1E2750`, `--russian-accent: #2563C9`, `--russian-accent-dark: #1D4EA0`
@@ -1149,7 +1156,19 @@ Semantic tokens in index.css drive light/dark via `:root` and `:root[data-theme=
 - **New code MUST use these tokens** (e.g. `background: 'var(--surface)'`, `color: 'var(--text)'`) instead of hardcoded neutral hexes, or it won't theme.
 - Accent colors (chinese/japanese), status colors (success/warn/error), sage nav colors, and **white text on accent buttons** (`color: '#fff'`) stay hardcoded — they read on both themes.
 - Fixed dark popovers/tooltips (e.g. Sidebar collapsed tooltip) use a literal dark (`#27272A`), not `var(--text)`, so they don't invert.
-- Known minor: the Home New/Learning/Due tiles and streak pill use pale pastel accent-tint backgrounds that stay light in dark mode (look like colored chips; acceptable, could be refined).
+- **Tints must mix into the themed surface**, not float on it: use
+  `color-mix(in srgb, <accent> 11%, var(--surface))` rather than an `<accent>+'14'`
+  alpha hex, or the chip stays light in dark mode. (This was the long-standing
+  "pale pastel chips" known-minor; fixed in the Home/nav polish pass.)
+- **Accent as ink** — the accent hexes are tuned for white paper and sink into a
+  dark surface. `ink(hex)` in `languageTheme.js` wraps a colour in
+  `color-mix(in srgb, hex, var(--ink-lift) var(--ink-lift-pct))`: a no-op in
+  light, a 30% lift toward white in dark. Use it wherever an accent is TEXT or a
+  drawn mark; keep the raw hex for tints/borders that already mix into a surface.
+- **Elevation tokens** — `--shadow-1` (resting) / `--shadow-2` (hover) are
+  two-layer (tight contact + wide cast) and flip to near-black on dark;
+  `--hairline` is the lit top edge, applied as `inset 0 1px 0 var(--hairline)`.
+  Prefer these over one-off `box-shadow` values.
 
 **Fonts:** Inter (UI), Noto Sans SC (Chinese), Noto Sans JP (Japanese) — loaded from Google Fonts in index.css. **Russian uses Inter**, which already ships full Cyrillic coverage, so no extra web font is needed.
 
