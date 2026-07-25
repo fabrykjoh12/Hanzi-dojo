@@ -1,16 +1,19 @@
-// Page Object for the authenticated Home dashboard ("Today's Dojo").
+// Page Object for the authenticated Home dashboard.
+//
+// Home leads with the story you have unlocked; the card queue is a readout
+// beneath it, and there is exactly one primary action.
 export class HomePage {
   constructor(page) {
     this.page = page;
-    this.dojoCard = page.getByText('Today’s Dojo');
-    this.cardsWaiting = page.getByText(/Cards waiting/i);
+    this.today = page.getByText('Today', { exact: true });
+    // The hero's single call to action — "Review N first" while cards are due,
+    // "Start reading" once the queue is clear.
+    this.heroAction = page.getByText(/Review \d+ first|Start reading/);
+    this.dueReadout = page.getByText('words due for review');
+    this.newReadout = page.getByText('new words today');
   }
   async goto() {
     await this.page.goto('/');
-    await this.dojoCard.waitFor({ state: 'visible' });
-  }
-  // The three count tiles on the dashboard, e.g. "New", "Learning", "Due".
-  tile(label) {
-    return this.page.getByText(new RegExp(`^${label}$`, 'i')).first();
+    await this.today.waitFor({ state: 'visible' });
   }
 }

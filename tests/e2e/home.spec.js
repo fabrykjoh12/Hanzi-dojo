@@ -2,23 +2,27 @@ import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 import { HomePage } from '../pages/HomePage.js';
 import { StudyPage } from '../pages/StudyPage.js';
 
-// Signed-in dashboard renders profile/track/counts from the mock backend.
-test.describe('Home dashboard (logged in)', () => {
+// Signed-in Home renders profile/track/counts from the mock backend.
+test.describe('Home (logged in)', () => {
   let home;
   test.beforeEach(async ({ page }) => {
     home = new HomePage(page);
     await home.goto();
   });
 
-  test('renders Today\'s Dojo card', async () => {
-    await expect(home.dojoCard).toBeVisible();
-    await expect(home.cardsWaiting).toBeVisible();
+  test('leads with the unlocked story, not the card queue', async ({ page }) => {
+    await expect(page.getByText(/Unlocked and waiting|Your first words/)).toBeVisible();
   });
 
-  test('shows the New / Learning / Due count tiles', async () => {
-    await expect(home.tile('New')).toBeVisible();
-    await expect(home.tile('Learning')).toBeVisible();
-    await expect(home.tile('Due')).toBeVisible();
+  test('shows the queue as readouts beneath the hero', async () => {
+    await expect(home.dueReadout).toBeVisible();
+    await expect(home.newReadout).toBeVisible();
+  });
+
+  test('offers exactly one primary action', async ({ page }) => {
+    await expect(home.heroAction).toBeVisible();
+    // The readouts are deliberately NOT buttons — Home is a coach, not a menu.
+    await expect(page.getByRole('button', { name: /Review now|Learn them/ })).toHaveCount(0);
   });
 
   test('does not show a streak badge or "keep it" guilt copy', async ({ page }) => {
@@ -26,9 +30,8 @@ test.describe('Home dashboard (logged in)', () => {
     await expect(page.getByText(/study today to keep it/i)).toHaveCount(0);
   });
 
-  test('the whole Today\'s Dojo card is tappable and opens Study', async ({ page }) => {
-    // No separate nested button for this any more — the card itself navigates.
-    await page.getByText('Today’s Dojo').click();
+  test('the hero is tappable and opens Study while cards are due', async ({ page }) => {
+    await home.heroAction.click();
     const study = new StudyPage(page);
     await expect(study.showAnswer).toBeVisible();
   });

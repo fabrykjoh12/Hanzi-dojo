@@ -19,9 +19,6 @@ import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
 import Background from './Background'
 import Home from './Home'
-// Design exploration: a story-first Home, reachable with ?home=story. Lazy so
-// it costs the default Home nothing. Remove with the flag once a direction wins.
-const HomeStory = lazy(() => import('./HomeStory'))
 // Lazy: heavier/less-frequent screens are code-split so the initial load stays
 // small (Home is what most sessions open to). react-router basename is unaffected.
 const Study = lazy(() => import('./Study'))
@@ -570,22 +567,12 @@ export default function App() {
       : <NotFound onHome={() => navigate('home')} />
   } else if (isKnownView(view)) {
     // Only 'home' reaches here (every other known view has a branch above).
-    // ?home=story renders the alternative story-first design instead. A URL
-    // flag rather than a setting: this is a design comparison, not a feature.
-    const storyHome = new URLSearchParams(location.search).get('home') === 'story'
-    content = storyHome ? (
-      <HomeStory
-        profile={profile}
-        track={track}
-        counts={counts}
-        session={session}
-        onNavigate={navigate}
-      />
-    ) : (
+    content = (
       <Home
         profile={profile}
         track={track}
         counts={counts}
+        session={session}
         onNavigate={navigate}
       />
     )

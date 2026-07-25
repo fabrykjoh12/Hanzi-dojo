@@ -556,7 +556,7 @@ Hanzi-dojo is a free language learning web app built around the two methods that
 - **Mastery system:** Two tiers — "learned" (card has ever reached review/relearning state, `learned` column = true) and "mastered" (FSRS stability ≥ 21 days). Constants in src/mastery.js.
 - **Streak system:** Updates on first grade of the day. Gap of 1 day = streak increment. Gap > 1 day = consumes one freeze per missed day, else resets to 1. The displayed streak uses `liveStreak(profile)` (computed from days since last study + freezes) so a broken streak shows 0 immediately rather than the stale stored value, which only changes on the next study. Streak freezes given back on progress reset.
 - **InfoTip:** Reusable `?` tooltip component used next to "Mastery" labels in Home, Test locked screen, and Profile. Shows explanatory text in a floating panel on click, closes on outside click.
-- **Home screen:** Language header (native script + level metadata on a hairline rule), a tappable Today card built around the **ensō progress ring**, "Your daily loop" rail of 4 flow steps (Flashcards → Stories → Videos → Writing), and the Discord card. The ring is `src/EnsoRing.jsx` over pure geometry in `src/enso.js` (`brushRingPath` walks a tapered, slightly wobbled band so it reads as a brush stroke, not an SVG progress circle; `dojoProgress` gives the fraction — cards cleared today over today's whole ask, with an empty day counting as complete). The inked portion is revealed by a masked arc animated via the `hd-enso-draw` keyframe, so reduced-motion collapses it to the final frame for free.
+- **Home screen:** Leads with the STORY you have unlocked, not the card queue — the product's own thesis. A single lit `HeroPanel` (deep language-accent ground, contained ink-wash, oversized first character of the sentence) carries the day's story, its title and how much of it you can read; beneath it sit flat `Panel`s with the queue as readouts and progress toward the next level. ONE call to action, which adapts — "Review N first" while cards are due, "Start reading" once clear. Data: `src/homeStory.js` (`heroSentence`/`firstContentChar` pure + tested) over the existing `pickDailyStory` and `calculateStoryReadability`. **The ensō ring was removed** (user preference) along with `EnsoRing.jsx`/`enso.js` and the `hd-enso-draw` keyframes.
 
 ---
 
@@ -1171,6 +1171,13 @@ Semantic tokens in index.css drive light/dark via `:root` and `:root[data-theme=
   Prefer these over one-off `box-shadow` values.
 
 **Fonts:** Inter (UI), Noto Sans SC (Chinese), Noto Sans JP (Japanese) — loaded from Google Fonts in index.css. **Russian uses Inter**, which already ships full Cyrillic coverage, so no extra web font is needed.
+
+**The "one lit panel" design language** (`src/designTokens.js` + `src/panels.jsx`):
+- A screen gets **exactly one** `HeroPanel` — the thing it is actually about — on a deep ground made by darkening the *language accent* (`heroGround`), never a fixed colour. Everything else on that screen is a flat `Panel`.
+- Atmosphere is **contained** to the hero and stays **under ~12% opacity**; past that it competes with the text.
+- Atmosphere is **drawn, not photographic** — `src/inkWash.js` generates three seeded ridgelines in cream. A photo carries its own colours and fights the palette however far it is faded; ridges made from the accent cannot clash, cost no bytes, and stay crisp at any size. Seeded per language so a skyline is stable across renders.
+- While any `HeroPanel` is mounted it sets `data-lit-hero` on the document, which drops `--bg-image-opacity` to 0.04. The rule travels with the component — a screen adopting the hero gets the flattening automatically.
+- Screens using it: **Home**, **Practice**.
 
 **Card interaction:** `translateY(-2px)`, stronger shadow, accent border on hover, ~180ms transition.
 

@@ -95,6 +95,19 @@ describe('heroSentence', () => {
     expect(out.endsWith('…')).toBe(true)
   })
 
+  it('drops a leading scene emoji — the hero is the sentence', () => {
+    expect(heroSentence('\u{1F327}\uFE0F 今天天气不好。')).toBe('今天天气不好。')
+    expect(heroSentence('🌧 今天天气不好。')).toBe('今天天气不好。')
+  })
+
+  it('keeps an emoji that is not leading', () => {
+    expect(heroSentence('今天很好🌞')).toBe('今天很好🌞')
+  })
+
+  it('strips the emoji before the speaker prefix', () => {
+    expect(heroSentence('🌧️ 妈妈：今天我们去公园。')).toBe('今天我们去公园。')
+  })
+
   it('is safe on empty content', () => {
     expect(heroSentence('')).toBe('')
   })

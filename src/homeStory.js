@@ -1,10 +1,10 @@
 // Data for the story-first Home hero: the one story the learner has unlocked
 // today, and how much of it they can already read.
 //
-// This is deliberately SEPARATE from homeCounts.js. The shipped Home needs none
-// of it, so keeping it here means the extra queries only run when the
-// story-first variant is actually on — Home is the most-opened screen in the
-// app and shouldn't pay for an experiment.
+// Kept SEPARATE from homeCounts.js: that module is the synchronous count math
+// every screen relies on, while this is Home's own async story fetch. Splitting
+// them means Home renders its counts immediately and fills the hero in when the
+// story arrives, rather than blocking the whole screen on three more queries.
 //
 // The pick itself (pickDailyStory) and the percentage (calculateStoryReadability)
 // are existing, tested, pure functions. This module only feeds them.
@@ -30,7 +30,11 @@ export function heroSentence(content, maxChars = 30) {
   const line = openingLine(content)
   // Dialogue lines look like "妈妈：..." — the hero reads better without the
   // speaker tag, and the reader itself still shows it.
-  const stripped = line.replace(/^[^：:]{1,8}[：:]\s*/, '')
+  // Story lines can open with a scene emoji (\u{1F327} today's weather, and so on).
+  // The hero is the SENTENCE; a leading pictograph reads as a rendering
+  // accident at display size, so it goes.
+  const noEmoji = line.replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u, '')
+  const stripped = noEmoji.replace(/^[^：:]{1,8}[：:]\s*/, '')
   if (stripped.length <= maxChars) return stripped
   // Cut on a clause boundary when there is one, so the teaser never ends
   // mid-word. Falls back to a hard cut with an ellipsis.
