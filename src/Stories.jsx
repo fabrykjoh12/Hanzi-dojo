@@ -16,7 +16,7 @@ import { isPracticeFormat, formatLabel, formatEmoji } from './storyFormat'
 import StoryReader from './StoryReader'
 import StoryCover from './StoryCover'
 import {
-  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Library, Lock,
+  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Layers, Library, Lock,
 } from 'lucide-react'
 
 // Story tier definitions live in ./storyTiers (shared with the post-study
@@ -249,28 +249,147 @@ function CardGrid({ children, isMobile }) {
   )
 }
 
-// A story arc: header ("The Missing Cat · 5 parts · 1 of 5 read") + a grid of its
-// parts, so the list reads as a grouped table of contents.
-function ArcSection({ arc, readIds, accentHex, fontFamily, levelLabelFor, isMobile, showHeader, onOpen }) {
+// The heading above a group on the shelf ("Series · 2 to follow").
+function SectionHeading({ title, note }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: '9px', margin: '0 0 12px', flexWrap: 'wrap' }}>
+      <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text)', margin: 0 }}>{title}</h3>
+      {note && <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>{note}</span>}
+    </div>
+  )
+}
+
+// A series as ONE card on the shelf: the cover of its first chapter, the
+// chapter count, and how far in you are. Tapping it opens the series page.
+//
+// The stacked edges behind the card are the whole point — they say "there is
+// more inside this" before you read a word of the label, which is what stops a
+// series reading as a single story.
+function SeriesCard({ arc, readIds, accentHex, fontFamily, isMobile, onOpen }) {
+  const [hovered, setHovered] = useState(false)
+  const readCount = arc.parts.filter(p => readIds.has(p.id)).length
+  const total = arc.parts.length
+  const done = readCount === total
+  // Open on the cover of where you actually are, not always chapter one.
+  const coverStory = arc.parts.find(p => !readIds.has(p.id)) || arc.parts[0]
+  return (
+    <div style={{ position: 'relative', paddingRight: '7px', paddingBottom: '7px' }}>
+      {/* Stacked edges — decorative, so hidden from the accessibility tree. */}
+      <div aria-hidden="true" style={{
+        position: 'absolute', top: '7px', left: '7px', right: 0, bottom: 0,
+        borderRadius: '16px', background: 'var(--surface)',
+        border: '1px solid var(--border)', opacity: 0.55,
+      }} />
+      <div aria-hidden="true" style={{
+        position: 'absolute', top: '4px', left: '4px', right: '3px', bottom: '3px',
+        borderRadius: '16px', background: 'var(--surface)',
+        border: '1px solid var(--border)', opacity: 0.8,
+      }} />
+      <button
+        onClick={onOpen}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          position: 'relative', display: 'flex', flexDirection: 'column', textAlign: 'left',
+          width: '100%', padding: 0, cursor: 'pointer',
+          border: '1px solid ' + (hovered ? accentHex + '55' : 'var(--border)'),
+          borderRadius: '16px', overflow: 'hidden', background: 'var(--surface)',
+          boxShadow: hovered ? '0 16px 34px rgba(24,24,27,0.10)' : '0 6px 20px rgba(24,24,27,0.05)',
+          transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
+          transition: 'all 170ms ease', fontFamily: 'Inter, sans-serif',
+        }}
+      >
+        <StoryCover
+          story={coverStory} path={coverStory && coverStory.image_path} accent={accentHex} radius={0}
+          style={{ width: '100%', aspectRatio: '16 / 9', border: 'none', borderBottom: '1px solid var(--border)' }}
+        >
+          <div style={{
+            position: 'absolute', top: '8px', left: '8px', display: 'flex', alignItems: 'center', gap: '5px',
+            fontSize: '10.5px', fontWeight: 800, color: '#fff',
+            background: 'rgba(24,24,27,0.55)', borderRadius: '999px', padding: '3px 9px', zIndex: 1,
+          }}>
+            <Layers size={12} strokeWidth={2.2} color="#fff" />
+            {total} chapters
+          </div>
+          {done && (
+            <div style={{
+              position: 'absolute', top: '8px', right: '8px', width: '22px', height: '22px',
+              borderRadius: '999px', background: 'var(--success)', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.3)', zIndex: 1,
+            }}>
+              <CheckCircle2 size={14} strokeWidth={2.4} color="#fff" />
+            </div>
+          )}
+        </StoryCover>
+        <div style={{ padding: '12px 14px 13px', display: 'flex', flexDirection: 'column', gap: '7px', flex: 1 }}>
+          <div title={arc.title} style={{
+            fontSize: isMobile ? '15px' : '16px', fontWeight: 750, fontFamily, color: 'var(--text)',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3,
+          }}>
+            {arc.title}
+          </div>
+          <SeriesProgress readCount={readCount} total={total} accentHex={accentHex} />
+        </div>
+      </button>
+    </div>
+  )
+}
+
+// Shared by the series card and the series page so the two never disagree about
+// how far along you are.
+function SeriesProgress({ readCount, total, accentHex }) {
+  const pct = total > 0 ? Math.round((readCount / total) * 100) : 0
+  const done = readCount === total && total > 0
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+      <div style={{ height: '4px', borderRadius: '999px', background: 'var(--surface-2)', overflow: 'hidden' }}>
+        <div style={{
+          width: pct + '%', height: '100%', borderRadius: '999px',
+          background: done ? 'var(--success)' : accentHex, transition: 'width 220ms ease',
+        }} />
+      </div>
+      <div style={{ fontSize: '11.5px', fontWeight: 700, color: done ? 'var(--success)' : 'var(--text-muted)' }}>
+        {readCount === 0
+          ? 'Not started'
+          : done ? 'Series complete' : readCount + ' of ' + total + ' read'}
+      </div>
+    </div>
+  )
+}
+
+// The series page: every chapter of one arc, in reading order.
+function SeriesPage({ arc, readIds, accentHex, fontFamily, levelLabelFor, isMobile, onOpen, onBack }) {
   const readCount = arc.parts.filter(p => readIds.has(p.id)).length
   return (
-    <section>
-      {showHeader && (
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '9px', margin: '0 0 12px', flexWrap: 'wrap' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text)', margin: 0, fontFamily }}>{arc.title}</h3>
-          <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
-            {arc.parts.length} part{arc.parts.length === 1 ? '' : 's'}
-            {readCount > 0 ? ' · ' + readCount + ' of ' + arc.parts.length + ' read' : ''}
-          </span>
+    <div>
+      <button onClick={onBack} style={{
+        display: 'inline-flex', alignItems: 'center', gap: '8px',
+        minHeight: '40px', padding: '0 14px', borderRadius: '12px', marginBottom: '18px',
+        border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)',
+        fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+      }}>
+        <ArrowLeft size={17} strokeWidth={1.85} color="var(--text-muted)" /> All stories
+      </button>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h1 style={{
+          margin: '0 0 10px', fontSize: isMobile ? '22px' : '26px', fontWeight: 800,
+          color: 'var(--text)', fontFamily, lineHeight: 1.2,
+        }}>
+          {arc.title}
+        </h1>
+        <div style={{ maxWidth: '280px' }}>
+          <SeriesProgress readCount={readCount} total={arc.parts.length} accentHex={accentHex} />
         </div>
-      )}
+      </div>
+
       <CardGrid isMobile={isMobile}>
         {arc.parts.map(story => (
           <StoryCard key={story.id} story={story} read={readIds.has(story.id)} accentHex={accentHex}
             fontFamily={fontFamily} levelLabel={levelLabelFor(story)} onClick={() => onOpen(story)} />
         ))}
       </CardGrid>
-    </section>
+    </div>
   )
 }
 
@@ -339,6 +458,11 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
   const [formatFilter, setFormatFilter] = useState('all')
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [selectedStory, setSelectedStory] = useState(null)
+  // The open series, and whether the reader was entered from inside one — so
+  // Back out of a chapter returns to its series rather than dumping you on the
+  // shelf with the series closed again.
+  const [selectedArc, setSelectedArc] = useState(null)
+  const [readerFromSeries, setReaderFromSeries] = useState(false)
   const [stories, setStories] = useState([])
   // Story ids the user has finished (story_reads) — drives read checkmarks,
   // per-tier progress, and the once-only finish XP.
@@ -516,7 +640,7 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
         session={session}
         profile={profile}
         track={track}
-        onBack={() => setView('browse')}
+        onBack={() => setView(readerFromSeries && selectedArc ? 'series' : 'browse')}
         onHome={onBack}
         onPractice={onNavigate ? (words) => onNavigate('fillblank', { practiceWords: words }) : null}
         todayWords={todayWords}
@@ -534,9 +658,10 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
 
   // Open a story straight into the reader, carrying its shelf (tier + level) so
   // next-story and the tier-unlock nudge keep working.
-  const openStory = (story) => {
+  const openStory = (story, fromSeries = false) => {
     setSelectedCategory(categoryForStory(story, track))
     setSelectedStory(story)
+    setReaderFromSeries(fromSeries)
     setView('reader')
   }
 
@@ -585,6 +710,28 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
   const activeShelves = shelvesForTier(currentTier)
   const activeInfo = tierInfo(currentTier)
   const multiLevel = activeShelves.filter(sh => sh.stories.length > 0).length > 1
+
+  // ── Series view: one arc's chapters ────────────────────────────────────
+  if (view === 'series' && selectedArc) {
+    return (
+      <div style={pageShell()}>
+        <div style={{ maxWidth: isMobile ? '860px' : '1040px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px', position: 'relative', zIndex: 1 }}>
+          <SeriesPage
+            arc={selectedArc}
+            readIds={readIds}
+            accentHex={accentHex}
+            fontFamily={fontFamily}
+            levelLabelFor={levelLabelFor}
+            isMobile={isMobile}
+            onOpen={(story) => openStory(story, true)}
+            onBack={() => { setView('browse'); setSelectedArc(null) }}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  const openSeries = (arc) => { setSelectedArc(arc); setView('series') }
 
   return (
     <div style={pageShell()}>
@@ -671,9 +818,15 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
             const practice = filtered.filter(s => isPracticeFormat(s))
             if (narrative.length === 0 && practice.length === 0) return
             const arcs = groupIntoArcs(narrative)
-            // An arc header earns its space when there's more than one arc, or the
-            // arc is chapter-numbered; a lone unnumbered pile just gets the grid.
-            const showArcHeaders = arcs.length > 1 || arcs.some(a => a.numbered)
+            // A series earns a cover only when it is genuinely a multi-chapter
+            // run. An unnumbered pile is not a series — collapsing it behind a
+            // cover would bury every story under a click for nothing.
+            const seriesArcs = arcs.filter(a => a.numbered && a.parts.length > 1)
+            const looseStories = arcs
+              .filter(a => !(a.numbered && a.parts.length > 1))
+              .flatMap(a => a.parts)
+            // Headings only pay for themselves when both kinds are on screen.
+            const showKindHeaders = seriesArcs.length > 0 && looseStories.length > 0
             blocks.push(
               <section key={sh.level}>
                 {multiLevel && (
@@ -687,13 +840,30 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
                   </div>
                 )}
                 <div style={{ display: 'grid', gap: '28px' }}>
-                  {arcs.map(arc => (
-                    <ArcSection
-                      key={arc.key} arc={arc} readIds={readIds} accentHex={accentHex}
-                      fontFamily={fontFamily} levelLabelFor={levelLabelFor} isMobile={isMobile}
-                      showHeader={showArcHeaders} onOpen={openStory}
-                    />
-                  ))}
+                  {seriesArcs.length > 0 && (
+                    <section>
+                      {showKindHeaders && <SectionHeading title="Series" note={seriesArcs.length + ' to follow'} />}
+                      <CardGrid isMobile={isMobile}>
+                        {seriesArcs.map(arc => (
+                          <SeriesCard
+                            key={arc.key} arc={arc} readIds={readIds} accentHex={accentHex}
+                            fontFamily={fontFamily} isMobile={isMobile} onOpen={() => openSeries(arc)}
+                          />
+                        ))}
+                      </CardGrid>
+                    </section>
+                  )}
+                  {looseStories.length > 0 && (
+                    <section>
+                      {showKindHeaders && <SectionHeading title="Single stories" note={looseStories.length + ' to read'} />}
+                      <CardGrid isMobile={isMobile}>
+                        {looseStories.map(story => (
+                          <StoryCard key={story.id} story={story} read={readIds.has(story.id)} accentHex={accentHex}
+                            fontFamily={fontFamily} levelLabel={levelLabelFor(story)} onClick={() => openStory(story)} />
+                        ))}
+                      </CardGrid>
+                    </section>
+                  )}
                   <PracticeSection
                     stories={practice} readIds={readIds} accentHex={accentHex}
                     fontFamily={fontFamily} levelLabelFor={levelLabelFor} isMobile={isMobile} onOpen={openStory}
