@@ -543,12 +543,12 @@ export default function App() {
       />
     )
   } else if (view === 'hq') {
-    content = (
-      <DojoHQ
-        session={session}
-        profile={profile}
-      />
-    )
+    // Dojo HQ is internal tooling, not a learner surface. Gated the same way
+    // as the admin dashboard: a non-admin who types /hq gets a 404, because
+    // hiding a menu entry is not access control.
+    content = profile.is_admin
+      ? <DojoHQ session={session} profile={profile} />
+      : <NotFound onHome={() => navigate('home')} />
   } else if (view === 'dev') {
     // Developer tools — email-gated inside the component; every action is
     // RLS-scoped to the signed-in account. Not linked from the main nav.
