@@ -31,3 +31,15 @@ export function rhythmSummary(rhythm) {
   const arr = rhythm || []
   return { studiedDays: arr.filter(x => x.studied).length, days: arr.length }
 }
+
+// Single-letter weekday for a YYYY-MM-DD key, for labelling the rhythm strip.
+//
+// Anchored at NOON deliberately. `new Date('2026-07-25')` is parsed as UTC
+// midnight, which renders as the previous day for anyone west of UTC — the
+// strip would be labelled a day off for every learner in the Americas. Noon
+// local is far from either boundary. (Profile.jsx uses the same trick.)
+export function weekdayInitial(dateKey) {
+  const d = new Date(String(dateKey) + 'T12:00:00')
+  if (Number.isNaN(d.getTime())) return ''
+  return ['S', 'M', 'T', 'W', 'T', 'F', 'S'][d.getDay()]
+}

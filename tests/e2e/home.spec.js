@@ -28,6 +28,11 @@ test.describe('Home (logged in)', () => {
     await expect(home.storyHandoff).toBeVisible();
   });
 
+  test('shows the week rhythm and what is coming', async ({ page }) => {
+    await expect(page.getByText('Your week')).toBeVisible();
+    await expect(page.getByText(/No sessions yet|Studied \d+ of the last \d+ days/)).toBeVisible();
+  });
+
   test('does not show a streak badge or "keep it" guilt copy', async ({ page }) => {
     await expect(page.getByText(/day streak/i)).toHaveCount(0);
     await expect(page.getByText(/study today to keep it/i)).toHaveCount(0);

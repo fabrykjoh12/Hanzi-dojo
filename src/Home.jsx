@@ -6,6 +6,8 @@ import { useIsMobile } from './useIsMobile'
 import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
 import { getDailyStoryCard, firstContentChar } from './homeStory'
 import { HeroPanel, HeroAction, Panel, Eyebrow } from './panels'
+import { rhythmSummary, weekdayInitial } from './studyRhythm'
+import { forecastSummary } from './reviewForecast'
 import { MICRO, NUM } from './designTokens'
 
 // ── Home ──────────────────────────────────────────────────────────────────
@@ -44,6 +46,12 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
   // Daily new-card goal, shown inside the queue block it belongs to.
   const goal = profile.daily_new_cards || 0
   const doneToday = counts.newDoneToday || 0
+
+  // The week behind (which days had a session) and the load ahead. Both were
+  // already computed by homeCounts; they were simply not being rendered.
+  const rhythm = counts.rhythm7 || []
+  const { studiedDays, days: rhythmDays } = rhythmSummary(rhythm)
+  const { total: forecastTotal, perDay } = forecastSummary(counts.forecast7 || [])
 
   const gentleReady = Math.min(counts.dueCount || 0, GENTLE_REVIEW_CAP)
   const gentleActive = isReturningFromBreak(profile) && (counts.dueCount || 0) > GENTLE_REVIEW_CAP
@@ -149,6 +157,69 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
           </div>
         </Panel>
       )}
+
+      {/* ── Your week: the rhythm behind you and the load ahead. This is the
+          return hook — "25 waiting tomorrow" is a reason to come back that
+          doesn't depend on guilt. Observational copy only: the app's stated
+          stance is no streak pressure, so there is no counter to protect and
+          nothing to "keep". ── */}
+      <Panel
+        padding={isMobile ? '16px 16px 14px' : '18px 20px 16px'}
+        style={{ marginBottom: '14px', animationDelay: '140ms' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '14px' }}>
+          <Eyebrow>Your week</Eyebrow>
+          <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
+            {studiedDays === 0
+              ? 'No sessions yet'
+              : 'Studied ' + studiedDays + ' of the last ' + rhythmDays + ' days'}
+          </span>
+        </div>
+
+        <div
+          role="img"
+          aria-label={'Studied ' + studiedDays + ' of the last ' + rhythmDays + ' days'}
+          style={{ display: 'flex', gap: '6px' }}
+        >
+          {rhythm.map(day => (
+            <div key={day.date} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+              <span style={{
+                width: '100%', height: '30px', borderRadius: '8px',
+                background: day.studied
+                  ? accentInk
+                  : `color-mix(in srgb, ${accentHex} 8%, var(--surface-2))`,
+                // Today is outlined rather than filled until it's earned — the
+                // ring is an invitation, the fill is the record.
+                boxShadow: day.isToday && !day.studied
+                  ? 'inset 0 0 0 2px ' + `color-mix(in srgb, ${accentHex} 45%, transparent)`
+                  : 'none',
+              }} />
+              <span style={{
+                ...MICRO, fontSize: '9.5px',
+                color: day.isToday ? 'var(--text)' : 'var(--text-faint)',
+              }}>
+                {weekdayInitial(day.date)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {forecastTotal > 0 && (
+          <div style={{
+            marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap',
+          }}>
+            <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
+              {counts.dueTomorrow > 0
+                ? 'About ' + counts.dueTomorrow + ' waiting tomorrow'
+                : 'Nothing due tomorrow — a free day'}
+            </span>
+            <span style={{ ...NUM, fontSize: '12px', color: 'var(--text-faint)' }}>
+              ~{perDay}/day this week
+            </span>
+          </div>
+        )}
+      </Panel>
 
       {/* ── Progress toward the next level ── */}
       <Panel
