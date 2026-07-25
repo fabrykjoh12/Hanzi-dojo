@@ -9,15 +9,17 @@ import { HeroPanel, HeroAction, Panel, Eyebrow } from './panels'
 import { MICRO, NUM } from './designTokens'
 
 // ── Home ──────────────────────────────────────────────────────────────────
-// Leads with the STORY you have unlocked, not the card queue. That ordering is
-// the product's own thesis — "every word you learn becomes part of a story you
-// can read" — so the queue is the means and the story is the point.
+// The one lit block is TODAY'S FLASHCARDS, end to end: how many cards are
+// waiting, the New/Learning/Due breakdown, the daily goal, and the button that
+// starts the session. Everything about the queue lives in the block that is
+// about the queue.
+//
+// The story you have unlocked is a quiet flat hand-off underneath — the next
+// step in the daily loop (cards, then read), deliberately not styled as a
+// button so it cannot compete with the hero. Home surfaces ONE action: it is a
+// coach, not a menu. The story itself gets the hero treatment on Stories.
 //
 // One lit panel, everything else flat. See designTokens.js for the rules.
-//
-// The single primary button adapts: it clears the queue first when cards are
-// due and opens the story when they are not. Home surfaces ONE next action —
-// a coach, not a menu.
 
 const WEEKDAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 

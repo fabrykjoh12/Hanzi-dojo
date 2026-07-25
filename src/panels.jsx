@@ -8,13 +8,14 @@ import { heroGround, heroShadow, flatPanel, ON_HERO, MICRO } from './designToken
 // around it. That contrast is the whole design language; adding atmosphere to
 // the supporting panels is what would flatten it back out.
 
-// The lit block. Optional watermark character, contained ink-wash, and an
-// accent-tinted shadow. Tappable when `onClick` is given.
 // How many HeroPanels are currently mounted. A counter rather than a boolean
 // because two screens can overlap for a frame during a route change, and the
 // outgoing one must not clear the flag the incoming one just set.
 let litCount = 0
 
+// The lit block. Optional watermark character, contained ink-wash, and an
+// accent-tinted shadow. Tappable when `onClick` is given; children may be a
+// function receiving { hovered } so a CTA inside shares the panel's hover.
 export function HeroPanel({
   accentHex, seed = 'a', watermark, watermarkFont,
   onClick, children, padding, compact = false, style = {},
