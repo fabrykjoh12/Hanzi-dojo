@@ -115,7 +115,9 @@ test.describe('Dictionary', () => {
     await expect(page.getByRole('button', { name: 'Full dictionary' })).toHaveAttribute('aria-pressed', 'true');
 
     await page.getByLabel('Search the dictionary').fill('zhong');
-    const row = page.getByRole('button').filter({ hasText: '中文' }).first();
+    // Scoped to <main>: the sidebar's language card is also a button carrying
+    // the native script, so an unscoped hasText match would find it first.
+    const row = page.getByRole('main').getByRole('button').filter({ hasText: '中文' }).first();
     await expect(row).toBeVisible();
 
     await row.click();
@@ -125,7 +127,7 @@ test.describe('Dictionary', () => {
   test('adds a reference word to the deck from the entry', async ({ page }) => {
     await page.goto('/dictionary')
     await page.getByLabel('Search the dictionary').fill('zhong')
-    await page.getByRole('button').filter({ hasText: '中文' }).first().click()
+    await page.getByRole('main').getByRole('button').filter({ hasText: '中文' }).first().click()
     const add = page.getByRole('button', { name: 'Add to deck' })
     await expect(add).toBeVisible()
     await add.click()

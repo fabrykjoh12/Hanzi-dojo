@@ -1,5 +1,5 @@
 import {
-  Home, Layers, BookOpen, Dumbbell, GraduationCap,
+  Home, Layers, BookOpen, Target, ClipboardCheck,
   User, Settings, Globe, LogOut, BarChart3, PanelsTopLeft,
 } from 'lucide-react'
 
@@ -12,28 +12,38 @@ export const PRIMARY_NAV = [
   { key: 'home', label: 'Home', icon: Home },
   { key: 'study', label: 'Flashcards', icon: Layers },
   { key: 'stories', label: 'Stories', icon: BookOpen },
-  { key: 'practice', label: 'Practice', icon: Dumbbell },
-  { key: 'test', label: 'Test', icon: GraduationCap },
+  { key: 'practice', label: 'Practice', icon: Target },
+  { key: 'test', label: 'Test', icon: ClipboardCheck },
 ]
 
-// Desktop sidebar — bottom section (account).
-export const BOTTOM_NAV = [
-  { key: 'profile', label: 'Profile', icon: User },
-  { key: 'settings', label: 'Settings', icon: Settings },
-  { key: 'languages', label: 'Language', icon: Globe },
-  { key: 'logout', label: 'Log out', icon: LogOut },
+// The sidebar breaks PRIMARY_NAV into two clusters separated by a gap: the
+// first three are the daily loop (cards, then reading), the last two are what
+// you reach for deliberately.
+//
+// These carried printed headings ("DAILY LOOP" / "TRAIN") for one iteration.
+// Five links do not need a taxonomy — the labels were inventing structure to
+// look organised, which is the exact thing that makes an interface feel
+// generated. The gap alone says it, so the ids stay and the words go.
+export const NAV_GROUPS = [
+  { keys: ['home', 'study', 'stories'] },
+  { keys: ['practice', 'test'] },
 ]
+
+// The desktop sidebar used to render a matching BOTTOM_NAV here — Profile,
+// Settings, Language, Log out as four more full-width rows. Its footer now
+// builds those itself (an avatar row plus three icon buttons) and the language
+// gets its own identity card, so the array had no remaining reader.
 
 // Mobile bottom bar — 4 tabs + a "More" sheet.
 export const MOBILE_PRIMARY = [
   { key: 'home', label: 'Home', icon: Home },
   { key: 'study', label: 'Cards', icon: Layers },
   { key: 'stories', label: 'Stories', icon: BookOpen },
-  { key: 'practice', label: 'Practice', icon: Dumbbell },
+  { key: 'practice', label: 'Practice', icon: Target },
 ]
 
 export const MOBILE_MORE = [
-  { key: 'test', label: 'Test', icon: GraduationCap },
+  { key: 'test', label: 'Test', icon: ClipboardCheck },
   { key: 'profile', label: 'Profile', icon: User },
   { key: 'languages', label: 'Language', icon: Globe },
   { key: 'settings', label: 'Settings', icon: Settings },
