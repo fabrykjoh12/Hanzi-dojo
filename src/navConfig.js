@@ -1,5 +1,5 @@
 import {
-  Home, Layers, BookOpen, Swords, ScrollText,
+  Home, Layers, BookOpen, Target, ClipboardCheck,
   User, Settings, Globe, LogOut, BarChart3, PanelsTopLeft,
 } from 'lucide-react'
 
@@ -12,17 +12,21 @@ export const PRIMARY_NAV = [
   { key: 'home', label: 'Home', icon: Home },
   { key: 'study', label: 'Flashcards', icon: Layers },
   { key: 'stories', label: 'Stories', icon: BookOpen },
-  { key: 'practice', label: 'Practice', icon: Swords },
-  { key: 'test', label: 'Test', icon: ScrollText },
+  { key: 'practice', label: 'Practice', icon: Target },
+  { key: 'test', label: 'Test', icon: ClipboardCheck },
 ]
 
-// The sidebar renders PRIMARY_NAV in two labelled groups instead of one
-// undifferentiated list of five. The split says something true: the first three
-// ARE the daily loop the product is built around (cards, then reading), while
-// Practice and Test are the things you reach for deliberately.
+// The sidebar breaks PRIMARY_NAV into two clusters separated by a gap: the
+// first three are the daily loop (cards, then reading), the last two are what
+// you reach for deliberately.
+//
+// These carried printed headings ("DAILY LOOP" / "TRAIN") for one iteration.
+// Five links do not need a taxonomy — the labels were inventing structure to
+// look organised, which is the exact thing that makes an interface feel
+// generated. The gap alone says it, so the ids stay and the words go.
 export const NAV_GROUPS = [
-  { label: 'Daily loop', keys: ['home', 'study', 'stories'] },
-  { label: 'Train', keys: ['practice', 'test'] },
+  { keys: ['home', 'study', 'stories'] },
+  { keys: ['practice', 'test'] },
 ]
 
 // The desktop sidebar used to render a matching BOTTOM_NAV here — Profile,
@@ -35,11 +39,11 @@ export const MOBILE_PRIMARY = [
   { key: 'home', label: 'Home', icon: Home },
   { key: 'study', label: 'Cards', icon: Layers },
   { key: 'stories', label: 'Stories', icon: BookOpen },
-  { key: 'practice', label: 'Practice', icon: Swords },
+  { key: 'practice', label: 'Practice', icon: Target },
 ]
 
 export const MOBILE_MORE = [
-  { key: 'test', label: 'Test', icon: ScrollText },
+  { key: 'test', label: 'Test', icon: ClipboardCheck },
   { key: 'profile', label: 'Profile', icon: User },
   { key: 'languages', label: 'Language', icon: Globe },
   { key: 'settings', label: 'Settings', icon: Settings },

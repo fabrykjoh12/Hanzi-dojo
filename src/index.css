@@ -63,6 +63,12 @@ body {
   --ink-lift: #FFFFFF;
   --ink-lift-pct: 0%;
 
+  /* Watermark strength for the sidebar's language character. The accents are
+     saturated reds/blues tuned for white paper, so the same alpha that reads as
+     a whisper on a dark rail reads as a pink stain on a light one. Two values,
+     one expression. */
+  --watermark-pct: 4.5%;
+
   /* Answer-feedback tokens (quizzes, typing, fill-in-the-blank). Kept as
      semantic vars so the correct/wrong panels adapt to dark mode instead of
      glowing as near-white blocks. */
@@ -233,6 +239,7 @@ body {
   --hairline: rgba(255, 255, 255, 0.045);
   --ink-lift: #FFFFFF;
   --ink-lift-pct: 30%;
+  --watermark-pct: 8%;
   /* The language background image is bright; keep it barely-there on dark so it
      blends instead of glowing. */
   --bg-image-opacity: 0.06;

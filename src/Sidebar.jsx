@@ -1,50 +1,52 @@
 import { useState } from 'react'
-import { ChevronsLeft, ChevronsRight, Sun, Moon, Settings, LogOut, ChevronRight } from 'lucide-react'
+import { ChevronsLeft, ChevronsRight, Sun, Moon, Settings, LogOut } from 'lucide-react'
 import logo from './assets/Hanzi-logo.png'
 import { useTheme } from './ThemeContext'
 import { languageTheme, ink } from './languageTheme'
 import { getLevelLabel } from './utils'
 import { PRIMARY_NAV, NAV_GROUPS, ADMIN_NAV } from './navConfig'
 import { BRAND_NAME, wordmarkStyle } from './brand'
-import { MICRO } from './designTokens'
 
 // ── Sidebar ───────────────────────────────────────────────────────────────
-// Reworked from a flat list of nine equal rows with a 300px void in the middle.
-// Now three bands:
+// Top to bottom: brand, the seal (what you're studying), nav, then the person.
 //
-//   1. NAV, in two labelled groups. The split is information, not decoration:
-//      Home/Flashcards/Stories are the daily loop the product is built around;
-//      Practice/Test are what you reach for deliberately. Flashcards carries the
-//      only number in the rail — the same count the Home hero shows.
-//   2. The LANGUAGE you are studying, as an identity card in what used to be
-//      dead space — native script, level, and a tap to switch. It replaces the
-//      old "Language" row and gives the empty middle a job.
-//   3. An ACCOUNT footer: one row for the person (avatar + name → Profile) and
-//      a strip of icon buttons for theme, settings and log out. Four equal-
-//      weight rows became one row plus three small controls.
+// Three things this deliberately does NOT do, each of them a habit that makes a
+// rail look assembled rather than designed:
 //
-// Collapsed (64px) the groups drop their labels and the identity card becomes
-// just the native character, so the rail stays legible.
+//   · No printed group headings. Five links don't need a taxonomy; the gap
+//     between the daily loop and Practice/Test carries the same information
+//     without inventing two category names to look organised.
+//   · One active treatment, not two. The row that's active gets a solid bar on
+//     the rail's own edge and accent-coloured type — no pill fill underneath it
+//     as well. Doubling the signal reads as indecision.
+//   · The empty middle is not filled with widgets. It carries the language's
+//     character at watermark strength, the same motif the hero panels use, so
+//     the space is quiet on purpose instead of merely unused.
+//
+// Collapsed (64px) the seal keeps only its character and the watermark drops —
+// there is no room for it to be atmosphere rather than clutter.
 
 const EXPANDED_WIDTH = 236
 const COLLAPSED_WIDTH = 64
 
-// Rows are a fixed height so the sliding ink bar positions from an index —
-// no measurement, no layout effect, no jump on first paint.
-const ROW_HEIGHT = 40
-const ROW_GAP = 4
+// Rows are a fixed height so the sliding bar positions from an index — no
+// measurement, no layout effect, no jump on first paint.
+const ROW_HEIGHT = 44
+const ROW_GAP = 5
 const ROW_PITCH = ROW_HEIGHT + ROW_GAP
 
-function InkBar({ index, accentInk, collapsed }) {
+// The active marker, flush against the rail's outer edge so it reads as part of
+// the sidebar's spine rather than a chip floating near it.
+function EdgeBar({ index, accentInk }) {
   const visible = index >= 0
   return (
     <span
       aria-hidden
       style={{
-        position: 'absolute', left: collapsed ? '2px' : '-6px', width: '3px',
-        top: 0, height: `${ROW_HEIGHT - 14}px`, borderRadius: '0 3px 3px 0',
+        position: 'absolute', left: '-14px', width: '2.5px',
+        top: 0, height: `${ROW_HEIGHT - 16}px`, borderRadius: '0 2px 2px 0',
         background: accentInk,
-        transform: `translateY(${(visible ? index : 0) * ROW_PITCH + 7}px)`,
+        transform: `translateY(${(visible ? index : 0) * ROW_PITCH + 8}px)`,
         opacity: visible ? 1 : 0,
         transition: 'transform 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease',
         pointerEvents: 'none',
@@ -53,7 +55,7 @@ function InkBar({ index, accentInk, collapsed }) {
   )
 }
 
-function NavItem({ item, isActive, collapsed, accentHex, accentInk, badge, onClick }) {
+function NavItem({ item, isActive, collapsed, accentInk, badge, onClick }) {
   const [hovered, setHovered] = useState(false)
   const Icon = item.icon
   const color = isActive ? accentInk : (hovered ? 'var(--text)' : 'var(--text-muted)')
@@ -70,21 +72,22 @@ function NavItem({ item, isActive, collapsed, accentHex, accentInk, badge, onCli
         display: 'flex', alignItems: 'center', gap: '12px',
         width: '100%', height: `${ROW_HEIGHT}px`, border: 'none', textAlign: 'left',
         fontFamily: 'Inter, sans-serif',
-        padding: collapsed ? '0' : '0 12px',
+        padding: collapsed ? '0' : '0 10px',
         justifyContent: collapsed ? 'center' : 'flex-start',
-        borderRadius: '11px', cursor: 'pointer',
-        background: isActive
-          ? `color-mix(in srgb, ${accentHex} 11%, var(--surface))`
-          : (hovered ? 'var(--surface-2)' : 'transparent'),
+        borderRadius: '10px', cursor: 'pointer',
+        // Hover is the only fill. Active is carried by the edge bar and the
+        // colour of the type, so the two states never stack.
+        background: hovered && !isActive ? 'var(--surface-2)' : 'transparent',
         color,
         fontWeight: isActive ? 650 : 500,
         fontSize: '14px', userSelect: 'none',
+        transition: 'color 160ms ease, background 160ms ease',
       }}
     >
       <span style={{ position: 'relative', display: 'flex', flexShrink: 0 }}>
-        <Icon size={19} strokeWidth={isActive ? 2.1 : 1.85} color={color} />
-        {/* Collapsed, the count has nowhere to sit, so it becomes a dot on the
-            icon — still says "there is something here", takes no width. */}
+        <Icon size={18.5} strokeWidth={isActive ? 2.15 : 1.8} color={color} />
+        {/* Collapsed, the count has nowhere to sit, so it becomes a dot — still
+            says "there is something here", takes no width. */}
         {badge && collapsed && (
           <span aria-hidden style={{
             position: 'absolute', top: '-3px', right: '-4px',
@@ -94,14 +97,14 @@ function NavItem({ item, isActive, collapsed, accentHex, accentInk, badge, onCli
         )}
       </span>
       {!collapsed && <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>}
+      {/* Plain accent digits, not a filled badge pill. The rail already has one
+          coloured object (the seal); a second competes with it. */}
       {!collapsed && badge && (
         <span style={{
           marginLeft: 'auto', flexShrink: 0,
           fontVariantNumeric: 'tabular-nums',
-          fontSize: '11.5px', fontWeight: 700, lineHeight: 1,
-          padding: '4px 7px', borderRadius: '7px',
-          background: `color-mix(in srgb, ${accentHex} ${isActive ? 20 : 13}%, var(--surface))`,
-          color: accentInk,
+          fontSize: '12px', fontWeight: 700,
+          color: isActive ? accentInk : 'var(--text-faint)',
         }}>
           {badge}
         </span>
@@ -134,8 +137,8 @@ function Tip({ children }) {
 function IconControl({ icon: Icon, label, danger, onClick }) {
   const [hovered, setHovered] = useState(false)
   const color = danger
-    ? (hovered ? '#DC2626' : 'var(--text-muted)')
-    : (hovered ? 'var(--text)' : 'var(--text-muted)')
+    ? (hovered ? '#DC2626' : 'var(--text-faint)')
+    : (hovered ? 'var(--text)' : 'var(--text-faint)')
   return (
     <button
       onClick={onClick}
@@ -146,16 +149,17 @@ function IconControl({ icon: Icon, label, danger, onClick }) {
       className="hd-press"
       style={{
         position: 'relative',
-        width: '34px', height: '34px', flexShrink: 0,
+        width: '32px', height: '32px', flexShrink: 0,
         display: 'grid', placeItems: 'center',
-        border: 'none', borderRadius: '9px', cursor: 'pointer',
+        border: 'none', borderRadius: '8px', cursor: 'pointer',
         background: hovered
           ? (danger ? 'color-mix(in srgb, #DC2626 10%, var(--surface))' : 'var(--surface-2)')
           : 'transparent',
         color,
+        transition: 'color 160ms ease, background 160ms ease',
       }}
     >
-      <Icon size={17} strokeWidth={1.9} color={color} />
+      <Icon size={16} strokeWidth={1.85} color={color} />
     </button>
   )
 }
@@ -163,7 +167,7 @@ function IconControl({ icon: Icon, label, danger, onClick }) {
 export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language, profile, track, email, counts }) {
   const [collapsed, setCollapsed] = useState(false)
   const [logoHovered, setLogoHovered] = useState(false)
-  const [langHovered, setLangHovered] = useState(false)
+  const [sealHovered, setSealHovered] = useState(false)
   const [accountHovered, setAccountHovered] = useState(false)
   const { theme, toggleTheme } = useTheme()
 
@@ -172,7 +176,13 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
   const accentInk = ink(accentHex)
 
   const byKey = Object.fromEntries(PRIMARY_NAV.map(i => [i.key, i]))
-  const groups = NAV_GROUPS.map(g => ({ ...g, items: g.keys.map(k => byKey[k]).filter(Boolean) }))
+  const groups = NAV_GROUPS.map(g => g.keys.map(k => byKey[k]).filter(Boolean))
+
+  // Same identity the Profile screen shows, so the footer and that page agree.
+  const name = profile?.display_name || email || 'Your account'
+  const initial = name.trim().charAt(0).toUpperCase() || '?'
+  // The level lives on the active track, not the profile.
+  const levelLabel = track ? getLevelLabel(language, track.system, track.current_level) : null
 
   // The one live number in the rail. Same total the Home hero shows, so the two
   // never disagree; hidden at zero, because "0" is a nag and the product's
@@ -180,11 +190,7 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
   const waiting = (counts?.newCount || 0) + (counts?.learnCount || 0) + (counts?.dueCount || 0)
   const badgeFor = (key) => (key === 'study' && waiting > 0 ? waiting : null)
 
-  // Same identity the Profile screen shows, so the footer and that page agree.
-  const name = profile?.display_name || email || 'Your account'
-  const initial = name.trim().charAt(0).toUpperCase() || '?'
-  // The level lives on the active track, not the profile.
-  const levelLabel = track ? getLevelLabel(language, track.system, track.current_level) : null
+  const hairline = { height: '1px', background: 'var(--border)', opacity: 0.7 }
 
   return (
     <div style={{
@@ -194,7 +200,7 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
       background: 'var(--surface-glass)', borderRight: '1px solid var(--border)',
       backdropFilter: 'blur(10px)',
       display: 'flex', flexDirection: 'column',
-      padding: '20px 14px 16px',
+      padding: '20px 14px 14px',
       overflow: 'hidden',
       transition: 'width 240ms cubic-bezier(0.22, 1, 0.36, 1)',
     }}>
@@ -203,7 +209,7 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
       <div style={{
         display: 'flex', alignItems: 'center',
         justifyContent: collapsed ? 'center' : 'space-between',
-        gap: '8px', padding: collapsed ? '2px 0 18px' : '2px 4px 18px',
+        gap: '8px', padding: collapsed ? '2px 0 14px' : '2px 2px 16px',
       }}>
         <div
           onMouseEnter={() => setLogoHovered(true)}
@@ -214,7 +220,7 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
             src={logo}
             alt={BRAND_NAME + ' logo'}
             style={{
-              width: collapsed ? '52px' : '40px', height: collapsed ? '52px' : '40px',
+              width: collapsed ? '46px' : '38px', height: collapsed ? '46px' : '38px',
               objectFit: 'contain', flexShrink: 0,
               transform: logoHovered ? 'rotate(-7deg) scale(1.05)' : 'none',
               transition: 'transform 400ms cubic-bezier(0.22, 1, 0.36, 1), width 240ms ease, height 240ms ease',
@@ -229,7 +235,7 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
             className="hd-press"
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', borderRadius: '8px', display: 'flex', flexShrink: 0 }}
           >
-            <ChevronsLeft size={18} strokeWidth={1.85} color="var(--text-muted)" />
+            <ChevronsLeft size={17} strokeWidth={1.8} color="var(--text-faint)" />
           </button>
         )}
       </div>
@@ -239,111 +245,140 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
           onClick={() => setCollapsed(false)}
           aria-label="Expand sidebar"
           className="hd-press"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', borderRadius: '8px', display: 'flex', margin: '0 auto 14px' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', borderRadius: '8px', display: 'flex', margin: '0 auto 10px' }}
         >
-          <ChevronsRight size={18} strokeWidth={1.85} color="var(--text-muted)" />
+          <ChevronsRight size={17} strokeWidth={1.8} color="var(--text-faint)" />
         </button>
       )}
 
-      {/* ── Nav, in two labelled groups ── */}
-      {groups.map((group, gi) => {
-        const activeIndex = group.items.findIndex(i => i.key === view)
-        return (
-          <div key={group.label} style={{ marginBottom: gi === groups.length - 1 ? 0 : '18px' }}>
-            {!collapsed && (
-              <div style={{ ...MICRO, color: 'var(--text-faint)', padding: '0 12px', marginBottom: '8px' }}>
-                {group.label}
-              </div>
-            )}
-            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: `${ROW_GAP}px` }}>
-              <InkBar index={activeIndex} accentInk={accentInk} collapsed={collapsed} />
-              {group.items.map(item => (
-                <NavItem
-                  key={item.key}
-                  item={item}
-                  isActive={view === item.key}
-                  collapsed={collapsed}
-                  accentHex={accentHex}
-                  accentInk={accentInk}
-                  badge={badgeFor(item.key)}
-                  onClick={() => onNavigate(item.key)}
-                />
-              ))}
-            </div>
-          </div>
-        )
-      })}
-
-      {isAdmin && (
-        <div style={{ marginTop: '18px' }}>
-          {!collapsed && (
-            <div style={{ ...MICRO, color: 'var(--text-faint)', padding: '0 12px', marginBottom: '8px' }}>
-              Admin
-            </div>
-          )}
-          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: `${ROW_GAP}px` }}>
-            <InkBar index={ADMIN_NAV.findIndex(i => i.key === view)} accentInk={accentInk} collapsed={collapsed} />
-            {ADMIN_NAV.map(item => (
-              <NavItem
-                key={item.key}
-                item={item}
-                isActive={view === item.key}
-                collapsed={collapsed}
-                accentHex={accentHex}
-                accentInk={accentInk}
-                onClick={() => onNavigate(item.key)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div style={{ flex: 1, minHeight: '16px' }} />
-
-      {/* ── What you're studying. This used to be ~300px of nothing; it now
-          carries the language's own script and doubles as the switcher, which
-          also retires the old "Language" nav row. ── */}
+      {/* ── The seal: what you're studying, and the switcher. ──
+          A filled accent square with the script in white — the form a name
+          stamp takes in the writing traditions this app teaches. It sits at the
+          top because it is the context every row below it is scoped to, and it
+          is the rail's single saturated object, so it does the work an outlined
+          card was doing without adding another rounded box to a UI already made
+          of them. */}
       <button
         onClick={() => onNavigate('languages')}
-        onMouseEnter={() => setLangHovered(true)}
-        onMouseLeave={() => setLangHovered(false)}
-        aria-label={'Studying ' + lang.languageName + '. Switch language'}
+        onMouseEnter={() => setSealHovered(true)}
+        onMouseLeave={() => setSealHovered(false)}
+        aria-label={'Studying ' + lang.languageName + (levelLabel ? ', ' + levelLabel : '') + '. Switch language'}
         className="hd-press"
         style={{
           position: 'relative',
-          display: 'flex', alignItems: 'center', gap: '11px',
-          width: '100%', marginBottom: '10px', cursor: 'pointer',
-          padding: collapsed ? '8px 0' : '10px 12px',
+          display: 'flex', alignItems: 'center', gap: '10px',
+          width: '100%', cursor: 'pointer',
+          padding: collapsed ? '0' : '0 2px 0 0',
           justifyContent: collapsed ? 'center' : 'flex-start',
-          borderRadius: '13px', textAlign: 'left',
-          background: langHovered
-            ? `color-mix(in srgb, ${accentHex} 10%, var(--surface))`
-            : `color-mix(in srgb, ${accentHex} 6%, var(--surface))`,
-          border: '1px solid ' + `color-mix(in srgb, ${accentHex} 22%, var(--border))`,
+          background: 'none', border: 'none', textAlign: 'left',
           fontFamily: 'Inter, sans-serif',
         }}
       >
-        <span style={{
-          fontFamily: lang.font, fontSize: collapsed ? '19px' : '21px', fontWeight: 700,
-          color: accentInk, lineHeight: 1, flexShrink: 0,
+        <span aria-hidden style={{
+          width: '34px', height: '34px', flexShrink: 0,
+          display: 'grid', placeItems: 'center',
+          borderRadius: '9px',
+          background: accentHex,
+          color: '#fff',
+          fontFamily: lang.font,
+          fontSize: lang.nativeName.length > 2 ? '13px' : '16px',
+          fontWeight: 700, lineHeight: 1,
+          boxShadow: sealHovered
+            ? `0 6px 16px -6px color-mix(in srgb, ${accentHex} 75%, transparent)`
+            : `0 3px 10px -6px color-mix(in srgb, ${accentHex} 70%, transparent)`,
+          transition: 'box-shadow 200ms ease, transform 200ms cubic-bezier(0.22,1,0.36,1)',
+          transform: sealHovered ? 'translateY(-1px)' : 'none',
         }}>
-          {lang.nativeName.slice(0, collapsed ? 1 : 2)}
+          {lang.nativeName.slice(0, 2)}
         </span>
         {!collapsed && (
           <span style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ display: 'block', fontSize: '13px', fontWeight: 650, color: 'var(--text)' }}>
+            <span style={{
+              display: 'block', fontSize: '13.5px', fontWeight: 650,
+              color: sealHovered ? accentInk : 'var(--text)',
+              transition: 'color 160ms ease',
+            }}>
               {lang.languageName}
             </span>
             {levelLabel && (
-              <span style={{ display: 'block', fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '1px' }}>
+              <span style={{ display: 'block', fontSize: '11.5px', color: 'var(--text-faint)', marginTop: '1px' }}>
                 {levelLabel}
               </span>
             )}
           </span>
         )}
-        {!collapsed && <ChevronRight size={15} strokeWidth={2} color="var(--text-faint)" style={{ flexShrink: 0 }} />}
-        {collapsed && langHovered && <Tip>{lang.languageName} · switch</Tip>}
+        {collapsed && sealHovered && <Tip>{lang.languageName} · switch</Tip>}
       </button>
+
+      <div style={{ ...hairline, margin: collapsed ? '14px 0' : '16px 0' }} />
+
+      {/* ── Nav. Two clusters, no headings — the gap is the grouping. ── */}
+      {groups.map((items, gi) => {
+        const activeIndex = items.findIndex(i => i.key === view)
+        return (
+          <div
+            key={gi}
+            style={{
+              position: 'relative',
+              display: 'flex', flexDirection: 'column', gap: `${ROW_GAP}px`,
+              marginBottom: gi === groups.length - 1 ? 0 : '14px',
+            }}
+          >
+            <EdgeBar index={activeIndex} accentInk={accentInk} />
+            {items.map(item => (
+              <NavItem
+                key={item.key}
+                item={item}
+                isActive={view === item.key}
+                collapsed={collapsed}
+                accentInk={accentInk}
+                badge={badgeFor(item.key)}
+                onClick={() => onNavigate(item.key)}
+              />
+            ))}
+          </div>
+        )
+      })}
+
+      {isAdmin && (
+        <div style={{
+          position: 'relative', marginTop: '14px',
+          display: 'flex', flexDirection: 'column', gap: `${ROW_GAP}px`,
+        }}>
+          <EdgeBar index={ADMIN_NAV.findIndex(i => i.key === view)} accentInk={accentInk} />
+          {ADMIN_NAV.map(item => (
+            <NavItem
+              key={item.key}
+              item={item}
+              isActive={view === item.key}
+              collapsed={collapsed}
+              accentInk={accentInk}
+              onClick={() => onNavigate(item.key)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* ── The quiet middle. The same watermark motif the hero panels carry,
+          at a strength you notice only once — it makes the empty space read as
+          material rather than as a gap nobody got to. ── */}
+      <div style={{ flex: 1, minHeight: '20px', position: 'relative', overflow: 'hidden' }}>
+        {/* Bleeds off the rail's left edge only — a stamp pressed at the margin,
+            not a glyph parked in the middle of a gap. */}
+        {!collapsed && (
+          <span aria-hidden style={{
+            position: 'absolute', left: '-38px', top: '50%',
+            transform: 'translateY(-50%)',
+            fontFamily: lang.font, fontSize: '164px', lineHeight: 0.78, fontWeight: 700,
+            color: `color-mix(in srgb, ${accentHex} var(--watermark-pct), transparent)`,
+            pointerEvents: 'none', userSelect: 'none', whiteSpace: 'nowrap',
+          }}>
+            {lang.nativeName.slice(0, 1)}
+          </span>
+        )}
+      </div>
+
+      <div style={{ ...hairline, marginBottom: '10px' }} />
 
       {/* ── Account: one row for the person, three small controls. ── */}
       <button
@@ -356,26 +391,26 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
         style={{
           position: 'relative',
           display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
-          padding: collapsed ? '6px 0' : '8px 10px',
+          padding: collapsed ? '6px 0' : '7px 8px',
           justifyContent: collapsed ? 'center' : 'flex-start',
-          border: 'none', borderRadius: '11px', cursor: 'pointer', textAlign: 'left',
+          border: 'none', borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
           fontFamily: 'Inter, sans-serif',
-          background: view === 'profile'
-            ? `color-mix(in srgb, ${accentHex} 11%, var(--surface))`
-            : (accountHovered ? 'var(--surface-2)' : 'transparent'),
+          background: accountHovered || view === 'profile' ? 'var(--surface-2)' : 'transparent',
+          transition: 'background 160ms ease',
         }}
       >
         <span aria-hidden style={{
-          width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
+          width: '26px', height: '26px', borderRadius: '50%', flexShrink: 0,
           display: 'grid', placeItems: 'center',
-          background: `color-mix(in srgb, ${accentHex} 16%, var(--surface))`,
-          color: accentInk, fontSize: '12.5px', fontWeight: 800,
+          border: '1px solid var(--border)',
+          color: 'var(--text-muted)', fontSize: '11.5px', fontWeight: 700,
         }}>
           {initial}
         </span>
         {!collapsed && (
           <span style={{
-            flex: 1, minWidth: 0, fontSize: '13px', fontWeight: 600, color: 'var(--text)',
+            flex: 1, minWidth: 0, fontSize: '13px', fontWeight: 550,
+            color: view === 'profile' ? 'var(--text)' : 'var(--text-muted)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {name}
@@ -385,7 +420,7 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
       </button>
 
       <div style={{
-        display: 'flex', alignItems: 'center', gap: '2px', marginTop: '4px',
+        display: 'flex', alignItems: 'center', gap: '1px', marginTop: '2px',
         justifyContent: collapsed ? 'center' : 'flex-start',
         flexWrap: collapsed ? 'wrap' : 'nowrap',
       }}>
