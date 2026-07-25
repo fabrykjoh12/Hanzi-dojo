@@ -556,7 +556,7 @@ Hanzi-dojo is a free language learning web app built around the two methods that
 - **Mastery system:** Two tiers — "learned" (card has ever reached review/relearning state, `learned` column = true) and "mastered" (FSRS stability ≥ 21 days). Constants in src/mastery.js.
 - **Streak system:** Updates on first grade of the day. Gap of 1 day = streak increment. Gap > 1 day = consumes one freeze per missed day, else resets to 1. The displayed streak uses `liveStreak(profile)` (computed from days since last study + freezes) so a broken streak shows 0 immediately rather than the stale stored value, which only changes on the next study. Streak freezes given back on progress reset.
 - **InfoTip:** Reusable `?` tooltip component used next to "Mastery" labels in Home, Test locked screen, and Profile. Shows explanatory text in a floating panel on click, closes on outside click.
-- **Home screen:** Leads with the STORY you have unlocked, not the card queue — the product's own thesis. A single lit `HeroPanel` (deep language-accent ground, contained ink-wash, oversized first character of the sentence) carries the day's story, its title and how much of it you can read; beneath it sit flat `Panel`s with the queue as readouts and progress toward the next level. ONE call to action, which adapts — "Review N first" while cards are due, "Start reading" once clear. Data: `src/homeStory.js` (`heroSentence`/`firstContentChar` pure + tested) over the existing `pickDailyStory` and `calculateStoryReadability`. **The ensō ring was removed** (user preference) along with `EnsoRing.jsx`/`enso.js` and the `hd-enso-draw` keyframes.
+- **Home screen:** One lit `HeroPanel` about **today's flashcards** — cards waiting, the New/Learning/Due breakdown, the daily goal, and ONE action ("Start reviewing", or "Read a story" once the queue is clear). Beneath it a quiet flat "Then read" hand-off to the day's story (the next step in the loop, deliberately not a rival CTA) and progress toward the next level. The ensō ring was removed (user preference) along with `EnsoRing.jsx`/`enso.js`.
 
 ---
 
@@ -1177,7 +1177,7 @@ Semantic tokens in index.css drive light/dark via `:root` and `:root[data-theme=
 - Atmosphere is **contained** to the hero and stays **under ~12% opacity**; past that it competes with the text.
 - Atmosphere is **drawn, not photographic** — `src/inkWash.js` generates three seeded ridgelines in cream. A photo carries its own colours and fights the palette however far it is faded; ridges made from the accent cannot clash, cost no bytes, and stay crisp at any size. Seeded per language so a skyline is stable across renders.
 - While any `HeroPanel` is mounted it sets `data-lit-hero` on the document, which drops `--bg-image-opacity` to 0.04. The rule travels with the component — a screen adopting the hero gets the flattening automatically.
-- Screens using it: **Home**, **Practice**.
+- Screens using it: **Home** (the card queue), **Stories** (the day's story — it replaced the old tinted "Today's story" strip AND the plain page header), **Practice** (its title block).
 
 **Card interaction:** `translateY(-2px)`, stronger shadow, accent border on hover, ~180ms transition.
 

@@ -1,16 +1,17 @@
-// Page Object for the authenticated Home dashboard.
+// Page Object for the authenticated Home screen.
 //
-// Home leads with the story you have unlocked; the card queue is a readout
-// beneath it, and there is exactly one primary action.
+// Home's one lit block is the flashcard queue: how many cards are waiting, the
+// day's goal, and a single button that starts the session. The story you have
+// unlocked is a quiet hand-off beneath it — the next step in the loop, not a
+// rival call to action.
 export class HomePage {
   constructor(page) {
     this.page = page;
     this.today = page.getByText('Today', { exact: true });
-    // The hero's single call to action — "Review N first" while cards are due,
-    // "Start reading" once the queue is clear.
-    this.heroAction = page.getByText(/Review \d+ first|Start reading/);
-    this.dueReadout = page.getByText('words due for review');
-    this.newReadout = page.getByText('new words today');
+    this.queueEyebrow = page.getByText(/Ready to review|Queue clear/);
+    // The hero's single action: cards while cards are due, reading once clear.
+    this.heroAction = page.getByText(/Start reviewing|Read a story/);
+    this.storyHandoff = page.getByText('Then read');
   }
   async goto() {
     await this.page.goto('/');

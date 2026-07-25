@@ -5,7 +5,7 @@ import { languageTheme, ink } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
 import { getDailyStoryCard, firstContentChar } from './homeStory'
-import { HeroPanel, HeroAction, Panel, Readout, Eyebrow } from './panels'
+import { HeroPanel, HeroAction, Panel, Eyebrow } from './panels'
 import { MICRO, NUM } from './designTokens'
 
 // ── Home ──────────────────────────────────────────────────────────────────
@@ -30,6 +30,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
   const accentInk = ink(accentHex)
   const langFont = theme.font
 
+  const langChar = firstContentChar(theme.nativeName) || theme.nativeName.slice(0, 1)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
   const nextLevelLabel = getLevelLabel(profile.active_language, track.system, track.current_level + 1)
 
@@ -37,6 +38,10 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
   const learned = counts.learnedCount || 0
   const totalWords = counts.totalWords || 0
   const pct = totalWords > 0 ? Math.min(100, Math.round((learned / totalWords) * 100)) : 0
+
+  // Daily new-card goal, shown inside the queue block it belongs to.
+  const goal = profile.daily_new_cards || 0
+  const doneToday = counts.newDoneToday || 0
 
   const gentleReady = Math.min(counts.dueCount || 0, GENTLE_REVIEW_CAP)
   const gentleActive = isReturningFromBreak(profile) && (counts.dueCount || 0) > GENTLE_REVIEW_CAP
@@ -49,9 +54,11 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
     return () => { alive = false }
   }, [userId, track, learned])
 
+  // One action. Cards while there are cards; once the queue is clear the next
+  // step in the daily loop is reading, so the button hands over to Stories.
   const action = totalDue > 0
-    ? { label: 'Review ' + totalDue + ' first', go: 'study' }
-    : { label: 'Start reading', go: 'stories' }
+    ? { label: 'Start reviewing', go: 'study' }
+    : { label: 'Read a story', go: 'stories' }
 
   const today = new Date()
 
@@ -63,9 +70,9 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
         gap: '12px', marginBottom: '16px',
       }}>
-        <span style={{ fontSize: '19px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+        <h1 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
           Today
-        </span>
+        </h1>
         <Eyebrow>{levelLabel} · {WEEKDAY[today.getDay()]}</Eyebrow>
       </div>
 
@@ -85,20 +92,22 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         </div>
       )}
 
-      {/* ── The one lit block ── */}
+      {/* ── The one lit block: today's cards ── */}
       <HeroPanel
         accentHex={accentHex}
         seed={profile.active_language}
-        watermark={daily?.sentence ? firstContentChar(daily.sentence) : null}
+        watermark={langChar}
         watermarkFont={langFont}
         compact={isMobile}
         onClick={() => onNavigate(action.go)}
         style={{ marginBottom: '14px' }}
       >
         {({ hovered }) => (
-          <HeroBody
-            daily={daily}
-            langFont={langFont}
+          <QueueBody
+            counts={counts}
+            totalDue={totalDue}
+            goal={goal}
+            doneToday={doneToday}
             isMobile={isMobile}
             action={action}
             accentHex={accentHex}
@@ -107,25 +116,37 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         )}
       </HeroPanel>
 
-      {/* ── Flat readouts. The hero owns the action. ── */}
-      <Panel
-        padding={isMobile ? '0 14px' : '0 20px'}
-        style={{ display: 'flex', marginBottom: '14px', animationDelay: '80ms' }}
-      >
-        <Readout
-          first
-          value={counts.dueCount + counts.learnCount}
-          label="words due for review"
-          tone={accentInk}
-          compact={isMobile}
-        />
-        <Readout
-          value={counts.newCount}
-          label="new words today"
-          tone="var(--text)"
-          compact={isMobile}
-        />
-      </Panel>
+      {/* ── The next step in the loop, deliberately quiet. The hero owns the
+          screen's action; this is a hand-off, not a rival CTA. ── */}
+      {daily && (
+        <Panel
+          padding={isMobile ? '14px 16px' : '15px 20px'}
+          style={{ marginBottom: '14px', animationDelay: '80ms', cursor: 'pointer' }}
+        >
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => onNavigate('stories')}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate('stories') } }}
+            className="hd-press"
+            style={{ display: 'flex', alignItems: 'center', gap: '14px' }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Eyebrow style={{ display: 'block', marginBottom: '5px' }}>Then read</Eyebrow>
+              <div style={{
+                fontFamily: langFont, fontSize: '15px', fontWeight: 600, color: 'var(--text)',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {daily.sentence}
+              </div>
+              <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '3px' }}>
+                {daily.story.title} · you know {daily.knownPct}% of it
+              </div>
+            </div>
+            <ArrowRight size={18} strokeWidth={2.1} color={accentInk} style={{ flexShrink: 0 }} />
+          </div>
+        </Panel>
+      )}
 
       {/* ── Progress toward the next level ── */}
       <Panel
@@ -161,30 +182,52 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
   )
 }
 
-// The hero's contents. Split out so the panel stays a generic container and
-// this stays about what Home has to say.
-function HeroBody({ daily, langFont, isMobile, action, accentHex, hovered }) {
+// The hero's contents: the whole block is about today's flashcards — how many
+// are waiting, how the day's goal is going, and the one button that starts it.
+function QueueBody({ counts, totalDue, goal, doneToday, isMobile, action, accentHex, hovered }) {
+  const clear = totalDue === 0
+  const goalComplete = goal > 0 && doneToday >= goal
+
   return (
     <div>
       <span style={{ ...MICRO, color: 'rgba(255,255,255,0.62)' }}>
-        {daily === null ? 'Your first words' : 'Unlocked and waiting'}
+        {clear ? 'Queue clear' : 'Ready to review'}
       </span>
 
-      <div style={{
-        fontFamily: langFont, color: '#fff',
-        fontSize: isMobile ? '25px' : '31px', fontWeight: 600, lineHeight: 1.32,
-        letterSpacing: '0.01em', margin: '10px 0 8px', maxWidth: '17ch',
-        minHeight: isMobile ? '33px' : '41px',
-      }}>
-        {daily === undefined ? '' : daily === null ? 'Learn a few words to unlock your first story' : daily.sentence}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', margin: '10px 0 6px' }}>
+        <span style={{
+          ...NUM, color: '#fff', lineHeight: 0.95,
+          fontSize: isMobile ? '52px' : '64px', fontWeight: 700, letterSpacing: '-0.04em',
+        }}>
+          {clear ? '\u2713' : totalDue}
+        </span>
+        <span style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: 600, color: 'rgba(255,255,255,0.86)' }}>
+          {clear ? 'all caught up' : 'card' + (totalDue === 1 ? '' : 's') + ' waiting'}
+        </span>
       </div>
 
-      <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45 }}>
-        {daily === undefined
-          ? ' '
-          : daily === null
-            ? 'Stories open up as soon as you know enough words to enjoy them.'
-            : daily.story.title + ' · you know ' + daily.knownPct + '% of it'}
+      {/* The queue's own breakdown, inside the block that is about it. */}
+      {!clear && (
+        <div style={{ display: 'flex', gap: isMobile ? '14px' : '20px', flexWrap: 'wrap', marginTop: '12px' }}>
+          {[
+            ['New', counts.newCount],
+            ['Learning', counts.learnCount],
+            ['Due', counts.dueCount],
+          ].map(([label, value]) => (
+            <span key={label} style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+              <span style={{ ...NUM, fontSize: '17px', fontWeight: 700, color: '#fff' }}>{value}</span>
+              <span style={{ ...MICRO, fontSize: '9.5px', color: 'rgba(255,255,255,0.55)' }}>{label}</span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45, marginTop: '12px' }}>
+        {goalComplete
+          ? 'Daily goal complete — nice work.'
+          : goal > 0
+            ? 'Daily goal: ' + doneToday + ' of ' + goal + ' new cards'
+            : 'No daily goal set.'}
       </div>
 
       <HeroAction label={action.label} hovered={hovered} icon={ArrowRight} accentHex={accentHex} />

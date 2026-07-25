@@ -10,19 +10,22 @@ test.describe('Home (logged in)', () => {
     await home.goto();
   });
 
-  test('leads with the unlocked story, not the card queue', async ({ page }) => {
-    await expect(page.getByText(/Unlocked and waiting|Your first words/)).toBeVisible();
-  });
-
-  test('shows the queue as readouts beneath the hero', async () => {
-    await expect(home.dueReadout).toBeVisible();
-    await expect(home.newReadout).toBeVisible();
+  test('the lit block is about the flashcard queue', async ({ page }) => {
+    await expect(home.queueEyebrow).toBeVisible();
+    // The queue's own breakdown lives inside the block that is about it.
+    for (const label of ['New', 'Learning', 'Due']) {
+      await expect(page.getByText(label, { exact: true })).toBeVisible();
+    }
   });
 
   test('offers exactly one primary action', async ({ page }) => {
     await expect(home.heroAction).toBeVisible();
-    // The readouts are deliberately NOT buttons — Home is a coach, not a menu.
+    // Home is a coach, not a menu — no competing per-stat buttons.
     await expect(page.getByRole('button', { name: /Review now|Learn them/ })).toHaveCount(0);
+  });
+
+  test('hands off to reading beneath the hero, quietly', async () => {
+    await expect(home.storyHandoff).toBeVisible();
   });
 
   test('does not show a streak badge or "keep it" guilt copy', async ({ page }) => {
@@ -30,7 +33,7 @@ test.describe('Home (logged in)', () => {
     await expect(page.getByText(/study today to keep it/i)).toHaveCount(0);
   });
 
-  test('the hero is tappable and opens Study while cards are due', async ({ page }) => {
+  test('the hero opens Study while cards are due', async ({ page }) => {
     await home.heroAction.click();
     const study = new StudyPage(page);
     await expect(study.showAnswer).toBeVisible();

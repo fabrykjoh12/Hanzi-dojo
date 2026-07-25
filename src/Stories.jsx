@@ -3,6 +3,8 @@ import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { cacheSet, cacheGet } from './offline'
 import { languageTheme } from './languageTheme'
+import { HeroPanel, HeroAction, Eyebrow } from './panels'
+import { heroSentence, firstContentChar } from './homeStory'
 import { tiersFor, learnedByLevel, readingGateCount, storyLevels, nextLockedTier } from './storyTiers'
 import { isLearned } from './mastery'
 import { useIsMobile } from './useIsMobile'
@@ -14,7 +16,7 @@ import { isPracticeFormat, formatLabel, formatEmoji } from './storyFormat'
 import StoryReader from './StoryReader'
 import StoryCover from './StoryCover'
 import {
-  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Library, Lock, Sparkles,
+  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Library, Lock,
 } from 'lucide-react'
 
 // Story tier definitions live in ./storyTiers (shared with the post-study
@@ -589,52 +591,69 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
       <div style={{ maxWidth: isMobile ? '860px' : '1040px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px', position: 'relative', zIndex: 1 }}>
         <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
 
-        <div style={{ margin: '28px 0 22px' }}>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-            <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>{nativeName}</span>
-            <span style={pillStyle('var(--text-muted)', 'var(--surface-2)', 'var(--border)')}>
-              {getSystemLabel(track.system)} · {getLevelLabel(track.language, track.system, track.current_level)}
-            </span>
+        {/* This screen's one lit block — the same treatment Home gives the card
+            queue, here given to the thing Stories is actually about: the story
+            waiting for you today. Falls back to a plain title block before
+            anything is unlocked. */}
+        {daily ? (
+          <HeroPanel
+            accentHex={accentHex}
+            seed={track.language + '-stories'}
+            watermark={firstContentChar(heroSentence(daily.content))}
+            watermarkFont={fontFamily}
+            compact={isMobile}
+            onClick={() => openStory(daily)}
+            style={{ margin: '28px 0 22px' }}
+          >
+            {({ hovered }) => (
+              <div>
+                {/* The eyebrow row carries BOTH facts the old header had: what
+                    this block is, and which level the learner is actually on.
+                    Dropping the latter left Stories unable to say where you are. */}
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                  <Eyebrow onHero>
+                    Today’s story{readIds.has(daily.id) ? ' · revisit' : ''}
+                  </Eyebrow>
+                  <Eyebrow onHero style={{ color: 'rgba(255,255,255,0.5)' }}>
+                    {getSystemLabel(track.system)} · {getLevelLabel(track.language, track.system, track.current_level)}
+                  </Eyebrow>
+                </div>
+                <h1 style={{
+                  fontFamily: fontFamily + ', Inter, sans-serif', color: '#fff',
+                  fontSize: isMobile ? '25px' : '31px', fontWeight: 600, lineHeight: 1.32,
+                  letterSpacing: '0.01em', margin: '10px 0 8px', maxWidth: '20ch',
+                }}>
+                  {heroSentence(daily.content)}
+                </h1>
+                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45 }}>
+                  {daily.title} · {getLevelLabel(track.language, track.system, daily.level == null ? track.current_level : daily.level)}
+                </div>
+                <HeroAction label="Start reading" hovered={hovered} icon={ArrowRight} accentHex={accentHex} />
+              </div>
+            )}
+          </HeroPanel>
+        ) : (
+          <div style={{ margin: '28px 0 22px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+              <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>{nativeName}</span>
+              <span style={pillStyle('var(--text-muted)', 'var(--surface-2)', 'var(--border)')}>
+                {getSystemLabel(track.system)} · {getLevelLabel(track.language, track.system, track.current_level)}
+              </span>
+            </div>
+            <h1 style={{ fontSize: '36px', fontWeight: 800, color: 'var(--text)', margin: '0 0 8px' }}>
+              Stories
+            </h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.6, margin: 0 }}>
+              Everything you can read, from every level you’ve reached.
+            </p>
           </div>
-          <h1 style={{ fontSize: '36px', fontWeight: 800, color: 'var(--text)', margin: '0 0 8px' }}>
-            Stories
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.6, margin: 0 }}>
-            Everything you can read, from every level you’ve reached.
-          </p>
-        </div>
+        )}
 
         {/* One control replaces the old progress bar + ladder: tiers as tabs. */}
         <TierTabs
           tiers={CATEGORIES} activeTier={currentTier} tierInfo={tierInfo}
           pct={pct} accentHex={accentHex} onPick={setActiveTier}
         />
-
-        {/* Today's story — a calm daily pick across everything readable. */}
-        {daily && (
-          <button
-            onClick={() => openStory(daily)}
-            style={{
-              width: '100%', textAlign: 'left', cursor: 'pointer', marginBottom: '22px',
-              display: 'flex', alignItems: 'center', gap: '16px',
-              background: accentHex + '0D', border: '1px solid ' + accentHex + '2E',
-              borderRadius: '18px', padding: isMobile ? '16px 18px' : '18px 22px', fontFamily: 'Inter, sans-serif',
-            }}
-          >
-            <div style={{ width: '46px', height: '46px', borderRadius: '14px', flexShrink: 0, background: accentHex + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Sparkles size={22} strokeWidth={1.9} color={accentHex} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '11px', fontWeight: 850, letterSpacing: '0.06em', textTransform: 'uppercase', color: accentHex, marginBottom: '3px' }}>
-                Today’s story{readIds.has(daily.id) ? ' · revisit' : ''}
-              </div>
-              <div style={{ fontSize: '17px', fontWeight: 750, color: 'var(--text)', fontFamily: fontFamily + ', Inter, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {daily.title}
-              </div>
-            </div>
-            <ArrowRight size={20} strokeWidth={2} color={accentHex} style={{ flexShrink: 0 }} />
-          </button>
-        )}
 
         <FilterRow
           status={statusFilter} setStatus={setStatusFilter}
