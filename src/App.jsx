@@ -594,7 +594,11 @@ export default function App() {
         <Background language={profile.active_language} />
         {!isMobile && (
           <div style={{ position: 'relative', zIndex: 10 }}>
-            <Sidebar view={view} onNavigate={navigate} onLogout={handleLogout} isAdmin={!!profile.is_admin} language={profile.active_language} />
+            <Sidebar
+              view={view} onNavigate={navigate} onLogout={handleLogout}
+              isAdmin={!!profile.is_admin} language={profile.active_language}
+              profile={profile} track={track} email={session.user.email} counts={counts}
+            />
           </div>
         )}
         <main id="main-content" tabIndex={-1} ref={mainRef} style={{

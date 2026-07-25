@@ -1,5 +1,5 @@
 import {
-  Home, Layers, BookOpen, Dumbbell, GraduationCap,
+  Home, Layers, BookOpen, Swords, ScrollText,
   User, Settings, Globe, LogOut, BarChart3, PanelsTopLeft,
 } from 'lucide-react'
 
@@ -12,28 +12,34 @@ export const PRIMARY_NAV = [
   { key: 'home', label: 'Home', icon: Home },
   { key: 'study', label: 'Flashcards', icon: Layers },
   { key: 'stories', label: 'Stories', icon: BookOpen },
-  { key: 'practice', label: 'Practice', icon: Dumbbell },
-  { key: 'test', label: 'Test', icon: GraduationCap },
+  { key: 'practice', label: 'Practice', icon: Swords },
+  { key: 'test', label: 'Test', icon: ScrollText },
 ]
 
-// Desktop sidebar — bottom section (account).
-export const BOTTOM_NAV = [
-  { key: 'profile', label: 'Profile', icon: User },
-  { key: 'settings', label: 'Settings', icon: Settings },
-  { key: 'languages', label: 'Language', icon: Globe },
-  { key: 'logout', label: 'Log out', icon: LogOut },
+// The sidebar renders PRIMARY_NAV in two labelled groups instead of one
+// undifferentiated list of five. The split says something true: the first three
+// ARE the daily loop the product is built around (cards, then reading), while
+// Practice and Test are the things you reach for deliberately.
+export const NAV_GROUPS = [
+  { label: 'Daily loop', keys: ['home', 'study', 'stories'] },
+  { label: 'Train', keys: ['practice', 'test'] },
 ]
+
+// The desktop sidebar used to render a matching BOTTOM_NAV here — Profile,
+// Settings, Language, Log out as four more full-width rows. Its footer now
+// builds those itself (an avatar row plus three icon buttons) and the language
+// gets its own identity card, so the array had no remaining reader.
 
 // Mobile bottom bar — 4 tabs + a "More" sheet.
 export const MOBILE_PRIMARY = [
   { key: 'home', label: 'Home', icon: Home },
   { key: 'study', label: 'Cards', icon: Layers },
   { key: 'stories', label: 'Stories', icon: BookOpen },
-  { key: 'practice', label: 'Practice', icon: Dumbbell },
+  { key: 'practice', label: 'Practice', icon: Swords },
 ]
 
 export const MOBILE_MORE = [
-  { key: 'test', label: 'Test', icon: GraduationCap },
+  { key: 'test', label: 'Test', icon: ScrollText },
   { key: 'profile', label: 'Profile', icon: User },
   { key: 'languages', label: 'Language', icon: Globe },
   { key: 'settings', label: 'Settings', icon: Settings },
