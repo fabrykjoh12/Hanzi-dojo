@@ -280,14 +280,21 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     if (el) { el.defaultPlaybackRate = next; el.playbackRate = next }
   }, [])
 
-  const selectWord = (vocab, status) => { stopPlay(); setSelected({ word: vocab.word, vocab, status }) }
-
   // The sentence the learner is reading when they save a word — stored on the
   // card so review shows real context. Prefer the beat that actually contains the
   // word (chat/scene taps can be on an earlier bubble); fall back to the current beat.
   const sourceSentenceFor = (vocab) => {
     const inBeat = beats.find(b => b.tokens.some(t => t.vocab && t.vocab.id === vocab.id))
     return (inBeat || beats[cur] || {}).text || null
+  }
+
+  // `tokenId` identifies exactly which rendered token was tapped (a reader
+  // composes it from the beat/bubble index + token key), so the caller can
+  // highlight that ONE word rather than every occurrence of it — a tap needs to
+  // be obviously about the word/sentence you touched, not just any match of it.
+  const selectWord = (vocab, status, tokenId) => {
+    stopPlay()
+    setSelected({ word: vocab.word, vocab, status, tokenId, sentence: sourceSentenceFor(vocab) })
   }
 
   const addToDeck = async (vocab) => {

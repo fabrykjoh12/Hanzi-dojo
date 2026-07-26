@@ -9,6 +9,11 @@ import WordLookupSheet from './WordLookupSheet'
 import FinishOverlay from './FinishOverlay'
 import { ArrowLeft, Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react'
 
+// The exact word just tapped — same amber the classic reader uses for its own
+// selection highlight, so a tap is unmistakably "this one", not just "a lookup
+// sheet opened somewhere".
+const TAP_HILITE = 'rgba(217, 164, 62, 0.32)'
+
 function beatStyle(distance, reduceMotion) {
   if (distance === 0) return { opacity: 1, filter: 'none' }
   if (distance < 0) return { opacity: 0.26, filter: 'none' }
@@ -104,6 +109,8 @@ export default function PacedReader(props) {
                     }
                     const status = wordStatus(t.vocab.id, userCards)
                     const decorate = i === c.cur
+                    const tokenId = i + ':' + k
+                    const isSelected = c.selected && c.selected.tokenId === tokenId
                     return (
                       <span key={k}
                         onClick={i === c.cur ? (e) => {
@@ -112,15 +119,15 @@ export default function PacedReader(props) {
                           // here". seekToToken reports false when there is no
                           // timeline, and then a tap means what it always did.
                           if (c.playing && c.seekToToken(k)) return
-                          c.selectWord(t.vocab, status)
+                          c.selectWord(t.vocab, status, tokenId)
                         } : undefined}
                         style={{
                           cursor: i === c.cur ? 'pointer' : 'inherit', borderRadius: '4px', padding: '0 1px',
-                          background: decorate && status === 'not_started' ? accent + '1f' : (decorate && status === 'learning' ? '#CA8A0422' : 'transparent'),
-                          boxShadow: decorate && status === 'not_started' ? 'inset 0 -2px 0 ' + accent + '66' : 'none',
+                          background: isSelected ? TAP_HILITE : (decorate && status === 'not_started' ? accent + '1f' : (decorate && status === 'learning' ? '#CA8A0422' : 'transparent')),
+                          boxShadow: isSelected ? '0 0 0 1px rgba(202,138,4,0.5)' : (decorate && status === 'not_started' ? 'inset 0 -2px 0 ' + accent + '66' : 'none'),
                           ...(i === c.cur ? spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) : null),
                         }}>
-                        <TokenBody text={t.text} reading={t.vocab.reading} mode={c.readingMode} status={status} language={track.language} reserve={reserve} />
+                        <TokenBody text={t.text} reading={t.vocab.reading} mode={c.readingMode} status={status} language={track.language} reserve={reserve} meaning={t.vocab.meaning} />
                       </span>
                     )
                   })}

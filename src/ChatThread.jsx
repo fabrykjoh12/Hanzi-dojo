@@ -3,11 +3,16 @@ import { wordStatus } from './storyReading'
 import { TokenBody } from './ReadingScaffold'
 import { spotlightStyle } from './readAlong'
 
+// The exact word just tapped — same amber the classic reader uses for its own
+// selection highlight, so a tap is unmistakably "this one", not just "a lookup
+// sheet opened somewhere".
+const TAP_HILITE = 'rgba(217, 164, 62, 0.32)'
+
 // Shared bubble-thread for the chat readers (observer + interactive). The caller
 // decides which beats are revealed, each speaker's side/color, the active
 // (outlined) index, and whether a "typing…" bubble trails the thread — so the two
 // readers render an identical thread without duplicating it.
-export default function ChatThread({ revealed, sides, skin, theme, accent, userCards, readingMode, language, activeIndex, typingBeat, reduceMotion, onSelectWord, activeToken = -1, onSeekToken, playing = false }) {
+export default function ChatThread({ revealed, sides, skin, theme, accent, userCards, readingMode, language, activeIndex, typingBeat, reduceMotion, onSelectWord, activeToken = -1, onSeekToken, playing = false, selected = null }) {
   const endRef = useRef(null)
   useEffect(() => {
     if (endRef.current) endRef.current.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'end' })
@@ -52,6 +57,8 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                     )
                   }
                   const status = wordStatus(t.vocab.id, userCards)
+                  const tokenId = key + ':' + k
+                  const isSelected = selected && selected.tokenId === tokenId
                   return (
                     <span key={k} onClick={(e) => {
                       e.stopPropagation()
@@ -61,12 +68,13 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                       // lead-in silence still tries to seek, matching the paced
                       // reader — seekToToken's own boolean decides success.
                       if (isCurrentBubble && onSeekToken && onSeekToken(k)) return
-                      onSelectWord(t.vocab, status)
+                      onSelectWord(t.vocab, status, tokenId)
                     }}
                       style={{ cursor: 'pointer', borderRadius: '4px', padding: '0 1px',
-                        background: status === 'not_started' ? accent + '22' : (status === 'learning' ? '#CA8A0426' : 'transparent'),
+                        background: isSelected ? TAP_HILITE : (status === 'not_started' ? accent + '22' : (status === 'learning' ? '#CA8A0426' : 'transparent')),
+                        boxShadow: isSelected ? '0 0 0 1px rgba(202,138,4,0.5)' : 'none',
                         ...spotlightStyle(k === activeToken, isSounding, reduceMotion) }}>
-                      <TokenBody text={t.text} reading={t.vocab.reading} mode={readingMode} status={status} language={language} reserve={reserve} rtColor={rtColor} />
+                      <TokenBody text={t.text} reading={t.vocab.reading} mode={readingMode} status={status} language={language} reserve={reserve} rtColor={rtColor} meaning={t.vocab.meaning} />
                     </span>
                   )
                 })}

@@ -5,7 +5,9 @@ import { X, Volume2, Bookmark } from 'lucide-react'
 const ghost = { background: 'none', border: 'none', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center' }
 
 // Bottom-sheet word lookup shared by the paced/scene readers and the analyzer.
-// `selected` is { word, vocab, status } | null.
+// `selected` is { word, vocab, status, tokenId, sentence } | null — `sentence`
+// (the line the tapped word came from) is shown so it's clear which sentence
+// the lookup belongs to, not just which word.
 //
 // Rendered through a portal to <body>: screens like the analyzer live inside the
 // app shell's <main>, which sets position:relative + z-index, forming a stacking
@@ -37,6 +39,11 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, on
           </div>
         </div>
         <div style={{ fontSize: '15px', color: 'var(--text-muted)', marginTop: '8px', lineHeight: 1.5 }}>{cleanMeaning(selected.vocab.meaning)}</div>
+        {selected.sentence && (
+          <div style={{ fontSize: '13px', color: 'var(--text-faint)', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border)', lineHeight: 1.5 }}>
+            {selected.sentence}
+          </div>
+        )}
       </div>
     </div>,
     document.body,

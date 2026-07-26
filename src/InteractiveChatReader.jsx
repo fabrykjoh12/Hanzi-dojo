@@ -105,7 +105,7 @@ export default function InteractiveChatReader(props) {
       </div>
 
       <div onClick={advance} style={{ flex: 1, overflowY: 'auto', padding: '10px 14px 20px', cursor: isGate ? 'default' : 'pointer', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <ChatThread revealed={revealed} sides={sides} skin={skin} theme={c.theme} accent={accent} userCards={userCards} readingMode={c.readingMode} language={track.language} activeIndex={c.cur} typingBeat={null} reduceMotion={c.reduceMotion} onSelectWord={c.selectWord} activeToken={c.activeToken} onSeekToken={c.seekToToken} playing={c.playing} />
+        <ChatThread revealed={revealed} sides={sides} skin={skin} theme={c.theme} accent={accent} userCards={userCards} readingMode={c.readingMode} language={track.language} activeIndex={c.cur} typingBeat={null} reduceMotion={c.reduceMotion} onSelectWord={c.selectWord} activeToken={c.activeToken} onSeekToken={c.seekToToken} playing={c.playing} selected={c.selected} />
       </div>
       <div aria-live="polite" style={srOnly}>{isGate ? (wrongPick ? 'Not quite — try another reply' : 'Your turn to reply') : (revealed.length ? revealed[revealed.length - 1].text : '')}</div>
 
