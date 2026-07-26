@@ -69,7 +69,7 @@ export default function InteractiveChatReader(props) {
     isGate ? buildReplyOptions(gateBeat.text, pinyinOf(gateBeat), distractors[gateIndex], gateIndex).options : []
   ), [isGate, gateBeat, distractors, gateIndex])
 
-  const advance = () => { if (!isGate && !settingsOpen) { c.stopPlay(); c.advance() } }
+  const markDone = () => { if (!isGate && !settingsOpen) c.markBeatDone(c.cur) }
   const pick = (opt) => {
     if (opt.correct) {
       setAnswered(a => ({ ...a, [gateIndex]: true }))
@@ -103,8 +103,8 @@ export default function InteractiveChatReader(props) {
         <div style={{ fontSize: '12px', color: '#666', minWidth: '34px', textAlign: 'right' }}>{c.cur + 1}/{c.total}</div>
       </div>
 
-      <div onClick={advance} style={{ flex: 1, overflowY: 'auto', padding: '10px 14px 20px', cursor: isGate ? 'default' : 'pointer', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <ChatThread revealed={revealed} sides={sides} skin={skin} theme={c.theme} accent={accent} userCards={userCards} readingMode={c.readingMode} language={track.language} activeIndex={c.cur} typingBeat={null} reduceMotion={c.reduceMotion} onSelectWord={c.selectWord} activeToken={c.activeToken} onSeekToken={c.seekToToken} playing={c.playing} selected={c.selected} revealedEnglish={c.revealedEnglish} onToggleEnglish={c.toggleEnglish} />
+      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <ChatThread revealed={revealed} sides={sides} skin={skin} theme={c.theme} accent={accent} userCards={userCards} readingMode={c.readingMode} language={track.language} activeIndex={c.cur} typingBeat={null} reduceMotion={c.reduceMotion} onSelectWord={c.selectWord} activeToken={c.activeToken} onSeekToken={c.seekToToken} playing={c.playing} selected={c.selected} revealedEnglish={c.revealedEnglish} onToggleEnglish={c.toggleEnglish} completedBeats={c.completedBeats} onMarkDone={(!isGate && !settingsOpen) ? markDone : undefined} />
       </div>
       <div aria-live="polite" style={srOnly}>{isGate ? (wrongPick ? 'Not quite — try another reply' : 'Your turn to reply') : (revealed.length ? revealed[revealed.length - 1].text : '')}</div>
 
@@ -130,7 +130,7 @@ export default function InteractiveChatReader(props) {
             {wrongPick && <div style={{ fontSize: '12.5px', color: '#DC2626', textAlign: 'center', marginTop: '8px' }}>Not quite — try another reply.</div>}
           </div>
         ) : (
-          <div style={{ textAlign: 'center', fontSize: '12.5px', color: '#555' }}>{c.cur >= c.total - 1 ? 'Tap to finish' : 'Tap anywhere to continue'}</div>
+          <div style={{ textAlign: 'center', fontSize: '12.5px', color: '#555' }}>{c.cur >= c.total - 1 ? 'Tap ✓ to finish' : 'Tap ✓ to continue'}</div>
         )}
       </div>
 

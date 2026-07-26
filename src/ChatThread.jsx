@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react'
 import { wordStatus, isPlaceWord } from './storyReading'
 import { TokenBody, RevealEnglishButton } from './ReadingScaffold'
 import { spotlightStyle } from './readAlong'
+import { Check } from 'lucide-react'
 
 // The exact word just tapped — same amber the classic reader uses for its own
 // selection highlight, so a tap is unmistakably "this one", not just "a lookup
@@ -10,12 +11,17 @@ const TAP_HILITE = 'rgba(217, 164, 62, 0.32)'
 // Proper nouns (character names + curated place names) get this same green
 // text color everywhere, so they read as "a name", not vocabulary to learn.
 const PROPER_NOUN_COLOR = '#2F9E6D'
+// A message the learner has confirmed "got it" on turns this same green.
+const DONE_GREEN = '#2F9E6D'
 
 // Shared bubble-thread for the chat readers (observer + interactive). The caller
 // decides which beats are revealed, each speaker's side/color, the active
 // (outlined) index, and whether a "typing…" bubble trails the thread — so the two
-// readers render an identical thread without duplicating it.
-export default function ChatThread({ revealed, sides, skin, theme, accent, userCards, readingMode, language, activeIndex, typingBeat, reduceMotion, onSelectWord, activeToken = -1, onSeekToken, playing = false, selected = null, revealedEnglish = null, onToggleEnglish }) {
+// readers render an identical thread without duplicating it. `onMarkDone`, when
+// given, is the ONLY way the thread advances now — passing it (or not) is how a
+// caller opens/closes the confirm-and-advance action (e.g. hidden during a
+// reply gate, where picking the correct option is what advances instead).
+export default function ChatThread({ revealed, sides, skin, theme, accent, userCards, readingMode, language, activeIndex, typingBeat, reduceMotion, onSelectWord, activeToken = -1, onSeekToken, playing = false, selected = null, revealedEnglish = null, onToggleEnglish, completedBeats = null, onMarkDone }) {
   const endRef = useRef(null)
   useEffect(() => {
     if (endRef.current) endRef.current.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'end' })
@@ -37,6 +43,10 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
     // fully legible so re-reading the conversation is never dimmed.
     const isCurrentBubble = playing && !muted && key === activeIndex
     const isSounding = isCurrentBubble && activeToken >= 0
+    const isDone = Boolean(completedBeats && completedBeats.has(key))
+    // Skip the green text tint on "my bubble" too — same legibility reason as
+    // properNounColor; the checkmark itself still confirms/advances there.
+    const doneColor = meta.side === 'right' ? undefined : DONE_GREEN
     return (
       <div key={key} style={{ display: 'flex', flexDirection: 'column', alignItems: meta.side === 'right' ? 'flex-end' : 'flex-start' }}>
         <div style={{ fontSize: '11.5px', fontWeight: 700, color: meta.color, margin: '0 8px 3px', fontFamily: theme.font }}>{b.speaker}</div>
@@ -44,7 +54,7 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
           {muted ? <div style={{ fontSize: '14px' }}>typing…</div> : (
             <>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                <div style={{ flex: 1, fontSize: '19px', lineHeight: reserve ? 2 : 1.55, fontFamily: theme.font }}>
+                <div style={{ flex: 1, fontSize: '19px', lineHeight: reserve ? 2 : 1.55, fontFamily: theme.font, color: isDone ? doneColor : undefined }}>
                   {b.tokens.map((t, k) => {
                     // Plain runs reserve the same annotation row, so a bubble's
                     // baseline is identical whether or not its words are scaffolded.
@@ -54,9 +64,7 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                           onClick={(e) => {
                             // A spotlit plain run is part of the bubble being read,
                             // so a tap on it means "read from here". No vocab
-                            // entry here, so it never opens the lookup sheet; when
-                            // the seek can't happen, let the click bubble so
-                            // tap-to-reveal still works.
+                            // entry here, so it never opens the lookup sheet.
                             if (isCurrentBubble && onSeekToken && onSeekToken(k)) e.stopPropagation()
                           }}
                           style={{ color: (t.name && properNounColor) || 'inherit', ...spotlightStyle(k === activeToken, isSounding, reduceMotion) }}>
@@ -97,6 +105,20 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                     activeColor={meta.side === 'right' ? skin.myText : accent}
                     style={{ opacity: meta.side === 'right' ? 0.75 : 1 }}
                   />
+                )}
+                {key === activeIndex && onMarkDone && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onMarkDone() }}
+                    aria-label="Got it — next message"
+                    title="Got it — next"
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      opacity: meta.side === 'right' ? 0.75 : 1,
+                    }}
+                  >
+                    <Check size={16} strokeWidth={2.6} color={isDone ? doneColor || skin.myText : (meta.side === 'right' ? skin.myText : '#888')} />
+                  </button>
                 )}
               </div>
               {b.english && revealedEnglish && revealedEnglish.has(key) && (

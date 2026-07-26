@@ -109,7 +109,7 @@ test.describe('Story reader', () => {
     await page.getByRole('button', { name: /Start reading/i }).click();
     await expect(page.getByText('1/3')).toBeVisible();
     await expect(page.getByText('你今天好吗', { exact: false }).first()).toBeVisible();
-    await expect(page.getByText(/Tap anywhere to continue/i)).toBeVisible();
+    await expect(page.getByText(/Tap ✓ to continue/i)).toBeVisible();
 
     // Tap a vocab word in the first bubble → shared lookup sheet shows its
     // meaning. The word span stops propagation, so this does NOT advance.
@@ -118,17 +118,16 @@ test.describe('Story reader', () => {
     await page.getByRole('button', { name: 'Close' }).click();
     await expect(page.getByText('1/3')).toBeVisible();             // still on the first bubble
 
-    // Tap the thread (the speaker label is plain text, not a vocab span, so the
-    // click bubbles to the thread's reveal-next-bubble handler) to advance.
-    await page.getByText('小明', { exact: true }).first().click();
+    // The check mark beside the current bubble confirms "got it" and advances.
+    await page.getByRole('button', { name: /Got it/i }).click();
     await expect(page.getByText('2/3')).toBeVisible();
     await expect(page.getByText('我很好', { exact: false }).first()).toBeVisible();
 
-    // Advance to the last bubble, then one more tap → shared finish overlay.
-    await page.getByText('小明', { exact: true }).first().click();
+    // Advance to the last bubble, then one more confirm → shared finish overlay.
+    await page.getByRole('button', { name: /Got it/i }).click();
     await expect(page.getByText('3/3')).toBeVisible();
     await expect(page.getByText('我们去公园', { exact: false }).first()).toBeVisible();
-    await page.getByText('小明', { exact: true }).first().click();
+    await page.getByRole('button', { name: /Got it/i }).click();
     await expect(page.getByText('You read it')).toBeVisible();
   });
 
@@ -164,11 +163,10 @@ test.describe('Story reader', () => {
 
     // First bubble is a "them" turn; the reply gate for 小明's first line (a
     // "you" beat with distractors) previews one beat ahead, so it is already
-    // showing here — tap the speaker label (plain text, not a vocab span, so
-    // the click bubbles to the thread's advance handler) to confirm the tap
-    // is inert while gated.
+    // showing here — the check mark doesn't even render while gated (picking
+    // a reply is the only way to advance), confirming the tap surface is gone.
     await expect(page.getByText('1/4')).toBeVisible();
-    await page.getByText('朋友', { exact: true }).first().click();
+    await expect(page.getByRole('button', { name: /Got it/i })).toHaveCount(0);
 
     // Reply gate: the panel offers the correct reply + a distractor.
     await expect(page.getByText('Your reply — tap the right one')).toBeVisible();
@@ -186,14 +184,14 @@ test.describe('Story reader', () => {
     await expect(page.getByText('2/4')).toBeVisible();
 
     // Advance past the non-gated beat (朋友's second line) to reveal the second
-    // gate — tap the (still on-screen) 小明 speaker label to advance.
-    await page.getByText('小明', { exact: true }).first().click();
+    // gate — the check mark beside that bubble confirms and advances.
+    await page.getByRole('button', { name: /Got it/i }).click();
     await expect(page.getByText('Your reply — tap the right one')).toBeVisible();
-    // Correct pick reveals the final "you" bubble; one more tap (same pattern
-    // as the observer chat reader) finishes the story.
+    // Correct pick reveals the final "you" bubble; one more confirm (same
+    // pattern as the observer chat reader) finishes the story.
     await page.getByRole('button', { name: /好，一起去/ }).click();
     await expect(page.getByText('4/4')).toBeVisible();
-    await page.getByText('小明', { exact: true }).last().click();
+    await page.getByRole('button', { name: /Got it/i }).click();
     await expect(page.getByText('You read it')).toBeVisible();
     await expect(page.getByText(/on the first try/)).toBeVisible();
   });
