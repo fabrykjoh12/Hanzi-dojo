@@ -11,7 +11,7 @@ const BRIDGE_VERSION = '2.0.0'
 const START_MARKER = '<!-- DOJO-HQ:START -->'
 const END_MARKER = '<!-- DOJO-HQ:END -->'
 const WRITABLE_DOCUMENTS = new Set(['ROADMAP.md', 'TASKS.md'])
-const READABLE_DOCUMENTS = new Set(['README.md', 'ROADMAP.md', 'TASKS.md', 'Claude.md'])
+const READABLE_DOCUMENTS = new Set(['README.md', 'ROADMAP.md', 'TASKS.md', 'CLAUDE.md'])
 const README_LIMIT = 80_000
 const STATUS_LABELS = {
   inbox: 'Innboks',
@@ -236,7 +236,7 @@ export function buildClaudePrompt(item, documentName, readme = {}) {
     ] : []),
     '',
     '## Working agreement',
-    `1. Use the embedded README.md context, then read ${target}, TASKS.md, and Claude.md before changing code.`,
+    `1. Use the embedded README.md context, then read ${target}, TASKS.md, and CLAUDE.md before changing code.`,
     '2. Inspect the repository and make only changes needed for this item.',
     `3. Keep the matching Dojo checklist entry in ${target} current as work progresses.`,
     '4. Run relevant tests and the production build.',

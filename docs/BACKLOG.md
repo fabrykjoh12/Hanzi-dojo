@@ -128,3 +128,66 @@ migration to drop them, since this removed the feature, not historical data.
 - [x] **Public story links** — signed-out `/read/:id` page: pick a level → "you'd understand ~X%" (canonical `calculateStoryReadability`) → teaser lines with known/new highlighting → signup gate; the reader's share card now links here. Anon funnel events (`public_story_viewed/level_picked/signup_clicked`) feed the dashboard. Pure logic in `src/publicStoryHelpers.js` + `readStoryId` in `routes.js` (tested); page code-split (lazy). *(needs the migration above applied)*
 - [x] Onboarding language cards render equal width — the longer "Русский" label no longer stretches the Russian card past the two CJK cards (`src/Onboarding.jsx`).
 - [x] Story reader no longer dead-ends: "learn N more to unlock the next tier" hook (`src/StoryReaderImmersive.jsx`, `nextLockedTier`).
+
+---
+
+## Known issues (migrated from CLAUDE.md §16)
+
+These moved out of `CLAUDE.md` so that file stays short enough to read every
+session. **Some entries predate the current state** — they were accurate when
+written and have not been re-verified since. Confirm against the code or the DB
+before acting, and delete an entry once it is resolved rather than annotating it.
+
+**In progress:**
+- **Apply migration `20260630000000_add_xp_and_prefs.sql`** in the Supabase SQL Editor to enable persistence of account XP and study prefs (`total_xp`, `recall_mode`, `audio_autoplay`, `furigana_default`). The app is defensive — it runs without it (defaults applied in code), but XP/prefs won't save across reloads until the columns exist.
+- **Apply migration `20260630010000_add_story_questions.sql`**, then generate questions (Action `task=comprehension`, or `node --env-file=.env.script generate-comprehension.mjs`). The end-of-story comprehension card only appears once questions exist; the "new words" recap works without it.
+- **Japanese example sentences (N5 Part 1 + Part 2):** 798/800 words populated. Run `node --env-file=.env.script generate-examples.mjs --japanese` to fill the remaining 2.
+
+**Russian (new language — frontend + DB ready, content pending):**
+- **Apply migration `20260701120000_add_russian_language.sql`** so the DB accepts `language='russian'` / `system='russian'` (relaxes the CHECK constraints across profiles, language_tracks, vocabulary, test_attempts, level_unlocks, stories, youtube_recommendations; RLS unchanged). Until applied, creating a Russian track fails the CHECK.
+- **Seed the starter deck** (`data/russian-a1.json`, 147 A1 words) via `seed-vocab.mjs --language russian --system russian --level 1 --apply` (needs a runner with Supabase access, like HSK 2). Then run the pipeline: `generate-audio --language russian --system russian --level 1` → `generate-examples --russian` → `generate-stories --language russian --system russian --level 1`.
+- The Cyrillic alphabet drill, gating of CJK-only modes, background, accent, and native name all ship in the frontend already.
+
+**Missing content:**
+- **Japanese YouTube recommendations:** None published. Chinese HSK 1 has 3.
+- **HSK 2 vocabulary: COMPLETE** (Chinese HSK 3.0 level 2) — 198 words + audio + example sentences + 15 stories + comprehension questions, all live. Only missing extra: YouTube recommendations. Both HSK 1 and HSK 2 are now done.
+- **JLPT N4 (level 3): 636 words seeded** (`data/n4.json`); audio/examples/stories/comprehension run via the Action. **HSK 3–9 and JLPT N3–N1:** still no vocabulary — level selection exists but shows empty study queues.
+
+**Technical debt:**
+- **Vocabulary `meaning` data is messy and sometimes wrong (TODO — deferred).**
+  AI-generated glosses have junk formatting ("Good morning., Good afternoon.,
+  Hello.") and some are semantically off (こんにちは listed as "good morning").
+  `cleanMeaning()` tidies *display* in the reader + flashcard, but the source
+  data is still messy and used elsewhere. Two follow-ups, do **#1 first**:
+  1. **Deterministic DB cleanup script — DONE (`clean-meanings.mjs`).** Imports
+     `src/cleanMeaning.js` (no drift) and applies the same tidy to the `meaning`
+     column across all active vocab. Conventions match the `generate-*.mjs`
+     scripts (`--env-file=.env.script`, SUPABASE_URL + SUPABASE_SERVICE_KEY).
+     **Dry-run by default** (prints every before→after, only rows that differ);
+     `--apply` writes; `--chinese`/`--japanese` filter. Free, safe, no AI — never
+     blanks a meaning. **Not yet run** — run it (or via a runner that can reach
+     Supabase) to fix formatting everywhere (flashcards/test/writing/stories).
+  2. **Regenerate meanings** (later) — `generate-meanings.mjs` already exists
+     (70B, tighter prompt, `--dry-run`/`--chinese`/`--japanese`). Easiest path is
+     the one-click Action (`task=meanings`, `language=both`). Neither Chinese nor
+     Japanese meanings have been regenerated yet. Costs API calls; spot-check.
+- **Example sentences — Chinese regenerated; Japanese still pending.**
+  The generator was upgraded (`generate-examples.mjs`: 70B model + quality
+  prompt + few-shot + an anti-tautology rule). **Chinese HSK 1 (all 300 words)
+  has been regenerated** via the one-click Action (`task=examples,
+  language=chinese`). **Japanese is still on the old data** — run the Action with
+  `task=examples, language=japanese` (or `--japanese --regen` locally) to fix it.
+  Costs Groq tokens; spot-check, and consider the counter-suffix entries
+  (～さい/～グラム/～たち) for deactivation since they make awkward sentences.
+- **Some Japanese audio mispronounces kanji.** Fix: generate-audio.mjs already uses `v.reading` (hiragana). Delete the storage folder for the level before regenerating so files are not skipped.
+- **Duplicate kanji + counter-suffix cleanup — script written (`deactivate-awkward-vocab.mjs`), not yet run.** Duplicate-reading kanji (何 = なん/なに, 私 = わたし/わたくし) create identical-looking options across Test/Listening/Fill-in-the-blank; counter-suffix entries (～さい/～グラム/～たち) are grammar fragments that make nonsense in the sentence modes. The script deactivates suffix entries (Japanese words starting with a wave dash) and the secondary reading of the listed duplicates (only if the word keeps another active row — never fully removes a word). Safe/reversible (`is_active=false` only, dry-run by default). Run via the Action (`task=deactivate-awkward`) or `node --env-file=.env.script deactivate-awkward-vocab.mjs --apply`. Reading is also already shown in Test.jsx Japanese options.
+- **Unified Stories reader.** Both Chinese and Japanese now use `StoryReaderImmersive.jsx` (Intl.Segmenter word tapping, furigana/pinyin, per-speaker dialogue labels, bottom-sheet definitions, audio bar). The old in-file `StoryReader` (and `CharacterGuide`/`StoryLine`/sidebar cards) in Stories.jsx are now **dead code** — safe to delete in a cleanup pass.
+- **Mobile layout.** Below 768px the left sidebar is replaced by a fixed bottom bar (MobileNav.jsx, 5 tabs + a "More" sheet); App.jsx branches the shell via useIsMobile(). Each top-level screen (Home, Study, Test, Writing, Stories, Profile, Settings, LanguageSwitcher, YouTube) reduces its horizontal padding (~32px → ~16px) on mobile via useIsMobile(). Stat/option grids use `1fr`/`minmax(0,1fr)` columns so they compress without overflow. Further polish (font scaling, 4-col → 2-col stat grids on very small phones) is optional.
+- **ESLint baseline (current): `npx eslint .` = 7 errors / 6 warnings.** The §0a "0 errors" claim from PR #40 is stale — new rules (`react-hooks` v6's `set-state-in-effect`) and new non-app files landed since. Current breakdown:
+  - **4 errors — `playwright.config.js`** (`no-undef` on `process`): the flat config only declares `globals.browser`, so Node globals in the e2e config are flagged. Harmless; fix by giving that file a Node-globals config block.
+  - **3 errors — `tests/fixtures/mockSupabase.js`** (1 `no-empty`, 2 `react-hooks/rules-of-hooks` on a Playwright `page.use(...)` call the rule mistakes for a React hook). Test fixture, not app code.
+  - **6 warnings** — the intentional `react-hooks/exhaustive-deps` on mount-load effects + audio autoplay (unchanged since PR #40).
+  - **`.claude/**` is ignored** (`eslint.config.js` `globalIgnores`) — it holds Claude Code tooling (skills/commands/worktrees), not app source; it was contributing 15 `no-undef` errors on `require`/`process`.
+  - **Zero errors remain in `src/`. Keep it that way** — don't add new ones.
+- **Existing ESLint hook-dependency warnings** in some files — don't add new ones.
+- **Legacy DB columns** `ease_factor` and old SM-2 `learning_step` semantics are kept in the cards table but unused. Do not write to `ease_factor`.

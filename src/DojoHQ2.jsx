@@ -218,7 +218,7 @@ function DocumentsView({ bridgeStatus, onReadDocument }) {
     <div className="dojo2-doc-layout">
       <aside className="dojo2-panel dojo2-doc-nav">
         <header className="dojo2-panel-head"><div><FileText size={18} /><span><strong>Prosjektdokumenter</strong><small>Direkte fra prosjektmappen</small></span></div></header>
-        {['README.md', 'ROADMAP.md', 'TASKS.md', 'Claude.md'].map(name => {
+        {['README.md', 'ROADMAP.md', 'TASKS.md', 'CLAUDE.md'].map(name => {
           const info = diagnostics.get(name)
           return <button key={name} className={selected === name ? 'active' : ''} onClick={() => load(name)} disabled={!bridgeStatus.connected}><FileCode2 size={17} /><span><strong>{name}</strong><small>{info?.exists ? `Oppdatert ${dateTime.format(new Date(info.modifiedAt))}` : 'Ikke funnet'}</small></span><i className={info?.exists ? 'is-good' : ''} /></button>
         })}

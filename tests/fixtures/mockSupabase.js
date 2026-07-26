@@ -209,7 +209,13 @@ export async function mockSupabaseRoutes(page) {
 
 async function injectSession(page) {
   await page.addInitScript(([ref, session]) => {
-    try { window.localStorage.setItem(`sb-${ref}-auth-token`, JSON.stringify(session)); } catch {}
+    try {
+      window.localStorage.setItem(`sb-${ref}-auth-token`, JSON.stringify(session));
+    } catch {
+      // localStorage can throw (disabled cookies / private mode). Nothing to do:
+      // without a session the app drops to the Landing page, which the anon
+      // specs already cover — failing the init script would be noisier.
+    }
   }, [REF, SESSION]);
 }
 
