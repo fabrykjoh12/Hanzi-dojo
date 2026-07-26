@@ -25,6 +25,28 @@ createRoot(document.getElementById('root')).render(
   </StrictMode>,
 )
 
+// Screens are code-split (see the lazy() imports in App.jsx), so navigating to
+// one not yet fetched this session dynamically imports its chunk. After a
+// deploy, an already-open tab is still running the OLD bundle, whose chunk
+// files no longer exist at their old hashed URLs — that import 404s, which is
+// exactly what used to surface as the ErrorBoundary's "Something went wrong"
+// and require a manual reload on every single navigation to a fresh screen.
+// Vite dispatches this event specifically for that failure; reloading once
+// fetches the current bundle and just works. Guarded by a one-shot flag
+// cleared on a successful `load`, so a reload that doesn't actually fix
+// things (a real bug, not a stale deploy) can't loop forever.
+const PRELOAD_ERROR_FLAG = 'hd:reloaded-for-preload-error'
+window.addEventListener('load', () => {
+  try { sessionStorage.removeItem(PRELOAD_ERROR_FLAG) } catch { /* noop */ }
+})
+window.addEventListener('vite:preloadError', () => {
+  try {
+    if (sessionStorage.getItem(PRELOAD_ERROR_FLAG)) return
+    sessionStorage.setItem(PRELOAD_ERROR_FLAG, '1')
+  } catch { /* sessionStorage unavailable — reload once, best effort */ }
+  window.location.reload()
+})
+
 // Register the offline service worker in production only (keeps dev/sandbox
 // clean). Scope follows BASE_URL so it works on both the GitHub Pages subpath
 // and the Vercel root. Failures are non-fatal.
