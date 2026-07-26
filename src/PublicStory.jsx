@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from './supabase'
 import { buildVocabMap, assumedKnownCards, teaserLines, LEVEL_CHOICES } from './publicStoryHelpers'
 import { calculateStoryReadability, buildVocabMatcher, matchVocabAt, matchName, wordStatus, splitSpeaker, boundaryAfterSkip, JP_PARTICLES } from './storyReading'
-import { getAudioUrl, getLevelLabel } from './utils'
+import { getLevelLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { BRAND_NAME } from './brand'
 import { track, EVENTS } from './analytics'
 import { CHARACTER_READINGS } from './characterNames'
+import StoryCover from './StoryCover'
 
 const NO_PARTICLES = new Set()
 
@@ -89,7 +90,6 @@ export default function PublicStory({ storyId }) {
     )
   }
 
-  const cover = story.image_path ? getAudioUrl(story.image_path) : null
   const levelLabel = getLevelLabel(story.language, story.system, story.level)
   const lines = teaserLines(story.content, 4)
   const knownCards = choice ? assumedKnownCards(story.vocab_pool, choice, story.level) : {}
@@ -99,9 +99,10 @@ export default function PublicStory({ storyId }) {
       <div style={cardStyle}>
         <div style={{ color: accent, fontWeight: 700, fontFamily: 'Poppins, Inter, sans-serif', marginBottom: '18px' }}>{BRAND_NAME}</div>
 
-        {cover ? (
-          <img src={cover} alt="" style={{ width: '100%', maxHeight: '220px', objectFit: 'cover', borderRadius: '16px', display: 'block', marginBottom: '16px' }} />
-        ) : null}
+        <StoryCover
+          story={story} path={story.image_path} accent={accent} radius={16}
+          style={{ width: '100%', height: '220px', marginBottom: '16px' }}
+        />
 
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' }}>
           <span style={{ fontSize: '12px', fontWeight: 700, color: accent, border: '1px solid ' + accent, borderRadius: '999px', padding: '2px 10px' }}>{theme.languageName} · {levelLabel}</span>
