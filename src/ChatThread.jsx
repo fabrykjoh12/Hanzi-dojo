@@ -15,7 +15,7 @@ const PROPER_NOUN_COLOR = '#2F9E6D'
 // decides which beats are revealed, each speaker's side/color, the active
 // (outlined) index, and whether a "typing…" bubble trails the thread — so the two
 // readers render an identical thread without duplicating it.
-export default function ChatThread({ revealed, sides, skin, theme, accent, userCards, readingMode, language, activeIndex, typingBeat, reduceMotion, onSelectWord, activeToken = -1, onSeekToken, playing = false, selected = null }) {
+export default function ChatThread({ revealed, sides, skin, theme, accent, userCards, readingMode, language, activeIndex, typingBeat, reduceMotion, onSelectWord, activeToken = -1, onSeekToken, playing = false, selected = null, showEnglish = false }) {
   const endRef = useRef(null)
   useEffect(() => {
     if (endRef.current) endRef.current.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'end' })
@@ -88,6 +88,9 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                   )
                 })}
               </div>
+              {showEnglish && b.english && (
+                <div style={{ fontSize: '13px', fontStyle: 'italic', opacity: 0.72, marginTop: '5px' }}>{b.english}</div>
+              )}
             </>
           )}
         </div>

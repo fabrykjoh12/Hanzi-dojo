@@ -36,7 +36,10 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   // exactly the legacy path.
   const [utteranceIds, setUtteranceIds] = useState({})
   const [readingMode, setReadingMode] = useState(DEFAULT_READING_MODE)
-  const [showEn, setShowEn] = useState(false)
+  // On by default: seeing the English sentence next to the original is what
+  // lets a learner connect word order/grammar to meaning, not just vocabulary
+  // — a learner can still switch it off from the reading settings.
+  const [showEn, setShowEn] = useState(true)
   const pickedRef = useRef(false)      // the learner chose a mode this session
   const ratePickedRef = useRef(false)  // the learner chose a rate this session (own flag: rate and mode must not gate each other)
   const firstSaveRef = useRef(true)    // don't persist the un-loaded default

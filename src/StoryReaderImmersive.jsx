@@ -39,10 +39,12 @@ const SPEAKER_PALETTE = ['#B83A24', '#2E6FB8', '#2F9E6D', '#C2680E', '#7C5CD0', 
 
 // Durable reader preferences (furigana mode, Learning Lens, translation). Stored
 // in the prefs store so a reader's chosen scaffolding survives reloads without a
-// round-trip to the server. Default: scaffold only unknown words, lens off — the
-// page reads like a book until the learner asks for more help.
+// round-trip to the server. Default: scaffold only unknown words, lens off,
+// English sentence translation ON — the page reads like a book, but the
+// learner sees what each line actually means (and so its grammar) without
+// having to ask for it first.
 const READER_PREFS_KEY = 'reader:prefs'
-const DEFAULT_PREFS = { furiganaMode: 'unknown', lens: false, showEnglish: false, serif: false, seenFocusHint: false }
+const DEFAULT_PREFS = { furiganaMode: 'unknown', lens: false, showEnglish: true, serif: false, seenFocusHint: false }
 
 // Serif reading-font stacks, per script. These lean on the OS's own serif faces
 // (genuinely book-like for CJK, and free) so we never load a web font — any named
