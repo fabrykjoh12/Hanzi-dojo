@@ -31,6 +31,7 @@ export const CHARACTER_GENDER = {
   // recurring named characters
   '小红': 'female', '小花': 'female', '小雨': 'female', '林雨晴': 'female',
   '李明': 'male', '小明': 'male', '大明': 'male', '大力': 'male', '大毛': 'male',
+  '小川': 'male', '林小川': 'male',
 }
 
 export function genderOf(name) {

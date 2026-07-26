@@ -70,7 +70,8 @@ function vocabMapFor(key) {
 // absent from CHARACTER_READINGS, and allow-listed separately as speaker
 // labels. Extend this list (not CHARACTER_READINGS) when a new season needs a
 // role-noun speaker; extend CHARACTER_READINGS when it needs a real name.
-const CN_ROLE_SPEAKERS = ['妈妈', '爸爸', '朋友', '老师', '服务员', '店员', '医生', '大家']
+const CN_ROLE_SPEAKERS = ['妈妈', '爸爸', '朋友', '老师', '服务员', '店员', '医生', '大家',
+  '教练', '学生', '记者']
 const KNOWN_SPEAKERS = {
   japanese: new Set(['たかし', 'はな', 'おかあさん', 'おじいさん', 'せんせい', 'みせのひと', 'みんな']),
   chinese: new Set([...Object.keys(CHARACTER_READINGS.chinese || {}), ...CN_ROLE_SPEAKERS]),

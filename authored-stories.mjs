@@ -19,6 +19,9 @@ import { readFileSync } from 'node:fs'
 //       story_number is assigned automatically as (current max for that
 //       language/system/level) + 1, incrementing across the batch, so authored
 //       stories append after whatever already exists without collisions.
+//       A story whose (language, system, level, title) is already in the DB is
+//       SKIPPED, so re-running the insert over the growing manifest only ever
+//       adds the new batch. Pass --allow-duplicates to insert anyway.
 //
 // Run with:
 //   node --env-file=.env.script authored-stories.mjs --list-vocab --language chinese --system hsk_3 --level 1
@@ -64,29 +67,47 @@ async function insertStories(file) {
     console.error('Manifest must be a non-empty JSON array.'); process.exit(1)
   }
 
-  // Track the next story_number per language/system/level, seeded from the DB.
-  const nextNumCache = {}
-  async function nextStoryNumber(language, system, level) {
+  // One read per language/system/level, reused for both the next story_number
+  // and the already-inserted titles. The manifest is a growing FILE, not a
+  // queue: every batch appends to it and the insert workflow always runs the
+  // whole thing, so without a skip an insert would duplicate every story from
+  // every previous batch. Titles are the identity here — story_number is
+  // assigned at insert time, so it can't be.
+  const levelCache = {}
+  async function levelState(language, system, level) {
     const key = `${language}|${system}|${level}`
-    if (nextNumCache[key] == null) {
-      const { data, error } = await supabase.from('stories').select('story_number')
+    if (!levelCache[key]) {
+      const { data, error } = await supabase.from('stories').select('story_number, title')
         .eq('language', language).eq('system', system).eq('level', level)
-        .order('story_number', { ascending: false }).limit(1)
       if (error) throw new Error(error.message)
-      nextNumCache[key] = (data && data.length > 0 ? data[0].story_number : 0) + 1
+      const rows = data || []
+      levelCache[key] = {
+        next: rows.reduce((max, r) => Math.max(max, r.story_number || 0), 0) + 1,
+        titles: new Set(rows.map(r => r.title)),
+      }
     }
-    const n = nextNumCache[key]
-    nextNumCache[key] += 1
+    return levelCache[key]
+  }
+  async function nextStoryNumber(language, system, level) {
+    const state = await levelState(language, system, level)
+    const n = state.next
+    state.next += 1
     return n
   }
 
   console.log(`Inserting ${manifest.length} authored story(ies)...\n`)
-  let ok = 0, failed = 0
+  let ok = 0, failed = 0, skipped = 0
   for (const s of manifest) {
     const label = `${s.language}/${s.system}/${s.level} "${s.title}"`
     try {
       for (const f of ['language', 'system', 'level', 'title', 'content']) {
         if (s[f] == null || s[f] === '') throw new Error('missing field: ' + f)
+      }
+      const state = await levelState(s.language, s.system, s.level)
+      if (state.titles.has(s.title) && !hasFlag('allow-duplicates')) {
+        console.log(`↷ ${label}: already in the DB, skipped`)
+        skipped += 1
+        continue
       }
       const contentLines = s.content.split('\n').filter(l => l.trim())
       const englishLines = (s.english_content || '').split('\n').filter(l => l.trim())
@@ -110,6 +131,7 @@ async function insertStories(file) {
       if (s.interactions) row.interactions = s.interactions
       const { error } = await supabase.from('stories').insert(row)
       if (error) throw new Error(error.message)
+      state.titles.add(s.title)
       console.log(`✓ ${label} → #${story_number} (${contentLines.length} lines, ${s.is_published !== false ? 'published' : 'held'})`)
       ok += 1
     } catch (err) {
@@ -117,7 +139,7 @@ async function insertStories(file) {
       failed += 1
     }
   }
-  console.log(`\n--- Done --- ✓ ${ok}  ✗ ${failed}`)
+  console.log(`\n--- Done --- ✓ ${ok}  ↷ ${skipped}  ✗ ${failed}`)
 }
 
 async function main() {
