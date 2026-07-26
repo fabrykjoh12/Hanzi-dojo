@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { getLevelLabel } from './utils'
 import { wordStatus, isPlaceWord } from './storyReading'
 import { spotlightStyle } from './readAlong'
@@ -7,7 +7,7 @@ import { TokenBody, ReadingSettings, RevealEnglishButton } from './ReadingScaffo
 import ReaderLaunch from './ReaderLaunch'
 import WordLookupSheet from './WordLookupSheet'
 import FinishOverlay from './FinishOverlay'
-import { ArrowLeft, Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Play, Pause, ChevronLeft, ChevronRight, Check } from 'lucide-react'
 
 // The exact word just tapped — same amber the classic reader uses for its own
 // selection highlight, so a tap is unmistakably "this one", not just "a lookup
@@ -16,6 +16,9 @@ const TAP_HILITE = 'rgba(217, 164, 62, 0.32)'
 // Proper nouns (character names + curated place names) get this same green
 // text color everywhere, so they read as "a name", not vocabulary to learn.
 const PROPER_NOUN_COLOR = '#2F9E6D'
+// A sentence the learner has confirmed "got it" on turns this same green —
+// one color for "this is understood/known", whether that's a word or a line.
+const DONE_GREEN = '#2F9E6D'
 
 function englishLineFor(story, i) { return (story.english_content || '').split('\n').filter(Boolean)[i] || '' }
 
@@ -29,14 +32,13 @@ export default function SceneReader(props) {
   const accent = c.theme.accentHex
   const levelLabel = getLevelLabel(track.language, track.system, story.level)
   const beat = c.beats[c.cur]
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  const isDone = c.completedBeats.has(c.cur)
   const reserve = c.readingMode !== 'hidden'
   const hasActive = c.playing && c.activeToken >= 0
 
   // While the settings panel is open its buttons own Space/→, not the scene.
   const { setAdvanceBlocked } = c
   const onSettingsOpen = useCallback((open) => {
-    setSettingsOpen(open)
     setAdvanceBlocked(open)
   }, [setAdvanceBlocked])
 
@@ -55,15 +57,15 @@ export default function SceneReader(props) {
         <div style={{ height: '100%', background: accent, width: `${((c.cur + 1) / (c.total || 1)) * 100}%`, transition: c.reduceMotion ? 'none' : 'width .4s ease' }} />
       </div>
 
-      <div onClick={() => { if (settingsOpen) return; c.stopPlay(); c.advance() }}
-        style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', cursor: 'pointer', padding: '24px 28px' }}>
+      <div
+        style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '24px 28px' }}>
         <div style={{ maxWidth: '620px', width: '100%' }}>
           {beat && beat.emoji && (
             <div aria-hidden="true" style={{ fontSize: '72px', lineHeight: 1, marginBottom: '26px' }}>{beat.emoji}</div>
           )}
           {beat && beat.speaker && <div style={{ fontSize: '12.5px', fontWeight: 800, color: accent, marginBottom: '10px' }}>{beat.speaker}</div>}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '8px' }}>
-            <div style={{ fontFamily: c.theme.font, fontSize: '30px', lineHeight: reserve ? 2.05 : 1.6, fontWeight: 500 }}>
+            <div style={{ fontFamily: c.theme.font, fontSize: '30px', lineHeight: reserve ? 2.05 : 1.6, fontWeight: 500, color: isDone ? DONE_GREEN : undefined }}>
               {beat && beat.tokens.map((t, k) => {
                 // Plain runs reserve the same annotation row as scaffolded words,
                 // so the scene's single line never shifts as modes change.
@@ -73,9 +75,7 @@ export default function SceneReader(props) {
                       onClick={(e) => {
                         // A spotlit plain run is part of the line being read, so a
                         // tap on it means "read from here", same as a vocab word.
-                        // No vocab entry here, so it never opens the lookup sheet;
-                        // when the seek can't happen, let the click bubble so
-                        // tap-to-advance still works.
+                        // No vocab entry here, so it never opens the lookup sheet.
                         if (c.playing && c.seekToToken(k)) e.stopPropagation()
                       }}
                       style={{ color: t.name ? PROPER_NOUN_COLOR : 'inherit', ...spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) }}>
@@ -108,6 +108,21 @@ export default function SceneReader(props) {
                 revealed={c.revealedEnglish.has(c.cur)} onToggle={() => c.toggleEnglish(c.cur)}
                 color="var(--text-faint)" activeColor={accent} style={{ marginTop: '4px' }}
               />
+            )}
+            {beat && (
+              <button
+                onClick={(e) => { e.stopPropagation(); c.markBeatDone(c.cur) }}
+                aria-label="Got it — next scene"
+                title="Got it — next"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  width: '34px', height: '34px', borderRadius: '999px', cursor: 'pointer', marginTop: '2px',
+                  border: '1.5px solid ' + (isDone ? DONE_GREEN : 'var(--border)'),
+                  background: isDone ? DONE_GREEN + '1f' : 'var(--surface)',
+                }}
+              >
+                <Check size={18} strokeWidth={2.6} color={isDone ? DONE_GREEN : 'var(--text-muted)'} />
+              </button>
             )}
           </div>
           {beat && story.english_content && c.revealedEnglish.has(c.cur) && (

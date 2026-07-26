@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState } from 'react'
+import { useRef, useEffect, useCallback } from 'react'
 import { getLevelLabel } from './utils'
 import { wordStatus, isPlaceWord } from './storyReading'
 import { spotlightStyle } from './readAlong'
@@ -7,7 +7,7 @@ import { TokenBody, ReadingSettings, RevealEnglishButton } from './ReadingScaffo
 import ReaderLaunch from './ReaderLaunch'
 import WordLookupSheet from './WordLookupSheet'
 import FinishOverlay from './FinishOverlay'
-import { ArrowLeft, Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Play, Pause, ChevronLeft, ChevronRight, Check } from 'lucide-react'
 
 // The exact word just tapped — same amber the classic reader uses for its own
 // selection highlight, so a tap is unmistakably "this one", not just "a lookup
@@ -16,6 +16,9 @@ const TAP_HILITE = 'rgba(217, 164, 62, 0.32)'
 // Proper nouns (character names + curated place names) get this same green
 // text color everywhere, so they read as "a name", not vocabulary to learn.
 const PROPER_NOUN_COLOR = '#2F9E6D'
+// A sentence the learner has confirmed "got it" on turns this same green —
+// one color for "this is understood/known", whether that's a word or a line.
+const DONE_GREEN = '#2F9E6D'
 
 function beatStyle(distance, reduceMotion) {
   if (distance === 0) return { opacity: 1, filter: 'none' }
@@ -34,7 +37,6 @@ export default function PacedReader(props) {
   const stageRef = useRef(null)
   const trackRef = useRef(null)
   const beatEls = useRef([])
-  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Every beat reserves furigana space (not just the lit one), so advancing
   // never re-measures to a different height and the focus scroll stays smooth.
@@ -48,7 +50,6 @@ export default function PacedReader(props) {
   // the panel's own buttons, so hand the keys over for as long as it is up.
   const { setAdvanceBlocked } = c
   const onSettingsOpen = useCallback((open) => {
-    setSettingsOpen(open)
     setAdvanceBlocked(open)
   }, [setAdvanceBlocked])
 
@@ -80,17 +81,18 @@ export default function PacedReader(props) {
         <div style={{ height: '100%', background: accent, width: `${((c.cur + 1) / (c.total || 1)) * 100}%`, transition: c.reduceMotion ? 'none' : 'width .4s ease' }} />
       </div>
 
-      <div ref={stageRef} onClick={() => { if (settingsOpen) return; c.stopPlay(); c.advance() }}
-        style={{ flex: 1, position: 'relative', overflow: 'hidden', cursor: 'pointer', WebkitMaskImage: 'linear-gradient(180deg,transparent,#000 16%,#000 82%,transparent)', maskImage: 'linear-gradient(180deg,transparent,#000 16%,#000 82%,transparent)' }}>
+      <div ref={stageRef}
+        style={{ flex: 1, position: 'relative', overflow: 'hidden', WebkitMaskImage: 'linear-gradient(180deg,transparent,#000 16%,#000 82%,transparent)', maskImage: 'linear-gradient(180deg,transparent,#000 16%,#000 82%,transparent)' }}>
         <div ref={trackRef} style={{ position: 'absolute', left: 0, right: 0, padding: '0 28px', maxWidth: '680px', margin: '0 auto', transition: c.reduceMotion ? 'none' : 'transform .55s cubic-bezier(.33,1,.68,1)' }}>
           {c.beats.map((b, i) => {
             const st = beatStyle(i - c.cur, c.reduceMotion)
+            const isDone = c.completedBeats.has(i)
             return (
               <div key={i} ref={el => { beatEls.current[i] = el }} aria-hidden={i !== c.cur}
                 style={{ padding: '26px 0', transition: c.reduceMotion ? 'none' : 'opacity .45s ease, filter .45s ease', ...st }}>
                 {b.speaker && <div style={{ fontSize: '12.5px', fontWeight: 800, color: accent, marginBottom: '9px' }}>{b.speaker}</div>}
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                  <div style={{ flex: 1, fontFamily: c.theme.font, fontSize: '30px', lineHeight: reserve ? 2.05 : 1.62, fontWeight: 500 }}>
+                  <div style={{ flex: 1, fontFamily: c.theme.font, fontSize: '30px', lineHeight: reserve ? 2.05 : 1.62, fontWeight: 500, color: isDone ? DONE_GREEN : undefined }}>
                     {b.tokens.map((t, k) => {
                       // Plain runs still route through TokenBody so they reserve the
                       // same annotation row and sit on the line's shared baseline.
@@ -102,8 +104,7 @@ export default function PacedReader(props) {
                               // word) is part of the line being read, so a tap on
                               // it means the same thing as a tap on a word: seek
                               // there. It carries no vocab entry, so it never opens
-                              // the lookup sheet — when the seek can't happen, let
-                              // the click bubble so tap-to-advance still works.
+                              // the lookup sheet.
                               if (c.playing && c.seekToToken(k)) e.stopPropagation()
                             } : undefined}
                             style={{
@@ -146,6 +147,21 @@ export default function PacedReader(props) {
                       revealed={c.revealedEnglish.has(i)} onToggle={() => c.toggleEnglish(i)}
                       color="var(--text-faint)" activeColor={accent} style={{ marginTop: '4px' }}
                     />
+                  )}
+                  {i === c.cur && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); c.markBeatDone(i) }}
+                      aria-label="Got it — next sentence"
+                      title="Got it — next"
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                        width: '34px', height: '34px', borderRadius: '999px', cursor: 'pointer', marginTop: '2px',
+                        border: '1.5px solid ' + (isDone ? DONE_GREEN : 'var(--border)'),
+                        background: isDone ? DONE_GREEN + '1f' : 'var(--surface)',
+                      }}
+                    >
+                      <Check size={18} strokeWidth={2.6} color={isDone ? DONE_GREEN : 'var(--text-muted)'} />
+                    </button>
                   )}
                 </div>
                 {i === c.cur && b.english && c.revealedEnglish.has(i) && (

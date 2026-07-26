@@ -40,6 +40,11 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   // English translation, via the eye icon beside each sentence. Each sentence
   // owns its own bit — revealing one never shows (or hides) any other.
   const [revealedEnglish, setRevealedEnglish] = useState(() => new Set())
+  // Beats the learner has confirmed "got it" on (the green check mark), so the
+  // sentence stays visibly done if they scroll back to it. Advancing through
+  // the story now requires this explicit confirmation rather than any tap on
+  // the screen — see markBeatDone.
+  const [completedBeats, setCompletedBeats] = useState(() => new Set())
   const pickedRef = useRef(false)      // the learner chose a mode this session
   const ratePickedRef = useRef(false)  // the learner chose a rate this session (own flag: rate and mode must not gate each other)
   const firstSaveRef = useRef(true)    // don't persist the un-loaded default
@@ -119,6 +124,21 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   }, [isRead, session, story.id, story.tier, onMarkRead, stopPlay, firstMission, readability.knownPct])
 
   const advance = useCallback(() => { if (cur >= total - 1) finish(); else go(cur + 1) }, [cur, total, finish, go])
+
+  // The learner confirms they understood the current sentence: it's tinted
+  // green for good, and the reader moves on. This is now the ONLY way a paced
+  // beat advances — a tap on the screen no longer does it, so a page turn
+  // always means "yes, I got that", not an accidental tap.
+  const markBeatDone = useCallback((idx) => {
+    setCompletedBeats(prev => {
+      if (prev.has(idx)) return prev
+      const next = new Set(prev)
+      next.add(idx)
+      return next
+    })
+    stopPlay()
+    advance()
+  }, [stopPlay, advance])
 
   // The narration for one beat, best source first:
   //   1. the generated per-utterance clip (a real voice, correct pronunciation),
@@ -420,8 +440,8 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
 
   return {
     theme, reduceMotion, beats, readability, total, ttsLang,
-    started, cur, done, playing, selected, readingMode, revealedEnglish, activeToken, rate,
-    setReadingMode: pickReadingMode, toggleEnglish, setSelected, setRate: pickRate,
+    started, cur, done, playing, selected, readingMode, revealedEnglish, completedBeats, activeToken, rate,
+    setReadingMode: pickReadingMode, toggleEnglish, markBeatDone, setSelected, setRate: pickRate,
     go, advance, finish, stopPlay, togglePlay, speakWord, replayLine, selectWord, addToDeck,
     seekToToken,
     start, backToStart, setAdvanceBlocked,
