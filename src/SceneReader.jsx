@@ -3,7 +3,7 @@ import { getLevelLabel } from './utils'
 import { wordStatus, isPlaceWord } from './storyReading'
 import { spotlightStyle } from './readAlong'
 import { useStoryReaderCore } from './useStoryReaderCore'
-import { TokenBody, ReadingSettings } from './ReadingScaffold'
+import { TokenBody, ReadingSettings, RevealEnglishButton } from './ReadingScaffold'
 import ReaderLaunch from './ReaderLaunch'
 import WordLookupSheet from './WordLookupSheet'
 import FinishOverlay from './FinishOverlay'
@@ -62,47 +62,57 @@ export default function SceneReader(props) {
             <div aria-hidden="true" style={{ fontSize: '72px', lineHeight: 1, marginBottom: '26px' }}>{beat.emoji}</div>
           )}
           {beat && beat.speaker && <div style={{ fontSize: '12.5px', fontWeight: 800, color: accent, marginBottom: '10px' }}>{beat.speaker}</div>}
-          <div style={{ fontFamily: c.theme.font, fontSize: '30px', lineHeight: reserve ? 2.05 : 1.6, fontWeight: 500 }}>
-            {beat && beat.tokens.map((t, k) => {
-              // Plain runs reserve the same annotation row as scaffolded words,
-              // so the scene's single line never shifts as modes change.
-              if (!t.vocab) {
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '8px' }}>
+            <div style={{ fontFamily: c.theme.font, fontSize: '30px', lineHeight: reserve ? 2.05 : 1.6, fontWeight: 500 }}>
+              {beat && beat.tokens.map((t, k) => {
+                // Plain runs reserve the same annotation row as scaffolded words,
+                // so the scene's single line never shifts as modes change.
+                if (!t.vocab) {
+                  return (
+                    <span key={k}
+                      onClick={(e) => {
+                        // A spotlit plain run is part of the line being read, so a
+                        // tap on it means "read from here", same as a vocab word.
+                        // No vocab entry here, so it never opens the lookup sheet;
+                        // when the seek can't happen, let the click bubble so
+                        // tap-to-advance still works.
+                        if (c.playing && c.seekToToken(k)) e.stopPropagation()
+                      }}
+                      style={{ color: t.name ? PROPER_NOUN_COLOR : 'inherit', ...spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) }}>
+                      <TokenBody text={t.text} reading={null} mode={c.readingMode} status="not_started" language={track.language} reserve={reserve} />
+                    </span>
+                  )
+                }
+                const status = wordStatus(t.vocab.id, userCards)
+                const tokenId = c.cur + ':' + k
+                const isSelected = c.selected && c.selected.tokenId === tokenId
+                const isPlace = isPlaceWord(t.vocab.word, track.language)
                 return (
-                  <span key={k}
-                    onClick={(e) => {
-                      // A spotlit plain run is part of the line being read, so a
-                      // tap on it means "read from here", same as a vocab word.
-                      // No vocab entry here, so it never opens the lookup sheet;
-                      // when the seek can't happen, let the click bubble so
-                      // tap-to-advance still works.
-                      if (c.playing && c.seekToToken(k)) e.stopPropagation()
-                    }}
-                    style={{ color: t.name ? PROPER_NOUN_COLOR : 'inherit', ...spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) }}>
-                    <TokenBody text={t.text} reading={null} mode={c.readingMode} status="not_started" language={track.language} reserve={reserve} />
+                  <span key={k} onClick={(e) => {
+                    e.stopPropagation()
+                    if (c.playing && c.seekToToken(k)) return
+                    c.selectWord(t.vocab, status, tokenId)
+                  }}
+                    style={{ cursor: 'pointer', borderRadius: '4px', padding: '0 1px',
+                      color: isPlace ? PROPER_NOUN_COLOR : 'inherit',
+                      background: isSelected ? TAP_HILITE : (status === 'not_started' ? accent + '1f' : (status === 'learning' ? '#CA8A0422' : 'transparent')),
+                      boxShadow: isSelected ? '0 0 0 1px rgba(202,138,4,0.5)' : (status === 'not_started' ? 'inset 0 -2px 0 ' + accent + '66' : 'none'),
+                      ...spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) }}>
+                    <TokenBody text={t.text} reading={t.vocab.reading} mode={c.readingMode} status={status} language={track.language} reserve={reserve} meaning={t.vocab.meaning} />
                   </span>
                 )
-              }
-              const status = wordStatus(t.vocab.id, userCards)
-              const tokenId = c.cur + ':' + k
-              const isSelected = c.selected && c.selected.tokenId === tokenId
-              const isPlace = isPlaceWord(t.vocab.word, track.language)
-              return (
-                <span key={k} onClick={(e) => {
-                  e.stopPropagation()
-                  if (c.playing && c.seekToToken(k)) return
-                  c.selectWord(t.vocab, status, tokenId)
-                }}
-                  style={{ cursor: 'pointer', borderRadius: '4px', padding: '0 1px',
-                    color: isPlace ? PROPER_NOUN_COLOR : 'inherit',
-                    background: isSelected ? TAP_HILITE : (status === 'not_started' ? accent + '1f' : (status === 'learning' ? '#CA8A0422' : 'transparent')),
-                    boxShadow: isSelected ? '0 0 0 1px rgba(202,138,4,0.5)' : (status === 'not_started' ? 'inset 0 -2px 0 ' + accent + '66' : 'none'),
-                    ...spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) }}>
-                  <TokenBody text={t.text} reading={t.vocab.reading} mode={c.readingMode} status={status} language={track.language} reserve={reserve} meaning={t.vocab.meaning} />
-                </span>
-              )
-            })}
+              })}
+            </div>
+            {beat && story.english_content && (
+              <RevealEnglishButton
+                revealed={c.revealedEnglish.has(c.cur)} onToggle={() => c.toggleEnglish(c.cur)}
+                color="var(--text-faint)" activeColor={accent} style={{ marginTop: '4px' }}
+              />
+            )}
           </div>
-          {c.showEn && beat && story.english_content && <div style={{ fontSize: '14px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '16px' }}>{englishLineFor(story, c.cur)}</div>}
+          {beat && story.english_content && c.revealedEnglish.has(c.cur) && (
+            <div style={{ fontSize: '14px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '16px' }}>{englishLineFor(story, c.cur)}</div>
+          )}
         </div>
       </div>
       <div aria-live="polite" style={srOnly}>{beat ? beat.text : ''}</div>
@@ -111,8 +121,6 @@ export default function SceneReader(props) {
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
           <ReadingSettings
             mode={c.readingMode} setMode={c.setReadingMode}
-            showEnglish={c.showEn} setShowEnglish={c.setShowEn}
-            hasEnglish={Boolean(story.english_content)}
             language={track.language} accent={accent} onOpenChange={onSettingsOpen}
             rate={c.rate} setRate={c.setRate}
           />

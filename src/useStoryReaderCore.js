@@ -36,10 +36,10 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   // exactly the legacy path.
   const [utteranceIds, setUtteranceIds] = useState({})
   const [readingMode, setReadingMode] = useState(DEFAULT_READING_MODE)
-  // On by default: seeing the English sentence next to the original is what
-  // lets a learner connect word order/grammar to meaning, not just vocabulary
-  // — a learner can still switch it off from the reading settings.
-  const [showEn, setShowEn] = useState(true)
+  // Per-sentence reveal: which beat/bubble indices currently show their
+  // English translation, via the eye icon beside each sentence. Each sentence
+  // owns its own bit — revealing one never shows (or hides) any other.
+  const [revealedEnglish, setRevealedEnglish] = useState(() => new Set())
   const pickedRef = useRef(false)      // the learner chose a mode this session
   const ratePickedRef = useRef(false)  // the learner chose a rate this session (own flag: rate and mode must not gate each other)
   const firstSaveRef = useRef(true)    // don't persist the un-loaded default
@@ -274,6 +274,15 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     return true
   }, [])
 
+  // Flip one sentence's reveal bit, leaving every other sentence untouched.
+  const toggleEnglish = useCallback((idx) => {
+    setRevealedEnglish(prev => {
+      const next = new Set(prev)
+      if (next.has(idx)) next.delete(idx); else next.add(idx)
+      return next
+    })
+  }, [])
+
   const pickRate = useCallback((next) => {
     if (SPEED_RATES.indexOf(next) === -1) return
     ratePickedRef.current = true
@@ -411,8 +420,8 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
 
   return {
     theme, reduceMotion, beats, readability, total, ttsLang,
-    started, cur, done, playing, selected, readingMode, showEn, activeToken, rate,
-    setReadingMode: pickReadingMode, setShowEn, setSelected, setRate: pickRate,
+    started, cur, done, playing, selected, readingMode, revealedEnglish, activeToken, rate,
+    setReadingMode: pickReadingMode, toggleEnglish, setSelected, setRate: pickRate,
     go, advance, finish, stopPlay, togglePlay, speakWord, replayLine, selectWord, addToDeck,
     seekToToken,
     start, backToStart, setAdvanceBlocked,

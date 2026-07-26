@@ -20,6 +20,7 @@ import { BRAND_URL } from './brand'
 import { ArrowLeft, Bookmark, Volume2, Play, Pause, Languages, ChevronRight, UserRound, MapPin, Check, X, Sparkles, Home, Sliders, Eye, Clock, Repeat, Lock, Share2, BookOpen } from 'lucide-react'
 import ComprehensionCheck from './ComprehensionCheck'
 import StoryCover from './StoryCover'
+import { RevealEnglishButton } from './ReadingScaffold'
 
 // HSKStory-inspired immersion reader for BOTH languages. Light theme. Tap a word
 // for a bottom-sheet definition; pinyin (Chinese) / furigana (Japanese) and
@@ -37,14 +38,14 @@ const PROPER_NOUN_COLOR = '#2F9E6D'
 
 const SPEAKER_PALETTE = ['#B83A24', '#2E6FB8', '#2F9E6D', '#C2680E', '#7C5CD0', '#B83A7A']
 
-// Durable reader preferences (furigana mode, Learning Lens, translation). Stored
-// in the prefs store so a reader's chosen scaffolding survives reloads without a
-// round-trip to the server. Default: scaffold only unknown words, lens off,
-// English sentence translation ON — the page reads like a book, but the
-// learner sees what each line actually means (and so its grammar) without
-// having to ask for it first.
+// Durable reader preferences (furigana mode, Learning Lens, serif). Stored in
+// the prefs store so a reader's chosen scaffolding survives reloads without a
+// round-trip to the server. Default: scaffold only unknown words, lens off —
+// the page reads like a book until the learner asks for more help. Sentence
+// translation is NOT a durable preference: each line has its own eye icon
+// (see RevealEnglishButton) so it's a per-sentence, per-session choice.
 const READER_PREFS_KEY = 'reader:prefs'
-const DEFAULT_PREFS = { furiganaMode: 'unknown', lens: false, showEnglish: true, serif: false, seenFocusHint: false }
+const DEFAULT_PREFS = { furiganaMode: 'unknown', lens: false, serif: false, seenFocusHint: false }
 
 // Serif reading-font stacks, per script. These lean on the OS's own serif faces
 // (genuinely book-like for CJK, and free) so we never load a web font — any named
@@ -294,7 +295,15 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const [selected, setSelected] = useState(null)
   const [furiganaMode, setFuriganaMode] = useState(DEFAULT_PREFS.furiganaMode)
   const [lens, setLens] = useState(DEFAULT_PREFS.lens)
-  const [showEnglish, setShowEnglish] = useState(DEFAULT_PREFS.showEnglish)
+  // Per-line reveal: which line indices currently show their English
+  // translation, via the eye icon beside each sentence — not a durable,
+  // all-or-nothing preference.
+  const [revealedLines, setRevealedLines] = useState(() => new Set())
+  const toggleLineEnglish = (li) => setRevealedLines(prev => {
+    const next = new Set(prev)
+    if (next.has(li)) next.delete(li); else next.add(li)
+    return next
+  })
   const [serif, setSerif] = useState(DEFAULT_PREFS.serif)
   const [seenFocusHint, setSeenFocusHint] = useState(DEFAULT_PREFS.seenFocusHint)
   const [showSentence, setShowSentence] = useState(false)
@@ -357,7 +366,6 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
       if (live && saved && typeof saved === 'object') {
         if (FURIGANA_OPTIONS.some(o => o.value === saved.furiganaMode)) setFuriganaMode(saved.furiganaMode)
         if (typeof saved.lens === 'boolean') setLens(saved.lens)
-        if (typeof saved.showEnglish === 'boolean') setShowEnglish(saved.showEnglish)
         if (typeof saved.serif === 'boolean') setSerif(saved.serif)
         if (typeof saved.seenFocusHint === 'boolean') setSeenFocusHint(saved.seenFocusHint)
       }
@@ -366,8 +374,8 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   }, [])
   useEffect(() => {
     if (!prefsReady.current) return
-    prefsSet(READER_PREFS_KEY, { furiganaMode, lens, showEnglish, serif, seenFocusHint })
-  }, [furiganaMode, lens, showEnglish, serif, seenFocusHint])
+    prefsSet(READER_PREFS_KEY, { furiganaMode, lens, serif, seenFocusHint })
+  }, [furiganaMode, lens, serif, seenFocusHint])
 
   // Close the desktop settings popover on an outside click (the mobile sheet has
   // its own tap-to-close scrim, so this only matters on desktop).
@@ -768,9 +776,8 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             <ReaderSettings
               furiganaMode={furiganaMode} setFuriganaMode={setFuriganaMode}
               lens={lens} setLens={setLens}
-              showEnglish={showEnglish} setShowEnglish={setShowEnglish}
               serif={serif} setSerif={setSerif}
-              hasEnglish={Boolean(story.english_content)} readingLabel={readingLabel}
+              readingLabel={readingLabel}
               accent={accent} onClose={() => setSettingsOpen(false)} isMobile={false}
             />
           )}
@@ -907,39 +914,47 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                   // buttons; words (Token) show the pointer that invites a tap.
                 }}
               >
-                <p style={{
-                  margin: 0,
-                  fontSize: isMobile ? '20px' : '22px',
-                  lineHeight: reserveRuby ? 2.15 : 1.9,
-                  fontFamily: readingFont, color: TEXT, fontWeight: 400,
-                  letterSpacing: isJapanese || isChinese ? '0.01em' : 'normal',
-                  // Alphabetic scripts read more book-like with even measure and no
-                  // stranded last word; CJK wraps per-character so leave it default.
-                  textWrap: isJapanese || isChinese ? 'initial' : 'pretty',
-                  // Read-along highlight: the line the TTS is currently speaking.
-                  background: li === speakingLine ? HILITE : 'transparent',
-                  borderRadius: '8px',
-                  boxShadow: li === speakingLine ? '0 0 0 6px ' + HILITE : 'none',
-                  transition: 'background 200ms ease, box-shadow 200ms ease',
-                }}>
-                  {tokens.map((tk, ti) => (
-                    <Token
-                      key={ti}
-                      token={tk}
-                      furiganaMode={furiganaMode}
-                      reserveRuby={reserveRuby}
-                      isJapanese={isJapanese}
-                      lens={lens}
-                      status={tk.vocab ? wordStatus(tk.vocab.id, userCards) : 'not_started'}
-                      today={Boolean(tk.vocab && todaySet.has(tk.vocab.word))}
-                      accent={accent}
-                      isPlace={Boolean(tk.vocab && isPlaceWord(tk.vocab.word, track.language))}
-                      isSelected={Boolean(sel) && sel.lineIndex === li && sel.tokenKey === ti}
-                      onSelect={() => selectToken(li, ti, tk)}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                  <p style={{
+                    margin: 0, flex: 1,
+                    fontSize: isMobile ? '20px' : '22px',
+                    lineHeight: reserveRuby ? 2.15 : 1.9,
+                    fontFamily: readingFont, color: TEXT, fontWeight: 400,
+                    letterSpacing: isJapanese || isChinese ? '0.01em' : 'normal',
+                    // Alphabetic scripts read more book-like with even measure and no
+                    // stranded last word; CJK wraps per-character so leave it default.
+                    textWrap: isJapanese || isChinese ? 'initial' : 'pretty',
+                    // Read-along highlight: the line the TTS is currently speaking.
+                    background: li === speakingLine ? HILITE : 'transparent',
+                    borderRadius: '8px',
+                    boxShadow: li === speakingLine ? '0 0 0 6px ' + HILITE : 'none',
+                    transition: 'background 200ms ease, box-shadow 200ms ease',
+                  }}>
+                    {tokens.map((tk, ti) => (
+                      <Token
+                        key={ti}
+                        token={tk}
+                        furiganaMode={furiganaMode}
+                        reserveRuby={reserveRuby}
+                        isJapanese={isJapanese}
+                        lens={lens}
+                        status={tk.vocab ? wordStatus(tk.vocab.id, userCards) : 'not_started'}
+                        today={Boolean(tk.vocab && todaySet.has(tk.vocab.word))}
+                        accent={accent}
+                        isPlace={Boolean(tk.vocab && isPlaceWord(tk.vocab.word, track.language))}
+                        isSelected={Boolean(sel) && sel.lineIndex === li && sel.tokenKey === ti}
+                        onSelect={() => selectToken(li, ti, tk)}
+                      />
+                    ))}
+                  </p>
+                  {englishLines[li] && (
+                    <RevealEnglishButton
+                      revealed={revealedLines.has(li)} onToggle={() => toggleLineEnglish(li)}
+                      color={MUTED} activeColor={accent} style={{ marginTop: '4px' }}
                     />
-                  ))}
-                </p>
-                {showEnglish && englishLines[li] && (
+                  )}
+                </div>
+                {revealedLines.has(li) && englishLines[li] && (
                   <p style={{ margin: '6px 0 0', fontSize: isMobile ? '14px' : '15px', lineHeight: 1.55, color: MUTED, fontStyle: 'italic' }}>
                     {speaker ? splitSpeaker(englishLines[li]).text : englishLines[li]}
                   </p>
@@ -1219,9 +1234,8 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             <ReaderSettings
               furiganaMode={furiganaMode} setFuriganaMode={setFuriganaMode}
               lens={lens} setLens={setLens}
-              showEnglish={showEnglish} setShowEnglish={setShowEnglish}
               serif={serif} setSerif={setSerif}
-              hasEnglish={Boolean(story.english_content)} readingLabel={readingLabel}
+              readingLabel={readingLabel}
               accent={accent} onClose={() => setSettingsOpen(false)} isMobile
             />
           </div>
@@ -1345,10 +1359,12 @@ function MetaChip({ icon: Icon, children, accent, strong = false }) {
   )
 }
 
-// Reader preferences: furigana mode, Learning Lens, translation. Shared by the
+// Reader preferences: furigana mode, reading font, Learning Lens. Shared by the
 // desktop popover and the mobile bottom sheet. Kept presentational — all state
 // lives in the reader so the choices persist and never reload the story.
-function ReaderSettings({ furiganaMode, setFuriganaMode, lens, setLens, showEnglish, setShowEnglish, serif, setSerif, hasEnglish, readingLabel, accent, onClose, isMobile }) {
+// Sentence translation lives outside this panel — a RevealEnglishButton sits
+// beside each line instead.
+function ReaderSettings({ furiganaMode, setFuriganaMode, lens, setLens, serif, setSerif, readingLabel, accent, onClose, isMobile }) {
   const wrap = isMobile
     ? { width: '100%' }
     : {
@@ -1418,18 +1434,6 @@ function ReaderSettings({ furiganaMode, setFuriganaMode, lens, setLens, showEngl
         hint="Spotlight new and learning words; quiet the ones you know."
         on={lens} onToggle={() => setLens(v => !v)} accent={accent}
       />
-
-      {/* Translation */}
-      {hasEnglish && (
-        <>
-          <div style={{ height: '1px', background: 'var(--border)', margin: '15px 0' }} />
-          <SettingRow
-            label="Show translation"
-            hint="Print the English line under each sentence."
-            on={showEnglish} onToggle={() => setShowEnglish(v => !v)} accent={accent}
-          />
-        </>
-      )}
 
       {isMobile && (
         <button onClick={onClose} style={{

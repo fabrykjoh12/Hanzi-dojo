@@ -3,7 +3,7 @@ import { tokenReading, furiganaSplit, FURIGANA_MODES } from './storyReading'
 import { cleanMeaning } from './cleanMeaning'
 import { SPEED_RATES } from './readAlong'
 import { useIsMobile } from './useIsMobile'
-import { Sliders, X } from 'lucide-react'
+import { Sliders, X, Eye, EyeOff } from 'lucide-react'
 
 // Per-word reading scaffolding, shared by the paced / chat / scene readers.
 // The DECISION of whether a word shows its reading lives in storyReading.js
@@ -69,10 +69,36 @@ export function TokenBody({ text, reading, mode, status, language, reserve, rtCo
   return <><ruby>{text}<rt style={rtStyle}>{shown}</rt></ruby>{glossEl}</>
 }
 
+// The per-sentence "reveal meaning" control: a plain eye icon that sits beside
+// one sentence/beat/bubble. Each caller owns its own revealed flag (usually one
+// bit in a Set keyed by beat/bubble index) — this button never affects any
+// sentence but the one it's attached to, so tapping it always means "this one".
+export function RevealEnglishButton({ revealed, onToggle, color = 'var(--text-muted)', activeColor, style }) {
+  const Icon = revealed ? EyeOff : Eye
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); onToggle() }}
+      aria-label={revealed ? 'Hide English translation' : 'Show English translation'}
+      aria-pressed={revealed}
+      title={revealed ? 'Hide translation' : 'Show translation'}
+      style={{
+        background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        ...style,
+      }}
+    >
+      <Icon size={16} strokeWidth={2} color={revealed ? (activeColor || color) : color} />
+    </button>
+  )
+}
+
 // The quiet control: one button that opens a small settings panel (popover on
-// desktop, bottom sheet on phones) holding the reading mode and the English
-// toggle — rather than a row of always-on switches competing with the story.
-export function ReadingSettings({ mode, setMode, showEnglish, setShowEnglish, hasEnglish, language, accent, onOpenChange, compact = false, placement = 'top', tint, rate, setRate }) {
+// desktop, bottom sheet on phones) holding the reading mode and speed — rather
+// than a row of always-on switches competing with the story. Sentence English
+// lives outside this panel now: a RevealEnglishButton sits beside each
+// sentence instead, so translation is a direct per-line action, not a buried
+// all-or-nothing setting.
+export function ReadingSettings({ mode, setMode, language, accent, onOpenChange, compact = false, placement = 'top', tint, rate, setRate }) {
   const [open, setOpen] = useState(false)
   const isMobile = useIsMobile()
   const btnRef = useRef(null)
@@ -168,22 +194,6 @@ export function ReadingSettings({ mode, setMode, showEnglish, setShowEnglish, ha
               )
             })}
           </div>
-        </div>
-      )}
-      {hasEnglish && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
-          <span style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text)' }}>English</span>
-          <button
-            onClick={() => setShowEnglish(v => !v)}
-            aria-pressed={showEnglish}
-            style={{
-              fontSize: '12px', fontWeight: 700, padding: '7px 14px', borderRadius: '999px', cursor: 'pointer',
-              fontFamily: 'Inter, sans-serif',
-              border: '1px solid ' + (showEnglish ? accent + '73' : 'var(--border)'),
-              background: showEnglish ? accent + '14' : 'var(--surface)',
-              color: showEnglish ? accent : 'var(--text-muted)',
-            }}
-          >{showEnglish ? 'On' : 'Off'}</button>
         </div>
       )}
     </div>

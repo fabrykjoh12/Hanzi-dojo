@@ -67,7 +67,6 @@ export default function ChatReader(props) {
         <div style={{ flex: 1, textAlign: 'center', fontSize: '13px', fontWeight: 700, color: '#333', fontFamily: c.theme.font }}>{story.title}</div>
         <ReadingSettings
           mode={c.readingMode} setMode={c.setReadingMode}
-          showEnglish={c.showEn} setShowEnglish={c.setShowEn} hasEnglish={Boolean(story.english_content)}
           language={track.language} accent={accent} onOpenChange={onSettingsOpen}
           compact placement="bottom" tint={CHAT_TINT}
           rate={c.rate} setRate={c.setRate}
@@ -76,7 +75,7 @@ export default function ChatReader(props) {
       </div>
 
       <div onClick={() => { if (settingsOpen) return; c.stopPlay(); c.advance() }} style={{ flex: 1, overflowY: 'auto', padding: '10px 14px 20px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <ChatThread revealed={revealed} sides={sides} skin={skin} theme={c.theme} accent={accent} userCards={userCards} readingMode={c.readingMode} language={track.language} activeIndex={c.cur} typingBeat={typing ? pending : null} reduceMotion={c.reduceMotion} onSelectWord={c.selectWord} activeToken={c.activeToken} onSeekToken={c.seekToToken} playing={c.playing} selected={c.selected} showEnglish={c.showEn} />
+        <ChatThread revealed={revealed} sides={sides} skin={skin} theme={c.theme} accent={accent} userCards={userCards} readingMode={c.readingMode} language={track.language} activeIndex={c.cur} typingBeat={typing ? pending : null} reduceMotion={c.reduceMotion} onSelectWord={c.selectWord} activeToken={c.activeToken} onSeekToken={c.seekToToken} playing={c.playing} selected={c.selected} revealedEnglish={c.revealedEnglish} onToggleEnglish={c.toggleEnglish} />
       </div>
       <div aria-live="polite" style={srOnly}>{revealed.length ? revealed[revealed.length - 1].text : ''}</div>
 
