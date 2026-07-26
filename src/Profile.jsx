@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
-import { languageTheme } from './languageTheme'
+import { languageTheme, availableLanguages } from './languageTheme'
 import { PageHeader } from './panels'
 import { isMastered } from './mastery'
 import { cleanMeaning } from './cleanMeaning'
@@ -17,7 +17,7 @@ import { STUCK_LAPSES } from './stuckWord'
 import { BRAND_URL } from './brand'
 import {
   ArrowLeft, Layers, LogOut, RotateCcw, Save,
-  Sparkles, Target, CalendarCheck, Award, Share2, Check, AlertTriangle, TrendingUp, BookOpen,
+  Sparkles, Target, CalendarCheck, Award, Share2, Check, AlertTriangle, TrendingUp, BookOpen, Trash2,
 } from 'lucide-react'
 
 const ACH_ICONS = { layers: Layers, sparkles: Sparkles, calendar: CalendarCheck, book: BookOpen }
@@ -87,6 +87,13 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   // column), so clearing them is a separate, explicit decision — never a side
   // effect of resetting one language.
   const [clearHistory, setClearHistory] = useState(false)
+  // A track for a language that's since been paused (not in availableLanguages)
+  // stays on the account so it's never silently orphaned — see LanguageSwitcher.
+  // This lets the learner actually drop it instead of it just sitting there.
+  const [removeTarget, setRemoveTarget] = useState(null)
+  const [confirmingRemove, setConfirmingRemove] = useState(false)
+  const [removing, setRemoving] = useState(false)
+  const [removeError, setRemoveError] = useState('')
   const [loading, setLoading] = useState(true)
   const [activity, setActivity] = useState({})
   const [shared, setShared] = useState(false)
@@ -254,6 +261,69 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     // Any other track only affects data this screen doesn't show.
     if (targetTrack.language === track.language) onNavigate('home')
     else await loadStats()
+  }
+
+  // Tracks for a language nobody can start anymore (paused, e.g. Japanese/
+  // Russian) — the only ones this account can actually drop. Chinese (or any
+  // currently-offered language) never shows here; there's nothing "stuck" to
+  // remove.
+  const removableTracks = tracks.filter(
+    t => !availableLanguages(!!profile?.is_admin).some(l => l.key === t.language)
+  )
+
+  const removeLanguageTrack = async (langCode) => {
+    if (!confirmingRemove) {
+      setConfirmingRemove(true)
+      setRemoveError('')
+      return
+    }
+
+    setRemoving(true)
+    setRemoveError('')
+
+    const wasActive = profile.active_language === langCode
+    const target = tracks.find(t => t.language === langCode)
+    // Fall back to Chinese if the account has it, else whatever track is left.
+    const fallback = tracks.find(t => t.language === 'chinese' && t.language !== langCode)
+      || tracks.find(t => t.language !== langCode)
+
+    // Same RPC the "Reset a language" panel uses — clears cards, review logs,
+    // writing stats, story reads, test attempts and unlocks for this track,
+    // so the delete below doesn't leave any of that behind as orphaned rows.
+    const { error: resetErr } = await supabase.rpc('reset_language_progress', {
+      p_language: langCode,
+      p_system: target.system,
+    })
+    if (resetErr) {
+      setRemoveError(resetErr.message)
+      setRemoving(false)
+      return
+    }
+
+    const { error } = await supabase
+      .from('language_tracks')
+      .delete()
+      .eq('user_id', session.user.id)
+      .eq('language', langCode)
+
+    if (error) {
+      setRemoveError(error.message)
+      setRemoving(false)
+      return
+    }
+
+    if (wasActive && fallback) {
+      await supabase.from('profiles').update({ active_language: fallback.language }).eq('id', session.user.id)
+    }
+
+    setRemoving(false)
+    setConfirmingRemove(false)
+    setRemoveTarget(null)
+    setTracks(prev => prev.filter(t => t.language !== langCode))
+
+    // Same reasoning as resetProgress: only reload through Home when the
+    // change actually affects the active track.
+    if (wasActive && fallback) onNavigate('home')
   }
 
   const masteryPct = stats.totalWords > 0
@@ -607,6 +677,77 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
           </div>
         )}
       </Panel>
+
+      {/* Only shows up for a track whose language has since been paused (e.g.
+          Japanese/Russian) — it stuck around so it's never silently orphaned,
+          but the learner can choose to actually drop it here. */}
+      {removableTracks.length > 0 && (
+        <Panel danger>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '18px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Remove a language</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
+                {removeTarget
+                  ? <>Deletes your <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{languageTheme(removeTarget).languageName}</strong> track and its flashcards, tests, story reads and unlocks. This can't be undone.</>
+                  : "These tracks are for a language that's not offered right now — pick one to remove it."}
+              </div>
+            </div>
+            {removeTarget && (
+              <SmallButton onClick={() => removeLanguageTrack(removeTarget)} danger filled={confirmingRemove} disabled={removing} icon={Trash2}>
+                {removing ? 'Removing' : confirmingRemove ? 'Confirm remove' : 'Remove'}
+              </SmallButton>
+            )}
+          </div>
+
+          <div role="radiogroup" aria-label="Language to remove" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '14px' }}>
+            {removableTracks.map(t => {
+              const on = t.language === removeTarget
+              return (
+                <button
+                  key={t.language}
+                  role="radio"
+                  aria-checked={on}
+                  disabled={confirmingRemove}
+                  onClick={() => { setRemoveTarget(t.language); setConfirmingRemove(false); setRemoveError('') }}
+                  style={{
+                    padding: '7px 13px', borderRadius: '9px', cursor: confirmingRemove ? 'default' : 'pointer',
+                    fontFamily: 'Inter, sans-serif', fontSize: '13px',
+                    fontWeight: on ? 700 : 550,
+                    border: '1px solid ' + (on ? '#DC2626' : 'var(--border)'),
+                    background: on ? 'var(--danger-bg)' : 'var(--surface)',
+                    color: on ? '#DC2626' : 'var(--text-muted)',
+                    opacity: confirmingRemove && !on ? 0.5 : 1,
+                  }}
+                >
+                  {languageTheme(t.language).languageName}
+                  <span style={{ opacity: 0.7, fontWeight: 500 }}>
+                    {' · ' + getLevelLabel(t.language, t.system, t.current_level)}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          {confirmingRemove && !removing && (
+            <button
+              onClick={() => { setConfirmingRemove(false); setRemoveError('') }}
+              style={{
+                marginTop: '12px', background: 'none', border: 'none',
+                padding: 0, color: 'var(--text-muted)', cursor: 'pointer',
+                fontSize: '13px', fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              Cancel remove
+            </button>
+          )}
+
+          {removeError && (
+            <div style={{ fontSize: '12px', color: '#DC2626', marginTop: '10px', lineHeight: 1.4 }}>
+              {removeError}
+            </div>
+          )}
+        </Panel>
+      )}
 
       <button
         onClick={() => supabase.auth.signOut()}
