@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback, useState } from 'react'
 import { getLevelLabel } from './utils'
-import { wordStatus } from './storyReading'
+import { wordStatus, isPlaceWord } from './storyReading'
 import { spotlightStyle } from './readAlong'
 import { useStoryReaderCore } from './useStoryReaderCore'
 import { TokenBody, ReadingSettings } from './ReadingScaffold'
@@ -13,6 +13,9 @@ import { ArrowLeft, Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react'
 // selection highlight, so a tap is unmistakably "this one", not just "a lookup
 // sheet opened somewhere".
 const TAP_HILITE = 'rgba(217, 164, 62, 0.32)'
+// Proper nouns (character names + curated place names) get this same green
+// text color everywhere, so they read as "a name", not vocabulary to learn.
+const PROPER_NOUN_COLOR = '#2F9E6D'
 
 function beatStyle(distance, reduceMotion) {
   if (distance === 0) return { opacity: 1, filter: 'none' }
@@ -102,7 +105,10 @@ export default function PacedReader(props) {
                             // the click bubble so tap-to-advance still works.
                             if (c.playing && c.seekToToken(k)) e.stopPropagation()
                           } : undefined}
-                          style={{ ...(i === c.cur ? spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) : null) }}>
+                          style={{
+                            color: t.name ? PROPER_NOUN_COLOR : 'inherit',
+                            ...(i === c.cur ? spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) : null),
+                          }}>
                           <TokenBody text={t.text} reading={null} mode={c.readingMode} status="not_started" language={track.language} reserve={reserve} />
                         </span>
                       )
@@ -111,6 +117,7 @@ export default function PacedReader(props) {
                     const decorate = i === c.cur
                     const tokenId = i + ':' + k
                     const isSelected = c.selected && c.selected.tokenId === tokenId
+                    const isPlace = isPlaceWord(t.vocab.word, track.language)
                     return (
                       <span key={k}
                         onClick={i === c.cur ? (e) => {
@@ -123,6 +130,7 @@ export default function PacedReader(props) {
                         } : undefined}
                         style={{
                           cursor: i === c.cur ? 'pointer' : 'inherit', borderRadius: '4px', padding: '0 1px',
+                          color: isPlace ? PROPER_NOUN_COLOR : 'inherit',
                           background: isSelected ? TAP_HILITE : (decorate && status === 'not_started' ? accent + '1f' : (decorate && status === 'learning' ? '#CA8A0422' : 'transparent')),
                           boxShadow: isSelected ? '0 0 0 1px rgba(202,138,4,0.5)' : (decorate && status === 'not_started' ? 'inset 0 -2px 0 ' + accent + '66' : 'none'),
                           ...(i === c.cur ? spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) : null),

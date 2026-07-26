@@ -1,7 +1,7 @@
 // Extension required: Vite resolves an extensionless specifier, Node ESM does
 // not, and this module is now imported by the story-utterance sync script as
 // well as by the readers.
-import { CHARACTER_READINGS } from './characterNames.js'
+import { CHARACTER_READINGS, PLACE_WORDS } from './characterNames.js'
 
 // Canonical story readability + the pure token/status helpers the immersion
 // reader is built from. This is the single source of truth for "% known": the
@@ -139,6 +139,14 @@ export function matchName(text, i, vocabMap, names) {
 // The names/particles a language uses — the same derivation the reader makes.
 export function namesFor(language) { return CHARACTER_READINGS[language] || {} }
 export function particlesFor(language) { return language === 'japanese' ? JP_PARTICLES : NO_PARTICLES }
+
+// Is this a vocab word's dictionary form a curated place name (country/city)?
+// Places stay ordinary vocabulary (own card, own status) — this only flags
+// them for a distinct color, same idea as `today` highlighting a studied word.
+export function isPlaceWord(word, language) {
+  const set = PLACE_WORDS[language]
+  return Boolean(set && word && set.has(word))
+}
 
 // ── Japanese deinflection-lite matching ──────────────────────────────────────
 // Japanese story text uses conjugated surface forms (書いて, 見せました) and
@@ -556,7 +564,9 @@ function scanLineVocab(text, matcher, names, particles, out) {
 }
 
 // Segment one (speaker-stripped) line into renderable tokens: each vocab match
-// is its own tappable token; consecutive non-vocab characters are grouped into
+// is its own tappable token; a curated proper name is its own token too (with a
+// `name` payload, so a reader can style/label it distinctly instead of showing
+// it as inert filler text); consecutive non-vocab characters are grouped into
 // a single plain-text run. Mirrors scanLineVocab's matching exactly, but keeps
 // the text so the reader can render it. Pure — unit-tested.
 export function segmentLine(text, matcher, names = {}, particles = NO_PARTICLES) {
@@ -567,7 +577,7 @@ export function segmentLine(text, matcher, names = {}, particles = NO_PARTICLES)
   let boundary = true
   while (i < text.length) {
     const name = matchName(text, i, matcher.words, names)
-    if (name) { flush(); tokens.push({ text: name, vocab: null }); i += name.length; boundary = true; continue }
+    if (name) { flush(); tokens.push({ text: name, vocab: null, name: { word: name, reading: names[name] } }); i += name.length; boundary = true; continue }
     const m = matchVocabAt(text, i, matcher, particles, boundary)
     if (m) { flush(); tokens.push({ text: text.slice(i, i + m.len), vocab: m.vocab }); i += m.len; boundary = true; continue }
     run += text[i]

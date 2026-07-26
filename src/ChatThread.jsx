@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react'
-import { wordStatus } from './storyReading'
+import { wordStatus, isPlaceWord } from './storyReading'
 import { TokenBody } from './ReadingScaffold'
 import { spotlightStyle } from './readAlong'
 
@@ -7,6 +7,9 @@ import { spotlightStyle } from './readAlong'
 // selection highlight, so a tap is unmistakably "this one", not just "a lookup
 // sheet opened somewhere".
 const TAP_HILITE = 'rgba(217, 164, 62, 0.32)'
+// Proper nouns (character names + curated place names) get this same green
+// text color everywhere, so they read as "a name", not vocabulary to learn.
+const PROPER_NOUN_COLOR = '#2F9E6D'
 
 // Shared bubble-thread for the chat readers (observer + interactive). The caller
 // decides which beats are revealed, each speaker's side/color, the active
@@ -26,6 +29,10 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
     // where the default amber annotation would disappear — tint the reading to
     // that bubble's text color instead so it stays legible on both sides.
     const rtColor = meta.side === 'right' ? skin.myText : undefined
+    // Same reason the proper-noun green is skipped there: "my bubble" is
+    // already a bright green fill (skin.myBubble) on most themes, so painting
+    // the word green too would wash it out instead of setting it apart.
+    const properNounColor = meta.side === 'right' ? undefined : PROPER_NOUN_COLOR
     // Only the bubble now sounding takes the spotlight; earlier bubbles stay
     // fully legible so re-reading the conversation is never dimmed.
     const isCurrentBubble = playing && !muted && key === activeIndex
@@ -51,7 +58,7 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                           // tap-to-reveal still works.
                           if (isCurrentBubble && onSeekToken && onSeekToken(k)) e.stopPropagation()
                         }}
-                        style={spotlightStyle(k === activeToken, isSounding, reduceMotion)}>
+                        style={{ color: (t.name && properNounColor) || 'inherit', ...spotlightStyle(k === activeToken, isSounding, reduceMotion) }}>
                         <TokenBody text={t.text} reading={null} mode={readingMode} status="not_started" language={language} reserve={reserve} rtColor={rtColor} />
                       </span>
                     )
@@ -59,6 +66,7 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                   const status = wordStatus(t.vocab.id, userCards)
                   const tokenId = key + ':' + k
                   const isSelected = selected && selected.tokenId === tokenId
+                  const isPlace = isPlaceWord(t.vocab.word, language)
                   return (
                     <span key={k} onClick={(e) => {
                       e.stopPropagation()
@@ -71,6 +79,7 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                       onSelectWord(t.vocab, status, tokenId)
                     }}
                       style={{ cursor: 'pointer', borderRadius: '4px', padding: '0 1px',
+                        color: (isPlace && properNounColor) || 'inherit',
                         background: isSelected ? TAP_HILITE : (status === 'not_started' ? accent + '22' : (status === 'learning' ? '#CA8A0426' : 'transparent')),
                         boxShadow: isSelected ? '0 0 0 1px rgba(202,138,4,0.5)' : 'none',
                         ...spotlightStyle(k === activeToken, isSounding, reduceMotion) }}>

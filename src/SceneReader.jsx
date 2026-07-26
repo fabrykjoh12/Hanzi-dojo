@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { getLevelLabel } from './utils'
-import { wordStatus } from './storyReading'
+import { wordStatus, isPlaceWord } from './storyReading'
 import { spotlightStyle } from './readAlong'
 import { useStoryReaderCore } from './useStoryReaderCore'
 import { TokenBody, ReadingSettings } from './ReadingScaffold'
@@ -13,6 +13,9 @@ import { ArrowLeft, Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react'
 // selection highlight, so a tap is unmistakably "this one", not just "a lookup
 // sheet opened somewhere".
 const TAP_HILITE = 'rgba(217, 164, 62, 0.32)'
+// Proper nouns (character names + curated place names) get this same green
+// text color everywhere, so they read as "a name", not vocabulary to learn.
+const PROPER_NOUN_COLOR = '#2F9E6D'
 
 function englishLineFor(story, i) { return (story.english_content || '').split('\n').filter(Boolean)[i] || '' }
 
@@ -74,7 +77,7 @@ export default function SceneReader(props) {
                       // tap-to-advance still works.
                       if (c.playing && c.seekToToken(k)) e.stopPropagation()
                     }}
-                    style={spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion)}>
+                    style={{ color: t.name ? PROPER_NOUN_COLOR : 'inherit', ...spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) }}>
                     <TokenBody text={t.text} reading={null} mode={c.readingMode} status="not_started" language={track.language} reserve={reserve} />
                   </span>
                 )
@@ -82,6 +85,7 @@ export default function SceneReader(props) {
               const status = wordStatus(t.vocab.id, userCards)
               const tokenId = c.cur + ':' + k
               const isSelected = c.selected && c.selected.tokenId === tokenId
+              const isPlace = isPlaceWord(t.vocab.word, track.language)
               return (
                 <span key={k} onClick={(e) => {
                   e.stopPropagation()
@@ -89,6 +93,7 @@ export default function SceneReader(props) {
                   c.selectWord(t.vocab, status, tokenId)
                 }}
                   style={{ cursor: 'pointer', borderRadius: '4px', padding: '0 1px',
+                    color: isPlace ? PROPER_NOUN_COLOR : 'inherit',
                     background: isSelected ? TAP_HILITE : (status === 'not_started' ? accent + '1f' : (status === 'learning' ? '#CA8A0422' : 'transparent')),
                     boxShadow: isSelected ? '0 0 0 1px rgba(202,138,4,0.5)' : (status === 'not_started' ? 'inset 0 -2px 0 ' + accent + '66' : 'none'),
                     ...spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) }}>

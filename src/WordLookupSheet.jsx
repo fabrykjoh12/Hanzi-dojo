@@ -1,8 +1,12 @@
 import { createPortal } from 'react-dom'
 import { cleanMeaning } from './cleanMeaning'
-import { X, Volume2, Bookmark } from 'lucide-react'
+import { isPlaceWord } from './storyReading'
+import { X, Volume2, Bookmark, MapPin } from 'lucide-react'
 
 const ghost = { background: 'none', border: 'none', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center' }
+// Same green the story text uses for a curated place name, so the sheet and
+// the word on the page never disagree about what kind of word this is.
+const PROPER_NOUN_COLOR = '#2F9E6D'
 
 // Bottom-sheet word lookup shared by the paced/scene readers and the analyzer.
 // `selected` is { word, vocab, status, tokenId, sentence } | null — `sentence`
@@ -17,14 +21,24 @@ const ghost = { background: 'none', border: 'none', cursor: 'pointer', padding: 
 export default function WordLookupSheet({ selected, theme, accent, userCards, onAddToDeck, onSpeak, onClose }) {
   if (!selected) return null
   if (typeof document === 'undefined') return null
+  const isPlace = isPlaceWord(selected.vocab.word, selected.vocab.language)
   return createPortal(
     <div onClick={onClose} className="app-overlay-viewport" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.14)' }}>
       <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '560px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px 20px 0 0', padding: '16px 18px 26px', boxShadow: '0 -10px 40px rgba(0,0,0,0.18)' }}>
         <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: 'var(--border)', margin: '0 auto 14px' }} />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '28px', fontWeight: 800, color: accent, fontFamily: theme.font }}>{selected.word}</span>
+            <span style={{ fontSize: '28px', fontWeight: 800, color: isPlace ? PROPER_NOUN_COLOR : accent, fontFamily: theme.font }}>{selected.word}</span>
             <span style={{ fontSize: '16px', color: '#B45309', fontWeight: 600 }}>{selected.vocab.reading}</span>
+            {isPlace && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '5px',
+                fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '3px 9px',
+                color: PROPER_NOUN_COLOR, border: '1px solid ' + PROPER_NOUN_COLOR + '40', background: PROPER_NOUN_COLOR + '12',
+              }}>
+                <MapPin size={12} strokeWidth={2.2} color={PROPER_NOUN_COLOR} /> Place
+              </span>
+            )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
             <button onClick={() => onAddToDeck(selected.vocab)} aria-label="Add to deck" style={ghost}>

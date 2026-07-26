@@ -8,7 +8,7 @@ import { CHARACTER_READINGS } from './characterNames'
 import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
-import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, matchName, JP_PARTICLES, readingVisibleFor, isDueSoon, buildVocabMatcher, matchVocabAt, boundaryAfterSkip } from './storyReading'
+import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, matchName, JP_PARTICLES, readingVisibleFor, isDueSoon, buildVocabMatcher, matchVocabAt, boundaryAfterSkip, isPlaceWord } from './storyReading'
 import { minDwellMs } from './readAlong'
 import { glossaryLookup } from './grammarGlossary'
 import { prefsGet, prefsSet } from './offline'
@@ -17,7 +17,7 @@ import { track as trackEvent, trackOnce, EVENTS } from './analytics'
 import { shareReadingCard } from './shareCard'
 import { toast } from './toast'
 import { BRAND_URL } from './brand'
-import { ArrowLeft, Bookmark, Volume2, Play, Pause, Languages, ChevronRight, UserRound, Check, X, Sparkles, Home, Sliders, Eye, Clock, Repeat, Lock, Share2, BookOpen } from 'lucide-react'
+import { ArrowLeft, Bookmark, Volume2, Play, Pause, Languages, ChevronRight, UserRound, MapPin, Check, X, Sparkles, Home, Sliders, Eye, Clock, Repeat, Lock, Share2, BookOpen } from 'lucide-react'
 import ComprehensionCheck from './ComprehensionCheck'
 import StoryCover from './StoryCover'
 
@@ -31,6 +31,9 @@ const TEXT = 'var(--text)'
 const MUTED = 'var(--text-muted)'
 const GOLD = '#B45309'
 const HILITE = 'rgba(217, 164, 62, 0.32)'
+// Proper nouns (character names + curated place names) get this green text
+// color everywhere, so they read as "a name", not vocabulary to learn.
+const PROPER_NOUN_COLOR = '#2F9E6D'
 
 const SPEAKER_PALETTE = ['#B83A24', '#2E6FB8', '#2F9E6D', '#C2680E', '#7C5CD0', '#B83A7A']
 
@@ -203,7 +206,7 @@ function rubyFor(text, reading, isJapanese) {
   return <ruby>{text}{rt(reading)}</ruby>
 }
 
-function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens, status, today, accent, onSelect }) {
+function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens, status, today, accent, isPlace, onSelect }) {
   const [hover, setHover] = useState(false)
   const reading = token.vocab ? token.vocab.reading : (token.name ? token.name.reading : null)
   // Vocabulary and names carry data; plain word-like tokens are still tappable
@@ -259,6 +262,10 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
   // A word you haven't started yet gets its English sense right alongside it —
   // no tap required to find out what an unknown (dotted-underline) word means.
   const gloss = token.vocab && status === 'not_started' ? firstGloss(token.vocab.meaning) : null
+  // Character names and curated place names get the same green text color, so
+  // a proper noun reads as "a name", not a word to learn — on top of, not
+  // instead of, its normal vocab/learning decoration.
+  const isProperNoun = Boolean(token.name) || isPlace
   return (
     <span
       onClick={(e) => { e.stopPropagation(); onSelect() }}
@@ -266,6 +273,7 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
       onMouseLeave={() => setHover(false)}
       style={{
         cursor: 'pointer', borderRadius: '5px', padding: '0 1px',
+        color: isProperNoun ? PROPER_NOUN_COLOR : 'inherit',
         background: isSelected ? HILITE : (hover ? 'rgba(0,0,0,0.05)' : decoBg),
         boxShadow: isSelected ? '0 0 0 1px rgba(202,138,4,0.45)' : 'none',
         borderBottom: decoBorder,
@@ -708,6 +716,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
 
   const sel = selected
   const isName = Boolean(sel && sel.name)
+  const isSelPlace = Boolean(sel && sel.vocab && isPlaceWord(sel.vocab.word, track.language))
   const isPlain = Boolean(sel && !sel.vocab && !sel.name)   // tapped a grammar / out-of-list word
   const selWord = sel ? (isName ? sel.name.word : (sel.vocab ? sel.vocab.word : sel.text)) : ''
   const selStatus = sel && sel.vocab ? wordStatus(sel.vocab.id, userCards) : 'not_started'
@@ -922,6 +931,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                       status={tk.vocab ? wordStatus(tk.vocab.id, userCards) : 'not_started'}
                       today={Boolean(tk.vocab && todaySet.has(tk.vocab.word))}
                       accent={accent}
+                      isPlace={Boolean(tk.vocab && isPlaceWord(tk.vocab.word, track.language))}
                       isSelected={Boolean(sel) && sel.lineIndex === li && sel.tokenKey === ti}
                       onSelect={() => selectToken(li, ti, tk)}
                     />
@@ -1114,16 +1124,17 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                     <span style={{ fontSize: '12.5px', fontWeight: 700, color: STATUS_COLOR[selStatus] }}>{STATUS_LABEL[selStatus]}</span>
                   </span>
                 )}
-                {(isName || isPlain) && (
+                {(isName || isSelPlace || isPlain) && (
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: '5px', marginTop: '6px',
                     fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '3px 9px',
-                    color: isName ? accent : MUTED,
-                    border: '1px solid ' + (isName ? accent + '40' : 'var(--border)'),
-                    background: isName ? accent + '12' : 'transparent',
+                    color: (isName || isSelPlace) ? PROPER_NOUN_COLOR : MUTED,
+                    border: '1px solid ' + ((isName || isSelPlace) ? PROPER_NOUN_COLOR + '40' : 'var(--border)'),
+                    background: (isName || isSelPlace) ? PROPER_NOUN_COLOR + '12' : 'transparent',
                   }}>
-                    {isName && <UserRound size={12} strokeWidth={2.2} color={accent} />}
-                    {isName ? 'Name' : (selGrammar ? 'Grammar' : 'Word')}
+                    {isName && <UserRound size={12} strokeWidth={2.2} color={PROPER_NOUN_COLOR} />}
+                    {isSelPlace && <MapPin size={12} strokeWidth={2.2} color={PROPER_NOUN_COLOR} />}
+                    {isName ? 'Name' : (isSelPlace ? 'Place' : (selGrammar ? 'Grammar' : 'Word'))}
                   </span>
                 )}
               </div>

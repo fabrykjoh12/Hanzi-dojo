@@ -14,3 +14,26 @@ export const CHARACTER_READINGS = {
   // through the vocab lookup instead — do not list them here.
   japanese: { 'たかし': 'Takashi', 'はな': 'Hana', 'しろ': 'Shiro (the cat)' },
 }
+
+// Curated PLACE NAMES (countries/cities) that recur across the story corpus.
+// Unlike CHARACTER_READINGS, most of these ARE ordinary curriculum vocabulary
+// too — they carry their own vocab card, reading and meaning like any other
+// word — so a place is never routed through the name-lookup path (matchName
+// only fires when a candidate ISN'T already in the vocab map). Places are
+// flagged here purely so the reader can give them a distinct color; that
+// color sits on top of the word's normal vocab/learning status, it doesn't
+// replace it.
+export const PLACE_WORDS = {
+  chinese: new Set([
+    '中国', '北京', '上海', '香港', '台湾', '广州', '深圳',
+    '美国', '英国', '法国', '德国', '日本', '韩国', '俄罗斯', '澳大利亚', '加拿大', '纽约', '伦敦',
+  ]),
+  japanese: new Set([
+    '日本', '東京', '大阪', '京都', '北海道', '沖縄',
+    '中国', '韓国', 'アメリカ', 'フランス', 'イギリス', 'ドイツ', 'ロシア', 'ニューヨーク',
+  ]),
+  russian: new Set([
+    'Россия', 'Москва', 'Санкт-Петербург',
+    'Америка', 'Китай', 'Япония', 'Франция', 'Германия', 'Лондон',
+  ]),
+}
