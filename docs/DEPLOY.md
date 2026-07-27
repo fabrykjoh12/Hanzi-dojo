@@ -13,9 +13,23 @@ Companion docs: [`CLAUDE.md`](../CLAUDE.md) (read first) ·
 For local dev these live in files; in production they come from each host's
 settings (see Hosting, below).
 
+**What the browser bundle actually reads** (grep `import.meta.env.VITE_` in `src/`
+before adding to this list — it drifts):
+
+| Var | Required? | Effect if missing |
+|-----|-----------|-------------------|
+| `VITE_SUPABASE_URL` | **yes** | "Site can't start" card, app never mounts |
+| `VITE_SUPABASE_ANON_KEY` | **yes** | same |
+| `VITE_VAPID_PUBLIC_KEY` | no | push reminders can't subscribe |
+| `VITE_DEV_EMAILS` | no | dev-only tooling stays hidden |
+| `VITE_BUILD_SHA` / `VITE_BUILD_TIME` | no | derived in `vite.config.js` from the CI commit — never set by hand |
+
+`VITE_GOOGLE_TTS_KEY` is **not** read by the app; it belongs to the content
+scripts only (`.env.script` / GitHub secrets). Never add it to a host's browser env.
+
 ```
 .env            Vite app vars (VITE_ prefix). Gitignored.
-                Required: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_GOOGLE_TTS_KEY
+                Required: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
 
 .env.script     Server-side vars for generate-audio.mjs, generate-examples.mjs,
                 generate-stories.mjs, and generate-story-translations.mjs. Gitignored.
@@ -32,8 +46,22 @@ The app is **live on Vercel**, building from `main`. It is a pure client-side SP
 
 ### Vercel — the live host
 - **URL:** https://hanzi-dojo.com (and the Vercel-assigned https://hanzi-dojo-jet.vercel.app/), served from root `/`.
-- **How:** Vercel project `hanzi-dojo` auto-deploys; the **Production** environment tracks the `main` branch. Framework preset = Vite, build `npm run build`, output `dist`.
-- **Env vars:** set per-environment under Settings → Environments → Production: the same three `VITE_` vars, plus **`VITE_VAPID_PUBLIC_KEY`** (push reminders — see below). Vercel bakes them in at build time and only applies them to **new** builds — after adding/changing, redeploy (Deployments → ⋯ → Redeploy, uncheck build cache).
+- **How:** Vercel project `hanzi-dojo` auto-deploys; the **Production** environment tracks the `main` branch. Build command and output come from `vercel.json`, **not** the dashboard preset: `DOJO_PUBLIC_BUILD=1 npm run build` → `dist/client`. That flag is what makes the build emit the real app rather than the Dojo HQ / Sites package (see the two-build-targets note in `README.md`).
+- **Env vars:** Vercel scopes them **per environment** — Production, Preview and Development are separate lists. Set the required `VITE_` vars (table above) on **Production _and_ Preview**, or every PR preview builds without them and shows the "Site can't start" card. Vercel bakes `VITE_*` in at build time and applies changes only to **new** builds — after adding or changing one, redeploy (Deployments → ⋯ → Redeploy, uncheck build cache).
+
+### Cloudflare — DNS only, not hosting
+`hanzi-dojo.com` uses **Cloudflare as its authoritative nameserver**; the records
+point at Vercel, which does the building and serving. Cloudflare also holds the
+Brevo email records (DKIM, DMARC) for auth mail. Nothing about the learner app
+is *hosted* there — if the site is down, look at Vercel; if the domain doesn't
+resolve or mail bounces, look at Cloudflare.
+
+The one piece of genuine Cloudflare code in this repo is **`worker/index.js`** —
+a Workers backend for **Dojo HQ** (invite codes, workspaces), the admin-only
+internal tool. It is *not* part of the learner app: `src/dojoRemoteClient.js`
+calls it with relative paths, so it must be same-origin with the HQ build, and
+that deploy lives outside this repo (no `wrangler.toml`, no deploy workflow
+here). Changing `worker/index.js` does not ship anything by itself.
 
 ### GitHub Pages — retired
 The app used to also deploy to `https://fabrykjoh12.github.io/Hanzi-dojo/` under
