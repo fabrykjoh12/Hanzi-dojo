@@ -78,10 +78,26 @@ async function main() {
   // Existing words at this level, so re-runs never duplicate.
   const { data: existing, error } = await supabase
     .from('vocabulary')
-    .select('word')
+    .select('word, sort_order')
     .eq('language', language).eq('system', system).eq('level', level)
   if (error) { console.error('Fetch error:', error.message); process.exit(1) }
   const have = new Set((existing || []).map(v => v.word))
+
+  // New words are APPENDED past the level's current highest sort_order rather
+  // than numbered by their position in the input file.
+  //
+  // ⚠️ Numbering by file position was only safe for a virgin level. Topping up a
+  // level that already has words — seeding the full 706-word HSK 2 list over the
+  // 197 already seeded — would hand a new word the sort_order of an existing
+  // one, and since `audio_path` is derived from sort_order, its generated
+  // narration would overwrite that existing word's audio file. It also corrupts
+  // tier gating, which selects by `sort_order <= cap`.
+  //
+  // Appending is also correct by frequency: these lists are frequency-ordered
+  // and were previously truncated by a `--cap`, so the words being added are the
+  // less common tail and belong after what is already there.
+  const maxOrder = (existing || []).reduce((m, v) => Math.max(m, v.sort_order || 0), 0)
+  let added = 0
 
   const rows = []
   let skipped = 0
@@ -91,7 +107,8 @@ async function main() {
     const meaning = (entry.meaning || '').trim()
     if (!word || !reading || !meaning) { console.log(`  ! skipping malformed entry #${i + 1}`); return }
     if (have.has(word)) { skipped += 1; return }
-    const sort_order = i + 1
+    added += 1
+    const sort_order = maxOrder + added
     const reading_plain = (entry.reading_plain || '').trim() || stripTones(reading)
     const namePart = slug(reading_plain)
     const audio_path = language + '/' + system + '/level_' + level + '/' + pad3(sort_order) + (namePart ? '_' + namePart : '') + '.mp3'

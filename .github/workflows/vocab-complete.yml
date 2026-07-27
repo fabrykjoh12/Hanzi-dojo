@@ -1,0 +1,99 @@
+name: Complete the HSK vocabulary
+
+# Fills in the missing HSK 3.0 vocabulary. The deck was seeded with roughly half
+# the curriculum — levels 1-2 came from small hand-made lists, and levels 3-6
+# were built with `--cap 500`, so each stops at ~460-480 of its ~900-1080 words:
+#
+#   level      1     2     3     4     5     6
+#   in deck  300   197   457   468   481   465     (2368)
+#   should   458   706   897   934  1034  1080     (5109)
+#
+# `build` rebuilds data/hsk<N>.json from the complete-hsk-vocabulary dataset and
+# commits them. It MUST run with database access: the builder excludes words
+# already in the deck at any level, and without that a word sitting at level 2
+# today would be seeded a second time at whatever level the dataset assigns it
+# (129 such words exist). Never build these lists without the dedup.
+#
+# `seed` then inserts them. seed-vocab.mjs skips words already at that level and
+# appends new ones past the level's highest sort_order, so it is safe to re-run
+# and never disturbs existing rows, their audio, or anyone's flashcards.
+#
+# After seeding, the new words still need audio and example sentences — run
+# regen-content's `audio-hsk3-6` / `examples-fill` tasks.
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: What to do
+        type: choice
+        default: build
+        options: [build, seed-dry-run, seed]
+      levels:
+        description: "Which levels (e.g. 1-6, or 4-4 for one)"
+        type: string
+        default: 1-6
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vocab-complete
+  cancel-in-progress: false
+
+jobs:
+  vocab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Download the HSK dataset
+        if: ${{ inputs.task == 'build' }}
+        run: curl -sSLf -o /tmp/complete.json https://raw.githubusercontent.com/drkameleon/complete-hsk-vocabulary/master/complete.json
+
+      - name: Build the word lists (deduped against the live deck)
+        if: ${{ inputs.task == 'build' }}
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node build-hsk-vocab.mjs --source /tmp/complete.json --cap 1200 --levels ${{ inputs.levels }}
+
+      - name: Commit the lists
+        if: ${{ inputs.task == 'build' }}
+        run: |
+          if [ -z "$(git status --porcelain data)" ]; then
+            echo "Word lists already up to date."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git commit -m "chore: rebuild HSK word lists from the complete-hsk-vocabulary dataset"
+          git push
+
+      - name: Seed
+        if: ${{ inputs.task == 'seed' || inputs.task == 'seed-dry-run' }}
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          set -e
+          APPLY=""
+          if [ "${{ inputs.task }}" = "seed" ]; then APPLY="--apply"; fi
+          LO="${{ inputs.levels }}"; LO="${LO%%-*}"
+          HI="${{ inputs.levels }}"; HI="${HI##*-}"
+          for lvl in $(seq "$LO" "$HI"); do
+            if [ ! -f "data/hsk${lvl}.json" ]; then
+              echo "::warning::data/hsk${lvl}.json missing — run the build task first"
+              continue
+            fi
+            echo "::group::level $lvl"
+            node seed-vocab.mjs --file "data/hsk${lvl}.json" --language chinese --system hsk_3 --level "$lvl" $APPLY
+            echo "::endgroup::"
+          done
