@@ -168,6 +168,53 @@ writing_stats
   last_practiced_at timestamptz
   created_at timestamptz
   updated_at timestamptz
+
+-- Dojo HQ (internal collaboration board at /hq, admin-only).
+-- Migration: 20260727140000_add_dojo_hq.sql. NOT learner data: every policy on
+-- these three tables requires profiles.is_admin, so a regular learner can
+-- neither read nor write a row. One shared board — there is no workspace or
+-- invite system; workspace_id is a constant ('admin-hq') kept as a column so the
+-- UI's queries and realtime filters have something to key on.
+
+dojo_items
+  id uuid PRIMARY KEY
+  workspace_id text                 -- always 'admin-hq' today
+  created_by uuid REFERENCES auth.users
+  assigned_to uuid REFERENCES auth.users
+  title text
+  description text
+  item_type text CHECK IN ('idea','plan','implement','test','fix','bug')
+  status text CHECK IN ('inbox','planned','progress','review','done')
+  priority text CHECK IN ('low','medium','high','urgent')
+  tags text[]
+  due_date date
+  milestone_id uuid                 -- HQ2 control room (worker-side), no FK here
+  depends_on uuid[]                 -- other dojo_items ids
+  github_branch text
+  github_pr_url text
+  ci_status text CHECK IN ('none','pending','passing','failing')
+  blocked_reason text
+  created_at timestamptz
+  updated_at timestamptz            -- maintained by trigger; the board sorts on it
+
+dojo_comments
+  id uuid PRIMARY KEY
+  workspace_id text
+  item_id uuid REFERENCES dojo_items ON DELETE CASCADE
+  author_id uuid REFERENCES auth.users   -- insert policy requires author_id = auth.uid()
+  body text
+  created_at timestamptz
+
+dojo_attachments
+  id uuid PRIMARY KEY
+  workspace_id text
+  item_id uuid REFERENCES dojo_items ON DELETE CASCADE
+  created_by uuid REFERENCES auth.users
+  storage_path text                 -- private 'dojo-attachments' bucket
+  file_name text
+  mime_type text
+  size_bytes bigint
+  created_at timestamptz
 ```
 
 **Supabase RPC:**
@@ -177,6 +224,14 @@ reset_current_language_progress(p_language, p_system, p_reset_streak=true)
   language. If p_reset_streak=true, also deletes daily_activity and resets
   profiles.streak=0, streak_freezes=1, last_studied_on=null. Security definer,
   callable only by authenticated users on their own data.
+
+dojo_hq_members()
+  Returns (user_id, display_name, role) for every account with is_admin. Security
+  definer so Dojo HQ can name and assign work to the other admin WITHOUT a broad
+  SELECT policy on profiles; raises for non-admins via assert_admin(). Falls back
+  to the local part of the email (never the full address) when an admin has no
+  display_name. Consumed by src/dojoSupabaseClient.js, which fakes the board's
+  `dojo_workspace_members` query from it.
 ```
 
 

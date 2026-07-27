@@ -563,7 +563,7 @@ export default function App() {
     )
   } else if (view === 'dashboard') {
     content = profile.is_admin
-      ? <Dashboard onBack={() => navigate('home')} />
+      ? <Dashboard onBack={() => navigate('home')} session={session} profile={profile} track={track} />
       : <NotFound onHome={() => navigate('home')} />
   } else if (isKnownView(view)) {
     // Only 'home' reaches here (every other known view has a branch above).

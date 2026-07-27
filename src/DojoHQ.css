@@ -428,6 +428,8 @@
 .dojo-identity-field { margin: 18px 0; display: grid; grid-template-columns: 1fr 210px; align-items: center; gap: 14px; }
 .dojo-identity-field > span { font-size: 11px; font-weight: 700; }
 .dojo-identity-field select { min-height: 44px; }
+/* Account-backed HQ: the identity is the login, so it is stated, not chosen. */
+.dojo-identity-field > strong { justify-self: end; font-size: 12px; }
 .dojo-invite-block { margin: 18px 0; padding: 17px; border: 1px solid var(--dojo-line); border-radius: 15px; background: #f2efe7; }
 .dojo-invite-block > span { display: block; margin-bottom: 9px; color: #74766e; font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .dojo-invite-block > div { display: flex; align-items: center; gap: 10px; }
