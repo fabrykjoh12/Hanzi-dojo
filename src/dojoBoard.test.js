@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
-  HQ_WORKSPACE_ID, boardCopy, boardIdentity, boardSnapshot, hqWorkspace,
-  isMissingSetupError, memberDisplayName, memberQueryKind, setupMissingError,
-  toMemberRows,
+  HQ_WORKSPACE_ID, applyMutationToCache, boardCopy, boardIdentity, boardSnapshot,
+  hqWorkspace, isMissingSetupError, memberDisplayName, memberQueryKind,
+  setupMissingError, toMemberRows,
 } from './dojoBoard'
 
 describe('the shared admin workspace', () => {
@@ -181,5 +181,74 @@ describe('copy for the storage mode in use', () => {
 
   it('lets the account-backed board win over the online flag', () => {
     expect(boardCopy({ online: true, accountBacked: true }).showInvite).toBe(false)
+  })
+})
+
+// The export cache used to refresh only on `.select()`, so a plain
+// `update(patch).eq('id', id)` — the board's commonest write — left it
+// pre-edit and "Last ned kopi" could disagree with the screen.
+describe('applyMutationToCache', () => {
+  const rows = () => [
+    { id: 'a', title: 'Fix audio', status: 'inbox' },
+    { id: 'b', title: 'Plan HSK 4', status: 'planned' },
+  ]
+
+  it('merges an update into the row its filter names, and leaves the rest alone', () => {
+    const out = applyMutationToCache(rows(), [
+      ['update', [{ status: 'done' }]],
+      ['eq', ['id', 'a']],
+    ])
+    expect(out[0]).toEqual({ id: 'a', title: 'Fix audio', status: 'done' })
+    expect(out[1]).toEqual(rows()[1])
+  })
+
+  it('does not mutate the array it was given', () => {
+    const original = rows()
+    applyMutationToCache(original, [['update', [{ status: 'done' }]], ['eq', ['id', 'a']]])
+    expect(original[0].status).toBe('inbox')
+  })
+
+  // Generic on purpose: a filter shape the board does not use today must not
+  // silently patch the wrong row tomorrow.
+  it('requires every eq filter to match, not just the first', () => {
+    const steps = [
+      ['update', [{ status: 'done' }]],
+      ['eq', ['id', 'a']],
+      ['eq', ['workspace_id', 'other-board']],
+    ]
+    expect(applyMutationToCache(rows(), steps)).toEqual(rows())
+  })
+
+  it('removes deleted rows', () => {
+    const out = applyMutationToCache(rows(), [['delete', []], ['eq', ['id', 'b']]])
+    expect(out.map(r => r.id)).toEqual(['a'])
+  })
+
+  it('appends inserted rows, single or batched', () => {
+    const one = applyMutationToCache(rows(), [['insert', [{ id: 'c', title: 'New' }]]])
+    expect(one.map(r => r.id)).toEqual(['a', 'b', 'c'])
+    const many = applyMutationToCache(rows(), [['insert', [[{ id: 'c' }, { id: 'd' }]]]])
+    expect(many.map(r => r.id)).toEqual(['a', 'b', 'c', 'd'])
+  })
+
+  it('does not duplicate an insert the cache already has', () => {
+    const out = applyMutationToCache(rows(), [['insert', [{ id: 'a', title: 'Fix audio' }]]])
+    expect(out.map(r => r.id)).toEqual(['a', 'b'])
+  })
+
+  // A stale cache is recoverable on the next select; a wrongly-patched one is
+  // not. Anything unrecognised must leave the rows exactly as they were.
+  it('leaves the cache untouched when it cannot interpret the mutation', () => {
+    expect(applyMutationToCache(rows(), [['update', [{ status: 'done' }]]])).toEqual(rows())
+    expect(applyMutationToCache(rows(), [['delete', []]])).toEqual(rows())
+    expect(applyMutationToCache(rows(), [['insert', [{ title: 'no id' }]]])).toEqual(rows())
+    expect(applyMutationToCache(rows(), [['select', ['*']]])).toEqual(rows())
+    expect(applyMutationToCache(rows(), [])).toEqual(rows())
+  })
+
+  it('survives junk input', () => {
+    expect(applyMutationToCache(null, null)).toEqual([])
+    expect(applyMutationToCache(undefined, [['update', [{ a: 1 }]], ['eq', ['id', 'a']]])).toEqual([])
+    expect(applyMutationToCache(rows(), 'nope')).toEqual(rows())
   })
 })

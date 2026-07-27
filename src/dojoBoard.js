@@ -229,3 +229,63 @@ export function boardCopy(options = {}) {
     ],
   }
 }
+
+// ── Keeping the export cache honest ─────────────────────────────────────────
+//
+// dojoSupabaseClient caches the last rows it read, because `exportData()` is
+// synchronous — the UI calls it to build a download and cannot await a fetch.
+// That cache used to refresh only on `.select()`, but the board's most common
+// write is `update(patch).eq('id', id)` with no select (a drag between columns
+// writes only `status`). So an edit landed in Postgres and in React state, but
+// the cached copy stayed pre-edit, and "Last ned kopi" could hand you a
+// snapshot that disagreed with the board on screen.
+//
+// Realtime usually papered over it — but the migration registers realtime in a
+// guarded block that skips rather than fails, so "usually" is not a guarantee.
+//
+// This applies the mutation to the cached rows directly, from the recorded
+// builder steps. Deliberately generic: it matches on EVERY `eq` filter, not
+// just `id`, so a filter shape the board doesn't use today can't silently
+// corrupt the cache tomorrow. A mutation it cannot interpret returns the rows
+// untouched — a stale cache is recoverable, a wrongly-patched one is not.
+export function applyMutationToCache(rows, steps) {
+  const list = Array.isArray(rows) ? rows : []
+  const entries = Array.isArray(steps) ? steps : []
+
+  const step = key => entries.find(entry => Array.isArray(entry) && entry[0] === key)
+  const filters = entries
+    .filter(entry => Array.isArray(entry) && entry[0] === 'eq' && Array.isArray(entry[1]))
+    .map(entry => ({ column: entry[1][0], value: entry[1][1] }))
+
+  const matches = row => filters.length > 0
+    && filters.every(filter => row && row[filter.column] === filter.value)
+
+  const updateStep = step('update')
+  if (updateStep) {
+    const patch = updateStep[1] && updateStep[1][0]
+    if (!patch || typeof patch !== 'object' || !filters.length) return list
+    return list.map(row => (matches(row) ? { ...row, ...patch } : row))
+  }
+
+  const deleteStep = step('delete')
+  if (deleteStep) {
+    if (!filters.length) return list
+    return list.filter(row => !matches(row))
+  }
+
+  const insertStep = step('insert')
+  if (insertStep) {
+    const payload = insertStep[1] && insertStep[1][0]
+    const added = (Array.isArray(payload) ? payload : [payload]).filter(Boolean)
+    if (!added.length) return list
+    // Only rows carrying an id are appended — without one there is nothing to
+    // dedupe against, and a duplicate in the export is worse than a gap the
+    // next select fills in.
+    const withIds = added.filter(row => row && row.id != null)
+    if (!withIds.length) return list
+    const seen = new Set(list.map(row => row && row.id))
+    return [...list, ...withIds.filter(row => !seen.has(row.id))]
+  }
+
+  return list
+}

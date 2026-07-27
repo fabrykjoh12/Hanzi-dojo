@@ -20,7 +20,7 @@
 // hq.html bundle (which never uses this client) must not inherit that.
 
 import {
-  boardSnapshot, hqWorkspace, isMissingSetupError,
+  applyMutationToCache, boardSnapshot, hqWorkspace, isMissingSetupError,
   memberQueryKind, setupMissingError, toMemberRows,
 } from './dojoBoard'
 
@@ -67,7 +67,12 @@ class DojoTableQuery {
     for (const [method, args] of this.steps) this.builder = this.builder[method](...args)
     const result = await this.builder
     const key = this.table.startsWith('dojo_') ? this.table.slice(5) : this.table
-    if (this.isSelect && Array.isArray(result.data) && key in cache) cache[key] = result.data
+    if (!(key in cache)) return result
+    if (this.isSelect && Array.isArray(result.data)) cache[key] = result.data
+    // A write with no `.select()` — the board's commonest one — would otherwise
+    // leave the cache pre-edit, and exportData() would hand back a snapshot
+    // that disagrees with the screen. See applyMutationToCache in dojoBoard.js.
+    else if (!this.isSelect && !result.error) cache[key] = applyMutationToCache(cache[key], this.steps)
     return result
   }
 }

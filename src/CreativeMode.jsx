@@ -40,15 +40,25 @@ const PAGE = 1000
 // PostgREST caps a response at 1000 rows, and a full HSK track has more
 // vocabulary than that. Each call must build a FRESH query — a Supabase builder
 // is single-use.
+//
+// MAX_PAGES is a backstop, not a limit anyone should reach: the loop normally
+// ends on a short page, but a server whose `db-max-rows` is set below PAGE
+// returns a full-looking page forever and would hang the tab. Reaching it
+// throws rather than returning a truncated list — a silent half-answer here
+// would seed half a level and look like it worked.
+const MAX_PAGES = 100
+
 async function fetchPaged(build) {
   const out = []
-  for (let from = 0; ; from += PAGE) {
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const from = page * PAGE
     const { data, error } = await build().range(from, from + PAGE - 1)
     if (error) throw new Error(error.message)
     const rows = data || []
     for (const r of rows) out.push(r)
     if (rows.length < PAGE) return out
   }
+  throw new Error('Read more than ' + MAX_PAGES * PAGE + ' rows without reaching the end — check the server row limit.')
 }
 
 function Field({ label, children }) {
