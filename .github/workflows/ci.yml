@@ -1,0 +1,47 @@
+name: CI
+
+# The gate. Lint, unit tests and build run on every push and every pull request.
+#
+# Before this existed the only PR check was Playwright (e2e.yml) — so the ~1,200
+# vitest specs, the ESLint baseline and the build itself never blocked a merge,
+# and since most work went straight to `main` (which auto-deploys to Vercel), a
+# red suite could reach real users. These three commands are the same ones
+# `/ship` runs locally; keep the two in step.
+
+on:
+  push:
+  pull_request:
+
+# A newer push to the same branch supersedes an in-flight run. Never cancel on
+# `main` — that run is the record of what was deployed.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Node 22+: @supabase/supabase-js v2 needs a global WebSocket at
+          # createClient time. Matches regen-content.yml.
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      # No secrets: src/supabase.js only reads VITE_SUPABASE_* at runtime, so a
+      # build with them unset still compiles. This checks the bundle, not config.
+      - name: Build
+        run: npm run build
