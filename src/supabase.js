@@ -33,4 +33,17 @@ VITE_SUPABASE_ANON_KEY=...</pre>
   throw new Error(message)
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Explicit (matches supabase-js's own defaults) rather than implicit: the
+// session/refresh token lives in localStorage and auto-refreshes, so a
+// returning visit skips the login screen on its own. This does NOT survive
+// iOS Safari's ~7-day storage eviction for installed web apps on iOS < 17.4 —
+// that's an OS-level purge with no client-side workaround (this is a static
+// SPA with no backend to hold a server-side session).
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+  },
+})
