@@ -8,6 +8,20 @@ lives in the docs indexed below.
 **When a decision isn't covered here, choose the option that best serves the
 vision and learning philosophy in §1.**
 
+## How to answer (read this first)
+
+The maintainer has ADHD. Long replies are genuinely hard to use, so **short is
+not a style preference here — it is the requirement.**
+
+- **5 lines or fewer** unless more is asked for.
+- **Answer first.** Reasoning only if asked.
+- **No tables, no long bullet lists** unless requested.
+- If something is genuinely complex, give the one-line version and offer detail.
+- Never re-explain what was already agreed.
+
+This applies to chat replies only. Commit messages, PR bodies and these docs
+still get full detail — they are read once, on purpose.
+
 ## Where things are
 
 | Doc | What's in it | Read when |
