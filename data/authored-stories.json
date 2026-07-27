@@ -343,5 +343,100 @@
       "风",
       "墙壁"
     ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 3,
+    "tier_min_words": 130,
+    "is_published": true,
+    "title": "1. 一只跑得很快的兔子",
+    "english_summary": "A farmer works his field every day and is tired of it. Then a rabbit runs straight into the tree at the edge of the field, and that evening he eats meat for the first time in a long while.",
+    "content": "一个农民每天早上去田里工作。\n他从早上工作到晚上。\n每天都是这样，他很累。\n农民：什么时候我可以不工作呢？\n田的旁边有一个大树。\n这天中午，一只兔子跑过来。\n兔子跑得非常快。\n它没有看见那个树。\n兔子到了树那里，就不动了。\n农民走过去，拿了兔子。\n农民：今天我不买肉了！\n那天晚上，他吃得很好。",
+    "english_content": "A farmer went out to his field every morning to work.\nHe worked from morning until night.\nEvery day was the same, and he was tired.\nFarmer: When will I ever get to stop working?\nBeside the field stood a big tree.\nThat noon, a rabbit came running.\nThe rabbit was running very fast.\nIt did not see the tree.\nThe rabbit reached the tree, and then it did not move again.\nThe farmer walked over and picked the rabbit up.\nFarmer: Today I don’t have to buy meat!\nThat evening he ate very well.",
+    "reach_words": [
+      "农民",
+      "田",
+      "田里",
+      "兔子",
+      "树"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 3,
+    "tier_min_words": 130,
+    "is_published": true,
+    "title": "2. 第二天",
+    "english_summary": "The next morning the farmer does not pick up his tools. He sits down beside the tree instead, and waits — certain that what happened once will happen again.",
+    "content": "第二天早上，农民没有去田里工作。\n他走到那个树旁边，坐了下来。\n农民：昨天有一只兔子。\n农民：今天也会有的。\n他坐着，看着前面的路。\n上午过去了。\n中午过去了。\n没有兔子。\n一个朋友从路上走过来。\n朋友：你在这里做什么？你的田呢？\n农民：我在等兔子。\n朋友看了看他，什么也没有说。",
+    "english_content": "The next morning, the farmer did not go to work in his field.\nHe walked over to the tree and sat down.\nFarmer: Yesterday there was a rabbit.\nFarmer: There will be one today too.\nHe sat there, watching the road ahead.\nThe morning went by.\nNoon went by.\nNo rabbit.\nA friend came walking along the road.\nFriend: What are you doing here? What about your field?\nFarmer: I am waiting for a rabbit.\nHis friend looked at him and said nothing at all.",
+    "reach_words": [
+      "农民",
+      "田",
+      "田里",
+      "兔子",
+      "树"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 3,
+    "tier_min_words": 130,
+    "is_published": true,
+    "title": "3. 一天一天",
+    "english_summary": "Days turn into weeks. The farmer keeps his seat by the tree while people begin to talk about him — and behind his back, the field is quietly going bad.",
+    "content": "一天过去了，两天过去了。\n一个星期过去了。\n农民每天早上都到树那里去。\n他不做别的事情，只是坐着等。\n路上的人开始说他。\n有的人说，他每天都坐在那里。\n有的人问，他不工作了吗？\n农民听见了，但是他不想动。\n农民：你们不懂。\n农民：兔子会来的。\n在他后面，田里已经坏了。\n但是农民没有回去看。",
+    "english_content": "One day went by, then two.\nA week went by.\nEvery morning the farmer went to the tree.\nHe did nothing else — he only sat and waited.\nPeople on the road began to talk about him.\nSome said he sat there every single day.\nSome asked whether he had stopped working.\nThe farmer heard them, but he did not want to move.\nFarmer: You don’t understand.\nFarmer: The rabbit will come.\nBehind him, the field had already gone bad.\nBut the farmer never went back to look at it.",
+    "reach_words": [
+      "农民",
+      "田",
+      "田里",
+      "兔子",
+      "树"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 3,
+    "tier_min_words": 130,
+    "is_published": true,
+    "title": "4. 田怎么了",
+    "english_summary": "His friend finally walks him back to the field. What was green is not green any more, and the farmer has to look at what his waiting has cost.",
+    "content": "这天，那个朋友回来了。\n朋友：跟我来一下。\n农民：我要等兔子。\n朋友：跟我来吧。\n他们一起走回田里。\n农民看了看，不说话了。\n田里没有东西了。\n朋友：你在树那里坐了一个月。\n朋友：这一个月，你的田没有人去。\n农民：但是那只兔子……\n朋友：那只兔子是一次，不是每天。\n农民坐了下来，很长时间没有起来。",
+    "english_content": "That day, the friend came again.\nFriend: Come with me for a moment.\nFarmer: I have to wait for the rabbit.\nFriend: Come with me first.\nTogether they walked back to the field.\nThe farmer looked, and stopped talking.\nThere was nothing left in the field.\nFriend: You sat by that tree for a month.\nFriend: For a month, nobody looked after your field.\nFarmer: But that rabbit…\nFriend: That rabbit was once. It was not every day.\nThe farmer sat down, and for a long time he did not get up.",
+    "reach_words": [
+      "农民",
+      "田",
+      "田里",
+      "兔子",
+      "树"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 3,
+    "tier_min_words": 130,
+    "is_published": true,
+    "title": "5. 农民回到田里",
+    "english_summary": "The farmer goes back to work. The tree is still there, and so is the memory — but now he knows what the rabbit actually was.",
+    "content": "第二天早上，农民很早就起床了。\n他没有去树那里。\n他去了田里。\n田里的工作非常多。\n他从早上做到晚上，很累。\n但是这天晚上，他睡得很好。\n过了一些时候，田好起来了。\n有一天，他从树旁边走过。\n他坐下来，看了看那个树。\n农民：我在这里等了一个月。\n农民：一只兔子跑错了路，那是一次。\n农民：不是每天。\n他起来，回田里工作去了。",
+    "english_content": "The next morning the farmer got up very early.\nHe did not go to the tree.\nHe went to the field.\nThere was a great deal of work to do there.\nHe worked from morning to night, and he was tired.\nBut that night, he slept well.\nAfter a while, the field was good again.\nOne day he walked past the tree.\nHe sat down and looked at it.\nFarmer: I waited here for a month.\nFarmer: One rabbit ran the wrong way. That was once.\nFarmer: It was not every day.\nHe stood up and went back to work in his field.",
+    "reach_words": [
+      "农民",
+      "田",
+      "田里",
+      "兔子",
+      "树"
+    ]
   }
 ]

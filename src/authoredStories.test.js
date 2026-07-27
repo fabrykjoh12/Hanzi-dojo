@@ -78,7 +78,7 @@ function vocabMapFor(key) {
 // reference dictionary like any other out-of-pool word.
 const CN_ROLE_SPEAKERS = [
   '妈妈', '爸爸', '朋友', '老师', '服务员', '店员', '医生', '大家',
-  '女儿', '儿子', '天', '云彩', '风', '墙壁',
+  '女儿', '儿子', '天', '云彩', '风', '墙壁', '农民',
 ]
 const KNOWN_SPEAKERS = {
   japanese: new Set(['たかし', 'はな', 'おかあさん', 'おじいさん', 'せんせい', 'みせのひと', 'みんな']),
