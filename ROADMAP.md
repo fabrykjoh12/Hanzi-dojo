@@ -16,6 +16,7 @@ so the community always sees the latest. Keep it current — move things to
 - [x] Better-sounding Chinese: new neural voices for every word, example sentence and story line, plus a slow version of each word and sentence for when a word won't stick. Stories now have a narrator and separate character voices.
 
 **Just shipped**
+- [x] The English-reveal eye on a story line now also shows the whole line's pinyin/furigana, not just the words your reading settings already scaffold — so you can hear how the full sentence is pronounced alongside its translation
 - [x] Removed the inline "(English gloss)" next to unfamiliar words in every story reader — now that per-word readings show automatically, the extra parenthetical was redundant; tap a word for its full meaning
 - [x] A calmer Stories library: story covers never break (a designed fallback when art is missing), narration paces itself so a paged story no longer races past, the classic reader auto-follows the line it's reading, stories are grouped into clear arcs in a tidy card grid with All/Unread filters, and paged vs. scroll reading is now an equal, obvious choice
 - [x] Pinyin only where you need it: readings now appear over the individual words you haven't learned yet, in every story format, instead of all-or-nothing for the whole line

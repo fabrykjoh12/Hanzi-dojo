@@ -87,6 +87,11 @@ export default function PacedReader(props) {
           {c.beats.map((b, i) => {
             const st = beatStyle(i - c.cur, c.reduceMotion)
             const isDone = c.completedBeats.has(i)
+            // Revealing the English also pins the reading to "always" for this
+            // one beat, so the whole line's pronunciation is visible right
+            // alongside its translation — not just whichever words the global
+            // reading-mode setting happens to scaffold.
+            const beatMode = c.revealedEnglish.has(i) ? 'always' : c.readingMode
             return (
               <div key={i} ref={el => { beatEls.current[i] = el }} aria-hidden={i !== c.cur}
                 style={{ padding: '26px 0', transition: c.reduceMotion ? 'none' : 'opacity .45s ease, filter .45s ease', ...st }}>
@@ -111,7 +116,7 @@ export default function PacedReader(props) {
                               color: t.name ? PROPER_NOUN_COLOR : 'inherit',
                               ...(i === c.cur ? spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) : null),
                             }}>
-                            <TokenBody text={t.text} reading={null} mode={c.readingMode} status="not_started" language={track.language} reserve={reserve} />
+                            <TokenBody text={t.text} reading={null} mode={beatMode} status="not_started" language={track.language} reserve={reserve} />
                           </span>
                         )
                       }
@@ -137,7 +142,7 @@ export default function PacedReader(props) {
                             boxShadow: isSelected ? '0 0 0 1px rgba(202,138,4,0.5)' : (decorate && status === 'not_started' ? 'inset 0 -2px 0 ' + accent + '66' : 'none'),
                             ...(i === c.cur ? spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) : null),
                           }}>
-                          <TokenBody text={t.text} reading={t.vocab.reading} mode={c.readingMode} status={status} language={track.language} reserve={reserve} />
+                          <TokenBody text={t.text} reading={t.vocab.reading} mode={beatMode} status={status} language={track.language} reserve={reserve} />
                         </span>
                       )
                     })}

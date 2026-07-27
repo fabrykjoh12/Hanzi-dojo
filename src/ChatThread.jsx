@@ -47,6 +47,9 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
     // Skip the green text tint on "my bubble" too — same legibility reason as
     // properNounColor; the checkmark itself still confirms/advances there.
     const doneColor = meta.side === 'right' ? undefined : DONE_GREEN
+    // Revealing a bubble's English also pins its reading to "always", so the
+    // whole line's pronunciation is visible right alongside its translation.
+    const bubbleMode = (revealedEnglish && revealedEnglish.has(key)) ? 'always' : readingMode
     return (
       <div key={key} style={{ display: 'flex', flexDirection: 'column', alignItems: meta.side === 'right' ? 'flex-end' : 'flex-start' }}>
         <div style={{ fontSize: '11.5px', fontWeight: 700, color: meta.color, margin: '0 8px 3px', fontFamily: theme.font }}>{b.speaker}</div>
@@ -68,7 +71,7 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                             if (isCurrentBubble && onSeekToken && onSeekToken(k)) e.stopPropagation()
                           }}
                           style={{ color: (t.name && properNounColor) || 'inherit', ...spotlightStyle(k === activeToken, isSounding, reduceMotion) }}>
-                          <TokenBody text={t.text} reading={null} mode={readingMode} status="not_started" language={language} reserve={reserve} rtColor={rtColor} />
+                          <TokenBody text={t.text} reading={null} mode={bubbleMode} status="not_started" language={language} reserve={reserve} rtColor={rtColor} />
                         </span>
                       )
                     }
@@ -92,7 +95,7 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                           background: isSelected ? TAP_HILITE : (status === 'not_started' ? accent + '22' : (status === 'learning' ? '#CA8A0426' : 'transparent')),
                           boxShadow: isSelected ? '0 0 0 1px rgba(202,138,4,0.5)' : 'none',
                           ...spotlightStyle(k === activeToken, isSounding, reduceMotion) }}>
-                        <TokenBody text={t.text} reading={t.vocab.reading} mode={readingMode} status={status} language={language} reserve={reserve} rtColor={rtColor} />
+                        <TokenBody text={t.text} reading={t.vocab.reading} mode={bubbleMode} status={status} language={language} reserve={reserve} rtColor={rtColor} />
                       </span>
                     )
                   })}

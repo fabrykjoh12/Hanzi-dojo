@@ -35,6 +35,9 @@ export default function SceneReader(props) {
   const isDone = c.completedBeats.has(c.cur)
   const reserve = c.readingMode !== 'hidden'
   const hasActive = c.playing && c.activeToken >= 0
+  // Revealing the English also pins the reading to "always" for this scene, so
+  // the whole line's pronunciation is visible right alongside its translation.
+  const beatMode = c.revealedEnglish.has(c.cur) ? 'always' : c.readingMode
 
   // While the settings panel is open its buttons own Space/→, not the scene.
   const { setAdvanceBlocked } = c
@@ -79,7 +82,7 @@ export default function SceneReader(props) {
                         if (c.playing && c.seekToToken(k)) e.stopPropagation()
                       }}
                       style={{ color: t.name ? PROPER_NOUN_COLOR : 'inherit', ...spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) }}>
-                      <TokenBody text={t.text} reading={null} mode={c.readingMode} status="not_started" language={track.language} reserve={reserve} />
+                      <TokenBody text={t.text} reading={null} mode={beatMode} status="not_started" language={track.language} reserve={reserve} />
                     </span>
                   )
                 }
@@ -98,7 +101,7 @@ export default function SceneReader(props) {
                       background: isSelected ? TAP_HILITE : (status === 'not_started' ? accent + '1f' : (status === 'learning' ? '#CA8A0422' : 'transparent')),
                       boxShadow: isSelected ? '0 0 0 1px rgba(202,138,4,0.5)' : (status === 'not_started' ? 'inset 0 -2px 0 ' + accent + '66' : 'none'),
                       ...spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) }}>
-                    <TokenBody text={t.text} reading={t.vocab.reading} mode={c.readingMode} status={status} language={track.language} reserve={reserve} />
+                    <TokenBody text={t.text} reading={t.vocab.reading} mode={beatMode} status={status} language={track.language} reserve={reserve} />
                   </span>
                 )
               })}

@@ -922,7 +922,10 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                       <Token
                         key={ti}
                         token={tk}
-                        furiganaMode={furiganaMode}
+                        // Revealing this line's English also pins its reading to
+                        // "always", so the whole sentence's pronunciation shows
+                        // right alongside the translation.
+                        furiganaMode={revealedLines.has(li) ? 'always' : furiganaMode}
                         reserveRuby={reserveRuby}
                         isJapanese={isJapanese}
                         lens={lens}
