@@ -25,18 +25,27 @@ export function mixKey(card) {
   return 'due'
 }
 
-// Segment tones: one accent, three strengths, so the rail stays inside the
-// language's own palette instead of importing a second hue. Mixed into
-// `--surface` (never an alpha hex) so the tints stay legible in dark mode.
-// Completed work is the accent at full strength — the strongest mark on the
-// rail, and the sharp edge against the pale "new" band is the progress
-// frontier you actually read at a glance.
-const TONE_PCT = { new: 22, learning: 48, due: 74 }
+// The card's own status colours — the 3px line drawn across the top of the
+// flashcard. The rail reuses them so a band and the card it will become are
+// the same colour, rather than two unrelated vocabularies for one fact. These
+// live here, not in Study.jsx, so there is one definition of them.
+export const TONE_NEW = '#7FA0B5'
+export const TONE_DUE = '#E4DCCB'
+// The card marker has no learning colour of its own — a learning card wears the
+// review marker, because the front of a card must never hint that a word is one
+// you keep failing. The rail is a session summary, not a hint about the card in
+// front of you, so it can name learning: the midpoint of the walk from
+// first-time to review, which is exactly what a learning card is.
+export const TONE_LEARNING = 'color-mix(in srgb, ' + TONE_NEW + ' 50%, ' + TONE_DUE + ')'
 
-export function mixTone(accentHex, key) {
+const TONES = { new: TONE_NEW, learning: TONE_LEARNING, due: TONE_DUE }
+
+// Completed work is the one band that isn't a card state, so it keeps the
+// language accent: the strongest mark on the rail, and the edge where it meets
+// the muted card tones is the progress frontier you read at a glance.
+export function bandTone(accentHex, key) {
   if (key === 'done') return accentHex
-  const pct = TONE_PCT[key] || TONE_PCT.due
-  return 'color-mix(in srgb, ' + accentHex + ' ' + pct + '%, var(--surface))'
+  return TONES[key] || TONES.due
 }
 
 // counts = what is LEFT (the queue), done = what has been graded this session.

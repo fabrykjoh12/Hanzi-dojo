@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { sessionMix, mixKey, mixTone, MIX_KEYS, MIX_LABELS } from './sessionMix'
+import {
+  sessionMix, mixKey, bandTone,
+  TONE_NEW, TONE_LEARNING, TONE_DUE, MIX_KEYS, MIX_LABELS,
+} from './sessionMix'
 
 const q = (...states) => states.map(state => ({ state }))
 
@@ -89,29 +92,36 @@ describe('sessionMix segments', () => {
   })
 })
 
-describe('mixTone', () => {
-  it('uses the raw accent for completed work', () => {
-    expect(mixTone('#B83A24', 'done')).toBe('#B83A24')
+describe('bandTone', () => {
+  it('uses the language accent for completed work', () => {
+    expect(bandTone('#B83A24', 'done')).toBe('#B83A24')
+    expect(bandTone('#2563C9', 'done')).toBe('#2563C9')
   })
 
-  // Tints must mix into the surface, never an alpha hex, or they stay light in
-  // dark mode (CLAUDE.md §5).
-  it('mixes remaining bands into the surface token', () => {
-    for (const key of MIX_KEYS) {
-      const tone = mixTone('#2563C9', key)
-      expect(tone.indexOf('color-mix(in srgb, #2563C9 ')).toBe(0)
-      expect(tone.indexOf('var(--surface)')).toBeGreaterThan(0)
-    }
+  // The whole point of the palette: a band is the same colour as the marker
+  // line across the top of the card it stands for. If these drift apart, the
+  // rail and the card are telling the learner two different things.
+  it('matches the card marker colours for new and due', () => {
+    expect(bandTone('#B83A24', 'new')).toBe('#7FA0B5')
+    expect(bandTone('#B83A24', 'due')).toBe('#E4DCCB')
   })
 
-  it('ramps new lighter than learning, and learning lighter than due', () => {
-    const pct = key => Number(mixTone('#2E3A6E', key).split(' ')[3].replace('%,', ''))
-    expect(pct('new')).toBeLessThan(pct('learning'))
-    expect(pct('learning')).toBeLessThan(pct('due'))
+  it('does not tint the card tones with the accent', () => {
+    expect(bandTone('#B83A24', 'new')).toBe(bandTone('#2563C9', 'new'))
+    expect(bandTone('#B83A24', 'due')).toBe(bandTone('#2E3A6E', 'due'))
+  })
+
+  it('places learning midway between first-time and review', () => {
+    expect(TONE_LEARNING).toBe('color-mix(in srgb, ' + TONE_NEW + ' 50%, ' + TONE_DUE + ')')
+    expect(bandTone('#B83A24', 'learning')).toBe(TONE_LEARNING)
+  })
+
+  it('gives every legend key a tone', () => {
+    for (const key of MIX_KEYS) expect(bandTone('#B83A24', key)).toBeTruthy()
   })
 
   it('falls back to the due tone for an unknown key', () => {
-    expect(mixTone('#B83A24', 'nonsense')).toBe(mixTone('#B83A24', 'due'))
+    expect(bandTone('#B83A24', 'nonsense')).toBe(TONE_DUE)
   })
 })
 

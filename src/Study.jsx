@@ -24,7 +24,7 @@ import SessionRecap from './SessionRecap'
 import ChatMission from './ChatMission'
 import { buildMissionOffer } from './missionOffer'
 import { computeStudyTally } from './studyTally'
-import { sessionMix, mixTone, MIX_KEYS, MIX_LABELS } from './sessionMix'
+import { sessionMix, bandTone, TONE_NEW, TONE_DUE, MIX_KEYS, MIX_LABELS } from './sessionMix'
 import { MICRO, NUM } from './designTokens'
 import { useStudyAudio } from './useStudyAudio'
 import { useStudyKeyboardShortcuts } from './useStudyKeyboardShortcuts'
@@ -56,12 +56,12 @@ const GRADE_STYLES = [
 // shown BEFORE the answer, so it never hints that a word is one you've been
 // struggling with (that would bias the recall attempt). The struggling signal
 // only ever appears after reveal, in the leech panel below.
-const MARKER_NEW = '#7FA0B5'
-const MARKER_REVIEW = '#E4DCCB'
+// The colours come from sessionMix.js, so the header rail's bands and this
+// marker are the same palette rather than two vocabularies for one fact.
 function cardMarker(card) {
   return card.state === 'new'
-    ? { color: MARKER_NEW, label: 'FIRST TIME' }
-    : { color: MARKER_REVIEW, label: 'REVIEW' }
+    ? { color: TONE_NEW, label: 'FIRST TIME' }
+    : { color: TONE_DUE, label: 'REVIEW' }
 }
 
 // System serif stack per language, mirroring StoryReaderImmersive.jsx's
@@ -1111,7 +1111,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                 style={{
                   flex: seg.pct + ' 0 0%',
                   borderRadius: '999px',
-                  background: mixTone(accentHex, seg.key),
+                  background: bandTone(accentHex, seg.key),
                   transition: 'flex-grow 320ms ease',
                 }}
               />
@@ -1131,7 +1131,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               }}>
                 <span style={{
                   width: '7px', height: '7px', borderRadius: '999px', flexShrink: 0,
-                  background: mixTone(accentHex, key),
+                  background: bandTone(accentHex, key),
                 }} />
                 <span style={{ ...NUM, fontSize: '12.5px', fontWeight: 700, color: 'var(--text)' }}>
                   {mix.counts[key]}
