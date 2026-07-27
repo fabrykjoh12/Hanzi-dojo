@@ -36,6 +36,7 @@ const stories = JSON.parse(readFileSync(new URL('../data/authored-stories.json',
 // snapshot a failure.
 const SNAPSHOT_FILES = {
   'japanese|jlpt|1': '../data/jlpt1-vocab-snapshot.json',
+  'chinese|hsk_3|2': '../data/hsk2-vocab-snapshot.json',
   'chinese|hsk_3|3': '../data/hsk3-vocab-snapshot.json',
 }
 const SNAPSHOTS = {}
@@ -70,7 +71,15 @@ function vocabMapFor(key) {
 // absent from CHARACTER_READINGS, and allow-listed separately as speaker
 // labels. Extend this list (not CHARACTER_READINGS) when a new season needs a
 // role-noun speaker; extend CHARACTER_READINGS when it needs a real name.
-const CN_ROLE_SPEAKERS = ['妈妈', '爸爸', '朋友', '老师', '服务员', '店员', '医生', '大家']
+// Folk-tale seasons speak as roles and as things (the sun, a wall) rather than
+// as named people, so those labels are allow-listed here rather than added to
+// CHARACTER_READINGS — they are not personal names and must not get the "Name"
+// popup. A label that is also a declared reach word resolves through the
+// reference dictionary like any other out-of-pool word.
+const CN_ROLE_SPEAKERS = [
+  '妈妈', '爸爸', '朋友', '老师', '服务员', '店员', '医生', '大家',
+  '女儿', '儿子', '天', '云彩', '风', '墙壁',
+]
 const KNOWN_SPEAKERS = {
   japanese: new Set(['たかし', 'はな', 'おかあさん', 'おじいさん', 'せんせい', 'みせのひと', 'みんな']),
   chinese: new Set([...Object.keys(CHARACTER_READINGS.chinese || {}), ...CN_ROLE_SPEAKERS]),
@@ -187,13 +196,41 @@ describe('authored stories validate against the level vocabulary', () => {
       const segmenter = segmenterFor(s.language)
 
       // For Chinese this is the whole bar: every hanzi run must resolve to a
-      // vocabulary entry or a CHARACTER_READINGS name, or it is untappable.
-      it('every kanji/katakana word resolves to vocabulary', () => {
+      // vocabulary entry, a CHARACTER_READINGS name, or a DECLARED reach word.
+      //
+      // Reach words are the deliberate exception. The reader now falls back to
+      // the CC-CEDICT reference dictionary for anything outside the level's
+      // vocabulary, so an out-of-pool word is tappable and savable rather than a
+      // dead end — which is what lets a story use the handful of concrete nouns
+      // its plot actually needs (a folk tale needs a sun and a wall) instead of
+      // writing around them and going flat.
+      //
+      // They stay DECLARED and capped so this can't rot back into "the model
+      // used whatever it liked": each one is a deliberate choice, listed on the
+      // story, and few enough that a reader meets the same word repeatedly
+      // instead of meeting a different one every line. Anything undeclared still
+      // fails, exactly as before.
+      // The cap is 8 rather than a tighter number because a scene story with a
+      // concrete subject (a zoo: lion, monkey, elephant, ice cream) legitimately
+      // needs that many nouns, and they repeat within the story. Prose chapters
+      // should sit far below it — 老鼠找丈夫 runs on 4.
+      const declaredReach = new Set(s.reach_words || [])
+      it('declared reach words stay few (≤ 8) and are real words', () => {
+        expect(declaredReach.size, 'too many reach words: ' + [...declaredReach].join('、')).toBeLessThanOrEqual(8)
+        for (const w of declaredReach) {
+          expect(w.trim(), 'blank reach word').toBeTruthy()
+          // A reach word that IS in the pool is a mistake in the declaration,
+          // not a reach — it would silently raise the cap for a real one.
+          expect(Boolean(vocabMap[w]), 'declared reach word is already vocabulary: ' + w).toBe(false)
+        }
+      })
+
+      it('every kanji/katakana word resolves to vocabulary or a declared reach word', () => {
         const bad = []
         for (const line of lines) {
           const { text } = splitSpeaker(line)
           for (const t of unmatchedTokens(text, matcher, names, particles, segmenter)) {
-            if (hasKanjiOrKatakana(t)) bad.push(t + ' (in: ' + text + ')')
+            if (hasKanjiOrKatakana(t) && !declaredReach.has(t)) bad.push(t + ' (in: ' + text + ')')
           }
         }
         expect(bad, 'unmatched kanji/katakana: ' + bad.join(' | ')).toEqual([])

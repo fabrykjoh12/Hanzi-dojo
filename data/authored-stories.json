@@ -90,7 +90,12 @@
     "presentation": "chat",
     "title": "周末做什么",
     "english_summary": "Two friends compare weekend plans.",
-    "content": "朋友：这个周末你有空吗？\n小明：有空。你想做什么？\n朋友：我想去看电影。\n小明：好主意！看什么电影？\n朋友：一个新的中国电影，听说很好看。\n小明：几点的？\n朋友：星期六下午三点。\n小明：太好了，我们一起去！"
+    "content": "朋友：这个周末你有空吗？\n小明：有空。你想做什么？\n朋友：我想去看电影。\n小明：好主意！看什么电影？\n朋友：一个新的中国电影，听说很好看。\n小明：几点的？\n朋友：星期六下午三点。\n小明：太好了，我们一起去！",
+    "reach_words": [
+      "末",
+      "空",
+      "主意"
+    ]
   },
   {
     "language": "chinese",
@@ -126,7 +131,17 @@
     "title": "在动物园",
     "english_summary": "An afternoon at the zoo, animal by animal.",
     "content": "🦁 这是一只狮子。\n🐼 那是一只熊猫。\n🐒 猴子在树上玩。\n🐘 大象很大很高。\n🍦 我们吃了冰淇淋。\n📸 妈妈拍了照片。",
-    "english_content": "This is a lion.\nThat is a panda.\nThe monkey is playing in the tree.\nThe elephant is very big and tall.\nWe ate ice cream.\nMom took a photo."
+    "english_content": "This is a lion.\nThat is a panda.\nThe monkey is playing in the tree.\nThe elephant is very big and tall.\nWe ate ice cream.\nMom took a photo.",
+    "reach_words": [
+      "狮子",
+      "熊",
+      "猴子",
+      "树",
+      "象",
+      "冰淇淋",
+      "拍",
+      "照片"
+    ]
   },
   {
     "language": "chinese",
@@ -194,7 +209,12 @@
           }
         ]
       }
-    }
+    },
+    "reach_words": [
+      "末",
+      "空",
+      "主意"
+    ]
   },
   {
     "language": "chinese",
@@ -233,5 +253,95 @@
     "english_summary": "Xiaohua runs her school race. She does not win — and finds that finishing was the point.",
     "content": "小花是学校比赛的选手。\n昨天的训练很困难。\n她的教练说，慢慢来。\n今天早上，比赛开始了。\n前面的路还很长。\n她很紧张，也有点儿害怕。\n但是她没有停止。\n教练的建议在她心里。\n她终于到达了。\n她不是第一，但是她很高兴。\n坚持就是胜利。",
     "english_content": "Xiaohua is a competitor in her school race.\nYesterday's training was hard.\nHer coach said: take it slowly.\nThis morning, the race began.\nThe road ahead was still long.\nShe was nervous, and a little afraid too.\nBut she did not stop.\nHer coach's advice stayed in her heart.\nAt last, she reached the end.\nShe was not first, but she was very happy.\nTo keep going is itself a victory."
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 2,
+    "tier_min_words": 80,
+    "is_published": true,
+    "title": "1. 最大的是谁",
+    "english_summary": "Mouse Father wants the greatest husband in the world for his daughter. She already likes someone — but he is not listening. He looks up, sees the sun, and decides.",
+    "content": "老鼠爸爸有一个女儿。\n女儿已经不小了。\n爸爸：我要给女儿找一个最好的丈夫。\n爸爸：这个丈夫要是最大的。\n女儿：爸爸，我已经喜欢一个人了。\n爸爸：你别说话，我知道怎么做。\n早上，爸爸走出门口。\n他看见了天。\n爸爸：天在最上面，天最大！\n爸爸：我去问天。",
+    "english_content": "Mouse Father had a daughter.\nHis daughter was not little any more.\nFather: I will find my daughter the very best husband.\nFather: And that husband must be the greatest of all.\nDaughter: Dad, there is already someone I like.\nFather: Don’t talk, I know what I am doing.\nIn the morning, Father walked out of the door.\nHe saw the sun.\nFather: The sun is highest of all — the sun is the greatest!\nFather: I will go and ask the sun.",
+    "reach_words": [
+      "老鼠",
+      "云彩",
+      "风",
+      "墙壁"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 2,
+    "tier_min_words": 80,
+    "is_published": true,
+    "title": "2. 天说的话",
+    "english_summary": "After a long walk Father reaches the sun and asks his question. The sun gives an answer he did not expect: something can blot him out completely.",
+    "content": "爸爸走了很长时间，走了很远的路。\n爸爸：天，您最大吗？\n天：不，我不是最大的。\n天：云彩来了，大家就看不见我。\n天：云彩比我大。\n爸爸：那我去问云彩。\n天：云彩就在那边。\n爸爸看了看上面。\n上面有很多云彩。\n爸爸：云彩，请等一等我！",
+    "english_content": "Father walked a long time, down a very long road.\nFather: Sun, are you the greatest?\nSun: No, I am not the greatest.\nSun: When the white clouds come, nobody can see me at all.\nSun: The white clouds are greater than I am.\nFather: Then I will go and ask the clouds.\nSun: The clouds are right over there.\nFather looked up.\nAbove him there were many white clouds.\nFather: Clouds, please wait for me!",
+    "reach_words": [
+      "老鼠",
+      "云彩",
+      "风",
+      "墙壁"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 2,
+    "tier_min_words": 80,
+    "is_published": true,
+    "title": "3. 云彩走了",
+    "english_summary": "The clouds admit they are not the greatest either. Something moves them whether they want to go or not — and Father starts to wonder if this will ever end.",
+    "content": "云彩：谁在叫我？\n爸爸：云彩，您最大吗？\n云彩：不是我。\n云彩：风来的时候，我就走了。\n云彩：我不想走，但是我不能不走。\n爸爸：风？风在哪儿？\n云彩：您听。\n这个时候，爸爸听见了一个很大的东西。\n那个东西很快，也很大。\n爸爸：这就是风吗？",
+    "english_content": "Clouds: Who is calling us?\nFather: Clouds, are you the greatest?\nClouds: Not us.\nClouds: When the wind comes, we go.\nClouds: We do not want to go, but we cannot stay.\nFather: The wind? Where is the wind?\nClouds: Listen.\nJust then, Father heard something very big.\nIt was fast, and it was large.\nFather: So this is the wind?",
+    "reach_words": [
+      "老鼠",
+      "云彩",
+      "风",
+      "墙壁"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 2,
+    "tier_min_words": 80,
+    "is_published": true,
+    "title": "4. 风过不去的东西",
+    "english_summary": "The wind is proud: it can go anywhere in the world. Anywhere except one place. Father is running out of things bigger than the last.",
+    "content": "风：对，我就是风。\n爸爸：风，您最大吗？\n风：我很快，我哪儿都能去。\n风：早上在这里，晚上就在很远的路上。\n爸爸：那您最大了！\n风：不。有一个东西，我过不去。\n爸爸：什么东西？\n风：墙壁。\n风：我到了墙壁那里，就要回来。\n爸爸看了看前面的墙壁，走了过去。",
+    "english_content": "Wind: Yes, I am the wind.\nFather: Wind, are you the greatest?\nWind: I am fast. I can go anywhere.\nWind: In the morning I am here; by evening I am far down the road.\nFather: Then you are the greatest!\nWind: No. There is one thing I cannot get past.\nFather: What thing?\nWind: A wall.\nWind: When I reach a wall, I have to turn back.\nFather looked at the wall ahead and walked over to it.",
+    "reach_words": [
+      "老鼠",
+      "云彩",
+      "风",
+      "墙壁"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 2,
+    "tier_min_words": 80,
+    "is_published": true,
+    "title": "5. 最大的就在家里",
+    "english_summary": "The wall gives Father the last answer, and it is not the one he was looking for. He walks home and finds that his daughter was right on the very first morning.",
+    "content": "爸爸：墙壁，您最大吗？\n墙壁：别问我了。\n墙壁：老鼠住在我里面。\n墙壁：我快要坏了。\n爸爸：老鼠？\n墙壁：对。我最不喜欢老鼠。\n爸爸没有说话。\n他走了很远的路，现在他要回家。\n爸爸回到家的时候，天已经晚了。\n女儿正在门口和一只老鼠说话。\n爸爸：他是谁？\n女儿：他就是我喜欢的人。\n爸爸看了看他，笑了。\n爸爸：我走了这么远的路。\n爸爸：最大的，就在家里。",
+    "english_content": "Father: Wall, are you the greatest?\nWall: Don’t ask me.\nWall: Mice live inside me.\nWall: I am close to falling apart.\nFather: Mice?\nWall: Yes. Mice are the one thing I cannot stand.\nFather said nothing.\nHe had walked a very long road, and now he wanted to go home.\nBy the time Father got home, it was already late.\nHis daughter was at the door, talking with a mouse.\nFather: Who is he?\nDaughter: He is the one I like.\nFather looked at him, and laughed.\nFather: I walked such a long road.\nFather: And the greatest of all was at home the whole time.",
+    "reach_words": [
+      "老鼠",
+      "云彩",
+      "风",
+      "墙壁"
+    ]
   }
 ]
