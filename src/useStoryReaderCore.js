@@ -315,9 +315,17 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   // The sentence the learner is reading when they save a word — stored on the
   // card so review shows real context. Prefer the beat that actually contains the
   // word (chat/scene taps can be on an earlier bubble); fall back to the current beat.
-  const sourceSentenceFor = (vocab) => {
+  const sourceBeatFor = (vocab) => {
     const inBeat = beats.find(b => b.tokens.some(t => t.vocab && t.vocab.id === vocab.id))
-    return (inBeat || beats[cur] || {}).text || null
+    return inBeat || beats[cur] || {}
+  }
+  const sourceSentenceFor = (vocab) => sourceBeatFor(vocab).text || null
+  // The same beat's English line + this story's title, for the review card's
+  // "FROM <title>" attribution (Study.jsx). Optional/additive — a beat with no
+  // translation just leaves english null, same as sourceSentenceFor already does.
+  const sourceContextFor = (vocab) => {
+    const beat = sourceBeatFor(vocab)
+    return { sentence: beat.text || null, english: beat.english || null, storyId: story.id || null, storyTitle: story.title || null }
   }
 
   // `tokenId` identifies exactly which rendered token was tapped (a reader
@@ -331,17 +339,21 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
 
   const addToDeck = async (vocab) => {
     if (!vocab || !vocab.id || (userCards && userCards[vocab.id])) return
+    const ctx = sourceContextFor(vocab)
     const row = {
       user_id: session.user.id, vocab_id: vocab.id,
       state: 'new', ease_factor: 2.5, learning_step: 0, due_at: new Date().toISOString(),
-      source_sentence: sourceSentenceFor(vocab),
+      source_sentence: ctx.sentence,
+      source_story_id: ctx.storyId, source_story_title: ctx.storyTitle, source_translation: ctx.english,
     }
     let { error } = await supabase.from('cards').insert(row)
-    // Degrade gracefully if the source_sentence migration isn't applied yet:
-    // retry without the column so add-to-deck never breaks.
-    if (error && /source_sentence/.test(error.message || '')) {
-      const { source_sentence, ...rest } = row
-      void source_sentence
+    // Degrade gracefully if either source_sentence's migration or this one
+    // (source_story_id/title/translation) isn't applied yet: retry with all
+    // four optional columns dropped, so add-to-deck never breaks on an old
+    // schema — same one-retry shape this already used for source_sentence.
+    if (error && /source_sentence|source_story_id|source_story_title|source_translation/.test(error.message || '')) {
+      const { source_sentence, source_story_id, source_story_title, source_translation, ...rest } = row
+      void source_sentence, source_story_id, source_story_title, source_translation
       ;({ error } = await supabase.from('cards').insert(rest))
     }
     if (!error && setUserCards) setUserCards(prev => ({ ...prev, [vocab.id]: { vocab_id: vocab.id, state: 'new' } }))

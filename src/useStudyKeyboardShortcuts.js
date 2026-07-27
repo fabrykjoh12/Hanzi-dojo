@@ -2,9 +2,9 @@ import { useEffect } from 'react'
 
 // Desktop keyboard flow for the study screen, lifted out of Study.jsx verbatim.
 // Space/Enter reveals, 1–4 grades (Again/Hard/Good/Easy), Enter takes the
-// suggested/Good grade, R replays audio, U undoes the last grade. Behavior is
-// unchanged, including the intentional every-render rebind (no dependency
-// array) so the handler always closes over current state.
+// suggested/Good grade, R replays audio, U or Ctrl/Cmd+Z undoes the last
+// grade. Behavior is unchanged, including the intentional every-render rebind
+// (no dependency array) so the handler always closes over current state.
 
 // Typing contexts own the keyboard entirely — never hijack keys while an
 // input / textarea / select or a contentEditable element is focused.
@@ -36,7 +36,9 @@ export function useStudyKeyboardShortcuts({
       // Typing contexts own the keyboard entirely.
       if (isEditableTarget(el)) return
       const onActivatable = isActivatableTarget(el)
-      if ((e.key === 'u' || e.key === 'U') && undoRef.current) {
+      const isUndoChord = (e.key === 'u' || e.key === 'U')
+        || ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z'))
+      if (isUndoChord && undoRef.current) {
         e.preventDefault()
         undoLast()
         return

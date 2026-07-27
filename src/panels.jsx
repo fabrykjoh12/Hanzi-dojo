@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
-import InkWash from './InkWash'
+// Explicit extension: this directory also has inkWash.js (lowercase, pure
+// helpers) — an extensionless specifier is ambiguous on a case-insensitive
+// filesystem (Windows/macOS) and some bundlers there resolve it to the wrong
+// file. Linux (production) is case-sensitive and was never affected.
+import InkWash from './InkWash.jsx'
 import { heroGround, heroShadow, flatPanel, ON_HERO, MICRO } from './designTokens'
 
 // ── The app's two panel types ────────────────────────────────────────────

@@ -544,10 +544,11 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
 
   const addToDeck = async (vocabItem) => {
     // Remember the exact line the word was tapped on (sel.lineIndex), so review
-    // can show the sentence the learner actually read.
-    const srcSentence = (sel && sel.vocab && sel.vocab.id === vocabItem.id && sel.lineIndex != null && lines[sel.lineIndex])
-      ? splitSpeaker(lines[sel.lineIndex]).text
-      : null
+    // can show the sentence the learner actually read — plus this story's
+    // title and that line's English, for the "FROM <title>" attribution.
+    const onTappedLine = sel && sel.vocab && sel.vocab.id === vocabItem.id && sel.lineIndex != null
+    const srcSentence = (onTappedLine && lines[sel.lineIndex]) ? splitSpeaker(lines[sel.lineIndex]).text : null
+    const srcTranslation = (onTappedLine && englishLines[sel.lineIndex]) ? splitSpeaker(englishLines[sel.lineIndex]).text : null
     const row = {
       user_id: session.user.id,
       vocab_id: vocabItem.id,
@@ -556,12 +557,17 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
       learning_step: 0,
       due_at: new Date().toISOString(),
       source_sentence: srcSentence,
+      source_story_id: story.id || null,
+      source_story_title: story.title || null,
+      source_translation: srcTranslation,
     }
     let { error } = await supabase.from('cards').insert(row)
-    // Degrade gracefully if the source_sentence migration isn't applied yet.
-    if (error && /source_sentence/.test(error.message || '')) {
-      const { source_sentence, ...rest } = row
-      void source_sentence
+    // Degrade gracefully if either source_sentence's migration or this one
+    // (source_story_id/title/translation) isn't applied yet — same one-retry
+    // shape this already used for source_sentence.
+    if (error && /source_sentence|source_story_id|source_story_title|source_translation/.test(error.message || '')) {
+      const { source_sentence, source_story_id, source_story_title, source_translation, ...rest } = row
+      void source_sentence, source_story_id, source_story_title, source_translation
       ;({ error } = await supabase.from('cards').insert(rest))
     }
     if (!error) {

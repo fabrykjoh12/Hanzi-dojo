@@ -2,8 +2,10 @@
 export class StudyPage {
   constructor(page) {
     this.page = page;
-    this.heading = page.getByText(/Study session/i);
-    this.showAnswer = page.getByRole('button', { name: /Show answer/i });
+    // The whole card is the tap-to-reveal target (role="button", aria-label
+    // set only while unflipped) — no separate "Show answer" button anymore.
+    this.showAnswer = page.getByRole('button', { name: /flashcard.*tap to reveal/i });
+    this.heading = this.showAnswer;
     this.gradeAgain = page.getByRole('button', { name: /Again/i });
     this.gradeGood = page.getByRole('button', { name: /Good/i });
     this.gradeEasy = page.getByRole('button', { name: /Easy/i });

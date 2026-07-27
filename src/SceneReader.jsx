@@ -115,7 +115,7 @@ export default function SceneReader(props) {
             {beat && (
               <button
                 onClick={(e) => { e.stopPropagation(); c.markBeatDone(c.cur) }}
-                aria-label="Got it — next scene"
+                aria-label="Got it — next line"
                 title="Got it — next"
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,

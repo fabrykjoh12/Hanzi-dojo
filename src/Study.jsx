@@ -9,7 +9,6 @@ import { schedule, previewLabels, isCardDue, endOfLocalDay } from './srs'
 import { todayStr } from './streak'
 import { evaluateAchievements } from './achievements'
 import { toast } from './toast'
-import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { checkTypedAnswer } from './typedAnswer'
 import { useIsMobile } from './useIsMobile'
@@ -28,30 +27,49 @@ import { computeStudyTally } from './studyTally'
 import { useStudyAudio } from './useStudyAudio'
 import { useStudyKeyboardShortcuts } from './useStudyKeyboardShortcuts'
 import AudioButton from './AudioButton'
-import { shouldOfferCoach, isStuck } from './stuckWord'
+import { shouldOfferCoach, charBreakdown } from './stuckWord'
 import StuckWordCoach from './StuckWordCoach'
 import { loadTtsAudio, flashcardAudio } from './ttsAudio'
 import {
-  Volume2, VolumeX, ArrowLeft, Eye, RotateCcw, AlertTriangle, Check,
-  Sparkles, Layers, BookOpenCheck, X,
+  Volume2, VolumeX, RotateCcw, AlertTriangle, Check,
+  Sparkles, BookOpenCheck, X,
 } from 'lucide-react'
 
 const SAGE = '#6E8466'
-const SAGE_DARK = '#5C7155'
-// Grade → feedback color (Again / Hard / Good / Easy)
+// Grade → feedback color (Again / Hard / Good / Easy) — the post-grade flash
+// ring only, kept vivid so the ring reads clearly against the card.
 const GRADE_COLORS = ['#DC2626', '#D97706', '#3E63DD', '#2F9E6D']
 
-// Card status → color, so the flashcard itself signals where a word stands at
-// a glance: new (never studied) is blue, a word that keeps lapsing (isStuck)
-// is orange, everything else (learning fine / review / mastered) is green.
-// Same three hues the queue-count pills above the card already use.
-const STATUS_NEW = '#3E63DD'
-const STATUS_STRUGGLING = '#D97706'
-const STATUS_OK = '#2F9E6D'
-function cardStatusColor(card) {
-  if (card.state === 'new') return STATUS_NEW
-  if (isStuck(card)) return STATUS_STRUGGLING
-  return STATUS_OK
+// Grade button palette — desaturated to sit quietly on the card until pressed.
+// Fixed positions + text labels carry the meaning; color is a second signal,
+// never the only one (kept in sync with the icon/label per button below).
+const GRADE_STYLES = [
+  { bg: '#FBEDEA', border: '#E9C9C0', text: '#9B3521' }, // Again
+  { bg: '#FBF1E4', border: '#EBD7B8', text: '#8A5F1E' }, // Hard
+  { bg: '#E9F2EA', border: '#C4DCC7', text: '#35603C' }, // Good
+  { bg: '#E7EFF3', border: '#C2D6DF', text: '#2F5A6B' }, // Easy
+]
+
+// Front-of-card status marker — deliberately only two states (new / review),
+// shown BEFORE the answer, so it never hints that a word is one you've been
+// struggling with (that would bias the recall attempt). The struggling signal
+// only ever appears after reveal, in the leech panel below.
+const MARKER_NEW = '#7FA0B5'
+const MARKER_REVIEW = '#E4DCCB'
+function cardMarker(card) {
+  return card.state === 'new'
+    ? { color: MARKER_NEW, label: 'FIRST TIME' }
+    : { color: MARKER_REVIEW, label: 'REVIEW' }
+}
+
+// System serif stack per language, mirroring StoryReaderImmersive.jsx's
+// SERIF_FONTS — no web font is loaded (none of these are in the Google Fonts
+// link), just a preference among fonts the OS may already have.
+const STUDY_SERIF_FONTS = {
+  japanese: "'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',serif",
+  chinese: "'Songti SC','SimSun','Noto Serif SC',serif",
+  russian: "'Noto Serif','Georgia','Times New Roman',serif",
+  default: "'Noto Serif','Georgia','Times New Roman',serif",
 }
 
 function hasKanji(text) {
@@ -102,19 +120,6 @@ function furiganaParts(word, reading) {
   return { lead: w.slice(0, wStart), core, coreReading, trail: w.slice(wEnd) }
 }
 
-function QueuePill({ label, value, color, background }) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: '8px',
-      padding: '8px 12px', borderRadius: '14px',
-      background, border: '1px solid ' + color + '22',
-      minWidth: '94px', justifyContent: 'center',
-    }}>
-      <span style={{ fontSize: '15px', fontWeight: 750, color, lineHeight: 1 }}>{value}</span>
-      <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)' }}>{label}</span>
-    </div>
-  )
-}
 
 function IconButton({ icon: Icon, label, onClick, color, background, border }) {
   const [hovered, setHovered] = useState(false)
@@ -140,8 +145,39 @@ function IconButton({ icon: Icon, label, onClick, color, background, border }) {
   )
 }
 
-function GradeButton({ grade, label, interval, color, icon: Icon, onClick, suggested }) {
+// Icon-only, compact — the header row's Exit / Undo (label is aria/title
+// only, no visible text, so the row stays a single slim line).
+function HeaderIconButton({ icon: Icon, label, onClick, disabled }) {
   const [hovered, setHovered] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        width: '38px', height: '38px', borderRadius: '12px', flexShrink: 0,
+        border: '1px solid var(--border)',
+        background: hovered && !disabled ? 'var(--surface-2)' : 'var(--surface)',
+        cursor: disabled ? 'default' : 'pointer',
+        opacity: disabled ? 0.35 : 1,
+        transition: 'background 160ms ease, opacity 160ms ease',
+      }}
+    >
+      <Icon size={18} strokeWidth={1.9} color="var(--text-muted)" />
+    </button>
+  )
+}
+
+function GradeButton({ grade, label, interval, bg, border, text, icon: Icon, onClick, suggested }) {
+  const [hovered, setHovered] = useState(false)
+  // Hover/suggested strengthens by swapping in the button's own border tone —
+  // one step darker than its resting bg, given directly by the palette rather
+  // than derived, so no new shades are invented.
+  const activeBg = hovered || suggested ? border : bg
   return (
     <button
       onClick={() => onClick(grade)}
@@ -151,44 +187,21 @@ function GradeButton({ grade, label, interval, color, icon: Icon, onClick, sugge
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         gap: '6px', minHeight: '76px', padding: '12px 8px',
         borderRadius: '16px',
-        border: suggested ? '2px solid ' + color + '99' : '1px solid ' + color + (hovered ? '66' : '30'),
-        background: hovered || suggested ? color + '14' : color + '0D',
-        color, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+        border: (suggested ? '2px solid ' : '1.5px solid ') + border,
+        background: activeBg,
+        color: text, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
         transition: 'background 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease',
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
         boxShadow: hovered ? '0 10px 22px rgba(24,24,27,0.08)' : 'none',
       }}
     >
       <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: 750 }}>
-        <Icon size={16} strokeWidth={2} color={color} />
+        <Icon size={16} strokeWidth={2} color={text} />
         {label}
       </span>
       <span style={{ fontSize: '11px', fontWeight: 650, color: 'var(--text-muted)' }}>
         {interval}
       </span>
-    </button>
-  )
-}
-
-function PrimaryButton({ onClick, children, icon: Icon }) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-        width: '100%', minHeight: '54px', borderRadius: '16px', border: 'none',
-        background: hovered ? SAGE_DARK : SAGE, color: '#fff',
-        fontSize: '15px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
-        cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease, box-shadow 160ms ease',
-        transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
-        boxShadow: hovered ? '0 12px 28px rgba(110,132,102,0.28)' : '0 6px 18px rgba(110,132,102,0.18)',
-      }}
-    >
-      <Icon size={18} strokeWidth={2.1} color="#fff" />
-      {children}
     </button>
   )
 }
@@ -210,10 +223,17 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // it and, for new cards, attempt a duplicate insert).
   const gradingRef = useRef(false)
   // Snapshot of everything the last grade mutated, so a misclicked "Easy" can
-  // be undone for a few seconds instead of silently mis-scheduling the card.
+  // be undone — a persistent header button now, not a timed toast, so it's
+  // available for as long as it's still valid (cleared the moment a new grade
+  // or an explicit undo supersedes it — see applyGrade/undoLast).
   const undoRef = useRef(null)
-  const undoTimerRef = useRef(null)
   const [undoVisible, setUndoVisible] = useState(false)
+  // Session total for the header "N of Total" counter + progress bar. Set once
+  // per queue load, then incremented whenever an Again-graded card re-enters
+  // the queue (applyGrade's res.stay), so the denominator stays honest instead
+  // of a fixed estimate that a growing session would silently outrun. State,
+  // not a ref — it's read during render, and refs can't be (react-hooks/refs).
+  const [total, setTotal] = useState(0)
   // Stuck-word help: after grading Again on a word that keeps slipping, offer a
   // fresh-angle coach; `coachVocab` is the word whose coach sheet is open.
   const [stuckOffer, setStuckOffer] = useState(null)
@@ -265,8 +285,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const isJapanese = profile.active_language === 'japanese'
   const langFont = theme.font
   const langChars = theme.languageName
-  const systemLabel = getSystemLabel(track.system)
-  const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
 
   // Audio (speed pref, iOS-safe playback + fallback, autoplay-on-flip, and
   // current+next prefetch) lives in a focused hook. Behavior is unchanged.
@@ -344,6 +362,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         .sort((a, b) => (b.lapses - a.lapses) || ((a.stability || 0) - (b.stability || 0)))
         .slice(0, 30)
       await primeTtsAudio(weakQueue)
+      setTotal(weakQueue.length)
       setQueue(weakQueue)
       setDone(weakQueue.length === 0)
       setLoading(false)
@@ -416,6 +435,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     })
     const newQueue = buildStudyQueue({ dueLearning, dueReview, newItems, seed })
     await primeTtsAudio(newQueue)
+    setTotal(newQueue.length)
     setQueue(newQueue)
     setDone(newQueue.length === 0)
     setLoading(false)
@@ -622,7 +642,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     const online = isOnline()
 
     // A new grade invalidates any pending undo — its snapshot predates this one.
-    clearTimeout(undoTimerRef.current)
     undoRef.current = null
     setUndoVisible(false)
 
@@ -756,19 +775,19 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       })
     }
 
-    // Offer undo for a few seconds — except when this grade completes the
-    // session (the recap snapshot has already been taken by then).
+    // Offer undo — a persistent header button now, not a timed toast — except
+    // when this grade completes the session (the recap snapshot has already
+    // been taken by then).
     snapshot.cardId = cardId
     snapshot.outboxId = outboxId
     const willComplete = !res.stay && queue.length === 1
     if (!willComplete) {
       undoRef.current = snapshot
       setUndoVisible(true)
-      undoTimerRef.current = setTimeout(() => {
-        undoRef.current = null
-        setUndoVisible(false)
-      }, 6000)
     }
+    // An Again-graded card re-enters the queue below, extending the session —
+    // grow the "N of Total" denominator to match instead of letting it lag.
+    if (res.stay) setTotal(t => t + 1)
 
     // The write landed (or was queued) — this card now counts toward today.
     // Offline these counts also ride along in the queued op and are folded into
@@ -811,7 +830,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     const u = undoRef.current
     if (!u || gradingRef.current) return
     gradingRef.current = true
-    clearTimeout(undoTimerRef.current)
     undoRef.current = null
     setUndoVisible(false)
     setStuckOffer(null)
@@ -871,8 +889,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     }
   }
 
-  // Clear a pending undo timer if the screen unmounts mid-window.
-  useEffect(() => () => clearTimeout(undoTimerRef.current), [])
 
   // In typed mode the check result implies a grade — highlight it and let Enter
   // confirm it. Flip mode defaults Enter to "Good" (the Anki convention).
@@ -885,9 +901,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     setFlipped, handleGrade, playAudio, undoLast,
   })
 
-  const newCount = queue.filter(c => c.state === 'new').length
-  const learnCount = queue.filter(c => c.state === 'learning' || c.state === 'relearning').length
-  const dueCount = queue.filter(c => c.state === 'review').length
+  // Header "N of Total": current position (1-indexed, capped to the tracked
+  // total) and a 0–100 completion pct for the thin progress bar.
+  const sessionTotal = Math.max(total, queue.length + studied)
+  const currentPosition = Math.min(studied + 1, sessionTotal)
+  const progressPct = sessionTotal > 0 ? Math.min(100, (studied / sessionTotal) * 100) : 0
   const pageShell = {
     minHeight: '100vh',
     position: 'relative',
@@ -966,6 +984,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const showRuby = canUseFurigana && (showFurigana || flipped)
   const wordFuri = showRuby ? furiganaParts(v.word, v.reading) : null
   const showReadingLine = flipped && v.reading && !isJapanese
+  // The character is the focal point of the redesigned card: bigger, and set
+  // in a system serif stack (mirrors StoryReaderImmersive's SERIF_FONTS — no
+  // web font loaded, just a preference among fonts the OS may already have).
+  const charFont = STUDY_SERIF_FONTS[track.language] || STUDY_SERIF_FONTS.default
+  const charFontSize = isMobile ? '64px' : '90px'
   // Prefer the sentence the learner actually read (captured when they added the
   // word from a story) over the generic example — real context is more memorable.
   const sourceSentence = card.source_sentence || null
@@ -1000,8 +1023,17 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       </span>
     )
   }
-  const stateLabel = card.state === 'new' ? 'New card' : (isStuck(card) ? 'Struggling' : (card.state === 'review' ? 'Review' : 'Learning'))
-  const stateColor = cardStatusColor(card)
+  const marker = cardMarker(card)
+  // Story attribution for the source sentence (requirement 7) — both new,
+  // optional columns; a pre-migration DB or a non-story add just leaves them
+  // null and the extra labels below don't render.
+  const sourceStoryTitle = card.source_story_title || null
+  const sourceTranslation = card.source_translation || null
+  // Leech intervention (requirement 8) — a genuinely FSRS-tracked signal
+  // (lapses), answer side only, never before reveal.
+  const isLeech = flipped && (card.lapses || 0) >= 4
+  const leechChars = track.language === 'chinese' ? charBreakdown(v.word, v.reading) : []
+  const showLeechBreakdown = leechChars.length > 1
 
   // Guided first-mission coaching for the current card (progressive disclosure).
   // Null except during the first run's early cards. A calm banner above the
@@ -1012,6 +1044,48 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     if (!typedValue.trim()) return
     setTypedResult(checkTypedAnswer(typedValue, v, isJapanese) ? 'correct' : 'wrong')
     setFlipped(true)
+  }
+
+  // "See it in a story" — a lightweight on-demand lookup (no dependency on
+  // this card happening to carry source_story_id, so it works for ANY
+  // leeching word, not just ones originally added from a story).
+  async function findStoryForWord() {
+    try {
+      const { data } = await supabase
+        .from('stories')
+        .select('id, title')
+        .eq('language', track.language)
+        .eq('system', track.system)
+        .eq('is_published', true)
+        .ilike('content', '%' + v.word + '%')
+        .limit(1)
+      const hit = data && data[0]
+      if (hit) {
+        onNavigate && onNavigate('stories', { storyId: hit.id, todayWords: [v.word] })
+      } else {
+        toast({ title: 'No story has this word yet' })
+      }
+    } catch {
+      toast({ title: 'No story has this word yet' })
+    }
+  }
+
+  // "Reset this card" — a correction action, not a grade: puts the row back
+  // to the same fresh-card shape newItems uses, and lets the learner restudy
+  // it immediately rather than waiting for the next session.
+  async function resetCard() {
+    const fresh = {
+      state: 'new', ease_factor: 2.5, learning_step: 0, due_at: new Date().toISOString(),
+      is_easy: false, learned: false,
+      stability: null, difficulty: null, reps: 0, lapses: 0,
+      last_review: null, scheduled_days: 0, elapsed_days: 0,
+    }
+    if (card.id) {
+      await supabase.from('cards').update(fresh).eq('id', card.id).eq('user_id', session.user.id)
+    }
+    setStuckOffer(null)
+    setFlipped(false)
+    setQueue(prev => [{ ...prev[0], ...fresh }, ...prev.slice(1)])
   }
 
   return (
@@ -1027,32 +1101,20 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         </div>
       )}
 
-      <div style={{ maxWidth: '680px', margin: '0 auto 14px' }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '10px' }}>
-          <IconButton icon={ArrowLeft} label="Exit" onClick={onBack} />
-        </div>
-
-        <div style={{ textAlign: 'center', minWidth: 0, marginBottom: '12px' }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
-            color: accentHex, fontSize: '13px', fontWeight: 750, marginBottom: '6px',
-          }}>
-            <Layers size={17} strokeWidth={1.8} color={accentHex} />
-            {firstRun ? 'Your first session' : (isWeak ? 'Weak word cleanup' : langChars + ' flashcards')}
-          </div>
-          <h1 style={{ fontSize: '28px', color: 'var(--text)', fontWeight: 780, lineHeight: 1.1 }}>
-            {firstRun ? 'Learn your first words' : (isWeak ? 'Weak words' : 'Study session')}
-          </h1>
-          <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: 550, marginTop: '5px' }}>
-            {firstRun ? 'These words will unlock your first story' : (systemLabel + ' · ' + levelLabel)}
+      <div style={{ maxWidth: '680px', margin: '0 auto 14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <HeaderIconButton icon={X} label="Exit" onClick={onBack} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ height: '3px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', background: accentHex, width: progressPct + '%',
+              transition: 'width 320ms ease',
+            }} />
           </div>
         </div>
-
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <QueuePill label="New" value={newCount} color="#3E63DD" background="#3E63DD14" />
-          <QueuePill label="Learn" value={learnCount} color="#D97706" background="#D9770614" />
-          <QueuePill label="Due" value={dueCount} color="#2F9E6D" background="#2F9E6D14" />
-        </div>
+        <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', fontWeight: 650, flexShrink: 0, whiteSpace: 'nowrap' }}>
+          {currentPosition} of {sessionTotal}
+        </span>
+        <HeaderIconButton icon={RotateCcw} label="Undo last grade" onClick={undoLast} disabled={!undoVisible} />
       </div>
 
       {isJapanese && (
@@ -1092,14 +1154,17 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         <div
           onClick={() => !flipped && setFlipped(true)}
           aria-live="polite"
+          role={!flipped ? 'button' : undefined}
+          tabIndex={!flipped ? 0 : undefined}
+          aria-label={!flipped ? langChars + ' flashcard — tap to reveal the answer' : undefined}
           style={{
             width: '100%', maxWidth: '680px', minHeight: '420px',
-            // The tint mixes INTO the themed surface (not a flat hex over it),
-            // so it reads correctly in both light and dark mode instead of
-            // staying pastel-light regardless of theme.
-            background: 'color-mix(in srgb, ' + stateColor + ' 10%, var(--surface))',
-            border: '1px solid ' + stateColor + '45', borderRadius: '26px',
-            boxShadow: '0 24px 70px rgba(24,24,27,0.08)',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)', borderRadius: '26px',
+            // The front-of-card status strip — new vs. review only, never a
+            // struggling/leech signal (that would bias the recall attempt;
+            // see the leech panel further down, which is answer-side only).
+            boxShadow: '0 24px 70px rgba(24,24,27,0.08), inset 0 3px 0 0 ' + marker.color,
             display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'space-between',
             cursor: flipped ? 'default' : 'pointer', padding: '24px', position: 'relative',
             perspective: '1200px',
@@ -1122,16 +1187,12 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', flexShrink: 0, position: 'relative', zIndex: 2 }}>
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
-              padding: '8px 12px', borderRadius: '999px',
-              background: stateColor + '10', color: stateColor,
-              fontSize: '12px', fontWeight: 750, border: '1px solid ' + stateColor + '30',
+              padding: '6px 11px', borderRadius: '999px',
+              background: marker.color + '1c', color: marker.color,
+              fontSize: '11px', fontWeight: 800, letterSpacing: '0.04em',
+              border: '1px solid ' + marker.color + '40',
             }}>
-              {card.state === 'new'
-                ? <Sparkles size={14} strokeWidth={1.9} color={stateColor} />
-                : (isStuck(card)
-                  ? <AlertTriangle size={14} strokeWidth={1.9} color={stateColor} />
-                  : <Check size={14} strokeWidth={2.2} color={stateColor} />)}
-              {stateLabel}
+              {marker.label}
             </span>
             {audioUrl && flipped && (
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -1210,8 +1271,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           >
             {wordFuri ? (
               <div style={{
-                fontSize: '86px', fontWeight: 400, color: 'var(--text)',
-                fontFamily: langFont, lineHeight: 1.25,
+                fontSize: charFontSize, fontWeight: 400, color: 'var(--text)',
+                fontFamily: charFont, lineHeight: 1.25,
               }}>
                 {wordFuri.lead}
                 <ruby>
@@ -1222,17 +1283,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               </div>
             ) : (
               <div style={{
-                fontSize: '86px', fontWeight: 400, color: 'var(--text)',
-                fontFamily: langFont, lineHeight: 1.08,
+                fontSize: charFontSize, fontWeight: 400, color: 'var(--text)',
+                fontFamily: charFont, lineHeight: 1.08,
                 overflowWrap: 'anywhere',
               }}>
                 {v.word}
-              </div>
-            )}
-
-            {!flipped && (
-              <div style={{ fontSize: '13px', color: 'var(--text-faint)', marginTop: '28px', fontWeight: 650 }}>
-                Tap the card or reveal the answer
               </div>
             )}
 
@@ -1254,11 +1309,16 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                     {sourceSentence ? (
                       <>
                         <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                          From a story you read
+                          {sourceStoryTitle ? 'From "' + sourceStoryTitle + '"' : 'From a story you read'}
                         </div>
                         <div style={{ fontSize: '17px', color: 'var(--text)', lineHeight: 1.5, fontFamily: langFont }}>
                           {renderExampleSentence(sourceSentence, v.word, v.reading)}
                         </div>
+                        {sourceTranslation && (
+                          <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '7px', lineHeight: 1.45 }}>
+                            {sourceTranslation}
+                          </div>
+                        )}
                       </>
                     ) : (
                       <>
@@ -1308,6 +1368,54 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                         )}
                       </>
                     )}
+                  </div>
+                )}
+                {isLeech && (
+                  <div style={{
+                    width: '100%', maxWidth: '430px', marginTop: '18px', padding: '14px 16px',
+                    borderRadius: '14px', background: '#FBF3EC', border: '1px solid #EEDCCB',
+                    textAlign: 'left',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 750, color: '#8A5F1E' }}>
+                      <AlertTriangle size={15} strokeWidth={2} color="#8A5F1E" style={{ flexShrink: 0 }} />
+                      This one keeps slipping — missed {card.lapses} times
+                    </div>
+                    {showLeechBreakdown && (
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
+                        {leechChars.map((p, i) => (
+                          <span key={i} style={{
+                            display: 'inline-flex', flexDirection: 'column', alignItems: 'center',
+                            padding: '5px 9px', borderRadius: '9px', background: 'var(--surface)',
+                            border: '1px solid #EEDCCB',
+                          }}>
+                            <span style={{ fontSize: '17px', fontFamily: charFont, color: 'var(--text)' }}>{p.char}</span>
+                            {p.pinyin && <span style={{ fontSize: '10.5px', color: '#8A5F1E', fontWeight: 600 }}>{p.pinyin}</span>}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={e => { e.stopPropagation(); findStoryForWord() }}
+                        style={{
+                          padding: '7px 12px', borderRadius: '10px', cursor: 'pointer',
+                          background: 'var(--surface)', border: '1px solid #EEDCCB',
+                          color: '#8A5F1E', fontSize: '12.5px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+                        }}
+                      >
+                        See it in a story
+                      </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); resetCard() }}
+                        style={{
+                          padding: '7px 12px', borderRadius: '10px', cursor: 'pointer',
+                          background: 'none', border: '1px solid #EEDCCB',
+                          color: '#8A5F1E', fontSize: '12.5px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+                        }}
+                      >
+                        Reset this card
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1366,11 +1474,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                   Skip — reveal answer
                 </button>
               </div>
-            ) : (
-              <PrimaryButton onClick={() => setFlipped(true)} icon={Eye}>
-                Show answer
-              </PrimaryButton>
-            )
+            ) : null
           ) : (
             <div>
               {typedResult && (
@@ -1388,21 +1492,24 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                 </div>
               )}
               <div style={{
-                display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                display: 'grid',
+                gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, minmax(0, 1fr))',
                 gap: '10px',
               }}>
                 {[
-                  { grade: 0, label: 'Again', color: '#DC2626', icon: RotateCcw },
-                  { grade: 1, label: 'Hard', color: '#B45309', icon: AlertTriangle },
-                  { grade: 2, label: 'Good', color: '#3E63DD', icon: Check },
-                  { grade: 3, label: 'Easy', color: '#2F9E6D', icon: Sparkles },
+                  { grade: 0, label: 'Again', icon: RotateCcw },
+                  { grade: 1, label: 'Hard', icon: AlertTriangle },
+                  { grade: 2, label: 'Good', icon: Check },
+                  { grade: 3, label: 'Easy', icon: Sparkles },
                 ].map(item => (
                   <GradeButton
                     key={item.grade}
                     grade={item.grade}
                     label={item.label}
                     interval={labels[item.grade]}
-                    color={item.color}
+                    bg={GRADE_STYLES[item.grade].bg}
+                    border={GRADE_STYLES[item.grade].border}
+                    text={GRADE_STYLES[item.grade].text}
                     icon={item.icon}
                     onClick={handleGrade}
                     suggested={suggestedGrade === item.grade}
@@ -1418,27 +1525,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                 : (isTyped ? 'Enter to check' : 'Space to reveal')}
             </div>
           )}
-          {/* In flow (not fixed) so it can never sit on top of the grade
-              buttons — the fixed version covered Again/Hard on phones. */}
-          {undoVisible && (
-            <div style={{ textAlign: 'center', marginTop: '14px' }}>
-              <button
-                onClick={undoLast}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '8px',
-                  padding: '10px 16px', borderRadius: '999px',
-                  background: 'var(--surface)', border: '1px solid var(--border)',
-                  color: 'var(--text)', fontSize: '13px', fontWeight: 650,
-                  fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-                  boxShadow: '0 6px 18px rgba(24,24,27,0.10)',
-                }}
-              >
-                <RotateCcw size={15} strokeWidth={2} color="var(--text-muted)" />
-                Undo last grade
-              </button>
-            </div>
-          )}
-
           {stuckOffer && (
             <div style={{ textAlign: 'center', marginTop: '10px' }}>
               <button
