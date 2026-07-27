@@ -235,12 +235,19 @@ npm run build    # the build is the source of truth
 
 `/ship` does this for you and refuses to commit if any step fails.
 
-Those three, plus read-only git (`status`, `diff`, `log`, `show`), are
+Those three, plus read-only git (`status`, `diff`, `log`, `show`) and the
+**read-only** Supabase MCP tools (`list_*`, `get_*`, `search_docs`), are
 allow-listed in `.claude/settings.json` so they run without a prompt — they're
 safe, read-only or idempotent, and asking about them dozens of times a day is
 pure friction. **`git push`, `git commit`, the `node --env-file=.env.script`
-content scripts, and anything touching Supabase deliberately still prompt.**
-Those either publish something or spend money. Keep that line where it is.
+content scripts, and every Supabase tool that writes — `execute_sql`,
+`apply_migration`, `deploy_edge_function`, branch and project management —
+deliberately still prompt.** Those either change data or spend money. Keep that
+line where it is: the split is read vs. write, not Supabase vs. not.
+
+(`execute_sql` prompts even for a `SELECT`, because the same tool can `DELETE`.
+That's the right trade — inspecting schema, migrations, logs and advisors is
+what Claude actually needs constantly, and `list_tables` already covers it.)
 
 **CI runs the same three on every push and pull request**
 (`.github/workflows/ci.yml`), plus Playwright e2e (`.github/workflows/e2e.yml`).
