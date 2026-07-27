@@ -24,6 +24,8 @@ import SessionRecap from './SessionRecap'
 import ChatMission from './ChatMission'
 import { buildMissionOffer } from './missionOffer'
 import { computeStudyTally } from './studyTally'
+import { sessionMix, mixTone, MIX_KEYS, MIX_LABELS } from './sessionMix'
+import { MICRO, NUM } from './designTokens'
 import { useStudyAudio } from './useStudyAudio'
 import { useStudyKeyboardShortcuts } from './useStudyKeyboardShortcuts'
 import AudioButton from './AudioButton'
@@ -228,12 +230,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // or an explicit undo supersedes it — see applyGrade/undoLast).
   const undoRef = useRef(null)
   const [undoVisible, setUndoVisible] = useState(false)
-  // Session total for the header "N of Total" counter + progress bar. Set once
-  // per queue load, then incremented whenever an Again-graded card re-enters
-  // the queue (applyGrade's res.stay), so the denominator stays honest instead
-  // of a fixed estimate that a growing session would silently outrun. State,
-  // not a ref — it's read during render, and refs can't be (react-hooks/refs).
-  const [total, setTotal] = useState(0)
   // Stuck-word help: after grading Again on a word that keeps slipping, offer a
   // fresh-angle coach; `coachVocab` is the word whose coach sheet is open.
   const [stuckOffer, setStuckOffer] = useState(null)
@@ -362,7 +358,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         .sort((a, b) => (b.lapses - a.lapses) || ((a.stability || 0) - (b.stability || 0)))
         .slice(0, 30)
       await primeTtsAudio(weakQueue)
-      setTotal(weakQueue.length)
       setQueue(weakQueue)
       setDone(weakQueue.length === 0)
       setLoading(false)
@@ -435,7 +430,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     })
     const newQueue = buildStudyQueue({ dueLearning, dueReview, newItems, seed })
     await primeTtsAudio(newQueue)
-    setTotal(newQueue.length)
     setQueue(newQueue)
     setDone(newQueue.length === 0)
     setLoading(false)
@@ -785,10 +779,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       undoRef.current = snapshot
       setUndoVisible(true)
     }
-    // An Again-graded card re-enters the queue below, extending the session —
-    // grow the "N of Total" denominator to match instead of letting it lag.
-    if (res.stay) setTotal(t => t + 1)
-
     // The write landed (or was queued) — this card now counts toward today.
     // Offline these counts also ride along in the queued op and are folded into
     // the server row when the outbox flushes.
@@ -901,11 +891,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     setFlipped, handleGrade, playAudio, undoLast,
   })
 
-  // Header "N of Total": current position (1-indexed, capped to the tracked
-  // total) and a 0–100 completion pct for the thin progress bar.
-  const sessionTotal = Math.max(total, queue.length + studied)
-  const currentPosition = Math.min(studied + 1, sessionTotal)
-  const progressPct = sessionTotal > 0 ? Math.min(100, (studied / sessionTotal) * 100) : 0
+  // Header rail: what the session is made of right now — work done, then the
+  // new / learning / due cards still ahead (sessionMix.js). `total` state is
+  // still the load-time estimate; the rail's denominator comes from the live
+  // queue so a growing session stays honest.
+  const mix = sessionMix(queue, studied)
   const pageShell = {
     minHeight: '100vh',
     position: 'relative',
@@ -1104,16 +1094,55 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       <div style={{ maxWidth: '680px', margin: '0 auto 14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
         <HeaderIconButton icon={X} label="Exit" onClick={onBack} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ height: '3px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden' }}>
-            <div style={{
-              height: '100%', background: accentHex, width: progressPct + '%',
-              transition: 'width 320ms ease',
-            }} />
+          {/* The rail is the session's composition, not one flat number: work
+              done, then the new / learning / due cards still ahead. It is fully
+              painted on card one, so it never reads as an empty grey line. */}
+          <div
+            role="progressbar"
+            aria-label="Session progress"
+            aria-valuemin={0}
+            aria-valuemax={mix.total}
+            aria-valuenow={mix.done}
+            style={{ display: 'flex', gap: '3px', height: '6px' }}
+          >
+            {mix.segments.filter(seg => seg.pct > 0).map(seg => (
+              <div
+                key={seg.key}
+                style={{
+                  flex: seg.pct + ' 0 0%',
+                  borderRadius: '999px',
+                  background: mixTone(accentHex, seg.key),
+                  transition: 'flex-grow 320ms ease',
+                }}
+              />
+            ))}
+            {mix.total === 0 && (
+              <div style={{ flex: 1, borderRadius: '999px', background: 'var(--border)' }} />
+            )}
+          </div>
+          <div style={{
+            display: 'flex', justifyContent: 'center', flexWrap: 'wrap',
+            gap: isMobile ? '12px' : '16px', marginTop: '9px',
+          }}>
+            {MIX_KEYS.map(key => (
+              <span key={key} style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                opacity: mix.counts[key] > 0 ? 1 : 0.38,
+              }}>
+                <span style={{
+                  width: '7px', height: '7px', borderRadius: '999px', flexShrink: 0,
+                  background: mixTone(accentHex, key),
+                }} />
+                <span style={{ ...NUM, fontSize: '12.5px', fontWeight: 700, color: 'var(--text)' }}>
+                  {mix.counts[key]}
+                </span>
+                <span style={{ ...MICRO, fontSize: '9.5px', color: 'var(--text-faint)' }}>
+                  {MIX_LABELS[key]}
+                </span>
+              </span>
+            ))}
           </div>
         </div>
-        <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', fontWeight: 650, flexShrink: 0, whiteSpace: 'nowrap' }}>
-          {currentPosition} of {sessionTotal}
-        </span>
         <HeaderIconButton icon={RotateCcw} label="Undo last grade" onClick={undoLast} disabled={!undoVisible} />
       </div>
 
