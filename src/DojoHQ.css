@@ -1,3 +1,11 @@
+/* How much bottom edge the app's fixed MobileNav occupies: the bar itself
+   (icon + label + padding + hairline ≈ 56px) plus the home-indicator inset.
+   Defined on :root, not .dojo-hq, because the modals that need it are
+   position: fixed and must resolve it wherever they are painted. */
+:root {
+  --dojo-mobile-nav: calc(56px + env(safe-area-inset-bottom));
+}
+
 .dojo-hq {
   --dojo-ink: #151613;
   --dojo-cream: #f3f0e8;
@@ -366,6 +374,13 @@
 .dojo-modal input, .dojo-modal textarea, .dojo-modal select, .dojo-detail input, .dojo-detail textarea, .dojo-detail select, .dojo-gate input {
   width: 100%; border: 1px solid rgba(21,22,19,.14); border-radius: 11px; outline: 0;
   background: #f5f2eb; color: var(--dojo-ink); font: 500 13px Inter, sans-serif;
+  /* `width: 100%` alone does not hold a date input on iOS: the UA gives it an
+     intrinsic minimum width that wins, and the field then pushes out past the
+     modal's right edge. min-width:0 lets it actually shrink. */
+  max-width: 100%; min-width: 0;
+}
+.dojo-modal input[type='date'], .dojo-detail input[type='date'] {
+  -webkit-appearance: none; appearance: none;
 }
 .dojo-modal input, .dojo-modal select, .dojo-detail input, .dojo-detail select, .dojo-gate input { min-height: 46px; padding: 0 12px; }
 .dojo-modal textarea, .dojo-detail textarea { padding: 12px; resize: vertical; line-height: 1.55; }
@@ -651,7 +666,29 @@
   .dojo-backlog { position: static; box-shadow: none; }
   .dojo-backlog, .dojo-day { min-height: 390px; }
   .dojo-later-strip > div { grid-template-columns: 1fr; }
-  .dojo-modal { max-height: 94vh; padding: 22px 17px; border-radius: 20px; }
+  /* The app's bottom nav is a sibling of the whole HQ screen and always paints
+     over it: App.jsx wraps the routed content in `position: relative; z-index: 1`,
+     which traps this modal's z-index inside that stacking context no matter how
+     high it goes. So the modal is kept clear of the nav instead of fighting it —
+     the backdrop reserves the bar's height, and the modal fits what's left.
+     `dvh` because iOS `vh` counts the browser chrome that isn't on screen. */
+  .dojo-modal-backdrop {
+    align-items: flex-start;
+    padding: 14px 14px calc(14px + var(--dojo-mobile-nav));
+  }
+  .dojo-modal {
+    max-height: calc(100vh - 28px - var(--dojo-mobile-nav));
+    max-height: calc(100dvh - 28px - var(--dojo-mobile-nav));
+    margin: auto 0; padding: 22px 17px; border-radius: 20px;
+  }
+  /* Save/cancel ride the bottom of the modal rather than sitting at the end of
+     a long scroll — on a phone the form is taller than the screen, so the
+     buttons were only reachable by scrolling to the very end. */
+  .dojo-modal-actions {
+    position: sticky; bottom: -22px; z-index: 1;
+    margin: 26px -17px -22px; padding: 14px 17px calc(14px + 22px);
+    background: var(--dojo-paper);
+  }
   .dojo-launch-backdrop { padding: 10px; place-items: start center; }
   .dojo-launch { margin: 8px 0; padding: 28px 18px; border-radius: 21px; }
   .dojo-launch h1 { font-size: 43px; }
@@ -672,7 +709,10 @@
   .dojo-claude-task-card { align-items: stretch; flex-direction: column; }
   .dojo-claude-task-card .dojo-primary { width: 100%; }
   .dojo-form-grid, .dojo-form-grid-3 { grid-template-columns: 1fr; gap: 0; }
-  .dojo-detail-scroll { padding: 25px 18px 90px; }
+  /* The drawer is edge-to-edge and full height, so it can't be inset like the
+     modal — instead its scroll area ends above the nav bar rather than behind
+     it, which is what hid the last field and the delete button. */
+  .dojo-detail-scroll { padding: 25px 18px calc(34px + var(--dojo-mobile-nav)); }
   .dojo-detail-fields { grid-template-columns: 1fr 1fr; padding: 11px; }
   .dojo-gate-wrap { padding: 14px; }
   .dojo-gate { padding: 30px 20px; border-radius: 20px; }
