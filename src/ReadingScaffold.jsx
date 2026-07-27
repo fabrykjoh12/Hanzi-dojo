@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { tokenReading, furiganaSplit, FURIGANA_MODES } from './storyReading'
-import { cleanMeaning } from './cleanMeaning'
 import { SPEED_RATES } from './readAlong'
 import { useIsMobile } from './useIsMobile'
 import { Sliders, X, Eye, EyeOff } from 'lucide-react'
@@ -11,15 +10,6 @@ import { Sliders, X, Eye, EyeOff } from 'lucide-react'
 // uses; this file only draws it and offers the quiet control that picks a mode.
 
 const RT_COLOR = '#B45309'
-const GLOSS_COLOR = 'var(--text-faint)'
-
-// The short English sense to sit next to a word you haven't started yet — just
-// its first cleaned meaning, not the full (sometimes long) comma list the
-// lookup sheet shows on tap.
-function firstGloss(meaning) {
-  const cleaned = cleanMeaning(meaning)
-  return cleaned ? cleaned.split(',')[0].trim() : null
-}
 
 // U+00A0. A plain space collapses in HTML, so it could not hold an empty
 // annotation row open; this one can.
@@ -46,27 +36,21 @@ function readingLabelFor(language) {
 // the bare text. `reserve` keeps an empty annotation row over words that show no
 // reading, so the line sits at the same baseline whichever words are scaffolded
 // — switching modes (or moving between beats) never nudges the text.
-export function TokenBody({ text, reading, mode, status, language, reserve, rtColor, meaning }) {
+export function TokenBody({ text, reading, mode, status, language, reserve, rtColor }) {
   const rtStyle = { fontSize: '0.56em', color: rtColor || RT_COLOR, fontWeight: 500, letterSpacing: '0.02em' }
   const shown = tokenReading({ text, reading, mode, status, language })
-  // A word you haven't started yet gets its English sense right alongside it —
-  // no tap required to find out what an unknown (red-underlined) word means.
-  const gloss = status === 'not_started' ? firstGloss(meaning) : null
-  const glossEl = gloss
-    ? <span style={{ fontSize: '0.6em', color: GLOSS_COLOR, fontWeight: 600, marginLeft: '2px', whiteSpace: 'nowrap' }}>({gloss})</span>
-    : null
   if (!shown) {
-    if (!reserve) return <>{text}{glossEl}</>
+    if (!reserve) return <>{text}</>
     // NBSP, not a plain space — HTML collapses plain whitespace, which would
     // leave the annotation row zero-height and defeat the reservation.
-    return <><ruby>{text}<rt style={rtStyle}>{NBSP}</rt></ruby>{glossEl}</>
+    return <ruby>{text}<rt style={rtStyle}>{NBSP}</rt></ruby>
   }
   if (language === 'japanese') {
     // Reading over the kanji core only; shared okurigana stays on the baseline.
     const fp = furiganaSplit(text, shown)
-    if (fp) return <>{fp.lead}<ruby>{fp.core}<rt style={rtStyle}>{fp.coreReading}</rt></ruby>{fp.trail}{glossEl}</>
+    if (fp) return <>{fp.lead}<ruby>{fp.core}<rt style={rtStyle}>{fp.coreReading}</rt></ruby>{fp.trail}</>
   }
-  return <><ruby>{text}<rt style={rtStyle}>{shown}</rt></ruby>{glossEl}</>
+  return <ruby>{text}<rt style={rtStyle}>{shown}</rt></ruby>
 }
 
 // The per-sentence "reveal meaning" control: a plain eye icon that sits beside

@@ -92,7 +92,7 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                           background: isSelected ? TAP_HILITE : (status === 'not_started' ? accent + '22' : (status === 'learning' ? '#CA8A0426' : 'transparent')),
                           boxShadow: isSelected ? '0 0 0 1px rgba(202,138,4,0.5)' : 'none',
                           ...spotlightStyle(k === activeToken, isSounding, reduceMotion) }}>
-                        <TokenBody text={t.text} reading={t.vocab.reading} mode={readingMode} status={status} language={language} reserve={reserve} rtColor={rtColor} meaning={t.vocab.meaning} />
+                        <TokenBody text={t.text} reading={t.vocab.reading} mode={readingMode} status={status} language={language} reserve={reserve} rtColor={rtColor} />
                       </span>
                     )
                   })}

@@ -189,14 +189,6 @@ function segmentLine(text, matcher, segmenter, names, particles) {
   return tokens
 }
 
-// The short English sense to sit next to a word you haven't started yet — just
-// its first cleaned meaning, not the full (sometimes long) comma list the
-// lookup sheet shows on tap.
-function firstGloss(meaning) {
-  const cleaned = cleanMeaning(meaning)
-  return cleaned ? cleaned.split(',')[0].trim() : null
-}
-
 // Furigana over a token. Kept as a small pure helper so both real vocab (kanji
 // core only) and name/kana readings render consistently, at a legible size.
 function rubyFor(text, reading, isJapanese) {
@@ -262,9 +254,6 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
     // an empty row so its baseline lines up with words that do show a reading.
     body = <ruby>{token.text}<rt>&nbsp;</rt></ruby>
   }
-  // A word you haven't started yet gets its English sense right alongside it —
-  // no tap required to find out what an unknown (dotted-underline) word means.
-  const gloss = token.vocab && status === 'not_started' ? firstGloss(token.vocab.meaning) : null
   // Character names and curated place names get the same green text color, so
   // a proper noun reads as "a name", not a word to learn — on top of, not
   // instead of, its normal vocab/learning decoration.
@@ -286,7 +275,6 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
       }}
     >
       {body}
-      {gloss && <span style={{ fontSize: '0.6em', color: 'var(--text-faint)', fontWeight: 600, marginLeft: '2px', whiteSpace: 'nowrap' }}>({gloss})</span>}
     </span>
   )
 }

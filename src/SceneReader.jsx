@@ -98,7 +98,7 @@ export default function SceneReader(props) {
                       background: isSelected ? TAP_HILITE : (status === 'not_started' ? accent + '1f' : (status === 'learning' ? '#CA8A0422' : 'transparent')),
                       boxShadow: isSelected ? '0 0 0 1px rgba(202,138,4,0.5)' : (status === 'not_started' ? 'inset 0 -2px 0 ' + accent + '66' : 'none'),
                       ...spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) }}>
-                    <TokenBody text={t.text} reading={t.vocab.reading} mode={c.readingMode} status={status} language={track.language} reserve={reserve} meaning={t.vocab.meaning} />
+                    <TokenBody text={t.text} reading={t.vocab.reading} mode={c.readingMode} status={status} language={track.language} reserve={reserve} />
                   </span>
                 )
               })}
