@@ -33,6 +33,10 @@ on:
         description: "Which levels (e.g. 1-6, or 4-4 for one)"
         type: string
         default: 1-6
+      cap:
+        description: "Max words per level. Must exceed the largest band (HSK 6 is 1,684) or levels are silently truncated."
+        type: string
+        default: "2000"
 
 permissions:
   contents: write
@@ -62,7 +66,7 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        run: node build-hsk-vocab.mjs --source /tmp/complete.json --cap 1200 --levels ${{ inputs.levels }}
+        run: node build-hsk-vocab.mjs --source /tmp/complete.json --cap ${{ inputs.cap }} --levels ${{ inputs.levels }}
 
       - name: Commit the lists
         if: ${{ inputs.task == 'build' }}

@@ -49,10 +49,25 @@ async function existingWords() {
     return new Set()
   }
   const supabase = createClient(url, key)
-  const { data, error } = await supabase
-    .from('vocabulary').select('word').eq('language', 'chinese').eq('system', 'hsk_3')
-  if (error) { console.error('Fetch error:', error.message); process.exit(1) }
-  return new Set((data || []).map(r => r.word))
+  // PAGED, and active-only. Unpaged this returned PostgREST's first 1000 rows
+  // against a 2,368-word deck, so two thirds of the deck was invisible to the
+  // dedup and words already seeded could be handed a second row at another
+  // level. Active-only so a deactivated word can be re-seeded rather than
+  // being excluded forever by a row the app no longer shows.
+  const words = new Set()
+  const PAGE = 1000
+  for (let page = 0; page < 100; page += 1) {
+    const from = page * PAGE
+    const { data, error } = await supabase
+      .from('vocabulary').select('word')
+      .eq('language', 'chinese').eq('system', 'hsk_3').eq('is_active', true)
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1)
+    if (error) { console.error('Fetch error:', error.message); process.exit(1) }
+    for (const r of (data || [])) words.add(r.word)
+    if ((data || []).length < PAGE) break
+  }
+  return words
 }
 
 async function main() {
