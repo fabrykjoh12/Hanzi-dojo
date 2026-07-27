@@ -28,7 +28,7 @@ import { computeStudyTally } from './studyTally'
 import { useStudyAudio } from './useStudyAudio'
 import { useStudyKeyboardShortcuts } from './useStudyKeyboardShortcuts'
 import AudioButton from './AudioButton'
-import { shouldOfferCoach } from './stuckWord'
+import { shouldOfferCoach, isStuck } from './stuckWord'
 import StuckWordCoach from './StuckWordCoach'
 import { loadTtsAudio, flashcardAudio } from './ttsAudio'
 import {
@@ -40,6 +40,19 @@ const SAGE = '#6E8466'
 const SAGE_DARK = '#5C7155'
 // Grade → feedback color (Again / Hard / Good / Easy)
 const GRADE_COLORS = ['#DC2626', '#D97706', '#3E63DD', '#2F9E6D']
+
+// Card status → color, so the flashcard itself signals where a word stands at
+// a glance: new (never studied) is blue, a word that keeps lapsing (isStuck)
+// is orange, everything else (learning fine / review / mastered) is green.
+// Same three hues the queue-count pills above the card already use.
+const STATUS_NEW = '#3E63DD'
+const STATUS_STRUGGLING = '#D97706'
+const STATUS_OK = '#2F9E6D'
+function cardStatusColor(card) {
+  if (card.state === 'new') return STATUS_NEW
+  if (isStuck(card)) return STATUS_STRUGGLING
+  return STATUS_OK
+}
 
 function hasKanji(text) {
   const value = text || ''
@@ -987,7 +1000,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       </span>
     )
   }
-  const stateLabel = card.state === 'new' ? 'New card' : (card.state === 'review' ? 'Review' : 'Learning')
+  const stateLabel = card.state === 'new' ? 'New card' : (isStuck(card) ? 'Struggling' : (card.state === 'review' ? 'Review' : 'Learning'))
+  const stateColor = cardStatusColor(card)
 
   // Guided first-mission coaching for the current card (progressive disclosure).
   // Null except during the first run's early cards. A calm banner above the
@@ -1081,8 +1095,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           style={{
             width: '100%', maxWidth: '680px', minHeight: '420px',
             background: 'linear-gradient(180deg, var(--surface) 0%, var(--surface) 100%)',
-            border: '1px solid var(--border)', borderRadius: '26px',
-            boxShadow: '0 24px 70px rgba(24,24,27,0.08)',
+            border: '1px solid ' + stateColor + '30', borderRadius: '26px',
+            boxShadow: '0 24px 70px rgba(24,24,27,0.08), inset 0 3px 0 0 ' + stateColor,
             display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'space-between',
             cursor: flipped ? 'default' : 'pointer', padding: '24px', position: 'relative',
             perspective: '1200px',
@@ -1106,10 +1120,14 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
               padding: '8px 12px', borderRadius: '999px',
-              background: accentHex + '10', color: accentHex,
-              fontSize: '12px', fontWeight: 750, border: '1px solid ' + accentHex + '18',
+              background: stateColor + '10', color: stateColor,
+              fontSize: '12px', fontWeight: 750, border: '1px solid ' + stateColor + '30',
             }}>
-              <Sparkles size={14} strokeWidth={1.9} color={accentHex} />
+              {card.state === 'new'
+                ? <Sparkles size={14} strokeWidth={1.9} color={stateColor} />
+                : (isStuck(card)
+                  ? <AlertTriangle size={14} strokeWidth={1.9} color={stateColor} />
+                  : <Check size={14} strokeWidth={2.2} color={stateColor} />)}
               {stateLabel}
             </span>
             {audioUrl && flipped && (
