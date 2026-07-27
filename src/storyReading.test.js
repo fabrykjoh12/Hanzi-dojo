@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, readingVisibleFor, isDueSoon, kanjiStem, buildVocabMatcher, matchVocabAt, segmentLine, namesFor, particlesFor, hasKanjiChar, tokenReading, furiganaSplit, normalizeReadingMode, DEFAULT_READING_MODE } from './storyReading'
+import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, readingVisibleFor, isDueSoon, kanjiStem, buildVocabMatcher, matchVocabAt, segmentLine, namesFor, particlesFor, hasKanjiChar, tokenReading, furiganaSplit, normalizeReadingMode, DEFAULT_READING_MODE, atomicSpans, segmenterFor } from './storyReading'
 
 // ── hasKanjiChar (drives "no furigana over kana-only words") ─────────────────
 describe('hasKanjiChar', () => {
@@ -636,5 +636,51 @@ describe('segmentLine', () => {
     const line = '今天天气很好。'
     const toks = segmentLine(line, matcher, names, particles)
     expect(toks.map(t => t.text).join('')).toBe(line)
+  })
+})
+
+// Greedy longest-match tore a word in half whenever it merely STARTED with a
+// pool word: 太阳 became the pool word 太 ("too") plus a dangling 阳. The
+// segmenter, not the pool, decides where a Chinese word ends — a segmenter word
+// the pool cannot cover completely is emitted whole so the reference dictionary
+// is asked about the real word.
+describe('atomicSpans', () => {
+  // 太/好/看/很/多/东西/上/一点儿 are pool words; 阳/山/末 are not.
+  const map = {}
+  ;['太', '好', '看', '看见', '他', '了', '很', '多', '东西', '上', '一点儿', '周', '有', '这个', '也', '没有'].forEach((w, i) => {
+    map[w] = { id: 'a' + i, word: w, reading: w }
+  })
+  const matcher = buildVocabMatcher(map, 'chinese')
+  const names = namesFor('chinese')
+  const particles = particlesFor('chinese')
+  const seg = segmenterFor('chinese')
+  const spansIn = (text) => [...atomicSpans(text, matcher, names, particles, seg)]
+    .map(([i, len]) => text.slice(i, i + len))
+
+  it('keeps a partly-matching word whole instead of splitting off the pool prefix', () => {
+    expect(spansIn('他看见了太阳。')).toEqual(['太阳'])
+    expect(spansIn('这个周末。')).toEqual(['周末'])
+  })
+
+  it('leaves a word the pool covers completely alone', () => {
+    // 很 + 多 are both pool words, so 很多 keeps matching as two tappable words
+    // even though 很多 itself is not in the pool.
+    expect(spansIn('很多东西')).toEqual([])
+  })
+
+  it('does not fire when a longer pool word crosses the segmenter boundary', () => {
+    // The segmenter splits 一点 + 儿; the pool has 一点儿, and it wins.
+    expect(spansIn('一点儿也没有')).toEqual([])
+  })
+
+  it('is disabled without a segmenter', () => {
+    expect([...atomicSpans('他看见了太阳。', matcher, names, particles, null)]).toEqual([])
+  })
+
+  it('stops an atomic span from counting toward known vocabulary', () => {
+    // 太 must NOT be counted as a known word just because 太阳 contains it.
+    const r = calculateStoryReadability({ content: '太阳很好。', vocabMap: map, cards: {}, language: 'chinese' })
+    expect(r.storyWords).not.toContain('太')
+    expect(r.storyWords).toEqual(['很', '好'])
   })
 })

@@ -92,9 +92,9 @@
     "english_summary": "Two friends compare weekend plans.",
     "content": "朋友：这个周末你有空吗？\n小明：有空。你想做什么？\n朋友：我想去看电影。\n小明：好主意！看什么电影？\n朋友：一个新的中国电影，听说很好看。\n小明：几点的？\n朋友：星期六下午三点。\n小明：太好了，我们一起去！",
     "reach_words": [
-      "末",
-      "空",
-      "主意"
+      "周末",
+      "有空",
+      "好主意"
     ]
   },
   {
@@ -134,10 +134,10 @@
     "english_content": "This is a lion.\nThat is a panda.\nThe monkey is playing in the tree.\nThe elephant is very big and tall.\nWe ate ice cream.\nMom took a photo.",
     "reach_words": [
       "狮子",
-      "熊",
+      "熊猫",
       "猴子",
       "树",
-      "象",
+      "大象",
       "冰淇淋",
       "拍",
       "照片"
@@ -211,9 +211,9 @@
       }
     },
     "reach_words": [
-      "末",
-      "空",
-      "主意"
+      "周末",
+      "有空",
+      "好主意"
     ]
   },
   {

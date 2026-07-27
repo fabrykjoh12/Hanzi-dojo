@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from './supabase'
 import { buildVocabMap, assumedKnownCards, teaserLines, LEVEL_CHOICES } from './publicStoryHelpers'
-import { calculateStoryReadability, buildVocabMatcher, matchVocabAt, matchName, wordStatus, splitSpeaker, boundaryAfterSkip, JP_PARTICLES } from './storyReading'
+import { calculateStoryReadability, buildVocabMatcher, matchVocabAt, matchName, wordStatus, splitSpeaker, boundaryAfterSkip, JP_PARTICLES, atomicSpans, segmenterFor } from './storyReading'
 import { getLevelLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { BRAND_NAME } from './brand'
@@ -173,10 +173,21 @@ function TeaserLine({ line, vocabMap, language, knownCards, accent }) {
   const names = CHARACTER_READINGS[language] || {}
   const { speaker, text } = splitSpeaker(line)
   const parts = []
+  // Same atomic-span rule as the signed-in reader and the counted %: a segmenter
+  // word the pool can't cover completely (太阳) renders whole and unhighlighted,
+  // never as a "known" pool word plus a fragment.
+  const atomic = atomicSpans(text, matcher, names, particles, segmenterFor(language))
   let i = 0
   let key = 0
   let boundary = true
   while (i < text.length) {
+    const span = atomic.get(i)
+    if (span) {
+      parts.push(<span key={key++}>{text.slice(i, i + span)}</span>)
+      i += span
+      boundary = true
+      continue
+    }
     const name = matchName(text, i, matcher.words, names)
     if (name) {
       parts.push(<span key={key++}>{name}</span>)

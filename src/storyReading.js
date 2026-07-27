@@ -140,6 +140,23 @@ export function matchName(text, i, vocabMap, names) {
 export function namesFor(language) { return CHARACTER_READINGS[language] || {} }
 export function particlesFor(language) { return language === 'japanese' ? JP_PARTICLES : NO_PARTICLES }
 
+// Per-language word segmenter, built once. `null` where Intl.Segmenter is
+// missing, which simply disables atomic spans (matching falls back to the old
+// pool-only behavior rather than breaking).
+const SEGMENTER_LOCALE = { chinese: 'zh', japanese: 'ja', russian: 'ru' }
+const SEGMENTERS = {}
+export function segmenterFor(language) {
+  const locale = SEGMENTER_LOCALE[language]
+  if (!locale) return null
+  if (!(locale in SEGMENTERS)) {
+    try {
+      SEGMENTERS[locale] = (typeof Intl !== 'undefined' && Intl.Segmenter)
+        ? new Intl.Segmenter(locale, { granularity: 'word' }) : null
+    } catch { SEGMENTERS[locale] = null }
+  }
+  return SEGMENTERS[locale]
+}
+
 // Is this a vocab word's dictionary form a curated place name (country/city)?
 // Places stay ordinary vocabulary (own card, own status) — this only flags
 // them for a distinct color, same idea as `today` highlighting a studied word.
@@ -550,10 +567,77 @@ export function boundaryAfterSkip(ch, particles = NO_PARTICLES) {
 // Greedy vocab scan of one (speaker-stripped) line, mirroring the reader's
 // segmentLine vocab matching without the Intl.Segmenter rendering pass. Pushes
 // the matched vocab objects (in order, with duplicates) into `out`.
-function scanLineVocab(text, matcher, names, particles, out) {
+// ── Atomic spans (Chinese) ───────────────────────────────────────────────────
+// Greedy longest-match runs left to right over the vocabulary pool, which means
+// a word that merely STARTS with a pool word gets torn in half: 太阳 became
+// 太 (a real pool word, "too") + a dangling 阳, and 周末 became 周 + 末. The
+// learner then saw a known word that isn't there, and tapping the remainder
+// asked the dictionary about a fragment instead of the word.
+//
+// The segmenter already knows 太阳 is one word, so it — not the pool — decides
+// where words end. A segmenter word is ATOMIC when the pool cannot cover it
+// completely; the scanners then emit it whole and leave it to the reference
+// dictionary. When the pool CAN cover it (很多 → 很 + 多, both real entries),
+// nothing changes and both stay tappable as before.
+//
+// Chinese only: Japanese runs conjugation/okurigana logic through the same
+// matcher, where a partial match is normal and correct, and Russian is
+// whitespace-tokenized already.
+function isCjkWord(w) {
+  for (let k = 0; k < w.length; k += 1) {
+    const c = w.charCodeAt(k)
+    if (!(c >= 0x3400 && c <= 0x9FFF)) return false
+  }
+  return true
+}
+
+// Can the pool tile [start, end) exactly? Matching is bounded to the segment:
+// asking matchVocabAt would let a longer pool word overshoot the end and report
+// a miss, which wrongly made 很好 (很 + 好, both pool words) look uncoverable
+// just because 很好看 is also a word.
+function coverableBy(text, start, end, matcher, names, particles) {
+  let i = start
+  while (i < end) {
+    const name = matchName(text, i, matcher.words, names)
+    if (name && i + name.length <= end) { i += name.length; continue }
+    let hit = 0
+    for (let len = end - i; len >= 1; len -= 1) {
+      const cand = text.slice(i, i + len)
+      if (matcher.exact[cand] && !(len === 1 && particles.has(cand))) { hit = len; break }
+    }
+    if (!hit) return false
+    i += hit
+  }
+  return true
+}
+
+export function atomicSpans(text, matcher, names = {}, particles = NO_PARTICLES, segmenter = null) {
+  const spans = new Map()
+  if (!segmenter || matcher.isRussian || matcher.isJapanese) return spans
+  for (const seg of segmenter.segment(text)) {
+    const w = seg.segment
+    if (w.length < 2 || !isCjkWord(w)) continue
+    if (matcher.exact[w]) continue                                   // already one vocab token
+    if (matchName(text, seg.index, matcher.words, names) === w) continue
+    // A pool word that runs PAST this segment (一点儿, where the segmenter splits
+    // 一点 + 儿) means the curriculum knows this boundary better than the
+    // segmenter does — leave it to the normal matcher.
+    const over = matchVocabAt(text, seg.index, matcher, particles, true)
+    if (over && over.len > w.length) continue
+    if (coverableBy(text, seg.index, seg.index + w.length, matcher, names, particles)) continue
+    spans.set(seg.index, w.length)
+  }
+  return spans
+}
+
+function scanLineVocab(text, matcher, names, particles, out, atomic = null) {
   let i = 0
   let boundary = true
   while (i < text.length) {
+    // An atomic span contributes no vocabulary — that is the point: 太阳 is one
+    // unknown word, not a known 太 plus a fragment.
+    const span = atomic && atomic.get(i)
+    if (span) { i += span; boundary = true; continue }
     const name = matchName(text, i, matcher.words, names)
     if (name) { i += name.length; boundary = true; continue }
     const m = matchVocabAt(text, i, matcher, particles, boundary)
@@ -622,10 +706,15 @@ export function calculateStoryReadability({ content, vocabMap = {}, cards = {}, 
   const storyWords = []
   const newWords = []
 
+  // Built here rather than taken as a parameter so every caller counts the same
+  // way the reader renders — a story's "% known" and its highlighted words must
+  // never disagree about whether 太阳 contains the known word 太.
+  const segmenter = segmenterFor(language)
+
   ;(content || '').split('\n').filter(Boolean).forEach(line => {
     const { text } = splitSpeaker(line)
     const matches = []
-    scanLineVocab(text, matcher, names, particles, matches)
+    scanLineVocab(text, matcher, names, particles, matches, atomicSpans(text, matcher, names, particles, segmenter))
     matches.forEach(v => {
       counts.set(v.word, (counts.get(v.word) || 0) + 1)
       if (statuses.has(v.word)) return

@@ -8,7 +8,7 @@ import { CHARACTER_READINGS } from './characterNames'
 import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
-import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, matchName, JP_PARTICLES, readingVisibleFor, isDueSoon, buildVocabMatcher, matchVocabAt, boundaryAfterSkip, isPlaceWord } from './storyReading'
+import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, matchName, JP_PARTICLES, readingVisibleFor, isDueSoon, buildVocabMatcher, matchVocabAt, boundaryAfterSkip, isPlaceWord, atomicSpans } from './storyReading'
 import { minDwellMs } from './readAlong'
 import { glossaryLookup } from './grammarGlossary'
 import { getDictEntryByWord, addDictEntryToDeck } from './dictSearch'
@@ -166,9 +166,20 @@ function makeSegmenter(locale) {
 // readability count so what's tappable and what's counted stay in lockstep.
 function segmentLine(text, matcher, segmenter, names, particles) {
   const tokens = []
+  // Segmenter words the vocabulary pool can't cover completely (太阳, 周末) are
+  // emitted whole instead of being torn into a pool word plus a fragment, so the
+  // dictionary fallback is asked about the real word. See atomicSpans().
+  const atomic = atomicSpans(text, matcher, names, particles, segmenter)
   let i = 0
   let boundary = true
   while (i < text.length) {
+    const span = atomic.get(i)
+    if (span) {
+      tokens.push({ text: text.slice(i, i + span), vocab: null })
+      i += span
+      boundary = true
+      continue
+    }
     const name = matchName(text, i, matcher.words, names)
     if (name) {
       tokens.push({ text: name, name: { word: name, reading: names[name] } })

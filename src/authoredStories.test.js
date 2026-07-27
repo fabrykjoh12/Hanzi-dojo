@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, existsSync } from 'node:fs'
-import { buildVocabMatcher, matchVocabAt, boundaryAfterSkip, splitSpeaker, matchName, JP_PARTICLES } from './storyReading'
+import { buildVocabMatcher, matchVocabAt, boundaryAfterSkip, splitSpeaker, matchName, JP_PARTICLES, atomicSpans } from './storyReading'
 import { splitScene } from './sceneReading'
 import { glossaryLookup } from './grammarGlossary'
 import { CHARACTER_READINGS } from './characterNames'
@@ -111,9 +111,15 @@ function segmenterFor(language) {
 }
 function unmatchedTokens(text, matcher, names, particles, segmenter) {
   const out = []
+  // Mirrors the reader's atomic-span rule: a segmenter word the pool can't cover
+  // completely surfaces as ONE token (周末), not a pool word plus a fragment
+  // (周 + 末) — so a declared reach word is the word a learner actually taps.
+  const atomic = atomicSpans(text, matcher, names, particles, segmenter)
   let i = 0
   let boundary = true
   while (i < text.length) {
+    const span = atomic.get(i)
+    if (span) { out.push(text.slice(i, i + span)); i += span; boundary = true; continue }
     const name = matchName(text, i, matcher.words, names)
     if (name) { i += name.length; boundary = true; continue }
     const m = matchVocabAt(text, i, matcher, particles, boundary)
