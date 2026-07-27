@@ -3,6 +3,7 @@ import { ArrowLeft, Users, Activity, Clock, BookOpen, Repeat } from 'lucide-reac
 import { supabase } from './supabase'
 import { useIsMobile } from './useIsMobile'
 import { languageTheme } from './languageTheme'
+import CreativeMode from './CreativeMode'
 import {
   withConversion, fillDailySeries, storyCompletionRate,
   filterStoryRows, storyLanguageBreakdown, retentionSummary, retentionAverages,
@@ -215,7 +216,7 @@ function StoriesPanel({ rows, language, onLanguage }) {
   )
 }
 
-export default function Dashboard({ onBack }) {
+export default function Dashboard({ onBack, session, profile, track }) {
   const isMobile = useIsMobile()
   const [days, setDays] = useState(30)
   const [state, setState] = useState('loading') // loading | ready | empty | error
@@ -325,6 +326,17 @@ export default function Dashboard({ onBack }) {
             <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', margin: '0 0 12px' }}>Stories</h2>
             <StoriesPanel rows={data.story} language={storyLang} onLanguage={setStoryLang} />
           </Card>
+        </div>
+      )}
+
+      {/* Creative mode — a sandbox for this account, NOT analytics. It sits
+          below a rule and wears its own warning colour so it can never be
+          mistaken for real numbers, and it renders whatever the analytics
+          RPCs did, because testing tools that vanish when something upstream
+          is broken are useless exactly when you need them. */}
+      {session && profile && track && (
+        <div style={{ marginTop: '28px', borderTop: '1px dashed var(--border)', paddingTop: '20px' }}>
+          <CreativeMode session={session} profile={profile} track={track} />
         </div>
       )}
     </div>
