@@ -7,6 +7,7 @@ import {
   RefreshCw, Rocket, Share2, ShieldCheck, SquareTerminal, Trash2, Upload, UserPlus, UsersRound, Wrench, X,
 } from 'lucide-react'
 import { dojoClient as supabase } from './dojoClient'
+import { boardCopy, boardIdentity } from './dojoBoard'
 import { dojoClaudeBridge } from './dojoClaudeBridge'
 import { dojoHQ2Client } from './dojoHQ2Client'
 import { DojoCommandCenter, DojoCommandPalette } from './DojoHQ2'
@@ -161,7 +162,7 @@ function WorkspaceGate({ onCreate, onJoin, busy, setupError, online = false }) {
         <h1>{setupError ? 'HQ-et er tegnet og klart.' : 'Bygg noe rått, sammen.'}</h1>
         <p>
           {setupError
-            ? 'Databasen må kobles på før dere kan lagre og dele. Resten av arbeidsområdet er klart.'
+            ? 'Databasen må kobles på før dere kan lagre og dele: kjør migrasjonen 20260727140000_add_dojo_hq.sql i Supabase. Resten av arbeidsområdet er klart.'
             : online
               ? 'Opprett et delt HQ eller åpne invitasjonslenken fra vennen din. Endringer og bilder synkroniseres automatisk.'
               : 'Samle idéer, bugs, tester, bilder og planer i én skarp arbeidsflyt.'}
@@ -284,48 +285,57 @@ function LaunchModal({ overview, defaultOwnerName, onSubmit, onImport, busy }) {
   )
 }
 
-function CollaborationModal({ overview, members, identity, workspace, online = false, copied = false, onClose, onImport, onDownload, onShare, onCopyCode, onIdentityChange, busy }) {
+function CollaborationModal({ copy, overview, members, identity, workspace, onClose, onImport, onDownload, onShare, onCopyCode, onIdentityChange, busy }) {
   useEffect(() => {
     const onKey = event => { if (event.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  // Account-backed: identity is the login, so there is nothing to switch between.
+  const showIdentityNote = !copy.showInvite && !copy.canSwitchIdentity
+
   return (
     <div className="dojo-modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
       <section className="dojo-modal dojo-collab-modal" role="dialog" aria-modal="true" aria-labelledby="collab-title">
         <div className="dojo-modal-head">
-          <div><span className="dojo-kicker">Samarbeid uten Supabase</span><h2 id="collab-title">{online ? 'Live HQ. Samme plan.' : 'Én fil. Begges arbeid.'}</h2></div>
+          <div><span className="dojo-kicker">{copy.kicker}</span><h2 id="collab-title">{copy.heading}</h2></div>
           <button className="dojo-icon-btn" onClick={onClose} aria-label="Lukk"><X size={20} /></button>
         </div>
 
-        <div className={`dojo-local-status${online ? ' is-live' : ''}`}><ShieldCheck size={20} /><div><strong>{online ? 'Delt lagring er aktiv' : 'Alt er lagret lokalt'}</strong><span>{online ? `${members.length} ${members.length === 1 ? 'medlem' : 'medlemmer'} · D1 + R2 · automatisk synk` : `Revisjon ${overview.settings?.revision || 0} · endringer lagres automatisk`}</span></div>{online && <i aria-hidden="true" />}</div>
+        <div className={`dojo-local-status${copy.live ? ' is-live' : ''}`}><ShieldCheck size={20} /><div><strong>{copy.statusTitle}</strong><span>{copy.statusDetail}</span></div>{copy.live && <i aria-hidden="true" />}</div>
 
-        {online ? (
+        {copy.showInvite && (
           <div className="dojo-invite-block">
             <span>Invitasjonskode</span>
             <div><code>{workspace?.invite_code || '••••••••••••'}</code><button className="dojo-ghost" onClick={onCopyCode} disabled={!workspace?.invite_code}><Check size={16} />Kopier kode</button></div>
             <p>Invitasjonslenken inneholder koden lokalt i nettleseren. Den blir ikke sendt til serveren før vennen din velger å bli med.</p>
           </div>
-        ) : (
+        )}
+
+        {copy.canSwitchIdentity && (
           <label className="dojo-identity-field" htmlFor="dojo-identity"><span>Du jobber som</span><select id="dojo-identity" value={identity.userId} onChange={event => onIdentityChange(event.target.value)}>{members.map(member => <option key={member.user_id} value={member.user_id}>{member.profile?.display_name || member.display_name || 'Dojo-medlem'}</option>)}</select></label>
         )}
 
+        {showIdentityNote && (
+          <div className="dojo-identity-field"><span>Du jobber som</span><strong>{identity.displayName || 'Deg'}</strong></div>
+        )}
+
         <div className="dojo-sync-actions">
-          <button className="dojo-primary" onClick={onShare} disabled={busy}><Share2 size={17} />{online ? (copied ? 'Lenke kopiert' : 'Kopier invitasjonslenke') : 'Del nyeste fil'}</button>
-          {!online && <button className="dojo-ghost" onClick={onImport} disabled={busy}><Upload size={17} />Importer og slå sammen</button>}
-          {!online && <button className="dojo-ghost" onClick={onDownload} disabled={busy}><Download size={17} />Last ned kopi</button>}
+          <button className="dojo-primary" onClick={onShare} disabled={busy}><Share2 size={17} />{copy.shareLabel}</button>
+          {copy.canImport && <button className="dojo-ghost" onClick={onImport} disabled={busy}><Upload size={17} />Importer og slå sammen</button>}
+          {copy.canImport && <button className="dojo-ghost" onClick={onDownload} disabled={busy}><Download size={17} />Last ned kopi</button>}
         </div>
 
         <div className="dojo-sync-timeline">
-          <article><span>1</span><div><strong>{online ? 'Send invitasjonslenken' : 'Gjør endringene dine'}</strong><p>{online ? 'Vennen din åpner lenken, skriver navnet sitt og blir med.' : 'Oppgaver, kommentarer og bilder lagres med én gang.'}</p></div></article>
-          <article><span>2</span><div><strong>{online ? 'Planlegg sammen' : 'Del nyeste fil'}</strong><p>{online ? 'Endringer dukker automatisk opp hos begge omtrent hvert fjerde sekund.' : 'Send den direkte i meldingsappen dere allerede bruker.'}</p></div></article>
-          <article><span>3</span><div><strong>{online ? 'Bruk bilder og kommentarer' : 'Importer når du får den tilbake'}</strong><p>{online ? 'Skjermbilder ligger i delt bildelager, ikke i nettleseren.' : 'Nye og endrede ting flettes sammen. Slettinger følger også med.'}</p></div></article>
+          {copy.steps.map((step, index) => (
+            <article key={step.title}><span>{index + 1}</span><div><strong>{step.title}</strong><p>{step.body}</p></div></article>
+          ))}
         </div>
 
         <footer className="dojo-sync-meta">
-          {online
-            ? <><span><UsersRound size={14} />Du jobber som {identity.displayName}</span><span><RefreshCw size={14} />Live synk er på</span></>
+          {copy.live
+            ? <><span><UsersRound size={14} />Du jobber som {identity.displayName || 'deg selv'}</span><span><RefreshCw size={14} />Live synk er på</span></>
             : <><span><FileCheck2 size={14} />Sist importert: {syncTime(overview.settings?.last_import_at)}</span><span><Share2 size={14} />Sist delt: {syncTime(overview.settings?.last_export_at)}</span></>}
         </footer>
       </section>
@@ -1263,6 +1273,24 @@ export default function DojoHQ({ session, profile }) {
     loadWorkspaces()
   }
 
+  // One place decides how the board describes itself, so the account-backed
+  // storage mode can never be labelled "lokal arbeidsfil" (see dojoBoard.js).
+  const copy = boardCopy({
+    online: supabase.isRemote,
+    accountBacked: supabase.isAccountBacked,
+    memberCount: members.length,
+    revision: overview.settings?.revision || 0,
+    copied,
+  })
+
+  const identity = boardIdentity({
+    accountBacked: supabase.isAccountBacked,
+    deviceIdentity: standaloneIdentity,
+    userId: localSession.user.id,
+    displayName: localProfile.display_name,
+    email: localSession.user.email,
+  })
+
   const openNew = (status, dueDate = '') => { setNewItemStatus(status || 'inbox'); setNewItemDueDate(dueDate); setNewItemOpen(true) }
   const attachmentFor = itemId => attachments.filter(file => file.item_id === itemId)
   const commentCountFor = itemId => comments.filter(entry => entry.item_id === itemId).length
@@ -1284,7 +1312,7 @@ export default function DojoHQ({ session, profile }) {
           <div className="dojo-avatars" aria-label={`${members.length} medlemmer`}>{members.slice(0, 4).map((member, index) => <Avatar key={member.user_id} name={memberName(member.user_id)} index={index} />)}</div>
           <button className="dojo-share dojo-command-button" onClick={() => { setCommandQuery(''); setCommandOpen(true) }} title="Kommandopalett (Ctrl+K)"><Search size={16} /><span>Finn</span><kbd>Ctrl K</kbd></button>
           <button className={`dojo-share dojo-claude-button ${bridgeStatus.connected && bridgeStatus.claudeReady ? 'is-online' : ''}`} onClick={() => setClaudePanelOpen(true)} title="Claude Code og roadmap"><SquareTerminal size={16} /><span>Claude</span><i aria-hidden="true" /></button>
-          <button className="dojo-share dojo-share-secondary dojo-sync-button" onClick={() => setCollabOpen(true)} title={supabase.isRemote ? 'Live samarbeid' : 'Samarbeid og arbeidsfil'}>{supabase.isRemote ? <UsersRound size={16} /> : <FolderSync size={16} />}<span>{supabase.isRemote ? 'Live' : 'Arbeidsfil'}</span><i aria-hidden="true" /></button>
+          <button className="dojo-share dojo-share-secondary dojo-sync-button" onClick={() => setCollabOpen(true)} title={copy.syncButtonTitle}>{copy.live ? <UsersRound size={16} /> : <FolderSync size={16} />}<span>{copy.syncButtonLabel}</span><i aria-hidden="true" /></button>
           <input ref={importRef} className="sr-only" type="file" accept="application/json,.json,.dojo.json" onChange={event => { importWorkspace(event.target.files?.[0]); event.target.value = '' }} />
           <button className="dojo-share" onClick={shareWorkspace}>{copied ? <Check size={16} /> : <Share2 size={16} />}<span>{copied ? 'Kopiert' : 'Del'}</span></button>
         </div>
@@ -1292,9 +1320,9 @@ export default function DojoHQ({ session, profile }) {
 
       <section className={`dojo-hero${viewMode === 'plan' || viewMode === 'control' ? ' dojo-hero-planning' : ''}${viewMode === 'control' ? ' dojo-hero-control' : ''}`}>
         <div className="dojo-hero-copy">
-          <span className="dojo-eyebrow"><Circle size={8} fill="currentColor" /> {supabase.isRemote ? 'Live arbeidsrom · D1 + R2 · ingen Supabase' : 'Lokal arbeidsfil · ingen Supabase'}</span>
+          <span className="dojo-eyebrow"><Circle size={8} fill="currentColor" /> {copy.eyebrow}</span>
           <h1>Bygg. Test.<br /><em>Levér.</em></h1>
-          <p>{supabase.isRemote ? 'Alle tanker, feil, bilder og neste trekk for Hanzi Dojo — delt mellom dere og automatisk synkronisert.' : 'Alle tanker, feil og neste trekk for Hanzi Dojo — lagret på enheten din. Eksporter arbeidsfilen når du vil sende siste versjon til vennen din.'}</p>
+          <p>{copy.intro}</p>
           <button className="dojo-primary dojo-hero-cta" onClick={() => openNew('inbox')}><Plus size={19} />Legg til noe</button>
         </div>
         <div className="dojo-stat-grid">
@@ -1508,7 +1536,7 @@ export default function DojoHQ({ session, profile }) {
       </main>
 
       {showSetup && <LaunchModal overview={overview} defaultOwnerName={localProfile.display_name} onSubmit={finishSetup} onImport={() => importRef.current?.click()} busy={busy} />}
-      {collabOpen && <CollaborationModal overview={overview} members={members} identity={standaloneIdentity} workspace={activeWorkspace} online={supabase.isRemote} copied={copied} onClose={() => setCollabOpen(false)} onImport={() => importRef.current?.click()} onDownload={() => exportWorkspace(false)} onShare={shareWorkspace} onCopyCode={() => copyInvite(true)} onIdentityChange={changeIdentity} busy={busy} />}
+      {collabOpen && <CollaborationModal copy={copy} overview={overview} members={members} identity={identity} workspace={activeWorkspace} onClose={() => setCollabOpen(false)} onImport={() => importRef.current?.click()} onDownload={() => exportWorkspace(false)} onShare={shareWorkspace} onCopyCode={() => copyInvite(true)} onIdentityChange={changeIdentity} busy={busy} />}
       {claudePanelOpen && <ClaudePanel status={bridgeStatus} roadmapInfo={roadmapInfo} documentName={roadmapDocument} onDocumentChange={setRoadmapDocument} onClose={() => setClaudePanelOpen(false)} onSync={syncRoadmap} onPull={pullRoadmapStatus} onCheck={checkBridge} busy={bridgeBusy} online={supabase.isRemote} pairCommand={bridgePairCommand} />}
       {newItemOpen && <CreateItemModal onClose={() => setNewItemOpen(false)} onSubmit={createItem} members={members} initialStatus={newItemStatus} initialDueDate={newItemDueDate} busy={busy} maxFileMb={supabase.isRemote ? 5 : 1.5} />}
       {selectedItem && <ItemDetail key={selectedItem.id} item={selectedItem} items={items} attachments={attachments} comments={comments} members={members} milestones={hq2Data.milestones} testCases={hq2Data.testCases.filter(test => test.item_id === selectedItem.id)} runs={hq2Data.runs.filter(run => run.item_id === selectedItem.id)} memberName={memberName} onClose={() => setSelectedId(null)} onUpdate={updateItem} onDelete={deleteItem} onComment={addComment} onUpload={async (id, files) => { setBusy(true); await uploadFiles(id, files); setBusy(false); loadWorkspace(activeWorkspace) }} onRemoveAttachment={removeAttachment} onOpenClaude={openInClaude} onUpdateTest={updateTest} claudeConnected={bridgeStatus.connected && bridgeStatus.claudeReady} busy={busy || bridgeBusy} />}

@@ -1,0 +1,115 @@
+# Deployment, hosting & environment
+
+Everything about getting the app from a commit to a running site: env vars,
+hosts, routing, PWA, secrets, and the failure-mode cheat sheet.
+
+Companion docs: [`CLAUDE.md`](../CLAUDE.md) (read first) ·
+[`docs/ARCHITECTURE.md`](ARCHITECTURE.md) (schema, systems, content pipeline).
+
+---
+
+## Environment variables
+
+For local dev these live in files; in production they come from each host's
+settings (see Hosting, below).
+
+**What the browser bundle actually reads** (grep `import.meta.env.VITE_` in `src/`
+before adding to this list — it drifts):
+
+| Var | Required? | Effect if missing |
+|-----|-----------|-------------------|
+| `VITE_SUPABASE_URL` | **yes** | "Site can't start" card, app never mounts |
+| `VITE_SUPABASE_ANON_KEY` | **yes** | same |
+| `VITE_VAPID_PUBLIC_KEY` | no | push reminders can't subscribe |
+| `VITE_DEV_EMAILS` | no | dev-only tooling stays hidden |
+| `VITE_BUILD_SHA` / `VITE_BUILD_TIME` | no | derived in `vite.config.js` from the CI commit — never set by hand |
+
+`VITE_GOOGLE_TTS_KEY` is **not** read by the app; it belongs to the content
+scripts only (`.env.script` / GitHub secrets). Never add it to a host's browser env.
+
+```
+.env            Vite app vars (VITE_ prefix). Gitignored.
+                Required: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+
+.env.script     Server-side vars for generate-audio.mjs, generate-examples.mjs,
+                generate-stories.mjs, and generate-story-translations.mjs. Gitignored.
+                Required: SUPABASE_URL, SUPABASE_SERVICE_KEY, GOOGLE_TTS_KEY, and an LLM key —
+                GEMINI_API_KEY (preferred; llm.mjs → gemini-2.5-flash-lite) OR GROQ_API_KEY (fallback).
+                Optional overrides: LLM_MODEL, LLM_BASE_URL.
+```
+
+---
+
+## Hosting
+
+The app is **live on Vercel**, building from `main`. It is a pure client-side SPA (no server) talking directly to Supabase.
+
+### Vercel — the live host
+- **URL:** https://hanzi-dojo.com (and the Vercel-assigned https://hanzi-dojo-jet.vercel.app/), served from root `/`.
+- **How:** Vercel project `hanzi-dojo` auto-deploys; the **Production** environment tracks the `main` branch. Build command and output come from `vercel.json`, **not** the dashboard preset: `DOJO_PUBLIC_BUILD=1 npm run build` → `dist/client`. That flag is what makes the build emit the real app rather than the Dojo HQ / Sites package (see the two-build-targets note in `README.md`).
+- **Env vars:** Vercel scopes them **per environment** — Production, Preview and Development are separate lists. Set the required `VITE_` vars (table above) on **Production _and_ Preview**, or every PR preview builds without them and shows the "Site can't start" card. Vercel bakes `VITE_*` in at build time and applies changes only to **new** builds — after adding or changing one, redeploy (Deployments → ⋯ → Redeploy, uncheck build cache).
+
+### Cloudflare — DNS only, not hosting
+`hanzi-dojo.com` uses **Cloudflare as its authoritative nameserver**; the records
+point at Vercel, which does the building and serving. Cloudflare also holds the
+Brevo email records (DKIM, DMARC) for auth mail. Nothing about the learner app
+is *hosted* there — if the site is down, look at Vercel; if the domain doesn't
+resolve or mail bounces, look at Cloudflare.
+
+The one piece of genuine Cloudflare code in this repo is **`worker/index.js`** —
+a Workers backend for **Dojo HQ** (invite codes, workspaces), the admin-only
+internal tool. It is *not* part of the learner app: `src/dojoRemoteClient.js`
+calls it with relative paths, so it must be same-origin with the HQ build, and
+that deploy lives outside this repo (no `wrangler.toml`, no deploy workflow
+here). Changing `worker/index.js` does not ship anything by itself.
+
+### GitHub Pages — retired
+The app used to also deploy to `https://fabrykjoh12.github.io/Hanzi-dojo/` under
+a `/Hanzi-dojo/` subpath. That is **gone**: `deploy.yml` has been removed and
+`vite.config.js` no longer branches its `base`. The last-built site may still be
+served until Pages is switched off in repo Settings → Pages → Source → None
+(tracked in `docs/BACKLOG.md`). Do not add subpath-specific logic back.
+
+### Push reminders — one-time secret setup
+`send-review-reminders.mjs` runs hourly via `.github/workflows/send-reminders.yml` and needs its own secrets, separate from the `regen-content` ones:
+- **GitHub repository secrets:** `VAPID_PRIVATE_KEY` (keep this one secret — never in the frontend), `VITE_VAPID_PUBLIC_KEY` (same value as the Vercel one below — the workflow reads it as `VAPID_PUBLIC_KEY`).
+- **GitHub repository variable** (Settings → Secrets and variables → Actions → Variables): `VAPID_SUBJECT`, a `mailto:` contact address some push services require — defaults to a placeholder if unset.
+- **Vercel env var:** `VITE_VAPID_PUBLIC_KEY` — same public key as above; the frontend needs it to call `pushManager.subscribe()`.
+- The keypair itself is generated once with `web-push`'s `generateVAPIDKeys()` — it isn't regenerated by any script in this repo, so store both halves somewhere safe (rotating them invalidates every existing subscription, requiring users to re-enable reminders).
+
+### Routing (react-router BrowserRouter)
+- `main.jsx` wraps `<App>` in `<BrowserRouter basename=…>` (basename = `BASE_URL` minus the trailing slash, so it matches each host's base path). `App.jsx` derives `view` from `useLocation().pathname` (`pathToView`) and `navigate(key)` calls `useNavigate()` with `viewToPath(key)`. Each top-level screen is its own URL (`/study`, `/profile`, …); home is `/`. Browser back/forward and refresh-keeps-place now work. (Stories' internal list↔reader is still local state, not routed.)
+- **Deep-link fallback (required for refresh on a deep route):** `vercel.json` rewrites `/(.*)` → `/index.html`, so any deep path serves the SPA shell.
+- OAuth is unaffected: `redirectTo` is the base path (`/`), which always resolves to a real `index.html`, and Supabase's hash tokens don't collide with BrowserRouter (which uses the path, not the hash).
+
+### Base path (vite.config.js)
+`base` is always `'/'` — production, preview, and local dev alike. The former
+GitHub Pages deployment needed a `/Hanzi-dojo/` subpath and the config used to
+branch on the `VERCEL` env var; that branch is gone now that Vercel is the only
+host. Code still reads `import.meta.env.BASE_URL` rather than hardcoding `/`, so
+a future subpath host stays possible — keep it that way.
+
+### OAuth redirect (Supabase)
+- `Auth.jsx` passes `redirectTo: window.location.origin + import.meta.env.BASE_URL`, so Google login returns to whichever host the user came from.
+- Supabase only honors a `redirectTo` that is allow-listed. In Supabase → Authentication → URL Configuration → **Redirect URLs**, keep:
+  - `https://hanzi-dojo.com/**`
+  - `https://hanzi-dojo-jet.vercel.app/**`
+  - `http://localhost:5173/**`
+- The **Site URL** should be `https://hanzi-dojo.com`. Adding a new host = add its URL to the Redirect URLs allow-list. *(Setting Site URL + the allowlist is still an open dashboard task — see `docs/BACKLOG.md` → Auth / email / hosting.)*
+
+### Failure-mode cheat sheet
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| "Site can't start" card | build ran without the `VITE_SUPABASE_*` env vars | add the Vercel env vars, then **rebuild/redeploy** (uncheck build cache) |
+| Blank/white page, 404 on `/assets/*` | `base` no longer resolves to `/` | check `base` in `vite.config.js` |
+| Deep link 404s on refresh | `vercel.json` rewrite missing | restore the `/(.*)` → `/index.html` rewrite |
+| Google login bounces to localhost | host URL not in Supabase Redirect URLs | add `https://<host>/**` to the allow-list |
+| Env var change had no effect | Vercel bakes `VITE_*` in at build time | redeploy; env changes only apply to **new** builds |
+
+### PWA / installable + offline
+- **Offline service worker** (`public/sw.js`, registered in `main.jsx` in production only). Runtime caching: navigations are network-first with a cached-shell fallback; same-origin assets and Google Fonts are cache-first; the Supabase **audio** bucket is cache-first (offline pronunciation replay); Supabase **REST/auth** is never cached (no stale user data). Versioned caches cleaned on `activate`; `skipWaiting`+`clientsClaim` apply updates on next load. Scope follows `BASE_URL`. **Not yet done:** caching Supabase data for full offline study — reads work from cache once loaded. (Offline *grading* now works via the durable write outbox in `src/syncQueue.js`.)
+- `public/manifest.webmanifest` + icons (`icon-192.png`, `icon-512.png`, `maskable-512.png`, `apple-touch-icon.png`) make the app installable ("Add to Home Screen", standalone display). Icons were generated from `src/assets/Hanzi-logo.png` (the vermillion enso) composited onto white.
+- `index.html` references the manifest/icons via Vite's `%BASE_URL%` rather than absolute paths, and the manifest's internal paths (`start_url`, icon `src`) are **relative** — so both resolve correctly under any base. Keep it that way.
+- To regenerate icons: `npm install --no-save sharp`, then a short sharp script compositing the logo onto a white background at 192/512/180. (Note: the browser-tab favicon is still the separate purple mark in `public/favicon.svg` — replace it with an enso-derived icon if full brand consistency is wanted.)
+
+### Secrets / keys

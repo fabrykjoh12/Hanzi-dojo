@@ -9,11 +9,24 @@ sprint board.)
 Companion docs: [`ROADMAP.md`](../ROADMAP.md) (what users see) ·
 [`docs/BACKLOG.md`](BACKLOG.md) (engineering backlog) · [`TASKS.md`](../TASKS.md)
 (the owner's personal wishlist, maintained externally — product signal, not a
-work queue) · [`Claude.md`](../Claude.md) (architecture + conventions, read first).
+work queue) · [`CLAUDE.md`](../CLAUDE.md) (architecture + conventions, read first).
 
-_Baseline for this board: `origin/main` @ `55a2bf2`. Unit suite **1166 passing
-across 90 files**; Playwright **55 passing** (56 after TASK-003's new regression
-test — see below)._
+> ⚠️ **Two things changed under this board; older entries below predate them.**
+> 1. **Docs were reorganised.** `Claude.md` is now `CLAUDE.md` (the lowercase
+>    name meant Claude Code never auto-loaded it on a case-sensitive filesystem)
+>    and was cut from 1,623 lines to ~270. Its §16 known-issues moved to
+>    `docs/BACKLOG.md`, §19 deployment to `docs/DEPLOY.md`, the schema/systems/
+>    pipeline detail to `docs/ARCHITECTURE.md`, and the session log to
+>    `docs/CHANGELOG.md`. **Any `Claude.md §N` reference below points at a
+>    section that no longer exists** — follow the index at the top of `CLAUDE.md`.
+> 2. **The ESLint baseline is now 0 errors, not 7.** The 7 were all outside
+>    `src/` (Node globals in `playwright.config.js`, Playwright's `use` fixture
+>    in `tests/fixtures/mockSupabase.js`); `eslint.config.js` now scopes those
+>    correctly. `npm run lint` must stay at 0 errors — CI enforces it.
+
+_Baseline for this board: `origin/main` @ `cec5381`. Unit suite **1289 passing
+across 97 files**; Playwright **55+ passing**. Don't hand-maintain these counts —
+read them off a CI run instead of trusting the number written here._
 
 ---
 
@@ -29,8 +42,9 @@ is language-agnostic by design.
 
 ## Current Product State
 
-**Strong and shipping fast.** 665 unit tests across 67 files, all green;
-Playwright e2e covers the main screens. Recently landed: the streak/XP removal,
+**Strong and shipping fast.** The unit suite is green and Playwright e2e covers
+the main screens (current counts in the baseline note above). Recently landed:
+the streak/XP removal,
 a calmer Home and session recap, the pre-signup "wow moment" onboarding (read a
 real Chinese sentence before signing up), a 123k-entry Pleco-style reference
 dictionary with 77k Tatoeba examples, flashcard-anything, and **HSK 3–6

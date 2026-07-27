@@ -1,0 +1,301 @@
+# CLAUDE.md — Hanzi-dojo
+
+Read this file before making any change. It is deliberately short: only the
+things that are **true across sessions** live here — the vision, the rules, the
+shape of the codebase, and how to verify work. Everything that changes weekly
+lives in the docs indexed below.
+
+**When a decision isn't covered here, choose the option that best serves the
+vision and learning philosophy in §1.**
+
+## How to answer (read this first)
+
+The maintainer has ADHD. Long replies are genuinely hard to use, so **short is
+not a style preference here — it is the requirement.**
+
+- **5 lines or fewer** unless more is asked for.
+- **Answer first.** Reasoning only if asked.
+- **No tables, no long bullet lists** unless requested.
+- If something is genuinely complex, give the one-line version and offer detail.
+- Never re-explain what was already agreed.
+
+This applies to chat replies only. Commit messages, PR bodies and these docs
+still get full detail — they are read once, on purpose.
+
+## Where things are
+
+| Doc | What's in it | Read when |
+|-----|--------------|-----------|
+| **this file** | Vision, stack, repo shape, coding rules, DB safety rules, workflow | Always, first |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Full DB schema, level/mastery/SRS systems, design system, content pipeline | You need the detail |
+| [`docs/DEPLOY.md`](docs/DEPLOY.md) | Env vars, hosting, routing, PWA, secrets, failure cheat-sheet | Something is broken in prod |
+| [`docs/TESTING.md`](docs/TESTING.md) | What needs manual testing on a real device | Before asking testers |
+| [`ROADMAP.md`](ROADMAP.md) | Public plan — **auto-syncs to Discord** | Starting or finishing work |
+| [`docs/BACKLOG.md`](docs/BACKLOG.md) | Engineering backlog, known issues, tech debt | Picking up a fix |
+| [`docs/PM-BOARD.md`](docs/PM-BOARD.md) | Current milestone, ownership, merge order | Coordinating parallel work |
+| [`docs/CHANGELOG.md`](docs/CHANGELOG.md) | Session-by-session history (reference only) | Archaeology |
+
+### Keep the roadmap current (every task — it is live in Discord)
+
+Whenever we finish or start a meaningful piece of work, edit **`ROADMAP.md`** in
+the same change: move finished items to **✅ Shipped**, add newly started/planned
+work under **🚧 Now** / **🔜 Next**. Treat this as part of "done", not optional
+bookkeeping — the roadmap is the community's live view of progress.
+
+**It syncs to Discord instantly, no manual merge:** any change to `ROADMAP.md`
+(or the internal `docs/BACKLOG.md`) on a working branch is auto-copied to `main`
+by `.github/workflows/roadmap-live-sync.yml`, and that `main` push triggers
+`.github/workflows/discord-notify.yml`, which edits the pinned **#roadmap** (and
+**#backlog**) message in place. So you never wait for the feature PR to merge.
+That sync only ever moves those two doc files to `main`, never code. A merge to
+`main` also posts the changelog to **#announcements** — so write descriptive
+commit and PR titles.
+
+---
+
+## 1. Purpose and philosophy
+
+Hanzi-dojo is a free language-learning web app built on the two methods that
+actually work: **FSRS spaced repetition** and **level-matched immersion**.
+Chinese (HSK 3.0), Japanese (JLPT), and Russian (CEFR) today.
+
+**Why it exists:** most apps don't teach the language. Gamified loops waste
+time; immersion works, but finding material at your level is hard. Hanzi-dojo
+combines SRS with immersion content matched to what you actually know, so the
+learner never hunts for comprehensible input — the right stories come to them.
+
+**The daily loop** (the UX should reinforce this order):
+1. **Flashcards** — daily SRS review and new cards
+2. **Stories** — reading immersion matched to learned vocabulary
+3. **Listening** — curated video/audio for the level
+4. **Writing / output** — active recall
+
+**Core philosophy:**
+- **No shortcuts.** Progression is gated on genuine mastery (FSRS stability), not self-graded buttons.
+- **Mastery before progression.** The level test requires 100%. Stories unlock on a lower "learned" bar to encourage early immersion.
+- **Calm, not pressured.** No dark patterns, no guilt, no fake urgency. Streaks and XP were deliberately **removed** — they cut against this promise. Copy is observational; the return hook is the work waiting, not guilt.
+- **Frequency-first vocabulary.** Most useful words first.
+- **Stay free.** If monetisation is ever needed, prefer donations — never paywalls on core features.
+
+**Adding a language is data-driven.** Per-language identity (accent, font,
+native name, background, level system, whether the script is CJK) lives in
+`src/languageTheme.js`. Adding a language = add an entry there, add its
+background asset, run the CHECK-constraint migration (template:
+`20260701120000_add_russian_language.sql`), and seed content. Screens read the
+config — **never branch on `active_language === 'japanese'`.**
+
+---
+
+## 2. Stack
+
+| Tool | Version / Notes |
+|------|----------------|
+| React | 19.x |
+| Vite | 8.x (**OXC parser — strict**, see coding rules) |
+| react-router-dom | 7.x — BrowserRouter; each top-level screen is `/<key>`, home is `/` |
+| Supabase JS | ^2.107 — auth, Postgres, storage (`audio` bucket) |
+| ts-fsrs | ^5.4.1 — FSRS v5 scheduling |
+| wanakana | ^5.3.1 — Japanese romaji conversion |
+| hanzi-writer | ^3.7.3 — animated stroke order (char data from CDN at runtime) |
+| lucide-react | ^1.17 — **all** UI icons; never emoji-as-icon |
+| vitest | ^4.x — unit tests, `src/**/*.test.js` |
+| Playwright | ^1.61 — e2e, `tests/e2e/*.spec.js` |
+| Tailwind CSS | installed but **not used in JSX** — all styling is inline style objects |
+| openai | content scripts only (Groq/Gemini-compatible API) — **not in the app bundle** |
+| Node | 22+ (`@supabase/supabase-js` v2 needs a global `WebSocket` at `createClient`) |
+| Language | Plain JSX. **No TypeScript.** |
+
+**Supabase project:** `bvqvturqupbggxaeihvi` · `https://bvqvturqupbggxaeihvi.supabase.co` ·
+public storage bucket `audio` (all TTS MP3s).
+
+---
+
+## 3. Shape of the codebase
+
+`src/` is **flat** — ~271 files, no subdirectories except `src/tts/` and
+`src/assets/`. It works because naming is consistent. Keep the convention:
+
+- **`Foo.jsx`** — a screen or component. Components only (react-refresh).
+- **`fooThing.js`** — pure logic, no React, no Supabase import. **This is where behaviour belongs.**
+- **`fooThing.test.js`** — sits next to the module it tests. Vitest.
+- **`useFoo.js`** — a hook.
+
+**The single most important structural habit in this repo:** when a screen grows
+logic, extract the logic into a plain `.js` module and test it there.
+`Study.jsx`, `DojoHQ.jsx` and `StoryReaderImmersive.jsx` are each ~1,500 lines
+and are where this has not yet been done — every new piece of behaviour in them
+should arrive as a tested module, not another branch inside the component.
+
+**Entry points worth knowing:**
+
+| File | Role |
+|------|------|
+| `src/App.jsx` | Root — session, profile, track, counts; routes view ↔ URL; gates admin views on `profile.is_admin` |
+| `src/main.jsx` | React root, `BrowserRouter`, service-worker registration |
+| `src/supabase.js` | The client. Renders a visible "Site can't start" card if env vars are missing |
+| `src/languageTheme.js` | Per-language identity — **single source of truth** |
+| `src/navConfig.js` | Nav arrays — single source consumed by `Sidebar` + `MobileNav`. `ADMIN_NAV` is gated in `App.jsx` |
+| `src/srs.js` | FSRS scheduling — `schedule(card, grade)`, `previewLabels(card)` |
+| `src/mastery.js` | `MASTERY_STABILITY_DAYS = 21`, `TEST_UNLOCK_MASTERY_PCT = 0.9` |
+| `src/storyReading.js` | Story segmentation + vocab matching (CJK greedy, Russian whole-token + inflection) |
+| `src/syncQueue.js` | Durable write outbox — offline grading replay |
+| `src/designTokens.js` + `src/panels.jsx` | The "one lit panel" design language |
+
+**Outside `src/`:** `*.mjs` at the repo root are **content-generation scripts**
+(never bundled — see `docs/ARCHITECTURE.md`). `supabase/migrations/` holds SQL.
+`tools/` holds the Dojo bridge. `worker/` holds the Cloudflare worker.
+
+---
+
+## 4. Core systems (short version — detail in `docs/ARCHITECTURE.md`)
+
+**Levels.** Chinese `hsk_3` levels 1–9 → "HSK N". Japanese `jlpt` levels 1–6 →
+N5·Part 1, N5·Part 2, N4, N3, N2, N1. Russian `russian` levels 1–6 → CEFR A1–C2.
+**Always use `getLevelLabel(language, system, level)` from `utils.js`. Never
+hardcode a label.**
+
+**Mastery — two tiers.** *Learned* = `learned` column true, or state is
+`review`/`relearning` → gates story tiers (low bar, early immersion). *Mastered*
+= FSRS `stability >= 21 days` → gates the level test and the mastery display.
+`is_easy` is kept but gates nothing; **stability is the gate.**
+
+**SRS.** ts-fsrs v5, `request_retention: 0.9`, `enable_fuzz: true`. Grades 0–3 =
+Again/Hard/Good/Easy. Learning/relearning cards get `due_at = now()` and re-enter
+the session queue at position `gap`; review cards get a real future date. Reviews
+use **day-based availability** (Anki-style): everything scheduled for today is
+available from local midnight, not at the exact clock time it was last reviewed.
+
+**Database.** ~15 tables; the ones you'll touch most are `profiles`,
+`language_tracks`, `vocabulary`, `cards`, `stories`, `daily_activity`. Progress
+reset goes through the `reset_current_language_progress` RPC. Full schema in
+`docs/ARCHITECTURE.md`.
+
+---
+
+## 5. Design system (essentials — full palette in `docs/ARCHITECTURE.md`)
+
+**Use semantic tokens for every neutral colour**, or it won't theme:
+`--bg`, `--surface`, `--surface-2`, `--surface-glass`, `--border`, `--text`,
+`--text-muted`, `--text-faint`, `--shadow-1`, `--shadow-2`, `--hairline`.
+Hardcoded neutral hexes are a bug.
+
+- **Accents stay hardcoded** — Chinese `#B83A24`, Japanese `#2E3A6E`, Russian
+  `#2563C9` — as do status colours and white-on-accent text. Derive them from
+  `languageTheme()`, never a ternary on the language.
+- **Accent as ink:** wrap an accent in `ink(hex)` (`languageTheme.js`) wherever
+  it is *text or a drawn mark* — it lifts toward white in dark mode. Keep the raw
+  hex for tints and borders that already mix into a surface.
+- **Tints must mix into the surface:** `color-mix(in srgb, <accent> 11%, var(--surface))`,
+  never an `<accent>+'14'` alpha hex (that stays light in dark mode).
+- **One lit panel per screen.** Exactly one `HeroPanel` — the thing the screen is
+  about — on a ground darkened from the *language accent*. Everything else is a
+  flat `Panel`. Atmosphere stays under ~12% opacity and is **drawn** (`inkWash.js`),
+  never photographic.
+- **Flex scroll rule:** any `flex: 1` scroll area inside a `position: fixed` or
+  fixed-height flex column needs `min-height: 0`, or it grows to fit its content
+  and the overflow gets clipped.
+
+---
+
+## 6. Coding rules (mandatory — the OXC parser is strict)
+
+1. **No TypeScript.** No type annotations anywhere.
+2. **No complex regex literals** — OXC breaks on them. Use `indexOf()`, `split()`, `includes()`.
+3. **All styling is inline style objects.** No Tailwind classes in JSX.
+4. **No template literals inside JSX style props** where concatenation works: `'url(' + src + ')'`, not `` `url(${src})` ``.
+5. **No `localStorage` / `sessionStorage`** — they don't work in this environment.
+6. **No `<form>` tags** — use `onClick` / `onChange`.
+7. **Keep components flat.** Extract a subcomponent when it's reused or the file would be unreadable — and extract *logic* to a `.js` module (see §3).
+8. **`src/` must stay at zero ESLint errors.** Run `npm run lint`; don't add new warnings either.
+9. **Verification is not optional** — see §8. The build and the tests are the source of truth, not a read-through.
+
+---
+
+## 7. Supabase safety rules
+
+1. **Never delete vocabulary rows** — set `is_active = false`.
+2. **Never delete cards** without an explicit user request. Reset goes through the `reset_current_language_progress` RPC only.
+3. **Never set `is_easy = true`** outside the SRS grading flow (`srs.js` + `Study.jsx`). Other features may set it `false`, never `true`.
+4. **RLS is enabled** — frontend queries run as the authenticated user. **Never put the service key in frontend code or any `VITE_` var**; it belongs only in `.env.script` and GitHub secrets.
+5. **`level_unlocks` is append-only**, except during a full reset via the RPC.
+6. **The `audio` bucket is public** — never store user data there.
+7. **Migrations are ordered.** Check `docs/BACKLOG.md` for ordering dependencies before running a data script that overlaps a pending migration.
+
+---
+
+## 8. Workflow — how a change gets shipped
+
+**Before you commit, run all three:**
+
+```bash
+npm run lint     # must be 0 errors in src/
+npm test         # vitest — ~1,200 unit tests
+npm run build    # the build is the source of truth
+```
+
+`/ship` does this for you and refuses to commit if any step fails.
+
+Those three, plus read-only git (`status`, `diff`, `log`, `show`) and the
+**read-only** Supabase MCP tools (`list_*`, `get_*`, `search_docs`), are
+allow-listed in `.claude/settings.json` so they run without a prompt — they're
+safe, read-only or idempotent, and asking about them dozens of times a day is
+pure friction. **`git push`, `git commit`, the `node --env-file=.env.script`
+content scripts, and every Supabase tool that writes — `execute_sql`,
+`apply_migration`, `deploy_edge_function`, branch and project management —
+deliberately still prompt.** Those either change data or spend money. Keep that
+line where it is: the split is read vs. write, not Supabase vs. not.
+
+(`execute_sql` prompts even for a `SELECT`, because the same tool can `DELETE`.
+That's the right trade — inspecting schema, migrations, logs and advisors is
+what Claude actually needs constantly, and `list_tables` already covers it.)
+
+**CI runs the same three on every push and pull request**
+(`.github/workflows/ci.yml`), plus Playwright e2e (`.github/workflows/e2e.yml`).
+If it's red, it doesn't merge.
+
+**Branch and PR, don't push to `main`.** A push to `main` deploys to real users
+immediately and posts to Discord #announcements. Work on a branch, open a PR, let
+CI go green, then merge. Reserve direct-to-`main` for doc-only changes.
+
+**Add the test with the change, not after.** A new pure module ships with its
+`.test.js`. A bug fix ships with the regression test that would have caught it.
+Anything touching scheduling, scoring, progression, or story matching **requires**
+a spec — those are the modules where a silent regression costs a learner real
+progress.
+
+**Update the docs in the same change:** `ROADMAP.md` always (§ above); this file
+only when a *rule or convention* changes; `docs/ARCHITECTURE.md` when the schema
+or a core system changes. Don't write session narrative into this file — that is
+what `git log` and `docs/CHANGELOG.md` are for.
+
+---
+
+## 9. Slash commands
+
+| Command | What it does |
+|---------|-------------|
+| `/ship` | Lint + test + build, then commit and push |
+| `/parallel` | Run several unrelated tasks at once in worktrees, then integrate, verify and report once |
+| `/unlock` | Marks the current testing level's cards Easy, to preview the unlocked state |
+| `/reset` | Resets language progress to level 1, to test the fresh-start experience |
+| `/audio` | Regenerates TTS audio for a vocabulary level |
+| `/make-admin` | Prints the SQL to set your account admin (for `/dashboard`) |
+
+---
+
+## 10. Known issues and current work
+
+Not in this file — they go stale here. **Open bugs, tech debt, and pending
+migrations live in [`docs/BACKLOG.md`](docs/BACKLOG.md).** What users see is in
+[`ROADMAP.md`](ROADMAP.md); the active milestone is in
+[`docs/PM-BOARD.md`](docs/PM-BOARD.md).
+
+Two standing cautions worth carrying in your head:
+
+- **Legacy DB columns** `ease_factor` and the old SM-2 `learning_step` semantics
+  remain in `cards` but are unused. `learning_step` is now the FSRS
+  learning-steps index. **Never write `ease_factor`.**
+- **A pending migration makes a feature silently no-op.** Analytics inserts,
+  XP/prefs persistence and story questions all fail quietly *by design* when
+  their migration hasn't been applied. If a feature "does nothing", check
+  `supabase/migrations/` against what's actually applied before debugging code.
