@@ -1,992 +1,3062 @@
 [
   {
-    "word": "啊",
-    "reading": "a",
-    "meaning": "ah, oh"
+    "word": "为",
+    "reading": "wéi",
+    "meaning": "as (in the capacity of); to take sth as"
   },
   {
-    "word": "爱好",
-    "reading": "àihào",
-    "meaning": "to like; hobby"
+    "word": "如果",
+    "reading": "rú guǒ",
+    "meaning": "if; in case"
   },
   {
-    "word": "白色",
-    "reading": "báisè",
-    "meaning": "white"
+    "word": "又",
+    "reading": "yòu",
+    "meaning": "(once) again; also"
   },
   {
-    "word": "班",
-    "reading": "bān",
-    "meaning": "class, team; (measure word for groups)"
+    "word": "该",
+    "reading": "gāi",
+    "meaning": "should; ought to"
   },
   {
-    "word": "帮",
-    "reading": "bāng",
-    "meaning": "to help"
+    "word": "更",
+    "reading": "gēng",
+    "meaning": "to change or replace; to experience"
   },
   {
-    "word": "帮忙",
-    "reading": "bāngmáng",
-    "meaning": "to help"
+    "word": "才",
+    "reading": "cái",
+    "meaning": "ability; talent; sb of a certain type"
   },
   {
-    "word": "包",
-    "reading": "bāo",
-    "meaning": "to wrap, to pack; bag; measure word for bundles"
+    "word": "像",
+    "reading": "xiàng",
+    "meaning": "to resemble; to be like"
   },
   {
-    "word": "本子",
-    "reading": "běnzi",
-    "meaning": "notebook"
+    "word": "认为",
+    "reading": "rèn wéi",
+    "meaning": "to believe; to think; to consider; to feel"
   },
   {
-    "word": "比",
-    "reading": "bǐ",
-    "meaning": "to compare; than"
+    "word": "应该",
+    "reading": "yīng gāi",
+    "meaning": "ought to; should"
   },
   {
-    "word": "笔",
-    "reading": "bǐ",
-    "meaning": "pen; (measure word for writing tools)"
+    "word": "带",
+    "reading": "dài",
+    "meaning": "band; belt"
   },
   {
-    "word": "别",
-    "reading": "bié",
-    "meaning": "don't, not bad"
+    "word": "发现",
+    "reading": "fā xiàn",
+    "meaning": "to notice; to become aware of; to discover; to find; to detect"
   },
   {
-    "word": "不错",
-    "reading": "búcuò",
-    "meaning": "not bad, pretty good"
+    "word": "一定",
+    "reading": "yī dìng",
+    "meaning": "surely; certainly"
   },
   {
-    "word": "不好意思",
-    "reading": "bù hǎoyìsi",
-    "meaning": "sorry, embarrassed"
+    "word": "生活",
+    "reading": "shēng huó",
+    "meaning": "to live; life"
   },
   {
-    "word": "长",
+    "word": "一直",
+    "reading": "yī zhí",
+    "meaning": "straight (in a straight line); continuously; always; all the way through"
+  },
+  {
+    "word": "不过",
+    "reading": "bù guò",
+    "meaning": "only; merely"
+  },
+  {
+    "word": "所有",
+    "reading": "suǒ yǒu",
+    "meaning": "all; to have; to possess; to own"
+  },
+  {
+    "word": "而且",
+    "reading": "ér qiě",
+    "meaning": "(not only ...) but also; moreover"
+  },
+  {
+    "word": "必须",
+    "reading": "bì xū",
+    "meaning": "to have to; must"
+  },
+  {
+    "word": "成为",
+    "reading": "chéng wéi",
+    "meaning": "to become; to turn into"
+  },
+  {
+    "word": "其他",
+    "reading": "qí tā",
+    "meaning": "other; (sth or sb) else"
+  },
+  {
+    "word": "感觉",
+    "reading": "gǎn jué",
+    "meaning": "feeling; impression; sensation; to feel; to perceive"
+  },
+  {
+    "word": "然后",
+    "reading": "rán hòu",
+    "meaning": "then; after that; afterwards"
+  },
+  {
+    "word": "场",
     "reading": "cháng",
-    "meaning": "long"
+    "meaning": "threshing floor; classifier for events and happenings: spell, episode, bout"
   },
   {
-    "word": "车站",
-    "reading": "chēzhàn",
-    "meaning": "station"
+    "word": "进行",
+    "reading": "jìn xíng",
+    "meaning": "to advance; to conduct"
   },
   {
-    "word": "出",
-    "reading": "chū",
-    "meaning": "to go out, to leave"
+    "word": "或",
+    "reading": "huò",
+    "meaning": "maybe; perhaps"
   },
   {
-    "word": "出国",
-    "reading": "chūguó",
-    "meaning": "to go abroad"
+    "word": "出现",
+    "reading": "chū xiàn",
+    "meaning": "to appear; to arise"
   },
   {
-    "word": "出来",
-    "reading": "chūlái",
-    "meaning": "to come out"
+    "word": "见到",
+    "reading": "jiàn dào",
+    "meaning": "to see"
   },
   {
-    "word": "出门",
-    "reading": "chūmén",
-    "meaning": "to go out"
+    "word": "通过",
+    "reading": "tōng guò",
+    "meaning": "to pass through; to get through; to adopt (a resolution); to pass (legislation)"
   },
   {
-    "word": "出去",
-    "reading": "chūqù",
-    "meaning": "to go out"
+    "word": "参加",
+    "reading": "cān jiā",
+    "meaning": "to participate; to take part"
   },
   {
-    "word": "床",
-    "reading": "chuáng",
-    "meaning": "bed"
+    "word": "安全",
+    "reading": "ān quán",
+    "meaning": "safe; secure; safety; security"
   },
   {
-    "word": "词",
-    "reading": "cí",
-    "meaning": "word, term"
+    "word": "结果",
+    "reading": "jiē guǒ",
+    "meaning": "to bear fruit"
   },
   {
-    "word": "次",
-    "reading": "cì",
-    "meaning": "measure word of time or occasion; (next in order)"
+    "word": "或者",
+    "reading": "huò zhě",
+    "meaning": "or; possibly; maybe; perhaps"
   },
   {
-    "word": "从",
-    "reading": "cóng",
-    "meaning": "from; (ever)"
+    "word": "机会",
+    "reading": "jī huì",
+    "meaning": "opportunity; chance"
   },
   {
-    "word": "从小",
-    "reading": "cóngxiǎo",
-    "meaning": "from childhood"
+    "word": "完全",
+    "reading": "wán quán",
+    "meaning": "complete; whole; totally; entirely"
   },
   {
-    "word": "错",
-    "reading": "cuò",
-    "meaning": "wrong, mistaken"
+    "word": "发",
+    "reading": "fā",
+    "meaning": "to send out; to show (one's feeling)"
   },
   {
-    "word": "打",
-    "reading": "dǎ",
-    "meaning": "to hit, to play, to make"
+    "word": "计划",
+    "reading": "jì huà",
+    "meaning": "plan; project"
   },
   {
-    "word": "打车",
-    "reading": "dǎchē",
-    "meaning": "to take a taxi"
+    "word": "可是",
+    "reading": "kě shì",
+    "meaning": "but; however; (used for emphasis) indeed"
   },
   {
-    "word": "打开",
-    "reading": "dǎkāi",
-    "meaning": "to open"
+    "word": "以后",
+    "reading": "yǐ hòu",
+    "meaning": "after; later"
   },
   {
-    "word": "但",
-    "reading": "dàn",
-    "meaning": "but, however; (only, merely)"
+    "word": "要求",
+    "reading": "yāo qiú",
+    "meaning": "to request; to require"
   },
   {
-    "word": "但是",
-    "reading": "dànshì",
-    "meaning": "but, however"
+    "word": "信",
+    "reading": "xìn",
+    "meaning": "letter; mail"
   },
   {
-    "word": "得",
-    "reading": "de",
-    "meaning": "particle indicating degree or manner"
+    "word": "队",
+    "reading": "duì",
+    "meaning": "squadron; team"
   },
   {
-    "word": "地",
-    "reading": "de",
-    "meaning": "particle modifying an adjective into an adverb"
+    "word": "接",
+    "reading": "jiē",
+    "meaning": "to receive; to answer (the phone)"
   },
   {
-    "word": "等",
-    "reading": "děng",
-    "meaning": "to wait; (and so on, until)"
+    "word": "相信",
+    "reading": "xiāng xìn",
+    "meaning": "to be convinced (that sth is true); to believe; to accept sth as true"
   },
   {
-    "word": "地铁",
-    "reading": "dìtiě",
-    "meaning": "subway, metro"
+    "word": "刚",
+    "reading": "gāng",
+    "meaning": "hard; firm"
   },
   {
-    "word": "点",
-    "reading": "diǎn",
-    "meaning": "to light, to ignite; (point, dot; to order)"
+    "word": "原因",
+    "reading": "yuán yīn",
+    "meaning": "cause; origin"
   },
   {
-    "word": "懂",
-    "reading": "dǒng",
-    "meaning": "to understand"
+    "word": "只要",
+    "reading": "zhǐ yào",
+    "meaning": "if only; so long as"
   },
   {
-    "word": "动",
-    "reading": "dòng",
-    "meaning": "to move, to act"
+    "word": "不同",
+    "reading": "bù tóng",
+    "meaning": "different; distinct"
   },
   {
-    "word": "饭馆",
-    "reading": "fànguǎn",
-    "meaning": "restaurant"
+    "word": "进入",
+    "reading": "jìn rù",
+    "meaning": "to enter; to join"
   },
   {
-    "word": "飞",
-    "reading": "fēi",
-    "meaning": "to fly"
+    "word": "有人",
+    "reading": "yǒu rén",
+    "meaning": "someone; people"
   },
   {
-    "word": "高",
-    "reading": "gāo",
-    "meaning": "tall, high; height"
+    "word": "接受",
+    "reading": "jiē shòu",
+    "meaning": "to accept; to receive"
   },
   {
-    "word": "高中",
-    "reading": "gāozhōng",
-    "meaning": "high school"
+    "word": "其中",
+    "reading": "qí zhōng",
+    "meaning": "among; in"
   },
   {
-    "word": "告诉",
-    "reading": "gàosu",
-    "meaning": "to tell"
+    "word": "人们",
+    "reading": "rén men",
+    "meaning": "people"
   },
   {
-    "word": "个子",
-    "reading": "gèzi",
-    "meaning": "height, stature"
+    "word": "道",
+    "reading": "dào",
+    "meaning": "road; path"
   },
   {
-    "word": "跟",
-    "reading": "gēn",
-    "meaning": "with; and; (heel; to follow, to accompany)"
+    "word": "能够",
+    "reading": "néng gòu",
+    "meaning": "to be capable of; to be able to"
   },
   {
-    "word": "公交车",
-    "reading": "gōngjiāochē",
-    "meaning": "bus"
+    "word": "拉",
+    "reading": "lā",
+    "meaning": "to pull; to play (a bowed instrument)"
   },
   {
-    "word": "过",
-    "reading": "guò",
-    "meaning": "to pass, to cross; excessive; particle indicating past experience"
+    "word": "完成",
+    "reading": "wán chéng",
+    "meaning": "to complete; to accomplish"
   },
   {
-    "word": "过来",
-    "reading": "guòlái",
-    "meaning": "to come over"
+    "word": "求",
+    "reading": "qiú",
+    "meaning": "to seek; to look for"
   },
   {
-    "word": "过年",
-    "reading": "guònián",
-    "meaning": "to celebrate the New Year"
+    "word": "帮助",
+    "reading": "bāng zhù",
+    "meaning": "assistance; aid; to help; to assist"
   },
   {
-    "word": "过去",
-    "reading": "guòqù",
-    "meaning": "to go over"
+    "word": "变",
+    "reading": "biàn",
+    "meaning": "to change; to become different"
   },
   {
-    "word": "还是",
-    "reading": "háishi",
-    "meaning": "still; or"
+    "word": "加",
+    "reading": "Jiā",
+    "meaning": "Canada (abbr. for 大); surname Jia"
   },
   {
-    "word": "黑色",
-    "reading": "hēisè",
-    "meaning": "black"
+    "word": "当时",
+    "reading": "dāng shí",
+    "meaning": "then; at that time"
   },
   {
-    "word": "红茶",
-    "reading": "hóngchá",
-    "meaning": "black tea"
+    "word": "努力",
+    "reading": "nǔ lì",
+    "meaning": "to make an effort; to try hard; to strive; hard-working; conscientious"
   },
   {
-    "word": "红色",
-    "reading": "hóngsè",
-    "meaning": "red"
+    "word": "部分",
+    "reading": "bù fen",
+    "meaning": "part; share"
   },
   {
-    "word": "后面",
-    "reading": "hòumiàn",
-    "meaning": "behind, back"
+    "word": "以前",
+    "reading": "yǐ qián",
+    "meaning": "before; formerly"
   },
   {
-    "word": "花",
-    "reading": "huā",
-    "meaning": "to spend (money or time); flower; (colorful)"
+    "word": "办法",
+    "reading": "bàn fǎ",
+    "meaning": "means; method"
   },
   {
-    "word": "画",
-    "reading": "huà",
-    "meaning": "to draw, to paint; painting, picture"
+    "word": "特别",
+    "reading": "tè bié",
+    "meaning": "unusual; special; very; especially; particularly"
   },
   {
-    "word": "坏",
-    "reading": "huài",
-    "meaning": "bad, broken"
+    "word": "真正",
+    "reading": "zhēn zhèng",
+    "meaning": "genuine; real; true; really; indeed"
   },
   {
-    "word": "回来",
-    "reading": "huílái",
-    "meaning": "to come back"
+    "word": "掉",
+    "reading": "diào",
+    "meaning": "to fall; to drop"
   },
   {
-    "word": "回去",
-    "reading": "huíqù",
-    "meaning": "to go back"
+    "word": "改变",
+    "reading": "gǎi biàn",
+    "meaning": "to change; to alter"
   },
   {
-    "word": "机场",
-    "reading": "jīchǎng",
-    "meaning": "airport"
+    "word": "讲",
+    "reading": "jiǎng",
+    "meaning": "to speak; to explain"
   },
   {
-    "word": "机票",
-    "reading": "jīpiào",
-    "meaning": "airplane ticket"
+    "word": "离开",
+    "reading": "lí kāi",
+    "meaning": "to depart; to leave"
   },
   {
-    "word": "记得",
-    "reading": "jìde",
-    "meaning": "to remember"
+    "word": "生",
+    "reading": "shēng",
+    "meaning": "to be born; to give birth"
   },
   {
-    "word": "间",
-    "reading": "jiān",
-    "meaning": "measure word for rooms; between"
+    "word": "片",
+    "reading": "piān",
+    "meaning": "disk; sheet"
   },
   {
-    "word": "教",
+    "word": "同时",
+    "reading": "tóng shí",
+    "meaning": "at the same time; simultaneously"
+  },
+  {
+    "word": "以为",
+    "reading": "yǐ wéi",
+    "meaning": "to think (i.e. to take it to be true that ...) (Usually there is an implication that the notion is mistaken – except when expressing one's own current opinion.)"
+  },
+  {
+    "word": "越",
+    "reading": "Yuè",
+    "meaning": "generic word for peoples or states of south China or south Asia at different historical periods; abbr. for Vietnam 越南"
+  },
+  {
+    "word": "方法",
+    "reading": "fāng fǎ",
+    "meaning": "method; way"
+  },
+  {
+    "word": "直接",
+    "reading": "zhí jiē",
+    "meaning": "direct (opposite: indirect 间接); immediate"
+  },
+  {
+    "word": "选",
+    "reading": "xuǎn",
+    "meaning": "to choose; to pick"
+  },
+  {
+    "word": "影响",
+    "reading": "yǐng xiǎng",
+    "meaning": "influence; effect"
+  },
+  {
+    "word": "永远",
+    "reading": "yǒng yuǎn",
+    "meaning": "forever; eternal"
+  },
+  {
+    "word": "方面",
+    "reading": "fāng miàn",
+    "meaning": "respect; aspect"
+  },
+  {
+    "word": "也许",
+    "reading": "yě xǔ",
+    "meaning": "perhaps; maybe"
+  },
+  {
+    "word": "活动",
+    "reading": "huó dòng",
+    "meaning": "to exercise; to move about"
+  },
+  {
+    "word": "份",
+    "reading": "fèn",
+    "meaning": "classifier for gifts, newspaper, magazine, papers, reports, contracts etc; variant of 分"
+  },
+  {
+    "word": "信息",
+    "reading": "xìn xī",
+    "meaning": "information; news"
+  },
+  {
+    "word": "最近",
+    "reading": "zuì jìn",
+    "meaning": "recently; soon"
+  },
+  {
+    "word": "换",
+    "reading": "huàn",
+    "meaning": "to exchange; to change (clothes etc)"
+  },
+  {
+    "word": "靠",
+    "reading": "kào",
+    "meaning": "to lean against or on; to stand by the side of"
+  },
+  {
+    "word": "脸",
+    "reading": "liǎn",
+    "meaning": "face"
+  },
+  {
+    "word": "使用",
+    "reading": "shǐ yòng",
+    "meaning": "to use; to employ"
+  },
+  {
+    "word": "来自",
+    "reading": "lái zì",
+    "meaning": "to come from (a place); From: (in email header)"
+  },
+  {
+    "word": "检查",
+    "reading": "jiǎn chá",
+    "meaning": "inspection; to examine"
+  },
+  {
+    "word": "中心",
+    "reading": "zhōng xīn",
+    "meaning": "center; heart"
+  },
+  {
+    "word": "行动",
+    "reading": "xíng dòng",
+    "meaning": "operation; action"
+  },
+  {
+    "word": "开心",
+    "reading": "kāi xīn",
+    "meaning": "to feel happy; to rejoice"
+  },
+  {
+    "word": "卡",
+    "reading": "kǎ",
+    "meaning": "to stop; to block"
+  },
+  {
+    "word": "带来",
+    "reading": "dài lái",
+    "meaning": "to bring; (fig.) to bring about; to produce"
+  },
+  {
+    "word": "办",
+    "reading": "bàn",
+    "meaning": "to do; to manage"
+  },
+  {
+    "word": "算",
+    "reading": "suàn",
+    "meaning": "to regard as; to figure"
+  },
+  {
+    "word": "辆",
+    "reading": "liàng",
+    "meaning": "classifier for vehicles"
+  },
+  {
+    "word": "家庭",
+    "reading": "jiā tíng",
+    "meaning": "family; household"
+  },
+  {
+    "word": "交",
     "reading": "jiāo",
-    "meaning": "to teach"
+    "meaning": "to hand over; to deliver"
   },
   {
-    "word": "教室",
-    "reading": "jiàoshì",
+    "word": "套",
+    "reading": "tào",
+    "meaning": "to cover; to encase"
+  },
+  {
+    "word": "全部",
+    "reading": "quán bù",
+    "meaning": "whole; all"
+  },
+  {
+    "word": "刚刚",
+    "reading": "gāng gang",
+    "meaning": "just recently; just a moment ago"
+  },
+  {
+    "word": "正常",
+    "reading": "zhèng cháng",
+    "meaning": "regular; normal"
+  },
+  {
+    "word": "黑",
+    "reading": "Hēi",
+    "meaning": "abbr. for Heilongjiang province 黑龙江"
+  },
+  {
+    "word": "服务",
+    "reading": "fú wù",
+    "meaning": "to serve; service"
+  },
+  {
+    "word": "想到",
+    "reading": "xiǎng dào",
+    "meaning": "to think of; to call to mind"
+  },
+  {
+    "word": "行为",
+    "reading": "xíng wéi",
+    "meaning": "action; conduct"
+  },
+  {
+    "word": "挺",
+    "reading": "tǐng",
+    "meaning": "straight; erect"
+  },
+  {
+    "word": "好像",
+    "reading": "hǎo xiàng",
+    "meaning": "as if; to seem like"
+  },
+  {
+    "word": "克",
+    "reading": "Kè",
+    "meaning": "abbr. for 克罗地亚, Croatia; (Tw) abbr. for 克罗埃西亚, Croatia"
+  },
+  {
+    "word": "愿意",
+    "reading": "yuàn yì",
+    "meaning": "to wish; to want"
+  },
+  {
+    "word": "装",
+    "reading": "zhuāng",
+    "meaning": "adornment; to adorn"
+  },
+  {
+    "word": "音乐",
+    "reading": "yīn yuè",
+    "meaning": "music"
+  },
+  {
+    "word": "感谢",
+    "reading": "gǎn xiè",
+    "meaning": "(express) thanks; gratitude"
+  },
+  {
+    "word": "座",
+    "reading": "zuò",
+    "meaning": "seat; base"
+  },
+  {
+    "word": "眼",
+    "reading": "yǎn",
+    "meaning": "eye; small hole"
+  },
+  {
+    "word": "感到",
+    "reading": "gǎn dào",
+    "meaning": "to feel; to sense; to perceive"
+  },
+  {
+    "word": "清楚",
+    "reading": "qīng chu",
+    "meaning": "clear; distinct"
+  },
+  {
+    "word": "照片",
+    "reading": "zhào piàn",
+    "meaning": "photograph; picture"
+  },
+  {
+    "word": "停",
+    "reading": "tíng",
+    "meaning": "to stop; to halt"
+  },
+  {
+    "word": "银行",
+    "reading": "yín háng",
+    "meaning": "bank"
+  },
+  {
+    "word": "故事",
+    "reading": "gù shì",
+    "meaning": "old practice"
+  },
+  {
+    "word": "气",
+    "reading": "qì",
+    "meaning": "gas; air; smell"
+  },
+  {
+    "word": "倒",
+    "reading": "dǎo",
+    "meaning": "to fall; to collapse; to lie horizontally; to fail; to go bankrupt"
+  },
+  {
+    "word": "酒",
+    "reading": "jiǔ",
+    "meaning": "wine (esp. rice wine); liquor"
+  },
+  {
+    "word": "原来",
+    "reading": "yuán lái",
+    "meaning": "original; former"
+  },
+  {
+    "word": "欢迎",
+    "reading": "huān yíng",
+    "meaning": "to welcome; welcome"
+  },
+  {
+    "word": "一般",
+    "reading": "yī bān",
+    "meaning": "same; ordinary"
+  },
+  {
+    "word": "可爱",
+    "reading": "kě ài",
+    "meaning": "adorable; cute"
+  },
+  {
+    "word": "新闻",
+    "reading": "xīn wén",
+    "meaning": "news"
+  },
+  {
+    "word": "做到",
+    "reading": "zuò dào",
+    "meaning": "to accomplish; to achieve"
+  },
+  {
+    "word": "怎样",
+    "reading": "zěn yàng",
+    "meaning": "how; what kind"
+  },
+  {
+    "word": "收",
+    "reading": "shōu",
+    "meaning": "to receive; to accept"
+  },
+  {
+    "word": "声音",
+    "reading": "shēng yīn",
+    "meaning": "voice; sound"
+  },
+  {
+    "word": "数",
+    "reading": "shǔ",
+    "meaning": "to count; to count as; to regard as"
+  },
+  {
+    "word": "变成",
+    "reading": "biàn chéng",
+    "meaning": "to change into; to turn into"
+  },
+  {
+    "word": "受到",
+    "reading": "shòu dào",
+    "meaning": "to receive (praise, an education, punishment etc); to be ...ed (praised, educated, punished etc)"
+  },
+  {
+    "word": "经过",
+    "reading": "jīng guò",
+    "meaning": "to pass; to go through"
+  },
+  {
+    "word": "只能",
+    "reading": "zhǐ néng",
+    "meaning": "can only; obliged to do sth"
+  },
+  {
+    "word": "哭",
+    "reading": "kū",
+    "meaning": "to cry; to weep"
+  },
+  {
+    "word": "重新",
+    "reading": "chóng xīn",
+    "meaning": "again; once more; re-"
+  },
+  {
+    "word": "度",
+    "reading": "dù",
+    "meaning": "to pass; to spend (time)"
+  },
+  {
+    "word": "面前",
+    "reading": "miàn qián",
+    "meaning": "in front of; facing"
+  },
+  {
+    "word": "低",
+    "reading": "dī",
+    "meaning": "low; beneath"
+  },
+  {
+    "word": "节目",
+    "reading": "jié mù",
+    "meaning": "program; item (on a program)"
+  },
+  {
+    "word": "健康",
+    "reading": "jiàn kāng",
+    "meaning": "health; healthy"
+  },
+  {
+    "word": "弄",
+    "reading": "lòng",
+    "meaning": "lane; alley"
+  },
+  {
+    "word": "作用",
+    "reading": "zuò yòng",
+    "meaning": "to act on; to affect"
+  },
+  {
+    "word": "满",
+    "reading": "Mǎn",
+    "meaning": "Manchu ethnic group"
+  },
+  {
+    "word": "说明",
+    "reading": "shuō míng",
+    "meaning": "to explain; to illustrate"
+  },
+  {
+    "word": "许多",
+    "reading": "xǔ duō",
+    "meaning": "many; a lot of"
+  },
+  {
+    "word": "同样",
+    "reading": "tóng yàng",
+    "meaning": "same; equal"
+  },
+  {
+    "word": "身边",
+    "reading": "shēn biān",
+    "meaning": "at one's side; on hand"
+  },
+  {
+    "word": "越来越",
+    "reading": "yuè lái yuè",
+    "meaning": "more and more"
+  },
+  {
+    "word": "短",
+    "reading": "duǎn",
+    "meaning": "short; brief"
+  },
+  {
+    "word": "意见",
+    "reading": "yì jiàn",
+    "meaning": "idea; opinion"
+  },
+  {
+    "word": "脚",
+    "reading": "jiǎo",
+    "meaning": "foot; leg (of an animal or an object)"
+  },
+  {
+    "word": "主要",
+    "reading": "zhǔ yào",
+    "meaning": "main; principal"
+  },
+  {
+    "word": "市",
+    "reading": "shì",
+    "meaning": "market; city"
+  },
+  {
+    "word": "不少",
+    "reading": "bù shǎo",
+    "meaning": "many; a lot"
+  },
+  {
+    "word": "讨论",
+    "reading": "tǎo lùn",
+    "meaning": "to discuss; to talk over"
+  },
+  {
+    "word": "超过",
+    "reading": "chāo guò",
+    "meaning": "to surpass; to exceed"
+  },
+  {
+    "word": "比如",
+    "reading": "bǐ rú",
+    "meaning": "for example; for instance"
+  },
+  {
+    "word": "后来",
+    "reading": "hòu lái",
+    "meaning": "afterwards; later; newly arrived"
+  },
+  {
+    "word": "嘴",
+    "reading": "zuǐ",
+    "meaning": "mouth; beak"
+  },
+  {
+    "word": "自由",
+    "reading": "zì yóu",
+    "meaning": "freedom; liberty; free; unrestricted"
+  },
+  {
+    "word": "改",
+    "reading": "gǎi",
+    "meaning": "to change; to alter"
+  },
+  {
+    "word": "就要",
+    "reading": "jiù yào",
+    "meaning": "will; shall"
+  },
+  {
+    "word": "加油",
+    "reading": "jiā yóu",
+    "meaning": "to add oil; to top up with gas"
+  },
+  {
+    "word": "省",
+    "reading": "shěng",
+    "meaning": "to save; to economize; to be frugal; to omit; to delete; to leave out"
+  },
+  {
+    "word": "十分",
+    "reading": "shí fēn",
+    "meaning": "very; completely"
+  },
+  {
+    "word": "称",
+    "reading": "chèn",
+    "meaning": "to fit; balanced"
+  },
+  {
+    "word": "年轻",
+    "reading": "nián qīng",
+    "meaning": "young"
+  },
+  {
+    "word": "条件",
+    "reading": "tiáo jiàn",
+    "meaning": "condition; circumstance; term; factor; requirement; prerequisite; qualification"
+  },
+  {
+    "word": "晚安",
+    "reading": "wǎn ān",
+    "meaning": "Good night!; Good evening!"
+  },
+  {
+    "word": "广告",
+    "reading": "guǎng gào",
+    "meaning": "to advertise; a commercial"
+  },
+  {
+    "word": "提出",
+    "reading": "tí chū",
+    "meaning": "to raise (an issue); to propose"
+  },
+  {
+    "word": "样子",
+    "reading": "yàng zi",
+    "meaning": "appearance; manner"
+  },
+  {
+    "word": "实现",
+    "reading": "shí xiàn",
+    "meaning": "to achieve; to implement"
+  },
+  {
+    "word": "刚才",
+    "reading": "gāng cái",
+    "meaning": "just now; a moment ago"
+  },
+  {
+    "word": "通",
+    "reading": "tōng",
+    "meaning": "to go through; to know well"
+  },
+  {
+    "word": "办公室",
+    "reading": "bàn gōng shì",
+    "meaning": "office; business premises"
+  },
+  {
+    "word": "正确",
+    "reading": "zhèng què",
+    "meaning": "correct; sound; right; proper"
+  },
+  {
+    "word": "爱情",
+    "reading": "ài qíng",
+    "meaning": "romance; love (romantic)"
+  },
+  {
+    "word": "收到",
+    "reading": "shōu dào",
+    "meaning": "to receive"
+  },
+  {
+    "word": "够",
+    "reading": "gòu",
+    "meaning": "enough (sufficient); enough (too much)"
+  },
+  {
+    "word": "正是",
+    "reading": "zhèng shì",
+    "meaning": "is precisely"
+  },
+  {
+    "word": "方向",
+    "reading": "fāng xiàng",
+    "meaning": "direction; orientation"
+  },
+  {
+    "word": "排",
+    "reading": "pái",
+    "meaning": "a row; a line"
+  },
+  {
+    "word": "关心",
+    "reading": "guān xīn",
+    "meaning": "to be concerned about; to care about"
+  },
+  {
+    "word": "留下",
+    "reading": "liú xià",
+    "meaning": "to leave behind; to stay behind"
+  },
+  {
+    "word": "教育",
+    "reading": "jiào yù",
+    "meaning": "to educate; to teach"
+  },
+  {
+    "word": "日子",
+    "reading": "rì zi",
+    "meaning": "day; a (calendar) date"
+  },
+  {
+    "word": "取",
+    "reading": "qǔ",
+    "meaning": "to take; to get"
+  },
+  {
+    "word": "层",
+    "reading": "céng",
+    "meaning": "to pile on top of one another; layer; stratum"
+  },
+  {
+    "word": "心里",
+    "reading": "xīn li",
+    "meaning": "chest; heart"
+  },
+  {
+    "word": "腿",
+    "reading": "tuǐ",
+    "meaning": "leg"
+  },
+  {
+    "word": "全国",
+    "reading": "quán guó",
+    "meaning": "whole nation; nationwide"
+  },
+  {
+    "word": "街",
+    "reading": "jiē",
+    "meaning": "street"
+  },
+  {
+    "word": "通知",
+    "reading": "tōng zhī",
+    "meaning": "to notify; to inform"
+  },
+  {
+    "word": "鞋",
+    "reading": "xié",
+    "meaning": "shoe"
+  },
+  {
+    "word": "习惯",
+    "reading": "xí guàn",
+    "meaning": "habit; custom"
+  },
+  {
+    "word": "目的",
+    "reading": "mù dì",
+    "meaning": "purpose; aim; goal; target; objective"
+  },
+  {
+    "word": "国际",
+    "reading": "guó jì",
+    "meaning": "international"
+  },
+  {
+    "word": "周末",
+    "reading": "zhōu mò",
+    "meaning": "weekend"
+  },
+  {
+    "word": "推",
+    "reading": "tuī",
+    "meaning": "to push; to cut"
+  },
+  {
+    "word": "听说",
+    "reading": "tīng shuō",
+    "meaning": "to hear (sth said); one hears (that)"
+  },
+  {
+    "word": "油",
+    "reading": "yóu",
+    "meaning": "oil; fat"
+  },
+  {
+    "word": "科学",
+    "reading": "kē xué",
+    "meaning": "science; scientific knowledge"
+  },
+  {
+    "word": "心情",
+    "reading": "xīn qíng",
+    "meaning": "mood; frame of mind"
+  },
+  {
+    "word": "接着",
+    "reading": "jiē zhe",
+    "meaning": "to catch and hold on; to continue"
+  },
+  {
+    "word": "流",
+    "reading": "liú",
+    "meaning": "to flow; to disseminate"
+  },
+  {
+    "word": "实在",
+    "reading": "shí zài",
+    "meaning": "really; actually"
+  },
+  {
+    "word": "表",
+    "reading": "biǎo",
+    "meaning": "exterior surface; family relationship via females"
+  },
+  {
+    "word": "养",
+    "reading": "yǎng",
+    "meaning": "to raise (animals); to bring up (children)"
+  },
+  {
+    "word": "鸡",
+    "reading": "jī",
+    "meaning": "fowl; chicken"
+  },
+  {
+    "word": "瓶",
+    "reading": "píng",
+    "meaning": "bottle; vase"
+  },
+  {
+    "word": "普通",
+    "reading": "pǔ tōng",
+    "meaning": "common; ordinary"
+  },
+  {
+    "word": "打算",
+    "reading": "dǎ suàn",
+    "meaning": "to plan; to intend"
+  },
+  {
+    "word": "重点",
+    "reading": "chóng diǎn",
+    "meaning": "to recount (e.g. results of election); to re-evaluate"
+  },
+  {
+    "word": "咱们",
+    "reading": "zán men",
+    "meaning": "we or us (including both the speaker and the person(s) spoken to); (dialect) I or me"
+  },
+  {
+    "word": "小心",
+    "reading": "xiǎo xīn",
+    "meaning": "to be careful; to take care"
+  },
+  {
+    "word": "不够",
+    "reading": "bù gòu",
+    "meaning": "not enough; insufficient"
+  },
+  {
+    "word": "怎么办",
+    "reading": "zěn me bàn",
+    "meaning": "what's to be done"
+  },
+  {
+    "word": "举行",
+    "reading": "jǔ xíng",
+    "meaning": "to hold (a meeting, ceremony etc)"
+  },
+  {
+    "word": "想法",
+    "reading": "xiǎng fǎ",
+    "meaning": "way of thinking; opinion; notion; to think of a way (to do sth)"
+  },
+  {
+    "word": "动物",
+    "reading": "dòng wù",
+    "meaning": "animal"
+  },
+  {
+    "word": "不行",
+    "reading": "bù xíng",
+    "meaning": "won't do; be out of the question"
+  },
+  {
+    "word": "明星",
+    "reading": "míng xīng",
+    "meaning": "star; celebrity"
+  },
+  {
+    "word": "级",
+    "reading": "jí",
+    "meaning": "level; grade"
+  },
+  {
+    "word": "顺利",
+    "reading": "shùn lì",
+    "meaning": "smoothly; without a hitch"
+  },
+  {
+    "word": "水平",
+    "reading": "shuǐ píng",
+    "meaning": "level (of achievement etc); standard"
+  },
+  {
+    "word": "网",
+    "reading": "wǎng",
+    "meaning": "net; network"
+  },
+  {
+    "word": "借",
+    "reading": "jiè",
+    "meaning": "to lend; to borrow"
+  },
+  {
+    "word": "长大",
+    "reading": "zhǎng dà",
+    "meaning": "to grow up"
+  },
+  {
+    "word": "交给",
+    "reading": "jiāo gěi",
+    "meaning": "to give; to deliver; to hand over"
+  },
+  {
+    "word": "头发",
+    "reading": "tóu fa",
+    "meaning": "hair (on the head)"
+  },
+  {
+    "word": "科",
+    "reading": "kē",
+    "meaning": "branch of study; administrative section"
+  },
+  {
+    "word": "取得",
+    "reading": "qǔ dé",
+    "meaning": "to acquire; to get; to obtain"
+  },
+  {
+    "word": "想起",
+    "reading": "xiǎng qǐ",
+    "meaning": "to recall; to think of"
+  },
+  {
+    "word": "一生",
+    "reading": "yī shēng",
+    "meaning": "all one's life; throughout one's life"
+  },
+  {
+    "word": "照顾",
+    "reading": "zhào gu",
+    "meaning": "to take care of; to show consideration"
+  },
+  {
+    "word": "急",
+    "reading": "jí",
+    "meaning": "urgent; pressing"
+  },
+  {
+    "word": "态度",
+    "reading": "tài du",
+    "meaning": "manner; bearing"
+  },
+  {
+    "word": "小组",
+    "reading": "xiǎo zǔ",
+    "meaning": "group"
+  },
+  {
+    "word": "数字",
+    "reading": "shù zì",
+    "meaning": "numeral; digit"
+  },
+  {
+    "word": "礼物",
+    "reading": "lǐ wù",
+    "meaning": "gift; present"
+  },
+  {
+    "word": "交通",
+    "reading": "jiāo tōng",
+    "meaning": "to be connected; traffic"
+  },
+  {
+    "word": "亮",
+    "reading": "liàng",
+    "meaning": "bright; clear"
+  },
+  {
+    "word": "篇",
+    "reading": "piān",
+    "meaning": "sheet; piece of writing"
+  },
+  {
+    "word": "出口",
+    "reading": "chū kǒu",
+    "meaning": "an exit; to speak"
+  },
+  {
+    "word": "味道",
+    "reading": "wèi dao",
+    "meaning": "flavor; taste; (fig.) feeling (of ...); sense (of ...); hint (of ...)"
+  },
+  {
+    "word": "出发",
+    "reading": "chū fā",
+    "meaning": "to set off; to start (on a journey)"
+  },
+  {
+    "word": "接到",
+    "reading": "jiē dào",
+    "meaning": "to receive (letter etc)"
+  },
+  {
+    "word": "提高",
+    "reading": "tí gāo",
+    "meaning": "to raise; to increase"
+  },
+  {
+    "word": "满意",
+    "reading": "mǎn yì",
+    "meaning": "satisfied; pleased"
+  },
+  {
+    "word": "食物",
+    "reading": "shí wù",
+    "meaning": "food"
+  },
+  {
+    "word": "司机",
+    "reading": "sī jī",
+    "meaning": "chauffeur; driver"
+  },
+  {
+    "word": "大量",
+    "reading": "dà liàng",
+    "meaning": "great amount; large quantity"
+  },
+  {
+    "word": "轻",
+    "reading": "qīng",
+    "meaning": "light; easy"
+  },
+  {
+    "word": "信号",
+    "reading": "xìn hào",
+    "meaning": "signal"
+  },
+  {
+    "word": "好多",
+    "reading": "hǎo duō",
+    "meaning": "many; quite a lot"
+  },
+  {
+    "word": "经理",
+    "reading": "jīng lǐ",
+    "meaning": "manager; director"
+  },
+  {
+    "word": "大部分",
+    "reading": "dà bù fen",
+    "meaning": "in large part; the greater part"
+  },
+  {
+    "word": "吹",
+    "reading": "chuī",
+    "meaning": "to blow; to play a wind instrument"
+  },
+  {
+    "word": "成绩",
+    "reading": "chéng jì",
+    "meaning": "achievement; performance records"
+  },
+  {
+    "word": "角度",
+    "reading": "jiǎo dù",
+    "meaning": "angle; point of view"
+  },
+  {
+    "word": "多么",
+    "reading": "duō me",
+    "meaning": "how (wonderful etc); what (a great idea etc)"
+  },
+  {
+    "word": "什么样",
+    "reading": "shén me yàng",
+    "meaning": "what kind?; what sort?"
+  },
+  {
+    "word": "语言",
+    "reading": "yǔ yán",
+    "meaning": "language"
+  },
+  {
+    "word": "网站",
+    "reading": "wǎng zhàn",
+    "meaning": "website; network station"
+  },
+  {
+    "word": "地球",
+    "reading": "dì qiú",
+    "meaning": "the earth"
+  },
+  {
+    "word": "那时",
+    "reading": "nà shí",
+    "meaning": "then; at that time"
+  },
+  {
+    "word": "实际",
+    "reading": "shí jì",
+    "meaning": "reality; practice"
+  },
+  {
+    "word": "心中",
+    "reading": "xīn zhōng",
+    "meaning": "central point; in one's thoughts"
+  },
+  {
+    "word": "灯",
+    "reading": "dēng",
+    "meaning": "lamp; light"
+  },
+  {
+    "word": "太阳",
+    "reading": "tài yang",
+    "meaning": "sun; abbr. for 太阳穴"
+  },
+  {
+    "word": "可怕",
+    "reading": "kě pà",
+    "meaning": "awful; dreadful"
+  },
+  {
+    "word": "方便",
+    "reading": "fāng biàn",
+    "meaning": "convenient; suitable"
+  },
+  {
+    "word": "爬",
+    "reading": "pá",
+    "meaning": "to crawl; to climb"
+  },
+  {
+    "word": "差不多",
+    "reading": "chà bu duō",
+    "meaning": "almost; nearly"
+  },
+  {
+    "word": "英语",
+    "reading": "Yīng yǔ",
+    "meaning": "English (language)"
+  },
+  {
+    "word": "空气",
+    "reading": "kōng qì",
+    "meaning": "air; atmosphere"
+  },
+  {
+    "word": "以下",
+    "reading": "yǐ xià",
+    "meaning": "that level or lower; that amount or less"
+  },
+  {
+    "word": "喊",
+    "reading": "hǎn",
+    "meaning": "to yell; to shout"
+  },
+  {
+    "word": "讲话",
+    "reading": "jiǎng huà",
+    "meaning": "a speech; to speak"
+  },
+  {
+    "word": "大多数",
+    "reading": "dà duō shù",
+    "meaning": "(great) majority"
+  },
+  {
+    "word": "随便",
+    "reading": "suí biàn",
+    "meaning": "as one wishes; as one pleases"
+  },
+  {
+    "word": "随时",
+    "reading": "suí shí",
+    "meaning": "at any time; at all times; at the right time; whenever necessary"
+  },
+  {
+    "word": "合适",
+    "reading": "hé shì",
+    "meaning": "suitable; fitting"
+  },
+  {
+    "word": "相同",
+    "reading": "xiāng tóng",
+    "meaning": "identical; same"
+  },
+  {
+    "word": "出生",
+    "reading": "chū shēng",
+    "meaning": "to be born"
+  },
+  {
+    "word": "以上",
+    "reading": "yǐ shàng",
+    "meaning": "that level or higher; that amount or more"
+  },
+  {
+    "word": "名单",
+    "reading": "míng dān",
+    "meaning": "list of names"
+  },
+  {
+    "word": "答应",
+    "reading": "dā ying",
+    "meaning": "to answer; to respond; to answer positively; to agree; to accept; to promise"
+  },
+  {
+    "word": "公园",
+    "reading": "gōng yuán",
+    "meaning": "park (for public recreation)"
+  },
+  {
+    "word": "热情",
+    "reading": "rè qíng",
+    "meaning": "cordial; enthusiastic"
+  },
+  {
+    "word": "到处",
+    "reading": "dào chù",
+    "meaning": "everywhere"
+  },
+  {
+    "word": "放下",
+    "reading": "fàng xià",
+    "meaning": "to lay down; to put down"
+  },
+  {
+    "word": "观点",
+    "reading": "guān diǎn",
+    "meaning": "point of view; viewpoint"
+  },
+  {
+    "word": "公平",
+    "reading": "gōng píng",
+    "meaning": "fair; impartial"
+  },
+  {
+    "word": "高级",
+    "reading": "gāo jí",
+    "meaning": "high level; high grade"
+  },
+  {
+    "word": "早就",
+    "reading": "zǎo jiù",
+    "meaning": "already at an earlier time"
+  },
+  {
+    "word": "的话",
+    "reading": "de huà",
+    "meaning": "if (coming after a conditional clause)"
+  },
+  {
+    "word": "骑",
+    "reading": "jì",
+    "meaning": "(Tw) saddle horse; mounted soldier"
+  },
+  {
+    "word": "报纸",
+    "reading": "bào zhǐ",
+    "meaning": "newspaper; newsprint"
+  },
+  {
+    "word": "响",
+    "reading": "xiǎng",
+    "meaning": "echo; sound"
+  },
+  {
+    "word": "收入",
+    "reading": "shōu rù",
+    "meaning": "to take in; income"
+  },
+  {
+    "word": "河",
+    "reading": "hé",
+    "meaning": "river"
+  },
+  {
+    "word": "练",
+    "reading": "liàn",
+    "meaning": "to practice; to train"
+  },
+  {
+    "word": "多久",
+    "reading": "duō jiǔ",
+    "meaning": "(of time) how long?; (not) a long time"
+  },
+  {
+    "word": "租",
+    "reading": "zū",
+    "meaning": "to hire; to rent"
+  },
+  {
+    "word": "同事",
+    "reading": "tóng shì",
+    "meaning": "colleague; co-worker"
+  },
+  {
+    "word": "球队",
+    "reading": "qiú duì",
+    "meaning": "sports team (basketball, soccer, football etc)"
+  },
+  {
+    "word": "上周",
+    "reading": "shàng zhōu",
+    "meaning": "last week"
+  },
+  {
+    "word": "单位",
+    "reading": "dān wèi",
+    "meaning": "unit (of measure); unit (group of people as a whole)"
+  },
+  {
+    "word": "体育",
+    "reading": "tǐ yù",
+    "meaning": "sports; physical education"
+  },
+  {
+    "word": "道路",
+    "reading": "dào lù",
+    "meaning": "road; path"
+  },
+  {
+    "word": "大人",
+    "reading": "dà ren",
+    "meaning": "adult; grownup"
+  },
+  {
+    "word": "旅行",
+    "reading": "lǚ xíng",
+    "meaning": "to travel; journey; trip"
+  },
+  {
+    "word": "公路",
+    "reading": "gōng lù",
+    "meaning": "highway; road"
+  },
+  {
+    "word": "主人",
+    "reading": "zhǔ rén",
+    "meaning": "master; host"
+  },
+  {
+    "word": "信心",
+    "reading": "xìn xīn",
+    "meaning": "confidence; faith (in sb or sth)"
+  },
+  {
+    "word": "故意",
+    "reading": "gù yì",
+    "meaning": "deliberately; on purpose"
+  },
+  {
+    "word": "看法",
+    "reading": "kàn fǎ",
+    "meaning": "way of looking at a thing; view"
+  },
+  {
+    "word": "放心",
+    "reading": "fàng xīn",
+    "meaning": "to feel relieved; to feel reassured"
+  },
+  {
+    "word": "湖",
+    "reading": "hú",
+    "meaning": "lake"
+  },
+  {
+    "word": "正好",
+    "reading": "zhèng hǎo",
+    "meaning": "just (in time); just right"
+  },
+  {
+    "word": "院",
+    "reading": "yuàn",
+    "meaning": "courtyard; institution"
+  },
+  {
+    "word": "安静",
+    "reading": "ān jìng",
+    "meaning": "quiet; peaceful"
+  },
+  {
+    "word": "道理",
+    "reading": "dào li",
+    "meaning": "reason; argument"
+  },
+  {
+    "word": "公里",
+    "reading": "gōng lǐ",
+    "meaning": "kilometer"
+  },
+  {
+    "word": "好处",
+    "reading": "hǎo chǔ",
+    "meaning": "easy to get along with"
+  },
+  {
+    "word": "作业",
+    "reading": "zuò yè",
+    "meaning": "school assignment; homework"
+  },
+  {
+    "word": "家长",
+    "reading": "jiā zhǎng",
+    "meaning": "head of a household; family head"
+  },
+  {
+    "word": "绿",
+    "reading": "lǜ",
+    "meaning": "green; (slang) (derived from 绿帽子) to cheat on (one's spouse or boyfriend or girlfriend)"
+  },
+  {
+    "word": "重复",
+    "reading": "chóng fù",
+    "meaning": "to repeat; to duplicate"
+  },
+  {
+    "word": "小说",
+    "reading": "xiǎo shuō",
+    "meaning": "novel; fiction"
+  },
+  {
+    "word": "教师",
+    "reading": "jiào shī",
+    "meaning": "teacher"
+  },
+  {
+    "word": "理想",
+    "reading": "lǐ xiǎng",
+    "meaning": "an ideal; a dream"
+  },
+  {
+    "word": "感动",
+    "reading": "gǎn dòng",
+    "meaning": "to move (sb); to touch (sb emotionally)"
+  },
+  {
+    "word": "好事",
+    "reading": "hǎo shì",
+    "meaning": "good action, deed, thing or work (also sarcastic, \"a fine thing indeed\"); charity"
+  },
+  {
+    "word": "提到",
+    "reading": "tí dào",
+    "meaning": "to mention; to raise (a subject)"
+  },
+  {
+    "word": "不如",
+    "reading": "bù rú",
+    "meaning": "not equal to; not as good as"
+  },
+  {
+    "word": "顾客",
+    "reading": "gù kè",
+    "meaning": "customer; client"
+  },
+  {
+    "word": "难过",
+    "reading": "nán guò",
+    "meaning": "to feel sad; to feel unwell"
+  },
+  {
+    "word": "组成",
+    "reading": "zǔ chéng",
+    "meaning": "to form; to make up"
+  },
+  {
+    "word": "流行",
+    "reading": "liú xíng",
+    "meaning": "(of a contagious disease etc) to spread; to propagate"
+  },
+  {
+    "word": "送给",
+    "reading": "sòng gěi",
+    "meaning": "to send; to give as a present"
+  },
+  {
+    "word": "不久",
+    "reading": "bù jiǔ",
+    "meaning": "not long (after); before too long"
+  },
+  {
+    "word": "客人",
+    "reading": "kè rén",
+    "meaning": "visitor; guest"
+  },
+  {
+    "word": "人口",
+    "reading": "rén kǒu",
+    "meaning": "population; people"
+  },
+  {
+    "word": "平时",
+    "reading": "píng shí",
+    "meaning": "ordinarily; in normal times"
+  },
+  {
+    "word": "比如说",
+    "reading": "bǐ rú shuō",
+    "meaning": "for example"
+  },
+  {
+    "word": "请求",
+    "reading": "qǐng qiú",
+    "meaning": "to request; to ask; request"
+  },
+  {
+    "word": "准确",
+    "reading": "zhǔn què",
+    "meaning": "accurate; exact; precise"
+  },
+  {
+    "word": "碰到",
+    "reading": "pèng dào",
+    "meaning": "to come across; to run into"
+  },
+  {
+    "word": "蓝色",
+    "reading": "lán sè",
+    "meaning": "blue (color)"
+  },
+  {
+    "word": "懂得",
+    "reading": "dǒng de",
+    "meaning": "to understand; to know; to comprehend"
+  },
+  {
+    "word": "广场",
+    "reading": "guǎng chǎng",
+    "meaning": "public square; plaza"
+  },
+  {
+    "word": "好久",
+    "reading": "hǎo jiǔ",
+    "meaning": "quite a while"
+  },
+  {
+    "word": "夏天",
+    "reading": "xià tiān",
+    "meaning": "summer"
+  },
+  {
+    "word": "接下来",
+    "reading": "jiē xià lái",
+    "meaning": "to accept; to take"
+  },
+  {
+    "word": "早餐",
+    "reading": "zǎo cān",
+    "meaning": "breakfast"
+  },
+  {
+    "word": "图片",
+    "reading": "tú piàn",
+    "meaning": "picture; photograph"
+  },
+  {
+    "word": "车辆",
+    "reading": "chē liàng",
+    "meaning": "vehicle"
+  },
+  {
+    "word": "早晨",
+    "reading": "zǎo chén",
+    "meaning": "early morning; also pr. [zǎo chen]"
+  },
+  {
+    "word": "以外",
+    "reading": "yǐ wài",
+    "meaning": "apart from; other than"
+  },
+  {
+    "word": "做法",
+    "reading": "zuò fǎ",
+    "meaning": "way of handling sth; method for making"
+  },
+  {
+    "word": "作家",
+    "reading": "zuò jiā",
+    "meaning": "author"
+  },
+  {
+    "word": "全体",
+    "reading": "quán tǐ",
+    "meaning": "all; entire"
+  },
+  {
+    "word": "熟",
+    "reading": "shú",
+    "meaning": "ripe; mature; thoroughly cooked; done"
+  },
+  {
+    "word": "全身",
+    "reading": "quán shēn",
+    "meaning": "the whole body; (typography) em"
+  },
+  {
+    "word": "练习",
+    "reading": "liàn xí",
+    "meaning": "to practice; exercise"
+  },
+  {
+    "word": "平安",
+    "reading": "píng ān",
+    "meaning": "safe and sound; well"
+  },
+  {
+    "word": "人数",
+    "reading": "rén shù",
+    "meaning": "number of people"
+  },
+  {
+    "word": "队长",
+    "reading": "duì zhǎng",
+    "meaning": "captain; team leader"
+  },
+  {
+    "word": "南方",
+    "reading": "nán fāng",
+    "meaning": "south; the southern part of the country"
+  },
+  {
+    "word": "友好",
+    "reading": "Yǒu hǎo",
+    "meaning": "Youhao district of Yichun city 市, Heilongjiang"
+  },
+  {
+    "word": "亿",
+    "reading": "yì",
+    "meaning": "100 million"
+  },
+  {
+    "word": "对话",
+    "reading": "duì huà",
+    "meaning": "to talk (with sb); dialogue; conversation"
+  },
+  {
+    "word": "停车",
+    "reading": "tíng chē",
+    "meaning": "to pull up (stop one's vehicle); to park"
+  },
+  {
+    "word": "冬天",
+    "reading": "dōng tiān",
+    "meaning": "winter"
+  },
+  {
+    "word": "云",
+    "reading": "yún",
+    "meaning": "(classical) to say"
+  },
+  {
+    "word": "青年",
+    "reading": "qīng nián",
+    "meaning": "youth; youthful years"
+  },
+  {
+    "word": "好人",
+    "reading": "hǎo rén",
+    "meaning": "good person; healthy person"
+  },
+  {
+    "word": "大声",
+    "reading": "dà shēng",
+    "meaning": "loud voice; in a loud voice"
+  },
+  {
+    "word": "分开",
+    "reading": "fēn kāi",
+    "meaning": "to separate; to part"
+  },
+  {
+    "word": "校长",
+    "reading": "xiào zhǎng",
+    "meaning": "(college, university) president; headmaster"
+  },
+  {
+    "word": "市长",
+    "reading": "shì zhǎng",
+    "meaning": "mayor"
+  },
+  {
+    "word": "自行车",
+    "reading": "zì xíng chē",
+    "meaning": "bicycle; bike"
+  },
+  {
+    "word": "相机",
+    "reading": "xiàng jī",
+    "meaning": "camera (abbr. for 照相机); at the opportune moment"
+  },
+  {
+    "word": "花园",
+    "reading": "huā yuán",
+    "meaning": "garden"
+  },
+  {
+    "word": "影片",
+    "reading": "yǐng piàn",
+    "meaning": "a copy of a film; film; motion picture; movie"
+  },
+  {
+    "word": "温度",
+    "reading": "wēn dù",
+    "meaning": "temperature"
+  },
+  {
+    "word": "等于",
+    "reading": "děng yú",
+    "meaning": "to equal; to be tantamount to"
+  },
+  {
+    "word": "周年",
+    "reading": "zhōu nián",
+    "meaning": "anniversary; annual"
+  },
+  {
+    "word": "节日",
+    "reading": "jié rì",
+    "meaning": "holiday; festival"
+  },
+  {
+    "word": "例如",
+    "reading": "lì rú",
+    "meaning": "for example; for instance; such as"
+  },
+  {
+    "word": "重视",
+    "reading": "zhòng shì",
+    "meaning": "to attach importance to sth; to value"
+  },
+  {
+    "word": "洗澡",
+    "reading": "xǐ zǎo",
+    "meaning": "to bathe; to take a shower"
+  },
+  {
+    "word": "今后",
+    "reading": "jīn hòu",
+    "meaning": "hereafter; henceforth"
+  },
+  {
+    "word": "这时",
+    "reading": "zhè shí",
+    "meaning": "at this time; at this moment"
+  },
+  {
+    "word": "大大",
+    "reading": "dà dà",
+    "meaning": "greatly; enormously"
+  },
+  {
+    "word": "科学家",
+    "reading": "kē xué jiā",
+    "meaning": "scientist"
+  },
+  {
+    "word": "晚餐",
+    "reading": "wǎn cān",
+    "meaning": "evening meal; dinner"
+  },
+  {
+    "word": "大门",
+    "reading": "Dà mén",
+    "meaning": "the Doors, US rock band"
+  },
+  {
+    "word": "晚会",
+    "reading": "wǎn huì",
+    "meaning": "evening party"
+  },
+  {
+    "word": "大小",
+    "reading": "dà xiǎo",
+    "meaning": "dimension; magnitude"
+  },
+  {
+    "word": "不一定",
+    "reading": "bù yī dìng",
+    "meaning": "not necessarily; maybe"
+  },
+  {
+    "word": "少年",
+    "reading": "shào nián",
+    "meaning": "early youth; youngster"
+  },
+  {
+    "word": "计算机",
+    "reading": "jì suàn jī",
+    "meaning": "computer; (Tw) calculator"
+  },
+  {
+    "word": "难受",
+    "reading": "nán shòu",
+    "meaning": "to feel unwell; to suffer pain"
+  },
+  {
+    "word": "刻",
+    "reading": "kè",
+    "meaning": "quarter (hour); moment"
+  },
+  {
+    "word": "参观",
+    "reading": "cān guān",
+    "meaning": "to look around; to tour"
+  },
+  {
+    "word": "太太",
+    "reading": "tài tai",
+    "meaning": "married woman; Mrs."
+  },
+  {
+    "word": "笔记本",
+    "reading": "bǐ jì běn",
+    "meaning": "notebook (stationery); notebook (computing)"
+  },
+  {
+    "word": "对面",
+    "reading": "duì miàn",
+    "meaning": "(sitting) opposite; across (the street)"
+  },
+  {
+    "word": "信用卡",
+    "reading": "xìn yòng kǎ",
+    "meaning": "credit card"
+  },
+  {
+    "word": "青少年",
+    "reading": "qīng shào nián",
+    "meaning": "adolescent; youth"
+  },
+  {
+    "word": "特点",
+    "reading": "tè diǎn",
+    "meaning": "characteristic (feature); trait"
+  },
+  {
+    "word": "笑话",
+    "reading": "xiào hua",
+    "meaning": "joke; jest; to laugh at; to mock"
+  },
+  {
+    "word": "凉",
+    "reading": "Liáng",
+    "meaning": "the five Liang of the Sixteen Kingdoms, namely: Former Liang 前凉 (314-376), Later Liang 后凉 (386-403), Northern Liang 北凉 (398-439), Southern Liang 南凉 (397-414), Western Liang 西凉 (400-421)"
+  },
+  {
+    "word": "平常",
+    "reading": "píng cháng",
+    "meaning": "ordinary; common"
+  },
+  {
+    "word": "不但",
+    "reading": "bù dàn",
+    "meaning": "not only (... but also ...)"
+  },
+  {
+    "word": "半夜",
+    "reading": "bàn yè",
+    "meaning": "midnight; in the middle of the night"
+  },
+  {
+    "word": "商量",
+    "reading": "shāng liang",
+    "meaning": "to consult; to talk over"
+  },
+  {
+    "word": "黄色",
+    "reading": "huáng sè",
+    "meaning": "yellow (color); pornographic"
+  },
+  {
+    "word": "午餐",
+    "reading": "wǔ cān",
+    "meaning": "lunch; luncheon"
+  },
+  {
+    "word": "排队",
+    "reading": "pái duì",
+    "meaning": "to line up"
+  },
+  {
+    "word": "校园",
+    "reading": "xiào yuán",
+    "meaning": "campus"
+  },
+  {
+    "word": "等到",
+    "reading": "děng dào",
+    "meaning": "to wait until; by the time when (sth is ready etc)"
+  },
+  {
+    "word": "一部分",
+    "reading": "yī bù fen",
+    "meaning": "portion; part of"
+  },
+  {
+    "word": "爱人",
+    "reading": "ài ren",
+    "meaning": "spouse (PRC); lover (non-PRC)"
+  },
+  {
+    "word": "多数",
+    "reading": "duō shù",
+    "meaning": "majority; most"
+  },
+  {
+    "word": "西方",
+    "reading": "Xī fāng",
+    "meaning": "the West; the Occident"
+  },
+  {
+    "word": "春天",
+    "reading": "chūn tiān",
+    "meaning": "spring (season)"
+  },
+  {
+    "word": "球场",
+    "reading": "qiú chǎng",
+    "meaning": "stadium; sports ground"
+  },
+  {
+    "word": "住院",
+    "reading": "zhù yuàn",
+    "meaning": "to be in hospital; to be hospitalized"
+  },
+  {
+    "word": "教学",
+    "reading": "jiāo xué",
+    "meaning": "to teach (as a professor)"
+  },
+  {
+    "word": "座位",
+    "reading": "zuò wèi",
+    "meaning": "seat"
+  },
+  {
+    "word": "忽然",
+    "reading": "hū rán",
+    "meaning": "suddenly; all of a sudden"
+  },
+  {
+    "word": "假期",
+    "reading": "jià qī",
+    "meaning": "vacation"
+  },
+  {
+    "word": "游客",
+    "reading": "yóu kè",
+    "meaning": "traveler; tourist"
+  },
+  {
+    "word": "报名",
+    "reading": "bào míng",
+    "meaning": "to sign up; to enter one's name"
+  },
+  {
+    "word": "拿到",
+    "reading": "ná dào",
+    "meaning": "to get; to obtain"
+  },
+  {
+    "word": "脏",
+    "reading": "zàng",
+    "meaning": "viscera; (anatomy) organ"
+  },
+  {
+    "word": "全家",
+    "reading": "quán jiā",
+    "meaning": "whole family"
+  },
+  {
+    "word": "饱",
+    "reading": "bǎo",
+    "meaning": "to eat till full; satisfied"
+  },
+  {
+    "word": "一共",
+    "reading": "yī gòng",
+    "meaning": "altogether"
+  },
+  {
+    "word": "月亮",
+    "reading": "yuè liang",
+    "meaning": "the moon"
+  },
+  {
+    "word": "公斤",
+    "reading": "gōng jīn",
+    "meaning": "kilogram (kg)"
+  },
+  {
+    "word": "北方",
+    "reading": "běi fāng",
+    "meaning": "north; the northern part a country"
+  },
+  {
+    "word": "平等",
+    "reading": "píng děng",
+    "meaning": "equal; equality"
+  },
+  {
+    "word": "打工",
+    "reading": "dǎ gōng",
+    "meaning": "to work a temporary or casual job; (of students) to have a job outside of class time, or during vacation"
+  },
+  {
+    "word": "星星",
+    "reading": "xīng xing",
+    "meaning": "(coll.) a star; the stars in the sky"
+  },
+  {
+    "word": "多云",
+    "reading": "duō yún",
+    "meaning": "cloudy (meteorology)"
+  },
+  {
+    "word": "不满",
+    "reading": "bù mǎn",
+    "meaning": "resentful; discontented"
+  },
+  {
+    "word": "例子",
+    "reading": "lì zi",
+    "meaning": "case; (for) instance"
+  },
+  {
+    "word": "东方",
+    "reading": "Dōng fāng",
+    "meaning": "the East; the Orient"
+  },
+  {
+    "word": "常见",
+    "reading": "cháng jiàn",
+    "meaning": "commonly seen; common"
+  },
+  {
+    "word": "商人",
+    "reading": "shāng rén",
+    "meaning": "merchant; businessman"
+  },
+  {
+    "word": "少数",
+    "reading": "shǎo shù",
+    "meaning": "small number; few"
+  },
+  {
+    "word": "走过",
+    "reading": "zǒu guò",
+    "meaning": "to walk past; to pass by"
+  },
+  {
+    "word": "得出",
+    "reading": "dé chū",
+    "meaning": "to obtain (a result); to arrive at (a conclusion)"
+  },
+  {
+    "word": "起飞",
+    "reading": "qǐ fēi",
+    "meaning": "(of an aircraft) to take off"
+  },
+  {
+    "word": "网球",
+    "reading": "wǎng qiú",
+    "meaning": "tennis; tennis ball"
+  },
+  {
+    "word": "停车场",
+    "reading": "tíng chē chǎng",
+    "meaning": "parking lot; car park"
+  },
+  {
+    "word": "大海",
+    "reading": "dà hǎi",
+    "meaning": "sea; ocean"
+  },
+  {
+    "word": "出租",
+    "reading": "chū zū",
+    "meaning": "to rent"
+  },
+  {
+    "word": "这时候",
+    "reading": "zhè shíhòu",
+    "meaning": "At this moment"
+  },
+  {
+    "word": "老是",
+    "reading": "lǎo shi",
+    "meaning": "always"
+  },
+  {
+    "word": "月份",
+    "reading": "yuè fèn",
+    "meaning": "month"
+  },
+  {
+    "word": "坏人",
+    "reading": "huài rén",
+    "meaning": "bad person; villain"
+  },
+  {
+    "word": "天上",
+    "reading": "tiān shàng",
+    "meaning": "celestial; heavenly"
+  },
+  {
+    "word": "旅客",
+    "reading": "lǚ kè",
+    "meaning": "traveler; tourist"
+  },
+  {
+    "word": "大衣",
+    "reading": "dà yī",
+    "meaning": "overcoat; topcoat"
+  },
+  {
+    "word": "学期",
+    "reading": "xué qī",
+    "meaning": "term; semester"
+  },
+  {
+    "word": "路边",
+    "reading": "lù biān",
+    "meaning": "curb; roadside; wayside"
+  },
+  {
+    "word": "难题",
+    "reading": "nán tí",
+    "meaning": "difficult problem"
+  },
+  {
+    "word": "入口",
+    "reading": "rù kǒu",
+    "meaning": "entrance; to import"
+  },
+  {
+    "word": "实习",
+    "reading": "shí xí",
+    "meaning": "to practice; field work"
+  },
+  {
+    "word": "点头",
+    "reading": "diǎn tóu",
+    "meaning": "to nod"
+  },
+  {
+    "word": "院长",
+    "reading": "yuàn zhǎng",
+    "meaning": "the head of an institution whose name ends in 院; chair of a board"
+  },
+  {
+    "word": "东北",
+    "reading": "Dōng běi",
+    "meaning": "Northeast China; Manchuria"
+  },
+  {
+    "word": "夜里",
+    "reading": "yè li",
+    "meaning": "during the night; at night"
+  },
+  {
+    "word": "音乐会",
+    "reading": "yīn yuè huì",
+    "meaning": "concert"
+  },
+  {
+    "word": "中年",
+    "reading": "zhōng nián",
+    "meaning": "middle age"
+  },
+  {
+    "word": "院子",
+    "reading": "yuàn zi",
+    "meaning": "courtyard; garden"
+  },
+  {
+    "word": "找出",
+    "reading": "zhǎo chū",
+    "meaning": "to find; to search out"
+  },
+  {
+    "word": "名称",
+    "reading": "míng chēng",
+    "meaning": "name (of a thing); name (of an organization)"
+  },
+  {
+    "word": "分数",
+    "reading": "fēn shù",
+    "meaning": "(exam) grade; mark"
+  },
+  {
+    "word": "瓶子",
+    "reading": "píng zi",
+    "meaning": "bottle"
+  },
+  {
+    "word": "举手",
+    "reading": "jǔ shǒu",
+    "meaning": "to raise a hand; to put up one's hand (as signal)"
+  },
+  {
+    "word": "复习",
+    "reading": "fù xí",
+    "meaning": "to review; revision"
+  },
+  {
+    "word": "课堂",
+    "reading": "kè táng",
     "meaning": "classroom"
   },
   {
-    "word": "介绍",
-    "reading": "jièshào",
-    "meaning": "to introduce"
+    "word": "秋天",
+    "reading": "qiū tiān",
+    "meaning": "autumn"
   },
   {
-    "word": "进",
-    "reading": "jìn",
+    "word": "护照",
+    "reading": "hù zhào",
+    "meaning": "passport"
+  },
+  {
+    "word": "下雪",
+    "reading": "xià xuě",
+    "meaning": "to snow"
+  },
+  {
+    "word": "英文",
+    "reading": "Yīng wén",
+    "meaning": "English (language)"
+  },
+  {
+    "word": "气温",
+    "reading": "qì wēn",
+    "meaning": "air temperature"
+  },
+  {
+    "word": "画家",
+    "reading": "huà jiā",
+    "meaning": "painter"
+  },
+  {
+    "word": "骑车",
+    "reading": "qí chē",
+    "meaning": "to ride a bike (motorbike or bicycle)"
+  },
+  {
+    "word": "西南",
+    "reading": "xī nán",
+    "meaning": "southwest"
+  },
+  {
+    "word": "西北",
+    "reading": "Xī běi",
+    "meaning": "Northwest China (Shaanxi, Gansu, Qinghai, Ningxia, Xinjiang)"
+  },
+  {
+    "word": "海边",
+    "reading": "hǎi biān",
+    "meaning": "coast; seaside"
+  },
+  {
+    "word": "住房",
+    "reading": "zhù fáng",
+    "meaning": "housing"
+  },
+  {
+    "word": "出院",
+    "reading": "chū yuàn",
+    "meaning": "to leave hospital; to be discharged from hospital"
+  },
+  {
+    "word": "体育馆",
+    "reading": "tǐ yù guǎn",
+    "meaning": "gym; gymnasium"
+  },
+  {
+    "word": "老朋友",
+    "reading": "lǎo péng you",
+    "meaning": "old friend; (slang) period"
+  },
+  {
+    "word": "菜单",
+    "reading": "cài dān",
+    "meaning": "menu"
+  },
+  {
+    "word": "年级",
+    "reading": "nián jí",
+    "meaning": "grade; year (in school, college etc)"
+  },
+  {
+    "word": "走开",
+    "reading": "zǒu kāi",
+    "meaning": "to leave; to walk away"
+  },
+  {
+    "word": "笔记",
+    "reading": "bǐ jì",
+    "meaning": "to take down (in writing); notes"
+  },
+  {
+    "word": "外地",
+    "reading": "wài dì",
+    "meaning": "parts of the country other than where one is"
+  },
+  {
+    "word": "休假",
+    "reading": "xiū jià",
+    "meaning": "to go on vacation; to have a holiday; to take leave"
+  },
+  {
+    "word": "小声",
+    "reading": "xiǎo shēng",
+    "meaning": "in a low voice; (speak) in whispers"
+  },
+  {
+    "word": "大自然",
+    "reading": "dà zì rán",
+    "meaning": "nature (the natural world)"
+  },
+  {
+    "word": "送到",
+    "reading": "sòng dào",
+    "meaning": "Deliver"
+  },
+  {
+    "word": "打印",
+    "reading": "dǎ yìn",
+    "meaning": "to affix a seal; to stamp"
+  },
+  {
+    "word": "斤",
+    "reading": "jīn",
+    "meaning": "catty; (PRC) weight equal to 500 g"
+  },
+  {
+    "word": "老年",
+    "reading": "lǎo nián",
+    "meaning": "elderly; old age"
+  },
+  {
+    "word": "照相",
+    "reading": "zhào xiàng",
+    "meaning": "to take a photograph"
+  },
+  {
+    "word": "动物园",
+    "reading": "dòng wù yuán",
+    "meaning": "zoo"
+  },
+  {
+    "word": "草地",
+    "reading": "cǎo dì",
+    "meaning": "lawn; meadow"
+  },
+  {
+    "word": "回国",
+    "reading": "huí guó",
+    "meaning": "to return to one's home country"
+  },
+  {
+    "word": "关机",
+    "reading": "guān jī",
+    "meaning": "to turn off (a machine or device); to finish shooting a film"
+  },
+  {
+    "word": "班长",
+    "reading": "bān zhǎng",
+    "meaning": "class monitor; squad leader"
+  },
+  {
+    "word": "常用",
+    "reading": "cháng yòng",
+    "meaning": "in common usage"
+  },
+  {
+    "word": "里头",
+    "reading": "lǐ tou",
+    "meaning": "inside; interior"
+  },
+  {
+    "word": "请客",
+    "reading": "qǐng kè",
+    "meaning": "to give a dinner party; to entertain guests"
+  },
+  {
+    "word": "日报",
+    "reading": "rì bào",
+    "meaning": "daily newspaper"
+  },
+  {
+    "word": "行人",
+    "reading": "xíng rén",
+    "meaning": "pedestrian; traveler on foot"
+  },
+  {
+    "word": "走进",
+    "reading": "zǒu jìn",
     "meaning": "to enter"
   },
   {
-    "word": "近",
-    "reading": "jìn",
-    "meaning": "near, close"
+    "word": "洗衣机",
+    "reading": "xǐ yī jī",
+    "meaning": "washing machine; washer"
   },
   {
-    "word": "进来",
-    "reading": "jìnlái",
-    "meaning": "to come in"
+    "word": "词语",
+    "reading": "cí yǔ",
+    "meaning": "word (general term including monosyllables through to short phrases); term (e.g. technical term)"
   },
   {
-    "word": "进去",
-    "reading": "jìnqù",
-    "meaning": "to go in"
+    "word": "句子",
+    "reading": "jù zi",
+    "meaning": "sentence"
   },
   {
-    "word": "经常",
-    "reading": "jīngcháng",
-    "meaning": "often"
+    "word": "筷子",
+    "reading": "kuài zi",
+    "meaning": "chopsticks"
   },
   {
-    "word": "酒店",
-    "reading": "jiǔdiàn",
-    "meaning": "hotel"
+    "word": "体育场",
+    "reading": "tǐ yù chǎng",
+    "meaning": "stadium"
   },
   {
-    "word": "就",
-    "reading": "jiù",
-    "meaning": "just, then; (as early as, only, as soon as)"
+    "word": "组长",
+    "reading": "zǔ zhǎng",
+    "meaning": "group leader"
   },
   {
-    "word": "咖啡",
-    "reading": "kāfēi",
-    "meaning": "coffee"
+    "word": "作文",
+    "reading": "zuò wén",
+    "meaning": "to write an essay; composition (student essay)"
   },
   {
-    "word": "开始",
-    "reading": "kāishǐ",
-    "meaning": "to start; beginning"
+    "word": "东南",
+    "reading": "dōng nán",
+    "meaning": "southeast"
   },
   {
-    "word": "开学",
-    "reading": "kāixué",
-    "meaning": "school starts"
+    "word": "难看",
+    "reading": "nán kàn",
+    "meaning": "ugly; unsightly"
   },
   {
-    "word": "考",
-    "reading": "kǎo",
-    "meaning": "to test, to take an exam"
+    "word": "地铁站",
+    "reading": "dì tiě zhàn",
+    "meaning": "subway station"
   },
   {
-    "word": "考试",
-    "reading": "kǎoshì",
-    "meaning": "to take an exam; exam"
+    "word": "快餐",
+    "reading": "kuài cān",
+    "meaning": "fast food; snack"
   },
   {
-    "word": "可能",
-    "reading": "kěnéng",
-    "meaning": "possible; possibility; may"
+    "word": "站住",
+    "reading": "zhàn zhù",
+    "meaning": "to stand"
   },
   {
-    "word": "裤子",
-    "reading": "kùzi",
-    "meaning": "pants"
+    "word": "开机",
+    "reading": "kāi jī",
+    "meaning": "to start an engine; to boot up (a computer)"
   },
   {
-    "word": "快",
-    "reading": "kuài",
-    "meaning": "fast; soon, quickly"
+    "word": "公共汽车",
+    "reading": "gōng gòng qì chē",
+    "meaning": "bus"
   },
   {
-    "word": "快乐",
-    "reading": "kuàilè",
-    "meaning": "happy, joyful"
+    "word": "碰见",
+    "reading": "pèng jiàn",
+    "meaning": "to run into; to meet (unexpectedly)"
   },
   {
-    "word": "快要",
-    "reading": "kuàiyào",
-    "meaning": "soon, almost"
+    "word": "字典",
+    "reading": "zì diǎn",
+    "meaning": "Chinese character dictionary (containing entries for single characters, contrasted with a 词典, which has entries for words of one or more characters); (coll.) dictionary"
   },
   {
-    "word": "篮球",
-    "reading": "lánqiú",
-    "meaning": "basketball"
+    "word": "排球",
+    "reading": "pái qiú",
+    "meaning": "volleyball"
   },
   {
-    "word": "累",
-    "reading": "lèi",
-    "meaning": "tired; to tire"
+    "word": "干杯",
+    "reading": "gān bēi",
+    "meaning": "to drink a toast; Cheers! (proposing a toast)"
   },
   {
-    "word": "离",
-    "reading": "lí",
-    "meaning": "to leave, to be away from"
+    "word": "零下",
+    "reading": "líng xià",
+    "meaning": "below zero"
   },
   {
-    "word": "里面",
-    "reading": "lǐmiàn",
-    "meaning": "inside"
+    "word": "拿出",
+    "reading": "ná chū",
+    "meaning": "to take out; to put out"
   },
   {
-    "word": "楼",
-    "reading": "lóu",
-    "meaning": "building, floor"
+    "word": "中餐",
+    "reading": "zhōng cān",
+    "meaning": "lunch; Chinese meal"
   },
   {
-    "word": "路",
-    "reading": "lù",
-    "meaning": "road, path"
+    "word": "晴天",
+    "reading": "qíng tiān",
+    "meaning": "clear sky; sunny day"
   },
   {
-    "word": "路上",
-    "reading": "lùshang",
-    "meaning": "on the road"
+    "word": "普通话",
+    "reading": "pǔ tōng huà",
+    "meaning": "Mandarin (common language); Putonghua (common speech of the Chinese language)"
   },
   {
-    "word": "旅游",
-    "reading": "lǚyóu",
-    "meaning": "to travel"
+    "word": "全年",
+    "reading": "quán nián",
+    "meaning": "the whole year; all year long"
   },
   {
-    "word": "绿茶",
-    "reading": "lǜchá",
-    "meaning": "green tea"
+    "word": "爬山",
+    "reading": "pá shān",
+    "meaning": "to climb a mountain; to mountaineer"
   },
   {
-    "word": "绿色",
-    "reading": "lǜsè",
-    "meaning": "green color; (green)"
+    "word": "那会儿",
+    "reading": "nà huì r",
+    "meaning": "at that time (in the past or the future); also pr. [nèi huì r]"
   },
   {
-    "word": "慢",
-    "reading": "màn",
-    "meaning": "slow"
+    "word": "黑板",
+    "reading": "hēi bǎn",
+    "meaning": "blackboard"
   },
   {
-    "word": "没意思",
-    "reading": "méi yìsi",
-    "meaning": "boring, uninteresting"
+    "word": "外卖",
+    "reading": "wài mài",
+    "meaning": "(of a restaurant) to provide a takeout or home delivery meal; takeout (business)"
   },
   {
-    "word": "每",
-    "reading": "měi",
-    "meaning": "every, each; (per)"
+    "word": "方便面",
+    "reading": "fāng biàn miàn",
+    "meaning": "instant noodles"
   },
   {
-    "word": "门",
-    "reading": "mén",
-    "meaning": "door, gate"
+    "word": "球鞋",
+    "reading": "qiú xié",
+    "meaning": "athletic shoes"
   },
   {
-    "word": "门口",
-    "reading": "ménkǒu",
-    "meaning": "doorway, entrance"
+    "word": "流利",
+    "reading": "liú lì",
+    "meaning": "fluent"
   },
   {
-    "word": "门票",
-    "reading": "ménpiào",
-    "meaning": "ticket"
+    "word": "交朋友",
+    "reading": "jiāo péng you",
+    "meaning": "to make friends; (dialect) to start an affair with sb"
   },
   {
-    "word": "面",
-    "reading": "miàn",
-    "meaning": "suffix indicating a person with a certain characteristic; (to face; side, aspect; measure word for flat objects)"
+    "word": "一路顺风",
+    "reading": "yī lù shùn fēng",
+    "meaning": "to have a pleasant journey (idiom)"
   },
   {
-    "word": "名",
-    "reading": "míng",
-    "meaning": "name, reputation; measure word for people"
+    "word": "晚报",
+    "reading": "wǎn bào",
+    "meaning": "evening newspaper; (in a newspaper's name) Evening News"
   },
   {
-    "word": "拿",
-    "reading": "ná",
-    "meaning": "to take, to hold"
+    "word": "难听",
+    "reading": "nán tīng",
+    "meaning": "unpleasant to hear; coarse"
   },
   {
-    "word": "那么",
-    "reading": "nàme",
-    "meaning": "so, like that; then"
+    "word": "药水",
+    "reading": "Yào shuǐ",
+    "meaning": "Yaksu in North Korea, near the border with Liaoning and Jiling province"
   },
   {
-    "word": "那样",
-    "reading": "nàyàng",
-    "meaning": "like that"
+    "word": "中医",
+    "reading": "Zhōng yī",
+    "meaning": "traditional Chinese medical science; a doctor trained in Chinese medicine"
   },
   {
-    "word": "奶茶",
-    "reading": "nǎichá",
-    "meaning": "milk tea"
+    "word": "坏处",
+    "reading": "huài chu",
+    "meaning": "harm; troubles"
   },
   {
-    "word": "奶奶",
-    "reading": "nǎinai",
-    "meaning": "grandmother"
+    "word": "前年",
+    "reading": "qián nián",
+    "meaning": "the year before last"
   },
   {
-    "word": "男孩儿",
-    "reading": "nánháir",
-    "meaning": "boy"
+    "word": "词典",
+    "reading": "cí diǎn",
+    "meaning": "dictionary; also written 辞典"
   },
   {
-    "word": "鸟",
-    "reading": "niǎo",
-    "meaning": "bird"
+    "word": "千克",
+    "reading": "qiān kè",
+    "meaning": "kilogram"
   },
   {
-    "word": "女孩儿",
-    "reading": "nǚháir",
-    "meaning": "girl"
+    "word": "问路",
+    "reading": "wèn lù",
+    "meaning": "to ask for directions; to ask the way (to some place)"
   },
   {
-    "word": "旁边",
-    "reading": "pángbiān",
-    "meaning": "side"
+    "word": "叫作",
+    "reading": "jiào zuò",
+    "meaning": "to call; to be called"
   },
   {
-    "word": "跑",
-    "reading": "pǎo",
-    "meaning": "to run"
+    "word": "凉快",
+    "reading": "liáng kuai",
+    "meaning": "nice and cold; pleasantly cool"
   },
   {
-    "word": "跑步",
-    "reading": "pǎobù",
-    "meaning": "to run, jogging"
+    "word": "午睡",
+    "reading": "wǔ shuì",
+    "meaning": "to take a nap; siesta"
   },
   {
-    "word": "票",
-    "reading": "piào",
-    "meaning": "ticket"
+    "word": "药片",
+    "reading": "yào piàn",
+    "meaning": "a (medicine) pill or tablet"
   },
   {
-    "word": "妻子",
-    "reading": "qīzi",
-    "meaning": "wife"
+    "word": "音节",
+    "reading": "yīn jié",
+    "meaning": "syllable"
   },
   {
-    "word": "起来",
-    "reading": "qǐlái",
-    "meaning": "to get up, to stand up; used after verbs to indicate upward movement or beginning"
+    "word": "中级",
+    "reading": "zhōng jí",
+    "meaning": "middle level (in a hierarchy)"
   },
   {
-    "word": "前面",
-    "reading": "qiánmiàn",
-    "meaning": "front"
+    "word": "一点点",
+    "reading": "yī diǎn diǎn",
+    "meaning": "a little bit"
   },
   {
-    "word": "晴",
-    "reading": "qíng",
-    "meaning": "sunny, clear"
+    "word": "春节",
+    "reading": "Chūn jié",
+    "meaning": "Spring Festival (Chinese New Year)"
   },
   {
-    "word": "球",
-    "reading": "qiú",
-    "meaning": "ball, sphere"
+    "word": "留学生",
+    "reading": "liú xué shēng",
+    "meaning": "student studying abroad; (foreign) exchange student"
   },
   {
-    "word": "让",
-    "reading": "ràng",
-    "meaning": "to let, to allow; (by)"
+    "word": "阴天",
+    "reading": "yīn tiān",
+    "meaning": "cloudy day; overcast sky"
   },
   {
-    "word": "肉",
-    "reading": "ròu",
-    "meaning": "meat"
+    "word": "西医",
+    "reading": "xī yī",
+    "meaning": "Western medicine; a doctor trained in Western medicine"
   },
   {
-    "word": "商场",
-    "reading": "shāngchǎng",
-    "meaning": "shopping mall"
+    "word": "听讲",
+    "reading": "tīng jiǎng",
+    "meaning": "to attend a lecture; to listen to a talk"
   },
   {
-    "word": "上来",
-    "reading": "shànglái",
-    "meaning": "to come up"
+    "word": "考生",
+    "reading": "kǎo shēng",
+    "meaning": "exam candidate; student whose name has been put forward for an exam"
   },
   {
-    "word": "上面",
-    "reading": "shàngmiàn",
-    "meaning": "above, top"
+    "word": "读音",
+    "reading": "dú yīn",
+    "meaning": "pronunciation; literary (rather than colloquial) pronunciation of a Chinese character"
   },
   {
-    "word": "上去",
-    "reading": "shàngqù",
-    "meaning": "to go up"
+    "word": "中小学",
+    "reading": "zhōng xiǎo xué",
+    "meaning": "middle and elementary school"
   },
   {
-    "word": "上网",
-    "reading": "shàngwǎng",
-    "meaning": "to go online, to surf the Internet"
+    "word": "西餐",
+    "reading": "xī cān",
+    "meaning": "Western-style food"
   },
   {
-    "word": "身体",
-    "reading": "shēntǐ",
-    "meaning": "body"
+    "word": "一路平安",
+    "reading": "yī lù píng ān",
+    "meaning": "to have a pleasant journey; Bon voyage!"
   },
   {
-    "word": "生日",
-    "reading": "shēngrì",
-    "meaning": "birthday"
+    "word": "不一会儿",
+    "reading": "bù yīhuǐr5",
+    "meaning": "Take a short while"
   },
   {
-    "word": "时",
-    "reading": "shí",
-    "meaning": "time, moment; (season, period)"
+    "word": "干活儿",
+    "reading": "gàn huó r",
+    "meaning": "erhua variant of 干活; (coll.) to work"
   },
   {
-    "word": "事情",
-    "reading": "shìqing",
-    "meaning": "matter, affair"
+    "word": "不太",
+    "reading": "bù tài",
+    "meaning": "Not too"
   },
   {
-    "word": "手",
-    "reading": "shǒu",
-    "meaning": "hand"
+    "word": "生词",
+    "reading": "shēng cí",
+    "meaning": "new word (in textbook); word that is unfamiliar or not yet studied"
   },
   {
-    "word": "手表",
-    "reading": "shǒubiǎo",
-    "meaning": "watch, wristwatch"
+    "word": "画儿",
+    "reading": "huà r",
+    "meaning": "picture; drawing"
   },
   {
-    "word": "书包",
-    "reading": "shūbāo",
-    "meaning": "backpack, schoolbag"
+    "word": "短信",
+    "reading": "duǎn xìn",
+    "meaning": "text message; SMS"
   },
   {
-    "word": "舒服",
-    "reading": "shūfu",
-    "meaning": "comfortable"
+    "word": "见过",
+    "reading": "jiànguò",
+    "meaning": "seen"
   },
   {
-    "word": "送",
-    "reading": "sòng",
-    "meaning": "to give, to send, to see off"
+    "word": "快点儿",
+    "reading": "kuài diǎn r",
+    "meaning": "erhua variant of 快点; to do smh more quickly"
   },
   {
-    "word": "虽然",
-    "reading": "suīrán",
-    "meaning": "although"
+    "word": "那时候",
+    "reading": "nà shí hou",
+    "meaning": "at that time"
   },
   {
-    "word": "所以",
-    "reading": "suǒyǐ",
-    "meaning": "so, therefore"
+    "word": "挺好",
+    "reading": "tǐng hǎo",
+    "meaning": "very good"
   },
   {
-    "word": "疼",
-    "reading": "téng",
-    "meaning": "painful, sore; (to hurt)"
+    "word": "下周",
+    "reading": "xià zhōu",
+    "meaning": "next week"
   },
   {
-    "word": "踢",
-    "reading": "tī",
-    "meaning": "to kick"
+    "word": "笑话儿",
+    "reading": "xiàohuar5",
+    "meaning": "Joke"
   },
   {
-    "word": "题",
-    "reading": "tí",
-    "meaning": "question, problem, topic"
+    "word": "银行卡",
+    "reading": "yín háng kǎ",
+    "meaning": "bank card; ATM card"
   },
   {
-    "word": "条",
-    "reading": "tiáo",
-    "meaning": "measure word for long, thin, or strip-like objects; (clause, item)"
+    "word": "有空儿",
+    "reading": "yǒukòngr5",
+    "meaning": "available"
   },
   {
-    "word": "跳舞",
-    "reading": "tiàowǔ",
-    "meaning": "to dance"
-  },
-  {
-    "word": "头",
-    "reading": "tóu",
-    "meaning": "head; (measure word for animals); (first)"
-  },
-  {
-    "word": "外国",
-    "reading": "wàiguó",
-    "meaning": "foreign country"
-  },
-  {
-    "word": "外面",
-    "reading": "wàimiàn",
-    "meaning": "outside"
-  },
-  {
-    "word": "完",
-    "reading": "wán",
-    "meaning": "to finish"
-  },
-  {
-    "word": "万",
-    "reading": "wàn",
-    "meaning": "ten thousand"
-  },
-  {
-    "word": "往",
-    "reading": "wǎng",
-    "meaning": "to go; toward"
-  },
-  {
-    "word": "网上",
-    "reading": "wǎngshang",
-    "meaning": "online"
-  },
-  {
-    "word": "忘",
-    "reading": "wàng",
-    "meaning": "to forget"
-  },
-  {
-    "word": "位",
-    "reading": "wèi",
-    "meaning": "measure word for people"
-  },
-  {
-    "word": "为什么",
-    "reading": "wèi shénme",
-    "meaning": "why"
-  },
-  {
-    "word": "希望",
-    "reading": "xīwàng",
-    "meaning": "to hope"
-  },
-  {
-    "word": "洗",
-    "reading": "xǐ",
-    "meaning": "to wash"
-  },
-  {
-    "word": "洗手间",
-    "reading": "xǐshǒujiān",
-    "meaning": "restroom, toilet"
-  },
-  {
-    "word": "下来",
-    "reading": "xiàlái",
-    "meaning": "to come down"
-  },
-  {
-    "word": "下面",
-    "reading": "xiàmiàn",
-    "meaning": "below, under"
-  },
-  {
-    "word": "下去",
-    "reading": "xiàqù",
-    "meaning": "to go down"
-  },
-  {
-    "word": "小孩儿",
-    "reading": "xiǎoháir",
-    "meaning": "child, little kid"
-  },
-  {
-    "word": "小时候",
-    "reading": "xiǎoshíhou",
-    "meaning": "childhood"
-  },
-  {
-    "word": "笑",
-    "reading": "xiào",
-    "meaning": "to laugh, to smile"
-  },
-  {
-    "word": "姓",
-    "reading": "xìng",
-    "meaning": "surname; to be surnamed"
-  },
-  {
-    "word": "姓名",
-    "reading": "xìngmíng",
-    "meaning": "full name"
-  },
-  {
-    "word": "颜色",
-    "reading": "yánsè",
-    "meaning": "color"
-  },
-  {
-    "word": "眼睛",
-    "reading": "yǎnjing",
-    "meaning": "eye"
-  },
-  {
-    "word": "药",
-    "reading": "yào",
-    "meaning": "medicine, drug"
-  },
-  {
-    "word": "药店",
-    "reading": "yàodiàn",
-    "meaning": "pharmacy"
-  },
-  {
-    "word": "爷爷",
-    "reading": "yéye",
-    "meaning": "grandfather"
-  },
-  {
-    "word": "一会儿",
-    "reading": "yíhuìr",
-    "meaning": "a while, a moment; (soon, in a little while)"
-  },
-  {
-    "word": "已经",
-    "reading": "yǐjīng",
-    "meaning": "already"
-  },
-  {
-    "word": "一起",
-    "reading": "yìqǐ",
-    "meaning": "together"
-  },
-  {
-    "word": "意思",
-    "reading": "yìsi",
-    "meaning": "meaning, idea"
-  },
-  {
-    "word": "阴",
-    "reading": "yīn",
-    "meaning": "cloudy"
-  },
-  {
-    "word": "因为",
-    "reading": "yīnwèi",
-    "meaning": "because; because of"
-  },
-  {
-    "word": "游",
-    "reading": "yóu",
-    "meaning": "to swim"
-  },
-  {
-    "word": "游泳",
-    "reading": "yóuyǒng",
-    "meaning": "to swim"
-  },
-  {
-    "word": "有意思",
-    "reading": "yǒu yìsi",
-    "meaning": "interesting, enjoyable"
-  },
-  {
-    "word": "有时",
-    "reading": "yǒushí",
-    "meaning": "sometimes"
-  },
-  {
-    "word": "右",
-    "reading": "yòu",
-    "meaning": "right"
-  },
-  {
-    "word": "右边",
-    "reading": "yòubian",
-    "meaning": "right side"
-  },
-  {
-    "word": "鱼",
-    "reading": "yú",
-    "meaning": "fish"
-  },
-  {
-    "word": "远",
-    "reading": "yuǎn",
-    "meaning": "far"
-  },
-  {
-    "word": "运动",
-    "reading": "yùndòng",
-    "meaning": "to move, to exercise; sports, exercise"
-  },
-  {
-    "word": "站",
-    "reading": "zhàn",
-    "meaning": "station, stop; to stand"
-  },
-  {
-    "word": "丈夫",
-    "reading": "zhàngfu",
-    "meaning": "husband"
-  },
-  {
-    "word": "这么",
-    "reading": "zhème",
-    "meaning": "so, such, like this"
-  },
-  {
-    "word": "这样",
-    "reading": "zhèyàng",
-    "meaning": "like this, so"
-  },
-  {
-    "word": "着",
-    "reading": "zhe",
-    "meaning": "particle indicating ongoing action or state"
-  },
-  {
-    "word": "正",
-    "reading": "zhèng",
-    "meaning": "just, exactly, right; (straight)"
-  },
-  {
-    "word": "周",
-    "reading": "zhōu",
-    "meaning": "week; (measure word for circumference, cycle)"
-  },
-  {
-    "word": "准备",
-    "reading": "zhǔnbèi",
-    "meaning": "to prepare"
-  },
-  {
-    "word": "自己",
-    "reading": "zìjǐ",
-    "meaning": "oneself"
-  },
-  {
-    "word": "走",
-    "reading": "zǒu",
-    "meaning": "to walk"
-  },
-  {
-    "word": "走路",
-    "reading": "zǒulù",
-    "meaning": "to walk"
-  },
-  {
-    "word": "足球",
-    "reading": "zúqiú",
-    "meaning": "soccer, football"
-  },
-  {
-    "word": "最",
-    "reading": "zuì",
-    "meaning": "most, -est"
-  },
-  {
-    "word": "左",
-    "reading": "zuǒ",
-    "meaning": "left"
-  },
-  {
-    "word": "左边",
-    "reading": "zuǒbian",
-    "meaning": "left side"
+    "word": "有一点儿",
+    "reading": "yǒu yī diǎn r",
+    "meaning": "a bit; a little"
   }
 ]
