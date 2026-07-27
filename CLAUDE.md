@@ -268,6 +268,7 @@ what `git log` and `docs/CHANGELOG.md` are for.
 | Command | What it does |
 |---------|-------------|
 | `/ship` | Lint + test + build, then commit and push |
+| `/parallel` | Run several unrelated tasks at once in worktrees, then integrate, verify and report once |
 | `/unlock` | Marks the current testing level's cards Easy, to preview the unlocked state |
 | `/reset` | Resets language progress to level 1, to test the fresh-start experience |
 | `/audio` | Regenerates TTS audio for a vocabulary level |
