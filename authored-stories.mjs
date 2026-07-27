@@ -64,6 +64,17 @@ async function insertStories(file) {
     console.error('Manifest must be a non-empty JSON array.'); process.exit(1)
   }
 
+  // The manifest is CUMULATIVE — it keeps every season ever authored, so most
+  // of it is already in the database by the time a new season is added. Insert
+  // was previously unconditional, which meant re-running it duplicated every
+  // earlier story (and a duplicate is invisible in the manifest but very visible
+  // in the reader). Skip anything already present, keyed the same way the
+  // manifest's own duplicate guard is: language + system + level + title.
+  const { data: existingRows, error: existingErr } = await supabase
+    .from('stories').select('language, system, level, title')
+  if (existingErr) { console.error('Cannot read existing stories: ' + existingErr.message); process.exit(1) }
+  const existing = new Set((existingRows || []).map(r => [r.language, r.system, r.level, r.title].join('|')))
+
   // Track the next story_number per language/system/level, seeded from the DB.
   const nextNumCache = {}
   async function nextStoryNumber(language, system, level) {
@@ -81,9 +92,14 @@ async function insertStories(file) {
   }
 
   console.log(`Inserting ${manifest.length} authored story(ies)...\n`)
-  let ok = 0, failed = 0
+  let ok = 0, failed = 0, skipped = 0
   for (const s of manifest) {
     const label = `${s.language}/${s.system}/${s.level} "${s.title}"`
+    if (existing.has([s.language, s.system, s.level, s.title].join('|'))) {
+      console.log(`· ${label} — already present, skipped`)
+      skipped += 1
+      continue
+    }
     try {
       for (const f of ['language', 'system', 'level', 'title', 'content']) {
         if (s[f] == null || s[f] === '') throw new Error('missing field: ' + f)
@@ -117,7 +133,7 @@ async function insertStories(file) {
       failed += 1
     }
   }
-  console.log(`\n--- Done --- ✓ ${ok}  ✗ ${failed}`)
+  console.log(`\n--- Done --- ✓ ${ok}  · skipped ${skipped}  ✗ ${failed}`)
 }
 
 async function main() {
