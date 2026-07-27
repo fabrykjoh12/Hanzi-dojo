@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { fetchPagedSafe } from './supabasePaging'
 import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { languageTheme } from './languageTheme'
@@ -80,8 +81,11 @@ export default function Dictionary({ session, profile, track, onBack }) {
     let cancelled = false
     async function load() {
       setLoading(true)
-      const [{ data: vocabData }, cards] = await Promise.all([
-        supabase
+      // Paged — this is the whole curriculum, well past the 1000-row cap, and a
+      // word list that silently stops two thirds of the way through is worse
+      // than useless for looking a word up.
+      const [vocabData, cards] = await Promise.all([
+        fetchPagedSafe(() => supabase
           .from('vocabulary')
           .select('id, word, reading, meaning, level, sort_order')
           .eq('language', track.language)
@@ -89,7 +93,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
           .eq('is_active', true)
           .not('level', 'is', null)
           .order('level', { ascending: true })
-          .order('sort_order', { ascending: true }),
+          .order('sort_order', { ascending: true })),
         getTrackCards(session.user.id, track, { columns: 'vocab_id, state, is_easy, stability' }),
       ])
       if (cancelled) return

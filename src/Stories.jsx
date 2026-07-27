@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { fetchPagedSafe } from './supabasePaging'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { cacheSet, cacheGet } from './offline'
@@ -513,15 +514,21 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
     const snapKey = 'storiesdata:' + track.language + ':' + track.system + ':' + track.current_level
     let vocabData = null, cardsData = null, storiesData = null, readsData = null
     try {
-      // Load all levels so every word in a story is clickable, not just current level
-      const vres = await supabase
+      // Load all levels so every word in a story is clickable, not just current
+      // level — and PAGE it. Unpaged this stopped at PostgREST's 1000-row cap,
+      // so on a track with more vocabulary than that the words past the cap were
+      // invisible to the reader: untappable in a story, and uncounted in the
+      // story's "% known", which silently understated how much a learner could
+      // read.
+      vocabData = await fetchPagedSafe(() => supabase
         .from('vocabulary').select('*')
         .eq('language', track.language).eq('system', track.system).eq('is_active', true)
-      vocabData = vres.data
-      const cres = await supabase
+        .order('id', { ascending: true }))
+      // A committed learner's card count passes 1000 too.
+      cardsData = await fetchPagedSafe(() => supabase
         .from('cards').select('vocab_id, is_easy, state, learned, due_at')
         .eq('user_id', session.user.id)
-      cardsData = cres.data
+        .order('vocab_id', { ascending: true }))
       // Reading is CUMULATIVE, the way review already is: every level the
       // learner has reached, not just the current one. Advancing a level adds to
       // the shelf instead of emptying it — and a level whose own stories don't

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { fetchPagedSafe } from './supabasePaging'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, getLevels } from './utils'
 import { languageList, availableLanguages } from './languageTheme'
@@ -232,13 +233,16 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
     if (!starting) return
     let cancelled = false
     const lang = LANGUAGES.find(l => l.code === starting)
-    supabase
+    // Paged for the same reason: unpaged, a level whose words all sat past the
+    // first 1000 rows would look unseeded and be offered as "Coming soon".
+    fetchPagedSafe(() => supabase
       .from('vocabulary')
       .select('level')
       .eq('language', lang.code)
       .eq('system', lang.system)
       .eq('is_active', true)
-      .then(({ data }) => {
+      .order('level', { ascending: true }))
+      .then((data) => {
         if (cancelled || !data) return
         setSeededData({ lang: lang.code, levels: new Set(data.map(r => r.level).filter(l => l != null)) })
       })
@@ -283,12 +287,15 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
       const lang = LANGUAGES.find(l => l.code === track.language)
       if (!lang) continue
 
-      const { data: vocab } = await supabase
+      // Paged: a whole track is past PostgREST's 1000-row cap, and an unpaged
+      // read here is what made every level show a fraction of its real size.
+      const vocab = await fetchPagedSafe(() => supabase
         .from('vocabulary')
         .select('id, level')
         .eq('language', track.language)
         .eq('system', track.system)
         .eq('is_active', true)
+        .order('id', { ascending: true }))
 
       progressMap[track.language] = {}
 
