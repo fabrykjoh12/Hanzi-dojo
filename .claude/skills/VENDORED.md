@@ -18,15 +18,23 @@ required by the MIT License.
   using-git-worktrees, using-superpowers, verification-before-completion,
   writing-plans, writing-skills
 
-### ECC (Everything Claude Code) — curated subset (21 skills)
+### ECC (Everything Claude Code) — curated subset (18 skills)
 - Source: https://github.com/affaan-m/ECC
 - Copyright (c) 2026 Affaan Mustafa — MIT License
 - Curated for this repo's stack (React 19 / Vite / Supabase / Vercel / PWA):
   react-patterns, react-performance, react-testing, frontend-patterns,
   frontend-a11y, accessibility, vite-patterns, design-system, postgres-patterns,
-  database-migrations, api-design, backend-patterns, error-handling, e2e-testing,
-  browser-qa, security-review, security-scan, coding-standards,
-  deployment-patterns, github-ops, documentation-lookup
+  database-migrations, error-handling, e2e-testing, browser-qa, security-review,
+  security-scan, deployment-patterns, github-ops, documentation-lookup
+
+**Removed** (were vendored, then dropped — don't re-add without a reason):
+- `api-design` — REST resource naming, status codes, versioning, rate limiting.
+  This app has no API; it is a client SPA talking straight to Supabase.
+- `backend-patterns` — Node/Express/Next.js API routes. There is no backend.
+- `coding-standards` — generic conventions that **contradict `CLAUDE.md` §6**.
+  It steers toward CSS modules, type annotations and extracted component trees;
+  this repo mandates inline style objects, plain JSX with no TypeScript, and flat
+  components. A skill that argues with the project rules costs more than it adds.
 
 ## Notes
 

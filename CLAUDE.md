@@ -221,6 +221,13 @@ npm run build    # the build is the source of truth
 
 `/ship` does this for you and refuses to commit if any step fails.
 
+Those three, plus read-only git (`status`, `diff`, `log`, `show`), are
+allow-listed in `.claude/settings.json` so they run without a prompt — they're
+safe, read-only or idempotent, and asking about them dozens of times a day is
+pure friction. **`git push`, `git commit`, the `node --env-file=.env.script`
+content scripts, and anything touching Supabase deliberately still prompt.**
+Those either publish something or spend money. Keep that line where it is.
+
 **CI runs the same three on every push and pull request**
 (`.github/workflows/ci.yml`), plus Playwright e2e (`.github/workflows/e2e.yml`).
 If it's red, it doesn't merge.
