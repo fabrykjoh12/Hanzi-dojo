@@ -8,6 +8,8 @@ export const CHARACTER_READINGS = {
     '李明': 'Lǐ Míng', '小花': 'Xiǎo Huā', '大力': 'Dà Lì',
     '小明': 'Xiǎo Míng', '小红': 'Xiǎo Hóng', '大毛': 'Dà Máo',
     '林雨晴': 'Lín Yǔqíng', '林小川': 'Lín Xiǎochuān', '小川': 'Xiǎochuān',
+    // Historical figure, retold in the HSK 3 folk-tale season 司马光砸缸.
+    '司马光': 'Sīmǎ Guāng',
   },
   // Japanese story protagonists (serial + legacy story sets). Role nouns
   // (おかあさん、おじいさん、せんせい…) are ordinary vocabulary and resolve

@@ -136,7 +136,6 @@
       "狮子",
       "熊猫",
       "猴子",
-      "树",
       "大象",
       "冰淇淋",
       "拍",
@@ -359,8 +358,7 @@
       "农民",
       "田",
       "田里",
-      "兔子",
-      "树"
+      "兔子"
     ]
   },
   {
@@ -378,8 +376,7 @@
       "农民",
       "田",
       "田里",
-      "兔子",
-      "树"
+      "兔子"
     ]
   },
   {
@@ -397,8 +394,7 @@
       "农民",
       "田",
       "田里",
-      "兔子",
-      "树"
+      "兔子"
     ]
   },
   {
@@ -416,8 +412,7 @@
       "农民",
       "田",
       "田里",
-      "兔子",
-      "树"
+      "兔子"
     ]
   },
   {
@@ -435,8 +430,282 @@
       "农民",
       "田",
       "田里",
-      "兔子",
-      "树"
+      "兔子"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 1,
+    "tier_min_words": 40,
+    "is_published": true,
+    "title": "1. 院子里的大水缸",
+    "english_summary": "Children play in a courtyard every afternoon. In one corner stands a water jar taller than any of them, and the grown-ups keep telling them to stay away from it.",
+    "content": "以前，有几个孩子常常在一个院子里玩。\n院子很大，里面有树，也有花。\n院子的旁边，有一个大水缸。\n水缸比孩子们还高。\n水缸里面都是水。\n大人常常告诉他们：\n妈妈：别到水缸那里去，那里很危险。\n孩子们都听见了，但是他们觉得水缸很有意思。\n这些孩子里面，有一个叫司马光。\n司马光很少说话。\n别的孩子跑来跑去的时候，他常常站在旁边看。\n小明：司马光，你怎么不过来玩？\n司马光：我在想事情。",
+    "english_content": "Long ago, several children often played in a courtyard.\nThe courtyard was large, with trees in it, and flowers too.\nBeside the courtyard stood a big water jar.\nThe jar was taller than the children.\nIt was full of water.\nThe grown-ups told them again and again:\nMother: Don’t go near that water jar. It is dangerous.\nThe children all heard, but they still found the jar interesting.\nAmong these children was one called Sima Guang.\nSima Guang rarely spoke.\nWhile the others ran about, he often stood to one side and watched.\nXiao Ming: Sima Guang, why don’t you come and play?\nSima Guang: I am thinking about something.",
+    "reach_words": [
+      "水缸",
+      "院子",
+      "石头",
+      "救"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 1,
+    "tier_min_words": 40,
+    "is_published": true,
+    "title": "2. 上去看一看",
+    "english_summary": "On a hot afternoon the children dare each other to climb up and look inside. Xiao Ming goes first, and from up on the rim the water looks a long way down.",
+    "content": "那是一个很热的下午。\n孩子们玩了很长时间，都很累了。\n一个孩子说，水缸里面一定不热。\n小明：我们上去看一看，好不好？\n别的孩子有点儿怕，但是也有点儿想去。\n司马光：大人说过，别到那里去。\n小明：只看一下，很快就下来。\n小明先爬了上去。\n他坐在水缸上面，往下看。\n水很黑，他看不到下面。\n小明：这里真高啊！\n下面的孩子们都笑了。\n就在这个时候，小明的手动了一下。",
+    "english_content": "It was a very hot afternoon.\nThe children had played a long time and were tired.\nOne child said: It must be cool inside that jar.\nXiao Ming: Let’s climb up and take a look, shall we?\nThe others were a little afraid, and a little tempted too.\nSima Guang: The grown-ups said not to go there.\nXiao Ming: Just one look. I’ll come straight down.\nXiao Ming climbed up first.\nHe sat on the rim of the jar and looked down.\nThe water was dark; he could not see the bottom.\nXiao Ming: It really is high up here!\nThe children below all laughed.\nAnd just then, Xiao Ming’s hand slipped.",
+    "reach_words": [
+      "水缸",
+      "院子",
+      "石头",
+      "救"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 1,
+    "tier_min_words": 40,
+    "is_published": true,
+    "title": "3. 水里面",
+    "english_summary": "Xiao Ming is in the water and cannot get out. The rim is far above his head, the others scatter to find an adult, and the sound from inside the jar keeps getting smaller.",
+    "content": "小明进了水里。\n水从水缸上面出来了一些。\n孩子们都不动了。\n过了一会儿，水缸里面有了声音。\n小明：救我！\n小明想上来，但是他上不来。\n他的手拿不住。\n水缸的上面离他的头很远。\n一个孩子开始哭。\n一个孩子叫了起来，来人啊！\n几个孩子往院子外面跑，要去找大人。\n但是大人在很远的地方。\n水缸里面的声音越来越小了。",
+    "english_content": "Xiao Ming went into the water.\nWater slopped over the top of the jar.\nThe children all stood frozen.\nAfter a moment, a sound came from inside the jar.\nXiao Ming: Help me!\nXiao Ming tried to get out, but he could not.\nHis hands could not hold on.\nThe rim was far above his head.\nOne child began to cry.\nOne child shouted: Somebody come!\nSeveral children ran out of the courtyard to fetch a grown-up.\nBut the grown-ups were far away.\nThe sound inside the jar was getting smaller and smaller.",
+    "reach_words": [
+      "水缸",
+      "院子",
+      "石头",
+      "救"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 1,
+    "tier_min_words": 40,
+    "is_published": true,
+    "title": "4. 司马光没有跑",
+    "english_summary": "Everyone runs for help. Sima Guang stays where he is and works out that help will come too late — so the problem is not how to get the boy out of the water.",
+    "content": "司马光没有跟着他们跑。\n他站在那里，看着水缸。\n他想，大人不会那么快来。\n他又想，小明在水里面，等不了那么久。\n大家：司马光，快跑啊！\n司马光：跑去找人，太慢了。\n孩子：那我们做什么？\n司马光：我们上不去，也拿不出来他。\n司马光：所以，不能想办法让人出来。\n孩子：那……\n司马光：要让水出来。\n他往院子里面看了一下。\n树的旁边，有几块石头。",
+    "english_content": "Sima Guang did not run with the others.\nHe stood where he was, looking at the jar.\nHe thought: the grown-ups will not come that fast.\nAnd then: Xiao Ming is in the water. He cannot wait that long.\nThe others called to him: Sima Guang, run!\nSima Guang: Running for help is too slow.\nA child: Then what do we do?\nSima Guang: We can’t get up there, and we can’t pull him out.\nSima Guang: So the answer is not getting the person out.\nA child: Then…\nSima Guang: We have to get the water out.\nHe looked around the courtyard.\nBeside the tree lay several stones.",
+    "reach_words": [
+      "水缸",
+      "院子",
+      "石头",
+      "救"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 1,
+    "tier_min_words": 40,
+    "is_published": true,
+    "title": "5. 水出来了",
+    "english_summary": "He carries over the biggest stone he can lift. What he does with it is not what anyone else would have thought of, and afterwards a grown-up wants to know who broke the jar.",
+    "content": "司马光走过去，拿了一块石头。\n石头很大，他两只手拿着。\n他慢慢地走回水缸旁边。\n别的孩子看着他，谁也不说话。\n司马光站好，用力把石头打在水缸上。\n第一下，水缸没有坏。\n他又打了一下。\n水缸破了。\n水都出来了。\n水和小明一起到了地上。\n小明在那里，动了一下。\n他还活着。\n大人们跑进院子的时候，孩子们正坐在地上。\n大人：这个水缸，是谁打破的？\n孩子们都看着司马光。\n司马光：是我。人比水缸重要。",
+    "english_content": "Sima Guang walked over and picked up a stone.\nIt was big; he held it with both hands.\nSlowly he carried it back to the jar.\nThe other children watched him. Nobody said a word.\nHe set his feet and struck the jar with the stone as hard as he could.\nThe first blow did not break it.\nHe struck again.\nThe jar broke open.\nAll the water came out.\nThe water carried Xiao Ming out onto the ground.\nXiao Ming lay there, and moved.\nHe was alive.\nWhen the grown-ups came running in, the children were sitting on the ground.\nA grown-up: This water jar — who broke it?\nAll the children looked at Sima Guang.\nSima Guang: I did. A person matters more than a jar.",
+    "reach_words": [
+      "水缸",
+      "院子",
+      "石头",
+      "救"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 2,
+    "tier_min_words": 110,
+    "is_published": true,
+    "title": "1. 长得太慢了",
+    "english_summary": "A farmer plants seedlings and cannot bear how slowly they grow. Every morning he goes to look, and every morning they are the same height as the day before.",
+    "content": "以前有一个农民，他在田里种了很多秧苗。\n秧苗出来的时候，只有一点点高。\n农民每天早上都去田里看它们。\n农民：长高一点儿了吗？\n但是秧苗一天一天，还是那么高。\n农民：为什么这么慢？\n旁边的田里，别人的秧苗也是这样。\n但是农民不想等。\n他晚上睡不着，想着这件事。\n农民：一定有办法让它们快一点儿。",
+    "english_content": "Long ago there was a farmer who planted many seedlings in his field.\nWhen the seedlings came up, they were only a little bit tall.\nEvery morning the farmer went to the field to look at them.\nFarmer: Have you grown a bit taller?\nBut day after day the seedlings stayed the same height.\nFarmer: Why is it so slow?\nIn the fields beside his, other people’s seedlings were the same.\nBut the farmer did not want to wait.\nAt night he could not sleep, thinking about it.\nFarmer: There must be a way to make them faster.",
+    "reach_words": [
+      "秧苗",
+      "田里",
+      "农民",
+      "田",
+      "拉"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 2,
+    "tier_min_words": 110,
+    "is_published": true,
+    "title": "2. 一个办法",
+    "english_summary": "On a hot afternoon he works out a way to speed things up: if the seedlings need to be taller, he will make them taller himself.",
+    "content": "第二天中午，太热了。\n农民坐在田旁边，看着他的秧苗。\n他想到了一个办法。\n农民：秧苗要高，我就把它们往上拉一点儿。\n他走进田里，拿着第一个秧苗，往上拉一下。\n秧苗真的高了一点儿。\n农民很高兴。\n他一个一个地拉，从早上到晚上。",
+    "english_content": "The next day at noon, it was very hot.\nThe farmer sat by the field, looking at his seedlings.\nThen he thought of a way.\nFarmer: If the seedlings need to be tall, I will pull them up a bit.\nHe walked into the field, took the first seedling, and pulled it up a little.\nThe seedling really was taller.\nThe farmer was delighted.\nHe pulled them one by one, from morning until night.",
+    "reach_words": [
+      "秧苗",
+      "田里",
+      "农民",
+      "田",
+      "拉"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 2,
+    "tier_min_words": 110,
+    "is_published": true,
+    "title": "3. 一天的工作",
+    "english_summary": "He pulls up every seedling in the field, one by one, from morning until night. He is exhausted, and very pleased with himself.",
+    "content": "晚上的时候，他做完了。\n农民累得走不动了。\n但是他看着田，觉得非常好。\n田里的秧苗，都比早上高了。\n他慢慢地走回家。\n儿子：爸爸，你今天怎么这么累？\n农民：我做了一件大事。\n农民：我帮田里的秧苗长高了！",
+    "english_content": "By evening, he was done.\nThe farmer was too tired to walk.\nBut he looked at the field and felt very good.\nThe seedlings in the field were all taller than they had been that morning.\nHe walked slowly home.\nSon: Dad, why are you so tired today?\nFarmer: I did a great thing.\nFarmer: I helped the seedlings in the field grow taller!",
+    "reach_words": [
+      "秧苗",
+      "田里",
+      "农民",
+      "田",
+      "拉"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 2,
+    "tier_min_words": 110,
+    "is_published": true,
+    "title": "4. 儿子往田里跑",
+    "english_summary": "He tells his son about the great thing he did. His son does not say a word — he runs straight out of the door towards the field.",
+    "content": "儿子听了，站了起来。\n儿子：你做了什么？\n农民：我把它们都往上拉一点儿。\n儿子没有说话，往门外面跑。\n农民：你去哪儿？\n儿子跑到田里的时候，已经很晚了。\n他看了一下，就不动了。\n田里的秧苗，都不好了。\n它们的下面已经离开了地。",
+    "english_content": "His son listened, and stood up.\nSon: You did what?\nFarmer: I pulled them all up a little.\nHis son said nothing and ran out of the door.\nFarmer: Where are you going?\nBy the time his son reached the field, it was already late.\nHe looked, and then he did not move.\nThe seedlings in the field were all ruined.\nTheir roots had already come away from the ground.",
+    "reach_words": [
+      "秧苗",
+      "田里",
+      "农民",
+      "田",
+      "拉"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 2,
+    "tier_min_words": 110,
+    "is_published": true,
+    "title": "5. 第二天早上",
+    "english_summary": "By morning there is nothing to argue about. The farmer sits by his field and looks at the neighbours’ fields, still growing slowly.",
+    "content": "第二天早上，农民也到了田里。\n他看着那些秧苗，很久没有说话。\n儿子：它们要慢慢地长。\n农民：我只是想让它们快一点儿。\n儿子：但是你没有让它们快，你让它们没有了。\n农民坐在田旁边。\n他看了看旁边那些田。\n别人的秧苗还在慢慢地长。",
+    "english_content": "The next morning, the farmer came to the field too.\nHe looked at the seedlings and said nothing for a long time.\nSon: They have to grow slowly.\nFarmer: I only wanted them to be faster.\nSon: But you did not make them faster. You made them gone.\nThe farmer sat down beside the field.\nHe looked over at the fields beside his own.\nOther people’s seedlings were still growing slowly.",
+    "reach_words": [
+      "秧苗",
+      "田里",
+      "农民",
+      "田",
+      "拉"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 3,
+    "tier_min_words": 220,
+    "is_published": true,
+    "title": "1. 田里的田螺",
+    "english_summary": "A farmer lives alone and comes home to a cold, empty house every night. One afternoon he finds a river snail in his field, bigger than any he has seen, and takes it home.",
+    "content": "以前，有一个农民，一个人住。\n他每天早上去田里工作，晚上回家。\n家里没有别人，也没有人做饭。\n他常常很累，回来就睡。\n有一天下午，他在田里看见了一个田螺。\n这个田螺很大，比他的手还大。\n农民：这么大的田螺，我没有见过。\n他把田螺拿回了家，让它住在水缸里面。\n田螺在水里，没有动。\n农民看了它一会儿，就去睡了。",
+    "english_content": "Long ago there was a farmer who lived alone.\nEvery morning he went to the field to work, and came home at night.\nThere was nobody else at home, and nobody to cook.\nHe was often tired, and went to sleep as soon as he got back.\nOne afternoon, he saw a river snail in his field.\nThis snail was big — bigger than his hand.\nFarmer: I have never seen a snail this big.\nHe took the snail home and let it live in the water jar.\nThe snail sat in the water and did not move.\nThe farmer looked at it for a while, then went to sleep.",
+    "reach_words": [
+      "田螺",
+      "田里",
+      "农民",
+      "水缸"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 3,
+    "tier_min_words": 220,
+    "is_published": true,
+    "title": "2. 桌子上的饭",
+    "english_summary": "The next evening he opens his door and stops. There is rice on the table, and vegetables, and they are still hot. Nobody in the village admits to it.",
+    "content": "第二天，农民去田里工作。\n晚上回来的时候，天已经很晚了。\n他打开门，就不动了。\n桌子上有饭，还有菜。\n菜是热的。\n农民：这是谁做的？\n他往外面看，外面没有人。\n他问了旁边的人。\n朋友：不是我。\n朋友：我们今天都在自己家里。",
+    "english_content": "The next day, the farmer went to the field to work.\nWhen he came back it was already late.\nHe opened the door, and stopped.\nThere was rice on the table, and vegetables.\nThe food was hot.\nFarmer: Who made this?\nHe looked outside. There was nobody there.\nHe asked the people next door.\nFriend: It wasn’t me.\nFriend: We were all in our own homes today.",
+    "reach_words": [
+      "田螺",
+      "田里",
+      "农民",
+      "水缸"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 3,
+    "tier_min_words": 220,
+    "is_published": true,
+    "title": "3. 每天都是这样",
+    "english_summary": "It happens the next day, and the next. Every evening there is a hot meal waiting, and after many days the farmer decides he has to know who is doing it.",
+    "content": "农民回到家，看着桌子上的饭。\n他想吃东西，但是他有点儿怕。\n最后他还是吃了。\n饭非常好吃。\n第三天，还是这样。\n第四天，第五天，也是这样。\n每天晚上回来，桌子上都有热饭热菜。\n农民想了很多天。\n农民：我一定要知道是谁。\n这天早上，他也出了门。\n但是他没有去田里。",
+    "english_content": "The farmer went back in and looked at the food on the table.\nHe wanted to eat, but he was a little afraid.\nIn the end he ate it anyway.\nThe food was very good.\nOn the third day, the same thing.\nOn the fourth day, and the fifth, the same.\nEvery evening he came home to hot rice and hot vegetables.\nThe farmer thought about it for many days.\nFarmer: I have to know who it is.\nThat morning, he went out as usual.\nBut he did not go to the field.",
+    "reach_words": [
+      "田螺",
+      "田里",
+      "农民",
+      "水缸"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 3,
+    "tier_min_words": 220,
+    "is_published": true,
+    "title": "4. 他没有去田里",
+    "english_summary": "He leaves in the morning as usual, then doubles back and watches his own house from outside the door.",
+    "content": "他在外面等了一会儿，就慢慢地走了回来。\n他站在门外面，从门口往里面看。\n一开始，家里什么声音也没有。\n过了一会儿，水缸那里有了声音。\n农民往那里看。\n水缸里面出来了一个姑娘。\n姑娘从水缸里出来，走到桌子旁边。\n她开始做饭。\n农民在门外面看着，什么也说不出来。\n过了很久，他慢慢地打开了门。",
+    "english_content": "He waited outside a while, then walked slowly back.\nHe stood outside the door and looked in.\nAt first there was no sound in the house at all.\nAfter a while, there was a sound from the water jar.\nThe farmer looked over.\nOut of the water jar came a girl.\nShe climbed out and walked to the table.\nShe began to cook.\nThe farmer watched from outside the door and could not say anything.\nAfter a long time, he slowly opened the door.",
+    "reach_words": [
+      "田螺",
+      "田里",
+      "农民",
+      "水缸"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 3,
+    "tier_min_words": 220,
+    "is_published": true,
+    "title": "5. 你没有吃我",
+    "english_summary": "What comes out of the water jar is not what he expected, and the answer she gives him is simpler than he thought.",
+    "content": "姑娘听见了，回过头来。\n她看见农民，站在那里不动了。\n农民：是你每天给我做饭吗？\n姑娘：是我。\n姑娘：你把我从田里拿回来，让我住在水里。\n姑娘：你没有吃我。\n农民不知道要说什么。\n农民：我一个人住了很久。\n农民：谢谢你。\n姑娘笑了。\n那天晚上，他们一起吃了饭。",
+    "english_content": "The girl heard him and turned around.\nShe saw the farmer, and stood quite still.\nFarmer: Are you the one who cooks for me every day?\nGirl: Yes.\nGirl: You brought me back from the field and let me live in the water.\nGirl: You did not eat me.\nThe farmer did not know what to say.\nFarmer: I have lived alone a long time.\nFarmer: Thank you.\nThe girl smiled.\nThat night, they ate together.",
+    "reach_words": [
+      "田螺",
+      "田里",
+      "农民",
+      "水缸"
     ]
   }
 ]

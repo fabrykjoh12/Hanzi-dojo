@@ -54,6 +54,26 @@ function vocabMapFor(key) {
   return map
 }
 
+// Words every Chinese season may use without spending its own reach budget.
+//
+// HSK 3.0 is a WORD list, and a compound-heavy one: it teaches 黑色 but not 黑,
+// 但是 but not 可是, and through level 3 — 954 words — it contains no 又, no 先,
+// no 树, no 地方, no 声音. Writing narrative prose without "again", "first" or
+// "but" is what pushes a graded reader toward the flat, clause-free register
+// these seasons exist to get away from.
+//
+// They are exempt from the per-story cap rather than added to `vocabulary`,
+// because the curriculum decides what a learner gets flashcards for and a story
+// should not quietly change that. They are the SAME small set across the whole
+// corpus, so a reader meets them again and again instead of meeting a different
+// unknown every line, and each one resolves to a useful gloss in CC-CEDICT
+// (checked by hand — 深, 重, 心里 and 一声 are deliberately absent, their first
+// dictionary sense is a variant stub or the wrong reading).
+const CN_COMMON_REACH = new Set([
+  '又', '先', '可是', '地方', '声音', '黑', '树', '怕', '爬', '常常',
+  '一定', '以前', '掉', '重要', '办法', '越来越', '哭', '危险', '慢慢', '用力',
+])
+
 // Character bibles for the recurring authored serials, keyed by language. The
 // known-speaker check is a typo guard for a *fixed* cast (the Japanese serial's
 // characters plus the chorus label みんな, "everyone", for group lines). Lanes
@@ -71,14 +91,15 @@ function vocabMapFor(key) {
 // absent from CHARACTER_READINGS, and allow-listed separately as speaker
 // labels. Extend this list (not CHARACTER_READINGS) when a new season needs a
 // role-noun speaker; extend CHARACTER_READINGS when it needs a real name.
+
 // Folk-tale seasons speak as roles and as things (the sun, a wall) rather than
 // as named people, so those labels are allow-listed here rather than added to
 // CHARACTER_READINGS — they are not personal names and must not get the "Name"
-// popup. A label that is also a declared reach word resolves through the
-// reference dictionary like any other out-of-pool word.
+// popup. A label that is also a reach word resolves through the reference
+// dictionary like any other out-of-pool word.
 const CN_ROLE_SPEAKERS = [
   '妈妈', '爸爸', '朋友', '老师', '服务员', '店员', '医生', '大家',
-  '女儿', '儿子', '天', '云彩', '风', '墙壁', '农民',
+  '女儿', '儿子', '天', '云彩', '风', '墙壁', '农民', '孩子', '大人', '姑娘',
 ]
 const KNOWN_SPEAKERS = {
   japanese: new Set(['たかし', 'はな', 'おかあさん', 'おじいさん', 'せんせい', 'みせのひと', 'みんな']),
@@ -144,6 +165,21 @@ function unmatchedTokens(text, matcher, names, particles, segmenter) {
   }
   return out
 }
+
+// A season is appended by a script, so re-running one on an unclean checkout
+// silently duplicates its chapters — the reader would then show the same
+// chapter twice in a row, and `authored-insert` would write both. Cheap guard.
+describe('the authored set has no duplicate chapters', () => {
+  it('every (language, system, level, title) appears once', () => {
+    const seen = new Map()
+    for (const s of stories) {
+      const key = [s.language, s.system, s.level, s.title].join('|')
+      seen.set(key, (seen.get(key) || 0) + 1)
+    }
+    const dupes = [...seen].filter(([, n]) => n > 1).map(([k]) => k)
+    expect(dupes, 'duplicated: ' + dupes.join(', ')).toEqual([])
+  })
+})
 
 describe('authored stories validate against the level vocabulary', () => {
   for (const s of stories) {
@@ -221,8 +257,16 @@ describe('authored stories validate against the level vocabulary', () => {
       // needs that many nouns, and they repeat within the story. Prose chapters
       // should sit far below it — 老鼠找丈夫 runs on 4.
       const declaredReach = new Set(s.reach_words || [])
+      const allowedReach = s.language === 'chinese'
+        ? new Set([...declaredReach, ...CN_COMMON_REACH])
+        : declaredReach
       it('declared reach words stay few (≤ 8) and are real words', () => {
+        // Only the story's OWN reach words count against the cap; the shared
+        // common set is corpus-wide and deliberately uncapped.
         expect(declaredReach.size, 'too many reach words: ' + [...declaredReach].join('、')).toBeLessThanOrEqual(8)
+        for (const w of declaredReach) {
+          expect(CN_COMMON_REACH.has(w), 'already a common reach word, drop it: ' + w).toBe(false)
+        }
         for (const w of declaredReach) {
           expect(w.trim(), 'blank reach word').toBeTruthy()
           // A reach word that IS in the pool is a mistake in the declaration,
@@ -236,7 +280,7 @@ describe('authored stories validate against the level vocabulary', () => {
         for (const line of lines) {
           const { text } = splitSpeaker(line)
           for (const t of unmatchedTokens(text, matcher, names, particles, segmenter)) {
-            if (hasKanjiOrKatakana(t) && !declaredReach.has(t)) bad.push(t + ' (in: ' + text + ')')
+            if (hasKanjiOrKatakana(t) && !allowedReach.has(t)) bad.push(t + ' (in: ' + text + ')')
           }
         }
         expect(bad, 'unmatched kanji/katakana: ' + bad.join(' | ')).toEqual([])
