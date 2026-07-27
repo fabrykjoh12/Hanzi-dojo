@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cleanHskMeaning, hskEntryToRow, buildLevelRows, isDegenerateMeaning } from './hskBuild'
+import { cleanHskMeaning, hskEntryToRow, buildLevelRows, isDegenerateMeaning, TAG_SETS } from './hskBuild'
 
 const entry = (simplified, level, frequency, pinyin, meanings) => ({
   simplified, level, frequency, forms: [{ transcriptions: { pinyin }, meanings }],
@@ -44,16 +44,20 @@ describe('hskEntryToRow', () => {
 })
 
 describe('buildLevelRows', () => {
+  // Entries carry every band assignment the real dataset does. 中文 is level 4
+  // under the 2021 draft but level 3 under the 2025 syllabus — exactly the kind
+  // of word that moves between frameworks, and the reason the tag set has to be
+  // chosen deliberately rather than defaulted into.
   const dataset = [
-    entry('丁', ['new-4'], 9000, 'dīng', ['rare word']),
-    entry('阿姨', ['new-4'], 4355, 'ā yí', ['maternal aunt', 'nursemaid']),
-    entry('中文', ['new-3'], 200, 'zhōng wén', ['Chinese language']),   // wrong level → excluded
-    entry('医生', ['new-4'], 800, 'yī shēng', ['doctor']),
+    entry('丁', ['newest-4', 'new-4'], 9000, 'dīng', ['rare word']),
+    entry('阿姨', ['newest-4', 'new-4'], 4355, 'ā yí', ['maternal aunt', 'nursemaid']),
+    entry('中文', ['newest-3', 'new-4'], 200, 'zhōng wén', ['Chinese language']),
+    entry('医生', ['newest-4', 'new-4'], 800, 'yī shēng', ['doctor']),
   ]
 
   it('selects only the target level, ordered by frequency (most common first)', () => {
     const rows = buildLevelRows(dataset, 4)
-    expect(rows.map(r => r.word)).toEqual(['医生', '阿姨', '丁']) // 800 < 4355 < 9000; 中文 (new-3) excluded
+    expect(rows.map(r => r.word)).toEqual(['医生', '阿姨', '丁']) // 800 < 4355 < 9000; 中文 is newest-3, so excluded
   })
   it('caps the count', () => {
     expect(buildLevelRows(dataset, 4, { cap: 2 }).map(r => r.word)).toEqual(['医生', '阿姨'])
@@ -61,5 +65,15 @@ describe('buildLevelRows', () => {
   it('excludes words already in the deck (no cross-level duplicates)', () => {
     const rows = buildLevelRows(dataset, 4, { exclude: new Set(['医生']) })
     expect(rows.map(r => r.word)).toEqual(['阿姨', '丁'])
+  })
+  it('defaults to the 2025 official syllabus, not the 2021 draft', () => {
+    // Building against the draft pulls 中文 into level 4; the syllabus does not.
+    expect(buildLevelRows(dataset, 4).map(r => r.word)).not.toContain('中文')
+    const draft = buildLevelRows(dataset, 4, { tagPrefix: TAG_SETS.draft2021 })
+    expect(draft.map(r => r.word)).toContain('中文')
+  })
+  it('can still build an earlier framework on request', () => {
+    expect(buildLevelRows(dataset, 3, { tagPrefix: TAG_SETS.draft2021 })).toEqual([])
+    expect(buildLevelRows(dataset, 3).map(r => r.word)).toEqual(['中文'])
   })
 })

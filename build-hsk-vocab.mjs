@@ -14,7 +14,7 @@
 //   ...and 4, 5, 6.
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync, writeFileSync } from 'node:fs'
-import { buildLevelRows } from './src/hskBuild.js'
+import { buildLevelRows, TAG_SETS } from './src/hskBuild.js'
 
 const args = process.argv.slice(2)
 function arg(name, def) {
@@ -23,6 +23,13 @@ function arg(name, def) {
 }
 const source = arg('source', null)
 const cap = parseInt(arg('cap', '500'), 10)
+// Which band assignment to build against. Defaults to the 2025 official
+// syllabus; `draft2021` reproduces the superseded framework, `old` is HSK 2.0.
+const tagSet = arg('tagset', 'official2025')
+if (!TAG_SETS[tagSet]) {
+  console.error('Unknown --tagset ' + tagSet + '. One of: ' + Object.keys(TAG_SETS).join(', '))
+  process.exit(1)
+}
 const outDir = arg('out', 'data')
 const [loStr, hiStr] = arg('levels', '3-6').split('-')
 const lo = parseInt(loStr, 10)
@@ -50,11 +57,11 @@ async function existingWords() {
 
 async function main() {
   const dataset = JSON.parse(readFileSync(source, 'utf8'))
-  console.log(`Loaded ${dataset.length} HSK entries from ${source}. Cap ${cap}/level, levels ${lo}-${hi}.`)
+  console.log(`Loaded ${dataset.length} HSK entries from ${source}. Cap ${cap}/level, levels ${lo}-${hi}, tagset ${tagSet} (${TAG_SETS[tagSet]}N).`)
   const exclude = await existingWords()
   console.log(`Excluding ${exclude.size} words already in the deck.`)
   for (let level = lo; level <= hi; level += 1) {
-    const rows = buildLevelRows(dataset, level, { cap, exclude })
+    const rows = buildLevelRows(dataset, level, { cap, exclude, tagPrefix: TAG_SETS[tagSet] })
     // Accumulate so a word can't reappear at a higher level within this run.
     for (const r of rows) exclude.add(r.word)
     const path = `${outDir}/hsk${level}.json`
