@@ -11,6 +11,7 @@ import { cleanMeaning } from './cleanMeaning'
 import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, matchName, JP_PARTICLES, readingVisibleFor, isDueSoon, buildVocabMatcher, matchVocabAt, boundaryAfterSkip, isPlaceWord } from './storyReading'
 import { minDwellMs } from './readAlong'
 import { glossaryLookup } from './grammarGlossary'
+import { getDictEntryByWord, addDictEntryToDeck } from './dictSearch'
 import { prefsGet, prefsSet } from './offline'
 import { FIRST_MISSION_READER_HINT, firstMissionCompletion } from './firstMission'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
@@ -37,6 +38,19 @@ const HILITE = 'rgba(217, 164, 62, 0.32)'
 const PROPER_NOUN_COLOR = '#2F9E6D'
 
 const SPEAKER_PALETTE = ['#B83A24', '#2E6FB8', '#2F9E6D', '#C2680E', '#7C5CD0', '#B83A7A']
+
+// Reference-dictionary fallback for words outside the level's vocabulary.
+// CC-CEDICT is Chinese-only, so the lookup is gated on the track's language.
+// Module-scoped so re-opening the same word (or the same word in another story
+// this session) is instant and costs no round trip; `null` is cached too, so a
+// genuine miss isn't retried on every tap. Bounded, since a reading session can
+// touch a lot of words and this never gets a chance to be evicted otherwise.
+const DICT_CACHE = new Map()
+const DICT_CACHE_MAX = 400
+function dictCacheSet(word, entry) {
+  if (DICT_CACHE.size >= DICT_CACHE_MAX) DICT_CACHE.delete(DICT_CACHE.keys().next().value)
+  DICT_CACHE.set(word, entry)
+}
 
 // Durable reader preferences (furigana mode, Learning Lens, serif). Stored in
 // the prefs store so a reader's chosen scaffolding survives reloads without a
@@ -281,6 +295,12 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
 
 export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, track, onBack, onHome, nextStory, nextTierUnlock = null, onNextStory, isRead, onMarkRead, todayWords = [], firstMission = false, onPickReaderMode }) {
   const [selected, setSelected] = useState(null)
+  // Reference-dictionary lookup for a tapped word that isn't in the level's
+  // vocabulary and isn't a grammar fragment. Results live in DICT_CACHE; this
+  // counter just re-renders the sheet once a fetch lands.
+  const [dictTick, setDictTick] = useState(0)
+  const [dictSaved, setDictSaved] = useState(() => new Set())
+  const [dictSaving, setDictSaving] = useState(false)
   const [furiganaMode, setFuriganaMode] = useState(DEFAULT_PREFS.furiganaMode)
   const [lens, setLens] = useState(DEFAULT_PREFS.lens)
   // Per-line reveal: which line indices currently show their English
@@ -728,6 +748,56 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   // fragment gets a real explanation instead of the generic fallback line.
   const selGrammar = isPlain ? glossaryLookup(track.language, sel.text) : null
   const selInDeck = sel && sel.vocab ? Boolean(userCards[sel.vocab.id]) : false
+
+  // Look the word up in the reference dictionary when nothing else explains it:
+  // not vocabulary, not a name, not a grammar fragment. This is what turns "a
+  // word beyond this level's list" into a real definition, which in turn is what
+  // lets a story reach for a vivid word without creating a dead end.
+  //
+  // Deliberately does NOT feed readability or word status — a dictionary word is
+  // still an unknown word, and "% known" must keep counting only the level's
+  // vocabulary.
+  const dictWord = isPlain && !selGrammar && track.language === 'chinese' ? sel.text : null
+  // The cache IS the store: a resolved word renders straight out of it, and the
+  // fetch only bumps `dictTick` to re-render. That keeps setState out of the
+  // effect body (no cascading renders) and means re-tapping a word already
+  // looked up this session paints instantly, with no loading flash.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- dictTick is the cache-write signal, by design
+  const dictEntry = useMemo(() => (dictWord ? DICT_CACHE.get(dictWord) || null : null), [dictWord, dictTick])
+  const dictResolved = Boolean(dictWord) && DICT_CACHE.has(dictWord)
+  // Offline (or a reader opened from the offline snapshot) shows the existing
+  // fallback copy rather than spinning on a request that can't succeed.
+  const dictLoading = Boolean(dictWord) && !dictResolved && isOnline()
+  useEffect(() => {
+    if (!dictWord || DICT_CACHE.has(dictWord) || !isOnline()) return
+    let cancelled = false
+    getDictEntryByWord(supabase, dictWord)
+      .then(entry => { dictCacheSet(dictWord, entry || null) })
+      .catch(() => { dictCacheSet(dictWord, null) })
+      .finally(() => { if (!cancelled) setDictTick(t => t + 1) })
+    return () => { cancelled = true }
+  }, [dictWord])
+
+  const dictDefs = dictEntry && Array.isArray(dictEntry.definitions) ? dictEntry.definitions : []
+  const dictInDeck = Boolean(dictEntry && dictSaved.has(dictEntry.id))
+
+  // Saving a dictionary word goes through the same RPC the Dictionary screen
+  // uses: it creates (or reuses) a level-less vocabulary row for the track and
+  // inserts the card. Those rows carry no recorded audio, so the flashcard falls
+  // back to speech synthesis — expected, not a failure.
+  const addDictToDeck = async () => {
+    if (!dictEntry || dictInDeck || dictSaving) return
+    setDictSaving(true)
+    try {
+      await addDictEntryToDeck(supabase, dictEntry.id, track.language, track.system)
+      setDictSaved(prev => new Set(prev).add(dictEntry.id))
+      toast({ title: 'Saved to your deck', body: dictEntry.simplified, accent })
+    } catch {
+      toast({ title: 'Couldn’t save that word', accent })
+    } finally {
+      setDictSaving(false)
+    }
+  }
   // Context chips in the lookup sheet, all from data already in memory (no query):
   // how often the word appears here, whether it was studied today, and whether a
   // review is coming up soon.
@@ -1120,7 +1190,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                     {selWord}
                   </span>
                   {(() => {
-                    const selReading = isName ? sel.name.reading : (selGrammar ? selGrammar.reading : (sel.vocab ? sel.vocab.reading : null))
+                    const selReading = isName ? sel.name.reading : (selGrammar ? selGrammar.reading : (sel.vocab ? sel.vocab.reading : (dictEntry ? dictEntry.pinyin : null)))
                     // Kana vocab stores its reading as itself — repeating the
                     // word right next to it is noise, so only show a reading
                     // that adds information.
@@ -1148,7 +1218,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                   }}>
                     {isName && <UserRound size={12} strokeWidth={2.2} color={PROPER_NOUN_COLOR} />}
                     {isSelPlace && <MapPin size={12} strokeWidth={2.2} color={PROPER_NOUN_COLOR} />}
-                    {isName ? 'Name' : (isSelPlace ? 'Place' : (selGrammar ? 'Grammar' : 'Word'))}
+                    {isName ? 'Name' : (isSelPlace ? 'Place' : (selGrammar ? 'Grammar' : (dictEntry ? 'Dictionary' : 'Word')))}
                   </span>
                 )}
               </div>
@@ -1157,6 +1227,14 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                   <button onClick={() => !selInDeck && addToDeck(sel.vocab)} aria-label={selInDeck ? 'In your deck' : 'Add to deck'} title={selInDeck ? 'In your deck' : 'Add to deck'}
                     style={{ background: 'none', border: 'none', cursor: selInDeck ? 'default' : 'pointer', minWidth: '40px', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Bookmark size={21} strokeWidth={2} color={selInDeck ? accent : MUTED} fill={selInDeck ? accent : 'none'} />
+                  </button>
+                )}
+                {/* A dictionary word is savable too — same gesture, same icon, so
+                    "tap a word, keep a word" holds for every word in the story. */}
+                {!sel.vocab && dictEntry && (
+                  <button onClick={addDictToDeck} disabled={dictInDeck || dictSaving} aria-label={dictInDeck ? 'In your deck' : 'Add to deck'} title={dictInDeck ? 'In your deck' : 'Add to deck'}
+                    style={{ background: 'none', border: 'none', cursor: (dictInDeck || dictSaving) ? 'default' : 'pointer', opacity: dictSaving ? 0.5 : 1, minWidth: '40px', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Bookmark size={21} strokeWidth={2} color={dictInDeck ? accent : MUTED} fill={dictInDeck ? accent : 'none'} />
                   </button>
                 )}
                 {/* Always pronounceable: recorded vocab audio when we have it, else speech synthesis. */}
@@ -1179,7 +1257,11 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                 : (isPlain
                     ? (selGrammar
                         ? selGrammar.gloss
-                        : 'A word beyond this level’s list — tap the speaker to hear it, or open the sentence translation below.')
+                        : (dictDefs.length > 0
+                            ? dictDefs.slice(0, 3).join('; ')
+                            : (dictLoading
+                                ? 'Looking it up…'
+                                : 'A word beyond this level’s list — tap the speaker to hear it, or open the sentence translation below.')))
                     : cleanMeaning(sel.vocab.meaning))}
             </div>
 
