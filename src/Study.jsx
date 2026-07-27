@@ -1094,9 +1094,12 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           aria-live="polite"
           style={{
             width: '100%', maxWidth: '680px', minHeight: '420px',
-            background: 'linear-gradient(180deg, var(--surface) 0%, var(--surface) 100%)',
-            border: '1px solid ' + stateColor + '30', borderRadius: '26px',
-            boxShadow: '0 24px 70px rgba(24,24,27,0.08), inset 0 3px 0 0 ' + stateColor,
+            // The tint mixes INTO the themed surface (not a flat hex over it),
+            // so it reads correctly in both light and dark mode instead of
+            // staying pastel-light regardless of theme.
+            background: 'color-mix(in srgb, ' + stateColor + ' 10%, var(--surface))',
+            border: '1px solid ' + stateColor + '45', borderRadius: '26px',
+            boxShadow: '0 24px 70px rgba(24,24,27,0.08)',
             display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'space-between',
             cursor: flipped ? 'default' : 'pointer', padding: '24px', position: 'relative',
             perspective: '1200px',
