@@ -84,6 +84,41 @@ export function lookupChip(kind, { grammar = null, dictEntry = null } = {}) {
   return null
 }
 
+// Can this tapped word be kept — and if so, what does the bookmark look like?
+//
+// "Tap a word, keep a word" has to hold in every reader, not just the classic
+// one. A word beyond the level's list has no vocabulary row to add, but if the
+// reference dictionary resolved it there IS something to save: the dict entry,
+// which the RPC turns into a level-less vocabulary row plus a card.
+//
+// Returns null — meaning "draw no bookmark at all" — rather than a disabled
+// button whenever saving isn't a real option:
+//   - the token is vocabulary, a name or a place (the sheet's own add-to-deck
+//     already covers vocabulary; proper nouns aren't words to study),
+//   - the grammar glossary answered, so no dictionary entry was ever fetched,
+//   - the dictionary hasn't resolved (still loading, offline, or a genuine miss),
+//   - the caller passed no save handler (the analyzer and the dictionary screen
+//     render this sheet too, and neither wires one up).
+export function dictSaveAction(selected, kind, { dictEntry = null, grammar = null, canSave = false, savedIds = null, saving = false } = {}) {
+  if (!selected || kind !== 'plain') return null
+  if (grammar) return null
+  if (!dictEntry || !dictEntry.id) return null
+  if (!canSave) return null
+  const inDeck = Boolean(savedIds && savedIds.has(dictEntry.id))
+  // Busy is only ever "this save is in flight" — a word already in the deck
+  // reads as saved, never as pending, even while another save is running.
+  const busy = Boolean(saving) && !inDeck
+  return {
+    entryId: dictEntry.id,
+    inDeck,
+    busy,
+    // Idempotent by construction: once it's in the deck the button stops firing,
+    // and a save in flight can't be fired again.
+    disabled: inDeck || busy,
+    label: inDeck ? 'In your deck' : 'Add to deck',
+  }
+}
+
 export const PLAIN_FALLBACK = 'A word beyond this level’s list — tap the speaker to hear it, or read the sentence below.'
 
 // The explanation paragraph.

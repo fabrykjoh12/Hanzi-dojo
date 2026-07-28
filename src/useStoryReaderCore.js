@@ -12,6 +12,8 @@ import { ensureAudio } from './audioCache'
 import { isOnline } from './useOnline'
 import { enqueueStoryRead } from './syncQueue'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
+import { addDictEntryToDeck } from './dictSearch'
+import { toast } from './toast'
 
 // The classic reader's prefs object. Shared verbatim so a reading mode picked in
 // one reader is the mode every reader opens with.
@@ -65,6 +67,13 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   const timelineRef = useRef(null)
   const [rate, setRateState] = useState(DEFAULT_RATE)
   const rateRef = useRef(DEFAULT_RATE)
+  // Dictionary words saved to the deck this session, and whether a save is in
+  // flight. Ids, not words: the RPC dedupes on the dict entry.
+  const [dictSaved, setDictSaved] = useState(() => new Set())
+  const [dictSaving, setDictSaving] = useState(false)
+  // The in-flight guard lives in a ref as well as in state, because two taps in
+  // the same frame both read the pre-render state and would both fire.
+  const dictSavingRef = useRef(false)
 
   const matcher = useMemo(() => buildVocabMatcher(vocabMap, track.language), [vocabMap, track.language])
   const particles = useMemo(() => particlesFor(track.language), [track.language])
@@ -383,6 +392,28 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     if (!error && setUserCards) setUserCards(prev => ({ ...prev, [vocab.id]: { vocab_id: vocab.id, state: 'new' } }))
   }
 
+  // Keeping a word the level's list doesn't contain. There is no vocabulary row
+  // to add, so this goes through the same RPC the classic reader and the
+  // Dictionary screen use: it creates (or reuses) a level-less vocabulary row
+  // for the track and inserts the card. Those rows carry no recorded audio, so
+  // the flashcard falls back to speech synthesis — expected, not a failure.
+  const addDictToDeck = async (entry) => {
+    if (!entry || !entry.id) return
+    if (dictSavingRef.current || dictSaved.has(entry.id)) return
+    dictSavingRef.current = true
+    setDictSaving(true)
+    try {
+      await addDictEntryToDeck(supabase, entry.id, track.language, track.system)
+      setDictSaved(prev => new Set(prev).add(entry.id))
+      toast({ title: 'Saved to your deck', body: entry.simplified || entry.word || null, accent: theme.accentHex })
+    } catch {
+      toast({ title: 'Couldn’t save that word', accent: theme.accentHex })
+    } finally {
+      dictSavingRef.current = false
+      setDictSaving(false)
+    }
+  }
+
   const start = () => { setCur(0); setStarted(true) }
   const backToStart = () => { stopPlay(); setStarted(false) }
 
@@ -479,6 +510,7 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     started, cur, done, playing, selected, readingMode, revealedEnglish, completedBeats, activeToken, rate,
     setReadingMode: pickReadingMode, toggleEnglish, markBeatDone, setSelected, setRate: pickRate,
     go, advance, finish, stopPlay, togglePlay, speakWord, replayLine, selectWord, selectToken, addToDeck,
+    addDictToDeck, dictSaved, dictSaving,
     seekToToken,
     start, backToStart, setAdvanceBlocked,
     questions, answers, answerQuestion,

@@ -3,7 +3,7 @@ import { glossaryLookup } from './grammarGlossary'
 import { useDictEntry, dictDefinitions } from './useDictEntry'
 import {
   lookupKind, lookupReading, lookupChip, lookupBody, dictWordFor, splitAround,
-  STATUS_COLOR, STATUS_LABEL,
+  dictSaveAction, STATUS_COLOR, STATUS_LABEL,
 } from './wordLookup'
 import { MICRO } from './designTokens'
 import { X, Volume2, Bookmark, MapPin, UserRound } from 'lucide-react'
@@ -50,7 +50,12 @@ function pill(color, tinted) {
 // context. A plain fixed overlay is then trapped below the sibling mobile nav
 // bar and only a sliver peeks out. Portaling to body escapes that context so the
 // sheet always sits above the whole app.
-export default function WordLookupSheet({ selected, theme, accent, userCards, language, onAddToDeck, onSpeak, onClose }) {
+//
+// `onAddDictToDeck` / `dictSaved` / `dictSaving` are optional: supply them and a
+// word the reference dictionary resolved gets the same bookmark a vocabulary
+// word has, so "tap a word, keep a word" holds here too. Leave them out (the
+// analyzer, the dictionary screen) and the action simply isn't drawn.
+export default function WordLookupSheet({ selected, theme, accent, userCards, language, onAddToDeck, onSpeak, onClose, onAddDictToDeck = null, dictSaved = null, dictSaving = false }) {
   const lang = language || (selected && selected.vocab && selected.vocab.language) || null
   const grammar = selected && !selected.vocab && !selected.name ? glossaryLookup(lang, selected.word) : null
   const { entry: dictEntry, loading: dictLoading } = useDictEntry(dictWordFor(selected, lang, grammar))
@@ -65,6 +70,9 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
   const vocab = selected.vocab || null
   const status = (vocab && selected.status) || null
   const inDeck = Boolean(vocab && userCards && userCards[vocab.id])
+  const dictSave = dictSaveAction(selected, kind, {
+    dictEntry, grammar, canSave: Boolean(onAddDictToDeck), savedIds: dictSaved, saving: dictSaving,
+  })
   const parts = splitAround(selected.sentence, selected.word)
 
   return createPortal(
@@ -98,6 +106,13 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
             {vocab && (
               <button onClick={() => onAddToDeck(vocab)} aria-label={inDeck ? 'In your deck' : 'Add to deck'} title={inDeck ? 'In your deck' : 'Add to deck'} style={action}>
                 <Bookmark size={20} color={inDeck ? accent : 'var(--text-muted)'} fill={inDeck ? accent : 'none'} />
+              </button>
+            )}
+            {dictSave && (
+              <button onClick={() => onAddDictToDeck(dictEntry)} disabled={dictSave.disabled}
+                aria-label={dictSave.label} title={dictSave.label}
+                style={{ ...action, cursor: dictSave.disabled ? 'default' : 'pointer', opacity: dictSave.busy ? 0.5 : 1 }}>
+                <Bookmark size={20} color={dictSave.inDeck ? accent : 'var(--text-muted)'} fill={dictSave.inDeck ? accent : 'none'} />
               </button>
             )}
             <button onClick={() => onSpeak(selected.word)} aria-label="Play audio" title="Play audio" style={action}>
