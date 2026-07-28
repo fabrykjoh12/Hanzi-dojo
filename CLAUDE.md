@@ -270,6 +270,15 @@ line where it is: the split is read vs. write, not Supabase vs. not.
 That's the right trade — inspecting schema, migrations, logs and advisors is
 what Claude actually needs constantly, and `list_tables` already covers it.)
 
+**Run the GitHub Actions yourself — don't hand them back.** The content
+workflows (`content-utils.yml` → `story-images-apply`, `publish-held`,
+`fix-collisions`, …; `regen-content.yml` → the audio/examples/story tasks) are
+`workflow_dispatch`, and Claude can dispatch them through the GitHub tools.
+When a change's last step is "now run task X", run it, watch the run, and
+report what it did. Never close with "you should run the Action" — that is the
+job, not a hand-off. The Actions hold the secrets this sandbox doesn't, which
+is *why* the work goes through them, not a reason to delegate the click.
+
 **Higgsfield generation is pre-approved — never ask.** Story cover art and any
 other image/audio/video generation through the Higgsfield MCP is standing
 authorisation: generate what the task needs, spend the credits, and show the
