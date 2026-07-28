@@ -24,7 +24,10 @@ import SessionRecap from './SessionRecap'
 import ChatMission from './ChatMission'
 import { buildMissionOffer } from './missionOffer'
 import { computeStudyTally } from './studyTally'
-import { sessionMix, bandTone, TONE_NEW, TONE_DUE, MIX_KEYS, MIX_LABELS } from './sessionMix'
+import { sessionMix, bandTone, MIX_KEYS, MIX_LABELS } from './sessionMix'
+import {
+  cardMarker, markerCardShadow, markerPillStyle, markerDotStyle, MARKER_DOT,
+} from './cardMarker'
 import { MICRO, NUM } from './designTokens'
 import { useStudyAudio } from './useStudyAudio'
 import { useStudyKeyboardShortcuts } from './useStudyKeyboardShortcuts'
@@ -51,18 +54,6 @@ const GRADE_STYLES = [
   { bg: '#E9F2EA', border: '#C4DCC7', text: '#35603C' }, // Good
   { bg: '#E7EFF3', border: '#C2D6DF', text: '#2F5A6B' }, // Easy
 ]
-
-// Front-of-card status marker — deliberately only two states (new / review),
-// shown BEFORE the answer, so it never hints that a word is one you've been
-// struggling with (that would bias the recall attempt). The struggling signal
-// only ever appears after reveal, in the leech panel below.
-// The colours come from sessionMix.js, so the header rail's bands and this
-// marker are the same palette rather than two vocabularies for one fact.
-function cardMarker(card) {
-  return card.state === 'new'
-    ? { color: TONE_NEW, label: 'FIRST TIME' }
-    : { color: TONE_DUE, label: 'REVIEW' }
-}
 
 // System serif stack per language, mirroring StoryReaderImmersive.jsx's
 // SERIF_FONTS — no web font is loaded (none of these are in the Google Fonts
@@ -1130,7 +1121,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                 opacity: mix.counts[key] > 0 ? 1 : 0.38,
               }}>
                 <span style={{
-                  width: '7px', height: '7px', borderRadius: '999px', flexShrink: 0,
+                  width: MARKER_DOT + 'px', height: MARKER_DOT + 'px',
+                  borderRadius: '999px', flexShrink: 0,
                   background: bandTone(accentHex, key),
                 }} />
                 <span style={{ ...NUM, fontSize: '12.5px', fontWeight: 700, color: 'var(--text)' }}>
@@ -1190,10 +1182,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             width: '100%', maxWidth: '680px', minHeight: '420px',
             background: 'var(--surface)',
             border: '1px solid var(--border)', borderRadius: '26px',
-            // The front-of-card status strip — new vs. review only, never a
+            // The front-of-card status band — new vs. review only, never a
             // struggling/leech signal (that would bias the recall attempt;
             // see the leech panel further down, which is answer-side only).
-            boxShadow: '0 24px 70px rgba(24,24,27,0.08), inset 0 3px 0 0 ' + marker.color,
+            // Geometry and tone live in cardMarker.js.
+            boxShadow: markerCardShadow(marker),
             display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'space-between',
             cursor: flipped ? 'default' : 'pointer', padding: '24px', position: 'relative',
             perspective: '1200px',
@@ -1214,13 +1207,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               used to float absolutely over the card, which covered the word's
               furigana on narrow screens. In flow they can't cover anything. */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', flexShrink: 0, position: 'relative', zIndex: 2 }}>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: '8px',
-              padding: '6px 11px', borderRadius: '999px',
-              background: marker.color + '1c', color: marker.color,
-              fontSize: '11px', fontWeight: 800, letterSpacing: '0.04em',
-              border: '1px solid ' + marker.color + '40',
-            }}>
+            {/* The band above carries the colour; this pill carries the word,
+                so the state never depends on colour alone. The dot is the same
+                mark the header legend uses, which is what ties the two. */}
+            <span style={markerPillStyle()}>
+              <span aria-hidden style={markerDotStyle(marker)} />
               {marker.label}
             </span>
             {audioUrl && flipped && (
