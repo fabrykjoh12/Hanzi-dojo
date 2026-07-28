@@ -12,7 +12,7 @@ so the community always sees the latest. Keep it current — move things to
 > you everywhere.
 
 ## 🚧 Now — in progress
-- [ ] **A lot more to read at every level** — stories are now written in overnight batches, several seasons per level at once, so HSK 1–6 keep filling up with new serials instead of one season at a time. 18 different season shapes (mysteries, competitions, a lost-and-found, a send-off, a stray animal) so the arcs stay distinct.
+- [ ] **A lot more to read at every level** — stories are now written in overnight batches, several seasons per level at once, so HSK 1–6 keep filling up with new serials instead of one season at a time. 18 different season shapes (mysteries, competitions, a lost-and-found, a send-off, a stray animal) so the arcs stay distinct. The bar to publish went up at the same time: every chapter is scored by a strict editor pass that reads it in the context of the season around it, rewritten while it keeps improving, and drafted from scratch again if it still isn't good enough — anything that never gets there is held back rather than shipped.
 - [ ] Writing the first HSK 3 stories, so the new levels have reading of their own
 - [x] Better-sounding Chinese: new neural voices for every word, example sentence and story line, plus a slow version of each word and sentence for when a word won't stick. Stories now have a narrator and separate character voices.
 
