@@ -38,6 +38,7 @@ const anyLangFlag = onlyChinese || onlyJapanese || onlyRussian
 
 // Smaller batches + the 70B model give noticeably more sensible sentences.
 const BATCH_SIZE = 10
+const MAX_CONSECUTIVE_FAILURES = 3
 const MODEL = LLM_MODEL
 
 function buildPrompt(words, language) {
@@ -141,6 +142,26 @@ async function generateBatch(words, language, attempt = 0) {
       await sleep(waitSec * 1000)
       return generateBatch(words, language, attempt + 1)
     }
+    // Surface WHY the provider refused. The old message was just
+    // "429 status code (no body)", which cannot distinguish a per-minute rate
+    // limit (wait and retry) from an exhausted daily quota (stop and come back
+    // tomorrow) from a key the provider rejects outright — three problems with
+    // three different fixes, and 46 batches of the same opaque line to read.
+    console.log('')
+    console.error(`  provider refused after ${attempt + 1} attempts:`)
+    console.error(`    status : ${err?.status ?? '(none)'}`)
+    console.error(`    message: ${err?.message || String(err)}`)
+    const body = err?.error ?? err?.response?.data
+    if (body) console.error(`    body   : ${JSON.stringify(body).slice(0, 400)}`)
+    // Retry-After / quota headers say which limit was hit, when the SDK has them.
+    const h = err?.headers
+    if (h) {
+      const interesting = ['retry-after', 'x-ratelimit-limit-requests', 'x-ratelimit-remaining-requests', 'x-ratelimit-reset-requests']
+      for (const k of interesting) {
+        const v = typeof h.get === 'function' ? h.get(k) : h[k]
+        if (v) console.error(`    ${k}: ${v}`)
+      }
+    }
     throw err
   }
 }
@@ -180,6 +201,7 @@ async function processLanguage(language, system) {
 
   let success = 0
   let failed = 0
+  let consecutiveFailures = 0
 
   for (let i = 0; i < vocab.length; i += BATCH_SIZE) {
     const batch = vocab.slice(i, i + BATCH_SIZE)
@@ -226,6 +248,7 @@ async function processLanguage(language, system) {
       }
 
       success += updates.length
+      consecutiveFailures = 0
       const skippedInBatch = batch.length - updates.length
       console.log(`✓ (${success}/${vocab.length} done${skippedInBatch ? `, ${skippedInBatch} skipped for re-attempt` : ''})`)
 
@@ -236,6 +259,17 @@ async function processLanguage(language, system) {
     } catch (err) {
       failed += batch.length
       console.log(`✗ ${err.message}`)
+      consecutiveFailures += 1
+      // Give up once the provider has refused this many batches in a row with
+      // nothing written. The level-3 fill burned 17 minutes retrying 429s that
+      // were never going to succeed — every batch failing from the first
+      // request is a provider/key/quota problem, not bad luck on one batch, and
+      // grinding through the remaining 37 only buries the reason.
+      if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES && success === 0) {
+        console.error(`\nAborting: ${consecutiveFailures} batches failed in a row and nothing was written.`)
+        console.error('Fix the provider error above (key, quota, or model) and re-run — finished words are skipped.')
+        break
+      }
     }
   }
 
