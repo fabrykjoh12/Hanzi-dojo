@@ -16,6 +16,8 @@ so the community always sees the latest. Keep it current — move things to
 - [x] Better-sounding Chinese: new neural voices for every word, example sentence and story line, plus a slow version of each word and sentence for when a word won't stick. Stories now have a narrator and separate character voices.
 
 **Just shipped**
+- [x] **Fixed: saving a word from a story didn't put it in your flashcards.** The card was being created, but the study session was quietly dropping it — so a saved word looked "started" and was never asked about again. Words you keep from the dictionary, and words you reach for above your level, now come back for review like any other.
+- [x] Pasting your known words now shows you the list before anything is added — grouped by level, all ticked, so you can untick whatever you don't actually remember instead of seeding a whole old deck as "known"
 - [x] Tap a word in a story and the answer now appears right above the word instead of at the bottom of the screen, so your eyes never leave the sentence
 - [x] The word box tells you more: which level a word is from ("HSK 3"), and a word that isn't on your list says "Unknown word" and shows its pinyin — those words are marked in the story text too, so you can see at a glance what's outside your syllabus
 - [x] Pick the font you read in — Sans, Serif, or a handwritten Kai face that shows characters the way they're actually written by hand. One choice, applied to every story format and to your flashcards, and remembered.
