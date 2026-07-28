@@ -4,11 +4,10 @@ import { isOnline } from './useOnline'
 import { enqueueStoryRead } from './syncQueue'
 import { ensureAudio } from './audioCache'
 import { PrimaryButton } from './ui'
-import { CHARACTER_READINGS } from './characterNames'
 import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
-import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, matchName, JP_PARTICLES, readingVisibleFor, isDueSoon, buildVocabMatcher, matchVocabAt, boundaryAfterSkip, isPlaceWord, atomicSpans } from './storyReading'
+import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, JP_PARTICLES, readingVisibleFor, isDueSoon, buildVocabMatcher, isPlaceWord, segmentLine, storyNamesFor, isNameKey, isWordlikeToken } from './storyReading'
 import { minDwellMs } from './readAlong'
 import { glossaryLookup } from './grammarGlossary'
 import { getDictEntryByWord, addDictEntryToDeck } from './dictSearch'
@@ -113,20 +112,6 @@ function hasKanji(text) {
   return false
 }
 function isKana(c) { return c >= 0x3040 && c <= 0x30FF }
-// Is a token an actual word (letters/CJK/kana/Cyrillic/digits) vs. pure
-// punctuation or spacing? Word-like tokens are all tappable, even when they
-// aren't in the learner's vocabulary list (conjugated verbs, grammar, particles)
-// — you can still hear them and read the sentence translation.
-function isWordChar(c) {
-  return (c >= 0x30 && c <= 0x39) || (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A)
-    || (c >= 0x3040 && c <= 0x30FF) || (c >= 0x3400 && c <= 0x9FFF)
-    || (c >= 0x0400 && c <= 0x04FF) || (c >= 0xFF66 && c <= 0xFF9D)
-}
-function isWordlike(text) {
-  const v = text || ''
-  for (let i = 0; i < v.length; i += 1) if (isWordChar(v.charCodeAt(i))) return true
-  return false
-}
 function furiganaParts(word, reading) {
   const w = word || ''
   const r = reading || ''
@@ -156,63 +141,9 @@ function makeSegmenter(locale) {
   return null
 }
 
-// splitSpeaker + matchName now live in ./storyReading (shared with the recap's
-// readability so counting and rendering strip labels / skip names identically).
-
-// Names → greedy/deinflection vocab match → Intl.Segmenter for the rest, so known
-// words (including conjugated Japanese verbs, via the shared matcher) stay
-// tappable as whole units and everything else has clean word boundaries. The
-// matcher is prebuilt once per render (buildVocabMatcher) and shared with the
-// readability count so what's tappable and what's counted stay in lockstep.
-function segmentLine(text, matcher, segmenter, names, particles) {
-  const tokens = []
-  // Segmenter words the vocabulary pool can't cover completely (太阳, 周末) are
-  // emitted whole instead of being torn into a pool word plus a fragment, so the
-  // dictionary fallback is asked about the real word. See atomicSpans().
-  const atomic = atomicSpans(text, matcher, names, particles, segmenter)
-  let i = 0
-  let boundary = true
-  while (i < text.length) {
-    const span = atomic.get(i)
-    if (span) {
-      tokens.push({ text: text.slice(i, i + span), vocab: null })
-      i += span
-      boundary = true
-      continue
-    }
-    const name = matchName(text, i, matcher.words, names)
-    if (name) {
-      tokens.push({ text: name, name: { word: name, reading: names[name] } })
-      i += name.length
-      boundary = true
-      continue
-    }
-    const m = matchVocabAt(text, i, matcher, particles, boundary)
-    if (m) {
-      tokens.push({ text: text.slice(i, i + m.len), vocab: m.vocab })
-      i += m.len
-      boundary = true
-      continue
-    }
-    let j = i
-    let b = boundary
-    while (j < text.length) {
-      if (matchName(text, j, matcher.words, names)) break
-      if (matchVocabAt(text, j, matcher, particles, b)) break
-      b = boundaryAfterSkip(text[j], particles)
-      j += 1
-    }
-    const run = text.slice(i, j)
-    if (segmenter) {
-      for (const seg of segmenter.segment(run)) tokens.push({ text: seg.segment, vocab: null })
-    } else {
-      tokens.push({ text: run, vocab: null })
-    }
-    i = j
-    boundary = b
-  }
-  return tokens
-}
+// splitSpeaker + matchName + segmentLine now live in ./storyReading (shared with
+// the paced/chat/scene readers and with the recap's readability, so counting and
+// rendering strip labels / skip names / split unmatched text identically).
 
 // Furigana over a token. Kept as a small pure helper so both real vocab (kanji
 // core only) and name/kana readings render consistently, at a legible size.
@@ -231,7 +162,7 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
   const reading = token.vocab ? token.vocab.reading : (token.name ? token.name.reading : null)
   // Vocabulary and names carry data; plain word-like tokens are still tappable
   // (hear them / see the sentence). Only punctuation and whitespace are inert.
-  const clickable = Boolean(token.vocab || token.name) || isWordlike(token.text)
+  const clickable = Boolean(token.vocab || token.name) || isWordlikeToken(token.text)
   if (!clickable) {
     // Reserve an empty furigana row so punctuation sits on the same baseline as
     // neighboring words that carry a reading (no vertical jitter).
@@ -357,7 +288,11 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   // Reading-column font: the theme sans by default, or the script's system serif
   // when the reader turns on the Serif setting (book-like, no web font loaded).
   const readingFont = serif ? (SERIF_FONTS[track.language] || SERIF_FONTS.default) : font
-  const names = CHARACTER_READINGS[track.language] || {}
+  // Curated names PLUS the cast this story declares in its own speaker labels,
+  // so a name nobody curated still reads (and taps) as a name.
+  const names = useMemo(
+    () => storyNamesFor(story.content, vocabMap, track.language),
+    [story.content, vocabMap, track.language])
   const particles = isJapanese ? JP_PARTICLES : NO_PARTICLES
   const watermark = isJapanese ? ['読', '書'] : isChinese ? ['读', '书'] : ['А', 'Я']
   const readingLabel = isJapanese ? 'Furigana' : isChinese ? 'Pinyin' : 'Reading'
@@ -445,7 +380,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         // Nth distinct speaker → palette[N]; N = speakers already assigned.
         colors[speaker] = SPEAKER_PALETTE[Object.keys(colors).length % SPEAKER_PALETTE.length]
       }
-      return { speaker, tokens: segmentLine(text, matcher, segmenter, names, particles) }
+      return { speaker, tokens: segmentLine(text, matcher, names, particles, segmenter) }
     })
     return { parsed: parsedLines, speakerColors: colors }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -964,13 +899,13 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             <div key={li} ref={el => { lineRefs.current[li] = el }} style={{ marginTop: topGap }}>
               {showLabel && (
                 <div
-                  onClick={names[speaker] ? () => selectToken(li, 'sp', { name: { word: speaker, reading: names[speaker] } }) : undefined}
+                  onClick={isNameKey(names, speaker) ? () => selectToken(li, 'sp', { name: { word: speaker, reading: names[speaker] || null } }) : undefined}
                   style={{
                     fontSize: '12.5px', fontWeight: 800, letterSpacing: '0.4px',
                     color: speakerColors[speaker], marginBottom: '5px',
                     fontFamily: font, display: 'inline-block',
                     paddingLeft: isMobile ? '12px' : '16px',
-                    cursor: names[speaker] ? 'pointer' : 'default',
+                    cursor: isNameKey(names, speaker) ? 'pointer' : 'default',
                     opacity: dimmed ? 0.32 : 1, transition: focusTransition,
                   }}
                 >

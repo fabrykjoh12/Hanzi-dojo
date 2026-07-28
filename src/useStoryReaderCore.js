@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import { languageTheme } from './languageTheme'
 import { getAudioUrl, playAudioEl } from './utils'
-import { calculateStoryReadability, buildVocabMatcher, segmentLine, namesFor, particlesFor, splitSpeaker, normalizeReadingMode, DEFAULT_READING_MODE } from './storyReading'
+import { calculateStoryReadability, buildVocabMatcher, segmentLine, storyNamesFor, particlesFor, splitSpeaker, normalizeReadingMode, DEFAULT_READING_MODE, segmenterFor } from './storyReading'
 import { splitScene, stripSceneEmoji } from './sceneReading'
 import { prefsGet, prefsMerge } from './offline'
 import { buildTimeline, tokenAtTime, startOfToken, minDwellMs, DEFAULT_RATE, SPEED_RATES } from './readAlong'
@@ -67,9 +67,17 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   const rateRef = useRef(DEFAULT_RATE)
 
   const matcher = useMemo(() => buildVocabMatcher(vocabMap, track.language), [vocabMap, track.language])
-  const names = useMemo(() => namesFor(track.language), [track.language])
   const particles = useMemo(() => particlesFor(track.language), [track.language])
   const isScene = story.presentation === 'scene'
+  // Curated names PLUS this story's own cast (its speaker labels), so a name the
+  // curated map never heard of still renders and taps as a name. Derived from
+  // the emoji-stripped text so a scene story's "🎬 小明：…" label still parses.
+  const names = useMemo(
+    () => storyNamesFor(isScene ? stripSceneEmoji(story.content) : story.content, vocabMap, track.language),
+    [story.content, isScene, vocabMap, track.language])
+  // Splits the text the vocabulary pool doesn't know into real words, so every
+  // word in a line is its own tappable token instead of one un-tappable run.
+  const segmenter = useMemo(() => segmenterFor(track.language), [track.language])
   const beats = useMemo(() => {
     // english_content is authored newline-aligned with content, so a beat's
     // translation is the English line at the same index. Guard by index so a
@@ -78,9 +86,9 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     return (story.content || '').split('\n').filter(Boolean).map((line, idx) => {
       const { emoji, text: body } = isScene ? splitScene(line) : { emoji: '', text: line }
       const { speaker, text } = splitSpeaker(body)
-      return { speaker, text, emoji, english: englishLines[idx] || '', tokens: segmentLine(text, matcher, names, particles) }
+      return { speaker, text, emoji, english: englishLines[idx] || '', tokens: segmentLine(text, matcher, names, particles, segmenter) }
     })
-  }, [story.content, story.english_content, isScene, matcher, names, particles])
+  }, [story.content, story.english_content, isScene, matcher, names, particles, segmenter])
   const readContent = useMemo(() => (isScene ? stripSceneEmoji(story.content) : story.content), [isScene, story.content])
   const readability = useMemo(
     () => calculateStoryReadability({ content: readContent, vocabMap, cards: userCards, language: track.language }),
@@ -334,7 +342,23 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   // be obviously about the word/sentence you touched, not just any match of it.
   const selectWord = (vocab, status, tokenId) => {
     stopPlay()
-    setSelected({ word: vocab.word, vocab, status, tokenId, sentence: sourceSentenceFor(vocab) })
+    setSelected({ word: vocab.word, vocab, name: null, status, tokenId, sentence: sourceSentenceFor(vocab) })
+  }
+
+  // A tap on ANY token, not just a vocabulary word. Words outside the level's
+  // list — and character names — carry no vocab entry, and used to be inert:
+  // the learner could see them but never ask what they were. They open the same
+  // sheet, which explains them from the grammar glossary or the reference
+  // dictionary. Punctuation and whitespace stay inert (the reader decides that
+  // with isWordlikeToken before calling).
+  const selectToken = (token, status, tokenId, beatIndex) => {
+    if (token.vocab) return selectWord(token.vocab, status, tokenId)
+    stopPlay()
+    const beat = beats[beatIndex] || beats[cur] || {}
+    return setSelected({
+      word: token.text, vocab: null, name: token.name || null,
+      status: 'not_started', tokenId, sentence: beat.text || null,
+    })
   }
 
   const addToDeck = async (vocab) => {
@@ -454,7 +478,7 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     theme, reduceMotion, beats, readability, total, ttsLang,
     started, cur, done, playing, selected, readingMode, revealedEnglish, completedBeats, activeToken, rate,
     setReadingMode: pickReadingMode, toggleEnglish, markBeatDone, setSelected, setRate: pickRate,
-    go, advance, finish, stopPlay, togglePlay, speakWord, replayLine, selectWord, addToDeck,
+    go, advance, finish, stopPlay, togglePlay, speakWord, replayLine, selectWord, selectToken, addToDeck,
     seekToToken,
     start, backToStart, setAdvanceBlocked,
     questions, answers, answerQuestion,

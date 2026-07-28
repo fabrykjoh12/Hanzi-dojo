@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { PageHeader } from './panels'
-import { calculateStoryReadability, buildVocabMatcher, segmentLine, namesFor, particlesFor, wordStatus } from './storyReading'
+import { calculateStoryReadability, buildVocabMatcher, segmentLine, storyNamesFor, particlesFor, wordStatus } from './storyReading'
 import WordLookupSheet from './WordLookupSheet'
 import { track as trackEvent, EVENTS } from './analytics'
 import { ArrowLeft, ScanText, Bookmark, Sparkles } from 'lucide-react'
@@ -35,7 +35,9 @@ export default function Analyzer({ session, track, onBack }) {
   // Tokenize the analyzed text for the tap-to-read view (same matcher the reader
   // and the % use, so highlighting ⇔ the counted status).
   const matcher = useMemo(() => (vocabMap ? buildVocabMatcher(vocabMap, track.language) : null), [vocabMap, track.language])
-  const names = useMemo(() => namesFor(track.language), [track.language])
+  // Names include the cast the pasted text declares in its speaker labels, so
+  // the highlighting agrees with the readability count (which derives the same).
+  const names = useMemo(() => storyNamesFor(text, vocabMap, track.language), [text, vocabMap, track.language])
   const particles = useMemo(() => particlesFor(track.language), [track.language])
   const parsedLines = useMemo(() => {
     if (!result || !matcher) return []
@@ -282,6 +284,7 @@ export default function Analyzer({ session, track, onBack }) {
         theme={theme}
         accent={accent}
         userCards={cards}
+        language={track.language}
         onAddToDeck={(v) => addOne(v, selected && selected.sentence)}
         onSpeak={speakWord}
         onClose={() => setSelected(null)}

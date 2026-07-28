@@ -1,8 +1,13 @@
 // Curated PROPER NAMES used in the seeded stories, mapped to their reading.
-// Used by the Chinese reader (StoryReaderImmersive) to make personal names tappable
-// with a "Name" popup instead of mis-translating them character-by-character.
+// Used by the readers to make personal names tappable with a "Name" popup
+// instead of mis-translating them character-by-character.
 // Only real personal names belong here — role nouns (妈妈/服务员/姐姐/弟弟…) are
 // ordinary vocabulary and must NOT be listed, or they'd be mislabeled "Name".
+//
+// This map is a floor, not the whole cast: `storyNamesFor` (storyReading.js)
+// adds the names a story declares in its own speaker labels, so a story using
+// a name nobody curated still reads as a name. Curated entries win, because
+// they carry a reading and a derived name does not.
 export const CHARACTER_READINGS = {
   chinese: {
     '李明': 'Lǐ Míng', '小花': 'Xiǎo Huā', '大力': 'Dà Lì',
@@ -15,6 +20,10 @@ export const CHARACTER_READINGS = {
   // (おかあさん、おじいさん、せんせい…) are ordinary vocabulary and resolve
   // through the vocab lookup instead — do not list them here.
   japanese: { 'たかし': 'Takashi', 'はな': 'Hana', 'しろ': 'Shiro (the cat)' },
+  // Russian story protagonists. Cyrillic names DECLINE (Иван → Ивана, Аня →
+  // Ане), so the matcher resolves inflected forms back to these keys the same
+  // way ordinary Russian vocabulary is resolved — see matchNameAt.
+  russian: { 'Иван': 'Ivan', 'Аня': 'Anya', 'Маша': 'Masha', 'Саша': 'Sasha' },
 }
 
 // Curated PLACE NAMES (countries/cities) that recur across the story corpus.

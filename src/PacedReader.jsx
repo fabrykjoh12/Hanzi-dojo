@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback } from 'react'
 import { getLevelLabel } from './utils'
-import { wordStatus, isPlaceWord } from './storyReading'
+import { wordStatus, isPlaceWord, isWordlikeToken } from './storyReading'
 import { spotlightStyle } from './readAlong'
 import { useStoryReaderCore } from './useStoryReaderCore'
 import { TokenBody, ReadingSettings, RevealEnglishButton } from './ReadingScaffold'
@@ -102,21 +102,31 @@ export default function PacedReader(props) {
                       // Plain runs still route through TokenBody so they reserve the
                       // same annotation row and sit on the line's shared baseline.
                       if (!t.vocab) {
+                        // A name, or a word beyond this level's list. It opens the
+                        // same lookup sheet a vocabulary word does — every word in
+                        // the story can be asked about. Punctuation stays inert.
+                        const tappable = Boolean(t.name) || isWordlikeToken(t.text)
+                        const plainId = i + ':' + k
+                        const plainSelected = tappable && c.selected && c.selected.tokenId === plainId
                         return (
                           <span key={k}
                             onClick={i === c.cur ? (e) => {
-                              // A spotlit plain run (punctuation or an out-of-pool
-                              // word) is part of the line being read, so a tap on
-                              // it means the same thing as a tap on a word: seek
-                              // there. It carries no vocab entry, so it never opens
-                              // the lookup sheet.
-                              if (c.playing && c.seekToToken(k)) e.stopPropagation()
+                              // While the line is sounding, a tap means "read from
+                              // here", same as on a vocab word; otherwise it's a
+                              // lookup.
+                              if (c.playing && c.seekToToken(k)) { e.stopPropagation(); return }
+                              if (!tappable) return
+                              e.stopPropagation()
+                              c.selectToken(t, 'not_started', plainId, i)
                             } : undefined}
                             style={{
+                              cursor: i === c.cur && tappable ? 'pointer' : 'inherit', borderRadius: '4px',
                               color: t.name ? PROPER_NOUN_COLOR : 'inherit',
+                              background: plainSelected ? TAP_HILITE : 'transparent',
+                              boxShadow: plainSelected ? '0 0 0 1px rgba(202,138,4,0.5)' : 'none',
                               ...(i === c.cur ? spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) : null),
                             }}>
-                            <TokenBody text={t.text} reading={null} mode={beatMode} status="not_started" language={track.language} reserve={reserve} />
+                            <TokenBody text={t.text} reading={t.name ? t.name.reading : null} mode={beatMode} status="not_started" language={track.language} reserve={reserve} />
                           </span>
                         )
                       }
@@ -133,7 +143,7 @@ export default function PacedReader(props) {
                             // here". seekToToken reports false when there is no
                             // timeline, and then a tap means what it always did.
                             if (c.playing && c.seekToToken(k)) return
-                            c.selectWord(t.vocab, status, tokenId)
+                            c.selectToken(t, status, tokenId, i)
                           } : undefined}
                           style={{
                             cursor: i === c.cur ? 'pointer' : 'inherit', borderRadius: '4px', padding: '0 1px',
@@ -194,7 +204,7 @@ export default function PacedReader(props) {
         </div>
       </div>
 
-      <WordLookupSheet selected={c.selected} theme={c.theme} accent={accent} userCards={userCards} onAddToDeck={c.addToDeck} onSpeak={c.speakWord} onClose={() => c.setSelected(null)} />
+      <WordLookupSheet selected={c.selected} theme={c.theme} accent={accent} userCards={userCards} language={track.language} onAddToDeck={c.addToDeck} onSpeak={c.speakWord} onClose={() => c.setSelected(null)} />
       {c.done && <FinishOverlay story={story} accent={accent} onBack={onBack} core={c} onPractice={props.onPractice} />}
     </div>
   )

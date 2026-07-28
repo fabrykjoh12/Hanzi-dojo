@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, readingVisibleFor, isDueSoon, kanjiStem, buildVocabMatcher, matchVocabAt, segmentLine, namesFor, particlesFor, hasKanjiChar, tokenReading, furiganaSplit, normalizeReadingMode, DEFAULT_READING_MODE, atomicSpans, segmenterFor } from './storyReading'
+import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, readingVisibleFor, isDueSoon, kanjiStem, buildVocabMatcher, matchVocabAt, segmentLine, namesFor, particlesFor, hasKanjiChar, tokenReading, furiganaSplit, normalizeReadingMode, DEFAULT_READING_MODE, atomicSpans, segmenterFor, storyNamesFor, matchNameAt, isWordlikeToken } from './storyReading'
 
 // ── hasKanjiChar (drives "no furigana over kana-only words") ─────────────────
 describe('hasKanjiChar', () => {
@@ -682,5 +682,142 @@ describe('atomicSpans', () => {
     const r = calculateStoryReadability({ content: '太阳很好。', vocabMap: map, cards: {}, language: 'chinese' })
     expect(r.storyWords).not.toContain('太')
     expect(r.storyWords).toEqual(['很', '好'])
+  })
+})
+
+// ── Every word tappable ──────────────────────────────────────────────────────
+// The paged/chat/scene readers used to collapse everything the vocabulary pool
+// didn't know into ONE run token, so a learner could tap 很 but not a single
+// word of the clause around it. Handing segmentLine the language's segmenter
+// splits that text at real word boundaries instead.
+describe('segmentLine with a segmenter', () => {
+  const map = {}
+  ;['说', '很', '好', '了'].forEach((w, i) => { map[w] = { id: 's' + i, word: w, reading: w } })
+  const matcher = buildVocabMatcher(map, 'chinese')
+  const names = namesFor('chinese')
+  const particles = particlesFor('chinese')
+  const seg = segmenterFor('chinese')
+
+  it('splits unmatched text into words instead of one un-tappable run', () => {
+    const blob = segmentLine('太阳出来了', matcher, names, particles, null)
+    expect(blob.map(t => t.text)).toEqual(['太阳出来', '了'])
+
+    const split = segmentLine('太阳出来了', matcher, names, particles, seg)
+    expect(split.map(t => t.text)).toEqual(['太阳', '出来', '了'])
+  })
+
+  it('still tiles the line exactly (read-along timing depends on it)', () => {
+    const line = '他说太阳出来了。'
+    expect(segmentLine(line, matcher, names, particles, seg).map(t => t.text).join('')).toBe(line)
+  })
+
+  it('keeps vocabulary matches whole and separately tappable', () => {
+    const toks = segmentLine('天气很好', matcher, names, particles, seg)
+    expect(toks.filter(t => t.vocab).map(t => t.text)).toEqual(['很', '好'])
+  })
+})
+
+// ── Names ────────────────────────────────────────────────────────────────────
+describe('storyNamesFor', () => {
+  it('adds the cast a story declares in its own speaker labels', () => {
+    const names = storyNamesFor('小云：我来了。\n小明：好。', {}, 'chinese')
+    expect('小云' in names).toBe(true)
+    expect(names['小明']).toBe('Xiǎo Míng')   // curated reading survives
+  })
+
+  it('leaves role nouns as vocabulary', () => {
+    const names = storyNamesFor('妈妈：吃饭了。', { '妈妈': { id: 'v1', word: '妈妈' } }, 'chinese')
+    expect('妈妈' in names).toBe(false)
+  })
+})
+
+describe('names in a segmented line', () => {
+  const map = { '说': { id: 'v1', word: '说', reading: 'shuō' } }
+  const matcher = buildVocabMatcher(map, 'chinese')
+  const particles = particlesFor('chinese')
+
+  it('makes a story-derived name one token carrying its name payload', () => {
+    const names = storyNamesFor('小云：我来了。', map, 'chinese')
+    const toks = segmentLine('小云说', matcher, names, particles, segmenterFor('chinese'))
+    expect(toks[0].text).toBe('小云')
+    expect(toks[0].name).toEqual({ word: '小云', reading: null })
+    expect(toks[1].vocab.id).toBe('v1')
+  })
+
+  it('does not count a name as vocabulary the learner failed to know', () => {
+    const r = calculateStoryReadability({ content: '小云：我说。', vocabMap: map, cards: {}, language: 'chinese' })
+    expect(r.storyWords).toEqual(['说'])
+  })
+})
+
+// Russian names DECLINE, so a fixed-substring match left the case ending
+// dangling as its own mystery token (Ивану → "Иван" + "у").
+describe('matchNameAt — Russian', () => {
+  const map = { 'книга': { id: 'r1', word: 'книга', reading: 'kniga' } }
+  const matcher = buildVocabMatcher(map, 'russian')
+  const names = { 'Иван': 'Ivan', 'Аня': 'Anya' }
+
+  it('matches the whole inflected form and resolves it to the dictionary name', () => {
+    expect(matchNameAt('Ивану книгу', 0, matcher, names, true)).toEqual({ text: 'Ивану', word: 'Иван' })
+    expect(matchNameAt('Ане', 0, matcher, names, true)).toEqual({ text: 'Ане', word: 'Аня' })
+    expect(matchNameAt('Иван', 0, matcher, names, true)).toEqual({ text: 'Иван', word: 'Иван' })
+  })
+
+  it('ignores lowercase words — a name is always capitalized', () => {
+    expect(matchNameAt('иван', 0, matcher, names, true)).toBe(null)
+  })
+
+  it('does not match a derived word that merely shares the stem', () => {
+    expect(matchNameAt('Ивановна', 0, matcher, names, true)).toBe(null)
+  })
+
+  it('only matches at a word boundary', () => {
+    expect(matchNameAt('Иван', 1, matcher, names, false)).toBe(null)
+  })
+
+  it('makes an inflected name one token in the line', () => {
+    const toks = segmentLine('Аня дала Ивану книгу.', matcher, storyNamesFor('Иван: привет', map, 'russian'), particlesFor('russian'), segmenterFor('russian'))
+    const named = toks.filter(t => t.name)
+    expect(named.map(t => t.text)).toEqual(['Аня', 'Ивану'])
+    expect(named[1].name.word).toBe('Иван')
+    expect(toks.map(t => t.text).join('')).toBe('Аня дала Ивану книгу.')
+  })
+})
+
+describe('splitSpeaker with a long single-word label', () => {
+  it('takes a spaced-script label past the six-character window', () => {
+    expect(splitSpeaker('продавец: Здравствуйте.')).toEqual({ speaker: 'продавец', text: 'Здравствуйте.' })
+  })
+
+  it('leaves narration alone when the prefix is a phrase', () => {
+    expect(splitSpeaker('Она сказала: привет').speaker).toBe(null)
+  })
+
+  it('never widens the window for CJK, which has no spaces to bound it', () => {
+    expect(splitSpeaker('大人常常告诉他们：不要去。').speaker).toBe(null)
+  })
+})
+
+describe('isWordlikeToken', () => {
+  it('is true for words in every supported script', () => {
+    expect(isWordlikeToken('太阳')).toBe(true)
+    expect(isWordlikeToken('たべる')).toBe(true)
+    expect(isWordlikeToken('книгу')).toBe(true)
+  })
+  it('is false for punctuation and spacing (those stay inert)', () => {
+    expect(isWordlikeToken('。')).toBe(false)
+    expect(isWordlikeToken(' ')).toBe(false)
+    expect(isWordlikeToken('')).toBe(false)
+  })
+})
+
+describe('matchNameAt — a name never outranks a longer word', () => {
+  it('leaves はなし ("story") whole rather than reading the name はな inside it', () => {
+    const map = { 'はなし': { id: 'j1', word: 'はなし', reading: 'はなし' } }
+    const matcher = buildVocabMatcher(map, 'japanese')
+    const names = { 'はな': 'Hana' }
+    expect(matchNameAt('はなしをする', 0, matcher, names, true)).toBe(null)
+    // …while the name on its own still matches.
+    expect(matchNameAt('はなは', 0, matcher, names, true)).toEqual({ text: 'はな', word: 'はな' })
   })
 })

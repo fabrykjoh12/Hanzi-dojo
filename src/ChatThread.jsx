@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react'
-import { wordStatus, isPlaceWord } from './storyReading'
+import { wordStatus, isPlaceWord, isWordlikeToken } from './storyReading'
 import { TokenBody, RevealEnglishButton } from './ReadingScaffold'
 import { spotlightStyle } from './readAlong'
 import { Check } from 'lucide-react'
@@ -21,7 +21,7 @@ const DONE_GREEN = '#2F9E6D'
 // given, is the ONLY way the thread advances now — passing it (or not) is how a
 // caller opens/closes the confirm-and-advance action (e.g. hidden during a
 // reply gate, where picking the correct option is what advances instead).
-export default function ChatThread({ revealed, sides, skin, theme, accent, userCards, readingMode, language, activeIndex, typingBeat, reduceMotion, onSelectWord, activeToken = -1, onSeekToken, playing = false, selected = null, revealedEnglish = null, onToggleEnglish, completedBeats = null, onMarkDone }) {
+export default function ChatThread({ revealed, sides, skin, theme, accent, userCards, readingMode, language, activeIndex, typingBeat, reduceMotion, onSelectWord, onSelectToken, activeToken = -1, onSeekToken, playing = false, selected = null, revealedEnglish = null, onToggleEnglish, completedBeats = null, onMarkDone }) {
   const endRef = useRef(null)
   useEffect(() => {
     if (endRef.current) endRef.current.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'end' })
@@ -62,16 +62,30 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                     // Plain runs reserve the same annotation row, so a bubble's
                     // baseline is identical whether or not its words are scaffolded.
                     if (!t.vocab) {
+                      // A name, or a word beyond this level's list. It opens the
+                      // same lookup sheet a vocabulary word does — every word in
+                      // the conversation can be asked about. Punctuation is inert.
+                      const tappable = Boolean(t.name) || isWordlikeToken(t.text)
+                      const plainId = key + ':' + k
+                      const plainSelected = tappable && selected && selected.tokenId === plainId
                       return (
                         <span key={k}
                           onClick={(e) => {
-                            // A spotlit plain run is part of the bubble being read,
-                            // so a tap on it means "read from here". No vocab
-                            // entry here, so it never opens the lookup sheet.
-                            if (isCurrentBubble && onSeekToken && onSeekToken(k)) e.stopPropagation()
+                            // A tap inside the bubble being read means "read from
+                            // here"; anywhere else it's a lookup.
+                            if (isCurrentBubble && onSeekToken && onSeekToken(k)) { e.stopPropagation(); return }
+                            if (!tappable || !onSelectToken) return
+                            e.stopPropagation()
+                            onSelectToken(t, 'not_started', plainId, key)
                           }}
-                          style={{ color: (t.name && properNounColor) || 'inherit', ...spotlightStyle(k === activeToken, isSounding, reduceMotion) }}>
-                          <TokenBody text={t.text} reading={null} mode={bubbleMode} status="not_started" language={language} reserve={reserve} rtColor={rtColor} />
+                          style={{
+                            cursor: tappable ? 'pointer' : 'inherit', borderRadius: '4px',
+                            color: (t.name && properNounColor) || 'inherit',
+                            background: plainSelected ? TAP_HILITE : 'transparent',
+                            boxShadow: plainSelected ? '0 0 0 1px rgba(202,138,4,0.5)' : 'none',
+                            ...spotlightStyle(k === activeToken, isSounding, reduceMotion),
+                          }}>
+                          <TokenBody text={t.text} reading={t.name ? t.name.reading : null} mode={bubbleMode} status="not_started" language={language} reserve={reserve} rtColor={rtColor} />
                         </span>
                       )
                     }
@@ -88,7 +102,8 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                         // lead-in silence still tries to seek, matching the paced
                         // reader — seekToToken's own boolean decides success.
                         if (isCurrentBubble && onSeekToken && onSeekToken(k)) return
-                        onSelectWord(t.vocab, status, tokenId)
+                        if (onSelectToken) onSelectToken(t, status, tokenId, key)
+                        else onSelectWord(t.vocab, status, tokenId)
                       }}
                         style={{ cursor: 'pointer', borderRadius: '4px', padding: '0 1px',
                           color: (isPlace && properNounColor) || 'inherit',
