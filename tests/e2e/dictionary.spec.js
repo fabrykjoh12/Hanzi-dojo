@@ -13,8 +13,10 @@ test.describe('Dictionary', () => {
     await expect(row).toBeVisible();
 
     // Tapping opens the shared lookup sheet — its unique controls confirm it.
+    // The deck button names the word's state, so it reads "In your deck" for a
+    // word already saved and "Add to deck" for one that isn't.
     await row.click();
-    await expect(page.getByRole('button', { name: 'Add to deck' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^(In your deck|Add to deck)$/ })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Play audio' })).toBeVisible();
   });
 
@@ -92,7 +94,7 @@ test.describe('Dictionary', () => {
 
     // Open a word, then close the lookup sheet.
     await page.getByRole('button', { name: /朋友/ }).first().click();
-    await expect(page.getByRole('button', { name: 'Add to deck' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^(In your deck|Add to deck)$/ })).toBeVisible();
     await page.getByRole('button', { name: 'Close' }).click();
 
     // A "Recent" section now surfaces the word we just opened.
