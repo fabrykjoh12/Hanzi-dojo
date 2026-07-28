@@ -22,6 +22,10 @@ on:
         type: choice
         default: ''
         options: ['', '1', '2', '3']
+      level:
+        description: "examples-fill only: fill just this level (e.g. 3). Blank = every level missing examples."
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -80,8 +84,10 @@ jobs:
           fi
 
           if [ "${{ inputs.task }}" = "examples-fill" ]; then
-            echo "::group::Example sentences (fill only missing — safe for new levels)"
-            node generate-examples.mjs $LANG_FLAG
+            LEVEL_FLAG=""
+            if [ -n "${{ inputs.level }}" ]; then LEVEL_FLAG="--level ${{ inputs.level }}"; fi
+            echo "::group::Example sentences (fill only missing — safe for new levels) $LEVEL_FLAG"
+            node generate-examples.mjs $LANG_FLAG $LEVEL_FLAG
             echo "::endgroup::"
           fi
 

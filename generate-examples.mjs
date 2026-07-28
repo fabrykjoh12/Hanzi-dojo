@@ -20,6 +20,19 @@ const onlyChinese = args.includes('--chinese')
 const onlyJapanese = args.includes('--japanese')
 const onlyRussian = args.includes('--russian')
 const regen = args.includes('--regen')
+// --level N restricts the run to a single level, so a big fill can be done one
+// level at a time (check quality and cost on one band before spending on all of
+// them) instead of committing to the whole backlog in one run.
+function argValue(name) {
+  const i = args.indexOf('--' + name)
+  return i !== -1 && args[i + 1] ? args[i + 1] : null
+}
+const levelArg = argValue('level')
+const onlyLevel = levelArg === null ? null : parseInt(levelArg, 10)
+if (levelArg !== null && Number.isNaN(onlyLevel)) {
+  console.error('--level expects a number, e.g. --level 3')
+  process.exit(1)
+}
 // When any single language flag is passed, only that language runs.
 const anyLangFlag = onlyChinese || onlyJapanese || onlyRussian
 
@@ -135,19 +148,34 @@ async function generateBatch(words, language, attempt = 0) {
 async function processLanguage(language, system) {
   console.log(`\n=== ${language.toUpperCase()} (${system}) ===`)
 
-  let query = supabase
-    .from('vocabulary')
-    .select('id, word, reading, meaning, sort_order')
-    .eq('language', language)
-    .eq('system', system)
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
-  // Without --regen, only fill words that have no example yet.
-  if (!regen) query = query.is('example_sentence', null)
-  const { data: vocab, error } = await query
+  // PAGED. This was a single unpaged select, so it silently stopped at
+  // PostgREST's 1000-row default. With 4,495 Chinese words missing an example
+  // after the HSK 3-6 seed, a fill run would have quietly covered the first
+  // thousand, reported success, and left the rest blank — and re-running would
+  // have kept refetching the same head of the list.
+  const PAGE = 1000
+  const vocab = []
+  for (let page = 0; page < 100; page += 1) {
+    let query = supabase
+      .from('vocabulary')
+      .select('id, word, reading, meaning, sort_order')
+      .eq('language', language)
+      .eq('system', system)
+      .eq('is_active', true)
+      .order('level', { ascending: true })
+      .order('sort_order', { ascending: true })
+      .order('id', { ascending: true })   // tiebreaker — paging needs a total order
+      .range(page * PAGE, page * PAGE + PAGE - 1)
+    // Without --regen, only fill words that have no example yet.
+    if (!regen) query = query.is('example_sentence', null)
+    if (onlyLevel !== null) query = query.eq('level', onlyLevel)
+    const { data, error } = await query
+    if (error) { console.error('Fetch error:', error.message); return }
+    vocab.push(...(data || []))
+    if ((data || []).length < PAGE) break
+  }
 
-  if (error) { console.error('Fetch error:', error.message); return }
-  console.log(`Found ${vocab.length} words without examples.`)
+  console.log(`Found ${vocab.length} words${regen ? '' : ' without examples'}${onlyLevel !== null ? ` at level ${onlyLevel}` : ''}.`)
   if (vocab.length === 0) return
 
   let success = 0
