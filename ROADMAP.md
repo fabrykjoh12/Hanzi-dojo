@@ -30,7 +30,7 @@ so the community always sees the latest. Keep it current — move things to
 - [x] Removed the streak and XP/leveling system entirely — no day-streak counter, no streak freezes, no account level, no "+N XP" anywhere. It cut against our own promise (*no streaks, no leagues, no guilt*). The calm, factual bits stayed: study-day tracking for the calendar heatmap, and the gentle "welcome back after a break" message.
 - [x] A calmer Home and session recap: no streak badge, no "keep it" pressure, fewer numbers — Home leads with one obvious tap to start, and finishing a session leads straight to the story you just unlocked
 - [x] Read real Chinese before you sign up: an interactive first-sentence onboarding (tap words for pinyin, meaning, and audio; a "you understand %" meter) themed to why you're learning
-- [x] HSK 3-6 vocabulary: 4,498 Chinese words to study, search, and test — the full HSK 3-6 word list, matched to the 2025 syllabus. Every word has audio, and all but 35 now have a real example sentence too — HSK 3, 4 and 5 are complete.
+- [x] HSK 3-6 vocabulary: 4,498 Chinese words to study, search, and test — the full HSK 3-6 word list, matched to the 2025 syllabus. Every word has audio, and all but 25 now have a real example sentence too — HSK 3, 4 and 5 are complete.
 - [x] Pleco-style dictionary: search 120k+ Chinese words with tone colors, character breakdown, and example sentences
 - [x] Save any dictionary word to your deck (even words outside your level)
 - [x] Example sentences with pinyin on every word (Tatoeba)
@@ -73,7 +73,7 @@ so the community always sees the latest. Keep it current — move things to
 - [ ] **Make a story from your words** — generate a story from your deck or weak words, on a topic you pick ("a detective story," "about cooking").
 - [ ] **Browse by interest** — topic tags, plus multi-chapter serials with recurring characters so vocabulary recycles across an arc.
 - [ ] **A fresh story every day** — *delivered by a gentle nudge* (push reminder) is still to do; the in-app daily pick has shipped.
-- [ ] **Stories for HSK 3-6** — the vocabulary, its audio and (bar 35 words) its example sentences have shipped; graded stories for these levels are the missing piece (pending a higher LLM quota).
+- [ ] **Stories for HSK 3-6** — the vocabulary, its audio and (bar 25 words) its example sentences have shipped; graded stories for these levels are the missing piece (pending a higher LLM quota).
 - [ ] Expand Chinese into **HSK 7-9** (the advanced band).
 - [ ] **More graded stories at every level** — greater depth and variety across the whole HSK band.
 - [ ] **Pictures on flashcards** — a visual memory hook alongside the word.
