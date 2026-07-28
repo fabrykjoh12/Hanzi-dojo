@@ -257,6 +257,6 @@ test.describe('Story reader', () => {
     await expect(page.getByText('today')).toBeVisible();                        // the definition
     // The deck button names the word's state — this one is already saved, so it
     // reads "In your deck" rather than "Add to deck" (parity with the classic reader).
-    await expect(page.getByRole('button', { name: /In your deck|Add to deck/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^(In your deck|Add to deck)$/i })).toBeVisible();
   });
 });
