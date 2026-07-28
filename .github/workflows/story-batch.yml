@@ -134,6 +134,13 @@ jobs:
           # `if` would read tee's exit code and call every failed round a pass.
           set -uo pipefail
           TIER_FLAG=""
+          # The generator parses --tier with parseInt, so "1foo" would silently
+          # run tier 1. A mistyped probe that quietly generates the wrong tier is
+          # worse than one that refuses to start.
+          case "$TIER" in
+            ''|1|2|3) ;;
+            *) echo "::error::tier must be blank, 1, 2 or 3 (got '$TIER')"; exit 1 ;;
+          esac
           if [ -n "$TIER" ]; then TIER_FLAG="--tier $TIER"; fi
           DEADLINE=$(( $(date +%s) + BUDGET_MINUTES * 60 ))
           echo "## Level $LEVEL" >> "$GITHUB_STEP_SUMMARY"
