@@ -1,126 +1,164 @@
 import { useState } from 'react'
 import { getSystemLabel, getLevelLabel } from './utils'
-import { languageTheme } from './languageTheme'
-import { PageHeader, Eyebrow } from './panels'
+import { languageTheme, ink } from './languageTheme'
+import { HeroPanel, HeroAction, PageHeader, Eyebrow } from './panels'
+import { flatPanel, ON_HERO } from './designTokens'
+import { buildPracticePlan } from './practicePlan'
 import { useIsMobile } from './useIsMobile'
 import {
-  ArrowLeft, AlertTriangle, Headphones, PenLine,
+  ArrowLeft, ArrowRight, AlertTriangle, Headphones, PenLine,
   AlignLeft, Blocks, Music2, Languages, Brush, Play, GraduationCap, BookA, ScanText, Mic, Search, Repeat2,
   ListChecks, ChevronRight,
 } from 'lucide-react'
 
-// The Practice hub: every drill/activity in one calm place, so the top-level
-// navigation can stay focused on the daily loop (Flashcards → Stories → Test).
+// The Practice hub: every drill and reference tool in one calm place, so the
+// top-level navigation can stay focused on the daily loop (Flashcards → Stories
+// → Test).
 //
-// The screen groups by what the learner is actually here to do, because a flat
-// grid of fifteen identical cards makes "what should I do now?" a reading task:
+// The screen is read top to bottom as one sentence:
 //
-//   Needs attention — only when something is genuinely due, so it stays a
-//                     signal instead of a permanent header.
-//   Drills          — active practice; the reason to open this screen.
-//   Tools           — lookup and reference. These are navigation, not practice,
-//                     so they render as slim rows rather than competing with
-//                     the drills at equal weight.
+//   1. ONE lit panel — the single drill worth opening right now. Anything with a
+//      real count behind it takes that slot; otherwise it is Listening.
+//   2. Drills — the rest of the practice modes, all the same size, one grid.
+//   3. Tools — lookup and reference. Slim rows, because these are places to go
+//      rather than things to practise, and a second grid of equal-weight cards
+//      is exactly what made this screen read as a pile.
+//
+// Which drill leads, what still carries a count, and the ordering all live in
+// practicePlan.js so they can be tested; this file only maps that onto panels.
+
+// The one status colour on this screen: something is waiting for you. Status
+// colours stay hardcoded (CLAUDE.md §5); everything neutral is a token and
+// every tint mixes into the surface so it survives dark mode.
+const SIGNAL = '#D97706'
+
+// lucide only — never an emoji as an icon.
+const ICONS = {
+  weak: AlertTriangle,
+  grammarpractice: Repeat2,
+  listen: Headphones,
+  speak: Mic,
+  writing: PenLine,
+  fillblank: AlignLeft,
+  builder: Blocks,
+  tones: Music2,
+  kana: Languages,
+  cyrillic: Languages,
+  strokes: Brush,
+  words: BookA,
+  known: ListChecks,
+  dictionary: Search,
+  analyzer: ScanText,
+  grammar: GraduationCap,
+  youtube: Play,
+}
+
+// One spacing scale for the whole screen. The old layout mixed 30 / 18 / 14 /
+// 11px gaps, which is most of what "messy" actually looked like.
+const SECTION_GAP = '26px'
+const LABEL_GAP = '10px'
+
+function tint(color, pct) {
+  return 'color-mix(in srgb, ' + color + ' ' + pct + '%, var(--surface))'
+}
+
+function tintBorder(color, pct) {
+  return 'color-mix(in srgb, ' + color + ' ' + pct + '%, var(--border))'
+}
+
 export default function Practice({ profile, track, counts, onNavigate, onBack }) {
   const isMobile = useIsMobile()
   const theme = languageTheme(profile.active_language)
   const accentHex = theme.accentHex
-  const isJapanese = profile.active_language === 'japanese'
-  const isChinese = profile.active_language === 'chinese'
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
-  const weak = counts ? (counts.weakCount || 0) : 0
-  const grammarDue = counts ? (counts.grammarDueCount || 0) : 0
 
-  // The script drill matches the language's writing system: Kana (Japanese),
-  // Tones (Chinese), Cyrillic alphabet (Russian). Stroke order is CJK-only.
-  let scriptCard = null
-  if (isJapanese) scriptCard = { key: 'kana', icon: Languages, title: 'Kana', desc: 'Hiragana & katakana' }
-  else if (isChinese) scriptCard = { key: 'tones', icon: Music2, title: 'Tones', desc: 'Hear and name the tone' }
-  else if (theme.script === 'cyrillic') scriptCard = { key: 'cyrillic', icon: Languages, title: 'Alphabet', desc: 'Cyrillic letters & sounds' }
+  // Which drills exist is a property of the language's script, never of its
+  // name — a new language is a data change in languageTheme.js.
+  const plan = buildPracticePlan({
+    script: theme.script,
+    cjk: theme.cjk,
+    weakCount: counts ? (counts.weakCount || 0) : 0,
+    grammarDueCount: counts ? (counts.grammarDueCount || 0) : 0,
+  })
 
-  const weakCard = {
-    key: 'weak', icon: AlertTriangle, title: 'Weak words', accent: '#D97706',
-    desc: weak > 0 ? weak + ' word' + (weak === 1 ? '' : 's') + ' keep slipping' : 'Clean up tricky words',
-    badge: weak > 0 ? weak : null,
-  }
-  const grammarReviewCard = {
-    key: 'grammarpractice', icon: Repeat2, title: 'Grammar review', accent: '#D97706',
-    desc: grammarDue > 0 ? grammarDue + ' pattern' + (grammarDue === 1 ? '' : 's') + ' due' : 'Keep your patterns sharp',
-    badge: grammarDue > 0 ? grammarDue : null,
-  }
-
-  // A card is "due" only when it has a real count behind it. With nothing due
-  // the section disappears and both cards fall back in with the drills, so an
-  // empty "Needs attention" heading never sits there crying wolf.
-  const due = [weak > 0 ? weakCard : null, grammarDue > 0 ? grammarReviewCard : null].filter(Boolean)
-
-  const drills = [
-    weak > 0 ? null : weakCard,
-    { key: 'listen', icon: Headphones, title: 'Listening', desc: 'Hear a word, pick it' },
-    { key: 'speak', icon: Mic, title: 'Speaking', desc: 'Say it aloud, get a ✓' },
-    { key: 'writing', icon: PenLine, title: 'Writing', desc: 'Type words from memory' },
-    { key: 'fillblank', icon: AlignLeft, title: 'Fill in the blank', desc: 'Complete the sentence' },
-    { key: 'builder', icon: Blocks, title: 'Sentence builder', desc: 'Reorder the words' },
-    scriptCard,
-    // Stroke order only applies to CJK scripts (hanzi/kanji).
-    theme.cjk ? { key: 'strokes', icon: Brush, title: 'Stroke order', desc: 'Animated writing' } : null,
-    grammarDue > 0 ? null : grammarReviewCard,
-  ].filter(Boolean)
-
-  // Reference, not practice. `ListChecks` rather than a second `BookA` — the
-  // word list and the already-known importer used to wear the same icon and sat
-  // adjacent, which read as one feature rendered twice.
-  const tools = [
-    { key: 'words', icon: BookA, title: 'Word list', desc: 'Every word and its status' },
-    { key: 'known', icon: ListChecks, title: 'Words you already know', desc: 'Import a list or tick off what you know' },
-    { key: 'dictionary', icon: Search, title: 'Dictionary', desc: 'Look up any word, hear it, save it' },
-    { key: 'analyzer', icon: ScanText, title: 'Analyze text', desc: 'Paste text — see % you know' },
-    { key: 'grammar', icon: GraduationCap, title: 'Grammar guide', desc: 'How the language works' },
-    { key: 'youtube', icon: Play, title: 'Videos', desc: 'Curated listening' },
-  ]
-
-  const gridStyle = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(' + (isMobile ? '150px' : '210px') + ', 1fr))',
-    gap: '14px',
-  }
+  const primary = plan.primary
+  const PrimaryIcon = ICONS[primary.key] || Headphones
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', padding: isMobile ? '28px 16px 40px' : '44px 32px 60px' }}>
-      <Ghost onClick={onBack} />
+    <div style={{ maxWidth: '720px', margin: '0 auto', padding: isMobile ? '24px 16px 40px' : '44px 32px 60px' }}>
+      <BackButton onClick={onBack} />
 
       <PageHeader
         title="Practice"
-        meta={`${systemLabel} · ${levelLabel}`}
-        style={{ margin: '20px 0 18px' }}
+        meta={systemLabel + ' · ' + levelLabel}
+        style={{ margin: '18px 0 14px' }}
       />
 
-      {due.length > 0 && (
-        <Section label="Needs attention" first>
-          <div style={gridStyle}>
-            {due.map(card => (
-              <Card key={card.key} card={card} accentHex={accentHex} onClick={() => onNavigate(card.key)} />
-            ))}
+      {/* ── The one lit block: the drill worth opening now ── */}
+      <HeroPanel
+        accentHex={accentHex}
+        seed={profile.active_language + '-practice'}
+        compact={isMobile}
+        onClick={() => onNavigate(primary.key)}
+        style={{ marginBottom: SECTION_GAP }}
+      >
+        {({ hovered }) => (
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Eyebrow onHero>{primary.eyebrow}</Eyebrow>
+              <h2 style={{
+                margin: '9px 0 7px', color: '#fff', letterSpacing: '-0.02em',
+                fontSize: isMobile ? '26px' : '31px', fontWeight: 700, lineHeight: 1.1,
+              }}>
+                {primary.title}
+              </h2>
+              <p style={{
+                margin: 0, fontSize: '13.5px', lineHeight: 1.5,
+                color: ON_HERO.body, maxWidth: '42ch',
+              }}>
+                {primary.reason}
+              </p>
+              <HeroAction label={primary.cta} hovered={hovered} icon={ArrowRight} accentHex={accentHex} />
+            </div>
+            <span aria-hidden style={{
+              flexShrink: 0, width: '44px', height: '44px', borderRadius: '14px',
+              background: 'rgba(255,255,255,0.13)', border: '1px solid rgba(255,255,255,0.22)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <PrimaryIcon size={22} strokeWidth={1.85} color="#fff" />
+            </span>
           </div>
-        </Section>
-      )}
+        )}
+      </HeroPanel>
 
-      <Section label="Drills" first={due.length === 0}>
-        <div style={gridStyle}>
-          {drills.map(card => (
-            <Card key={card.key} card={card} accentHex={accentHex} onClick={() => onNavigate(card.key)} />
+      {/* ── Everything else you can drill. One grid, one tile size. ── */}
+      <section className="hd-rise" style={{ marginBottom: SECTION_GAP, animationDelay: '80ms' }}>
+        <div style={{ marginBottom: LABEL_GAP }}>
+          <Eyebrow>More drills</Eyebrow>
+        </div>
+        <div style={{
+          display: 'grid', gap: '12px',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(' + (isMobile ? '148px' : '198px') + ', 1fr))',
+        }}>
+          {plan.drills.map(item => (
+            <DrillTile
+              key={item.key}
+              item={item}
+              accentHex={accentHex}
+              onClick={() => onNavigate(item.key)}
+            />
           ))}
         </div>
-      </Section>
+      </section>
 
-      <Section label="Tools">
-        <div style={{
-          borderRadius: '16px', overflow: 'hidden',
-          border: '1px solid var(--border)', background: 'var(--surface)',
-          boxShadow: 'var(--shadow-1), inset 0 1px 0 var(--hairline)',
-        }}>
-          {tools.map((tool, i) => (
+      {/* ── Reference, deliberately quieter than a drill. ── */}
+      <section className="hd-rise" style={{ animationDelay: '140ms' }}>
+        <div style={{ marginBottom: LABEL_GAP }}>
+          <Eyebrow>Look things up</Eyebrow>
+        </div>
+        <div style={{ ...flatPanel({ radius: 16 }), overflow: 'hidden' }}>
+          {plan.tools.map((tool, i) => (
             <ToolRow
               key={tool.key}
               tool={tool}
@@ -130,69 +168,68 @@ export default function Practice({ profile, track, counts, onNavigate, onBack })
             />
           ))}
         </div>
-      </Section>
+      </section>
     </div>
   )
 }
 
-function Section({ label, children, first = false }) {
-  return (
-    <section style={{ marginTop: first ? 0 : '30px' }}>
-      <div style={{ marginBottom: '11px' }}>
-        <Eyebrow>{label}</Eyebrow>
-      </div>
-      {children}
-    </section>
-  )
-}
-
-function Card({ card, accentHex, onClick }) {
+// One drill. Every tile is the same size with the same icon, title and one line
+// of description — the only variation is the amber treatment when something is
+// genuinely waiting, so that variation actually means something.
+function DrillTile({ item, accentHex, onClick }) {
   const [hovered, setHovered] = useState(false)
-  const Icon = card.icon
-  const color = card.accent || accentHex
+  const Icon = ICONS[item.key] || Headphones
+  const signal = item.tone === 'signal'
+  const color = signal ? SIGNAL : accentHex
+
   return (
     <button
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
+        ...flatPanel({ radius: 16 }),
         position: 'relative', textAlign: 'left', cursor: 'pointer',
-        background: 'var(--surface)', border: '1px solid ' + (hovered ? color + '55' : 'var(--border)'),
-        borderRadius: '18px', padding: '18px', fontFamily: 'Inter, sans-serif',
+        padding: '15px 14px 16px', fontFamily: 'Inter, sans-serif',
+        border: '1px solid ' + (hovered ? tintBorder(color, 45) : 'var(--border)'),
         boxShadow: (hovered ? 'var(--shadow-2)' : 'var(--shadow-1)') + ', inset 0 1px 0 var(--hairline)',
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
         transition: 'transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease',
-        display: 'flex', flexDirection: 'column', gap: '11px', minHeight: '118px',
+        display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '112px',
       }}
     >
-      <div style={{
-        width: '40px', height: '40px', borderRadius: '12px',
-        background: color + '14', border: '1px solid ' + color + '24',
+      <span style={{
+        width: '36px', height: '36px', borderRadius: '11px',
+        background: tint(color, 11), border: '1px solid ' + tintBorder(color, 26),
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <Icon size={20} strokeWidth={1.85} color={color} />
-      </div>
-      <div>
-        <div style={{ fontSize: '15px', fontWeight: 750, color: 'var(--text)' }}>{card.title}</div>
-        <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '3px', lineHeight: 1.4 }}>{card.desc}</div>
-      </div>
-      {card.badge != null && (
+        <Icon size={19} strokeWidth={1.85} color={ink(color)} />
+      </span>
+      <span style={{ display: 'block' }}>
+        <span style={{ display: 'block', fontSize: '14.5px', fontWeight: 700, color: 'var(--text)', lineHeight: 1.25 }}>
+          {item.title}
+        </span>
+        <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.4 }}>
+          {item.desc}
+        </span>
+      </span>
+      {item.badge != null && (
         <span style={{
-          position: 'absolute', top: '15px', right: '15px',
-          fontSize: '12px', fontWeight: 750, color: '#B45309',
-          background: 'rgba(217,119,6,0.12)', border: '1px solid rgba(217,119,6,0.28)',
-          borderRadius: '999px', padding: '2px 9px',
-        }}>{card.badge}</span>
+          position: 'absolute', top: '13px', right: '13px',
+          fontSize: '11.5px', fontWeight: 750, lineHeight: 1,
+          color: ink(SIGNAL), background: tint(SIGNAL, 16),
+          border: '1px solid ' + tintBorder(SIGNAL, 34),
+          borderRadius: '999px', padding: '4px 9px',
+        }}>{item.badge}</span>
       )}
     </button>
   )
 }
 
-// One line per tool: icon, name, what it's for, chevron. Deliberately quieter
-// than a Card — these are places to go, not things to practise.
+// One line per tool: icon, name, what it's for, chevron.
 function ToolRow({ tool, accentHex, first, onClick }) {
   const [hovered, setHovered] = useState(false)
-  const Icon = tool.icon
+  const Icon = ICONS[tool.key] || Search
   return (
     <button
       onClick={onClick}
@@ -208,10 +245,10 @@ function ToolRow({ tool, accentHex, first, onClick }) {
     >
       <span style={{
         width: '34px', height: '34px', borderRadius: '10px', flexShrink: 0,
-        background: accentHex + '12', border: '1px solid ' + accentHex + '20',
+        background: tint(accentHex, 9), border: '1px solid ' + tintBorder(accentHex, 20),
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <Icon size={17} strokeWidth={1.85} color={accentHex} />
+        <Icon size={17} strokeWidth={1.85} color={ink(accentHex)} />
       </span>
       <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
         <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>{tool.title}</span>
@@ -222,13 +259,13 @@ function ToolRow({ tool, accentHex, first, onClick }) {
   )
 }
 
-function Ghost({ onClick }) {
-  const [h, setH] = useState(false)
+function BackButton({ onClick }) {
+  const [hovered, setHovered] = useState(false)
   return (
-    <button onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)} style={{
+    <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} style={{
       display: 'inline-flex', alignItems: 'center', gap: '8px',
       minHeight: '40px', padding: '0 14px', borderRadius: '12px',
-      border: '1px solid var(--border)', background: h ? 'var(--surface-2)' : 'var(--surface)',
+      border: '1px solid var(--border)', background: hovered ? 'var(--surface-2)' : 'var(--surface)',
       color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
     }}>
       <ArrowLeft size={17} strokeWidth={1.85} color="var(--text-muted)" /> Home

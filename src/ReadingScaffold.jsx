@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { tokenReading, furiganaSplit, FURIGANA_MODES } from './storyReading'
+import { readingFontOptions, readingFontHint } from './readingFonts'
 import { SPEED_RATES } from './readAlong'
 import { useIsMobile } from './useIsMobile'
 import { Sliders, X, Eye, EyeOff } from 'lucide-react'
@@ -82,12 +83,13 @@ export function RevealEnglishButton({ revealed, onToggle, color = 'var(--text-mu
 // lives outside this panel now: a RevealEnglishButton sits beside each
 // sentence instead, so translation is a direct per-line action, not a buried
 // all-or-nothing setting.
-export function ReadingSettings({ mode, setMode, language, accent, onOpenChange, compact = false, placement = 'top', tint, rate, setRate }) {
+export function ReadingSettings({ mode, setMode, language, accent, onOpenChange, compact = false, placement = 'top', tint, rate, setRate, font, setFont }) {
   const [open, setOpen] = useState(false)
   const isMobile = useIsMobile()
   const btnRef = useRef(null)
   const panelRef = useRef(null)
   const label = readingLabelFor(language)
+  const fontOptions = readingFontOptions(language)
 
   const close = () => {
     setOpen(false)
@@ -156,6 +158,41 @@ export function ReadingSettings({ mode, setMode, language, accent, onOpenChange,
       <div style={{ fontSize: '11.5px', color: 'var(--text-faint)', marginTop: '8px', lineHeight: 1.45 }}>
         {MODE_HINTS[mode] || ''}
       </div>
+      {setFont && (
+        <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text)', letterSpacing: '0.02em', marginBottom: '8px' }}>Reading font</div>
+          <div role="group" aria-label="Reading font" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {fontOptions.map((opt) => {
+              const on = font === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => setFont(opt.value)}
+                  aria-pressed={on}
+                  style={{
+                    flex: '1 1 auto', minWidth: '68px', fontSize: '12px', fontWeight: 700, padding: '8px 10px',
+                    borderRadius: '10px', cursor: 'pointer',
+                    // Each option is set in its own face, so the shapes are
+                    // visible before the choice is made.
+                    fontFamily: opt.stack,
+                    border: '1px solid ' + (on ? accent + '73' : 'var(--border)'),
+                    background: on ? accent + '14' : 'var(--surface)',
+                    color: on ? accent : 'var(--text-muted)',
+                  }}
+                >
+                  {opt.sample && (
+                    <span aria-hidden="true" style={{ display: 'block', fontSize: '20px', lineHeight: 1.15, marginBottom: '2px', fontWeight: 500 }}>{opt.sample}</span>
+                  )}
+                  {opt.label}
+                </button>
+              )
+            })}
+          </div>
+          <div style={{ fontSize: '11.5px', color: 'var(--text-faint)', marginTop: '8px', lineHeight: 1.45 }}>
+            {readingFontHint(language, font)}
+          </div>
+        </div>
+      )}
       {setRate && (
         <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
           <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text)', letterSpacing: '0.02em', marginBottom: '8px' }}>Speed</div>

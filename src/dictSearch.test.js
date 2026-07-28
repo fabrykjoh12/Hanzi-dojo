@@ -1,5 +1,37 @@
 import { describe, it, expect, vi } from 'vitest'
-import { normalizeQuery, searchDict, getExamples, getWordsContaining, getDictEntryById, getDictEntryByWord, addDictEntryToDeck } from './dictSearch'
+import { normalizeQuery, searchDict, getExamples, getWordsContaining, getDictEntryById, getDictEntryByWord, addDictEntryToDeck, isHanChar, isHeadwordLookup } from './dictSearch'
+
+describe('isHanChar', () => {
+  it('recognises CJK ideographs across the common blocks', () => {
+    expect(isHanChar('中')).toBe(true)
+    expect(isHanChar('気')).toBe(true)
+    expect(isHanChar('𠀋')).toBe(true)   // extension B, a surrogate pair
+  })
+  it('rejects kana, cyrillic, latin, punctuation and nothing', () => {
+    for (const ch of ['あ', 'ア', 'д', 'a', '·', ' ']) expect(isHanChar(ch)).toBe(false)
+    expect(isHanChar('')).toBe(false)
+    expect(isHanChar(null)).toBe(false)
+  })
+})
+
+describe('isHeadwordLookup', () => {
+  it('one or two hanzi is a headword, so it is looked up by word', () => {
+    expect(isHeadwordLookup('中')).toBe(true)
+    expect(isHeadwordLookup('中文')).toBe(true)
+    expect(isHeadwordLookup('𠀋')).toBe(true)   // 2 UTF-16 units, 1 character
+  })
+  it('an entry id is not a headword', () => {
+    expect(isHeadwordLookup('3f2504e0-4f89-11d3-9a0c-0305e82c3301')).toBe(false)
+    expect(isHeadwordLookup('d1')).toBe(false)
+    expect(isHeadwordLookup(42)).toBe(false)
+    expect(isHeadwordLookup(null)).toBe(false)
+    expect(isHeadwordLookup('')).toBe(false)
+  })
+  it('three or more hanzi, or mixed script, is not a bare character lookup', () => {
+    expect(isHeadwordLookup('中国人')).toBe(false)
+    expect(isHeadwordLookup('中a')).toBe(false)
+  })
+})
 
 describe('normalizeQuery', () => {
   it('folds pinyin tones and lowercases', () => {

@@ -1,5 +1,50 @@
 import { describe, it, expect } from 'vitest'
-import { DICT_FILTERS, matchesDictFilter, filterVocab, dictionaryEmptyState, levelsInVocab, filterByLevel } from './dictionaryFilters'
+import { DICT_FILTERS, matchesDictFilter, filterVocab, dictionaryEmptyState, levelsInVocab, filterByLevel, cardStatus, hasActiveFilters } from './dictionaryFilters'
+import { MASTERY_STABILITY_DAYS } from './mastery'
+
+describe('cardStatus', () => {
+  it('no card is not_started', () => {
+    expect(cardStatus(null)).toBe('not_started')
+    expect(cardStatus(undefined)).toBe('not_started')
+    expect(cardStatus({ state: 'new' })).toBe('not_started')
+  })
+
+  it('learning and relearning both read as learning', () => {
+    expect(cardStatus({ state: 'learning' })).toBe('learning')
+    expect(cardStatus({ state: 'relearning' })).toBe('learning')
+  })
+
+  it('mastery is the stability gate, at the shared threshold', () => {
+    expect(cardStatus({ state: 'review', stability: MASTERY_STABILITY_DAYS })).toBe('mastered')
+    expect(cardStatus({ state: 'review', stability: MASTERY_STABILITY_DAYS - 0.1 })).toBe('review')
+  })
+
+  // The regression: is_easy is a kept-but-dead flag (CLAUDE.md §4) and used to
+  // short-circuit this check, so words FSRS had not proven yet were listed as
+  // Mastered — the one thing this app promises never to fake.
+  it('is_easy alone never counts as mastered', () => {
+    expect(cardStatus({ state: 'review', is_easy: true, stability: 2 })).toBe('review')
+    expect(cardStatus({ state: 'learning', is_easy: true, stability: 2 })).toBe('learning')
+    expect(cardStatus({ state: 'new', is_easy: true })).toBe('not_started')
+  })
+
+  it('a graduated card short of the threshold is review', () => {
+    expect(cardStatus({ state: 'review', stability: 5 })).toBe('review')
+  })
+})
+
+describe('hasActiveFilters', () => {
+  it('is false only when nothing is narrowing the list', () => {
+    expect(hasActiveFilters('all', 'all')).toBe(false)
+    expect(hasActiveFilters('all', null)).toBe(false)
+    expect(hasActiveFilters(undefined, undefined)).toBe(false)
+  })
+  it('is true for a status chip, a level, or both', () => {
+    expect(hasActiveFilters('learning', 'all')).toBe(true)
+    expect(hasActiveFilters('all', 2)).toBe(true)
+    expect(hasActiveFilters('mastered', 3)).toBe(true)
+  })
+})
 
 describe('DICT_FILTERS', () => {
   it('leads with All and covers the key states', () => {

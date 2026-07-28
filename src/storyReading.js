@@ -2,6 +2,7 @@
 // not, and this module is now imported by the story-utterance sync script as
 // well as by the readers.
 import { CHARACTER_READINGS, PLACE_WORDS } from './characterNames.js'
+import { collectStoryNames } from './storyNames.js'
 
 // Canonical story readability + the pure token/status helpers the immersion
 // reader is built from. This is the single source of truth for "% known": the
@@ -111,33 +112,66 @@ export function isDueSoon(dueAt, now = Date.now(), withinMs = 24 * 60 * 60 * 100
 }
 
 // Split "Speaker：line" into { speaker, text }. The colon (full-width or ASCII)
-// must sit within the first few characters to count as a label. Verbatim from
-// the reader so counting and rendering strip labels identically.
+// must sit within the first few characters to count as a label — or, in a
+// SPACED script, the prefix must be a single word (Russian labels like
+// "продавец:" run past six characters, while a narrated "Она сказала: …" has a
+// space in it and stays body text). The wider window is deliberately denied to
+// CJK: with no spaces to bound it, a narrated "大人常常告诉他们：…" would read as
+// an eight-character speaker. Verbatim from the reader so counting and
+// rendering strip labels identically.
+const SPEAKER_MAX = 6
+const SPEAKER_WORD_MAX = 16
+function isSpacedSingleWord(s) {
+  for (let i = 0; i < s.length; i += 1) {
+    const c = s.charCodeAt(i)
+    if (c === 32 || c === 9 || c === 10 || c === 13 || c === 0x3000) return false   // whitespace
+    if (c >= 0x3040 && c <= 0x30FF) return false                                    // kana
+    if (c >= 0x3400 && c <= 0x9FFF) return false                                    // CJK
+  }
+  return true
+}
 export function splitSpeaker(line) {
   const full = line.indexOf('：')
   const ascii = line.indexOf(':')
   let idx = -1
   if (full > 0) idx = full
   if (idx < 0 && ascii > 0) idx = ascii
-  if (idx > 0 && idx <= 6) {
+  if (idx > 0 && (idx <= SPEAKER_MAX || (idx <= SPEAKER_WORD_MAX && isSpacedSingleWord(line.slice(0, idx))))) {
     return { speaker: line.slice(0, idx).trim(), text: line.slice(idx + 1).trim() }
   }
   return { speaker: null, text: line }
 }
 
-// A proper name is one in the curated map that ISN'T a normal vocab word.
-// Verbatim from the reader (used by both the reader's segmenter and the count).
+// A proper name is one in the names map that ISN'T a normal vocab word.
+// Membership is checked by KEY, not by value: a name derived from the story's
+// own speaker labels has no reading (null), and testing truthiness would drop
+// every one of them.
+export function isNameKey(names, cand) {
+  return Boolean(names) && Object.prototype.hasOwnProperty.call(names, cand)
+}
 export function matchName(text, i, vocabMap, names) {
   const maxLen = Math.min(4, text.length - i)
   for (let len = maxLen; len >= 2; len -= 1) {
     const cand = text.slice(i, i + len)
-    if (names[cand] && !vocabMap[cand]) return cand
+    if (isNameKey(names, cand) && !vocabMap[cand]) return cand
   }
   return null
 }
 
 // The names/particles a language uses — the same derivation the reader makes.
 export function namesFor(language) { return CHARACTER_READINGS[language] || {} }
+
+// Every name this story uses: the curated map plus the cast the story declares
+// in its own speaker labels. Readers and the readability count must both call
+// this (never namesFor directly) or they disagree about what is a name.
+export function storyNamesFor(content, vocabMap = {}, language) {
+  const speakers = []
+  ;(content || '').split('\n').forEach(line => {
+    const { speaker } = splitSpeaker(line)
+    if (speaker) speakers.push(speaker)
+  })
+  return collectStoryNames(speakers, vocabMap, language, namesFor(language))
+}
 export function particlesFor(language) { return language === 'japanese' ? JP_PARTICLES : NO_PARTICLES }
 
 // Per-language word segmenter, built once. `null` where Intl.Segmenter is
@@ -491,6 +525,89 @@ function matchRussianAt(text, i, matcher, atBoundary) {
   return null
 }
 
+// ── Proper-name matching ─────────────────────────────────────────────────────
+// Chinese and Japanese names are matched as a fixed substring (matchName).
+// Russian names DECLINE — Иван → Ивана / Ивану / Иваном, Аня → Ани / Ане / Аню
+// — so a fixed substring match either misses the form entirely or matches the
+// stem and leaves the case ending dangling as its own mystery token. Russian
+// names are therefore matched as whole capitalized tokens, resolved back to the
+// dictionary name by the same shared-stem rule ordinary Russian vocabulary uses.
+
+// Names arrive as a plain object; index it once per object identity.
+const RU_NAME_INDEX = new WeakMap()
+function ruNameIndex(names) {
+  let idx = RU_NAME_INDEX.get(names)
+  if (idx) return idx
+  idx = []
+  for (const key in names) {
+    if (!Object.prototype.hasOwnProperty.call(names, key)) continue
+    const nl = normalizeRussian(key)
+    if (nl.length >= 2) idx.push({ word: key, nl })
+  }
+  RU_NAME_INDEX.set(names, idx)
+  return idx
+}
+
+// Is story token `tl` an inflected form of name `nl` (both normalized)? The
+// shared stem must reach within two letters of the name's end, and what's left
+// on each side must be a real inflectional ending — so Ивану resolves to Иван
+// while Ивановна (a different word) does not.
+function nameInflects(tl, nl) {
+  const lcp = ruLcp(tl, nl)
+  if (lcp < 2 || lcp < nl.length - 2) return false
+  const tEnd = tl.slice(lcp)
+  const nEnd = nl.slice(lcp)
+  if (tEnd.length > 3 || nEnd.length > 2) return false
+  return RU_INFLECTION.has(tEnd) && RU_INFLECTION.has(nEnd)
+}
+
+function matchRussianNameAt(text, i, matcher, names, atBoundary) {
+  if (!atBoundary) return null
+  const ch = text[i]
+  if (!isRuWordChar(ch)) return null
+  // A Russian personal name is always capitalized; a lowercase token is an
+  // ordinary word, however close its stem happens to sit to a name.
+  if (ch === ch.toLowerCase()) return null
+  let j = i
+  while (j < text.length && isRuWordChar(text[j])) j += 1
+  const token = text.slice(i, j)
+  const tl = normalizeRussian(token)
+  if (!tl) return null
+  // Vocabulary wins, exactly as it does for Chinese/Japanese names.
+  if (matcher && matcher.ruExact && matcher.ruExact.get(tl)) return null
+  let best = null
+  for (const e of ruNameIndex(names)) {
+    if (e.nl === tl) { best = e; break }
+    if (!best && nameInflects(tl, e.nl)) best = e
+  }
+  return best ? { text: token, word: best.word } : null
+}
+
+// matchNameAt(text, i, matcher, names, atBoundary) → { text, word } | null.
+// `text` is the surface form as written (Ивану), `word` the dictionary name
+// (Иван) the reading and the lookup sheet belong to. For CJK the two are equal.
+export function matchNameAt(text, i, matcher, names = {}, atBoundary = true) {
+  if (matcher && matcher.isRussian) return matchRussianNameAt(text, i, matcher, names, atBoundary)
+  const word = matchName(text, i, (matcher && matcher.words) || {}, names)
+  if (!word) return null
+  // A name never wins over a LONGER vocabulary word starting in the same place:
+  // the Japanese name はな sits inside はなし ("story"), and taking the name
+  // there would strand し. Longest consumption wins, as it does everywhere else
+  // in the matcher. (Particles are irrelevant to the comparison — a one-char
+  // match can never be longer than a two-char name.)
+  if (matcher) {
+    const v = matchVocabAt(text, i, matcher, NO_PARTICLES, atBoundary)
+    if (v && v.len > word.length) return null
+  }
+  return { text: word, word }
+}
+
+// The name payload a token carries — a derived name has no reading, and null
+// reads the same as "no furigana here" everywhere downstream.
+function namePayload(match, names) {
+  return { word: match.word, reading: names[match.word] || null }
+}
+
 // matchVocabAt(text, i, matcher, particles, atBoundary) → { vocab, len } | null.
 // Considers exact matches (long enough for set phrases like ありがとうございます)
 // AND, for Japanese, conjugation-tolerant stem matches (only when the char
@@ -551,6 +668,23 @@ export function matchVocabAt(text, i, matcher, particles = NO_PARTICLES, atBound
   return exactMatch || stemMatch
 }
 
+// Is a token an actual word (letters/CJK/kana/Cyrillic/digits) rather than pure
+// punctuation or spacing? Every word-like token is tappable in every reader,
+// even the ones outside the learner's vocabulary list (conjugated verbs,
+// grammar, names, words beyond the level) — you can always hear it, look it up
+// and read the sentence. Punctuation stays inert.
+export function isWordlikeToken(text) {
+  const v = text || ''
+  for (let i = 0; i < v.length; i += 1) {
+    const c = v.charCodeAt(i)
+    const isWord = (c >= 0x30 && c <= 0x39) || (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A)
+      || (c >= 0x3040 && c <= 0x30FF) || (c >= 0x3400 && c <= 0x9FFF)
+      || (c >= 0x0400 && c <= 0x04FF) || (c >= 0xFF66 && c <= 0xFF9D)
+    if (isWord) return true
+  }
+  return false
+}
+
 // Is `ch` a boundary-maker when skipped unmatched: punctuation/space (any
 // non-word char) or a single-kana particle. A skipped ordinary word char means
 // we're inside an unknown word, so the next position is NOT a boundary.
@@ -598,8 +732,8 @@ function isCjkWord(w) {
 function coverableBy(text, start, end, matcher, names, particles) {
   let i = start
   while (i < end) {
-    const name = matchName(text, i, matcher.words, names)
-    if (name && i + name.length <= end) { i += name.length; continue }
+    const name = matchNameAt(text, i, matcher, names, true)
+    if (name && i + name.text.length <= end) { i += name.text.length; continue }
     let hit = 0
     for (let len = end - i; len >= 1; len -= 1) {
       const cand = text.slice(i, i + len)
@@ -618,7 +752,8 @@ export function atomicSpans(text, matcher, names = {}, particles = NO_PARTICLES,
     const w = seg.segment
     if (w.length < 2 || !isCjkWord(w)) continue
     if (matcher.exact[w]) continue                                   // already one vocab token
-    if (matchName(text, seg.index, matcher.words, names) === w) continue
+    const asName = matchNameAt(text, seg.index, matcher, names, true)
+    if (asName && asName.text === w) continue
     // A pool word that runs PAST this segment (一点儿, where the segmenter splits
     // 一点 + 儿) means the curriculum knows this boundary better than the
     // segmenter does — leave it to the normal matcher.
@@ -638,8 +773,8 @@ function scanLineVocab(text, matcher, names, particles, out, atomic = null) {
     // unknown word, not a known 太 plus a fragment.
     const span = atomic && atomic.get(i)
     if (span) { i += span; boundary = true; continue }
-    const name = matchName(text, i, matcher.words, names)
-    if (name) { i += name.length; boundary = true; continue }
+    const name = matchNameAt(text, i, matcher, names, boundary)
+    if (name) { i += name.text.length; boundary = true; continue }
     const m = matchVocabAt(text, i, matcher, particles, boundary)
     if (m) { out.push(m.vocab); i += m.len; boundary = true; continue }
     boundary = boundaryAfterSkip(text[i], particles)
@@ -648,27 +783,55 @@ function scanLineVocab(text, matcher, names, particles, out, atomic = null) {
 }
 
 // Segment one (speaker-stripped) line into renderable tokens: each vocab match
-// is its own tappable token; a curated proper name is its own token too (with a
-// `name` payload, so a reader can style/label it distinctly instead of showing
-// it as inert filler text); consecutive non-vocab characters are grouped into
-// a single plain-text run. Mirrors scanLineVocab's matching exactly, but keeps
-// the text so the reader can render it. Pure — unit-tested.
-export function segmentLine(text, matcher, names = {}, particles = NO_PARTICLES) {
+// is its own tappable token; a proper name is its own token too (with a `name`
+// payload, so a reader can style/label it distinctly instead of showing it as
+// inert filler text). Mirrors scanLineVocab's matching exactly, but keeps the
+// text so the reader can render it. Pure — unit-tested.
+//
+// `segmenter` (Intl.Segmenter for the language) is what makes the REST of the
+// line tappable. Without it, every stretch of text the vocabulary pool doesn't
+// know collapses into one run token — a whole clause the learner can't tap a
+// single word of. With it, unmatched text is split at real word boundaries and
+// atomic spans (太阳, 周末) survive whole, so every word in the line is its own
+// token whether or not it is in the pool. Optional so a caller that only wants
+// vocabulary (the readability count) can skip the work.
+export function segmentLine(text, matcher, names = {}, particles = NO_PARTICLES, segmenter = null) {
   const tokens = []
-  let run = ''
-  const flush = () => { if (run) { tokens.push({ text: run, vocab: null }); run = '' } }
+  const atomic = atomicSpans(text, matcher, names, particles, segmenter)
   let i = 0
   let boundary = true
   while (i < text.length) {
-    const name = matchName(text, i, matcher.words, names)
-    if (name) { flush(); tokens.push({ text: name, vocab: null, name: { word: name, reading: names[name] } }); i += name.length; boundary = true; continue }
+    const span = atomic.get(i)
+    if (span) { tokens.push({ text: text.slice(i, i + span), vocab: null }); i += span; boundary = true; continue }
+    const name = matchNameAt(text, i, matcher, names, boundary)
+    if (name) {
+      tokens.push({ text: name.text, vocab: null, name: namePayload(name, names) })
+      i += name.text.length
+      boundary = true
+      continue
+    }
     const m = matchVocabAt(text, i, matcher, particles, boundary)
-    if (m) { flush(); tokens.push({ text: text.slice(i, i + m.len), vocab: m.vocab }); i += m.len; boundary = true; continue }
-    run += text[i]
-    boundary = boundaryAfterSkip(text[i], particles)
-    i += 1
+    if (m) { tokens.push({ text: text.slice(i, i + m.len), vocab: m.vocab }); i += m.len; boundary = true; continue }
+    // Unmatched text: run to the next thing the matcher recognises, then hand
+    // the run to the segmenter so it becomes words rather than one blob.
+    let j = i
+    let b = boundary
+    while (j < text.length) {
+      if (atomic.get(j)) break
+      if (matchNameAt(text, j, matcher, names, b)) break
+      if (matchVocabAt(text, j, matcher, particles, b)) break
+      b = boundaryAfterSkip(text[j], particles)
+      j += 1
+    }
+    const run = text.slice(i, j)
+    if (segmenter) {
+      for (const seg of segmenter.segment(run)) tokens.push({ text: seg.segment, vocab: null })
+    } else {
+      tokens.push({ text: run, vocab: null })
+    }
+    i = j
+    boundary = b
   }
-  flush()
   return tokens
 }
 
@@ -697,7 +860,10 @@ export function todayWordsInStory(storyWords, todayWords) {
 //   - counts: Map word → how many times it appears (with duplicates) — powers the
 //     "appears N× in this story" hint without a second parse.
 export function calculateStoryReadability({ content, vocabMap = {}, cards = {}, language } = {}) {
-  const names = namesFor(language)
+  // Derived from THIS story's speaker labels, not just the curated map — the
+  // reader renders names that way, and "% known" must never count a character's
+  // name as vocabulary the learner failed to know.
+  const names = storyNamesFor(content, vocabMap, language)
   const particles = particlesFor(language)
   const matcher = buildVocabMatcher(vocabMap, language)
 

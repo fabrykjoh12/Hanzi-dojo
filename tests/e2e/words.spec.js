@@ -9,8 +9,9 @@ test.describe('Word list', () => {
     // Tap a seeded word row.
     await page.getByRole('button', { name: /朋友/ }).first().click();
 
-    // The shared lookup sheet appears with its controls.
-    await expect(page.getByRole('button', { name: 'Add to deck' })).toBeVisible();
+    // The shared lookup sheet appears with its controls. Its deck button names
+    // the word's state, so it reads "In your deck" for a word already saved.
+    await expect(page.getByRole('button', { name: /^(In your deck|Add to deck)$/ })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Play audio' })).toBeVisible();
   });
 

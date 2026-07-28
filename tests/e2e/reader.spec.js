@@ -223,6 +223,30 @@ test.describe('Story reader', () => {
     await expect(speeds.getByRole('button', { name: '1×' })).toHaveAttribute('aria-pressed', 'false');
   });
 
+  test('paced reveal: the reader settings panel offers a reading font', async ({ page }) => {
+    const reader = new ReaderPage(page);
+    await reader.openFirstStory();
+    await page.getByRole('button', { name: /Start reading/i }).click();
+
+    await page.getByRole('button', { name: /Reader settings/i }).click();
+    const fonts = page.getByRole('group', { name: /Reading font/i });
+    await expect(fonts).toBeVisible();
+
+    // Sans is the default — the app's existing look.
+    await expect(fonts.getByRole('button', { name: 'Sans' })).toHaveAttribute('aria-pressed', 'true');
+
+    // Chinese is the only track with a Kai handwriting face, and it's offered.
+    const kai = fonts.getByRole('button', { name: 'Handwriting' });
+    await kai.click();
+    await expect(kai).toHaveAttribute('aria-pressed', 'true');
+    await expect(fonts.getByRole('button', { name: 'Sans' })).toHaveAttribute('aria-pressed', 'false');
+
+    // The story text itself is now set in the Kai stack (font-family inherits).
+    const family = await page.getByText('今天', { exact: true }).first()
+      .evaluate(el => getComputedStyle(el).fontFamily);
+    expect(family).toContain('Kaiti SC');
+  });
+
   test('paced reveal: tapping a word while paused still opens the lookup sheet', async ({ page }) => {
     const reader = new ReaderPage(page);
     await reader.openFirstStory();
@@ -230,6 +254,9 @@ test.describe('Story reader', () => {
 
     // Not playing, so the tap must mean "what does that mean", unchanged.
     await page.getByText('今天', { exact: true }).first().click();
-    await expect(page.getByRole('button', { name: /Add to deck/i })).toBeVisible();
+    await expect(page.getByText('today')).toBeVisible();                        // the definition
+    // The deck button names the word's state — this one is already saved, so it
+    // reads "In your deck" rather than "Add to deck" (parity with the classic reader).
+    await expect(page.getByRole('button', { name: /^(In your deck|Add to deck)$/i })).toBeVisible();
   });
 });

@@ -43,6 +43,35 @@ export async function getDictEntryByWord(supabase, word) {
   return rows[0] || null
 }
 
+// CJK Unified Ideographs, the main extensions, and the compatibility block.
+const HAN_RANGES = [
+  [0x3400, 0x4dbf], [0x4e00, 0x9fff], [0xf900, 0xfaff],
+  [0x20000, 0x2a6df], [0x2a700, 0x2ebef], [0x2f800, 0x2fa1f],
+]
+
+export function isHanChar(ch) {
+  if (!ch) return false
+  const c = ch.codePointAt(0)
+  for (const [lo, hi] of HAN_RANGES) {
+    if (c >= lo && c <= hi) return true
+  }
+  return false
+}
+
+// An entry drill-down passes either a dict-entry id (the "words containing"
+// chips) or a bare headword (the character cards). One or two hanzi means it is
+// a headword and must be looked up by word, not by id.
+//
+// Written with codePointAt rather than a `\p{Script=Han}` regex on purpose:
+// CLAUDE.md §6.2 (the OXC parser chokes on complex regex literals), and
+// iterating code points also stops a surrogate pair from counting as two chars.
+export function isHeadwordLookup(value) {
+  if (typeof value !== 'string' || !value) return false
+  const chars = Array.from(value)
+  if (chars.length > 2) return false
+  return chars.every(isHanChar)
+}
+
 export async function addDictEntryToDeck(supabase, dictEntryId, language, system) {
   const { data, error } = await supabase.rpc('dict_add_to_deck', {
     p_dict_entry_id: dictEntryId, p_language: language, p_system: system,

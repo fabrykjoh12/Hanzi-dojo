@@ -2,12 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from './supabase'
 import { buildVocabMap, assumedKnownCards, teaserLines, LEVEL_CHOICES } from './publicStoryHelpers'
-import { calculateStoryReadability, buildVocabMatcher, matchVocabAt, matchName, wordStatus, splitSpeaker, boundaryAfterSkip, JP_PARTICLES, atomicSpans, segmenterFor } from './storyReading'
+import { calculateStoryReadability, buildVocabMatcher, matchVocabAt, matchNameAt, storyNamesFor, wordStatus, splitSpeaker, boundaryAfterSkip, JP_PARTICLES, atomicSpans, segmenterFor } from './storyReading'
 import { getLevelLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { BRAND_NAME } from './brand'
 import { track, EVENTS } from './analytics'
-import { CHARACTER_READINGS } from './characterNames'
 import StoryCover from './StoryCover'
 
 const NO_PARTICLES = new Set()
@@ -92,6 +91,9 @@ export default function PublicStory({ storyId }) {
 
   const levelLabel = getLevelLabel(story.language, story.system, story.level)
   const lines = teaserLines(story.content, 4)
+  // Curated names + this story's own cast, so the teaser skips names exactly
+  // the way the counted percentage does.
+  const teaserNames = storyNamesFor(story.content, vocabMap, story.language)
   const knownCards = choice ? assumedKnownCards(story.vocab_pool, choice, story.level) : {}
 
   return (
@@ -139,7 +141,7 @@ export default function PublicStory({ storyId }) {
 
             <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '18px', marginBottom: '18px', fontFamily: theme.font + ', Inter, sans-serif', fontSize: '20px', lineHeight: 2 }}>
               {lines.map((line, i) => (
-                <TeaserLine key={i} line={line} vocabMap={vocabMap} language={story.language} knownCards={knownCards} accent={accent} />
+                <TeaserLine key={i} line={line} vocabMap={vocabMap} language={story.language} knownCards={knownCards} accent={accent} names={teaserNames} />
               ))}
               <div style={{ color: 'var(--text-faint)', fontSize: '14px', fontStyle: 'italic', marginTop: '8px' }}>…</div>
             </div>
@@ -167,10 +169,9 @@ function ctaStyle(accent) {
 // Mirrors scanLineVocab's ordering (storyReading.js): try matchName first at
 // each position (skip over a personal-name fragment without highlighting it,
 // same as the counted % does), then fall back to matchVocabAt.
-function TeaserLine({ line, vocabMap, language, knownCards, accent }) {
+function TeaserLine({ line, vocabMap, language, knownCards, accent, names }) {
   const matcher = useMemo(() => buildVocabMatcher(vocabMap, language), [vocabMap, language])
   const particles = language === 'japanese' ? JP_PARTICLES : NO_PARTICLES
-  const names = CHARACTER_READINGS[language] || {}
   const { speaker, text } = splitSpeaker(line)
   const parts = []
   // Same atomic-span rule as the signed-in reader and the counted %: a segmenter
@@ -188,10 +189,10 @@ function TeaserLine({ line, vocabMap, language, knownCards, accent }) {
       boundary = true
       continue
     }
-    const name = matchName(text, i, matcher.words, names)
+    const name = matchNameAt(text, i, matcher, names, boundary)
     if (name) {
-      parts.push(<span key={key++}>{name}</span>)
-      i += name.length
+      parts.push(<span key={key++}>{name.text}</span>)
+      i += name.text.length
       boundary = true
       continue
     }

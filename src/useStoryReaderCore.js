@@ -1,9 +1,10 @@
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import { languageTheme } from './languageTheme'
 import { getAudioUrl, playAudioEl } from './utils'
-import { calculateStoryReadability, buildVocabMatcher, segmentLine, namesFor, particlesFor, splitSpeaker, normalizeReadingMode, DEFAULT_READING_MODE } from './storyReading'
+import { calculateStoryReadability, buildVocabMatcher, segmentLine, storyNamesFor, particlesFor, splitSpeaker, normalizeReadingMode, DEFAULT_READING_MODE, segmenterFor } from './storyReading'
 import { splitScene, stripSceneEmoji } from './sceneReading'
 import { prefsGet, prefsMerge } from './offline'
+import { READER_PREFS_KEY, DEFAULT_READING_FONT, normalizeReadingFont, readingFontFromPrefs, readingFontPatch, readingFontStack } from './readingFonts'
 import { buildTimeline, tokenAtTime, startOfToken, minDwellMs, DEFAULT_RATE, SPEED_RATES } from './readAlong'
 import { supabase } from './supabase'
 import { loadTtsAudio, utteranceAudio } from './ttsAudio'
@@ -12,10 +13,12 @@ import { ensureAudio } from './audioCache'
 import { isOnline } from './useOnline'
 import { enqueueStoryRead } from './syncQueue'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
+import { addDictEntryToDeck } from './dictSearch'
+import { toast } from './toast'
 
-// The classic reader's prefs object. Shared verbatim so a reading mode picked in
-// one reader is the mode every reader opens with.
-const READER_PREFS_KEY = 'reader:prefs'
+// READER_PREFS_KEY is the classic reader's prefs object, shared verbatim (from
+// readingFonts.js, which owns the key) so a reading mode or font picked in one
+// reader is what every reader opens with.
 
 // Shared, presentation-independent reader behavior for the paced + chat readers:
 // beat parsing, % known, tap-to-reveal progression, per-line audio read-along,
@@ -36,6 +39,10 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   // exactly the legacy path.
   const [utteranceIds, setUtteranceIds] = useState({})
   const [readingMode, setReadingMode] = useState(DEFAULT_READING_MODE)
+  // The reading font — shared with the classic reader and the flashcard through
+  // the same prefs record, so the shape of the characters is one choice, made
+  // once. See readingFonts.js.
+  const [readingFont, setReadingFont] = useState(DEFAULT_READING_FONT)
   // Per-sentence reveal: which beat/bubble indices currently show their
   // English translation, via the eye icon beside each sentence. Each sentence
   // owns its own bit — revealing one never shows (or hides) any other.
@@ -47,6 +54,7 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   const [completedBeats, setCompletedBeats] = useState(() => new Set())
   const pickedRef = useRef(false)      // the learner chose a mode this session
   const ratePickedRef = useRef(false)  // the learner chose a rate this session (own flag: rate and mode must not gate each other)
+  const fontPickedRef = useRef(false)  // the learner chose a font this session (own flag, same reason)
   const firstSaveRef = useRef(true)    // don't persist the un-loaded default
   const [playing, setPlaying] = useState(false)
   const [selected, setSelected] = useState(null)
@@ -65,11 +73,31 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   const timelineRef = useRef(null)
   const [rate, setRateState] = useState(DEFAULT_RATE)
   const rateRef = useRef(DEFAULT_RATE)
+  // Dictionary words saved to the deck this session, and whether a save is in
+  // flight. Ids, not words: the RPC dedupes on the dict entry.
+  const [dictSaved, setDictSaved] = useState(() => new Set())
+  const [dictSaving, setDictSaving] = useState(false)
+  // The in-flight guard lives in a ref as well as in state, because two taps in
+  // the same frame both read the pre-render state and would both fire.
+  const dictSavingRef = useRef(false)
+
+  // The CSS family the story text is set in. Derived, never stored — the stored
+  // value is the choice ('sans' / 'serif' / 'handwriting'), so the stacks can
+  // change in one place without migrating anybody's prefs.
+  const readingFontFamily = readingFontStack(track.language, readingFont)
 
   const matcher = useMemo(() => buildVocabMatcher(vocabMap, track.language), [vocabMap, track.language])
-  const names = useMemo(() => namesFor(track.language), [track.language])
   const particles = useMemo(() => particlesFor(track.language), [track.language])
   const isScene = story.presentation === 'scene'
+  // Curated names PLUS this story's own cast (its speaker labels), so a name the
+  // curated map never heard of still renders and taps as a name. Derived from
+  // the emoji-stripped text so a scene story's "🎬 小明：…" label still parses.
+  const names = useMemo(
+    () => storyNamesFor(isScene ? stripSceneEmoji(story.content) : story.content, vocabMap, track.language),
+    [story.content, isScene, vocabMap, track.language])
+  // Splits the text the vocabulary pool doesn't know into real words, so every
+  // word in a line is its own tappable token instead of one un-tappable run.
+  const segmenter = useMemo(() => segmenterFor(track.language), [track.language])
   const beats = useMemo(() => {
     // english_content is authored newline-aligned with content, so a beat's
     // translation is the English line at the same index. Guard by index so a
@@ -78,9 +106,9 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     return (story.content || '').split('\n').filter(Boolean).map((line, idx) => {
       const { emoji, text: body } = isScene ? splitScene(line) : { emoji: '', text: line }
       const { speaker, text } = splitSpeaker(body)
-      return { speaker, text, emoji, english: englishLines[idx] || '', tokens: segmentLine(text, matcher, names, particles) }
+      return { speaker, text, emoji, english: englishLines[idx] || '', tokens: segmentLine(text, matcher, names, particles, segmenter) }
     })
-  }, [story.content, story.english_content, isScene, matcher, names, particles])
+  }, [story.content, story.english_content, isScene, matcher, names, particles, segmenter])
   const readContent = useMemo(() => (isScene ? stripSceneEmoji(story.content) : story.content), [isScene, story.content])
   const readability = useMemo(
     () => calculateStoryReadability({ content: readContent, vocabMap, cards: userCards, language: track.language }),
@@ -334,7 +362,23 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   // be obviously about the word/sentence you touched, not just any match of it.
   const selectWord = (vocab, status, tokenId) => {
     stopPlay()
-    setSelected({ word: vocab.word, vocab, status, tokenId, sentence: sourceSentenceFor(vocab) })
+    setSelected({ word: vocab.word, vocab, name: null, status, tokenId, sentence: sourceSentenceFor(vocab) })
+  }
+
+  // A tap on ANY token, not just a vocabulary word. Words outside the level's
+  // list — and character names — carry no vocab entry, and used to be inert:
+  // the learner could see them but never ask what they were. They open the same
+  // sheet, which explains them from the grammar glossary or the reference
+  // dictionary. Punctuation and whitespace stay inert (the reader decides that
+  // with isWordlikeToken before calling).
+  const selectToken = (token, status, tokenId, beatIndex) => {
+    if (token.vocab) return selectWord(token.vocab, status, tokenId)
+    stopPlay()
+    const beat = beats[beatIndex] || beats[cur] || {}
+    return setSelected({
+      word: token.text, vocab: null, name: token.name || null,
+      status: 'not_started', tokenId, sentence: beat.text || null,
+    })
   }
 
   const addToDeck = async (vocab) => {
@@ -357,6 +401,28 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
       ;({ error } = await supabase.from('cards').insert(rest))
     }
     if (!error && setUserCards) setUserCards(prev => ({ ...prev, [vocab.id]: { vocab_id: vocab.id, state: 'new' } }))
+  }
+
+  // Keeping a word the level's list doesn't contain. There is no vocabulary row
+  // to add, so this goes through the same RPC the classic reader and the
+  // Dictionary screen use: it creates (or reuses) a level-less vocabulary row
+  // for the track and inserts the card. Those rows carry no recorded audio, so
+  // the flashcard falls back to speech synthesis — expected, not a failure.
+  const addDictToDeck = async (entry) => {
+    if (!entry || !entry.id) return
+    if (dictSavingRef.current || dictSaved.has(entry.id)) return
+    dictSavingRef.current = true
+    setDictSaving(true)
+    try {
+      await addDictEntryToDeck(supabase, entry.id, track.language, track.system)
+      setDictSaved(prev => new Set(prev).add(entry.id))
+      toast({ title: 'Saved to your deck', body: entry.simplified || entry.word || null, accent: theme.accentHex })
+    } catch {
+      toast({ title: 'Couldn’t save that word', accent: theme.accentHex })
+    } finally {
+      dictSavingRef.current = false
+      setDictSaving(false)
+    }
   }
 
   const start = () => { setCur(0); setStarted(true) }
@@ -413,23 +479,34 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
         setRateState(saved.playbackRate)
         rateRef.current = saved.playbackRate
       }
+      // readingFontFromPrefs also migrates the legacy `serif: true` flag, so a
+      // learner who had turned serif on keeps it instead of being reset.
+      if (!fontPickedRef.current) setReadingFont(readingFontFromPrefs(saved, track.language))
     })
     return () => { active = false }
-  }, [])
+  }, [track.language])
 
-  // Persist mode changes, merged over whatever is stored, so writing our one
-  // field never clobbers the classic reader's lens / serif / English flags.
+  // Persist mode/rate/font changes, merged over whatever is stored, so writing
+  // our fields never clobbers the classic reader's lens / focus-hint flags.
   // Skipping only the very first run keeps the initial default from overwriting
   // a saved value; every later change (a load or a pick) is worth writing back.
   useEffect(() => {
     if (firstSaveRef.current) { firstSaveRef.current = false; return }
-    prefsMerge(READER_PREFS_KEY, { furiganaMode: readingMode, playbackRate: rate })
-  }, [readingMode, rate])
+    prefsMerge(READER_PREFS_KEY, {
+      furiganaMode: readingMode, playbackRate: rate,
+      ...readingFontPatch(track.language, readingFont),
+    })
+  }, [readingMode, rate, readingFont, track.language])
 
   const pickReadingMode = useCallback((mode) => {
     pickedRef.current = true
     setReadingMode(normalizeReadingMode(mode))
   }, [])
+
+  const pickReadingFont = useCallback((value) => {
+    fontPickedRef.current = true
+    setReadingFont(normalizeReadingFont(track.language, value))
+  }, [track.language])
 
   useEffect(() => {
     if (!started) return undefined
@@ -453,8 +530,11 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   return {
     theme, reduceMotion, beats, readability, total, ttsLang,
     started, cur, done, playing, selected, readingMode, revealedEnglish, completedBeats, activeToken, rate,
+    readingFont, readingFontFamily,
+    setReadingFont: pickReadingFont,
     setReadingMode: pickReadingMode, toggleEnglish, markBeatDone, setSelected, setRate: pickRate,
-    go, advance, finish, stopPlay, togglePlay, speakWord, replayLine, selectWord, addToDeck,
+    go, advance, finish, stopPlay, togglePlay, speakWord, replayLine, selectWord, selectToken, addToDeck,
+    addDictToDeck, dictSaved, dictSaving,
     seekToToken,
     start, backToStart, setAdvanceBlocked,
     questions, answers, answerQuestion,

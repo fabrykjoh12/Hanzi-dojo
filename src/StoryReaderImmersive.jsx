@@ -4,15 +4,16 @@ import { isOnline } from './useOnline'
 import { enqueueStoryRead } from './syncQueue'
 import { ensureAudio } from './audioCache'
 import { PrimaryButton } from './ui'
-import { CHARACTER_READINGS } from './characterNames'
 import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
-import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, matchName, JP_PARTICLES, readingVisibleFor, isDueSoon, buildVocabMatcher, matchVocabAt, boundaryAfterSkip, isPlaceWord, atomicSpans } from './storyReading'
+import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, JP_PARTICLES, readingVisibleFor, isDueSoon, buildVocabMatcher, isPlaceWord, segmentLine, storyNamesFor, isNameKey, isWordlikeToken } from './storyReading'
 import { minDwellMs } from './readAlong'
 import { glossaryLookup } from './grammarGlossary'
+import { STATUS_COLOR, STATUS_LABEL } from './wordLookup'
 import { getDictEntryByWord, addDictEntryToDeck } from './dictSearch'
-import { prefsGet, prefsSet } from './offline'
+import { prefsGet, prefsMerge } from './offline'
+import { READER_PREFS_KEY, DEFAULT_READING_FONT, normalizeReadingFont, readingFontFromPrefs, readingFontHint, readingFontOptions, readingFontPatch, readingFontStack } from './readingFonts'
 import { FIRST_MISSION_READER_HINT, firstMissionCompletion } from './firstMission'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
 import { shareReadingCard } from './shareCard'
@@ -52,24 +53,15 @@ function dictCacheSet(word, entry) {
   DICT_CACHE.set(word, entry)
 }
 
-// Durable reader preferences (furigana mode, Learning Lens, serif). Stored in
-// the prefs store so a reader's chosen scaffolding survives reloads without a
-// round-trip to the server. Default: scaffold only unknown words, lens off —
-// the page reads like a book until the learner asks for more help. Sentence
-// translation is NOT a durable preference: each line has its own eye icon
-// (see RevealEnglishButton) so it's a per-sentence, per-session choice.
-const READER_PREFS_KEY = 'reader:prefs'
-const DEFAULT_PREFS = { furiganaMode: 'unknown', lens: false, serif: false, seenFocusHint: false }
-
-// Serif reading-font stacks, per script. These lean on the OS's own serif faces
-// (genuinely book-like for CJK, and free) so we never load a web font — any named
-// face that's absent falls through to the generic `serif` keyword.
-const SERIF_FONTS = {
-  japanese: "'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',serif",
-  chinese: "'Songti SC','SimSun','Noto Serif SC',serif",
-  russian: "'Noto Serif','Georgia','Times New Roman',serif",
-  default: "'Noto Serif','Georgia','Times New Roman',serif",
-}
+// Durable reader preferences (furigana mode, Learning Lens, reading font).
+// Stored in the prefs store — under READER_PREFS_KEY, the same record every
+// other reader and the flashcard read — so a reader's chosen scaffolding
+// survives reloads without a round-trip to the server. Default: scaffold only
+// unknown words, lens off — the page reads like a book until the learner asks
+// for more help. Sentence translation is NOT a durable preference: each line
+// has its own eye icon (see RevealEnglishButton) so it's a per-sentence,
+// per-session choice. The reading-font stacks live in readingFonts.js.
+const DEFAULT_PREFS = { furiganaMode: 'unknown', lens: false, seenFocusHint: false }
 
 const FURIGANA_OPTIONS = [
   { value: 'always', label: 'Always' },
@@ -87,21 +79,9 @@ const prefersReducedMotion = () =>
 // in a sentence they're almost always the particle, not the noun.
 const NO_PARTICLES = new Set()
 
-const STATUS_COLOR = {
-  not_started: 'var(--text-faint)',
-  learning: '#CA8A04',
-  review: '#3E63DD',
-  mastered: '#2F9E6D',
-}
-
-// Plain-language status label for the lookup sheet, so learning state is legible
-// (not conveyed by the color dot alone).
-const STATUS_LABEL = {
-  not_started: 'New word',
-  learning: 'Learning',
-  review: 'Known',
-  mastered: 'Mastered',
-}
+// STATUS_COLOR / STATUS_LABEL are shared with the paged reader's lookup sheet
+// (wordLookup.js), so the two sheets can never disagree about what a status
+// looks like or is called.
 
 // ── Japanese furigana helpers (reading only over kanji) ─────────────────────
 function hasKanji(text) {
@@ -113,20 +93,6 @@ function hasKanji(text) {
   return false
 }
 function isKana(c) { return c >= 0x3040 && c <= 0x30FF }
-// Is a token an actual word (letters/CJK/kana/Cyrillic/digits) vs. pure
-// punctuation or spacing? Word-like tokens are all tappable, even when they
-// aren't in the learner's vocabulary list (conjugated verbs, grammar, particles)
-// — you can still hear them and read the sentence translation.
-function isWordChar(c) {
-  return (c >= 0x30 && c <= 0x39) || (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A)
-    || (c >= 0x3040 && c <= 0x30FF) || (c >= 0x3400 && c <= 0x9FFF)
-    || (c >= 0x0400 && c <= 0x04FF) || (c >= 0xFF66 && c <= 0xFF9D)
-}
-function isWordlike(text) {
-  const v = text || ''
-  for (let i = 0; i < v.length; i += 1) if (isWordChar(v.charCodeAt(i))) return true
-  return false
-}
 function furiganaParts(word, reading) {
   const w = word || ''
   const r = reading || ''
@@ -156,63 +122,9 @@ function makeSegmenter(locale) {
   return null
 }
 
-// splitSpeaker + matchName now live in ./storyReading (shared with the recap's
-// readability so counting and rendering strip labels / skip names identically).
-
-// Names → greedy/deinflection vocab match → Intl.Segmenter for the rest, so known
-// words (including conjugated Japanese verbs, via the shared matcher) stay
-// tappable as whole units and everything else has clean word boundaries. The
-// matcher is prebuilt once per render (buildVocabMatcher) and shared with the
-// readability count so what's tappable and what's counted stay in lockstep.
-function segmentLine(text, matcher, segmenter, names, particles) {
-  const tokens = []
-  // Segmenter words the vocabulary pool can't cover completely (太阳, 周末) are
-  // emitted whole instead of being torn into a pool word plus a fragment, so the
-  // dictionary fallback is asked about the real word. See atomicSpans().
-  const atomic = atomicSpans(text, matcher, names, particles, segmenter)
-  let i = 0
-  let boundary = true
-  while (i < text.length) {
-    const span = atomic.get(i)
-    if (span) {
-      tokens.push({ text: text.slice(i, i + span), vocab: null })
-      i += span
-      boundary = true
-      continue
-    }
-    const name = matchName(text, i, matcher.words, names)
-    if (name) {
-      tokens.push({ text: name, name: { word: name, reading: names[name] } })
-      i += name.length
-      boundary = true
-      continue
-    }
-    const m = matchVocabAt(text, i, matcher, particles, boundary)
-    if (m) {
-      tokens.push({ text: text.slice(i, i + m.len), vocab: m.vocab })
-      i += m.len
-      boundary = true
-      continue
-    }
-    let j = i
-    let b = boundary
-    while (j < text.length) {
-      if (matchName(text, j, matcher.words, names)) break
-      if (matchVocabAt(text, j, matcher, particles, b)) break
-      b = boundaryAfterSkip(text[j], particles)
-      j += 1
-    }
-    const run = text.slice(i, j)
-    if (segmenter) {
-      for (const seg of segmenter.segment(run)) tokens.push({ text: seg.segment, vocab: null })
-    } else {
-      tokens.push({ text: run, vocab: null })
-    }
-    i = j
-    boundary = b
-  }
-  return tokens
-}
+// splitSpeaker + matchName + segmentLine now live in ./storyReading (shared with
+// the paced/chat/scene readers and with the recap's readability, so counting and
+// rendering strip labels / skip names / split unmatched text identically).
 
 // Furigana over a token. Kept as a small pure helper so both real vocab (kanji
 // core only) and name/kana readings render consistently, at a legible size.
@@ -231,7 +143,7 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
   const reading = token.vocab ? token.vocab.reading : (token.name ? token.name.reading : null)
   // Vocabulary and names carry data; plain word-like tokens are still tappable
   // (hear them / see the sentence). Only punctuation and whitespace are inert.
-  const clickable = Boolean(token.vocab || token.name) || isWordlike(token.text)
+  const clickable = Boolean(token.vocab || token.name) || isWordlikeToken(token.text)
   if (!clickable) {
     // Reserve an empty furigana row so punctuation sits on the same baseline as
     // neighboring words that carry a reading (no vertical jitter).
@@ -323,7 +235,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     if (next.has(li)) next.delete(li); else next.add(li)
     return next
   })
-  const [serif, setSerif] = useState(DEFAULT_PREFS.serif)
+  const [readingFontChoice, setReadingFontChoice] = useState(DEFAULT_READING_FONT)
   const [seenFocusHint, setSeenFocusHint] = useState(DEFAULT_PREFS.seenFocusHint)
   const [showSentence, setShowSentence] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -354,10 +266,15 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const isChinese = track.language === 'chinese'
   const accent = theme.accentHex
   const font = theme.font
-  // Reading-column font: the theme sans by default, or the script's system serif
-  // when the reader turns on the Serif setting (book-like, no web font loaded).
-  const readingFont = serif ? (SERIF_FONTS[track.language] || SERIF_FONTS.default) : font
-  const names = CHARACTER_READINGS[track.language] || {}
+  // Reading-column font: whichever face the learner picked (readingFonts.js owns
+  // the stacks and which languages offer what). No web font is loaded either way.
+  const readingFont = readingFontStack(track.language, readingFontChoice)
+  const pickReadingFont = (value) => setReadingFontChoice(normalizeReadingFont(track.language, value))
+  // Curated names PLUS the cast this story declares in its own speaker labels,
+  // so a name nobody curated still reads (and taps) as a name.
+  const names = useMemo(
+    () => storyNamesFor(story.content, vocabMap, track.language),
+    [story.content, vocabMap, track.language])
   const particles = isJapanese ? JP_PARTICLES : NO_PARTICLES
   const watermark = isJapanese ? ['読', '書'] : isChinese ? ['读', '书'] : ['А', 'Я']
   const readingLabel = isJapanese ? 'Furigana' : isChinese ? 'Pinyin' : 'Reading'
@@ -385,16 +302,23 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
       if (live && saved && typeof saved === 'object') {
         if (FURIGANA_OPTIONS.some(o => o.value === saved.furiganaMode)) setFuriganaMode(saved.furiganaMode)
         if (typeof saved.lens === 'boolean') setLens(saved.lens)
-        if (typeof saved.serif === 'boolean') setSerif(saved.serif)
         if (typeof saved.seenFocusHint === 'boolean') setSeenFocusHint(saved.seenFocusHint)
       }
+      // Also migrates the legacy `serif: true` flag, so anyone who had turned
+      // serif on lands on Serif rather than being reset to Sans.
+      if (live) setReadingFontChoice(readingFontFromPrefs(saved, track.language))
     }).finally(() => { prefsReady.current = true })
     return () => { live = false }
-  }, [])
+  }, [track.language])
+  // prefsMerge, not prefsSet: the paged/chat readers keep their reading mode and
+  // playback rate in this same record, and a whole-object write would erase them.
   useEffect(() => {
     if (!prefsReady.current) return
-    prefsSet(READER_PREFS_KEY, { furiganaMode, lens, serif, seenFocusHint })
-  }, [furiganaMode, lens, serif, seenFocusHint])
+    prefsMerge(READER_PREFS_KEY, {
+      furiganaMode, lens, seenFocusHint,
+      ...readingFontPatch(track.language, readingFontChoice),
+    })
+  }, [furiganaMode, lens, readingFontChoice, seenFocusHint, track.language])
 
   // Close the desktop settings popover on an outside click (the mobile sheet has
   // its own tap-to-close scrim, so this only matters on desktop).
@@ -445,7 +369,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         // Nth distinct speaker → palette[N]; N = speakers already assigned.
         colors[speaker] = SPEAKER_PALETTE[Object.keys(colors).length % SPEAKER_PALETTE.length]
       }
-      return { speaker, tokens: segmentLine(text, matcher, segmenter, names, particles) }
+      return { speaker, tokens: segmentLine(text, matcher, names, particles, segmenter) }
     })
     return { parsed: parsedLines, speakerColors: colors }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -851,7 +775,8 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             <ReaderSettings
               furiganaMode={furiganaMode} setFuriganaMode={setFuriganaMode}
               lens={lens} setLens={setLens}
-              serif={serif} setSerif={setSerif}
+              fontChoice={readingFontChoice} setFontChoice={pickReadingFont}
+              language={track.language}
               readingLabel={readingLabel}
               accent={accent} onClose={() => setSettingsOpen(false)} isMobile={false}
             />
@@ -964,13 +889,13 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             <div key={li} ref={el => { lineRefs.current[li] = el }} style={{ marginTop: topGap }}>
               {showLabel && (
                 <div
-                  onClick={names[speaker] ? () => selectToken(li, 'sp', { name: { word: speaker, reading: names[speaker] } }) : undefined}
+                  onClick={isNameKey(names, speaker) ? () => selectToken(li, 'sp', { name: { word: speaker, reading: names[speaker] || null } }) : undefined}
                   style={{
                     fontSize: '12.5px', fontWeight: 800, letterSpacing: '0.4px',
                     color: speakerColors[speaker], marginBottom: '5px',
                     fontFamily: font, display: 'inline-block',
                     paddingLeft: isMobile ? '12px' : '16px',
-                    cursor: names[speaker] ? 'pointer' : 'default',
+                    cursor: isNameKey(names, speaker) ? 'pointer' : 'default',
                     opacity: dimmed ? 0.32 : 1, transition: focusTransition,
                   }}
                 >
@@ -1324,7 +1249,8 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             <ReaderSettings
               furiganaMode={furiganaMode} setFuriganaMode={setFuriganaMode}
               lens={lens} setLens={setLens}
-              serif={serif} setSerif={setSerif}
+              fontChoice={readingFontChoice} setFontChoice={pickReadingFont}
+              language={track.language}
               readingLabel={readingLabel}
               accent={accent} onClose={() => setSettingsOpen(false)} isMobile
             />
@@ -1454,7 +1380,8 @@ function MetaChip({ icon: Icon, children, accent, strong = false }) {
 // lives in the reader so the choices persist and never reload the story.
 // Sentence translation lives outside this panel — a RevealEnglishButton sits
 // beside each line instead.
-function ReaderSettings({ furiganaMode, setFuriganaMode, lens, setLens, serif, setSerif, readingLabel, accent, onClose, isMobile }) {
+function ReaderSettings({ furiganaMode, setFuriganaMode, lens, setLens, fontChoice, setFontChoice, language, readingLabel, accent, onClose, isMobile }) {
+  const fontOptions = readingFontOptions(language)
   const wrap = isMobile
     ? { width: '100%' }
     : {
@@ -1490,31 +1417,37 @@ function ReaderSettings({ furiganaMode, setFuriganaMode, lens, setLens, serif, s
         Show readings for every word, only the ones you’re still learning, only new words, or never.
       </div>
 
-      {/* Reading font — sans (default) or a book-like serif */}
+      {/* Reading font — the shape of the characters themselves. Which options
+          exist is per-language data (readingFonts.js), never a branch here. */}
       <div style={{ height: '1px', background: 'var(--border)', margin: '15px 0' }} />
       <div style={{ fontSize: '12px', fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '9px' }}>
         Reading font
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px' }}>
-        {[{ value: false, label: 'Sans' }, { value: true, label: 'Serif' }].map(opt => {
-          const on = serif === opt.value
+      <div role="group" aria-label="Reading font" style={{ display: 'grid', gridTemplateColumns: 'repeat(' + fontOptions.length + ', 1fr)', gap: '7px' }}>
+        {fontOptions.map(opt => {
+          const on = fontChoice === opt.value
           return (
-            <button key={opt.label} onClick={() => setSerif(opt.value)} role="menuitemradio" aria-checked={on}
+            <button key={opt.value} onClick={() => setFontChoice(opt.value)} aria-pressed={on}
               style={{
-                minHeight: '42px', borderRadius: '11px', cursor: 'pointer',
-                fontSize: '13.5px', fontWeight: on ? 750 : 600,
-                fontFamily: opt.value ? "'Noto Serif','Georgia',serif" : 'Inter, sans-serif',
+                minHeight: '42px', padding: '7px 4px', borderRadius: '11px', cursor: 'pointer',
+                fontSize: '12.5px', fontWeight: on ? 750 : 600,
+                // Drawn in its own face, so the shapes are visible before the
+                // choice is made — the whole point of the setting.
+                fontFamily: opt.stack,
                 color: on ? accent : 'var(--text)',
                 background: on ? accent + '14' : 'var(--surface-2)',
                 border: '1px solid ' + (on ? accent + '66' : 'var(--border)'),
               }}>
+              {opt.sample && (
+                <span aria-hidden="true" style={{ display: 'block', fontSize: '21px', lineHeight: 1.15, fontWeight: 500 }}>{opt.sample}</span>
+              )}
               {opt.label}
             </button>
           )
         })}
       </div>
       <div style={{ fontSize: '11.5px', color: MUTED, marginTop: '8px', lineHeight: 1.45 }}>
-        Serif gives the story a calmer, book-like feel.
+        {readingFontHint(language, fontChoice)}
       </div>
 
       {/* Learning Lens */}

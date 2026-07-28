@@ -4,8 +4,26 @@
 // (via its own statusOf) and calls filterVocab. Additive: a set of filter chips
 // above the existing list, no change to search or lookup behavior.
 
-// `status` values match Dictionary.statusOf: 'not_started' | 'learning' |
+import { isMastered } from './mastery'
+
+// The status a card gets in the dictionary list: 'not_started' | 'learning' |
 // 'mastered' | 'review'. ("review" = a graduated card that isn't mastered yet.)
+//
+// This used to live inline in Dictionary.jsx and read
+// `card.is_easy || (card.stability || 0) >= 21`, which is wrong twice over:
+// `is_easy` is a kept-but-dead flag that gates nothing (CLAUDE.md §4 — stability
+// is the gate), so a word the learner had once pressed "Easy" on showed as
+// Mastered under the filter even when FSRS said it had not stuck; and the 21 was
+// a hardcoded copy of MASTERY_STABILITY_DAYS that would silently drift if the
+// threshold ever moved. It now defers to mastery.js like the rest of the app.
+export function cardStatus(card) {
+  if (!card) return 'not_started'
+  if (card.state === 'learning' || card.state === 'relearning') return 'learning'
+  if (isMastered(card)) return 'mastered'
+  if (card.state === 'review') return 'review'
+  return 'not_started'
+}
+
 export const DICT_FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'in_deck', label: 'In deck' },
@@ -62,4 +80,14 @@ export function filterByLevel(vocab, level) {
   const rows = Array.isArray(vocab) ? vocab : []
   if (level == null || level === 'all') return rows
   return rows.filter(v => v && v.level === level)
+}
+
+// True when a status or level filter is narrowing the list. The screen uses this
+// to explain an empty search result: "no matches" while an invisible chip is
+// silently hiding two thirds of the dictionary is the single most confusing
+// thing this screen could say.
+export function hasActiveFilters(filterKey, levelFilter) {
+  const statusOn = Boolean(filterKey) && filterKey !== 'all'
+  const levelOn = levelFilter != null && levelFilter !== 'all'
+  return statusOn || levelOn
 }
