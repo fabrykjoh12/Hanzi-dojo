@@ -14,6 +14,36 @@ import { isPlaceWord } from './storyReading'
 // `selected` is { word, vocab, name, status, tokenId, sentence } — vocab and
 // name are both optional, and a token with neither is 'plain'.
 
+// One learning-status palette and one set of labels for every lookup sheet, so
+// the paged/chat/scene sheet and the classic reader's can't drift apart. Status
+// is never conveyed by the dot alone — the label carries it too.
+export const STATUS_COLOR = {
+  not_started: 'var(--text-faint)',
+  learning: '#CA8A04',
+  review: '#3E63DD',
+  mastered: '#2F9E6D',
+}
+export const STATUS_LABEL = {
+  not_started: 'New word',
+  learning: 'Learning',
+  review: 'Known',
+  mastered: 'Mastered',
+}
+
+// Split a sentence around the first occurrence of `word`, so the sheet can
+// show the tapped word lit inside its own line — the answer to "which one did
+// I tap?" without making the learner scan for it. Returns null when the word
+// isn't in the sentence (a Russian token appears inflected, for instance), and
+// the caller then renders the sentence plainly.
+export function splitAround(sentence, word) {
+  const s = String(sentence || '')
+  const w = String(word || '')
+  if (!s || !w) return null
+  const at = s.indexOf(w)
+  if (at < 0) return null
+  return { before: s.slice(0, at), match: w, after: s.slice(at + w.length) }
+}
+
 export function lookupKind(selected, language) {
   if (!selected) return null
   if (selected.vocab) {

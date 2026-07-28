@@ -10,6 +10,7 @@ import { cleanMeaning } from './cleanMeaning'
 import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, JP_PARTICLES, readingVisibleFor, isDueSoon, buildVocabMatcher, isPlaceWord, segmentLine, storyNamesFor, isNameKey, isWordlikeToken } from './storyReading'
 import { minDwellMs } from './readAlong'
 import { glossaryLookup } from './grammarGlossary'
+import { STATUS_COLOR, STATUS_LABEL } from './wordLookup'
 import { getDictEntryByWord, addDictEntryToDeck } from './dictSearch'
 import { prefsGet, prefsSet } from './offline'
 import { FIRST_MISSION_READER_HINT, firstMissionCompletion } from './firstMission'
@@ -86,21 +87,9 @@ const prefersReducedMotion = () =>
 // in a sentence they're almost always the particle, not the noun.
 const NO_PARTICLES = new Set()
 
-const STATUS_COLOR = {
-  not_started: 'var(--text-faint)',
-  learning: '#CA8A04',
-  review: '#3E63DD',
-  mastered: '#2F9E6D',
-}
-
-// Plain-language status label for the lookup sheet, so learning state is legible
-// (not conveyed by the color dot alone).
-const STATUS_LABEL = {
-  not_started: 'New word',
-  learning: 'Learning',
-  review: 'Known',
-  mastered: 'Mastered',
-}
+// STATUS_COLOR / STATUS_LABEL are shared with the paged reader's lookup sheet
+// (wordLookup.js), so the two sheets can never disagree about what a status
+// looks like or is called.
 
 // ── Japanese furigana helpers (reading only over kanji) ─────────────────────
 function hasKanji(text) {

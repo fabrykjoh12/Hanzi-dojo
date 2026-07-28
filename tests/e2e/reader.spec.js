@@ -230,6 +230,9 @@ test.describe('Story reader', () => {
 
     // Not playing, so the tap must mean "what does that mean", unchanged.
     await page.getByText('今天', { exact: true }).first().click();
-    await expect(page.getByRole('button', { name: /Add to deck/i })).toBeVisible();
+    await expect(page.getByText('today')).toBeVisible();                        // the definition
+    // The deck button names the word's state — this one is already saved, so it
+    // reads "In your deck" rather than "Add to deck" (parity with the classic reader).
+    await expect(page.getByRole('button', { name: /In your deck|Add to deck/i })).toBeVisible();
   });
 });

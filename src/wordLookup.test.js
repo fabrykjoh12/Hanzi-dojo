@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { lookupKind, dictWordFor, lookupReading, lookupChip, lookupBody, PLAIN_FALLBACK } from './wordLookup'
+import { lookupKind, dictWordFor, lookupReading, lookupChip, lookupBody, splitAround, PLAIN_FALLBACK, STATUS_COLOR, STATUS_LABEL } from './wordLookup'
 
 const vocab = { id: 'v1', word: '天气', reading: 'tiānqì', meaning: 'weather', language: 'chinese' }
 const place = { id: 'v2', word: '北京', reading: 'Běijīng', meaning: 'Beijing', language: 'chinese' }
@@ -75,5 +75,27 @@ describe('lookupBody', () => {
     expect(lookupBody({ word: '太阳' }, 'plain', { dictDefs: ['sun', 'sunshine'] })).toBe('sun; sunshine')
     expect(lookupBody({ word: '太阳' }, 'plain', { dictLoading: true })).toBe('Looking it up…')
     expect(lookupBody({ word: '太阳' }, 'plain')).toBe(PLAIN_FALLBACK)
+  })
+})
+
+describe('splitAround', () => {
+  it('finds the tapped word inside its line', () => {
+    expect(splitAround('今天天气很好。', '天气')).toEqual({ before: '今天', match: '天气', after: '很好。' })
+  })
+  it('is null when the word is not in the line (an inflected form, say)', () => {
+    expect(splitAround('Аня дала Ивану книгу.', 'книга')).toBe(null)
+  })
+  it('is null for missing input rather than throwing', () => {
+    expect(splitAround(null, '天气')).toBe(null)
+    expect(splitAround('今天天气很好。', '')).toBe(null)
+  })
+})
+
+describe('status vocabulary', () => {
+  it('labels and colors every status the readers can produce', () => {
+    ;['not_started', 'learning', 'review', 'mastered'].forEach(s => {
+      expect(STATUS_LABEL[s]).toBeTruthy()
+      expect(STATUS_COLOR[s]).toBeTruthy()
+    })
   })
 })
