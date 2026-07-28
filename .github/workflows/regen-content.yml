@@ -11,7 +11,7 @@ on:
         description: What to regenerate
         type: choice
         default: both
-        options: [meanings, examples, examples-fill, both, comprehension, comprehension-prune, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk1, audio-hsk2, stories-hsk2, examples-hsk3-6, audio-hsk3-6, serial-hsk3-6, seed-n4, audio-n4, stories-n4, seed-russian, audio-russian, examples-russian, stories-russian, stories-hsk1-replace, stories-hsk2-replace, stories-jlpt1-replace, publish-held-jlpt1, audio-jlpt1, audio-jlpt2, story-audio-hsk1, story-audio-hsk2, story-audio-hsk3, story-audio-jlpt1, story-audio-jlpt2, story-audio-n4, story-audio-russian, serial-hsk1, serial-hsk2, serial-jlpt1, serial-jlpt1-more, serial-jlpt2, serial-n4, serial-russian, story-images-list, story-images-apply, authored-vocab-hsk1, authored-vocab-hsk2, authored-vocab-hsk3, authored-vocab-hsk4, authored-vocab-hsk5, authored-vocab-hsk6, authored-vocab-jlpt1, authored-vocab-n4, authored-vocab-russian, authored-insert, normalize-readings, normalize-readings-apply]
+        options: [meanings, examples, examples-fill, both, comprehension, comprehension-prune, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk1, audio-hsk2, stories-hsk2, examples-hsk3-6, audio-hsk3-6, tts-flashcards, serial-hsk3-6, seed-n4, audio-n4, stories-n4, seed-russian, audio-russian, examples-russian, stories-russian, stories-hsk1-replace, stories-hsk2-replace, stories-jlpt1-replace, publish-held-jlpt1, audio-jlpt1, audio-jlpt2, story-audio-hsk1, story-audio-hsk2, story-audio-hsk3, story-audio-jlpt1, story-audio-jlpt2, story-audio-n4, story-audio-russian, serial-hsk1, serial-hsk2, serial-jlpt1, serial-jlpt1-more, serial-jlpt2, serial-n4, serial-russian, story-images-list, story-images-apply, authored-vocab-hsk1, authored-vocab-hsk2, authored-vocab-hsk3, authored-vocab-hsk4, authored-vocab-hsk5, authored-vocab-hsk6, authored-vocab-jlpt1, authored-vocab-n4, authored-vocab-russian, authored-insert, normalize-readings, normalize-readings-apply]
       language:
         description: Which language
         type: choice
@@ -23,9 +23,17 @@ on:
         default: ''
         options: ['', '1', '2', '3']
       level:
-        description: "examples-fill only: fill just this level (e.g. 3). Blank = every level missing examples."
+        description: "examples-fill / tts-flashcards: just this level (e.g. 3). Blank = every level."
         type: string
         default: ''
+      tts_limit:
+        description: "tts-flashcards only: how many source records (words) to voice. Above 200 needs override."
+        type: string
+        default: '20'
+      tts_confirm:
+        description: "tts-flashcards only: actually spend money. Unticked = dry run that bills nothing."
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -59,7 +67,14 @@ jobs:
           # premiumLlm) — bulk tasks never use this key.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           LLM_MODEL_PREMIUM: ${{ vars.LLM_MODEL_PREMIUM }}
+          # Google TTS is only still here for the legacy `audio-*` tasks below.
+          # New synthesis goes through tts-generate.mjs on Azure.
           GOOGLE_TTS_KEY: ${{ secrets.VITE_GOOGLE_TTS_KEY }}
+          # Azure Speech — the provider tts-generate.mjs actually bills. A dry
+          # run works without these; only --confirm requires them.
+          AZURE_SPEECH_KEY: ${{ secrets.AZURE_SPEECH_KEY }}
+          AZURE_SPEECH_REGION: ${{ secrets.AZURE_SPEECH_REGION }}
+          TTS_CONCURRENCY: ${{ vars.TTS_CONCURRENCY }}
         run: |
           set -e
           LANG_FLAG=""
@@ -147,11 +162,39 @@ jobs:
           fi
 
           if [ "${{ inputs.task }}" = "audio-hsk3-6" ]; then
-            echo "::group::Generate HSK 3-6 audio (Google TTS)"
-            for lvl in 3 4 5 6; do
-              echo "--- level $lvl ---"
-              node generate-audio.mjs --language chinese --system hsk_3 --level $lvl
-            done
+            echo "::error::audio-hsk3-6 is retired — it billed Google TTS, not Azure."
+            echo "Use task 'tts-flashcards' (Azure, via tts-generate.mjs) with level/tts_limit/tts_confirm."
+            exit 1
+          fi
+
+          # Azure synthesis. tts-generate.mjs is the only script in the repo that
+          # spends money on speech, and its safety model is deliberate: a DRY RUN
+          # unless --confirm, and a 200-record hard cap that --override-max must
+          # unlock. This task surfaces those controls rather than bypassing them,
+          # so a mistyped level costs a dry run instead of a bill.
+          if [ "${{ inputs.task }}" = "tts-flashcards" ]; then
+            LEVEL_FLAG=""
+            if [ -n "${{ inputs.level }}" ]; then LEVEL_FLAG="--level ${{ inputs.level }}"; fi
+            LANG_NAME="${{ inputs.language }}"
+            if [ "$LANG_NAME" = "both" ]; then LANG_NAME="chinese"; fi
+            case "$LANG_NAME" in
+              chinese)  SYSTEM=hsk_3 ;;
+              japanese) SYSTEM=jlpt ;;
+              *)        SYSTEM=hsk_3 ;;
+            esac
+            LIMIT="${{ inputs.tts_limit }}"
+            OVERRIDE=""
+            if [ "$LIMIT" -gt 200 ] 2>/dev/null; then OVERRIDE="--override-max"; fi
+            CONFIRM=""
+            if [ "${{ inputs.tts_confirm }}" = "true" ]; then CONFIRM="--confirm"; fi
+            if [ -z "$CONFIRM" ]; then
+              echo "DRY RUN — nothing will be billed. Tick tts_confirm to generate."
+            fi
+            echo "::group::Azure TTS · $LANG_NAME/$SYSTEM $LEVEL_FLAG · limit $LIMIT"
+            node tts-generate.mjs \
+              --flashcards --missing-only \
+              --language "$LANG_NAME" --system "$SYSTEM" $LEVEL_FLAG \
+              --limit "$LIMIT" $OVERRIDE $CONFIRM
             echo "::endgroup::"
           fi
 
