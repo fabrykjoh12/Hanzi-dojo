@@ -4,7 +4,7 @@ import { useDictEntry, dictDefinitions } from './useDictEntry'
 import { useAnchoredPopover } from './useAnchoredPopover'
 import { PopoverArrow } from './ui'
 import {
-  lookupKind, lookupReading, lookupChip, lookupBody, dictWordFor, splitAround,
+  lookupKind, lookupReadingState, lookupChip, lookupLevel, lookupBody, dictWordFor, splitAround,
   dictSaveAction, STATUS_COLOR, STATUS_LABEL,
 } from './wordLookup'
 import { MICRO } from './designTokens'
@@ -80,8 +80,9 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
 
   const kind = lookupKind(selected, lang)
   const isProperNoun = kind === 'name' || kind === 'place'
-  const reading = lookupReading(selected, { grammar, dictEntry })
-  const chip = lookupChip(kind, { grammar, dictEntry })
+  const reading = lookupReadingState(selected, { grammar, dictEntry, dictLoading })
+  const chip = lookupChip(kind, { grammar })
+  const levelChip = lookupLevel(selected, kind, lang)
   const body = lookupBody(selected, kind, { grammar, dictDefs: dictDefinitions(dictEntry), dictLoading })
   const vocab = selected.vocab || null
   const status = (vocab && selected.status) || null
@@ -148,8 +149,15 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
             }}>
               {selected.word}
             </div>
+            {/* The pronunciation. For a word beyond the list this is the answer
+                the learner came for, so the line is held open (dimmed) while the
+                dictionary is still answering rather than appearing a beat later
+                and pushing the definition down. */}
             {reading && (
-              <div style={{ fontSize: '16px', color: '#B45309', fontWeight: 600, marginTop: '4px' }}>{reading}</div>
+              <div style={{
+                fontSize: '16px', color: '#B45309', fontWeight: 600, marginTop: '4px',
+                opacity: reading.pending ? 0.45 : 1, letterSpacing: reading.pending ? '0.12em' : 'normal',
+              }} aria-hidden={reading.pending ? 'true' : undefined}>{reading.text}</div>
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
@@ -174,8 +182,11 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
           </div>
         </div>
 
-        {/* Where does it stand — learning status for vocabulary, what-kind-of-word otherwise. */}
-        {(status || chip) && (
+        {/* Where does it stand — learning status for vocabulary, what-kind-of-word
+            otherwise, and (for curriculum vocabulary) which level it comes from.
+            One row of meta: status and kind are mutually exclusive with the level
+            chip's own case, so this never becomes three competing badges. */}
+        {(status || chip || levelChip) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
             {status && (
               <span style={pill(STATUS_COLOR[status] || 'var(--text-muted)', true)}>
@@ -189,6 +200,9 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
                 {kind === 'place' && <MapPin size={12} strokeWidth={2.2} color={PROPER_NOUN_COLOR} />}
                 {chip}
               </span>
+            )}
+            {levelChip && (
+              <span style={pill('var(--text-muted)', false)}>{levelChip}</span>
             )}
           </div>
         )}

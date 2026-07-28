@@ -1,6 +1,7 @@
 import { useRef, useEffect, useCallback } from 'react'
 import { getLevelLabel } from './utils'
 import { wordStatus, isPlaceWord, isWordlikeToken } from './storyReading'
+import { unknownMarkStyle } from './tokenMark'
 import { spotlightStyle } from './readAlong'
 import { useStoryReaderCore } from './useStoryReaderCore'
 import { TokenBody, ReadingSettings, RevealEnglishButton } from './ReadingScaffold'
@@ -108,6 +109,10 @@ export default function PacedReader(props) {
                         const tappable = Boolean(t.name) || isWordlikeToken(t.text)
                         const plainId = i + ':' + k
                         const plainSelected = tappable && c.selected && c.selected.tokenId === plainId
+                        // Outside the level's list entirely — marked so the
+                        // learner can see at a glance which words aren't on
+                        // their syllabus. tokenMark.js owns the decision.
+                        const unknown = unknownMarkStyle(t, track.language)
                         return (
                           <span key={k}
                             onClick={i === c.cur ? (e) => {
@@ -122,7 +127,8 @@ export default function PacedReader(props) {
                             style={{
                               cursor: i === c.cur && tappable ? 'pointer' : 'inherit', borderRadius: '4px',
                               color: t.name ? PROPER_NOUN_COLOR : 'inherit',
-                              background: plainSelected ? TAP_HILITE : 'transparent',
+                              ...unknown,
+                              ...(plainSelected ? { background: TAP_HILITE } : null),
                               boxShadow: plainSelected ? '0 0 0 1px rgba(202,138,4,0.5)' : 'none',
                               ...(i === c.cur ? spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion) : null),
                             }}>

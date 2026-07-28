@@ -11,7 +11,8 @@ import { cleanMeaning } from './cleanMeaning'
 import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, JP_PARTICLES, readingVisibleFor, isDueSoon, buildVocabMatcher, isPlaceWord, segmentLine, storyNamesFor, isNameKey, isWordlikeToken } from './storyReading'
 import { minDwellMs } from './readAlong'
 import { glossaryLookup } from './grammarGlossary'
-import { STATUS_COLOR, STATUS_LABEL } from './wordLookup'
+import { STATUS_COLOR, STATUS_LABEL, lookupKind, lookupChip, lookupLevel, lookupReadingState } from './wordLookup'
+import { unknownMarkStyle } from './tokenMark'
 import { getDictEntryByWord, addDictEntryToDeck } from './dictSearch'
 import { prefsGet, prefsMerge } from './offline'
 import { READER_PREFS_KEY, DEFAULT_READING_FONT, normalizeReadingFont, readingFontFromPrefs, readingFontHint, readingFontOptions, readingFontPatch, readingFontStack } from './readingFonts'
@@ -139,7 +140,7 @@ function rubyFor(text, reading, isJapanese) {
   return <ruby>{text}{rt(reading)}</ruby>
 }
 
-function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens, status, today, accent, isPlace, onSelect }) {
+function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens, status, today, accent, isPlace, language, onSelect }) {
   const [hover, setHover] = useState(false)
   const reading = token.vocab ? token.vocab.reading : (token.name ? token.name.reading : null)
   // Vocabulary and names carry data; plain word-like tokens are still tappable
@@ -182,6 +183,17 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
     decoBorder = '2px solid ' + accent
     decoBg = accent + '18'
     faded = false
+  }
+  // A word outside the vocabulary list altogether — not a name, not grammar
+  // glue. It never had a cue before, so it looked exactly like a word the
+  // learner was supposed to know. The mark says "this one isn't on your list",
+  // which is a different message from "this one is next", so it is deliberately
+  // NOT the accent (tokenMark.js). The Lens owns the vocabulary marks only: an
+  // out-of-list word is neither known nor next, so it neither boxes nor fades.
+  const unknown = unknownMarkStyle(token, language)
+  if (unknown) {
+    decoBorder = unknown.borderBottom
+    decoBg = unknown.background
   }
 
   let body = token.text
@@ -696,6 +708,14 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   // fragment gets a real explanation instead of the generic fallback line.
   const selGrammar = isPlain ? glossaryLookup(track.language, sel.text) : null
   const selInDeck = sel && sel.vocab ? Boolean(userCards[sel.vocab.id]) : false
+  // This sheet is the classic reader's own, but the *decisions* it makes are the
+  // shared, tested ones (wordLookup.js) — the same chip, the same level, the
+  // same reading rule as the paged/chat/scene sheet, so the two can't drift.
+  // `word` is what those helpers key on; this reader tracks it as `text`.
+  const selForLookup = sel ? { ...sel, word: selWord } : null
+  const selKind = selForLookup ? lookupKind(selForLookup, track.language) : null
+  const selChip = lookupChip(selKind, { grammar: selGrammar })
+  const selLevel = lookupLevel(selForLookup, selKind, track.language)
 
   // Look the word up in the reference dictionary when nothing else explains it:
   // not vocabulary, not a name, not a grammar fragment. This is what turns "a
@@ -958,6 +978,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                         today={Boolean(tk.vocab && todaySet.has(tk.vocab.word))}
                         accent={accent}
                         isPlace={Boolean(tk.vocab && isPlaceWord(tk.vocab.word, track.language))}
+                        language={track.language}
                         isSelected={Boolean(sel) && sel.lineIndex === li && sel.tokenKey === ti}
                         onSelect={(el) => selectToken(li, ti, tk, el)}
                       />
@@ -1161,35 +1182,60 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                     {selWord}
                   </span>
                   {(() => {
-                    const selReading = isName ? sel.name.reading : (selGrammar ? selGrammar.reading : (sel.vocab ? sel.vocab.reading : (dictEntry ? dictEntry.pinyin : null)))
-                    // Kana vocab stores its reading as itself — repeating the
-                    // word right next to it is noise, so only show a reading
-                    // that adds information.
-                    if (!selReading || selReading === selWord) return null
+                    // Shared rule: the vocabulary reading, else the name, else
+                    // grammar, else the dictionary's pinyin — and never a
+                    // reading identical to the word (kana vocab stores its own
+                    // reading, and repeating it is noise). For a word beyond the
+                    // list the pinyin IS the answer, so the line is held open
+                    // while the dictionary is still answering rather than
+                    // appearing a beat later and shoving the definition down.
+                    const selReading = lookupReadingState(selForLookup, { grammar: selGrammar, dictEntry, dictLoading })
+                    if (!selReading) return null
                     return (
-                      <span style={{ fontSize: '17px', color: GOLD, fontWeight: 600 }}>
-                        {selReading}
+                      <span style={{
+                        fontSize: '17px', color: GOLD, fontWeight: 600,
+                        opacity: selReading.pending ? 0.45 : 1,
+                        letterSpacing: selReading.pending ? '0.12em' : 'normal',
+                      }} aria-hidden={selReading.pending ? 'true' : undefined}>
+                        {selReading.text}
                       </span>
                     )
                   })()}
                 </div>
-                {sel.vocab && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '999px', background: STATUS_COLOR[selStatus] }} />
-                    <span style={{ fontSize: '12.5px', fontWeight: 700, color: STATUS_COLOR[selStatus] }}>{STATUS_LABEL[selStatus]}</span>
-                  </span>
-                )}
-                {(isName || isSelPlace || isPlain) && (
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '5px', marginTop: '6px',
-                    fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '3px 9px',
-                    color: (isName || isSelPlace) ? PROPER_NOUN_COLOR : MUTED,
-                    border: '1px solid ' + ((isName || isSelPlace) ? PROPER_NOUN_COLOR + '40' : 'var(--border)'),
-                    background: (isName || isSelPlace) ? PROPER_NOUN_COLOR + '12' : 'transparent',
-                  }}>
-                    {isName && <UserRound size={12} strokeWidth={2.2} color={PROPER_NOUN_COLOR} />}
-                    {isSelPlace && <MapPin size={12} strokeWidth={2.2} color={PROPER_NOUN_COLOR} />}
-                    {isName ? 'Name' : (isSelPlace ? 'Place' : (selGrammar ? 'Grammar' : (dictEntry ? 'Dictionary' : 'Word')))}
+                {/* One row of meta: where the word stands, what kind of word it
+                    is, and — for curriculum vocabulary — which level it comes
+                    from. The kind chip and the level chip never both apply, so
+                    this stays a row rather than a wall of badges. */}
+                {(sel.vocab || selChip || selLevel) && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+                    {sel.vocab && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '999px', background: STATUS_COLOR[selStatus] }} />
+                        <span style={{ fontSize: '12.5px', fontWeight: 700, color: STATUS_COLOR[selStatus] }}>{STATUS_LABEL[selStatus]}</span>
+                      </span>
+                    )}
+                    {selChip && (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '5px',
+                        fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '3px 9px',
+                        color: (isName || isSelPlace) ? PROPER_NOUN_COLOR : MUTED,
+                        border: '1px solid ' + ((isName || isSelPlace) ? PROPER_NOUN_COLOR + '40' : 'var(--border)'),
+                        background: (isName || isSelPlace) ? PROPER_NOUN_COLOR + '12' : 'transparent',
+                      }}>
+                        {isName && <UserRound size={12} strokeWidth={2.2} color={PROPER_NOUN_COLOR} />}
+                        {isSelPlace && <MapPin size={12} strokeWidth={2.2} color={PROPER_NOUN_COLOR} />}
+                        {selChip}
+                      </span>
+                    )}
+                    {selLevel && (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center',
+                        fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '3px 9px',
+                        color: MUTED, border: '1px solid var(--border)', background: 'transparent',
+                      }}>
+                        {selLevel}
+                      </span>
+                    )}
                   </span>
                 )}
               </div>

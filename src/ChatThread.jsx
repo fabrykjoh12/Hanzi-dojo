@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react'
 import { wordStatus, isPlaceWord, isWordlikeToken } from './storyReading'
+import { unknownMarkStyle } from './tokenMark'
 import { TokenBody, RevealEnglishButton } from './ReadingScaffold'
 import { spotlightStyle } from './readAlong'
 import { Check } from 'lucide-react'
@@ -73,6 +74,10 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                       const tappable = Boolean(t.name) || isWordlikeToken(t.text)
                       const plainId = key + ':' + k
                       const plainSelected = tappable && selected && selected.tokenId === plainId
+                      // Outside the level's list entirely. The mark is drawn
+                      // from the bubble's own ink (tokenMark.js), so it reads
+                      // the same inside a coloured bubble as on the page.
+                      const unknown = unknownMarkStyle(t, language)
                       return (
                         <span key={k}
                           onClick={(e) => {
@@ -88,7 +93,8 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                           style={{
                             cursor: tappable ? 'pointer' : 'inherit', borderRadius: '4px',
                             color: (t.name && properNounColor) || 'inherit',
-                            background: plainSelected ? TAP_HILITE : 'transparent',
+                            ...unknown,
+                            ...(plainSelected ? { background: TAP_HILITE } : null),
                             boxShadow: plainSelected ? '0 0 0 1px rgba(202,138,4,0.5)' : 'none',
                             ...spotlightStyle(k === activeToken, isSounding, reduceMotion),
                           }}>
