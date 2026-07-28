@@ -1,0 +1,161 @@
+name: Batch story generation
+
+# Long-running, unattended story generation — the "leave it running overnight"
+# workflow.
+#
+# `regen-content.yml` runs ONE task at a time (its concurrency group serialises
+# every content job) and its serial-story tasks generate a single season per
+# tier. That is the right shape for a targeted regeneration, and the wrong shape
+# for "fill every level with as much reading as you can while I sleep".
+#
+# This workflow instead:
+#   - fans out over levels, ONE JOB PER LEVEL, so six levels generate at once
+#     instead of queueing behind each other;
+#   - APPENDS (never --replace) — existing stories are untouched, and
+#     generate-serial-stories.mjs continues story_number from the level's
+#     current maximum, so nothing collides;
+#   - loops `rounds` seasons per tier, stepping --season-offset by 3 each round
+#     so every round draws unseen premises from SEASON_SEEDS;
+#   - stops starting new rounds once `budget_minutes` is spent, so an overnight
+#     run ends on its own instead of being killed mid-chapter.
+#
+# Cost: the serial pipeline uses the premium LLM tier (~100 calls per level per
+# round — a dollar or two per level-round on a top model). levels x rounds is
+# the multiplier; keep an eye on it.
+
+on:
+  workflow_dispatch:
+    inputs:
+      levels:
+        description: "Comma-separated levels to fill, one parallel job each (e.g. 1,2,3,4,5,6)"
+        type: string
+        default: '1,2,3,4,5,6'
+      rounds:
+        description: "Seasons per tier, per level. Each round is a fresh premise."
+        type: string
+        default: '6'
+      budget_minutes:
+        description: "Stop starting new rounds after this many minutes (per level)."
+        type: string
+        default: '420'
+      language:
+        description: "Language key (chinese)"
+        type: string
+        default: 'chinese'
+      system:
+        description: "Level system key (hsk_3)"
+        type: string
+        default: 'hsk_3'
+      season_offset_base:
+        description: "Start premise rotation here — bump it if a level already has seasons from a previous batch."
+        type: string
+        default: '0'
+      max_parallel:
+        description: "How many levels to generate at once (lower this if the LLM rate-limits)."
+        type: string
+        default: '3'
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      levels: ${{ steps.parse.outputs.levels }}
+    steps:
+      - name: Parse levels into a matrix
+        id: parse
+        env:
+          LEVELS: ${{ inputs.levels }}
+        run: |
+          set -e
+          JSON=$(node -e '
+            const raw = String(process.env.LEVELS || "")
+            const out = []
+            for (const part of raw.split(",")) {
+              const n = parseInt(part.trim(), 10)
+              if (Number.isInteger(n) && n >= 1 && n <= 9 && out.indexOf(n) === -1) out.push(n)
+            }
+            if (!out.length) { console.error("No valid levels in: " + raw); process.exit(1) }
+            process.stdout.write(JSON.stringify(out))
+          ')
+          echo "levels=$JSON" >> "$GITHUB_OUTPUT"
+          echo "Levels: $JSON"
+
+  generate:
+    needs: plan
+    runs-on: ubuntu-latest
+    # Each level gets the full day GitHub allows; the in-script budget below is
+    # what actually ends the run cleanly.
+    timeout-minutes: 720
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(inputs.max_parallel) }}
+      matrix:
+        level: ${{ fromJSON(needs.plan.outputs.levels) }}
+    # One batch per level at a time — two jobs appending to the same level would
+    # both read the same story_number high-water mark and collide on the
+    # (language, system, level, tier, story_number) unique index.
+    concurrency:
+      group: story-batch-${{ inputs.language }}-${{ inputs.system }}-${{ matrix.level }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22   # 22 has a global WebSocket, which supabase-js needs
+          cache: npm
+      - run: npm ci
+      - name: Generate seasons
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          # The serial pipeline runs on the premium tier — quality matters more
+          # than cost here, and the whole point of a batch is unattended volume.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LLM_MODEL_PREMIUM: ${{ vars.LLM_MODEL_PREMIUM }}
+          LEVEL: ${{ matrix.level }}
+          ROUNDS: ${{ inputs.rounds }}
+          BUDGET_MINUTES: ${{ inputs.budget_minutes }}
+          LANGUAGE: ${{ inputs.language }}
+          SYSTEM: ${{ inputs.system }}
+          OFFSET_BASE: ${{ inputs.season_offset_base }}
+        run: |
+          # pipefail matters: the round is piped through tee, and without it the
+          # `if` would read tee's exit code and call every failed round a pass.
+          set -uo pipefail
+          DEADLINE=$(( $(date +%s) + BUDGET_MINUTES * 60 ))
+          echo "## Level $LEVEL" >> "$GITHUB_STEP_SUMMARY"
+          ok=0
+          for round in $(seq 1 "$ROUNDS"); do
+            now=$(date +%s)
+            if [ "$now" -ge "$DEADLINE" ]; then
+              echo "Budget of ${BUDGET_MINUTES}m spent — stopping after $((round - 1)) round(s)."
+              echo "- Budget spent after $((round - 1)) round(s)" >> "$GITHUB_STEP_SUMMARY"
+              break
+            fi
+            # Step by 3 (one seed per tier) so each round draws unseen premises.
+            OFFSET=$(( OFFSET_BASE + 3 * (round - 1) ))
+            echo "::group::Level $LEVEL — round $round/$ROUNDS (season-offset $OFFSET, $(( (DEADLINE - now) / 60 ))m left)"
+            if node generate-serial-stories.mjs \
+                 --language "$LANGUAGE" --system "$SYSTEM" --level "$LEVEL" \
+                 --season-offset "$OFFSET" 2>&1 | tee round.log; then
+              ok=$((ok + 1))
+              tail -n 1 round.log | sed "s/^/- Round $round: /" >> "$GITHUB_STEP_SUMMARY"
+            else
+              # A failed round (provider outage, bad plan) must not abandon the
+              # rounds after it — the next one starts from a fresh season plan.
+              echo "Round $round FAILED — continuing with the next round."
+              echo "- Round $round: failed" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            echo "::endgroup::"
+          done
+          echo "Level $LEVEL finished: $ok round(s) completed."
+          if [ "$ok" -eq 0 ]; then
+            echo "::error::Level $LEVEL produced no completed rounds."
+            exit 1
+          fi
