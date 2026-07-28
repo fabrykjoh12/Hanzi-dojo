@@ -54,6 +54,10 @@ on:
         description: "How many levels to generate at once (lower this if the LLM rate-limits)."
         type: string
         default: '3'
+      tier:
+        description: "Probe run: generate only this tier (1/2/3). Blank = all three. Use it to sample quality before committing a whole night."
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -124,10 +128,13 @@ jobs:
           LANGUAGE: ${{ inputs.language }}
           SYSTEM: ${{ inputs.system }}
           OFFSET_BASE: ${{ inputs.season_offset_base }}
+          TIER: ${{ inputs.tier }}
         run: |
           # pipefail matters: the round is piped through tee, and without it the
           # `if` would read tee's exit code and call every failed round a pass.
           set -uo pipefail
+          TIER_FLAG=""
+          if [ -n "$TIER" ]; then TIER_FLAG="--tier $TIER"; fi
           DEADLINE=$(( $(date +%s) + BUDGET_MINUTES * 60 ))
           echo "## Level $LEVEL" >> "$GITHUB_STEP_SUMMARY"
           ok=0
@@ -143,7 +150,7 @@ jobs:
             echo "::group::Level $LEVEL — round $round/$ROUNDS (season-offset $OFFSET, $(( (DEADLINE - now) / 60 ))m left)"
             if node generate-serial-stories.mjs \
                  --language "$LANGUAGE" --system "$SYSTEM" --level "$LEVEL" \
-                 --season-offset "$OFFSET" 2>&1 | tee round.log; then
+                 --season-offset "$OFFSET" $TIER_FLAG 2>&1 | tee round.log; then
               ok=$((ok + 1))
               tail -n 1 round.log | sed "s/^/- Round $round: /" >> "$GITHUB_STEP_SUMMARY"
             else
