@@ -1,22 +1,32 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabase'
-import { languageTheme } from './languageTheme'
+import { languageTheme, ink } from './languageTheme'
 import { getLevelLabel } from './utils'
 import { useIsMobile } from './useIsMobile'
+import { flatPanel, NUM } from './designTokens'
 import { toast } from './toast'
 import { PACING, estimateDays } from './priorKnowledge'
 import { matchPastedText } from './priorKnowledgeImport'
 import { seedClaim } from './priorKnowledgeSeed'
-import { ArrowLeft, Check } from 'lucide-react'
+import {
+  buildReviewGroups, selectAll, toggleSelection, setSelected,
+  groupState, idsOf, claimIdsFor, initialOpenLevels, toggleLevelOpen,
+} from './knownWordsReview'
+import { ArrowLeft, Check, ChevronDown, ChevronRight, Minus } from 'lucide-react'
 
 // "Words you already know" — bring prior knowledge into review.
 //
 // Two ways to make a claim (a set of vocab ids the learner already knows):
 //   • Paste a list (Anki / Pleco export, or a bare column) → matched by the same
-//     matcher the reader uses to decide what is tappable.
+//     matcher the reader uses to decide what is tappable, then REVIEWED word by
+//     word before anything is seeded — a paste is a claim about a whole deck,
+//     and nobody remembers a whole deck equally.
 //   • Browse & check — tap words from a frequency-ordered grid.
 // Both end at a pacing picker and seed the claim as spread-out review cards.
 // Words that already have a card can never be claimed here (§13: no clobbering).
+//
+// The selection, grouping and "what will be seeded" derivation are pure and live
+// in knownWordsReview.js; this file only draws them.
 
 const PAGE = 1000   // PostgREST hard cap — page until a short page comes back
 
@@ -53,6 +63,8 @@ export default function KnownWords({ session, profile, track, onBack }) {
   const [mode, setMode] = useState('paste')               // 'paste' | 'browse'
   const [text, setText] = useState('')
   const [pasteResult, setPasteResult] = useState(null)    // { ids, unmatchedLines }
+  const [ticked, setTicked] = useState(() => new Set())   // paste review — ids still claimed
+  const [openLevels, setOpenLevels] = useState(() => new Set())
   const [picked, setPicked] = useState(() => new Set())   // browse selections
   const [pacing, setPacing] = useState('steady')
   const [saving, setSaving] = useState(false)
@@ -94,18 +106,33 @@ export default function KnownWords({ session, profile, track, onBack }) {
     return [...groups.entries()].sort((a, b) => a[0] - b[0])
   }, [vocab])
 
-  // The claim: selected ids minus anything already carded, in the loaded
-  // (frequency) order so the spread is frequency-ordered.
+  // What a paste turned up, grouped by level and stripped of anything already in
+  // the deck. Rebuilt whenever the match or the deck changes.
+  const review = useMemo(
+    () => buildReviewGroups(vocab, pasteResult ? pasteResult.ids : [], carded),
+    [vocab, pasteResult, carded],
+  )
+
+  // The claim: for a paste, only what is still ticked; for browse, what was
+  // tapped. Both stay in the loaded (frequency) order so the spread is
+  // frequency-ordered, and both exclude anything already carded.
   const claimIds = useMemo(() => {
-    const wanted = mode === 'paste'
-      ? new Set(pasteResult ? pasteResult.ids : [])
-      : picked
-    return vocab.filter(v => wanted.has(v.id) && !carded.has(v.id)).map(v => v.id)
-  }, [mode, pasteResult, picked, vocab, carded])
+    if (mode === 'paste') return claimIdsFor(review, ticked)
+    return vocab.filter(v => picked.has(v.id) && !carded.has(v.id)).map(v => v.id)
+  }, [mode, review, ticked, picked, vocab, carded])
 
   const runPaste = () => {
     const { matchedIds, unmatchedLines } = matchPastedText(text, vocabMap, track.language)
+    const next = buildReviewGroups(vocab, matchedIds, carded)
     setPasteResult({ ids: matchedIds, unmatchedLines })
+    setTicked(selectAll(next.orderedIds))       // everything ticked to start
+    setOpenLevels(initialOpenLevels(next.groups))
+  }
+
+  const clearPaste = () => {
+    setPasteResult(null)
+    setTicked(new Set())
+    setOpenLevels(new Set())
   }
 
   const toggle = (id) => {
@@ -192,7 +219,7 @@ export default function KnownWords({ session, profile, track, onBack }) {
         <div style={{ marginBottom: '22px' }}>
           <textarea
             value={text}
-            onChange={e => { setText(e.target.value); setPasteResult(null) }}
+            onChange={e => { setText(e.target.value); clearPaste() }}
             placeholder={'Paste words here — an Anki or Pleco export, or one word per line.'}
             rows={7}
             style={{
@@ -210,10 +237,25 @@ export default function KnownWords({ session, profile, track, onBack }) {
           </button>
           {pasteResult && (
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '10px' }}>
-              Found <strong style={{ color: 'var(--text)' }}>{claimIds.length}</strong> of your words
-              {pasteResult.unmatchedLines > 0 && ` · ${pasteResult.unmatchedLines} line${pasteResult.unmatchedLines === 1 ? '' : 's'} we didn’t recognise`}
-              {pasteResult.ids.length !== claimIds.length && ` · ${pasteResult.ids.length - claimIds.length} already in your deck`}.
+              Found <strong style={{ color: 'var(--text)' }}>{review.matched}</strong> of your words
+              {review.alreadyKnown > 0 && ' · ' + review.alreadyKnown + ' already in your deck'}
+              {pasteResult.unmatchedLines > 0 && ' · ' + pasteResult.unmatchedLines + ' line' + (pasteResult.unmatchedLines === 1 ? '' : 's') + ' we didn’t recognise'}.
             </p>
+          )}
+
+          {pasteResult && review.total > 0 && (
+            <ReviewList
+              review={review}
+              ticked={ticked}
+              openLevels={openLevels}
+              onToggleWord={id => setTicked(prev => toggleSelection(prev, id))}
+              onSetMany={(ids, on) => setTicked(prev => setSelected(prev, ids, on))}
+              onToggleLevel={level => setOpenLevels(prev => toggleLevelOpen(prev, level))}
+              track={track}
+              accentHex={accentHex}
+              langFont={langFont}
+              isMobile={isMobile}
+            />
           )}
         </div>
       )}
@@ -259,6 +301,12 @@ export default function KnownWords({ session, profile, track, onBack }) {
         </div>
       )}
 
+      {mode === 'paste' && review.total > 0 && claimIds.length === 0 && (
+        <p style={{ fontSize: '13px', color: 'var(--text-muted)', paddingTop: '4px' }}>
+          Nothing ticked, so nothing will be added. These words stay as new words.
+        </p>
+      )}
+
       {/* Pacing + confirm — shown once there is a claim */}
       {claimIds.length > 0 && (
         <div style={{ borderTop: '1px solid var(--border)', paddingTop: '18px' }}>
@@ -293,6 +341,137 @@ export default function KnownWords({ session, profile, track, onBack }) {
           </button>
         </div>
       )}
+    </div>
+  )
+}
+
+// The review step. Every matched word is here, ticked, until the learner says
+// otherwise — the counts and the ordering come from knownWordsReview.js, so this
+// is only layout.
+function ReviewList({
+  review, ticked, openLevels, onToggleWord, onSetMany, onToggleLevel,
+  track, accentHex, langFont, isMobile,
+}) {
+  const selected = review.orderedIds.filter(id => ticked.has(id)).length
+  const allIds = review.orderedIds
+
+  return (
+    <div style={{ marginTop: '16px', overflow: 'hidden', ...flatPanel({ radius: 14 }) }}>
+      <div style={{ padding: isMobile ? '12px 14px' : '14px 16px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
+          Check what you remember
+        </div>
+        <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55, margin: '5px 0 0' }}>
+          Untick anything you don’t actually remember. Those stay out of review and
+          come round later as new words.
+        </p>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: '10px', marginTop: '10px', flexWrap: 'wrap',
+        }}>
+          <span style={{ fontSize: '13px', color: 'var(--text-muted)', ...NUM }}>
+            <strong style={{ color: 'var(--text)' }}>{selected}</strong> of {review.total} ticked
+          </span>
+          <span style={{ display: 'flex', gap: '12px' }}>
+            <button onClick={() => onSetMany(allIds, true)} style={linkBtn(ink(accentHex))}>Tick all</button>
+            <button onClick={() => onSetMany(allIds, false)} style={linkBtn(ink(accentHex))}>Untick all</button>
+          </span>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', maxHeight: isMobile ? '54vh' : '460px' }}>
+        {/* flex scroll rule (§5): the scroller needs min-height 0 or it grows to
+            fit thousands of rows and the overflow gets clipped. */}
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+          {review.groups.map(group => {
+            const state = groupState(group.words, ticked)
+            const open = openLevels.has(group.level)
+            return (
+              <div key={group.level}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  padding: '9px 14px', background: 'var(--surface-2)',
+                  borderBottom: '1px solid var(--border)',
+                  position: 'sticky', top: 0, zIndex: 1,
+                }}>
+                  <button
+                    onClick={() => onToggleLevel(group.level)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '6px', flex: 1,
+                      background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                      color: 'var(--text)', fontFamily: 'Inter, sans-serif', textAlign: 'left',
+                    }}
+                  >
+                    {open
+                      ? <ChevronDown size={15} strokeWidth={2.2} color="var(--text-muted)" />
+                      : <ChevronRight size={15} strokeWidth={2.2} color="var(--text-muted)" />}
+                    <span style={{ fontSize: '13px', fontWeight: 700 }}>
+                      {getLevelLabel(track.language, track.system, group.level)}
+                    </span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', ...NUM }}>
+                      {state.selected} of {state.total}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => onSetMany(idsOf(group.words), !state.all)}
+                    style={linkBtn(ink(accentHex))}
+                  >
+                    {state.all ? 'Untick all' : 'Tick all'}
+                  </button>
+                </div>
+
+                {open && group.words.map(v => {
+                  const on = ticked.has(v.id)
+                  return (
+                    <button
+                      key={v.id}
+                      onClick={() => onToggleWord(v.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
+                        padding: '9px 14px', textAlign: 'left', cursor: 'pointer',
+                        border: 'none', borderBottom: '1px solid var(--hairline)',
+                        // Ticked is the resting state, so it stays plain; an
+                        // unticked word recedes instead of the list shouting.
+                        background: on ? 'var(--surface)' : 'var(--surface-2)',
+                        color: 'var(--text)', fontFamily: 'Inter, sans-serif',
+                      }}
+                    >
+                      <span style={{
+                        width: '18px', height: '18px', borderRadius: '5px', flexShrink: 0,
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        border: '1.5px solid ' + (on ? accentHex : 'var(--border)'),
+                        background: on ? accentHex : 'transparent',
+                      }}>
+                        {on
+                          ? <Check size={12} strokeWidth={3} color="#fff" />
+                          : <Minus size={11} strokeWidth={3} color="var(--text-faint)" />}
+                      </span>
+                      <span style={{ minWidth: 0, flex: 1 }}>
+                        <span style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{
+                            fontSize: '17px', fontFamily: "'" + langFont + "', sans-serif",
+                            color: on ? 'var(--text)' : 'var(--text-muted)',
+                          }}>
+                            {v.word}
+                          </span>
+                          <span style={{ fontSize: '12px', color: 'var(--text-faint)' }}>{v.reading}</span>
+                        </span>
+                        <span style={{
+                          display: 'block', fontSize: '12.5px', marginTop: '1px',
+                          color: on ? 'var(--text-muted)' : 'var(--text-faint)',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          {v.meaning}
+                        </span>
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }
