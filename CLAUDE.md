@@ -18,6 +18,9 @@ not a style preference here — it is the requirement.**
 - **No tables, no long bullet lists** unless requested.
 - If something is genuinely complex, give the one-line version and offer detail.
 - Never re-explain what was already agreed.
+- **Never bring up the frozen non-Chinese tracks** (§1). Not in a status line,
+  not as a caveat, not as a suggestion. If work happens to touch them through
+  shared code, say "all tracks" and move on.
 
 This applies to chat replies only. Commit messages, PR bodies and these docs
 still get full detail — they are read once, on purpose.
@@ -57,7 +60,25 @@ commit and PR titles.
 
 Hanzi-dojo is a free language-learning web app built on the two methods that
 actually work: **FSRS spaced repetition** and **level-matched immersion**.
-Chinese (HSK 3.0), Japanese (JLPT), and Russian (CEFR) today.
+
+**Scope: Chinese (HSK 3.0) only.** The two non-Chinese tracks are **frozen** —
+they stay in the app and keep working for anyone already on them, but they are
+out of scope for good: no new content, no new features, no fixes, no design
+work, no migrations, no plans. Treat "Chinese" and "the product" as the same
+thing.
+
+Applies to work and to conversation both:
+- **Never propose, plan, estimate or ask about the frozen tracks.** Not as an
+  option, not as a follow-up, not as a "while we're here". Don't report their
+  content gaps, their broken things, or their test coverage.
+- **Don't spend work on them.** A change that touches all languages because it
+  lives in shared code is fine — that is the architecture doing its job — but
+  never open a task, script run or migration *for* a frozen track.
+- **Don't rip them out either.** Deleting their rows, assets, themes or
+  language branches is its own pile of risk and work for zero benefit. Frozen
+  means untouched, not removed.
+- Their seeded content, migrations and generator scripts stay in the repo as
+  history. Leave them where they are.
 
 **Why it exists:** most apps don't teach the language. Gamified loops waste
 time; immersion works, but finding material at your level is hard. Hanzi-dojo
@@ -77,12 +98,12 @@ learner never hunts for comprehensible input — the right stories come to them.
 - **Frequency-first vocabulary.** Most useful words first.
 - **Stay free.** If monetisation is ever needed, prefer donations — never paywalls on core features.
 
-**Adding a language is data-driven.** Per-language identity (accent, font,
+**Language stays data-driven anyway.** Per-language identity (accent, font,
 native name, background, level system, whether the script is CJK) lives in
-`src/languageTheme.js`. Adding a language = add an entry there, add its
-background asset, run the CHECK-constraint migration (template:
-`20260701120000_add_russian_language.sql`), and seed content. Screens read the
-config — **never branch on `active_language === 'japanese'`.**
+`src/languageTheme.js`, and screens read that config rather than branching on
+which language is active. That rule survives the scope decision above: it costs
+nothing, it is what keeps the frozen tracks working without anyone maintaining
+them, and a hardcoded `if (active_language === …)` is still a bug.
 
 ---
 
