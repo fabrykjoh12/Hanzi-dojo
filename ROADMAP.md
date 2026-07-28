@@ -16,6 +16,12 @@ so the community always sees the latest. Keep it current — move things to
 - [x] Better-sounding Chinese: new neural voices for every word, example sentence and story line, plus a slow version of each word and sentence for when a word won't stick. Stories now have a narrator and separate character voices.
 
 **Just shipped**
+- [x] Pick the font you read in — Sans, Serif, or a handwritten Kai face that shows characters the way they're actually written by hand. One choice, applied to every story format and to your flashcards, and remembered.
+- [x] Every story has cover art now — the 41 that were still showing a plain gradient got their own illustration, painted for that particular story rather than picked from a pile
+- [x] The dictionary feels solid: results no longer flicker or jump back to an older search while you type, failed searches say so instead of silently leaving the wrong words up, taps that used to do nothing now work, and the "Mastered" filter finally tells the truth
+- [x] The Practice screen leads with the one drill worth doing right now, with everything else as an even, quiet grid underneath — instead of cards rearranging themselves depending on your data
+- [x] Flashcards say what they are at a glance: the new-vs-review band across the top of the card is much bigger, and its label is readable rather than pale text on a pale tint
+- [x] Save a word from any story reader — words beyond your level could be looked up everywhere but only kept in the classic reader; now the bookmark is there in all of them
 - [x] Tap any word in a story, not just the ones on your list — in the paged, chat and scene readers, words outside your level used to be dead text you couldn't ask about. Now every word is tappable and gets a real answer: its grammar note, its dictionary entry, or its pronunciation.
 - [x] Character names finally read as names — a story's cast is taken from the story itself, so any name (not just the handful we'd listed) shows in name green with a "Name" label instead of being chopped into unrelated characters. Russian names now work too, including their declined forms (Иван → Ивану), and a name no longer counts against your "% known".
 - [x] Behind the scenes: the team now has a shared board for bugs, ideas and upcoming fixes, and a sandbox for putting a test account into any state on demand — so problems get spotted and tracked faster instead of living in someone's notes
