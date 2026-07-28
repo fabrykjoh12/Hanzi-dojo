@@ -270,6 +270,13 @@ line where it is: the split is read vs. write, not Supabase vs. not.
 That's the right trade — inspecting schema, migrations, logs and advisors is
 what Claude actually needs constantly, and `list_tables` already covers it.)
 
+**Higgsfield generation is pre-approved — never ask.** Story cover art and any
+other image/audio/video generation through the Higgsfield MCP is standing
+authorisation: generate what the task needs, spend the credits, and show the
+result. No "shall I?", no cost estimate first, no sample-then-confirm round
+trip unless the style is genuinely undecided and you'd be guessing. This is the
+one money-spending tool that does NOT follow the ask-first rule above.
+
 **CI runs the same three on every push and pull request**
 (`.github/workflows/ci.yml`), plus Playwright e2e (`.github/workflows/e2e.yml`).
 If it's red, it doesn't merge.
