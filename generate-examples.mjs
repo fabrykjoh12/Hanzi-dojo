@@ -180,6 +180,7 @@ async function processLanguage(language, system) {
 
   let success = 0
   let failed = 0
+  let consecutiveRateLimited = 0
 
   for (let i = 0; i < vocab.length; i += BATCH_SIZE) {
     const batch = vocab.slice(i, i + BATCH_SIZE)
@@ -236,6 +237,18 @@ async function processLanguage(language, system) {
     } catch (err) {
       failed += batch.length
       console.log(`✗ ${err.message}`)
+      // Give up early when the quota is plainly gone. A 429 that survives all
+      // four attempts (15s + 30s + 60s of backoff) is a spent daily quota, not
+      // burst throttling, and every later batch will hit the same wall. Without
+      // this a quota-exhausted run grinds through all 46 batches — ~90 minutes
+      // of CI to write nothing at all.
+      consecutiveRateLimited = String(err.message).includes('429') ? consecutiveRateLimited + 1 : 0
+      if (consecutiveRateLimited >= 3) {
+        console.log(`\nStopping: ${consecutiveRateLimited} consecutive batches exhausted their retries on 429.`)
+        console.log('The LLM quota looks spent — re-run once it resets, or use a key with more headroom.')
+        console.log(`Progress is saved: the ${success} words written keep their examples, and the rest stay NULL for the next run to pick up.`)
+        break
+      }
     }
   }
 
