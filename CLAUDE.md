@@ -256,19 +256,23 @@ npm run build    # the build is the source of truth
 
 `/ship` does this for you and refuses to commit if any step fails.
 
-Those three, plus read-only git (`status`, `diff`, `log`, `show`) and the
-**read-only** Supabase MCP tools (`list_*`, `get_*`, `search_docs`), are
-allow-listed in `.claude/settings.json` so they run without a prompt — they're
-safe, read-only or idempotent, and asking about them dozens of times a day is
-pure friction. **`git push`, `git commit`, the `node --env-file=.env.script`
-content scripts, and every Supabase tool that writes — `execute_sql`,
-`apply_migration`, `deploy_edge_function`, branch and project management —
-deliberately still prompt.** Those either change data or spend money. Keep that
-line where it is: the split is read vs. write, not Supabase vs. not.
+Those three, plus read-only git (`status`, `diff`, `log`, `show`), the
+**read-only** Supabase MCP tools (`list_*`, `get_*`, `search_docs`), and —
+since 2026-07-28 — **`execute_sql` and `apply_migration`**, are allow-listed in
+`.claude/settings.json` so they run without a prompt. **`git push`,
+`git commit`, the `node --env-file=.env.script` content scripts,
+`deploy_edge_function`, and branch/project management still prompt.** Those
+either spend money or change the shape of the project itself.
 
-(`execute_sql` prompts even for a `SELECT`, because the same tool can `DELETE`.
-That's the right trade — inspecting schema, migrations, logs and advisors is
-what Claude actually needs constantly, and `list_tables` already covers it.)
+`execute_sql` and `apply_migration` were moved to allow deliberately, at the
+maintainer's request, after a pending migration left the language reset broken
+(`writing_stats`) and there was no way to apply the fix from a remote session —
+the prompt is not reachable there, so "it prompts" meant "it can never run".
+Migrations in this repo are written to be idempotent and are committed to
+`supabase/migrations/` before they are applied; that, plus §7's rules (never
+delete vocabulary, never delete cards outside the reset RPC, never write
+`is_easy = true` or `ease_factor`), is what keeps the power safe. Apply the
+migration you committed — do not improvise DDL at the prompt.
 
 **Run the GitHub Actions yourself — don't hand them back.** The content
 workflows (`content-utils.yml` → `story-images-apply`, `publish-held`,
