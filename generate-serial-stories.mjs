@@ -13,8 +13,12 @@ import { premiumLlm } from './llm.mjs'
 //                dialogue-speaker whitelist, line counts
 //   4. REVISE    targeted — the model is told exactly which words to replace,
 //                not asked to regenerate blind (max 3 rounds)
-//   5. CRITIQUE  a rubric-scored quality pass; below 7/10 → one quality
-//                revision (then re-validate, since revision can break coverage)
+//   5. CRITIQUE  a calibrated rubric pass that reads the chapter in the
+//                season's context; below TARGET_SCORE it is revised (up to
+//                twice, and only while the score moves), then re-validated,
+//                since a rewrite can break coverage. The whole chapter is
+//                re-attempted from scratch until it hits TARGET or runs out
+//                of attempts, and the best attempt wins.
 //   6. TRANSLATE separate line-aligned pass, count-checked in code
 //
 // Chapters that pass every gate are inserted is_published=true; anything that
@@ -565,18 +569,43 @@ async function reviseForCoverage(tier, draft, validation, focusWords, pool) {
   return callText(prompt, 6000, parseChapter)
 }
 
-async function critiqueStory(draft) {
+// The critique is the only quality gate, and a model scoring its own output
+// drifts generous — an unanchored 1-10 clusters at 7-8 no matter what it read.
+// So the scale is calibrated explicitly, and the chapter is judged IN CONTEXT
+// (premise, its role in the season, what happened last chapter) because the
+// serial failures that matter — a chapter that doesn't follow from the one
+// before, a hook that never lands — are invisible when it is read alone.
+async function critiqueStory(draft, plan, chapterIdx, prevRecap) {
+  const ch = plan && plan.chapters[chapterIdx]
+  const isLast = plan && chapterIdx === plan.chapters.length - 1
+  const context = plan
+    ? 'Season premise: ' + plan.premise_en + '\n' +
+      'This is chapter ' + (chapterIdx + 1) + ' of ' + plan.chapters.length + '.\n' +
+      (prevRecap ? 'Previous chapter: ' + prevRecap + '\n' : '') +
+      'It is meant to cover: ' + (ch ? ch.summary_en : '') + '\n' +
+      (isLast ? 'It must resolve the season warmly.\n' : (ch && ch.hook_en ? 'It must end on this hook: ' + ch.hook_en + '\n' : '')) +
+      '\n'
+    : ''
   const prompt =
-    'You are a strict editor of graded readers for ' + cfg.levelName + ' ' + cfg.promptLang + ' learners. Score this chapter.\n\n' +
-    draft.content + '\n\n' +
-    'Rubric (score 1-10 overall):\n' +
-    '- Natural, idiomatic ' + cfg.promptLang + ' (not translated-sounding, not choppy baby prose)\n' +
+    'You are a demanding editor of graded readers for ' + cfg.levelName + ' ' + cfg.promptLang + ' learners. Score this chapter.\n\n' +
+    context +
+    'Chapter:\n' + draft.content + '\n\n' +
+    'Judge it on:\n' +
+    '- Natural, idiomatic ' + cfg.promptLang + ' (not translated-sounding, not choppy baby prose, no repeated sentence shapes)\n' +
     '- An actual story: concrete events, cause and effect, a reason to keep reading\n' +
-    '- Distinct character voices in dialogue\n' +
-    '- Appropriate for the level (simple grammar, but not insulting)\n\n' +
+    '- Distinct character voices — could you tell who is speaking with the names removed?\n' +
+    '- It does the job the outline gives it, follows on from the previous chapter, and lands its ending\n' +
+    '- Appropriate for the level (simple grammar, but never insulting or babyish)\n\n' +
+    'Calibration — use the WHOLE scale, and be hard to please:\n' +
+    '- 9-10: publishable as-is in a good graded reader. Rare.\n' +
+    '- 7-8: solid. Real story, natural language, minor blemishes only.\n' +
+    '- 5-6: readable but flat — thin plot, interchangeable voices, or stiff prose.\n' +
+    '- 1-4: broken, incoherent, or barely a story.\n' +
+    'Most drafts are a 5 or 6. Do not award 7+ out of politeness; a chapter where\n' +
+    'nothing much happens, or where every character sounds the same, is a 6 at best.\n\n' +
     'Output format — plain text, NOT JSON. Exactly two lines:\n' +
     'SCORE: <a single number 1-10>\n' +
-    'FEEDBACK: <2-4 specific, actionable problems (or what works, if 8+)>'
+    'FEEDBACK: <2-4 specific, actionable problems (or what works, if 9+)>'
   return callText(prompt, 3000, (text) => {
     let score = null, feedback = ''
     for (const line of text.split('\n')) {
@@ -634,15 +663,23 @@ async function translateStory(draft) {
   }
 }
 
-// A solid graded reader scores ~6+. Chapters below this are held unpublished.
-const PUBLISH_SCORE = 6
+// Two bars, deliberately different.
+//
+// TARGET is what the pipeline works toward: below it, a chapter gets a quality
+// revision and the attempt loop keeps trying instead of settling. PUBLISH is
+// the floor for shipping. Collapsing them into one number (it used to be a
+// lone 6) meant the loop stopped the instant a draft cleared the floor, so the
+// floor became the typical quality rather than the worst allowed.
+const TARGET_SCORE = 8
+// A solid graded reader scores 7+. Chapters below this are held unpublished.
+const PUBLISH_SCORE = 7
 // A serial can't have gaps — a held opener means readers start mid-story. So
 // every chapter gets several from-scratch attempts (fresh drafts vary a lot;
 // revising a weak draft often doesn't rescue it) and we keep the best one.
 const MAX_CHAPTER_ATTEMPTS = 3
 
 // One full attempt at a chapter: draft → coverage/format fixes → quality
-// critique → at most one targeted quality revision. Returns the draft plus its
+// critique → up to two targeted quality revisions. Returns the draft plus its
 // final validation and critique so the caller can compare attempts.
 async function attemptChapter(tier, plan, i, focus, pool, prevRecap) {
   let draft = await draftChapter(tier, plan, i, focus, pool, prevRecap)
@@ -657,16 +694,23 @@ async function attemptChapter(tier, plan, i, focus, pool, prevRecap) {
     rounds += 1
   }
 
-  // Quality gate: below the bar → one quality revision, re-checked (and
-  // re-covered if the rewrite drifts out of the vocabulary pool).
+  // Quality gate: below TARGET → a quality revision, re-checked (and re-covered
+  // if the rewrite drifts out of the vocabulary pool). Up to two rounds, and
+  // only while the score is actually moving — a revision that doesn't improve
+  // the chapter won't improve it on a third pass either, and the attempt loop's
+  // next from-scratch draft is the better use of the call. A revision that
+  // makes things WORSE is discarded rather than kept.
   process.stdout.write('critique... ')
-  let crit = await critiqueStory(draft)
-  if ((crit.score || 0) < PUBLISH_SCORE) {
+  let crit = await critiqueStory(draft, plan, i, prevRecap)
+  for (let round = 0; round < 2 && (crit.score || 0) < TARGET_SCORE; round += 1) {
     process.stdout.write('revise(' + crit.score + ')... ')
-    draft = await reviseForQuality(tier, draft, crit.feedback || '', focus, pool)
-    v = validateStory(draft.content, pool, tier)
-    if (!v.ok) { draft = await reviseForCoverage(tier, draft, v, focus, pool); v = validateStory(draft.content, pool, tier) }
-    crit = await critiqueStory(draft)
+    const revised = await reviseForQuality(tier, draft, crit.feedback || '', focus, pool)
+    let rv = validateStory(revised.content, pool, tier)
+    let fixed = revised
+    if (!rv.ok) { fixed = await reviseForCoverage(tier, revised, rv, focus, pool); rv = validateStory(fixed.content, pool, tier) }
+    const rcrit = await critiqueStory(fixed, plan, i, prevRecap)
+    if (attemptRank({ v: rv, crit: rcrit }) <= attemptRank({ v, crit })) break
+    draft = fixed; v = rv; crit = rcrit
   }
   return { draft, v, crit }
 }
@@ -713,6 +757,7 @@ async function main() {
   let nextNum = existing && existing.length > 0 ? existing[0].story_number + 1 : 1
 
   let published = 0, held = 0
+  const scores = []
 
   for (const tier of tiersToRun) {
     console.log('\n=== Tier ' + tier.tier + ' — season of ' + tier.chapters + ' chapters ===')
@@ -754,7 +799,9 @@ async function main() {
           process.stdout.write(attempt === 0 ? 'draft... ' : 'retry ' + (attempt + 1) + '... ')
           const cand = await attemptChapter(tier, plan, i, focus, pool, prevRecap)
           if (!best || attemptRank(cand) > attemptRank(best)) best = cand
-          if (best.v.ok && (best.crit.score || 0) >= PUBLISH_SCORE) break
+          // Stop at TARGET, not at the publish floor: settling for the first
+          // barely-shippable draft is exactly how a level fills up with 6/10s.
+          if (best.v.ok && (best.crit.score || 0) >= TARGET_SCORE) break
         }
         const { draft, v, crit } = best
 
@@ -775,6 +822,7 @@ async function main() {
         if (error) throw new Error(error.message)
         console.log((pass ? 'PUBLISHED' : 'HELD (unpublished)') + ' — cov ' + Math.round(v.coverage * 100) + '%, score ' + crit.score + ', ' + v.lineCount + ' lines — "' + title + '"')
         if (pass) published += 1; else held += 1
+        scores.push(crit.score || 0)
         nextNum += 1
         prevRecap = plan.chapters[i].summary_en
         await sleep(1500)
@@ -784,7 +832,9 @@ async function main() {
     }
   }
 
-  console.log('\nAll done. Published ' + published + ', held for review ' + held + '.')
+  const avg = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length) : 0
+  console.log('\nAll done. Published ' + published + ', held for review ' + held +
+    (scores.length ? ' — average quality score ' + avg.toFixed(1) + '/10' : '') + '.')
   if (held > 0) console.log('Held chapters: stories rows with is_published=false — review in the dashboard, fix or regenerate, then flip is_published.')
 }
 
