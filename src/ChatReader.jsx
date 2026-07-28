@@ -69,13 +69,14 @@ export default function ChatReader(props) {
           mode={c.readingMode} setMode={c.setReadingMode}
           language={track.language} accent={accent} onOpenChange={onSettingsOpen}
           compact placement="bottom" tint={CHAT_TINT}
+          font={c.readingFont} setFont={c.setReadingFont}
           rate={c.rate} setRate={c.setRate}
         />
         <div style={{ fontSize: '12px', color: '#666', minWidth: '34px', textAlign: 'right' }}>{c.cur + 1}/{c.total}</div>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <ChatThread revealed={revealed} sides={sides} skin={skin} theme={c.theme} accent={accent} userCards={userCards} readingMode={c.readingMode} language={track.language} activeIndex={c.cur} typingBeat={typing ? pending : null} reduceMotion={c.reduceMotion} onSelectWord={c.selectWord} onSelectToken={c.selectToken} activeToken={c.activeToken} onSeekToken={c.seekToToken} playing={c.playing} selected={c.selected} revealedEnglish={c.revealedEnglish} onToggleEnglish={c.toggleEnglish} completedBeats={c.completedBeats} onMarkDone={settingsOpen ? undefined : () => c.markBeatDone(c.cur)} />
+        <ChatThread revealed={revealed} sides={sides} skin={skin} theme={c.theme} accent={accent} userCards={userCards} readingMode={c.readingMode} language={track.language} activeIndex={c.cur} typingBeat={typing ? pending : null} reduceMotion={c.reduceMotion} onSelectWord={c.selectWord} onSelectToken={c.selectToken} activeToken={c.activeToken} onSeekToken={c.seekToToken} playing={c.playing} selected={c.selected} revealedEnglish={c.revealedEnglish} onToggleEnglish={c.toggleEnglish} completedBeats={c.completedBeats} readingFontFamily={c.readingFontFamily} onMarkDone={settingsOpen ? undefined : () => c.markBeatDone(c.cur)} />
       </div>
       <div aria-live="polite" style={srOnly}>{revealed.length ? revealed[revealed.length - 1].text : ''}</div>
 

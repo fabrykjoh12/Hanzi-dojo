@@ -97,7 +97,7 @@ export default function PacedReader(props) {
                 style={{ padding: '26px 0', transition: c.reduceMotion ? 'none' : 'opacity .45s ease, filter .45s ease', ...st }}>
                 {b.speaker && <div style={{ fontSize: '12.5px', fontWeight: 800, color: accent, marginBottom: '9px' }}>{b.speaker}</div>}
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                  <div style={{ flex: 1, fontFamily: c.theme.font, fontSize: '30px', lineHeight: reserve ? 2.05 : 1.62, fontWeight: 500, color: isDone ? DONE_GREEN : undefined }}>
+                  <div style={{ flex: 1, fontFamily: c.readingFontFamily, fontSize: '30px', lineHeight: reserve ? 2.05 : 1.62, fontWeight: 500, color: isDone ? DONE_GREEN : undefined }}>
                     {b.tokens.map((t, k) => {
                       // Plain runs still route through TokenBody so they reserve the
                       // same annotation row and sit on the line's shared baseline.
@@ -194,6 +194,7 @@ export default function PacedReader(props) {
           <ReadingSettings
             mode={c.readingMode} setMode={c.setReadingMode}
             language={track.language} accent={accent} onOpenChange={onSettingsOpen}
+            font={c.readingFont} setFont={c.setReadingFont}
             rate={c.rate} setRate={c.setRate}
           />
         </div>

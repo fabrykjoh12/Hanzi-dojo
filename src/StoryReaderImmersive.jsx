@@ -12,7 +12,8 @@ import { minDwellMs } from './readAlong'
 import { glossaryLookup } from './grammarGlossary'
 import { STATUS_COLOR, STATUS_LABEL } from './wordLookup'
 import { getDictEntryByWord, addDictEntryToDeck } from './dictSearch'
-import { prefsGet, prefsSet } from './offline'
+import { prefsGet, prefsMerge } from './offline'
+import { READER_PREFS_KEY, DEFAULT_READING_FONT, normalizeReadingFont, readingFontFromPrefs, readingFontHint, readingFontOptions, readingFontPatch, readingFontStack } from './readingFonts'
 import { FIRST_MISSION_READER_HINT, firstMissionCompletion } from './firstMission'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
 import { shareReadingCard } from './shareCard'
@@ -52,24 +53,15 @@ function dictCacheSet(word, entry) {
   DICT_CACHE.set(word, entry)
 }
 
-// Durable reader preferences (furigana mode, Learning Lens, serif). Stored in
-// the prefs store so a reader's chosen scaffolding survives reloads without a
-// round-trip to the server. Default: scaffold only unknown words, lens off —
-// the page reads like a book until the learner asks for more help. Sentence
-// translation is NOT a durable preference: each line has its own eye icon
-// (see RevealEnglishButton) so it's a per-sentence, per-session choice.
-const READER_PREFS_KEY = 'reader:prefs'
-const DEFAULT_PREFS = { furiganaMode: 'unknown', lens: false, serif: false, seenFocusHint: false }
-
-// Serif reading-font stacks, per script. These lean on the OS's own serif faces
-// (genuinely book-like for CJK, and free) so we never load a web font — any named
-// face that's absent falls through to the generic `serif` keyword.
-const SERIF_FONTS = {
-  japanese: "'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',serif",
-  chinese: "'Songti SC','SimSun','Noto Serif SC',serif",
-  russian: "'Noto Serif','Georgia','Times New Roman',serif",
-  default: "'Noto Serif','Georgia','Times New Roman',serif",
-}
+// Durable reader preferences (furigana mode, Learning Lens, reading font).
+// Stored in the prefs store — under READER_PREFS_KEY, the same record every
+// other reader and the flashcard read — so a reader's chosen scaffolding
+// survives reloads without a round-trip to the server. Default: scaffold only
+// unknown words, lens off — the page reads like a book until the learner asks
+// for more help. Sentence translation is NOT a durable preference: each line
+// has its own eye icon (see RevealEnglishButton) so it's a per-sentence,
+// per-session choice. The reading-font stacks live in readingFonts.js.
+const DEFAULT_PREFS = { furiganaMode: 'unknown', lens: false, seenFocusHint: false }
 
 const FURIGANA_OPTIONS = [
   { value: 'always', label: 'Always' },
@@ -243,7 +235,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     if (next.has(li)) next.delete(li); else next.add(li)
     return next
   })
-  const [serif, setSerif] = useState(DEFAULT_PREFS.serif)
+  const [readingFontChoice, setReadingFontChoice] = useState(DEFAULT_READING_FONT)
   const [seenFocusHint, setSeenFocusHint] = useState(DEFAULT_PREFS.seenFocusHint)
   const [showSentence, setShowSentence] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -274,9 +266,10 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const isChinese = track.language === 'chinese'
   const accent = theme.accentHex
   const font = theme.font
-  // Reading-column font: the theme sans by default, or the script's system serif
-  // when the reader turns on the Serif setting (book-like, no web font loaded).
-  const readingFont = serif ? (SERIF_FONTS[track.language] || SERIF_FONTS.default) : font
+  // Reading-column font: whichever face the learner picked (readingFonts.js owns
+  // the stacks and which languages offer what). No web font is loaded either way.
+  const readingFont = readingFontStack(track.language, readingFontChoice)
+  const pickReadingFont = (value) => setReadingFontChoice(normalizeReadingFont(track.language, value))
   // Curated names PLUS the cast this story declares in its own speaker labels,
   // so a name nobody curated still reads (and taps) as a name.
   const names = useMemo(
@@ -309,16 +302,23 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
       if (live && saved && typeof saved === 'object') {
         if (FURIGANA_OPTIONS.some(o => o.value === saved.furiganaMode)) setFuriganaMode(saved.furiganaMode)
         if (typeof saved.lens === 'boolean') setLens(saved.lens)
-        if (typeof saved.serif === 'boolean') setSerif(saved.serif)
         if (typeof saved.seenFocusHint === 'boolean') setSeenFocusHint(saved.seenFocusHint)
       }
+      // Also migrates the legacy `serif: true` flag, so anyone who had turned
+      // serif on lands on Serif rather than being reset to Sans.
+      if (live) setReadingFontChoice(readingFontFromPrefs(saved, track.language))
     }).finally(() => { prefsReady.current = true })
     return () => { live = false }
-  }, [])
+  }, [track.language])
+  // prefsMerge, not prefsSet: the paged/chat readers keep their reading mode and
+  // playback rate in this same record, and a whole-object write would erase them.
   useEffect(() => {
     if (!prefsReady.current) return
-    prefsSet(READER_PREFS_KEY, { furiganaMode, lens, serif, seenFocusHint })
-  }, [furiganaMode, lens, serif, seenFocusHint])
+    prefsMerge(READER_PREFS_KEY, {
+      furiganaMode, lens, seenFocusHint,
+      ...readingFontPatch(track.language, readingFontChoice),
+    })
+  }, [furiganaMode, lens, readingFontChoice, seenFocusHint, track.language])
 
   // Close the desktop settings popover on an outside click (the mobile sheet has
   // its own tap-to-close scrim, so this only matters on desktop).
@@ -775,7 +775,8 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             <ReaderSettings
               furiganaMode={furiganaMode} setFuriganaMode={setFuriganaMode}
               lens={lens} setLens={setLens}
-              serif={serif} setSerif={setSerif}
+              fontChoice={readingFontChoice} setFontChoice={pickReadingFont}
+              language={track.language}
               readingLabel={readingLabel}
               accent={accent} onClose={() => setSettingsOpen(false)} isMobile={false}
             />
@@ -1248,7 +1249,8 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             <ReaderSettings
               furiganaMode={furiganaMode} setFuriganaMode={setFuriganaMode}
               lens={lens} setLens={setLens}
-              serif={serif} setSerif={setSerif}
+              fontChoice={readingFontChoice} setFontChoice={pickReadingFont}
+              language={track.language}
               readingLabel={readingLabel}
               accent={accent} onClose={() => setSettingsOpen(false)} isMobile
             />
@@ -1378,7 +1380,8 @@ function MetaChip({ icon: Icon, children, accent, strong = false }) {
 // lives in the reader so the choices persist and never reload the story.
 // Sentence translation lives outside this panel — a RevealEnglishButton sits
 // beside each line instead.
-function ReaderSettings({ furiganaMode, setFuriganaMode, lens, setLens, serif, setSerif, readingLabel, accent, onClose, isMobile }) {
+function ReaderSettings({ furiganaMode, setFuriganaMode, lens, setLens, fontChoice, setFontChoice, language, readingLabel, accent, onClose, isMobile }) {
+  const fontOptions = readingFontOptions(language)
   const wrap = isMobile
     ? { width: '100%' }
     : {
@@ -1414,31 +1417,37 @@ function ReaderSettings({ furiganaMode, setFuriganaMode, lens, setLens, serif, s
         Show readings for every word, only the ones you’re still learning, only new words, or never.
       </div>
 
-      {/* Reading font — sans (default) or a book-like serif */}
+      {/* Reading font — the shape of the characters themselves. Which options
+          exist is per-language data (readingFonts.js), never a branch here. */}
       <div style={{ height: '1px', background: 'var(--border)', margin: '15px 0' }} />
       <div style={{ fontSize: '12px', fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '9px' }}>
         Reading font
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px' }}>
-        {[{ value: false, label: 'Sans' }, { value: true, label: 'Serif' }].map(opt => {
-          const on = serif === opt.value
+      <div role="group" aria-label="Reading font" style={{ display: 'grid', gridTemplateColumns: 'repeat(' + fontOptions.length + ', 1fr)', gap: '7px' }}>
+        {fontOptions.map(opt => {
+          const on = fontChoice === opt.value
           return (
-            <button key={opt.label} onClick={() => setSerif(opt.value)} role="menuitemradio" aria-checked={on}
+            <button key={opt.value} onClick={() => setFontChoice(opt.value)} aria-pressed={on}
               style={{
-                minHeight: '42px', borderRadius: '11px', cursor: 'pointer',
-                fontSize: '13.5px', fontWeight: on ? 750 : 600,
-                fontFamily: opt.value ? "'Noto Serif','Georgia',serif" : 'Inter, sans-serif',
+                minHeight: '42px', padding: '7px 4px', borderRadius: '11px', cursor: 'pointer',
+                fontSize: '12.5px', fontWeight: on ? 750 : 600,
+                // Drawn in its own face, so the shapes are visible before the
+                // choice is made — the whole point of the setting.
+                fontFamily: opt.stack,
                 color: on ? accent : 'var(--text)',
                 background: on ? accent + '14' : 'var(--surface-2)',
                 border: '1px solid ' + (on ? accent + '66' : 'var(--border)'),
               }}>
+              {opt.sample && (
+                <span aria-hidden="true" style={{ display: 'block', fontSize: '21px', lineHeight: 1.15, fontWeight: 500 }}>{opt.sample}</span>
+              )}
               {opt.label}
             </button>
           )
         })}
       </div>
       <div style={{ fontSize: '11.5px', color: MUTED, marginTop: '8px', lineHeight: 1.45 }}>
-        Serif gives the story a calmer, book-like feel.
+        {readingFontHint(language, fontChoice)}
       </div>
 
       {/* Learning Lens */}

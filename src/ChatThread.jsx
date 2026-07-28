@@ -21,11 +21,16 @@ const DONE_GREEN = '#2F9E6D'
 // given, is the ONLY way the thread advances now — passing it (or not) is how a
 // caller opens/closes the confirm-and-advance action (e.g. hidden during a
 // reply gate, where picking the correct option is what advances instead).
-export default function ChatThread({ revealed, sides, skin, theme, accent, userCards, readingMode, language, activeIndex, typingBeat, reduceMotion, onSelectWord, onSelectToken, activeToken = -1, onSeekToken, playing = false, selected = null, revealedEnglish = null, onToggleEnglish, completedBeats = null, onMarkDone }) {
+export default function ChatThread({ revealed, sides, skin, theme, accent, userCards, readingMode, language, activeIndex, typingBeat, reduceMotion, onSelectWord, onSelectToken, activeToken = -1, onSeekToken, playing = false, selected = null, revealedEnglish = null, onToggleEnglish, completedBeats = null, onMarkDone, readingFontFamily }) {
+  // The learner's chosen reading font, applied to the story text itself. Falls
+  // back to the language's own face so a caller that doesn't pass one is
+  // unchanged.
   const endRef = useRef(null)
   useEffect(() => {
     if (endRef.current) endRef.current.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'end' })
   }, [revealed.length, typingBeat, reduceMotion])
+
+  const bodyFont = readingFontFamily || theme.font
 
   const reserve = readingMode !== 'hidden'
 
@@ -57,7 +62,7 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
           {muted ? <div style={{ fontSize: '14px' }}>typing…</div> : (
             <>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                <div style={{ flex: 1, fontSize: '19px', lineHeight: reserve ? 2 : 1.55, fontFamily: theme.font, color: isDone ? doneColor : undefined }}>
+                <div style={{ flex: 1, fontSize: '19px', lineHeight: reserve ? 2 : 1.55, fontFamily: bodyFont, color: isDone ? doneColor : undefined }}>
                   {b.tokens.map((t, k) => {
                     // Plain runs reserve the same annotation row, so a bubble's
                     // baseline is identical whether or not its words are scaffolded.
@@ -154,7 +159,7 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
       {revealed.map((b, i) => (
         b.speaker
           ? bubble(b, i, false)
-          : <div key={i} style={{ textAlign: 'center', fontSize: '12.5px', color: '#5a5a5a', fontStyle: 'italic', margin: '6px 0', fontFamily: theme.font }}>{b.text}</div>
+          : <div key={i} style={{ textAlign: 'center', fontSize: '12.5px', color: '#5a5a5a', fontStyle: 'italic', margin: '6px 0', fontFamily: bodyFont }}>{b.text}</div>
       ))}
       {typingBeat && bubble(typingBeat, 'typing', true)}
       <div ref={endRef} />

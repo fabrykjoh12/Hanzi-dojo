@@ -12,6 +12,7 @@ import { toast } from './toast'
 import { languageTheme } from './languageTheme'
 import { checkTypedAnswer } from './typedAnswer'
 import { useIsMobile } from './useIsMobile'
+import { useReadingFont } from './useReadingFont'
 import { cleanMeaning } from './cleanMeaning'
 import { pickRecapStory } from './storyMatch'
 import { tiersFor, learnedByLevel, readingGateCount } from './storyTiers'
@@ -54,16 +55,6 @@ const GRADE_STYLES = [
   { bg: '#E9F2EA', border: '#C4DCC7', text: '#35603C' }, // Good
   { bg: '#E7EFF3', border: '#C2D6DF', text: '#2F5A6B' }, // Easy
 ]
-
-// System serif stack per language, mirroring StoryReaderImmersive.jsx's
-// SERIF_FONTS — no web font is loaded (none of these are in the Google Fonts
-// link), just a preference among fonts the OS may already have.
-const STUDY_SERIF_FONTS = {
-  japanese: "'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',serif",
-  chinese: "'Songti SC','SimSun','Noto Serif SC',serif",
-  russian: "'Noto Serif','Georgia','Times New Roman',serif",
-  default: "'Noto Serif','Georgia','Times New Roman',serif",
-}
 
 function hasKanji(text) {
   const value = text || ''
@@ -264,6 +255,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const [mission, setMission] = useState(null)              // active running mission
 
   const isMobile = useIsMobile()
+  // The flashcard has no settings panel of its own — it simply follows the
+  // reading font the learner picked in the readers, so the shape of the
+  // character is the same wherever they meet it.
+  const { fontFamily: charFont } = useReadingFont(track.language)
   const isTyped = profile.recall_mode === 'typed'
 
   const theme = languageTheme(profile.active_language)
@@ -965,10 +960,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const showRuby = canUseFurigana && (showFurigana || flipped)
   const wordFuri = showRuby ? furiganaParts(v.word, v.reading) : null
   const showReadingLine = flipped && v.reading && !isJapanese
-  // The character is the focal point of the redesigned card: bigger, and set
-  // in a system serif stack (mirrors StoryReaderImmersive's SERIF_FONTS — no
-  // web font loaded, just a preference among fonts the OS may already have).
-  const charFont = STUDY_SERIF_FONTS[track.language] || STUDY_SERIF_FONTS.default
+  // The character is the focal point of the redesigned card; `charFont` above
+  // is whichever reading font the learner chose (readingFonts.js).
   const charFontSize = isMobile ? '64px' : '90px'
   // Prefer the sentence the learner actually read (captured when they added the
   // word from a story) over the generic example — real context is more memorable.

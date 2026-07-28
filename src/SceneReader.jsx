@@ -68,7 +68,7 @@ export default function SceneReader(props) {
           )}
           {beat && beat.speaker && <div style={{ fontSize: '12.5px', fontWeight: 800, color: accent, marginBottom: '10px' }}>{beat.speaker}</div>}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '8px' }}>
-            <div style={{ fontFamily: c.theme.font, fontSize: '30px', lineHeight: reserve ? 2.05 : 1.6, fontWeight: 500, color: isDone ? DONE_GREEN : undefined }}>
+            <div style={{ fontFamily: c.readingFontFamily, fontSize: '30px', lineHeight: reserve ? 2.05 : 1.6, fontWeight: 500, color: isDone ? DONE_GREEN : undefined }}>
               {beat && beat.tokens.map((t, k) => {
                 // Plain runs reserve the same annotation row as scaffolded words,
                 // so the scene's single line never shifts as modes change.
@@ -154,6 +154,7 @@ export default function SceneReader(props) {
           <ReadingSettings
             mode={c.readingMode} setMode={c.setReadingMode}
             language={track.language} accent={accent} onOpenChange={onSettingsOpen}
+            font={c.readingFont} setFont={c.setReadingFont}
             rate={c.rate} setRate={c.setRate}
           />
         </div>

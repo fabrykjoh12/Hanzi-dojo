@@ -98,13 +98,14 @@ export default function InteractiveChatReader(props) {
           mode={c.readingMode} setMode={c.setReadingMode}
           language={track.language} accent={accent} onOpenChange={onSettingsOpen}
           compact placement="bottom" tint={CHAT_TINT}
+          font={c.readingFont} setFont={c.setReadingFont}
           rate={c.rate} setRate={c.setRate}
         />
         <div style={{ fontSize: '12px', color: '#666', minWidth: '34px', textAlign: 'right' }}>{c.cur + 1}/{c.total}</div>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <ChatThread revealed={revealed} sides={sides} skin={skin} theme={c.theme} accent={accent} userCards={userCards} readingMode={c.readingMode} language={track.language} activeIndex={c.cur} typingBeat={null} reduceMotion={c.reduceMotion} onSelectWord={c.selectWord} onSelectToken={c.selectToken} activeToken={c.activeToken} onSeekToken={c.seekToToken} playing={c.playing} selected={c.selected} revealedEnglish={c.revealedEnglish} onToggleEnglish={c.toggleEnglish} completedBeats={c.completedBeats} onMarkDone={(!isGate && !settingsOpen) ? markDone : undefined} />
+        <ChatThread revealed={revealed} sides={sides} skin={skin} theme={c.theme} accent={accent} userCards={userCards} readingMode={c.readingMode} language={track.language} activeIndex={c.cur} typingBeat={null} reduceMotion={c.reduceMotion} onSelectWord={c.selectWord} onSelectToken={c.selectToken} activeToken={c.activeToken} onSeekToken={c.seekToToken} playing={c.playing} selected={c.selected} revealedEnglish={c.revealedEnglish} onToggleEnglish={c.toggleEnglish} completedBeats={c.completedBeats} readingFontFamily={c.readingFontFamily} onMarkDone={(!isGate && !settingsOpen) ? markDone : undefined} />
       </div>
       <div aria-live="polite" style={srOnly}>{isGate ? (wrongPick ? 'Not quite — try another reply' : 'Your turn to reply') : (revealed.length ? revealed[revealed.length - 1].text : '')}</div>
 
@@ -117,7 +118,7 @@ export default function InteractiveChatReader(props) {
                 const isWrong = wrongPick === opt.text
                 return (
                   <button key={oi} onClick={() => pick(opt)}
-                    style={{ textAlign: 'left', border: '1px solid ' + (isWrong ? '#DC2626' : 'rgba(0,0,0,0.12)'), background: isWrong ? '#FEECEC' : '#fff', opacity: isWrong ? 0.6 : 1, borderRadius: '14px', padding: '10px 14px', cursor: 'pointer', fontFamily: c.theme.font, animation: (isWrong && !c.reduceMotion) ? 'hdShake 0.3s' : 'none' }}>
+                    style={{ textAlign: 'left', border: '1px solid ' + (isWrong ? '#DC2626' : 'rgba(0,0,0,0.12)'), background: isWrong ? '#FEECEC' : '#fff', opacity: isWrong ? 0.6 : 1, borderRadius: '14px', padding: '10px 14px', cursor: 'pointer', fontFamily: c.readingFontFamily, animation: (isWrong && !c.reduceMotion) ? 'hdShake 0.3s' : 'none' }}>
                     <div style={{ fontSize: '17px', color: '#111' }}>{opt.text}</div>
                     {/* A candidate reply has no per-word learning status yet, so
                         it keeps a whole-line reading — hidden only when the

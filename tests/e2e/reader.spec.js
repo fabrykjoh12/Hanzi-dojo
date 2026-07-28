@@ -223,6 +223,30 @@ test.describe('Story reader', () => {
     await expect(speeds.getByRole('button', { name: '1×' })).toHaveAttribute('aria-pressed', 'false');
   });
 
+  test('paced reveal: the reader settings panel offers a reading font', async ({ page }) => {
+    const reader = new ReaderPage(page);
+    await reader.openFirstStory();
+    await page.getByRole('button', { name: /Start reading/i }).click();
+
+    await page.getByRole('button', { name: /Reader settings/i }).click();
+    const fonts = page.getByRole('group', { name: /Reading font/i });
+    await expect(fonts).toBeVisible();
+
+    // Sans is the default — the app's existing look.
+    await expect(fonts.getByRole('button', { name: 'Sans' })).toHaveAttribute('aria-pressed', 'true');
+
+    // Chinese is the only track with a Kai handwriting face, and it's offered.
+    const kai = fonts.getByRole('button', { name: 'Handwriting' });
+    await kai.click();
+    await expect(kai).toHaveAttribute('aria-pressed', 'true');
+    await expect(fonts.getByRole('button', { name: 'Sans' })).toHaveAttribute('aria-pressed', 'false');
+
+    // The story text itself is now set in the Kai stack (font-family inherits).
+    const family = await page.getByText('今天', { exact: true }).first()
+      .evaluate(el => getComputedStyle(el).fontFamily);
+    expect(family).toContain('Kaiti SC');
+  });
+
   test('paced reveal: tapping a word while paused still opens the lookup sheet', async ({ page }) => {
     const reader = new ReaderPage(page);
     await reader.openFirstStory();
