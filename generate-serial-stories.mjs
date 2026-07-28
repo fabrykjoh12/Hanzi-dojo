@@ -92,6 +92,18 @@ const SEASON_SEEDS = [
   'a new friend or visitor arrives and daily life is a little different for a while',
   'secretly helping someone prepare a surprise without them finding out',
   'the characters take on a small job or responsibility for the first time and almost mess it up',
+  'a plan for the day keeps going wrong in small ways until an accident turns out better than the plan',
+  'the characters look after an animal that is not theirs and grow attached to it',
+  'something old is found (a photo, a letter, a broken object) and the characters piece together its story',
+  'two of the characters disagree about something small, avoid each other, and find their way back',
+  'the weather changes everything for a few days and the characters have to rearrange their lives around it',
+  'a competition or test the characters have been dreading, and what actually happens on the day',
+  'the characters try to make or cook something difficult and fail repeatedly before getting it right',
+  'a day when nothing goes to schedule: a missed bus, a wrong turn, an unfamiliar part of town',
+  'someone is leaving soon and the characters quietly prepare a send-off',
+  'the characters trade places or swap responsibilities for a few days and see the other side',
+  'a small business or stall nearby is in trouble and the characters decide to help it',
+  'the characters keep noticing the same stranger, animal or object around town and finally learn why',
 ]
 
 // ── Per-target config ─────────────────────────────────────────────────────────
