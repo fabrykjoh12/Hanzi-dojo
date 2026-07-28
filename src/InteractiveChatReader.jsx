@@ -135,7 +135,7 @@ export default function InteractiveChatReader(props) {
         )}
       </div>
 
-      <WordLookupSheet selected={c.selected} theme={c.theme} accent={accent} userCards={userCards} language={track.language} onAddToDeck={c.addToDeck} onSpeak={c.speakWord} onClose={() => c.setSelected(null)} onAddDictToDeck={c.addDictToDeck} dictSaved={c.dictSaved} dictSaving={c.dictSaving} />
+      <WordLookupSheet selected={c.selected} anchor={c.selected ? c.selected.anchorEl : null} theme={c.theme} accent={accent} userCards={userCards} language={track.language} onAddToDeck={c.addToDeck} onSpeak={c.speakWord} onClose={() => c.setSelected(null)} onAddDictToDeck={c.addDictToDeck} dictSaved={c.dictSaved} dictSaving={c.dictSaving} />
       {c.done && <FinishOverlay story={story} accent={accent} onBack={onBack} note={gateCount ? `You replied ${firstTry}/${gateCount} on the first try` : null} core={c} onPractice={props.onPractice} />}
     </div>
   )

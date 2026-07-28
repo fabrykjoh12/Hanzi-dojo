@@ -117,7 +117,7 @@ export default function PacedReader(props) {
                               if (c.playing && c.seekToToken(k)) { e.stopPropagation(); return }
                               if (!tappable) return
                               e.stopPropagation()
-                              c.selectToken(t, 'not_started', plainId, i)
+                              c.selectToken(t, 'not_started', plainId, i, e.currentTarget)
                             } : undefined}
                             style={{
                               cursor: i === c.cur && tappable ? 'pointer' : 'inherit', borderRadius: '4px',
@@ -143,7 +143,7 @@ export default function PacedReader(props) {
                             // here". seekToToken reports false when there is no
                             // timeline, and then a tap means what it always did.
                             if (c.playing && c.seekToToken(k)) return
-                            c.selectToken(t, status, tokenId, i)
+                            c.selectToken(t, status, tokenId, i, e.currentTarget)
                           } : undefined}
                           style={{
                             cursor: i === c.cur ? 'pointer' : 'inherit', borderRadius: '4px', padding: '0 1px',
@@ -205,7 +205,8 @@ export default function PacedReader(props) {
         </div>
       </div>
 
-      <WordLookupSheet selected={c.selected} theme={c.theme} accent={accent} userCards={userCards} language={track.language} onAddToDeck={c.addToDeck} onSpeak={c.speakWord} onClose={() => c.setSelected(null)} onAddDictToDeck={c.addDictToDeck} dictSaved={c.dictSaved} dictSaving={c.dictSaving} />
+      {/* anchor: the tapped word itself, so the answer appears over it. */}
+      <WordLookupSheet selected={c.selected} anchor={c.selected ? c.selected.anchorEl : null} theme={c.theme} accent={accent} userCards={userCards} language={track.language} onAddToDeck={c.addToDeck} onSpeak={c.speakWord} onClose={() => c.setSelected(null)} onAddDictToDeck={c.addDictToDeck} dictSaved={c.dictSaved} dictSaving={c.dictSaving} />
       {c.done && <FinishOverlay story={story} accent={accent} onBack={onBack} core={c} onPractice={props.onPractice} />}
     </div>
   )

@@ -3,7 +3,8 @@ import { supabase } from './supabase'
 import { isOnline } from './useOnline'
 import { enqueueStoryRead } from './syncQueue'
 import { ensureAudio } from './audioCache'
-import { PrimaryButton } from './ui'
+import { PrimaryButton, PopoverArrow } from './ui'
+import { useAnchoredPopover } from './useAnchoredPopover'
 import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
@@ -197,7 +198,7 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
   const isProperNoun = Boolean(token.name) || isPlace
   return (
     <span
-      onClick={(e) => { e.stopPropagation(); onSelect() }}
+      onClick={(e) => { e.stopPropagation(); onSelect(e.currentTarget) }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
@@ -658,11 +659,15 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   // (a word tap or a line tap both focus a line) or is dismissed by the ✕.
   const dismissFocusHint = () => setSeenFocusHint(prev => (prev ? prev : true))
 
-  const selectToken = (lineIndex, tokenKey, token) => {
+  // `anchorEl` is the word element that was tapped. It rides along on the
+  // selection so the lookup can be drawn directly above that word rather than
+  // pinned to the bottom of a screen the learner isn't looking at — the same
+  // treatment the paced/chat/scene readers get, through anchoredPopover.js.
+  const selectToken = (lineIndex, tokenKey, token, anchorEl) => {
     setShowSentence(false)
     setFocusedLine(lineIndex)   // tapping a word also focuses its sentence
     dismissFocusHint()
-    setSelected({ lineIndex, tokenKey, vocab: token.vocab || null, name: token.name || null, text: token.text })
+    setSelected({ lineIndex, tokenKey, vocab: token.vocab || null, name: token.name || null, text: token.text, anchorEl: anchorEl || null })
   }
 
   // Sentence focus: tapping a line's whitespace (not a word) fades the rest of
@@ -674,6 +679,14 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const clearReading = () => { setSelected(null); setFocusedLine(null) }
 
   const sel = selected
+  // The lookup follows the word instead of living at the bottom of the screen.
+  // This reader is one long scrolling column, so re-placing on scroll is what
+  // keeps the box on its word — and dropping it once the word has scrolled away
+  // is why the hook gets `clearReading`. anchoredPopover.js owns the geometry;
+  // when a definition can't be given a readable box on either side of the word,
+  // `mode` comes back 'sheet' and this falls back to the bottom sheet below.
+  const { ref: popRef, mode: popMode, place: popPlace } = useAnchoredPopover(sel ? sel.anchorEl : null, clearReading)
+  const anchored = Boolean(sel) && popMode !== 'sheet'
   const isName = Boolean(sel && sel.name)
   const isSelPlace = Boolean(sel && sel.vocab && isPlaceWord(sel.vocab.word, track.language))
   const isPlain = Boolean(sel && !sel.vocab && !sel.name)   // tapped a grammar / out-of-list word
@@ -889,7 +902,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             <div key={li} ref={el => { lineRefs.current[li] = el }} style={{ marginTop: topGap }}>
               {showLabel && (
                 <div
-                  onClick={isNameKey(names, speaker) ? () => selectToken(li, 'sp', { name: { word: speaker, reading: names[speaker] || null } }) : undefined}
+                  onClick={isNameKey(names, speaker) ? (e) => selectToken(li, 'sp', { name: { word: speaker, reading: names[speaker] || null } }, e.currentTarget) : undefined}
                   style={{
                     fontSize: '12.5px', fontWeight: 800, letterSpacing: '0.4px',
                     color: speakerColors[speaker], marginBottom: '5px',
@@ -946,7 +959,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                         accent={accent}
                         isPlace={Boolean(tk.vocab && isPlaceWord(tk.vocab.word, track.language))}
                         isSelected={Boolean(sel) && sel.lineIndex === li && sel.tokenKey === ti}
-                        onSelect={() => selectToken(li, ti, tk)}
+                        onSelect={(el) => selectToken(li, ti, tk, el)}
                       />
                     ))}
                   </p>
@@ -1104,19 +1117,41 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         )}
       </div>
 
-      {/* Word lookup sheet */}
+      {/* Word lookup — a popover over the tapped word, falling back to the
+          bottom sheet when the geometry can't give it a readable box. */}
       {sel && (
-        <div style={{
-          position: 'fixed', left: 0, right: 0, bottom: 'calc(64px + ' + bottomOffset + ')', zIndex: 25,
-          display: 'flex', justifyContent: 'center', padding: '0 12px', pointerEvents: 'none',
-        }}>
-          <div style={{
-            width: '100%', maxWidth: '760px', background: PANEL, border: '1px solid var(--border)',
-            borderRadius: '20px', boxShadow: '0 -12px 44px rgba(24,24,27,0.16)', padding: '12px 18px 16px',
-            pointerEvents: 'auto',
-            animation: reduceMotion ? 'none' : 'hd-sheet-up 240ms cubic-bezier(0.22, 1, 0.36, 1)',
+        <div style={anchored
+          ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 25, pointerEvents: 'none' }
+          : {
+            position: 'fixed', left: 0, right: 0, bottom: 'calc(64px + ' + bottomOffset + ')', zIndex: 25,
+            display: 'flex', justifyContent: 'center', padding: '0 12px', pointerEvents: 'none',
           }}>
-            <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: 'var(--border)', margin: '0 auto 12px' }} />
+          <div ref={anchored ? popRef : null} style={anchored
+            ? {
+              position: 'fixed',
+              top: (popPlace ? popPlace.top : 0) + 'px',
+              left: (popPlace ? popPlace.left : 0) + 'px',
+              // Hidden for the one layout pass it takes to measure, so the box
+              // is never painted at 0,0 before it knows where it belongs.
+              visibility: popPlace ? 'visible' : 'hidden',
+              width: 'min(360px, calc(100vw - 24px))',
+              maxHeight: popPlace ? popPlace.maxHeight + 'px' : '60vh',
+              overflowY: 'auto',
+              background: PANEL, border: '1px solid var(--border)',
+              borderRadius: '16px', boxShadow: 'var(--shadow-2)', padding: '10px 14px 12px',
+              pointerEvents: 'auto', zIndex: 201,
+              animation: reduceMotion ? 'none' : 'hd-pop-in 160ms ease',
+            }
+            : {
+              width: '100%', maxWidth: '760px', background: PANEL, border: '1px solid var(--border)',
+              borderRadius: '20px', boxShadow: '0 -12px 44px rgba(24,24,27,0.16)', padding: '12px 18px 16px',
+              pointerEvents: 'auto',
+              animation: reduceMotion ? 'none' : 'hd-sheet-up 240ms cubic-bezier(0.22, 1, 0.36, 1)',
+            }}>
+            {/* The grab handle belongs to the sheet — a popover isn't dragged. */}
+            {!anchored && (
+              <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: 'var(--border)', margin: '0 auto 12px' }} />
+            )}
 
             {/* Header: word + reading on the left, actions on the right */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
@@ -1227,6 +1262,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               </div>
             )}
           </div>
+          {anchored && <PopoverArrow place={popPlace} />}
         </div>
       )}
 

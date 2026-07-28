@@ -81,7 +81,9 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                             if (isCurrentBubble && onSeekToken && onSeekToken(k)) { e.stopPropagation(); return }
                             if (!tappable || !onSelectToken) return
                             e.stopPropagation()
-                            onSelectToken(t, 'not_started', plainId, key)
+                            // The bubble's own word element is the anchor: the
+                            // lookup opens over it, not at the bottom of the thread.
+                            onSelectToken(t, 'not_started', plainId, key, e.currentTarget)
                           }}
                           style={{
                             cursor: tappable ? 'pointer' : 'inherit', borderRadius: '4px',
@@ -107,8 +109,8 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                         // lead-in silence still tries to seek, matching the paced
                         // reader — seekToToken's own boolean decides success.
                         if (isCurrentBubble && onSeekToken && onSeekToken(k)) return
-                        if (onSelectToken) onSelectToken(t, status, tokenId, key)
-                        else onSelectWord(t.vocab, status, tokenId)
+                        if (onSelectToken) onSelectToken(t, status, tokenId, key, e.currentTarget)
+                        else onSelectWord(t.vocab, status, tokenId, e.currentTarget)
                       }}
                         style={{ cursor: 'pointer', borderRadius: '4px', padding: '0 1px',
                           color: (isPlace && properNounColor) || 'inherit',

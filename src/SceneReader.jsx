@@ -87,7 +87,7 @@ export default function SceneReader(props) {
                         if (c.playing && c.seekToToken(k)) { e.stopPropagation(); return }
                         if (!tappable) return
                         e.stopPropagation()
-                        c.selectToken(t, 'not_started', plainId, c.cur)
+                        c.selectToken(t, 'not_started', plainId, c.cur, e.currentTarget)
                       }}
                       style={{
                         cursor: tappable ? 'pointer' : 'inherit', borderRadius: '4px',
@@ -108,7 +108,7 @@ export default function SceneReader(props) {
                   <span key={k} onClick={(e) => {
                     e.stopPropagation()
                     if (c.playing && c.seekToToken(k)) return
-                    c.selectToken(t, status, tokenId, c.cur)
+                    c.selectToken(t, status, tokenId, c.cur, e.currentTarget)
                   }}
                     style={{ cursor: 'pointer', borderRadius: '4px', padding: '0 1px',
                       color: isPlace ? PROPER_NOUN_COLOR : 'inherit',
@@ -165,7 +165,8 @@ export default function SceneReader(props) {
         </div>
       </div>
 
-      <WordLookupSheet selected={c.selected} theme={c.theme} accent={accent} userCards={userCards} language={track.language} onAddToDeck={c.addToDeck} onSpeak={c.speakWord} onClose={() => c.setSelected(null)} onAddDictToDeck={c.addDictToDeck} dictSaved={c.dictSaved} dictSaving={c.dictSaving} />
+      {/* anchor: the tapped word itself, so the answer appears over it. */}
+      <WordLookupSheet selected={c.selected} anchor={c.selected ? c.selected.anchorEl : null} theme={c.theme} accent={accent} userCards={userCards} language={track.language} onAddToDeck={c.addToDeck} onSpeak={c.speakWord} onClose={() => c.setSelected(null)} onAddDictToDeck={c.addDictToDeck} dictSaved={c.dictSaved} dictSaving={c.dictSaving} />
       {c.done && <FinishOverlay story={story} accent={accent} onBack={onBack} core={c} onPractice={props.onPractice} />}
     </div>
   )
