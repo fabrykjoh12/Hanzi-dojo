@@ -5,6 +5,7 @@ import { enqueueGrade, gradeCardWrite, nextActivityCounts, newOpId } from './syn
 import { cacheSet, cacheGet, outboxDelete } from './offline'
 import { getTrackCards } from './data'
 import { studyFloorLevel } from './levelScope'
+import { missingVocabIds, mergeVocab } from './deckVocab'
 import { schedule, previewLabels, isCardDue, endOfLocalDay } from './srs'
 import { todayStr } from './streak'
 import { evaluateAchievements } from './achievements'
@@ -294,7 +295,13 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     // floor (the lowest level they actually study), then load every level's
     // vocabulary from that floor up to the current level. Advancing a level
     // keeps earlier levels in the deck for review instead of dropping them.
-    const cards = await getTrackCards(session.user.id, track, { maxLevel: track.current_level, includeUnleveled: true })
+    // Every card the learner owns on this track, not just the ones inside the
+    // level window. A card exists because they chose to study that word — saving
+    // it from a story is an explicit act — so it belongs in the queue even when
+    // the word sits above their current level or carries no level at all.
+    // Which words get INTRODUCED as new is still level-scoped: that comes from
+    // the `vocab` list below, never from the cards.
+    const cards = await getTrackCards(session.user.id, track, { includeUnleveled: true })
     const floorLevel = studyFloorLevel(cards, track.current_level)
 
     const vocabKey = 'vocab:' + track.language + ':' + track.system + ':' + floorLevel + '-' + track.current_level
@@ -318,8 +325,25 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     else { const cached = await cacheGet(vocabKey); if (cached) vocab = cached }
     vocabRef.current = vocab || []
 
-    const vocabById = {}
+    let vocabById = {}
     ;(vocab || []).forEach(v => { vocabById[v.id] = v })
+
+    // A card whose vocabulary the level-scoped load didn't return used to be
+    // dropped on the floor by the `filter(c => c.vocab)` below — silently, so a
+    // saved word simply never appeared in a session again. Fetch exactly the
+    // rows still missing (dictionary words carry no level; a reach word saved
+    // from an easy story sits above the window) and merge them in.
+    const missingIds = missingVocabIds(cards, vocabById)
+    if (missingIds.length) {
+      try {
+        const extra = await supabase
+          .from('vocabulary').select('*').in('id', missingIds)
+        if (extra.data && extra.data.length) {
+          vocabById = mergeVocab(vocabById, extra.data)
+          vocabRef.current = [...(vocabRef.current || []), ...extra.data]
+        }
+      } catch { /* offline — those cards stay out of this session, as before */ }
+    }
 
     const startOfToday = new Date()
     startOfToday.setHours(0, 0, 0, 0)
@@ -453,8 +477,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
   // Recompute the next-day forecast (reviews + new) for the recap card.
   async function loadForecast() {
+    // Same scope as the session queue: every card on this track, whatever its
+    // level — otherwise tomorrow's forecast under-counts the very cards the
+    // session will actually serve.
     const cards = await getTrackCards(session.user.id, track, {
-      maxLevel: track.current_level,
       columns: 'vocab_id, state, due_at',
       includeUnleveled: true,
     })
@@ -468,7 +494,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       .lte('level', track.current_level)
       .eq('is_active', true)
 
-    const vocabIds = new Set((vocab || []).map(v => v.id))
     const started = new Set((cards || []).map(c => c.vocab_id))
     // Reviews due AFTER today and by end of tomorrow — today's reviews are part
     // of the session just finished, so the forecast counts only what's genuinely
@@ -477,8 +502,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     const endOfTomorrow = new Date(); endOfTomorrow.setHours(23, 59, 59, 999)
     endOfTomorrow.setDate(endOfTomorrow.getDate() + 1)
 
+    // getTrackCards already scopes to this track's language + system, so a card
+    // counts whether or not its word sits inside the level window.
     const reviews = (cards || []).filter(c => {
-      if (!vocabIds.has(c.vocab_id) || c.state !== 'review') return false
+      if (c.state !== 'review') return false
       const d = new Date(c.due_at)
       return d > eod && d <= endOfTomorrow
     }).length
