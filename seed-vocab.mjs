@@ -71,7 +71,16 @@ function slug(readingPlain) {
 
 async function main() {
   const raw = JSON.parse(readFileSync(file, 'utf8'))
-  if (!Array.isArray(raw) || raw.length === 0) { console.error('Input must be a non-empty JSON array.'); process.exit(1) }
+  if (!Array.isArray(raw)) { console.error('Input must be a JSON array.'); process.exit(1) }
+  // An EMPTY list is success, not failure. The build step derives each level's
+  // list by excluding words already in the deck, so a level that is already
+  // complete legitimately yields []. Exiting non-zero here aborted a `set -e`
+  // loop over all six levels at level 1 — the one level with nothing left to
+  // add — and levels 2-6 were never seeded.
+  if (raw.length === 0) {
+    console.log(`=== ${language}/${system}/level ${level}: nothing to seed (${file} is empty — level already complete) ===`)
+    return
+  }
 
   console.log(`=== Seed ${language}/${system}/level ${level} from ${file} (${raw.length} words)${apply ? '' : ' — DRY RUN'} ===`)
 
