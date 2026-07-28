@@ -16,6 +16,8 @@ so the community always sees the latest. Keep it current — move things to
 - [x] Better-sounding Chinese: new neural voices for every word, example sentence and story line, plus a slow version of each word and sentence for when a word won't stick. Stories now have a narrator and separate character voices.
 
 **Just shipped**
+- [x] Tap a word in a story and the answer now appears right above the word instead of at the bottom of the screen, so your eyes never leave the sentence
+- [x] The word box tells you more: which level a word is from ("HSK 3"), and a word that isn't on your list says "Unknown word" and shows its pinyin — those words are marked in the story text too, so you can see at a glance what's outside your syllabus
 - [x] Pick the font you read in — Sans, Serif, or a handwritten Kai face that shows characters the way they're actually written by hand. One choice, applied to every story format and to your flashcards, and remembered.
 - [x] Every story has cover art now — the 41 that were still showing a plain gradient got their own illustration, painted for that particular story rather than picked from a pile
 - [x] The dictionary feels solid: results no longer flicker or jump back to an older search while you type, failed searches say so instead of silently leaving the wrong words up, taps that used to do nothing now work, and the "Mastered" filter finally tells the truth
