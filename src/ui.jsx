@@ -96,3 +96,32 @@ export function SecondaryButton({ onClick, children, icon: Icon }) {
     </button>
   )
 }
+
+// The notch on an anchored popover — what turns a floating box into "this box is
+// about THAT word". Takes a placement from anchoredPopover.js.
+//
+// Drawn as a fixed sibling of the popover rather than a child of it, because the
+// popover scrolls its own content and an absolutely positioned child would be
+// clipped by that scroll box. Two stacked CSS triangles: the border-coloured one
+// behind, the surface-coloured one a pixel over it, so the notch carries the
+// panel's own hairline instead of looking pasted on.
+export function PopoverArrow({ place, zIndex = 201 }) {
+  if (!place) return null
+  const above = place.placement === 'above'
+  const size = 8
+  const left = place.left + place.arrowLeft - size
+  const edge = above ? place.top + place.height : place.top - size
+  const base = {
+    position: 'fixed', left: left + 'px', width: 0, height: 0, zIndex,
+    borderLeft: size + 'px solid transparent',
+    borderRight: size + 'px solid transparent',
+    pointerEvents: 'none',
+  }
+  const side = above ? 'borderTop' : 'borderBottom'
+  return (
+    <>
+      <div aria-hidden="true" style={{ ...base, top: edge + 'px', [side]: size + 'px solid var(--border)' }} />
+      <div aria-hidden="true" style={{ ...base, top: (above ? edge - 1 : edge + 1) + 'px', [side]: size + 'px solid var(--surface)' }} />
+    </>
+  )
+}

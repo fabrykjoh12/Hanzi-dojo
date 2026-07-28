@@ -360,9 +360,13 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   // composes it from the beat/bubble index + token key), so the caller can
   // highlight that ONE word rather than every occurrence of it — a tap needs to
   // be obviously about the word/sentence you touched, not just any match of it.
-  const selectWord = (vocab, status, tokenId) => {
+  // `anchorEl` is the token element that was tapped, carried alongside so the
+  // lookup can be drawn directly above the word instead of in a sheet at the
+  // bottom of the screen (see anchoredPopover.js). It is optional: a caller that
+  // passes nothing gets the bottom sheet, unchanged.
+  const selectWord = (vocab, status, tokenId, anchorEl) => {
     stopPlay()
-    setSelected({ word: vocab.word, vocab, name: null, status, tokenId, sentence: sourceSentenceFor(vocab) })
+    setSelected({ word: vocab.word, vocab, name: null, status, tokenId, sentence: sourceSentenceFor(vocab), anchorEl: anchorEl || null })
   }
 
   // A tap on ANY token, not just a vocabulary word. Words outside the level's
@@ -371,13 +375,14 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
   // sheet, which explains them from the grammar glossary or the reference
   // dictionary. Punctuation and whitespace stay inert (the reader decides that
   // with isWordlikeToken before calling).
-  const selectToken = (token, status, tokenId, beatIndex) => {
-    if (token.vocab) return selectWord(token.vocab, status, tokenId)
+  const selectToken = (token, status, tokenId, beatIndex, anchorEl) => {
+    if (token.vocab) return selectWord(token.vocab, status, tokenId, anchorEl)
     stopPlay()
     const beat = beats[beatIndex] || beats[cur] || {}
     return setSelected({
       word: token.text, vocab: null, name: token.name || null,
       status: 'not_started', tokenId, sentence: beat.text || null,
+      anchorEl: anchorEl || null,
     })
   }
 

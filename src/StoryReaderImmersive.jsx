@@ -3,14 +3,16 @@ import { supabase } from './supabase'
 import { isOnline } from './useOnline'
 import { enqueueStoryRead } from './syncQueue'
 import { ensureAudio } from './audioCache'
-import { PrimaryButton } from './ui'
+import { PrimaryButton, PopoverArrow } from './ui'
+import { useAnchoredPopover } from './useAnchoredPopover'
 import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
 import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, JP_PARTICLES, readingVisibleFor, isDueSoon, buildVocabMatcher, isPlaceWord, segmentLine, storyNamesFor, isNameKey, isWordlikeToken } from './storyReading'
 import { minDwellMs } from './readAlong'
 import { glossaryLookup } from './grammarGlossary'
-import { STATUS_COLOR, STATUS_LABEL } from './wordLookup'
+import { STATUS_COLOR, STATUS_LABEL, lookupKind, lookupChip, lookupLevel, lookupReadingState } from './wordLookup'
+import { unknownMarkStyle } from './tokenMark'
 import { getDictEntryByWord, addDictEntryToDeck } from './dictSearch'
 import { prefsGet, prefsMerge } from './offline'
 import { READER_PREFS_KEY, DEFAULT_READING_FONT, normalizeReadingFont, readingFontFromPrefs, readingFontHint, readingFontOptions, readingFontPatch, readingFontStack } from './readingFonts'
@@ -138,7 +140,7 @@ function rubyFor(text, reading, isJapanese) {
   return <ruby>{text}{rt(reading)}</ruby>
 }
 
-function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens, status, today, accent, isPlace, onSelect }) {
+function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens, status, today, accent, isPlace, language, onSelect }) {
   const [hover, setHover] = useState(false)
   const reading = token.vocab ? token.vocab.reading : (token.name ? token.name.reading : null)
   // Vocabulary and names carry data; plain word-like tokens are still tappable
@@ -182,6 +184,17 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
     decoBg = accent + '18'
     faded = false
   }
+  // A word outside the vocabulary list altogether — not a name, not grammar
+  // glue. It never had a cue before, so it looked exactly like a word the
+  // learner was supposed to know. The mark says "this one isn't on your list",
+  // which is a different message from "this one is next", so it is deliberately
+  // NOT the accent (tokenMark.js). The Lens owns the vocabulary marks only: an
+  // out-of-list word is neither known nor next, so it neither boxes nor fades.
+  const unknown = unknownMarkStyle(token, language)
+  if (unknown) {
+    decoBorder = unknown.borderBottom
+    decoBg = unknown.background
+  }
 
   let body = token.text
   if (showReading) {
@@ -197,7 +210,7 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
   const isProperNoun = Boolean(token.name) || isPlace
   return (
     <span
-      onClick={(e) => { e.stopPropagation(); onSelect() }}
+      onClick={(e) => { e.stopPropagation(); onSelect(e.currentTarget) }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
@@ -658,11 +671,15 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   // (a word tap or a line tap both focus a line) or is dismissed by the ✕.
   const dismissFocusHint = () => setSeenFocusHint(prev => (prev ? prev : true))
 
-  const selectToken = (lineIndex, tokenKey, token) => {
+  // `anchorEl` is the word element that was tapped. It rides along on the
+  // selection so the lookup can be drawn directly above that word rather than
+  // pinned to the bottom of a screen the learner isn't looking at — the same
+  // treatment the paced/chat/scene readers get, through anchoredPopover.js.
+  const selectToken = (lineIndex, tokenKey, token, anchorEl) => {
     setShowSentence(false)
     setFocusedLine(lineIndex)   // tapping a word also focuses its sentence
     dismissFocusHint()
-    setSelected({ lineIndex, tokenKey, vocab: token.vocab || null, name: token.name || null, text: token.text })
+    setSelected({ lineIndex, tokenKey, vocab: token.vocab || null, name: token.name || null, text: token.text, anchorEl: anchorEl || null })
   }
 
   // Sentence focus: tapping a line's whitespace (not a word) fades the rest of
@@ -674,6 +691,14 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const clearReading = () => { setSelected(null); setFocusedLine(null) }
 
   const sel = selected
+  // The lookup follows the word instead of living at the bottom of the screen.
+  // This reader is one long scrolling column, so re-placing on scroll is what
+  // keeps the box on its word — and dropping it once the word has scrolled away
+  // is why the hook gets `clearReading`. anchoredPopover.js owns the geometry;
+  // when a definition can't be given a readable box on either side of the word,
+  // `mode` comes back 'sheet' and this falls back to the bottom sheet below.
+  const { ref: popRef, mode: popMode, place: popPlace } = useAnchoredPopover(sel ? sel.anchorEl : null, clearReading)
+  const anchored = Boolean(sel) && popMode !== 'sheet'
   const isName = Boolean(sel && sel.name)
   const isSelPlace = Boolean(sel && sel.vocab && isPlaceWord(sel.vocab.word, track.language))
   const isPlain = Boolean(sel && !sel.vocab && !sel.name)   // tapped a grammar / out-of-list word
@@ -683,6 +708,14 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   // fragment gets a real explanation instead of the generic fallback line.
   const selGrammar = isPlain ? glossaryLookup(track.language, sel.text) : null
   const selInDeck = sel && sel.vocab ? Boolean(userCards[sel.vocab.id]) : false
+  // This sheet is the classic reader's own, but the *decisions* it makes are the
+  // shared, tested ones (wordLookup.js) — the same chip, the same level, the
+  // same reading rule as the paged/chat/scene sheet, so the two can't drift.
+  // `word` is what those helpers key on; this reader tracks it as `text`.
+  const selForLookup = sel ? { ...sel, word: selWord } : null
+  const selKind = selForLookup ? lookupKind(selForLookup, track.language) : null
+  const selChip = lookupChip(selKind, { grammar: selGrammar })
+  const selLevel = lookupLevel(selForLookup, selKind, track.language)
 
   // Look the word up in the reference dictionary when nothing else explains it:
   // not vocabulary, not a name, not a grammar fragment. This is what turns "a
@@ -889,7 +922,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             <div key={li} ref={el => { lineRefs.current[li] = el }} style={{ marginTop: topGap }}>
               {showLabel && (
                 <div
-                  onClick={isNameKey(names, speaker) ? () => selectToken(li, 'sp', { name: { word: speaker, reading: names[speaker] || null } }) : undefined}
+                  onClick={isNameKey(names, speaker) ? (e) => selectToken(li, 'sp', { name: { word: speaker, reading: names[speaker] || null } }, e.currentTarget) : undefined}
                   style={{
                     fontSize: '12.5px', fontWeight: 800, letterSpacing: '0.4px',
                     color: speakerColors[speaker], marginBottom: '5px',
@@ -945,8 +978,9 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                         today={Boolean(tk.vocab && todaySet.has(tk.vocab.word))}
                         accent={accent}
                         isPlace={Boolean(tk.vocab && isPlaceWord(tk.vocab.word, track.language))}
+                        language={track.language}
                         isSelected={Boolean(sel) && sel.lineIndex === li && sel.tokenKey === ti}
-                        onSelect={() => selectToken(li, ti, tk)}
+                        onSelect={(el) => selectToken(li, ti, tk, el)}
                       />
                     ))}
                   </p>
@@ -1104,19 +1138,41 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         )}
       </div>
 
-      {/* Word lookup sheet */}
+      {/* Word lookup — a popover over the tapped word, falling back to the
+          bottom sheet when the geometry can't give it a readable box. */}
       {sel && (
-        <div style={{
-          position: 'fixed', left: 0, right: 0, bottom: 'calc(64px + ' + bottomOffset + ')', zIndex: 25,
-          display: 'flex', justifyContent: 'center', padding: '0 12px', pointerEvents: 'none',
-        }}>
-          <div style={{
-            width: '100%', maxWidth: '760px', background: PANEL, border: '1px solid var(--border)',
-            borderRadius: '20px', boxShadow: '0 -12px 44px rgba(24,24,27,0.16)', padding: '12px 18px 16px',
-            pointerEvents: 'auto',
-            animation: reduceMotion ? 'none' : 'hd-sheet-up 240ms cubic-bezier(0.22, 1, 0.36, 1)',
+        <div style={anchored
+          ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 25, pointerEvents: 'none' }
+          : {
+            position: 'fixed', left: 0, right: 0, bottom: 'calc(64px + ' + bottomOffset + ')', zIndex: 25,
+            display: 'flex', justifyContent: 'center', padding: '0 12px', pointerEvents: 'none',
           }}>
-            <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: 'var(--border)', margin: '0 auto 12px' }} />
+          <div ref={anchored ? popRef : null} style={anchored
+            ? {
+              position: 'fixed',
+              top: (popPlace ? popPlace.top : 0) + 'px',
+              left: (popPlace ? popPlace.left : 0) + 'px',
+              // Hidden for the one layout pass it takes to measure, so the box
+              // is never painted at 0,0 before it knows where it belongs.
+              visibility: popPlace ? 'visible' : 'hidden',
+              width: 'min(360px, calc(100vw - 24px))',
+              maxHeight: popPlace ? popPlace.maxHeight + 'px' : '60vh',
+              overflowY: 'auto',
+              background: PANEL, border: '1px solid var(--border)',
+              borderRadius: '16px', boxShadow: 'var(--shadow-2)', padding: '10px 14px 12px',
+              pointerEvents: 'auto', zIndex: 201,
+              animation: reduceMotion ? 'none' : 'hd-pop-in 160ms ease',
+            }
+            : {
+              width: '100%', maxWidth: '760px', background: PANEL, border: '1px solid var(--border)',
+              borderRadius: '20px', boxShadow: '0 -12px 44px rgba(24,24,27,0.16)', padding: '12px 18px 16px',
+              pointerEvents: 'auto',
+              animation: reduceMotion ? 'none' : 'hd-sheet-up 240ms cubic-bezier(0.22, 1, 0.36, 1)',
+            }}>
+            {/* The grab handle belongs to the sheet — a popover isn't dragged. */}
+            {!anchored && (
+              <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: 'var(--border)', margin: '0 auto 12px' }} />
+            )}
 
             {/* Header: word + reading on the left, actions on the right */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
@@ -1126,35 +1182,60 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                     {selWord}
                   </span>
                   {(() => {
-                    const selReading = isName ? sel.name.reading : (selGrammar ? selGrammar.reading : (sel.vocab ? sel.vocab.reading : (dictEntry ? dictEntry.pinyin : null)))
-                    // Kana vocab stores its reading as itself — repeating the
-                    // word right next to it is noise, so only show a reading
-                    // that adds information.
-                    if (!selReading || selReading === selWord) return null
+                    // Shared rule: the vocabulary reading, else the name, else
+                    // grammar, else the dictionary's pinyin — and never a
+                    // reading identical to the word (kana vocab stores its own
+                    // reading, and repeating it is noise). For a word beyond the
+                    // list the pinyin IS the answer, so the line is held open
+                    // while the dictionary is still answering rather than
+                    // appearing a beat later and shoving the definition down.
+                    const selReading = lookupReadingState(selForLookup, { grammar: selGrammar, dictEntry, dictLoading })
+                    if (!selReading) return null
                     return (
-                      <span style={{ fontSize: '17px', color: GOLD, fontWeight: 600 }}>
-                        {selReading}
+                      <span style={{
+                        fontSize: '17px', color: GOLD, fontWeight: 600,
+                        opacity: selReading.pending ? 0.45 : 1,
+                        letterSpacing: selReading.pending ? '0.12em' : 'normal',
+                      }} aria-hidden={selReading.pending ? 'true' : undefined}>
+                        {selReading.text}
                       </span>
                     )
                   })()}
                 </div>
-                {sel.vocab && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '999px', background: STATUS_COLOR[selStatus] }} />
-                    <span style={{ fontSize: '12.5px', fontWeight: 700, color: STATUS_COLOR[selStatus] }}>{STATUS_LABEL[selStatus]}</span>
-                  </span>
-                )}
-                {(isName || isSelPlace || isPlain) && (
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '5px', marginTop: '6px',
-                    fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '3px 9px',
-                    color: (isName || isSelPlace) ? PROPER_NOUN_COLOR : MUTED,
-                    border: '1px solid ' + ((isName || isSelPlace) ? PROPER_NOUN_COLOR + '40' : 'var(--border)'),
-                    background: (isName || isSelPlace) ? PROPER_NOUN_COLOR + '12' : 'transparent',
-                  }}>
-                    {isName && <UserRound size={12} strokeWidth={2.2} color={PROPER_NOUN_COLOR} />}
-                    {isSelPlace && <MapPin size={12} strokeWidth={2.2} color={PROPER_NOUN_COLOR} />}
-                    {isName ? 'Name' : (isSelPlace ? 'Place' : (selGrammar ? 'Grammar' : (dictEntry ? 'Dictionary' : 'Word')))}
+                {/* One row of meta: where the word stands, what kind of word it
+                    is, and — for curriculum vocabulary — which level it comes
+                    from. The kind chip and the level chip never both apply, so
+                    this stays a row rather than a wall of badges. */}
+                {(sel.vocab || selChip || selLevel) && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+                    {sel.vocab && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '999px', background: STATUS_COLOR[selStatus] }} />
+                        <span style={{ fontSize: '12.5px', fontWeight: 700, color: STATUS_COLOR[selStatus] }}>{STATUS_LABEL[selStatus]}</span>
+                      </span>
+                    )}
+                    {selChip && (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '5px',
+                        fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '3px 9px',
+                        color: (isName || isSelPlace) ? PROPER_NOUN_COLOR : MUTED,
+                        border: '1px solid ' + ((isName || isSelPlace) ? PROPER_NOUN_COLOR + '40' : 'var(--border)'),
+                        background: (isName || isSelPlace) ? PROPER_NOUN_COLOR + '12' : 'transparent',
+                      }}>
+                        {isName && <UserRound size={12} strokeWidth={2.2} color={PROPER_NOUN_COLOR} />}
+                        {isSelPlace && <MapPin size={12} strokeWidth={2.2} color={PROPER_NOUN_COLOR} />}
+                        {selChip}
+                      </span>
+                    )}
+                    {selLevel && (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center',
+                        fontSize: '11px', fontWeight: 700, borderRadius: '999px', padding: '3px 9px',
+                        color: MUTED, border: '1px solid var(--border)', background: 'transparent',
+                      }}>
+                        {selLevel}
+                      </span>
+                    )}
                   </span>
                 )}
               </div>
@@ -1227,6 +1308,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               </div>
             )}
           </div>
+          {anchored && <PopoverArrow place={popPlace} />}
         </div>
       )}
 

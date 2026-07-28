@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { lookupKind, dictWordFor, lookupReading, lookupChip, lookupBody, splitAround, dictSaveAction, PLAIN_FALLBACK, STATUS_COLOR, STATUS_LABEL } from './wordLookup'
+import { lookupKind, dictWordFor, lookupReading, lookupReadingState, lookupChip, lookupLevel, lookupBody, splitAround, dictSaveAction, PLAIN_FALLBACK, READING_PENDING, STATUS_COLOR, STATUS_LABEL } from './wordLookup'
 
-const vocab = { id: 'v1', word: '天气', reading: 'tiānqì', meaning: 'weather', language: 'chinese' }
-const place = { id: 'v2', word: '北京', reading: 'Běijīng', meaning: 'Beijing', language: 'chinese' }
+const vocab = { id: 'v1', word: '天气', reading: 'tiānqì', meaning: 'weather', language: 'chinese', system: 'hsk_3', level: 3 }
+const place = { id: 'v2', word: '北京', reading: 'Běijīng', meaning: 'Beijing', language: 'chinese', system: 'hsk_3', level: 2 }
 
 describe('lookupKind', () => {
   it('is vocab for a word in the level’s list', () => {
@@ -52,14 +52,63 @@ describe('lookupReading', () => {
   })
 })
 
+describe('lookupReadingState', () => {
+  it('reports a real reading as settled', () => {
+    expect(lookupReadingState({ word: '天气', vocab })).toEqual({ text: 'tiānqì', pending: false })
+    expect(lookupReadingState({ word: '太阳' }, { dictEntry: { pinyin: 'tài yáng' } }))
+      .toEqual({ text: 'tài yáng', pending: false })
+  })
+  it('holds the reading line open while the dictionary is still answering', () => {
+    const state = lookupReadingState({ word: '太阳' }, { dictLoading: true })
+    expect(state).toEqual({ text: READING_PENDING, pending: true })
+  })
+  it('prefers the real reading over the placeholder the moment it lands', () => {
+    expect(lookupReadingState({ word: '太阳' }, { dictEntry: { pinyin: 'tài yáng' }, dictLoading: true }))
+      .toEqual({ text: 'tài yáng', pending: false })
+  })
+  it('is null when there is no reading and none is coming', () => {
+    expect(lookupReadingState({ word: '太阳' })).toBe(null)
+    expect(lookupReadingState({ word: '小云', name: { word: '小云', reading: null } })).toBe(null)
+  })
+})
+
 describe('lookupChip', () => {
   it('names the kind of word', () => {
     expect(lookupChip('name')).toBe('Name')
     expect(lookupChip('place')).toBe('Place')
     expect(lookupChip('plain', { grammar: { gloss: 'x' } })).toBe('Grammar')
-    expect(lookupChip('plain', { dictEntry: { pinyin: 'x' } })).toBe('Dictionary')
-    expect(lookupChip('plain')).toBe('Word')
     expect(lookupChip('vocab')).toBe(null)
+  })
+  it('calls a word beyond the list an unknown word, not the source that explained it', () => {
+    expect(lookupChip('plain', { dictEntry: { pinyin: 'x' } })).toBe('Unknown word')
+    expect(lookupChip('plain')).toBe('Unknown word')
+  })
+})
+
+describe('lookupLevel', () => {
+  it('tells you which level a vocabulary word comes from', () => {
+    expect(lookupLevel({ word: '天气', vocab }, 'vocab', 'chinese')).toBe('HSK 3')
+  })
+  it('reads the level off the word’s own row, never the screen’s language', () => {
+    const jp = { id: 'v9', word: '食べる', language: 'japanese', system: 'jlpt', level: 3 }
+    expect(lookupLevel({ word: '食べる', vocab: jp }, 'vocab', 'chinese')).toBe('N4')
+  })
+  it('falls back to the screen’s language when the row doesn’t carry one', () => {
+    const bare = { id: 'v8', word: '天气', level: 4 }
+    expect(lookupLevel({ word: '天气', vocab: bare }, 'vocab', 'chinese')).toBe('HSK 4')
+  })
+  it('is absent for a saved dictionary word — those rows carry no level by design', () => {
+    const saved = { id: 'v7', word: '太阳', language: 'chinese', system: 'hsk_3', level: null }
+    expect(lookupLevel({ word: '太阳', vocab: saved }, 'vocab', 'chinese')).toBe(null)
+    expect(lookupLevel({ word: '太阳', vocab: { id: 'v7', word: '太阳' } }, 'vocab', 'chinese')).toBe(null)
+  })
+  it('is absent for names, places and words outside the list', () => {
+    expect(lookupLevel({ word: '北京', vocab: place }, 'place', 'chinese')).toBe(null)
+    expect(lookupLevel({ word: '小云', name: {} }, 'name', 'chinese')).toBe(null)
+    expect(lookupLevel({ word: '太阳', vocab: null }, 'plain', 'chinese')).toBe(null)
+  })
+  it('is absent with nothing selected rather than throwing', () => {
+    expect(lookupLevel(null, 'vocab', 'chinese')).toBe(null)
   })
 })
 

@@ -1,5 +1,6 @@
 import { cleanMeaning } from './cleanMeaning'
 import { isPlaceWord } from './storyReading'
+import { getLevelLabel } from './utils'
 
 // What the word-lookup sheet says about a tapped token, as pure logic.
 //
@@ -76,12 +77,51 @@ export function lookupReading(selected, { grammar = null, dictEntry = null } = {
   return reading
 }
 
+// A reading is the first thing wanted for a word beyond the list — it is how
+// you say it at all. The dictionary answers over the network, though, so the
+// reading slot is held open with a placeholder while that is in flight instead
+// of appearing a beat later and shoving the definition down the box.
+export const READING_PENDING = '···'
+
+// The reading row: { text, pending } | null. `pending` marks the placeholder so
+// the sheet can draw it dimmed rather than as a real pronunciation.
+export function lookupReadingState(selected, { grammar = null, dictEntry = null, dictLoading = false } = {}) {
+  const reading = lookupReading(selected, { grammar, dictEntry })
+  if (reading) return { text: reading, pending: false }
+  if (dictLoading) return { text: READING_PENDING, pending: true }
+  return null
+}
+
 // The chip label under the word — what KIND of word this is.
-export function lookupChip(kind, { grammar = null, dictEntry = null } = {}) {
+//
+// A word outside the level's list says so plainly: "Unknown word". It used to
+// be labelled by where the answer came from ("Dictionary"), which named a
+// mechanism the learner has no reason to care about and read as though the word
+// were a dictionary curiosity rather than simply one they don't have yet. The
+// label is the same whether or not the reference dictionary resolves it —
+// resolving only decides how much can be said about it, not what it is.
+export function lookupChip(kind, { grammar = null } = {}) {
   if (kind === 'name') return 'Name'
   if (kind === 'place') return 'Place'
-  if (kind === 'plain') return grammar ? 'Grammar' : (dictEntry ? 'Dictionary' : 'Word')
+  if (kind === 'plain') return grammar ? 'Grammar' : 'Unknown word'
   return null
+}
+
+// The level chip beside the status pill: which level of the course this word
+// comes from ("HSK 3"). Always via getLevelLabel — the label per level is the
+// track's business, never this sheet's.
+//
+// Absent — not blank, not guessed — whenever there is nothing true to say:
+//   - a name, a place or a grammar/unknown word: not curriculum vocabulary,
+//   - a saved dictionary word, whose vocabulary row carries no level by design,
+//   - a caller that doesn't select the column at all (the word list).
+export function lookupLevel(selected, kind, language) {
+  if (!selected || kind !== 'vocab' || !selected.vocab) return null
+  const v = selected.vocab
+  if (v.level === null || v.level === undefined || v.level === '') return null
+  const level = Number(v.level)
+  if (!Number.isFinite(level)) return null
+  return getLevelLabel(v.language || language || null, v.system || null, level)
 }
 
 // Can this tapped word be kept — and if so, what does the bookmark look like?

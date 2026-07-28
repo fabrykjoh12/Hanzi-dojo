@@ -259,4 +259,46 @@ test.describe('Story reader', () => {
     // reads "In your deck" rather than "Add to deck" (parity with the classic reader).
     await expect(page.getByRole('button', { name: /^(In your deck|Add to deck)$/i })).toBeVisible();
   });
+
+  test('a looked-up word says which level it comes from', async ({ page }) => {
+    const reader = new ReaderPage(page);
+    await reader.openFirstStory();
+    await page.getByRole('button', { name: /Start reading/i }).click();
+
+    // 今天 is HSK 2 vocabulary, and the lookup says so beside its status — the
+    // label always comes from getLevelLabel, never a hardcoded string.
+    await page.getByText('今天', { exact: true }).first().click();
+    await expect(page.getByText('today')).toBeVisible();
+    await expect(page.getByText('HSK 2', { exact: true }).first()).toBeVisible();
+  });
+
+  test('a word beyond the list reads as an unknown word, and is marked in the text', async ({ page }) => {
+    const reader = new ReaderPage(page);
+    await reader.openFirstStory();
+    await page.getByRole('button', { name: /Start reading/i }).click();
+    await page.getByRole('button', { name: /Next line/i }).click();
+
+    // 我们 has no vocabulary row at this level. It carries the out-of-list mark
+    // in the story text itself — dashed, and NOT the accent, so it can't be
+    // confused with a new word to learn.
+    // The mark sits on the token's own span; the text node may live a level or
+    // two deeper (the reading scaffold wraps it in <ruby>), so walk out to it.
+    const word = page.getByText('我们', { exact: true }).first();
+    const border = await word.evaluate((el) => {
+      let node = el;
+      for (let i = 0; i < 4 && node; i += 1) {
+        const style = getComputedStyle(node);
+        if (parseFloat(style.borderBottomWidth) > 0) return style.borderBottomStyle;
+        node = node.parentElement;
+      }
+      return 'none';
+    });
+    expect(border).toBe('dashed');
+
+    // Tapping it names it plainly rather than naming the source that answered.
+    await word.click();
+    await expect(page.getByText('Unknown word')).toBeVisible();
+    // And its pronunciation is shown, which is the whole point of the lookup.
+    await expect(page.getByText('zhōng wén')).toBeVisible();
+  });
 });

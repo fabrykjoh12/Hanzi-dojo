@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { getLevelLabel } from './utils'
 import { wordStatus, isPlaceWord, isWordlikeToken } from './storyReading'
+import { unknownMarkStyle } from './tokenMark'
 import { spotlightStyle } from './readAlong'
 import { useStoryReaderCore } from './useStoryReaderCore'
 import { TokenBody, ReadingSettings, RevealEnglishButton } from './ReadingScaffold'
@@ -79,6 +80,10 @@ export default function SceneReader(props) {
                   const tappable = Boolean(t.name) || isWordlikeToken(t.text)
                   const plainId = c.cur + ':' + k
                   const plainSelected = tappable && c.selected && c.selected.tokenId === plainId
+                  // Outside the level's list entirely — marked so the learner
+                  // can see which words aren't on their syllabus. tokenMark.js
+                  // owns the decision, shared by all four readers.
+                  const unknown = unknownMarkStyle(t, track.language)
                   return (
                     <span key={k}
                       onClick={(e) => {
@@ -87,12 +92,13 @@ export default function SceneReader(props) {
                         if (c.playing && c.seekToToken(k)) { e.stopPropagation(); return }
                         if (!tappable) return
                         e.stopPropagation()
-                        c.selectToken(t, 'not_started', plainId, c.cur)
+                        c.selectToken(t, 'not_started', plainId, c.cur, e.currentTarget)
                       }}
                       style={{
                         cursor: tappable ? 'pointer' : 'inherit', borderRadius: '4px',
                         color: t.name ? PROPER_NOUN_COLOR : 'inherit',
-                        background: plainSelected ? TAP_HILITE : 'transparent',
+                        ...unknown,
+                        ...(plainSelected ? { background: TAP_HILITE } : null),
                         boxShadow: plainSelected ? '0 0 0 1px rgba(202,138,4,0.5)' : 'none',
                         ...spotlightStyle(k === c.activeToken, hasActive, c.reduceMotion),
                       }}>
@@ -108,7 +114,7 @@ export default function SceneReader(props) {
                   <span key={k} onClick={(e) => {
                     e.stopPropagation()
                     if (c.playing && c.seekToToken(k)) return
-                    c.selectToken(t, status, tokenId, c.cur)
+                    c.selectToken(t, status, tokenId, c.cur, e.currentTarget)
                   }}
                     style={{ cursor: 'pointer', borderRadius: '4px', padding: '0 1px',
                       color: isPlace ? PROPER_NOUN_COLOR : 'inherit',
@@ -165,7 +171,8 @@ export default function SceneReader(props) {
         </div>
       </div>
 
-      <WordLookupSheet selected={c.selected} theme={c.theme} accent={accent} userCards={userCards} language={track.language} onAddToDeck={c.addToDeck} onSpeak={c.speakWord} onClose={() => c.setSelected(null)} onAddDictToDeck={c.addDictToDeck} dictSaved={c.dictSaved} dictSaving={c.dictSaving} />
+      {/* anchor: the tapped word itself, so the answer appears over it. */}
+      <WordLookupSheet selected={c.selected} anchor={c.selected ? c.selected.anchorEl : null} theme={c.theme} accent={accent} userCards={userCards} language={track.language} onAddToDeck={c.addToDeck} onSpeak={c.speakWord} onClose={() => c.setSelected(null)} onAddDictToDeck={c.addDictToDeck} dictSaved={c.dictSaved} dictSaving={c.dictSaving} />
       {c.done && <FinishOverlay story={story} accent={accent} onBack={onBack} core={c} onPractice={props.onPractice} />}
     </div>
   )

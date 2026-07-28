@@ -1,8 +1,10 @@
 import { createPortal } from 'react-dom'
 import { glossaryLookup } from './grammarGlossary'
 import { useDictEntry, dictDefinitions } from './useDictEntry'
+import { useAnchoredPopover } from './useAnchoredPopover'
+import { PopoverArrow } from './ui'
 import {
-  lookupKind, lookupReading, lookupChip, lookupBody, dictWordFor, splitAround,
+  lookupKind, lookupReadingState, lookupChip, lookupLevel, lookupBody, dictWordFor, splitAround,
   dictSaveAction, STATUS_COLOR, STATUS_LABEL,
 } from './wordLookup'
 import { MICRO } from './designTokens'
@@ -32,8 +34,9 @@ function pill(color, tinted) {
   }
 }
 
-// Bottom-sheet word lookup shared by the paced/chat/scene readers and the
-// analyzer. `selected` is { word, vocab, name, status, tokenId, sentence } | null.
+// Word lookup shared by the paced/chat/scene readers, the analyzer, the
+// dictionary and the word list. `selected` is
+// { word, vocab, name, status, tokenId, sentence } | null.
 //
 // The layout answers three questions in order, and gives each its own line
 // rather than crowding them onto one baseline: WHAT did I tap (word + reading),
@@ -45,6 +48,17 @@ function pill(color, tinted) {
 // glossary or the reference dictionary rather than dead-ending. See wordLookup.js
 // for the (pure, tested) decision of what to show.
 //
+// `anchor` — OPTIONAL. Pass the tapped element (or a viewport-relative rect) and
+// the answer is drawn as a small popover directly ABOVE that word, with an arrow
+// pointing at it, instead of as a sheet at the bottom of the screen. That matters
+// in a story: the learner's eyes are already on the word, and an answer arriving
+// somewhere else costs a hunt on every single lookup. Pass nothing (the analyzer,
+// the dictionary, the word list — screens with no word on a page to point at) and
+// this renders the bottom sheet it always did, unchanged. anchoredPopover.js
+// decides the geometry; when it reports that nothing readable fits above OR below
+// the word, this falls back to the bottom sheet, so a small screen with a long
+// definition still gets a real answer.
+//
 // Rendered through a portal to <body>: screens like the analyzer live inside the
 // app shell's <main>, which sets position:relative + z-index, forming a stacking
 // context. A plain fixed overlay is then trapped below the sibling mobile nav
@@ -55,17 +69,20 @@ function pill(color, tinted) {
 // word the reference dictionary resolved gets the same bookmark a vocabulary
 // word has, so "tap a word, keep a word" holds here too. Leave them out (the
 // analyzer, the dictionary screen) and the action simply isn't drawn.
-export default function WordLookupSheet({ selected, theme, accent, userCards, language, onAddToDeck, onSpeak, onClose, onAddDictToDeck = null, dictSaved = null, dictSaving = false }) {
+export default function WordLookupSheet({ selected, theme, accent, userCards, language, onAddToDeck, onSpeak, onClose, onAddDictToDeck = null, dictSaved = null, dictSaving = false, anchor = null }) {
   const lang = language || (selected && selected.vocab && selected.vocab.language) || null
   const grammar = selected && !selected.vocab && !selected.name ? glossaryLookup(lang, selected.word) : null
   const { entry: dictEntry, loading: dictLoading } = useDictEntry(dictWordFor(selected, lang, grammar))
+  // Measuring and repositioning only — the geometry lives in anchoredPopover.js.
+  const { ref: popRef, mode, place } = useAnchoredPopover(selected ? anchor : null, onClose)
   if (!selected) return null
   if (typeof document === 'undefined') return null
 
   const kind = lookupKind(selected, lang)
   const isProperNoun = kind === 'name' || kind === 'place'
-  const reading = lookupReading(selected, { grammar, dictEntry })
-  const chip = lookupChip(kind, { grammar, dictEntry })
+  const reading = lookupReadingState(selected, { grammar, dictEntry, dictLoading })
+  const chip = lookupChip(kind, { grammar })
+  const levelChip = lookupLevel(selected, kind, lang)
   const body = lookupBody(selected, kind, { grammar, dictDefs: dictDefinitions(dictEntry), dictLoading })
   const vocab = selected.vocab || null
   const status = (vocab && selected.status) || null
@@ -75,31 +92,72 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
   })
   const parts = splitAround(selected.sentence, selected.word)
 
+  const anchored = mode !== 'sheet'
+
+  // The same content, in whichever of its two shapes this call asked for. Sheet:
+  // full width, hinged to the bottom edge. Popover: a card pinned over the word,
+  // width-capped so it stays readable on a narrow phone, with its own scroller so
+  // a long dictionary entry runs out of room inside the box, not off the screen.
+  const boxStyle = anchored
+    ? {
+      position: 'fixed',
+      top: (place ? place.top : 0) + 'px',
+      left: (place ? place.left : 0) + 'px',
+      // Hidden for the single layout pass it takes to measure, so the box is
+      // never painted at 0,0 before it knows where it belongs.
+      visibility: place ? 'visible' : 'hidden',
+      width: 'min(360px, calc(100vw - 24px))',
+      maxHeight: place ? place.maxHeight + 'px' : '60vh',
+      overflowY: 'auto',
+      background: 'var(--surface)', border: '1px solid var(--border)',
+      borderRadius: '16px', padding: '10px 14px 12px',
+      boxShadow: 'var(--shadow-2)',
+      zIndex: 201,
+      animation: 'hd-pop-in 160ms ease',
+    }
+    : {
+      width: '100%', maxWidth: '560px', maxHeight: '80vh', overflowY: 'auto',
+      background: 'var(--surface)', border: '1px solid var(--border)', borderTop: '1px solid var(--hairline)',
+      borderRadius: '22px 22px 0 0',
+      // The extra bottom padding clears a phone's home indicator, so the last
+      // line of a definition is never half-swallowed by the system bar.
+      padding: '12px 20px calc(24px + env(safe-area-inset-bottom, 0px))',
+      boxShadow: '0 -14px 44px rgba(24,24,27,0.18)',
+      animation: 'hd-sheet-up 240ms cubic-bezier(0.22, 1, 0.36, 1)',
+    }
+
   return createPortal(
-    <div onClick={onClose} className="app-overlay-viewport" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.18)' }}>
-      <div onClick={e => e.stopPropagation()} style={{
-        width: '100%', maxWidth: '560px', maxHeight: '80vh', overflowY: 'auto',
-        background: 'var(--surface)', border: '1px solid var(--border)', borderTop: '1px solid var(--hairline)',
-        borderRadius: '22px 22px 0 0',
-        // The extra bottom padding clears a phone's home indicator, so the last
-        // line of a definition is never half-swallowed by the system bar.
-        padding: '12px 20px calc(24px + env(safe-area-inset-bottom, 0px))',
-        boxShadow: '0 -14px 44px rgba(24,24,27,0.18)',
-        animation: 'hd-sheet-up 240ms cubic-bezier(0.22, 1, 0.36, 1)',
-      }}>
-        <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: 'var(--border)', margin: '0 auto 12px' }} />
+    <div onClick={onClose} className="app-overlay-viewport" style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
+      display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+      // The anchored popover points at the word it is about; dimming the page
+      // behind it would shade out exactly the thing it is pointing at.
+      background: anchored ? 'transparent' : 'rgba(0,0,0,0.18)',
+    }}>
+      <div ref={anchored ? popRef : null} onClick={e => e.stopPropagation()} style={boxStyle}>
+        {/* The grab handle belongs to the sheet — a popover isn't dragged. */}
+        {!anchored && (
+          <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: 'var(--border)', margin: '0 auto 12px' }} />
+        )}
 
         {/* What did I tap — word and reading own the top line; actions sit clear of them. */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{
-              fontSize: '30px', fontWeight: 800, lineHeight: 1.15, overflowWrap: 'anywhere',
+              fontSize: anchored ? '26px' : '30px', fontWeight: 800, lineHeight: 1.15, overflowWrap: 'anywhere',
               color: isProperNoun ? PROPER_NOUN_COLOR : accent, fontFamily: theme.font,
             }}>
               {selected.word}
             </div>
+            {/* The pronunciation. For a word beyond the list this is the answer
+                the learner came for, so the line is held open (dimmed) while the
+                dictionary is still answering rather than appearing a beat later
+                and pushing the definition down. */}
             {reading && (
-              <div style={{ fontSize: '16px', color: '#B45309', fontWeight: 600, marginTop: '4px' }}>{reading}</div>
+              <div style={{
+                fontSize: '16px', color: '#B45309', fontWeight: 600, marginTop: '4px',
+                opacity: reading.pending ? 0.45 : 1, letterSpacing: reading.pending ? '0.12em' : 'normal',
+              }} aria-hidden={reading.pending ? 'true' : undefined}>{reading.text}</div>
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
@@ -124,8 +182,11 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
           </div>
         </div>
 
-        {/* Where does it stand — learning status for vocabulary, what-kind-of-word otherwise. */}
-        {(status || chip) && (
+        {/* Where does it stand — learning status for vocabulary, what-kind-of-word
+            otherwise, and (for curriculum vocabulary) which level it comes from.
+            One row of meta: status and kind are mutually exclusive with the level
+            chip's own case, so this never becomes three competing badges. */}
+        {(status || chip || levelChip) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
             {status && (
               <span style={pill(STATUS_COLOR[status] || 'var(--text-muted)', true)}>
@@ -140,17 +201,20 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
                 {chip}
               </span>
             )}
+            {levelChip && (
+              <span style={pill('var(--text-muted)', false)}>{levelChip}</span>
+            )}
           </div>
         )}
 
         {/* What does it mean — the reason the sheet opened, so it reads as body text, not a caption. */}
-        <div style={{ fontSize: '16px', color: 'var(--text)', fontWeight: 500, marginTop: '12px', lineHeight: 1.5 }}>{body}</div>
+        <div style={{ fontSize: anchored ? '15px' : '16px', color: 'var(--text)', fontWeight: 500, marginTop: anchored ? '10px' : '12px', lineHeight: 1.5 }}>{body}</div>
 
         {/* Where it came from — the line, with the tapped word lit inside it. */}
         {selected.sentence && (
-          <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
-            <div style={{ ...MICRO, color: 'var(--text-faint)', marginBottom: '6px' }}>From this line</div>
-            <div style={{ fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.7, fontFamily: theme.font }}>
+          <div style={{ marginTop: anchored ? '10px' : '14px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
+            <div style={{ ...MICRO, color: 'var(--text-faint)', marginBottom: anchored ? '4px' : '6px' }}>From this line</div>
+            <div style={{ fontSize: anchored ? '14px' : '15px', color: 'var(--text-muted)', lineHeight: anchored ? 1.5 : 1.7, fontFamily: theme.font }}>
               {parts ? (
                 <>
                   {parts.before}
@@ -165,6 +229,7 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
           </div>
         )}
       </div>
+      {anchored && <PopoverArrow place={place} />}
     </div>,
     document.body,
   )
