@@ -38,7 +38,6 @@ const anyLangFlag = onlyChinese || onlyJapanese || onlyRussian
 
 // Smaller batches + the 70B model give noticeably more sensible sentences.
 const BATCH_SIZE = 10
-const MAX_CONSECUTIVE_FAILURES = 3
 const MODEL = LLM_MODEL
 
 function buildPrompt(words, language) {
@@ -201,7 +200,7 @@ async function processLanguage(language, system) {
 
   let success = 0
   let failed = 0
-  let consecutiveFailures = 0
+  let consecutiveRateLimited = 0
 
   for (let i = 0; i < vocab.length; i += BATCH_SIZE) {
     const batch = vocab.slice(i, i + BATCH_SIZE)
@@ -248,7 +247,7 @@ async function processLanguage(language, system) {
       }
 
       success += updates.length
-      consecutiveFailures = 0
+      consecutiveRateLimited = 0
       const skippedInBatch = batch.length - updates.length
       console.log(`✓ (${success}/${vocab.length} done${skippedInBatch ? `, ${skippedInBatch} skipped for re-attempt` : ''})`)
 
@@ -259,15 +258,16 @@ async function processLanguage(language, system) {
     } catch (err) {
       failed += batch.length
       console.log(`✗ ${err.message}`)
-      consecutiveFailures += 1
-      // Give up once the provider has refused this many batches in a row with
-      // nothing written. The level-3 fill burned 17 minutes retrying 429s that
-      // were never going to succeed — every batch failing from the first
-      // request is a provider/key/quota problem, not bad luck on one batch, and
-      // grinding through the remaining 37 only buries the reason.
-      if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES && success === 0) {
-        console.error(`\nAborting: ${consecutiveFailures} batches failed in a row and nothing was written.`)
-        console.error('Fix the provider error above (key, quota, or model) and re-run — finished words are skipped.')
+      // Give up early when the quota is plainly gone. A 429 that survives all
+      // four attempts (15s + 30s + 60s of backoff) is a spent daily quota, not
+      // burst throttling, and every later batch will hit the same wall. Without
+      // this a quota-exhausted run grinds through all 46 batches — ~90 minutes
+      // of CI to write nothing at all.
+      consecutiveRateLimited = String(err.message).includes('429') ? consecutiveRateLimited + 1 : 0
+      if (consecutiveRateLimited >= 3) {
+        console.log(`\nStopping: ${consecutiveRateLimited} consecutive batches exhausted their retries on 429.`)
+        console.log('The LLM quota looks spent — re-run once it resets, or use a key with more headroom.')
+        console.log(`Progress is saved: the ${success} words written keep their examples, and the rest stay NULL for the next run to pick up.`)
         break
       }
     }
