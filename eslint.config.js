@@ -39,4 +39,16 @@ export default defineConfig([
     languageOptions: { globals: { ...globals.node, ...globals.browser } },
     rules: { 'react-hooks/rules-of-hooks': 'off' },
   },
+  // Root *.mjs are the content-generation scripts. They were unlinted, which
+  // let a refactor ship a runtime ReferenceError (SEASON_SEEDS moved to
+  // storyLevels.mjs without an export) that node --check cannot see and the
+  // generator's own try/catch swallowed into "planning FAILED" — a whole batch
+  // run produced nothing before anyone knew. no-undef alone is the rule that
+  // catches that class statically; the scripts aren't held to the app's full
+  // rule set because they aren't app code.
+  {
+    files: ['*.mjs'],
+    languageOptions: { globals: globals.node, ecmaVersion: 'latest', sourceType: 'module' },
+    rules: { 'no-undef': 'error' },
+  },
 ])

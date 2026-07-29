@@ -44,7 +44,7 @@ export const BIBLE_RUSSIAN = {
 // Per-tier premise seeds so re-runs and tiers don't converge on the same plot.
 // --season-offset N rotates which seed each tier draws, so an APPEND run (no
 // --replace) gets different season shapes than the level's existing seasons.
-const SEASON_SEEDS = [
+export const SEASON_SEEDS = [
   'a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly',
   'preparing for something over several days (a trip, a festival, a small competition) with setbacks',
   'a bigger outing or adventure away from home with a genuine surprise in the middle',
