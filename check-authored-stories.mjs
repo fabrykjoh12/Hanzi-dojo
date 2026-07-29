@@ -138,12 +138,27 @@ for (const s of manifest) {
   //
   // What is NOT negotiable is vocabulary coverage: a word outside the pool is
   // a word the learner has never met and cannot tap.
+  // A colon inside narration is read as a speaker tag by the reader AND by the
+  // matcher, which silently hides the first few characters of the line from
+  // coverage and shows them to the learner as a character name. It is the
+  // easiest mistake to make when authoring ("上面写着：…", "他们说：…") and the
+  // hardest to see, because the story still looks right in a text editor.
+  //
+  // Any label ending in a speech or writing verb is narration, not a name.
+  const NARRATION_TAIL = ['说', '写', '着', '问', '道', '喊', '答']
   const storySpeakers = []
+  const narrationColons = []
   for (const line of (s.content || '').split('\n')) {
     const idx = line.indexOf(cfg.colon || '：')
     if (idx > 0 && idx <= 8) {
       const name = line.slice(0, idx).trim()
-      if (name && storySpeakers.indexOf(name) === -1) storySpeakers.push(name)
+      if (!name) continue
+      const looksLikeNarration = NARRATION_TAIL.indexOf(name[name.length - 1]) !== -1
+      if (looksLikeNarration) {
+        if (narrationColons.indexOf(name) === -1) narrationColons.push(name)
+      } else if (storySpeakers.indexOf(name) === -1) {
+        storySpeakers.push(name)
+      }
     }
   }
 
@@ -156,6 +171,12 @@ for (const s of manifest) {
     maxLineChars: cfg.maxLineChars,
     colon: cfg.colon || '：',
   })
+
+  if (narrationColons.length > 0) {
+    r.problems.push('Narration read as a speaker tag: ' + narrationColons.join('、')
+      + '. Use a comma — a colon here hides the start of the line and shows it as a character name.')
+    r.ok = false
+  }
 
   const [minLines] = tier.lines
   const advisories = []
