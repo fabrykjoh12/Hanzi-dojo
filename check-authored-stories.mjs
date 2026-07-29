@@ -145,7 +145,9 @@ for (const s of manifest) {
   // hardest to see, because the story still looks right in a text editor.
   //
   // Any label ending in a speech or writing verb is narration, not a name.
-  const NARRATION_TAIL = ['说', '写', '着', '问', '道', '喊', '答']
+  // 是 and 的 catch the reported-speech shapes ("他写的是：…", "上面的字是：…")
+  // that the verb endings miss. No character name ends in any of these.
+  const NARRATION_TAIL = ['说', '写', '着', '问', '道', '喊', '答', '是', '的']
   const storySpeakers = []
   const narrationColons = []
   for (const line of (s.content || '').split('\n')) {
