@@ -88,6 +88,38 @@ words. Everything else is dead text the learner cannot ask about.
 
 ---
 
+## 2b. The second strand: the sea
+
+Everything above describes 这条街 — the contemporary street, 李明, the noodle
+shop, the chair. There is one other continuity, and it exists to do something
+the main strand cannot.
+
+**The sea strand** is a single 18-chapter serial that runs **HSK 1 t3 → HSK 2 t3
+→ HSK 3 t3**: 《第七个人》, 《阿水的水》, 《三年前》. A boy stows away on a ship,
+is given the job of counting its water, and finds the number is wrong. The
+answer is that three years ago the crew left a man on an island, and nobody
+decided to — he offered, and six people did not say no.
+
+The design rule is that **the plot may only know what the level can say.**
+
+| Level | What it gains | What the story can therefore do |
+|-------|---------------|---------------------------------|
+| HSK 1 | numbers, days, `了`, no conjunctions beyond 和/也/还/都 | State the mystery and refuse to explain it. Every adult answers with silence, because the language has no 因为, no 但是, no 告诉. The whole hook is arithmetic — the one thing HSK 1 has in abundance. |
+| HSK 2 | 因为, 但是, 所以, 虽然, 告诉, 让, 已经, 过, 着 | People give reasons. Most of them are wrong ones. Motive arrives; the past still cannot. |
+| HSK 3 | 以前, 才, 又, 如果, 决定, 发现, 相信, 忘记, 一样, 把, 被 | Hold a past and judge it. "Nobody decided" / "they just didn't say no" / "that is the same thing" is not sayable before this level, and it is the whole point of the story. |
+
+So a reader climbing three levels reads one continuous story that gets more
+articulate exactly as they do. **Reach lexicon for all eighteen chapters: 船,
+海, 岛.** Nothing else — everything a pirate story seems to need (金子, 山, 火,
+刀, 黑) is absent from HSK 1–3 entirely, so the strand is built from the three
+nouns it genuinely cannot do without, repeated until they stick.
+
+Its cast (小七, 大风, 阿水, 老九, 阿力) is separate from 这条街 and **the two
+strands do not cross over.** If a third strand is ever added, give it the same
+test: it should exist because it can only be told this way.
+
+---
+
 ## 3. The cast
 
 Full sheets live in the canon file; speech style and never-dos also live in

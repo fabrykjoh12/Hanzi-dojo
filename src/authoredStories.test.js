@@ -35,23 +35,45 @@ const storyCanon = JSON.parse(readFileSync(new URL('../data/story-canon.chinese.
 // snapshot file simply falls back to the structural-only checks below, so the
 // suite stays green before the owner has run the dump. Never make an absent
 // snapshot a failure.
+//
+// A level may list SEVERAL files; they are unioned, which is how a level whose
+// own list is not cumulative gets the levels below it. Two shapes are accepted:
+// the [[word, reading]] snapshots above, and the [{word, reading, meaning}]
+// seed lists (data/hsk3.json …) that seed-vocab.mjs loads.
+//
+// ⚠️ HSK 3 is deliberately NOT data/hsk3-vocab-snapshot.json. That file looks
+// like the next rung of the same ladder and is not: it is HSK 1+2 plus 457
+// words from an OLDER HSK 3 draft, of which only 50 survive in the current
+// level. Using it both admitted words the learner has never seen and, worse,
+// rejected most of the real HSK 3 list (发现, 相信, 一直, 然后, 回答, 忘记 …)
+// — so an HSK 3 story had to declare genuine curriculum words as "reach".
+// data/hsk3.json matches the database exactly; the HSK 1+2 snapshot supplies
+// the levels below it.
 const SNAPSHOT_FILES = {
-  'japanese|jlpt|1': '../data/jlpt1-vocab-snapshot.json',
-  'chinese|hsk_3|2': '../data/hsk2-vocab-snapshot.json',
-  'chinese|hsk_3|3': '../data/hsk3-vocab-snapshot.json',
+  'japanese|jlpt|1': ['../data/jlpt1-vocab-snapshot.json'],
+  'chinese|hsk_3|2': ['../data/hsk2-vocab-snapshot.json'],
+  'chinese|hsk_3|3': ['../data/hsk2-vocab-snapshot.json', '../data/hsk3.json'],
 }
 const SNAPSHOTS = {}
 for (const key of Object.keys(SNAPSHOT_FILES)) {
-  const url = new URL(SNAPSHOT_FILES[key], import.meta.url)
-  if (existsSync(url)) SNAPSHOTS[key] = url
+  const urls = SNAPSHOT_FILES[key].map(p => new URL(p, import.meta.url)).filter(u => existsSync(u))
+  // All-or-nothing: a partial union would be a pool with holes, which reads as
+  // "this story used a word it shouldn't have" when the truth is a missing file.
+  if (urls.length === SNAPSHOT_FILES[key].length) SNAPSHOTS[key] = urls
 }
 
 function vocabMapFor(key) {
-  const url = SNAPSHOTS[key]
-  if (!url) return null
-  const pairs = JSON.parse(readFileSync(url, 'utf8'))
+  const urls = SNAPSHOTS[key]
+  if (!urls) return null
   const map = {}
-  pairs.forEach(([word, reading], i) => { if (!map[word]) map[word] = { id: 'v' + i, word, reading } })
+  let i = 0
+  for (const url of urls) {
+    for (const row of JSON.parse(readFileSync(url, 'utf8'))) {
+      const [word, reading] = Array.isArray(row) ? row : [row.word, row.reading]
+      i += 1
+      if (word && !map[word]) map[word] = { id: 'v' + i, word, reading }
+    }
+  }
   return map
 }
 

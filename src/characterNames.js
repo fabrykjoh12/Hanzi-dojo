@@ -15,6 +15,11 @@ export const CHARACTER_READINGS = {
     '林雨晴': 'Lín Yǔqíng', '林小川': 'Lín Xiǎochuān', '小川': 'Xiǎochuān',
     // Historical figure, retold in the HSK 3 folk-tale season 司马光砸缸.
     '司马光': 'Sīmǎ Guāng',
+    // The sea strand — one serial running HSK 1 → 2 → 3. None of these are
+    // ordinary vocabulary at any of those levels, so they must be curated here
+    // or the reader splits them character by character (小七 → "small" + "seven").
+    '小七': 'Xiǎo Qī', '大风': 'Dà Fēng', '阿水': 'Ā Shuǐ',
+    '老九': 'Lǎo Jiǔ', '阿力': 'Ā Lì',
   },
   // Japanese story protagonists (serial + legacy story sets). Role nouns
   // (おかあさん、おじいさん、せんせい…) are ordinary vocabulary and resolve
