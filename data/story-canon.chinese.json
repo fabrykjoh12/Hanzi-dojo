@@ -27,7 +27,8 @@
     "爷爷",
     "客人",
     "先生",
-    "叔叔"
+    "叔叔",
+    "学生"
   ],
   "_role_labels_comment": "Generic speaker labels — not personal names, so they never get the reader's Name popup and never need CHARACTER_READINGS entries. Single source of truth: src/authoredStories.test.js and check-authored-stories.mjs both read this list.",
   "characters": [
@@ -54,7 +55,7 @@
       "name": "小明",
       "pinyin": "Xiǎo Míng",
       "role": "best friend",
-      "traits": "easygoing, a little lazy, loyal; pretends not to care and then cares the most",
+      "traits": "easygoing, a little lazy, loyal; pretends not to care and then cares the most. Ran exactly twenty minutes to school every day for two years — not a training time, a winning time: he ran until he was first and then stopped, and did not know his own limit until someone made him find it (the running serial, HSK 1-3)",
       "speech": "deflecting one-liners; understatement",
       "never": "abandons a friend mid-task, volunteers first",
       "first_appeared": "HSK 1 serials"
@@ -212,6 +213,15 @@
       "speech": "short, flat, deflects thanks; ends an argument by going to wash something already clean",
       "never": "complains about business, badmouths a rival, takes credit",
       "first_appeared": "HSK 3 t2 一个字 (the shop itself is in the corpus from HSK 1)"
+    },
+    {
+      "name": "大力",
+      "pinyin": "Dà Lì",
+      "role": "the running serial — twelve, came eighth every morning for two years",
+      "traits": "says the thing out loud before he can back it up; trains alone at six because that is the only hour nobody can see him fail; goes out too fast and pays for it in the last five minutes, which is the whole of his character and eventually the whole of his fix",
+      "speech": "flat declaratives, repeats a number back instead of answering, never asks for help until he physically cannot stand",
+      "never": "blames anyone else for a time, stops mid-run, pretends a result was better than it was",
+      "first_appeared": "HSK 1 t3 八个人，我第八"
     }
   ],
   "locations": [
@@ -451,6 +461,30 @@
       "premise": "five people remember the street cat's arrival five incompatible ways, and three of them remember being the one who fed him first",
       "register": "quiet, formally structured as interviews",
       "status": "published — needs HSK 6 (记忆/版本/矛盾/细节/事实/确定) to state its own problem, which is that memory is not evidence"
+    },
+    {
+      "level": 1,
+      "tier": 3,
+      "title": "第八个 (running serial 1/3, authored, 6 ch)",
+      "premise": "a boy who comes eighth every morning says out loud that tomorrow he will be first",
+      "register": "shonen, hot-blooded, stated in numbers",
+      "status": "published — HSK 1 has no 打/赢/快/走/站, so the power level is an ARRIVAL TIME and the entire rivalry is expressed in clock minutes. Reach set: 跑, 快"
+    },
+    {
+      "level": 2,
+      "tier": 3,
+      "title": "比昨天快 (running serial 2/3, authored, 6 ch)",
+      "premise": "he breaks twenty, then breaks himself, and watches the rival train for the first time in two years",
+      "register": "shonen, the body arrives",
+      "status": "published — HSK 2 adds 累/疼/慢/比/最, so this is where running stops being arithmetic and starts costing something"
+    },
+    {
+      "level": 3,
+      "tier": 3,
+      "title": "比赛 (running serial 3/3, authored, 6 ch)",
+      "premise": "eleven schools, two places, and a boy from another school who runs sixteen minutes",
+      "register": "shonen, the reckoning",
+      "status": "published — HSK 3 adds 比赛/坚持/努力/认真/决定/相信, which is the vocabulary shonen actually runs on. He does not win; he takes ninety seconds off himself and shakes the rival's hand"
     }
   ],
   "_strands": "Two strands. 这条街 (HSK 1-6, contemporary, 李明 and the street) is the main one. The sea strand (HSK 1 t3 → 2 t3 → 3 t3, 18 chapters) is a separate continuity with its own cast, designed so a reader climbing three levels reads one continuous story whose plot can only resolve once the grammar can express a past. The two do not cross over."
