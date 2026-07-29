@@ -31,6 +31,7 @@ still get full detail — they are read once, on purpose.
 |-----|--------------|-----------|
 | **this file** | Vision, stack, repo shape, coding rules, DB safety rules, workflow | Always, first |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Full DB schema, level/mastery/SRS systems, design system, content pipeline | You need the detail |
+| [`docs/STORY-BIBLE.md`](docs/STORY-BIBLE.md) | The story universe: world rules, cast, how a season is made. Machine half: `data/story-canon.chinese.json` | Writing or reviewing stories |
 | [`docs/DEPLOY.md`](docs/DEPLOY.md) | Env vars, hosting, routing, PWA, secrets, failure cheat-sheet | Something is broken in prod |
 | [`docs/TESTING.md`](docs/TESTING.md) | What needs manual testing on a real device | Before asking testers |
 | [`ROADMAP.md`](ROADMAP.md) | Public plan — **auto-syncs to Discord** | Starting or finishing work |

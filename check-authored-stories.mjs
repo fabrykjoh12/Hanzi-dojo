@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { validateStory } from './storyValidation.mjs'
+import { validateStory, splitSpeaker } from './storyValidation.mjs'
 import { levelConfig } from './storyLevels.mjs'
 
 // Offline checker for hand-authored stories.
@@ -103,6 +103,28 @@ try { manifest = JSON.parse(readFileSync(file, 'utf8')) }
 catch (err) { console.error('Cannot read ' + file + ': ' + err.message); process.exit(1) }
 if (!Array.isArray(manifest)) { console.error('Manifest must be a JSON array.'); process.exit(1) }
 
+// The canon file is the universe's memory: every established character, so a
+// canon name (周淑兰) never counts as an out-of-pool miss at any level, and a
+// speaker who is NOT yet in canon gets surfaced — a cast that grows silently
+// is how seasons drift apart. Optional by design: a manifest for a fresh
+// universe should still validate without one.
+const CANON_FILES = { chinese: 'data/story-canon.chinese.json' }
+const canonCache = {}
+function canonFor(language) {
+  if (canonCache[language] !== undefined) return canonCache[language]
+  const path = CANON_FILES[language]
+  let canon = null
+  if (path) {
+    try { canon = JSON.parse(readFileSync(path, 'utf8')) } catch { canon = null }
+  }
+  canonCache[language] = canon
+  return canon
+}
+function canonNames(language) {
+  const canon = canonFor(language)
+  return canon && Array.isArray(canon.characters) ? canon.characters.map(c => c.name).filter(Boolean) : []
+}
+
 let pass = 0, fail = 0, skipped = 0
 const seenTitles = new Set()
 const duplicates = []
@@ -116,13 +138,10 @@ for (const s of manifest) {
   const key = s.language + '|' + s.system + '|' + s.level
   const colon = (levelConfig(s.language, s.system, s.level) || {}).colon || '：'
   for (const line of (s.content || '').split('\n')) {
-    const idx = line.indexOf(colon)
-    if (idx > 0 && idx <= 8) {
-      const name = line.slice(0, idx).trim()
-      if (!name) continue
-      if (!castByLevel[key]) castByLevel[key] = new Set()
-      castByLevel[key].add(name)
-    }
+    const { speaker } = splitSpeaker(line, colon)
+    if (!speaker) continue
+    if (!castByLevel[key]) castByLevel[key] = new Set()
+    castByLevel[key].add(speaker)
   }
 }
 
@@ -170,16 +189,13 @@ for (const s of manifest) {
   const storySpeakers = []
   const narrationColons = []
   for (const line of (s.content || '').split('\n')) {
-    const idx = line.indexOf(cfg.colon || '：')
-    if (idx > 0 && idx <= 8) {
-      const name = line.slice(0, idx).trim()
-      if (!name) continue
-      const looksLikeNarration = NARRATION_TAIL.indexOf(name[name.length - 1]) !== -1
-      if (looksLikeNarration) {
-        if (narrationColons.indexOf(name) === -1) narrationColons.push(name)
-      } else if (storySpeakers.indexOf(name) === -1) {
-        storySpeakers.push(name)
-      }
+    const { speaker } = splitSpeaker(line, cfg.colon || '：')
+    if (!speaker) continue
+    const looksLikeNarration = NARRATION_TAIL.indexOf(speaker[speaker.length - 1]) !== -1
+    if (looksLikeNarration) {
+      if (narrationColons.indexOf(speaker) === -1) narrationColons.push(speaker)
+    } else if (storySpeakers.indexOf(speaker) === -1) {
+      storySpeakers.push(speaker)
     }
   }
 
@@ -190,6 +206,7 @@ for (const s of manifest) {
     speakers: storySpeakers,
     extraNames: (s.language === 'chinese' ? ['大毛'] : [])
       .concat(cfg.bible.speakers)
+      .concat(canonNames(s.language))
       .concat([...(castByLevel[s.language + '|' + s.system + '|' + s.level] || [])]),
     maxLineChars: cfg.maxLineChars,
     colon: cfg.colon || '：',
@@ -205,6 +222,18 @@ for (const s of manifest) {
   const advisories = []
   if (r.lineCount < minLines) {
     advisories.push('shorter than the tier target (' + r.lineCount + ' lines vs ' + minLines + ')')
+  }
+  // Advisory, not failure: new characters are allowed — but they must not stay
+  // invisible, or the next season won't know they exist.
+  if (canonFor(s.language)) {
+    const canon = canonFor(s.language)
+    const known = new Set(canonNames(s.language)
+      .concat(cfg.bible.speakers)
+      .concat(Array.isArray(canon.role_labels) ? canon.role_labels : []))
+    const uncanonized = storySpeakers.filter(name => !known.has(name))
+    if (uncanonized.length > 0) {
+      advisories.push('speakers not in canon: ' + uncanonized.join('、') + ' — add them to ' + CANON_FILES[s.language])
+    }
   }
 
   // A line-aligned translation is what the reader pairs with each line; a
