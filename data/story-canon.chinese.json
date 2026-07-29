@@ -1,9 +1,27 @@
 {
   "_comment": "Machine-readable canon for the Chinese story universe. Consumed by check-authored-stories.mjs (names join the coverage dictionary; unlisted speakers are surfaced) and intended as prompt context for generate-serial-stories.mjs. Update this in the same change that adds a season — it is the memory that keeps seasons consistent with each other.",
   "role_labels": [
-    "妈妈", "爸爸", "朋友", "老师", "服务员", "店员", "医生", "大家",
-    "女儿", "儿子", "天", "云彩", "风", "墙壁", "农民", "孩子", "大人", "姑娘",
-    "奶奶", "阿姨", "管理员"
+    "妈妈",
+    "爸爸",
+    "朋友",
+    "老师",
+    "服务员",
+    "店员",
+    "医生",
+    "大家",
+    "女儿",
+    "儿子",
+    "天",
+    "云彩",
+    "风",
+    "墙壁",
+    "农民",
+    "孩子",
+    "大人",
+    "姑娘",
+    "奶奶",
+    "阿姨",
+    "管理员"
   ],
   "_role_labels_comment": "Generic speaker labels — not personal names, so they never get the reader's Name popup and never need CHARACTER_READINGS entries. Single source of truth: src/authoredStories.test.js and check-authored-stories.mjs both read this list.",
   "characters": [
@@ -58,19 +76,19 @@
       "pinyin": "nǎinai",
       "role": "grandmother",
       "age": 86,
-      "traits": "lived in the old building sixty years; remembers everything and rations what she tells; keeps promises past their usefulness and knows it (HSK 6). Moved to a smaller flat on the same street (HSK 6 t2). Sat daily in the chair by the old building's door",
+      "traits": "lived in the old building sixty years; remembers everything and rations what she tells; keeps promises past their usefulness and knows it (HSK 6). Moved to a smaller flat on the same street (HSK 6 t2). Sat daily in the chair by the old building's door. Was already on the chair outside the shop, every day, before anyone on the street learned her name — HSK 1 t3",
       "speech": "short declaratives; aphorisms she has clearly said before ('东西是给忘了的人用的')",
       "never": "breaks a promise, explains herself twice, weeps openly",
-      "first_appeared": "HSK 4 t1 书里的照片"
+      "first_appeared": "HSK 1 t3 椅子上的人 (named only at HSK 4 t1 书里的照片)"
     },
     {
       "name": "大毛",
       "pinyin": "Dà Máo",
       "role": "the street's white cat",
-      "traits": "belongs to nobody; sits on the stone outside the noodle shop at 6:30 every morning; fed by at least five shops, each believing they are the only one; walks slightly differently after a car injured his back leg (HSK 5 t3)",
+      "traits": "belongs to nobody; sits on the stone outside the noodle shop at 6:30 every morning; fed by at least five shops, each believing they are the only one; walks slightly differently after a car injured his back leg (HSK 5 t3); sleeps on 奶奶's chair outside the shop when she is not in it (HSK 1 t3 — at HSK 1 vocabulary the corner can only be said as 'the chair outside the shop', but it is the same corner as the stone and the noodle shop)",
       "speech": "does not talk",
       "never": "dies, talks, becomes anyone's pet",
-      "first_appeared": "HSK 1 serials"
+      "first_appeared": "HSK 1 t3 椅子上没有猫"
     },
     {
       "name": "姑娘",
@@ -156,12 +174,30 @@
     }
   ],
   "facts": [
-    { "fact": "A second-hand book stall at the far end of the street sold the thick old book the photograph fell out of.", "source": "HSK 4 t1" },
-    { "fact": "小红's method for hard problems: a sheet of paper, a pen, and letting people answer it themselves. Used for the shop (HSK 4 t3) and the vet bill (HSK 5 t3).", "source": "HSK 4 t3, HSK 5 t3" },
-    { "fact": "小明 ran the 800m he never signed up for (小红 wrote his name), came last after stopping for a fallen boy, and is quietly proud of it.", "source": "HSK 4 t2" },
-    { "fact": "妈妈 works in another city, four hours by train; home Friday 19:00, away Sunday 20:00. 李明 learned to cook so the arrangement could hold.", "source": "HSK 5 t1-t2" },
-    { "fact": "奶奶 keeps 周淑兰's thirty letters in a locked wooden box, and answered them once, thirty years late, with a letter that deliberately contained no apology.", "source": "HSK 6 t2" },
-    { "fact": "小明's uncle fits lights and refuses payment.", "source": "HSK 5 t3" }
+    {
+      "fact": "A second-hand book stall at the far end of the street sold the thick old book the photograph fell out of.",
+      "source": "HSK 4 t1"
+    },
+    {
+      "fact": "小红's method for hard problems: a sheet of paper, a pen, and letting people answer it themselves. Used for the shop (HSK 4 t3) and the vet bill (HSK 5 t3).",
+      "source": "HSK 4 t3, HSK 5 t3"
+    },
+    {
+      "fact": "小明 ran the 800m he never signed up for (小红 wrote his name), came last after stopping for a fallen boy, and is quietly proud of it.",
+      "source": "HSK 4 t2"
+    },
+    {
+      "fact": "妈妈 works in another city, four hours by train; home Friday 19:00, away Sunday 20:00. 李明 learned to cook so the arrangement could hold.",
+      "source": "HSK 5 t1-t2"
+    },
+    {
+      "fact": "奶奶 keeps 周淑兰's thirty letters in a locked wooden box, and answered them once, thirty years late, with a letter that deliberately contained no apology.",
+      "source": "HSK 6 t2"
+    },
+    {
+      "fact": "小明's uncle fits lights and refuses payment.",
+      "source": "HSK 5 t3"
+    }
   ],
   "open_threads": [
     "The stranger who wrote '老王教我做面，我在南边开了一家' on the shop's paper has never been found.",
@@ -170,17 +206,118 @@
     "The book the photograph fell out of has never been read."
   ],
   "seasons": [
-    { "level": 1, "tiers": "1-3", "titles": "generated serials", "premise": "various (SEASON_SEEDS 1-3)", "register": "light", "status": "published, some held" },
-    { "level": 2, "tiers": "1-3", "titles": "generated serials + authored folk tales", "premise": "various", "register": "light/fable", "status": "published, some held" },
-    { "level": 3, "tiers": "1-3", "titles": "generated serials + authored folk tales (司马光, 田螺姑娘)", "premise": "various", "register": "fable", "status": "published" },
-    { "level": 4, "tier": 1, "title": "书里的照片", "premise": "something old is found and its story pieced together", "register": "wonder", "status": "published" },
-    { "level": 4, "tier": 2, "title": "名字在上面", "premise": "a dreaded competition, and what the day is actually for", "register": "humor into earnestness", "status": "published" },
-    { "level": 4, "tier": 3, "title": "三天的雨", "premise": "weather rearranges life; a small business in trouble; the street helps", "register": "quiet crisis, warm", "status": "published" },
-    { "level": 5, "tier": 1, "title": "妈妈的电话", "premise": "a family decision nobody wants to be the reason against", "register": "domestic, weighty", "status": "published" },
-    { "level": 5, "tier": 2, "title": "第一个星期", "premise": "absence rearranges a household; father and son say true things", "register": "tender", "status": "published" },
-    { "level": 5, "tier": 3, "title": "大毛不见了", "premise": "a disappearance reveals a web of quiet care", "register": "mystery, warm", "status": "published" },
-    { "level": 6, "tier": 1, "title": "写错地址的信", "premise": "a letter to someone thirty years gone; a promise outlives its purpose", "register": "melancholy, resolved", "status": "published" },
-    { "level": 6, "tier": 2, "title": "一个箱子", "premise": "what one keeps when discarding everything; asking once and accepting no", "register": "interior", "status": "published" },
-    { "level": 6, "tier": 3, "title": "一年一封", "premise": "the answer arrives in person; a correspondence restarts in a new generation", "register": "elegiac, warm close", "status": "published" }
+    {
+      "level": 1,
+      "tiers": "1-3",
+      "titles": "generated serials",
+      "premise": "various (SEASON_SEEDS 1-3)",
+      "register": "light",
+      "status": "published, some held"
+    },
+    {
+      "level": 1,
+      "tiers": "2",
+      "titles": "我做晚饭 (authored, 6 ch)",
+      "premise": "Mum is working late all month; Li Ming decides to cook one dinner, and gets it wrong before he gets it right",
+      "register": "warm, domestic",
+      "status": "published"
+    },
+    {
+      "level": 1,
+      "tiers": "3",
+      "titles": "店外边的椅子 (authored, 6 ch)",
+      "premise": "The street cat 大毛 vanishes from its chair; the woman who has sat beside it every day for years knows exactly where it is",
+      "register": "quiet, warm",
+      "status": "published — first appearance of 奶奶 and 大毛; HSK 4 t1 书里的照片 pays it off"
+    },
+    {
+      "level": 2,
+      "tiers": "1-3",
+      "titles": "generated serials + authored folk tales",
+      "premise": "various",
+      "register": "light/fable",
+      "status": "published, some held"
+    },
+    {
+      "level": 3,
+      "tiers": "1-3",
+      "titles": "generated serials + authored folk tales (司马光, 田螺姑娘)",
+      "premise": "various",
+      "register": "fable",
+      "status": "published"
+    },
+    {
+      "level": 4,
+      "tier": 1,
+      "title": "书里的照片",
+      "premise": "something old is found and its story pieced together",
+      "register": "wonder",
+      "status": "published"
+    },
+    {
+      "level": 4,
+      "tier": 2,
+      "title": "名字在上面",
+      "premise": "a dreaded competition, and what the day is actually for",
+      "register": "humor into earnestness",
+      "status": "published"
+    },
+    {
+      "level": 4,
+      "tier": 3,
+      "title": "三天的雨",
+      "premise": "weather rearranges life; a small business in trouble; the street helps",
+      "register": "quiet crisis, warm",
+      "status": "published"
+    },
+    {
+      "level": 5,
+      "tier": 1,
+      "title": "妈妈的电话",
+      "premise": "a family decision nobody wants to be the reason against",
+      "register": "domestic, weighty",
+      "status": "published"
+    },
+    {
+      "level": 5,
+      "tier": 2,
+      "title": "第一个星期",
+      "premise": "absence rearranges a household; father and son say true things",
+      "register": "tender",
+      "status": "published"
+    },
+    {
+      "level": 5,
+      "tier": 3,
+      "title": "大毛不见了",
+      "premise": "a disappearance reveals a web of quiet care",
+      "register": "mystery, warm",
+      "status": "published",
+      "note": "Not a repeat of HSK 1 t3: there the cat is missing for two chapters and one person quietly has it; here it is missing for four days, the cause is the car, and the point is how many people had noticed."
+    },
+    {
+      "level": 6,
+      "tier": 1,
+      "title": "写错地址的信",
+      "premise": "a letter to someone thirty years gone; a promise outlives its purpose",
+      "register": "melancholy, resolved",
+      "status": "published"
+    },
+    {
+      "level": 6,
+      "tier": 2,
+      "title": "一个箱子",
+      "premise": "what one keeps when discarding everything; asking once and accepting no",
+      "register": "interior",
+      "status": "published"
+    },
+    {
+      "level": 6,
+      "tier": 3,
+      "title": "一年一封",
+      "premise": "the answer arrives in person; a correspondence restarts in a new generation",
+      "register": "elegiac, warm close",
+      "status": "published"
+    }
   ]
 }
