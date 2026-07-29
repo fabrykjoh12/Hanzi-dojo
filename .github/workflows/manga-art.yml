@@ -1,0 +1,58 @@
+name: Manga art fetch
+
+# Pulls generated panel art for a Hanzi Dojo Stories episode into the repo and
+# commits it to the branch it was dispatched on.
+#
+# The art is generated through the Higgsfield MCP in an agent session, which
+# gets CDN URLs back but has no network route to that CDN. This runner does, so
+# the session commits a manifest of (file ← url) pairs and dispatches this.
+# See fetch-manga-art.mjs for why episode art is committed rather than uploaded
+# to the storage bucket the way story covers are.
+
+on:
+  workflow_dispatch:
+    inputs:
+      manifest:
+        description: Art manifest to fetch
+        type: string
+        default: data/manga/inkbound-hsk1-ep01.art.json
+      force:
+        description: Re-fetch assets that are already committed
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: manga-art-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch art
+        run: node fetch-manga-art.mjs "${{ inputs.manifest }}" ${{ inputs.force && '--force' || '' }}
+      - name: Commit
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # The manifest owns its own destination, so a candidate-review batch
+          # and the final episode assets can use the same workflow.
+          DIR=$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).dir)' "${{ inputs.manifest }}")
+          git add -A "$DIR"
+          if git diff --cached --quiet; then
+            echo "No new art to commit."
+            exit 0
+          fi
+          git commit -m "art: fetch manga panel art from ${{ inputs.manifest }}"
+          git push origin HEAD:${{ github.ref_name }}

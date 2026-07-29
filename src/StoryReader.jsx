@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import StoryReaderImmersive from './StoryReaderImmersive'
+import MangaReader from './MangaReader'
 import PacedReader from './PacedReader'
 import ChatReader from './ChatReader'
 import InteractiveChatReader from './InteractiveChatReader'
@@ -30,6 +31,7 @@ export default function StoryReader(props) {
   const extra = { readerMode: modePref, onPickReaderMode: chooseMode }
 
   const mode = resolvePresentation(props.story, modePref)
+  if (mode === 'manga') return <MangaReader {...props} />
   if (mode === 'scene') return <SceneReader {...props} />
   if (mode === 'chat' && props.story.interactions) return <InteractiveChatReader {...props} />
   if (mode === 'chat') return <ChatReader {...props} />
