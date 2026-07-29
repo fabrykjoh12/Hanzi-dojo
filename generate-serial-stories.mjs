@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { premiumLlm } from './llm.mjs'
+import { validateStory as validate } from './storyValidation.mjs'
+import { CONFIGS } from './storyLevels.mjs'
 
 // Serial graded-reader generator — the replacement for generate-stories.mjs's
 // one-shot vignettes. Each tier becomes one continuing storyline ("season") of
@@ -53,177 +55,9 @@ const level = parseInt(arg('level', '1'), 10)
 const onlyTier = arg('tier', null) ? parseInt(arg('tier', null), 10) : null
 const seasonOffset = arg('season-offset', null) ? parseInt(arg('season-offset', null), 10) : 0
 
-// ── Character bibles ─────────────────────────────────────────────────────────
-// Recurring characters with actual personalities and speech habits — the thing
-// the old generator never had. Chinese names must stay within the reader's
-// CHARACTER_READINGS map (src/characterNames.js) so name-taps keep working.
+// Character bibles and per-level tier targets live in storyLevels.mjs, shared
+// with the offline authored-story checker.
 
-const BIBLE_CHINESE = {
-  speakers: ['李明', '小红', '小明', '妈妈'],
-  text:
-    '- 李明 (Lǐ Míng): a curious, slightly impulsive 12-year-old boy. Always hungry. Speaks in short, eager sentences and asks a lot of questions.\n' +
-    '- 小红 (Xiǎo Hóng): his classmate. Sharp-eyed and quick — she notices what others miss, and teases 李明, but is kind underneath.\n' +
-    '- 小明 (Xiǎo Míng): 李明\'s best friend. Easygoing, a little lazy, loyal.\n' +
-    '- 妈妈: 李明\'s mother. Patient, practical, gently firm.\n' +
-    '- 大毛 (Dà Máo): a white neighborhood cat. Does not talk, but keeps appearing where things happen.',
-}
-
-const BIBLE_JAPANESE = {
-  speakers: ['たかし', 'はな', 'おかあさん', 'おじいさん'],
-  text:
-    '- たかし (Takashi): a shy, careful boy who loves trains and notices small details. Speaks briefly and politely.\n' +
-    '- はな (Hana): his classmate. Energetic, always hungry, speaks fast and decides fast.\n' +
-    '- おかあさん (Mother): kind but busy; keeps everyone on schedule.\n' +
-    '- おじいさん (an elderly neighbor): grows vegetables, walks slowly, knows everything about the town.',
-}
-
-const BIBLE_RUSSIAN = {
-  speakers: ['Иван', 'Аня', 'мама', 'бабушка'],
-  text:
-    '- Иван (Ivan): a friendly student who loves sport and is always a little late.\n' +
-    '- Аня (Anya): his friend. Loves music, very organized, mildly exasperated by Иван.\n' +
-    '- мама: Ivan\'s mother. Warm and practical.\n' +
-    '- бабушка: the grandmother. Bakes constantly, speaks in short warm sentences, always right.',
-}
-
-// Per-tier premise seeds so re-runs and tiers don't converge on the same plot.
-// --season-offset N rotates which seed each tier draws, so an APPEND run (no
-// --replace) gets different season shapes than the level's existing seasons.
-const SEASON_SEEDS = [
-  'a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly',
-  'preparing for something over several days (a trip, a festival, a small competition) with setbacks',
-  'a bigger outing or adventure away from home with a genuine surprise in the middle',
-  'a new friend or visitor arrives and daily life is a little different for a while',
-  'secretly helping someone prepare a surprise without them finding out',
-  'the characters take on a small job or responsibility for the first time and almost mess it up',
-  'a plan for the day keeps going wrong in small ways until an accident turns out better than the plan',
-  'the characters look after an animal that is not theirs and grow attached to it',
-  'something old is found (a photo, a letter, a broken object) and the characters piece together its story',
-  'two of the characters disagree about something small, avoid each other, and find their way back',
-  'the weather changes everything for a few days and the characters have to rearrange their lives around it',
-  'a competition or test the characters have been dreading, and what actually happens on the day',
-  'the characters try to make or cook something difficult and fail repeatedly before getting it right',
-  'a day when nothing goes to schedule: a missed bus, a wrong turn, an unfamiliar part of town',
-  'someone is leaving soon and the characters quietly prepare a send-off',
-  'the characters trade places or swap responsibilities for a few days and see the other side',
-  'a small business or stall nearby is in trouble and the characters decide to help it',
-  'the characters keep noticing the same stranger, animal or object around town and finally learn why',
-]
-
-// ── Per-target config ─────────────────────────────────────────────────────────
-// Tier caps mirror the old generator so tier gating (tier_min_words) and level
-// pools stay consistent. maxLineChars is a SOFT target now — the reader wraps
-// text fine and choppy 15-char baby prose was a big part of why stories read
-// badly. Only egregiously long lines (2x) get flagged for revision.
-//
-// Per-tier knobs for "longer + richer" (user request):
-//   lines      target line count — bumped ~50% so chapters read like real scenes
-//   minCov     min in-pool vocabulary coverage. GRADUATED: rank beginners
-//              (tier 1) need near-full comprehension; by tier 3 the reader can
-//              handle a few reach words, which surface as tappable "new words".
-//   maxMisses  cap on DISTINCT out-of-pool words — lets a chapter reach for a
-//              handful of vivid words without turning into a word salad.
-
-const CONFIGS = {
-  'chinese|hsk_3|1': {
-    bible: BIBLE_CHINESE, promptLang: 'Chinese', levelName: 'HSK 1',
-    maxLineChars: 30, prereqLevel: null, prereqMax: 0,
-    tiers: [
-      { tier: 1, minWords: 0, prevCap: 0, cap: 100, chapters: 6, lines: [18, 26], minCov: 0.85, maxMisses: 10 },
-      { tier: 2, minWords: 100, prevCap: 100, cap: 200, chapters: 6, lines: [24, 34], minCov: 0.85, maxMisses: 12 },
-      { tier: 3, minWords: 200, prevCap: 200, cap: 300, chapters: 6, lines: [30, 42], minCov: 0.83, maxMisses: 14 },
-    ],
-  },
-  'chinese|hsk_3|2': {
-    bible: BIBLE_CHINESE, promptLang: 'Chinese', levelName: 'HSK 2',
-    maxLineChars: 32, prereqLevel: 1, prereqMax: 150,
-    tiers: [
-      { tier: 1, minWords: 30, prevCap: 0, cap: 66, chapters: 5, lines: [18, 26], minCov: 0.90, maxMisses: 6 },
-      { tier: 2, minWords: 80, prevCap: 66, cap: 132, chapters: 5, lines: [24, 34], minCov: 0.88, maxMisses: 9 },
-      { tier: 3, minWords: 130, prevCap: 132, cap: 198, chapters: 5, lines: [30, 42], minCov: 0.85, maxMisses: 12 },
-    ],
-  },
-  // HSK 3-6: seeded from the reference dictionary (frequency-capped ~460-480
-  // words/level, sort_order 1..~500 after cleanup). tier-3 cap 500 captures the
-  // whole level; coverage gates loosen a touch as the vocabulary gets harder.
-  'chinese|hsk_3|3': {
-    bible: BIBLE_CHINESE, promptLang: 'Chinese', levelName: 'HSK 3',
-    maxLineChars: 34, prereqLevel: 2, prereqMax: 200,
-    tiers: [
-      { tier: 1, minWords: 40, prevCap: 0, cap: 170, chapters: 5, lines: [20, 28], minCov: 0.88, maxMisses: 8 },
-      { tier: 2, minWords: 110, prevCap: 170, cap: 340, chapters: 5, lines: [26, 36], minCov: 0.86, maxMisses: 11 },
-      { tier: 3, minWords: 220, prevCap: 340, cap: 500, chapters: 5, lines: [32, 44], minCov: 0.84, maxMisses: 14 },
-    ],
-  },
-  'chinese|hsk_3|4': {
-    bible: BIBLE_CHINESE, promptLang: 'Chinese', levelName: 'HSK 4',
-    maxLineChars: 36, prereqLevel: 3, prereqMax: 300,
-    tiers: [
-      { tier: 1, minWords: 40, prevCap: 0, cap: 170, chapters: 5, lines: [20, 28], minCov: 0.88, maxMisses: 8 },
-      { tier: 2, minWords: 110, prevCap: 170, cap: 340, chapters: 5, lines: [26, 36], minCov: 0.86, maxMisses: 11 },
-      { tier: 3, minWords: 220, prevCap: 340, cap: 500, chapters: 5, lines: [32, 44], minCov: 0.84, maxMisses: 14 },
-    ],
-  },
-  'chinese|hsk_3|5': {
-    bible: BIBLE_CHINESE, promptLang: 'Chinese', levelName: 'HSK 5',
-    maxLineChars: 38, prereqLevel: 4, prereqMax: 300,
-    tiers: [
-      { tier: 1, minWords: 40, prevCap: 0, cap: 170, chapters: 5, lines: [20, 28], minCov: 0.87, maxMisses: 9 },
-      { tier: 2, minWords: 110, prevCap: 170, cap: 340, chapters: 5, lines: [26, 36], minCov: 0.85, maxMisses: 12 },
-      { tier: 3, minWords: 220, prevCap: 340, cap: 500, chapters: 5, lines: [32, 44], minCov: 0.83, maxMisses: 15 },
-    ],
-  },
-  'chinese|hsk_3|6': {
-    bible: BIBLE_CHINESE, promptLang: 'Chinese', levelName: 'HSK 6',
-    maxLineChars: 40, prereqLevel: 5, prereqMax: 300,
-    tiers: [
-      { tier: 1, minWords: 40, prevCap: 0, cap: 170, chapters: 5, lines: [20, 28], minCov: 0.87, maxMisses: 9 },
-      { tier: 2, minWords: 110, prevCap: 170, cap: 340, chapters: 5, lines: [26, 36], minCov: 0.85, maxMisses: 12 },
-      { tier: 3, minWords: 220, prevCap: 340, cap: 500, chapters: 5, lines: [32, 44], minCov: 0.83, maxMisses: 15 },
-    ],
-  },
-  'japanese|jlpt|1': {
-    // N5 stories use kanji (with furigana in the reader) so they match the
-    // kanji-keyed vocabulary and words stay tappable — a kana-only story fails
-    // both (looks wrong, and can't be looked up). Was kanaOnly: true.
-    bible: BIBLE_JAPANESE, promptLang: 'Japanese', levelName: 'JLPT N5',
-    maxLineChars: 36, prereqLevel: null, prereqMax: 0,
-    tiers: [
-      { tier: 1, minWords: 30, prevCap: 0, cap: 100, chapters: 5, lines: [18, 26], minCov: 0.90, maxMisses: 6 },
-      { tier: 2, minWords: 100, prevCap: 100, cap: 200, chapters: 5, lines: [24, 34], minCov: 0.88, maxMisses: 9 },
-      { tier: 3, minWords: 200, prevCap: 200, cap: 400, chapters: 5, lines: [30, 42], minCov: 0.85, maxMisses: 12 },
-    ],
-  },
-  'japanese|jlpt|2': {
-    // N5 Part 2 — same difficulty band as Part 1, so the same line targets and
-    // coverage knobs; the basics of Part 1 ride along as prereq vocabulary.
-    bible: BIBLE_JAPANESE, promptLang: 'Japanese', levelName: 'JLPT N5 (Part 2)',
-    maxLineChars: 36, prereqLevel: 1, prereqMax: 150,
-    tiers: [
-      { tier: 1, minWords: 30, prevCap: 0, cap: 134, chapters: 5, lines: [18, 26], minCov: 0.90, maxMisses: 6 },
-      { tier: 2, minWords: 100, prevCap: 134, cap: 268, chapters: 5, lines: [24, 34], minCov: 0.88, maxMisses: 9 },
-      { tier: 3, minWords: 200, prevCap: 268, cap: 402, chapters: 5, lines: [30, 42], minCov: 0.85, maxMisses: 12 },
-    ],
-  },
-  'japanese|jlpt|3': {
-    bible: BIBLE_JAPANESE, promptLang: 'Japanese', levelName: 'JLPT N4',
-    maxLineChars: 40, prereqLevel: 1, prereqMax: 150,
-    tiers: [
-      { tier: 1, minWords: 30, prevCap: 0, cap: 200, chapters: 5, lines: [18, 26], minCov: 0.90, maxMisses: 7 },
-      { tier: 2, minWords: 150, prevCap: 200, cap: 400, chapters: 5, lines: [24, 34], minCov: 0.87, maxMisses: 10 },
-      { tier: 3, minWords: 300, prevCap: 400, cap: 636, chapters: 5, lines: [30, 42], minCov: 0.84, maxMisses: 14 },
-    ],
-  },
-  'russian|russian|1': {
-    bible: BIBLE_RUSSIAN, promptLang: 'Russian', levelName: 'CEFR A1',
-    colon: ':', maxLineChars: 70, prereqLevel: null, prereqMax: 0,
-    tiers: [
-      { tier: 1, minWords: 15, prevCap: 0, cap: 50, chapters: 4, lines: [16, 24], minCov: 0.88, maxMisses: 8 },
-      { tier: 2, minWords: 40, prevCap: 50, cap: 100, chapters: 4, lines: [20, 30], minCov: 0.86, maxMisses: 11 },
-      { tier: 3, minWords: 80, prevCap: 100, cap: 147, chapters: 4, lines: [26, 38], minCov: 0.83, maxMisses: 14 },
-    ],
-  },
-}
 
 const cfg = CONFIGS[language + '|' + system + '|' + level]
 if (!cfg) {
@@ -298,14 +132,30 @@ function parseChapter(text) {
 
 // ── Vocabulary ───────────────────────────────────────────────────────────────
 
+// The allowed pool is EVERY level below this one, in full, plus this level up
+// to the tier cap.
+//
+// It used to be a slice of the single preceding level (`prereqLevel` /
+// `prereqMax`), which quietly made the higher levels impossible to write for.
+// HSK 4's config names level 3 as its prerequisite, so the pool contained no
+// HSK 1 vocabulary at all — no 的, no 我, no 是, no 很, no 了. Those words are
+// unavoidable in any real Chinese sentence, so every draft came back tens of
+// points under the coverage bar no matter how carefully it was written, and no
+// amount of revision could fix it. That is also the honest model of the
+// learner: someone reading at HSK 4 has met HSK 1-3, not a 300-word window of
+// HSK 3.
+//
+// The pool only ever grows as a result, so nothing that passed before can fail
+// now. prereqLevel/prereqMax stay in the configs as documentation of the
+// intended step-up; they no longer restrict what may appear.
 async function fetchVocab(maxSortOrder) {
   const rows = []
-  if (cfg.prereqLevel) {
+  if (level > 1) {
     const { data, error } = await supabase
       .from('vocabulary').select('word, reading, meaning, sort_order')
-      .eq('language', language).eq('system', system).eq('level', cfg.prereqLevel)
-      .eq('is_active', true).lte('sort_order', cfg.prereqMax)
-    if (error) throw new Error('Prereq vocab error: ' + error.message)
+      .eq('language', language).eq('system', system)
+      .lt('level', level).eq('is_active', true)
+    if (error) throw new Error('Lower-level vocab error: ' + error.message)
     rows.push(...(data || []))
   }
   const { data, error } = await supabase
@@ -319,142 +169,22 @@ async function fetchVocab(maxSortOrder) {
 }
 
 // ── Validators (code, not vibes) ─────────────────────────────────────────────
-
-const PUNCT = new Set('，。！？：；、“”‘’…—·《》〈〉（）「」『』・,.!?:;"\'()[]{}<>~～-–—%＄$&*/\\ \t\r　0123456789０１２３４５６７８９'.split(''))
-function isPunct(ch) { return PUNCT.has(ch) || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') }
-function isHiragana(ch) { const c = ch.charCodeAt(0); return c >= 0x3040 && c <= 0x309F }
-
-function splitSpeaker(line) {
-  const idx = line.indexOf(COLON)
-  if (idx > 0 && idx <= 8) return { speaker: line.slice(0, idx).trim(), text: line.slice(idx + 1).trim() }
-  return { speaker: null, text: line }
-}
-
-// CJK coverage: greedy longest-match against the allowed dictionary. Unmatched
-// hiragana is allowed for Japanese (particles + conjugation ARE the grammar the
-// prompt permits); everything else unmatched counts against coverage.
-function cjkCoverage(lines, dict, maxWordLen, allowHiragana) {
-  let matched = 0, unmatched = 0
-  const misses = new Map()
-  for (const raw of lines) {
-    const text = splitSpeaker(raw).text
-    let i = 0
-    while (i < text.length) {
-      const ch = text[i]
-      if (isPunct(ch)) { i += 1; continue }
-      let hit = 0
-      for (let len = Math.min(maxWordLen, text.length - i); len >= 1; len -= 1) {
-        if (dict.has(text.slice(i, i + len))) { hit = len; break }
-      }
-      if (hit > 0) { matched += hit; i += hit; continue }
-      if (allowHiragana && isHiragana(ch)) { matched += 1; i += 1; continue }
-      // Collect the whole unmatched run so revision prompts show words, not chars.
-      let j = i
-      while (j < text.length && !isPunct(text[j]) && !(allowHiragana && isHiragana(text[j]))) {
-        let anyHit = false
-        for (let len = Math.min(maxWordLen, text.length - j); len >= 1; len -= 1) {
-          if (dict.has(text.slice(j, j + len))) { anyHit = true; break }
-        }
-        if (anyHit) break
-        j += 1
-      }
-      const run = text.slice(i, j)
-      misses.set(run, (misses.get(run) || 0) + 1)
-      unmatched += run.length
-      i = j
-    }
-  }
-  const total = matched + unmatched
-  return { coverage: total === 0 ? 1 : matched / total, misses: [...misses.keys()] }
-}
-
-// Russian: token-level, with a prefix allowance for inflection (an A1 validator
-// doesn't need a morphological analyzer — sharing the first 4+ letters with a
-// pool word is close enough to catch real out-of-pool vocabulary).
-const RU_FUNCTION = new Set(['и', 'а', 'но', 'в', 'во', 'не', 'на', 'у', 'с', 'со', 'к', 'ко', 'по', 'за', 'из', 'о', 'об', 'от', 'до', 'же', 'бы', 'ли', 'да', 'нет', 'то', 'же', 'уже', 'ещё', 'еще', 'вот', 'как', 'что', 'кто', 'это', 'этот', 'эта', 'эти', 'тот', 'та', 'те', 'мой', 'моя', 'мои', 'твой', 'наш', 'ваш', 'его', 'её', 'ее', 'их', 'я', 'ты', 'он', 'она', 'оно', 'мы', 'вы', 'они', 'меня', 'тебя', 'него', 'нее', 'неё', 'нас', 'вас', 'них', 'мне', 'тебе', 'ему', 'ей', 'нам', 'вам', 'им', 'есть', 'был', 'была', 'было', 'были', 'будет', 'будут', 'очень', 'там', 'тут', 'здесь', 'потом', 'тоже'])
-function russianCoverage(lines, poolWords, names) {
-  const pool = poolWords.map(w => w.toLowerCase())
-  const nameSet = new Set(names.map(n => n.toLowerCase()))
-  let matched = 0, unmatched = 0
-  const misses = new Set()
-  for (const raw of lines) {
-    const text = splitSpeaker(raw).text.toLowerCase()
-    const tokens = text.split(/[^а-яё]+/).filter(Boolean)
-    for (const t of tokens) {
-      const ok = RU_FUNCTION.has(t) || nameSet.has(t)
-        || pool.some(w => w === t || (t.length >= 4 && w.length >= 4 && w.slice(0, 4) === t.slice(0, 4)))
-      if (ok) matched += 1
-      else { unmatched += 1; misses.add(t) }
-    }
-  }
-  const total = matched + unmatched
-  return { coverage: total === 0 ? 1 : matched / total, misses: [...misses] }
-}
+// The matcher itself lives in storyValidation.mjs so hand-authored stories are
+// held to exactly the same bar as generated ones — and so "passes validation"
+// keeps meaning "every word is tappable in the reader" for both.
 
 function validateStory(content, pool, tier) {
-  const problems = []
-  const lines = (content || '').split('\n').map(l => l.trim()).filter(Boolean)
-
-  const [minL, maxL] = tier.lines
-  if (lines.length < minL - 2) problems.push('Too short: ' + lines.length + ' lines (need at least ' + minL + ').')
-  if (lines.length > maxL + 8) problems.push('Too long: ' + lines.length + ' lines (target at most ' + maxL + ').')
-
-  const badSpeakers = new Set()
-  for (const line of lines) {
-    const { speaker } = splitSpeaker(line)
-    if (speaker && cfg.bible.speakers.indexOf(speaker) === -1) badSpeakers.add(speaker)
-  }
-  if (badSpeakers.size > 0) problems.push('Unknown dialogue speakers: ' + [...badSpeakers].join(', ') + '. Allowed: ' + cfg.bible.speakers.join(', '))
-
-  const longLines = lines.filter(l => splitSpeaker(l).text.length > cfg.maxLineChars * 2)
-  if (longLines.length > 0) problems.push(longLines.length + ' line(s) are far too long — split them into shorter sentences.')
-
-  let cov
-  if (language === 'russian') {
-    cov = russianCoverage(lines, pool.map(v => v.word), cfg.bible.speakers)
-  } else {
-    // Stored vocab forms carry decorations story text never has ("この～",
-    // "すみません。", "後(で)") — normalize them, and for Japanese also index
-    // readings, kanji stems, and ます-stems so a naturally conjugated pool verb
-    // (食べます → 食べた) counts as in-pool rather than as a miss. Mirrors the
-    // reader's matcher (src/storyReading.js) so "validates" ⇒ "tappable".
-    const dict = new Set()
-    const norm = (s) => String(s || '').trim().replace(/[～〜]/g, '').replace(/[。．.、，,!！?？\s]+$/g, '')
-    const addForms = (raw) => {
-      const f = norm(raw)
-      if (!f) return
-      const pm = f.match(/^(.+?)[（(](.+?)[）)]$/)
-      const variants = pm ? [pm[1] + pm[2], pm[1]] : [f]
-      for (const w of variants) {
-        dict.add(w)
-        if (language !== 'japanese') continue
-        // kanji stem (行きます → 行) — cjkCoverage treats trailing okurigana as
-        // allowed hiragana, so the stem alone is enough to count the word.
-        let lastK = -1
-        for (let i = 0; i < w.length; i += 1) { const c = w.charCodeAt(i); if (c >= 0x3400 && c <= 0x9FFF) lastK = i }
-        if (lastK >= 0) dict.add(w.slice(0, lastK + 1))
-        if (w.endsWith('ます') && w.length > 4) dict.add(w.slice(0, -2))   // かえります → かえり
-      }
-    }
-    pool.forEach(v => {
-      addForms(v.word)
-      if (language === 'japanese' && v.reading) String(v.reading).split(/[/／・;；]/).forEach(addForms)
-    })
-    cfg.bible.speakers.forEach(n => dict.add(n))
-    if (language === 'chinese') dict.add('大毛')
-    cov = cjkCoverage(lines, dict, 8, language === 'japanese')
-  }
-  const minCov = tier.minCov != null ? tier.minCov : 0.9
-  const maxMisses = tier.maxMisses != null ? tier.maxMisses : 8
-  if (cov.coverage < minCov) {
-    problems.push('Vocabulary coverage ' + Math.round(cov.coverage * 100) + '% (need ' + Math.round(minCov * 100) + '%). Out-of-pool: ' + cov.misses.slice(0, 25).join('、'))
-  } else if (cov.misses.length > maxMisses) {
-    // Coverage is fine by ratio, but too many DISTINCT reach words — trim the
-    // least essential ones so a chapter teaches a few new words, not dozens.
-    problems.push(cov.misses.length + ' distinct out-of-pool words (max ' + maxMisses + '). Replace the less important ones: ' + cov.misses.slice(0, 25).join('、'))
-  }
-  return { ok: problems.length === 0, problems, coverage: cov.coverage, misses: cov.misses, lineCount: lines.length }
+  return validate(content, {
+    pool,
+    tier,
+    language,
+    speakers: cfg.bible.speakers,
+    extraNames: language === 'chinese' ? ['大毛'] : [],
+    maxLineChars: cfg.maxLineChars,
+    colon: COLON,
+  })
 }
+
 
 // ── Pipeline passes ──────────────────────────────────────────────────────────
 
