@@ -22,7 +22,9 @@
     "奶奶",
     "阿姨",
     "管理员",
-    "男人"
+    "男人",
+    "女士",
+    "爷爷"
   ],
   "_role_labels_comment": "Generic speaker labels — not personal names, so they never get the reader's Name popup and never need CHARACTER_READINGS entries. Single source of truth: src/authoredStories.test.js and check-authored-stories.mjs both read this list.",
   "characters": [
@@ -189,6 +191,15 @@
       "speech": "blunt, practical, defensive when he is right for the wrong reason",
       "never": "acts alone",
       "first_appeared": "HSK 2 t3 十九个"
+    },
+    {
+      "name": "老陈",
+      "pinyin": "Lǎo Chén",
+      "role": "caretaker of the old building, ~76",
+      "traits": "worked in that building forty years; when everyone moved out for repairs that never came he stayed, and has swept the stairs from the ground floor to the fifth every morning for seven hundred-odd days, for residents who are not coming back. Lives in the storeroom on the fifth floor. Has counted the days",
+      "speech": "practical instructions before greetings ('mind that side, I haven't done it yet'); answers questions with the fact, never the feeling",
+      "never": "complains, asks anyone for anything, leaves a floor half done",
+      "first_appeared": "HSK 4 t1 五楼的灯"
     }
   ],
   "locations": [
@@ -388,6 +399,22 @@
       "premise": "nobody decided to leave a man on an island; he offered and six people did not say no",
       "register": "reckoning",
       "status": "published — HSK 3 adds 以前/才/决定/发现/相信/一样, which is the machinery for holding a past and judging it. The answer waits until here because the language does."
+    },
+    {
+      "level": 2,
+      "tier": 1,
+      "title": "天天来的那只狗 (authored, 6 ch)",
+      "premise": "a dog arrives on the street at four and leaves at five, every day, and dogs do not own watches",
+      "register": "warm, observational",
+      "status": "published — this tier had ZERO published stories before it; built on time and counting, which is what HSK 1+2 can say completely"
+    },
+    {
+      "level": 4,
+      "tier": 1,
+      "title": "五楼的灯 (authored, 6 ch)",
+      "premise": "someone is sweeping the stairs of a building nobody has lived in for two years",
+      "register": "quiet mystery, humane answer",
+      "status": "published — the corpus's first mystery-shaped season; ties to 奶奶's sixty years in the old building"
     }
   ],
   "_strands": "Two strands. 这条街 (HSK 1-6, contemporary, 李明 and the street) is the main one. The sea strand (HSK 1 t3 → 2 t3 → 3 t3, 18 chapters) is a separate continuity with its own cast, designed so a reader climbing three levels reads one continuous story whose plot can only resolve once the grammar can express a past. The two do not cross over."
