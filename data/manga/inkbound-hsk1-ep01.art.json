@@ -1,0 +1,13 @@
+{
+  "_comment": "Panel art for 'The Inkbound' episode 1. Fetched into the repo by .github/workflows/content-utils.yml, task `manga-art-fetch` (which runs fetch-manga-art.mjs on this file and commits the result) — the agent sandbox has no route to the generation CDN, a GitHub runner does. The `file` names are what data/manga/inkbound-hsk1-ep01.json's panels[].art refer to; src/mangaEpisodes.test.js fails if the two ever disagree.",
+  "dir": "public/stories/inkbound/hsk1/ep01",
+  "assets": [
+    { "file": "panel-01-arrival.webp", "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260729_162905_bc520152-b8f4-47bd-a062-1ea6c6237286_min.webp" },
+    { "file": "panel-02-gate.webp", "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260729_162927_a651fa58-620e-438f-bda7-08739a173b7e_min.webp" },
+    { "file": "panel-03-xiaoyu.webp", "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260729_163007_63b66c61-8ddb-4899-bdc4-4cd1b0d32595_min.webp" },
+    { "file": "panel-05-introduce.webp", "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260729_163022_de38da01-f405-4cad-af38-41b087529282_min.webp" },
+    { "file": "panel-06-teacher.webp", "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260729_163042_061a9a25-3631-4a13-9bde-ce23b2332fe0_min.webp" },
+    { "file": "panel-07-watcher.webp", "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260729_163058_1788789e-9ebe-4c72-8044-e002ff7a518d_min.webp" },
+    { "file": "panel-08-hook.webp", "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260729_163118_61b396c2-55d3-4ffe-8c49-613d2bc44759_min.webp" }
+  ]
+}

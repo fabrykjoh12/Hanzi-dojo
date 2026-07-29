@@ -286,6 +286,38 @@
       "speech": "calm, transactional, never threatens directly — states what will happen and lets it land",
       "never": "insults anyone, loses his temper, breaks a deadline he set",
       "first_appeared": "HSK 2 t3 山那边的人"
+    },
+    {
+      "name": "小雨",
+      "pinyin": "Xiǎo Yǔ",
+      "role": "dojo apprentice",
+      "age": 13,
+      "traits": "delighted by new people; asks the direct question first and the polite one never; ink brush through her hair, cinnabar ribbon",
+      "speech": "short, bright, question-first",
+      "never": "cold to a newcomer, or the one who stays quiet",
+      "first_appeared": "Hanzi Dojo: The Inkbound, 第一话 (HSK 1 manga)",
+      "universe": "inkbound"
+    },
+    {
+      "name": "林老师",
+      "pinyin": "Lín lǎoshī",
+      "role": "calligraphy master",
+      "traits": "still, unhurried, says one thing and stops; the season's slow thread",
+      "speech": "one sentence, no elaboration",
+      "never": "explains himself early",
+      "first_appeared": "Hanzi Dojo: The Inkbound, 第一话 (HSK 1 manga)",
+      "universe": "inkbound"
+    },
+    {
+      "name": "小白",
+      "pinyin": "Xiǎo Bái",
+      "role": "ink spirit",
+      "traits": "tiny, floating, one black brushstroke across its forehead, a thread of ink-smoke for a tail; says nothing and follows you",
+      "speech": "none — never given a line",
+      "never": "speaks, or is explained",
+      "first_appeared": "Hanzi Dojo: The Inkbound, 第一话 (HSK 1 manga)",
+      "universe": "inkbound",
+      "_note": "Canon name is 白; written 小白 on the page because the reader's name matcher only takes names of two characters or more. See docs/STORY-BIBLE.md §6."
     }
   ],
   "locations": [

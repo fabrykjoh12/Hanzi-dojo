@@ -1,0 +1,161 @@
+import { wordStatus } from './storyReading'
+import { PAPER, CARD_RADIUS, TYPE, TAP_TARGET } from './mangaTokens'
+import { ArrowLeft, Sparkles } from 'lucide-react'
+
+// The end of an episode.
+//
+// It is a panel in the strip, not a modal slab dropped over the artwork. The
+// other readers finish with a full-screen overlay, which is right for a drill
+// and wrong here: an episode ends on a beat, and covering the last panel with a
+// congratulations card throws that beat away. So this scrolls into view as the
+// closing plate — the reader's seal stamped on the page, the words the learner
+// met, and the hook for what comes next.
+//
+// No score, no XP, no streak: those were removed from this app on purpose
+// (CLAUDE.md §1). The "reward" is the seal and the sentence that says the story
+// isn't over.
+
+// A carved cinnabar seal, the mark a reader leaves on a page they've finished.
+function Seal({ accentHex, glyph, fontFamily }) {
+  return (
+    <div aria-hidden style={{
+      width: '56px', height: '56px', flexShrink: 0,
+      borderRadius: '10px',
+      background: accentHex,
+      color: '#fff',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily, fontSize: '30px', fontWeight: 700, lineHeight: 1,
+      boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.28), ' + PAPER.shadowLift,
+      // Very slightly off-square, the way a hand-pressed stamp lands.
+      transform: 'rotate(-1.5deg)',
+    }}>
+      {glyph}
+    </div>
+  )
+}
+
+function WordChip({ vocab, userCards, accentHex, fontFamily, onSelectWord }) {
+  const status = wordStatus(vocab.id, userCards)
+  // Tapping a chip opens the same lookup popover the story does, anchored to
+  // the chip — so "what was that word again?" is answered here too, by the one
+  // component that answers it everywhere else.
+  return (
+    <button
+      onClick={(e) => onSelectWord(vocab, status, 'done:' + vocab.id, e.currentTarget)}
+      aria-label={vocab.word + (vocab.reading ? ' ' + vocab.reading : '')}
+      className="hd-press"
+      style={{
+        display: 'inline-flex', alignItems: 'baseline', gap: '6px',
+        minHeight: '34px', padding: '5px 11px',
+        borderRadius: '999px',
+        border: '1px solid ' + PAPER.hairline,
+        background: PAPER.card, cursor: 'pointer',
+      }}
+    >
+      <span style={{ fontFamily, fontSize: '15.5px', fontWeight: 600, color: PAPER.ink }}>{vocab.word}</span>
+      {vocab.reading && <span style={{ fontSize: '11.5px', color: PAPER.muted }}>{vocab.reading}</span>}
+      <span aria-hidden style={{
+        width: '6px', height: '6px', borderRadius: '999px', alignSelf: 'center',
+        background: status === 'not_started' ? accentHex : PAPER.gold,
+      }} />
+      <span style={{
+        position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px',
+        overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0,
+      }}>
+        {status === 'not_started' ? 'new word' : 'already in your deck'}
+      </span>
+    </button>
+  )
+}
+
+export default function MangaCompletion({
+  label, title, words = [], userCards, accentHex, fontFamily,
+  hook, onBack, onPractice, practiceWords = [], onSelectWord,
+}) {
+  const newCount = words.filter(v => wordStatus(v.id, userCards) === 'not_started').length
+  return (
+    <section
+      aria-label="Episode complete"
+      className="hd-manga-panel is-in"
+      style={{
+        background: PAPER.card,
+        border: '1px solid ' + PAPER.hairline,
+        borderRadius: CARD_RADIUS + 'px',
+        boxShadow: PAPER.shadow,
+        padding: '20px 18px 22px',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <Seal accentHex={accentHex} glyph="读" fontFamily={fontFamily} />
+        <div style={{ minWidth: 0 }}>
+          <div style={{
+            fontSize: TYPE.meta, fontWeight: 800, letterSpacing: '0.13em',
+            textTransform: 'uppercase', color: PAPER.muted,
+          }}>
+            {label ? label + ' · complete' : 'Episode complete'}
+          </div>
+          <div style={{ fontFamily, fontSize: '20px', fontWeight: 700, color: PAPER.ink, marginTop: '3px', lineHeight: 1.25 }}>
+            {title}
+          </div>
+        </div>
+      </div>
+
+      {words.length > 0 && (
+        <div style={{ marginTop: '18px' }}>
+          <div style={{
+            fontSize: TYPE.meta, fontWeight: 800, letterSpacing: '0.13em',
+            textTransform: 'uppercase', color: PAPER.muted, marginBottom: '9px',
+          }}>
+            {newCount > 0 ? words.length + ' words · ' + newCount + ' new' : words.length + ' words'}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
+            {words.map(v => (
+              <WordChip key={v.id} vocab={v} userCards={userCards} accentHex={accentHex} fontFamily={fontFamily} onSelectWord={onSelectWord} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {hook && (
+        <p style={{
+          margin: '18px 0 0', fontSize: '14px', lineHeight: 1.65, color: PAPER.ink2,
+          paddingTop: '15px', borderTop: '1px solid ' + PAPER.soft,
+        }}>
+          {hook}
+        </p>
+      )}
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '18px' }}>
+        <button
+          onClick={onBack}
+          className="hd-press"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            minHeight: TAP_TARGET + 'px', padding: '0 18px',
+            borderRadius: '14px', border: 'none', cursor: 'pointer',
+            background: accentHex, color: '#fff', fontSize: '15px', fontWeight: 700,
+          }}
+        >
+          <ArrowLeft size={17} strokeWidth={2.4} />
+          Back to stories
+        </button>
+        {onPractice && practiceWords.length >= 4 && (
+          <button
+            onClick={() => onPractice(practiceWords)}
+            className="hd-press"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              minHeight: TAP_TARGET + 'px', padding: '0 18px',
+              borderRadius: '14px', cursor: 'pointer',
+              border: '1px solid ' + PAPER.hairline, background: PAPER.card,
+              color: PAPER.ink, fontSize: '15px', fontWeight: 650,
+            }}
+          >
+            <Sparkles size={17} strokeWidth={2} color={accentHex} />
+            Practise the new words
+          </button>
+        )}
+      </div>
+    </section>
+  )
+}
