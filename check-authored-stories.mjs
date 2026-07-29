@@ -42,14 +42,17 @@ const OWN_LEVEL_FILES = {
   'russian|russian|1': 'data/russian-a1.json',
 }
 
-// Cumulative: everything a learner entering this level already knows.
-const CUMULATIVE_BELOW = {
-  'chinese|hsk_3|2': 'data/hsk2-vocab-snapshot.json',   // HSK 1
-  'chinese|hsk_3|3': 'data/hsk2-vocab-snapshot.json',   // HSK 1-2
-  'chinese|hsk_3|4': 'data/hsk3-vocab-snapshot.json',   // HSK 1-3
-  'chinese|hsk_3|5': 'data/hsk3-vocab-snapshot.json',   // HSK 1-3 …
-  'chinese|hsk_3|6': 'data/hsk3-vocab-snapshot.json',   // … plus the lists below
-}
+// HSK 1 and 2 have no word list of their own in data/ (hsk1.json and hsk2.json
+// are empty files), so their vocabulary comes from this cumulative snapshot —
+// 497 words, exactly the database's 300 + 197.
+//
+// Note it is HSK 1+2 only. data/hsk3-vocab-snapshot.json looks like the next
+// rung of the same ladder and is NOT: it is this file plus 457 words from an
+// older HSK 3 draft, of which only 50 survive in the current level 3. Using it
+// would both admit words the learner has never seen and, worse, exclude most of
+// the real HSK 3 list (发现, 地方, 照片, 声音 …). The current list is
+// data/hsk3.json, which matches the database exactly.
+const HSK_1_2 = 'data/hsk2-vocab-snapshot.json'
 
 const fileCache = {}
 function loadFile(path) {
@@ -70,26 +73,29 @@ function loadFile(path) {
 // Mirrors the generator's pool: every lower level in full, plus this level up
 // to the last tier's cap. The tier a story is FILED under is what gates who
 // sees it; the pool is about what the reader can already understand.
+// Every level below, in full, plus this level in full.
+//
+// The own-level cap the generator applies (`tiers[last].cap`) is a pacing knob
+// for a machine writing a season per tier — it is not a statement about what an
+// HSK 4 reader can read. Half of HSK 4's own 929 words sit above that cap, and
+// an authored HSK 4 story has no reason to avoid them. What gates who SEES a
+// story is the tier it is filed under (tier_min_words), not which words it may
+// contain.
 function poolFor(language, system, level, cfg) {
   const rows = []
-  const below = CUMULATIVE_BELOW[language + '|' + system + '|' + level]
-  if (below) {
-    const prior = loadFile(below)
-    if (!prior) return null
-    rows.push(...prior)
+  if (level >= 2) {
+    const base = loadFile(HSK_1_2)
+    if (!base) return null
+    rows.push(...base)
   }
-  // HSK 5 and 6 sit above the newest snapshot, so the intervening word lists
-  // are added explicitly rather than assumed.
-  for (let l = 4; l < level; l += 1) {
+  for (let l = 3; l < level; l += 1) {
     const mid = OWN_LEVEL_FILES[language + '|' + system + '|' + l]
     if (mid) { const r = loadFile(mid); if (r) rows.push(...r) }
   }
   const ownPath = OWN_LEVEL_FILES[language + '|' + system + '|' + level]
   const own = ownPath && loadFile(ownPath)
-  if (!own) return rows.length > 0 ? rows : null
-  const cap = cfg.tiers[cfg.tiers.length - 1].cap
-  rows.push(...own.filter(v => v.sort_order <= cap))
-  return rows
+  if (own) rows.push(...own)
+  return rows.length > 0 ? rows : null
 }
 
 let manifest
