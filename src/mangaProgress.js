@@ -92,10 +92,21 @@ export function loadMangaProgress(storyId) {
   return prefsGet(progressKey(storyId)).then(sanitizeProgress).catch(() => ({ ...EMPTY_PROGRESS }))
 }
 
+// One write chain per story. The save below is a read-modify-write, and the
+// reader fires them from more than one place (scroll position, an answered
+// choice) — two in flight at once would both read the same `prev`, and the
+// second merge would silently drop the first's accumulation. Chaining makes the
+// sequence atomic in practice without a lock.
+const writeChains = new Map()
+
 // Read-modify-write rather than a blind merge: `tapped` and `choices` are
 // accumulating collections, and prefsMerge would replace them wholesale.
 export function saveMangaProgress(storyId, patch) {
-  return prefsGet(progressKey(storyId))
-    .then(prev => prefsMerge(progressKey(storyId), mergeProgress(prev, patch)))
+  const key = progressKey(storyId)
+  const next = (writeChains.get(key) || Promise.resolve())
+    .then(() => prefsGet(key))
+    .then(prev => prefsMerge(key, mergeProgress(prev, patch)))
     .catch(() => undefined)
+  writeChains.set(key, next)
+  return next
 }

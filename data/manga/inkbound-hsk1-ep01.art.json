@@ -1,5 +1,5 @@
 {
-  "_comment": "Panel art for 'The Inkbound' episode 1. Fetched into the repo by .github/workflows/manga-art.yml (task: node fetch-manga-art.mjs <this file>) — the agent sandbox has no route to the generation CDN, a GitHub runner does. The `file` names are what data/manga/inkbound-hsk1-ep01.json's panels[].art refer to; src/mangaEpisodes.test.js fails if the two ever disagree.",
+  "_comment": "Panel art for 'The Inkbound' episode 1. Fetched into the repo by .github/workflows/content-utils.yml, task `manga-art-fetch` (which runs fetch-manga-art.mjs on this file and commits the result) — the agent sandbox has no route to the generation CDN, a GitHub runner does. The `file` names are what data/manga/inkbound-hsk1-ep01.json's panels[].art refer to; src/mangaEpisodes.test.js fails if the two ever disagree.",
   "dir": "public/stories/inkbound/hsk1/ep01",
   "assets": [
     { "file": "panel-01-arrival.webp", "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260729_162905_bc520152-b8f4-47bd-a062-1ea6c6237286_min.webp" },

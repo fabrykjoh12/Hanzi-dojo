@@ -71,8 +71,14 @@ for (const asset of assets) {
     if (!res.ok) throw new Error('HTTP ' + res.status)
     const buf = Buffer.from(await res.arrayBuffer())
     // A CDN that answers an expired link with an HTML error page would otherwise
-    // be committed as a "webp" nobody can open until it reaches a browser.
-    if (buf.length < 2048) throw new Error('suspiciously small response (' + buf.length + ' bytes)')
+    // be committed as a "webp" nobody can open until it reaches a browser — and
+    // an error page can easily be bigger than any size threshold, so check the
+    // container's own signature: 'RIFF' at 0, 'WEBP' at 8.
+    if (buf.length < 12
+      || buf.subarray(0, 4).toString('ascii') !== 'RIFF'
+      || buf.subarray(8, 12).toString('ascii') !== 'WEBP') {
+      throw new Error('not a WebP container (' + buf.length + ' bytes) — expired link, or an error page?')
+    }
     mkdirSync(dirname(target), { recursive: true })
     writeFileSync(target, buf)
     console.log('  ✓ ' + file + ' (' + Math.round(buf.length / 1024) + ' KB)')

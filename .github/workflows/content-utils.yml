@@ -29,9 +29,9 @@ on:
         type: string
         default: ''
       manifest:
-        description: "manga-art-fetch / manga-publish only: the file to act on"
+        description: "manga-art-fetch / manga-publish only: the file to act on. Blank = that task's default (the .art.json for a fetch, the episode JSON for a publish)"
         type: string
-        default: data/manga/inkbound-hsk1-ep01.art.json
+        default: ''
       force:
         description: "manga-art-fetch only: re-fetch art that is already committed"
         type: boolean
@@ -65,42 +65,67 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          # Every dispatch input reaches the shell as an environment VARIABLE,
+          # never as ${{ }} interpolated into the script. Interpolation splices
+          # the value in as shell SOURCE, so a manifest containing a quote and a
+          # semicolon would run commands — in a job that holds the service key.
+          TASK: ${{ inputs.task }}
+          LANGUAGE: ${{ inputs.language }}
+          SYSTEM: ${{ inputs.system }}
+          LEVEL: ${{ inputs.level }}
+          TIER: ${{ inputs.tier }}
+          MANIFEST: ${{ inputs.manifest }}
+          FORCE: ${{ inputs.force }}
         run: |
           set -e
-          if [ "${{ inputs.task }}" = "story-images-apply" ]; then
+          if [ "$TASK" = "story-images-apply" ]; then
             node generate-story-images.mjs --apply data/story-covers.json
           fi
-          if [ "${{ inputs.task }}" = "publish-held" ]; then
+          if [ "$TASK" = "publish-held" ]; then
             TIER_FLAG=""
-            if [ -n "${{ inputs.tier }}" ]; then TIER_FLAG="--tier ${{ inputs.tier }}"; fi
-            node publish-stories.mjs --language "${{ inputs.language }}" --system "${{ inputs.system }}" --level "${{ inputs.level }}" $TIER_FLAG --apply
+            if [ -n "$TIER" ]; then TIER_FLAG="--tier $TIER"; fi
+            node publish-stories.mjs --language "$LANGUAGE" --system "$SYSTEM" --level "$LEVEL" $TIER_FLAG --apply
           fi
-          if [ "${{ inputs.task }}" = "fix-collisions" ]; then
-            node publish-stories.mjs --language "${{ inputs.language }}" --system "${{ inputs.system }}" --level "${{ inputs.level }}" --fix-collisions --apply
+          if [ "$TASK" = "fix-collisions" ]; then
+            node publish-stories.mjs --language "$LANGUAGE" --system "$SYSTEM" --level "$LEVEL" --fix-collisions --apply
           fi
-          if [ "${{ inputs.task }}" = "fix-vocab-kanji" ]; then
+          if [ "$TASK" = "fix-vocab-kanji" ]; then
             node fix-vocab-kanji.mjs
           fi
-          if [ "${{ inputs.task }}" = "fix-vocab-kanji-apply" ]; then
+          if [ "$TASK" = "fix-vocab-kanji-apply" ]; then
             node fix-vocab-kanji.mjs --apply
           fi
-          if [ "${{ inputs.task }}" = "manga-art-fetch" ]; then
-            node fetch-manga-art.mjs "${{ inputs.manifest }}" ${{ inputs.force && '--force' || '' }}
+          # The two manga tasks share one `manifest` input but need different
+          # files — a fetch reads the .art.json (urls), a publish reads the
+          # episode JSON (content). Blank means "this task's own default", so
+          # dispatching either one without typing a path does the right thing
+          # instead of failing with "Episode has no content".
+          if [ "$TASK" = "manga-art-fetch" ]; then
+            FILE="${MANIFEST:-data/manga/inkbound-hsk1-ep01.art.json}"
+            if [ "$FORCE" = "true" ]; then
+              node fetch-manga-art.mjs "$FILE" --force
+            else
+              node fetch-manga-art.mjs "$FILE"
+            fi
           fi
-          if [ "${{ inputs.task }}" = "manga-publish" ]; then
-            node publish-manga.mjs "${{ inputs.manifest }}" --apply
+          if [ "$TASK" = "manga-publish" ]; then
+            node publish-manga.mjs "${MANIFEST:-data/manga/inkbound-hsk1-ep01.json}" --apply
           fi
       - name: Commit fetched art
         if: inputs.task == 'manga-art-fetch'
+        env:
+          MANIFEST: ${{ inputs.manifest }}
+          BRANCH: ${{ github.ref_name }}
         run: |
           set -e
+          FILE="${MANIFEST:-data/manga/inkbound-hsk1-ep01.art.json}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          DIR=$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).dir)' "${{ inputs.manifest }}")
+          DIR=$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).dir)' "$FILE")
           git add -A "$DIR"
           if git diff --cached --quiet; then
             echo "No new art to commit."
             exit 0
           fi
-          git commit -m "art: fetch manga art from ${{ inputs.manifest }}"
-          git push origin HEAD:${{ github.ref_name }}
+          git commit -m "art: fetch manga art from $FILE"
+          git push origin "HEAD:$BRANCH"

@@ -146,8 +146,18 @@ describe('manga episodes', () => {
 
       it('every panel with art names a real file, and every art file is used', () => {
         const base = (ep.panels && ep.panels.meta && ep.panels.meta.art_base) || ''
+        const declared = built.panels.filter(p => p.art)
         const dir = new URL('../public' + base, import.meta.url)
-        if (!existsSync(dir)) return   // art not fetched into this checkout yet
+        // An episode that names art must HAVE that art — panel files are
+        // committed, so a missing directory means it was deleted or the
+        // art_base is wrong. Asserted rather than skipped: a bare `return` here
+        // made both checks below vanish from the run while the suite still
+        // reported green, which is the one thing a content gate must never do.
+        if (declared.length === 0) {
+          expect(existsSync(dir), 'no panel declares art, but ' + base + ' exists').toBe(false)
+          return
+        }
+        expect(existsSync(dir), 'art_base does not exist: public' + base).toBe(true)
         const onDisk = new Set(readdirSync(dir))
         const used = new Set()
         for (const panel of built.panels) {
@@ -224,10 +234,21 @@ describe('manga episodes', () => {
       // ── Vocabulary ──────────────────────────────────────────────────────
       const key = ep.language + '|' + ep.system + '|' + ep.level
       const vocabMap = vocabMapFor(key)
-      if (!vocabMap) return
 
-      const matcher = buildVocabMatcher(vocabMap, ep.language)
+      // The four checks below are the reason this file exists — they are what
+      // proves the episode is readable at its level. If the snapshot key ever
+      // stops matching (a renamed system, a new level), they must FAIL rather
+      // than quietly disappear and let the suite report green on an episode
+      // nobody validated.
+      it('has a vocabulary snapshot to validate the episode against', () => {
+        expect(vocabMap, 'no vocabulary snapshot for ' + key).toBeTruthy()
+      })
+
+      const matcher = vocabMap ? buildVocabMatcher(vocabMap, ep.language) : null
       const names = CHARACTER_READINGS[ep.language] || {}
+      // Guarded so a missing snapshot surfaces as the one clear failure above
+      // instead of four confusing ones underneath it.
+      if (!matcher) return
 
       it('every word is in the level word list or is a curated name', () => {
         const bad = []

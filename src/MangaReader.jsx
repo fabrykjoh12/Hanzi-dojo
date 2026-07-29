@@ -327,9 +327,16 @@ export default function MangaReader(props) {
           // The learner's own reply, once made, is a line of the story like any
           // other — same bubble, same tappable words, tinted so it reads as
           // theirs.
-          const replyBubble = panel.choice && Number.isInteger(picked)
+          // Indexed, not asserted: `picked` comes from durable storage, so an
+          // episode that has since been re-cut can hand back an index its choice
+          // no longer has. Reading `.beat` off the undefined that follows would
+          // take the whole reader down over a stale preference.
+          const chosen = panel.choice && Number.isInteger(picked)
+            ? panel.choice.options[picked]
+            : null
+          const replyBubble = chosen
             ? renderBubble(panel, {
-              beat: panel.choice.options[picked].beat,
+              beat: chosen.beat,
               kind: 'reply', side: 'right', top: 8,
               width: 78, tail: null, when: null,
             }, 'reply')

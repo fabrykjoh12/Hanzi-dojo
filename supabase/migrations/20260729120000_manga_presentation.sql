@@ -30,4 +30,11 @@ alter table public.stories
   drop constraint if exists stories_presentation_check;
 alter table public.stories
   add constraint stories_presentation_check
-  check (presentation in ('paced', 'chat', 'scene', 'manga'));
+  check (presentation in ('paced', 'chat', 'scene', 'manga')) not valid;
+
+-- NOT VALID: adding a CHECK the normal way scans every row of `stories` and
+-- blocks writes for the length of that scan. The constraint still applies to
+-- every INSERT and UPDATE from this point on — it just does not re-prove the
+-- rows already there, which the previous constraint already guaranteed. A later
+-- ordered migration can `validate constraint stories_presentation_check` when
+-- it is convenient to take the scan.
