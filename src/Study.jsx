@@ -27,6 +27,7 @@ import ChatMission from './ChatMission'
 import { buildMissionOffer } from './missionOffer'
 import { computeStudyTally } from './studyTally'
 import { sessionMix, bandTone, MIX_KEYS, MIX_LABELS } from './sessionMix'
+import { studyLayout } from './studyLayout'
 import {
   cardMarker, markerCardShadow, markerPillStyle, markerDotStyle, MARKER_DOT,
 } from './cardMarker'
@@ -157,7 +158,12 @@ function HeaderIconButton({ icon: Icon, label, onClick, disabled }) {
   )
 }
 
-function GradeButton({ grade, label, interval, bg, border, text, icon: Icon, onClick, suggested }) {
+function GradeButton({
+  grade, label, interval, bg, border, text, icon: Icon, onClick, suggested,
+  // Sizing comes from studyLayout.js so a short phone can fit all four grades
+  // on screen without ever dropping below a comfortable tap target.
+  minHeight = 76, labelSize = 14, intervalSize = 11, iconSize = 16,
+}) {
   const [hovered, setHovered] = useState(false)
   // Hover/suggested strengthens by swapping in the button's own border tone —
   // one step darker than its resting bg, given directly by the palette rather
@@ -170,7 +176,8 @@ function GradeButton({ grade, label, interval, bg, border, text, icon: Icon, onC
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        gap: '6px', minHeight: '76px', padding: '12px 8px',
+        gap: minHeight >= 68 ? '6px' : '3px',
+        minHeight: minHeight + 'px', padding: minHeight >= 68 ? '12px 8px' : '8px 4px',
         borderRadius: '16px',
         border: (suggested ? '2px solid ' : '1.5px solid ') + border,
         background: activeBg,
@@ -180,11 +187,11 @@ function GradeButton({ grade, label, interval, bg, border, text, icon: Icon, onC
         boxShadow: hovered ? '0 10px 22px rgba(24,24,27,0.08)' : 'none',
       }}
     >
-      <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: 750 }}>
-        <Icon size={16} strokeWidth={2} color={text} />
+      <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: labelSize + 'px', fontWeight: 750 }}>
+        <Icon size={iconSize} strokeWidth={2} color={text} />
         {label}
       </span>
-      <span style={{ fontSize: '11px', fontWeight: 650, color: 'var(--text-muted)' }}>
+      <span style={{ fontSize: intervalSize + 'px', fontWeight: 650, color: 'var(--text-muted)' }}>
         {interval}
       </span>
     </button>
@@ -256,6 +263,21 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const [mission, setMission] = useState(null)              // active running mission
 
   const isMobile = useIsMobile()
+  // The study screen is height-locked to the viewport on phones (see
+  // studyLayout.js), so it has to know how tall that viewport currently is —
+  // rotating the device or the address bar collapsing both change it.
+  const [viewportHeight, setViewportHeight] = useState(
+    typeof window !== 'undefined' ? window.innerHeight : 800
+  )
+  useEffect(() => {
+    function onResize() { setViewportHeight(window.innerHeight) }
+    window.addEventListener('resize', onResize)
+    window.addEventListener('orientationchange', onResize)
+    return () => {
+      window.removeEventListener('resize', onResize)
+      window.removeEventListener('orientationchange', onResize)
+    }
+  }, [])
   // The flashcard has no settings panel of its own — it simply follows the
   // reading font the learner picked in the readers, so the shape of the
   // character is the same wherever they meet it.
@@ -909,11 +931,49 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // still the load-time estimate; the rail's denominator comes from the live
   // queue so a growing session stays honest.
   const mix = sessionMix(queue, studied)
+
+  // Guided first-mission coaching for the current card (progressive disclosure).
+  // Null except during the first run's early cards. A calm banner above the
+  // card — never over the grade buttons; auto-advances as `studied` grows.
+  // Computed here (rather than at the render site) because it is one of the
+  // optional banners the layout has to budget vertical space for.
+  const firstMissionHint = firstRun ? firstMissionCardHint(studied, { flipped, isTyped }) : null
+
+  // All the size arithmetic lives in studyLayout.js. On a phone this returns a
+  // height-locked shell so the grade buttons can never fall below the fold.
+  const layout = studyLayout({
+    isMobile,
+    viewportHeight,
+    banners: (saveError ? 1 : 0) + (firstMissionHint ? 1 : 0) + (isJapanese ? 1 : 0),
+  })
+
+  // The recap and loading states are ordinary scrollable pages — only the card
+  // view is locked to one viewport.
   const pageShell = {
     minHeight: '100vh',
     position: 'relative',
     overflow: 'hidden',
     padding: isMobile ? '16px 14px 28px' : '20px 32px 36px',
+  }
+
+  // The card view: a fixed-height flex column on mobile (header rail pinned,
+  // card flexes, grade band pinned), the original growing page on desktop.
+  const studyShell = layout.fixed
+    ? {
+      height: layout.shellHeight,
+      maxHeight: layout.shellHeight,
+      position: 'relative',
+      overflow: 'hidden',
+      padding: layout.shellPadding,
+      display: 'flex',
+      flexDirection: 'column',
+    }
+    : { ...pageShell, padding: layout.shellPadding }
+
+  // Blocks above the card never shrink — the card absorbs the difference.
+  const railStyle = {
+    width: '100%', maxWidth: '680px', margin: '0 auto',
+    marginBottom: layout.headerGap + 'px', flexShrink: 0,
   }
 
 
@@ -989,7 +1049,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const showReadingLine = flipped && v.reading && !isJapanese
   // The character is the focal point of the redesigned card; `charFont` above
   // is whichever reading font the learner chose (readingFonts.js).
-  const charFontSize = isMobile ? '64px' : '90px'
+  const charFontSize = layout.wordSize + 'px'
   // Prefer the sentence the learner actually read (captured when they added the
   // word from a story) over the generic example — real context is more memorable.
   const sourceSentence = card.source_sentence || null
@@ -1035,11 +1095,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const isLeech = flipped && (card.lapses || 0) >= 4
   const leechChars = track.language === 'chinese' ? charBreakdown(v.word, v.reading) : []
   const showLeechBreakdown = leechChars.length > 1
-
-  // Guided first-mission coaching for the current card (progressive disclosure).
-  // Null except during the first run's early cards. A calm banner above the
-  // card — never over the grade buttons; auto-advances as `studied` grows.
-  const firstMissionHint = firstRun ? firstMissionCardHint(studied, { flipped, isTyped }) : null
 
   function submitTyped() {
     if (!typedValue.trim()) return
@@ -1090,10 +1145,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   }
 
   return (
-    <div style={pageShell}>
+    <div style={studyShell}>
       {saveError && (
         <div style={{
-          maxWidth: '680px', margin: '0 auto 18px',
+          width: '100%', maxWidth: '680px', margin: '0 auto', marginBottom: '18px', flexShrink: 0,
           background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: '#DC2626',
           padding: '14px 18px', borderRadius: '16px', fontSize: '13px', lineHeight: 1.5,
         }}>
@@ -1102,7 +1157,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         </div>
       )}
 
-      <div style={{ maxWidth: '680px', margin: '0 auto 14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ ...railStyle, display: 'flex', alignItems: 'center', gap: '12px' }}>
         <HeaderIconButton icon={X} label="Exit" onClick={onBack} />
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* The rail is the session's composition, not one flat number: work
@@ -1159,7 +1214,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       </div>
 
       {isJapanese && (
-        <div style={{ maxWidth: '680px', margin: '0 auto 14px', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ ...railStyle, display: 'flex', justifyContent: 'center' }}>
           <IconButton
             icon={BookOpenCheck}
             label={showFurigana ? 'Furigana on' : 'Furigana off'}
@@ -1176,7 +1231,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           role="status"
           aria-live="polite"
           style={{
-            maxWidth: '680px', margin: '0 auto 14px',
+            ...railStyle,
             display: 'flex', alignItems: 'center', gap: '9px',
             padding: '11px 15px', borderRadius: '14px',
             background: accentHex + '10', border: '1px solid ' + accentHex + '2A',
@@ -1188,10 +1243,20 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         </div>
       )}
 
-      <div style={{
-        maxWidth: '680px', margin: '0 auto',
-        display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', justifyItems: 'center',
-      }}>
+      {/* On mobile this is the flex column that owns the leftover height: the
+          card takes it (and scrolls internally), the grade band below never
+          moves. On desktop it stays the original single-column grid. */}
+      <div style={layout.fixed
+        ? {
+          width: '100%', maxWidth: '680px', margin: '0 auto',
+          display: 'flex', flexDirection: 'column',
+          flex: 1, minHeight: 0,
+        }
+        : {
+          maxWidth: '680px', margin: '0 auto',
+          display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', justifyItems: 'center',
+        }}
+      >
         <div
           onClick={() => !flipped && setFlipped(true)}
           aria-live="polite"
@@ -1199,7 +1264,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           tabIndex={!flipped ? 0 : undefined}
           aria-label={!flipped ? langChars + ' flashcard — tap to reveal the answer' : undefined}
           style={{
-            width: '100%', maxWidth: '680px', minHeight: '420px',
+            width: '100%', maxWidth: '680px',
+            // Desktop keeps its fixed 420px card; on mobile the card shrinks to
+            // whatever is left over instead of forcing the page to overflow.
+            minHeight: layout.cardMinHeight + 'px',
+            ...(layout.cardFlex ? { flex: layout.cardFlex } : {}),
             background: 'var(--surface)',
             border: '1px solid var(--border)', borderRadius: '26px',
             // The front-of-card status band — new vs. review only, never a
@@ -1208,8 +1277,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             // Geometry and tone live in cardMarker.js.
             boxShadow: markerCardShadow(marker),
             display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'space-between',
-            cursor: flipped ? 'default' : 'pointer', padding: '24px', position: 'relative',
-            perspective: '1200px',
+            cursor: flipped ? 'default' : 'pointer', padding: layout.cardPadding + 'px',
+            position: 'relative', perspective: '1200px',
           }}
         >
           {gradeColor && (
@@ -1304,7 +1373,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               flex: 1, minHeight: 0, overflowY: 'auto',
               display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center',
-              textAlign: 'center', padding: '34px 24px',
+              textAlign: 'center', padding: layout.contentPadding,
               transformOrigin: 'center', willChange: 'transform',
               animation: 'hd-flip-in 260ms ease',
             }}
@@ -1338,12 +1407,13 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                     {v.reading}
                   </div>
                 )}
-                <div style={{ fontSize: '19px', color: 'var(--text-muted)', marginTop: '10px', lineHeight: 1.45, fontWeight: 550 }}>
+                <div style={{ fontSize: layout.meaningSize + 'px', color: 'var(--text-muted)', marginTop: '10px', lineHeight: 1.45, fontWeight: 550 }}>
                   {cleanMeaning(v.meaning)}
                 </div>
                 {hasExample && (
                   <div style={{
-                    width: '100%', maxWidth: '430px', marginTop: '22px', paddingTop: '18px',
+                    width: '100%', maxWidth: '430px',
+                    marginTop: (layout.fixed ? '14px' : '22px'), paddingTop: (layout.fixed ? '12px' : '18px'),
                     borderTop: '1px solid var(--border)', textAlign: 'center',
                   }}>
                     {sourceSentence ? (
@@ -1462,17 +1532,23 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             )}
           </div>
 
-          <div style={{
-            minHeight: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            borderTop: '1px solid var(--surface-2)', paddingTop: '18px',
-          }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-faint)', fontWeight: 650 }}>
-              {flipped ? 'How well did you remember this?' : (isTyped ? 'Type the reading, then check' : 'Recall first, then reveal')}
-            </span>
-          </div>
+          {/* The prompt line is the first thing sacrificed on a short phone —
+              the grade buttons themselves are never negotiable. */}
+          {layout.showFooterHint && (
+            <div style={{
+              flexShrink: 0,
+              minHeight: layout.footerMinHeight + 'px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderTop: '1px solid var(--surface-2)', paddingTop: layout.footerPadTop + 'px',
+            }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-faint)', fontWeight: 650 }}>
+                {flipped ? 'How well did you remember this?' : (isTyped ? 'Type the reading, then check' : 'Recall first, then reveal')}
+              </span>
+            </div>
+          )}
         </div>
 
-        <div style={{ width: '100%', maxWidth: '680px', marginTop: '14px' }}>
+        <div style={{ width: '100%', maxWidth: '680px', marginTop: layout.gradeTopGap + 'px', flexShrink: 0 }}>
           {!flipped ? (
             isTyped ? (
               <div>
@@ -1531,10 +1607,14 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                     : <><X size={16} strokeWidth={2.4} color="#DC2626" /> You typed “{typedValue}”</>}
                 </div>
               )}
+              {/* One row of four on every width. The 2x2 mobile grid was the
+                  other half of why grading fell below the fold — two rows of
+                  76px buttons plus their gap is most of a phone's card area.
+                  studyLayout shrinks the buttons instead, never past 44px. */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, minmax(0, 1fr))',
-                gap: '10px',
+                gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                gap: layout.gradeGap + 'px',
               }}>
                 {[
                   { grade: 0, label: 'Again', icon: RotateCcw },
@@ -1553,6 +1633,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                     icon={item.icon}
                     onClick={handleGrade}
                     suggested={suggestedGrade === item.grade}
+                    minHeight={layout.gradeMinHeight}
+                    labelSize={layout.gradeLabelSize}
+                    intervalSize={layout.gradeIntervalSize}
+                    iconSize={layout.gradeIconSize}
                   />
                 ))}
               </div>

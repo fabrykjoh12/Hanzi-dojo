@@ -291,6 +291,13 @@ result. No "shall I?", no cost estimate first, no sample-then-confirm round
 trip unless the style is genuinely undecided and you'd be guessing. This is the
 one money-spending tool that does NOT follow the ask-first rule above.
 
+Since 2026-07-29 that standing authorisation is enforced by the harness, not
+just by this doc: `generate_image`, `job_display`, `show_generations` and
+`balance` are allow-listed in `.claude/settings.json`, so a cover-art run no
+longer stops on a permission prompt for every single image. The other
+Higgsfield tools (video, audio, publishing, TikTok, websites) still prompt —
+add one to the allow list only when a real task keeps hitting it.
+
 **CI runs the same three on every push and pull request**
 (`.github/workflows/ci.yml`), plus Playwright e2e (`.github/workflows/e2e.yml`).
 If it's red, it doesn't merge.

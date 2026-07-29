@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useReducer, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { fetchPagedSafe } from './supabasePaging'
 import { supabase } from './supabase'
 import { getTrackCards } from './data'
@@ -17,6 +18,7 @@ import { buildVocabIndex, searchVocabIndex } from './vocabIndex'
 import { dictSearchReducer, dictSearchView, initialDictSearch } from './dictSearchState'
 import { searchDict, getDictEntryById, getDictEntryByWord, addDictEntryToDeck, isHeadwordLookup } from './dictSearch'
 import DictEntryView from './DictEntryView'
+import { sheetOverlayStyle, sheetShellStyle, sheetHeaderStyle, sheetHandleStyle, sheetBodyStyle } from './sheetLayout'
 import { ArrowLeft, Search, Clock, X, WifiOff, AlertCircle } from 'lucide-react'
 
 // Built-in dictionary: search ANY word in the current language (every level, not
@@ -586,22 +588,24 @@ export default function Dictionary({ session, profile, track, onBack }) {
         onClose={() => setSelected(null)}
       />
 
-      {entryStack.length > 0 && (
-        <div onClick={closeEntry} className="app-overlay-viewport"
-             style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.14)' }}>
+      {/* Portaled to <body> on purpose: rendered in place the sheet lives inside
+          the shell's <main>, which sets position:relative + z-index and so forms
+          a stacking context — the sheet's own z-index:200 is scoped inside it
+          and loses to the sibling MobileNav (z-index:30). The nav then painted
+          over the sheet's bottom strip, so the last rows of a long entry were
+          unreachable however far you scrolled, and taps there hit the nav.
+          The header is pinned; only the entry body scrolls. */}
+      {entryStack.length > 0 && typeof document !== 'undefined' && createPortal(
+        <div onClick={closeEntry} className="app-overlay-viewport" style={sheetOverlayStyle()}>
           <div
             onClick={e => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-label="Dictionary entry"
-            style={{
-              width: '100%', maxWidth: '560px', maxHeight: '92%', minHeight: 0, overflowY: 'auto',
-              WebkitOverflowScrolling: 'touch',
-              background: 'var(--surface)', border: '1px solid var(--border)',
-              borderRadius: '20px 20px 0 0', padding: '10px 18px 26px',
-            }}
+            style={sheetShellStyle()}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', minHeight: TAP + 'px' }}>
+            <div style={sheetHandleStyle()} />
+            <div style={{ ...sheetHeaderStyle(), minHeight: TAP + 'px' }}>
               {entryStack.length > 1
                 ? <button onClick={() => setEntryStack(s => s.slice(0, -1))} style={ghostBtn}><ArrowLeft size={16} strokeWidth={1.85} color="var(--text-muted)" /> Back</button>
                 : <span />}
@@ -613,22 +617,25 @@ export default function Dictionary({ session, profile, track, onBack }) {
               </button>
             </div>
 
-            {entryError && (
-              <div role="status" style={{ margin: '0 0 10px', fontSize: '13px', color: 'var(--text-muted)' }}>{entryError}</div>
-            )}
+            <div style={sheetBodyStyle()} data-testid="dict-entry-scroll">
+              {entryError && (
+                <div role="status" style={{ margin: '0 0 10px', fontSize: '13px', color: 'var(--text-muted)' }}>{entryError}</div>
+              )}
 
-            <DictEntryView
-              entry={entryStack[entryStack.length - 1]}
-              accentHex={accentHex}
-              langFont={langFont}
-              ttsLang={ttsLang}
-              canAddToDeck={true}
-              inDeck={dictInDeck.has(entryStack[entryStack.length - 1].id)}
-              onAddToDeck={addDictToDeck}
-              onOpenEntry={openLinkedEntry}
-            />
+              <DictEntryView
+                entry={entryStack[entryStack.length - 1]}
+                accentHex={accentHex}
+                langFont={langFont}
+                ttsLang={ttsLang}
+                canAddToDeck={true}
+                inDeck={dictInDeck.has(entryStack[entryStack.length - 1].id)}
+                onAddToDeck={addDictToDeck}
+                onOpenEntry={openLinkedEntry}
+              />
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )
