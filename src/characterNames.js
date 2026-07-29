@@ -24,6 +24,9 @@ export const CHARACTER_READINGS = {
     // in no level, so without this the reader reads him as "old" + a character
     // it cannot place.
     '老陈': 'Lǎo Chén',
+    // The noodle shop, named on the page from HSK 3 t2 一个字 onward. 小李 is
+    // what he calls 李明 — a real form of address, and not derivable from 李明.
+    '老王': 'Lǎo Wáng', '小李': 'Xiǎo Lǐ', '小周': 'Xiǎo Zhōu',
   },
   // Japanese story protagonists (serial + legacy story sets). Role nouns
   // (おかあさん、おじいさん、せんせい…) are ordinary vocabulary and resolve
