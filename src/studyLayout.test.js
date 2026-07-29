@@ -108,7 +108,7 @@ describe('studyLayout — mobile locks the screen to one viewport', () => {
 describe('studyLayout — everything shrinks monotonically', () => {
   const shrinking = ['wordSize', 'meaningSize', 'cardPadding', 'gradeMinHeight',
     'gradeGap', 'gradeTopGap', 'headerGap', 'titleSize', 'gradeLabelSize',
-    'gradeIntervalSize', 'gradeIconSize', 'footerPadTop']
+    'gradeIntervalSize', 'footerPadTop']
 
   const layouts = [
     studyLayout({ isMobile: false, viewportHeight: 1000 }),

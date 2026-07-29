@@ -158,11 +158,14 @@ function HeaderIconButton({ icon: Icon, label, onClick, disabled }) {
   )
 }
 
+// Word and interval only — no icon. Four grades sit in one row, so each button
+// is a narrow column; an icon beside the label crowds it and forces the word to
+// shrink or wrap. The colour already carries the meaning the icon was adding.
 function GradeButton({
-  grade, label, interval, bg, border, text, icon: Icon, onClick, suggested,
+  grade, label, interval, bg, border, text, onClick, suggested,
   // Sizing comes from studyLayout.js so a short phone can fit all four grades
   // on screen without ever dropping below a comfortable tap target.
-  minHeight = 76, labelSize = 14, intervalSize = 11, iconSize = 16,
+  minHeight = 76, labelSize = 14, intervalSize = 11,
 }) {
   const [hovered, setHovered] = useState(false)
   // Hover/suggested strengthens by swapping in the button's own border tone —
@@ -187,8 +190,7 @@ function GradeButton({
         boxShadow: hovered ? '0 10px 22px rgba(24,24,27,0.08)' : 'none',
       }}
     >
-      <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: labelSize + 'px', fontWeight: 750 }}>
-        <Icon size={iconSize} strokeWidth={2} color={text} />
+      <span style={{ fontSize: labelSize + 'px', fontWeight: 750 }}>
         {label}
       </span>
       <span style={{ fontSize: intervalSize + 'px', fontWeight: 650, color: 'var(--text-muted)' }}>
@@ -1617,10 +1619,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                 gap: layout.gradeGap + 'px',
               }}>
                 {[
-                  { grade: 0, label: 'Again', icon: RotateCcw },
-                  { grade: 1, label: 'Hard', icon: AlertTriangle },
-                  { grade: 2, label: 'Good', icon: Check },
-                  { grade: 3, label: 'Easy', icon: Sparkles },
+                  { grade: 0, label: 'Again' },
+                  { grade: 1, label: 'Hard' },
+                  { grade: 2, label: 'Good' },
+                  { grade: 3, label: 'Easy' },
                 ].map(item => (
                   <GradeButton
                     key={item.grade}
@@ -1630,13 +1632,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                     bg={GRADE_STYLES[item.grade].bg}
                     border={GRADE_STYLES[item.grade].border}
                     text={GRADE_STYLES[item.grade].text}
-                    icon={item.icon}
                     onClick={handleGrade}
                     suggested={suggestedGrade === item.grade}
                     minHeight={layout.gradeMinHeight}
                     labelSize={layout.gradeLabelSize}
                     intervalSize={layout.gradeIntervalSize}
-                    iconSize={layout.gradeIconSize}
                   />
                 ))}
               </div>
