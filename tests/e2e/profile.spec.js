@@ -1,4 +1,4 @@
-import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
+import { authedTest as test, expect, ACTIVE_VOCAB_COUNT } from '../fixtures/mockSupabase.js';
 
 // Month-in-review recap on the Profile screen. We override daily_activity for
 // the current month so the enriched headline + best-day line are deterministic.
@@ -144,13 +144,18 @@ test.describe('Profile — month in review', () => {
   test('shows the known-word map with reading reach', async ({ page }) => {
     await page.goto('/profile');
 
-    // The map heading and a readable-of-total summary render from the mock vocab
-    // (7 active words: 5 known, 2 learning → 5 readable).
+    // The map heading and a readable-of-total summary render from the mock vocab.
+    // 5 readable is a property of the mock DECK; the total is the size of the
+    // mock curriculum, so it is read from the fixture — adding words for a new
+    // story is a content change and must not fail this spec.
+    const total = ACTIVE_VOCAB_COUNT;
     await expect(page.getByText('Known-word map')).toBeVisible();
-    await expect(page.getByText(/You can read 5 of 7 words so far/i)).toBeVisible();
+    await expect(page.getByText(new RegExp('You can read 5 of ' + total + ' words so far', 'i'))).toBeVisible();
     // Its legend surfaces the buckets.
     await expect(page.getByText(/^Known \(5\)$/)).toBeVisible();
-    // The level bar exposes its numbers to screen readers.
-    await expect(page.getByRole('img', { name: /5 of 7 words readable/i })).toBeVisible();
+    // The level bar exposes its numbers to screen readers. This one is PER
+    // LEVEL, so it keeps its literals: the mock deck's five known words are all
+    // HSK 2, and that stays true however much vocabulary other levels gain.
+    await expect(page.getByRole('img', { name: /HSK 2: 5 of 7 words readable/i })).toBeVisible();
   });
 });

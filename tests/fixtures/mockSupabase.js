@@ -207,6 +207,13 @@ const STORY_QUESTIONS = [
 
 const TABLE_FIXTURES = { profiles: PROFILE, language_tracks: TRACK, vocabulary: VOCAB, cards: CARDS, stories: STORIES, story_reads: [], story_questions: STORY_QUESTIONS };
 
+// How many active words the mock curriculum holds. The profile's known-word map
+// is a proportion of THIS, so it is derived rather than written as a literal —
+// adding vocabulary for a new story must not break a spec about a different
+// screen. (How many of them are readable is a property of the mock DECK, not the
+// curriculum, and stays asserted as a literal in the spec.)
+export const ACTIVE_VOCAB_COUNT = VOCAB.filter(v => v.is_active).length
+
 export const SESSION = {
   access_token: 'mock', token_type: 'bearer', expires_in: 3600, expires_at: 4102444800,
   refresh_token: 'mock',
