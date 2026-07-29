@@ -24,7 +24,10 @@
     "管理员",
     "男人",
     "女士",
-    "爷爷"
+    "爷爷",
+    "客人",
+    "先生",
+    "叔叔"
   ],
   "_role_labels_comment": "Generic speaker labels — not personal names, so they never get the reader's Name popup and never need CHARACTER_READINGS entries. Single source of truth: src/authoredStories.test.js and check-authored-stories.mjs both read this list.",
   "characters": [
@@ -200,6 +203,15 @@
       "speech": "practical instructions before greetings ('mind that side, I haven't done it yet'); answers questions with the fact, never the feeling",
       "never": "complains, asks anyone for anything, leaves a floor half done",
       "first_appeared": "HSK 4 t1 五楼的灯"
+    },
+    {
+      "name": "老王",
+      "pinyin": "Lǎo Wáng",
+      "role": "the noodle shop, thirty years behind the counter",
+      "traits": "cooks by feel and says cooking does not need eyes; has fed children whose parents could not pay and never mentioned it; refuses to say a bad word about a competitor whose food he privately thinks is better than his own",
+      "speech": "short, flat, deflects thanks; ends an argument by going to wash something already clean",
+      "never": "complains about business, badmouths a rival, takes credit",
+      "first_appeared": "HSK 3 t2 一个字 (the shop itself is in the corpus from HSK 1)"
     }
   ],
   "locations": [
@@ -415,6 +427,30 @@
       "premise": "someone is sweeping the stairs of a building nobody has lived in for two years",
       "register": "quiet mystery, humane answer",
       "status": "published — the corpus's first mystery-shaped season; ties to 奶奶's sixty years in the old building"
+    },
+    {
+      "level": 3,
+      "tier": 2,
+      "title": "一个字 (authored, 6 ch)",
+      "premise": "a boy writes 卖 where he meant 买 and the mistake travels the length of the street ahead of him",
+      "register": "farce, warm landing",
+      "status": "published — the corpus's first comedy. The whole plot is one hanzi, and both 买 and 卖 are HSK 1, so the reader is ahead of every character in it"
+    },
+    {
+      "level": 5,
+      "tier": 2,
+      "title": "对面的新店 (authored, 6 ch)",
+      "premise": "a chain opens across the road from a thirty-year-old noodle shop",
+      "register": "adult, unsentimental",
+      "status": "published — the corpus had no economics. It does not end in winning, because that is not what happens; it ends in a man saying out loud that he is second"
+    },
+    {
+      "level": 6,
+      "tier": 1,
+      "title": "大毛是从哪儿来的 (authored, 6 ch)",
+      "premise": "five people remember the street cat's arrival five incompatible ways, and three of them remember being the one who fed him first",
+      "register": "quiet, formally structured as interviews",
+      "status": "published — needs HSK 6 (记忆/版本/矛盾/细节/事实/确定) to state its own problem, which is that memory is not evidence"
     }
   ],
   "_strands": "Two strands. 这条街 (HSK 1-6, contemporary, 李明 and the street) is the main one. The sea strand (HSK 1 t3 → 2 t3 → 3 t3, 18 chapters) is a separate continuity with its own cast, designed so a reader climbing three levels reads one continuous story whose plot can only resolve once the grammar can express a past. The two do not cross over."
