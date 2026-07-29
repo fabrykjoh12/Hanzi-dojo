@@ -34,6 +34,11 @@ const verbose = args.includes('--verbose')
 // data/hsk1.json and data/hsk2.json are empty files, and the HSK 1-2 words only
 // exist in the snapshots.
 const OWN_LEVEL_FILES = {
+  // HSK 1 has no word list of its own either (data/hsk1.json is an empty file),
+  // so every HSK 1 story was silently "skipped — no vocabulary list available".
+  // The level with the tightest pool in the app — 300 words, no 可是, no 因为,
+  // barely a conjunction — was the one level nothing was checking.
+  'chinese|hsk_3|1': 'data/hsk1-vocab-snapshot.json',
   'chinese|hsk_3|3': 'data/hsk3.json',
   'chinese|hsk_3|4': 'data/hsk4.json',
   'chinese|hsk_3|5': 'data/hsk5.json',
@@ -185,7 +190,9 @@ for (const s of manifest) {
   // Any label ending in a speech or writing verb is narration, not a name.
   // 是 and 的 catch the reported-speech shapes ("他写的是：…", "上面的字是：…")
   // that the verb endings miss. No character name ends in any of these.
-  const NARRATION_TAIL = ['说', '写', '着', '问', '道', '喊', '答', '是', '的']
+  // 想 catches reported *thought* ("他想：…"), which is as common in a story as
+  // reported speech and reads as a character named 他想.
+  const NARRATION_TAIL = ['说', '写', '着', '问', '道', '喊', '答', '是', '的', '想']
   const storySpeakers = []
   const narrationColons = []
   for (const line of (s.content || '').split('\n')) {
