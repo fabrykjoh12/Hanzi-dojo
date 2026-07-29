@@ -120,6 +120,44 @@ test: it should exist because it can only be told this way.
 
 ---
 
+## 2c. The third strand: 五族城
+
+A 12-chapter secondary-world season at **HSK 2 t3**, self-contained — it does
+not climb levels and does not cross over with 这条街 or the sea. A human named
+阿山, who is mediocre at everything, founds a city on empty land and persuades
+five non-human peoples to live in it.
+
+**The world rule: each people's gift and each people's problem are the same
+fact.** Nothing here is a "strength and a weakness" — it is one property,
+described twice.
+
+- **石族** live three hundred years and build things that outlast everyone, so
+  they are also too slow to be any use in a crisis.
+- **风族** sicken if they stay anywhere past three months, so they are free and
+  are never trusted.
+- **树族** must root themselves in one place and can never go more than thirty
+  li from it again, so they are utterly loyal and utterly trapped.
+- **夜族** cannot be in sunlight, so they guard the city every night of its life
+  and are seen by almost nobody.
+- **火族** are dead by forty, so they are brave, and reckless for the same reason.
+
+阿山's gift is having no gift: he can take nothing, he is not time, and nobody
+is afraid of him, which is why all five will talk to him and will not talk to
+each other (ch8 is where this is said out loud). Ch7 gives all five a true and
+incompatible claim to owning the city; ch10 builds the defence out of every
+people's *weakness* rather than their strength; ch12 solves the Wind folk by
+rotation — twenty always present, never the same twenty.
+
+**This season is authored at a declared lower bar.** The world cannot be said in
+85% HSK 2, so its entries carry `world: true`, `min_coverage: 0.80` and
+`max_reach: 22`, which `check-authored-stories.mjs` honours and always reports.
+It lands 86–92% in practice. The reach lexicon is small and relentlessly
+repeated — 族, 城, 石, 火, 夜, 风, 井, 种, 死 — because a fantasy world at HSK 2
+can afford about a dozen new nouns, not a glossary. Use `world: true` only for a
+season that genuinely cannot exist at the tier bar, and say why in the canon.
+
+---
+
 ## 3. The cast
 
 Full sheets live in the canon file; speech style and never-dos also live in

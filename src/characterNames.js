@@ -27,6 +27,9 @@ export const CHARACTER_READINGS = {
     // The noodle shop, named on the page from HSK 3 t2 一个字 onward. 小李 is
     // what he calls 李明 — a real form of address, and not derivable from 李明.
     '老王': 'Lǎo Wáng', '小李': 'Xiǎo Lǐ', '小周': 'Xiǎo Zhōu',
+    '阿山': 'Ā Shān', '大石': 'Dà Shí', '木青': 'Mù Qīng',
+    '夜白': 'Yè Bái', '火三': 'Huǒ Sān', '张平': 'Zhāng Píng',
+    '阿风': 'Ā Fēng',
   },
   // Japanese story protagonists (serial + legacy story sets). Role nouns
   // (おかあさん、おじいさん、せんせい…) are ordinary vocabulary and resolve

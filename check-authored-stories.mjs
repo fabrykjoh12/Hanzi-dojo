@@ -206,9 +206,30 @@ for (const s of manifest) {
     }
   }
 
+  // A story may lower its own bar, but only by saying so out loud in the data.
+  // This exists for ONE case: a season whose subject genuinely needs a larger
+  // fixed vocabulary than the tier assumes — a fantasy world has to be able to
+  // say 城, 族, 墙, 火, 夜 or it cannot be told at all, and writing around them
+  // produces worse Chinese than teaching them. The words are still declared,
+  // still repeated, and still capped; what moves is the threshold, per story,
+  // visibly, in `data/authored-stories.json`.
+  //
+  // It is deliberately NOT a way to let a sloppy story through: a story with a
+  // sprawling one-off vocabulary looks exactly the same to this check as one
+  // with a tight recurring set, so the number here is a promise the author is
+  // making about the SHAPE of the reach set, not just its size. Keep using the
+  // tier default unless the season's premise really cannot fit inside it.
+  const bar = {
+    ...tier,
+    lines: [0, Number.MAX_SAFE_INTEGER],
+    ...(typeof s.min_coverage === 'number' ? { minCov: s.min_coverage } : {}),
+    ...(typeof s.max_reach === 'number' ? { maxMisses: s.max_reach } : {}),
+  }
+  const lowered = bar.minCov !== tier.minCov || bar.maxMisses !== tier.maxMisses
+
   const r = validateStory(s.content, {
     pool,
-    tier: { ...tier, lines: [0, Number.MAX_SAFE_INTEGER] },
+    tier: bar,
     language: s.language,
     speakers: storySpeakers,
     extraNames: (s.language === 'chinese' ? ['大毛'] : [])
@@ -229,6 +250,13 @@ for (const s of manifest) {
   const advisories = []
   if (r.lineCount < minLines) {
     advisories.push('shorter than the tier target (' + r.lineCount + ' lines vs ' + minLines + ')')
+  }
+  // Always say when a story was judged against its own bar rather than the
+  // tier's, so a lowered threshold can never pass quietly.
+  if (lowered) {
+    advisories.push('judged at a declared lower bar: ' + Math.round(bar.minCov * 100) + '% / '
+      + bar.maxMisses + ' reach words (tier default is ' + Math.round(tier.minCov * 100) + '% / '
+      + tier.maxMisses + ')')
   }
   // Advisory, not failure: new characters are allowed — but they must not stay
   // invisible, or the next season won't know they exist.

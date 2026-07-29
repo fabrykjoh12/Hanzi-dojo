@@ -28,7 +28,8 @@
     "客人",
     "先生",
     "叔叔",
-    "学生"
+    "学生",
+    "年轻人"
   ],
   "_role_labels_comment": "Generic speaker labels — not personal names, so they never get the reader's Name popup and never need CHARACTER_READINGS entries. Single source of truth: src/authoredStories.test.js and check-authored-stories.mjs both read this list.",
   "characters": [
@@ -222,6 +223,69 @@
       "speech": "flat declaratives, repeats a number back instead of answering, never asks for help until he physically cannot stand",
       "never": "blames anyone else for a time, stops mid-run, pretends a result was better than it was",
       "first_appeared": "HSK 1 t3 八个人，我第八"
+    },
+    {
+      "name": "阿山",
+      "pinyin": "Ā Shān",
+      "role": "《五族城》— the human who founds the city, twenty-five in ch1, mid-thirties by ch12",
+      "traits": "average at everything and has stopped minding; asks the question everyone else is too proud to ask; remembers what each people cannot do and builds around it rather than asking them to change",
+      "speech": "short sentences, asks more than he answers, says 我什么都不会 as a statement of fact rather than an apology",
+      "never": "claims to lead, picks one people over another, promises something he cannot build",
+      "first_appeared": "HSK 2 t3 没有人的地方"
+    },
+    {
+      "name": "大石",
+      "pinyin": "Dà Shí",
+      "role": "《五族城》— Stone elder, two hundred and forty years old, builds things meant to outlast everyone present",
+      "traits": "answers three days after the question; measures in centuries and is genuinely puzzled that others don't; the first to say no to 阿山 and the one who explains, in ch8, what 阿山 is actually for",
+      "speech": "slow, few words, long pauses written as narration; states what will still be standing in three hundred years",
+      "never": "hurries, changes a decision under pressure, builds anything temporary",
+      "first_appeared": "HSK 2 t3 没有人的地方"
+    },
+    {
+      "name": "阿风",
+      "pinyin": "Ā Fēng",
+      "role": "《五族城》— Wind folk, twenty, falls ill if she stays anywhere past three months",
+      "traits": "free because she cannot stay, and never trusted for the same reason; the one who says 这不是我们的城 out loud in ch7; the citizenship-by-rotation answer in ch12 is hers to accept",
+      "speech": "quick, light, deflects with a joke and then says the hard thing flatly one line later",
+      "never": "promises to stay, complains about leaving, lets anyone see her count the days",
+      "first_appeared": "HSK 2 t3 风族不住下"
+    },
+    {
+      "name": "木青",
+      "pinyin": "Mù Qīng",
+      "role": "《五族城》— Tree folk, must plant herself in one place and can never go more than thirty li from it afterwards",
+      "traits": "grows the city's food and cannot flee it; loyal because she is rooted, which she refuses to let anyone call a virtue; the one who points out that if the city falls, the others walk and she dies",
+      "speech": "patient, concrete, talks in growing seasons; says 我们不能走 without self-pity",
+      "never": "asks to be moved, resents the ones who can leave out loud, plants somewhere she has not thought about for a year",
+      "first_appeared": "HSK 2 t3 种下去"
+    },
+    {
+      "name": "夜白",
+      "pinyin": "Yè Bái",
+      "role": "《五族城》— Night folk, cannot be in sunlight, so guards the city through every night of its life",
+      "traits": "knows the city better than anyone and is seen by almost no one; keeps count of everything; the first to see the army come in ch11",
+      "speech": "quiet, precise, reports numbers and times; rarely says anything about himself",
+      "never": "goes out in daylight, raises his voice, asks for thanks",
+      "first_appeared": "HSK 2 t3 白天和晚上"
+    },
+    {
+      "name": "火三",
+      "pinyin": "Huǒ Sān",
+      "role": "《五族城》— Fire folk, nineteen, will not live past forty and knows it",
+      "traits": "brave because time is short and reckless for the same reason; stands in front when outsiders come; wants someone — anyone — to just decide",
+      "speech": "loud, impatient, demands a straight answer; 都对不行 is his whole argument",
+      "never": "waits, hedges, backs down from a fight he started",
+      "first_appeared": "HSK 2 t3 火族来了"
+    },
+    {
+      "name": "张平",
+      "pinyin": "Zhāng Píng",
+      "role": "《五族城》— envoy of the twenty-thousand-strong human city beyond the mountain; the season's antagonist",
+      "traits": "reasonable, patient, offers 阿山 the land and the title if he expels the other five; withdraws in ch11 after counting the cost rather than after losing a battle",
+      "speech": "calm, transactional, never threatens directly — states what will happen and lets it land",
+      "never": "insults anyone, loses his temper, breaks a deadline he set",
+      "first_appeared": "HSK 2 t3 山那边的人"
     }
   ],
   "locations": [
@@ -485,6 +549,14 @@
       "premise": "eleven schools, two places, and a boy from another school who runs sixteen minutes",
       "register": "shonen, the reckoning",
       "status": "published — HSK 3 adds 比赛/坚持/努力/认真/决定/相信, which is the vocabulary shonen actually runs on. He does not win; he takes ninety seconds off himself and shakes the rival's hand"
+    },
+    {
+      "level": 2,
+      "tier": 3,
+      "title": "五族城 (authored, 12 ch)",
+      "premise": "a human with no talent founds a city for five peoples whose gift and whose flaw are the same fact",
+      "register": "fantasy world-building, slow and civic — the drama is who a city belongs to, not who wins a fight",
+      "status": "published — the first HSK 2 season authored at a declared 80% bar (world: true, min_coverage 0.80, max_reach 22) so the world could be said at all; lands 86–92% in-pool. Stone build permanently and cannot hurry; Wind sicken if they stay past three months; Tree must root and then cannot travel; Night cannot take sunlight; Fire die by forty. Ch10 builds the defence out of every people's weakness rather than their strength; ch12 makes the Wind citizens by rotation — twenty always present, never the same twenty"
     }
   ],
   "_strands": "Two strands. 这条街 (HSK 1-6, contemporary, 李明 and the street) is the main one. The sea strand (HSK 1 t3 → 2 t3 → 3 t3, 18 chapters) is a separate continuity with its own cast, designed so a reader climbing three levels reads one continuous story whose plot can only resolve once the grammar can express a past. The two do not cross over."

@@ -276,18 +276,33 @@ describe('authored stories validate against the level vocabulary', () => {
       // story, and few enough that a reader meets the same word repeatedly
       // instead of meeting a different one every line. Anything undeclared still
       // fails, exactly as before.
-      // The cap is 8 rather than a tighter number because a scene story with a
-      // concrete subject (a zoo: lion, monkey, elephant, ice cream) legitimately
-      // needs that many nouns, and they repeat within the story. Prose chapters
-      // should sit far below it — 老鼠找丈夫 runs on 4.
+      // The everyday cap is 8: a scene story with a concrete subject (a zoo:
+      // lion, monkey, elephant, ice cream) legitimately needs that many nouns,
+      // and they repeat. Prose chapters should sit far below it — 老鼠找丈夫
+      // runs on 4.
+      //
+      // WORLD_CAP is for one deliberate exception, raised at the maintainer's
+      // explicit request: a season set somewhere that is not this world. A
+      // fantasy city has to be able to say 城, 族, 墙, 火, 夜 — write around
+      // those and you get worse Chinese, not less of it. Such a season declares
+      // `world: true` and gets 16.
+      //
+      // The number is not the real guard; the SHAPE of the set is. Sixteen
+      // words repeated across twelve chapters is a small vocabulary taught by
+      // saturation. Sixteen different words per chapter is a story nobody can
+      // read, and this test cannot tell those apart — so `world: true` is a
+      // claim the author is making, and the coverage check in
+      // check-authored-stories.mjs is what actually holds it up.
+      const WORLD_CAP = 16
+      const cap = s.world ? WORLD_CAP : 8
       const declaredReach = new Set(s.reach_words || [])
       const allowedReach = s.language === 'chinese'
         ? new Set([...declaredReach, ...CN_COMMON_REACH])
         : declaredReach
-      it('declared reach words stay few (≤ 8) and are real words', () => {
+      it('declared reach words stay few and are real words', () => {
         // Only the story's OWN reach words count against the cap; the shared
         // common set is corpus-wide and deliberately uncapped.
-        expect(declaredReach.size, 'too many reach words: ' + [...declaredReach].join('、')).toBeLessThanOrEqual(8)
+        expect(declaredReach.size, 'too many reach words: ' + [...declaredReach].join('、')).toBeLessThanOrEqual(cap)
         for (const w of declaredReach) {
           expect(CN_COMMON_REACH.has(w), 'already a common reach word, drop it: ' + w).toBe(false)
         }
