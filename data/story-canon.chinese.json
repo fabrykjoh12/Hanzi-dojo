@@ -21,7 +21,8 @@
     "姑娘",
     "奶奶",
     "阿姨",
-    "管理员"
+    "管理员",
+    "男人"
   ],
   "_role_labels_comment": "Generic speaker labels — not personal names, so they never get the reader's Name popup and never need CHARACTER_READINGS entries. Single source of truth: src/authoredStories.test.js and check-authored-stories.mjs both read this list.",
   "characters": [
@@ -143,6 +144,51 @@
       "speech": "measured; arrives at conclusions aloud",
       "never": "blames anyone for the thirty years",
       "first_appeared": "HSK 6 t3 一年一封"
+    },
+    {
+      "name": "小七",
+      "pinyin": "Xiǎo Qī",
+      "role": "the sea strand — stowaway, 12",
+      "traits": "counts things; will not stop asking a question once he has started; waited on a dock every day for a year. His father was left on an island when he was nine",
+      "speech": "flat declaratives and arithmetic; repeats the last thing said to him while he works it out",
+      "never": "lies to protect himself, lets an adult end a conversation",
+      "first_appeared": "HSK 1 t3 第七个人"
+    },
+    {
+      "name": "大风",
+      "pinyin": "Dà Fēng",
+      "role": "the sea strand — captain",
+      "traits": "says less than any other character in the corpus; knew who 小七 was on the first day and said nothing for eleven; three years ago he was on the deck and did not say no either",
+      "speech": "one to four words; answers a question only when refusing to is worse",
+      "never": "explains himself unprompted, raises his voice, claims he was right",
+      "first_appeared": "HSK 1 t3 第七个人"
+    },
+    {
+      "name": "阿水",
+      "pinyin": "Ā Shuǐ",
+      "role": "the sea strand — cook",
+      "traits": "miscounted the water three years ago and has set aside four containers a day, a thousand days running, without ever drinking one; feeds everyone more than he eats",
+      "speech": "imperatives about food; long silences before anything true",
+      "never": "asks to be forgiven, stops taking the four",
+      "first_appeared": "HSK 1 t3 海上都是海"
+    },
+    {
+      "name": "老九",
+      "pinyin": "Lǎo Jiǔ",
+      "role": "the sea strand — oldest crewman, twenty years aboard",
+      "traits": "knows everything and rations it harder than the captain does; opens and closes the strand with the same line about how many people the ship has",
+      "speech": "short refusals with the reason attached",
+      "never": "gossips, gives a name he has decided not to give",
+      "first_appeared": "HSK 1 t3 第七个人"
+    },
+    {
+      "name": "阿力",
+      "pinyin": "Ā Lì",
+      "role": "the sea strand — crewman",
+      "traits": "says out loud what the rest of the crew is thinking, three years ago and again now; the argument for turning back always comes from him",
+      "speech": "blunt, practical, defensive when he is right for the wrong reason",
+      "never": "acts alone",
+      "first_appeared": "HSK 2 t3 十九个"
     }
   ],
   "locations": [
@@ -318,6 +364,31 @@
       "premise": "the answer arrives in person; a correspondence restarts in a new generation",
       "register": "elegiac, warm close",
       "status": "published"
+    },
+    {
+      "level": 1,
+      "tier": 3,
+      "title": "第七个人 (sea strand 1/3, authored, 6 ch)",
+      "premise": "a stowaway is given one job — count the water — on a ship that will not say where it is going",
+      "register": "spare, watchful",
+      "status": "published — HSK 1 has no 因为/但是/告诉, so nobody in this part can explain anything. The mystery is stated entirely in arithmetic."
+    },
+    {
+      "level": 2,
+      "tier": 3,
+      "title": "阿水的水 (sea strand 2/3, authored, 6 ch)",
+      "premise": "the water thief, and why a ship that left with seven people came back with six",
+      "register": "tightening",
+      "status": "published — HSK 2 adds 因为/但是/所以/告诉, so this is the part where people give reasons, mostly wrong ones"
+    },
+    {
+      "level": 3,
+      "tier": 3,
+      "title": "三年前 (sea strand 3/3, authored, 6 ch)",
+      "premise": "nobody decided to leave a man on an island; he offered and six people did not say no",
+      "register": "reckoning",
+      "status": "published — HSK 3 adds 以前/才/决定/发现/相信/一样, which is the machinery for holding a past and judging it. The answer waits until here because the language does."
     }
-  ]
+  ],
+  "_strands": "Two strands. 这条街 (HSK 1-6, contemporary, 李明 and the street) is the main one. The sea strand (HSK 1 t3 → 2 t3 → 3 t3, 18 chapters) is a separate continuity with its own cast, designed so a reader climbing three levels reads one continuous story whose plot can only resolve once the grammar can express a past. The two do not cross over."
 }
