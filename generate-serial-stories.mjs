@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { premiumLlm } from './llm.mjs'
 import { validateStory as validate } from './storyValidation.mjs'
-import { CONFIGS } from './storyLevels.mjs'
+import { CONFIGS, SEASON_SEEDS } from './storyLevels.mjs'
 
 // Serial graded-reader generator — the replacement for generate-stories.mjs's
 // one-shot vignettes. Each tier becomes one continuing storyline ("season") of
