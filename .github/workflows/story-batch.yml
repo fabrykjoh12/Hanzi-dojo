@@ -145,6 +145,7 @@ jobs:
           DEADLINE=$(( $(date +%s) + BUDGET_MINUTES * 60 ))
           echo "## Level $LEVEL" >> "$GITHUB_STEP_SUMMARY"
           ok=0
+          published=0
           for round in $(seq 1 "$ROUNDS"); do
             now=$(date +%s)
             if [ "$now" -ge "$DEADLINE" ]; then
@@ -158,7 +159,15 @@ jobs:
             if node generate-serial-stories.mjs \
                  --language "$LANGUAGE" --system "$SYSTEM" --level "$LEVEL" \
                  --season-offset "$OFFSET" $TIER_FLAG 2>&1 | tee round.log; then
-              ok=$((ok + 1))
+              # Exiting 0 is not the same as producing stories. The generator
+              # skips a tier whose season plan fails (a provider 429, say) and
+              # still exits clean, so a whole night can burn down to "Published
+              # 0" while every job reports success. Count the stories, not the
+              # exit code.
+              PUB=$(sed -n 's/^All done. Published \([0-9][0-9]*\).*/\1/p' round.log | tail -n 1)
+              [ -n "$PUB" ] || PUB=0
+              published=$((published + PUB))
+              if [ "$PUB" -gt 0 ]; then ok=$((ok + 1)); fi
               tail -n 1 round.log | sed "s/^/- Round $round: /" >> "$GITHUB_STEP_SUMMARY"
             else
               # A failed round (provider outage, bad plan) must not abandon the
@@ -168,8 +177,9 @@ jobs:
             fi
             echo "::endgroup::"
           done
-          echo "Level $LEVEL finished: $ok round(s) completed."
-          if [ "$ok" -eq 0 ]; then
-            echo "::error::Level $LEVEL produced no completed rounds."
+          echo "Level $LEVEL finished: $ok productive round(s), $published stories published."
+          echo "- **$published published across $ok round(s)**" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$published" -eq 0 ]; then
+            echo "::error::Level $LEVEL published nothing. Check the round logs — an LLM quota (429) exhausts silently and the generator still exits 0."
             exit 1
           fi
