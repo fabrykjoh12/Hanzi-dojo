@@ -23,6 +23,19 @@ describe('splitSpeaker', () => {
     const line = '妈妈说了一句很长的话：吃饭'
     expect(splitSpeaker(line).speaker).toBe(null)
   })
+
+  it('caps CJK speakers at 6 characters, exactly like the reader', () => {
+    // 最后她说了一句 is 7 chars: narration in the app, so it must be narration
+    // here too — the validator flagging what the reader renders fine is a
+    // phantom bug. (Mirrors SPEAKER_MAX in src/storyReading.js.)
+    expect(splitSpeaker('最后她说了一句：我想一想。').speaker).toBe(null)
+    expect(splitSpeaker('大人常常告诉他们：别去那里。').speaker).toBe(null)
+  })
+
+  it('allows one longer spaced-language word as a speaker', () => {
+    // Russian names exceed 6 letters without being narration.
+    expect(splitSpeaker('бабушка: Иди сюда.', ':').speaker).toBe('бабушка')
+  })
 })
 
 describe('buildDict', () => {

@@ -12,6 +12,7 @@ import { CHARACTER_READINGS } from './characterNames'
 // same bar the serial pipeline enforces, applied with the production matcher.
 
 const stories = JSON.parse(readFileSync(new URL('../data/authored-stories.json', import.meta.url), 'utf8'))
+const storyCanon = JSON.parse(readFileSync(new URL('../data/story-canon.chinese.json', import.meta.url), 'utf8'))
 
 // Vocabulary snapshots, keyed `language|system|level`. A snapshot is a JSON
 // array of [word, reading] pairs — exactly the shape buildVocabMatcher expects
@@ -93,15 +94,15 @@ const CN_COMMON_REACH = new Set([
 // role-noun speaker; extend CHARACTER_READINGS when it needs a real name.
 
 // Folk-tale seasons speak as roles and as things (the sun, a wall) rather than
-// as named people, so those labels are allow-listed here rather than added to
+// as named people, so those labels are allow-listed rather than added to
 // CHARACTER_READINGS — they are not personal names and must not get the "Name"
 // popup. A label that is also a reach word resolves through the reference
 // dictionary like any other out-of-pool word.
-const CN_ROLE_SPEAKERS = [
-  '妈妈', '爸爸', '朋友', '老师', '服务员', '店员', '医生', '大家',
-  '女儿', '儿子', '天', '云彩', '风', '墙壁', '农民', '孩子', '大人', '姑娘',
-  '奶奶', '阿姨', '管理员',
-]
+//
+// The list itself lives in the story canon (data/story-canon.chinese.json),
+// shared with check-authored-stories.mjs, so the offline checker and this spec
+// can never disagree about what counts as a valid speaker.
+const CN_ROLE_SPEAKERS = storyCanon.role_labels
 const KNOWN_SPEAKERS = {
   japanese: new Set(['たかし', 'はな', 'おかあさん', 'おじいさん', 'せんせい', 'みせのひと', 'みんな']),
   chinese: new Set([...Object.keys(CHARACTER_READINGS.chinese || {}), ...CN_ROLE_SPEAKERS]),

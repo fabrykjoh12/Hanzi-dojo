@@ -39,11 +39,29 @@ export function isHiragana(ch) {
   return c >= 0x3040 && c <= 0x309F
 }
 
-// "李明：吃饭吧" → { speaker: '李明', text: '吃饭吧' }. The index cap keeps a
-// colon used mid-sentence from being mistaken for a speaker tag.
+// "李明：吃饭吧" → { speaker: '李明', text: '吃饭吧' }. Mirrors the reader's
+// splitSpeaker (src/storyReading.js) EXACTLY — same caps, same spaced-word
+// window — because this validator's promise is "validates ⇒ renders the same
+// way". It used to cap at 8, which was stricter than the reader's 6 for CJK:
+// a narrated "最后她说了一句：…" (7 chars) validated as a speaker tag here while
+// rendering as ordinary narration in the app, so the checker flagged phantom
+// bugs in lines the reader handled fine.
+const SPEAKER_MAX = 6         // CJK names are short; anything longer is narration
+const SPEAKER_WORD_MAX = 16   // one spaced-language word (Иван, бабушка) may be longer
+function isSpacedSingleWord(s) {
+  for (let i = 0; i < s.length; i += 1) {
+    const c = s.charCodeAt(i)
+    if (c === 32 || c === 9 || c === 10 || c === 13 || c === 0x3000) return false   // whitespace
+    if (c >= 0x3040 && c <= 0x30FF) return false                                    // kana
+    if (c >= 0x3400 && c <= 0x9FFF) return false                                    // CJK
+  }
+  return true
+}
 export function splitSpeaker(line, colon = DEFAULT_COLON) {
   const idx = line.indexOf(colon)
-  if (idx > 0 && idx <= 8) return { speaker: line.slice(0, idx).trim(), text: line.slice(idx + 1).trim() }
+  if (idx > 0 && (idx <= SPEAKER_MAX || (idx <= SPEAKER_WORD_MAX && isSpacedSingleWord(line.slice(0, idx))))) {
+    return { speaker: line.slice(0, idx).trim(), text: line.slice(idx + 1).trim() }
+  }
   return { speaker: null, text: line }
 }
 

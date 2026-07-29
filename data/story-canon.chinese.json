@@ -1,0 +1,186 @@
+{
+  "_comment": "Machine-readable canon for the Chinese story universe. Consumed by check-authored-stories.mjs (names join the coverage dictionary; unlisted speakers are surfaced) and intended as prompt context for generate-serial-stories.mjs. Update this in the same change that adds a season — it is the memory that keeps seasons consistent with each other.",
+  "role_labels": [
+    "妈妈", "爸爸", "朋友", "老师", "服务员", "店员", "医生", "大家",
+    "女儿", "儿子", "天", "云彩", "风", "墙壁", "农民", "孩子", "大人", "姑娘",
+    "奶奶", "阿姨", "管理员"
+  ],
+  "_role_labels_comment": "Generic speaker labels — not personal names, so they never get the reader's Name popup and never need CHARACTER_READINGS entries. Single source of truth: src/authoredStories.test.js and check-authored-stories.mjs both read this list.",
+  "characters": [
+    {
+      "name": "李明",
+      "pinyin": "Lǐ Míng",
+      "role": "protagonist",
+      "age": 12,
+      "traits": "curious, slightly impulsive, always hungry; asks a lot of questions and follows them up",
+      "speech": "short, eager sentences; direct questions",
+      "never": "cruel, cynical, gives up on a thread he has started pulling",
+      "first_appeared": "HSK 1 serials"
+    },
+    {
+      "name": "小红",
+      "pinyin": "Xiǎo Hóng",
+      "role": "classmate",
+      "traits": "sharp-eyed; notices what others miss; teases 李明 but is kind underneath; the one who asks the uncomfortable, correct question",
+      "speech": "blunt, economical; lets silence do work",
+      "never": "gossips, apologises for being right (she apologises for tone, not content)",
+      "first_appeared": "HSK 1 serials"
+    },
+    {
+      "name": "小明",
+      "pinyin": "Xiǎo Míng",
+      "role": "best friend",
+      "traits": "easygoing, a little lazy, loyal; pretends not to care and then cares the most",
+      "speech": "deflecting one-liners; understatement",
+      "never": "abandons a friend mid-task, volunteers first",
+      "first_appeared": "HSK 1 serials"
+    },
+    {
+      "name": "妈妈",
+      "pinyin": "māma",
+      "role": "李明's mother",
+      "traits": "patient, practical, gently firm; took a two-year posting in another city (HSK 5) and keeps the family steady from a distance",
+      "speech": "calm imperatives; says less than she knows",
+      "never": "guilt-trips, decides for others without eventually asking them",
+      "first_appeared": "HSK 1 serials"
+    },
+    {
+      "name": "爸爸",
+      "pinyin": "bàba",
+      "role": "李明's father",
+      "traits": "quiet, competent at work and lost in the kitchen; slow to name his own feelings but honest when asked directly (HSK 5 t2)",
+      "speech": "short answers; long pauses before true ones",
+      "never": "raises his voice, lies when asked a direct question",
+      "first_appeared": "HSK 5 t2 第一个星期"
+    },
+    {
+      "name": "奶奶",
+      "pinyin": "nǎinai",
+      "role": "grandmother",
+      "age": 86,
+      "traits": "lived in the old building sixty years; remembers everything and rations what she tells; keeps promises past their usefulness and knows it (HSK 6). Moved to a smaller flat on the same street (HSK 6 t2). Sat daily in the chair by the old building's door",
+      "speech": "short declaratives; aphorisms she has clearly said before ('东西是给忘了的人用的')",
+      "never": "breaks a promise, explains herself twice, weeps openly",
+      "first_appeared": "HSK 4 t1 书里的照片"
+    },
+    {
+      "name": "大毛",
+      "pinyin": "Dà Máo",
+      "role": "the street's white cat",
+      "traits": "belongs to nobody; sits on the stone outside the noodle shop at 6:30 every morning; fed by at least five shops, each believing they are the only one; walks slightly differently after a car injured his back leg (HSK 5 t3)",
+      "speech": "does not talk",
+      "never": "dies, talks, becomes anyone's pet",
+      "first_appeared": "HSK 1 serials"
+    },
+    {
+      "name": "姑娘",
+      "pinyin": "gūniang",
+      "role": "the noodle-shop owner, 老王's granddaughter",
+      "traits": "reopened the family stall thirty metres from where the original shop stood; makes the noodles the way her grandfather taught her ('别的可以变，面不能变'); knows everything that happens on the street and admits to none of it",
+      "speech": "dry, warm; deflects thanks",
+      "never": "raises prices on regulars, takes credit",
+      "first_appeared": "HSK 4 t1 书里的照片"
+    },
+    {
+      "name": "阿姨",
+      "pinyin": "āyí",
+      "role": "night cleaner of the office building",
+      "traits": "lives alone above a shop up a narrow dark staircase (light fixed anonymously, HSK 5 t3); spent a week's pay on the cat's clinic bill and called it unimportant; now eats at the noodle shop every Sunday at the back table",
+      "speech": "practical, unsentimental, gives numbers only when pressed",
+      "never": "asks for help, accepts thanks gracefully",
+      "first_appeared": "HSK 5 t3 大毛不见了"
+    },
+    {
+      "name": "老王",
+      "pinyin": "Lǎo Wáng",
+      "role": "historical — ran the original noodle shop, demolished for the tall building ~30 years ago",
+      "traits": "made everything himself, slowly; everyone waited anyway; taught his granddaughter and at least one stranger who later opened a shop in the south",
+      "speech": "appears only in others' memories",
+      "never": "appears on-page in the present day",
+      "first_appeared": "HSK 4 t1 书里的照片 (in memory)"
+    },
+    {
+      "name": "周淑兰",
+      "pinyin": "Zhōu Shūlán",
+      "role": "historical — teacher who lived in 李明's flat until ~30 years ago; 奶奶's friend",
+      "traits": "left suddenly, told only 奶奶 where she went and swore her to silence; wrote 奶奶 one letter a year for thirty years and never got a reply; died three years before the story finds her; her husband still posts a letter to the old address every year, not knowing",
+      "speech": "appears only in letters and memory; small, very neat handwriting",
+      "never": "appears alive in the present day",
+      "first_appeared": "HSK 6 t1 写错地址的信"
+    },
+    {
+      "name": "司马光",
+      "pinyin": "Sīmǎ Guāng",
+      "role": "folk-tale protagonist (司马光砸缸, HSK 3 t1) — outside the street continuity",
+      "traits": "historical figure retold as a graded folk tale; the child who broke the water jar",
+      "speech": "calm where the other children panic",
+      "never": "appears in the street's present-day seasons",
+      "first_appeared": "HSK 3 t1 authored folk tale"
+    },
+    {
+      "name": "女儿",
+      "pinyin": "nǚ'ér",
+      "role": "周淑兰's daughter, about 60",
+      "traits": "learned the street from thirty years of her mother's letters without ever seeing it; chose not to ask 奶奶 the obvious question and explained why; now writes 奶奶 one letter a year",
+      "speech": "measured; arrives at conclusions aloud",
+      "never": "blames anyone for the thirty years",
+      "first_appeared": "HSK 6 t3 一年一封"
+    }
+  ],
+  "locations": [
+    {
+      "name": "这条街 (the street)",
+      "facts": [
+        "One contemporary neighborhood street; school, shops, the old residential building, the tall office building. Everything in the Chinese serials happens here or within a bus ride.",
+        "The tall building replaced a row of small houses and shops (including 老王's) about thirty years ago; the trees planted then are now full-grown."
+      ]
+    },
+    {
+      "name": "面店 (the noodle stall)",
+      "facts": [
+        "A small corner stall run by 姑娘, a few tables; the character 王 on its sign matches the shop in the old photograph.",
+        "Flooded in the three-day rain (HSK 4 t3); reopened at 6:00 after the street answered a sheet of paper on its door.",
+        "On its wall: the old photograph from the book, and the paper covered in customers' memories.",
+        "The best table is the one at the back — from it you can see 大毛's stone by the door. It is 阿姨's on Sundays.",
+        "大毛's stone sits outside the entrance."
+      ]
+    },
+    {
+      "name": "老楼 (the old building)",
+      "facts": [
+        "李明's family lives on the fourth floor, right-hand window — the same flat 周淑兰 lived in thirty years ago; her flowers stood on that windowsill.",
+        "奶奶 lived here sixty years, in the flat upstairs, before moving to a smaller place on the same street (HSK 6 t2).",
+        "The caretaker's records were lost in an office move; 奶奶 is the building's real memory.",
+        "The old chair by the door downstairs is still there; since 奶奶 moved, nobody sits in it."
+      ]
+    }
+  ],
+  "facts": [
+    { "fact": "A second-hand book stall at the far end of the street sold the thick old book the photograph fell out of.", "source": "HSK 4 t1" },
+    { "fact": "小红's method for hard problems: a sheet of paper, a pen, and letting people answer it themselves. Used for the shop (HSK 4 t3) and the vet bill (HSK 5 t3).", "source": "HSK 4 t3, HSK 5 t3" },
+    { "fact": "小明 ran the 800m he never signed up for (小红 wrote his name), came last after stopping for a fallen boy, and is quietly proud of it.", "source": "HSK 4 t2" },
+    { "fact": "妈妈 works in another city, four hours by train; home Friday 19:00, away Sunday 20:00. 李明 learned to cook so the arrangement could hold.", "source": "HSK 5 t1-t2" },
+    { "fact": "奶奶 keeps 周淑兰's thirty letters in a locked wooden box, and answered them once, thirty years late, with a letter that deliberately contained no apology.", "source": "HSK 6 t2" },
+    { "fact": "小明's uncle fits lights and refuses payment.", "source": "HSK 5 t3" }
+  ],
+  "open_threads": [
+    "The stranger who wrote '老王教我做面，我在南边开了一家' on the shop's paper has never been found.",
+    "周淑兰's husband still posts a letter every year and still does not know she has been answered — or that she is gone.",
+    "女儿's first annual letter to 奶奶 has not yet arrived on-page.",
+    "The book the photograph fell out of has never been read."
+  ],
+  "seasons": [
+    { "level": 1, "tiers": "1-3", "titles": "generated serials", "premise": "various (SEASON_SEEDS 1-3)", "register": "light", "status": "published, some held" },
+    { "level": 2, "tiers": "1-3", "titles": "generated serials + authored folk tales", "premise": "various", "register": "light/fable", "status": "published, some held" },
+    { "level": 3, "tiers": "1-3", "titles": "generated serials + authored folk tales (司马光, 田螺姑娘)", "premise": "various", "register": "fable", "status": "published" },
+    { "level": 4, "tier": 1, "title": "书里的照片", "premise": "something old is found and its story pieced together", "register": "wonder", "status": "published" },
+    { "level": 4, "tier": 2, "title": "名字在上面", "premise": "a dreaded competition, and what the day is actually for", "register": "humor into earnestness", "status": "published" },
+    { "level": 4, "tier": 3, "title": "三天的雨", "premise": "weather rearranges life; a small business in trouble; the street helps", "register": "quiet crisis, warm", "status": "published" },
+    { "level": 5, "tier": 1, "title": "妈妈的电话", "premise": "a family decision nobody wants to be the reason against", "register": "domestic, weighty", "status": "published" },
+    { "level": 5, "tier": 2, "title": "第一个星期", "premise": "absence rearranges a household; father and son say true things", "register": "tender", "status": "published" },
+    { "level": 5, "tier": 3, "title": "大毛不见了", "premise": "a disappearance reveals a web of quiet care", "register": "mystery, warm", "status": "published" },
+    { "level": 6, "tier": 1, "title": "写错地址的信", "premise": "a letter to someone thirty years gone; a promise outlives its purpose", "register": "melancholy, resolved", "status": "published" },
+    { "level": 6, "tier": 2, "title": "一个箱子", "premise": "what one keeps when discarding everything; asking once and accepting no", "register": "interior", "status": "published" },
+    { "level": 6, "tier": 3, "title": "一年一封", "premise": "the answer arrives in person; a correspondence restarts in a new generation", "register": "elegiac, warm close", "status": "published" }
+  ]
+}
