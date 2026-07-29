@@ -20,6 +20,10 @@ export const CHARACTER_READINGS = {
     // or the reader splits them character by character (小七 → "small" + "seven").
     '小七': 'Xiǎo Qī', '大风': 'Dà Fēng', '阿水': 'Ā Shuǐ',
     '老九': 'Lǎo Jiǔ', '阿力': 'Ā Lì',
+    // The old building's caretaker (HSK 4 t1 五楼的灯). 老 is HSK 3 and 陈 is
+    // in no level, so without this the reader reads him as "old" + a character
+    // it cannot place.
+    '老陈': 'Lǎo Chén',
   },
   // Japanese story protagonists (serial + legacy story sets). Role nouns
   // (おかあさん、おじいさん、せんせい…) are ordinary vocabulary and resolve
