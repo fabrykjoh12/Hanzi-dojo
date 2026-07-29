@@ -225,8 +225,13 @@
     "presentation": "paced",
     "title": "回家的路",
     "english_summary": "After years in the city, Xiaochuan goes back to the village and finds the old bridge — and his parents — still waiting.",
-    "content": "小川在大城市工作了很久。\n每天都很忙，压力也很大。\n今天早上，他终于决定回家看看。\n火车很慢，外边的世界很美丽。\n到了村里，阳光正好。\n他看见了那个旧桥。\n桥还在，一点儿也没有变化。\n父母正在桥上等他。\n妈妈：小川，你回来了！\n母亲突然笑了，眼前都是光。\n小川心里想，这就是幸福。\n有些东西，很久也不会消失。",
-    "english_content": "Xiaochuan had worked in the big city for a long time.\nEvery day was busy, and the pressure was heavy.\nThis morning, he finally decided to go home for a visit.\nThe train was slow, and the world outside was beautiful.\nWhen he reached the village, the sunlight was just right.\nHe saw that old bridge.\nThe bridge was still there — not changed at all.\nHis parents were waiting for him on the bridge.\nMum: Xiaochuan, you are back!\nHis mother suddenly smiled, and everything before his eyes was light.\nXiaochuan thought to himself: this is happiness.\nSome things do not disappear, even after a long time."
+    "content": "小川在大城市工作了很久。\n每天都很忙，也很累。\n今天早上，他终于决定回家看看。\n火车很慢，外边的世界很好看。\n到了村里，阳光正好。\n他看见了那个旧桥。\n桥还在，一点儿也没有变化。\n爸爸妈妈正在桥上等他。\n妈妈：小川，你回来了！\n妈妈突然笑了。\n小川心里想，这就是家。\n有些东西，很久也不会变。",
+    "english_content": "Xiaochuan had worked in the big city for a long time.\nEvery day was busy, and the pressure was heavy.\nThis morning, he finally decided to go home for a visit.\nThe train was slow, and the world outside was beautiful.\nWhen he reached the village, the sunlight was just right.\nHe saw that old bridge.\nThe bridge was still there — not changed at all.\nHis parents were waiting for him on the bridge.\nMum: Xiaochuan, you are back!\nHis mother suddenly smiled, and everything before his eyes was light.\nXiaochuan thought to himself: this is happiness.\nSome things do not disappear, even after a long time.",
+    "reach_words": [
+      "村里",
+      "阳光",
+      "桥"
+    ]
   },
   {
     "language": "chinese",
@@ -238,7 +243,15 @@
     "presentation": "chat",
     "title": "新的决定",
     "english_summary": "Xiaochuan tells Lin Yuqing he wants to move back to the village. She hears him out — and backs him.",
-    "content": "小川：雨晴，我有一个决定。\n林雨晴：什么决定？\n小川：我想回村里工作。\n林雨晴：真的吗？你不喜欢城市了？\n小川：城市很好，但是我需要家人。\n林雨晴：我理解你。\n小川：我有点儿紧张。\n林雨晴：这是你的人生，我支持你。\n林雨晴：什么时候走？\n小川：下个月。\n林雨晴：那我们要好好庆祝一下！"
+    "content": "小川：雨晴，我有一个决定。\n林雨晴：什么决定？\n小川：我想回村里工作。\n林雨晴：真的吗？你不喜欢城市了？\n小川：城市很好，但是我需要家人。\n林雨晴：我理解你。\n小川：我有点儿紧张。\n林雨晴：这是你的人生，我支持你。\n林雨晴：什么时候走？\n小川：下个月。\n林雨晴：那我们要好好庆祝一下！",
+    "reach_words": [
+      "村里",
+      "理解",
+      "紧张",
+      "人生",
+      "支持",
+      "庆祝"
+    ]
   },
   {
     "language": "chinese",
@@ -251,7 +264,16 @@
     "title": "坚持",
     "english_summary": "Xiaohua runs her school race. She does not win — and finds that finishing was the point.",
     "content": "小花是学校比赛的选手。\n昨天的训练很困难。\n她的教练说，慢慢来。\n今天早上，比赛开始了。\n前面的路还很长。\n她很紧张，也有点儿害怕。\n但是她没有停止。\n教练的建议在她心里。\n她终于到达了。\n她不是第一，但是她很高兴。\n坚持就是胜利。",
-    "english_content": "Xiaohua is a competitor in her school race.\nYesterday's training was hard.\nHer coach said: take it slowly.\nThis morning, the race began.\nThe road ahead was still long.\nShe was nervous, and a little afraid too.\nBut she did not stop.\nHer coach's advice stayed in her heart.\nAt last, she reached the end.\nShe was not first, but she was very happy.\nTo keep going is itself a victory."
+    "english_content": "Xiaohua is a competitor in her school race.\nYesterday's training was hard.\nHer coach said: take it slowly.\nThis morning, the race began.\nThe road ahead was still long.\nShe was nervous, and a little afraid too.\nBut she did not stop.\nHer coach's advice stayed in her heart.\nAt last, she reached the end.\nShe was not first, but she was very happy.\nTo keep going is itself a victory.",
+    "reach_words": [
+      "训练",
+      "困难",
+      "紧张",
+      "停止",
+      "建议",
+      "到达",
+      "胜利"
+    ]
   },
   {
     "language": "chinese",
@@ -520,7 +542,10 @@
       "水缸",
       "院子",
       "石头",
-      "救"
+      "救",
+      "破",
+      "活着",
+      "打破"
     ]
   },
   {
@@ -687,7 +712,8 @@
       "田螺",
       "田里",
       "农民",
-      "水缸"
+      "水缸",
+      "姑娘"
     ]
   },
   {
@@ -705,7 +731,8 @@
       "田螺",
       "田里",
       "农民",
-      "水缸"
+      "水缸",
+      "姑娘"
     ]
   },
   {
@@ -1346,5 +1373,282 @@
     "content": "星期六上午，奶奶回家了。\n她到店外边，坐在那个椅子上。\n大毛在椅子上睡觉。\n它看见她，还在那儿睡觉。\n奶奶：它这些天吃东西了吗？\n李明：天天吃。\n奶奶：谁给的？\n李明：我。\n小明：我们两个。\n奶奶：你们两个。\n李明：小明也天天来。\n小明：我一天没有来。\n李明：一天。\n奶奶：一天没关系。\n天很好，不冷了。\n李明坐在她那边。\n李明：奶奶，我问您一件事。\n奶奶：你问。\n李明：您叫什么名字？\n她没有说话。\n她看了看外边。\n奶奶：你怎么想问这个？\n李明：我认识您两个星期了。\n李明：我不知道您的名字。\n奶奶：你不知道，我知道你的。\n李明：那不对。\n奶奶：好。\n她说了三个字。\n李明没有听见。\n奶奶：你没有听见？\n李明：没有。\n奶奶：那我再说一回。\n她再说了一回。\n这一天李明听见了。\n他没有说什么。\n奶奶：怎么了？\n李明：我的名字，您怎么知道的？\n奶奶：那天你问店员。\n李明：那是十四天前的事。\n奶奶：对。\n李明：您那天在椅子上。\n奶奶：我天天在椅子上。\n大毛在她那边睡觉。\n天上没有雪了。\n李明想，明年这个时候，椅子上也有一个猫。\n他想，那个时候，椅子上也有她。\n奶奶：李明。\n李明：什么？\n奶奶：明天你来吗？\n李明：我天天来。",
     "english_content": "Saturday morning, she came home.\nShe went out to the shop and sat down on the chair.\nDa Mao was asleep on it.\nIt saw her and went on sleeping.\nGrandma: Has it been eating?\nLi Ming: Every day.\nGrandma: Who fed it?\nLi Ming: Me.\nXiao Ming: Both of us.\nGrandma: Both of you.\nLi Ming: Xiao Ming came every day too.\nXiao Ming: I missed one day.\nLi Ming: One day.\nGrandma: One day doesn't matter.\nIt was a fine day, not cold any more.\nLi Ming sat down beside her.\nLi Ming: I want to ask you something.\nGrandma: Ask.\nLi Ming: What's your name?\nShe didn't answer.\nShe looked out at the street.\nGrandma: What makes you ask that?\nLi Ming: I've known you two weeks.\nLi Ming: And I don't know your name.\nGrandma: You don't know mine. I know yours.\nLi Ming: That's not fair.\nGrandma: All right.\nShe said three syllables.\nLi Ming didn't catch them.\nGrandma: You didn't hear?\nLi Ming: No.\nGrandma: Then I'll say it once more.\nShe said it again.\nThis time Li Ming heard it.\nHe didn't say anything.\nGrandma: What is it?\nLi Ming: How did you know my name?\nGrandma: You asked the shop assistant, that day.\nLi Ming: That was fourteen days ago.\nGrandma: Yes.\nLi Ming: You were on the chair that day.\nGrandma: I am on the chair every day.\nDa Mao slept on beside her.\nThere was no snow left in the sky.\nLi Ming thought: this time next year there will be a cat on that chair.\nAnd, he thought, she will be there too.\nGrandma: Li Ming.\nLi Ming: Yes?\nGrandma: Will you come tomorrow?\nLi Ming: I come every day.",
     "is_published": true
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 3,
+    "tier_min_words": 200,
+    "title": "1. 第七个人",
+    "english_summary": "He wakes in a small room that is moving, and outside the room there is nothing but water. The ship has six people on it. The captain looks at him for a long time and does not turn back.",
+    "content": "小七不知道现在几点。\n这个房间很小，没有人。\n房间在开。\n他到外边。\n外边都是水。\n不是一点儿水，是很多水。\n这是海。\n小七在一个船上。\n船不大。\n船上有六个人。\n一个人看见他了。\n老九：你是谁？\n小七没有说话。\n老九：大风！\n一个人来了。\n他很大，不说话。\n大风：你几岁？\n小七：十二。\n大风：你叫什么名字？\n小七：小七。\n大风：小七。\n老九：这个船上有六个人。\n大风：现在有七个。\n老九：我们回去吗？\n大风：不回。\n老九：那他呢？\n大风：他在船上。\n老九：他在船上做什么？\n大风：他工作。\n小七：我做什么工作？\n大风没有说话。\n他看了看海。\n大风：明天早上，我给你一个工作。\n小七：什么工作？\n大风：明天你知道。\n那天晚上，小七在那个小房间里。\n外边都是海。\n他想，明天是什么工作。\n他没有睡。",
+    "english_content": "Xiao Qi didn't know what time it was.\nThe room was small, and there was nobody in it.\nThe room was moving.\nHe went outside.\nOutside there was water everywhere.\nNot a little water. A great deal of water.\nThis was the sea.\nXiao Qi was on a ship.\nThe ship was not big.\nThere were six people on it.\nOne of them saw him.\nLao Jiu: Who are you?\nXiao Qi didn't answer.\nLao Jiu: Da Feng!\nA man came.\nHe was a big man, and he said nothing.\nDa Feng: How old are you?\nXiao Qi: Twelve.\nDa Feng: What's your name?\nXiao Qi: Xiao Qi.\nDa Feng: Xiao Qi.\nLao Jiu: This ship has six people on it.\nDa Feng: Now it has seven.\nLao Jiu: Do we turn back?\nDa Feng: No.\nLao Jiu: And him?\nDa Feng: He stays on the ship.\nLao Jiu: And does what?\nDa Feng: He works.\nXiao Qi: What work?\nDa Feng said nothing.\nHe looked out at the sea.\nDa Feng: Tomorrow morning I'll give you a job.\nXiao Qi: What job?\nDa Feng: Tomorrow you'll know.\nThat night Xiao Qi lay in the small room.\nOutside there was only sea.\nHe wondered what the job would be.\nHe didn't sleep.",
+    "is_published": true
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 3,
+    "tier_min_words": 200,
+    "title": "2. 一天七个",
+    "english_summary": "A hundred containers of water, seven people, seven a day. The captain gives him one job and will not say why it needs doing twice. The arithmetic works for three days.",
+    "content": "早上七点，大风叫小七。\n大风：你来。\n船的里边有很多杯子。\n小七：这些是什么？\n大风：水。\n大风：一百个杯子，都是水。\n小七：一百个。\n大风：船上七个人。\n大风：一天七个。\n小七：一天七个。\n大风：你天天早上来看，还有多少个。\n小七：这个我会。\n大风：早上七点，你来说。\n小七：您怎么不看？\n大风：我看。\n小七：那我也看？\n大风：对。\n小七：两个人看一件事？\n大风：对。\n小七不知道这是怎么一件事。\n大风：明天早上七点。\n小七：好。\n第二天早上七点，小七到那儿。\n他看了看。\n九十三个。\n小七：九十三。\n大风：对。\n第三天早上，八十六。\n小七：八十六。\n大风：对。\n第四天早上，七十九。\n小七：一百，九十三，八十六，七十九。\n大风：七，七，七。\n小七：都是七。\n大风：都是七。\n小七：那明天是七十二。\n大风看了看他。\n大风：明天你来说。\n小七很高兴。\n他不知道这个工作是什么工作。",
+    "english_content": "At seven in the morning Da Feng called for Xiao Qi.\nDa Feng: Come here.\nBelow deck there were rows and rows of containers.\nXiao Qi: What are these?\nDa Feng: Water.\nDa Feng: A hundred of them, all water.\nXiao Qi: A hundred.\nDa Feng: There are seven of us.\nDa Feng: Seven a day.\nXiao Qi: Seven a day.\nDa Feng: Every morning you come and see how many are left.\nXiao Qi: I can do that.\nDa Feng: Seven o'clock. You come and tell me.\nXiao Qi: Why don't you look yourself?\nDa Feng: I do look.\nXiao Qi: So I look too?\nDa Feng: Yes.\nXiao Qi: Two people looking at the same thing?\nDa Feng: Yes.\nXiao Qi did not know what to make of that.\nDa Feng: Tomorrow. Seven.\nXiao Qi: All right.\nAt seven the next morning Xiao Qi was there.\nHe counted.\nNinety-three.\nXiao Qi: Ninety-three.\nDa Feng: Correct.\nThe third morning: eighty-six.\nXiao Qi: Eighty-six.\nDa Feng: Correct.\nThe fourth morning: seventy-nine.\nXiao Qi: A hundred, ninety-three, eighty-six, seventy-nine.\nDa Feng: Seven, seven, seven.\nXiao Qi: All sevens.\nDa Feng: All sevens.\nXiao Qi: So tomorrow it's seventy-two.\nDa Feng looked at him.\nDa Feng: Tomorrow you tell me.\nXiao Qi was pleased.\nHe didn't know what the job was really for.",
+    "is_published": true
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 3,
+    "tier_min_words": 200,
+    "title": "3. 海上都是海",
+    "english_summary": "Days of nothing. The cook gives him two portions and never drinks in front of him. The oldest man on the ship has been aboard twenty years and will say only that there are things he does not say.",
+    "content": "一天，两天，三天。\n海上都是海。\n没有人，没有船。\n早上七点，小七看水。\n七十二，六十五，五十八。\n都是七。\n中午，阿水做饭。\n阿水：吃。\n小七：谢谢。\n阿水：你吃两个。\n小七：两个？\n阿水：你十二岁。\n小七：您呢？\n阿水：我不想吃。\n小七：您喝水吗？\n阿水：喝。\n小七：我没有看见您喝。\n阿水看了看他，没有说话。\n下午，小七问老九。\n小七：我们去哪儿？\n老九：你问大风。\n小七：我问了。\n老九：他说什么？\n小七：他没有说。\n老九：那我也没有。\n小七：您知道吗？\n老九：我知道。\n小七：那您说。\n老九：不。\n小七：怎么不说？\n老九：这个船，我在上边二十年了。\n老九：有些事，我不说。\n小七：那我问谁？\n老九：你不问。\n小七：我要知道。\n老九：你十二岁。\n小七：我十二岁，我在这个船上。\n老九没有说话。\n老九：好孩子。\n他回去了。\n晚上，小七看海。\n海上都是海。",
+    "english_content": "One day, two days, three days.\nThere was nothing on the sea but sea.\nNo people, no other ships.\nAt seven each morning Xiao Qi counted the water.\nSeventy-two, sixty-five, fifty-eight.\nAll sevens.\nAt midday Ah Shui cooked.\nAh Shui: Eat.\nXiao Qi: Thank you.\nAh Shui: You have two.\nXiao Qi: Two?\nAh Shui: You're twelve.\nXiao Qi: And you?\nAh Shui: I don't want any.\nXiao Qi: Do you drink water?\nAh Shui: I do.\nXiao Qi: I've never seen you drink.\nAh Shui looked at him and said nothing.\nThat afternoon Xiao Qi asked Lao Jiu.\nXiao Qi: Where are we going?\nLao Jiu: Ask Da Feng.\nXiao Qi: I did.\nLao Jiu: What did he say?\nXiao Qi: He didn't say.\nLao Jiu: Then neither do I.\nXiao Qi: Do you know?\nLao Jiu: I know.\nXiao Qi: Then tell me.\nLao Jiu: No.\nXiao Qi: Why not?\nLao Jiu: I have been on this ship twenty years.\nLao Jiu: There are things I do not say.\nXiao Qi: Then who do I ask?\nLao Jiu: You don't ask.\nXiao Qi: I want to know.\nLao Jiu: You're twelve.\nXiao Qi: I'm twelve, and I am on this ship.\nLao Jiu said nothing.\nLao Jiu: Good lad.\nAnd he went back to work.\nThat evening Xiao Qi looked at the sea.\nThere was nothing on it but sea.",
+    "is_published": true
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 3,
+    "tier_min_words": 200,
+    "title": "4. 阿水不喝水",
+    "english_summary": "Seven days in, Xiao Qi starts watching the cook instead of the water. Ah Shui eats little, drinks nothing anyone sees, and is the only person on the ship who asks Xiao Qi a question back.",
+    "content": "第七天，小七看水。\n五十一个。\n小七：五十一。\n大风：对。\n小七：大风。\n大风：说。\n小七：五十一个，七个人，七天。\n大风：对。\n小七：那我们回家吗？\n大风：不回。\n小七：七天，船上没有水。\n大风：我知道。\n大风：你去做饭。\n中午，小七在阿水那边。\n阿水：你吃。\n小七：您也吃。\n阿水：我吃了。\n小七：我没有看见。\n阿水：你看见的东西不多。\n小七：我看见您不喝水。\n阿水没有说话。\n小七：七天了。\n阿水：你几岁？\n小七：十二。\n阿水：你怎么来的？\n小七：我来的。\n阿水：这个船不是这边的。\n小七：我知道。\n阿水：你知道？\n小七没有说话。\n阿水看了看他。\n阿水：好。\n阿水：这个你吃。\n他给了小七一个鸡蛋。\n小七：您呢？\n阿水：我不想吃。\n晚上，小七没有睡。\n他在想阿水。\n七天，他没有喝一个杯子的水。\n七天，一个人可以不喝水吗？\n不可以。",
+    "english_content": "On the seventh day Xiao Qi counted the water.\nFifty-one.\nXiao Qi: Fifty-one.\nDa Feng: Correct.\nXiao Qi: Da Feng.\nDa Feng: Speak.\nXiao Qi: Fifty-one left. Seven people. Seven days.\nDa Feng: Correct.\nXiao Qi: Do we go home then?\nDa Feng: No.\nXiao Qi: Seven days, and the ship has no water.\nDa Feng: I know.\nDa Feng: Go and help with the food.\nAt midday Xiao Qi was with Ah Shui.\nAh Shui: Eat.\nXiao Qi: You eat too.\nAh Shui: I've eaten.\nXiao Qi: I didn't see you.\nAh Shui: You don't see very much.\nXiao Qi: I see that you don't drink water.\nAh Shui said nothing.\nXiao Qi: Seven days now.\nAh Shui: How old are you?\nXiao Qi: Twelve.\nAh Shui: How did you get here?\nXiao Qi: I just came.\nAh Shui: This ship isn't from around here.\nXiao Qi: I know.\nAh Shui: You know?\nXiao Qi said nothing.\nAh Shui looked at him.\nAh Shui: All right.\nAh Shui: Have this too.\nHe gave Xiao Qi an egg.\nXiao Qi: And you?\nAh Shui: I don't want it.\nThat night Xiao Qi didn't sleep.\nHe lay thinking about Ah Shui.\nSeven days, and not one container of water.\nCan a man go seven days without water?\nHe cannot.",
+    "is_published": true
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 3,
+    "tier_min_words": 200,
+    "title": "5. 我们去一个岛",
+    "english_summary": "On the tenth day the captain answers a question for the first time. It is one word long, and it is not the answer to the question Xiao Qi asked.",
+    "content": "第十天，天不好。\n海很大。\n船上的人都在工作。\n小七也工作。\n下午，天好了。\n大风在看海。\n小七到他那边。\n小七：我看了水。\n大风：多少？\n小七：三十个。\n大风：对。\n小七：四天。\n大风：对。\n小七：我们去哪儿？\n大风没有说话。\n小七：四天。\n大风：我们去一个岛。\n小七：一个岛。\n大风：对。\n小七：哪个岛？\n大风没有说话。\n小七：岛上有什么？\n大风没有说话。\n小七：岛上有人吗？\n大风看了他一下。\n大风：你去休息。\n小七：我不休息。\n大风：小七。\n小七：什么？\n大风：你的工作是看水。\n小七：我看了。\n大风：那明天再看。\n小七回房间了。\n老九在外边。\n老九：他说了？\n小七：他说一个岛。\n老九：那他说了很多。\n小七：一个字。\n老九：一个字，二十年。\n老九回去了。",
+    "english_content": "On the tenth day the weather turned.\nThe sea got big.\nEveryone on the ship was working.\nXiao Qi worked too.\nBy afternoon it had cleared.\nDa Feng was watching the water.\nXiao Qi went and stood by him.\nXiao Qi: I counted the water.\nDa Feng: How much?\nXiao Qi: Thirty.\nDa Feng: Correct.\nXiao Qi: Four days.\nDa Feng: Correct.\nXiao Qi: Where are we going?\nDa Feng said nothing.\nXiao Qi: Four days.\nDa Feng: We are going to an island.\nXiao Qi: An island.\nDa Feng: Yes.\nXiao Qi: Which island?\nDa Feng said nothing.\nXiao Qi: What's on it?\nDa Feng said nothing.\nXiao Qi: Are there people on it?\nDa Feng glanced at him.\nDa Feng: Go and rest.\nXiao Qi: I don't want to rest.\nDa Feng: Xiao Qi.\nXiao Qi: What?\nDa Feng: Your job is the water.\nXiao Qi: I did it.\nDa Feng: Then do it again tomorrow.\nXiao Qi went back to his room.\nLao Jiu was outside.\nLao Jiu: He told you?\nXiao Qi: He said an island.\nLao Jiu: Then he told you a great deal.\nXiao Qi: He said one word.\nLao Jiu: One word. In twenty years.\nAnd Lao Jiu went back to work.",
+    "is_published": true
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "tier": 3,
+    "tier_min_words": 200,
+    "title": "6. 少了四个",
+    "english_summary": "Eleven days of sevens, and then the number is wrong. The captain does not look surprised, does not check, and does not ask who. He asks Xiao Qi a different question entirely.",
+    "content": "第十一天早上七点，小七去看水。\n昨天是三十个。\n三十少七是二十三。\n他看了。\n十九个。\n他再看了一下。\n十九个。\n不是二十三，是十九。\n少了四个。\n小七到大风那边。\n小七：十九。\n大风：你说什么？\n小七：十九个。\n小七：昨天三十个，今天十九个。\n小七：不是七，是十一。\n大风没有说话。\n他没有去看。\n小七：您不去看吗？\n大风：不去。\n小七：那我再看一下。\n大风：不。\n小七：船上少了四个水。\n大风：我知道。\n小七：您知道？\n大风：我知道。\n小七：那是谁？\n大风没有说话。\n小七：您也知道是谁？\n大风：小七。\n小七：什么？\n大风：我问你一件事。\n小七：您问。\n大风：这十一天，你天天看水。\n小七：对。\n大风：今天是第一天，你说少了。\n小七：对。\n大风：那十天前呢？\n小七没有说话。\n大风：那十天也少。\n小七：少多少？\n大风：天天四个。\n小七：那一百个……\n大风：一百个不是一百个。\n大风：明天早上七点，你再来。",
+    "english_content": "At seven on the eleventh morning Xiao Qi went to count the water.\nYesterday it had been thirty.\nThirty less seven is twenty-three.\nHe counted.\nNineteen.\nHe counted again.\nNineteen.\nNot twenty-three. Nineteen.\nFour short.\nXiao Qi went to Da Feng.\nXiao Qi: Nineteen.\nDa Feng: Say that again.\nXiao Qi: Nineteen.\nXiao Qi: Thirty yesterday, nineteen today.\nXiao Qi: That's not seven. That's eleven.\nDa Feng said nothing.\nHe did not go and look.\nXiao Qi: Aren't you going to check?\nDa Feng: No.\nXiao Qi: Then let me count again.\nDa Feng: No.\nXiao Qi: Four containers are gone.\nDa Feng: I know.\nXiao Qi: You know?\nDa Feng: I know.\nXiao Qi: Then who?\nDa Feng said nothing.\nXiao Qi: You know who as well?\nDa Feng: Xiao Qi.\nXiao Qi: What?\nDa Feng: I'll ask you something.\nXiao Qi: Ask.\nDa Feng: Eleven days you have counted that water.\nXiao Qi: Yes.\nDa Feng: Today is the first day you have told me it was short.\nXiao Qi: Yes.\nDa Feng: And the ten days before?\nXiao Qi said nothing.\nDa Feng: Those ten days were short too.\nXiao Qi: By how much?\nDa Feng: Four. Every day.\nXiao Qi: Then a hundred —\nDa Feng: A hundred was never a hundred.\nDa Feng: Seven tomorrow. Come again.",
+    "is_published": true
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 3,
+    "tier_min_words": 130,
+    "title": "7. 我跟着他",
+    "english_summary": "Xiao Qi stays awake for the answer instead of asking for it. At two in the morning the cook carries four containers to the back of the ship, and there are far more than four already there.",
+    "content": "那天晚上，小七没有睡。\n他在房间里等。\n十二点，外面没有人。\n一点，还是没有人。\n两点，他听见了。\n有人从上面下来。\n小七出去看。\n是阿水。\n他拿着四个杯子。\n他往船的后面走。\n小七跟着他。\n阿水到了一个门。\n他打开门，进去了。\n小七等了一会儿。\n他也进去了。\n里面很小。\n里面有很多杯子。\n不是四个，是很多。\n阿水看见他了。\n阿水：你怎么来了？\n小七：我跟着您。\n阿水：出去。\n小七：这些水是什么？\n阿水：出去！\n小七没有出去。\n小七：一天四个。\n阿水没有说话。\n小七：十一天，四十四个。\n阿水：你都看了。\n小七：这是我的工作。\n阿水：别告诉大风。\n小七：他已经知道了。\n阿水的手不动了。\n阿水：他知道？\n小七：他今天早上告诉我的。\n阿水：他说了什么？\n小七：他说，一百个不是一百个。\n阿水坐下了。\n他很长时间没有说话。\n阿水：那他也知道为什么。\n小七：为什么？\n阿水：因为这个水不是给我们的。\n小七：那是给谁的？\n阿水：给一个人。\n小七：哪个人？\n阿水看着他。\n阿水：你太小了。\n小七：我十二岁。\n阿水：三年前，你九岁。\n小七：三年前怎么了？\n阿水没有再说话。",
+    "english_content": "That night Xiao Qi did not sleep.\nHe waited in his room.\nMidnight: nobody outside.\nOne o'clock: still nobody.\nAt two he heard it.\nSomeone coming down from above.\nXiao Qi went out to look.\nIt was Ah Shui.\nHe was carrying four containers.\nHe went towards the back of the ship.\nXiao Qi followed him.\nAh Shui reached a door.\nHe opened it and went in.\nXiao Qi waited a moment.\nThen he went in too.\nThe space was small.\nAnd it was full of containers.\nNot four. Many.\nAh Shui saw him.\nAh Shui: What are you doing here?\nXiao Qi: I followed you.\nAh Shui: Get out.\nXiao Qi: What is all this water?\nAh Shui: Get out!\nXiao Qi didn't move.\nXiao Qi: Four a day.\nAh Shui said nothing.\nXiao Qi: Eleven days. Forty-four.\nAh Shui: You've been counting all of it.\nXiao Qi: That is my job.\nAh Shui: Don't tell Da Feng.\nXiao Qi: He already knows.\nAh Shui's hands went still.\nAh Shui: He knows?\nXiao Qi: He told me this morning.\nAh Shui: What did he say?\nXiao Qi: He said a hundred was never a hundred.\nAh Shui sat down.\nFor a long time he said nothing.\nAh Shui: Then he knows why, as well.\nXiao Qi: Why?\nAh Shui: Because this water isn't for us.\nXiao Qi: Then who is it for?\nAh Shui: For a person.\nXiao Qi: Which person?\nAh Shui looked at him.\nAh Shui: You're too young.\nXiao Qi: I'm twelve.\nAh Shui: Three years ago you were nine.\nXiao Qi: What happened three years ago?\nAh Shui said nothing more.",
+    "is_published": true,
+    "reach_words": [
+      "船"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 3,
+    "tier_min_words": 130,
+    "title": "8. 出去七个，回来六个",
+    "english_summary": "Lao Jiu has been on this ship twenty years and has made this exact voyage once before. He will give Xiao Qi the numbers. He will not give him the name, and he says why.",
+    "content": "第二天，小七找老九。\n老九在船的前面工作。\n小七：我要问您一件事。\n老九：你还问。\n小七：我还问。\n老九：好。你问。\n小七：三年前，这个船来过这里吗？\n老九没有说话。\n小七：来过。\n老九：你听谁说的？\n小七：阿水。\n老九：他跟你说了？\n小七：他说了三年前。\n老九：他没有说别人？\n小七：没有。\n老九坐下了。\n老九：三年前，这个船来过。\n小七：来做什么？\n老九：现在做的事，那个时候也做过。\n小七：去那个岛？\n老九：去那个岛。\n小七：那个时候船上有多少人？\n老九很长时间没有说话。\n老九：七个。\n小七：七个。\n老九：出去的时候七个。\n小七：回来的时候呢？\n老九：六个。\n小七：六个。\n老九：对。\n小七：那一个人呢？\n老九：还在岛上。\n小七：三年了？\n老九：三年了。\n小七：他叫什么？\n老九站起来了。\n老九：我说得太多了。\n小七：您告诉我他叫什么。\n老九：不。\n小七：为什么？\n老九：因为你听了这个名字，你就不是现在的你了。\n老九往前面走了。\n小七站在那里，很长时间。",
+    "english_content": "The next day Xiao Qi went to Lao Jiu.\nLao Jiu was working at the bow.\nXiao Qi: I want to ask you something.\nLao Jiu: You're still asking.\nXiao Qi: I'm still asking.\nLao Jiu: Fine. Ask.\nXiao Qi: Three years ago, did this ship come here?\nLao Jiu said nothing.\nXiao Qi: It did.\nLao Jiu: Who told you?\nXiao Qi: Ah Shui.\nLao Jiu: He talked to you?\nXiao Qi: He said three years ago.\nLao Jiu: He didn't name anyone?\nXiao Qi: No.\nLao Jiu sat down.\nLao Jiu: Three years ago this ship came here.\nXiao Qi: To do what?\nLao Jiu: The same thing we are doing now.\nXiao Qi: Go to that island?\nLao Jiu: Go to that island.\nXiao Qi: How many people were on board then?\nLao Jiu was quiet for a long time.\nLao Jiu: Seven.\nXiao Qi: Seven.\nLao Jiu: Seven when we left.\nXiao Qi: And when you came back?\nLao Jiu: Six.\nXiao Qi: Six.\nLao Jiu: Yes.\nXiao Qi: And the seventh?\nLao Jiu: Still on the island.\nXiao Qi: For three years?\nLao Jiu: Three years.\nXiao Qi: What's his name?\nLao Jiu stood up.\nLao Jiu: I have said too much.\nXiao Qi: Tell me his name.\nLao Jiu: No.\nXiao Qi: Why not?\nLao Jiu: Because once you hear that name you stop being who you are now.\nLao Jiu walked away up the deck.\nXiao Qi stood where he was for a long time.",
+    "is_published": true,
+    "reach_words": [
+      "船",
+      "岛",
+      "船上"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 3,
+    "tier_min_words": 130,
+    "title": "9. 你为什么在这个船上",
+    "english_summary": "The captain ends the water job two days from the island, and asks Xiao Qi the one question Xiao Qi has been avoiding. Then Xiao Qi asks his, and gets an answer that is worse than silence.",
+    "content": "下午，大风叫小七。\n大风：从明天开始，你别看水了。\n小七：为什么？\n大风：这个工作完了。\n小七：还有十九个。\n大风：我知道。\n小七：十九个，七个人，两天。\n大风：两天，我们到那个岛。\n小七：到了岛，我们做什么？\n大风：我们等。\n小七：等什么？\n大风：等一个人。\n小七：他叫什么名字？\n大风看着他。\n大风：老九跟你说了。\n小七：他说了六个人，七个人。\n大风：他说得不多。\n小七：他说得不多，但是他说了。\n大风：小七。\n小七：您说。\n大风：你为什么在这个船上？\n小七：因为我在这个船上。\n大风：你还没有说。\n小七：我不知道怎么说。\n大风：那你想一想。\n大风：想两天。\n小七：两天，您再问我？\n大风：对。\n小七：那我也问您一件事。\n大风：你问。\n小七：您为什么让我看水？\n大风：因为我要一个人看着它。\n小七：船上有六个人。\n大风：那六个人都在这个船上很多年了。\n小七：我不是。\n大风：你不是。\n大风：所以是你。\n小七想了很长时间。\n小七：您不知道他们做什么。\n大风没有说是，也没有说不是。\n大风：两天。",
+    "english_content": "That afternoon Da Feng sent for Xiao Qi.\nDa Feng: From tomorrow, stop counting the water.\nXiao Qi: Why?\nDa Feng: The job is finished.\nXiao Qi: There are nineteen left.\nDa Feng: I know.\nXiao Qi: Nineteen, seven people, two days.\nDa Feng: Two days and we reach the island.\nXiao Qi: And when we get there?\nDa Feng: We wait.\nXiao Qi: For what?\nDa Feng: For a person.\nXiao Qi: What is his name?\nDa Feng looked at him.\nDa Feng: Lao Jiu has talked to you.\nXiao Qi: He told me six and seven.\nDa Feng: He didn't say much.\nXiao Qi: He didn't say much, but he said it.\nDa Feng: Xiao Qi.\nXiao Qi: Go on.\nDa Feng: Why are you on this ship?\nXiao Qi: Because I am on this ship.\nDa Feng: That isn't an answer.\nXiao Qi: I don't know how to say it.\nDa Feng: Then think about it.\nDa Feng: Take two days.\nXiao Qi: And in two days you ask me again?\nDa Feng: Yes.\nXiao Qi: Then I want to ask you something too.\nDa Feng: Ask.\nXiao Qi: Why did you make me count the water?\nDa Feng: Because I needed someone watching it.\nXiao Qi: There are six others.\nDa Feng: All six have been on this ship for years.\nXiao Qi: I haven't.\nDa Feng: You haven't.\nDa Feng: That is why it was you.\nXiao Qi thought about that for a long moment.\nXiao Qi: You don't know what your own crew is doing.\nDa Feng did not say yes and did not say no.\nDa Feng: Two days.",
+    "is_published": true,
+    "reach_words": [
+      "岛",
+      "船上"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 3,
+    "tier_min_words": 130,
+    "title": "10. 这个水不是我的",
+    "english_summary": "The cook gives Xiao Qi the true half of it: the four containers a day were never drunk by anyone. Three years of them. He has been carrying the same arithmetic Xiao Qi was given, in the opposite direction.",
+    "content": "晚上，小七到后面的那个门。\n门开着。\n阿水在里面。\n阿水：你还来。\n小七：我还来。\n阿水：坐。\n小七坐下了。\n阿水：你看这些杯子。\n小七：我看了。\n阿水：这里有多少个？\n小七：我不知道。\n阿水：你知道。你天天看水。\n小七想了一会儿。\n小七：一天四个。\n阿水：对。\n小七：出海十二天。\n阿水：这次十二天。\n小七：这次？\n阿水没有说话。\n小七看着那些杯子。\n小七：这里不是四十八个。\n阿水：不是。\n小七：这里很多。\n阿水：对。\n小七：您做了多长时间？\n阿水：三年。\n小七站起来了。\n小七：三年？\n阿水：三年。\n小七：船三年没有来这里。\n阿水：船没有来。\n阿水：但是我天天拿四个。\n小七：为什么？\n阿水：因为三年前我没有拿。\n小七没有说话。\n阿水：那个时候，船上的水不多。\n阿水：七个人的水，六个人喝。\n小七：六个人喝。\n阿水：对。\n小七：那第七个人呢？\n阿水看着他，很长时间。\n阿水：所以我现在天天拿四个。",
+    "english_content": "That evening Xiao Qi went back to the door at the stern.\nIt was open.\nAh Shui was inside.\nAh Shui: You came back.\nXiao Qi: I came back.\nAh Shui: Sit.\nXiao Qi sat.\nAh Shui: Look at all this.\nXiao Qi: I have.\nAh Shui: How many are there?\nXiao Qi: I don't know.\nAh Shui: You do know. You count water every day.\nXiao Qi thought for a moment.\nXiao Qi: Four a day.\nAh Shui: Yes.\nXiao Qi: Twelve days at sea.\nAh Shui: Twelve days this time.\nXiao Qi: This time?\nAh Shui said nothing.\nXiao Qi looked at the containers again.\nXiao Qi: There aren't forty-eight here.\nAh Shui: No.\nXiao Qi: There are a great many.\nAh Shui: Yes.\nXiao Qi: How long have you been doing this?\nAh Shui: Three years.\nXiao Qi stood up.\nXiao Qi: Three years?\nAh Shui: Three years.\nXiao Qi: The ship hasn't come here in three years.\nAh Shui: The ship hasn't.\nAh Shui: But I have taken four every day.\nXiao Qi: Why?\nAh Shui: Because three years ago I took none.\nXiao Qi said nothing.\nAh Shui: There wasn't much water on the ship then.\nAh Shui: Seven people's water, and six people drinking it.\nXiao Qi: Six people drinking it.\nAh Shui: Yes.\nXiao Qi: And the seventh?\nAh Shui looked at him for a long time.\nAh Shui: That is why I take four, every day.",
+    "is_published": true,
+    "reach_words": [
+      "出海",
+      "船"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 3,
+    "tier_min_words": 130,
+    "title": "11. 十九个",
+    "english_summary": "The crew finds out how little water is left and wants to turn for home. Da Feng will not. The vote comes down to the newest person on the ship, who has been aboard eleven days and is twelve years old.",
+    "content": "第二天早上，船上的人都知道了。\n十九个杯子。\n七个人。\n两天。\n他们都到上面来。\n阿力：我们回去。\n大风：不回。\n阿力：水不多了。\n大风：我知道。\n阿力：您知道，但是您还往前走。\n大风：对。\n阿力：为什么？\n大风没有说话。\n老九：因为岛上有一个人。\n大家都不说话了。\n阿力：三年了。\n老九：三年了。\n阿力：三年，一个人在岛上。\n老九：对。\n阿力：那我们去做什么？\n老九没有说话。\n阿水：我们去拿他。\n阿力：阿水。\n阿水：我们三年前没有拿他。\n阿力：那个时候水不多。\n阿水：现在也不多。\n阿力：所以我们回去。\n阿水：三年前你也这样说。\n大家都不说话。\n大风：小七。\n小七：我？\n大风：你天天看水。你说。\n阿力：他十二岁！\n大风：他十二岁，他看了十一天。\n小七很长时间没有说话。\n小七：十九个杯子，两天。\n阿力：对。\n小七：回去要十二天。\n阿力：……对。\n小七：那我们回不去。\n没有人说话。\n小七：我们只能往前走。\n大风看着他。\n大风：往前走。",
+    "english_content": "By the next morning everyone on the ship knew.\nNineteen containers.\nSeven people.\nTwo days.\nThey all came up on deck.\nA Li: We turn back.\nDa Feng: No.\nA Li: There's no water left.\nDa Feng: I know.\nA Li: You know, and you keep going.\nDa Feng: Yes.\nA Li: Why?\nDa Feng said nothing.\nLao Jiu: Because there is a man on that island.\nNobody spoke.\nA Li: It has been three years.\nLao Jiu: Three years.\nA Li: Three years. A man alone on an island.\nLao Jiu: Yes.\nA Li: Then what are we going there for?\nLao Jiu did not answer.\nAh Shui: We are going to get him.\nA Li: Ah Shui.\nAh Shui: We didn't get him three years ago.\nA Li: There was no water then.\nAh Shui: There is no water now.\nA Li: Which is why we go back.\nAh Shui: You said that three years ago too.\nNobody spoke.\nDa Feng: Xiao Qi.\nXiao Qi: Me?\nDa Feng: You count the water. You say.\nA Li: He's twelve!\nDa Feng: He's twelve, and he has counted for eleven days.\nFor a long moment Xiao Qi said nothing.\nXiao Qi: Nineteen containers. Two days.\nA Li: Correct.\nXiao Qi: Turning back takes twelve.\nA Li: … Correct.\nXiao Qi: Then we can't go back.\nNobody said anything.\nXiao Qi: Forward is the only way there is.\nDa Feng looked at him.\nDa Feng: Forward.",
+    "is_published": true,
+    "reach_words": [
+      "船",
+      "岛"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "tier": 3,
+    "tier_min_words": 130,
+    "title": "12. 岛",
+    "english_summary": "Two days of no water and no talking, and then Lao Jiu shouts one word from the bow. There is a man standing on the beach, and he is not waving.",
+    "content": "那两天，船上没有人说话。\n水一天比一天少。\n小七不看水了。\n他天天在船的前面看海。\n第一天，海上都是海。\n第二天早上，也是海。\n中午，老九在上面。\n老九：岛！\n大家都跑到前面来。\n海的那边有一个岛。\n岛不大。\n小七看了很长时间。\n小七：岛上有东西吗？\n老九：有。\n小七：什么？\n老九没有说话。\n船慢慢地往岛那边开。\n一个小时，两个小时。\n船离岛很近了。\n下午四点，他们能看见岛上的东西了。\n岛上有绿色的东西。\n海边有一个小门。\n门前面有一个人。\n他站在那里。\n他没有动。\n小七：他看见我们了吗？\n老九：看见了。\n小七：那他为什么不动？\n没有人跟他说话。\n阿水到了小七旁边。\n阿水：小七。\n小七：什么？\n阿水：大风问过你一件事。\n小七：他问我为什么在这个船上。\n阿水：两天到了。\n小七看着岛上的那个人。\n小七：我知道我为什么在这个船上。\n阿水：那你说。\n小七：我到了岛上说。\n船往岛那边开。\n岛上的那个人还站在那里。\n他还是没有动。",
+    "english_content": "For two days nobody on the ship spoke.\nThe water got lower by the day.\nXiao Qi no longer counted it.\nHe stood at the bow and watched the sea.\nThe first day there was only sea.\nThe second morning, still sea.\nAt midday Lao Jiu was up top.\nLao Jiu: Island!\nThey all ran to the bow.\nThere it was, across the water.\nIt was not big.\nXiao Qi looked at it for a long time.\nXiao Qi: Is there anything on it?\nLao Jiu: Yes.\nXiao Qi: What?\nLao Jiu did not answer.\nThe ship moved slowly towards it.\nOne hour. Two.\nThe ship drew close.\nBy four in the afternoon they could make things out on it.\nThere was green on it.\nAt the water's edge there was a low doorway.\nAnd in front of it, a man.\nHe was standing.\nHe did not move.\nXiao Qi: Has he seen us?\nLao Jiu: He's seen us.\nXiao Qi: Then why isn't he moving?\nNobody answered him.\nAh Shui came and stood beside Xiao Qi.\nAh Shui: Xiao Qi.\nXiao Qi: What?\nAh Shui: Da Feng asked you something.\nXiao Qi: He asked why I'm on this ship.\nAh Shui: The two days are up.\nXiao Qi watched the man on the shore.\nXiao Qi: I know why I'm on this ship.\nAh Shui: Then say it.\nXiao Qi: I'll say it when we land.\nThe ship went on towards the island.\nThe man on the island was still standing there.\nHe still had not moved.",
+    "is_published": true,
+    "reach_words": [
+      "船",
+      "看海",
+      "海",
+      "岛",
+      "离岛",
+      "海边",
+      "船上"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 3,
+    "tier_min_words": 220,
+    "title": "13. 上岛",
+    "english_summary": "Four of them go ashore. The man has been on this island three years and does not seem surprised to see them. Then he looks past the captain at the boy, and asks one question about a name.",
+    "content": "下午五点，船到了岛边。\n大风、阿水、老九和小七上了岛。\n岛上很安静。\n只有海的声音。\n那个人还站在门前面。\n他很老。\n他的衣服不是衣服了。\n他们走到他前面。\n没有人说话。\n最后，那个人说话了。\n男人：你们来了。\n大风：我们来了。\n男人：三年。\n大风：三年。\n男人：我一直在这里。\n大风：我知道。\n那个人没有再说话。\n他看了看阿水。\n他看了看老九。\n然后他看见了小七。\n他的眼睛变了。\n男人：这个孩子是谁？\n大风：他自己上的船。\n男人：他叫什么名字？\n大风：小七。\n那个人很长时间没有说话。\n男人：小七。\n小七没有回答。\n男人：你妈妈叫什么？\n小七说了一个名字。\n那个人坐下了。\n他不是慢慢地坐下的。\n他坐在地上，手放在地上。\n阿水走到他旁边。\n阿水：你还好吗？\n那个人没有回答。\n他一直看着小七。\n最后他说了两个字。\n男人：小七。\n小七：爸爸。\n海还在那里。\n没有人说话。",
+    "english_content": "At five in the afternoon the ship came in to the island.\nDa Feng, Ah Shui, Lao Jiu and Xiao Qi went ashore.\nThe island was very quiet.\nThere was only the sound of the sea.\nThe man was still standing in front of the doorway.\nHe looked old.\nWhat he was wearing was no longer really clothing.\nThey walked up to him.\nNobody spoke.\nAt last the man spoke.\nThe man: You came.\nDa Feng: We came.\nThe man: Three years.\nDa Feng: Three years.\nThe man: I have been here the whole time.\nDa Feng: I know.\nThe man said nothing more.\nHe looked at Ah Shui.\nHe looked at Lao Jiu.\nThen he saw Xiao Qi.\nSomething in his eyes changed.\nThe man: Who is this child?\nDa Feng: He put himself on the ship.\nThe man: What is his name?\nDa Feng: Xiao Qi.\nFor a long time the man said nothing.\nThe man: Xiao Qi.\nXiao Qi did not answer.\nThe man: What is your mother's name?\nXiao Qi said a name.\nThe man sat down.\nNot slowly.\nHe sat down on the ground with his hands on the ground.\nAh Shui went to him.\nAh Shui: Are you all right?\nThe man did not answer.\nHe was looking at Xiao Qi and did not stop.\nAt last he said two syllables.\nThe man: Xiao Qi.\nXiao Qi: Father.\nThe sea went on behind them.\nNobody said anything at all.",
+    "is_published": true,
+    "reach_words": [
+      "船",
+      "岛",
+      "海"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 3,
+    "tier_min_words": 220,
+    "title": "14. 没有人说不",
+    "english_summary": "His father tells him how a man ends up alone on an island. Nobody decided it. Nobody voted. He offered, and six people did not say no, and he has had three years to work out whether those are different things.",
+    "content": "那天晚上，他们在岛上。\n小七和爸爸坐在海边。\n小七：三年前，怎么了？\n爸爸：三年前，船上的水不多了。\n爸爸：回家要十天。\n爸爸：水只有五天。\n爸爸：七个人，五天。\n小七：六个人呢？\n爸爸：六天。\n小七：六天也不能到家。\n爸爸：不能。可是六天比五天多。\n小七：所以有一个人要下船。\n爸爸：对。\n小七：谁决定的？\n爸爸：没有人决定。\n小七：什么意思？\n爸爸：我们都在上面。没有人说话。\n爸爸：一分钟，两分钟，没有人说话。\n爸爸：后来我说，我下去。\n小七：您说的？\n爸爸：我说的。\n小七：那他们呢？\n爸爸：他们没有说不。\n小七：一个人也没有？\n爸爸：一个人也没有。\n小七很长时间没有说话。\n小七：这是他们的错。\n爸爸：这不是他们的错。\n小七：他们让您下船。\n爸爸：他们没有让我。他们只是没有说不。\n小七：那是一样的。\n爸爸没有回答。\n海一直在那里。\n最后爸爸说话了。\n爸爸：三年，我天天想这件事。\n小七：您想到什么？\n爸爸：第一年，我想这不是他们的错。\n爸爸：第二年，我还是这样想。\n小七：第三年呢？\n爸爸很长时间没有说话。\n爸爸：第三年我想，你说得对。\n爸爸：那是一样的。",
+    "english_content": "That night they stayed on the island.\nXiao Qi and his father sat by the water.\nXiao Qi: What happened, three years ago?\nFather: Three years ago the water ran low.\nFather: Ten days to get home.\nFather: Five days of water.\nFather: Seven people, five days.\nXiao Qi: And six people?\nFather: Six days.\nXiao Qi: Six days still doesn't get you home.\nFather: It doesn't. But six is more than five.\nXiao Qi: So one person had to leave the ship.\nFather: Yes.\nXiao Qi: Who decided?\nFather: Nobody decided.\nXiao Qi: What does that mean?\nFather: We were all up on deck. Nobody said anything.\nFather: One minute, two minutes. Nobody said anything.\nFather: And then I said, I'll go.\nXiao Qi: You said it?\nFather: I said it.\nXiao Qi: And them?\nFather: They didn't say no.\nXiao Qi: Not one of them?\nFather: Not one.\nFor a long time Xiao Qi said nothing.\nXiao Qi: This is their fault.\nFather: It isn't their fault.\nXiao Qi: They put you off the ship.\nFather: They didn't put me off. They just didn't say no.\nXiao Qi: That's the same thing.\nHis father did not answer.\nThe sea kept on beside them.\nAt last his father spoke.\nFather: Three years. I have thought about this every day.\nXiao Qi: And what did you decide?\nFather: The first year I decided it wasn't their fault.\nFather: The second year I still thought so.\nXiao Qi: And the third?\nHis father was silent a long time.\nFather: The third year I decided you're right.\nFather: It is the same thing.",
+    "is_published": true,
+    "reach_words": [
+      "岛",
+      "海边",
+      "船",
+      "下船",
+      "海"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 3,
+    "tier_min_words": 220,
+    "title": "15. 一千天",
+    "english_summary": "Ah Shui was the one counting the water three years ago, and he counted it wrong. He worked out how wrong on the third day of the voyage home, and he has been carrying four containers a day ever since.",
+    "content": "第二天早上，阿水来找小七。\n阿水：我要跟你说一件事。\n小七：您说。\n阿水：三年前，看水的人是我。\n小七没有说话。\n阿水：我看错了。\n阿水：我说只有五天。\n小七：其实呢？\n阿水：七天。\n小七：七天。\n阿水：七天，七个人，可以到家。\n小七站起来了。\n小七：可以到家。\n阿水：可以。\n小七：那我爸爸不用下船。\n阿水：不用。\n小七：您什么时候发现的？\n阿水：我们回家的第三天。\n小七：第三天。\n阿水：第三天。\n小七：那您为什么不回来？\n阿水：我跟大风说了。\n小七：他说什么？\n阿水：他说，我们回不去了。\n小七：为什么？\n阿水：因为我们只有四天的水。\n小七：所以您看错了两天，我爸爸在这里三年。\n阿水：对。\n小七：那些水呢？\n阿水：从那天开始，我天天拿四个杯子。\n小七：为什么是四个？\n阿水：我不知道。\n阿水：第一天我拿了四个。第二天我也拿了四个。\n阿水：后来我就没有想过这个问题。\n小七：三年。\n阿水：一千天。\n小七：一千天。\n阿水：我一个杯子也没有喝过。\n小七看着他。\n小七：您想我说没关系吗？\n阿水：不想。\n小七：好。\n阿水：谢谢。",
+    "english_content": "The next morning Ah Shui came to find Xiao Qi.\nAh Shui: There's something I have to tell you.\nXiao Qi: Go on.\nAh Shui: Three years ago, I was the one counting the water.\nXiao Qi said nothing.\nAh Shui: I got it wrong.\nAh Shui: I said five days.\nXiao Qi: And really?\nAh Shui: Seven.\nXiao Qi: Seven.\nAh Shui: Seven days, seven people. Enough to get home.\nXiao Qi stood up.\nXiao Qi: Enough to get home.\nAh Shui: Enough.\nXiao Qi: Then my father never had to leave the ship.\nAh Shui: He never had to.\nXiao Qi: When did you find out?\nAh Shui: On the third day of the voyage home.\nXiao Qi: The third day.\nAh Shui: The third day.\nXiao Qi: Then why didn't you turn around?\nAh Shui: I told Da Feng.\nXiao Qi: What did he say?\nAh Shui: He said we couldn't get back.\nXiao Qi: Why not?\nAh Shui: Because by then we only had four days of water.\nXiao Qi: So you were two days out, and my father has been here three years.\nAh Shui: Yes.\nXiao Qi: And all that water?\nAh Shui: From that day on I took four containers a day.\nXiao Qi: Why four?\nAh Shui: I don't know.\nAh Shui: The first day I took four. The second day I took four.\nAh Shui: After that I stopped asking myself about it.\nXiao Qi: Three years.\nAh Shui: A thousand days.\nXiao Qi: A thousand days.\nAh Shui: I have not drunk one of them.\nXiao Qi looked at him.\nXiao Qi: Do you want me to say it's all right?\nAh Shui: No.\nXiao Qi: Good.\nAh Shui: Thank you.",
+    "is_published": true,
+    "reach_words": [
+      "下船"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 3,
+    "tier_min_words": 220,
+    "title": "16. 我等了三年",
+    "english_summary": "Xiao Qi finally answers the captain's question. He did not end up on this ship. He worked out where it would be and when, and he was nine years old when he started waiting.",
+    "content": "下午，大风叫小七到船上。\n大风：两天前我问过你一件事。\n小七：您问我为什么在这个船上。\n大风：对。\n小七：我现在可以说了。\n大风：那你说。\n小七：三年前，我九岁。\n小七：我爸爸出海，没有回来。\n大风没有说话。\n小七：我妈妈问了很多人。\n小七：他们都说一样的话。\n大风：他们说什么？\n小七：他们说，海上的事，没有人知道。\n大风：……对。\n小七：可是有一个人跟我妈妈说了别的。\n大风：谁？\n小七：我不知道他的名字。\n小七：他说，那个船三年来一次。\n大风：他说得对。\n小七：我妈妈去年不在了。\n大风：……\n小七：她不在了以后，我一直等。\n大风：等什么？\n小七：等三年到。\n大风：你怎么知道船在哪里？\n小七：我不知道。\n小七：我天天去海边看。\n大风：天天？\n小七：天天。\n大风：多长时间？\n小七：一年。\n大风很长时间没有说话。\n小七：后来我看见了这个船。\n小七：我就上来了。\n大风：你上来的时候，你知道船去哪儿吗？\n小七：不知道。\n大风：你不知道船去哪儿，你也上来了。\n小七：对。\n大风：为什么？\n小七：因为这个船是最后一个办法。",
+    "english_content": "That afternoon Da Feng called Xiao Qi back on board.\nDa Feng: Two days ago I asked you something.\nXiao Qi: You asked why I'm on this ship.\nDa Feng: Yes.\nXiao Qi: I can say it now.\nDa Feng: Then say it.\nXiao Qi: Three years ago I was nine.\nXiao Qi: My father went to sea and did not come back.\nDa Feng said nothing.\nXiao Qi: My mother asked a great many people.\nXiao Qi: They all said the same thing.\nDa Feng: What did they say?\nXiao Qi: They said the sea is the sea, and nobody knows.\nDa Feng: … Yes.\nXiao Qi: But one person told my mother something else.\nDa Feng: Who?\nXiao Qi: I don't know his name.\nXiao Qi: He said that ship comes back every three years.\nDa Feng: He was right.\nXiao Qi: My mother died last year.\nDa Feng: …\nXiao Qi: After she was gone I just waited.\nDa Feng: For what?\nXiao Qi: For the three years to be up.\nDa Feng: How did you know where the ship would be?\nXiao Qi: I didn't.\nXiao Qi: I went down to the water every day and looked.\nDa Feng: Every day?\nXiao Qi: Every day.\nDa Feng: For how long?\nXiao Qi: A year.\nDa Feng was silent for a long time.\nXiao Qi: And then I saw this ship.\nXiao Qi: And I got on it.\nDa Feng: When you came aboard, did you know where it was going?\nXiao Qi: No.\nDa Feng: You didn't know where it was going, and you got on anyway.\nXiao Qi: Yes.\nDa Feng: Why?\nXiao Qi: Because this ship was the last thing left to try.",
+    "is_published": true,
+    "reach_words": [
+      "船上",
+      "出海",
+      "海",
+      "船",
+      "海边"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 3,
+    "tier_min_words": 220,
+    "title": "17. 第一天我就知道了",
+    "english_summary": "The captain explains why a stowaway was never put off his ship, and why the job he was given was the water. It is not kindness. It is a man who three years ago also said nothing, arranging to be caught.",
+    "content": "大风看着海。\n大风：小七，我也要说一件事。\n小七：您说。\n大风：第一天我看见你，我就知道你是谁。\n小七：第一天？\n大风：第一天。\n小七：您怎么知道的？\n大风：你的眼睛。\n小七没有说话。\n大风：老九问我，我们回去吗。我说不回。\n小七：因为您知道我是谁。\n大风：因为我知道你是谁。\n小七：那您为什么让我看水？\n大风：因为我要一个人看着阿水。\n小七：您知道他拿水？\n大风：我三年前就知道了。\n小七：那您为什么不说？\n大风：因为我不要他不拿。\n小七想了一会儿。\n小七：您要那些水。\n大风：我要那些水。\n小七：为了这一天。\n大风：为了这一天。\n小七：那您为什么要我看？\n大风很长时间没有回答。\n大风：三年前，我也在上面。\n小七：我知道。\n大风：你爸爸说他下去的时候，我也没有说不。\n小七：我知道。\n大风：这三年，船上的人都不说这件事。\n大风：不说，这件事就慢慢地不在了。\n小七：所以您要一个新的人。\n大风：我要一个新的人，天天看那些水。\n大风：天天看，就不会忘记。\n小七：您用了我。\n大风：我用了你。\n小七：您也可以自己天天看。\n大风：我可以。\n小七：那您为什么不看？\n大风：因为我三年前就发现了，我自己的话，我不相信。",
+    "english_content": "Da Feng looked at the sea.\nDa Feng: Xiao Qi, I have something to say as well.\nXiao Qi: Go on.\nDa Feng: The first day I saw you, I knew who you were.\nXiao Qi: The first day?\nDa Feng: The first day.\nXiao Qi: How?\nDa Feng: Your eyes.\nXiao Qi said nothing.\nDa Feng: Lao Jiu asked me if we were turning back. I said no.\nXiao Qi: Because you knew who I was.\nDa Feng: Because I knew who you were.\nXiao Qi: Then why did you make me count the water?\nDa Feng: Because I needed someone watching Ah Shui.\nXiao Qi: You knew he was taking it?\nDa Feng: I have known for three years.\nXiao Qi: Then why didn't you say anything?\nDa Feng: Because I didn't want him to stop.\nXiao Qi thought about that.\nXiao Qi: You wanted that water.\nDa Feng: I wanted that water.\nXiao Qi: For today.\nDa Feng: For today.\nXiao Qi: Then why did you need me to see it?\nDa Feng did not answer for a long time.\nDa Feng: Three years ago I was up on that deck too.\nXiao Qi: I know.\nDa Feng: When your father said he would go, I did not say no either.\nXiao Qi: I know that too.\nDa Feng: For three years nobody on this ship has spoken of it.\nDa Feng: And a thing you don't speak of slowly stops being there.\nXiao Qi: So you wanted someone new.\nDa Feng: I wanted someone new, counting that water every day.\nDa Feng: Counting it every day so it could not be forgotten.\nXiao Qi: You used me.\nDa Feng: I used you.\nXiao Qi: You could have counted it yourself.\nDa Feng: I could have.\nXiao Qi: Why didn't you?\nDa Feng: Because three years ago I found out I don't believe myself.",
+    "is_published": true,
+    "reach_words": [
+      "海",
+      "船"
+    ]
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "tier": 3,
+    "tier_min_words": 220,
+    "title": "18. 八个人",
+    "english_summary": "They leave the island with one more person than they arrived with, and Lao Jiu says the line he said on the first morning, with the numbers moved up by one.",
+    "content": "他们在岛上住了两天。\n阿水天天做饭。\n小七的爸爸吃得很慢。\n三年，他忘记了怎么快快地吃。\n第三天早上，他们上船。\n阿水把那个后面的门打开了。\n里面有一千天的水。\n大风：这些水能回家吗？\n小七看了看。\n小七：能。\n大风：你看一下。\n小七：八个人，回家十天。\n小七：一天八个，十天八十个。\n大风：这里有多少？\n小七：这里比八十个多。\n大风：多多少？\n小七：很多很多。\n阿水没有说话。\n他一直看着地上。\n小七的爸爸走到他旁边。\n爸爸：阿水。\n阿水：……\n爸爸：这些水是你的。\n阿水：不是我的。\n爸爸：那你现在喝一个。\n阿水很长时间没有动。\n最后他拿了一个杯子。\n他喝了。\n他哭了。\n没有人看他。\n船开了。\n岛越来越小。\n小七站在船的后面看那个岛。\n他爸爸也站在那里。\n爸爸：你在看什么？\n小七：我在看这个地方。\n爸爸：为什么？\n小七：因为我不要忘记它。\n爸爸没有说话。\n他把手放在小七的头上。\n老九从前面过来。\n老九：这个船上有七个人。\n大风：现在有八个。\n老九：我们回家吗？\n大风：回家。",
+    "english_content": "They stayed on the island two days.\nAh Shui cooked.\nXiao Qi's father ate very slowly.\nThree years had taken from him the habit of eating quickly.\nOn the third morning they went aboard.\nAh Shui opened the door at the stern.\nBehind it were a thousand days of water.\nDa Feng: Will that get us home?\nXiao Qi looked.\nXiao Qi: It will.\nDa Feng: Work it out.\nXiao Qi: Eight people. Ten days home.\nXiao Qi: Eight a day, ten days, eighty containers.\nDa Feng: How many are there?\nXiao Qi: More than eighty.\nDa Feng: How many more?\nXiao Qi: A great many more.\nAh Shui said nothing.\nHe was looking at the deck.\nXiao Qi's father walked over to him.\nFather: Ah Shui.\nAh Shui: …\nFather: This water is yours.\nAh Shui: It isn't mine.\nFather: Then drink one of them now.\nFor a long time Ah Shui did not move.\nAt last he picked one up.\nHe drank.\nAnd he cried.\nNobody looked at him.\nThe ship put out.\nThe island got smaller.\nXiao Qi stood at the stern and watched it.\nHis father stood there too.\nFather: What are you looking at?\nXiao Qi: I'm looking at that place.\nFather: Why?\nXiao Qi: Because I don't want to forget it.\nHis father said nothing.\nHe put a hand on Xiao Qi's head.\nLao Jiu came back along the deck.\nLao Jiu: This ship has seven people on it.\nDa Feng: Now it has eight.\nLao Jiu: Do we go home?\nDa Feng: We go home.",
+    "is_published": true,
+    "reach_words": [
+      "岛",
+      "上船",
+      "船",
+      "船上"
+    ]
   }
 ]
