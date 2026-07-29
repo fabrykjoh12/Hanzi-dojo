@@ -1,6 +1,6 @@
 import { wordStatus, isPlaceWord, isWordlikeToken } from './storyReading'
 import { TokenBody, RevealEnglishButton } from './ReadingScaffold'
-import { PAPER, BUBBLE_RADIUS, TYPE, TAP_TARGET } from './mangaTokens'
+import { PAPER, BUBBLE_OVAL, BUBBLE_FRAME, NARRATION_RADIUS, TYPE, TAP_TARGET } from './mangaTokens'
 import { Volume2 } from 'lucide-react'
 
 // A line of the story, drawn as interface over the artwork.
@@ -24,26 +24,41 @@ const SR_ONLY = {
   overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0,
 }
 
+// The balloon itself. Drawn the way a comic draws one: a heavy ink keyline and
+// an elliptical shape, with no shadow — ink on paper does not float.
+//
+// Narration is deliberately the odd one out. In print a caption is a hard-edged
+// box, not a balloon, and keeping it square is what tells the reader at a glance
+// that nobody is saying it out loud.
 function chromeFor(kind, accentHex) {
   if (kind === 'narration') {
     return {
-      background: 'rgba(250, 248, 243, 0.94)',
-      border: '1px solid ' + PAPER.soft,
-      borderLeft: '2.5px solid ' + accentHex,
-      borderRadius: '4px 12px 12px 4px',
+      background: '#FBF9F4',
+      border: '2px solid ' + PAPER.frame,
+      borderLeft: '5px solid ' + accentHex,
+      borderRadius: NARRATION_RADIUS + 'px',
+    }
+  }
+  if (kind === 'thought') {
+    // A thought balloon is a cloud. A dashed keyline is the honest CSS
+    // approximation of a scalloped edge, and reads as "unspoken" instantly.
+    return {
+      background: PAPER.bubble,
+      border: BUBBLE_FRAME + 'px dashed ' + PAPER.frame,
+      borderRadius: BUBBLE_OVAL,
     }
   }
   if (kind === 'reply') {
     return {
       background: 'color-mix(in srgb, ' + accentHex + ' 7%, ' + PAPER.bubble + ')',
-      border: '1px solid color-mix(in srgb, ' + accentHex + ' 26%, transparent)',
-      borderRadius: BUBBLE_RADIUS + 'px',
+      border: BUBBLE_FRAME + 'px solid ' + accentHex,
+      borderRadius: BUBBLE_OVAL,
     }
   }
   return {
     background: PAPER.bubble,
-    border: '1px solid ' + (kind === 'thought' ? PAPER.soft : PAPER.hairline),
-    borderRadius: BUBBLE_RADIUS + 'px',
+    border: BUBBLE_FRAME + 'px solid ' + PAPER.frame,
+    borderRadius: BUBBLE_OVAL,
   }
 }
 
@@ -54,21 +69,22 @@ function Tail({ tail, kind, accentHex }) {
   const chrome = chromeFor(kind, accentHex)
   const bottom = tail.indexOf('bottom') === 0
   const left = tail.indexOf('left') !== -1
-  const edge = kind === 'reply'
-    ? 'color-mix(in srgb, ' + accentHex + ' 26%, transparent)'
-    : (kind === 'thought' ? PAPER.soft : PAPER.hairline)
+  const edge = kind === 'reply' ? accentHex : PAPER.frame
   const base = {
     position: 'absolute', width: 0, height: 0,
-    borderLeft: '9px solid transparent', borderRight: '9px solid transparent',
+    borderLeft: '10px solid transparent', borderRight: '10px solid transparent',
   }
   const dir = bottom ? 'borderTop' : 'borderBottom'
-  const pos = bottom ? { bottom: '-13px' } : { top: '-13px' }
-  const posIn = bottom ? { bottom: '-11px' } : { top: '-11px' }
-  const side = left ? { left: '26px' } : { right: '26px' }
+  // The outline triangle sits 3px further out than the fill triangle, so the
+  // keyline continues around the point at the same weight as the balloon's edge
+  // instead of thinning to nothing.
+  const pos = bottom ? { bottom: '-19px' } : { top: '-19px' }
+  const posIn = bottom ? { bottom: '-16px' } : { top: '-16px' }
+  const side = left ? { left: '30px' } : { right: '30px' }
   return (
     <>
-      <span aria-hidden style={{ ...base, ...pos, ...side, [dir]: '13px solid ' + edge }} />
-      <span aria-hidden style={{ ...base, ...posIn, ...side, [dir]: '13px solid ' + chrome.background }} />
+      <span aria-hidden style={{ ...base, ...pos, ...side, [dir]: '19px solid ' + edge }} />
+      <span aria-hidden style={{ ...base, ...posIn, ...side, [dir]: '16px solid ' + chrome.background }} />
     </>
   )
 }
@@ -144,7 +160,7 @@ export default function MangaBubble({
   return (
     <div
       className={reduceMotion ? undefined : 'hd-manga-bubble'}
-      style={{ ...position, ...chrome, padding: narration ? '10px 14px' : '11px 14px 12px', boxShadow: overlay ? PAPER.shadow : 'none', ...style }}
+      style={{ ...position, ...chrome, padding: narration ? '10px 14px' : '14px 22px 15px', boxShadow: 'none', ...style }}
     >
       <Tail tail={tail} kind={kind} accentHex={accentHex} />
 

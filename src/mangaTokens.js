@@ -37,10 +37,16 @@ export const PAPER = {
   // Surfaces drawn ON the paper.
   bubble: 'rgba(255, 255, 255, 0.96)',
   card: '#FFFDF9',
-  // Edges. `hairline` is the panel border; `soft` divides content inside a card.
+  // Edges. A printed comic is drawn in ink, not in grey UI hairlines: `frame` is
+  // the black keyline around a panel and around a balloon, `hairline` and `soft`
+  // stay for the cards and dividers that are interface rather than page.
+  frame: '#171411',
   hairline: 'rgba(23, 20, 17, 0.14)',
   soft: 'rgba(23, 20, 17, 0.08)',
   // Warm, low shadows — a page lit from above, not a UI card floating in space.
+  // Panels and balloons take NONE of this: ink on paper does not cast a shadow,
+  // and a shadow under a balloon is the single thing that made this read as a
+  // messaging app rather than a comic.
   shadow: '0 1px 2px rgba(23, 20, 17, 0.06), 0 8px 24px -12px rgba(23, 20, 17, 0.22)',
   shadowLift: '0 2px 4px rgba(23, 20, 17, 0.08), 0 14px 32px -14px rgba(23, 20, 17, 0.28)',
 }
@@ -49,10 +55,26 @@ export const PAPER = {
 // rather than widening into a dashboard.
 export const COLUMN_MAX = 520
 
-// Panel geometry, from the reference: a large radius would make a panel read as
-// a card, and a hairline border is what makes it read as printed.
-export const PANEL_RADIUS = 12
-export const BUBBLE_RADIUS = 26
+// Panel and balloon geometry, taken from the reference page.
+//
+// A panel on a comic page is a rectangle with a black keyline and a white
+// gutter around it — not a rounded card. The radius here is 3px rather than 0
+// only so the corner does not alias harshly against the artwork; anything
+// larger and the panel reads as a UI card again.
+export const PANEL_RADIUS = 3
+export const PANEL_FRAME = 2          // the keyline's weight, in px
+export const GUTTER = 12              // white space between panels
+
+// A speech balloon is an OVAL with a heavy ink outline. Expressed as an
+// elliptical radius (50% / 42%) rather than a corner radius, which is what
+// separates a drawn balloon from a rounded rectangle. Narration is the
+// exception: a caption plate is a hard-edged box in print, and stays one.
+export const BUBBLE_OVAL = '50% / 42%'
+export const BUBBLE_FRAME = 2.5
+export const NARRATION_RADIUS = 2
+
+// Cards below the page (the choice, the closing plate) are interface, not
+// artwork, and keep the app's softer geometry.
 export const CARD_RADIUS = 22
 export const OPTION_RADIUS = 16
 

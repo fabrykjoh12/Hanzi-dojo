@@ -5,7 +5,7 @@ import {
   readBeats, episodeProgress, isEpisodeComplete, bubbleLayout, panelAtReadingLine,
 } from './mangaLayout'
 import { loadMangaProgress, saveMangaProgress, resumePanel } from './mangaProgress'
-import { PAPER, COLUMN_MAX, mangaAccent, mangaFontStack } from './mangaTokens'
+import { PAPER, COLUMN_MAX, GUTTER, mangaAccent, mangaFontStack } from './mangaTokens'
 import { minDwellMs } from './readAlong'
 import MangaHeader from './MangaHeader'
 import MangaPanel from './MangaPanel'
@@ -311,7 +311,10 @@ export default function MangaReader(props) {
           // The bottom pad clears the mobile tab bar the app shell draws over
           // this screen, so the closing plate is never half-hidden behind it.
           padding: '12px 12px calc(88px + env(safe-area-inset-bottom, 0px))',
-          display: 'flex', flexDirection: 'column', gap: '14px',
+          // The gutter. On a comic page the white space between panels is part
+          // of the drawing's grammar — it is what makes two pictures read as
+          // consecutive moments rather than two cards in a list.
+          display: 'flex', flexDirection: 'column', gap: GUTTER + 'px',
         }}
       >
         {panels.slice(0, limit + 1).map((panel, i) => {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PAPER, PANEL_RADIUS } from './mangaTokens'
+import { PAPER, PANEL_RADIUS, PANEL_FRAME } from './mangaTokens'
 
 // One cinematic panel: the art, with the dialogue drawn on top of it by the
 // caller.
@@ -62,12 +62,14 @@ export default function MangaPanel({
         borderRadius: PANEL_RADIUS + 'px',
         overflow: 'hidden',
         background: emptyPlate(accentHex),
-        // 1px hairline normally; the accent treatment is a slightly heavier
-        // cinnabar edge, reserved for a panel the episode wants to land on.
-        border: accent
-          ? '1.5px solid color-mix(in srgb, ' + accentHex + ' 55%, ' + PAPER.hairline + ')'
-          : '1px solid ' + PAPER.hairline,
-        boxShadow: PAPER.shadow,
+        // A printed keyline, not a UI border: a panel on a comic page is a black
+        // rectangle with white gutter around it. The accent treatment thickens
+        // the same line in cinnabar, reserved for a panel the episode lands on.
+        border: (accent ? PANEL_FRAME + 1 : PANEL_FRAME) + 'px solid '
+          + (accent ? accentHex : PAPER.frame),
+        // No shadow. Ink on paper does not float above the page, and the soft
+        // drop shadow was what made a panel read as a card in a feed.
+        boxShadow: 'none',
       }}>
         {showImg && (
           <img
