@@ -67,6 +67,15 @@ when we resume, not scheduled.
 - [ ] **Stale fix instruction above:** the HSK 3-6 reading-fix entry says "re-run Actions → task `audio-hsk3-6`". That task was **retired** in `5e65347` (it billed Google, not Azure) and now exits 1 with a pointer. Once the Azure secrets exist, the equivalent is `tts-flashcards` for the affected levels; the legacy Google `audio_path` rows it replaces are the ones carrying the wrong readings.
 - [ ] **Chinese → HSK 7-9** (the advanced band): seed the vocab, then run `generate-meanings` → `generate-examples` → `generate-serial-stories` → `generate-audio`/`generate-story-audio`. Add tiers to `storyTiers.js` and level labels in `utils.js`. *(HSK 3-6 vocab/examples/audio already shipped; stories pending LLM quota.)*
 - [ ] More graded stories at existing Chinese levels (volume, not just new levels) — improves the "read next" ladder density.
+- [ ] **Six published HSK 2-3 stories sit under their level's coverage bar.** Found by `node check-authored-stories.mjs`, which now runs the same validator the generator uses against the vocabulary lists in `data/` (no network, no API key). These predate that checker, so nothing regressed — but a learner reading them meets words that are not on their list yet:
+  - `在动物园` (L2 t1) — 65% vs 90%. The worst of them: 狮子、熊、猴子、象、冰淇淋、拍、照片. A scene story, so the zoo animals are the point; it may be easier to re-level it to HSK 3 than to rewrite it.
+  - `回家的路` (L3 t1) — 83% vs 88%: 压力、美丽、阳光、桥、父母、母亲、幸福、消失.
+  - `新的决定` (L3 t1) — 87%: 理解、紧张、支持、庆祝.
+  - `坚持` (L3 t1) — 88% (marginal): 困、紧张、停止、建议、胜利.
+  - `周末的电影` (L2 t1) — 88% vs 90%: 末、空、主意.
+  - `2. 一个办法` (L3 t2) — 85% vs 86% (marginal): 田、秧苗、拉.
+  Deliberately **not** rewritten — these are published stories and how far to push a reach word is a content call, not a lint. The two marginal ones may just want a word swapped; `在动物园` needs a decision.
+- [ ] **Cover art for the 45 new HSK 4-6 chapters.** Every other published story has an illustration; these nine seasons ship with the designed fallback. Pipeline is unchanged: author `data/story-covers.json`, then Actions → `story-images-apply`.
 - [ ] *(PAUSED)* **Japanese JLPT N4+ / Russian A2+**: same pipeline per new level; extend the level/tier config so onboarding offers them (Onboarding gates on seeded levels already). Repo already has `data/n4.json` (N4 vocab, meanings + readings) if/when we resume Japanese.
 - [ ] *(PAUSED)* **Spanish track**: add a `spanish` entry to `languageTheme.js` (accent, font, system=CEFR), level list + tiers in `storyTiers.js`, seed CEFR vocab, generate content. Onboarding/data layers are already data-driven, so most of the app picks it up for free.
 

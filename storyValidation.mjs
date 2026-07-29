@@ -17,8 +17,21 @@ export const DEFAULT_COLON = '：'
 
 const PUNCT = new Set('，。！？：；、“”‘’…—·《》〈〉（）「」『』・,.!?:;"\'()[]{}<>~～-–—%＄$&*/\\ \t\r　0123456789０１２３４５６７８９'.split(''))
 
+// Emoji are not vocabulary. `scene` stories lead each line with one on purpose,
+// and counting them as unmatched characters dropped a perfectly good HSK 2
+// story to 49% coverage — the validator marking the illustration wrong.
+function isEmoji(ch) {
+  const c = ch.codePointAt(0)
+  return (c >= 0x1F000 && c <= 0x1FAFF)      // pictographs, faces, symbols
+    || (c >= 0x2600 && c <= 0x27BF)          // misc symbols and dingbats
+    || (c >= 0x2190 && c <= 0x21FF)          // arrows
+    || c === 0x200D                          // zero-width joiner
+    || (c >= 0xFE00 && c <= 0xFE0F)          // variation selectors
+    || (c >= 0xD800 && c <= 0xDFFF)          // surrogate halves of the above
+}
+
 export function isPunct(ch) {
-  return PUNCT.has(ch) || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
+  return PUNCT.has(ch) || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || isEmoji(ch)
 }
 
 export function isHiragana(ch) {

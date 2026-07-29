@@ -107,6 +107,25 @@ let pass = 0, fail = 0, skipped = 0
 const seenTitles = new Set()
 const duplicates = []
 
+// A season's cast belongs to the whole season, not to one chapter. 云彩 speaks
+// in chapters 3 and 4 and is merely mentioned in chapter 2 — read alone, that
+// chapter looked like it used an out-of-pool word, when the reader knows
+// perfectly well who 云彩 is by then. Collect every speaker at each level first.
+const castByLevel = {}
+for (const s of manifest) {
+  const key = s.language + '|' + s.system + '|' + s.level
+  const colon = (levelConfig(s.language, s.system, s.level) || {}).colon || '：'
+  for (const line of (s.content || '').split('\n')) {
+    const idx = line.indexOf(colon)
+    if (idx > 0 && idx <= 8) {
+      const name = line.slice(0, idx).trim()
+      if (!name) continue
+      if (!castByLevel[key]) castByLevel[key] = new Set()
+      castByLevel[key].add(name)
+    }
+  }
+}
+
 for (const s of manifest) {
   if (onlyLanguage && s.language !== onlyLanguage) continue
   const label = s.language + '/' + s.system + '/' + s.level + ' t' + (s.tier ?? 1) + ' "' + s.title + '"'
@@ -169,7 +188,9 @@ for (const s of manifest) {
     tier: { ...tier, lines: [0, Number.MAX_SAFE_INTEGER] },
     language: s.language,
     speakers: storySpeakers,
-    extraNames: (s.language === 'chinese' ? ['大毛'] : []).concat(cfg.bible.speakers),
+    extraNames: (s.language === 'chinese' ? ['大毛'] : [])
+      .concat(cfg.bible.speakers)
+      .concat([...(castByLevel[s.language + '|' + s.system + '|' + s.level] || [])]),
     maxLineChars: cfg.maxLineChars,
     colon: cfg.colon || '：',
   })
