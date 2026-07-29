@@ -48,7 +48,6 @@ const PRESETS = {
     gradeMinHeight: 76,
     gradeLabelSize: 14,
     gradeIntervalSize: 11,
-    gradeIconSize: 16,
   },
   roomy: {
     shellPadding: '12px 14px 10px',
@@ -68,7 +67,6 @@ const PRESETS = {
     gradeMinHeight: 68,
     gradeLabelSize: 14,
     gradeIntervalSize: 11,
-    gradeIconSize: 16,
   },
   compact: {
     shellPadding: '10px 14px 8px',
@@ -88,7 +86,6 @@ const PRESETS = {
     gradeMinHeight: 60,
     gradeLabelSize: 13.5,
     gradeIntervalSize: 10.5,
-    gradeIconSize: 15,
   },
   tight: {
     shellPadding: '8px 12px 6px',
@@ -108,7 +105,6 @@ const PRESETS = {
     gradeMinHeight: 52,
     gradeLabelSize: 13,
     gradeIntervalSize: 10,
-    gradeIconSize: 14,
   },
 }
 
