@@ -57,6 +57,22 @@ const VOCAB = [
   { id: 'v5', word: '公园', reading: 'gōngyuán', meaning: 'park', level: 2, system: 'hsk', language: 'chinese', is_active: true },
   { id: 'v6', word: '朋友', reading: 'péngyou', meaning: 'friend', level: 2, system: 'hsk', language: 'chinese', is_active: true },
   { id: 'v7', word: '花', reading: 'huā', meaning: 'flower', level: 2, system: 'hsk', language: 'chinese', is_active: true },
+  // The HSK 1 words the manga episode (st6) is written from. Level 1, so they
+  // are on the cumulative shelf for a learner sitting at level 2. None of them
+  // carries a card, so every word in the episode reads as "new" — which is what
+  // the vocabulary popover's new-word state is exercised against.
+  ...[
+    ['我', 'wǒ', 'I, me'], ['来', 'lái', 'to come'], ['学校', 'xuéxiào', 'school'],
+    ['了', 'le', 'particle for completed action'], ['这', 'zhè', 'this'], ['是', 'shì', 'to be'],
+    ['吗', 'ma', 'question particle'], ['你好', 'nǐ hǎo', 'hello'], ['你', 'nǐ', 'you'],
+    ['新', 'xīn', 'new'], ['学生', 'xuéshēng', 'student'], ['不', 'bù', 'not, no'],
+    ['叫', 'jiào', 'to be called, to call'], ['什么', 'shénme', 'what'], ['名字', 'míngzi', 'name'],
+    ['真', 'zhēn', 'really, true'], ['的', 'de', 'possessive particle'], ['老师', 'lǎoshī', 'teacher'],
+    ['吧', 'ba', 'particle indicating suggestion'], ['也', 'yě', 'also, too'],
+  ].map(([word, reading, meaning], i) => ({
+    id: 'm' + (i + 1), word, reading, meaning,
+    level: 1, system: 'hsk', language: 'chinese', is_active: true,
+  })),
 ];
 
 // One published, Paced-Reveal story, and one published Chat-format story.
@@ -95,6 +111,60 @@ const STORIES = [{
   title: '老朋友', is_published: true, presentation: 'paced', has_audio: false,
   image_path: null, english_content: 'An old friend.',
   content: ['今天我看朋友。', '朋友很好。'].join('\n'),
+}, {
+  // The manga episode, carrying the SAME content and panel layout as the
+  // authored source (data/manga/inkbound-hsk1-ep01.json). Duplicated rather than
+  // imported because the fixture has to be a plain literal the route mock can
+  // serve — but the e2e spec asserts against the same strings the unit spec
+  // validates, so a drift in either shows up as a failing test somewhere.
+  id: 'st6', language: 'chinese', system: 'hsk', level: 1, tier: 1, story_number: 2,
+  title: '第一话 · 我是新学生', is_published: true, presentation: 'manga', has_audio: false,
+  image_path: null,
+  english_summary: 'You climb the lantern-lit steps to the Hanzi Dojo and meet 小雨.',
+  content: [
+    '我来学校了。', '这是学校吗？', '小雨：你好！你是新学生吗？',
+    '你：是，我是新学生。', '你：不是！', '小雨：真的吗？',
+    '小雨：我叫小雨。你叫什么名字？', '林老师：我是林老师。',
+    '小雨：来吧！', '小白也来了。',
+  ].join('\n'),
+  english_content: [
+    "I've come to the school.", 'Is this the school?', 'Hello! Are you the new student?',
+    "Yes, I'm the new student.", "I'm not!", 'Really?',
+    "I'm called Xiao Yu. What's your name?", 'I am Teacher Lin.',
+    'Come on!', 'Xiao Bai came too.',
+  ].join('\n'),
+  panels: {
+    meta: {
+      series: 'Hanzi Dojo: The Inkbound',
+      episode_label: '第一话',
+      episode_title: '我是新学生',
+      art_base: '/stories/inkbound/hsk1/ep01/',
+      hook: 'Something small and white followed you through the gate. 第二话 is being drawn.',
+    },
+    cast: { '小雨': {}, '你': {}, '林老师': {} },
+    panels: [
+      { id: 'p1', art: 'panel-01-arrival.webp', ratio: '4/3', alt: 'A traveller at the foot of a lantern-lit stair below a dojo gate.', bubbles: [{ beat: 0, kind: 'narration', side: 'left', top: 6, width: 70 }] },
+      { id: 'p2', art: 'panel-02-gate.webp', ratio: '4/5', alt: 'The huge dojo gateway towers over the traveller.', bubbles: [{ beat: 1, kind: 'thought', side: 'right', top: 8, width: 72 }] },
+      { id: 'p3', art: 'panel-03-xiaoyu.webp', ratio: '16/9', alt: 'Close-up of 小雨 leaning grinning into frame.', bubbles: [{ beat: 2, kind: 'speech', side: 'right', top: 8, width: 68, tail: 'bottom-left' }] },
+      { id: 'p4', choice: { prompt: '选择回答', options: [{ beat: 3 }, { beat: 4 }] } },
+      {
+        id: 'p5', art: 'panel-05-introduce.webp', ratio: '3/4', alt: '小雨 introduces herself in a lantern-lit courtyard.',
+        bubbles: [
+          { beat: 5, kind: 'speech', side: 'left', top: 5, width: 58, tail: 'bottom-right', when: { choice: 'p4', option: 1 } },
+          { beat: 6, kind: 'speech', side: 'right', top: 62, width: 70, tail: 'bottom-left' },
+        ],
+      },
+      { id: 'p6', art: 'panel-06-teacher.webp', ratio: '2/1', alt: 'A calligraphy master stands in a lit doorway.', bubbles: [{ beat: 7, kind: 'speech', side: 'left', top: 8, width: 58, tail: 'bottom-right' }] },
+      { id: 'p7', art: 'panel-07-watcher.webp', ratio: '3/2', alt: 'A tiny white ink spirit peers out from behind a lantern.' },
+      {
+        id: 'p8', art: 'panel-08-hook.webp', ratio: '4/5', accent: true, alt: 'The traveller walks in through the gate as the spirit follows.',
+        bubbles: [
+          { beat: 8, kind: 'speech', side: 'center', top: 4, width: 62, tail: 'bottom-right' },
+          { beat: 9, kind: 'narration', side: 'right', top: 66, width: 70 },
+        ],
+      },
+    ],
+  },
 }];
 
 function card(n, o = {}) {

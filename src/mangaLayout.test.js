@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   buildEpisode, normalizeRatio, panelArtSrc, visibleBubbles, isGate, revealLimit,
   panelBeats, readBeats, episodeProgress, isEpisodeComplete, bubbleLayout,
-  estimateBubbleHeight, DEFAULT_RATIO,
+  panelAtReadingLine, estimateBubbleHeight, DEFAULT_RATIO, READING_LINE,
 } from './mangaLayout'
 
 // A three-panel episode with a choice in the middle, which is the shape every
@@ -153,6 +153,60 @@ describe('branching', () => {
   })
 })
 
+describe('panelAtReadingLine', () => {
+  const H = 800
+  // 336 at this height — quoted in the assertions below.
+
+  it('picks the last panel whose top has passed the line', () => {
+    const rects = [{ top: -400 }, { top: 100 }, { top: 600 }]
+    expect(panelAtReadingLine(rects, H)).toBe(1)
+  })
+
+  it('picks the first panel the moment an episode opens', () => {
+    // The 4:3 opening panel sits under the header and ENDS above the line;
+    // "the panel the line is inside" would credit the tall panel below it
+    // before the reader has reached it.
+    // Real numbers from a 390×844 phone: a 4:3 panel under a 76px header.
+    const phone = 844
+    const rects = [{ top: 76, bottom: 350 }, { top: 364, bottom: 851 }]
+    expect(phone * READING_LINE).toBeGreaterThan(350)
+    expect(panelAtReadingLine(rects, phone)).toBe(0)
+  })
+
+  it('does not let a letterbox panel at the edge steal the count', () => {
+    // A 21:9 panel fully visible at the bottom scores intersectionRatio 1.0
+    // while the panel being read scores less. The reading line is not fooled.
+    const rects = [{ top: 0 }, { top: 700 }]
+    expect(panelAtReadingLine(rects, H)).toBe(0)
+  })
+
+  it('moves on as soon as the next panel crosses the line', () => {
+    expect(panelAtReadingLine([{ top: -200 }, { top: 340 }], H)).toBe(0)
+    expect(panelAtReadingLine([{ top: -210 }, { top: 330 }], H)).toBe(1)
+  })
+
+  it('is monotone: scrolling down never walks the count backwards', () => {
+    const heights = [300, 500, 200, 640]
+    let previous = 0
+    for (let scroll = 0; scroll < 1600; scroll += 20) {
+      let top = 76 - scroll
+      const rects = heights.map((h) => { const r = { top }; top += h + 14; return r })
+      const at = panelAtReadingLine(rects, H)
+      expect(at, 'went backwards at scroll ' + scroll).toBeGreaterThanOrEqual(previous)
+      previous = at
+    }
+  })
+
+  it('skips panels that are not mounted', () => {
+    expect(panelAtReadingLine([null, { top: 100 }, null], H)).toBe(1)
+  })
+
+  it('is -1 when there is nothing to measure', () => {
+    expect(panelAtReadingLine([], H)).toBe(-1)
+    expect(panelAtReadingLine(null, H)).toBe(-1)
+  })
+})
+
 describe('episodeProgress', () => {
   it('is one-based for humans', () => {
     expect(episodeProgress(0, 8)).toEqual({ current: 1, total: 8, pct: 12.5 })
@@ -219,11 +273,22 @@ describe('bubbleLayout', () => {
   })
 
   it('makes room for the pinyin and the revealed translation', () => {
-    const base = { columnWidth: 390, ratio: 16 / 9, textLength: 18, top: 40 }
-    const bare = bubbleLayout({ ...bubble, top: 40 }, { ...base, withReadings: false })
-    const full = bubbleLayout({ ...bubble, top: 40 }, { ...base, withReadings: true, withEnglish: true, withSpeaker: true })
+    const base = { columnWidth: 390, ratio: 16 / 9, textLength: 12 }
+    const bare = bubbleLayout({ ...bubble, top: 30 }, { ...base, withReadings: false })
+    const full = bubbleLayout({ ...bubble, top: 30 }, { ...base, withReadings: true, withEnglish: true, withSpeaker: true })
     expect(bare.mode).toBe('overlay')
     expect(full.mode).toBe('below')
+  })
+
+  it('costs the floated controls width on the first line only', () => {
+    const opts = { columnWidth: 390, ratio: 16 / 9, textLength: 6, top: 30 }
+    // Six characters fit on one line once the controls are paid for…
+    expect(bubbleLayout({ ...bubble, width: 70 }, opts).mode).toBe('overlay')
+    // …and a bubble too narrow to seat them plus the text wraps, which is what
+    // pushes a tall-enough result out of a short panel.
+    const narrow = estimateBubbleHeight(6, 390 * 0.44)
+    const wide = estimateBubbleHeight(6, 390 * 0.70)
+    expect(narrow).toBeGreaterThan(wide)
   })
 
   it('survives being asked with nothing', () => {

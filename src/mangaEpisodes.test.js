@@ -174,9 +174,18 @@ describe('manga episodes', () => {
       })
 
       it('places every bubble over its art at phone widths', () => {
-        // The reference layout is an overlay layout. A bubble is allowed to fall
-        // into the gutter — that is the designed escape hatch — but if the
-        // authored positions push a whole episode there, the layout is wrong.
+        // This is an overlay layout: the words belong on the picture. Dropping a
+        // bubble into the gutter is the designed escape hatch for a line that
+        // would otherwise cover the whole drawing — but it has to stay the
+        // exception, or the episode stops being a comic and becomes a script
+        // with illustrations.
+        //
+        // 375 and up: every bubble on the art. 320 (an iPhone SE 1) is held to a
+        // lower bar on purpose — at that width a 2:1 letterbox panel genuinely
+        // has no room for a two-line bubble, and a readable line under the
+        // picture beats an unreadable one over it. Distorting the layout for a
+        // 2016 phone would cost every other reader.
+        const FLOOR = { 320: 0.6 }
         for (const width of [320, 375, 390, 430, 520]) {
           let overlaid = 0
           let totalBubbles = 0
@@ -195,7 +204,7 @@ describe('manga episodes', () => {
             }
           }
           expect(overlaid / Math.max(1, totalBubbles), 'bubbles fall out of the art at ' + width + 'px')
-            .toBeGreaterThanOrEqual(0.8)
+            .toBeGreaterThanOrEqual(FLOOR[width] == null ? 1 : FLOOR[width])
         }
       })
 

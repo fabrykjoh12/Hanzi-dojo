@@ -235,6 +235,44 @@ export function readBeats(panels, choices, throughIndex) {
   return out
 }
 
+// Which panel is the learner on?
+//
+// Not "the one filling most of the screen" — on a phone two panels are usually
+// both partly visible, and the biggest is often the tall one you have just
+// finished rather than the one you have moved on to. Not intersectionRatio
+// either: that is area-visible ÷ own-area, so a letterbox panel peeking in at
+// the bottom edge scores a perfect 1.0 while the panel you are actually reading
+// scores 0.7.
+//
+// The rule that matches where a reader's eyes are: a fixed READING LINE about
+// two-fifths down the viewport, and you are on THE LAST PANEL WHOSE TOP EDGE
+// HAS PASSED IT — the most recent panel you have scrolled into.
+//
+// "Last top past the line" rather than "the panel the line is inside" because
+// panels are different heights on purpose. A short 4:3 opening panel sitting
+// under the header can end a few pixels ABOVE the line, and "inside" would then
+// credit the panel below one before the reader has reached it. This version is
+// also monotone: scrolling down can only ever move the count forward.
+export const READING_LINE = 0.42
+
+// rects: [{ top }] in viewport coordinates, indexed by panel. Entries may be
+// null for a panel that isn't mounted.
+export function panelAtReadingLine(rects, viewportHeight) {
+  const list = Array.isArray(rects) ? rects : []
+  const line = (viewportHeight || 0) * READING_LINE
+  let best = -1
+  for (let i = 0; i < list.length; i += 1) {
+    const r = list[i]
+    if (!r) continue
+    if (r.top <= line) best = i
+    // Nothing has passed the line yet (the very top of the episode): the first
+    // mounted panel is the one being read.
+    else if (best < 0) { best = i; break }
+    else break
+  }
+  return best
+}
+
 // The header's "3 / 8". One-based for humans, clamped so an out-of-range active
 // index can never print "0 / 8" or "9 / 8".
 export function episodeProgress(activeIndex, total) {
@@ -269,14 +307,22 @@ const HANZI_ADVANCE = 23
 // One line of hanzi, plus the ruby row that carries its pinyin.
 const LINE_HEIGHT = 32
 const RUBY_HEIGHT = 15
-// The bubble's own padding plus its speaker label.
+// The bubble's own padding.
 const BUBBLE_CHROME = 34
+// The play-line and reveal-translation controls sit in the bubble's top-right
+// corner and the text wraps around them (they are floated, so they cost width
+// on the FIRST line only and no height at all). Costing them nothing was what
+// orphaned the last character of a short line onto a second row.
+export const BUBBLE_ACTIONS_WIDTH = 64
 
 export function estimateBubbleHeight(textLength, widthPx, opts) {
   const o = opts || {}
   const inner = Math.max(40, widthPx - 32)
+  const actions = o.withActions === false ? 0 : BUBBLE_ACTIONS_WIDTH
+  const firstLine = Math.max(1, Math.floor((inner - actions) / HANZI_ADVANCE))
   const perLine = Math.max(1, Math.floor(inner / HANZI_ADVANCE))
-  const lines = Math.max(1, Math.ceil((textLength || 1) / perLine))
+  const chars = textLength || 1
+  const lines = chars <= firstLine ? 1 : 1 + Math.ceil((chars - firstLine) / perLine)
   const ruby = o.withReadings === false ? 0 : RUBY_HEIGHT
   const speaker = o.withSpeaker ? 18 : 0
   const english = o.withEnglish ? 22 : 0

@@ -165,39 +165,14 @@ export default function MangaBubble({
         <span style={SR_ONLY}>{voice}</span>
       )}
 
-      <div style={{
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px',
-      }}>
-        <div style={{
-          flex: 1, minWidth: 0,
-          fontFamily,
-          fontSize: narration ? TYPE.hanziNarration : TYPE.hanzi,
-          lineHeight: 1.85,
-          fontWeight: narration ? 500 : 550,
-          color: PAPER.ink,
-          fontStyle: kind === 'thought' ? 'normal' : 'normal',
-          opacity: narration ? 0.92 : 1,
-        }}>
-          {beat.tokens.map((t, k) => (
-            <Word
-              key={k}
-              token={t}
-              tokenId={beatIndex + ':' + k}
-              beatIndex={beatIndex}
-              selected={selected}
-              accentHex={accentHex}
-              readingMode={readingMode}
-              userCards={userCards}
-              language={language}
-              onSelectToken={onSelectToken}
-            />
-          ))}
-        </div>
-
+      <div>
         {/* Hear the whole line, and reveal what it means. Two small ink marks,
-            not a toolbar — they sit at the bubble's edge so the sentence keeps
-            the space. */}
-        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0, marginTop: '-2px' }}>
+            not a toolbar — and FLOATED, not a flex sibling: floated, they cost
+            the sentence width on its first line only and no height at all, so a
+            six-character line stays a six-character line instead of orphaning
+            its last character onto a second row. mangaLayout's height estimate
+            models exactly this (BUBBLE_ACTIONS_WIDTH). */}
+        <div style={{ float: 'right', display: 'flex', alignItems: 'center', marginLeft: '6px', marginTop: '-4px' }}>
           {onPlayLine && (
             <button
               onClick={(e) => { e.stopPropagation(); onPlayLine(beatIndex) }}
@@ -221,6 +196,45 @@ export default function MangaBubble({
             />
           )}
         </div>
+
+        <div style={{
+          fontFamily,
+          fontSize: narration ? TYPE.hanziNarration : TYPE.hanzi,
+          lineHeight: 1.85,
+          fontWeight: narration ? 500 : 550,
+          color: PAPER.ink,
+          opacity: narration ? 0.92 : 1,
+          // Wrap between words, never inside one.
+          //
+          // CJK breaks between any two characters by default, which tore 林老师
+          // across two lines as 林老 / 师 — a name split in half, and a tap
+          // target split with it. `keep-all` forbids all of those breaks; the
+          // <wbr> the loop below emits between tokens hands back exactly the
+          // ones we want. (Marking each token `white-space: nowrap` instead does
+          // not work: a break between two nowrap inline boxes is forbidden too,
+          // so a long line stops wrapping at all and runs off the bubble.)
+          wordBreak: 'keep-all',
+        }}>
+          {beat.tokens.map((t, k) => (
+            <span key={k}>
+              {/* A legal place to wrap — but never in front of punctuation: a
+                  Chinese line may not begin with 。or ？. */}
+              {k > 0 && isWordlikeToken(t.text) ? <wbr /> : null}
+              <Word
+                token={t}
+                tokenId={beatIndex + ':' + k}
+                beatIndex={beatIndex}
+                selected={selected}
+                accentHex={accentHex}
+                readingMode={readingMode}
+                userCards={userCards}
+                language={language}
+                onSelectToken={onSelectToken}
+              />
+            </span>
+          ))}
+        </div>
+        <div style={{ clear: 'both' }} />
       </div>
 
       {revealed && english && (

@@ -43,7 +43,7 @@
         "ratio": "4/3",
         "alt": "Dusk. A young traveller with a scroll on their back stands small at the foot of a long stone stair, looking up at a lantern-hung dojo gate above a misty village.",
         "bubbles": [
-          { "beat": 0, "kind": "narration", "side": "left", "top": 6, "width": 56 }
+          { "beat": 0, "kind": "narration", "side": "left", "top": 6, "width": 70 }
         ]
       },
       {
@@ -52,7 +52,7 @@
         "ratio": "4/5",
         "alt": "Low angle: the huge tiled dojo gateway towers over the traveller, who is a small dark shape at the bottom of the frame.",
         "bubbles": [
-          { "beat": 1, "kind": "thought", "side": "right", "top": 8, "width": 60 }
+          { "beat": 1, "kind": "thought", "side": "right", "top": 8, "width": 72 }
         ]
       },
       {
@@ -61,7 +61,7 @@
         "ratio": "16/9",
         "alt": "Close-up: 小雨 leans grinning into the left of the frame, an ink brush through her hair and a red ribbon at one side; the right half of the panel is quiet empty wash.",
         "bubbles": [
-          { "beat": 2, "kind": "speech", "side": "right", "top": 14, "width": 74, "tail": "bottom-left" }
+          { "beat": 2, "kind": "speech", "side": "right", "top": 8, "width": 68, "tail": "bottom-left" }
         ]
       },
       {
@@ -80,17 +80,17 @@
         "ratio": "3/4",
         "alt": "小雨 in a lantern-lit courtyard, one hand at her chest as she introduces herself; the traveller's shoulder is in dark foreground at the left edge.",
         "bubbles": [
-          { "beat": 5, "kind": "speech", "side": "left", "top": 5, "width": 46, "tail": "bottom-right", "when": { "choice": "p4", "option": 1 } },
-          { "beat": 6, "kind": "speech", "side": "right", "top": 52, "width": 70, "tail": "bottom-left" }
+          { "beat": 5, "kind": "speech", "side": "left", "top": 5, "width": 58, "tail": "bottom-right", "when": { "choice": "p4", "option": 1 } },
+          { "beat": 6, "kind": "speech", "side": "right", "top": 62, "width": 70, "tail": "bottom-left" }
         ]
       },
       {
         "id": "p6",
         "art": "panel-06-teacher.webp",
-        "ratio": "21/9",
+        "ratio": "2/1",
         "alt": "A letterbox panel: a tall calligraphy master stands in a doorway, face half in shadow, a brush held loosely at his side.",
         "bubbles": [
-          { "beat": 7, "kind": "speech", "side": "right", "top": 10, "width": 62, "tail": "bottom-left" }
+          { "beat": 7, "kind": "speech", "side": "left", "top": 8, "width": 58, "tail": "bottom-right" }
         ]
       },
       {
@@ -106,8 +106,8 @@
         "accent": true,
         "alt": "The traveller walks in through the dojo gate, seen from behind; far back down the steps the small white spirit drifts after them.",
         "bubbles": [
-          { "beat": 8, "kind": "speech", "side": "left", "top": 6, "width": 52, "tail": "bottom-right" },
-          { "beat": 9, "kind": "narration", "side": "right", "top": 76, "width": 62 }
+          { "beat": 8, "kind": "speech", "side": "center", "top": 4, "width": 62, "tail": "bottom-right" },
+          { "beat": 9, "kind": "narration", "side": "right", "top": 66, "width": 70 }
         ]
       }
     ]

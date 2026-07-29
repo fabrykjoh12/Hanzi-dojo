@@ -130,6 +130,10 @@ stories
   english_content text          -- line-aligned English translation of content (same line count);
                                    nullable — translation toggle only shows when populated
   is_published boolean
+  image_path text               -- cover art in the public `audio` bucket (stories/<id>/cover.webp)
+  presentation text             -- 'paced' | 'chat' | 'scene' | 'manga'; see src/readerMode.js
+  interactions jsonb            -- reply-along chat only: { you, distractors }
+  panels jsonb                  -- manga only: the panel layout. See "Manga episodes" below.
 
 story_vocab
   story_id uuid REFERENCES stories
@@ -236,6 +240,103 @@ dojo_hq_members()
 
 
 ---
+
+## Manga episodes — Hanzi Dojo Stories
+
+A fourth `presentation` alongside `paced` / `chat` / `scene`: a vertical
+cinematic reader. First season: **Hanzi Dojo: The Inkbound** (`第一话 · 我是新学生`,
+HSK 1).
+
+**The one rule the format is built on: art and educational text are separate.**
+No Chinese is ever baked into a generated image. The hanzi is HTML, so it is
+accurate, tappable, scaffoldable with pinyin, playable, translatable,
+screen-readable, and re-flowable — none of which a picture of a sentence can be.
+Panel art is generated with an explicit "no text, no signage, no captions"
+instruction for the same reason.
+
+### Where the pieces live
+
+| Piece | Where |
+|---|---|
+| The Chinese, one beat per line | `stories.content` — exactly as every other format stores it |
+| Line-parallel English | `stories.english_content` |
+| Panel layout (art, bubbles, choices) | `stories.panels` jsonb |
+| Canonical source of both | `data/manga/<episode>.json` — edit here, never in the DB |
+| Panel art | `public/stories/<series>/<level>/<episode>/*.webp`, **committed** |
+| Character reference sheets | `data/manga/bible/` (not shipped) |
+| Publish | `publish-manga.mjs` (upserts on language/system/level/title) |
+| Fetch generated art | `fetch-manga-art.mjs` + the `manga-art-fetch` task in `content-utils.yml` |
+
+Episode art is committed rather than uploaded to the `audio` bucket the way
+covers are: a panel is chosen for its aspect ratio and for the empty corner a
+bubble sits in, so it belongs to the same diff and the same rollback as the
+metadata that places bubbles over it.
+
+### `stories.panels` shape
+
+```jsonc
+{
+  "meta":   { "series", "episode_label", "episode_title", "art_base", "hook" },
+  "cast":   { "<speaker>": { "display": "…" } },   // `display` ⇒ a printed name plate; default is a bare bubble
+  "panels": [
+    { "id", "art", "ratio": "16/9", "alt", "accent": false,
+      "bubbles": [
+        { "beat": 2,                                  // index into content's lines
+          "kind": "speech|thought|narration|reply",
+          "side": "left|right|center", "top": 14, "width": 68,
+          "tail": "bottom-left",
+          "when": { "choice": "p4", "option": 1 } }   // branch-only line
+      ],
+      "choice": { "prompt": "选择回答", "options": [ { "beat": 3 }, { "beat": 4 } ] } }
+  ]
+}
+```
+
+`src/mangaLayout.js` normalises all of it. **Every field is optional and every
+bad value degrades to something readable** — a `panels` of `null` still renders
+(one panel per beat), a bubble naming a beat that doesn't exist is dropped, a
+choice with one option stops gating. Panel metadata is authored content, and
+authored content has typos.
+
+### Reader behaviour worth knowing
+
+- **Progression is by PANEL, not by beat.** A panel may hold two lines or none,
+  so `MangaReader` holds the shared engine's `advanceBlocked` on for the whole
+  session and owns the keyboard itself.
+- **The header counts the panel under the READING LINE** (42% down the
+  viewport), taking the last panel whose top has passed it — see
+  `panelAtReadingLine`. "Biggest on screen" and `intersectionRatio` both give
+  the wrong panel when panel heights vary, which is the whole point of the
+  format.
+- **A bubble overlays its art, or drops into the gutter under it.**
+  `bubbleLayout` estimates the bubble's height from its text, its width and the
+  panel's aspect ratio, and moves it below the picture rather than let it cover
+  the drawing. The play/reveal controls are FLOATED inside the bubble, so they
+  cost width on the first line only — `estimateBubbleHeight` models exactly that.
+- **Scrolling is not reading.** `isEpisodeComplete` requires every choice
+  answered AND the last panel reached. A choice gates every panel after it
+  (`revealLimit`).
+- **Position and branch persist locally** (`mangaProgress.js`, on the existing
+  IndexedDB `prefs` store — works signed-out). Completion still goes through
+  `story_reads` like every other format; there is no second progress system.
+- **The palette is fixed warm paper on both themes** (`mangaTokens.js`), the
+  documented exception to §5's "no hardcoded neutrals" — the same licence
+  `chatStyleFor` already takes. The panels are monochrome ink carrying their own
+  paper tone; floated on a dark themed surface they read as photographs punched
+  through the page. The accent is still `languageTheme()`'s, not a hardcoded one.
+
+### Adding an episode
+
+1. Write `data/manga/<series>-<level>-ep<NN>.json` — content, line-parallel
+   `english_content`, `names`, and the panel layout.
+2. Add any new character to `src/characterNames.js` (the matcher only takes
+   names of **two characters or more** — a one-character name is unreachable).
+3. `npx vitest run src/mangaEpisodes.test.js` — validates every word against the
+   level's vocabulary snapshot, that each beat is drawn exactly once, that the
+   episode is completable, and that the bubbles stay on the art at phone widths.
+4. Generate art with the locked style + character sheets, write
+   `<episode>.art.json`, and dispatch `content-utils.yml` → `manga-art-fetch`.
+5. Dispatch `content-utils.yml` → `manga-publish` with the episode manifest.
 
 ## Language and level system
 

@@ -229,3 +229,80 @@ never speaker labels — `她：` renders as a character called "she".
   is the right grain.
 - **No interactive branching** until a design exists where every branch still
   validates and stays line-aligned with its translation and narration.
+
+---
+
+## 6. Hanzi Dojo: The Inkbound — the manga season
+
+A second universe, and the only one that is drawn. It is deliberately **not**
+这条街: the street serials are contemporary and domestic, and this one is a
+lantern-lit dojo in the mountains, because a manga episode has to earn its
+artwork and a kitchen table does not.
+
+Told in the second person. The learner IS the new student — shown from behind
+or out of frame, gender-neutral, dark training clothes, a scroll on their back —
+so there is nobody to identify with except yourself.
+
+### Cast
+
+| Name | Reading | Who |
+|------|---------|-----|
+| 小雨 | Xiǎo Yǔ | Apprentice at the dojo, about thirteen. Chin-length black hair, a cinnabar-red ribbon at one side, an ink brush pushed through her hair. Delighted by new people; asks the direct question first and the polite one never. She is the reason an episode has dialogue at all. |
+| 林老师 | Lín lǎoshī | The calligraphy master. Introduced in one line and one doorway. Reveal nothing about him yet — his restraint is the season's slow thread. |
+| 小白 | Xiǎo Bái | A tiny floating white ink spirit, one black brushstroke across its forehead, a thread of ink-smoke for a tail. Says nothing. Watches. Follows you inside at the end of episode 1. |
+
+⚠️ The ink spirit is **白** in canon and **小白** on the page. The reader's name
+matcher (`matchName`) only takes candidates of two characters or more, so a
+one-character name is unreachable — it would be read as the ordinary word 白
+("white") and lose its Name popup. 小白 is what you would call him anyway.
+Every name here must also exist in `src/characterNames.js`, same rule as 这条街.
+
+### Art direction (locked — use this verbatim)
+
+> Monochrome greyscale manga illustration, deep rich blacks and luminous pale
+> highlights, high contrast, highly detailed polished digital ink rendering with
+> clean crisp lineart, soft grey ink-wash and screentone gradients, traditional
+> sumi-e ink splash accents, soft bokeh depth of field with drifting light
+> particles, cinematic night lighting with glowing lanterns, modern anime
+> character rendering with large glossy detailed eyes and sharp glossy hair, no
+> colour except a restrained cinnabar-red accent, premium serialized
+> graphic-novel quality, no text, no letters, no signage, no captions, no speech
+> bubbles, no logo, no watermark, no resemblance to any existing franchise or
+> artist.
+
+Rules that go with it:
+
+- **Attach the character sheet** in `data/manga/bible/` as a reference image to
+  every generation featuring that character. That is what keeps 小雨 the same
+  person across episodes.
+- **Never name a franchise, a studio or an artist in a prompt.** Describe the
+  picture, not somebody else's work.
+- **"No text" is not a style note, it is the format.** Every Chinese word is
+  rendered by the app so it can be tapped, scaffolded, played and translated.
+  Ask explicitly for blank lanterns and blank banners — they are what the model
+  reaches for otherwise.
+- **Compose for the bubble.** Each panel is generated with the empty corner its
+  dialogue will sit in ("the entire right half is quiet negative space"), and
+  the panel's `alt` describes it. A bubble must never cover a face.
+- **Stage characters apart.** Over-the-shoulder framing, reaction shots, one
+  figure plus a blurred foreground shoulder — close physical interaction between
+  two generated characters is where consistency breaks.
+- Vary the aspect ratios (4:3 establishing, 4:5 tall, 16:9 close-up, 2:1
+  letterbox, 3:2 reaction). A column of identically-shaped panels reads as a
+  card list, which is the failure mode this format exists to avoid.
+
+### Language bar
+
+Stricter than a prose season: **100% of the level's word list, zero reach
+words.** A prose chapter may declare a few reach words because writing narrative
+without them goes flat — a manga episode has the picture to carry the meaning
+instead, so it has no excuse. `src/mangaEpisodes.test.js` enforces it.
+
+Lines are capped at 24 characters (prose gets 40): a manga line has to fit in a
+box drawn over a picture, on a phone.
+
+### Episodes
+
+| Episode | Level | State |
+|---------|-------|-------|
+| 第一话 · 我是新学生 | HSK 1 | Shipped. You arrive at the dojo, 小雨 asks if you are the new student, you answer, 林老师 appears, 小白 watches. |

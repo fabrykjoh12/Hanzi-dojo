@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useStoryReaderCore } from './useStoryReaderCore'
 import {
   buildEpisode, panelArtSrc, visibleBubbles, isGate, revealLimit,
-  readBeats, episodeProgress, isEpisodeComplete, bubbleLayout,
+  readBeats, episodeProgress, isEpisodeComplete, bubbleLayout, panelAtReadingLine,
 } from './mangaLayout'
 import { loadMangaProgress, saveMangaProgress, resumePanel } from './mangaProgress'
 import { PAPER, COLUMN_MAX, mangaAccent, mangaFontStack } from './mangaTokens'
@@ -81,12 +81,14 @@ export default function MangaReader(props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story.id])
 
-  // Scroll back to where the learner left off, once, after the panels exist.
+  // Scroll to where the learner left off, once, after the panels exist. This
+  // runs for panel 0 too, and has to: the reader opens inside the app shell,
+  // which keeps whatever scroll position the story shelf was left at — without
+  // this, opening an episode drops you three panels in.
   const scrolledRef = useRef(false)
   useEffect(() => {
     if (!restored || scrolledRef.current) return
     scrolledRef.current = true
-    if (active === 0) return
     const el = panelRefs.current[active]
     if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start', behavior: 'auto' })
   }, [restored, active])
@@ -105,29 +107,32 @@ export default function MangaReader(props) {
   }, [])
 
   // ── Which panel am I looking at ──────────────────────────────────────────
-  // One observer over every panel; the most-visible one owns the header count
-  // and is also what "how far have I got" means for completion.
+  // Measured against the reading line (see panelAtReadingLine), on scroll,
+  // throttled to one read per animation frame. A scroll listener rather than an
+  // IntersectionObserver because the question is "what is under the reading
+  // line", which needs the panels' live positions, not the moments they crossed
+  // a threshold.
   const limit = revealLimit(panels, choices)
   useEffect(() => {
-    if (typeof IntersectionObserver === 'undefined') return undefined
-    const ratios = new Map()
-    const observer = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        const idx = Number(entry.target.getAttribute('data-panel-index'))
-        if (Number.isNaN(idx)) continue
-        ratios.set(idx, entry.isIntersecting ? entry.intersectionRatio : 0)
-      }
-      let best = -1
-      let bestRatio = 0
-      for (const [idx, ratio] of ratios) {
-        if (ratio > bestRatio) { bestRatio = ratio; best = idx }
-      }
-      if (best < 0) return
-      setActive(best)
-      setSeenThrough(prev => (best > prev ? best : prev))
-    }, { threshold: [0, 0.25, 0.5, 0.75, 1] })
-    for (const el of panelRefs.current) { if (el) observer.observe(el) }
-    return () => observer.disconnect()
+    let raf = 0
+    const pick = () => {
+      raf = 0
+      const rects = panelRefs.current.map(el => (el ? el.getBoundingClientRect() : null))
+      const next = panelAtReadingLine(rects, window.innerHeight)
+      if (next < 0) return
+      setActive(next)
+      setSeenThrough(prev => (next > prev ? next : prev))
+    }
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(pick) }
+    pick()
+    // Capture phase: the app shell scrolls a container, not the window.
+    window.addEventListener('scroll', onScroll, true)
+    window.addEventListener('resize', onScroll)
+    return () => {
+      if (raf) cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', onScroll, true)
+      window.removeEventListener('resize', onScroll)
+    }
   }, [limit, panels.length])
 
   // Persist position + branch as the learner moves. Debounced by the fact that
@@ -303,7 +308,9 @@ export default function MangaReader(props) {
         ref={columnRef}
         style={{
           maxWidth: COLUMN_MAX + 'px', margin: '0 auto',
-          padding: '12px 12px calc(48px + env(safe-area-inset-bottom, 0px))',
+          // The bottom pad clears the mobile tab bar the app shell draws over
+          // this screen, so the closing plate is never half-hidden behind it.
+          padding: '12px 12px calc(88px + env(safe-area-inset-bottom, 0px))',
           display: 'flex', flexDirection: 'column', gap: '14px',
         }}
       >
