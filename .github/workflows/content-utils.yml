@@ -11,7 +11,7 @@ on:
         description: What to run
         type: choice
         default: story-images-apply
-        options: [story-images-apply, publish-held, fix-collisions, fix-vocab-kanji, fix-vocab-kanji-apply]
+        options: [story-images-apply, publish-held, fix-collisions, fix-vocab-kanji, fix-vocab-kanji-apply, manga-art-fetch, manga-publish]
       language:
         description: "publish-held only: language of the level to publish"
         type: string
@@ -28,9 +28,21 @@ on:
         description: "publish-held only: restrict to one tier (blank = all)"
         type: string
         default: ''
+      manifest:
+        description: "manga-art-fetch / manga-publish only: the file to act on"
+        type: string
+        default: data/manga/inkbound-hsk1-ep01.art.json
+      force:
+        description: "manga-art-fetch only: re-fetch art that is already committed"
+        type: boolean
+        default: false
 
+# manga-art-fetch commits the art it fetches back to the branch it was
+# dispatched on (see fetch-manga-art.mjs for why episode art is committed
+# rather than uploaded to the storage bucket). Every other task here is
+# read-only against the repo and writes only to Supabase.
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: content-utils
@@ -42,6 +54,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -70,3 +84,23 @@ jobs:
           if [ "${{ inputs.task }}" = "fix-vocab-kanji-apply" ]; then
             node fix-vocab-kanji.mjs --apply
           fi
+          if [ "${{ inputs.task }}" = "manga-art-fetch" ]; then
+            node fetch-manga-art.mjs "${{ inputs.manifest }}" ${{ inputs.force && '--force' || '' }}
+          fi
+          if [ "${{ inputs.task }}" = "manga-publish" ]; then
+            node publish-manga.mjs "${{ inputs.manifest }}" --apply
+          fi
+      - name: Commit fetched art
+        if: inputs.task == 'manga-art-fetch'
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          DIR=$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).dir)' "${{ inputs.manifest }}")
+          git add -A "$DIR"
+          if git diff --cached --quiet; then
+            echo "No new art to commit."
+            exit 0
+          fi
+          git commit -m "art: fetch manga art from ${{ inputs.manifest }}"
+          git push origin HEAD:${{ github.ref_name }}
