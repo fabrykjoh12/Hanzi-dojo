@@ -79,6 +79,14 @@ describe('cjkCoverage', () => {
     expect(cjkCoverage(['李明：吃饭'], dict).coverage).toBe(1)
   })
 
+  it('ignores emoji, which scene stories lead every line with', () => {
+    // Counting them as unmatched characters marked the illustration wrong and
+    // dropped a good HSK 2 story to 49%.
+    const dict = chinese(['我', '喜欢', '吃', '饭'])
+    expect(cjkCoverage(['🍚 我喜欢吃饭'], dict).coverage).toBe(1)
+    expect(cjkCoverage(['🦁🐼 我喜欢吃饭'], dict).misses).toEqual([])
+  })
+
   it('counts unmatched hiragana as known for Japanese only', () => {
     const jp = buildDict([{ word: '学校' }], { language: 'japanese' })
     expect(cjkCoverage(['学校にいきます'], jp, 8, true).coverage).toBe(1)
