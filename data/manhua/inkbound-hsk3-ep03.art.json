@@ -1,0 +1,79 @@
+{
+  "_comment": "Panel art for 'The Inkbound' episode 3 (HSK 3). Fetched into the repo by .github/workflows/content-utils.yml, task `manhua-art-fetch` (which runs fetch-manhua-art.mjs on this file and commits the result) — the agent sandbox has no route to the generation CDN, a GitHub runner does. The `file` names are what data/manhua/inkbound-hsk3-ep03.json's panels[].art refer to; src/manhuaEpisodes.test.js fails if the two ever disagree.",
+  "_style_comment": "All eighteen generated with the locked art direction in docs/STORY-BIBLE.md §6, model nano_banana_pro at 2k, every prompt carrying the CRITICAL CONSTRAINTS block that episode 2 had to be rebuilt to learn. Panels featuring 小白 carried his model sheet as a reference image; the four 林老师 panels carried episode 2's panel-18 as his reference, since he has no sheet of his own and one doorway in episode 2 is all the canon there is. The 2/1 letterbox panels were generated at 21:9 and are cover-cropped by the reader. The floating ink marks are described as purely abstract sweeps and blots in every prompt that contains them — 'rows of brushstrokes on a page' is what produced episode 2's invented hanzi.",
+  "dir": "public/stories/inkbound/hsk3/ep03",
+  "assets": [
+    {
+      "file": "panel-01-night-gate.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_210821_988b6820-1dea-4397-9799-2bb202a14cf9_min.webp"
+    },
+    {
+      "file": "panel-02-open-door.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201352_f141311b-3df4-4d00-9214-9e03cb822cd8_min.webp"
+    },
+    {
+      "file": "panel-03-waiting.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201356_75c71d0c-5bf9-4650-ae7c-d168f058c026_min.webp"
+    },
+    {
+      "file": "panel-04-he-speaks.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_210826_58e7a949-9b55-4442-a954-a012a8e1616d_min.webp"
+    },
+    {
+      "file": "panel-05-listen.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201408_e94c76d6-788a-4d59-9cf0-c52b44e602e3_min.webp"
+    },
+    {
+      "file": "panel-07-was-a-word.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201414_8646170b-a5ec-4158-a844-9ad071bfe351_min.webp"
+    },
+    {
+      "file": "panel-08-too-long.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201421_98f31b7a-802d-4ab2-b1f6-ab75ebd14659_min.webp"
+    },
+    {
+      "file": "panel-09-they-move.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201430_0c385a2c-71d3-4b30-af69-4a63b3849c54_min.webp"
+    },
+    {
+      "file": "panel-10-coming-down.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_210830_a74e1000-4df6-43a0-b045-e1a044ac4e40_min.webp"
+    },
+    {
+      "file": "panel-11-room-full.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201507_8c97231a-b6d7-4b56-8b31-206ecf65f53e_min.webp"
+    },
+    {
+      "file": "panel-12-all-talk.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201521_0b67e160-5d67-442f-86b8-ae87dd982871_min.webp"
+    },
+    {
+      "file": "panel-14-they-remember.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201527_1de784eb-d623-49fc-b9fa-51f1fe6c97b7_min.webp"
+    },
+    {
+      "file": "panel-15-door.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_210834_43307411-cb89-4e7d-9ba4-94356b41edb8_min.webp"
+    },
+    {
+      "file": "panel-16-teacher-night.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_210849_8d16da39-a798-4496-b4f7-3ac7ab3a4d44_min.webp"
+    },
+    {
+      "file": "panel-17-did-she-tell.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_210856_b3cf332e-e6ec-468d-a85c-0c52fb27d9fc_min.webp"
+    },
+    {
+      "file": "panel-18-not-writing.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_210903_267617e3-5559-468f-8496-90d179955572_min.webp"
+    },
+    {
+      "file": "panel-19-i-said-nothing.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_205356_41454b03-a447-4a5e-aa5e-3dc8ef60ca29_min.webp"
+    },
+    {
+      "file": "panel-20-the-bird.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_214932_5b9ca11b-9103-4c46-b5e2-1853d215e230_min.webp"
+    }
+  ]
+}

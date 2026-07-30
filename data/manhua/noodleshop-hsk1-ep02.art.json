@@ -1,0 +1,63 @@
+{
+  "_comment": "Panel art for 'The Rainy-Day Noodle Shop' episode 2 (HSK 1). Fetched into the repo by .github/workflows/content-utils.yml, task `manhua-art-fetch`. The `file` names are what data/manhua/noodleshop-hsk1-ep02.json's panels[].art refer to; src/manhuaEpisodes.test.js fails if the two ever disagree.",
+  "_style_comment": "Same locked warm-colour direction as episode 1 (docs/STORY-BIBLE.md §6), model nano_banana_pro at 2k, model sheets attached to every panel featuring a named character. This episode is the one where the rain stops, so the street panel is deliberately generated in dry golden evening light — the palette shift IS the storytelling.",
+  "dir": "public/stories/noodleshop/hsk1/ep02",
+  "assets": [
+    {
+      "file": "panel-01-dry.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_214134_7b0f5ab9-1d3b-4b28-a421-a1f09f8b1818_min.webp"
+    },
+    {
+      "file": "panel-02-asleep.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_214141_94b639ab-6c92-472a-95b8-5b83622f9dcf_min.webp"
+    },
+    {
+      "file": "panel-03-lives-here.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_210929_7e27253f-af5c-42b8-81d9-69d35cb7c77d_min.webp"
+    },
+    {
+      "file": "panel-04-what-name.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201902_07d13ea8-c468-47f6-89e2-9cfffeb2bb24_min.webp"
+    },
+    {
+      "file": "panel-06-every-cat.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_214148_7c1aa4eb-6336-4966-8a13-609fb6b76eba_min.webp"
+    },
+    {
+      "file": "panel-07-unimpressed.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_214153_d644c5ed-3635-40f4-8fbf-93551faa587f_min.webp"
+    },
+    {
+      "file": "panel-08-he-returns.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201922_88e54bef-70cd-4c03-80a3-47ab1d4a1f23_min.webp"
+    },
+    {
+      "file": "panel-09-her-name.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_214159_f15e70ec-83eb-4b40-a342-9105bc6025dc_min.webp"
+    },
+    {
+      "file": "panel-10-my-cat.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201944_9dae75f8-4745-4f73-87d4-b0570e1d5b01_min.webp"
+    },
+    {
+      "file": "panel-11-your-cat.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_214928_a3d051d3-6620-434b-8956-ca816a859728_min.webp"
+    },
+    {
+      "file": "panel-12-stopped.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201955_56c2c306-0246-4ca6-9c11-63cc123262d7_min.webp"
+    },
+    {
+      "file": "panel-13-went-over.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_210934_4ff302a6-b4f8-4e3c-9a6c-eefcf0228b37_min.webp"
+    },
+    {
+      "file": "panel-14-huahua.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_210941_215bc98f-7186-4f24-9d2a-2017a57cb6b8_min.webp"
+    },
+    {
+      "file": "panel-15-come-eat.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_202019_19749b24-9075-481c-9459-725973b3e150_min.webp"
+    }
+  ]
+}

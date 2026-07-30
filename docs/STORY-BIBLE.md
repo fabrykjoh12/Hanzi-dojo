@@ -249,7 +249,7 @@ so there is nobody to identify with except yourself.
 |------|---------|-----|
 | 小雨 | Xiǎo Yǔ | Apprentice at the dojo, about thirteen. Chin-length black hair, a cinnabar-red ribbon at one side, an ink brush pushed through her hair. Delighted by new people; asks the direct question first and the polite one never. She is the reason an episode has dialogue at all. |
 | 林老师 | Lín lǎoshī | The calligraphy master. Introduced in one line and one doorway. Reveal nothing about him yet — his restraint is the season's slow thread. |
-| 小白 | Xiǎo Bái | A tiny floating white ink spirit, one black brushstroke across its forehead, a thread of ink-smoke for a tail. Says nothing. Watches. Follows you inside at the end of episode 1. |
+| 小白 | Xiǎo Bái | A tiny floating white ink spirit, one black brushstroke across its forehead, a thread of ink-smoke for a tail. Watches. Follows you inside at the end of episode 1. **Silent through episodes 1 and 2, and speaks for the first time in episode 3** — that silence was the setup and the first line is the payoff, so do not spend it twice and do not write it chatty from here on. When it does talk it is short, plain and unhurried, and it explains the world rather than itself. |
 
 ⚠️ The ink spirit is **白** in canon and **小白** on the page. The reader's name
 matcher (`matchName`) only takes candidates of two characters or more, so a
@@ -308,9 +308,26 @@ Rules that go with it:
   border, white margin, inset panel or empty caption box doubles up inside the
   reader's own frame, and a bubble positioned at `top: 6` lands on the margin
   instead of the picture. Say "no frame, bleed to all four edges" every time.
-- **Compose for the bubble.** Each panel is generated with the empty corner its
-  dialogue will sit in ("the entire right half is quiet negative space"), and
-  the panel's `alt` describes it. A bubble must never cover a face.
+- **Compose for the bubble — but never ask for an EMPTY area.** Each panel is
+  generated with a quiet region where its dialogue will sit, and the panel's
+  `alt` describes it. A bubble must never cover a face.
+
+  ⚠️ Say *quiet*, never *empty*. "The top quarter of the frame is empty negative
+  space" is read literally: the model draws nothing there, and nothing is a
+  **letterbox bar**. That one phrase produced flat bars on eighteen panels of
+  the 第三话 + noodle-shop batch, pale cream ones in the colour series and black
+  ones in the ink series, and no amount of "full bleed, no frame" in the
+  constraints block overrode it — the composition line and the constraints line
+  were asking for opposite things. The wording that works names what fills the
+  space:
+
+  > COMPOSITION: the cat sits low and to the right. Keep the upper-left third
+  > free of faces and important detail — but it must still be FULLY PAINTED
+  > with continuing background (rain, shadow, drifting steam), never a flat
+  > empty area and never a blank bar.
+
+  `tools/manhua-contact-sheet.mjs` now detects these bars mechanically, at any
+  brightness, so a batch cannot ship with them again.
 - **Stage characters apart.** Over-the-shoulder framing, reaction shots, one
   figure plus a blurred foreground shoulder — close physical interaction between
   two generated characters is where consistency breaks.
@@ -334,7 +351,55 @@ box drawn over a picture, on a phone.
 |---------|-------|-------|
 | 第一话 · 我是新学生 | HSK 1 | Shipped. 23 lines over 14 panels, two choices. You arrive, 小雨 asks if you are the new student, she leads you to the hall, 林老师 asks whether you can write and answers you differently either way, and 小白 watches from behind a lantern. |
 | 第二话 · 字会说话 | HSK 2 | Shipped. 32 lines over 21 panels, two choices. You arrive early to an empty hall and find a mark on your table you did not make; 小雨 says 小白 wrote it. 林老师 sets you a hundred repetitions and your hand starts to hurt. 小白 blots the page, and what you do with the blot is the lesson — you draw the bird either way, because there are no new notebooks. He takes the page without saying whether it was good. On her way out 小雨 stops grinning: 晚上不要一个人写字。因为晚上，字会说话。 |
-| 第三话 | HSK 3 | Planned. The closing plate of 第二话 promises it at HSK 3 (`panels.meta.continues`), so it must be written at HSK 3 — the promise is load-bearing. |
+| 第三话 · 夜里的字 | HSK 3 | Shipped. 30 lines over 20 panels, two choices. You come back to the dojo at night, and 小白 — silent for two whole episodes — speaks. What 小雨 warned you about is literally true: the marks come off the page, and they remember who wrote them. 林老师 arrives in the doorway entirely unsurprised, walks between the tables while the ink parts around him, and holds out his hand. The closing plate is your notebook with the bird gone from it and one ink feather on the boards. Promises 第四话 at HSK 4. |
+| 第四话 | HSK 4 | Planned. Promised by 第三话's closing plate (`panels.meta.continues`), so it must be written at HSK 4 — the promise is load-bearing. |
+
+## 7. The Rainy-Day Noodle Shop (the second drawn series)
+
+A deliberate counterweight to The Inkbound. Where that one is monochrome ink,
+night, a dojo and a ghost story, this is **warm colour, a working street food
+stall, and nothing supernatural at all** — the drama is entirely that people are
+kind to each other without saying so. It exists because the Inkbound starts at
+HSK 1 and immediately climbs, and a beginner arriving today needs a series that
+is *still* at their level next week.
+
+Its engine is restraint: the quiet man is never named, nobody ever says what he
+is short of money for, and the thing that finally gets said out loud is a cat's
+name. **The rule is that the important thing stays unsaid and gets drawn
+instead** — which is exactly the format's strength, since the reader is decoding
+every word and cannot carry subtext in the prose.
+
+| Character | Reading | Canon |
+|-----------|---------|-------|
+| 小美 | Xiǎo Měi | Ten, the daughter. Short ponytail, an apron too big for her. Names things and then defends the name; she is the one who decides to go and find someone. Model sheet: `data/manhua/bible/xiaomei-huahua-model-sheet.webp`. |
+| 妈妈 | — | Her mother, forties, runs the stall. Tired and completely competent. She is the one who pushes the bowl across anyway. Deliberately NOT in `characterNames.js` — 妈妈 is ordinary HSK 1 vocabulary and must resolve as the word it is. Model sheet: `data/manhua/bible/mama-and-the-man-model-sheet.webp`. |
+| 花花 | Huā Huā | The calico cat. Walks in out of the rain and stays. Chooses people; is never picked up. Sits in the doorway facing the street when someone is late. |
+| the quiet man | — | Big, a soaked work jacket, eats there every evening. **Never named, in any episode.** He was one kuai short on the first night and nobody said anything about it. That silence is the series. |
+
+### Art direction (locked — use this verbatim)
+
+> Warm colour manhua illustration, rich amber and lantern-orange palette against
+> cool blue-grey shadow, soft painterly digital rendering with clean confident
+> lineart, gentle cel shading, cosy slice-of-life atmosphere, modern anime
+> character rendering with expressive faces, premium serialized graphic-novel
+> quality, no text, no letters, no signage, no captions, no speech bubbles, no
+> logo, no watermark, no resemblance to any existing franchise or artist.
+
+Everything in §6 applies here too — the same CRITICAL CONSTRAINTS block, the same
+model-sheet rule, the same full-bleed rule. Two additions this series needs:
+
+- **A noodle stall is the most sign-covered set in the world.** The constraints
+  block must name them: *no shop signs, no menus, no price boards, no banners*.
+  Without that the model hangs a lantern with characters on it in every shot.
+- **`panels.meta.art_palette` must be `'colour'`** or the contact sheet's
+  seal-stamp check fires on all fifteen panels at once and tells you nothing.
+
+| Episode | Level | State |
+|---------|-------|-------|
+| 第一话 · 一块钱 | HSK 1 | Shipped. 26 lines over 18 panels. Night rain; a soaked cat outside the light, and you get it to come in. Then a big man in a wet jacket puts nine coins on the counter for a ten-kuai bowl, and 妈妈 pushes the bowl across without a word about it. He gives the cat half his egg. Nobody comments on any of it. |
+| 第二话 · 花花 | HSK 1 | Shipped. 26 lines over 15 panels. The rain has stopped and the cat has moved in. 小美 wants to name her; 妈妈 is unimpressed; the cat is uninterested. The man comes back, sees her, and his face does something complicated — and the cat walks straight into his arms and settles, which answers a question nobody asked out loud. Still every word HSK 1. |
+| 第三话 · 他没来 | HSK 2 | Shipped. 26 lines over 16 panels. He eats there every evening — until one evening he doesn't, and the cat sits in the doorway facing the street. 小美 is already putting her coat on. They walk a long wet road to a doorway off an alley with a folded blanket in it, and the bowl they carry has gone completely cold — which is the one detail the episode turns on, because he smiles anyway. |
+| 第四话 | HSK 2 | Planned. Promised by 第三话's closing plate. |
 
 ### The plate at the end of an episode
 

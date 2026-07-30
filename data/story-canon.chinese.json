@@ -306,18 +306,40 @@
       "speech": "one sentence, no elaboration",
       "never": "explains himself early",
       "first_appeared": "Hanzi Dojo: The Inkbound, 第一话 (HSK 1 manhua)",
-      "universe": "inkbound"
+      "universe": "inkbound",
+      "appearance": "tall and lean, about fifty; calm unreadable face, high cheekbones, black hair greying at the temples pulled into a low knot, a plain unadorned long dark robe with a simple sash. Model sheet: data/manhua/bible/linlaoshi-model-sheet.webp — attach it to every generation he appears in."
     },
     {
       "name": "小白",
       "pinyin": "Xiǎo Bái",
       "role": "ink spirit",
-      "traits": "tiny, floating, one black brushstroke across its forehead, a thread of ink-smoke for a tail; says nothing and follows you",
-      "speech": "none — never given a line",
-      "never": "speaks, or is explained",
+      "traits": "tiny, floating, one black brushstroke across its forehead, a thread of ink-smoke for a tail; silent for two whole episodes, then speaks",
+      "speech": "none until 第三话, where it speaks for the first time — short, plain, unhurried, and it explains the world rather than itself",
+      "never": "loud, or frightened of you",
       "first_appeared": "Hanzi Dojo: The Inkbound, 第一话 (HSK 1 manhua)",
       "universe": "inkbound",
-      "_note": "Canon name is 白; written 小白 on the page because the reader's name matcher only takes names of two characters or more. See docs/STORY-BIBLE.md §6."
+      "_note": "Canon name is 白; written 小白 on the page because the reader's name matcher only takes names of two characters or more. See docs/STORY-BIBLE.md §6. ⚠️ Its silence was the point for two episodes and its first line is the payoff — do not spend that twice, and do not write it chatty from here on."
+    },
+    {
+      "name": "小美",
+      "pinyin": "Xiǎo Měi",
+      "role": "noodle shop daughter",
+      "age": 10,
+      "traits": "bright, certain, short ponytail and an apron too big for her; names things and then defends the name; the one who decides to go looking for someone",
+      "speech": "direct, warm, a question or an announcement — rarely anything in between",
+      "never": "cruel about anyone being poor",
+      "first_appeared": "Hanzi Dojo: The Rainy-Day Noodle Shop, 第一话 (HSK 1 manhua)",
+      "universe": "noodleshop"
+    },
+    {
+      "name": "花花",
+      "pinyin": "Huā Huā",
+      "role": "the cat",
+      "traits": "soaked calico who walks in out of the rain and stays; chooses people, is never picked up; sits in the doorway facing the street when someone is late",
+      "speech": "none — a cat",
+      "never": "made to talk, or made cute at the expense of being a cat",
+      "first_appeared": "Hanzi Dojo: The Rainy-Day Noodle Shop, 第一话 (HSK 1 manhua)",
+      "universe": "noodleshop"
     }
   ],
   "locations": [
@@ -345,6 +367,15 @@
         "奶奶 lived here sixty years, in the flat upstairs, before moving to a smaller place on the same street (HSK 6 t2).",
         "The caretaker's records were lost in an office move; 奶奶 is the building's real memory.",
         "The old chair by the door downstairs is still there; since 奶奶 moved, nobody sits in it."
+      ]
+    },
+    {
+      "name": "the rainy-day noodle shop",
+      "facts": [
+        "A one-counter street stall with four stools, a plastic side sheet against the rain and two bare hanging bulbs. 小美 and her mother run it; the mother cooks and 小美 is underfoot.",
+        "It is the only lit thing on its street after dark, which is the whole reason people end up in it.",
+        "The quiet man eats there every evening and is never named. He was a kuai short on the first night and nobody said anything about it — that silence is the series.",
+        "His room is a doorway off an alley, a folded blanket and nothing else. It is a short walk, and nobody in the shop knew where it was until 第三话."
       ]
     }
   ],

@@ -1,0 +1,67 @@
+{
+  "_comment": "Panel art for 'The Rainy-Day Noodle Shop' episode 3 (HSK 2). Fetched into the repo by .github/workflows/content-utils.yml, task `manhua-art-fetch`. The `file` names are what data/manhua/noodleshop-hsk2-ep03.json's panels[].art refer to; src/manhuaEpisodes.test.js fails if the two ever disagree.",
+  "_style_comment": "Same locked warm-colour direction (docs/STORY-BIBLE.md §6), model nano_banana_pro at 2k. Two prompts here fight the model harder than the rest and are written accordingly: panel 1 wants four evenings in one frame, which every model reads as a comic grid, so it is specified as ONE seamless counter with the same man at four points and the light sliding from gold to night — 'no dividers, no separating lines, no boxes' by name. And panel 13's whole point is the absence of steam, so it says so twice; a bowl of noodles is the most steam-shaped object there is. The 2/1 closing letterbox was generated at 21:9 and is cover-cropped by the reader.",
+  "dir": "public/stories/noodleshop/hsk2/ep03",
+  "assets": [
+    {
+      "file": "panel-01-every-day.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_202054_8db2331f-5088-4241-9b74-a1c8a535641c_min.webp"
+    },
+    {
+      "file": "panel-02-only-noodles.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_202059_acc62546-a2b1-4380-b1c3-9cbddc774734_min.webp"
+    },
+    {
+      "file": "panel-03-waiting.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_210956_ad6285a7-8756-4a77-96f8-9572bfa6b6b3_min.webp"
+    },
+    {
+      "file": "panel-04-where.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_202109_9df3096a-4988-4e22-85b5-9dd258740f9c_min.webp"
+    },
+    {
+      "file": "panel-05-late.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_202113_d3e2f4b4-c88b-4717-99c2-d696e11ca0b5_min.webp"
+    },
+    {
+      "file": "panel-07-i-know.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_202127_fe7b4cb1-b576-47f5-be1d-99a4d361caca_min.webp"
+    },
+    {
+      "file": "panel-08-long-road.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_202134_9f91c5a0-3494-4013-9e46-15177c7a9148_min.webp"
+    },
+    {
+      "file": "panel-09-the-room.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_202145_e8fe540f-5508-4818-b5ed-a99f5ae4ba95_min.webp"
+    },
+    {
+      "file": "panel-10-cat-goes-in.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_211003_e9ea0c4e-2a01-4afa-8f06-47972a1026df_min.webp"
+    },
+    {
+      "file": "panel-11-he-gets-up.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_211011_58b00a49-4ecb-46e8-9902-bc05cfef34b8_min.webp"
+    },
+    {
+      "file": "panel-12-came-for-you.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_211015_4c9abc50-627f-43a8-9545-cd718fb350d7_min.webp"
+    },
+    {
+      "file": "panel-13-mum-sent-us.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_202217_68b78930-2073-4d83-85ef-5f946f74a687_min.webp"
+    },
+    {
+      "file": "panel-14-he-smiled.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_211020_3a1037a4-b07d-4501-bdf5-d90798b97f3a_min.webp"
+    },
+    {
+      "file": "panel-15-back-together.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_202228_ab260df1-7e24-4784-a4b1-bec36c463e69_min.webp"
+    },
+    {
+      "file": "panel-16-rain-again.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_202234_6b77b719-8c1b-435f-beee-47bd3ca88db2_min.webp"
+    }
+  ]
+}

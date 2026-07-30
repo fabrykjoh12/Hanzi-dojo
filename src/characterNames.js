@@ -40,6 +40,13 @@ export const CHARACTER_READINGS = {
     // only takes candidates of two characters or more, so a one-character name
     // is unreachable by the reader — and 小白 is the natural way to say it.
     '小雨': 'Xiǎo Yǔ', '小白': 'Xiǎo Bái', '林老师': 'Lín lǎoshī',
+    // Hanzi Dojo Stories — "The Rainy-Day Noodle Shop" (HSK 1 manhua, the
+    // second drawn series). Same problem as above: 小美 would split into 小 +
+    // 美 and 花花 into 花 + 花 ("flower flower"), which is a real reading and
+    // exactly the wrong one for a cat's name. 妈妈 is deliberately NOT here —
+    // it is ordinary HSK 1 vocabulary, so it resolves through the word lookup
+    // and stays tappable as the word it is.
+    '小美': 'Xiǎo Měi', '花花': 'Huā Huā',
   },
   // Japanese story protagonists (serial + legacy story sets). Role nouns
   // (おかあさん、おじいさん、せんせい…) are ordinary vocabulary and resolve

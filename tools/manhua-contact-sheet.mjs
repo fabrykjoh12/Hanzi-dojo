@@ -35,7 +35,15 @@
 //            So: 1 of 3, with 1 of 19 crying wolf. Useful, not a gate you can
 //            trust on its own.
 //   colour:  catches everything, because it flags any colour at all and lets a
-//            human separate a ribbon from a seal. Deliberately over-eager.
+//            human separate a ribbon from a seal. Deliberately over-eager, and
+//            only run for a MONOCHROME episode — see `art_palette` below.
+//   bar:     the letterbox/pillarbox check added after the 第三话 + noodle-shop
+//            batch, where 27 of 63 panels came back with a flat empty strip at
+//            an edge. It catches the unambiguous ones — a hard-edged, dead-flat
+//            band — and MISSES pale-cream bars in warm art, where the bar and
+//            the picture are within a few luminance points of each other. Nine
+//            of that batch had to be found by eye after the screen said nothing.
+//            See the thresholds below for why it is not simply loosened.
 //
 // The reliable win here is NOT the screen — it is the contact sheet. Judging
 // nineteen panels went from nineteen separate looks to one. Do not let the
@@ -58,8 +66,17 @@ if (!episodePath) {
 }
 
 const ep = JSON.parse(readFileSync(resolve(ROOT, episodePath), 'utf8'))
-const base = (ep.panels && ep.panels.meta && ep.panels.meta.art_base) || ''
+const meta = (ep.panels && ep.panels.meta) || {}
+const base = meta.art_base || ''
 const panels = ((ep.panels && ep.panels.panels) || []).filter(p => p.art)
+
+// The colour screen only means anything for a series whose art direction is
+// monochrome. The Rainy-Day Noodle Shop is a warm COLOUR series on purpose, so
+// running it there flags all fifteen panels at 20-70% saturated and the run
+// says nothing at all. Each episode declares its own palette in
+// `panels.meta.art_palette` ('mono' | 'colour'); anything else is treated as
+// mono, because that was the only kind of episode before this field existed.
+const isColour = meta.art_palette === 'colour'
 
 const items = panels.map(p => {
   const file = join(ROOT, 'public', base, p.art)
@@ -179,6 +196,63 @@ async function screenPanel(page, url) {
     const v = findLines(darkShareCol, W)
     const hLine = h[0] && h[1]
     const vLine = v[0] && v[1]
+    // BAND: a letterbox or pillarbox bar — a run of rows (or columns) at an
+    // edge that are FLAT, all the same, and end at a hard edge. This is a
+    // different defect from the keyline above and needs its own test, because
+    // the bar is whatever colour the picture is: the noodle-shop batch came
+    // back with pale cream bars that the dark-keyline check could never see.
+    //
+    // It is caused by the prompt, not the model being careless. Asking for
+    // "the top quarter is empty negative space" is read as "draw nothing
+    // there", and nothing is a bar. Say "fully painted, no faces or important
+    // detail in that strip" instead — see docs/STORY-BIBLE.md §6.
+    // Thresholds, calibrated against the 第三话 + noodle-shop batch, where 27 of
+    // 63 panels came back barred and every one was confirmed by eye.
+    //
+    // These are the TIGHT setting, and that is a deliberate choice. Loosening
+    // them to SD_FLAT 14 / JUMP 6 catches the pale-cream bars this setting
+    // misses, but it also flags a night sky, a dark hall, an unlit wall and a
+    // rain-grey road — because in this art a flat bar and a flat sky ARE the
+    // same measurement. A screen that flags a third of a good episode gets
+    // ignored, and an ignored screen is worse than none. So: catch the
+    // unambiguous bars, stay silent on the rest, and let the contact sheet do
+    // what only an eye can.
+    const SD_FLAT = 7
+    const JUMP = 12
+    function stats(i, span, at) {
+      let sum = 0
+      for (let k = 0; k < span; k += 1) sum += at(i, k)
+      const mean = sum / span
+      let varr = 0
+      for (let k = 0; k < span; k += 1) { const d = at(i, k) - mean; varr += d * d }
+      return { mean, sd: Math.sqrt(varr / span) }
+    }
+    function findBand(span, cross, at) {
+      const scan = Math.round(span * 0.35)
+      const out = [0, 0]
+      for (const side of [0, 1]) {
+        const first = stats(side === 0 ? 0 : span - 1, cross, at)
+        if (first.sd > SD_FLAT) continue
+        let run = 0
+        for (let k = 0; k < scan; k += 1) {
+          const i = side === 0 ? k : span - 1 - k
+          const s = stats(i, cross, at)
+          if (s.sd > SD_FLAT || Math.abs(s.mean - first.mean) > SD_FLAT) break
+          run += 1
+        }
+        if (run < Math.max(4, span * 0.025) || run >= scan) continue
+        // The band has to END, sharply. A sky that fades into the picture is
+        // not a bar; a bar butts straight up against the art.
+        const nextI = side === 0 ? run + 2 : span - 3 - run
+        const next = stats(nextI, cross, at)
+        if (Math.abs(next.mean - first.mean) > JUMP || next.sd > first.sd + JUMP) {
+          out[side] = Math.round((run / span) * 100)
+        }
+      }
+      return out
+    }
+    const hBand = findBand(H, W, (y, x) => lum(x, y))
+    const vBand = findBand(W, H, (x, y) => lum(x, y))
     let saturated = 0
     for (let i = 0; i < d.length; i += 4) {
       const r = d[i], g = d[i + 1], b = d[i + 2]
@@ -187,6 +261,7 @@ async function screenPanel(page, url) {
     return {
       hLine: Boolean(hLine),
       vLine: Boolean(vLine),
+      bands: { top: hBand[0], bottom: hBand[1], left: vBand[0], right: vBand[1] },
       saturatedPct: (saturated / (W * H)) * 100,
     }
   }, url)
@@ -239,10 +314,17 @@ for (const i of items) {
       + ' edge. The reader draws its own keyline and gutter; a baked one doubles up, '
       + 'and a bubble at a low `top` lands on the margin instead of the art.')
   }
-  if (r.saturatedPct > 0.02) {
+  const bars = Object.keys(r.bands).filter(k => r.bands[k] > 0)
+  if (bars.length) {
+    flags.push(i.art + ': a flat bar at the '
+      + bars.map(k => k + ' (' + r.bands[k] + '%)').join(' and ')
+      + '. The panel is letterboxed or pillarboxed — the art does not reach the edge, so '
+      + 'the reader frames a bar instead of a picture and a bubble at a low `top` lands on it.')
+  }
+  if (!isColour && r.saturatedPct > 0.02) {
     flags.push(i.art + ': ' + r.saturatedPct.toFixed(3) + '% coloured pixels. Confirm on the '
-      + "sheet that this is 小雨's ribbon and not a red seal stamp — a seal is invented "
-      + 'characters in miniature.')
+      + "sheet that this is the series' one cinnabar accent — 小雨's ribbon, a lantern — and "
+      + 'not a red seal stamp, which is invented characters in miniature.')
   }
 }
 

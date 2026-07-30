@@ -1,0 +1,71 @@
+{
+  "_comment": "Panel art for 'The Rainy-Day Noodle Shop' episode 1 (HSK 1). Fetched into the repo by .github/workflows/content-utils.yml, task `manhua-art-fetch`. The `file` names are what data/manhua/noodleshop-hsk1-ep01.json's panels[].art refer to; src/manhuaEpisodes.test.js fails if the two ever disagree.",
+  "_style_comment": "The second drawn series, and deliberately the opposite register to The Inkbound: warm colour instead of monochrome ink, a working noodle stall instead of a dojo at night. Its own locked art direction is in docs/STORY-BIBLE.md §6. Model nano_banana_pro at 2k. 小美 and 花花 carry the 小美/花花 model sheet; 妈妈 and the quiet man carry theirs. Every prompt carries the CRITICAL CONSTRAINTS block, extended here with 'no shop signs, no menus, no price boards' — a noodle stall is the single most sign-covered set in the world, and the format cannot have a character on the art.",
+  "dir": "public/stories/noodleshop/hsk1/ep01",
+  "assets": [
+    {
+      "file": "panel-01-rain.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201632_d2e3c85c-6a7e-40f9-8cb7-9d7e30cca213_min.webp"
+    },
+    {
+      "file": "panel-02-inside.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201639_4aea1d65-d659-4ecc-b29a-f25b5051b68d_min.webp"
+    },
+    {
+      "file": "panel-03-mum.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_214115_04d6e9a3-1e49-4694-8922-875da7353c77_min.webp"
+    },
+    {
+      "file": "panel-04-xiaomei.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201653_88b5f1c0-3303-494a-a7be-9fcb3d2cda4d_min.webp"
+    },
+    {
+      "file": "panel-05-cat.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201657_188a0bf2-5548-4a5d-afd7-71b4cea6771d_min.webp"
+    },
+    {
+      "file": "panel-06-small-cold.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201703_52767fa5-f55c-4d86-a986-ccfa3ef3538c_min.webp"
+    },
+    {
+      "file": "panel-08-no-answer.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201709_957441b3-3c70-404b-8126-e26774d43fbe_min.webp"
+    },
+    {
+      "file": "panel-09-milk.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201721_1eeb3f76-f657-4917-b505-3017affc13c1_min.webp"
+    },
+    {
+      "file": "panel-10-drank.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201736_412a9341-dff3-465b-becc-20deaac2f1bc_min.webp"
+    },
+    {
+      "file": "panel-11-man.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_214118_93838d0b-08c9-4666-b0ca-40d98344dcc3_min.webp"
+    },
+    {
+      "file": "panel-12-ten.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201750_f717f1f3-cc0e-4112-a6f5-31fb2bbb3ad0_min.webp"
+    },
+    {
+      "file": "panel-13-nine.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201754_78d54e35-92bf-48d6-a81f-ef34f18e7994_min.webp"
+    },
+    {
+      "file": "panel-15-eat.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_214121_0fb7a8f0-624d-46dd-8ede-b9761181e8fd_min.webp"
+    },
+    {
+      "file": "panel-16-watching.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201809_dfce6798-557c-43bb-9bb1-ea1f8b5b5a6e_min.webp"
+    },
+    {
+      "file": "panel-17-egg.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201814_c5d38cf7-19de-4d19-a6b8-0feac6ca7c1f_min.webp"
+    },
+    {
+      "file": "panel-18-quiet.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_201819_e7d68e06-3b3b-44d5-b90f-c3621eafceed_min.webp"
+    }
+  ]
+}
