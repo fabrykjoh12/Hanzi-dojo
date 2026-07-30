@@ -21,13 +21,14 @@ assumption before this was understood:
   anything `ok`), so an image that shipped late stayed broken on every device
   that had asked for it early. Fixed in v7: `isShellHtml` refuses to store it and
   drops an existing poisoned hit, and the version bump clears the old caches.
-- `publish-manga.mjs`'s art preflight checked `res.ok` only, so it would have
+- `publish-manhua.mjs`'s art preflight checked `res.ok` only, so it would have
   passed on every missing panel. It now requires `content-type: image/*`.
 
 **Anything else that probes for a file's existence over HTTP has the same trap.**
 Check the content type, not the status.
 
 ## Database
+- [ ] **`20260730090000_manhua_presentation_rename.sql` — WRITTEN, NOT APPLIED.** Retags the fourth presentation `'manga'` → `'manhua'` (Chinese word for the form; the Japanese one was a slip). Idempotent: it widens `stories_presentation_check` to accept both spellings, UPDATEs the one row, then narrows the constraint to `'manhua'` alone. **Order does not matter** — `presentationOf` in `src/readerMode.js` aliases the old tag to the new one, so the app deploy and this migration can land in either order without the live episode dropping to a plain paced story in between. Once it is applied everywhere, that alias and the `LEGACY_PROGRESS_PREFIX` fallback in `src/manhuaProgress.js` (which reads reading positions saved under the old `manga:` IndexedDB key) can both be deleted.
 - [x] **APPLIED 2026-07-28 — `20260728210000_fix_language_reset_missing_writing_stats.sql`.** "Reset HSK 3.0 progress" failed outright with `relation "public.writing_stats" does not exist`, so a language's progress could not be cleared. Root cause was the §10 classic: `20260605224500_add_writing_stats.sql` sat in the repo unapplied while the reset RPC that deletes from that table was applied. It cost more than the reset — `src/Writing.jsx` reads and upserts `writing_stats` on every writing answer, so writing practice was discarding its results. The fix creates the table idempotently AND guards the RPC's delete with `to_regclass`, so a missing optional table can never abort a reset again. Applied through the dashboard SQL editor (the sandbox's MCP write gate was unreachable that session). **Worth a check when convenient:** reset a language from Profile and confirm it completes, and that a writing answer now persists across a reload.
 
 ## Auth / email / hosting
