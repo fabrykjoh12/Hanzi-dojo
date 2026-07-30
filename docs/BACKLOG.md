@@ -93,6 +93,19 @@ Shipped 2026-07-20 (see Claude.md §0). Data loaded to prod Supabase: **123,465*
 
 ## Content
 
+- [ ] **Four small letterbox bars in the two already-shipped Inkbound episodes.**
+  Found on 2026-07-30 by the bar check newly added to
+  `tools/manhua-contact-sheet.mjs`, which did not exist when those episodes were
+  reviewed. 第一话: `panel-08-teacher` (bottom 6%), `panel-11-stroke` (top 6% and
+  bottom 9%), `panel-13-watcher` (left 11%). 第二话: `panel-21-hook` (right 6%).
+  All are small, all are dark-on-dark, and none of them puts a bubble on a bar —
+  which is why nobody saw them. **Deliberately not fixed here:** reworking
+  published art means a force re-fetch and a new commit on live episodes for a
+  defect no reader has noticed, and this batch already spent three rounds on the
+  bars that mattered. Worth doing the next time either episode is touched for
+  another reason. The cause and the prompt wording that avoids it are in
+  `docs/STORY-BIBLE.md` §6.
+
 **Focus: Chinese only.** Japanese and Russian are paused until the app scales; the
 gate lives in `PUBLIC_LANGUAGES`/`ADMIN_LANGUAGES` in `src/languageTheme.js` (add a
 language key back to un-pause). The non-Chinese content items below are kept for
