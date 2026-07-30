@@ -65,6 +65,9 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          # manga-publish refuses to publish an episode whose panel art is not
+          # yet on the live site. This is the site it checks.
+          SITE_URL: https://hanzi-dojo.com
           # Every dispatch input reaches the shell as an environment VARIABLE,
           # never as ${{ }} interpolated into the script. Interpolation splices
           # the value in as shell SOURCE, so a manifest containing a quote and a

@@ -336,7 +336,24 @@ authored content has typos.
    episode is completable, and that the bubbles stay on the art at phone widths.
 4. Generate art with the locked style + character sheets, write
    `<episode>.art.json`, and dispatch `content-utils.yml` → `manga-art-fetch`.
-5. Dispatch `content-utils.yml` → `manga-publish` with the episode manifest.
+5. Dispatch `content-utils.yml` → `manga-publish` with the episode manifest —
+   **after the art is merged to `main` and deployed**, not before.
+
+### Publish comes AFTER deploy, and the script enforces it
+
+The database is shared by every deployment; panel art is a file inside a build.
+So publishing an episode whose art is still on a feature branch points
+**production** at 404s, and the reader draws an empty plate where each missing
+drawing should be. That is not hypothetical — it shipped: five new panels were
+still unmerged when `manga-publish` ran, and production showed blank panels until
+the branch merged.
+
+`publish-manga.mjs` now HEAD-checks every `panels[].art` file against `SITE_URL`
+(default `https://hanzi-dojo.com`) and **refuses to write** if any are missing,
+listing them. `--skip-art-check` overrides it for a deliberate text-ahead-of-art
+draft. The same trap applies to renaming an existing panel file: the old name
+disappears from the build at the same moment the new one appears, so a rename is
+a deploy-then-publish sequence too.
 
 ## Language and level system
 
