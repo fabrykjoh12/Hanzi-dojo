@@ -270,6 +270,18 @@ Every name here must also exist in `src/characterNames.js`, same rule as 这条�
 > bubbles, no logo, no watermark, no resemblance to any existing franchise or
 > artist.
 
+**And every prompt ends with this block — it is not optional** (added after 14 of
+episode 2's 19 panels had to be regenerated for breaking it):
+
+> CRITICAL CONSTRAINTS: there must be NO writing anywhere in the image — no
+> Chinese or Japanese characters, no letters, no digits, no invented or fake
+> glyphs, no calligraphy, no red seal or stamp, no crest or emblem carrying
+> symbols, no signage. Every lantern, banner, scroll and page is completely
+> BLANK. Draw NO panel border, NO frame, NO keyline, NO white margin, NO gutter,
+> NO inset panel-within-a-panel and NO empty speech balloon or caption box — the
+> illustration must BLEED to all four edges. No logo, no watermark, no
+> resemblance to any existing franchise or artist.
+
 Rules that go with it:
 
 - **Attach the character sheet** in `data/manhua/bible/` as a reference image to
@@ -280,7 +292,22 @@ Rules that go with it:
 - **"No text" is not a style note, it is the format.** Every Chinese word is
   rendered by the app so it can be tapped, scaffolded, played and translated.
   Ask explicitly for blank lanterns and blank banners — they are what the model
-  reaches for otherwise.
+  reaches for otherwise. The two shapes it reaches for hardest, both of which
+  shipped in episode 2's first pass: **a page of practice covered in invented
+  hanzi** (asking for "rows of brushstrokes on a page" is read as "writing" —
+  describe widely-spaced single marks instead) and **a red seal stamp**, which is
+  fake characters in miniature and turns up on lanterns, scrolls, robes and
+  notebook covers unless you forbid it by name.
+- **Never ask for a mark that could be read.** A panel whose subject is a
+  brushstroke must say the mark is a plain single tapering sweep that could not
+  be mistaken for a letter, a digit or a character. Episode 2's "一次，两次，十次"
+  panel came back the first time as the same glyph-like squiggle three times,
+  which a learner would try to read.
+- **The art must be full-bleed — the app draws the comic, not the model.** The
+  reader supplies the keyline, the gutter and the balloons. A generated panel
+  border, white margin, inset panel or empty caption box doubles up inside the
+  reader's own frame, and a bubble positioned at `top: 6` lands on the margin
+  instead of the picture. Say "no frame, bleed to all four edges" every time.
 - **Compose for the bubble.** Each panel is generated with the empty corner its
   dialogue will sit in ("the entire right half is quiet negative space"), and
   the panel's `alt` describes it. A bubble must never cover a face.
@@ -306,7 +333,8 @@ box drawn over a picture, on a phone.
 | Episode | Level | State |
 |---------|-------|-------|
 | 第一话 · 我是新学生 | HSK 1 | Shipped. 23 lines over 14 panels, two choices. You arrive, 小雨 asks if you are the new student, she leads you to the hall, 林老师 asks whether you can write and answers you differently either way, and 小白 watches from behind a lantern. |
-| 第二话 | HSK 2 | Planned. The closing plate of 第一话 promises it at HSK 2 (`panels.meta.continues`), so it must be written at HSK 2 — the promise is load-bearing. |
+| 第二话 · 字会说话 | HSK 2 | Shipped. 32 lines over 21 panels, two choices. You arrive early to an empty hall and find a mark on your table you did not make; 小雨 says 小白 wrote it. 林老师 sets you a hundred repetitions and your hand starts to hurt. 小白 blots the page, and what you do with the blot is the lesson — you draw the bird either way, because there are no new notebooks. He takes the page without saying whether it was good. On her way out 小雨 stops grinning: 晚上不要一个人写字。因为晚上，字会说话。 |
+| 第三话 | HSK 3 | Planned. The closing plate of 第二话 promises it at HSK 3 (`panels.meta.continues`), so it must be written at HSK 3 — the promise is load-bearing. |
 
 ### The plate at the end of an episode
 

@@ -1,0 +1,255 @@
+{
+  "_comment": "Hanzi Dojo Stories — 'The Inkbound', episode 2. The canonical source for the manhua episode: the Chinese, the line-parallel English, and the panel layout. publish-manhua.mjs upserts this into `stories` (content / english_content / panels / presentation='manhua'); src/manhuaEpisodes.test.js validates the Chinese against the HSK 2 snapshot and the layout against the reader's own rules. Edit here, never in the database.",
+
+  "language": "chinese",
+  "system": "hsk_3",
+  "level": 2,
+  "tier": 1,
+  "tier_min_words": 0,
+  "presentation": "manhua",
+  "is_published": true,
+
+  "title": "第二话 · 字会说话",
+  "english_summary": "Your second morning at the dojo. Someone has written on your table before you arrived, 小雨 says it was the ink spirit, and 林老师 sets you a hundred repetitions of one character. Then 小白 knocks the ink over — and what you do with the blot is the whole lesson.",
+
+  "_promise_comment": "第一话's closing plate promises 第二话 at HSK 2 (panels.meta.continues), so this is written at HSK 2 and published at level 2. See docs/STORY-BIBLE.md §6: whatever the plate promises has to be true.",
+
+  "_content_comment": "One beat per line, 'NAME：text' with a fullwidth colon, exactly as every other authored format stores it — the shared engine (useStoryReaderCore) tokenizes this and the manhua reader only decides where each line is drawn. Beat indices are 0-based and are what panels[].bubbles[].beat refers to; INSERTING A LINE MEANS RE-INDEXING THE PANELS.",
+  "content": "今天早上，我到学校了。\n教室里没有人。\n桌子上有一个字。\n这个字不是我写的。\n小雨：你好！你来得很早。\n小雨：这个字是小白写的。\n你：小白会写字吗？\n你：我不懂。\n小雨：他真的会！我看见了。\n小雨：我也不懂。\n小雨：但是老师不知道。\n林老师：早上好。\n林老师：今天你自己写。\n林老师：写一百次这个字。\n我拿着笔，开始写。\n一次，两次，十次。\n我的手很疼。\n小白进来了。\n我的本子上有一个黑色的点。\n小雨：坏了！\n你：没关系。我可以画。\n你：我要一个新本子。\n小雨：好！你画。\n小雨：没有新本子了。\n我拿着笔，画了一只鸟。\n小雨：这只鸟真漂亮！\n林老师拿走了我的本子。\n林老师：明天早上再来。\n我不知道他觉得怎么样。\n小雨：晚上不要一个人写字。\n你：为什么？\n小雨：因为晚上，字会说话。",
+  "english_content": "This morning I got to the school.\nThere was nobody in the classroom.\nThere was a character on the table.\nI didn't write this character.\nHello! You came very early.\nXiao Bai wrote this character.\nCan Xiao Bai write?\nI don't understand.\nHe really can! I saw it.\nI don't understand it either.\nBut the teacher doesn't know.\nGood morning.\nToday you write on your own.\nWrite this character a hundred times.\nI held the brush and started writing.\nOnce, twice, ten times.\nMy hand hurt.\nXiao Bai came in.\nThere was a black dot on my notebook.\nIt's ruined!\nIt doesn't matter. I can draw.\nI want a new notebook.\nGood! You draw.\nThere are no new notebooks.\nI held the brush and drew a bird.\nThis bird is really beautiful!\nTeacher Lin took my notebook away.\nCome again tomorrow morning.\nI don't know what he thought.\nDon't write alone at night.\nWhy?\nBecause at night, the characters talk.",
+
+  "_vocabulary_comment": "Every word in this episode is HSK 2 (data/hsk2-vocab-snapshot.json, which is cumulative and so contains HSK 1). There are no reach words at all. The only tokens outside the word list are the three proper names, curated in src/characterNames.js. Two words the level does NOT have shaped the script: 纸 (paper) and 墨 (ink) are both absent, so the page is a 本子 and the spill is 一个黑色的点 — which is truer to what the panel actually shows anyway. 没 alone is not in the list either (only 没有 / 没关系 / 没事), which is why the closing thought is 我不知道他觉得怎么样 rather than 他没说.",
+  "names": ["小雨", "小白", "林老师"],
+  "reach_words": [],
+  "anchor_word": "本子",
+
+  "panels": {
+    "meta": {
+      "series": "Hanzi Dojo: The Inkbound",
+      "episode_label": "第二话",
+      "episode_title": "字会说话",
+      "art_base": "/stories/inkbound/hsk2/ep02/",
+      "hook": "Don't write alone at night. At night, the characters talk.",
+
+      "_continues_comment": "What the closing plate promises next, and the level it is written at. `level` is a level NUMBER in this story's own system — the reader prints it with getLevelLabel, so the plate says 'HSK 3' without anything hardcoding that string. Omit the whole block for an episode that ends a season. Whatever this promises has to be true: 第三话 must be written at HSK 3.",
+      "continues": {
+        "label": "第三话",
+        "level": 3
+      }
+    },
+
+    "_cast_comment": "A cast entry with a `display` gets a printed speaker label above its bubble; without one the bubble is bare, which is how a manhua panel works — the drawing says who is talking. The speaker is still announced to screen readers either way.",
+    "cast": {
+      "小雨": {},
+      "你": {},
+      "林老师": {}
+    },
+
+    "panels": [
+      {
+        "id": "p1",
+        "art": "panel-01-morning.webp",
+        "ratio": "4/3",
+        "alt": "Early morning, the opposite of the episode before: the dojo courtyard in flat pale daylight, lanterns unlit, one small figure with a scroll on their back crossing the empty stones.",
+        "bubbles": [
+          { "beat": 0, "kind": "narration", "side": "left", "top": 6, "width": 70 }
+        ]
+      },
+      {
+        "id": "p2",
+        "art": "panel-02-empty-hall.webp",
+        "ratio": "16/9",
+        "alt": "The calligraphy hall seen from the doorway, completely empty: two rows of low writing tables, every cushion unoccupied, cold morning light falling across them.",
+        "bubbles": [
+          { "beat": 1, "kind": "narration", "side": "right", "top": 8, "width": 60 }
+        ]
+      },
+      {
+        "id": "p3",
+        "art": "panel-03-stroke-waiting.webp",
+        "_art_comment": "Abstract wet ink, never a legible character — the 'no text' rule is the format, not a style note. The story's words call it 一个字; the picture shows the ink.",
+        "ratio": "3/2",
+        "alt": "Extreme close-up of an open notebook on a low table, a single bold wet brushstroke already drying on the blank page, the brush nowhere in sight.",
+        "bubbles": [
+          { "beat": 2, "kind": "narration", "side": "left", "top": 6, "width": 62 }
+        ]
+      },
+      {
+        "id": "p4",
+        "art": "panel-04-my-shadow.webp",
+        "ratio": "4/5",
+        "alt": "A tall panel straight down onto the same page, the reader's own shadow falling across it from behind, one hand hovering without touching the paper.",
+        "bubbles": [
+          { "beat": 3, "kind": "thought", "side": "right", "top": 8, "width": 68 }
+        ]
+      },
+      {
+        "id": "p5",
+        "art": "panel-05-xiaoyu-doorway.webp",
+        "ratio": "4/5",
+        "alt": "小雨 framed in the hall doorway with bright morning behind her, the ink brush through her hair and the red ribbon at one side, grinning and already talking.",
+        "bubbles": [
+          { "beat": 4, "kind": "speech", "side": "left", "top": 5, "width": 62, "tail": "bottom-right" },
+          { "beat": 5, "kind": "speech", "side": "right", "top": 58, "width": 70, "tail": "bottom-left" }
+        ]
+      },
+      {
+        "id": "p6",
+        "choice": {
+          "prompt": "选择回答",
+          "options": [
+            { "beat": 6, "tone": "curious" },
+            { "beat": 7, "tone": "honest" }
+          ]
+        }
+      },
+      {
+        "id": "p7",
+        "art": "panel-07-xiaoyu-insists.webp",
+        "ratio": "3/4",
+        "_bubbles_comment": "Both branches answer here and exactly one is ever visible — she insists to the reader who asked, and admits it to the reader who didn't. The line after is common to both, so the story rejoins itself on the same panel.",
+        "alt": "Reaction shot: 小雨 leaning into the frame with both hands raised, absolutely certain, the empty hall falling away behind her in soft grey wash.",
+        "bubbles": [
+          { "beat": 8, "kind": "speech", "side": "right", "top": 6, "width": 66, "tail": "bottom-left", "when": { "choice": "p6", "option": 0 } },
+          { "beat": 9, "kind": "speech", "side": "right", "top": 6, "width": 60, "tail": "bottom-left", "when": { "choice": "p6", "option": 1 } },
+          { "beat": 10, "kind": "speech", "side": "left", "top": 54, "width": 66, "tail": "top-right" }
+        ]
+      },
+      {
+        "id": "p8",
+        "art": "panel-08-teacher-arrives.webp",
+        "ratio": "2/1",
+        "alt": "A letterbox panel: 林老师 as a tall dark silhouette in the bright hall entrance, face unreadable, one hand behind his back.",
+        "bubbles": [
+          { "beat": 11, "kind": "speech", "side": "left", "top": 10, "width": 44, "tail": "bottom-right" }
+        ]
+      },
+      {
+        "id": "p9",
+        "art": "panel-09-assignment.webp",
+        "ratio": "3/4",
+        "alt": "Low angle from the cushion: 林老师 stands over the writing table looking down at the reader, one finger resting on the open notebook page.",
+        "bubbles": [
+          { "beat": 12, "kind": "speech", "side": "left", "top": 5, "width": 62, "tail": "bottom-right" },
+          { "beat": 13, "kind": "speech", "side": "right", "top": 56, "width": 72, "tail": "bottom-left" }
+        ]
+      },
+      {
+        "id": "p10",
+        "art": "panel-10-writing.webp",
+        "ratio": "4/3",
+        "alt": "Over-the-shoulder view of the reader's own hand and brush working down a notebook page covered in row after row of the same wet ink stroke.",
+        "bubbles": [
+          { "beat": 14, "kind": "narration", "side": "left", "top": 6, "width": 62 }
+        ]
+      },
+      {
+        "id": "p11",
+        "art": "panel-11-again.webp",
+        "_art_comment": "A letterbox strip read left to right as three moments of the same stroke — the repetition IS the beat, so the panel shape carries it instead of the words.",
+        "ratio": "2/1",
+        "alt": "A wide strip showing the same brushstroke three times across the page, left to right: the first crisp and controlled, the second heavier, the third shaky and blotted at the end.",
+        "bubbles": [
+          { "beat": 15, "kind": "narration", "side": "left", "top": 8, "width": 50 }
+        ]
+      },
+      {
+        "id": "p12",
+        "art": "panel-12-hand.webp",
+        "ratio": "16/9",
+        "alt": "Extreme close-up of a cramped hand gripping the brush too tightly, the knuckles pale, ink drying dark in the creases of the fingers.",
+        "bubbles": [
+          { "beat": 16, "kind": "narration", "side": "right", "top": 10, "width": 52 }
+        ]
+      },
+      {
+        "id": "p13",
+        "art": "panel-13-xiaobai.webp",
+        "ratio": "3/2",
+        "alt": "The tiny white ink spirit with a single black brushstroke on its forehead drifts in through the open door, trailing a thread of ink-smoke, entirely unhurried.",
+        "bubbles": [
+          { "beat": 17, "kind": "narration", "side": "left", "top": 6, "width": 52 }
+        ]
+      },
+      {
+        "id": "p14",
+        "art": "panel-14-blot.webp",
+        "ratio": "3/4",
+        "alt": "The notebook page ruined: one enormous black ink blot spreading across the neat rows of strokes, the small white spirit hovering just above it looking innocent.",
+        "bubbles": [
+          { "beat": 18, "kind": "narration", "side": "left", "top": 5, "width": 74 },
+          { "beat": 19, "kind": "speech", "side": "right", "top": 58, "width": 44, "tail": "bottom-left" }
+        ]
+      },
+      {
+        "id": "p15",
+        "choice": {
+          "prompt": "选择回答",
+          "options": [
+            { "beat": 20, "tone": "calm" },
+            { "beat": 21, "tone": "flustered" }
+          ]
+        }
+      },
+      {
+        "id": "p16",
+        "art": "panel-16-draw.webp",
+        "ratio": "3/4",
+        "alt": "The reader's hand back at work, brush moving out of the ink blot in a confident curve — the blot is becoming the body of something.",
+        "bubbles": [
+          { "beat": 22, "kind": "speech", "side": "left", "top": 5, "width": 52, "tail": "bottom-right", "when": { "choice": "p15", "option": 0 } },
+          { "beat": 23, "kind": "speech", "side": "left", "top": 5, "width": 62, "tail": "bottom-right", "when": { "choice": "p15", "option": 1 } },
+          { "beat": 24, "kind": "narration", "side": "right", "top": 56, "width": 70 }
+        ]
+      },
+      {
+        "id": "p17",
+        "art": "panel-17-bird.webp",
+        "ratio": "16/9",
+        "alt": "The finished page: the ink blot has become a bird in flight, wings swept back in two long wet strokes; 小雨's face leans in delighted at the very edge of the frame.",
+        "bubbles": [
+          { "beat": 25, "kind": "speech", "side": "left", "top": 8, "width": 60, "tail": "bottom-right" }
+        ]
+      },
+      {
+        "id": "p18",
+        "art": "panel-18-teacher-takes.webp",
+        "ratio": "3/4",
+        "alt": "林老师's hand lifting the notebook off the table and away out of frame; his face is not in the picture at all, only the sleeve and the taken page.",
+        "bubbles": [
+          { "beat": 26, "kind": "narration", "side": "left", "top": 5, "width": 68 },
+          { "beat": 27, "kind": "speech", "side": "right", "top": 56, "width": 64, "tail": "bottom-left" }
+        ]
+      },
+      {
+        "id": "p19",
+        "art": "panel-19-alone.webp",
+        "ratio": "4/3",
+        "alt": "The reader alone at the low table from behind, shoulders down, looking at the clean rectangle of dust where the notebook had been.",
+        "bubbles": [
+          { "beat": 28, "kind": "thought", "side": "right", "top": 8, "width": 68 }
+        ]
+      },
+      {
+        "id": "p20",
+        "art": "panel-20-warning.webp",
+        "ratio": "2/1",
+        "alt": "Dusk in the doorway. 小雨 half turned back, the grin gone for the first time, one hand on the frame — the same girl composed completely differently.",
+        "bubbles": [
+          { "beat": 29, "kind": "speech", "side": "left", "top": 10, "width": 58, "tail": "bottom-right" }
+        ]
+      },
+      {
+        "id": "p21",
+        "art": "panel-21-hook.webp",
+        "ratio": "4/5",
+        "accent": true,
+        "alt": "Night in the empty hall. One lantern burns over a single brush left lying on a table, and the darkness above the paper is full of faint drifting ink-smoke shapes that are almost, but not quite, writing.",
+        "bubbles": [
+          { "beat": 30, "kind": "thought", "side": "left", "top": 5, "width": 40 },
+          { "beat": 31, "kind": "speech", "side": "right", "top": 56, "width": 76, "tail": "bottom-left" }
+        ]
+      }
+    ]
+  }
+}
