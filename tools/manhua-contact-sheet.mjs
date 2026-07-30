@@ -37,6 +37,13 @@
 //   colour:  catches everything, because it flags any colour at all and lets a
 //            human separate a ribbon from a seal. Deliberately over-eager, and
 //            only run for a MONOCHROME episode — see `art_palette` below.
+//   bar:     the letterbox/pillarbox check added after the 第三话 + noodle-shop
+//            batch, where 27 of 63 panels came back with a flat empty strip at
+//            an edge. It catches the unambiguous ones — a hard-edged, dead-flat
+//            band — and MISSES pale-cream bars in warm art, where the bar and
+//            the picture are within a few luminance points of each other. Nine
+//            of that batch had to be found by eye after the screen said nothing.
+//            See the thresholds below for why it is not simply loosened.
 //
 // The reliable win here is NOT the screen — it is the contact sheet. Judging
 // nineteen panels went from nineteen separate looks to one. Do not let the
@@ -199,6 +206,19 @@ async function screenPanel(page, url) {
     // "the top quarter is empty negative space" is read as "draw nothing
     // there", and nothing is a bar. Say "fully painted, no faces or important
     // detail in that strip" instead — see docs/STORY-BIBLE.md §6.
+    // Thresholds, calibrated against the 第三话 + noodle-shop batch, where 27 of
+    // 63 panels came back barred and every one was confirmed by eye.
+    //
+    // These are the TIGHT setting, and that is a deliberate choice. Loosening
+    // them to SD_FLAT 14 / JUMP 6 catches the pale-cream bars this setting
+    // misses, but it also flags a night sky, a dark hall, an unlit wall and a
+    // rain-grey road — because in this art a flat bar and a flat sky ARE the
+    // same measurement. A screen that flags a third of a good episode gets
+    // ignored, and an ignored screen is worse than none. So: catch the
+    // unambiguous bars, stay silent on the rest, and let the contact sheet do
+    // what only an eye can.
+    const SD_FLAT = 7
+    const JUMP = 12
     function stats(i, span, at) {
       let sum = 0
       for (let k = 0; k < span; k += 1) sum += at(i, k)
@@ -212,12 +232,12 @@ async function screenPanel(page, url) {
       const out = [0, 0]
       for (const side of [0, 1]) {
         const first = stats(side === 0 ? 0 : span - 1, cross, at)
-        if (first.sd > 7) continue
+        if (first.sd > SD_FLAT) continue
         let run = 0
         for (let k = 0; k < scan; k += 1) {
           const i = side === 0 ? k : span - 1 - k
           const s = stats(i, cross, at)
-          if (s.sd > 7 || Math.abs(s.mean - first.mean) > 7) break
+          if (s.sd > SD_FLAT || Math.abs(s.mean - first.mean) > SD_FLAT) break
           run += 1
         }
         if (run < Math.max(4, span * 0.025) || run >= scan) continue
@@ -225,7 +245,7 @@ async function screenPanel(page, url) {
         // not a bar; a bar butts straight up against the art.
         const nextI = side === 0 ? run + 2 : span - 3 - run
         const next = stats(nextI, cross, at)
-        if (Math.abs(next.mean - first.mean) > 12 || next.sd > first.sd + 12) {
+        if (Math.abs(next.mean - first.mean) > JUMP || next.sd > first.sd + JUMP) {
           out[side] = Math.round((run / span) * 100)
         }
       }
