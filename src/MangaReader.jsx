@@ -7,6 +7,7 @@ import {
 import { loadMangaProgress, saveMangaProgress, resumePanel } from './mangaProgress'
 import { PAPER, COLUMN_MAX, GUTTER, mangaAccent, mangaFontStack } from './mangaTokens'
 import { minDwellMs } from './readAlong'
+import { getLevelLabel } from './utils'
 import MangaHeader from './MangaHeader'
 import MangaPanel from './MangaPanel'
 import MangaBubble from './MangaBubble'
@@ -40,6 +41,12 @@ export default function MangaReader(props) {
 
   const episode = useMemo(() => buildEpisode(story.panels, c.beats.length), [story.panels, c.beats.length])
   const { meta, cast, panels, total } = episode
+
+  // "HSK 2" / "N4" / "A2" — never a hardcoded string. getLevelLabel is the one
+  // place that knows what a level is called in each system (CLAUDE.md §4).
+  const continuesLevelLabel = meta.continues && meta.continues.level
+    ? getLevelLabel(track.language, track.system, meta.continues.level)
+    : null
 
   const [choices, setChoices] = useState({})
   const [active, setActive] = useState(0)
@@ -421,6 +428,8 @@ export default function MangaReader(props) {
               accentHex={accent}
               fontFamily={fontFamily}
               hook={meta.hook}
+              continues={meta.continues}
+              continuesLevelLabel={continuesLevelLabel}
               onBack={onBack}
               onPractice={onPractice}
               practiceWords={practiceWords}

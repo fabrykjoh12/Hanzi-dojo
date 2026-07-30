@@ -1,4 +1,5 @@
 import { wordStatus } from './storyReading'
+import { ink } from './languageTheme'
 import { PAPER, CARD_RADIUS, TYPE, TAP_TARGET } from './mangaTokens'
 import { ArrowLeft, Sparkles } from 'lucide-react'
 
@@ -70,7 +71,8 @@ function WordChip({ vocab, userCards, accentHex, fontFamily, onSelectWord }) {
 
 export default function MangaCompletion({
   label, title, words = [], userCards, accentHex, fontFamily,
-  hook, onBack, onPractice, practiceWords = [], onSelectWord,
+  hook, continues = null, continuesLevelLabel = null,
+  onBack, onPractice, practiceWords = [], onSelectWord,
 }) {
   const newCount = words.filter(v => wordStatus(v.id, userCards) === 'not_started').length
   return (
@@ -116,13 +118,28 @@ export default function MangaCompletion({
         </div>
       )}
 
-      {hook && (
-        <p style={{
-          margin: '18px 0 0', fontSize: '14px', lineHeight: 1.65, color: PAPER.ink2,
-          paddingTop: '15px', borderTop: '1px solid ' + PAPER.soft,
-        }}>
-          {hook}
-        </p>
+      {(hook || continues) && (
+        <div style={{ marginTop: '18px', paddingTop: '15px', borderTop: '1px solid ' + PAPER.soft }}>
+          {hook && (
+            <p style={{ margin: 0, fontSize: '14px', lineHeight: 1.65, color: PAPER.ink2 }}>{hook}</p>
+          )}
+
+          {/* Where the story goes next, and — the part that actually helps —
+              the level it is written at. A serial that climbs the ladder should
+              say so on the plate the learner reaches at the end, rather than
+              leaving them to hunt a shelf for an episode that is a level up. */}
+          {continues && (
+            <p style={{
+              margin: hook ? '10px 0 0' : 0,
+              fontSize: TYPE.meta, fontWeight: 800,
+              letterSpacing: '0.06em', textTransform: 'uppercase',
+              color: ink(accentHex),
+            }}>
+              {continues.label ? continues.label + ' · ' : ''}
+              {continuesLevelLabel ? 'continues at ' + continuesLevelLabel : 'continues'}
+            </p>
+          )}
+        </div>
       )}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '18px' }}>
