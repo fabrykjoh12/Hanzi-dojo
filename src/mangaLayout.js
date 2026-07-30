@@ -109,6 +109,17 @@ function normalizeChoice(raw, beatCount) {
   return { prompt: typeof raw.prompt === 'string' && raw.prompt ? raw.prompt : '选择回答', options }
 }
 
+// { label, level } or null. `level` is a level NUMBER in the story's own system,
+// never a printed string — the reader turns it into "HSK 2" (or "N4", or "A2")
+// with getLevelLabel, which is the repo's rule for every level label.
+function continuesFrom(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const label = typeof raw.label === 'string' && raw.label ? raw.label : null
+  const level = Number.isInteger(raw.level) && raw.level > 0 ? raw.level : null
+  if (!label && !level) return null
+  return { label, level }
+}
+
 // Build the render plan.
 //
 // `panelsJson` is stories.panels (may be null — an authored manga row that has
@@ -129,6 +140,12 @@ export function buildEpisode(panelsJson, beatCount) {
     // series rather than part of it, and an HSK 1 learner cannot be told
     // "something followed you home" in HSK 1.
     hook: typeof rawMeta.hook === 'string' ? rawMeta.hook : null,
+    // Where the story goes next, and at what level. The LEVEL is what earns its
+    // place here: a serial that climbs the ladder should say so on the plate the
+    // learner reaches at the end, so "there is more" and "you are not ready for
+    // it yet" arrive together instead of the reader hunting a shelf for a
+    // second episode that is two levels up. Null when a season ends.
+    continues: continuesFrom(rawMeta.continues),
   }
   const cast = json.cast && typeof json.cast === 'object' ? json.cast : {}
 

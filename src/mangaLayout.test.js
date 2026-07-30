@@ -108,6 +108,29 @@ describe('buildEpisode', () => {
   })
 })
 
+describe('meta.continues', () => {
+  it('reads the next episode and the level it is written at', () => {
+    const { meta } = buildEpisode({ meta: { continues: { label: '第二话', level: 2 } } }, 1)
+    expect(meta.continues).toEqual({ label: '第二话', level: 2 })
+  })
+
+  it('is null for an episode that ends a season', () => {
+    expect(buildEpisode({ meta: {} }, 1).meta.continues).toBeNull()
+    expect(buildEpisode({ meta: { continues: {} } }, 1).meta.continues).toBeNull()
+    expect(buildEpisode({ meta: { continues: 'soon' } }, 1).meta.continues).toBeNull()
+  })
+
+  it('drops a level that is not a usable level number', () => {
+    // The reader feeds this straight to getLevelLabel; 0, -1 and "two" are not
+    // levels, and a plate reading "continues at HSK 0" is worse than one that
+    // only promises there is more.
+    for (const bad of [0, -1, 2.5, 'two', null]) {
+      const { meta } = buildEpisode({ meta: { continues: { label: '第二话', level: bad } } }, 1)
+      expect(meta.continues).toEqual({ label: '第二话', level: null })
+    }
+  })
+})
+
 describe('panelArtSrc', () => {
   const meta = { artBase: '/art/ep01/' }
   it('joins the base and the file', () => {
