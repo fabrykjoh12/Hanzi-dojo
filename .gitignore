@@ -43,3 +43,6 @@ artifacts
 .playwright-mcp/
 test-results/
 playwright-report/
+
+# Scratch output of tools/manhua-contact-sheet.mjs — regenerate it, do not commit it.
+tools/.contact-sheets/
