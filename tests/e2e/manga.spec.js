@@ -83,6 +83,23 @@ test.describe('Manga reader', () => {
     await expect(page.getByRole('button', { name: '名字', exact: true })).toBeVisible();
   });
 
+  test('the chosen reply stays in the flow, never over an earlier panel', async ({ page }) => {
+    // Regression: the reply balloon was laid out as an overlay (position:
+    // absolute) inside an unpositioned wrapper, so it climbed to the nearest
+    // positioned ancestor — the artwork of the panel BEFORE the choice — and the
+    // learner's own line appeared floating over the opening scene.
+    await openEpisode(page);
+    const openingArt = page.getByRole('img', { name: /traveller at the foot of a lantern-lit stair/ });
+    await page.getByRole('button', { name: /是，我是新学生。/ }).click();
+
+    const reply = page.getByRole('button', { name: '新', exact: true }).last();
+    await expect(reply).toBeVisible();
+    const replyBox = await reply.boundingBox();
+    const artBox = await openingArt.boundingBox();
+    // The reply sits below the opening panel, not on top of it.
+    expect(replyBox.y).toBeGreaterThan(artBox.y + artBox.height);
+  });
+
   test('an answered choice cannot be answered twice', async ({ page }) => {
     await openEpisode(page);
     const other = page.getByRole('button', { name: /不是！/ });

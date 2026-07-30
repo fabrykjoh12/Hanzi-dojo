@@ -1,6 +1,6 @@
 import { wordStatus, isPlaceWord, isWordlikeToken } from './storyReading'
 import { TokenBody, RevealEnglishButton } from './ReadingScaffold'
-import { PAPER, BUBBLE_OVAL, BUBBLE_FRAME, NARRATION_RADIUS, TYPE, TAP_TARGET } from './mangaTokens'
+import { PAPER, BUBBLE_RADIUS, THOUGHT_RADIUS, BUBBLE_FRAME, THOUGHT_FRAME, NARRATION_RADIUS, TYPE, TAP_TARGET } from './mangaTokens'
 import { Volume2 } from 'lucide-react'
 
 // A line of the story, drawn as interface over the artwork.
@@ -12,10 +12,11 @@ import { Volume2 } from 'lucide-react'
 //
 // Four registers, because a panel says different kinds of things:
 //   speech    — the white bubble with a tail, someone talking
-//   thought    — the same, tailless and softer, the learner's own head
+//   thought    — rounder, tailless, drawn in a lighter ink: the learner's head
 //   narration  — a caption plate with a cinnabar rule, the story's voice
-//   reply      — the learner's chosen line, tinted with the accent so their own
-//                voice is visibly theirs
+//   reply      — the learner's chosen line: the same ink keyline as speech over
+//                a faint accent tint, so it is recognisably theirs without
+//                becoming the loudest thing on the page
 
 const PROPER_NOUN = '#2F9E6D'
 
@@ -25,7 +26,8 @@ const SR_ONLY = {
 }
 
 // The balloon itself. Drawn the way a comic draws one: a heavy ink keyline and
-// an elliptical shape, with no shadow — ink on paper does not float.
+// a generous but BOUNDED corner radius, with no shadow — ink on paper does not
+// float, and a percentage radius turns a one-line balloon into a flat lens.
 //
 // Narration is deliberately the odd one out. In print a caption is a hard-edged
 // box, not a balloon, and keeping it square is what tells the reader at a glance
@@ -40,25 +42,29 @@ function chromeFor(kind, accentHex) {
     }
   }
   if (kind === 'thought') {
-    // A thought balloon is a cloud. A dashed keyline is the honest CSS
-    // approximation of a scalloped edge, and reads as "unspoken" instantly.
+    // Rounder and drawn in a lighter ink than speech. NOT dashed — a dashed
+    // keyline is meant to suggest a scalloped cloud edge and instead reads as a
+    // selection marquee, like the balloon is an object you have clicked on.
     return {
       background: PAPER.bubble,
-      border: BUBBLE_FRAME + 'px dashed ' + PAPER.frame,
-      borderRadius: BUBBLE_OVAL,
+      border: THOUGHT_FRAME + 'px solid ' + PAPER.ink2,
+      borderRadius: THOUGHT_RADIUS + 'px',
     }
   }
   if (kind === 'reply') {
+    // The learner's own line. Marked by a tint of the accent, not by a ring of
+    // it: a saturated outline plus a tinted fill made the one balloon the reader
+    // wrote the loudest thing on the page.
     return {
-      background: 'color-mix(in srgb, ' + accentHex + ' 7%, ' + PAPER.bubble + ')',
-      border: BUBBLE_FRAME + 'px solid ' + accentHex,
-      borderRadius: BUBBLE_OVAL,
+      background: 'color-mix(in srgb, ' + accentHex + ' 8%, ' + PAPER.bubble + ')',
+      border: BUBBLE_FRAME + 'px solid ' + PAPER.frame,
+      borderRadius: BUBBLE_RADIUS + 'px',
     }
   }
   return {
     background: PAPER.bubble,
     border: BUBBLE_FRAME + 'px solid ' + PAPER.frame,
-    borderRadius: BUBBLE_OVAL,
+    borderRadius: BUBBLE_RADIUS + 'px',
   }
 }
 
@@ -69,7 +75,7 @@ function Tail({ tail, kind, accentHex }) {
   const chrome = chromeFor(kind, accentHex)
   const bottom = tail.indexOf('bottom') === 0
   const left = tail.indexOf('left') !== -1
-  const edge = kind === 'reply' ? accentHex : PAPER.frame
+  const edge = kind === 'thought' ? PAPER.ink2 : PAPER.frame
   const base = {
     position: 'absolute', width: 0, height: 0,
     borderLeft: '10px solid transparent', borderRight: '10px solid transparent',
@@ -160,7 +166,7 @@ export default function MangaBubble({
   return (
     <div
       className={reduceMotion ? undefined : 'hd-manga-bubble'}
-      style={{ ...position, ...chrome, padding: narration ? '10px 14px' : '14px 22px 15px', boxShadow: 'none', ...style }}
+      style={{ ...position, ...chrome, padding: narration ? '10px 14px' : '11px 16px 12px', boxShadow: 'none', ...style }}
     >
       <Tail tail={tail} kind={kind} accentHex={accentHex} />
 
