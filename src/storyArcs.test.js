@@ -65,3 +65,60 @@ describe('groupIntoArcs', () => {
     expect(groupIntoArcs(null)).toEqual([])
   })
 })
+
+describe('第N话 chapter markers', () => {
+  // A manga episode announces its chapter the Chinese way. Before this was
+  // understood, 第一话 read as "no number", so the episode did not start an arc
+  // — it was appended to whatever season came before it in story_number order,
+  // and vanished as an extra chapter inside someone else's series card.
+  it('reads a Chinese-numeral chapter marker', () => {
+    expect(leadingChapterNumber('第一话 · 我是新学生')).toBe(1)
+    expect(leadingChapterNumber('第二话 · 墨')).toBe(2)
+    expect(leadingChapterNumber('第十话 x')).toBe(10)
+    expect(leadingChapterNumber('第十二章 x')).toBe(12)
+    expect(leadingChapterNumber('第二十话 x')).toBe(20)
+    expect(leadingChapterNumber('第二十一回 x')).toBe(21)
+  })
+
+  it('reads digits inside the same form', () => {
+    expect(leadingChapterNumber('第10话 x')).toBe(10)
+    expect(leadingChapterNumber('第３章 x')).toBe(3)
+  })
+
+  it('strips the marker for the arc title', () => {
+    expect(stripLeadingNumber('第一话 · 我是新学生')).toBe('我是新学生')
+    expect(stripLeadingNumber('第10章：开始')).toBe('开始')
+  })
+
+  it('is not fooled by ordinary prose that starts with 第', () => {
+    // No unit character, so no marker…
+    expect(leadingChapterNumber('第一个朋友')).toBeNull()
+    // …and a unit that runs straight into more words is a sentence, not a label.
+    expect(leadingChapterNumber('第一话说得很好')).toBeNull()
+    expect(leadingChapterNumber('第话 x')).toBeNull()
+    expect(stripLeadingNumber('第一个朋友')).toBe('第一个朋友')
+  })
+
+  it('starts its own arc instead of joining the season before it', () => {
+    const arcs = groupIntoArcs([
+      { id: 'a', title: '1. 下雪了' },
+      { id: 'b', title: '2. 和朋友玩' },
+      { id: 'c', title: '第一话 · 我是新学生' },
+    ])
+    expect(arcs).toHaveLength(2)
+    expect(arcs[0].parts.map(p => p.id)).toEqual(['a', 'b'])
+    expect(arcs[1].parts.map(p => p.id)).toEqual(['c'])
+    expect(arcs[1].title).toBe('我是新学生')
+  })
+
+  it('keeps a multi-episode manga season together', () => {
+    const arcs = groupIntoArcs([
+      { id: 'e1', title: '第一话 · 我是新学生' },
+      { id: 'e2', title: '第二话 · 墨' },
+      { id: 'e3', title: '第三话 · 夜' },
+    ])
+    expect(arcs).toHaveLength(1)
+    expect(arcs[0].parts).toHaveLength(3)
+    expect(arcs[0].numbered).toBe(true)
+  })
+})
