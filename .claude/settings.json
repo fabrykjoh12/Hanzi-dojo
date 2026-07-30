@@ -47,7 +47,15 @@
       "mcp__Higgsfield__generate_image",
       "mcp__Higgsfield__job_display",
       "mcp__Higgsfield__show_generations",
-      "mcp__Higgsfield__balance"
+      "mcp__Higgsfield__balance",
+      "mcp__Higgsfield__generate_video",
+      "mcp__Higgsfield__generate_audio",
+      "mcp__Higgsfield__models_explore",
+      "mcp__Higgsfield__media_upload",
+      "mcp__Higgsfield__media_confirm",
+      "mcp__Higgsfield__media_import_url",
+      "mcp__Higgsfield__upscale_video",
+      "mcp__Higgsfield__reframe"
     ],
     "ask": [
       "mcp__Supabase__deploy_edge_function",
