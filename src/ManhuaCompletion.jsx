@@ -1,6 +1,6 @@
 import { wordStatus } from './storyReading'
 import { ink } from './languageTheme'
-import { PAPER, CARD_RADIUS, TYPE, TAP_TARGET } from './mangaTokens'
+import { PAPER, CARD_RADIUS, TYPE, TAP_TARGET } from './manhuaTokens'
 import { ArrowLeft, Sparkles } from 'lucide-react'
 
 // The end of an episode.
@@ -69,7 +69,7 @@ function WordChip({ vocab, userCards, accentHex, fontFamily, onSelectWord }) {
   )
 }
 
-export default function MangaCompletion({
+export default function ManhuaCompletion({
   label, title, words = [], userCards, accentHex, fontFamily,
   hook, continues = null, continuesLevelLabel = null,
   onBack, onPractice, practiceWords = [], onSelectWord,
@@ -78,7 +78,7 @@ export default function MangaCompletion({
   return (
     <section
       aria-label="Episode complete"
-      className="hd-manga-panel is-in"
+      className="hd-manhua-panel is-in"
       style={{
         background: PAPER.card,
         border: '1px solid ' + PAPER.hairline,

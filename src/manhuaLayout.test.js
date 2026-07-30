@@ -3,7 +3,7 @@ import {
   buildEpisode, normalizeRatio, panelArtSrc, visibleBubbles, isGate, revealLimit,
   panelBeats, readBeats, episodeProgress, isEpisodeComplete, bubbleLayout,
   panelAtReadingLine, estimateBubbleHeight, DEFAULT_RATIO, READING_LINE,
-} from './mangaLayout'
+} from './manhuaLayout'
 
 // A three-panel episode with a choice in the middle, which is the shape every
 // interesting case here comes from.
@@ -94,7 +94,7 @@ describe('buildEpisode', () => {
     expect(panels[0].bubbles[2].tail).toBeNull()
   })
 
-  it('falls back to one panel per beat when a manga row has no layout yet', () => {
+  it('falls back to one panel per beat when a manhua row has no layout yet', () => {
     const { panels, total } = buildEpisode(null, 4)
     expect(total).toBe(4)
     expect(panels.map(p => p.bubbles[0].beat)).toEqual([0, 1, 2, 3])

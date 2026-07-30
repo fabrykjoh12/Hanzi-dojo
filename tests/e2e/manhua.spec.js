@@ -3,7 +3,7 @@ import { ReaderPage } from '../pages/ReaderPage.js';
 
 const EPISODE = '第一话 · 我是新学生';
 
-// The manga reader (src/MangaReader.jsx) — Hanzi Dojo Stories.
+// The manhua reader (src/ManhuaReader.jsx) — Hanzi Dojo Stories.
 //
 // These cover the behaviours the format actually adds on top of the shared
 // reading engine: the panel-counting header, tapping a word inside a bubble,
@@ -18,7 +18,7 @@ async function openEpisode(page) {
   await expect(page.getByRole('heading', { name: '我是新学生' })).toBeVisible();
 }
 
-test.describe('Manga reader', () => {
+test.describe('Manhua reader', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
   test('opens on the first panel with the episode header', async ({ page }) => {
@@ -186,7 +186,7 @@ test.describe('Manga reader', () => {
   });
 });
 
-test.describe('Manga reader on desktop', () => {
+test.describe('Manhua reader on desktop', () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
   test('centres the same reading column instead of widening into a dashboard', async ({ page }) => {

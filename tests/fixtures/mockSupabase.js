@@ -57,7 +57,7 @@ const VOCAB = [
   { id: 'v5', word: '公园', reading: 'gōngyuán', meaning: 'park', level: 2, system: 'hsk', language: 'chinese', is_active: true },
   { id: 'v6', word: '朋友', reading: 'péngyou', meaning: 'friend', level: 2, system: 'hsk', language: 'chinese', is_active: true },
   { id: 'v7', word: '花', reading: 'huā', meaning: 'flower', level: 2, system: 'hsk', language: 'chinese', is_active: true },
-  // The HSK 1 words the manga episode (st6) is written from. Level 1, so they
+  // The HSK 1 words the manhua episode (st6) is written from. Level 1, so they
   // are on the cumulative shelf for a learner sitting at level 2. None of them
   // carries a card, so every word in the episode reads as "new" — which is what
   // the vocabulary popover's new-word state is exercised against.
@@ -119,13 +119,13 @@ const STORIES = [{
   image_path: null, english_content: 'An old friend.',
   content: ['今天我看朋友。', '朋友很好。'].join('\n'),
 }, {
-  // The manga episode, carrying the SAME content and panel layout as the
-  // authored source (data/manga/inkbound-hsk1-ep01.json). Duplicated rather than
+  // The manhua episode, carrying the SAME content and panel layout as the
+  // authored source (data/manhua/inkbound-hsk1-ep01.json). Duplicated rather than
   // imported because the fixture has to be a plain literal the route mock can
   // serve — but the e2e spec asserts against the same strings the unit spec
   // validates, so a drift in either shows up as a failing test somewhere.
   id: 'st6', language: 'chinese', system: 'hsk', level: 1, tier: 1, story_number: 2,
-  title: "第一话 · 我是新学生", is_published: true, presentation: 'manga', has_audio: false,
+  title: "第一话 · 我是新学生", is_published: true, presentation: 'manhua', has_audio: false,
   image_path: null,
   english_summary: "You climb the lantern-lit steps to the Hanzi Dojo, meet \u5c0f\u96e8, and kneel at a writing table for your first lesson. Something small and white is watching from behind a lantern.",
   content: "我来学校了。\n这是学校吗？\n小雨：你好！你是新学生吗？\n你：是，我是新学生。\n你：不是！\n小雨：真的吗？\n小雨：我叫小雨。你叫什么名字？\n小雨：来吧！我们去那边。\n学校很大。\n小雨：这是我们的学校。\n林老师：我是林老师。\n林老师：请坐。\n林老师：你会写汉字吗？\n你：会一点儿。\n你：不会。\n林老师：很好。\n林老师：没关系。\n林老师：现在我们学写字。\n小雨：这个字很漂亮。\n那是什么？\n小雨：那是小白。\n小雨：小白喜欢看我们写字。\n小白也想学汉字吗？",

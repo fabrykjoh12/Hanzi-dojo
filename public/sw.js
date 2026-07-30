@@ -18,7 +18,7 @@
 // OK. cacheFirst only checked `resp.ok`, so it happily stored that HTML under
 // the image's URL, and cache-first then served the HTML for that image forever:
 // the <img> could not decode it, so the panel rendered blank even after the real
-// file shipped. That is exactly what happened to the manga panels — the art was
+// file shipped. That is exactly what happened to the manhua panels — the art was
 // published to the database before it was deployed, every panel URL 200'd with
 // the app shell, and the poisoned entries outlived the fix.
 //

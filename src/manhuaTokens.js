@@ -1,4 +1,4 @@
-// The paper palette for Hanzi Dojo Stories — the manga reader's own surface.
+// The paper palette for Hanzi Dojo Stories — the manhua reader's own surface.
 //
 // Every other screen themes off the semantic tokens in index.css, and must:
 // a hardcoded neutral there is a bug (CLAUDE.md §5). This file is the one
@@ -6,7 +6,7 @@
 // `chatStyleFor` (chatMissions.js) paints the chat readers' messaging-app
 // chrome rather than the app's surfaces, for the same reason.
 //
-// The reason is that the paper IS the artwork here. A manga panel is a
+// The reason is that the paper IS the artwork here. A manhua panel is a
 // monochrome ink drawing carrying its own paper tone; float it on a themed
 // surface and in dark mode you get a bright rectangle punched through a dark
 // page — the panel stops reading as paper and starts reading as a photo. So the
@@ -29,7 +29,7 @@ export const PAPER = {
   muted: '#746D64',
   faint: 'rgba(23, 20, 17, 0.42)',
   // The pressed/selected state of an accent. The resting accent is the
-  // language's own — see mangaAccent().
+  // language's own — see manhuaAccent().
   active: '#D45143',
   // Lantern light: the one warm non-red accent, used for the reading progress
   // track and the completion mark.
@@ -107,7 +107,7 @@ export const TYPE = {
 // The reading font stack. `languageTheme().font` first (Noto Sans SC for
 // Chinese), then real system CJK faces, so a device without the web font still
 // draws sharp hanzi instead of falling back to a Latin face with tofu.
-export function mangaFontStack(themeFont) {
+export function manhuaFontStack(themeFont) {
   return (themeFont ? themeFont + ', ' : '')
     + "'Noto Sans SC', 'Source Han Sans SC', 'PingFang SC', 'Hiragino Sans GB', "
     + "'Microsoft YaHei', 'Heiti SC', sans-serif"
@@ -115,7 +115,7 @@ export function mangaFontStack(themeFont) {
 
 // The resting accent for this reader: the language's own, from languageTheme.
 // Falls back to Chinese cinnabar only if a caller passes nothing.
-export function mangaAccent(theme) {
+export function manhuaAccent(theme) {
   return (theme && theme.accentHex) || '#B83A24'
 }
 

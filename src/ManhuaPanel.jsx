@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PAPER, PANEL_RADIUS, PANEL_FRAME } from './mangaTokens'
+import { PAPER, PANEL_RADIUS, PANEL_FRAME } from './manhuaTokens'
 
 // One cinematic panel: the art, with the dialogue drawn on top of it by the
 // caller.
@@ -7,7 +7,7 @@ import { PAPER, PANEL_RADIUS, PANEL_FRAME } from './mangaTokens'
 // Two children slots, because a bubble is not always on the picture. `children`
 // is overlaid inside the art box (absolutely positioned, clipped to the panel's
 // rounded corners); `below` is drawn in the gutter under it, which is where
-// mangaLayout.bubbleLayout sends a bubble whose text would otherwise cover the
+// manhuaLayout.bubbleLayout sends a bubble whose text would otherwise cover the
 // whole drawing. The panel owns the frame either way, so a bubble never floats
 // loose between two panels.
 //
@@ -26,7 +26,7 @@ function emptyPlate(accentHex) {
     + 'color-mix(in srgb, ' + PAPER.ink + ' 6%, ' + PAPER.panel + ') 100%)'
 }
 
-export default function MangaPanel({
+export default function ManhuaPanel({
   src, alt = '', ratio, accent = false, accentHex,
   priority = false, inView = true, reduceMotion = false,
   panelRef, panelIndex, children, below, style = {},
@@ -52,7 +52,7 @@ export default function MangaPanel({
       // panel the header is counting — an attribute rather than a closure so one
       // observer can serve every panel.
       data-panel-index={panelIndex}
-      className={'hd-manga-panel' + (inView || reduceMotion ? ' is-in' : '')}
+      className={'hd-manhua-panel' + (inView || reduceMotion ? ' is-in' : '')}
       style={{ margin: 0, ...style }}
     >
       <div style={{

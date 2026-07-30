@@ -232,11 +232,11 @@ never speaker labels — `她：` renders as a character called "she".
 
 ---
 
-## 6. Hanzi Dojo: The Inkbound — the manga season
+## 6. Hanzi Dojo: The Inkbound — the manhua season
 
 A second universe, and the only one that is drawn. It is deliberately **not**
 这条街: the street serials are contemporary and domestic, and this one is a
-lantern-lit dojo in the mountains, because a manga episode has to earn its
+lantern-lit dojo in the mountains, because a manhua episode has to earn its
 artwork and a kitchen table does not.
 
 Told in the second person. The learner IS the new student — shown from behind
@@ -259,7 +259,7 @@ Every name here must also exist in `src/characterNames.js`, same rule as 这条�
 
 ### Art direction (locked — use this verbatim)
 
-> Monochrome greyscale manga illustration, deep rich blacks and luminous pale
+> Monochrome greyscale manhua illustration, deep rich blacks and luminous pale
 > highlights, high contrast, highly detailed polished digital ink rendering with
 > clean crisp lineart, soft grey ink-wash and screentone gradients, traditional
 > sumi-e ink splash accents, soft bokeh depth of field with drifting light
@@ -272,7 +272,7 @@ Every name here must also exist in `src/characterNames.js`, same rule as 这条�
 
 Rules that go with it:
 
-- **Attach the character sheet** in `data/manga/bible/` as a reference image to
+- **Attach the character sheet** in `data/manhua/bible/` as a reference image to
   every generation featuring that character. That is what keeps 小雨 the same
   person across episodes.
 - **Never name a franchise, a studio or an artist in a prompt.** Describe the
@@ -295,10 +295,10 @@ Rules that go with it:
 
 Stricter than a prose season: **100% of the level's word list, zero reach
 words.** A prose chapter may declare a few reach words because writing narrative
-without them goes flat — a manga episode has the picture to carry the meaning
-instead, so it has no excuse. `src/mangaEpisodes.test.js` enforces it.
+without them goes flat — a manhua episode has the picture to carry the meaning
+instead, so it has no excuse. `src/manhuaEpisodes.test.js` enforces it.
 
-Lines are capped at 24 characters (prose gets 40): a manga line has to fit in a
+Lines are capped at 24 characters (prose gets 40): a manhua line has to fit in a
 box drawn over a picture, on a phone.
 
 ### Episodes

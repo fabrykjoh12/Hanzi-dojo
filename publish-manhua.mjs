@@ -1,15 +1,15 @@
-// Publish a Hanzi Dojo Stories manga episode.
+// Publish a Hanzi Dojo Stories manhua episode.
 //
-// The episode's canonical source is its JSON in data/manga/. This upserts it
+// The episode's canonical source is its JSON in data/manhua/. This upserts it
 // into `stories` on the (language, system, level, title) natural key, so
 // re-running after a text or layout edit UPDATES the episode rather than
-// appending a second copy of it — the manga episodes are a small hand-authored
+// appending a second copy of it — the manhua episodes are a small hand-authored
 // set that gets revised, unlike the generated seasons authored-stories.mjs
 // appends.
 //
 // It does NOT touch the artwork: panel art is committed to public/ by the
-// `manga-art-fetch` task in .github/workflows/content-utils.yml (see
-// fetch-manga-art.mjs for why).
+// `manhua-art-fetch` task in .github/workflows/content-utils.yml (see
+// fetch-manhua-art.mjs for why).
 //
 // WHICH IS EXACTLY WHY IT PREFLIGHTS THE ART. The database is shared by every
 // deployment; the art is a file in a build. Publishing an episode whose panels
@@ -21,8 +21,8 @@
 // here rather than written down and forgotten.
 //
 // Run with:
-//   node --env-file=.env.script publish-manga.mjs data/manga/inkbound-hsk1-ep01.json           (dry run)
-//   node --env-file=.env.script publish-manga.mjs data/manga/inkbound-hsk1-ep01.json --apply
+//   node --env-file=.env.script publish-manhua.mjs data/manhua/inkbound-hsk1-ep01.json           (dry run)
+//   node --env-file=.env.script publish-manhua.mjs data/manhua/inkbound-hsk1-ep01.json --apply
 
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'node:fs'
@@ -44,7 +44,7 @@ const skipArtCheck = args.includes('--skip-art-check')
 // Where "live" is. Overridable so a staging host can be checked instead.
 const SITE_URL = (process.env.SITE_URL || 'https://hanzi-dojo.com').replace(/\/+$/, '')
 if (!file) {
-  console.error('Usage: node publish-manga.mjs <episode.json> [--apply] [--skip-art-check]')
+  console.error('Usage: node publish-manhua.mjs <episode.json> [--apply] [--skip-art-check]')
   process.exit(1)
 }
 
@@ -133,7 +133,7 @@ const row = {
   english_summary: ep.english_summary || null,
   tier: ep.tier == null ? 1 : ep.tier,
   tier_min_words: ep.tier_min_words == null ? 0 : ep.tier_min_words,
-  presentation: 'manga',
+  presentation: 'manhua',
   panels: ep.panels || null,
   is_published: ep.is_published !== false,
 }

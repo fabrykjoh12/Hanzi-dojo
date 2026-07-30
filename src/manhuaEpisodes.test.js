@@ -2,20 +2,20 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { buildVocabMatcher, matchVocabAt, matchName, boundaryAfterSkip, splitSpeaker, atomicSpans, segmentLine } from './storyReading'
 import { CHARACTER_READINGS } from './characterNames'
-import { buildEpisode, visibleBubbles, bubbleLayout, isEpisodeComplete, revealLimit } from './mangaLayout'
+import { buildEpisode, visibleBubbles, bubbleLayout, isEpisodeComplete, revealLimit } from './manhuaLayout'
 
-// Validates every authored manga episode in data/manga/ against the real reader:
+// Validates every authored manhua episode in data/manhua/ against the real reader:
 // the same vocabulary matcher, the same segmenter, the same layout module. An
 // episode that passes this is tappable and readable by construction — the two
 // things a learner-facing story cannot be wrong about.
 //
-// The bar for a manga episode is deliberately STRICTER than for a prose season:
+// The bar for a manhua episode is deliberately STRICTER than for a prose season:
 // prose may declare a handful of "reach" words the reference dictionary
-// explains, because writing narrative without them goes flat. A manga episode
+// explains, because writing narrative without them goes flat. A manhua episode
 // has the artwork to carry meaning, so it has no excuse — every word must be in
 // the level's list or be a curated character name.
 
-const DIR = new URL('../data/manga/', import.meta.url)
+const DIR = new URL('../data/manhua/', import.meta.url)
 const files = existsSync(DIR)
   ? readdirSync(DIR).filter(f => f.indexOf('.json') !== -1 && f.indexOf('.art.json') === -1)
   : []
@@ -81,7 +81,7 @@ function unmatchedTokens(text, matcher, names) {
   return out
 }
 
-describe('manga episodes', () => {
+describe('manhua episodes', () => {
   it('there is at least one authored episode', () => {
     expect(files.length).toBeGreaterThan(0)
   })
@@ -93,8 +93,8 @@ describe('manga episodes', () => {
     const built = buildEpisode(ep.panels, lines.length)
 
     describe(file + ' — ' + ep.title, () => {
-      it('is a manga row with content', () => {
-        expect(ep.presentation).toBe('manga')
+      it('is a manhua row with content', () => {
+        expect(ep.presentation).toBe('manhua')
         expect(lines.length).toBeGreaterThan(0)
       })
 

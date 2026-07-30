@@ -301,40 +301,40 @@ body {
 .dict-chip { display: flex; align-items: baseline; gap: 7px; padding: 8px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); cursor: pointer; }
 .dict-ex { padding: 12px 13px; border-radius: 13px; background: var(--surface); border: 1px solid var(--border); }
 .dict-label { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 10px; }
-/* ── Hanzi Dojo Stories: the manga reader ─────────────────────────────
+/* ── Hanzi Dojo Stories: the manhua reader ─────────────────────────────
    A panel settles onto the page as it comes into view — a short fade and a
    12px lift, no bounce and no parallax. The class is applied on the way in and
    `is-in` is what plays it, so a panel already on screen at first paint (the
    opening one) doesn't animate from nothing.
    Neutralized by the reduced-motion catch-all above, like every other
    animation in this file. */
-@keyframes hd-manga-in {
+@keyframes hd-manhua-in {
   from { transform: translateY(12px); opacity: 0; }
   to   { transform: translateY(0); opacity: 1; }
 }
 /* No base `opacity: 0` here on purpose: the fill-mode `both` below already
    holds the from-state, and a base rule would leave a panel permanently
    invisible anywhere `is-in` never lands. */
-.hd-manga-panel.is-in {
-  animation: hd-manga-in 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+.hd-manhua-panel.is-in {
+  animation: hd-manhua-in 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* A bubble arrives just after the art it sits on, so the eye lands on the
    drawing first and the words a beat later — the reading order of a comic. */
-@keyframes hd-manga-bubble-in {
+@keyframes hd-manhua-bubble-in {
   from { transform: translateY(6px) scale(0.985); opacity: 0; }
   to   { transform: translateY(0) scale(1); opacity: 1; }
 }
-.hd-manga-bubble {
-  animation: hd-manga-bubble-in 320ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both;
+.hd-manhua-bubble {
+  animation: hd-manhua-bubble-in 320ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both;
 }
 
 /* A word gives a little under the finger and lifts its own ink on hover. */
-.hd-manga-word {
+.hd-manhua-word {
   transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease;
 }
-.hd-manga-word:hover { background: rgba(23, 20, 17, 0.06); }
-.hd-manga-word:focus-visible {
+.hd-manhua-word:hover { background: rgba(23, 20, 17, 0.06); }
+.hd-manhua-word:focus-visible {
   outline: 2px solid currentcolor;
   outline-offset: 2px;
 }

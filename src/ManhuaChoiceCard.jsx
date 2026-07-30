@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PAPER, CARD_RADIUS, OPTION_RADIUS, TYPE, TAP_TARGET } from './mangaTokens'
+import { PAPER, CARD_RADIUS, OPTION_RADIUS, TYPE, TAP_TARGET } from './manhuaTokens'
 import { MessageCircleMore, MessageCircleDashed, Check } from 'lucide-react'
 
 // The story's fork: a small card of things the learner could say.
@@ -71,14 +71,14 @@ function Option({ text, pinyin, index, picked, chosen, disabled, accentHex, font
   )
 }
 
-export default function MangaChoiceCard({
+export default function ManhuaChoiceCard({
   prompt, options, chosenIndex, onPick, accentHex, fontFamily, showPinyin = true,
 }) {
   const picked = Number.isInteger(chosenIndex)
   return (
     <section
       aria-label={prompt}
-      className="hd-manga-panel is-in"
+      className="hd-manhua-panel is-in"
       style={{
         background: PAPER.card,
         border: '1px solid ' + PAPER.hairline,

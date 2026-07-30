@@ -16,7 +16,7 @@
 // so a title like "2024年" or "3つの願い" is NOT mistaken for chapter 2024 / 3.
 const NUM_SEPARATORS = '.．。、,，:：)）]】-–—·・ \t　'
 
-// The OTHER way a chapter announces itself: 第一话 / 第二章 / 第10回. A manga
+// The OTHER way a chapter announces itself: 第一话 / 第二章 / 第10回. A manhua
 // episode is titled that way rather than "1. …", and without this the number is
 // invisible — the episode joins whatever season precedes it in story_number
 // order instead of starting its own. (That is exactly what happened to

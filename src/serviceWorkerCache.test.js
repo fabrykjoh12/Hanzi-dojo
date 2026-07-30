@@ -21,7 +21,7 @@ describe('service worker: never cache the SPA shell under an asset URL', () => {
   it('recognises the shell', () => {
     // vercel.json rewrites every unmatched path to /index.html, so an asset that
     // has not shipped yet answers 200 with this. Caching it under the asset's
-    // URL is what left the manga panels blank long after the art deployed.
+    // URL is what left the manhua panels blank long after the art deployed.
     expect(isShellHtml(resp('text/html; charset=utf-8'))).toBe(true)
     expect(isShellHtml(resp('text/html'))).toBe(true)
   })

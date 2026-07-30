@@ -1,6 +1,6 @@
 import { wordStatus, isPlaceWord, isWordlikeToken } from './storyReading'
 import { TokenBody, RevealEnglishButton } from './ReadingScaffold'
-import { PAPER, BUBBLE_RADIUS, THOUGHT_RADIUS, BUBBLE_FRAME, THOUGHT_FRAME, NARRATION_RADIUS, TYPE, TAP_TARGET } from './mangaTokens'
+import { PAPER, BUBBLE_RADIUS, THOUGHT_RADIUS, BUBBLE_FRAME, THOUGHT_FRAME, NARRATION_RADIUS, TYPE, TAP_TARGET } from './manhuaTokens'
 import { Volume2 } from 'lucide-react'
 
 // A line of the story, drawn as interface over the artwork.
@@ -123,7 +123,7 @@ function Word({ token, tokenId, beatIndex, selected, accentHex, readingMode, use
         e.preventDefault(); e.stopPropagation()
         onSelectToken(token, status, tokenId, beatIndex, e.currentTarget)
       }}
-      className="hd-manga-word"
+      className="hd-manhua-word"
       style={{
         cursor: 'pointer', borderRadius: '5px', padding: '0 1px',
         color: isSelected ? accentHex : (proper ? PROPER_NOUN : PAPER.ink),
@@ -142,7 +142,7 @@ function Word({ token, tokenId, beatIndex, selected, accentHex, readingMode, use
   )
 }
 
-export default function MangaBubble({
+export default function ManhuaBubble({
   beat, beatIndex, kind = 'speech', tail = null, speaker = null, voice = null,
   accentHex, fontFamily, readingMode, userCards, language,
   selected, onSelectToken, onPlayLine, speaking = false,
@@ -165,13 +165,13 @@ export default function MangaBubble({
 
   return (
     <div
-      className={reduceMotion ? undefined : 'hd-manga-bubble'}
+      className={reduceMotion ? undefined : 'hd-manhua-bubble'}
       style={{ ...position, ...chrome, padding: narration ? '10px 14px' : '11px 16px 12px', boxShadow: 'none', ...style }}
     >
       <Tail tail={tail} kind={kind} accentHex={accentHex} />
 
       {/* Who is talking. A printed label is the exception, not the rule — in a
-          manga panel the drawing says who is speaking, and a name plate over
+          manhua panel the drawing says who is speaking, and a name plate over
           every bubble is what makes a comic look like a chat app. So the episode
           opts in per character (cast[speaker].display), while screen readers,
           which have no drawing to go on, are always told. */}
@@ -192,7 +192,7 @@ export default function MangaBubble({
             not a toolbar — and FLOATED, not a flex sibling: floated, they cost
             the sentence width on its first line only and no height at all, so a
             six-character line stays a six-character line instead of orphaning
-            its last character onto a second row. mangaLayout's height estimate
+            its last character onto a second row. manhuaLayout's height estimate
             models exactly this (BUBBLE_ACTIONS_WIDTH). */}
         <div style={{ float: 'right', display: 'flex', alignItems: 'center', marginLeft: '6px', marginTop: '-4px' }}>
           {onPlayLine && (

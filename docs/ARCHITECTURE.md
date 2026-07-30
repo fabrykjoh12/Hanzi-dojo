@@ -131,9 +131,9 @@ stories
                                    nullable — translation toggle only shows when populated
   is_published boolean
   image_path text               -- cover art in the public `audio` bucket (stories/<id>/cover.webp)
-  presentation text             -- 'paced' | 'chat' | 'scene' | 'manga'; see src/readerMode.js
+  presentation text             -- 'paced' | 'chat' | 'scene' | 'manhua'; see src/readerMode.js
   interactions jsonb            -- reply-along chat only: { you, distractors }
-  panels jsonb                  -- manga only: the panel layout. See "Manga episodes" below.
+  panels jsonb                  -- manhua only: the panel layout. See "Manhua episodes" below.
 
 story_vocab
   story_id uuid REFERENCES stories
@@ -241,11 +241,21 @@ dojo_hq_members()
 
 ---
 
-## Manga episodes — Hanzi Dojo Stories
+## Manhua episodes — Hanzi Dojo Stories
 
 A fourth `presentation` alongside `paced` / `chat` / `scene`: a vertical
 cinematic reader. First season: **Hanzi Dojo: The Inkbound** (`第一话 · 我是新学生`,
 HSK 1).
+
+The format shipped tagged `'manga'` on 2026-07-29 and was renamed to `'manhua'`
+the next day — 漫画 read the Chinese way, which is what the format is when the
+product is Chinese-only. **Nothing compares against `story.presentation`
+directly**: `presentationOf(story)` in `src/readerMode.js` aliases the old tag to
+the new one, which is what let the app deploy and
+`20260730090000_manhua_presentation_rename.sql` land in either order. The same
+applies to reading positions — `src/manhuaProgress.js` reads back the old
+`manga:` IndexedDB key once, then writes only the new one. Both are transitional;
+`docs/BACKLOG.md` says when they can go.
 
 **The one rule the format is built on: art and educational text are separate.**
 No Chinese is ever baked into a generated image. The hanzi is HTML, so it is
@@ -261,11 +271,11 @@ instruction for the same reason.
 | The Chinese, one beat per line | `stories.content` — exactly as every other format stores it |
 | Line-parallel English | `stories.english_content` |
 | Panel layout (art, bubbles, choices) | `stories.panels` jsonb |
-| Canonical source of both | `data/manga/<episode>.json` — edit here, never in the DB |
+| Canonical source of both | `data/manhua/<episode>.json` — edit here, never in the DB |
 | Panel art | `public/stories/<series>/<level>/<episode>/*.webp`, **committed** |
-| Character reference sheets | `data/manga/bible/` (not shipped) |
-| Publish | `publish-manga.mjs` (upserts on language/system/level/title) |
-| Fetch generated art | `fetch-manga-art.mjs` + the `manga-art-fetch` task in `content-utils.yml` |
+| Character reference sheets | `data/manhua/bible/` (not shipped) |
+| Publish | `publish-manhua.mjs` (upserts on language/system/level/title) |
+| Fetch generated art | `fetch-manhua-art.mjs` + the `manhua-art-fetch` task in `content-utils.yml` |
 
 Episode art is committed rather than uploaded to the `audio` bucket the way
 covers are: a panel is chosen for its aspect ratio and for the empty corner a
@@ -292,7 +302,7 @@ metadata that places bubbles over it.
 }
 ```
 
-`src/mangaLayout.js` normalises all of it. **Every field is optional and every
+`src/manhuaLayout.js` normalises all of it. **Every field is optional and every
 bad value degrades to something readable** — a `panels` of `null` still renders
 (one panel per beat), a bubble naming a beat that doesn't exist is dropped, a
 choice with one option stops gating. Panel metadata is authored content, and
@@ -301,7 +311,7 @@ authored content has typos.
 ### Reader behaviour worth knowing
 
 - **Progression is by PANEL, not by beat.** A panel may hold two lines or none,
-  so `MangaReader` holds the shared engine's `advanceBlocked` on for the whole
+  so `ManhuaReader` holds the shared engine's `advanceBlocked` on for the whole
   session and owns the keyboard itself.
 - **The header counts the panel under the READING LINE** (42% down the
   viewport), taking the last panel whose top has passed it — see
@@ -316,10 +326,10 @@ authored content has typos.
 - **Scrolling is not reading.** `isEpisodeComplete` requires every choice
   answered AND the last panel reached. A choice gates every panel after it
   (`revealLimit`).
-- **Position and branch persist locally** (`mangaProgress.js`, on the existing
+- **Position and branch persist locally** (`manhuaProgress.js`, on the existing
   IndexedDB `prefs` store — works signed-out). Completion still goes through
   `story_reads` like every other format; there is no second progress system.
-- **The palette is fixed warm paper on both themes** (`mangaTokens.js`), the
+- **The palette is fixed warm paper on both themes** (`manhuaTokens.js`), the
   documented exception to §5's "no hardcoded neutrals" — the same licence
   `chatStyleFor` already takes. The panels are monochrome ink carrying their own
   paper tone; floated on a dark themed surface they read as photographs punched
@@ -327,16 +337,16 @@ authored content has typos.
 
 ### Adding an episode
 
-1. Write `data/manga/<series>-<level>-ep<NN>.json` — content, line-parallel
+1. Write `data/manhua/<series>-<level>-ep<NN>.json` — content, line-parallel
    `english_content`, `names`, and the panel layout.
 2. Add any new character to `src/characterNames.js` (the matcher only takes
    names of **two characters or more** — a one-character name is unreachable).
-3. `npx vitest run src/mangaEpisodes.test.js` — validates every word against the
+3. `npx vitest run src/manhuaEpisodes.test.js` — validates every word against the
    level's vocabulary snapshot, that each beat is drawn exactly once, that the
    episode is completable, and that the bubbles stay on the art at phone widths.
 4. Generate art with the locked style + character sheets, write
-   `<episode>.art.json`, and dispatch `content-utils.yml` → `manga-art-fetch`.
-5. Dispatch `content-utils.yml` → `manga-publish` with the episode manifest —
+   `<episode>.art.json`, and dispatch `content-utils.yml` → `manhua-art-fetch`.
+5. Dispatch `content-utils.yml` → `manhua-publish` with the episode manifest —
    **after the art is merged to `main` and deployed**, not before.
 
 ### Publish comes AFTER deploy, and the script enforces it
@@ -345,10 +355,10 @@ The database is shared by every deployment; panel art is a file inside a build.
 So publishing an episode whose art is still on a feature branch points
 **production** at 404s, and the reader draws an empty plate where each missing
 drawing should be. That is not hypothetical — it shipped: five new panels were
-still unmerged when `manga-publish` ran, and production showed blank panels until
+still unmerged when `manhua-publish` ran, and production showed blank panels until
 the branch merged.
 
-`publish-manga.mjs` now HEAD-checks every `panels[].art` file against `SITE_URL`
+`publish-manhua.mjs` now HEAD-checks every `panels[].art` file against `SITE_URL`
 (default `https://hanzi-dojo.com`) and **refuses to write** if any are missing,
 listing them. `--skip-art-check` overrides it for a deliberate text-ahead-of-art
 draft. The same trap applies to renaming an existing panel file: the old name
