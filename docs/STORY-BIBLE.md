@@ -305,4 +305,20 @@ box drawn over a picture, on a phone.
 
 | Episode | Level | State |
 |---------|-------|-------|
-| 第一话 · 我是新学生 | HSK 1 | Shipped. You arrive at the dojo, 小雨 asks if you are the new student, you answer, 林老师 appears, 小白 watches. |
+| 第一话 · 我是新学生 | HSK 1 | Shipped. 23 lines over 14 panels, two choices. You arrive, 小雨 asks if you are the new student, she leads you to the hall, 林老师 asks whether you can write and answers you differently either way, and 小白 watches from behind a lantern. |
+| 第二话 | HSK 2 | Planned. The closing plate of 第一话 promises it at HSK 2 (`panels.meta.continues`), so it must be written at HSK 2 — the promise is load-bearing. |
+
+### The plate at the end of an episode
+
+`panels.meta.continues` is `{ label, level }`, and the closing plate prints
+"第二话 · continues at HSK 2". The **level** is the part that earns its place: a
+serial that climbs the ladder should say so at the end of the episode, so "there
+is more" and "you are not ready for it yet" arrive together rather than leaving
+the reader to hunt the shelf for an episode a level up. `level` is a level
+NUMBER in the story's own system, never a printed string — `getLevelLabel` turns
+it into "HSK 2" (or "N4", or "A2"). Omit the block entirely for an episode that
+ends a season.
+
+**Whatever this promises has to be true.** If the plate says HSK 2, the next
+episode is written at HSK 2 and published at level 2, or the promise is a lie
+told to a learner.

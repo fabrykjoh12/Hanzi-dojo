@@ -97,7 +97,7 @@
         "alt": "小雨 walks ahead along a covered lantern-lit walkway, turning back over her shoulder to beckon the traveller on.",
         "bubbles": [
           { "beat": 7, "kind": "speech", "side": "left", "top": 6, "width": 64, "tail": "bottom-right" },
-          { "beat": 8, "kind": "narration", "side": "right", "top": 52, "width": 66 }
+          { "beat": 8, "kind": "narration", "side": "left", "top": 54, "width": 62 }
         ]
       },
       {
@@ -125,7 +125,7 @@
         "alt": "林老师 kneels behind a low writing table, looking straight at the reader and opening one hand toward the empty cushion in the foreground.",
         "bubbles": [
           { "beat": 11, "kind": "speech", "side": "left", "top": 5, "width": 56, "tail": "bottom-right" },
-          { "beat": 12, "kind": "speech", "side": "right", "top": 28, "width": 74, "tail": "bottom-left" }
+          { "beat": 12, "kind": "speech", "side": "right", "top": 18, "width": 74, "tail": "bottom-left" }
         ]
       },
       {
