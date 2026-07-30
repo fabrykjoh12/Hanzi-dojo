@@ -197,6 +197,13 @@ migration to drop them, since this removed the feature, not historical data.
   reads them.
 
 ## Frontend cleanup
+- [x] **`Stories.jsx` shelf logic extracted to `src/storyShelves.js` (2026-07-30).** The
+  screen held two closures over render scope (`shelvesForTier`, `tierInfo`) plus a
+  ~70-line IIFE inside the JSX that filtered, arc-grouped and split every level of
+  the open tier. All of it is pure and all of it decides what a learner can read,
+  so it now lives in a module with 22 specs beside it — `shelvesForTier`,
+  `tierInfo`, `defaultTier`, `splitShelf` — and the JSX renders a `LevelBlock`
+  component instead. No behaviour change; the tier rules are identical.
 - [ ] Continue extracting the large `Study` screen into focused hooks/components.
 - [ ] Supabase generated types (gradual TypeScript adoption).
 - [ ] Centralize design tokens (colors/spacing/shadows) beyond the current shared primitives.

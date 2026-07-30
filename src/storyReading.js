@@ -859,17 +859,13 @@ export function todayWordsInStory(storyWords, todayWords) {
 //   - statuses: Map word → status (for today/session-word matching)
 //   - counts: Map word → how many times it appears (with duplicates) — powers the
 //     "appears N× in this story" hint without a second parse.
-// An optional pre-built `matcher` lets a caller score MANY stories against the
-// same vocabulary without rebuilding the index each time — see
-// storyLibrary.scoreStories. It must come from buildVocabMatcher(vocabMap,
-// language) with the same arguments passed here, or the numbers drift.
-export function calculateStoryReadability({ content, vocabMap = {}, cards = {}, language, matcher: sharedMatcher } = {}) {
+export function calculateStoryReadability({ content, vocabMap = {}, cards = {}, language } = {}) {
   // Derived from THIS story's speaker labels, not just the curated map — the
   // reader renders names that way, and "% known" must never count a character's
   // name as vocabulary the learner failed to know.
   const names = storyNamesFor(content, vocabMap, language)
   const particles = particlesFor(language)
-  const matcher = sharedMatcher || buildVocabMatcher(vocabMap, language)
+  const matcher = buildVocabMatcher(vocabMap, language)
 
   const statuses = new Map()   // word → status (distinct by word)
   const counts = new Map()     // word → occurrence count (with duplicates)

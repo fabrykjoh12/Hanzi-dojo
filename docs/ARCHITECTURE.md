@@ -433,8 +433,7 @@ JLPT advances: 1 → 2 → 3 → 4 → 5 → 6. Always use `getLevelLabel(langua
 - Audio voice: `ru-RU-Wavenet-C`, languageCode `ru-RU`, TTS input = `v.word` (the Cyrillic word).
 - No example sentences / stories / YouTube yet (run the respective generators after seeding).
 
-**Story tier structure** (defined in `src/storyTiers.js`, keyed by *(language, level)* —
-`tiersFor(language, level)`; the table below is the language-level default):
+**Story tier structure (per language, defined in Stories.jsx CATEGORIES_CHINESE / CATEGORIES_JAPANESE):**
 
 | Tier | Label | Unlocks at (learnedCount) | Chinese vocab used | Japanese vocab used |
 |------|-------|--------------------------|---------------------|----------------------|
@@ -762,23 +761,17 @@ src/Test.jsx
   "End quiz" ends early (unanswered = wrong). Shows reading below Japanese options.
 
 src/Stories.jsx
-  The story LIBRARY. Navigation is by LEVEL, not by tier: a level rail (every
-  level that has stories, plus the one the learner is on, plus the levels above
-  as dimmed previews) picks one shelf, and that shelf shows everything written
-  for the level at once — series as one stacked card (groupIntoArcs), single
-  stories, then practice formats in their own section. Ordering, search, the
-  rail model and the per-story "% known" all live in `src/storyLibrary.js`
-  (pure, tested); tier thresholds still gate what is OPEN (storyTiers.js), and
-  anything a tier has not opened yet is drawn as a dimmed "Not open yet" card
-  stating the words that open it, rather than being hidden.
-
-  "% known" is the sort key and comes from the canonical
-  calculateStoryReadability — scoreStories() builds the vocab matcher ONCE and
-  scores the whole shelf with it (per-story it would rebuild an index over the
-  entire vocabulary for every card). Two queries feed the screen: the open shelf
-  (`level <= current_level`, full rows, cached to IndexedDB for offline) and the
-  preview shelf (`level > current_level`, columns only — no `content`).
-  The hero panel is the day's pick (pickDailyStory); the reader is StoryReader.
+  Story immersion. Three-tier category screen (CATEGORIES_CHINESE /
+  CATEGORIES_JAPANESE) → story list → story reader. Text is segmented with
+  greedy longest-match (segmentText) against a vocab map loaded across all
+  levels. StoryLine renders each line with a per-speaker avatar/color
+  (splitSpeakerLine) and a per-line Web Speech API "play" button; clicking a
+  word opens VocabularyPopup (furigana, status, add-to-deck). CharacterGuide +
+  CHARACTER_READINGS shows named characters with reading pills (Chinese only).
+  StoryProgressCard and ReviewWordsCard form a sticky sidebar that moves below
+  the story on narrow screens. StoryCompletionCard ends the story with a
+  next-story link. A translation toggle renders EnglishStoryLine from the
+  `english_content` column instead of the interactive reader.
 
 src/StoryReaderImmersive.jsx
   HSKStory-style reader used for BOTH languages (Stories.jsx routes all stories

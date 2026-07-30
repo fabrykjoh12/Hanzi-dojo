@@ -1,8 +1,9 @@
-// Page Object for the story reader (level rail → story card → reader).
-// See src/Stories.jsx: the library navigates by LEVEL now — a rail of tabs, one
-// per level, opening on the learner's own level. Every story is a normalized
-// card (src/Stories.jsx StoryCard) whose accessible name includes its title;
-// tapping one opens the reader directly (there is no separate list drill-in).
+// Page Object for the story reader (browse tabs → story card → reader).
+// See src/Stories.jsx: the library opens on the tier tabs (First Steps is
+// unlocked from minWords 0 — src/storyTiers.js) with the tier's stories grouped
+// into arcs + a Practice Scenarios section. Every story is a normalized card
+// (src/Stories.jsx StoryCard) whose accessible name includes its title; tapping
+// one opens the reader directly (there is no separate list drill-in anymore).
 export class ReaderPage {
   constructor(page) {
     this.page = page;
@@ -10,27 +11,19 @@ export class ReaderPage {
   async gotoStories() {
     await this.page.goto('/stories');
   }
-  // Opens the seeded first story into the reader.
+  // Opens the seeded first story into the reader: First Steps tab → its card.
   async openFirstStory() {
     await this.openStoryByTitle('公园里的下午');
   }
 
-  // Opens a story by its title into the reader, wherever it lives on the rail:
-  // the shelf the library opens on is checked first, then each level in turn.
-  // Written this way so a spec names a story, not a level — the fixture is free
-  // to move a story between levels without every reader spec knowing.
+  // Opens a story by its title into the reader. First Steps (tier 1) is unlocked
+  // from day one and holds every seeded story (arc + practice). The card is a
+  // button whose accessible name embeds the title, so match it as a substring.
   async openStoryByTitle(title) {
     await this.gotoStories();
-    const tabs = this.page.getByRole('tab');
-    await tabs.first().waitFor();
-    // Scope to the tab panel so the "Today's story" hero (which may show the
-    // same title) never shadows the grid card we mean to open.
-    const card = this.page.getByRole('tabpanel').getByRole('button', { name: new RegExp(title) });
-    const levels = await tabs.count();
-    for (let i = 0; i < levels; i++) {
-      if (await card.count() > 0) break;
-      await tabs.nth(i).click();
-    }
-    await card.first().click();
+    await this.page.getByRole('tab', { name: /First Steps/ }).click();
+    // Scope to the tab panel so the "Today's story" card (which may show the same
+    // title) never shadows the grid card we mean to open.
+    await this.page.getByRole('tabpanel').getByRole('button', { name: new RegExp(title) }).click();
   }
 }

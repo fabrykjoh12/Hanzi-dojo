@@ -10,16 +10,17 @@ test.describe('Story of the day', () => {
     await expect(daily).toBeVisible();
 
     await daily.click();
-    // Navigates into the reader: we've left the browse screen (the level rail is
+    // Navigates into the reader: we've left the browse screen (the tier tabs are
     // gone). Format-agnostic, since the daily pick may be any presentation.
-    await expect(page.getByRole('tab', { name: /HSK 2/ })).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: /First Steps/ })).toHaveCount(0);
     await expect(daily).toHaveCount(0);
   });
 
-  test('the hero says where you are on the ladder', async ({ page }) => {
+  test('the tier tabs surface the gap to the next unlock', async ({ page }) => {
     await page.goto('/stories');
-    // Level and progress ride in the hero's eyebrow, so the shelf below it can
-    // be nothing but stories.
-    await expect(page.getByText(/hsk · HSK 2 · \d+% learned/i)).toBeVisible();
+    // The reading-ladder rung copy folded into the tab bar: a locked tier's tab
+    // states how many more words open it (fixture: Growing is locked at HSK 2).
+    await expect(page.getByText(/more word/i).first()).toBeVisible();
+    await expect(page.getByText(/% of this level unlocked/i)).toBeVisible();
   });
 });
