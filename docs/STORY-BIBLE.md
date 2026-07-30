@@ -398,7 +398,7 @@ model-sheet rule, the same full-bleed rule. Two additions this series needs:
 |---------|-------|-------|
 | 第一话 · 一块钱 | HSK 1 | Shipped. 26 lines over 18 panels. Night rain; a soaked cat outside the light, and you get it to come in. Then a big man in a wet jacket puts nine coins on the counter for a ten-kuai bowl, and 妈妈 pushes the bowl across without a word about it. He gives the cat half his egg. Nobody comments on any of it. |
 | 第二话 · 花花 | HSK 1 | Shipped. 26 lines over 15 panels. The rain has stopped and the cat has moved in. 小美 wants to name her; 妈妈 is unimpressed; the cat is uninterested. The man comes back, sees her, and his face does something complicated — and the cat walks straight into his arms and settles, which answers a question nobody asked out loud. Still every word HSK 1. |
-| 第三话 · 他没来 | HSK 2 | Shipped. 26 lines over 16 panels. He eats there every evening — until one evening he doesn't, and the cat sits in the doorway facing the street. 小美 is already putting her coat on. They walk a long wet road to a doorway off an alley with a folded blanket in it, and the bowl they carry has gone completely cold — which is the one detail the episode turns on, because he smiles anyway. |
+| 第三话 · 冷了的面条儿 | HSK 2 | Shipped. 26 lines over 16 panels. He eats there every evening — until one evening he doesn't, and the cat sits in the doorway facing the street. 小美 is already putting her coat on. They walk a long wet road to a doorway off an alley with a folded blanket in it, and the bowl they carry has gone completely cold — which is the one detail the episode turns on, because he smiles anyway. |
 | 第四话 | HSK 2 | Planned. Promised by 第三话's closing plate. |
 
 ### The plate at the end of an episode
