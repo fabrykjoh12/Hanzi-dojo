@@ -3,19 +3,19 @@ import { useStoryReaderCore } from './useStoryReaderCore'
 import {
   buildEpisode, panelArtSrc, visibleBubbles, isGate, revealLimit,
   readBeats, episodeProgress, isEpisodeComplete, bubbleLayout, panelAtReadingLine,
-} from './mangaLayout'
-import { loadMangaProgress, saveMangaProgress, resumePanel } from './mangaProgress'
-import { PAPER, COLUMN_MAX, GUTTER, mangaAccent, mangaFontStack } from './mangaTokens'
+} from './manhuaLayout'
+import { loadManhuaProgress, saveManhuaProgress, resumePanel } from './manhuaProgress'
+import { PAPER, COLUMN_MAX, GUTTER, manhuaAccent, manhuaFontStack } from './manhuaTokens'
 import { minDwellMs } from './readAlong'
 import { getLevelLabel } from './utils'
-import MangaHeader from './MangaHeader'
-import MangaPanel from './MangaPanel'
-import MangaBubble from './MangaBubble'
-import MangaChoiceCard from './MangaChoiceCard'
-import MangaCompletion from './MangaCompletion'
+import ManhuaHeader from './ManhuaHeader'
+import ManhuaPanel from './ManhuaPanel'
+import ManhuaBubble from './ManhuaBubble'
+import ManhuaChoiceCard from './ManhuaChoiceCard'
+import ManhuaCompletion from './ManhuaCompletion'
 import WordLookupSheet from './WordLookupSheet'
 
-// Hanzi Dojo Stories — the manga reader.
+// Hanzi Dojo Stories — the manhua reader.
 //
 // A vertical strip of cinematic panels with the dialogue drawn over them as real
 // interface: every hanzi is a button, the pinyin is the shared per-word
@@ -32,12 +32,12 @@ import WordLookupSheet from './WordLookupSheet'
 //   · It does not treat scrolling as reading. The episode completes only when
 //     the learner has answered every choice AND reached the closing plate —
 //     see isEpisodeComplete.
-export default function MangaReader(props) {
+export default function ManhuaReader(props) {
   const c = useStoryReaderCore(props)
   const { story, track, onBack, userCards, onPractice } = props
 
-  const accent = mangaAccent(c.theme)
-  const fontFamily = mangaFontStack(c.theme.font)
+  const accent = manhuaAccent(c.theme)
+  const fontFamily = manhuaFontStack(c.theme.font)
 
   const episode = useMemo(() => buildEpisode(story.panels, c.beats.length), [story.panels, c.beats.length])
   const { meta, cast, panels, total } = episode
@@ -74,7 +74,7 @@ export default function MangaReader(props) {
   // completion still goes through story_reads like every other format.
   useEffect(() => {
     let live = true
-    loadMangaProgress(story.id).then((saved) => {
+    loadManhuaProgress(story.id).then((saved) => {
       if (!live) return
       setChoices(saved.choices)
       const at = resumePanel(saved, panels)
@@ -146,7 +146,7 @@ export default function MangaReader(props) {
   // `active` only changes when a different panel takes over the viewport.
   useEffect(() => {
     if (!restored) return
-    saveMangaProgress(story.id, { panel: active, choices })
+    saveManhuaProgress(story.id, { panel: active, choices })
   }, [restored, active, choices, story.id])
 
   // ── Completion ───────────────────────────────────────────────────────────
@@ -156,7 +156,7 @@ export default function MangaReader(props) {
     if (!complete || finishedRef.current) return
     finishedRef.current = true
     finish()
-    saveMangaProgress(story.id, { completed: true })
+    saveManhuaProgress(story.id, { completed: true })
   }, [complete, finish, story.id])
 
   // ── Audio ────────────────────────────────────────────────────────────────
@@ -180,7 +180,7 @@ export default function MangaReader(props) {
   const { selectToken } = c
   const onSelectToken = useCallback((token, status, tokenId, beatIndex, anchorEl) => {
     selectToken(token, status, tokenId, beatIndex, anchorEl)
-    saveMangaProgress(story.id, { tapped: [token.text] })
+    saveManhuaProgress(story.id, { tapped: [token.text] })
   }, [selectToken, story.id])
 
   // ── Choices ──────────────────────────────────────────────────────────────
@@ -269,7 +269,7 @@ export default function MangaReader(props) {
     return {
       layout,
       node: (
-        <MangaBubble
+        <ManhuaBubble
           key={panel.id + ':' + bubble.beat}
           beat={beat}
           beatIndex={bubble.beat}
@@ -306,7 +306,7 @@ export default function MangaReader(props) {
         'repeating-linear-gradient(0deg, rgba(23,20,17,0.014) 0px, rgba(23,20,17,0.014) 1px, transparent 1px, transparent 3px),'
         + 'repeating-linear-gradient(90deg, rgba(23,20,17,0.010) 0px, rgba(23,20,17,0.010) 1px, transparent 1px, transparent 4px)',
     }}>
-      <MangaHeader
+      <ManhuaHeader
         label={label}
         title={title}
         current={progress.current}
@@ -359,7 +359,7 @@ export default function MangaReader(props) {
           return (
             <div key={panel.id}>
               {(panel.art || panel.bubbles.length > 0) && (
-                <MangaPanel
+                <ManhuaPanel
                   panelRef={(el) => { panelRefs.current[i] = el }}
                   panelIndex={i}
                   src={panelArtSrc(meta, panel)}
@@ -373,7 +373,7 @@ export default function MangaReader(props) {
                   below={belows.length ? <div style={{ display: 'flex', flexDirection: 'column' }}>{belows}</div> : null}
                 >
                   {overlays}
-                </MangaPanel>
+                </ManhuaPanel>
               )}
               {/* A panel with no art and no bubbles is a pure choice panel; it
                   still needs an observed element, or the header's count skips it. */}
@@ -391,7 +391,7 @@ export default function MangaReader(props) {
 
               {panel.choice && (
                 <div style={{ marginTop: '14px' }}>
-                  <MangaChoiceCard
+                  <ManhuaChoiceCard
                     prompt={panel.choice.prompt}
                     options={panel.choice.options.map(o => ({
                       text: (c.beats[o.beat] || {}).text || '',
@@ -420,7 +420,7 @@ export default function MangaReader(props) {
 
         {complete && (
           <div style={{ marginTop: '4px' }}>
-            <MangaCompletion
+            <ManhuaCompletion
               label={label}
               title={title}
               words={metWords}

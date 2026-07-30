@@ -30,7 +30,7 @@ export const CHARACTER_READINGS = {
     '阿山': 'Ā Shān', '大石': 'Dà Shí', '木青': 'Mù Qīng',
     '夜白': 'Yè Bái', '火三': 'Huǒ Sān', '张平': 'Zhāng Píng',
     '阿风': 'Ā Fēng',
-    // Hanzi Dojo Stories — "The Inkbound" (HSK 1 manga). 小雨 and 小白 are both
+    // Hanzi Dojo Stories — "The Inkbound" (HSK 1 manhua). 小雨 and 小白 are both
     // built from HSK 1 characters, so without an entry here the reader would
     // split them into 小 + 雨 ("small" + "rain") and 小 + 白. 林老师 is the
     // master's whole form of address — 老师 IS vocabulary, but "Teacher Lin" is

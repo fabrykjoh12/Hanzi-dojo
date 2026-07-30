@@ -31,3 +31,13 @@ describe('formatEmoji / formatLabel', () => {
     expect(formatEmoji(undefined)).toBe('📖')
   })
 })
+
+// A row still tagged with the pre-rename spelling is labelled and shelved as the
+// manhua it is, rather than as an unknown format.
+describe('the legacy manga tag', () => {
+  it('is not a practice format, and reads as manhua', () => {
+    expect(isPracticeFormat({ presentation: 'manga' })).toBe(false)
+    expect(formatEmoji({ presentation: 'manga' })).toBe('\u{1F58C}\u{FE0F}')
+    expect(formatLabel({ presentation: 'manga' })).toBe('Manhua')
+  })
+})

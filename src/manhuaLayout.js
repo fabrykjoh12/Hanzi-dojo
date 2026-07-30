@@ -1,8 +1,8 @@
-// The manga episode's layout plan: how the story's beats are distributed over
+// The manhua episode's layout plan: how the story's beats are distributed over
 // cinematic panels, where each speech bubble sits over the art, and which
 // branch of a story choice the learner is currently in.
 //
-// Pure — no React, no Supabase, no DOM. That split is the point: MangaReader
+// Pure — no React, no Supabase, no DOM. That split is the point: ManhuaReader
 // draws whatever this returns, so the awkward cases (a panel that names a beat
 // that does not exist, a choice with one option, a bubble too tall for the art
 // it is pinned to, a saved position pointing past the end of a re-cut episode)
@@ -18,7 +18,7 @@
 // line, exactly as it does for the paced/chat/scene readers, and the shared
 // engine (useStoryReaderCore) turns it into tappable tokens. A bubble refers to
 // a beat by index; it never carries text of its own. See CLAUDE.md and the
-// manga migration for why art and educational text stay separate.
+// manhua migration for why art and educational text stay separate.
 
 // Panels are drawn at the column width; this is the widest and narrowest shape
 // one may take, so a typo like "40/1" cannot produce a 40-screen-tall panel.
@@ -122,7 +122,7 @@ function continuesFrom(raw) {
 
 // Build the render plan.
 //
-// `panelsJson` is stories.panels (may be null — an authored manga row that has
+// `panelsJson` is stories.panels (may be null — an authored manhua row that has
 // not been laid out yet), `beatCount` the number of lines the engine parsed.
 // With no metadata at all this still returns a readable episode: one panel per
 // beat, no art, bubbles in the default position. That fallback is what keeps a

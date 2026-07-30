@@ -57,25 +57,34 @@ const VOCAB = [
   { id: 'v5', word: '公园', reading: 'gōngyuán', meaning: 'park', level: 2, system: 'hsk', language: 'chinese', is_active: true },
   { id: 'v6', word: '朋友', reading: 'péngyou', meaning: 'friend', level: 2, system: 'hsk', language: 'chinese', is_active: true },
   { id: 'v7', word: '花', reading: 'huā', meaning: 'flower', level: 2, system: 'hsk', language: 'chinese', is_active: true },
-  // The HSK 1 words the manga episode (st6) is written from. Level 1, so they
+  // The HSK 1 words the manhua episode (st6) is written from. Level 1, so they
   // are on the cumulative shelf for a learner sitting at level 2. None of them
   // carries a card, so every word in the episode reads as "new" — which is what
   // the vocabulary popover's new-word state is exercised against.
+  //
+  // ⚠️ FIVE WORDS ARE DELIBERATELY MISSING from this list even though the
+  // episode uses them: 你 我们 去 看 吧. They also appear in `st1`, and `st1`
+  // having out-of-list words is what reader.spec.js's unknown-word test stands
+  // on ("我们 has no vocabulary row at this level" — dashed mark, "Unknown word"
+  // in the popover). Adding them here silently made that whole path untestable:
+  // the story went 100% covered and the assertion timed out looking for a
+  // dashed border that no longer existed. The cost is only that those five read
+  // as unknown inside the mocked episode, which no manhua spec asserts on.
+  // If you add a word here, check it is not one of st1's gaps first.
   ...[
     ['我', 'wǒ', 'I, me'], ['来', 'lái', 'to come'], ['学校', 'xuéxiào', 'school'],
     ['了', 'le', 'particle for completed action'], ['这', 'zhè', 'this'], ['是', 'shì', 'to be'],
-    ['吗', 'ma', 'question particle'], ['你好', 'nǐ hǎo', 'hello'], ['你', 'nǐ', 'you'],
+    ['吗', 'ma', 'question particle'], ['你好', 'nǐ hǎo', 'hello'],
     ['新', 'xīn', 'new'], ['学生', 'xuéshēng', 'student'], ['不', 'bù', 'not, no'],
     ['叫', 'jiào', 'to be called, to call'], ['什么', 'shénme', 'what'], ['名字', 'míngzi', 'name'],
     ['真', 'zhēn', 'really, true'], ['的', 'de', 'possessive particle'], ['老师', 'lǎoshī', 'teacher'],
-    ['吧', 'ba', 'particle indicating suggestion'], ['也', 'yě', 'also, too'],
-    ['我们', 'wǒmen', 'we, us'], ['去', 'qù', 'to go'], ['那边', 'nàbiān', 'over there'],
+    ['也', 'yě', 'also, too'], ['那边', 'nàbiān', 'over there'],
     ['大', 'dà', 'big'], ['请', 'qǐng', 'please'], ['坐', 'zuò', 'to sit'],
     ['会', 'huì', 'to be able to'], ['写', 'xiě', 'to write'], ['汉字', 'hànzì', 'Chinese character'],
     ['一点儿', 'yìdiǎnr', 'a little'], ['没关系', 'méi guānxi', "it doesn't matter"],
     ['现在', 'xiànzài', 'now'], ['学', 'xué', 'to learn'], ['字', 'zì', 'character'],
     ['这个', 'zhège', 'this one'], ['漂亮', 'piàoliang', 'beautiful'], ['那', 'nà', 'that'],
-    ['喜欢', 'xǐhuan', 'to like'], ['看', 'kàn', 'to look, to watch'], ['想', 'xiǎng', 'to want'],
+    ['喜欢', 'xǐhuan', 'to like'], ['想', 'xiǎng', 'to want'],
   ].map(([word, reading, meaning], i) => ({
     id: 'm' + (i + 1), word, reading, meaning,
     level: 1, system: 'hsk', language: 'chinese', is_active: true,
@@ -119,13 +128,13 @@ const STORIES = [{
   image_path: null, english_content: 'An old friend.',
   content: ['今天我看朋友。', '朋友很好。'].join('\n'),
 }, {
-  // The manga episode, carrying the SAME content and panel layout as the
-  // authored source (data/manga/inkbound-hsk1-ep01.json). Duplicated rather than
+  // The manhua episode, carrying the SAME content and panel layout as the
+  // authored source (data/manhua/inkbound-hsk1-ep01.json). Duplicated rather than
   // imported because the fixture has to be a plain literal the route mock can
   // serve — but the e2e spec asserts against the same strings the unit spec
   // validates, so a drift in either shows up as a failing test somewhere.
   id: 'st6', language: 'chinese', system: 'hsk', level: 1, tier: 1, story_number: 2,
-  title: "第一话 · 我是新学生", is_published: true, presentation: 'manga', has_audio: false,
+  title: "第一话 · 我是新学生", is_published: true, presentation: 'manhua', has_audio: false,
   image_path: null,
   english_summary: "You climb the lantern-lit steps to the Hanzi Dojo, meet \u5c0f\u96e8, and kneel at a writing table for your first lesson. Something small and white is watching from behind a lantern.",
   content: "我来学校了。\n这是学校吗？\n小雨：你好！你是新学生吗？\n你：是，我是新学生。\n你：不是！\n小雨：真的吗？\n小雨：我叫小雨。你叫什么名字？\n小雨：来吧！我们去那边。\n学校很大。\n小雨：这是我们的学校。\n林老师：我是林老师。\n林老师：请坐。\n林老师：你会写汉字吗？\n你：会一点儿。\n你：不会。\n林老师：很好。\n林老师：没关系。\n林老师：现在我们学写字。\n小雨：这个字很漂亮。\n那是什么？\n小雨：那是小白。\n小雨：小白喜欢看我们写字。\n小白也想学汉字吗？",

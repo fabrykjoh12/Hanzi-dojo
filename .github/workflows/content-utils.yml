@@ -11,7 +11,7 @@ on:
         description: What to run
         type: choice
         default: story-images-apply
-        options: [story-images-apply, publish-held, fix-collisions, fix-vocab-kanji, fix-vocab-kanji-apply, manga-art-fetch, manga-publish]
+        options: [story-images-apply, publish-held, fix-collisions, fix-vocab-kanji, fix-vocab-kanji-apply, manhua-art-fetch, manhua-publish]
       language:
         description: "publish-held only: language of the level to publish"
         type: string
@@ -29,16 +29,16 @@ on:
         type: string
         default: ''
       manifest:
-        description: "manga-art-fetch / manga-publish only: the file to act on. Blank = that task's default (the .art.json for a fetch, the episode JSON for a publish)"
+        description: "manhua-art-fetch / manhua-publish only: the file to act on. Blank = that task's default (the .art.json for a fetch, the episode JSON for a publish)"
         type: string
         default: ''
       force:
-        description: "manga-art-fetch only: re-fetch art that is already committed"
+        description: "manhua-art-fetch only: re-fetch art that is already committed"
         type: boolean
         default: false
 
-# manga-art-fetch commits the art it fetches back to the branch it was
-# dispatched on (see fetch-manga-art.mjs for why episode art is committed
+# manhua-art-fetch commits the art it fetches back to the branch it was
+# dispatched on (see fetch-manhua-art.mjs for why episode art is committed
 # rather than uploaded to the storage bucket). Every other task here is
 # read-only against the repo and writes only to Supabase.
 permissions:
@@ -65,6 +65,9 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          # manhua-publish refuses to publish an episode whose panel art is not
+          # yet on the live site. This is the site it checks.
+          SITE_URL: https://hanzi-dojo.com
           # Every dispatch input reaches the shell as an environment VARIABLE,
           # never as ${{ }} interpolated into the script. Interpolation splices
           # the value in as shell SOURCE, so a manifest containing a quote and a
@@ -95,30 +98,30 @@ jobs:
           if [ "$TASK" = "fix-vocab-kanji-apply" ]; then
             node fix-vocab-kanji.mjs --apply
           fi
-          # The two manga tasks share one `manifest` input but need different
+          # The two manhua tasks share one `manifest` input but need different
           # files — a fetch reads the .art.json (urls), a publish reads the
           # episode JSON (content). Blank means "this task's own default", so
           # dispatching either one without typing a path does the right thing
           # instead of failing with "Episode has no content".
-          if [ "$TASK" = "manga-art-fetch" ]; then
-            FILE="${MANIFEST:-data/manga/inkbound-hsk1-ep01.art.json}"
+          if [ "$TASK" = "manhua-art-fetch" ]; then
+            FILE="${MANIFEST:-data/manhua/inkbound-hsk1-ep01.art.json}"
             if [ "$FORCE" = "true" ]; then
-              node fetch-manga-art.mjs "$FILE" --force
+              node fetch-manhua-art.mjs "$FILE" --force
             else
-              node fetch-manga-art.mjs "$FILE"
+              node fetch-manhua-art.mjs "$FILE"
             fi
           fi
-          if [ "$TASK" = "manga-publish" ]; then
-            node publish-manga.mjs "${MANIFEST:-data/manga/inkbound-hsk1-ep01.json}" --apply
+          if [ "$TASK" = "manhua-publish" ]; then
+            node publish-manhua.mjs "${MANIFEST:-data/manhua/inkbound-hsk1-ep01.json}" --apply
           fi
       - name: Commit fetched art
-        if: inputs.task == 'manga-art-fetch'
+        if: inputs.task == 'manhua-art-fetch'
         env:
           MANIFEST: ${{ inputs.manifest }}
           BRANCH: ${{ github.ref_name }}
         run: |
           set -e
-          FILE="${MANIFEST:-data/manga/inkbound-hsk1-ep01.art.json}"
+          FILE="${MANIFEST:-data/manhua/inkbound-hsk1-ep01.art.json}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           DIR=$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).dir)' "$FILE")
@@ -127,5 +130,5 @@ jobs:
             echo "No new art to commit."
             exit 0
           fi
-          git commit -m "art: fetch manga art from $FILE"
+          git commit -m "art: fetch manhua art from $FILE"
           git push origin "HEAD:$BRANCH"

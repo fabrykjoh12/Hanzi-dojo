@@ -1,4 +1,4 @@
-// Where the learner is inside a manga episode, so closing the tab mid-episode
+// Where the learner is inside a manhua episode, so closing the tab mid-episode
 // costs nothing.
 //
 // This deliberately does NOT invent a progress system. Completion is still the
@@ -14,15 +14,25 @@
 // Same store the reading mode/font/rate already use.
 //
 // The pure half (sanitise / merge / resume) is tested; the two IO functions are
-// three lines of prefsGet/prefsMerge over it.
+// a few lines of prefsGet/prefsMerge over it, plus the legacy-key read below.
 
 import { prefsGet, prefsMerge } from './offline'
-import { revealLimit } from './mangaLayout'
+import { revealLimit } from './manhuaLayout'
 
-export const MANGA_PROGRESS_PREFIX = 'manga:'
+export const MANHUA_PROGRESS_PREFIX = 'manhua:'
+
+// The format was called "manga" for its first two days, and positions saved in
+// that window live under the old prefix. Reads fall back to it once; writes only
+// ever go to the new key, so a resumed episode quietly migrates itself. Delete
+// this and the fallback in loadManhuaProgress when the old keys stop mattering.
+export const LEGACY_PROGRESS_PREFIX = 'manga:'
 
 export function progressKey(storyId) {
-  return MANGA_PROGRESS_PREFIX + (storyId || 'unknown')
+  return MANHUA_PROGRESS_PREFIX + (storyId || 'unknown')
+}
+
+export function legacyProgressKey(storyId) {
+  return LEGACY_PROGRESS_PREFIX + (storyId || 'unknown')
 }
 
 export const EMPTY_PROGRESS = { panel: 0, choices: {}, tapped: [], completed: false }
@@ -88,8 +98,11 @@ export function resumePanel(progress, panels) {
   return Math.max(0, Math.min(p.panel, revealLimit(list, p.choices), list.length - 1))
 }
 
-export function loadMangaProgress(storyId) {
-  return prefsGet(progressKey(storyId)).then(sanitizeProgress).catch(() => ({ ...EMPTY_PROGRESS }))
+export function loadManhuaProgress(storyId) {
+  return prefsGet(progressKey(storyId))
+    .then(rec => (rec ? rec : prefsGet(legacyProgressKey(storyId))))
+    .then(sanitizeProgress)
+    .catch(() => ({ ...EMPTY_PROGRESS }))
 }
 
 // One write chain per story. The save below is a read-modify-write, and the
@@ -101,7 +114,7 @@ const writeChains = new Map()
 
 // Read-modify-write rather than a blind merge: `tapped` and `choices` are
 // accumulating collections, and prefsMerge would replace them wholesale.
-export function saveMangaProgress(storyId, patch) {
+export function saveManhuaProgress(storyId, patch) {
   const key = progressKey(storyId)
   const next = (writeChains.get(key) || Promise.resolve())
     .then(() => prefsGet(key))

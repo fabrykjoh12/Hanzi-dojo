@@ -1,8 +1,0 @@
-{
-  "_comment": "Fetched by .github/workflows/content-utils.yml, task `manga-art-fetch`, with this file as the manifest. The visual bible for 'Hanzi Dojo: The Inkbound' — the locked character reference sheets every panel is generated against. NOT shipped to users (data/, not public/): they exist so the next episode's art matches this one's. Attach the matching sheet as a reference image on every generation that includes that character. The art direction they were locked with is recorded in docs/STORY-BIBLE.md.",
-  "dir": "data/manga/bible",
-  "assets": [
-    { "file": "xiaoyu-model-sheet.webp", "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260729_162853_7be44d40-f3e5-4609-b6fd-aa87bd12c442_min.webp" },
-    { "file": "xiaobai-model-sheet.webp", "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260729_162941_db4c35ec-e518-4d63-8d5c-a1bf76c158a9_min.webp" }
-  ]
-}

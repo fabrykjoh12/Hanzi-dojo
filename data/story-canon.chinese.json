@@ -295,7 +295,7 @@
       "traits": "delighted by new people; asks the direct question first and the polite one never; ink brush through her hair, cinnabar ribbon",
       "speech": "short, bright, question-first",
       "never": "cold to a newcomer, or the one who stays quiet",
-      "first_appeared": "Hanzi Dojo: The Inkbound, 第一话 (HSK 1 manga)",
+      "first_appeared": "Hanzi Dojo: The Inkbound, 第一话 (HSK 1 manhua)",
       "universe": "inkbound"
     },
     {
@@ -305,7 +305,7 @@
       "traits": "still, unhurried, says one thing and stops; the season's slow thread",
       "speech": "one sentence, no elaboration",
       "never": "explains himself early",
-      "first_appeared": "Hanzi Dojo: The Inkbound, 第一话 (HSK 1 manga)",
+      "first_appeared": "Hanzi Dojo: The Inkbound, 第一话 (HSK 1 manhua)",
       "universe": "inkbound"
     },
     {
@@ -315,7 +315,7 @@
       "traits": "tiny, floating, one black brushstroke across its forehead, a thread of ink-smoke for a tail; says nothing and follows you",
       "speech": "none — never given a line",
       "never": "speaks, or is explained",
-      "first_appeared": "Hanzi Dojo: The Inkbound, 第一话 (HSK 1 manga)",
+      "first_appeared": "Hanzi Dojo: The Inkbound, 第一话 (HSK 1 manhua)",
       "universe": "inkbound",
       "_note": "Canon name is 白; written 小白 on the page because the reader's name matcher only takes names of two characters or more. See docs/STORY-BIBLE.md §6."
     }

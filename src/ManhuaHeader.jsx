@@ -1,4 +1,4 @@
-import { PAPER, COLUMN_MAX, TYPE, TAP_TARGET } from './mangaTokens'
+import { PAPER, COLUMN_MAX, TYPE, TAP_TARGET } from './manhuaTokens'
 import { ArrowLeft } from 'lucide-react'
 
 // The episode's only chrome: where you are, what you're reading, how far in.
@@ -11,7 +11,7 @@ import { ArrowLeft } from 'lucide-react'
 // Sticky, with the paper carried up behind it (a blur plus the page tone) so the
 // panels scroll under it without the title becoming unreadable over a dark
 // establishing shot.
-export default function MangaHeader({ label, title, current, total, pct, onBack, accentHex, fontFamily }) {
+export default function ManhuaHeader({ label, title, current, total, pct, onBack, accentHex, fontFamily }) {
   return (
     <header style={{
       position: 'sticky', top: 0, zIndex: 5,

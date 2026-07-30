@@ -1,18 +1,18 @@
 {
-  "_comment": "Hanzi Dojo Stories — 'The Inkbound', episode 1. The canonical source for the manga episode: the Chinese, the line-parallel English, and the panel layout. publish-manga.mjs upserts this into `stories` (content / english_content / panels / presentation='manga'); src/mangaEpisodes.test.js validates the Chinese against the HSK 1 snapshot and the layout against the reader's own rules. Edit here, never in the database.",
+  "_comment": "Hanzi Dojo Stories — 'The Inkbound', episode 1. The canonical source for the manhua episode: the Chinese, the line-parallel English, and the panel layout. publish-manhua.mjs upserts this into `stories` (content / english_content / panels / presentation='manhua'); src/manhuaEpisodes.test.js validates the Chinese against the HSK 1 snapshot and the layout against the reader's own rules. Edit here, never in the database.",
 
   "language": "chinese",
   "system": "hsk_3",
   "level": 1,
   "tier": 1,
   "tier_min_words": 0,
-  "presentation": "manga",
+  "presentation": "manhua",
   "is_published": true,
 
   "title": "第一话 · 我是新学生",
   "english_summary": "You climb the lantern-lit steps to the Hanzi Dojo, meet 小雨, and kneel at a writing table for your first lesson. Something small and white is watching from behind a lantern.",
 
-  "_content_comment": "One beat per line, 'NAME：text' with a fullwidth colon, exactly as every other authored format stores it — the shared engine (useStoryReaderCore) tokenizes this and the manga reader only decides where each line is drawn. Beat indices are 0-based and are what panels[].bubbles[].beat refers to; INSERTING A LINE MEANS RE-INDEXING THE PANELS.",
+  "_content_comment": "One beat per line, 'NAME：text' with a fullwidth colon, exactly as every other authored format stores it — the shared engine (useStoryReaderCore) tokenizes this and the manhua reader only decides where each line is drawn. Beat indices are 0-based and are what panels[].bubbles[].beat refers to; INSERTING A LINE MEANS RE-INDEXING THE PANELS.",
   "content": "我来学校了。\n这是学校吗？\n小雨：你好！你是新学生吗？\n你：是，我是新学生。\n你：不是！\n小雨：真的吗？\n小雨：我叫小雨。你叫什么名字？\n小雨：来吧！我们去那边。\n学校很大。\n小雨：这是我们的学校。\n林老师：我是林老师。\n林老师：请坐。\n林老师：你会写汉字吗？\n你：会一点儿。\n你：不会。\n林老师：很好。\n林老师：没关系。\n林老师：现在我们学写字。\n小雨：这个字很漂亮。\n那是什么？\n小雨：那是小白。\n小雨：小白喜欢看我们写字。\n小白也想学汉字吗？",
   "english_content": "I've come to the school.\nIs this the school?\nHello! Are you the new student?\nYes, I'm the new student.\nI'm not!\nReally?\nI'm called Xiao Yu. What's your name?\nCome on! Let's go over there.\nThe school is big.\nThis is our school.\nI am Teacher Lin.\nPlease sit.\nCan you write Chinese characters?\nA little.\nI can't.\nVery good.\nIt doesn't matter.\nNow we'll learn to write.\nThat character is beautiful.\nWhat is that?\nThat's Xiao Bai.\nXiao Bai likes watching us write.\nDoes Xiao Bai want to learn characters too?",
 
@@ -35,7 +35,7 @@
       }
     },
 
-    "_cast_comment": "A cast entry with a `display` gets a printed speaker label above its bubble; without one the bubble is bare, which is how a manga panel works — the drawing says who is talking. The speaker is still announced to screen readers either way.",
+    "_cast_comment": "A cast entry with a `display` gets a printed speaker label above its bubble; without one the bubble is bare, which is how a manhua panel works — the drawing says who is talking. The speaker is still announced to screen readers either way.",
     "cast": {
       "小雨": {},
       "你": {},

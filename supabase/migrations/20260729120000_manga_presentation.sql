@@ -11,7 +11,11 @@
 -- the text out of it is deliberate — see docs/ARCHITECTURE.md: educational text
 -- is rendered by the app, never baked into an image or duplicated beside it.
 --
--- Shape (validated by src/mangaLayout.js, which tolerates every field being
+-- (The format was renamed 'manga' → 'manhua' the next day — see
+-- 20260730090000_manhua_presentation_rename.sql. This file is left as it was
+-- applied; only the file pointer below is corrected.)
+--
+-- Shape (validated by src/manhuaLayout.js, which tolerates every field being
 -- absent and falls back to a readable default rather than throwing):
 --
 --   {

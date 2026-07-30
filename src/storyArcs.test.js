@@ -67,7 +67,7 @@ describe('groupIntoArcs', () => {
 })
 
 describe('第N话 chapter markers', () => {
-  // A manga episode announces its chapter the Chinese way. Before this was
+  // A manhua episode announces its chapter the Chinese way. Before this was
   // understood, 第一话 read as "no number", so the episode did not start an arc
   // — it was appended to whatever season came before it in story_number order,
   // and vanished as an extra chapter inside someone else's series card.
@@ -111,7 +111,7 @@ describe('第N话 chapter markers', () => {
     expect(arcs[1].title).toBe('我是新学生')
   })
 
-  it('keeps a multi-episode manga season together', () => {
+  it('keeps a multi-episode manhua season together', () => {
     const arcs = groupIntoArcs([
       { id: 'e1', title: '第一话 · 我是新学生' },
       { id: 'e2', title: '第二话 · 墨' },

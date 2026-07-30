@@ -1,28 +1,28 @@
-// Pull generated manga panel art into the repo.
+// Pull generated manhua panel art into the repo.
 //
 // Why a script and a workflow rather than a download in the session: panel art
 // is generated through the interactive Higgsfield MCP, which returns CDN URLs,
 // and the agent sandbox has no route to that CDN. A GitHub runner does. So the
 // session writes a manifest of (file ← url) pairs, this script fetches them,
-// and .github/workflows/manga-art.yml commits the result to the branch — the
+// and .github/workflows/manhua-art.yml commits the result to the branch — the
 // same split generate-story-images.mjs already uses for story covers, with one
 // difference: episode art is COMMITTED rather than uploaded to the `audio`
 // bucket.
 //
-// Committed, because manga art is not interchangeable content the way a cover
+// Committed, because manhua art is not interchangeable content the way a cover
 // is. A panel is part of the episode's layout — it is chosen for its aspect
 // ratio and for the empty corner a speech bubble sits in — so it belongs to the
 // same review, the same diff and the same rollback as the panel metadata that
 // places bubbles over it. It also means the reader has no runtime dependency on
 // a storage bucket for its most visible asset.
 //
-// Manifest shape (data/manga/<episode>.art.json):
+// Manifest shape (data/manhua/<episode>.art.json):
 //   { "dir": "public/stories/inkbound/hsk1/ep01",
 //     "assets": [ { "file": "panel-01-arrival.webp", "url": "https://…" } ] }
 //
 // Run with:
-//   node fetch-manga-art.mjs data/manga/inkbound-hsk1-ep01.art.json
-//   node fetch-manga-art.mjs <manifest> --force    (re-fetch files already present)
+//   node fetch-manhua-art.mjs data/manhua/inkbound-hsk1-ep01.art.json
+//   node fetch-manhua-art.mjs <manifest> --force    (re-fetch files already present)
 
 import { readFileSync, mkdirSync, writeFileSync, existsSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -32,7 +32,7 @@ const manifestPath = args.find(a => !a.startsWith('--'))
 const force = args.includes('--force')
 
 if (!manifestPath) {
-  console.error('Usage: node fetch-manga-art.mjs <manifest.json> [--force]')
+  console.error('Usage: node fetch-manhua-art.mjs <manifest.json> [--force]')
   process.exit(1)
 }
 
