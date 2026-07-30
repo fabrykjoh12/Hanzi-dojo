@@ -14,12 +14,42 @@
 // Separators that can follow a leading chapter number. A digit run only counts
 // as a chapter number when the very next character is one of these (or the end),
 // so a title like "2024年" or "3つの願い" is NOT mistaken for chapter 2024 / 3.
-const NUM_SEPARATORS = '.．。、,，:：)）]】-–— \t　'
+const NUM_SEPARATORS = '.．。、,，:：)）]】-–—·・ \t　'
 
-// The leading chapter number of a title, or null. Handles ASCII and fullwidth
-// digits.
-export function leadingChapterNumber(title) {
-  const t = String(title || '').trim()
+// The OTHER way a chapter announces itself: 第一话 / 第二章 / 第10回. A manga
+// episode is titled that way rather than "1. …", and without this the number is
+// invisible — the episode joins whatever season precedes it in story_number
+// order instead of starting its own. (That is exactly what happened to
+// 第一话 · 我是新学生: it was swallowed as chapter 6 of 下雪了.)
+const CHAPTER_OPEN = '第'
+const CHAPTER_UNITS = '话話章回集'
+const CN_DIGITS = '〇一二三四五六七八九'
+const CN_TEN = '十'
+
+// A Chinese numeral 1–99 in the ordinary composition (十二 = 12, 二十 = 20,
+// 二十一 = 21), or null. Deliberately capped: chapter numbers past 99 do not
+// happen, and the longer forms bring 百/千 and their own edge cases.
+function parseChineseNumber(s) {
+  if (!s) return null
+  let total = 0
+  let unit = 0
+  let seen = false
+  for (const ch of s) {
+    const d = CN_DIGITS.indexOf(ch)
+    if (d !== -1) { unit = d; seen = true; continue }
+    if (ch === CN_TEN) { total += (unit || 1) * 10; unit = 0; seen = true; continue }
+    return null
+  }
+  if (!seen) return null
+  return total + unit
+}
+
+// How many characters of `t` the leading chapter marker occupies, and what
+// number it names. { length, value } or null. Both leadingChapterNumber and
+// stripLeadingNumber read this, so they can never disagree about where the
+// marker ends.
+function chapterMarker(t) {
+  // Form 1 — "12. " / "３：" : a digit run followed by a separator or the end.
   let i = 0
   let digits = ''
   while (i < t.length) {
@@ -28,10 +58,43 @@ export function leadingChapterNumber(title) {
     if (c >= 0xff10 && c <= 0xff19) { digits += String.fromCharCode(c - 0xff10 + 0x30); i += 1; continue }
     break
   }
-  if (!digits || i === 0) return null
-  const next = t[i]
-  if (next !== undefined && NUM_SEPARATORS.indexOf(next) === -1) return null
-  return parseInt(digits, 10)
+  if (digits) {
+    const next = t[i]
+    if (next !== undefined && NUM_SEPARATORS.indexOf(next) === -1) return null
+    while (i < t.length && NUM_SEPARATORS.indexOf(t[i]) !== -1) i += 1
+    return { length: i, value: parseInt(digits, 10) }
+  }
+
+  // Form 2 — "第一话" / "第10章": 第, a number in either script, then a unit.
+  if (t[0] !== CHAPTER_OPEN) return null
+  let j = 1
+  let body = ''
+  while (j < t.length) {
+    const c = t.charCodeAt(j)
+    if (c >= 0x30 && c <= 0x39) { body += String.fromCharCode(c); j += 1; continue }
+    if (c >= 0xff10 && c <= 0xff19) { body += String.fromCharCode(c - 0xff10 + 0x30); j += 1; continue }
+    if (CN_DIGITS.indexOf(t[j]) !== -1 || t[j] === CN_TEN) { body += t[j]; j += 1; continue }
+    break
+  }
+  if (!body || j >= t.length || CHAPTER_UNITS.indexOf(t[j]) === -1) return null
+  j += 1
+  // Same rule as form 1: a marker has to END, or the "第一话" was just the
+  // opening of an ordinary sentence.
+  const after = t[j]
+  if (after !== undefined && NUM_SEPARATORS.indexOf(after) === -1) return null
+  while (j < t.length && NUM_SEPARATORS.indexOf(t[j]) !== -1) j += 1
+
+  const ascii = body.charCodeAt(0) >= 0x30 && body.charCodeAt(0) <= 0x39
+  const value = ascii ? parseInt(body, 10) : parseChineseNumber(body)
+  if (value == null || Number.isNaN(value)) return null
+  return { length: j, value }
+}
+
+// The leading chapter number of a title, or null. Handles ASCII and fullwidth
+// digits, and the 第N话 / 第N章 form.
+export function leadingChapterNumber(title) {
+  const marker = chapterMarker(String(title || '').trim())
+  return marker ? marker.value : null
 }
 
 // A title with its leading "N<sep>" chapter marker removed, trimmed. Used to name
@@ -39,17 +102,9 @@ export function leadingChapterNumber(title) {
 // data holds).
 export function stripLeadingNumber(title) {
   const t = String(title || '').trim()
-  const num = leadingChapterNumber(t)
-  if (num == null) return t
-  let i = 0
-  while (i < t.length) {
-    const c = t.charCodeAt(i)
-    if ((c >= 0x30 && c <= 0x39) || (c >= 0xff10 && c <= 0xff19)) { i += 1; continue }
-    break
-  }
-  // Skip the separator run that follows the digits.
-  while (i < t.length && NUM_SEPARATORS.indexOf(t[i]) !== -1) i += 1
-  return t.slice(i).trim()
+  const marker = chapterMarker(t)
+  if (!marker) return t
+  return t.slice(marker.length).trim()
 }
 
 function arcTitleFor(parts) {

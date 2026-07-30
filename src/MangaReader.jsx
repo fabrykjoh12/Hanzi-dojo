@@ -242,10 +242,16 @@ export default function MangaReader(props) {
   const practiceWords = (c.readability.newWords || [])
     .filter(w => w.example_sentence && w.example_sentence.indexOf(w.word) !== -1)
 
-  const renderBubble = (panel, bubble, kind) => {
+  // `forceBelow` is for a bubble that has no artwork to sit on. Without it,
+  // bubbleLayout can return mode 'overlay' — which is `position: absolute` — and
+  // an absolutely-positioned box in an unpositioned wrapper does not stay put:
+  // it climbs to the nearest positioned ancestor, which is the PREVIOUS panel's
+  // art. That is how the learner's reply ended up floating over the opening
+  // panel of the episode.
+  const renderBubble = (panel, bubble, kind, forceBelow) => {
     const beat = c.beats[bubble.beat]
     if (!beat) return null
-    const layout = bubbleLayout(bubble, {
+    const layout = forceBelow ? { mode: 'below' } : bubbleLayout(bubble, {
       columnWidth,
       ratio: panel.ratio,
       textLength: beat.text.length,
@@ -334,12 +340,13 @@ export default function MangaReader(props) {
           const chosen = panel.choice && Number.isInteger(picked)
             ? panel.choice.options[picked]
             : null
+          // A choice panel carries no art, so the reply is always in flow.
           const replyBubble = chosen
             ? renderBubble(panel, {
               beat: chosen.beat,
               kind: 'reply', side: 'right', top: 8,
               width: 78, tail: null, when: null,
-            }, 'reply')
+            }, 'reply', true)
             : null
 
           return (
@@ -371,7 +378,9 @@ export default function MangaReader(props) {
                 />
               )}
 
-              {replyBubble && <div style={{ marginTop: '10px' }}>{replyBubble.node}</div>}
+              {replyBubble && (
+                <div style={{ position: 'relative', marginTop: '10px' }}>{replyBubble.node}</div>
+              )}
 
               {panel.choice && (
                 <div style={{ marginTop: '14px' }}>
