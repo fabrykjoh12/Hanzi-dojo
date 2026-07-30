@@ -1,0 +1,354 @@
+{
+  "_comment": "Hanzi Dojo Stories — canonical source for this manhua episode. publish-manhua.mjs upserts it into `stories`; src/manhuaEpisodes.test.js validates the Chinese against the level list and the layout against the reader’s own rules. Edit here, never in the database.",
+  "language": "chinese",
+  "system": "hsk_3",
+  "level": 2,
+  "tier": 1,
+  "tier_min_words": 0,
+  "presentation": "manhua",
+  "is_published": true,
+  "title": "第三话 · 冷了的面条儿",
+  "english_summary": "He has come every day for weeks. Today he does not, and the cat waits at the door until it is late. So you go and find him — and take the noodles with you.",
+  "_content_comment": "One beat per line, ‘NAME：text’ with a fullwidth colon. Beat indices are 0-based and are what panels[].bubbles[].beat refers to; INSERTING A LINE MEANS RE-INDEXING THE PANELS.",
+  "content": "他每天都来。\n他不说话，只吃面条儿。\n花花每天在门口等他。\n今天他没有来。\n小美：他去哪儿了？\n妈妈：我不知道。\n花花在门口等到很晚。\n你：我们去找他吧。\n你：他明天会来的。\n小美：我知道他在哪儿。\n我们走了很长的路。\n路的旁边有一个小房间。\n里面很冷，什么都没有。\n他一个人坐在那儿。\n花花进去了。\n花花叫了。\n他起来了。\n他：你们怎么来了？\n小美：花花找你。\n你：面条儿冷了。\n你：妈妈让我们来。\n他笑了。\n这是他第一次笑。\n他：我跟你们回去。\n我们四个一起回饭馆。\n外面开始下雨了。",
+  "english_content": "He comes every day.\nHe doesn't talk, he just eats noodles.\nHuahua waits for him at the door every day.\nToday he didn't come.\nWhere did he go?\nI don't know.\nHuahua waited at the door until very late.\nLet's go and find him.\nHe'll come tomorrow.\nI know where he is.\nWe walked a long way.\nThere's a small room beside the road.\nIt's cold inside, there's nothing there.\nHe's sitting there on his own.\nHuahua went in.\nHuahua called out.\nHe got up.\nHow did you get here?\nHuahua came looking for you.\nThe noodles are cold.\nMum told us to come.\nHe smiled.\nIt's the first time he's smiled.\nI'll come back with you.\nThe four of us go back to the shop together.\nOutside, it starts raining.",
+  "_vocabulary_comment": "Every word is HSK 2 (data/hsk2-vocab-snapshot.json, cumulative). Zero reach words. The level is what shaped the plot: HSK 1 has no 因为, no 但是 and no 告诉, so nobody in episode 1 can explain anything — the whole story is told in actions, food and numbers, which is exactly what HSK 1 has in abundance (十块钱, 九块, 一块钱). 屋子 and 灯 are HSK 3, so the place he is living is 一个小房间 and the detail that carries the cold is 什么都没有 rather than a description of the dark.",
+  "names": [
+    "小美",
+    "花花"
+  ],
+  "reach_words": [],
+  "anchor_word": "面条儿",
+  "panels": {
+    "meta": {
+      "series": "Hanzi Dojo: The Rainy-Day Noodle Shop",
+      "episode_label": "第三话",
+      "episode_title": "冷了的面条儿",
+      "art_base": "/stories/noodleshop/hsk2/ep03/",
+      "hook": "You do not ask people like him to come in. You bring the noodles to them.",
+      "continues": {
+        "label": "第四话",
+        "level": 3
+      }
+    },
+    "cast": {
+      "小美": {},
+      "妈妈": {},
+      "你": {},
+      "他": {}
+    },
+    "panels": [
+      {
+        "id": "p1",
+        "art": "panel-01-every-day.webp",
+        "ratio": "16/9",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. A row of four evenings in one wide frame: the same stool, the same man, the same bowl, the light changing behind him.",
+        "bubbles": [
+          {
+            "beat": 0,
+            "kind": "narration",
+            "side": "left",
+            "top": 6,
+            "width": 48
+          }
+        ]
+      },
+      {
+        "id": "p2",
+        "art": "panel-02-only-noodles.webp",
+        "ratio": "3/2",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. Close on the man eating in silence, the cat asleep against his forearm.",
+        "bubbles": [
+          {
+            "beat": 1,
+            "kind": "narration",
+            "side": "right",
+            "top": 6,
+            "width": 70
+          }
+        ]
+      },
+      {
+        "id": "p3",
+        "art": "panel-03-waiting.webp",
+        "ratio": "4/5",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. The cat sitting bolt upright in the doorway facing out at the street, in the exact same spot, waiting.",
+        "bubbles": [
+          {
+            "beat": 2,
+            "kind": "narration",
+            "side": "left",
+            "top": 6,
+            "width": 70
+          },
+          {
+            "beat": 3,
+            "kind": "narration",
+            "side": "right",
+            "top": 56,
+            "width": 52
+          }
+        ]
+      },
+      {
+        "id": "p4",
+        "art": "panel-04-where.webp",
+        "ratio": "3/4",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. 小美 with her face against the door frame beside the cat, both of them looking the same way down the street.",
+        "bubbles": [
+          {
+            "beat": 4,
+            "kind": "speech",
+            "side": "left",
+            "top": 6,
+            "width": 52,
+            "tail": "bottom-right"
+          },
+          {
+            "beat": 5,
+            "kind": "speech",
+            "side": "right",
+            "top": 56,
+            "width": 48,
+            "tail": "top-left"
+          }
+        ]
+      },
+      {
+        "id": "p5",
+        "art": "panel-05-late.webp",
+        "ratio": "3/2",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. A late letterbox: the street empty and dark, the stall’s light the only warm thing, the cat a small silhouette in the doorway.",
+        "bubbles": [
+          {
+            "beat": 6,
+            "kind": "narration",
+            "side": "left",
+            "top": 6,
+            "width": 52
+          }
+        ]
+      },
+      {
+        "id": "p6",
+        "choice": {
+          "prompt": "选择回答",
+          "options": [
+            {
+              "beat": 7
+            },
+            {
+              "beat": 8
+            }
+          ]
+        }
+      },
+      {
+        "id": "p7",
+        "art": "panel-07-i-know.webp",
+        "ratio": "3/4",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. 小美 already pulling her coat on, entirely certain, the mother handing a covered bowl across the counter.",
+        "bubbles": [
+          {
+            "beat": 9,
+            "kind": "speech",
+            "side": "left",
+            "top": 6,
+            "width": 58,
+            "tail": "bottom-right"
+          },
+          {
+            "beat": 10,
+            "kind": "narration",
+            "side": "right",
+            "top": 56,
+            "width": 60
+          }
+        ]
+      },
+      {
+        "id": "p8",
+        "art": "panel-08-long-road.webp",
+        "ratio": "16/9",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. Two children and a cat walking away down a long wet road under sparse lights, seen from far behind, the bowl carried in both hands.",
+        "bubbles": [
+          {
+            "beat": 11,
+            "kind": "narration",
+            "side": "right",
+            "top": 6,
+            "width": 66
+          }
+        ]
+      },
+      {
+        "id": "p9",
+        "art": "panel-09-the-room.webp",
+        "ratio": "3/4",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. A low doorway off an alley, no light behind it, a folded blanket and nothing else visible inside.",
+        "bubbles": [
+          {
+            "beat": 12,
+            "kind": "narration",
+            "side": "left",
+            "top": 6,
+            "width": 70
+          },
+          {
+            "beat": 13,
+            "kind": "narration",
+            "side": "right",
+            "top": 56,
+            "width": 62
+          }
+        ]
+      },
+      {
+        "id": "p10",
+        "art": "panel-10-cat-goes-in.webp",
+        "ratio": "4/5",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. The cat walking in ahead of everyone without hesitating, tail high.",
+        "bubbles": [
+          {
+            "beat": 14,
+            "kind": "narration",
+            "side": "left",
+            "top": 6,
+            "width": 44
+          },
+          {
+            "beat": 15,
+            "kind": "narration",
+            "side": "right",
+            "top": 56,
+            "width": 40
+          }
+        ]
+      },
+      {
+        "id": "p11",
+        "art": "panel-11-he-gets-up.webp",
+        "ratio": "3/4",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. The man sitting up out of the dark, hair flat, seeing the three of them in his doorway and not understanding.",
+        "bubbles": [
+          {
+            "beat": 16,
+            "kind": "narration",
+            "side": "left",
+            "top": 6,
+            "width": 44
+          },
+          {
+            "beat": 17,
+            "kind": "speech",
+            "side": "right",
+            "top": 56,
+            "width": 62,
+            "tail": "bottom-left"
+          }
+        ]
+      },
+      {
+        "id": "p12",
+        "art": "panel-12-came-for-you.webp",
+        "ratio": "4/5",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. 小美 holding the covered bowl out with both arms, the cat already in his lap.",
+        "bubbles": [
+          {
+            "beat": 18,
+            "kind": "speech",
+            "side": "left",
+            "top": 6,
+            "width": 52,
+            "tail": "bottom-right"
+          },
+          {
+            "beat": 19,
+            "kind": "speech",
+            "side": "right",
+            "top": 56,
+            "width": 52,
+            "tail": "top-left"
+          }
+        ]
+      },
+      {
+        "id": "p13",
+        "art": "panel-13-mum-sent-us.webp",
+        "ratio": "16/9",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. The lid coming off the bowl, no steam rising from it at all — the one detail the whole episode turns on.",
+        "bubbles": [
+          {
+            "beat": 20,
+            "kind": "speech",
+            "side": "left",
+            "top": 6,
+            "width": 62,
+            "tail": "bottom-right"
+          }
+        ]
+      },
+      {
+        "id": "p14",
+        "art": "panel-14-he-smiled.webp",
+        "ratio": "3/4",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. The man’s face breaking into a real smile, caught completely off guard by it himself.",
+        "bubbles": [
+          {
+            "beat": 21,
+            "kind": "narration",
+            "side": "left",
+            "top": 6,
+            "width": 38
+          },
+          {
+            "beat": 22,
+            "kind": "narration",
+            "side": "right",
+            "top": 56,
+            "width": 58
+          }
+        ]
+      },
+      {
+        "id": "p15",
+        "art": "panel-15-back-together.webp",
+        "ratio": "4/5",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. Final plate from behind: three figures and a cat walking back up the road toward a small warm light, first raindrops starting in the lamplight.",
+        "bubbles": [
+          {
+            "beat": 23,
+            "kind": "speech",
+            "side": "left",
+            "top": 6,
+            "width": 62,
+            "tail": "bottom-right"
+          },
+          {
+            "beat": 24,
+            "kind": "narration",
+            "side": "right",
+            "top": 56,
+            "width": 66
+          }
+        ],
+        "accent": true
+      },
+      {
+        "id": "p16",
+        "art": "panel-16-rain-again.webp",
+        "ratio": "2/1",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. A closing letterbox of rain beginning on the empty road behind them, the noodle shop’s glow at the far end.",
+        "bubbles": [
+          {
+            "beat": 25,
+            "kind": "narration",
+            "side": "left",
+            "top": 6,
+            "width": 60
+          }
+        ]
+      }
+    ]
+  }
+}

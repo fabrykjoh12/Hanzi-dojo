@@ -1,0 +1,414 @@
+{
+  "_comment": "Hanzi Dojo Stories — canonical source for this manhua episode. publish-manhua.mjs upserts it into `stories`; src/manhuaEpisodes.test.js validates the Chinese against the level list and the layout against the reader’s own rules. Edit here, never in the database.",
+  "language": "chinese",
+  "system": "hsk_3",
+  "level": 3,
+  "tier": 1,
+  "tier_min_words": 0,
+  "presentation": "manhua",
+  "is_published": true,
+  "title": "第三话 · 夜里的字",
+  "english_summary": "You go back to the dojo after dark, and 小雨 was telling the truth. 小白 speaks for the first time — he used to be a character, and he has forgotten which one. Then 林老师 arrives and tells you what the school is actually for.",
+  "_content_comment": "One beat per line, ‘NAME：text’ with a fullwidth colon. Beat indices are 0-based and are what panels[].bubbles[].beat refers to; INSERTING A LINE MEANS RE-INDEXING THE PANELS.",
+  "content": "晚上，我又来学校了。\n门开着，里面很安静。\n我有点儿害怕。\n小白在桌子上等我。\n小白：你来了。\n我不知道说什么。\n小白：你听见了吗？我在说话。\n你：你是谁？\n你：这不是真的。\n小白：我以前是一个字。\n小白：哪个字？我忘了。\n小白：太久了。\n本子上的字动了。\n它们一个一个下来了。\n房间里都是字。\n小白：晚上，字都会说话。\n小白：但是它们还不认识你。\n你：我说我的名字。\n你：我什么也不说。\n小白：好。它们记得你了。\n小白：它们不喜欢新的人。\n门开了。\n林老师：你来了。\n林老师：我等了很久。\n林老师：小雨没有告诉你吗？\n林老师：这个学校不教写字。\n林老师：我们教字怎么说话。\n我看着他，没有说话。\n林老师：你昨天画的那只鸟。\n林老师：早上它不在本子上了。",
+  "english_content": "That evening I came back to the school.\nThe door was open, and it was very quiet inside.\nI was a little afraid.\nXiao Bai was waiting for me on the table.\nYou came.\nI didn't know what to say.\nDid you hear that? I'm talking.\nWho are you?\nThis isn't real.\nI used to be a character.\nWhich one? I've forgotten.\nIt's been too long.\nThe characters on the notebook moved.\nThey came down one by one.\nThe room was full of characters.\nAt night, all the characters can talk.\nBut they don't know you yet.\nI'll tell them my name.\nI won't say anything.\nGood. They remember you now.\nThey don't like new people.\nThe door opened.\nYou came.\nI've waited a long time.\nDidn't Xiao Yu tell you?\nThis school doesn't teach writing.\nWe teach characters how to talk.\nI looked at him and said nothing.\nThat bird you drew yesterday.\nThis morning it wasn't on the notebook.",
+  "_vocabulary_comment": "Every word is HSK 2 + HSK 3 (data/hsk2-vocab-snapshot.json + data/hsk3.json, which matches the database). Zero reach words. 活 is NOT in the level — the reveal is 我们教字怎么说话 rather than 怎么活, which is the better line anyway because it lands the title of 第二话.",
+  "names": [
+    "小雨",
+    "小白",
+    "林老师"
+  ],
+  "reach_words": [],
+  "anchor_word": "本子",
+  "panels": {
+    "meta": {
+      "series": "Hanzi Dojo: The Inkbound",
+      "episode_label": "第三话",
+      "episode_title": "夜里的字",
+      "art_base": "/stories/inkbound/hsk3/ep03/",
+      "hook": "This school does not teach writing. It teaches characters how to talk.",
+      "continues": {
+        "label": "第四话",
+        "level": 4
+      }
+    },
+    "cast": {
+      "小白": {},
+      "你": {},
+      "林老师": {}
+    },
+    "panels": [
+      {
+        "id": "p1",
+        "art": "panel-01-night-gate.webp",
+        "ratio": "4/3",
+        "alt": "Monochrome ink-and-screentone panel from The Inkbound. Night. The dojo gate from below, one lantern lit, the traveller a small dark shape returning up the steps.",
+        "bubbles": [
+          {
+            "beat": 0,
+            "kind": "narration",
+            "side": "left",
+            "top": 6,
+            "width": 70
+          }
+        ]
+      },
+      {
+        "id": "p2",
+        "art": "panel-02-open-door.webp",
+        "ratio": "4/5",
+        "alt": "Monochrome ink-and-screentone panel from The Inkbound. A sliding door standing open onto a black interior, a wedge of lantern light falling out across the boards.",
+        "bubbles": [
+          {
+            "beat": 1,
+            "kind": "narration",
+            "side": "left",
+            "top": 6,
+            "width": 66
+          },
+          {
+            "beat": 2,
+            "kind": "thought",
+            "side": "right",
+            "top": 56,
+            "width": 56
+          }
+        ]
+      },
+      {
+        "id": "p3",
+        "art": "panel-03-waiting.webp",
+        "ratio": "3/2",
+        "alt": "Monochrome ink-and-screentone panel from The Inkbound. The small white ink spirit sitting perfectly still on a low writing table in the dark, glowing faintly, clearly waiting.",
+        "bubbles": [
+          {
+            "beat": 3,
+            "kind": "narration",
+            "side": "left",
+            "top": 6,
+            "width": 62
+          }
+        ]
+      },
+      {
+        "id": "p4",
+        "art": "panel-04-he-speaks.webp",
+        "ratio": "3/4",
+        "alt": "Monochrome ink-and-screentone panel from The Inkbound. Extreme close-up of the ink spirit, mouth open for the first time in the season, the single black stroke on its forehead catching the light.",
+        "bubbles": [
+          {
+            "beat": 4,
+            "kind": "speech",
+            "side": "left",
+            "top": 6,
+            "width": 46,
+            "tail": "bottom-right"
+          },
+          {
+            "beat": 5,
+            "kind": "narration",
+            "side": "right",
+            "top": 56,
+            "width": 62
+          }
+        ]
+      },
+      {
+        "id": "p5",
+        "art": "panel-05-listen.webp",
+        "ratio": "16/9",
+        "alt": "Monochrome ink-and-screentone panel from The Inkbound. The dark hall from the spirit’s height, the reader’s knees and hands on the boards in the foreground, everything else swallowed by black.",
+        "bubbles": [
+          {
+            "beat": 6,
+            "kind": "speech",
+            "side": "left",
+            "top": 6,
+            "width": 72,
+            "tail": "bottom-right"
+          }
+        ]
+      },
+      {
+        "id": "p6",
+        "choice": {
+          "prompt": "选择回答",
+          "options": [
+            {
+              "beat": 7
+            },
+            {
+              "beat": 8
+            }
+          ]
+        }
+      },
+      {
+        "id": "p7",
+        "art": "panel-07-was-a-word.webp",
+        "ratio": "3/4",
+        "alt": "Monochrome ink-and-screentone panel from The Inkbound. The ink spirit half turned away, its smoke-tail curling, the first time it has looked uncertain.",
+        "bubbles": [
+          {
+            "beat": 9,
+            "kind": "speech",
+            "side": "right",
+            "top": 6,
+            "width": 66,
+            "tail": "bottom-left"
+          },
+          {
+            "beat": 10,
+            "kind": "speech",
+            "side": "left",
+            "top": 56,
+            "width": 60,
+            "tail": "top-right"
+          }
+        ]
+      },
+      {
+        "id": "p8",
+        "art": "panel-08-too-long.webp",
+        "ratio": "2/1",
+        "alt": "Monochrome ink-and-screentone panel from The Inkbound. A letterbox of nothing but drifting ink-smoke in darkness, the spirit tiny at one edge.",
+        "bubbles": [
+          {
+            "beat": 11,
+            "kind": "speech",
+            "side": "right",
+            "top": 6,
+            "width": 44,
+            "tail": "bottom-left"
+          }
+        ]
+      },
+      {
+        "id": "p9",
+        "art": "panel-09-they-move.webp",
+        "ratio": "4/3",
+        "alt": "Monochrome ink-and-screentone panel from The Inkbound. An open notebook seen from directly above, its abstract ink marks lifting off the page and hanging in the air above it.",
+        "bubbles": [
+          {
+            "beat": 12,
+            "kind": "narration",
+            "side": "left",
+            "top": 6,
+            "width": 62
+          }
+        ]
+      },
+      {
+        "id": "p10",
+        "art": "panel-10-coming-down.webp",
+        "ratio": "4/5",
+        "alt": "Monochrome ink-and-screentone panel from The Inkbound. Marks of wet ink drifting down through the dark like slow snow, each one trailing a thread of smoke.",
+        "bubbles": [
+          {
+            "beat": 13,
+            "kind": "narration",
+            "side": "right",
+            "top": 6,
+            "width": 66
+          }
+        ]
+      },
+      {
+        "id": "p11",
+        "art": "panel-11-room-full.webp",
+        "ratio": "16/9",
+        "alt": "Monochrome ink-and-screentone panel from The Inkbound. The whole hall filled with floating abstract ink shapes, the reader a small silhouette standing among them.",
+        "bubbles": [
+          {
+            "beat": 14,
+            "kind": "narration",
+            "side": "left",
+            "top": 6,
+            "width": 58
+          }
+        ]
+      },
+      {
+        "id": "p12",
+        "art": "panel-12-all-talk.webp",
+        "ratio": "3/4",
+        "alt": "Monochrome ink-and-screentone panel from The Inkbound. The ink spirit close to the reader’s face, lit from below by the floating marks, explaining something serious.",
+        "bubbles": [
+          {
+            "beat": 15,
+            "kind": "speech",
+            "side": "left",
+            "top": 6,
+            "width": 70,
+            "tail": "bottom-right"
+          },
+          {
+            "beat": 16,
+            "kind": "speech",
+            "side": "right",
+            "top": 56,
+            "width": 72,
+            "tail": "top-left"
+          }
+        ]
+      },
+      {
+        "id": "p13",
+        "choice": {
+          "prompt": "选择回答",
+          "options": [
+            {
+              "beat": 17
+            },
+            {
+              "beat": 18
+            }
+          ]
+        }
+      },
+      {
+        "id": "p14",
+        "art": "panel-14-they-remember.webp",
+        "ratio": "3/4",
+        "alt": "Monochrome ink-and-screentone panel from The Inkbound. The floating marks turned inward, all of them facing the reader at once — the first time they have paid attention.",
+        "bubbles": [
+          {
+            "beat": 19,
+            "kind": "speech",
+            "side": "left",
+            "top": 6,
+            "width": 66,
+            "tail": "bottom-right"
+          },
+          {
+            "beat": 20,
+            "kind": "speech",
+            "side": "right",
+            "top": 56,
+            "width": 68,
+            "tail": "top-left"
+          }
+        ]
+      },
+      {
+        "id": "p15",
+        "art": "panel-15-door.webp",
+        "ratio": "2/1",
+        "alt": "Monochrome ink-and-screentone panel from The Inkbound. A hard letterbox: the far door opening, a tall silhouette against pale night sky, the floating marks scattering.",
+        "bubbles": [
+          {
+            "beat": 21,
+            "kind": "narration",
+            "side": "left",
+            "top": 6,
+            "width": 44
+          }
+        ]
+      },
+      {
+        "id": "p16",
+        "art": "panel-16-teacher-night.webp",
+        "ratio": "3/4",
+        "alt": "Monochrome ink-and-screentone panel from The Inkbound. 林老师 in the doorway at night, lantern below him so the light comes upward, entirely unsurprised.",
+        "bubbles": [
+          {
+            "beat": 22,
+            "kind": "speech",
+            "side": "left",
+            "top": 6,
+            "width": 46,
+            "tail": "bottom-right"
+          },
+          {
+            "beat": 23,
+            "kind": "speech",
+            "side": "right",
+            "top": 56,
+            "width": 58,
+            "tail": "top-left"
+          }
+        ]
+      },
+      {
+        "id": "p17",
+        "art": "panel-17-did-she-tell.webp",
+        "ratio": "3/2",
+        "alt": "Monochrome ink-and-screentone panel from The Inkbound. 林老师 walking slowly between the writing tables, marks of ink drifting out of his way like fish.",
+        "bubbles": [
+          {
+            "beat": 24,
+            "kind": "speech",
+            "side": "left",
+            "top": 6,
+            "width": 72,
+            "tail": "bottom-right"
+          }
+        ]
+      },
+      {
+        "id": "p18",
+        "art": "panel-18-not-writing.webp",
+        "ratio": "4/5",
+        "alt": "Monochrome ink-and-screentone panel from The Inkbound. Low angle on 林老师 standing over the reader, one hand open, the hall behind him alive with floating ink.",
+        "bubbles": [
+          {
+            "beat": 25,
+            "kind": "speech",
+            "side": "right",
+            "top": 6,
+            "width": 70,
+            "tail": "bottom-left"
+          },
+          {
+            "beat": 26,
+            "kind": "speech",
+            "side": "left",
+            "top": 56,
+            "width": 72,
+            "tail": "top-right"
+          }
+        ]
+      },
+      {
+        "id": "p19",
+        "art": "panel-19-i-said-nothing.webp",
+        "ratio": "16/9",
+        "alt": "Monochrome ink-and-screentone panel from The Inkbound. Over-the-shoulder from behind the reader’s head: 林老师 waiting, the reader silent, the space between them full of drifting marks.",
+        "bubbles": [
+          {
+            "beat": 27,
+            "kind": "narration",
+            "side": "right",
+            "top": 6,
+            "width": 64
+          }
+        ]
+      },
+      {
+        "id": "p20",
+        "art": "panel-20-the-bird.webp",
+        "ratio": "4/5",
+        "alt": "Monochrome ink-and-screentone panel from The Inkbound. The final plate: an open notebook on a table, the bird-shaped ink blot GONE from the page, only a faint clean shadow where it had been, and one small ink feather on the boards.",
+        "bubbles": [
+          {
+            "beat": 28,
+            "kind": "speech",
+            "side": "left",
+            "top": 6,
+            "width": 70,
+            "tail": "bottom-right"
+          },
+          {
+            "beat": 29,
+            "kind": "speech",
+            "side": "right",
+            "top": 56,
+            "width": 74,
+            "tail": "top-left"
+          }
+        ],
+        "accent": true
+      }
+    ]
+  }
+}

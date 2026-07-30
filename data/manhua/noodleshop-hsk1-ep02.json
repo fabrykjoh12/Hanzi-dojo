@@ -1,0 +1,359 @@
+{
+  "_comment": "Hanzi Dojo Stories — canonical source for this manhua episode. publish-manhua.mjs upserts it into `stories`; src/manhuaEpisodes.test.js validates the Chinese against the level list and the layout against the reader’s own rules. Edit here, never in the database.",
+  "language": "chinese",
+  "system": "hsk_3",
+  "level": 1,
+  "tier": 1,
+  "tier_min_words": 0,
+  "presentation": "manhua",
+  "is_published": true,
+  "title": "第二话 · 花花",
+  "english_summary": "The cat has moved in and needs a name. Nothing anyone suggests fits — until the quiet man comes back and says the name it already has.",
+  "_content_comment": "One beat per line, ‘NAME：text’ with a fullwidth colon. Beat indices are 0-based and are what panels[].bubbles[].beat refers to; INSERTING A LINE MEANS RE-INDEXING THE PANELS.",
+  "content": "今天没有下雨。\n猫在椅子上睡觉。\n小美：它住在这儿了。\n妈妈：它没有名字。\n你：我们叫它什么？\n小美：叫它小猫吧！\n妈妈：这儿的猫都叫小猫。\n你：叫它面条儿。\n你：叫它牛奶。\n小美：面条儿！好听！\n猫不看我们。\n小美：它不喜欢。\n那个人来了。\n他看猫，猫也看他。\n他：它叫花花。\n妈妈：你认识它？\n他：花花是我的猫。\n小美：你的猫？\n他：我现在没有家。\n他不说话了。\n猫去他那儿了。\n猫在他那儿睡觉了。\n小美：花花。\n猫听见了。\n妈妈：花花，来吃饭。\n明天他还来吗？",
+  "english_content": "It didn't rain today.\nThe cat is asleep on a chair.\nIt lives here now.\nIt doesn't have a name.\nWhat shall we call it?\nCall it Little Cat!\nEvery cat here is called Little Cat.\nCall it Noodles.\nCall it Milk.\nNoodles! That sounds good!\nThe cat doesn't look at us.\nIt doesn't like them.\nThat man came.\nHe looks at the cat, and the cat looks at him.\nHer name is Huahua.\nYou know her?\nHuahua is my cat.\nYour cat?\nI don't have a home right now.\nHe stopped talking.\nThe cat went over to him.\nThe cat fell asleep beside him.\nHuahua.\nThe cat heard.\nHuahua, come and eat.\nWill he come again tomorrow?",
+  "_vocabulary_comment": "Every word is HSK 1 (data/hsk1-vocab-snapshot.json, cumulative). Zero reach words. The level is what shaped the plot: HSK 1 has no 因为, no 但是 and no 告诉, so nobody in episode 1 can explain anything — the whole story is told in actions, food and numbers, which is exactly what HSK 1 has in abundance (十块钱, 九块, 一块钱).",
+  "names": [
+    "小美",
+    "花花"
+  ],
+  "reach_words": [],
+  "anchor_word": "名字",
+  "panels": {
+    "meta": {
+      "series": "Hanzi Dojo: The Rainy-Day Noodle Shop",
+      "episode_label": "第二话",
+      "episode_title": "花花",
+      "art_base": "/stories/noodleshop/hsk1/ep02/",
+      "hook": "He already knew her name. He did not say how.",
+      "continues": {
+        "label": "第三话",
+        "level": 2
+      }
+    },
+    "cast": {
+      "小美": {},
+      "妈妈": {},
+      "你": {},
+      "他": {}
+    },
+    "panels": [
+      {
+        "id": "p1",
+        "art": "panel-01-dry.webp",
+        "ratio": "16/9",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. The same street in dry evening light for the first time, the stall’s sheeting rolled up, puddles gone.",
+        "bubbles": [
+          {
+            "beat": 0,
+            "kind": "narration",
+            "side": "left",
+            "top": 6,
+            "width": 54
+          }
+        ]
+      },
+      {
+        "id": "p2",
+        "art": "panel-02-asleep.webp",
+        "ratio": "3/2",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. The cat asleep in a tight circle on a stool, entirely at home, one ear flicking.",
+        "bubbles": [
+          {
+            "beat": 1,
+            "kind": "narration",
+            "side": "right",
+            "top": 6,
+            "width": 56
+          }
+        ]
+      },
+      {
+        "id": "p3",
+        "art": "panel-03-lives-here.webp",
+        "ratio": "3/4",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. 小美 crouched with her chin on the counter at cat height, delighted; the mother behind her drying a bowl.",
+        "bubbles": [
+          {
+            "beat": 2,
+            "kind": "speech",
+            "side": "left",
+            "top": 6,
+            "width": 56,
+            "tail": "bottom-right"
+          },
+          {
+            "beat": 3,
+            "kind": "speech",
+            "side": "right",
+            "top": 56,
+            "width": 58,
+            "tail": "top-left"
+          }
+        ]
+      },
+      {
+        "id": "p4",
+        "art": "panel-04-what-name.webp",
+        "ratio": "4/5",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. The three of them looking down at the sleeping cat from above, the cat filling the bottom of the frame.",
+        "bubbles": [
+          {
+            "beat": 4,
+            "kind": "thought",
+            "side": "right",
+            "top": 6,
+            "width": 62
+          }
+        ]
+      },
+      {
+        "id": "p5",
+        "choice": {
+          "prompt": "选择回答",
+          "options": [
+            {
+              "beat": 5
+            },
+            {
+              "beat": 7
+            }
+          ]
+        }
+      },
+      {
+        "id": "p6",
+        "art": "panel-06-every-cat.webp",
+        "ratio": "3/4",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. The mother with one eyebrow up, unimpressed, a ladle in her hand.",
+        "bubbles": [
+          {
+            "beat": 6,
+            "kind": "speech",
+            "side": "left",
+            "top": 6,
+            "width": 70,
+            "tail": "bottom-right",
+            "when": {
+              "choice": "p5",
+              "option": 0
+            }
+          },
+          {
+            "beat": 8,
+            "kind": "speech",
+            "side": "left",
+            "top": 56,
+            "width": 48,
+            "tail": "bottom-right",
+            "when": {
+              "choice": "p5",
+              "option": 1
+            }
+          },
+          {
+            "beat": 9,
+            "kind": "speech",
+            "side": "right",
+            "top": 56,
+            "width": 56,
+            "tail": "top-left"
+          }
+        ]
+      },
+      {
+        "id": "p7",
+        "art": "panel-07-unimpressed.webp",
+        "ratio": "3/4",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. The cat has turned its back on all of them, tail flat, supremely uninterested.",
+        "bubbles": [
+          {
+            "beat": 10,
+            "kind": "narration",
+            "side": "left",
+            "top": 6,
+            "width": 56
+          },
+          {
+            "beat": 11,
+            "kind": "speech",
+            "side": "right",
+            "top": 56,
+            "width": 46,
+            "tail": "bottom-left"
+          }
+        ]
+      },
+      {
+        "id": "p8",
+        "art": "panel-08-he-returns.webp",
+        "ratio": "4/5",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. The big man back in the doorway, drier this time, stopping short when he sees the cat.",
+        "bubbles": [
+          {
+            "beat": 12,
+            "kind": "narration",
+            "side": "left",
+            "top": 6,
+            "width": 48
+          },
+          {
+            "beat": 13,
+            "kind": "narration",
+            "side": "right",
+            "top": 56,
+            "width": 66
+          }
+        ]
+      },
+      {
+        "id": "p9",
+        "art": "panel-09-her-name.webp",
+        "ratio": "3/4",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. Close on the man’s face — the first time it is fully lit — looking at the cat with something complicated.",
+        "bubbles": [
+          {
+            "beat": 14,
+            "kind": "speech",
+            "side": "right",
+            "top": 6,
+            "width": 44,
+            "tail": "bottom-left"
+          },
+          {
+            "beat": 15,
+            "kind": "speech",
+            "side": "left",
+            "top": 56,
+            "width": 52,
+            "tail": "top-right"
+          }
+        ]
+      },
+      {
+        "id": "p10",
+        "art": "panel-10-my-cat.webp",
+        "ratio": "3/2",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. The cat walking along the counter toward him, tail up, no hesitation at all.",
+        "bubbles": [
+          {
+            "beat": 16,
+            "kind": "speech",
+            "side": "left",
+            "top": 6,
+            "width": 52,
+            "tail": "bottom-right"
+          }
+        ]
+      },
+      {
+        "id": "p11",
+        "art": "panel-11-your-cat.webp",
+        "ratio": "4/5",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. 小美 and her mother exchanging a look over the child’s head, the question sitting in the air.",
+        "bubbles": [
+          {
+            "beat": 17,
+            "kind": "speech",
+            "side": "left",
+            "top": 6,
+            "width": 44,
+            "tail": "bottom-right"
+          },
+          {
+            "beat": 18,
+            "kind": "speech",
+            "side": "right",
+            "top": 56,
+            "width": 58,
+            "tail": "top-left"
+          }
+        ]
+      },
+      {
+        "id": "p12",
+        "art": "panel-12-stopped.webp",
+        "ratio": "16/9",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. The man looking down at his hands on the counter, saying nothing, the steam moving between him and the camera.",
+        "bubbles": [
+          {
+            "beat": 19,
+            "kind": "narration",
+            "side": "left",
+            "top": 6,
+            "width": 56
+          }
+        ]
+      },
+      {
+        "id": "p13",
+        "art": "panel-13-went-over.webp",
+        "ratio": "4/5",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. The cat stepping off the counter into the crook of the man’s arm, deciding the matter entirely on her own.",
+        "bubbles": [
+          {
+            "beat": 20,
+            "kind": "narration",
+            "side": "right",
+            "top": 6,
+            "width": 62
+          },
+          {
+            "beat": 21,
+            "kind": "narration",
+            "side": "left",
+            "top": 56,
+            "width": 64
+          }
+        ]
+      },
+      {
+        "id": "p14",
+        "art": "panel-14-huahua.webp",
+        "ratio": "3/4",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. 小美 trying the name out quietly, half to herself; the cat’s ear turning toward her.",
+        "bubbles": [
+          {
+            "beat": 22,
+            "kind": "speech",
+            "side": "left",
+            "top": 6,
+            "width": 36,
+            "tail": "bottom-right"
+          },
+          {
+            "beat": 23,
+            "kind": "narration",
+            "side": "right",
+            "top": 56,
+            "width": 52
+          }
+        ]
+      },
+      {
+        "id": "p15",
+        "art": "panel-15-come-eat.webp",
+        "ratio": "4/5",
+        "alt": "Warm colour manhua panel from The Rainy-Day Noodle Shop. Final plate: the mother setting down a small dish for the cat, the man half-smiling for the first time, 小美 mid-laugh, the shop full and warm.",
+        "bubbles": [
+          {
+            "beat": 24,
+            "kind": "speech",
+            "side": "left",
+            "top": 6,
+            "width": 66,
+            "tail": "bottom-right"
+          },
+          {
+            "beat": 25,
+            "kind": "thought",
+            "side": "right",
+            "top": 56,
+            "width": 58
+          }
+        ],
+        "accent": true
+      }
+    ]
+  }
+}
