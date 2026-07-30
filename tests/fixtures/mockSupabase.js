@@ -61,21 +61,30 @@ const VOCAB = [
   // are on the cumulative shelf for a learner sitting at level 2. None of them
   // carries a card, so every word in the episode reads as "new" — which is what
   // the vocabulary popover's new-word state is exercised against.
+  //
+  // ⚠️ FIVE WORDS ARE DELIBERATELY MISSING from this list even though the
+  // episode uses them: 你 我们 去 看 吧. They also appear in `st1`, and `st1`
+  // having out-of-list words is what reader.spec.js's unknown-word test stands
+  // on ("我们 has no vocabulary row at this level" — dashed mark, "Unknown word"
+  // in the popover). Adding them here silently made that whole path untestable:
+  // the story went 100% covered and the assertion timed out looking for a
+  // dashed border that no longer existed. The cost is only that those five read
+  // as unknown inside the mocked episode, which no manhua spec asserts on.
+  // If you add a word here, check it is not one of st1's gaps first.
   ...[
     ['我', 'wǒ', 'I, me'], ['来', 'lái', 'to come'], ['学校', 'xuéxiào', 'school'],
     ['了', 'le', 'particle for completed action'], ['这', 'zhè', 'this'], ['是', 'shì', 'to be'],
-    ['吗', 'ma', 'question particle'], ['你好', 'nǐ hǎo', 'hello'], ['你', 'nǐ', 'you'],
+    ['吗', 'ma', 'question particle'], ['你好', 'nǐ hǎo', 'hello'],
     ['新', 'xīn', 'new'], ['学生', 'xuéshēng', 'student'], ['不', 'bù', 'not, no'],
     ['叫', 'jiào', 'to be called, to call'], ['什么', 'shénme', 'what'], ['名字', 'míngzi', 'name'],
     ['真', 'zhēn', 'really, true'], ['的', 'de', 'possessive particle'], ['老师', 'lǎoshī', 'teacher'],
-    ['吧', 'ba', 'particle indicating suggestion'], ['也', 'yě', 'also, too'],
-    ['我们', 'wǒmen', 'we, us'], ['去', 'qù', 'to go'], ['那边', 'nàbiān', 'over there'],
+    ['也', 'yě', 'also, too'], ['那边', 'nàbiān', 'over there'],
     ['大', 'dà', 'big'], ['请', 'qǐng', 'please'], ['坐', 'zuò', 'to sit'],
     ['会', 'huì', 'to be able to'], ['写', 'xiě', 'to write'], ['汉字', 'hànzì', 'Chinese character'],
     ['一点儿', 'yìdiǎnr', 'a little'], ['没关系', 'méi guānxi', "it doesn't matter"],
     ['现在', 'xiànzài', 'now'], ['学', 'xué', 'to learn'], ['字', 'zì', 'character'],
     ['这个', 'zhège', 'this one'], ['漂亮', 'piàoliang', 'beautiful'], ['那', 'nà', 'that'],
-    ['喜欢', 'xǐhuan', 'to like'], ['看', 'kàn', 'to look, to watch'], ['想', 'xiǎng', 'to want'],
+    ['喜欢', 'xǐhuan', 'to like'], ['想', 'xiǎng', 'to want'],
   ].map(([word, reading, meaning], i) => ({
     id: 'm' + (i + 1), word, reading, meaning,
     level: 1, system: 'hsk', language: 'chinese', is_active: true,
