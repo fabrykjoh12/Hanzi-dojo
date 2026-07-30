@@ -10,6 +10,24 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+### An art-fetch commit lands without CI (know it before you merge)
+
+`manhua-art-fetch` commits the panels it downloads back to the branch, using the
+workflow's own `GITHUB_TOKEN`. **GitHub does not trigger workflows for a push
+made with that token** — deliberately, so a workflow cannot loop by pushing. So
+the commit at the head of a manhua PR is routinely one that `ci.yml` and
+`e2e.yml` never saw, and the PR's check list will look thin rather than red.
+
+Two consequences worth carrying:
+
+- Do not read "no failing checks" as "CI passed" on one of these PRs. Look at
+  which commit the checks are attached to.
+- To get a real run, push one more commit yourself (any real change on top), or
+  verify the exact tree locally with lint + test + build before merging. The
+  art-fetch commit only adds `.webp` files, so the risk is low — but "low" is
+  not the same as "checked", and this project has already shipped blank panels
+  once by assuming.
+
 ### The SPA rewrite makes a missing file look like a 200 (fixed, but know it)
 
 `vercel.json` rewrites `/(.*)` → `/index.html`. That is what makes deep links
