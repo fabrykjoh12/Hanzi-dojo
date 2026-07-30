@@ -10,11 +10,22 @@
  * This file is served verbatim from /public (no bundler transform). Plain JS.
  */
 
+// v7: stop caching the SPA shell under an asset URL, and bump the version so
+// every already-poisoned cache is dropped on activate.
+//
+// vercel.json rewrites every unmatched path to /index.html. So a request for an
+// asset that does not exist yet does NOT 404 — it returns index.html with 200
+// OK. cacheFirst only checked `resp.ok`, so it happily stored that HTML under
+// the image's URL, and cache-first then served the HTML for that image forever:
+// the <img> could not decode it, so the panel rendered blank even after the real
+// file shipped. That is exactly what happened to the manga panels — the art was
+// published to the database before it was deployed, every panel URL 200'd with
+// the app shell, and the poisoned entries outlived the fix.
+//
 // v6: adds a Background Sync handler ('hd-flush') that wakes open clients to
 // replay the offline write queue when connectivity returns — even if the page
-// was backgrounded. Caching behavior is unchanged; the bump gives the new SW a
-// clean install/activate cycle.
-var VERSION = 'v6'
+// was backgrounded.
+var VERSION = 'v7'
 var SHELL_CACHE = 'hanzi-shell-' + VERSION
 var ASSET_CACHE = 'hanzi-assets-' + VERSION
 var AUDIO_CACHE = 'hanzi-audio-' + VERSION
@@ -72,14 +83,35 @@ function isSupabaseRest(url) {
   return url.indexOf('/rest/v1/') !== -1 || url.indexOf('/auth/v1/') !== -1
 }
 
+// Is this response the SPA shell rather than the asset that was asked for?
+// vercel.json rewrites any unmatched path to /index.html, so a not-yet-deployed
+// asset answers 200 with HTML. Caching that under the asset's URL poisons it for
+// good, and serving a cached one keeps a panel blank long after the real file
+// exists.
+function isShellHtml(resp) {
+  if (!resp || !resp.headers) return false
+  var type = resp.headers.get('content-type')
+  return Boolean(type && type.indexOf('text/html') !== -1)
+}
+
 // Cache-first: serve from cache, else fetch and store a copy (then trim the
 // cache back under its cap, oldest-first).
 function cacheFirst(request, cacheName) {
   return caches.open(cacheName).then(function (cache) {
     return cache.match(request).then(function (hit) {
+      // A cached shell under an asset URL is poison from an older worker. Treat
+      // it as a miss, drop it, and go to the network — so a client that has not
+      // yet taken v7's clean install still heals itself.
+      if (hit && isShellHtml(hit)) {
+        cache.delete(request)
+        hit = null
+      }
       if (hit) return hit
       return fetch(request).then(function (resp) {
-        if (resp && (resp.ok || resp.type === 'opaque')) {
+        // `opaque` is a cross-origin no-cors response: its headers are hidden,
+        // so it cannot be the shell (which is same-origin) and is safe to keep.
+        var storable = resp && (resp.type === 'opaque' || (resp.ok && !isShellHtml(resp)))
+        if (storable) {
           cache.put(request, resp.clone()).then(function () { return trimCache(cacheName) })
         }
         return resp

@@ -90,7 +90,16 @@ if (artFiles.length && !skipArtCheck) {
       : SITE_URL + (artBase.charAt(artBase.length - 1) === '/' ? artBase : artBase + '/') + art
     try {
       const res = await fetch(url, { method: 'HEAD' })
+      // `res.ok` is NOT enough. vercel.json rewrites every unmatched path to
+      // /index.html, so a panel that has not shipped answers 200 with the app
+      // shell rather than 404 — a status-only check would pass on every missing
+      // file and this guard would never fire. What proves the file is there is
+      // that the response is an IMAGE.
+      const type = (res.headers.get('content-type') || '').toLowerCase()
       if (!res.ok) missing.push(art + '  (HTTP ' + res.status + ')')
+      else if (type.indexOf('image/') !== 0) {
+        missing.push(art + '  (200 but content-type ' + (type || 'unknown') + ' — the SPA shell, not the file)')
+      }
     } catch (err) {
       missing.push(art + '  (' + err.message + ')')
     }

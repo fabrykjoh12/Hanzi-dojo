@@ -10,6 +10,23 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+### The SPA rewrite makes a missing file look like a 200 (fixed, but know it)
+
+`vercel.json` rewrites `/(.*)` → `/index.html`. That is what makes deep links
+work on refresh, and it also means **a request for a file that does not exist
+returns 200 with the app shell, not 404.** Two things were built on the wrong
+assumption before this was understood:
+
+- `public/sw.js` cached that HTML under the asset's URL (cache-first stores
+  anything `ok`), so an image that shipped late stayed broken on every device
+  that had asked for it early. Fixed in v7: `isShellHtml` refuses to store it and
+  drops an existing poisoned hit, and the version bump clears the old caches.
+- `publish-manga.mjs`'s art preflight checked `res.ok` only, so it would have
+  passed on every missing panel. It now requires `content-type: image/*`.
+
+**Anything else that probes for a file's existence over HTTP has the same trap.**
+Check the content type, not the status.
+
 ## Database
 - [x] **APPLIED 2026-07-28 — `20260728210000_fix_language_reset_missing_writing_stats.sql`.** "Reset HSK 3.0 progress" failed outright with `relation "public.writing_stats" does not exist`, so a language's progress could not be cleared. Root cause was the §10 classic: `20260605224500_add_writing_stats.sql` sat in the repo unapplied while the reset RPC that deletes from that table was applied. It cost more than the reset — `src/Writing.jsx` reads and upserts `writing_stats` on every writing answer, so writing practice was discarding its results. The fix creates the table idempotently AND guards the RPC's delete with `to_regclass`, so a missing optional table can never abort a reset again. Applied through the dashboard SQL editor (the sandbox's MCP write gate was unreachable that session). **Worth a check when convenient:** reset a language from Profile and confirm it completes, and that a writing answer now persists across a reload.
 
