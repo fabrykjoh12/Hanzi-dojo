@@ -25,6 +25,7 @@
       "episode_label": "第一话",
       "episode_title": "一块钱",
       "art_base": "/stories/noodleshop/hsk1/ep01/",
+      "art_palette": "colour",
       "hook": "He was one kuai short, and nobody said anything about it.",
       "continues": {
         "label": "第二话",

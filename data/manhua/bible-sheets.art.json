@@ -1,0 +1,19 @@
+{
+  "_comment": "Character model sheets for the drawn series, fetched into the repo by .github/workflows/content-utils.yml, task `manhua-art-fetch`. These are not panels — nothing in the app loads them. They live here so that every future episode can attach the SAME reference image for a character, which is the only thing keeping a character the same person across episodes (docs/STORY-BIBLE.md §6). The two Inkbound sheets already in data/manhua/bible/ were committed by hand before this manifest existed.",
+  "_style_comment": "林老师 got a sheet late, and for a reason worth keeping: episode 3 gave him four panels, and generating them against a single episode-2 panel produced three visibly different men — a topknot in one, a modern crop in another, a straw hat in a third. The sheet is a reconciliation of episode 2's two teacher panels into one canonical face, and all four episode-3 panels were regenerated against it. 小美 with 花花, and 妈妈 with the quiet man, were drawn as sheets from the start for the same reason.",
+  "dir": "data/manhua/bible",
+  "assets": [
+    {
+      "file": "linlaoshi-model-sheet.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_203758_4d642288-747f-4d52-8a51-633062e81ba3_min.webp"
+    },
+    {
+      "file": "xiaomei-huahua-model-sheet.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_192910_a05da711-4618-4521-a2d6-2e242ebc842a_min.webp"
+    },
+    {
+      "file": "mama-and-the-man-model-sheet.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_192929_bd79ad16-00d7-443c-8d58-57d42a7f3037_min.webp"
+    }
+  ]
+}

@@ -308,9 +308,26 @@ Rules that go with it:
   border, white margin, inset panel or empty caption box doubles up inside the
   reader's own frame, and a bubble positioned at `top: 6` lands on the margin
   instead of the picture. Say "no frame, bleed to all four edges" every time.
-- **Compose for the bubble.** Each panel is generated with the empty corner its
-  dialogue will sit in ("the entire right half is quiet negative space"), and
-  the panel's `alt` describes it. A bubble must never cover a face.
+- **Compose for the bubble — but never ask for an EMPTY area.** Each panel is
+  generated with a quiet region where its dialogue will sit, and the panel's
+  `alt` describes it. A bubble must never cover a face.
+
+  ⚠️ Say *quiet*, never *empty*. "The top quarter of the frame is empty negative
+  space" is read literally: the model draws nothing there, and nothing is a
+  **letterbox bar**. That one phrase produced flat bars on eighteen panels of
+  the 第三话 + noodle-shop batch, pale cream ones in the colour series and black
+  ones in the ink series, and no amount of "full bleed, no frame" in the
+  constraints block overrode it — the composition line and the constraints line
+  were asking for opposite things. The wording that works names what fills the
+  space:
+
+  > COMPOSITION: the cat sits low and to the right. Keep the upper-left third
+  > free of faces and important detail — but it must still be FULLY PAINTED
+  > with continuing background (rain, shadow, drifting steam), never a flat
+  > empty area and never a blank bar.
+
+  `tools/manhua-contact-sheet.mjs` now detects these bars mechanically, at any
+  brightness, so a batch cannot ship with them again.
 - **Stage characters apart.** Over-the-shoulder framing, reaction shots, one
   figure plus a blurred foreground shoulder — close physical interaction between
   two generated characters is where consistency breaks.
