@@ -19,6 +19,7 @@
   "_vocabulary_comment": "Every word in this episode is HSK 1 (data/hsk1-vocab-snapshot.json). There are no reach words at all. The only tokens outside the word list are the three proper names, which are curated in src/characterNames.js so the reader gives them the 'Name' popup with a reading instead of translating them character by character. 小白 rather than the canon's 白: the reader's name matcher only takes names of two characters or more (matchName), so a one-character name would be read as the ordinary word 白 'white' — and 小白 is what you would actually call him.",
   "names": ["小雨", "小白", "林老师"],
   "reach_words": [],
+  "anchor_word": "学生",
 
   "panels": {
     "meta": {

@@ -1,0 +1,83 @@
+{
+  "_comment": "Panel art for 'The Inkbound' episode 2. Fetched into the repo by .github/workflows/content-utils.yml, task `manhua-art-fetch` (which runs fetch-manhua-art.mjs on this file and commits the result) — the agent sandbox has no route to the generation CDN, a GitHub runner does. The `file` names are what data/manhua/inkbound-hsk2-ep02.json's panels[].art refer to; src/manhuaEpisodes.test.js fails if the two ever disagree.",
+  "_style_comment": "All nineteen generated with the locked art direction in docs/STORY-BIBLE.md §6, model nano_banana_pro at 2k. Every panel featuring 小雨 or 小白 carried that character's model sheet from data/manhua/bible/ as a reference image, which is what keeps them the same person as episode 1. The 2/1 letterbox panels were generated at 21:9 and are cover-cropped by the reader.",
+  "dir": "public/stories/inkbound/hsk2/ep02",
+  "assets": [
+    {
+      "file": "panel-01-morning.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_111441_0b32dc9b-97a7-49b8-b10d-77c1af76c065_min.webp"
+    },
+    {
+      "file": "panel-02-empty-hall.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_111457_a6b7aa1c-0ca0-4f52-bd9d-d64c20089a38_min.webp"
+    },
+    {
+      "file": "panel-03-stroke-waiting.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_111507_1c3a4dcc-78f6-4324-8662-42739d52059b_min.webp"
+    },
+    {
+      "file": "panel-04-my-shadow.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_111522_376fbd4b-fbfa-48e7-ab56-ab61185d634a_min.webp"
+    },
+    {
+      "file": "panel-05-xiaoyu-doorway.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_111855_b96ac5e3-51bc-4136-928d-7ea7e0b58a78_min.webp"
+    },
+    {
+      "file": "panel-07-xiaoyu-insists.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_111921_39f5923c-cbc4-4c16-8e47-1f2863478c99_min.webp"
+    },
+    {
+      "file": "panel-08-teacher-arrives.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_112035_406e1b08-f451-4bdf-885e-5668e515a071_min.webp"
+    },
+    {
+      "file": "panel-09-assignment.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_112056_cd15bc6f-249f-4222-b41e-b1288d59086b_min.webp"
+    },
+    {
+      "file": "panel-10-writing.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_112107_8be5c181-b622-472e-ad42-6b46b06be116_min.webp"
+    },
+    {
+      "file": "panel-11-again.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_112121_09d02eec-eba9-4e30-ba85-9c672db815cc_min.webp"
+    },
+    {
+      "file": "panel-12-hand.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_112324_e5e35181-a6cd-4d21-aa9e-f825f72e37a0_min.webp"
+    },
+    {
+      "file": "panel-13-xiaobai.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_112419_95adcba4-97a4-4afc-9dc2-6bb25a1aebcf_min.webp"
+    },
+    {
+      "file": "panel-14-blot.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_112603_b57c5de0-769e-4b76-8bb2-386c42efa445_min.webp"
+    },
+    {
+      "file": "panel-16-draw.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_113123_f857d6fe-13be-41c0-b7d6-c6d0f9d8b386_min.webp"
+    },
+    {
+      "file": "panel-17-bird.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_114047_e8fe0ba3-ad11-4a7b-b4e8-55a096d53004_min.webp"
+    },
+    {
+      "file": "panel-18-teacher-takes.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_114104_90514d0c-cff6-4cf0-8674-f5f7c24f6c33_min.webp"
+    },
+    {
+      "file": "panel-19-alone.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_114114_4b956656-816e-4b69-b23a-acefa1cc0a40_min.webp"
+    },
+    {
+      "file": "panel-20-warning.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_114128_7a3305e9-cbf4-41b9-94eb-de4400eeb80e_min.webp"
+    },
+    {
+      "file": "panel-21-hook.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260730_114157_ccf7dd1a-806c-41ef-8d06-b46291c8d508_min.webp"
+    }
+  ]
+}

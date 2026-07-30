@@ -22,6 +22,20 @@ const files = existsSync(DIR)
 
 const SNAPSHOTS = {
   'chinese|hsk_3|1': '../data/hsk1-vocab-snapshot.json',
+  'chinese|hsk_3|2': '../data/hsk2-vocab-snapshot.json',
+  'chinese|hsk_3|3': '../data/hsk3-vocab-snapshot.json',
+}
+
+// Answer every gate in an episode with the option at `pick`, clamped to what
+// each gate actually offers. Layout is checked along more than one path because
+// a branch-only bubble is invisible on the other branch — measuring only the
+// first option would leave every "when" bubble in the episode unmeasured.
+function answerAll(panels, pick) {
+  const out = {}
+  for (const panel of panels) {
+    if (panel.choice) out[panel.id] = Math.min(pick, panel.choice.options.length - 1)
+  }
+  return out
 }
 
 function vocabMapFor(key) {
@@ -197,34 +211,37 @@ describe('manhua episodes', () => {
         // 2016 phone would cost every other reader.
         const FLOOR = { 320: 0.6 }
         for (const width of [320, 375, 390, 430, 520]) {
-          let overlaid = 0
-          let totalBubbles = 0
-          for (const panel of built.panels) {
-            for (const b of visibleBubbles(panel, { p4: 1 })) {
-              const beat = lines[b.beat]
-              if (!beat) continue
-              totalBubbles += 1
-              const out = bubbleLayout(b, {
-                columnWidth: Math.min(width - 24, 520 - 24),
-                ratio: panel.ratio,
-                textLength: splitSpeaker(beat).text.length,
-                withReadings: true,
-              })
-              if (out.mode === 'overlay') overlaid += 1
+          for (const pick of [0, 1]) {
+            let overlaid = 0
+            let totalBubbles = 0
+            for (const panel of built.panels) {
+              for (const b of visibleBubbles(panel, answerAll(built.panels, pick))) {
+                const beat = lines[b.beat]
+                if (!beat) continue
+                totalBubbles += 1
+                const out = bubbleLayout(b, {
+                  columnWidth: Math.min(width - 24, 520 - 24),
+                  ratio: panel.ratio,
+                  textLength: splitSpeaker(beat).text.length,
+                  withReadings: true,
+                })
+                if (out.mode === 'overlay') overlaid += 1
+              }
             }
+            expect(overlaid / Math.max(1, totalBubbles), 'bubbles fall out of the art at ' + width + 'px on branch ' + pick)
+              .toBeGreaterThanOrEqual(FLOOR[width] == null ? 1 : FLOOR[width])
           }
-          expect(overlaid / Math.max(1, totalBubbles), 'bubbles fall out of the art at ' + width + 'px')
-            .toBeGreaterThanOrEqual(FLOOR[width] == null ? 1 : FLOOR[width])
         }
       })
 
       it('is completable: every gate is answerable and the last panel ends it', () => {
-        const answered = {}
-        for (const panel of built.panels) {
-          if (panel.choice) answered[panel.id] = 0
+        // Both branches have to reach the end — a `when` bubble that only ever
+        // appears on option 0 would otherwise hide a dead end on option 1.
+        for (const pick of [0, 1]) {
+          const answered = answerAll(built.panels, pick)
+          expect(revealLimit(built.panels, answered), 'branch ' + pick + ' stops early').toBe(built.panels.length - 1)
+          expect(isEpisodeComplete(built.panels, answered, built.panels.length - 1)).toBe(true)
         }
-        expect(revealLimit(built.panels, answered)).toBe(built.panels.length - 1)
-        expect(isEpisodeComplete(built.panels, answered, built.panels.length - 1)).toBe(true)
         // …and NOT completable by scrolling past an unanswered choice.
         if (built.panels.some(p => p.choice)) {
           expect(isEpisodeComplete(built.panels, {}, built.panels.length - 1)).toBe(false)
@@ -264,13 +281,20 @@ describe('manhua episodes', () => {
       })
 
       it('renders the tappable word the episode is built around', () => {
-        // 学生 must survive segmentation as ONE token — the whole opening beat
-        // of the episode is "tap this word".
-        const target = lines.find(l => l.indexOf('学生') !== -1)
-        expect(target, 'no line contains 学生').toBeTruthy()
+        // Each episode names its own `anchor_word` — the multi-character word the
+        // episode leans on hardest, which must survive segmentation as ONE token
+        // and arrive with a reading. This is the "tap this word" promise; a
+        // segmenter change that splits it would break the point of the format,
+        // and a per-episode anchor is what keeps that check meaningful as the
+        // season grows past the one episode it was written for.
+        const anchor = ep.anchor_word
+        expect(anchor, 'no anchor_word declared').toBeTruthy()
+        expect(anchor.length, 'a one-character anchor proves nothing').toBeGreaterThan(1)
+        const target = lines.find(l => l.indexOf(anchor) !== -1)
+        expect(target, 'no line contains the anchor ' + anchor).toBeTruthy()
         const tokens = segmentLine(splitSpeaker(target).text, matcher, names, new Set(), segmenter)
-        const hit = tokens.find(t => t.text === '学生')
-        expect(hit, 'segmentation split 学生').toBeTruthy()
+        const hit = tokens.find(t => t.text === anchor)
+        expect(hit, 'segmentation split ' + anchor).toBeTruthy()
         expect(hit.vocab).toBeTruthy()
         expect(hit.vocab.reading).toBeTruthy()
       })
