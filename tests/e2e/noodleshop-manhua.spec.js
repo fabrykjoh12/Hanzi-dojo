@@ -16,9 +16,10 @@ test.describe('《一块钱》 vertical slice', () => {
   test('appears as a complete standalone work beside, not inside, series', async ({ page }) => {
     await page.goto('/stories');
     const shelf = page.getByRole('tabpanel');
-    await expect(shelf.getByRole('heading', { name: 'Standalone stories' })).toBeVisible();
+    const standalone = shelf.locator('section[aria-labelledby="standalone-stories-1"]');
+    await expect(standalone.getByRole('heading', { name: 'Standalone stories' })).toBeVisible();
     await expect(shelf.getByRole('heading', { name: 'Series' })).toBeVisible();
-    const card = shelf.getByRole('button', { name: new RegExp(STORY) });
+    const card = standalone.getByRole('button', { name: new RegExp(STORY) });
     await expect(card.getByText('Complete story', { exact: true })).toBeVisible();
     await expect(card.getByText('3 chapters', { exact: true })).toBeVisible();
     await expect(card.getByText('8 min', { exact: true })).toBeVisible();

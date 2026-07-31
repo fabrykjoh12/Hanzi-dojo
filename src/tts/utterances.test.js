@@ -33,6 +33,10 @@ describe('assignSpeakerVoices', () => {
     expect(FEMALE).toContain(assignSpeakerVoices([NARRATOR, '妈妈'], VOICES)['妈妈'])
   })
 
+  it('keeps 阿力 on a male voice for the train story', () => {
+    expect(MALE).toContain(assignSpeakerVoices([NARRATOR, '阿力'], VOICES)['阿力'])
+  })
+
   it('casts the boys male and the girls female', () => {
     const cast = assignSpeakerVoices([NARRATOR, '李明', '小明', '小红', '妈妈'], VOICES)
     expect(MALE).toContain(cast['李明'])
@@ -73,6 +77,7 @@ describe('assignSpeakerVoices', () => {
     expect(genderOf('妈妈')).toBe('female')
     expect(genderOf('小红')).toBe('female')
     expect(genderOf('李明')).toBe('male')
+    expect(genderOf('阿力')).toBe('male')
     expect(genderOf('店员')).toBe(null)
   })
 })
