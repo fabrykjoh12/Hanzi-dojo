@@ -171,6 +171,7 @@ paid generation happens without an explicit `--confirm`.
 - [ ] Extend beyond Chinese: Japanese and Russian still use the Google pipeline.
 
 - [x] Collapse the multi-write grading path into a single Supabase RPC/transaction
+- [ ] **Clear the two permanently-red CI checks** — every pull request carries two failing `Workers Builds` checks left over from an old Cloudflare hookup that was never used; the app is hosted on Vercel and always has been. Traced to its source and documented: nothing in the code produces them, so it is a one-time settings change on the Cloudflare side. Red that means nothing is how red that matters gets missed.
 - [ ] Real-device verification pass — offline replay, iOS audio, push reminders end-to-end
 - [ ] Tune the FSRS scheduler from real review data
 - [ ] Continue extracting the large `Study` screen into focused hooks/components
