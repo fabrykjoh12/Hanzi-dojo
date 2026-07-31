@@ -2,6 +2,7 @@ import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 import { ReaderPage } from '../pages/ReaderPage.js';
 
 const EPISODE = '第一话 · 我是新学生';
+const SERIES = 'Hanzi Dojo: The Inkbound';
 
 // The manhua reader (src/ManhuaReader.jsx) — Hanzi Dojo Stories.
 //
@@ -13,7 +14,7 @@ const EPISODE = '第一话 · 我是新学生';
 
 async function openEpisode(page) {
   const reader = new ReaderPage(page);
-  await reader.openStoryByTitle(EPISODE);
+  await reader.openSeriesStoryByTitle(SERIES, EPISODE);
   // The reader opens straight onto the artwork — no launch screen.
   await expect(page.getByRole('heading', { name: '我是新学生' })).toBeVisible();
 }

@@ -3,7 +3,8 @@
 // unlocked from minWords 0 — src/storyTiers.js) with the tier's stories grouped
 // into arcs + a Practice Scenarios section. Every story is a normalized card
 // (src/Stories.jsx StoryCard) whose accessible name includes its title; tapping
-// one opens the reader directly (there is no separate list drill-in anymore).
+// one opens the reader directly unless it belongs to a serial work, in which
+// case its series cover opens a dedicated chapter list first.
 export class ReaderPage {
   constructor(page) {
     this.page = page;
@@ -25,5 +26,15 @@ export class ReaderPage {
     // Scope to the tab panel so the "Today's story" card (which may show the same
     // title) never shadows the grid card we mean to open.
     await this.page.getByRole('tabpanel').getByRole('button', { name: new RegExp(title) }).click();
+  }
+
+  // Serial stories live behind their series cover. Open the series first, then
+  // choose the requested chapter from its chapter list.
+  async openSeriesStoryByTitle(seriesTitle, storyTitle) {
+    await this.gotoStories();
+    await this.page.getByRole('tab', { name: /First Steps/ }).click();
+    const shelf = this.page.getByRole('tabpanel');
+    await shelf.getByRole('button', { name: new RegExp(seriesTitle) }).click();
+    await this.page.getByRole('button', { name: new RegExp(storyTitle) }).click();
   }
 }
