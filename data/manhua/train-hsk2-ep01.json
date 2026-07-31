@@ -1,0 +1,245 @@
+{
+  "_comment": "Hanzi Dojo Stories — 'The Eight-Thirty Train', episode 1. Canonical source for this manhua episode. publish-manhua.mjs upserts it into `stories`; src/manhuaEpisodes.test.js validates the Chinese against the HSK 2 snapshot and the layout against the reader's own rules. Edit here, never in the database.",
+  "language": "chinese",
+  "system": "hsk_3",
+  "level": 2,
+  "tier": 1,
+  "tier_min_words": 0,
+  "presentation": "manhua",
+  "is_published": true,
+  "title": "第一话 · 八点半的火车",
+  "english_summary": "Closing time, rain, and a phone left on a table. The old man who forgot it has a train at eight-thirty — and his wife is waiting for him in a Beijing hospital. You and 阿力 run the phone across town with minutes to spare. He boards, promising to come back tomorrow night: he has a favour to ask.",
+  "_content_comment": "One beat per line, 'NAME：text' with a fullwidth colon. Beat indices are 0-based and are what panels[].bubbles[].beat refers to; INSERTING A LINE MEANS RE-INDEXING THE PANELS.",
+  "content": "晚上八点，外面在下雨。\n饭馆里没有人了。\n阿力：你看，桌子上有一个手机！\n你：是那个爷爷的！他已经走了。\n阿力：他要去火车站，他的车八点半开！\n阿力：没有手机，他不能给奶奶打电话。\n你：奶奶怎么了？\n阿力：她生病了，要进医院，在等他。\n你：我们打车去！\n你：我们跑过去！\n阿力：好！我叫车！\n阿力：好！你跑得快，你走前面！\n外面雨很大，路上没有车。\n阿力：快！快要八点半了！\n阿力：手机在唱歌！\n你：喂？你是谁？\n奶奶：我是他妻子。爷爷在哪儿？\n你：我们在找他！奶奶，你在哪儿？\n奶奶：我在北京的医院。他在等我吗？\n你：他在等你！我们也快到了！\n火车站。八点二十六分。\n门口有很多人，我们看不见他。\n阿力：人太多了！我们怎么找他？\n你：我个子高，我进去找！\n你：你去那边，我去这边！\n你：爷爷！爷爷！你的手机！\n爷爷：我的手机！谢谢你们，好孩子！\n爷爷：你们怎么来的？\n你：我们跑来的。奶奶在医院等你。\n他的眼睛里有水。\n爷爷：明天晚上，我还来！\n爷爷：我有一件事，要请你们帮忙！\n火车开了。爷爷上去了。\n他在火车上打电话。\n阿力：明天早上八点，你有考试！\n你：我知道。走吧，我们回家。\n晚上十点，雨不下了。\n阿力：什么忙？\n你：不知道。\n阿力：我觉得，这不是一件小事。\n你：明天晚上，我们就知道了。",
+  "english_content": "Eight in the evening. Outside, it is raining.\nThere is nobody left in the restaurant.\nLook — there's a phone on the table!\nIt's that grandpa's! He's already gone.\nHe's going to the train station. His train leaves at eight-thirty!\nWithout the phone, he can't call Grandma.\nWhat's wrong with Grandma?\nShe's ill. She's going into hospital, and she's waiting for him.\nWe'll get a taxi!\nWe'll run there!\nOK! I'll call a car!\nOK! You're fast — you go in front!\nThe rain is heavy out there, and there are no cars on the road.\nQuick! It's almost eight-thirty!\nThe phone is singing!\nHello? Who are you?\nI'm his wife. Where is Grandpa?\nWe're looking for him! Grandma, where are you?\nI'm in a hospital in Beijing. Is he waiting for me?\nHe's waiting for you! We're almost there too!\nThe train station. Eight twenty-six.\nThere are so many people at the entrance that we can't see him.\nToo many people! How do we find him?\nI'm tall — I'll go in and look!\nYou go that way, I'll go this way!\nGrandpa! Grandpa! Your phone!\nMy phone! Thank you, good kids!\nHow did you get here?\nWe ran. Grandma is waiting for you at the hospital.\nThere was water in his eyes.\nTomorrow night, I'll come back!\nThere's something I want to ask you to help me with!\nThe train left. Grandpa boarded.\nHe is making a call on the train.\nTomorrow morning at eight, you have an exam!\nI know. Come on, let's go home.\nTen at night. The rain has stopped.\nHelp with what?\nNo idea.\nI don't think this is a small thing.\nTomorrow night, we'll know.",
+  "_vocabulary_comment": "Every word is HSK 2 (data/hsk2-vocab-snapshot.json, cumulative). Zero reach words; the only non-word token is the curated name 阿力. The level's gaps did the writing: 响 is absent, so the incoming call is the phone 唱歌 — which also gives the art its best recurring image, a little glowing rectangle singing in the rain. 刚 is absent, so he 已经走了. 窗户 is absent, so the farewell is 他在火车上打电话 instead of a face at a window. 紧张/害怕 are absent, so the closing dread is 这不是一件小事.",
+  "names": [
+    "阿力"
+  ],
+  "reach_words": [],
+  "anchor_word": "打电话",
+  "panels": {
+    "meta": {
+      "series": "Hanzi Dojo: The Eight-Thirty Train",
+      "episode_label": "第一话",
+      "episode_title": "八点半的火车",
+      "art_base": "/stories/train/hsk2/ep01/",
+      "art_palette": "colour",
+      "hook": "A singing phone, a train at eight-thirty, and a wife waiting in a Beijing hospital.",
+      "continues": {
+        "label": "第二话",
+        "level": 2
+      }
+    },
+    "cast": {
+      "阿力": {},
+      "你": {},
+      "爷爷": {},
+      "奶奶": {}
+    },
+    "panels": [
+      {
+        "id": "p1",
+        "art": "panel-01-closing-time.webp",
+        "ratio": "4/3",
+        "alt": "Night rain over a small family restaurant, warm light spilling from the window onto the wet street, one empty table visible inside with chairs already turned up.",
+        "bubbles": [
+          { "beat": 0, "kind": "narration", "side": "left", "top": 3, "width": 92 },
+          { "beat": 1, "kind": "narration", "side": "right", "top": 54, "width": 92 }
+        ]
+      },
+      {
+        "id": "p2",
+        "art": "panel-02-phone-on-table.webp",
+        "ratio": "4/5",
+        "alt": "Close on a smartphone lying alone on a wiped table, its screen lighting up the wood grain; 阿力's hand points in from the edge of frame.",
+        "bubbles": [
+          { "beat": 2, "kind": "speech", "side": "left", "top": 3, "width": 92, "tail": "bottom-right" },
+          { "beat": 3, "kind": "speech", "side": "right", "top": 34, "width": 92, "tail": "bottom-right" }
+        ]
+      },
+      {
+        "id": "p3",
+        "art": "panel-03-eight-thirty.webp",
+        "ratio": "3/4",
+        "alt": "阿力 with rain on his hair, urgently holding up eight fingers then two, the restaurant clock behind him reading eight ten.",
+        "bubbles": [
+          { "beat": 4, "kind": "speech", "side": "left", "top": 3, "width": 92, "tail": "bottom-right" },
+          { "beat": 5, "kind": "speech", "side": "right", "top": 32, "width": 92, "tail": "bottom-right" }
+        ]
+      },
+      {
+        "id": "p4",
+        "art": "panel-04-grandma-waits.webp",
+        "ratio": "4/3",
+        "alt": "A quieter beat: 阿力's face gone serious in the warm shop light, explaining, while the reader holds the phone between them.",
+        "bubbles": [
+          { "beat": 6, "kind": "speech", "side": "left", "top": 3, "width": 92, "tail": "bottom-right" },
+          { "beat": 7, "kind": "speech", "side": "right", "top": 36, "width": 92, "tail": "bottom-right" }
+        ]
+      },
+      {
+        "id": "p5",
+        "choice": {
+          "prompt": "选择回答",
+          "options": [
+            { "beat": 8, "tone": "sensible" },
+            { "beat": 9, "tone": "bold" }
+          ]
+        }
+      },
+      {
+        "id": "p6",
+        "art": "panel-06-into-the-rain.webp",
+        "ratio": "2/1",
+        "alt": "A letterbox of the empty drowned street: no cars anywhere, two small figures bursting out of the restaurant doorway into sheets of rain.",
+        "bubbles": [
+          { "beat": 10, "kind": "speech", "side": "left", "top": 3, "width": 92, "tail": "bottom-right", "when": { "choice": "p5", "option": 0 } },
+          { "beat": 11, "kind": "speech", "side": "left", "top": 3, "width": 92, "tail": "bottom-right", "when": { "choice": "p5", "option": 1 } }
+        ]
+      },
+      {
+        "id": "p7",
+        "art": "panel-07-phone-sings.webp",
+        "ratio": "3/4",
+        "alt": "Extreme close-up of the phone glowing and buzzing in a wet hand, music notes of light rising off the screen into the dark rain.",
+        "bubbles": [
+          { "beat": 12, "kind": "narration", "side": "left", "top": 3, "width": 92 },
+          { "beat": 13, "kind": "speech", "side": "right", "top": 32, "width": 92, "tail": "bottom-right" },
+          { "beat": 14, "kind": "speech", "side": "left", "top": 52, "width": 92, "tail": "bottom-right" },
+          { "beat": 15, "kind": "speech", "side": "right", "top": 71, "width": 92, "tail": "bottom-right" }
+        ]
+      },
+      {
+        "id": "p8",
+        "art": "panel-08-beijing-hospital.webp",
+        "ratio": "4/5",
+        "alt": "Soft cool light: 奶奶 sitting up in a hospital bed by a high window of city lights, a folded coat on the chair beside her, phone at her ear.",
+        "bubbles": [
+          { "beat": 16, "kind": "speech", "side": "left", "top": 3, "width": 92, "tail": "bottom-right" },
+          { "beat": 17, "kind": "speech", "side": "right", "top": 34, "width": 92, "tail": "bottom-right" }
+        ]
+      },
+      {
+        "id": "p9",
+        "art": "panel-09-running.webp",
+        "ratio": "16/9",
+        "alt": "Two kids sprinting full-tilt toward the lit station at the end of the road, reflections racing under their feet, the phone held high like a torch.",
+        "bubbles": [
+          { "beat": 18, "kind": "speech", "side": "left", "top": 3, "width": 92, "tail": "bottom-right" }
+        ]
+      },
+      {
+        "id": "p10",
+        "art": "panel-10-eight-twenty-six.webp",
+        "ratio": "2/1",
+        "alt": "The station clock reading eight twenty-six above a dense crowd of umbrellas and shoulders streaming through the entrance.",
+        "bubbles": [
+          { "beat": 19, "kind": "narration", "side": "left", "top": 3, "width": 92 }
+        ]
+      },
+      {
+        "id": "p11",
+        "art": "panel-11-too-many-people.webp",
+        "ratio": "4/5",
+        "alt": "From the kids' eye level: a wall of legs, bags and umbrellas, not a single face visible; 阿力 on tiptoe at the edge of frame.",
+        "bubbles": [
+          { "beat": 20, "kind": "narration", "side": "left", "top": 3, "width": 92 },
+          { "beat": 21, "kind": "narration", "side": "right", "top": 34, "width": 92 },
+          { "beat": 22, "kind": "speech", "side": "left", "top": 65, "width": 92, "tail": "bottom-right" }
+        ]
+      },
+      {
+        "id": "p12",
+        "choice": {
+          "prompt": "选择回答",
+          "options": [
+            { "beat": 23, "tone": "direct" },
+            { "beat": 24, "tone": "tactical" }
+          ]
+        }
+      },
+      {
+        "id": "p13",
+        "art": "panel-13-there-he-is.webp",
+        "ratio": "3/4",
+        "alt": "High over the crowd, one arm and phone thrust up, mouth wide in a shout; beyond the shoulders, a grey-coated old man turning toward the sound.",
+        "bubbles": [
+          { "beat": 25, "kind": "speech", "side": "left", "top": 3, "width": 92, "tail": "bottom-right" }
+        ]
+      },
+      {
+        "id": "p14",
+        "art": "panel-14-phone-returned.webp",
+        "ratio": "4/5",
+        "alt": "The old man clutching the phone to his chest with both hands, bowing his head to the two soaked kids, station light haloing all three.",
+        "bubbles": [
+          { "beat": 26, "kind": "speech", "side": "left", "top": 3, "width": 92, "tail": "bottom-right" },
+          { "beat": 27, "kind": "speech", "side": "right", "top": 34, "width": 92, "tail": "bottom-right" },
+          { "beat": 28, "kind": "speech", "side": "left", "top": 55, "width": 92, "tail": "bottom-right" }
+        ]
+      },
+      {
+        "id": "p15",
+        "art": "panel-15-water-in-his-eyes.webp",
+        "ratio": "4/5",
+        "alt": "The tightest close-up of the episode: the old man's eyes shining, one tear catching the station light, his mouth halfway to a smile.",
+        "bubbles": [
+          { "beat": 29, "kind": "narration", "side": "left", "top": 3, "width": 92 },
+          { "beat": 30, "kind": "speech", "side": "right", "top": 23, "width": 92, "tail": "bottom-right" },
+          { "beat": 31, "kind": "speech", "side": "left", "top": 44, "width": 92, "tail": "bottom-right" }
+        ]
+      },
+      {
+        "id": "p16",
+        "art": "panel-16-train-leaves.webp",
+        "ratio": "3/2",
+        "alt": "The train pulling out in a blur of lit windows; in one window the old man sits with the phone at his ear, raising his other hand to the platform.",
+        "bubbles": [
+          { "beat": 32, "kind": "narration", "side": "left", "top": 3, "width": 92 },
+          { "beat": 33, "kind": "narration", "side": "right", "top": 58, "width": 92 }
+        ]
+      },
+      {
+        "id": "p17",
+        "art": "panel-17-walking-home.webp",
+        "ratio": "16/9",
+        "alt": "Late-night calm: the two kids walking home down the middle of the wet empty road, rain thinning to nothing, streetlights doubled in the puddles.",
+        "bubbles": [
+          { "beat": 34, "kind": "speech", "side": "left", "top": 3, "width": 92, "tail": "bottom-right" }
+        ]
+      },
+      {
+        "id": "p18",
+        "art": "panel-17-walking-home.webp",
+        "ratio": "4/5",
+        "alt": "Late-night calm: the two kids walking home down the middle of the wet empty road, rain thinning to nothing, streetlights doubled in the puddles.",
+        "bubbles": [
+          { "beat": 35, "kind": "speech", "side": "left", "top": 3, "width": 92, "tail": "bottom-right" },
+          { "beat": 36, "kind": "narration", "side": "right", "top": 34, "width": 92 }
+        ]
+      },
+      {
+        "id": "p19",
+        "art": "panel-18-what-favour.webp",
+        "ratio": "3/2",
+        "alt": "The restaurant doorway again, dark now; the two kids stopped under the eaves looking at each other, the question hanging between them.",
+        "bubbles": [
+          { "beat": 37, "kind": "speech", "side": "left", "top": 3, "width": 92, "tail": "bottom-right" },
+          { "beat": 38, "kind": "speech", "side": "right", "top": 40, "width": 92, "tail": "bottom-right" }
+        ]
+      },
+      {
+        "id": "p20",
+        "art": "panel-19-tomorrow-night.webp",
+        "ratio": "3/4",
+        "alt": "Final plate: the dark restaurant window from outside, one small light still on behind the glass, rain-washed street empty — tomorrow night already waiting inside.",
+        "bubbles": [
+          { "beat": 39, "kind": "speech", "side": "left", "top": 3, "width": 92, "tail": "bottom-right" },
+          { "beat": 40, "kind": "speech", "side": "right", "top": 32, "width": 92, "tail": "bottom-right" }
+        ],
+        "accent": true
+      }
+    ]
+  }
+}
