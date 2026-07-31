@@ -2,6 +2,8 @@ import { wordStatus } from './storyReading'
 import { ink } from './languageTheme'
 import { PAPER, CARD_RADIUS, TYPE, TAP_TARGET } from './manhuaTokens'
 import { ArrowLeft, Sparkles } from 'lucide-react'
+import ComprehensionCheck from './ComprehensionCheck'
+import { scoreComprehension } from './comprehension'
 
 // The end of an episode.
 //
@@ -71,10 +73,13 @@ function WordChip({ vocab, userCards, accentHex, fontFamily, onSelectWord }) {
 
 export default function ManhuaCompletion({
   label, title, words = [], userCards, accentHex, fontFamily,
-  hook, continues = null, continuesLevelLabel = null,
+  hook, reward = null, continues = null, continuesLevelLabel = null,
+  questions = [], answers = {}, onAnswer,
   onBack, onPractice, practiceWords = [], onSelectWord,
 }) {
   const newCount = words.filter(v => wordStatus(v.id, userCards) === 'not_started').length
+  const comprehension = scoreComprehension(questions, answers)
+  const rewardEarned = Boolean(reward && questions.length > 0 && comprehension.answered === questions.length)
   return (
     <section
       aria-label="Episode complete"
@@ -114,6 +119,35 @@ export default function ManhuaCompletion({
             {words.map(v => (
               <WordChip key={v.id} vocab={v} userCards={userCards} accentHex={accentHex} fontFamily={fontFamily} onSelectWord={onSelectWord} />
             ))}
+          </div>
+        </div>
+      )}
+
+      {questions.length > 0 && (
+        <div style={{ marginTop: '18px' }}>
+          <ComprehensionCheck questions={questions} answers={answers} onAnswer={onAnswer} />
+        </div>
+      )}
+
+      {rewardEarned && (
+        <div
+          role="status"
+          aria-label={'Reward earned: ' + reward.label}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '12px',
+            marginTop: '18px', padding: '13px 14px',
+            border: '1px solid ' + accentHex + '55', borderRadius: '14px',
+            background: 'color-mix(in srgb, ' + accentHex + ' 7%, ' + PAPER.card + ')',
+          }}
+        >
+          <Seal accentHex={accentHex} glyph={reward.glyph || '读'} fontFamily={fontFamily} />
+          <div>
+            <div style={{ fontSize: TYPE.meta, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: PAPER.muted }}>
+              Reader seal earned
+            </div>
+            <div style={{ marginTop: '3px', fontFamily, fontSize: '19px', fontWeight: 750, color: PAPER.ink }}>
+              {reward.label}
+            </div>
           </div>
         </div>
       )}

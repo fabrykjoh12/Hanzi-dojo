@@ -137,6 +137,22 @@ describe('manhua episodes', () => {
         expect(english.length).toBe(lines.length)
       })
 
+      it('keeps authored comprehension questions publishable', () => {
+        if (!Object.prototype.hasOwnProperty.call(ep, 'questions')) return
+        expect(Array.isArray(ep.questions)).toBe(true)
+        expect(ep.questions.length).toBeGreaterThan(0)
+        for (const question of ep.questions) {
+          expect(typeof question.question).toBe('string')
+          expect(question.question.trim().length).toBeGreaterThan(0)
+          expect(Array.isArray(question.options)).toBe(true)
+          expect(question.options).toHaveLength(4)
+          expect(question.options.every(option => typeof option === 'string' && option.trim().length > 0)).toBe(true)
+          expect(Number.isInteger(question.correct_index)).toBe(true)
+          expect(question.correct_index).toBeGreaterThanOrEqual(0)
+          expect(question.correct_index).toBeLessThan(question.options.length)
+        }
+      })
+
       it('keeps every line short enough for a bubble (≤ 24 chars)', () => {
         // Tighter than the 40 a prose chapter gets: this line has to fit in a
         // box drawn over a picture, on a phone.

@@ -19,6 +19,38 @@
   ],
   "reach_words": [],
   "anchor_word": "面条儿",
+  "questions": [
+    {
+      "question": "Why could the man not pay the full price for the noodles?",
+      "options": [
+        "He had nine kuai, but the noodles cost ten.",
+        "He had left his money at home.",
+        "He did not want noodles.",
+        "The shop was closed."
+      ],
+      "correct_index": 0
+    },
+    {
+      "question": "What did the learner give Mum?",
+      "options": [
+        "A bowl of noodles",
+        "One kuai",
+        "A glass of water",
+        "Nine kuai"
+      ],
+      "correct_index": 1
+    },
+    {
+      "question": "What did the man share with the cat?",
+      "options": [
+        "Milk",
+        "Water",
+        "An egg",
+        "Noodles"
+      ],
+      "correct_index": 2
+    }
+  ],
   "panels": {
     "meta": {
       "series": "Hanzi Dojo: The Rainy-Day Noodle Shop",
@@ -27,6 +59,10 @@
       "art_base": "/stories/noodleshop/hsk1/ep01/",
       "art_palette": "colour",
       "hook": "He was one kuai short, and nobody said anything about it.",
+      "reward": {
+        "glyph": "暖",
+        "label": "暖心读者"
+      },
       "continues": {
         "label": "第二话",
         "level": 1
@@ -50,7 +86,7 @@
             "kind": "narration",
             "side": "left",
             "top": 6,
-            "width": 56
+            "width": 64
           }
         ]
       },

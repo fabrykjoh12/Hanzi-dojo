@@ -55,6 +55,14 @@ describe('buildEpisode', () => {
     expect(meta.hook).toBe('next time')
   })
 
+  it('normalizes an optional reader reward', () => {
+    expect(buildEpisode({ meta: { reward: { label: ' 暖心读者 ', glyph: '暖' } } }, 1).meta.reward)
+      .toEqual({ label: '暖心读者', glyph: '暖' })
+    expect(buildEpisode({ meta: { reward: { glyph: '暖' } } }, 1).meta.reward).toBeNull()
+    expect(buildEpisode({ meta: { reward: { label: '读者' } } }, 1).meta.reward)
+      .toEqual({ label: '读者', glyph: '读' })
+  })
+
   it('gives every panel an id and a drawable ratio', () => {
     const { panels } = buildEpisode({ panels: [{}, { id: 'x' }] }, 1)
     expect(panels[0].id).toBe('p1')
@@ -193,6 +201,13 @@ describe('panelAtReadingLine', () => {
     const phone = 844
     const rects = [{ top: 76, bottom: 350 }, { top: 364, bottom: 851 }]
     expect(phone * READING_LINE).toBeGreaterThan(350)
+    expect(panelAtReadingLine(rects, phone)).toBe(0)
+  })
+
+  it('still starts at panel one when a narrow phone puts panel two above the reading line', () => {
+    const phone = 844
+    const rects = [{ top: 70, bottom: 291 }, { top: 304, bottom: 470 }, { top: 483, bottom: 878 }]
+    expect(rects[1].top).toBeLessThan(phone * READING_LINE)
     expect(panelAtReadingLine(rects, phone)).toBe(0)
   })
 

@@ -126,6 +126,9 @@ function Word({ token, tokenId, beatIndex, selected, accentHex, readingMode, use
       className="hd-manhua-word"
       style={{
         cursor: 'pointer', borderRadius: '5px', padding: '0 1px',
+        // Programmatic focus/scroll must leave the word below the sticky reader
+        // header instead of considering it visible underneath that header.
+        scrollMarginTop: '76px',
         color: isSelected ? accentHex : (proper ? PROPER_NOUN : PAPER.ink),
         background: isSelected ? 'color-mix(in srgb, ' + accentHex + ' 12%, transparent)' : 'transparent',
         // A tapped word is marked by colour AND a rule under it, so the
@@ -194,7 +197,14 @@ export default function ManhuaBubble({
             six-character line stays a six-character line instead of orphaning
             its last character onto a second row. manhuaLayout's height estimate
             models exactly this (BUBBLE_ACTIONS_WIDTH). */}
-        <div style={{ float: 'right', display: 'flex', alignItems: 'center', marginLeft: '6px', marginTop: '-4px' }}>
+        <div style={{
+          float: 'right', display: 'flex', alignItems: 'center',
+          marginLeft: '6px', marginTop: '-4px',
+          // The following full-width text block is painted after this float.
+          // Keep the controls in the top painting layer so its transparent box
+          // cannot intercept taps meant for the visible ear/eye buttons.
+          position: 'relative', zIndex: 1,
+        }}>
           {onPlayLine && (
             <button
               onClick={(e) => { e.stopPropagation(); onPlayLine(beatIndex) }}
@@ -204,6 +214,7 @@ export default function ManhuaBubble({
                 background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                 width: TAP_TARGET * 0.66 + 'px', height: TAP_TARGET * 0.66 + 'px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
+                scrollMarginTop: '76px',
               }}
             >
               <Volume2 size={17} strokeWidth={2} color={speaking ? accentHex : PAPER.faint} />
@@ -215,6 +226,7 @@ export default function ManhuaBubble({
               onToggle={() => onToggleEnglish(beatIndex)}
               color={PAPER.faint}
               activeColor={accentHex}
+              style={{ scrollMarginTop: '76px' }}
             />
           )}
         </div>

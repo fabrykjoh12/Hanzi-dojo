@@ -120,6 +120,17 @@ function continuesFrom(raw) {
   return { label, level }
 }
 
+// Optional story-specific reader seal. It is presentation metadata only: the
+// quiz answers still live in the shared comprehension state, while this says
+// what to print after every authored question has been answered.
+function rewardFrom(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const label = typeof raw.label === 'string' && raw.label.trim() ? raw.label.trim() : null
+  if (!label) return null
+  const glyph = typeof raw.glyph === 'string' && raw.glyph.trim() ? raw.glyph.trim() : '读'
+  return { label, glyph }
+}
+
 // Build the render plan.
 //
 // `panelsJson` is stories.panels (may be null — an authored manhua row that has
@@ -140,6 +151,7 @@ export function buildEpisode(panelsJson, beatCount) {
     // series rather than part of it, and an HSK 1 learner cannot be told
     // "something followed you home" in HSK 1.
     hook: typeof rawMeta.hook === 'string' ? rawMeta.hook : null,
+    reward: rewardFrom(rawMeta.reward),
     // Where the story goes next, and at what level. The LEVEL is what earns its
     // place here: a serial that climbs the ladder should say so on the plate the
     // learner reaches at the end, so "there is more" and "you are not ready for
@@ -276,6 +288,12 @@ export const READING_LINE = 0.42
 // null for a panel that isn't mounted.
 export function panelAtReadingLine(rects, viewportHeight) {
   const list = Array.isArray(rects) ? rects : []
+  // At the untouched top of an episode, panel 1 is the thing the learner has
+  // opened even when a very narrow phone makes that first panel short enough
+  // for panel 2's top to cross the fixed reading line. Once panel 1 moves above
+  // the viewport, the normal reading-line calculation takes over.
+  const firstMounted = list.findIndex(Boolean)
+  if (firstMounted >= 0 && list[firstMounted].top >= 0) return firstMounted
   const line = (viewportHeight || 0) * READING_LINE
   let best = -1
   for (let i = 0; i < list.length; i += 1) {
