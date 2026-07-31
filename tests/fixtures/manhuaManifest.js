@@ -13,6 +13,11 @@ export const TRAIN_MANIFEST = JSON.parse(readFileSync(
   'utf8',
 ));
 
+export const UPSTAIRS_MANIFEST = JSON.parse(readFileSync(
+  new URL('../../data/manhua/upstairs-hsk3-ep01.json', import.meta.url),
+  'utf8',
+));
+
 export function storyFromManhuaManifest(manifest, {
   id,
   storyNumber,

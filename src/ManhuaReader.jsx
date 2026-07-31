@@ -125,7 +125,7 @@ export default function ManhuaReader(props) {
     const pick = () => {
       raf = 0
       const rects = panelRefs.current.map(el => (el ? el.getBoundingClientRect() : null))
-      const next = panelAtReadingLine(rects, window.innerHeight)
+      const next = panelAtReadingLine(rects, window.innerHeight, panels.length)
       if (next < 0) return
       setActive(next)
       setSeenThrough(prev => (next > prev ? next : prev))
