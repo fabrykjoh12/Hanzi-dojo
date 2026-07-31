@@ -1,5 +1,5 @@
 {
-  "_comment": "Hanzi Dojo Stories — 'The Eight-Thirty Train', episode 1. Canonical source for this manhua episode. publish-manhua.mjs upserts it into `stories`; src/manhuaEpisodes.test.js validates the Chinese against the HSK 2 snapshot and the layout against the reader's own rules. Edit here, never in the database.",
+  "_comment": "Hanzi Dojo Stories — canonical source for the standalone HSK 2 manhua 《末班车》. publish-manhua.mjs upserts it into `stories`; src/manhuaEpisodes.test.js validates the Chinese against the HSK 2 snapshot and the layout against the reader's own rules. Edit here, never in the database.",
   "language": "chinese",
   "system": "hsk_3",
   "level": 2,
@@ -7,28 +7,75 @@
   "tier_min_words": 0,
   "presentation": "manhua",
   "is_published": true,
-  "title": "第一话 · 八点半的火车",
-  "english_summary": "Closing time, rain, and a phone left on a table. The old man who forgot it has a train at eight-thirty — and his wife is waiting for him in a hospital far away. You and 阿力 run the phone across town with minutes to spare. He boards, promising to come back tomorrow night: he has a favour to ask.",
+  "title": "《末班车》",
+  "previous_titles": [
+    "第一话 · 八点半的火车"
+  ],
+  "english_summary": "Closing time, rain, and a phone left on a table. The old man who forgot it needs the last train to reach his wife in a distant hospital. You and 阿力 race across town with four minutes to spare.",
   "_content_comment": "One beat per line, 'NAME：text' with a fullwidth colon. Beat indices are 0-based and are what panels[].bubbles[].beat refers to; INSERTING A LINE MEANS RE-INDEXING THE PANELS.",
-  "content": "晚上八点，外面在下雨。\n饭馆里没有人了。\n阿力：你看，桌子上有一个手机！\n你：是那个爷爷的！他已经走了。\n阿力：他要去火车站，他的车八点半开！\n阿力：没有手机，他不能给奶奶打电话。\n你：奶奶怎么了？\n阿力：她生病了，要进医院，在等他。\n你：我们打车去！\n你：我们跑过去！\n阿力：好！我叫车！\n阿力：好！你跑得快，你走前面！\n外面雨很大，路上没有车。\n阿力：快！快要八点半了！\n阿力：手机在唱歌！\n你：喂？你是谁？\n奶奶：我是他妻子。爷爷在哪儿？\n你：我们在找他！奶奶，你在哪儿？\n奶奶：我在医院，离这儿很远。他在等我吗？\n你：他在等你！我们也快到了！\n火车站。八点二十六分。\n门口有很多人，我们看不见他。\n阿力：人太多了！我们怎么找他？\n你：我个子高，我进去找！\n你：你去那边，我去这边！\n你：爷爷！爷爷！你的手机！\n爷爷：我的手机！谢谢你们，好孩子！\n爷爷：你们怎么来的？\n你：我们跑来的。奶奶在医院等你。\n他的眼睛里有水。\n爷爷：明天晚上，我还来！\n爷爷：我有一件事，要请你们帮忙！\n火车开了。爷爷上去了。\n他在火车上打电话。\n阿力：明天早上八点，你有考试！\n你：我知道。走吧，我们回家。\n晚上十点，雨不下了。\n阿力：什么忙？\n你：不知道。\n阿力：我觉得，这不是一件小事。\n你：明天晚上，我们就知道了。",
-  "english_content": "Eight in the evening. Outside, it is raining.\nThere is nobody left in the restaurant.\nLook — there's a phone on the table!\nIt's that grandpa's! He's already gone.\nHe's going to the train station. His train leaves at eight-thirty!\nWithout the phone, he can't call Grandma.\nWhat's wrong with Grandma?\nShe's ill. She's going into hospital, and she's waiting for him.\nWe'll get a taxi!\nWe'll run there!\nOK! I'll call a car!\nOK! You're fast — you go in front!\nThe rain is heavy out there, and there are no cars on the road.\nQuick! It's almost eight-thirty!\nThe phone is singing!\nHello? Who are you?\nI'm his wife. Where is Grandpa?\nWe're looking for him! Grandma, where are you?\nI'm in a hospital far from here. Is he waiting for me?\nHe's waiting for you! We're almost there too!\nThe train station. Eight twenty-six.\nThere are so many people at the entrance that we can't see him.\nToo many people! How do we find him?\nI'm tall — I'll go in and look!\nYou go that way, I'll go this way!\nGrandpa! Grandpa! Your phone!\nMy phone! Thank you, good kids!\nHow did you get here?\nWe ran. Grandma is waiting for you at the hospital.\nThere was water in his eyes.\nTomorrow night, I'll come back!\nThere's something I want to ask you to help me with!\nThe train left. Grandpa boarded.\nHe is making a call on the train.\nTomorrow morning at eight, you have an exam!\nI know. Come on, let's go home.\nTen at night. The rain has stopped.\nHelp with what?\nNo idea.\nI don't think this is a small thing.\nTomorrow night, we'll know.",
-  "_vocabulary_comment": "Every word is HSK 2 (data/hsk2-vocab-snapshot.json, cumulative). Zero reach words; the only non-word token is the curated name 阿力. The level's gaps did the writing: 响 is absent, so the incoming call is the phone 唱歌 — which also gives the art its best recurring image, a little glowing rectangle singing in the rain. 刚 is absent, so he 已经走了. 窗户 is absent, so the farewell is 他在火车上打电话 instead of a face at a window. 北京 is absent too (place words are not curriculum), so Grandma is 离这儿很远 — farther away raises the stakes better than a pin on a map. 紧张/害怕 are absent, so the closing dread is 这不是一件小事.",
+  "content": "晚上八点，外面在下雨。\n饭馆里没有人了。\n阿力：你看，桌子上有一个手机！\n你：是那个爷爷的！他已经走了。\n阿力：他要去火车站，他的车八点半开！\n阿力：没有手机，他不能给奶奶打电话。\n你：奶奶怎么了？\n阿力：她生病了，要进医院，在等他。\n你：我们打车去！\n你：我们跑过去！\n阿力：好！我叫车！\n阿力：好！你跑得快，你走前面！\n外面雨很大，路上没有车。\n阿力：快！快要八点半了！\n阿力：手机在唱歌！\n你：喂？你是谁？\n奶奶：我是他妻子。爷爷在哪儿？\n你：我们在找他！奶奶，你在哪儿？\n奶奶：我在医院，离这儿很远。他在等我吗？\n你：他在等你！我们也快到了！\n火车站。八点二十六分。\n门口有很多人，我们看不见他。\n阿力：人太多了！我们怎么找他？\n你：我个子高，我进去找！\n你：你去那边，我去这边！\n你：爷爷！爷爷！你的手机！\n爷爷：我的手机！谢谢你们，好孩子！\n爷爷：你们怎么来的？\n你：我们跑来的。奶奶在医院等你。\n他的眼睛里有水。\n爷爷：这是今天最后的火车。\n爷爷：我的妻子还在医院等我。\n火车开了。爷爷上去了。\n他在火车上打电话。\n阿力：明天早上八点，你有考试！\n你：我知道。但是我们做对了。\n晚上十点，雨不下了。\n阿力：他现在到医院了吗？\n你：他已经到了。\n阿力：奶奶现在很高兴。\n我们笑了，一起走回家。",
+  "english_content": "Eight in the evening. Outside, it is raining.\nThere is nobody left in the restaurant.\nLook — there's a phone on the table!\nIt's that grandpa's! He's already gone.\nHe's going to the train station. His train leaves at eight-thirty!\nWithout the phone, he can't call Grandma.\nWhat's wrong with Grandma?\nShe's ill. She's going into hospital, and she's waiting for him.\nWe'll get a taxi!\nWe'll run there!\nOK! I'll call a car!\nOK! You're fast — you go in front!\nThe rain is heavy out there, and there are no cars on the road.\nQuick! It's almost eight-thirty!\nThe phone is singing!\nHello? Who are you?\nI'm his wife. Where is Grandpa?\nWe're looking for him! Grandma, where are you?\nI'm in a hospital far from here. Is he waiting for me?\nHe's waiting for you! We're almost there too!\nThe train station. Eight twenty-six.\nThere are so many people at the entrance that we can't see him.\nToo many people! How do we find him?\nI'm tall — I'll go in and look!\nYou go that way, I'll go this way!\nGrandpa! Grandpa! Your phone!\nMy phone! Thank you, good kids!\nHow did you get here?\nWe ran. Grandma is waiting for you at the hospital.\nThere was water in his eyes.\nThis is the last train today.\nMy wife is still waiting for me in hospital.\nThe train left. Grandpa boarded.\nHe is making a call on the train.\nTomorrow morning at eight, you have an exam!\nI know. But we did the right thing.\nTen at night. The rain has stopped.\nHas he reached the hospital now?\nHe has already arrived.\nGrandma must be very happy now.\nWe laughed and walked home together.",
+  "_vocabulary_comment": "Every word is HSK 2 (data/hsk2-vocab-snapshot.json, cumulative). Zero reach words; the only non-word token is the curated name 阿力. The level's gaps shaped the writing: 响 is absent, so the incoming call is the phone 唱歌 — which also gives the art its best recurring image, a little glowing rectangle singing in the rain. 刚 is absent, so he 已经走了. 窗户 is absent, so the farewell is 他在火车上打电话 instead of a face at a window. 北京 is absent too (place words are not curriculum), so Grandma is 离这儿很远 — farther away raises the stakes better than a pin on a map.",
   "names": [
     "阿力"
   ],
   "reach_words": [],
   "anchor_word": "打电话",
+  "questions": [
+    {
+      "question": "Why did the learner and 阿力 hurry to the station?",
+      "options": [
+        "To return Grandpa's phone before his train left",
+        "To take an exam",
+        "To visit the restaurant",
+        "To buy train tickets"
+      ],
+      "correct_index": 0
+    },
+    {
+      "question": "Where was Grandpa's wife waiting?",
+      "options": [
+        "At the restaurant",
+        "At home",
+        "At the hospital",
+        "At the station"
+      ],
+      "correct_index": 2
+    },
+    {
+      "question": "What happened after Grandpa got his phone?",
+      "options": [
+        "He missed the train",
+        "He caught the last train and called his wife",
+        "He walked home with the children",
+        "He returned to the restaurant"
+      ],
+      "correct_index": 1
+    }
+  ],
   "panels": {
     "meta": {
-      "series": "Hanzi Dojo: The Eight-Thirty Train",
-      "episode_label": "第一话",
-      "episode_title": "八点半的火车",
+      "story_kind": "standalone",
+      "estimated_minutes": 12,
+      "chapters": [
+        {
+          "title": "雨夜的手机",
+          "panel": "p1"
+        },
+        {
+          "title": "八点二十六分",
+          "panel": "p10"
+        },
+        {
+          "title": "最后的火车",
+          "panel": "p15"
+        }
+      ],
       "art_base": "/stories/train/hsk2/ep01/",
       "art_palette": "colour",
-      "hook": "A singing phone, a train at eight-thirty, and a wife waiting in a hospital far away.",
-      "continues": {
-        "label": "第二话",
-        "level": 2
+      "reward": {
+        "glyph": "时",
+        "label": "守时读者"
       }
     },
     "cast": {

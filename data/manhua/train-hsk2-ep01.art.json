@@ -1,5 +1,5 @@
 {
-  "_comment": "Panel art for 'The Eight-Thirty Train' episode 1. Fetched into the repo by .github/workflows/content-utils.yml, task `manhua-art-fetch` (runs fetch-manhua-art.mjs on this file and commits the result) — the authoring sandbox has no route to binary pushes, so art travels as URLs exactly like the other episodes. The `file` names are what data/manhua/train-hsk2-ep01.json's panels[].art refer to; src/manhuaEpisodes.test.js fails if the two ever disagree.",
+  "_comment": "Panel art for the standalone HSK 2 story 《末班车》, originally authored as 'The Eight-Thirty Train'. Fetched into the repo by .github/workflows/content-utils.yml, task `manhua-art-fetch` (runs fetch-manhua-art.mjs on this file and commits the result). The `file` names are what data/manhua/train-hsk2-ep01.json's panels[].art refer to; src/manhuaEpisodes.test.js fails if the two ever disagree.",
   "_style_comment": "All seventeen generated with a locked warm-colour rainy-night art direction (teal-and-amber palette, cinematic lighting), with a single cast sheet generated first and attached as the reference image for every panel featuring 你, 阿力, 爷爷 or 奶奶. Every prompt carried the full-bleed / no-frame / no-text / no-invented-glyph block from docs/STORY-BIBLE.md §6. Clock faces and phone screens are explicitly blank.",
   "dir": "public/stories/train/hsk2/ep01",
   "assets": [

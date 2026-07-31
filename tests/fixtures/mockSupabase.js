@@ -11,6 +11,7 @@
 import { test as base, expect } from '@playwright/test';
 import {
   NOODLESHOP_MANIFEST,
+  TRAIN_MANIFEST,
   questionsFromManhuaManifest,
   storyFromManhuaManifest,
 } from './manhuaManifest.js';
@@ -110,6 +111,7 @@ const VOCAB = [
 // because level 1 is complete. It is deliberately NOT tier 1, so "First Steps"
 // stays a unique control on the screen for the existing reader specs.
 export const NOODLESHOP_STORY_ID = 'st-noodleshop-hsk1-ep01';
+export const TRAIN_STORY_ID = 'st-train-hsk2-ep01';
 
 const STORIES = [{
   id: 'st1', language: 'chinese', system: 'hsk', level: 2, tier: 1, story_number: 1,
@@ -158,6 +160,10 @@ const STORIES = [{
   // track predates that rename and still queries `hsk`, so adapt only the row
   // key while leaving every authored field untouched.
   system: TRACK.system,
+}), storyFromManhuaManifest(TRAIN_MANIFEST, {
+  id: TRAIN_STORY_ID,
+  storyNumber: 5,
+  system: TRACK.system,
 })];
 
 function card(n, o = {}) {
@@ -197,6 +203,7 @@ const STORY_QUESTIONS = [
   { id: 'sq1', story_id: 'st1', question_number: 1, question: 'How is the weather?', options: ['Good', 'Bad'], correct_index: 0 },
   { id: 'sq2', story_id: 'st1', question_number: 2, question: 'Where did they go?', options: ['Park', 'School'], correct_index: 0 },
   ...questionsFromManhuaManifest(NOODLESHOP_MANIFEST, NOODLESHOP_STORY_ID),
+  ...questionsFromManhuaManifest(TRAIN_MANIFEST, TRAIN_STORY_ID),
 ];
 
 const TABLE_FIXTURES = { profiles: PROFILE, language_tracks: TRACK, vocabulary: VOCAB, cards: CARDS, stories: STORIES, story_reads: [], story_questions: STORY_QUESTIONS };
