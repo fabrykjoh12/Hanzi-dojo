@@ -153,6 +153,36 @@ describe('manhua episodes', () => {
         }
       })
 
+      it('keeps title aliases safe for an in-place publisher rename', () => {
+        if (!Object.prototype.hasOwnProperty.call(ep, 'previous_titles')) return
+        expect(Array.isArray(ep.previous_titles)).toBe(true)
+        expect(ep.previous_titles.length).toBeGreaterThan(0)
+        expect(ep.previous_titles.every(title => typeof title === 'string' && title.trim().length > 0)).toBe(true)
+        expect(new Set(ep.previous_titles).size).toBe(ep.previous_titles.length)
+        expect(ep.previous_titles).not.toContain(ep.title)
+      })
+
+      it('gives a standalone work honest shelf metadata and no serial framing', () => {
+        const meta = (ep.panels && ep.panels.meta) || {}
+        if (meta.story_kind !== 'standalone') return
+        expect(ep.title.startsWith('《')).toBe(true)
+        expect(ep.title.endsWith('》')).toBe(true)
+        expect(meta.series).toBeUndefined()
+        expect(meta.episode_label).toBeUndefined()
+        expect(meta.episode_title).toBeUndefined()
+        expect(meta.continues).toBeUndefined()
+        expect(Number.isInteger(meta.estimated_minutes)).toBe(true)
+        expect(meta.estimated_minutes).toBeGreaterThan(0)
+        expect(Array.isArray(meta.chapters)).toBe(true)
+        expect(meta.chapters.length).toBeGreaterThan(0)
+        const panelIds = new Set(((ep.panels && ep.panels.panels) || []).map(panel => panel.id))
+        for (const chapter of meta.chapters) {
+          expect(typeof chapter.title).toBe('string')
+          expect(chapter.title.trim().length).toBeGreaterThan(0)
+          expect(panelIds.has(chapter.panel), 'chapter starts at missing panel: ' + chapter.panel).toBe(true)
+        }
+      })
+
       it('keeps every line short enough for a bubble (≤ 24 chars)', () => {
         // Tighter than the 40 a prose chapter gets: this line has to fit in a
         // box drawn over a picture, on a phone.

@@ -1,5 +1,5 @@
 {
-  "_comment": "Hanzi Dojo Stories — canonical source for this manhua episode. publish-manhua.mjs upserts it into `stories`; src/manhuaEpisodes.test.js validates the Chinese against the level list and the layout against the reader’s own rules. Edit here, never in the database.",
+  "_comment": "Hanzi Dojo Stories — canonical source for this standalone manhua. publish-manhua.mjs upserts it into `stories`; src/manhuaEpisodes.test.js validates the Chinese against the level list and the layout against the reader’s own rules. Edit here, never in the database.",
   "language": "chinese",
   "system": "hsk_3",
   "level": 1,
@@ -7,7 +7,10 @@
   "tier_min_words": 0,
   "presentation": "manhua",
   "is_published": true,
-  "title": "第一话 · 一块钱",
+  "title": "《一块钱》",
+  "previous_titles": [
+    "第一话 · 一块钱"
+  ],
   "english_summary": "A rainy night at a tiny noodle shop where nobody has come in. A cat appears at the door, then a man who is one kuai short of a bowl of noodles. Nobody explains anything — at HSK 1 nobody can.",
   "_content_comment": "One beat per line, ‘NAME：text’ with a fullwidth colon. Beat indices are 0-based and are what panels[].bubbles[].beat refers to; INSERTING A LINE MEANS RE-INDEXING THE PANELS.",
   "content": "下雨了。\n我在饭店里。\n妈妈做饭。\n今天没有人来。\n小美：你看！\n一只猫在外边。\n它很小，也很冷。\n你：你想吃什么？\n你：你想喝水吗？\n猫不说话。\n我给它牛奶。\n它都喝了。\n一个人来了。\n他要面条儿。\n妈妈：十块钱。\n他有九块。\n他不说话。\n你：没关系。\n你：妈妈，我有一块钱。\n妈妈：好。吃吧。\n他吃面条儿。\n猫看他。\n他给猫一个鸡蛋。\n小美：猫喜欢他。\n他和猫都不说话。\n明天他会来吗？",
@@ -53,19 +56,27 @@
   ],
   "panels": {
     "meta": {
-      "series": "Hanzi Dojo: The Rainy-Day Noodle Shop",
-      "episode_label": "第一话",
-      "episode_title": "一块钱",
+      "story_kind": "standalone",
+      "estimated_minutes": 8,
+      "chapters": [
+        {
+          "title": "雨夜",
+          "panel": "p1"
+        },
+        {
+          "title": "九块钱",
+          "panel": "p11"
+        },
+        {
+          "title": "一碗面",
+          "panel": "p15"
+        }
+      ],
       "art_base": "/stories/noodleshop/hsk1/ep01/",
       "art_palette": "colour",
-      "hook": "He was one kuai short, and nobody said anything about it.",
       "reward": {
         "glyph": "暖",
         "label": "暖心读者"
-      },
-      "continues": {
-        "label": "第二话",
-        "level": 1
       }
     },
     "cast": {

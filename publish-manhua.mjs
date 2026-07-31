@@ -58,6 +58,10 @@ const lines = (ep.content || '').split('\n').filter(Boolean)
 const english = (ep.english_content || '').split('\n').filter(Boolean)
 const hasAuthoredQuestions = Object.prototype.hasOwnProperty.call(ep, 'questions')
 const authoredQuestions = hasAuthoredQuestions ? ep.questions : null
+const hasPreviousTitles = Object.prototype.hasOwnProperty.call(ep, 'previous_titles')
+const previousTitles = hasPreviousTitles && Array.isArray(ep.previous_titles)
+  ? ep.previous_titles.map(title => typeof title === 'string' ? title.trim() : '').filter(Boolean)
+  : []
 if (lines.length === 0) { console.error('Episode has no content.'); process.exit(1) }
 if (english.length && english.length !== lines.length) {
   console.error('english_content must be line-parallel: ' + english.length + ' English vs ' + lines.length + ' Chinese.')
@@ -80,6 +84,14 @@ if (hasAuthoredQuestions) {
     }
   }
 }
+if (hasPreviousTitles) {
+  const unique = new Set(previousTitles)
+  if (!Array.isArray(ep.previous_titles) || previousTitles.length !== ep.previous_titles.length
+    || unique.size !== previousTitles.length || unique.has(ep.title)) {
+    console.error('previous_titles must contain unique non-empty strings and must not repeat the current title.')
+    process.exit(1)
+  }
+}
 
 const key = { language: ep.language, system: ep.system, level: ep.level, title: ep.title }
 console.log('Episode: ' + ep.title)
@@ -87,11 +99,17 @@ console.log('  ' + lines.length + ' beats · ' + ((ep.panels && ep.panels.panels
   + ep.language + '/' + ep.system + '/level ' + ep.level)
 if (hasAuthoredQuestions) console.log('  ' + authoredQuestions.length + ' authored comprehension questions')
 
-const { data: existing, error: findErr } = await supabase
-  .from('stories').select('id, story_number')
-  .eq('language', key.language).eq('system', key.system).eq('level', key.level).eq('title', key.title)
-  .maybeSingle()
+const lookupTitles = [key.title].concat(previousTitles)
+const { data: existingMatches, error: findErr } = await supabase
+  .from('stories').select('id, story_number, title')
+  .eq('language', key.language).eq('system', key.system).eq('level', key.level)
+  .in('title', lookupTitles).limit(2)
 if (findErr) { console.error('Lookup failed: ' + findErr.message); process.exit(1) }
+if ((existingMatches || []).length > 1) {
+  console.error('Lookup found more than one current/previous title. Refusing to guess which story to update.')
+  process.exit(1)
+}
+const existing = (existingMatches || [])[0] || null
 
 // ── Preflight: is every panel's art actually on the live site? ──────────────
 const panelMeta = (ep.panels && ep.panels.meta) || {}
@@ -138,7 +156,10 @@ if (artFiles.length && !skipArtCheck) {
 }
 
 if (!apply) {
-  console.log(existing ? '\nDRY RUN — would UPDATE story ' + existing.id : '\nDRY RUN — would INSERT a new story')
+  const rename = existing && existing.title !== key.title
+    ? ' and RENAME “' + existing.title + '” → “' + key.title + '”'
+    : ''
+  console.log(existing ? '\nDRY RUN — would UPDATE story ' + existing.id + rename : '\nDRY RUN — would INSERT a new story')
   console.log('Re-run with --apply to write.')
   process.exit(0)
 }
