@@ -11,13 +11,13 @@ import { isLearned } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import { todayStr } from './streak'
 import { pickDailyStory } from './dailyStory'
-import { groupIntoArcs } from './storyArcs'
 import { filterStories, STATUS_FILTERS, FORMAT_FILTERS } from './storyList'
 import { isPracticeFormat, formatLabel, formatEmoji } from './storyFormat'
+import { organizeNarrativeStories, seriesHasMore, standaloneStoryDetails } from './storyShelf'
 import StoryReader from './StoryReader'
 import StoryCover from './StoryCover'
 import {
-  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Layers, Library, Lock,
+  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock, Layers, Library, Lock,
 } from 'lucide-react'
 
 // Story tier definitions live in ./storyTiers (shared with the post-study
@@ -107,6 +107,7 @@ const metaTag = {
 // level tag · format tag · read/unread.
 function StoryCard({ story, read, accentHex, fontFamily, levelLabel, practice, onClick }) {
   const [hovered, setHovered] = useState(false)
+  const standalone = standaloneStoryDetails(story)
   return (
     <button
       onClick={onClick}
@@ -141,6 +142,16 @@ function StoryCard({ story, read, accentHex, fontFamily, levelLabel, practice, o
             color: '#fff', background: 'rgba(24,24,27,0.55)', borderRadius: '999px', padding: '3px 8px', zIndex: 1,
           }}>Practice</div>
         )}
+        {standalone && (
+          <div style={{
+            position: 'absolute', top: '8px', left: '8px', display: 'flex', alignItems: 'center', gap: '5px',
+            fontSize: '10.5px', fontWeight: 800, color: '#fff',
+            background: 'rgba(24,24,27,0.62)', borderRadius: '999px', padding: '4px 9px', zIndex: 1,
+          }}>
+            <BookOpen size={12} strokeWidth={2.2} color="#fff" aria-hidden="true" />
+            Complete story
+          </div>
+        )}
       </StoryCover>
       <div style={{ padding: '12px 14px 13px', display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 }}>
         <div title={story.title} style={{ fontSize: '16px', fontWeight: 750, fontFamily, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3 }}>
@@ -149,6 +160,28 @@ function StoryCard({ story, read, accentHex, fontFamily, levelLabel, practice, o
         <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.4 }}>
           {story.english_summary || '—'}
         </div>
+        {standalone && (standalone.chapters || standalone.minutes) && (
+          <div
+            aria-label={[
+              standalone.chapters ? standalone.chapters + ' chapters' : null,
+              standalone.minutes ? 'about ' + standalone.minutes + ' minutes' : null,
+            ].filter(Boolean).join(', ')}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', minHeight: '18px', color: 'var(--text-muted)', fontSize: '11.5px', fontWeight: 700 }}
+          >
+            {standalone.chapters && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <Layers size={13} strokeWidth={2} aria-hidden="true" />
+                {standalone.chapters} chapters
+              </span>
+            )}
+            {standalone.minutes && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <Clock size={13} strokeWidth={2} aria-hidden="true" />
+                {standalone.minutes} min
+              </span>
+            )}
+          </div>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '3px', flexWrap: 'nowrap' }}>
           <span style={metaTag}>{levelLabel}</span>
           <span style={metaTag}>{formatEmoji(story)} {formatLabel(story)}</span>
@@ -271,6 +304,7 @@ function SeriesCard({ arc, readIds, accentHex, fontFamily, isMobile, onOpen }) {
   const readCount = arc.parts.filter(p => readIds.has(p.id)).length
   const total = arc.parts.length
   const done = readCount === total
+  const ongoing = seriesHasMore(arc)
   // Open on the cover of where you actually are, not always chapter one.
   const coverStory = arc.parts.find(p => !readIds.has(p.id)) || arc.parts[0]
   return (
@@ -310,7 +344,7 @@ function SeriesCard({ arc, readIds, accentHex, fontFamily, isMobile, onOpen }) {
             background: 'rgba(24,24,27,0.55)', borderRadius: '999px', padding: '3px 9px', zIndex: 1,
           }}>
             <Layers size={12} strokeWidth={2.2} color="#fff" />
-            {total} chapters
+            {total} chapter{total === 1 ? '' : 's'}
           </div>
           {done && (
             <div style={{
@@ -329,7 +363,7 @@ function SeriesCard({ arc, readIds, accentHex, fontFamily, isMobile, onOpen }) {
           }}>
             {arc.title}
           </div>
-          <SeriesProgress readCount={readCount} total={total} accentHex={accentHex} />
+          <SeriesProgress readCount={readCount} total={total} accentHex={accentHex} ongoing={ongoing} />
         </div>
       </button>
     </div>
@@ -338,7 +372,7 @@ function SeriesCard({ arc, readIds, accentHex, fontFamily, isMobile, onOpen }) {
 
 // Shared by the series card and the series page so the two never disagree about
 // how far along you are.
-function SeriesProgress({ readCount, total, accentHex }) {
+function SeriesProgress({ readCount, total, accentHex, ongoing = false }) {
   const pct = total > 0 ? Math.round((readCount / total) * 100) : 0
   const done = readCount === total && total > 0
   return (
@@ -352,7 +386,7 @@ function SeriesProgress({ readCount, total, accentHex }) {
       <div style={{ fontSize: '11.5px', fontWeight: 700, color: done ? 'var(--success)' : 'var(--text-muted)' }}>
         {readCount === 0
           ? 'Not started'
-          : done ? 'Series complete' : readCount + ' of ' + total + ' read'}
+          : done ? (ongoing ? 'All available read' : 'Series complete') : readCount + ' of ' + total + ' read'}
       </div>
     </div>
   )
@@ -361,6 +395,7 @@ function SeriesProgress({ readCount, total, accentHex }) {
 // The series page: every chapter of one arc, in reading order.
 function SeriesPage({ arc, readIds, accentHex, fontFamily, levelLabelFor, isMobile, onOpen, onBack }) {
   const readCount = arc.parts.filter(p => readIds.has(p.id)).length
+  const ongoing = seriesHasMore(arc)
   return (
     <div>
       <button onClick={onBack} style={{
@@ -380,7 +415,7 @@ function SeriesPage({ arc, readIds, accentHex, fontFamily, levelLabelFor, isMobi
           {arc.title}
         </h1>
         <div style={{ maxWidth: '280px' }}>
-          <SeriesProgress readCount={readCount} total={arc.parts.length} accentHex={accentHex} />
+          <SeriesProgress readCount={readCount} total={arc.parts.length} accentHex={accentHex} ongoing={ongoing} />
         </div>
       </div>
 
@@ -824,16 +859,8 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
             const narrative = filtered.filter(s => !isPracticeFormat(s))
             const practice = filtered.filter(s => isPracticeFormat(s))
             if (narrative.length === 0 && practice.length === 0) return
-            const arcs = groupIntoArcs(narrative)
-            // A series earns a cover only when it is genuinely a multi-chapter
-            // run. An unnumbered pile is not a series — collapsing it behind a
-            // cover would bury every story under a click for nothing.
-            const seriesArcs = arcs.filter(a => a.numbered && a.parts.length > 1)
-            const looseStories = arcs
-              .filter(a => !(a.numbered && a.parts.length > 1))
-              .flatMap(a => a.parts)
-            // Headings only pay for themselves when both kinds are on screen.
-            const showKindHeaders = seriesArcs.length > 0 && looseStories.length > 0
+            const { standaloneStories, seriesArcs, looseStories } = organizeNarrativeStories(narrative)
+            const showLooseHeader = standaloneStories.length > 0 || seriesArcs.length > 0
             blocks.push(
               <section key={sh.level}>
                 {multiLevel && (
@@ -847,9 +874,24 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
                   </div>
                 )}
                 <div style={{ display: 'grid', gap: '28px' }}>
+                  {standaloneStories.length > 0 && (
+                    <section aria-labelledby={'standalone-stories-' + sh.level}>
+                      <div id={'standalone-stories-' + sh.level}>
+                        <SectionHeading title="Standalone stories" note="Complete in one sitting" />
+                      </div>
+                      <CardGrid isMobile={isMobile}>
+                        {standaloneStories.map(story => (
+                          <StoryCard key={story.id} story={story} read={readIds.has(story.id)} accentHex={accentHex}
+                            fontFamily={fontFamily} levelLabel={levelLabelFor(story)} onClick={() => openStory(story)} />
+                        ))}
+                      </CardGrid>
+                    </section>
+                  )}
                   {seriesArcs.length > 0 && (
-                    <section>
-                      {showKindHeaders && <SectionHeading title="Series" note={seriesArcs.length + ' to follow'} />}
+                    <section aria-labelledby={'story-series-' + sh.level}>
+                      <div id={'story-series-' + sh.level}>
+                        <SectionHeading title="Series" note={seriesArcs.length + ' to follow'} />
+                      </div>
                       <CardGrid isMobile={isMobile}>
                         {seriesArcs.map(arc => (
                           <SeriesCard
@@ -862,7 +904,7 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
                   )}
                   {looseStories.length > 0 && (
                     <section>
-                      {showKindHeaders && <SectionHeading title="Single stories" note={looseStories.length + ' to read'} />}
+                      {showLooseHeader && <SectionHeading title="More stories" note={looseStories.length + ' to read'} />}
                       <CardGrid isMobile={isMobile}>
                         {looseStories.map(story => (
                           <StoryCard key={story.id} story={story} read={readIds.has(story.id)} accentHex={accentHex}

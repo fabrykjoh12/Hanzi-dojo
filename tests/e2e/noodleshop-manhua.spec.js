@@ -2,22 +2,34 @@ import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 import { NOODLESHOP_MANIFEST } from '../fixtures/manhuaManifest.js';
 import { ReaderPage } from '../pages/ReaderPage.js';
 
-const EPISODE = NOODLESHOP_MANIFEST.title;
+const STORY = NOODLESHOP_MANIFEST.title;
 
 async function openEpisode(page) {
   const reader = new ReaderPage(page);
-  await reader.openStoryByTitle(EPISODE);
-  await expect(page.getByRole('heading', { name: NOODLESHOP_MANIFEST.panels.meta.episode_title })).toBeVisible();
+  await reader.openStoryByTitle(STORY);
+  await expect(page.getByRole('heading', { name: STORY, exact: true })).toBeVisible();
 }
 
 test.describe('《一块钱》 vertical slice', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
+  test('appears as a complete standalone work beside, not inside, series', async ({ page }) => {
+    await page.goto('/stories');
+    const shelf = page.getByRole('tabpanel');
+    await expect(shelf.getByRole('heading', { name: 'Standalone stories' })).toBeVisible();
+    await expect(shelf.getByRole('heading', { name: 'Series' })).toBeVisible();
+    const card = shelf.getByRole('button', { name: new RegExp(STORY) });
+    await expect(card.getByText('Complete story', { exact: true })).toBeVisible();
+    await expect(card.getByText('3 chapters', { exact: true })).toBeVisible();
+    await expect(card.getByText('8 min', { exact: true })).toBeVisible();
+    await expect(card.getByText('第一话', { exact: true })).toHaveCount(0);
+  });
+
   test('runs from shelf to choices, resume, comprehension, reward, and read state', async ({ page }) => {
     test.setTimeout(120000);
     await openEpisode(page);
 
-    await expect(page.getByText('第一话', { exact: true })).toBeVisible();
+    await expect(page.getByText('第一话', { exact: true })).toHaveCount(0);
     await expect(page.getByLabel('Panel 1 of 18')).toBeVisible();
     await expect(page.getByRole('img', { name: /Night rain hammering a narrow street/ })).toBeVisible();
 
@@ -68,7 +80,7 @@ test.describe('《一块钱》 vertical slice', () => {
     await expect(completion.getByRole('status', { name: /暖心读者/ })).toBeVisible();
 
     await completion.getByRole('button', { name: /Back to stories/ }).click();
-    const card = page.getByRole('tabpanel').getByRole('button', { name: new RegExp(EPISODE) });
+    const card = page.getByRole('tabpanel').getByRole('button', { name: new RegExp(STORY) });
     await expect(card.getByText('Read', { exact: true })).toBeVisible();
   });
 });
