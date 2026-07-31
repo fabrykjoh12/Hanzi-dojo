@@ -12,6 +12,7 @@ import { test as base, expect } from '@playwright/test';
 import {
   NOODLESHOP_MANIFEST,
   TRAIN_MANIFEST,
+  UPSTAIRS_MANIFEST,
   questionsFromManhuaManifest,
   storyFromManhuaManifest,
 } from './manhuaManifest.js';
@@ -99,6 +100,7 @@ const VOCAB = [
   // the episode may use the normal fallback dictionary path; this row proves
   // the manifest-derived story is wired to the learner vocabulary map.
   { id: 'noodle-v1', word: '面条儿', reading: 'miàntiáor', meaning: 'noodles', level: 1, system: 'hsk', language: 'chinese', is_active: true },
+  { id: 'upstairs-v1', word: '声音', reading: 'shēngyīn', meaning: 'sound, voice', level: 3, system: 'hsk', language: 'chinese', is_active: true },
 ];
 
 // One published, Paced-Reveal story, and one published Chat-format story.
@@ -112,6 +114,7 @@ const VOCAB = [
 // stays a unique control on the screen for the existing reader specs.
 export const NOODLESHOP_STORY_ID = 'st-noodleshop-hsk1-ep01';
 export const TRAIN_STORY_ID = 'st-train-hsk2-ep01';
+export const UPSTAIRS_STORY_ID = 'st-upstairs-hsk3-ep01';
 
 const STORIES = [{
   id: 'st1', language: 'chinese', system: 'hsk', level: 2, tier: 1, story_number: 1,
@@ -164,6 +167,10 @@ const STORIES = [{
   id: TRAIN_STORY_ID,
   storyNumber: 5,
   system: TRACK.system,
+}), storyFromManhuaManifest(UPSTAIRS_MANIFEST, {
+  id: UPSTAIRS_STORY_ID,
+  storyNumber: 1,
+  system: TRACK.system,
 })];
 
 function card(n, o = {}) {
@@ -204,6 +211,7 @@ const STORY_QUESTIONS = [
   { id: 'sq2', story_id: 'st1', question_number: 2, question: 'Where did they go?', options: ['Park', 'School'], correct_index: 0 },
   ...questionsFromManhuaManifest(NOODLESHOP_MANIFEST, NOODLESHOP_STORY_ID),
   ...questionsFromManhuaManifest(TRAIN_MANIFEST, TRAIN_STORY_ID),
+  ...questionsFromManhuaManifest(UPSTAIRS_MANIFEST, UPSTAIRS_STORY_ID),
 ];
 
 const TABLE_FIXTURES = { profiles: PROFILE, language_tracks: TRACK, vocabulary: VOCAB, cards: CARDS, stories: STORIES, story_reads: [], story_questions: STORY_QUESTIONS };

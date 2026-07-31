@@ -218,6 +218,25 @@ describe('panelAtReadingLine', () => {
     expect(panelAtReadingLine(rects, H)).toBe(0)
   })
 
+  it('credits a short final panel once the whole ending is visible', () => {
+    const rects = [
+      { top: -700, bottom: -200 },
+      { top: -120, bottom: 450 },
+      { top: 520, bottom: 730 },
+    ]
+    expect(rects[2].top).toBeGreaterThan(H * READING_LINE)
+    expect(panelAtReadingLine(rects, H)).toBe(2)
+  })
+
+  it('does not treat the last unlocked choice as the episode ending', () => {
+    const rects = [
+      { top: -700, bottom: -200 },
+      { top: -120, bottom: 450 },
+      { top: 520, bottom: 730 },
+    ]
+    expect(panelAtReadingLine(rects, H, 8)).toBe(1)
+  })
+
   it('moves on as soon as the next panel crosses the line', () => {
     expect(panelAtReadingLine([{ top: -200 }, { top: 340 }], H)).toBe(0)
     expect(panelAtReadingLine([{ top: -210 }, { top: 330 }], H)).toBe(1)

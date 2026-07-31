@@ -286,15 +286,35 @@ export const READING_LINE = 0.42
 
 // rects: [{ top }] in viewport coordinates, indexed by panel. Entries may be
 // null for a panel that isn't mounted.
-export function panelAtReadingLine(rects, viewportHeight) {
+export function panelAtReadingLine(rects, viewportHeight, panelCount) {
   const list = Array.isArray(rects) ? rects : []
+  const viewport = viewportHeight || 0
+  const total = Number.isInteger(panelCount) ? panelCount : list.length
+  const firstMounted = list.findIndex(Boolean)
+
+  // At maximum scroll, a short final panel can be completely visible without
+  // ever reaching the fixed reading line. Credit it once the learner has
+  // scrolled past an earlier panel and can see the whole ending.
+  let lastMounted = -1
+  for (let i = list.length - 1; i >= 0; i -= 1) {
+    if (list[i]) { lastMounted = i; break }
+  }
+  const finalRect = list[lastMounted]
+  const hasScrolledPastEarlierPanel = list.some((r, i) => i < lastMounted && r?.top < 0)
+  if (
+    lastMounted === total - 1
+    && finalRect?.top >= 0
+    && Number.isFinite(finalRect.bottom)
+    && finalRect.bottom <= viewport
+    && hasScrolledPastEarlierPanel
+  ) return lastMounted
+
   // At the untouched top of an episode, panel 1 is the thing the learner has
   // opened even when a very narrow phone makes that first panel short enough
   // for panel 2's top to cross the fixed reading line. Once panel 1 moves above
   // the viewport, the normal reading-line calculation takes over.
-  const firstMounted = list.findIndex(Boolean)
   if (firstMounted >= 0 && list[firstMounted].top >= 0) return firstMounted
-  const line = (viewportHeight || 0) * READING_LINE
+  const line = viewport * READING_LINE
   let best = -1
   for (let i = 0; i < list.length; i += 1) {
     const r = list[i]
