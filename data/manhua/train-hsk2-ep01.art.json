@@ -1,0 +1,75 @@
+{
+  "_comment": "Panel art for 'The Eight-Thirty Train' episode 1. Fetched into the repo by .github/workflows/content-utils.yml, task `manhua-art-fetch` (runs fetch-manhua-art.mjs on this file and commits the result) — the authoring sandbox has no route to binary pushes, so art travels as URLs exactly like the other episodes. The `file` names are what data/manhua/train-hsk2-ep01.json's panels[].art refer to; src/manhuaEpisodes.test.js fails if the two ever disagree.",
+  "_style_comment": "All seventeen generated with a locked warm-colour rainy-night art direction (teal-and-amber palette, cinematic lighting), with a single cast sheet generated first and attached as the reference image for every panel featuring 你, 阿力, 爷爷 or 奶奶. Every prompt carried the full-bleed / no-frame / no-text / no-invented-glyph block from docs/STORY-BIBLE.md §6. Clock faces and phone screens are explicitly blank.",
+  "dir": "public/stories/train/hsk2/ep01",
+  "assets": [
+    {
+      "file": "panel-01-closing-time.webp",
+      "url": "https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F46280e15b732cfd2f3b87bc8d90e09823951af7144454e919229d94ee1aacbe4?filename=panel-01-closing-time.webp&sig=n59G_zIwnzvDYllABj2iT7E2P8EHYCGynuc9eeKEMEc=&t=o"
+    },
+    {
+      "file": "panel-02-phone-on-table.webp",
+      "url": "https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F9918b8947d2025d6514fc88f02957ebc646977a589915f1978a9b185fc6b663c?filename=panel-02-phone-on-table.webp&sig=Jp9WAxLvx51DWLM6xG9O9dYjTl3hnEtfH7aIbBfwT1c=&t=o"
+    },
+    {
+      "file": "panel-03-eight-thirty.webp",
+      "url": "https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F7f15d9825135aece6fe483f0248e60e11dfef084aad67128f529b0c4262e6c7a?filename=panel-03-eight-thirty.webp&sig=yRvcIuTKU0dtBY3lHrPbuGm6z4J6BIy26HsqDNkiDxQ=&t=o"
+    },
+    {
+      "file": "panel-04-grandma-waits.webp",
+      "url": "https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F663dacb0ef2dfe31671e297e1f098cd301d852e51956c08d2185304b9bccbf00?filename=panel-04-grandma-waits.webp&sig=oCtwMzcndJTvs_fI6W3YRwOiO52hfzf3xrU7M3yaENU=&t=o"
+    },
+    {
+      "file": "panel-06-into-the-rain.webp",
+      "url": "https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2Ff86e42c33ee5b51bbec819ddb4f1300e54d34957bcdc60f584cc0c3f725d2ce1?filename=panel-06-into-the-rain.webp&sig=qauke2aCZxqtsBl7N0nN2qtrmb9Tnokg15giqrXF_1I=&t=o"
+    },
+    {
+      "file": "panel-07-phone-sings.webp",
+      "url": "https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F80cf42ebdca38911635acba52ea12ca3a7796f873e83eac799de0efb92108669?filename=panel-07-phone-sings.webp&sig=u2K4l3TcMU_Pw0SxIY-JFf2RBfNMZO7dsnuT3Vgca5Q=&t=o"
+    },
+    {
+      "file": "panel-08-beijing-hospital.webp",
+      "url": "https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2Fe46dfd7835c1251ae9e4dfa56946834a29579c5549cea5bdc2bcfeb1d92b1757?filename=panel-08-beijing-hospital.webp&sig=lqNtT4x9JABf_pxY6nn-Hj0pZ_8bydjbGeb1WN7gI8I=&t=o"
+    },
+    {
+      "file": "panel-09-running.webp",
+      "url": "https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F8dd44b9e96400d89d69d96c19a2d242920a18ed942f3833277a2d7f97949ae91?filename=panel-09-running.webp&sig=cfgAFzr0mcUp_OAE9dS1EdOSjWG0dtvvPC5Gs_RUJoE=&t=o"
+    },
+    {
+      "file": "panel-10-eight-twenty-six.webp",
+      "url": "https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2Ff7c4f6f6a198b0217ee48b5f67ca0e0f504d82ac0d3c0d892a0e8a9c737f2182?filename=panel-10-eight-twenty-six.webp&sig=D7PzrEDlls_k56CJXBowXkC1eRskluwm12i5ld7lRG8=&t=o"
+    },
+    {
+      "file": "panel-11-too-many-people.webp",
+      "url": "https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F0ebe02ea83aa0277d89bb0e0cd20d01659d39f3de27fde2587c110658fc46b5e?filename=panel-11-too-many-people.webp&sig=tEuS6VzC2DI2eoqGbu00L38oKygbb_XjCV4GaWOvZZQ=&t=o"
+    },
+    {
+      "file": "panel-13-there-he-is.webp",
+      "url": "https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2Fe4d3fe1a8ea7970bd46b75046d6aab6e7e1d38e62e09da4e628dc35e85bd075a?filename=panel-13-there-he-is.webp&sig=o7J0RPs3WAdcUvXgFtdgmnqB8WbdmAgsnz16ojdqGfU=&t=o"
+    },
+    {
+      "file": "panel-14-phone-returned.webp",
+      "url": "https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F3b2996d412b78719fab88039c8e0b62b8685d6d0fe9a51099501f237e1f5e0f1?filename=panel-14-phone-returned.webp&sig=DgaQX_AHexdcQzIcr6KIaNacTOPAx7JAuz2nCiquiQI=&t=o"
+    },
+    {
+      "file": "panel-15-water-in-his-eyes.webp",
+      "url": "https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F3ab7b17ac76c62fdd75da590481eef3a2cc63d2c76cbed70c36e14af0bff849d?filename=panel-15-water-in-his-eyes.webp&sig=eFyKoMCrAZgSH8BDNWIX1non5x9gdp3JBjp-h78tEt8=&t=o"
+    },
+    {
+      "file": "panel-16-train-leaves.webp",
+      "url": "https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F23996693ca8dae89a9b81b42b502a463f6becb8a288af038e5ee2a3ca1734865?filename=panel-16-train-leaves.webp&sig=n4F6RanaGN3MqXqpQYcKYbLlBjOQ573HPZVIHXGkRsg=&t=o"
+    },
+    {
+      "file": "panel-17-walking-home.webp",
+      "url": "https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F87bc8cf41fdeb5327b430c611e9c94fa5d7ec410f9e286319928444fb46ba677?filename=panel-17-walking-home.webp&sig=s0mftP1li4mXw0nRkyt-ju9EPHokQTutJhHdkm4OdCE=&t=o"
+    },
+    {
+      "file": "panel-18-what-favour.webp",
+      "url": "https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2Fd45d86695939e06ab3598cc5bc57d8870174aa16df63d51f14f462f10b143255?filename=panel-18-what-favour.webp&sig=kGcNGZYt6Zuh163IoGfTUsG1TcBxXZl2DV0Ps9cgKGw=&t=o"
+    },
+    {
+      "file": "panel-19-tomorrow-night.webp",
+      "url": "https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F237bf9039b1ed832cf740be3555b0441ac1214cd57403f045c5d2c400ec85a87?filename=panel-19-tomorrow-night.webp&sig=45A2C9ZWE7tTCnKuZZQYz9uMnd-H9BEXzrl4PklrrsU=&t=o"
+    }
+  ]
+}
