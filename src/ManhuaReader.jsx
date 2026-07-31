@@ -428,8 +428,12 @@ export default function ManhuaReader(props) {
               accentHex={accent}
               fontFamily={fontFamily}
               hook={meta.hook}
+              reward={meta.reward}
               continues={meta.continues}
               continuesLevelLabel={continuesLevelLabel}
+              questions={c.questions}
+              answers={c.answers}
+              onAnswer={c.answerQuestion}
               onBack={onBack}
               onPractice={onPractice}
               practiceWords={practiceWords}

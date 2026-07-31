@@ -9,6 +9,11 @@
 // secrets and identical results every time. VITE_SUPABASE_URL is set to
 // https://mock.supabase.co in .env.e2e, so the project ref is "mock".
 import { test as base, expect } from '@playwright/test';
+import {
+  NOODLESHOP_MANIFEST,
+  questionsFromManhuaManifest,
+  storyFromManhuaManifest,
+} from './manhuaManifest.js';
 
 const REF = 'mock';
 const USER_ID = '00000000-0000-4000-8000-000000000001';
@@ -89,6 +94,10 @@ const VOCAB = [
     id: 'm' + (i + 1), word, reading, meaning,
     level: 1, system: 'hsk', language: 'chinese', is_active: true,
   })),
+  // One canonical noodle-shop term for its E2E lookup assertion. The rest of
+  // the episode may use the normal fallback dictionary path; this row proves
+  // the manifest-derived story is wired to the learner vocabulary map.
+  { id: 'noodle-v1', word: '面条儿', reading: 'miàntiáor', meaning: 'noodles', level: 1, system: 'hsk', language: 'chinese', is_active: true },
 ];
 
 // One published, Paced-Reveal story, and one published Chat-format story.
@@ -100,6 +109,8 @@ const VOCAB = [
 // in tier 3, which would be locked at the learner's level-2 progress but is open
 // because level 1 is complete. It is deliberately NOT tier 1, so "First Steps"
 // stays a unique control on the screen for the existing reader specs.
+export const NOODLESHOP_STORY_ID = 'st-noodleshop-hsk1-ep01';
+
 const STORIES = [{
   id: 'st1', language: 'chinese', system: 'hsk', level: 2, tier: 1, story_number: 1,
   title: '公园里的下午', is_published: true, presentation: 'paced', has_audio: false,
@@ -140,7 +151,14 @@ const STORIES = [{
   content: "我来学校了。\n这是学校吗？\n小雨：你好！你是新学生吗？\n你：是，我是新学生。\n你：不是！\n小雨：真的吗？\n小雨：我叫小雨。你叫什么名字？\n小雨：来吧！我们去那边。\n学校很大。\n小雨：这是我们的学校。\n林老师：我是林老师。\n林老师：请坐。\n林老师：你会写汉字吗？\n你：会一点儿。\n你：不会。\n林老师：很好。\n林老师：没关系。\n林老师：现在我们学写字。\n小雨：这个字很漂亮。\n那是什么？\n小雨：那是小白。\n小雨：小白喜欢看我们写字。\n小白也想学汉字吗？",
   english_content: "I've come to the school.\nIs this the school?\nHello! Are you the new student?\nYes, I'm the new student.\nI'm not!\nReally?\nI'm called Xiao Yu. What's your name?\nCome on! Let's go over there.\nThe school is big.\nThis is our school.\nI am Teacher Lin.\nPlease sit.\nCan you write Chinese characters?\nA little.\nI can't.\nVery good.\nIt doesn't matter.\nNow we'll learn to write.\nThat character is beautiful.\nWhat is that?\nThat's Xiao Bai.\nXiao Bai likes watching us write.\nDoes Xiao Bai want to learn characters too?",
   panels: {"meta": {"series": "Hanzi Dojo: The Inkbound", "episode_label": "第一话", "episode_title": "我是新学生", "art_base": "/stories/inkbound/hsk1/ep01/", "hook": "Something small and white followed you through the gate.", "_continues_comment": "What the closing plate promises next, and the level it is written at. `level` is a level NUMBER in this story's own system — the reader prints it with getLevelLabel, so the plate says 'HSK 2' without anything hardcoding that string, and a Japanese or Russian season would print its own system's label. Omit the whole block for an episode that ends a season.", "continues": {"label": "第二话", "level": 2}}, "cast": {"小雨": {}, "你": {}, "林老师": {}}, "panels": [{"id": "p1", "art": "panel-01-arrival.webp", "ratio": "4/3", "alt": "Dusk. A young traveller with a scroll on their back stands small at the foot of a long stone stair, looking up at a lantern-hung dojo gate above a misty village.", "bubbles": [{"beat": 0, "kind": "narration", "side": "left", "top": 6, "width": 70}]}, {"id": "p2", "art": "panel-02-gate.webp", "ratio": "4/5", "alt": "Low angle: the huge tiled dojo gateway towers over the traveller, who is a small dark shape at the bottom of the frame.", "bubbles": [{"beat": 1, "kind": "thought", "side": "right", "top": 8, "width": 72}]}, {"id": "p3", "art": "panel-03-xiaoyu.webp", "ratio": "16/9", "alt": "Close-up: 小雨 leans grinning into the left of the frame, an ink brush through her hair and a red ribbon at one side; the right half of the panel is quiet empty wash.", "bubbles": [{"beat": 2, "kind": "speech", "side": "right", "top": 8, "width": 68, "tail": "bottom-left"}]}, {"id": "p4", "choice": {"prompt": "选择回答", "options": [{"beat": 3, "tone": "honest"}, {"beat": 4, "tone": "nervous"}]}}, {"id": "p5", "art": "panel-05-introduce.webp", "ratio": "3/4", "alt": "小雨 in a lantern-lit courtyard, one hand at her chest as she introduces herself; the traveller's shoulder is in dark foreground at the left edge.", "bubbles": [{"beat": 5, "kind": "speech", "side": "left", "top": 5, "width": 58, "tail": "bottom-right", "when": {"choice": "p4", "option": 1}}, {"beat": 6, "kind": "speech", "side": "right", "top": 62, "width": 70, "tail": "bottom-left"}]}, {"id": "p6", "art": "panel-06-walkway.webp", "ratio": "3/2", "alt": "小雨 walks ahead along a covered lantern-lit walkway, turning back over her shoulder to beckon the traveller on.", "bubbles": [{"beat": 7, "kind": "speech", "side": "left", "top": 6, "width": 64, "tail": "bottom-right"}, {"beat": 8, "kind": "narration", "side": "left", "top": 54, "width": 62}]}, {"id": "p7", "art": "panel-07-hall.webp", "ratio": "16/9", "alt": "The empty calligraphy hall: two rows of low writing tables, each with blank paper and a resting brush, under hanging lanterns.", "bubbles": [{"beat": 9, "kind": "speech", "side": "left", "top": 8, "width": 68, "tail": "bottom-right"}]}, {"id": "p8", "art": "panel-08-teacher.webp", "ratio": "2/1", "alt": "A letterbox panel: a tall calligraphy master stands in a lit doorway, face half in shadow, a brush held loosely at his side.", "bubbles": [{"beat": 10, "kind": "speech", "side": "left", "top": 8, "width": 58, "tail": "bottom-right"}]}, {"id": "p9", "art": "panel-09-seated.webp", "ratio": "3/4", "alt": "林老师 kneels behind a low writing table, looking straight at the reader and opening one hand toward the empty cushion in the foreground.", "bubbles": [{"beat": 11, "kind": "speech", "side": "left", "top": 5, "width": 56, "tail": "bottom-right"}, {"beat": 12, "kind": "speech", "side": "right", "top": 18, "width": 74, "tail": "bottom-left"}]}, {"id": "p10", "choice": {"prompt": "选择回答", "options": [{"beat": 13, "tone": "modest"}, {"beat": 14, "tone": "honest"}]}}, {"id": "p11", "art": "panel-11-stroke.webp", "_ratio_comment": "The generation came back 16:9; cropped to 4:3 here because this panel carries two lines and a letterbox has no room for the second. The brush is centred, so the crop only loses outer shadow.", "ratio": "4/3", "alt": "Extreme close-up of the master's hand and brush beginning a single bold stroke of wet ink on blank paper.", "_bubbles_comment": "Both branches answer here and exactly one is ever visible — 很好 to the learner who can already write a little, 没关系 to the one who cannot. The line after it is common to both, so the story rejoins itself on the same panel.", "bubbles": [{"beat": 15, "kind": "speech", "side": "left", "top": 6, "width": 50, "tail": "bottom-right", "when": {"choice": "p10", "option": 0}}, {"beat": 16, "kind": "speech", "side": "left", "top": 6, "width": 50, "tail": "bottom-right", "when": {"choice": "p10", "option": 1}}, {"beat": 17, "kind": "speech", "side": "right", "top": 44, "width": 74, "tail": "bottom-left"}]}, {"id": "p12", "art": "panel-12-delight.webp", "ratio": "3/2", "alt": "小雨 leans over the writing table with both hands flat on it, eyes shining, watching the master's brush.", "bubbles": [{"beat": 18, "kind": "speech", "side": "left", "top": 6, "width": 64, "tail": "bottom-right"}]}, {"id": "p13", "art": "panel-13-watcher.webp", "ratio": "3/2", "alt": "Almost darkness. A tiny white ink spirit with a single black brushstroke on its forehead peers out from behind a paper lantern, trailing a thread of ink-smoke.", "bubbles": [{"beat": 19, "kind": "thought", "side": "left", "top": 6, "width": 56}, {"beat": 20, "kind": "speech", "side": "left", "top": 48, "width": 66, "tail": "top-right"}]}, {"id": "p14", "art": "panel-14-hook.webp", "ratio": "4/5", "accent": true, "alt": "The traveller walks in through the dojo gate, seen from behind; far back down the steps the small white spirit drifts after them.", "bubbles": [{"beat": 21, "kind": "speech", "side": "center", "top": 4, "width": 78, "tail": "bottom-right"}, {"beat": 22, "kind": "thought", "side": "right", "top": 64, "width": 72}]}]},
-}];
+}, storyFromManhuaManifest(NOODLESHOP_MANIFEST, {
+  id: NOODLESHOP_STORY_ID,
+  storyNumber: 3,
+  // The production manifest uses the canonical HSK 3.0 key. This older mock
+  // track predates that rename and still queries `hsk`, so adapt only the row
+  // key while leaving every authored field untouched.
+  system: TRACK.system,
+})];
 
 function card(n, o = {}) {
   const state = o.state || 'review';
@@ -178,6 +196,7 @@ const CARDS = [
 const STORY_QUESTIONS = [
   { id: 'sq1', story_id: 'st1', question_number: 1, question: 'How is the weather?', options: ['Good', 'Bad'], correct_index: 0 },
   { id: 'sq2', story_id: 'st1', question_number: 2, question: 'Where did they go?', options: ['Park', 'School'], correct_index: 0 },
+  ...questionsFromManhuaManifest(NOODLESHOP_MANIFEST, NOODLESHOP_STORY_ID),
 ];
 
 const TABLE_FIXTURES = { profiles: PROFILE, language_tracks: TRACK, vocabulary: VOCAB, cards: CARDS, stories: STORIES, story_reads: [], story_questions: STORY_QUESTIONS };
@@ -245,7 +264,16 @@ export async function mockSupabaseRoutes(page) {
       let body;
       if (table in TABLE_FIXTURES) {
         const f = TABLE_FIXTURES[table];
-        body = Array.isArray(f) ? (wantsObject ? (f[0] ?? {}) : f) : (wantsObject ? f : [f]);
+        let rows = f;
+        // Unlike most broad fixture reads, comprehension is story-scoped. Keep
+        // that contract in the mock so one story cannot accidentally display
+        // another story's questions and still pass E2E.
+        if (table === 'story_questions' && Array.isArray(rows)) {
+          const filter = url.searchParams.get('story_id');
+          const storyId = filter && filter.startsWith('eq.') ? filter.slice(3) : null;
+          if (storyId) rows = rows.filter(row => row.story_id === storyId);
+        }
+        body = Array.isArray(rows) ? (wantsObject ? (rows[0] ?? {}) : rows) : (wantsObject ? rows : [rows]);
       } else body = wantsObject ? null : [];
       return route.fulfill({
         status: 200,

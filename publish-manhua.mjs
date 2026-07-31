@@ -56,16 +56,36 @@ try { ep = JSON.parse(readFileSync(file, 'utf8')) } catch (err) {
 
 const lines = (ep.content || '').split('\n').filter(Boolean)
 const english = (ep.english_content || '').split('\n').filter(Boolean)
+const hasAuthoredQuestions = Object.prototype.hasOwnProperty.call(ep, 'questions')
+const authoredQuestions = hasAuthoredQuestions ? ep.questions : null
 if (lines.length === 0) { console.error('Episode has no content.'); process.exit(1) }
 if (english.length && english.length !== lines.length) {
   console.error('english_content must be line-parallel: ' + english.length + ' English vs ' + lines.length + ' Chinese.')
   process.exit(1)
+}
+if (hasAuthoredQuestions) {
+  if (!Array.isArray(authoredQuestions)) {
+    console.error('questions must be an array when provided.')
+    process.exit(1)
+  }
+  for (let i = 0; i < authoredQuestions.length; i += 1) {
+    const q = authoredQuestions[i]
+    const valid = q && typeof q.question === 'string' && q.question.trim()
+      && Array.isArray(q.options) && q.options.length === 4
+      && q.options.every(option => typeof option === 'string' && option.trim())
+      && Number.isInteger(q.correct_index) && q.correct_index >= 0 && q.correct_index < q.options.length
+    if (!valid) {
+      console.error('questions[' + i + '] needs text, four non-empty options, and a valid correct_index.')
+      process.exit(1)
+    }
+  }
 }
 
 const key = { language: ep.language, system: ep.system, level: ep.level, title: ep.title }
 console.log('Episode: ' + ep.title)
 console.log('  ' + lines.length + ' beats · ' + ((ep.panels && ep.panels.panels) || []).length + ' panels · '
   + ep.language + '/' + ep.system + '/level ' + ep.level)
+if (hasAuthoredQuestions) console.log('  ' + authoredQuestions.length + ' authored comprehension questions')
 
 const { data: existing, error: findErr } = await supabase
   .from('stories').select('id, story_number')
@@ -142,6 +162,7 @@ if (existing) {
   const { error } = await supabase.from('stories').update(row).eq('id', existing.id)
   if (error) { console.error('Update failed: ' + error.message); process.exit(1) }
   console.log('Updated ' + existing.id)
+  row.id = existing.id
 } else {
   // story_number appends after whatever already exists at this level, the same
   // rule authored-stories.mjs uses, so numbering never collides.
@@ -153,4 +174,18 @@ if (existing) {
   const { data: inserted, error } = await supabase.from('stories').insert(row).select('id').single()
   if (error) { console.error('Insert failed: ' + error.message); process.exit(1) }
   console.log('Inserted ' + inserted.id + ' as story_number ' + row.story_number)
+  row.id = inserted.id
+}
+
+if (hasAuthoredQuestions) {
+  const { data: questionCount, error } = await supabase.rpc('replace_story_questions', {
+    p_story_id: row.id,
+    p_questions: authoredQuestions,
+  })
+  if (error) {
+    console.error('Question replacement failed: ' + error.message)
+    console.error('Apply supabase/migrations/20260731160000_replace_story_questions_rpc.sql, then re-run this publisher.')
+    process.exit(1)
+  }
+  console.log('Replaced ' + questionCount + ' authored comprehension questions')
 }

@@ -3,7 +3,7 @@ import { ArrowLeft, Users, Activity, Clock, BookOpen, Repeat } from 'lucide-reac
 import { supabase } from './supabase'
 import { useIsMobile } from './useIsMobile'
 import { languageTheme } from './languageTheme'
-import CreativeMode from './CreativeMode'
+import CreativeMode from './CreativeMode.jsx'
 import {
   withConversion, fillDailySeries, storyCompletionRate,
   filterStoryRows, storyLanguageBreakdown, retentionSummary, retentionAverages,
