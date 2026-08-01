@@ -1,0 +1,130 @@
+// Structural validator for the LIVE published stories (Chinese). Read-only.
+//
+// check-authored-stories.mjs validates the authored manifests in data/ before
+// they are inserted; nothing validated what is actually PUBLISHED in the
+// database — where drift really bites (a preview edited by hand, a chapter
+// unpublished out of a season, translations misaligned by one line). This
+// script pulls every published Chinese story and checks the invariants the
+// readers and the shelf depend on. It needs the service key, so it runs
+// locally via .env.script or in the content-utils Action (task
+// `check-published`), never in plain CI.
+//
+//   node --env-file=.env.script check-published-stories.mjs            # report
+//   node --env-file=.env.script check-published-stories.mjs --strict   # warnings also fail
+//
+// ERRORS (exit 1 — a learner-visible break):
+//   - empty content, or missing title
+//   - null tier / story_number
+//   - duplicate (level, story_number) among published rows
+//   - english_content present but its non-empty line count differs from the
+//     Chinese content's (per-line reveal shows the WRONG translation)
+//   - missing / blank english_summary (the shelf preview)
+// WARNINGS (exit 0 unless --strict — real, but may be deliberate):
+//   - chapter-number gaps among the published chapters of a series (held
+//     chapters — decide, don't just renumber; see docs/PM-BOARD.md HD-P4)
+//   - no english_content at all (some older chat/scene stories)
+//   - has_audio = false
+
+import { createClient } from '@supabase/supabase-js'
+
+const SUPABASE_URL = process.env.SUPABASE_URL
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+  console.error('Missing env vars. Run with: node --env-file=.env.script check-published-stories.mjs [--strict]')
+  process.exit(1)
+}
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+const strict = process.argv.includes('--strict')
+
+const lines = (s) => String(s || '').split('\n').filter(l => l.trim() !== '')
+
+// Leading chapter number of a title ("3. 商店寻宝记" → 3), mirroring the ASCII
+// half of src/storyArcs.js (the DB titles for serials all use "N. " form).
+function chapterNumber(title) {
+  const t = String(title || '').trim()
+  let i = 0
+  let digits = ''
+  while (i < t.length && t.charCodeAt(i) >= 0x30 && t.charCodeAt(i) <= 0x39) {
+    digits += t[i]
+    i += 1
+  }
+  if (!digits || i >= t.length) return null
+  if ('.．。、,，:：)）]】-–—·・ \t　'.indexOf(t[i]) === -1) return null
+  return parseInt(digits, 10)
+}
+
+const { data: stories, error } = await supabase
+  .from('stories')
+  .select('id, title, level, tier, story_number, presentation, content, english_content, english_summary, has_audio')
+  .eq('language', 'chinese')
+  .eq('is_published', true)
+  .order('level')
+  .order('story_number')
+
+if (error) {
+  console.error('Query failed:', error.message)
+  process.exit(1)
+}
+
+const errors = []
+const warnings = []
+const where = (s) => `[L${s.level} #${s.story_number}] ${s.title} (${s.id})`
+
+for (const s of stories) {
+  if (!String(s.title || '').trim()) errors.push(`${where(s)}: missing title`)
+  if (lines(s.content).length === 0) errors.push(`${where(s)}: empty content`)
+  if (s.tier == null) errors.push(`${where(s)}: null tier`)
+  if (s.story_number == null) errors.push(`${where(s)}: null story_number`)
+  if (!String(s.english_summary || '').trim()) errors.push(`${where(s)}: missing english_summary (shelf preview)`)
+
+  const zh = lines(s.content).length
+  const en = lines(s.english_content).length
+  if (s.presentation !== 'manhua') {
+    if (en === 0) warnings.push(`${where(s)}: no english_content`)
+    else if (en !== zh) errors.push(`${where(s)}: line mismatch — ${zh} Chinese vs ${en} English`)
+  }
+  if (s.has_audio === false) warnings.push(`${where(s)}: has_audio = false`)
+}
+
+// Duplicate (level, story_number) among published rows.
+const byNumber = new Map()
+for (const s of stories) {
+  const key = s.level + '#' + s.story_number
+  if (byNumber.has(key)) errors.push(`${where(s)}: duplicate story_number with ${byNumber.get(key).title}`)
+  else byNumber.set(key, s)
+}
+
+// Chapter gaps per series: group consecutive published rows the way the shelf
+// does (a chapter number of 1 or a backwards move starts a new series), then
+// look for holes in each series' published numbering.
+for (const [level, group] of Map.groupBy(stories, (s) => s.level)) {
+  let series = []
+  let prev = null
+  const flush = () => {
+    const nums = series.map(s => chapterNumber(s.title)).filter(n => n != null)
+    if (nums.length > 1) {
+      const missing = []
+      for (let n = nums[0]; n <= nums[nums.length - 1]; n += 1) {
+        if (!nums.includes(n)) missing.push(n)
+      }
+      if (missing.length) {
+        warnings.push(`L${level} series “${series[0].title}”: published chapters ${nums.join(',')} — missing ${missing.join(',')} (held?)`)
+      }
+    }
+    series = []
+  }
+  for (const s of group) {
+    const n = chapterNumber(s.title)
+    if (series.length && (n === 1 || (n != null && prev != null && n <= prev))) flush()
+    series.push(s)
+    prev = n
+  }
+  flush()
+}
+
+console.log(`Checked ${stories.length} published Chinese stories.`)
+for (const e of errors) console.log('ERROR   ' + e)
+for (const w of warnings) console.log('warning ' + w)
+console.log(`${errors.length} errors, ${warnings.length} warnings.`)
+
+if (errors.length || (strict && warnings.length)) process.exit(1)
