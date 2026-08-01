@@ -33,7 +33,8 @@ const TAILS = ['bottom-left', 'bottom-right', 'top-left', 'top-right']
 // Width the bubble takes, as a percentage of the panel, when metadata doesn't
 // say. Narration is a caption — it wants to be visibly not-a-voice, so it sits
 // narrower and squarer than speech.
-const DEFAULT_WIDTH = { speech: 72, reply: 72, thought: 66, narration: 58 }
+const DEFAULT_WIDTH = { speech: 68, reply: 68, thought: 62, narration: 58 }
+export const MAX_OVERLAY_WIDTH = 68
 
 function clamp(n, low, high) {
   if (typeof n !== 'number' || !Number.isFinite(n)) return null
@@ -146,9 +147,12 @@ export function buildEpisode(panelsJson, beatCount) {
     label: typeof rawMeta.episode_label === 'string' ? rawMeta.episode_label : null,
     title: typeof rawMeta.episode_title === 'string' ? rawMeta.episode_title : null,
     artBase: typeof rawMeta.art_base === 'string' ? rawMeta.art_base : '',
-    // Art-first episodes can keep every learning line in a clean caption rail
-    // below the image. `auto` preserves the traditional comic-overlay layout.
-    textPlacement: rawMeta.text_placement === 'below' ? 'below' : 'auto',
+    // `hybrid` keeps narration in the gutter while letting speech and thoughts
+    // use real comic balloons on safe parts of the art. `below` remains as a
+    // compatibility mode, while `auto` preserves older authored layouts.
+    textPlacement: rawMeta.text_placement === 'hybrid'
+      ? 'hybrid'
+      : (rawMeta.text_placement === 'below' ? 'below' : 'auto'),
     // One English sentence on the closing plate, pointing at the next episode.
     // English on purpose: it is the only line in the reader that is about the
     // series rather than part of it, and an HSK 1 learner cannot be told
@@ -395,7 +399,13 @@ export function bubbleLayout(bubble, opts) {
   const columnWidth = o.columnWidth > 0 ? o.columnWidth : 390
   const ratio = o.ratio > 0 ? o.ratio : DEFAULT_RATIO
   const panelHeight = columnWidth / ratio
-  const width = bubble && bubble.width ? bubble.width : DEFAULT_WIDTH.speech
+  // Even if authored metadata asks for a near-full-width box, a balloon may
+  // never become a banner across the picture. Narrowing it can make a long line
+  // fall into the gutter below, which is safer than covering the subject.
+  const width = Math.min(
+    bubble && bubble.width ? bubble.width : DEFAULT_WIDTH.speech,
+    MAX_OVERLAY_WIDTH,
+  )
   const top = bubble && typeof bubble.top === 'number' ? bubble.top : 8
   const widthPx = columnWidth * (width / 100)
   const height = estimateBubbleHeight(o.textLength, widthPx, o)
@@ -403,7 +413,13 @@ export function bubbleLayout(bubble, opts) {
   // off the panel's bottom border.
   const room = panelHeight * (1 - top / 100) - 14
 
-  if (height > room) return { mode: 'below', width: 100 }
+  if (height > room) {
+    return {
+      mode: 'below',
+      width,
+      side: (bubble && bubble.side) || 'right',
+    }
+  }
 
   const side = (bubble && bubble.side) || 'right'
   const edge = 4

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { buildVocabMatcher, matchVocabAt, matchName, boundaryAfterSkip, splitSpeaker, atomicSpans, segmentLine } from './storyReading'
 import { CHARACTER_READINGS } from './characterNames'
-import { buildEpisode, isEpisodeComplete, revealLimit } from './manhuaLayout'
+import { buildEpisode, bubbleLayout, MAX_OVERLAY_WIDTH, isEpisodeComplete, revealLimit } from './manhuaLayout'
 
 // Validates every authored manhua episode in data/manhua/ against the real reader:
 // the same vocabulary matcher, the same segmenter, the same layout module. An
@@ -257,15 +257,29 @@ describe('manhua episodes', () => {
         expect(shapes.size, 'every panel is the same shape').toBeGreaterThanOrEqual(3)
       })
 
-      it('keeps every line below its artwork with no choices', () => {
-        expect(built.meta.textPlacement).toBe('below')
+      it('uses safe manga bubbles with no choices', () => {
+        expect(built.meta.textPlacement).toBe('hybrid')
+        let overlays = 0
         for (const panel of built.panels) {
           expect(panel.art, 'text-only panel: ' + panel.id).toBeTruthy()
           expect(panel.choice, 'choice panel: ' + panel.id).toBeNull()
           for (const bubble of panel.bubbles) {
             expect(bubble.when, 'conditional line on ' + panel.id).toBeNull()
+            if (bubble.kind === 'narration') continue
+            const layout = bubbleLayout(bubble, {
+              columnWidth: 390,
+              ratio: panel.ratio,
+              textLength: splitSpeaker(lines[bubble.beat]).text.length,
+              withReadings: true,
+            })
+            if (layout.mode !== 'overlay') continue
+            overlays += 1
+            expect(layout.width).toBeLessThanOrEqual(MAX_OVERLAY_WIDTH)
+            expect(layout.left).toBeGreaterThanOrEqual(0)
+            expect(layout.left + layout.width).toBeLessThanOrEqual(100)
           }
         }
+        expect(overlays, 'no speech or thought balloons remain on the artwork').toBeGreaterThan(0)
       })
 
       it('is completable by reaching the final artwork', () => {

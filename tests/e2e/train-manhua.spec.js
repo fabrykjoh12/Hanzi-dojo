@@ -41,7 +41,7 @@ test.describe('《末班车》 standalone story', () => {
     await page.getByRole('button', { name: /^Play this line/ }).first().click();
 
     await expect(page.getByRole('group', { name: '选择回答' })).toHaveCount(0);
-    await expect(page.locator('[data-manhua-text-layout="overlay"]')).toHaveCount(0);
+    expect(await page.locator('[data-manhua-text-layout="overlay"]').count()).toBeGreaterThan(0);
     const rainArt = page.getByRole('img', { name: /two small figures bursting out of the restaurant doorway/ });
     await rainArt.scrollIntoViewIfNeeded();
     await expect(rainArt).toBeVisible();
@@ -91,6 +91,5 @@ for (const width of [320, 390, 430]) {
     expect(await captions.count()).toBeGreaterThan(0);
     const firstCaption = await captions.first().boundingBox();
     expect(firstCaption.y).toBeGreaterThanOrEqual(art.y + art.height - 1);
-    expect(await page.locator('[data-manhua-text-layout="overlay"]').count()).toBe(0);
   });
 }

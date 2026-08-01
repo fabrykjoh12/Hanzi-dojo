@@ -27,7 +27,7 @@
       "episode_title": "我是新学生",
       "art_base": "/stories/inkbound/hsk1/ep01/",
       "art_palette": "mono",
-      "text_placement": "below",
+      "text_placement": "hybrid",
       "hook": "Something small and white followed you through the gate.",
       "_continues_comment": "What the closing plate promises next, and the level it is written at. `level` is a level NUMBER in this story's own system — the reader prints it with getLevelLabel, so the plate says 'HSK 2' without anything hardcoding that string, and a Japanese or Russian season would print its own system's label. Omit the whole block for an episode that ends a season.",
       "continues": {

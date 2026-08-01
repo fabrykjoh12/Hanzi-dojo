@@ -68,7 +68,7 @@
       ],
       "art_base": "/stories/upstairs/hsk3/ep01/",
       "art_palette": "colour",
-      "text_placement": "below",
+      "text_placement": "hybrid",
       "reward": {
         "glyph": "听",
         "label": "细心读者"

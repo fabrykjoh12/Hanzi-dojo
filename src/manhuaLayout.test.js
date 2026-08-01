@@ -63,7 +63,8 @@ describe('buildEpisode', () => {
       .toEqual({ label: '读者', glyph: '读' })
   })
 
-  it('supports an art-first caption rail below every panel', () => {
+  it('supports hybrid manga bubbles and the legacy caption rail', () => {
+    expect(buildEpisode({ meta: { text_placement: 'hybrid' } }, 1).meta.textPlacement).toBe('hybrid')
     expect(buildEpisode({ meta: { text_placement: 'below' } }, 1).meta.textPlacement).toBe('below')
     expect(buildEpisode({ meta: { text_placement: 'over-everything' } }, 1).meta.textPlacement).toBe('auto')
     expect(buildEpisode(null, 1).meta.textPlacement).toBe('auto')
@@ -306,16 +307,16 @@ describe('bubbleLayout', () => {
     const out = bubbleLayout(bubble, { columnWidth: 390, ratio: 4 / 3, textLength: 10 })
     expect(out.mode).toBe('overlay')
     expect(out.top).toBe(10)
-    expect(out.width).toBe(70)
+    expect(out.width).toBe(68)
   })
 
   it('pins each side against its own edge and centres the centre', () => {
     const right = bubbleLayout({ side: 'right', top: 0, width: 70 }, { columnWidth: 390, ratio: 1, textLength: 4 })
     const left = bubbleLayout({ side: 'left', top: 0, width: 70 }, { columnWidth: 390, ratio: 1, textLength: 4 })
     const mid = bubbleLayout({ side: 'center', top: 0, width: 70 }, { columnWidth: 390, ratio: 1, textLength: 4 })
-    expect(right.left).toBe(26)
+    expect(right.left).toBe(28)
     expect(left.left).toBe(4)
-    expect(mid.left).toBe(15)
+    expect(mid.left).toBe(16)
     // Whatever the side, the box stays inside the panel.
     for (const out of [right, left, mid]) {
       expect(out.left).toBeGreaterThanOrEqual(0)
@@ -326,6 +327,15 @@ describe('bubbleLayout', () => {
   it('drops a long line out of the art rather than covering the drawing', () => {
     const out = bubbleLayout(bubble, { columnWidth: 390, ratio: 21 / 9, textLength: 120 })
     expect(out.mode).toBe('below')
+    expect(out.width).toBe(68)
+    expect(out.side).toBe('right')
+  })
+
+  it('caps an oversized authored box before it can become a banner', () => {
+    const out = bubbleLayout({ side: 'left', top: 0, width: 92 }, { columnWidth: 390, ratio: 1, textLength: 4 })
+    expect(out.mode).toBe('overlay')
+    expect(out.width).toBe(68)
+    expect(out.left).toBe(4)
   })
 
   it('re-decides as the screen narrows', () => {
@@ -357,7 +367,7 @@ describe('bubbleLayout', () => {
   it('survives being asked with nothing', () => {
     const out = bubbleLayout(null, {})
     expect(out.mode).toBe('overlay')
-    expect(out.width).toBe(72)
+    expect(out.width).toBe(68)
   })
 })
 

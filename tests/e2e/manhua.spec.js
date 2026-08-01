@@ -45,13 +45,13 @@ test.describe('Manhua reader', () => {
     await expect(play).toHaveCount(0);
   });
 
-  test('keeps every caption below the art and shows no story choices', async ({ page }) => {
+  test('keeps narration below the art, uses manga balloons, and shows no choices', async ({ page }) => {
     await openEpisode(page);
     const openingArt = page.getByRole('img', { name: /at the foot of a long stone stair/ });
     const captions = page.locator('[data-manhua-text-layout="caption"]');
 
     await expect(page.getByRole('region', { name: '选择回答' })).toHaveCount(0);
-    await expect(page.locator('[data-manhua-text-layout="overlay"]')).toHaveCount(0);
+    expect(await page.locator('[data-manhua-text-layout="overlay"]').count()).toBeGreaterThan(0);
     expect(await captions.count()).toBeGreaterThan(0);
 
     const art = await openingArt.boundingBox();
@@ -61,7 +61,7 @@ test.describe('Manhua reader', () => {
 
   test('updates the panel count while scrolling', async ({ page }) => {
     await openEpisode(page);
-    await page.getByRole('img', { name: /小雨 leans grinning/ })
+    await page.locator('[data-panel-index="2"]')
       .evaluate(el => el.scrollIntoView({ block: 'center' }));
     await expect(page.getByLabel(`Panel 3 of ${PANEL_COUNT}`)).toBeVisible();
   });

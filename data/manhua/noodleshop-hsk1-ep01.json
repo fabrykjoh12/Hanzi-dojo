@@ -74,7 +74,7 @@
       ],
       "art_base": "/stories/noodleshop/hsk1/ep01/",
       "art_palette": "colour",
-      "text_placement": "below",
+      "text_placement": "hybrid",
       "reward": {
         "glyph": "暖",
         "label": "暖心读者"

@@ -14,9 +14,8 @@ import { Volume2 } from 'lucide-react'
 //   speech    — the white bubble with a tail, someone talking
 //   thought    — rounder, tailless, drawn in a lighter ink: the learner's head
 //   narration  — a caption plate with a cinnabar rule, the story's voice
-//   reply      — the learner's chosen line: the same ink keyline as speech over
-//                a faint accent tint, so it is recognisably theirs without
-//                becoming the loudest thing on the page
+//   reply      — a legacy learner line, drawn with the same white balloon as
+//                ordinary speech so a linear story never looks like a chat UI
 
 const PROPER_NOUN = '#2F9E6D'
 
@@ -52,11 +51,10 @@ function chromeFor(kind, accentHex) {
     }
   }
   if (kind === 'reply') {
-    // The learner's own line. Marked by a tint of the accent, not by a ring of
-    // it: a saturated outline plus a tinted fill made the one balloon the reader
-    // wrote the loudest thing on the page.
+    // Kept as a distinct semantic kind for compatibility with saved episodes,
+    // but drawn like ordinary dialogue now that authored stories read linearly.
     return {
-      background: 'color-mix(in srgb, ' + accentHex + ' 8%, ' + PAPER.bubble + ')',
+      background: PAPER.bubble,
       border: BUBBLE_FRAME + 'px solid ' + PAPER.frame,
       borderRadius: BUBBLE_RADIUS + 'px',
     }
@@ -172,7 +170,14 @@ export default function ManhuaBubble({
       left: layout.left + '%',
       width: layout.width + '%',
     }
-    : { position: 'relative', width: '100%', marginTop: caption ? 0 : '10px' }
+    : {
+      position: 'relative',
+      width: caption ? '100%' : ((layout.width || 68) + '%'),
+      alignSelf: caption
+        ? 'stretch'
+        : (layout.side === 'left' ? 'flex-start' : (layout.side === 'center' ? 'center' : 'flex-end')),
+      marginTop: caption ? 0 : '10px',
+    }
   const padding = caption
     ? (narration ? '10px 9px 8px' : '11px 9px 9px')
     : (narration ? '10px 14px' : '11px 16px 12px')

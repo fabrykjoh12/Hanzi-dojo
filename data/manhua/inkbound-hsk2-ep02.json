@@ -28,7 +28,7 @@
       "episode_title": "字会说话",
       "art_base": "/stories/inkbound/hsk2/ep02/",
       "art_palette": "mono",
-      "text_placement": "below",
+      "text_placement": "hybrid",
       "hook": "Don't write alone at night. At night, the characters talk.",
       "_continues_comment": "What the closing plate promises next, and the level it is written at. `level` is a level NUMBER in this story's own system — the reader prints it with getLevelLabel, so the plate says 'HSK 3' without anything hardcoding that string. Omit the whole block for an episode that ends a season. Whatever this promises has to be true: 第三话 must be written at HSK 3.",
       "continues": {

@@ -72,15 +72,14 @@ export const GUTTER = 12              // white space between panels
 // what most lines are, especially with pinyin off) collapses into a flat lens
 // that swallows the panel behind it and leaves the text stranded in the middle
 // of a huge empty oval. A fixed radius degrades the right way instead: on a
-// short box it lands near a stadium — properly balloon-shaped — and on a tall
-// one it stays a softly rounded rectangle, which is what a real balloon holding
-// three lines of text looks like.
+// short box it lands near an oval — properly manga-like — and on a tall one it
+// stays an organic rounded balloon instead of turning into a UI message card.
 //
 // Narration is the exception: a caption plate is a hard-edged box in print, and
 // stays one.
-export const BUBBLE_RADIUS = 26
-export const THOUGHT_RADIUS = 34
-export const BUBBLE_FRAME = 2.5
+export const BUBBLE_RADIUS = 38
+export const THOUGHT_RADIUS = 48
+export const BUBBLE_FRAME = 2
 export const THOUGHT_FRAME = 2
 export const NARRATION_RADIUS = 2
 

@@ -27,7 +27,7 @@
       "episode_title": "夜里的字",
       "art_base": "/stories/inkbound/hsk3/ep03/",
       "art_palette": "mono",
-      "text_placement": "below",
+      "text_placement": "hybrid",
       "hook": "This school does not teach writing. It teaches characters how to talk.",
       "continues": {
         "label": "第四话",

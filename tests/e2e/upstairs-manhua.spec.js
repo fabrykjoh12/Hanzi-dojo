@@ -58,7 +58,9 @@ test.describe('《楼上没有声音》 standalone story', () => {
     await expect(page.getByText('I live in a new place.', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: /^Play this line/ }).first().click();
     await expect(page.getByRole('region', { name: '选择回答' })).toHaveCount(0);
-    await expect(page.locator('[data-manhua-text-layout="overlay"]')).toHaveCount(0);
+    expect(await page.locator('[data-manhua-text-layout="overlay"]').count()).toBeGreaterThan(0);
+    const doorway = page.getByRole('img', { name: /elderly woman opens a teal apartment door/ });
+    await doorway.scrollIntoViewIfNeeded();
 
     const sound = page.getByRole('button', { name: '声音', exact: true }).first();
     await sound.scrollIntoViewIfNeeded();
@@ -112,7 +114,6 @@ for (const width of [320, 375, 390, 430]) {
     expect(captionCount).toBeGreaterThan(0);
     const firstCaption = await captions.first().boundingBox();
     expect(firstCaption.y).toBeGreaterThanOrEqual(art.y + art.height - 1);
-    expect(await page.locator('[data-manhua-text-layout="overlay"]').count()).toBe(0);
   });
 }
 
@@ -127,7 +128,7 @@ test('keeps the caption rail below the art in phone landscape with reduced motio
   const art = await openingArt.boundingBox();
   const firstCaption = await captions.first().boundingBox();
   expect(firstCaption.y).toBeGreaterThanOrEqual(art.y + art.height - 1);
-  expect(await page.locator('[data-manhua-text-layout="overlay"]').count()).toBe(0);
+  expect(await page.locator('[data-manhua-text-layout="overlay"]').count()).toBeGreaterThan(0);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
 });

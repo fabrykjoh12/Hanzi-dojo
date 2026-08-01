@@ -73,7 +73,7 @@
       ],
       "art_base": "/stories/train/hsk2/ep01/",
       "art_palette": "colour",
-      "text_placement": "below",
+      "text_placement": "hybrid",
       "reward": {
         "glyph": "时",
         "label": "守时读者"

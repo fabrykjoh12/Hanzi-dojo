@@ -26,7 +26,7 @@
       "episode_title": "冷了的面条儿",
       "art_base": "/stories/noodleshop/hsk2/ep03/",
       "art_palette": "colour",
-      "text_placement": "below",
+      "text_placement": "hybrid",
       "hook": "You do not ask people like him to come in. You bring the noodles to them.",
       "continues": {
         "label": "第四话",

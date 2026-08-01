@@ -3,6 +3,7 @@ import { useStoryReaderCore } from './useStoryReaderCore'
 import {
   buildEpisode, panelArtSrc, visibleBubbles, isGate, revealLimit,
   readBeats, episodeProgress, isEpisodeComplete, bubbleLayout, panelAtReadingLine,
+  MAX_OVERLAY_WIDTH,
 } from './manhuaLayout'
 import { loadManhuaProgress, saveManhuaProgress, resumePanel } from './manhuaProgress'
 import { PAPER, COLUMN_MAX, GUTTER, manhuaAccent, manhuaFontStack } from './manhuaTokens'
@@ -259,8 +260,18 @@ export default function ManhuaReader(props) {
     const beat = c.beats[bubble.beat]
     if (!beat) return null
     const captionBelow = meta.textPlacement === 'below'
+      || (meta.textPlacement === 'hybrid' && bubble.kind === 'narration')
+    const replyBelow = meta.textPlacement === 'hybrid' && bubble.kind === 'reply'
     let layout
     if (captionBelow) layout = { mode: 'below', variant: 'caption' }
+    else if (replyBelow) {
+      layout = {
+        mode: 'below',
+        variant: 'bubble-rail',
+        width: Math.min(bubble.width, MAX_OVERLAY_WIDTH),
+        side: bubble.side,
+      }
+    }
     else if (forceBelow) layout = { mode: 'below' }
     else {
       layout = bubbleLayout(bubble, {
@@ -377,7 +388,7 @@ export default function ManhuaReader(props) {
                   reduceMotion={c.reduceMotion}
                   style={{ scrollMarginTop: '76px' }}
                   below={belows.length ? (
-                    meta.textPlacement === 'below'
+                    (meta.textPlacement === 'below' || meta.textPlacement === 'hybrid')
                       ? <figcaption style={{ display: 'flex', flexDirection: 'column', margin: '6px 2px 0' }}>{belows}</figcaption>
                       : <div style={{ display: 'flex', flexDirection: 'column' }}>{belows}</div>
                   ) : null}
