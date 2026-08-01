@@ -91,7 +91,8 @@ describe('estimateReadingPercent', () => {
 describe('labels', () => {
   it('maps frontier to a human label and a starting level', () => {
     const bands = buildBands(vocab)
-    expect(levelLabelForFrontier(-1, bands)).toMatch(/starting/i)
+    // Rendered mid-sentence ("You're …"), so the label must start lowercase.
+    expect(levelLabelForFrontier(-1, bands)).toBe('just getting started')
     expect(levelLabelForFrontier(bands.length - 1, bands)).toMatch(/HSK 2/i)
     expect(startingLevelForFrontier(-1, bands)).toBe(1)
     expect(startingLevelForFrontier(bands.length - 1, bands)).toBe(2)

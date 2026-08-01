@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
 import ErrorBoundary from './ErrorBoundary'
 import { getHomeCounts } from './homeCounts'
-import { pathToView, viewToPath, isKnownView, readStoryId, isAssessmentPath } from './routes'
+import { pathToView, viewToPath, isKnownView, readStoryId, isAssessmentPath, trustPageKey } from './routes'
 import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
@@ -49,6 +49,7 @@ const DojoHQ = lazy(() => import('./DojoHQ'))
 // out of the first-paint bundle (it pulls in storyReading.js).
 const PublicStory = lazy(() => import('./PublicStory'))
 const HowMuchCanYouRead = lazy(() => import('./HowMuchCanYouRead'))
+const TrustPages = lazy(() => import('./TrustPages'))
 const Dev = lazy(() => import('./Dev'))
 const NotFound = lazy(() => import('./NotFound'))
 const Dashboard = lazy(() => import('./Dashboard'))
@@ -118,6 +119,7 @@ export default function App() {
   const view = pathToView(location.pathname)
   const publicStoryId = readStoryId(location.pathname)
   const assessment = isAssessmentPath(location.pathname)
+  const trustPage = trustPageKey(location.pathname)
 
   // Apply the theme to the document so the CSS variables (index.css) switch.
   useEffect(() => {
@@ -272,6 +274,16 @@ export default function App() {
     return (
       <Suspense fallback={<ViewFallback />}>
         <HowMuchCanYouRead />
+      </Suspense>
+    )
+  }
+
+  // Public trust pages (/privacy, /terms, /support, /methodology) — must be
+  // readable before registration, and stay reachable signed-in.
+  if (trustPage) {
+    return (
+      <Suspense fallback={<ViewFallback />}>
+        <TrustPages page={trustPage} onBack={() => routerNavigate('/')} />
       </Suspense>
     )
   }

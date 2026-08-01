@@ -105,9 +105,10 @@ export function estimateReadingPercent(knownVocabIds, vocab, corpusSentences, la
   return knownPct
 }
 
-// Human-facing level label from the frontier band.
+// Human-facing level label from the frontier band. Rendered mid-sentence
+// ("You're …"), so it must start lowercase.
 export function levelLabelForFrontier(frontierIndex, bands) {
-  if (frontierIndex < 0 || !bands.length) return 'Just starting'
+  if (frontierIndex < 0 || !bands.length) return 'just getting started'
   const band = bands[Math.min(frontierIndex, bands.length - 1)]
   return `around HSK ${band.level}`
 }

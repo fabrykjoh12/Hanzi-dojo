@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import { reportClientError } from './errorMonitor'
 
 // Catches render-time crashes so a public visitor sees a calm recovery screen
 // instead of a blank white page. Reloading almost always clears transient
@@ -16,6 +17,7 @@ export default class ErrorBoundary extends Component {
   componentDidCatch(error, info) {
     // Best-effort logging; never throw from here.
     try { console.error('[Hanzi Dojo] render error', error, info) } catch { /* noop */ }
+    reportClientError(error, 'boundary')
   }
 
   render() {

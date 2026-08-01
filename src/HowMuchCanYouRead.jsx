@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from './supabase'
 import {
   pickAssessmentQuestions, buildBands, estimateKnownFrontier,
-  estimateReadingPercent, levelLabelForFrontier,
+  estimateReadingPercent, levelLabelForFrontier, startingLevelForFrontier,
 } from './assessment'
+import { getLevelLabel } from './utils'
+import { readPreloginPrefs, savePreloginPrefs } from './prelogin'
 import { languageTheme } from './languageTheme'
 import { BRAND_NAME } from './brand'
 import { track, EVENTS } from './analytics'
@@ -16,9 +18,11 @@ import corpus from '../data/assessment-corpus.chinese.json'
 const LANGUAGE = 'chinese'
 const PER_BAND = 3
 
-// Signed-out (or signed-in) public page: a ~60-second word quiz that estimates how
-// much everyday Chinese the visitor can read, then funnels to signup. Thin shell
-// over the pure logic in assessment.js.
+// Signed-out (or signed-in) public page: an untimed multiple-choice quiz (~3
+// minutes, a few questions per difficulty band) that estimates how much
+// everyday Chinese the visitor can read, then funnels to signup. Thin shell
+// over the pure logic in assessment.js. The copy states the real length — it
+// used to promise "60 seconds" over ~36 questions, which wasn't credible.
 export default function HowMuchCanYouRead() {
   const navigate = useNavigate()
   const [phase, setPhase] = useState('intro')   // intro | loading | quiz | result | error
@@ -74,14 +78,20 @@ export default function HowMuchCanYouRead() {
     const { frontierIndex, knownVocabIds } = estimateKnownFrontier(next, bands)
     const pct = estimateReadingPercent(knownVocabIds, vocab, corpus, LANGUAGE)
     const label = levelLabelForFrontier(frontierIndex, bands)
+    const startLevel = startingLevelForFrontier(frontierIndex, bands)
     setAnswers(next)
-    setResult({ pct, label })
+    setResult({ pct, label, startLevel })
     track(EVENTS.ASSESSMENT_COMPLETED, { language: LANGUAGE, pct, label })
     setPhase('result')
   }
 
   function goSignup() {
     track(EVENTS.ASSESSMENT_SIGNUP_CLICKED, { language: LANGUAGE })
+    // Carry the estimate into onboarding: the level step opens pre-selected at
+    // the suggested level (still confirmable — an estimate never silently
+    // decides). Merged, not overwritten, so a reason picked earlier survives.
+    const prev = readPreloginPrefs() || {}
+    savePreloginPrefs({ ...prev, language: LANGUAGE, level: result ? result.startLevel : undefined })
     navigate('/')
   }
 
@@ -123,8 +133,8 @@ export default function HowMuchCanYouRead() {
           <div style={{ color: accent, fontWeight: 700, fontFamily: 'Poppins, Inter, sans-serif', marginBottom: '24px' }}>{BRAND_NAME}</div>
           <div style={{ fontSize: '56px', marginBottom: '8px', fontFamily: theme.font + ', sans-serif' }}>读</div>
           <h1 style={{ fontSize: '28px', fontWeight: 800, margin: '0 0 10px' }}>How much Chinese can you read?</h1>
-          <p style={{ color: 'var(--text-muted)', margin: '0 0 28px' }}>A quick quiz — about 60 seconds — estimates how much everyday Chinese you can already read. No account needed.</p>
-          <button onClick={start} style={ctaStyle(accent)}>Start the 60-second test</button>
+          <p style={{ color: 'var(--text-muted)', margin: '0 0 28px' }}>A short multiple-choice quiz — about 3 minutes, untimed — estimates how much everyday Chinese you can already read. No account needed.</p>
+          <button onClick={start} style={ctaStyle(accent)}>Start the reading test</button>
         </div>
       </div>
     )
@@ -175,7 +185,11 @@ export default function HowMuchCanYouRead() {
         <div style={{ color: 'var(--text-muted)', fontWeight: 600 }}>You can read about</div>
         <div style={{ color: accent, fontWeight: 800, fontSize: '72px', lineHeight: 1.1 }}>~{result.pct}%</div>
         <div style={{ color: 'var(--text-muted)', marginBottom: '4px' }}>of everyday Chinese</div>
-        <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '24px' }}>You're {result.label}</div>
+        <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '8px' }}>You're {result.label}</div>
+        {/* The estimate becomes a concrete recommendation, not just a number. */}
+        <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginBottom: '24px' }}>
+          We'd start you at {getLevelLabel(LANGUAGE, 'hsk_3', result.startLevel)} — you can adjust it during signup.
+        </div>
 
         <button onClick={share} style={{ ...ctaStyle(accent), background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)', marginBottom: '10px' }}>
           Share my result

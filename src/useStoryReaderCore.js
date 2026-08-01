@@ -13,6 +13,7 @@ import { ensureAudio } from './audioCache'
 import { isOnline } from './useOnline'
 import { enqueueStoryRead } from './syncQueue'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
+import { setFeedbackStory } from './feedbackContext'
 import { addDictEntryToDeck } from './dictSearch'
 import { toast } from './toast'
 
@@ -118,6 +119,18 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
 
   const go = useCallback((i) => setCur(c => Math.max(0, Math.min(total - 1, i ?? c))), [total])
 
+  // Analytics: story opened (once per story), mirroring the classic reader.
+  // Without this, guided-format completions had no matching open event and the
+  // dashboard's finish rate overcounted. The same mount also registers the
+  // story as feedback context, so a report sent mid-read names this story.
+  useEffect(() => {
+    trackEvent(EVENTS.STORY_OPENED, { tier: story.tier, known_pct: readability.knownPct, story_id: story.id })
+    if (firstMission) trackOnce(EVENTS.FIRST_STORY_OPENED, { known_pct: readability.knownPct })
+    setFeedbackStory({ id: story.id, title: story.title })
+    return () => setFeedbackStory(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story.id])
+
   const stopPlay = useCallback(() => {
     runRef.current += 1
     setPlaying(false)
@@ -146,7 +159,7 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
         await enqueueStoryRead({ userId: session.user.id, storyId: story.id })
         if (onMarkRead) onMarkRead(story.id)
       }
-      trackEvent(EVENTS.STORY_COMPLETED, { tier: story.tier, known_pct: readability.knownPct })
+      trackEvent(EVENTS.STORY_COMPLETED, { tier: story.tier, known_pct: readability.knownPct, story_id: story.id })
       if (firstMission) trackOnce(EVENTS.FIRST_STORY_COMPLETED, { known_pct: readability.knownPct })
     }
   }, [isRead, session, story.id, story.tier, onMarkRead, stopPlay, firstMission, readability.knownPct])

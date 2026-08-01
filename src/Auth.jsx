@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 import { supabase } from './supabase'
 import { normalizeEmail } from './utils'
 import { track, EVENTS } from './analytics'
+import { emailProblem, passwordProblem, passwordWhitespaceNote, mapAuthError, MIN_PASSWORD } from './authValidation'
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
@@ -13,6 +15,7 @@ export default function Auth({ intro = null }) {
   const [resetMode, setResetMode] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [messageKind, setMessageKind] = useState('error')   // 'error' | 'success'
@@ -24,6 +27,16 @@ export default function Auth({ intro = null }) {
 
   const handleAuth = async (e) => {
     e.preventDefault()
+
+    // Client-side pre-checks: catch the obvious problems with specific copy
+    // before a server round-trip. The server still validates everything.
+    const problem = emailProblem(email) || passwordProblem(password, { signup: isSignup })
+    if (problem) {
+      setMessageKind('error')
+      setMessage(problem)
+      return
+    }
+
     setLoading(true)
     setMessage('')
 
@@ -53,7 +66,7 @@ export default function Auth({ intro = null }) {
       }
     } catch (error) {
       setMessageKind('error')
-      setMessage(error.message)
+      setMessage(mapAuthError(error.message))
     }
     setLoading(false)
   }
@@ -208,17 +221,47 @@ export default function Auth({ intro = null }) {
             style={inputStyle}
           />
           {!resetMode && (
-            <input
-              type="password"
-              placeholder="Password"
-              aria-label="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={onEnter}
-              required
-              minLength={6}
-              style={inputStyle}
-            />
+            <div>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Password"
+                  aria-label="Password"
+                  aria-describedby={isSignup ? 'password-requirements' : (message && messageKind === 'error' ? 'auth-message' : undefined)}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={onEnter}
+                  required
+                  minLength={MIN_PASSWORD}
+                  style={{ ...inputStyle, paddingRight: '46px' }}
+                />
+                <button
+                  onClick={() => setShowPassword(s => !s)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  style={{
+                    position: 'absolute', right: '4px', top: '50%', transform: 'translateY(-50%)',
+                    width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'none', border: 'none', cursor: 'pointer', borderRadius: '10px',
+                  }}
+                >
+                  {showPassword
+                    ? <EyeOff size={17} strokeWidth={1.9} color="var(--text-muted)" />
+                    : <Eye size={17} strokeWidth={1.9} color="var(--text-muted)" />}
+                </button>
+              </div>
+              {/* Visible requirement, live: gray until met, calm green once met.
+                  Signup only — an existing password answers to no rule here. */}
+              {isSignup && (
+                <p id="password-requirements" style={{
+                  fontSize: '12px', margin: '6px 2px 0', lineHeight: 1.5,
+                  color: password.length >= MIN_PASSWORD ? '#3E7A4E' : 'var(--text-muted)',
+                }}>
+                  {password.length >= MIN_PASSWORD ? '✓ ' : ''}At least {MIN_PASSWORD} characters
+                  {passwordWhitespaceNote(password) ? ' · ' + passwordWhitespaceNote(password) : ''}
+                </p>
+              )}
+            </div>
           )}
         </div>
 
@@ -249,6 +292,19 @@ export default function Auth({ intro = null }) {
         >
           {loading ? 'Please wait...' : resetMode ? 'Send reset link' : isSignup ? 'Create account' : 'Log in'}
         </button>
+
+        {/* Legal acknowledgment — presented where the account is created. */}
+        {isSignup && !resetMode && (
+          <p style={{
+            fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6,
+            textAlign: 'center', margin: '10px 0 0', fontFamily: 'Inter, sans-serif',
+          }}>
+            By creating an account you agree to the{' '}
+            <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Terms of Use</a>
+            {' '}and{' '}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Privacy Policy</a>.
+          </p>
+        )}
 
         {/* Forgot password / back link */}
         {!isSignup && (
@@ -301,9 +357,10 @@ export default function Auth({ intro = null }) {
         </button>
         )}
 
-        {/* Message */}
+        {/* Message — a live region so screen readers hear the outcome, with an
+            id the inputs reference via aria-describedby when it's an error. */}
         {message && (
-          <p style={{
+          <p id="auth-message" role={messageKind === 'error' ? 'alert' : 'status'} style={{
             textAlign: 'center', fontSize: '13px', marginTop: '16px',
             color: messageKind === 'success' ? 'var(--success)' : '#DC2626',
           }}>

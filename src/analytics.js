@@ -61,6 +61,8 @@ export const EVENTS = {
   // App session envelope
   SESSION_STARTED: 'session_started',
   SESSION_ENDED: 'session_ended',
+  // Monitoring (see errorMonitor.js — name/truncated message/route only)
+  CLIENT_ERROR: 'client_error',
 }
 
 // ── Context: who/where the user is, set by the app as it learns ──────────────

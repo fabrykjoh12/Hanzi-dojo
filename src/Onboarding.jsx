@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, getLevels } from './utils'
 import { track, EVENTS } from './analytics'
-import { availableLanguages, languageTheme, LANGUAGES } from './languageTheme'
+import { availableLanguages, languageTheme } from './languageTheme'
 import { resolveTiers, TIER_META } from './tiers'
 import { PACING } from './priorKnowledge'
 import { seedClaim } from './priorKnowledgeSeed'
@@ -15,18 +15,19 @@ import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 import { ArrowRight, BookOpen, GraduationCap, Layers, Lock, PenLine, Play } from 'lucide-react'
 
-// Read the pre-login wizard choices, but only trust a known language. Pure and
-// idempotent (a plain read), so it's safe to call from useState initializers.
-function initialPrefill() {
-  const p = readPreloginPrefs()
-  return p && LANGUAGES[p.language] ? p : null
-}
-
 // The languages onboarding offers. With non-Chinese tracks paused this is a
 // single language, so we skip the picker step and start on "What's your level?"
 // pre-selected. Un-pausing a track (see languageTheme.js) restores the picker
 // automatically — SOLO_LANGUAGE goes null and the language step reappears.
 const ONBOARDING_LANGUAGES = availableLanguages(false)
+
+// Read the pre-login wizard choices, but only trust a language onboarding
+// actually offers — a hand-edited stored value must not smuggle in a paused
+// track. Pure and idempotent (a plain read), so it's safe in useState initializers.
+function initialPrefill() {
+  const p = readPreloginPrefs()
+  return p && ONBOARDING_LANGUAGES.some(l => l.key === p.language) ? p : null
+}
 const SOLO_LANGUAGE = ONBOARDING_LANGUAGES.length === 1 ? ONBOARDING_LANGUAGES[0].key : null
 
 export default function Onboarding({ session, onComplete }) {
@@ -35,7 +36,13 @@ export default function Onboarding({ session, onComplete }) {
   // offered — in both cases the choice is already made.
   const [step, setStep] = useState(() => (initialPrefill() || SOLO_LANGUAGE ? 2 : 1))
   const [language, setLanguage] = useState(() => initialPrefill()?.language || SOLO_LANGUAGE || null)
-  const [level, setLevel] = useState(null)
+  // The public reading test saves its estimated starting level with the
+  // pre-login prefs; the level step opens pre-selected there (still a choice —
+  // the learner confirms or changes it, an estimate never silently decides).
+  const [level, setLevel] = useState(() => {
+    const lv = initialPrefill()?.level
+    return Number.isInteger(lv) && lv >= 1 && lv <= 9 ? lv : null
+  })
   const [tier, setTier] = useState(null)         // selected tier { key, level, test }
   const [placement, setPlacement] = useState(false)  // showing the placement test
   const [goal, setGoal] = useState(10)

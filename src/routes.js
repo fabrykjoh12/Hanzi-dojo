@@ -52,3 +52,15 @@ export function isAssessmentPath(pathname) {
   if (p.startsWith('/')) p = p.slice(1)
   return p.replace(/\/$/, '') === 'how-much-can-you-read'
 }
+
+// The public trust pages (/privacy, /terms, /support, /methodology), which work
+// signed-out AND signed-in — a visitor must be able to read them before
+// registering. Returns the page key, or null for any other path.
+export const TRUST_PAGES = ['privacy', 'terms', 'support', 'methodology']
+
+export function trustPageKey(pathname) {
+  let p = pathname || '/'
+  if (p.startsWith('/')) p = p.slice(1)
+  const seg = p.replace(/\/$/, '')
+  return TRUST_PAGES.indexOf(seg) !== -1 ? seg : null
+}

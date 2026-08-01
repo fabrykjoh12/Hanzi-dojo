@@ -11,7 +11,7 @@ on:
         description: What to run
         type: choice
         default: story-images-apply
-        options: [story-images-apply, publish-held, fix-collisions, fix-vocab-kanji, fix-vocab-kanji-apply, manhua-art-fetch, manhua-publish]
+        options: [story-images-apply, publish-held, fix-collisions, fix-vocab-kanji, fix-vocab-kanji-apply, manhua-art-fetch, manhua-publish, check-published]
       language:
         description: "publish-held only: language of the level to publish"
         type: string
@@ -91,6 +91,9 @@ jobs:
           fi
           if [ "$TASK" = "fix-collisions" ]; then
             node publish-stories.mjs --language "$LANGUAGE" --system "$SYSTEM" --level "$LEVEL" --fix-collisions --apply
+          fi
+          if [ "$TASK" = "check-published" ]; then
+            node check-published-stories.mjs
           fi
           if [ "$TASK" = "fix-vocab-kanji" ]; then
             node fix-vocab-kanji.mjs

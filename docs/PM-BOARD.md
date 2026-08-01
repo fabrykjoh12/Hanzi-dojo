@@ -30,6 +30,112 @@ read them off a CI run instead of trusting the number written here._
 
 ---
 
+## Active milestone — HD: Public Chinese beta hardening (implementation brief)
+
+Source of truth: the owner's *Hanzi Dojo — Claude Code Master Implementation
+Brief* (uploaded 2026-07-31; keep a copy alongside this board if it moves).
+Phases run in order; one phase per reviewable change. Statuses: `pending` /
+`in progress` / `blocked` / `needs review` / `complete`.
+
+The detailed plan lives **here**, not in `ROADMAP.md`/`docs/BACKLOG.md`, because
+those two sync to public Discord and this tracker enumerates security
+boundaries. The public roadmap carries a one-line "Public-beta hardening" item.
+
+| ID | Phase | Status | Notes |
+|----|-------|--------|-------|
+| HD-P0 | Baseline, safety, task infra | **complete** | Baseline 2026-07-31 (branch `claude/new-session-tllaz3`): lint **0 errors** (7 pre-existing warnings), vitest **3,000/3,000 pass** (122 files), build **clean** (one cosmetic Rolldown plugin-timing notice). No console-error or e2e baseline captured this session — e2e runs in CI. Test-account strategy: Creative Mode sandbox on `/dashboard` + `/unlock` + `/reset` cover the learner scenarios; fixtures in `tests/fixtures/`. No production mutation was needed. |
+| HD-P1 | Security & public-product boundaries | **needs review** | Audit + fixes shipped this change — see report below. |
+| HD-P2 | Analytics & progress-data integrity | **needs review** | Shipped 2026-08-01: `20260801090000_honest_admin_metrics.sql` (applied) — story stats redefined on readers (completed ⊆ opened by construction; verified on prod data), staff accounts excluded from every aggregate, signups/sessions deduped, DAU/WAU labeled as live windows, "funnel" renamed to stages with an honesty footnote. Root causes of >100%: raw-event math + guided readers never fired `story_opened` (now fixed; events also carry `story_id` going forward). Metric dictionary: `docs/METRICS.md`. Transactional grading had already shipped (`20260722120000`). Open: per-story completion once story_id data accumulates. |
+| HD-P3 | Curriculum & HSK claims | **complete — decided** | **Owner decision 2026-08-01: the current curriculum is correct as-is** (option 1 — keep the lists, label honestly). No migration, no remapping. Claims verified consistent: the methodology page states the lists are curated HSK-3.0-aligned study sets, and the level test describes itself as an internal mastery gate (100% to advance), never official certification. Any future official-alignment work would be a new, deliberate milestone. |
+| HD-P4 | Canonical content model & urgent repairs | **in progress — one editorial task left** | **(a) `今天唱歌` RESOLVED 2026-08-01:** owner reviewed the held chapters 2/4/6 and chose publish — series now live as a complete 1–6 with its real resolution (`publish-held` Action, level 1 tier 2). **(b) `1. 不见了的苹果` — the one open editorial task (owner decision: leave for a content session):** ch. 1 stays live standalone; the held season 2–6 still tells the older *flowers* version of the mystery, so a future writing session must rewrite one side to match before those publish. Preview already fixed. **(c)** The other reported "gaps" (L2 兔子, L3 田螺/老王的眼镜) were phantom: multi-level serials number chapters across levels by design; the checker now only flags a gap when the missing chapter exists unpublished at that level. Canonical-record/versioning work open. |
+| HD-P5 | Navigation, loading, learner shell | pending | Reassess against current app — much has shipped since the brief was written. |
+| HD-P6 | Home & flashcards | in progress | Phone-fit grading and single-RPC grades had already shipped. 2026-08-01: Home shows a queue-derived "~N min" session estimate (`sessionEstimate.js`, documented per-card costs — never a fixed marketing number). Open: grade explanations/tooltips, interval-choice investigation, audio failure states. |
+| HD-P7 | Story library & core reader | in progress | 2026-08-01: Today's-story hero now leads with the story TITLE (the first sentence demoted to supporting text) — the brief's 7.1 hierarchy fix. Structural audit of all published Chinese stories run against prod: line alignment, summaries, tiers, numbering all clean; six older chat/scene stories have no per-line English (may be by-design for those formats — verify before "fixing"). |
+| HD-P8 | Manhua, chats, scenes, replies | pending | Manga→manhua rename shipped; migration `20260730090000` pending apply (see BACKLOG §Database). |
+| HD-P9 | Chinese editorial sign-off | **blocked — needs Chinese reviewer** | Claude may build tooling/reports but must not self-certify Chinese editorial quality. |
+| HD-P10 | Practice hub & practice modes | in progress | Dictionary English ranking FIXED 2026-08-01 (`20260801100000`, applied): 'friend'→朋友, 'cold'→冷, 'eat'→吃 verified in prod; definition-match scoring + HSK boost + vulgar/coarse/offensive demotion. Explicit entries now also HIDDEN by default in the Dictionary UI behind a per-query reveal with an "Explicit" tag (`dictExplicit.js` + specs). Grammar guide: the three flagged absolutes corrected 2026-08-01 ("words never change" → doesn't conjugate; 不/没 reframed as isn't-so/won't vs didn't-happen + 有) — **all 14 topics still need a qualified Chinese teacher's review** (HD-P9 posture: not self-certified). Videos: the brief's dead video `YRqRoUEqMCE` unpublished 2026-08-01 (reversible; sandbox can't reach YouTube to health-check the other two — needs an Actions-side link check). |
+| HD-P11 | Public website, auth, diagnostic | in progress | 2026-08-01: the reading test's "60-second" claim (over ~36 questions) replaced with the honest untimed ~3-minute framing; "You're Just starting" casing fixed; signup shows a Terms/Privacy acknowledgment, visible password requirement (live), show/hide password, client-side pre-checks, and actionable error copy for the common auth failures (authValidation.js + 18 specs); the test result now recommends a concrete starting level and pre-selects it in onboarding (still confirmable). Open: suggested first story on the result, share-flow feedback verification, full auth error-path e2e. |
+| HD-P12 | Profile, settings, internal ops | in progress | Destructive reset verified against the brief's bar 2026-08-01: the Profile "Reset a language" panel already lists exactly what's cleared, scopes to one language (account-wide history a separate opt-in), two-step confirm with cancel, atomic `reset_language_progress` RPC, error state. Open: profile number scoping labels, achievements determinism audit, HQ audit trail. |
+| HD-P13 | Legal, privacy, a11y, mobile, perf | in progress | 2026-08-01: public `/privacy`, `/terms`, `/support`, `/methodology` pages shipped (reachable signed-out, linked from Landing footer + signup). Written from actual behavior (browser speech recognition — no audio recorded/stored; Analyze-text on-device; first-party analytics; CC-CEDICT/Tatoeba attributions). **Drafts — owner must review before treating as final** (visible beta note on the legal pages). Monitoring shipped: unhandled exceptions/rejections/render crashes → capped, privacy-safe `client_error` analytics events (`errorMonitor.js`; name + 40-char message + route only, never stacks). Open: a11y/mobile/perf passes, a dashboard surface for client_error counts. |
+| HD-P14 | Automated QA & release gate | in progress | CI (lint/test/build) + Playwright e2e exist; `tests/e2e/trust-pages.spec.js` added 2026-08-01 (4 passing). Published-content validation shipped: `check-published-stories.mjs` + content-utils task `check-published` (runs where the secrets live). First prod run: **0 errors**, 158 warnings — the audio-pending HSK 4–6 stories plus FOUR series with held-chapter gaps: 今天唱歌 (2,4 held), L2 一只跑得很快的兔子 (6 held), L3 田里的田螺 (6–12 held), L3 老王的眼镜 (7–12 held). The L3 serials are missing most of a season each — worth an editorial `publish-held` pass. Open: visual regression, the release checklist itself. |
+| HD-P15 | Differentiation after stabilization | pending | Do not start until the release gate is healthy. |
+
+### HD-P3 — Curriculum decision note (DECIDED 2026-08-01: option 1 — current curriculum is correct, label honestly)
+
+The app says "HSK 3.0 · HSK N" while its per-level word lists don't match the
+official standard's counts. Actual DB counts vs the official HSK 3.0 new-word
+counts per level: **L1 300/500 · L2 197/772 · L3 453/973 · L4 929/1000 ·
+L5 1495/1071 · L6 1621/1140** (app total L1–6: 4,995 vs official 5,456; note
+L5/L6 are *over* the official counts, so this isn't just "words missing" — the
+level assignment itself diverges). Three options:
+
+1. **Keep the lists, label them honestly** *(cheapest, safest)* — copy stops
+   claiming official equivalence: level labels stay "HSK N" but the
+   methodology/test copy says "curated HSK-3.0-aligned study sets" (the
+   methodology page already says this since 2026-08-01). No data migration, no
+   progress risk. Cost: the level test can't claim to certify an official level.
+2. **Migrate to the official lists** — re-seed per-level vocabulary to the
+   official allocations, remap existing learners' cards to the new levels
+   (cards keyed by vocab id survive; *level* progress and story tiers need
+   remapping), re-run coverage for every story, revisit every tier threshold.
+   Highest cost and the only option with real user-progress risk; needs the
+   official list as data (the MOE PDF), a migration with a rollback, and a
+   Chinese-qualified check of the mapping.
+3. **Own syllabus with a published mapping** — rename levels to "Dojo 1–6",
+   publish a transparent mapping table to HSK 3.0. No data risk, but every
+   surface, all marketing, and learner expectations change; SEO/recognition of
+   "HSK" is lost.
+
+**Recommendation: option 1 now** (it makes every public claim true without
+touching learner data), keeping option 2 open as a deliberate later milestone
+if official alignment becomes a product goal. Decision needed before the
+level-test copy (HD-P10.17) and any public "HSK-aligned" marketing claims.
+
+### HD-P1 report (2026-07-31)
+
+**Already in place before this change** (verified in code + prod):
+roles come from `profiles.is_admin` (server-trusted, default false); `/dashboard`
+and `/hq` render 404 for non-admins and their data is admin-only at the RLS/RPC
+layer (`assert_admin()` on every `admin_*` RPC; every `dojo_*` policy requires
+`is_admin`; `analytics_events` is insert-only for clients); admin nav is a
+separate `ADMIN_NAV` gated in `App.jsx`; both admin screens are lazy-loaded
+chunks; e2e spec `tests/e2e/hq-gate.spec.js` covers learner denial. The
+Chinese-only picker gate (`PUBLIC_LANGUAGES`/`ADMIN_LANGUAGES` in
+`languageTheme.js`) covers onboarding, landing, and the switcher, with
+grandfathered tracks kept visible.
+
+**Gaps found and fixed in this change:**
+1. `guard_is_admin` was a BEFORE **UPDATE** trigger only, while profile rows are
+   created client-side and the INSERT policy is column-blind — a fresh account
+   with no profiles row could insert one with `is_admin = true` and become an
+   admin. Fixed: guard now covers INSERT too
+   (`20260731170000_guard_profile_insert_and_track_activation.sql`, applied).
+2. `language_tracks` had no server-side language gate — any authenticated user
+   could insert a paused-language track from the console. Fixed: BEFORE
+   INSERT/UPDATE trigger allows only `public_track_languages()` (Chinese) for
+   ordinary users, leaves rows whose language is unchanged alone (the 15
+   existing grandfathered tracks keep working), and exempts admins + service
+   role. Same migration, applied.
+3. `index.html` + `public/manifest.webmanifest` still advertised all three
+   languages in the title/description/OG/Twitter/PWA copy. Now Chinese-only.
+4. Onboarding's pre-login prefill validated against the full `LANGUAGES` map,
+   so a hand-edited stored value could start a paused track client-side. Now
+   validated against `availableLanguages(false)`.
+
+**Known, documented, deliberately not changed here:**
+- `vite.config.js` default build target is the standalone HQ page unless
+  `DOJO_PUBLIC_BUILD=1` (Vercel sets it). Safe-by-default would invert the
+  flag; that breaks the Sites CI on purpose-kept behavior → **owner call**.
+- `/dev` route has no route-level gate (client email allowlist inside the
+  component; every action runs under the user's own RLS). Pattern differs from
+  `/hq`/`/dashboard`; harmless today, tidy later.
+- 58 published non-Chinese stories remain reachable via direct `/read/<id>`
+  links (no listing anywhere). Frozen-track policy says leave them; revisit
+  only if share links circulate.
+- `assert_admin()` keeps implicit PUBLIC execute (returns void, leaks nothing).
+
+---
+
 ## Product Vision
 
 A calm, free language app built on the two methods that actually work: **FSRS

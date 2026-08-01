@@ -1,7 +1,7 @@
 {
   "name": "Hanzi Dojo",
   "short_name": "Hanzi Dojo",
-  "description": "Learn Chinese, Japanese, and Russian with SRS flashcards and level-matched immersion. Free forever.",
+  "description": "Learn Chinese with SRS flashcards and stories matched to the words you know. Free forever.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",

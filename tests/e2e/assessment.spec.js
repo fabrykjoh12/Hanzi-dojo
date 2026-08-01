@@ -4,9 +4,11 @@ test.describe('How much can you read? assessment', () => {
   test('anon visitor takes the quiz and sees a shareable result + signup CTA', async ({ page }) => {
     await page.goto('/how-much-can-you-read');
 
-    // Intro → start.
+    // Intro → start. The copy states the honest length (untimed, ~3 minutes),
+    // not the old "60-second" claim.
     await expect(page.getByRole('heading', { name: /How much Chinese can you read/i })).toBeVisible();
-    await page.getByRole('button', { name: /Start the 60-second test/i }).click();
+    await expect(page.getByText(/untimed/i)).toBeVisible();
+    await page.getByRole('button', { name: /Start the reading test/i }).click();
 
     // Answer every question by clicking the first option, until the result shows.
     // (12 questions for the fixture vocab; loop defensively up to 20.)
@@ -23,9 +25,11 @@ test.describe('How much can you read? assessment', () => {
       }
     }
 
-    // Result: a percentage, a level label, and the signup CTA.
+    // Result: a percentage, a level label, a concrete starting recommendation,
+    // and the signup CTA.
     await expect(page.getByText(/of everyday Chinese/i)).toBeVisible();
     await expect(page.getByText(/~\d+%/)).toBeVisible();
+    await expect(page.getByText(/We'd start you at HSK \d/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /Sign up free to learn the words/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /Share my result/i })).toBeVisible();
   });

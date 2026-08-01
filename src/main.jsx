@@ -5,10 +5,15 @@ import './index.css'
 import App from './App.jsx'
 import ErrorBoundary from './ErrorBoundary.jsx'
 import { BUILD_SHA, BUILD_TIME } from './version'
+import { installErrorMonitoring } from './errorMonitor'
 
 // Announce the running build so "which version is live?" is answerable from the
 // console (also in Settings, and at /version.json).
 console.info('Hanzi Dojo · build ' + BUILD_SHA + (BUILD_TIME ? ' · ' + BUILD_TIME : ''))
+
+// Unhandled exceptions / rejections become capped, privacy-safe analytics
+// events, so production failures are diagnosable (see errorMonitor.js).
+installErrorMonitoring()
 
 // react-router basename must match the host's base path (Pages serves under
 // /Hanzi-dojo/, Vercel/dev under /). Strip the trailing slash for a subpath.

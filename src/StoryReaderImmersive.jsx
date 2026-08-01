@@ -18,6 +18,7 @@ import { prefsGet, prefsMerge } from './offline'
 import { READER_PREFS_KEY, DEFAULT_READING_FONT, normalizeReadingFont, readingFontFromPrefs, readingFontHint, readingFontOptions, readingFontPatch, readingFontStack } from './readingFonts'
 import { FIRST_MISSION_READER_HINT, firstMissionCompletion } from './firstMission'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
+import { setFeedbackStory } from './feedbackContext'
 import { shareReadingCard } from './shareCard'
 import { toast } from './toast'
 import { BRAND_URL } from './brand'
@@ -440,9 +441,13 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
 
   // Analytics: story opened (once per story). Fires with the current readability
   // so drop-off vs. difficulty is analyzable. Intentionally keyed on story.id.
+  // The same mount registers the story as feedback context, so a report sent
+  // mid-read names this story.
   useEffect(() => {
-    trackEvent(EVENTS.STORY_OPENED, { tier: story.tier, known_pct: knownPct })
+    trackEvent(EVENTS.STORY_OPENED, { tier: story.tier, known_pct: knownPct, story_id: story.id })
     if (firstMission) trackOnce(EVENTS.FIRST_STORY_OPENED, { known_pct: knownPct })
+    setFeedbackStory({ id: story.id, title: story.title })
+    return () => setFeedbackStory(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story.id])
 
@@ -464,7 +469,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
       await enqueueStoryRead({ userId: session.user.id, storyId: story.id })
       if (onMarkRead) onMarkRead(story.id)
     }
-    trackEvent(EVENTS.STORY_COMPLETED, { tier: story.tier, known_pct: knownPct })
+    trackEvent(EVENTS.STORY_COMPLETED, { tier: story.tier, known_pct: knownPct, story_id: story.id })
     if (firstMission) trackOnce(EVENTS.FIRST_STORY_COMPLETED, { known_pct: knownPct })
     setFinishing(false)
   }
