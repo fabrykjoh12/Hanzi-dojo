@@ -30,6 +30,81 @@ read them off a CI run instead of trusting the number written here._
 
 ---
 
+## Active milestone — HD: Public Chinese beta hardening (implementation brief)
+
+Source of truth: the owner's *Hanzi Dojo — Claude Code Master Implementation
+Brief* (uploaded 2026-07-31; keep a copy alongside this board if it moves).
+Phases run in order; one phase per reviewable change. Statuses: `pending` /
+`in progress` / `blocked` / `needs review` / `complete`.
+
+The detailed plan lives **here**, not in `ROADMAP.md`/`docs/BACKLOG.md`, because
+those two sync to public Discord and this tracker enumerates security
+boundaries. The public roadmap carries a one-line "Public-beta hardening" item.
+
+| ID | Phase | Status | Notes |
+|----|-------|--------|-------|
+| HD-P0 | Baseline, safety, task infra | **complete** | Baseline 2026-07-31 (branch `claude/new-session-tllaz3`): lint **0 errors** (7 pre-existing warnings), vitest **3,000/3,000 pass** (122 files), build **clean** (one cosmetic Rolldown plugin-timing notice). No console-error or e2e baseline captured this session — e2e runs in CI. Test-account strategy: Creative Mode sandbox on `/dashboard` + `/unlock` + `/reset` cover the learner scenarios; fixtures in `tests/fixtures/`. No production mutation was needed. |
+| HD-P1 | Security & public-product boundaries | **needs review** | Audit + fixes shipped this change — see report below. |
+| HD-P2 | Analytics & progress-data integrity | pending | Much already done: transactional grading RPC (`20260722120000`), analytics RLS. Remaining: verify dashboard metrics against the brief's known failures (103%, 37/36, funnel, date ranges) against live data; metric dictionary. |
+| HD-P3 | Curriculum & HSK claims | **blocked — owner decision** | The brief requires the owner to pick: legacy-count labels vs current-standard migration vs independent syllabus with published mapping. Do not change syllabus semantics before that. |
+| HD-P4 | Canonical content model & urgent repairs | pending | The brief's two named story defects still exist in prod (`1. 不见了的苹果`, and the `今天唱歌` series numbered 1/3/5 — confirmed by read-only query 2026-07-31). Validator exists (`check-authored-stories.mjs`); canonical-record/versioning work open. |
+| HD-P5 | Navigation, loading, learner shell | pending | Reassess against current app — much has shipped since the brief was written. |
+| HD-P6 | Home & flashcards | pending | Phone-fit grading and single-RPC grades already shipped; verify remaining acceptance criteria. |
+| HD-P7 | Story library & core reader | pending | |
+| HD-P8 | Manhua, chats, scenes, replies | pending | Manga→manhua rename shipped; migration `20260730090000` pending apply (see BACKLOG §Database). |
+| HD-P9 | Chinese editorial sign-off | **blocked — needs Chinese reviewer** | Claude may build tooling/reports but must not self-certify Chinese editorial quality. |
+| HD-P10 | Practice hub & practice modes | pending | Dictionary ranking fix shipped (`20260727160000`); re-verify the brief's `friend` case and slang labeling. |
+| HD-P11 | Public website, auth, diagnostic | pending | Landing rework shipped since the brief; verify sign-up validation, diagnostic honesty ("60-second" claim), share flows. |
+| HD-P12 | Profile, settings, internal ops | pending | |
+| HD-P13 | Legal, privacy, a11y, mobile, perf | pending | Privacy/Terms pages do not exist yet — launch blocker for public beta. |
+| HD-P14 | Automated QA & release gate | pending | CI (lint/test/build) + Playwright e2e exist; content validation in CI and the release checklist are open. |
+| HD-P15 | Differentiation after stabilization | pending | Do not start until the release gate is healthy. |
+
+### HD-P1 report (2026-07-31)
+
+**Already in place before this change** (verified in code + prod):
+roles come from `profiles.is_admin` (server-trusted, default false); `/dashboard`
+and `/hq` render 404 for non-admins and their data is admin-only at the RLS/RPC
+layer (`assert_admin()` on every `admin_*` RPC; every `dojo_*` policy requires
+`is_admin`; `analytics_events` is insert-only for clients); admin nav is a
+separate `ADMIN_NAV` gated in `App.jsx`; both admin screens are lazy-loaded
+chunks; e2e spec `tests/e2e/hq-gate.spec.js` covers learner denial. The
+Chinese-only picker gate (`PUBLIC_LANGUAGES`/`ADMIN_LANGUAGES` in
+`languageTheme.js`) covers onboarding, landing, and the switcher, with
+grandfathered tracks kept visible.
+
+**Gaps found and fixed in this change:**
+1. `guard_is_admin` was a BEFORE **UPDATE** trigger only, while profile rows are
+   created client-side and the INSERT policy is column-blind — a fresh account
+   with no profiles row could insert one with `is_admin = true` and become an
+   admin. Fixed: guard now covers INSERT too
+   (`20260731170000_guard_profile_insert_and_track_activation.sql`, applied).
+2. `language_tracks` had no server-side language gate — any authenticated user
+   could insert a paused-language track from the console. Fixed: BEFORE
+   INSERT/UPDATE trigger allows only `public_track_languages()` (Chinese) for
+   ordinary users, leaves rows whose language is unchanged alone (the 15
+   existing grandfathered tracks keep working), and exempts admins + service
+   role. Same migration, applied.
+3. `index.html` + `public/manifest.webmanifest` still advertised all three
+   languages in the title/description/OG/Twitter/PWA copy. Now Chinese-only.
+4. Onboarding's pre-login prefill validated against the full `LANGUAGES` map,
+   so a hand-edited stored value could start a paused track client-side. Now
+   validated against `availableLanguages(false)`.
+
+**Known, documented, deliberately not changed here:**
+- `vite.config.js` default build target is the standalone HQ page unless
+  `DOJO_PUBLIC_BUILD=1` (Vercel sets it). Safe-by-default would invert the
+  flag; that breaks the Sites CI on purpose-kept behavior → **owner call**.
+- `/dev` route has no route-level gate (client email allowlist inside the
+  component; every action runs under the user's own RLS). Pattern differs from
+  `/hq`/`/dashboard`; harmless today, tidy later.
+- 58 published non-Chinese stories remain reachable via direct `/read/<id>`
+  links (no listing anywhere). Frozen-track policy says leave them; revisit
+  only if share links circulate.
+- `assert_admin()` keeps implicit PUBLIC execute (returns void, leaks nothing).
+
+---
+
 ## Product Vision
 
 A calm, free language app built on the two methods that actually work: **FSRS
