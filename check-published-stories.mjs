@@ -20,8 +20,13 @@
 //     Chinese content's (per-line reveal shows the WRONG translation)
 //   - missing / blank english_summary (the shelf preview)
 // WARNINGS (exit 0 unless --strict — real, but may be deliberate):
-//   - chapter-number gaps among the published chapters of a series (held
-//     chapters — decide, don't just renumber; see docs/PM-BOARD.md HD-P4)
+//   - chapter-number gaps among the published chapters of a series, but ONLY
+//     when the missing chapter actually exists UNPUBLISHED at the same level
+//     (a genuinely held chapter — decide, don't just renumber; see
+//     docs/PM-BOARD.md HD-P4). Gaps with no matching held row are the
+//     multi-level serials, whose chapters deliberately continue numbering
+//     across levels (1–6 at HSK 1, 7–12 at HSK 2, 13–18 at HSK 3) — those are
+//     not flagged.
 //   - no english_content at all (some older chat/scene stories)
 //   - has_audio = false
 
@@ -66,6 +71,26 @@ if (error) {
   process.exit(1)
 }
 
+// Held (unpublished) rows, used to tell a real held-chapter gap from a
+// cross-level serial continuation.
+const { data: heldRows, error: heldError } = await supabase
+  .from('stories')
+  .select('title, level')
+  .eq('language', 'chinese')
+  .eq('is_published', false)
+
+if (heldError) {
+  console.error('Held-rows query failed:', heldError.message)
+  process.exit(1)
+}
+
+const heldChapters = new Set(
+  (heldRows || [])
+    .map(r => ({ n: chapterNumber(r.title), level: r.level }))
+    .filter(r => r.n != null)
+    .map(r => r.level + '#' + r.n)
+)
+
 const errors = []
 const warnings = []
 const where = (s) => `[L${s.level} #${s.story_number}] ${s.title} (${s.id})`
@@ -105,10 +130,13 @@ for (const [level, group] of Map.groupBy(stories, (s) => s.level)) {
     if (nums.length > 1) {
       const missing = []
       for (let n = nums[0]; n <= nums[nums.length - 1]; n += 1) {
-        if (!nums.includes(n)) missing.push(n)
+        // Only a real gap when that chapter exists unpublished at this level —
+        // otherwise it's a cross-level serial leg (numbering continues from a
+        // lower level) and there is nothing to publish.
+        if (!nums.includes(n) && heldChapters.has(level + '#' + n)) missing.push(n)
       }
       if (missing.length) {
-        warnings.push(`L${level} series “${series[0].title}”: published chapters ${nums.join(',')} — missing ${missing.join(',')} (held?)`)
+        warnings.push(`L${level} series “${series[0].title}”: published chapters ${nums.join(',')} — chapters ${missing.join(',')} exist unpublished (held)`)
       }
     }
     series = []
