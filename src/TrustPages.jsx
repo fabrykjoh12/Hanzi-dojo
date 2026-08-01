@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { BRAND_NAME, BRAND_URL } from './brand'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
@@ -31,11 +32,16 @@ function Li({ children }) {
 }
 
 function A({ href, children, external }) {
+  const navigate = useNavigate()
   return (
     <a
       href={href}
       target={external ? '_blank' : undefined}
       rel={external ? 'noopener noreferrer' : undefined}
+      // Internal links navigate client-side (the app is already loaded); the
+      // href stays real for middle-click / open-in-new-tab. External links are
+      // real navigations by design.
+      onClick={external ? undefined : (e) => { e.preventDefault(); navigate(href) }}
       style={{ color: 'var(--text)', fontWeight: 600, textDecorationColor: 'var(--text-faint)' }}
     >{children}</a>
   )

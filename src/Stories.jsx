@@ -807,15 +807,21 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
                     {getSystemLabel(track.system)} · {getLevelLabel(track.language, track.system, track.current_level)}
                   </Eyebrow>
                 </div>
+                {/* Title first, opening sentence supporting — the headline names
+                    the story; a first sentence can't be told apart from copy. */}
                 <h1 style={{
                   fontFamily: fontFamily + ', Inter, sans-serif', color: '#fff',
                   fontSize: isMobile ? '25px' : '31px', fontWeight: 600, lineHeight: 1.32,
                   letterSpacing: '0.01em', margin: '10px 0 8px', maxWidth: '20ch',
                 }}>
-                  {heroSentence(daily.content)}
+                  {daily.title}
                 </h1>
-                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45 }}>
-                  {daily.title} · {getLevelLabel(track.language, track.system, daily.level == null ? track.current_level : daily.level)}
+                <div style={{
+                  fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45,
+                  fontFamily: fontFamily + ', Inter, sans-serif',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '46ch',
+                }}>
+                  {heroSentence(daily.content)} · {getLevelLabel(track.language, track.system, daily.level == null ? track.current_level : daily.level)}
                 </div>
                 <HeroAction label="Start reading" hovered={hovered} icon={ArrowRight} accentHex={accentHex} />
               </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Auth from './Auth'
 import { track, EVENTS } from './analytics'
 import logo from './assets/Hanzi-logo.png'
@@ -226,6 +227,7 @@ export default function Landing() {
   const [pickedLang, setPickedLang] = useState(null)
   const [pickedReason, setPickedReason] = useState(null)
   const isMobile = useIsMobile()
+  const navigate = useNavigate()
   // Pre-login: no account context yet, so the landing wizard always shows the
   // public set (Chinese-only). Gated tracks appear after sign-in on an admin
   // account via the language switcher.
@@ -585,7 +587,14 @@ export default function Landing() {
             marginTop: '22px', fontSize: '13px',
           }}>
             {[['/methodology', 'How it teaches'], ['/privacy', 'Privacy'], ['/terms', 'Terms'], ['/support', 'Support']].map(([href, label]) => (
-              <a key={href} href={href} style={{ color: 'var(--text-muted)', fontWeight: 600, textDecoration: 'none' }}>
+              <a
+                key={href}
+                href={href}
+                // Client-side navigation (the app is already loaded); the href
+                // stays real for middle-click / open-in-new-tab.
+                onClick={(e) => { e.preventDefault(); navigate(href) }}
+                style={{ color: 'var(--text-muted)', fontWeight: 600, textDecoration: 'none' }}
+              >
                 {label}
               </a>
             ))}
