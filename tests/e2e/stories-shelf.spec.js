@@ -1,12 +1,15 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 
-// The Stories library groups a CUMULATIVE shelf under tier tabs (First Steps /
-// Growing / Fluent). Each tab shows that tier's stories across every level the
-// learner has reached — grouped into arcs, with practice formats in their own
-// section — and a locked tab states how many more words open it.
+// The Stories library is ONE flat page of level sections (no tier tabs): the
+// learner's current level first, then earlier levels, each a grid with one
+// card per series / standalone story sorted most-readable first, practice
+// formats in their own group, and the NEXT level as a locked teaser at the
+// end. Tier locks render inline on cards ("Learn N more words"), never as a
+// separate wall.
 //
-// Fixture: track.current_level = 2; four level-2 tier-1 stories (one paced
-// narrative + three practice formats) and one level-1 tier-3 story ("老朋友").
+// Fixture: track.current_level = 2; level-2 tier-1 stories (st1 + practice),
+// level-1 stories (st5 tier 3, st6 tier 1, manhua), and one HSK 3 manhua
+// (the teaser).
 const LEVEL_1_STORY = {
   id: 'st5', language: 'chinese', system: 'hsk', level: 1, tier: 3, story_number: 1,
   title: '老朋友', is_published: true, presentation: 'paced', has_audio: false,
@@ -15,7 +18,9 @@ const LEVEL_1_STORY = {
 };
 
 // Narrow the stories table to a specific set for one test (GET only — anything
-// else falls through to the shared mock).
+// else falls through to the shared mock). NOTE: this serves the SAME rows to
+// both shelf queries (reachable levels and the next-level teaser); the teaser
+// builder filters to its own level, so extra rows are ignored.
 async function serveStories(page, rows) {
   await page.route('**/rest/v1/stories**', async (route) => {
     if (route.request().method() !== 'GET') return route.fallback();
@@ -47,9 +52,6 @@ async function serveTrackLevel(page, level) {
   });
 }
 
-// A level-2 tier-1 story (mirrors the default fixture's "st1") and a level-3
-// (HSK 3) tier-1 story, used together to exercise a THIRD level on the
-// cumulative shelf without displacing the existing level-1/level-2 coverage.
 const LEVEL_2_STORY = {
   id: 'st1', language: 'chinese', system: 'hsk', level: 2, tier: 1, story_number: 1,
   title: '公园里的下午', is_published: true, presentation: 'paced', has_audio: false,
@@ -57,73 +59,82 @@ const LEVEL_2_STORY = {
   content: ['今天天气很好。', '小明：我们去公园吧！', '朋友：你看，花很好！'].join('\n'),
 };
 const LEVEL_3_STORY = {
-  id: 'st6', language: 'chinese', system: 'hsk', level: 3, tier: 1, story_number: 1,
+  id: 'st6b', language: 'chinese', system: 'hsk', level: 3, tier: 1, story_number: 1,
   title: '新的一年', is_published: true, presentation: 'paced', has_audio: false,
   image_path: null, english_content: 'A new year.',
   content: ['今年是新的一年。', '我们很高兴。'].join('\n'),
 };
+// A tier the HSK 2 learner has not reached — its card must show the inline lock.
+const LOCKED_TIER_STORY = {
+  id: 'st-locked', language: 'chinese', system: 'hsk', level: 2, tier: 3, story_number: 9,
+  title: '还没到的故事', is_published: true, presentation: 'paced', has_audio: false,
+  image_path: null, english_content: 'Not yet.',
+  content: ['以后再看。'].join('\n'),
+};
 
-test.describe('Story library — tier tabs', () => {
-  test('one tab bar replaces the old progress bar + ladder', async ({ page }) => {
+test.describe('Story library — flat shelf', () => {
+  test('level sections replace the tier tabs, current level first', async ({ page }) => {
     await page.goto('/stories');
-    await expect(page.getByRole('tab', { name: /First Steps/ })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /Growing/ })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /Fluent/ })).toBeVisible();
-    // The overall unlock % is a small label in the same bar, not a separate card.
-    await expect(page.getByText(/% of this level unlocked/i)).toBeVisible();
+    // No tab bar anywhere.
+    await expect(page.getByRole('tab', { name: /First Steps/ })).toHaveCount(0);
+    // Sections: HSK 2 (current, marked) and HSK 1, in that order, each with an
+    // honest read count.
+    await expect(page.getByRole('heading', { name: 'HSK 2', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'HSK 1', exact: true })).toBeVisible();
+    await expect(page.getByText('Your level')).toBeVisible();
+    await expect(page.getByText(/\d+ of \d+ read/).first()).toBeVisible();
+    const headings = await page.getByRole('heading', { level: 2 }).allTextContents();
+    expect(headings.indexOf('HSK 2')).toBeLessThan(headings.indexOf('HSK 1'));
   });
 
-  test('First Steps is open by default; practice formats sit in their own section', async ({ page }) => {
+  test('cards carry a "% known" chip (the sort the shelf is built on)', async ({ page }) => {
     await page.goto('/stories');
-    const panel = page.getByRole('tabpanel');
-    // The narrative story is a card.
-    await expect(panel.getByRole('button', { name: /公园里的下午/ })).toBeVisible();
-    // Chat / scene / reply stories are pulled out into Practice Scenarios (their
-    // cards carry the "Practice" ribbon in the accessible name).
-    await expect(panel.getByRole('heading', { name: 'Practice Scenarios' })).toBeVisible();
-    await expect(panel.getByRole('button', { name: /Practice 朋友的问题/ })).toBeVisible();
-    await expect(panel.getByRole('button', { name: /Practice 下雨天/ })).toBeVisible();
+    await expect(page.getByText(/% known/).first()).toBeVisible();
   });
 
-  test('a locked tier shows how many more words open it', async ({ page }) => {
+  test('practice formats sit in their own section', async ({ page }) => {
     await page.goto('/stories');
-    // Growing is locked at HSK 2 — its tab says so, and selecting it shows the
-    // locked panel rather than a dead end.
-    await expect(page.getByText(/more word/i).first()).toBeVisible();
-    await page.getByRole('tab', { name: /Growing/ }).click();
-    await expect(page.getByText('Keep learning to unlock')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Practice Scenarios' }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /Practice 朋友的问题/ })).toBeVisible();
   });
 
-  test('cumulative shelf: a passed level’s story stays open under its tier tab', async ({ page }) => {
+  test('a tier the learner has not reached locks INLINE on the card', async ({ page }) => {
+    await serveStories(page, [LEVEL_2_STORY, LOCKED_TIER_STORY]);
     await page.goto('/stories');
-    // HSK 1 (behind the learner) keeps its tier-3 story readable even though the
-    // same threshold is still locked at HSK 2 — reached via the Fluent tab.
-    await page.getByRole('tab', { name: /Fluent/ }).click();
-    await expect(page.getByRole('tabpanel').getByRole('button', { name: /老朋友/ })).toBeVisible();
+    const lockedCard = page.getByRole('button', { name: /还没到的故事/ });
+    await expect(lockedCard).toBeVisible();
+    await expect(lockedCard).toBeDisabled();
+    await expect(page.getByText(/Learn \d+ more words?/)).toBeVisible();
   });
 
-  test('a story card opens straight into the reader (no list drill-in)', async ({ page }) => {
+  test('a passed level’s story stays readable and opens straight into the reader', async ({ page }) => {
     await page.goto('/stories');
-    await page.getByRole('tab', { name: /Fluent/ }).click();
-    await page.getByRole('tabpanel').getByRole('button', { name: /老朋友/ }).click();
+    // st5 is HSK 1 tier 3 — locked at HSK 2’s thresholds, but the level is
+    // passed, so it reads. One tap, straight to the reader.
+    await page.getByRole('region').getByRole('button', { name: /老朋友/ }).click();
     await expect(page.getByRole('button', { name: /Start reading/i })).toBeVisible();
+  });
+
+  test('the next level appears as a locked teaser at the end', async ({ page }) => {
+    await page.goto('/stories');
+    // The fixture has an HSK 3 manhua; the learner is at HSK 2.
+    await expect(page.getByRole('heading', { name: 'HSK 3', exact: true })).toBeVisible();
+    await expect(page.getByText(/Unlocks when you pass the HSK 2 test/)).toBeVisible();
+    const headings = await page.getByRole('heading', { level: 2 }).allTextContents();
+    expect(headings.indexOf('HSK 3')).toBeGreaterThan(headings.indexOf('HSK 1'));
   });
 
   test('the filter row narrows by format', async ({ page }) => {
     await page.goto('/stories');
-    const panel = page.getByRole('tabpanel');
-    // Format → Practice hides the narrative card, keeps the practice ones.
-    // (Scope to the Format group so the sidebar's "Practice" nav isn't matched.)
     await page.getByRole('group', { name: 'Format' }).getByRole('button', { name: 'Practice' }).click();
-    await expect(panel.getByRole('button', { name: /Practice 朋友的问题/ })).toBeVisible();
-    await expect(panel.getByRole('button', { name: /公园里的下午/ })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Practice 朋友的问题/ })).toBeVisible();
+    await expect(page.getByRole('region').getByRole('button', { name: /公园里的下午/ })).toHaveCount(0);
   });
 
   test('current level has no stories of its own — a lower level still shows', async ({ page }) => {
     await serveStories(page, [LEVEL_1_STORY]);
     await page.goto('/stories');
-    // Default opens the tier that actually has something readable (Fluent → HSK 1).
-    await expect(page.getByRole('tabpanel').getByRole('button', { name: /老朋友/ })).toBeVisible();
+    await expect(page.getByRole('region').getByRole('button', { name: /老朋友/ })).toBeVisible();
   });
 
   test('no stories anywhere — a calm empty state, no broken shelf', async ({ page }) => {
@@ -132,27 +143,24 @@ test.describe('Story library — tier tabs', () => {
     await expect(page.getByText('No stories yet')).toBeVisible();
   });
 
-  test('a third level (HSK 3) joins the cumulative shelf without displacing 1 or 2', async ({ page }) => {
+  test('a third level (HSK 3) joins the one-page shelf without displacing 1 or 2', async ({ page }) => {
     await serveTrackLevel(page, 3);
     await serveStories(page, [LEVEL_1_STORY, LEVEL_2_STORY, LEVEL_3_STORY]);
     await page.goto('/stories');
-    // The header names the learner's real current level (HSK 3), not "undefined".
     await expect(page.getByText(/hsk · HSK 3/i)).toBeVisible();
-    // Tier 1 ("First Steps") is open by default and shows the new HSK 3 story,
-    // grouped under its own "HSK 3" heading.
-    await expect(page.getByRole('heading', { name: 'HSK 3', exact: true })).toBeVisible();
-    await expect(page.getByRole('tabpanel').getByRole('button', { name: /新的一年/ })).toBeVisible();
-    // The HSK 2 tier-1 story a level below is still reachable in the same tab.
-    await expect(page.getByRole('tabpanel').getByRole('button', { name: /公园里的下午/ })).toBeVisible();
-    // The HSK 1 tier-3 story two levels below is reachable via Fluent — nothing lost.
-    await page.getByRole('tab', { name: /Fluent/ }).click();
-    await expect(page.getByRole('tabpanel').getByRole('button', { name: /老朋友/ })).toBeVisible();
+    // ONE page, three sections — no tab switching.
+    await expect(page.getByRole('region').getByRole('button', { name: /新的一年/ })).toBeVisible();
+    await expect(page.getByRole('region').getByRole('button', { name: /公园里的下午/ })).toBeVisible();
+    await expect(page.getByRole('region').getByRole('button', { name: /老朋友/ })).toBeVisible();
+    const headings = await page.getByRole('heading', { level: 2 }).allTextContents();
+    expect(headings.indexOf('HSK 3')).toBeLessThan(headings.indexOf('HSK 2'));
+    expect(headings.indexOf('HSK 2')).toBeLessThan(headings.indexOf('HSK 1'));
   });
 
   test('reads on a phone-width viewport without horizontal overflow', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/stories');
-    await expect(page.getByRole('tab', { name: /First Steps/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'HSK 2', exact: true })).toBeVisible();
     const overflow = await page.evaluate(() =>
       document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);

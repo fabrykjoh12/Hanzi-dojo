@@ -36,10 +36,9 @@ test.describe('《楼上没有声音》 standalone story', () => {
   test('appears as a complete HSK 3 work outside every series', async ({ page }) => {
     await serveHsk3Track(page);
     await page.goto('/stories');
-    const shelf = page.getByRole('tabpanel');
-    const standalone = shelf.locator('section[aria-labelledby="standalone-stories-3"]');
-    await expect(standalone.getByRole('heading', { name: 'Standalone stories' })).toBeVisible();
-    const card = standalone.getByRole('button', { name: new RegExp(STORY) });
+    // The flat shelf: the standalone is its own card in the HSK 3 section.
+    const shelf = page.getByRole('region', { name: 'HSK 3' });
+    const card = shelf.getByRole('button', { name: new RegExp(STORY) });
     await expect(card.getByText('Complete story', { exact: true })).toBeVisible();
     await expect(card.getByText('3 chapters', { exact: true })).toBeVisible();
     await expect(card.getByText('12 min', { exact: true })).toBeVisible();
@@ -97,7 +96,7 @@ test.describe('《楼上没有声音》 standalone story', () => {
     await expect(completion.getByRole('status', { name: /细心读者/ })).toBeVisible();
 
     await completion.getByRole('button', { name: /Back to stories/ }).click();
-    const card = page.getByRole('tabpanel').getByRole('button', { name: new RegExp(STORY) });
+    const card = page.getByRole('region').getByRole('button', { name: new RegExp(STORY) }).first();
     await expect(card.getByText('Read', { exact: true })).toBeVisible();
   });
 });

@@ -16,11 +16,10 @@ test.describe('Story of the day', () => {
     await expect(daily).toHaveCount(0);
   });
 
-  test('the tier tabs surface the gap to the next unlock', async ({ page }) => {
+  test('the shelf surfaces what comes next: the locked next-level teaser', async ({ page }) => {
     await page.goto('/stories');
-    // The reading-ladder rung copy folded into the tab bar: a locked tier's tab
-    // states how many more words open it (fixture: Growing is locked at HSK 2).
-    await expect(page.getByText(/more word/i).first()).toBeVisible();
-    await expect(page.getByText(/% of this level unlocked/i)).toBeVisible();
+    // The flat shelf's "road ahead": the next level's stories are visible but
+    // locked, with the honest gate (the level test) stated inline.
+    await expect(page.getByText(/Unlocks when you pass the HSK 2 test/)).toBeVisible();
   });
 });

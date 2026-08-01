@@ -288,6 +288,15 @@ export async function mockSupabaseRoutes(page) {
           const storyId = filter && filter.startsWith('eq.') ? filter.slice(3) : null;
           if (storyId) rows = rows.filter(row => row.story_id === storyId);
         }
+        // The flat shelf issues TWO stories queries — reachable levels
+        // (level=lte.N) and the next level's teaser (level=eq.N+1). Honor the
+        // level filter, or the teaser echoes the whole library and the shelf
+        // renders every level twice.
+        if (table === 'stories' && Array.isArray(rows)) {
+          const lf = url.searchParams.get('level');
+          if (lf && lf.startsWith('eq.')) rows = rows.filter(row => row.level === Number(lf.slice(3)));
+          else if (lf && lf.startsWith('lte.')) rows = rows.filter(row => row.level <= Number(lf.slice(4)));
+        }
         body = Array.isArray(rows) ? (wantsObject ? (rows[0] ?? {}) : rows) : (wantsObject ? rows : [rows]);
       } else body = wantsObject ? null : [];
       return route.fulfill({
