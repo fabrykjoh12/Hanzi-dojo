@@ -785,6 +785,17 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
             waiting for you today. Falls back to a plain title block before
             anything is unlocked. */}
         {daily ? (
+          <>
+          {/* The page h1 lives OUTSIDE the hero: HeroPanel is role="button",
+              and ARIA flattens headings inside a button into its name — an h1
+              in there is not exposed as a heading at all. Visually hidden;
+              the hero carries the visual title. */}
+          <h1 style={{
+            position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px',
+            overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0,
+          }}>
+            Stories
+          </h1>
           <HeroPanel
             accentHex={accentHex}
             seed={track.language + '-stories'}
@@ -808,14 +819,16 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
                   </Eyebrow>
                 </div>
                 {/* Title first, opening sentence supporting — the headline names
-                    the story; a first sentence can't be told apart from copy. */}
-                <h1 style={{
+                    the story; a first sentence can't be told apart from copy.
+                    A div, not a heading: inside role="button" a heading would
+                    be flattened anyway (the real h1 sits above the hero). */}
+                <div style={{
                   fontFamily: fontFamily + ', Inter, sans-serif', color: '#fff',
                   fontSize: isMobile ? '25px' : '31px', fontWeight: 600, lineHeight: 1.32,
                   letterSpacing: '0.01em', margin: '10px 0 8px', maxWidth: '20ch',
                 }}>
                   {daily.title}
-                </h1>
+                </div>
                 <div style={{
                   fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45,
                   fontFamily: fontFamily + ', Inter, sans-serif',
@@ -827,6 +840,7 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
               </div>
             )}
           </HeroPanel>
+          </>
         ) : (
           <div style={{ margin: '28px 0 22px' }}>
             <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>

@@ -212,6 +212,14 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
   return (
     <span
       onClick={(e) => { e.stopPropagation(); onSelect(e.currentTarget) }}
+      // Keyboard parity for the reader's core interaction (the ManhuaBubble
+      // pattern): every word is a real button, Enter/Space looks it up.
+      role="button"
+      tabIndex={0}
+      aria-label={token.text}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onSelect(e.currentTarget) }
+      }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
@@ -703,6 +711,21 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   // when a definition can't be given a readable box on either side of the word,
   // `mode` comes back 'sheet' and this falls back to the bottom sheet below.
   const { ref: popRef, mode: popMode, place: popPlace } = useAnchoredPopover(sel ? sel.anchorEl : null, clearReading)
+
+  // Escape dismisses the lookup, then the settings sheet — keyboard parity
+  // with the backdrop tap, matching useStoryReaderCore's readers. This
+  // component doesn't use that hook, so it needs its own listener.
+  useEffect(() => {
+    if (!sel && !settingsOpen) return undefined
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return
+      if (sel) clearReading()
+      else setSettingsOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [Boolean(sel), settingsOpen])
   const anchored = Boolean(sel) && popMode !== 'sheet'
   const isName = Boolean(sel && sel.name)
   const isSelPlace = Boolean(sel && sel.vocab && isPlaceWord(sel.vocab.word, track.language))
@@ -928,6 +951,12 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               {showLabel && (
                 <div
                   onClick={isNameKey(names, speaker) ? (e) => selectToken(li, 'sp', { name: { word: speaker, reading: names[speaker] || null } }, e.currentTarget) : undefined}
+                  role={isNameKey(names, speaker) ? 'button' : undefined}
+                  tabIndex={isNameKey(names, speaker) ? 0 : undefined}
+                  aria-label={isNameKey(names, speaker) ? speaker : undefined}
+                  onKeyDown={isNameKey(names, speaker) ? (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectToken(li, 'sp', { name: { word: speaker, reading: names[speaker] || null } }, e.currentTarget) }
+                  } : undefined}
                   style={{
                     fontSize: '12.5px', fontWeight: 800, letterSpacing: '0.4px',
                     color: speakerColors[speaker], marginBottom: '5px',
@@ -941,7 +970,14 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                 </div>
               )}
               <div
-                onClick={() => toggleFocus(li)}
+                // Line focus is a pointer convenience (dim the other lines); a
+                // click on any real control inside the line must not also
+                // toggle it. Deliberately not keyboard-operable: it adds no
+                // information, and a tab stop per line would drown the tokens.
+                onClick={(e) => {
+                  if (e.target.closest && e.target.closest('button, [role="button"]')) return
+                  toggleFocus(li)
+                }}
                 style={{
                   // Dialogue gets a subtle speaker-colored left rule + indent so
                   // it reads distinctly from narration without a label on every line.
@@ -1152,7 +1188,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             position: 'fixed', left: 0, right: 0, bottom: 'calc(64px + ' + bottomOffset + ')', zIndex: 25,
             display: 'flex', justifyContent: 'center', padding: '0 12px', pointerEvents: 'none',
           }}>
-          <div ref={anchored ? popRef : null} style={anchored
+          <div ref={anchored ? popRef : null} role="dialog" aria-label={selWord} style={anchored
             ? {
               position: 'fixed',
               top: (popPlace ? popPlace.top : 0) + 'px',
@@ -1325,6 +1361,9 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         >
           <div
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Reader settings"
             style={{
               width: '100%', background: PANEL, borderTopLeftRadius: '22px', borderTopRightRadius: '22px',
               borderTop: '1px solid var(--border)', boxShadow: '0 -12px 44px rgba(24,24,27,0.20)',

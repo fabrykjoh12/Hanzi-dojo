@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { glossaryLookup } from './grammarGlossary'
 import { useDictEntry, dictDefinitions } from './useDictEntry'
@@ -75,6 +76,21 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
   const { entry: dictEntry, loading: dictLoading } = useDictEntry(dictWordFor(selected, lang, grammar))
   // Measuring and repositioning only — the geometry lives in anchoredPopover.js.
   const { ref: popRef, mode, place } = useAnchoredPopover(selected ? anchor : null, onClose)
+
+  // Dialog focus management: remember the word that opened the sheet, move
+  // focus into it (so a screen reader announces the lookup instead of silence),
+  // give focus back on close. Every reader gets this for free.
+  const boxRef = useRef(null)
+  const openerRef = useRef(null)
+  useEffect(() => {
+    if (!selected) return
+    openerRef.current = document.activeElement
+    if (boxRef.current) boxRef.current.focus({ preventScroll: true })
+    return () => {
+      if (openerRef.current && openerRef.current.focus) openerRef.current.focus({ preventScroll: true })
+    }
+  }, [selected])
+
   if (!selected) return null
   if (typeof document === 'undefined') return null
 
@@ -134,7 +150,15 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
       // behind it would shade out exactly the thing it is pointing at.
       background: anchored ? 'transparent' : 'rgba(0,0,0,0.18)',
     }}>
-      <div ref={anchored ? popRef : null} onClick={e => e.stopPropagation()} style={boxStyle}>
+      <div
+        ref={(el) => { boxRef.current = el; if (anchored) popRef.current = el }}
+        onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal={anchored ? undefined : 'true'}
+        aria-label={selected.word}
+        tabIndex={-1}
+        style={{ ...boxStyle, outline: 'none' }}
+      >
         {/* The grab handle belongs to the sheet — a popover isn't dragged. */}
         {!anchored && (
           <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: 'var(--border)', margin: '0 auto 12px' }} />

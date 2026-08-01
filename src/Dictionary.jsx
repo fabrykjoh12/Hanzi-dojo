@@ -291,6 +291,32 @@ export default function Dictionary({ session, profile, track, onBack }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [entryDepth])
 
+  // Escape also closes the WORD lookup sheet (syllabus scope). The entry-sheet
+  // handler above only covers the drill-down; this was the one lookup you
+  // couldn't leave by keyboard. Gated on the entry sheet being closed so one
+  // press never closes both layers.
+  useEffect(() => {
+    if (!selected || entryDepth > 0) return undefined
+    const onKey = (e) => { if (e.key === 'Escape') setSelected(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selected, entryDepth])
+
+  // aria-modal dialogs must actually hold focus: stash the opener, focus the
+  // entry sheet on open, restore on close (the ReadingScaffold pattern).
+  const entrySheetRef = useRef(null)
+  const entryOpenerRef = useRef(null)
+  useEffect(() => {
+    if (entryDepth === 0) return undefined
+    entryOpenerRef.current = document.activeElement
+    if (entrySheetRef.current) entrySheetRef.current.focus({ preventScroll: true })
+    return () => {
+      if (entryOpenerRef.current && entryOpenerRef.current.focus) entryOpenerRef.current.focus({ preventScroll: true })
+    }
+    // Depth transitions 0→N and N→0 are what matter; re-running on 1→2 keeps
+    // focus inside the sheet, which is fine.
+  }, [entryDepth])
+
   const rowStyle = {
     display: 'flex', alignItems: 'center', gap: '14px', textAlign: 'left', width: '100%',
     minHeight: TAP + 'px', padding: '13px 16px', borderRadius: '14px', cursor: 'pointer',
@@ -628,11 +654,13 @@ export default function Dictionary({ session, profile, track, onBack }) {
       {entryStack.length > 0 && typeof document !== 'undefined' && createPortal(
         <div onClick={closeEntry} className="app-overlay-viewport" style={sheetOverlayStyle()}>
           <div
+            ref={entrySheetRef}
             onClick={e => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-label="Dictionary entry"
-            style={sheetShellStyle()}
+            tabIndex={-1}
+            style={{ ...sheetShellStyle(), outline: 'none' }}
           >
             <div style={sheetHandleStyle()} />
             <div style={{ ...sheetHeaderStyle(), minHeight: TAP + 'px' }}>

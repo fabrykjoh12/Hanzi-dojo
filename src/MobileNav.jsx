@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { MoreHorizontal, X } from 'lucide-react'
 import { languageTheme, ink } from './languageTheme'
 import { MOBILE_PRIMARY, MOBILE_MORE, ADMIN_NAV } from './navConfig'
@@ -59,6 +59,19 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
     return () => window.removeEventListener('keydown', onKey)
   }, [moreOpen])
 
+  // aria-modal hides the page from assistive tech, so focus must actually move
+  // into the sheet — and back to the More button on close.
+  const sheetRef = useRef(null)
+  const openerRef = useRef(null)
+  useEffect(() => {
+    if (!moreOpen) return
+    openerRef.current = document.activeElement
+    if (sheetRef.current) sheetRef.current.focus({ preventScroll: true })
+    return () => {
+      if (openerRef.current && openerRef.current.focus) openerRef.current.focus({ preventScroll: true })
+    }
+  }, [moreOpen])
+
   const moreActive = moreKeys.indexOf(view) !== -1
   // The bar is PRIMARY tabs plus "More"; the marker slides across that many
   // equal columns, so adding a tab needs no other change here.
@@ -79,7 +92,8 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
               animation: 'hd-fade-in 200ms ease both',
             }}
           />
-          <div role="dialog" aria-modal="true" aria-label="More menu" style={{
+          <div ref={sheetRef} role="dialog" aria-modal="true" aria-label="More menu" tabIndex={-1} style={{
+            outline: 'none',
             position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 41,
             background: 'var(--surface)',
             borderTopLeftRadius: '22px', borderTopRightRadius: '22px',
