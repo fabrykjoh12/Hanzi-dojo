@@ -29,21 +29,28 @@ export default function InfoTip({ accentHex, text }) {
       <button
         onClick={handleOpen}
         style={{
+          width: '44px', height: '44px', margin: '-13px',
+          background: 'transparent', border: 'none', padding: 0,
+          cursor: 'pointer', display: 'inline-flex',
+          alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}
+        aria-label="What does mastered mean?"
+      >
+        <span style={{
           width: '18px', height: '18px',
           borderRadius: '50%',
           border: '1.5px solid ' + (accentHex || 'var(--text-muted)') + '66',
           background: pos ? (accentHex || 'var(--text-muted)') + '18' : 'transparent',
           color: accentHex || 'var(--text-muted)',
           fontSize: '11px', fontWeight: 700,
-          cursor: 'pointer', lineHeight: '15px',
-          padding: 0, display: 'inline-flex',
+          lineHeight: '15px',
+          display: 'inline-flex',
           alignItems: 'center', justifyContent: 'center',
           fontFamily: 'Inter, sans-serif',
-          flexShrink: 0,
-        }}
-        aria-label="What does mastered mean?"
-      >
-        ?
+        }}>
+          ?
+        </span>
       </button>
       {pos && (
         <div style={{

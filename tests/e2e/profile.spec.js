@@ -149,7 +149,7 @@ test.describe('Profile — month in review', () => {
     // mock curriculum, so it is read from the fixture — adding words for a new
     // story is a content change and must not fail this spec.
     const total = ACTIVE_VOCAB_COUNT;
-    await expect(page.getByText('Known-word map')).toBeVisible();
+    await expect(page.getByText('Reading reach')).toBeVisible();
     await expect(page.getByText(new RegExp('You can read 5 of ' + total + ' words so far', 'i'))).toBeVisible();
     // Its legend surfaces the buckets.
     await expect(page.getByText(/^Known \(5\)$/)).toBeVisible();

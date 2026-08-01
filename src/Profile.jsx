@@ -17,10 +17,10 @@ import { STUCK_LAPSES } from './stuckWord'
 import { BRAND_URL } from './brand'
 import {
   ArrowLeft, Layers, LogOut, RotateCcw, Save,
-  Sparkles, Target, CalendarCheck, Award, Share2, Check, AlertTriangle, TrendingUp, BookOpen, Trash2,
+  Sparkles, Award, Share2, Check, Trash2, BookOpen,
 } from 'lucide-react'
 
-const ACH_ICONS = { layers: Layers, sparkles: Sparkles, calendar: CalendarCheck, book: BookOpen }
+const ACH_ICONS = { layers: Layers, sparkles: Sparkles, calendar: Award, book: BookOpen }
 
 function getLanguageDetails(profile) {
   const t = languageTheme(profile.active_language)
@@ -55,7 +55,7 @@ function IconButton({ icon: Icon, label, onClick }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-        height: '40px', padding: '0 14px', borderRadius: '12px',
+        height: '44px', padding: '0 16px', borderRadius: '12px',
         border: '1px solid var(--border)',
         background: hovered ? 'var(--surface-2)' : 'var(--surface)',
         color: 'var(--text-muted)',
@@ -71,8 +71,84 @@ function IconButton({ icon: Icon, label, onClick }) {
   )
 }
 
+// The one heading style used everywhere on this screen: a small, quiet label
+// with an optional right-hand slot for a count/action. Hierarchy comes from
+// this staying tiny and uniform, not from boxes or icons.
+function Eyebrow({ children, right, style = {} }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '14px', ...style }}>
+      <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-faint)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        {children}
+      </span>
+      {right}
+    </div>
+  )
+}
+
+function wallColor(status, accentHex) {
+  if (status === 'mastered') return { color: 'var(--text)', opacity: 1 }
+  if (status === 'known') return { color: accentHex, opacity: 1 }
+  if (status === 'learning') return { color: accentHex, opacity: 0.45 }
+  return { color: 'var(--text-faint)', opacity: 0.28 }
+}
+
+// The hero: every word at the current level, rendered as its first character
+// and tinted by how well it's known. The one loud thing on this screen —
+// everything else is quiet by comparison.
+function CharacterWall({ words, levelLabel, accentHex, fontFamily }) {
+  const total = words.length
+  let mastered = 0, known = 0, learning = 0
+  for (const w of words) {
+    if (w.status === 'mastered') mastered += 1
+    else if (w.status === 'known') known += 1
+    else if (w.status === 'learning') learning += 1
+  }
+  const readable = mastered + known
+  const notStarted = total - readable - learning
+  const label = readable + ' of ' + total + ' words readable at ' + levelLabel + ' — '
+    + mastered + ' mastered, ' + known + ' known, ' + learning + ' learning, ' + notStarted + ' not started'
+
+  return (
+    <div style={{ marginBottom: '34px' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '46px', fontWeight: 600, color: 'var(--text)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+          {readable}
+        </span>
+        <span style={{ fontSize: '15px', color: 'var(--text-muted)' }}>
+          of {total} words at {levelLabel}
+        </span>
+      </div>
+      <div style={{ fontSize: '13px', color: 'var(--text-faint)', marginTop: '4px' }}>
+        {mastered} locked in · {learning} still settling
+      </div>
+      <div
+        role="img"
+        aria-label={label}
+        style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(26px, 1fr))',
+          gap: '6px 4px', marginTop: '18px',
+        }}
+      >
+        {words.map(w => {
+          const st = wallColor(w.status, accentHex)
+          return (
+            <span key={w.id} aria-hidden style={{
+              fontSize: '20px', fontFamily, textAlign: 'center', lineHeight: 1.3,
+              color: st.color, opacity: st.opacity,
+            }}>
+              {w.word ? w.word.slice(0, 1) : ''}
+            </span>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function Profile({ session, profile, track, onBack, onNavigate, onUpdate }) {
   const [stats, setStats] = useState({ learned: 0, totalCards: 0, masteredCount: 0, totalWords: 0 })
+  const [wall, setWall] = useState([])
+  const [showAllAch, setShowAllAch] = useState(false)
   const [editingGoal, setEditingGoal] = useState(false)
   const [newGoal, setNewGoal] = useState(profile.daily_new_cards)
   const [saving, setSaving] = useState(false)
@@ -110,7 +186,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   async function loadStats() {
     const { data: vocab } = await supabase
       .from('vocabulary')
-      .select('id')
+      .select('id, word')
       .eq('language', track.language)
       .eq('system', track.system)
       .eq('level', track.current_level)
@@ -121,8 +197,25 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       .select('vocab_id, learned, stability')
       .eq('user_id', session.user.id)
 
+    const cardById = {}
+    for (const c of (cards || [])) cardById[c.vocab_id] = c
+
     const vocabIds = new Set((vocab || []).map(v => v.id))
     const levelCards = (cards || []).filter(c => vocabIds.has(c.vocab_id))
+
+    // The character wall: one entry per word at this level, coloured by how
+    // well it's known — the single visual the rest of the screen defers to.
+    const wallWords = (vocab || []).map(v => {
+      const c = cardById[v.id]
+      let status = 'new'
+      if (c) {
+        if (isMastered(c)) status = 'mastered'
+        else if (c.learned) status = 'known'
+        else status = 'learning'
+      }
+      return { id: v.id, word: v.word, status }
+    })
+    setWall(wallWords)
 
     // Known-Word Map: bucket every active word in the language (all levels) by
     // how well the learner knows it, so reading reach is visible as it grows.
@@ -132,8 +225,6 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       .eq('language', track.language)
       .eq('system', track.system)
       .eq('is_active', true)
-    const cardById = {}
-    for (const c of (cards || [])) cardById[c.vocab_id] = c
     setWordMap(knownWordMap(allVocab || [], cardById))
 
     // Stories finished (lifetime, all languages) — drives the Reading achievements.
@@ -337,6 +428,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     storiesRead: stats.storiesRead || 0,
   })
   const earnedCount = achievements.filter(a => a.earned).length
+  const railAchievements = [...achievements].sort((a, b) => (b.earned ? 1 : 0) - (a.earned ? 1 : 0))
 
   // This-month report (from daily_activity; presence is exact, counts approximate).
   const mr = monthReview(activity)
@@ -372,89 +464,93 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         style={{ margin: '22px 0 18px' }}
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px', marginBottom: '18px' }}>
-        <StatCard label="Words learned" value={loading ? '-' : stats.learned} unit={'of ' + stats.totalWords} icon={Layers} color={accentHex} bg={accentHex + '10'} />
-        <StatCard label="Words mastered" value={loading ? '-' : stats.masteredCount} unit={masteryPct + '%'} icon={Sparkles} color="#2F9E6D" bg="var(--success-bg)" />
-      </div>
+      {!loading && (
+        <CharacterWall words={wall} levelLabel={levelLabel} accentHex={accentHex} fontFamily={fontFamily} />
+      )}
 
       {!loading && (
-        <Panel>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
-              <Award size={17} strokeWidth={1.85} color={accentHex} />
-              Achievements
-            </span>
-            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{earnedCount}/{achievements.length} unlocked</span>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '12px' }}>
-            {achievements.map(a => (
-              <Badge key={a.id} ach={a} accentHex={accentHex} Icon={ACH_ICONS[a.icon] || Award} />
-            ))}
-          </div>
-        </Panel>
+        <div style={{ marginBottom: '34px' }}>
+          <Eyebrow right={
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 650, fontVariantNumeric: 'tabular-nums' }}>
+                {earnedCount}/{achievements.length}
+              </span>
+              {isMobile && (
+                <button
+                  onClick={() => setShowAllAch(v => !v)}
+                  style={{ background: 'none', border: 'none', padding: 0, color: accentHex, fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+                >
+                  {showAllAch ? 'Less' : 'All'}
+                </button>
+              )}
+            </div>
+          }>
+            Milestones
+          </Eyebrow>
+
+          {isMobile && !showAllAch ? (
+            <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', scrollSnapType: 'x mandatory', scrollbarWidth: 'none', paddingBottom: '2px' }}>
+              {railAchievements.map(a => (
+                <Badge key={a.id} compact ach={a} accentHex={accentHex} Icon={ACH_ICONS[a.icon] || Award} />
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '12px' }}>
+              {achievements.map(a => (
+                <Badge key={a.id} ach={a} accentHex={accentHex} Icon={ACH_ICONS[a.icon] || Award} />
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {!loading && leeches.length > 0 && (
-        <Panel>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
-              <AlertTriangle size={17} strokeWidth={1.95} color="#D97706" />
-              Words that keep slipping
-            </span>
-            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{leeches.length}</span>
-          </div>
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '14px', lineHeight: 1.5 }}>
-            These have lapsed the most. A focused drill helps them stick.
-          </div>
-          <div style={{ display: 'grid', gap: '8px', marginBottom: '16px' }}>
+        <div style={{ marginBottom: '34px' }}>
+          <Eyebrow right={<span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 650 }}>{leeches.length}</span>}>
+            Keeps slipping
+          </Eyebrow>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
             {leeches.map((l, i) => (
               <button key={i} onClick={() => setCoachVocab(l.vocabulary)} title="See it a different way" style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', width: '100%', textAlign: 'left',
-                padding: '10px 14px', borderRadius: '12px', background: 'var(--surface-2)', border: '1px solid var(--border)',
-                cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                padding: '11px 0', border: 'none', borderBottom: '1px solid var(--border)',
+                background: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
               }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', minWidth: 0 }}>
                   <span style={{ fontSize: '20px', fontFamily, color: 'var(--text)', flexShrink: 0 }}>{l.vocabulary.word}</span>
                   <span style={{ fontSize: '12px', color: accentHex, fontWeight: 600, flexShrink: 0 }}>{l.vocabulary.reading}</span>
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cleanMeaning(l.vocabulary.meaning)}</span>
                 </div>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#D97706', background: 'rgba(217,119,6,0.12)', border: '1px solid rgba(217,119,6,0.28)', borderRadius: '999px', padding: '3px 9px' }}>
-                    missed {l.lapses}×
-                  </span>
-                  <Sparkles size={15} strokeWidth={2} color={accentHex} />
+                <span style={{ fontSize: '12px', color: 'var(--text-faint)', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
+                  {l.lapses}x
                 </span>
               </button>
             ))}
           </div>
           {onNavigate && (
             <button onClick={() => onNavigate('weak')} style={{
-              width: '100%', minHeight: '44px', borderRadius: '12px',
-              border: '1px solid rgba(217,119,6,0.30)', background: 'rgba(217,119,6,0.08)',
-              color: '#B45309', fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+              width: '100%', minHeight: '44px', borderRadius: '12px', marginTop: '14px',
+              border: '1px solid var(--border)', background: 'transparent',
+              color: 'var(--text)', fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
             }}>
-              <RotateCcw size={16} strokeWidth={2} color="#D97706" />
-              Review weak words
+              <RotateCcw size={16} strokeWidth={2} color="var(--text)" />
+              Drill these
             </button>
           )}
-        </Panel>
+        </div>
       )}
 
       <StuckWordCoach vocab={coachVocab} onClose={() => setCoachVocab(null)} />
 
       {!loading && (
-        <Panel>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
-              <CalendarCheck size={17} strokeWidth={1.85} color={accentHex} />
-              {monthName} so far
-            </span>
+        <div style={{ marginBottom: '34px' }}>
+          <Eyebrow right={
             <button
               onClick={shareReport}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '7px',
-                minHeight: '34px', padding: '0 13px', borderRadius: '10px',
+                minHeight: '44px', padding: '0 13px', borderRadius: '10px',
                 border: '1px solid ' + (shared ? '#2F9E6D' : 'var(--border)'),
                 background: shared ? 'var(--success-bg)' : 'var(--surface)',
                 color: shared ? '#2F9E6D' : 'var(--text-muted)',
@@ -465,7 +561,9 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
                 ? <><Check size={15} strokeWidth={2.4} color="#2F9E6D" /> Copied</>
                 : <><Share2 size={15} strokeWidth={2} color="var(--text-muted)" /> Share</>}
             </button>
-          </div>
+          }>
+            {monthName}
+          </Eyebrow>
           <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: 1.5 }}>
             {monthHeadline(mr)}
           </div>
@@ -487,36 +585,32 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
               {new Date(mr.bestDay.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}.
             </div>
           )}
-        </Panel>
+        </div>
       )}
 
       {!loading && wordMap.totals.total > 0 && (
-        <Panel>
+        <div style={{ marginBottom: '34px' }}>
           <KnownWordMap map={wordMap} accentHex={accentHex} language={track.language} system={track.system} />
-        </Panel>
+        </div>
       )}
 
       {!loading && (
-        <Panel>
+        <div style={{ marginBottom: '34px' }}>
           <StudyCalendar activity={activity} accentHex={accentHex} />
-        </Panel>
+        </div>
       )}
 
       {!loading && (
-        <Panel>
+        <div style={{ marginBottom: '34px' }}>
           <ReviewAccuracy stats={reviewStats} accentHex={accentHex} />
-        </Panel>
+        </div>
       )}
 
       {!loading && (
-        <Panel>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
-              Level mastery
-              <InfoTip accentHex={accentHex} text="A word is mastered once the app predicts you'll still recall it about three weeks from now. It can't be rushed - mastery comes from reviewing correctly over time, across multiple days." />
-            </span>
-            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{stats.masteredCount}/{stats.totalWords} mastered</span>
-          </div>
+        <div style={{ marginBottom: '34px' }}>
+          <Eyebrow right={<span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 650 }}>{stats.masteredCount}/{stats.totalWords} mastered</span>}>
+            Level mastery <InfoTip accentHex={accentHex} text="A word is mastered once the app predicts you'll still recall it about three weeks from now. It can't be rushed - mastery comes from reviewing correctly over time, across multiple days." />
+          </Eyebrow>
           <div style={{ height: '8px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden' }}>
             <div style={{
               height: '100%',
@@ -529,16 +623,13 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '9px' }}>
             Test unlocks at 90% mastery.
           </div>
-        </Panel>
+        </div>
       )}
 
       <Panel>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '18px', marginBottom: editingGoal ? '16px' : 0 }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
-              <Target size={17} strokeWidth={1.85} color={accentHex} />
-              Daily new cards
-            </div>
+            <Eyebrow style={{ marginBottom: '4px' }}>Daily new cards</Eyebrow>
             {!editingGoal && (
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>
                 {profile.daily_new_cards} new cards per day
@@ -593,7 +684,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       <Panel danger>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '18px', alignItems: 'center' }}>
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Reset a language</div>
+            <Eyebrow style={{ marginBottom: '4px' }}>Reset a language</Eyebrow>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
               Clears flashcards, tests, story reads and unlocks for{' '}
               <strong style={{ color: 'var(--text)', fontWeight: 700 }}>
@@ -643,12 +734,14 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
           display: 'flex', alignItems: 'flex-start', gap: '9px', marginTop: '14px',
           cursor: 'pointer', fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.45,
         }}>
-          <input
-            type="checkbox"
-            checked={clearHistory}
-            onChange={e => setClearHistory(e.target.checked)}
-            style={{ marginTop: '2px', accentColor: '#DC2626', cursor: 'pointer' }}
-          />
+          <span style={{ width: '44px', height: '44px', marginLeft: '-11px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <input
+              type="checkbox"
+              checked={clearHistory}
+              onChange={e => setClearHistory(e.target.checked)}
+              style={{ width: '20px', height: '20px', margin: 0, accentColor: '#DC2626', cursor: 'pointer' }}
+            />
+          </span>
           <span>
             Also clear my study history and streak.{' '}
             <span style={{ color: '#DC2626', fontWeight: 650 }}>
@@ -685,7 +778,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         <Panel danger>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '18px', alignItems: 'center', flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Remove a language</div>
+              <Eyebrow style={{ marginBottom: '4px' }}>Remove a language</Eyebrow>
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
                 {removeTarget
                   ? <>Deletes your <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{languageTheme(removeTarget).languageName}</strong> track and its flashcards, tests, story reads and unlocks. This can't be undone.</>
@@ -808,7 +901,7 @@ const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep
 
 // Known-Word Map — reading reach across levels, as calm stacked bars. Each
 // level shows how many words you've mastered / know / are learning / haven't met
-// yet. Data comes from the pure knownWordMap module (fully unit-tested).
+// yet.
 export function KnownWordMap({ map, accentHex, language, system }) {
   const SEGMENTS = [
     { key: 'mastered', label: 'Mastered', color: '#2F9E6D' },
@@ -818,10 +911,7 @@ export function KnownWordMap({ map, accentHex, language, system }) {
   ]
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)', marginBottom: '6px' }}>
-        <BookOpen size={17} strokeWidth={1.85} color={accentHex} />
-        Known-word map
-      </div>
+      <Eyebrow>Reading reach</Eyebrow>
       <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '18px', lineHeight: 1.5 }}>
         {readableSummary(map)}
       </div>
@@ -881,12 +971,13 @@ export function StudyCalendar({ activity, accentHex }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '12px', marginBottom: '14px' }}>
-        <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Study activity</span>
-        <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>
+      <Eyebrow right={
+        <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 650 }}>
           {totalDays} {totalDays === 1 ? 'day' : 'days'} studied
         </span>
-      </div>
+      }>
+        Study activity
+      </Eyebrow>
 
       <div style={{ display: 'flex', gap: gap + 'px', overflowX: 'auto', paddingBottom: '2px' }}>
         {weeks.map((col, wi) => {
@@ -933,10 +1024,7 @@ export function ReviewAccuracy({ stats, accentHex }) {
   if (stats.total === 0) {
     return (
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)', marginBottom: '8px' }}>
-          <TrendingUp size={17} strokeWidth={1.85} color={accentHex} />
-          Review accuracy
-        </div>
+        <Eyebrow>Review accuracy</Eyebrow>
         <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
           Once you've graded a few cards, your retention rate and daily review count will show up here.
         </div>
@@ -962,10 +1050,7 @@ export function ReviewAccuracy({ stats, accentHex }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)', marginBottom: '16px' }}>
-        <TrendingUp size={17} strokeWidth={1.85} color={accentHex} />
-        Review accuracy
-      </div>
+      <Eyebrow>Review accuracy</Eyebrow>
 
       <div style={{ display: 'flex', gap: '14px', alignItems: 'stretch', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
         <div style={{
@@ -1002,14 +1087,14 @@ export function ReviewAccuracy({ stats, accentHex }) {
   )
 }
 
-function Panel({ children, compact, danger }) {
+function Panel({ children, danger }) {
   return (
     <div style={{
       background: 'var(--surface)',
       borderRadius: '20px',
       border: '1px solid ' + (danger ? 'var(--danger-border)' : 'var(--border)'),
       boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
-      padding: compact ? '18px 22px' : '22px 24px',
+      padding: '22px 24px',
       marginBottom: '14px',
     }}>
       {children}
@@ -1017,31 +1102,35 @@ function Panel({ children, compact, danger }) {
   )
 }
 
-function StatCard({ label, value, unit, icon: Icon, color, bg }) {
-  return (
-    <div style={{
-      background: 'var(--surface)',
-      borderRadius: '18px',
-      border: '1px solid var(--border)',
-      boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
-      padding: '18px',
-    }}>
-      <div style={{
-        width: '38px', height: '38px', borderRadius: '13px',
-        background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        marginBottom: '14px',
-      }}>
-        <Icon size={19} strokeWidth={1.85} color={color} />
-      </div>
-      <div style={{ fontSize: '29px', fontWeight: 850, color, lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '5px', fontWeight: 650 }}>{unit}</div>
-      <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '7px' }}>{label}</div>
-    </div>
-  )
-}
-
-function Badge({ ach, accentHex, Icon }) {
+function Badge({ ach, accentHex, Icon, compact }) {
   const earned = ach.earned
+
+  if (compact) {
+    return (
+      <div
+        title={ach.desc}
+        style={{
+          flex: '0 0 116px', scrollSnapAlign: 'start',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '8px',
+          padding: '14px 8px', borderRadius: '16px',
+          border: '1px solid ' + (earned ? accentHex + '33' : 'var(--border)'),
+          background: earned ? accentHex + '0A' : 'var(--surface-2)',
+          opacity: earned ? 1 : 0.65,
+        }}
+      >
+        <div style={{
+          width: '40px', height: '40px', borderRadius: '12px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: earned ? accentHex + '16' : 'var(--surface)',
+          border: '1px solid ' + (earned ? accentHex + '2E' : 'var(--border)'),
+        }}>
+          <Icon size={18} strokeWidth={1.9} color={earned ? accentHex : 'var(--text-faint)'} />
+        </div>
+        <div style={{ fontSize: '12px', fontWeight: 750, color: earned ? 'var(--text)' : 'var(--text-muted)' }}>{ach.title}</div>
+      </div>
+    )
+  }
+
   return (
     <div
       title={ach.desc}
@@ -1074,8 +1163,8 @@ function SmallButton({ children, onClick, accentHex, filled, danger, disabled, i
       onClick={onClick}
       disabled={disabled}
       style={{
-        minHeight: '36px',
-        padding: '0 14px',
+        minHeight: '44px',
+        padding: '0 16px',
         borderRadius: '10px',
         border: '1px solid ' + (danger ? 'var(--danger-border)' : filled ? color : 'var(--border)'),
         background: filled ? color : (danger ? 'var(--danger-bg)' : 'var(--surface)'),
