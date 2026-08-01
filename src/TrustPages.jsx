@@ -116,17 +116,29 @@ function Privacy() {
       <H2>Infrastructure</H2>
       <P>
         Your data is processed by the services that run the app: Supabase (database and
-        authentication), Vercel (site hosting), Cloudflare (DNS), and Google Fonts (font
-        delivery). Pronunciation audio is generated in advance with text-to-speech services
-        from vocabulary text only — never from anything you type or say.
+        authentication), Vercel (site hosting), Cloudflare (DNS), Brevo (sending sign-up and
+        password emails), and Google Fonts (font delivery). Pronunciation audio is generated
+        in advance with text-to-speech services from vocabulary text only — never from
+        anything you type or say.
       </P>
 
-      <H2>Your choices</H2>
+      <H2>Your rights and choices</H2>
       <ul style={{ paddingLeft: '20px', margin: '0 0 12px' }}>
         <Li>You can reset your learning progress for your language from Profile at any time.</Li>
-        <Li>You can ask us to delete your account and its data — see <A href="/support">Support</A>.</Li>
+        <Li>You can ask for a copy of your data, ask us to correct it, or ask us to delete
+          your account and everything in it — see <A href="/support">Support</A>. Deletion
+          removes your account data; we don’t keep it beyond that.</Li>
+        <Li>Your data is kept for as long as you have an account, so your progress is there
+          when you come back.</Li>
         <Li>Reminders and audio autoplay are opt-in preferences you control in the app.</Li>
       </ul>
+
+      <H2>Contact</H2>
+      <P>
+        During the beta, the contact channel is the community Discord and the in-app feedback
+        button (see <A href="/support">Support</A>). A dedicated support email is coming and
+        will be listed here.
+      </P>
     </>
   )
 }
