@@ -162,9 +162,11 @@ function Terms() {
 
       <H2>Your account</H2>
       <P>
-        You are responsible for your account credentials. One account per person; use a real
-        email you control so password recovery works. We may close accounts that abuse the
-        service (for example attempting to access other users’ data or internal tooling).
+        You must be at least 13 years old (or the minimum age for online accounts in your
+        country, if higher) to create an account. You are responsible for your account
+        credentials. One account per person; use a real email you control so password
+        recovery works. We may close accounts that abuse the service (for example attempting
+        to access other users’ data or internal tooling).
       </P>
 
       <H2>Content and licenses</H2>
@@ -183,6 +185,14 @@ function Terms() {
       <P>
         Don’t attempt to disrupt the service, scrape it at scale, probe other users’ data, or
         misuse the anonymous endpoints. Automated access beyond normal app use isn’t permitted.
+      </P>
+
+      <H2>Liability</H2>
+      <P>
+        {BRAND_NAME} is a free service provided as-is, without warranties of any kind. To the
+        extent permitted by law, we are not liable for indirect or consequential damages
+        arising from your use of the service. Nothing here limits liability that cannot be
+        limited by law.
       </P>
 
       <H2>Changes and contact</H2>
