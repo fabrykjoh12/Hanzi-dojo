@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Users, Activity, Clock, BookOpen, Repeat } from 'lucide-react'
+import { ArrowLeft, Users, Activity, Clock, BookOpen, Repeat, AlertTriangle } from 'lucide-react'
 import { supabase } from './supabase'
 import { useIsMobile } from './useIsMobile'
 import { languageTheme } from './languageTheme'
@@ -220,6 +220,47 @@ function StoriesPanel({ rows, language, onLanguage }) {
   )
 }
 
+// Aggregated client_error events (errorMonitor.js): name, truncated message,
+// route, hit count, last seen. Unlike the engagement metrics, staff sessions
+// are INCLUDED — a crash hit by a maintainer is still a crash. rows === null
+// means the RPC isn't available yet (migration pending).
+function ClientErrorsPanel({ rows }) {
+  if (rows === null) {
+    return <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Not available — apply migration 20260801150000_admin_client_errors.</span>
+  }
+  if (!rows.length) {
+    return <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>No client errors recorded in this range.</span>
+  }
+  return (
+    <div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {rows.map((r, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap', fontSize: '13px' }}>
+            <span style={{ fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums', minWidth: '3ch', textAlign: 'right' }}>
+              {r.hits}×
+            </span>
+            <span style={{ fontWeight: 650, color: 'var(--text)' }}>{r.error_name}</span>
+            <span style={{ color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '40ch' }}>
+              {r.message}
+            </span>
+            <span style={{
+              color: 'var(--text-faint)', fontSize: '11.5px', fontWeight: 600,
+              border: '1px solid var(--border)', borderRadius: '999px', padding: '1px 8px',
+            }}>{r.route || '?'}</span>
+            <span style={{ color: 'var(--text-faint)', fontSize: '11.5px' }}>
+              last {String(r.last_seen || '').slice(0, 10)}
+            </span>
+          </div>
+        ))}
+      </div>
+      <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '10px 0 0' }}>
+        Includes staff sessions (a crash is a crash). Messages are truncated at 40 characters at the source; stacks and
+        typed text are never collected.
+      </p>
+    </div>
+  )
+}
+
 export default function Dashboard({ onBack, session, profile, track }) {
   const isMobile = useIsMobile()
   const [days, setDays] = useState(30)
@@ -241,14 +282,18 @@ export default function Dashboard({ onBack, session, profile, track }) {
     const { fromTs, toTs, fromISO, toISO } = rangeBounds(days)
     async function load() {
       try {
-        const [overview, funnel, active, story, retention] = await Promise.all([
+        const [overview, funnel, active, story, retention, clientErrors] = await Promise.all([
           supabase.rpc('admin_overview', { from_ts: fromTs, to_ts: toTs }),
           supabase.rpc('admin_funnel', { from_ts: fromTs, to_ts: toTs }),
           supabase.rpc('admin_active_users', { from_ts: fromTs, to_ts: toTs }),
           supabase.rpc('admin_story_stats', { from_ts: fromTs, to_ts: toTs }),
           supabase.rpc('admin_retention', { cohort_from: fromTs, cohort_to: toTs }),
+          supabase.rpc('admin_client_errors', { from_ts: fromTs, to_ts: toTs }),
         ])
         if (cancelled) return
+        // client_errors is deliberately NOT in the all-or-nothing gate: if its
+        // migration isn't applied yet, the panel degrades to a note instead of
+        // taking the whole dashboard down (CLAUDE.md §10 pattern).
         const firstErr = overview.error || funnel.error || active.error || story.error || retention.error
         if (firstErr) { setState('error'); return }
         const ov = (overview.data && overview.data[0]) || {}
@@ -261,6 +306,7 @@ export default function Dashboard({ onBack, session, profile, track }) {
           series: fillDailySeries(active.data || [], fromISO, toISO),
           story: story.data || [],
           retention: retention.data || [],
+          clientErrors: clientErrors.error ? null : (clientErrors.data || []),
         })
         setState('ready')
       } catch {
@@ -339,6 +385,13 @@ export default function Dashboard({ onBack, session, profile, track }) {
           <Card>
             <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', margin: '0 0 12px' }}>Stories</h2>
             <StoriesPanel rows={data.story} language={storyLang} onLanguage={setStoryLang} />
+          </Card>
+
+          <Card>
+            <h2 style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '15px', fontWeight: 600, color: 'var(--text)', margin: '0 0 12px' }}>
+              <AlertTriangle size={16} strokeWidth={1.85} /> Client errors
+            </h2>
+            <ClientErrorsPanel rows={data.clientErrors} />
           </Card>
         </div>
       )}
