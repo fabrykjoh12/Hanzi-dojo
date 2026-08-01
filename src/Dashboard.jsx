@@ -194,7 +194,7 @@ function StoriesPanel({ rows, language, onLanguage }) {
       )}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '14px' }}>
         <span style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text)' }}>{rate}%</span>
-        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>completed · {completed}/{opened} stories</span>
+        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>finished · {completed} of {opened} readers</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
         {breakdown.map(b => {
@@ -212,6 +212,10 @@ function StoriesPanel({ rows, language, onLanguage }) {
           )
         })}
       </div>
+      <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '10px 0 0' }}>
+        A reader is one account (or one anonymous browser session). The rate is the share of readers who opened a story in
+        this range and finished at least one — re-reads and repeat finishes don’t inflate it.
+      </p>
     </div>
   )
 }
@@ -292,6 +296,12 @@ export default function Dashboard({ onBack, session, profile, track }) {
         </div>
       </div>
 
+      {/* What the numbers mean — range, timezone, exclusions. Every figure below
+          follows these rules (see docs/METRICS.md), so state them once, up top. */}
+      <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '-8px 0 16px' }}>
+        Last {days} days (UTC, up to now) · staff accounts excluded · DAU/WAU are live trailing 1/7-day windows, not range-scoped
+      </p>
+
       {state === 'loading' && <p style={{ color: 'var(--text-muted)' }}>Loading…</p>}
       {state === 'error' && <Card><p style={{ color: 'var(--text-muted)', margin: 0 }}>Couldn’t load analytics. Confirm the admin migration is applied and you have admin access, then retry.</p></Card>}
       {state === 'empty' && <Card><p style={{ color: 'var(--text-muted)', margin: 0 }}>No analytics yet for this range. Once the analytics migration is applied and traffic (or seeded events) exists, charts appear here.</p></Card>}
@@ -302,12 +312,16 @@ export default function Dashboard({ onBack, session, profile, track }) {
             <Kpi icon={Users} label="Signups" value={data.overview.signups ?? 0} />
             <Kpi icon={Activity} label="DAU / WAU" value={`${data.overview.dau ?? 0} / ${data.overview.wau ?? 0}`} />
             <Kpi icon={Clock} label="Median session" value={fmtMs(Number(data.overview.median_session_ms))} />
-            <Kpi icon={BookOpen} label="Story completion" value={storyCompletionRate(data.story) + '%'} />
+            <Kpi icon={BookOpen} label="Readers finishing" value={storyCompletionRate(data.story) + '%'} />
           </div>
 
           <Card>
-            <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', margin: '0 0 12px' }}>Activation funnel</h2>
+            <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', margin: '0 0 12px' }}>Activation stages</h2>
             <FunnelBars stages={data.funnel} />
+            <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '10px 0 0' }}>
+              Pre-auth stages count browser sessions; signed-in stages count accounts. Each stage counts activity inside the
+              range independently, so stages are not strictly nested — this is a set of stage counts, not a true funnel.
+            </p>
           </Card>
 
           <Card>

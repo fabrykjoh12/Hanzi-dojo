@@ -441,7 +441,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   // Analytics: story opened (once per story). Fires with the current readability
   // so drop-off vs. difficulty is analyzable. Intentionally keyed on story.id.
   useEffect(() => {
-    trackEvent(EVENTS.STORY_OPENED, { tier: story.tier, known_pct: knownPct })
+    trackEvent(EVENTS.STORY_OPENED, { tier: story.tier, known_pct: knownPct, story_id: story.id })
     if (firstMission) trackOnce(EVENTS.FIRST_STORY_OPENED, { known_pct: knownPct })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story.id])
@@ -464,7 +464,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
       await enqueueStoryRead({ userId: session.user.id, storyId: story.id })
       if (onMarkRead) onMarkRead(story.id)
     }
-    trackEvent(EVENTS.STORY_COMPLETED, { tier: story.tier, known_pct: knownPct })
+    trackEvent(EVENTS.STORY_COMPLETED, { tier: story.tier, known_pct: knownPct, story_id: story.id })
     if (firstMission) trackOnce(EVENTS.FIRST_STORY_COMPLETED, { known_pct: knownPct })
     setFinishing(false)
   }
