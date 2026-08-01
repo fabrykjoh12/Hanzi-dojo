@@ -17,7 +17,7 @@
 export const GRAMMAR = {
   chinese: {
     languageName: 'Chinese',
-    intro: 'Chinese grammar is refreshingly logical: words never change their form. No conjugations, no plurals, no genders — meaning comes from word order and a handful of little helper words.',
+    intro: 'Chinese grammar is refreshingly logical: verbs don’t conjugate and nouns have no grammatical gender or case. Instead of endings, meaning comes from word order and small helper words — particles like 了 and 的 do the work that conjugation does in European languages.',
     topics: [
       {
         id: 'word-order',
@@ -36,12 +36,12 @@ export const GRAMMAR = {
       },
       {
         id: 'no-conjugation',
-        title: 'Verbs never change',
-        blurb: 'One verb form covers every subject and every tense.',
-        pattern: 'verb stays the same — time words do the work',
+        title: 'Verbs don’t conjugate',
+        blurb: 'One verb form covers every subject; time is shown around the verb, not inside it.',
+        pattern: 'verb stays the same — time words and particles do the work',
         points: [
           { text: '是 (to be) is the same for everyone — no am/is/are.', ex: { target: '我是学生。', reading: 'wǒ shì xuésheng', en: 'I am a student.' } },
-          { text: 'Time is shown with words like 今天 (today) or 昨天 (yesterday), not by changing the verb.', ex: { target: '他昨天去。', reading: 'tā zuótiān qù', en: 'He went yesterday.' } },
+          { text: 'Time is shown with words like 今天 (today) or 昨天 (yesterday), and with particles like 了 (see that topic) — the verb itself keeps one form.', ex: { target: '他昨天去。', reading: 'tā zuótiān qù', en: 'He went yesterday.' } },
         ],
         find: ['昨天', '今天', '明天'],
         check: [
@@ -112,11 +112,11 @@ export const GRAMMAR = {
       {
         id: 'negation',
         title: 'Negation: 不 and 没',
-        blurb: 'Two negatives, used in different situations.',
-        pattern: '不 + verb (present/future) · 没 + verb (past)',
+        blurb: 'Two negatives: one for what isn’t so or won’t happen, one for what didn’t happen.',
+        pattern: '不 + verb (isn’t so / won’t / habits) · 没(有) + verb (didn’t happen)',
         points: [
-          { text: '不 (bù) negates the present and future, and habits.', ex: { target: '我不喝咖啡。', reading: 'wǒ bù hē kāfēi', en: 'I don’t drink coffee.' } },
-          { text: '没 (méi) negates the past and the verb 有 (to have).', ex: { target: '我没吃饭。', reading: 'wǒ méi chī fàn', en: 'I didn’t eat.' } },
+          { text: '不 (bù) negates facts, habits, and willingness — things that aren’t so or that you don’t/won’t do. It’s also the negative for 是 and for adjectives.', ex: { target: '我不喝咖啡。', reading: 'wǒ bù hē kāfēi', en: 'I don’t drink coffee.' } },
+          { text: '没 (méi) says an action didn’t happen (wasn’t completed), and is always the negative of 有 (to have) — it’s about completion, not simply “the past”.', ex: { target: '我没吃饭。', reading: 'wǒ méi chī fàn', en: 'I didn’t eat.' } },
         ],
         find: ['不是', '不去', '没有'],
         check: [

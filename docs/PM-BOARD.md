@@ -46,19 +46,50 @@ boundaries. The public roadmap carries a one-line "Public-beta hardening" item.
 | HD-P0 | Baseline, safety, task infra | **complete** | Baseline 2026-07-31 (branch `claude/new-session-tllaz3`): lint **0 errors** (7 pre-existing warnings), vitest **3,000/3,000 pass** (122 files), build **clean** (one cosmetic Rolldown plugin-timing notice). No console-error or e2e baseline captured this session — e2e runs in CI. Test-account strategy: Creative Mode sandbox on `/dashboard` + `/unlock` + `/reset` cover the learner scenarios; fixtures in `tests/fixtures/`. No production mutation was needed. |
 | HD-P1 | Security & public-product boundaries | **needs review** | Audit + fixes shipped this change — see report below. |
 | HD-P2 | Analytics & progress-data integrity | **needs review** | Shipped 2026-08-01: `20260801090000_honest_admin_metrics.sql` (applied) — story stats redefined on readers (completed ⊆ opened by construction; verified on prod data), staff accounts excluded from every aggregate, signups/sessions deduped, DAU/WAU labeled as live windows, "funnel" renamed to stages with an honesty footnote. Root causes of >100%: raw-event math + guided readers never fired `story_opened` (now fixed; events also carry `story_id` going forward). Metric dictionary: `docs/METRICS.md`. Transactional grading had already shipped (`20260722120000`). Open: per-story completion once story_id data accumulates. |
-| HD-P3 | Curriculum & HSK claims | **blocked — owner decision** | The brief requires the owner to pick: legacy-count labels vs current-standard migration vs independent syllabus with published mapping. Do not change syllabus semantics before that. |
+| HD-P3 | Curriculum & HSK claims | **blocked — owner decision** | Decision note prepared below (real DB counts vs official, three options, recommendation: honest labeling now). Do not change syllabus semantics before the owner picks. |
 | HD-P4 | Canonical content model & urgent repairs | **in progress — editorial decisions needed** | Investigated 2026-08-01, and both defects are really *held-chapter* problems: **(a) `今天唱歌` "numbered 1/3/5"** — the season has SIX chapters; 2 (`上班和上学`), 4 (`李明唱歌`) and 6 (`我们的歌`, the resolution) exist unpublished, held by the quality gate. Renumbering the published three (the brief's suggestion, premised on "only three chapters") would orphan the held ones — the right fix is an editorial pass over chapters 2/4/6 and publish-or-rewrite. **(b) `1. 不见了的苹果`** — its preview described an old draft (park, missing flowers); fixed with an accurate English preview from the real text (old value: "李明和他的好朋友小明在公园。李明很饿…有几朵花不见了…"). Deeper: the whole tier-1 season 2–6 (held) still continues the *flowers* mystery while published ch. 1 was rewritten to *apples* at home — reconciling chapter 1 with its own season is a content decision for the owner/editor. Canonical-record/versioning work open. |
 | HD-P5 | Navigation, loading, learner shell | pending | Reassess against current app — much has shipped since the brief was written. |
 | HD-P6 | Home & flashcards | pending | Phone-fit grading and single-RPC grades already shipped; verify remaining acceptance criteria. |
-| HD-P7 | Story library & core reader | pending | |
+| HD-P7 | Story library & core reader | in progress | 2026-08-01: Today's-story hero now leads with the story TITLE (the first sentence demoted to supporting text) — the brief's 7.1 hierarchy fix. Structural audit of all published Chinese stories run against prod: line alignment, summaries, tiers, numbering all clean; six older chat/scene stories have no per-line English (may be by-design for those formats — verify before "fixing"). |
 | HD-P8 | Manhua, chats, scenes, replies | pending | Manga→manhua rename shipped; migration `20260730090000` pending apply (see BACKLOG §Database). |
 | HD-P9 | Chinese editorial sign-off | **blocked — needs Chinese reviewer** | Claude may build tooling/reports but must not self-certify Chinese editorial quality. |
-| HD-P10 | Practice hub & practice modes | in progress | Dictionary English ranking FIXED 2026-08-01 (`20260801100000`, applied): 'friend'→朋友, 'cold'→冷, 'eat'→吃 verified in prod; definition-match scoring + HSK boost + vulgar/coarse/offensive demotion. Open: default-hidden slang with deliberate reveal (UI), register labels. Videos: the brief's dead video `YRqRoUEqMCE` unpublished 2026-08-01 (reversible; sandbox can't reach YouTube to health-check the other two — needs an Actions-side link check). |
+| HD-P10 | Practice hub & practice modes | in progress | Dictionary English ranking FIXED 2026-08-01 (`20260801100000`, applied): 'friend'→朋友, 'cold'→冷, 'eat'→吃 verified in prod; definition-match scoring + HSK boost + vulgar/coarse/offensive demotion. Explicit entries now also HIDDEN by default in the Dictionary UI behind a per-query reveal with an "Explicit" tag (`dictExplicit.js` + specs). Grammar guide: the three flagged absolutes corrected 2026-08-01 ("words never change" → doesn't conjugate; 不/没 reframed as isn't-so/won't vs didn't-happen + 有) — **all 14 topics still need a qualified Chinese teacher's review** (HD-P9 posture: not self-certified). Videos: the brief's dead video `YRqRoUEqMCE` unpublished 2026-08-01 (reversible; sandbox can't reach YouTube to health-check the other two — needs an Actions-side link check). |
 | HD-P11 | Public website, auth, diagnostic | in progress | 2026-08-01: the reading test's "60-second" claim (over ~36 questions) replaced with the honest untimed ~3-minute framing; "You're Just starting" mid-sentence capitalization fixed ("you're just getting started"); signup now shows a Terms/Privacy acknowledgment. Open: password requirements/show-hide/validation, auth error-state test pass, result → concrete starting-story recommendation. |
 | HD-P12 | Profile, settings, internal ops | pending | |
 | HD-P13 | Legal, privacy, a11y, mobile, perf | in progress | 2026-08-01: public `/privacy`, `/terms`, `/support`, `/methodology` pages shipped (reachable signed-out, linked from Landing footer + signup). Written from actual behavior (browser speech recognition — no audio recorded/stored; Analyze-text on-device; first-party analytics; CC-CEDICT/Tatoeba attributions). **Drafts — owner must review before treating as final** (visible beta note on the legal pages). Open: a11y/mobile/perf passes, monitoring. |
-| HD-P14 | Automated QA & release gate | pending | CI (lint/test/build) + Playwright e2e exist; content validation in CI and the release checklist are open. |
+| HD-P14 | Automated QA & release gate | in progress | CI (lint/test/build) + Playwright e2e exist; `tests/e2e/trust-pages.spec.js` added 2026-08-01 (4 passing). Open: content validation against the DB in CI (needs Actions secrets), visual regression, the release checklist itself. |
 | HD-P15 | Differentiation after stabilization | pending | Do not start until the release gate is healthy. |
+
+### HD-P3 — Curriculum decision note (owner call, prepared 2026-08-01)
+
+The app says "HSK 3.0 · HSK N" while its per-level word lists don't match the
+official standard's counts. Actual DB counts vs the official HSK 3.0 new-word
+counts per level: **L1 300/500 · L2 197/772 · L3 453/973 · L4 929/1000 ·
+L5 1495/1071 · L6 1621/1140** (app total L1–6: 4,995 vs official 5,456; note
+L5/L6 are *over* the official counts, so this isn't just "words missing" — the
+level assignment itself diverges). Three options:
+
+1. **Keep the lists, label them honestly** *(cheapest, safest)* — copy stops
+   claiming official equivalence: level labels stay "HSK N" but the
+   methodology/test copy says "curated HSK-3.0-aligned study sets" (the
+   methodology page already says this since 2026-08-01). No data migration, no
+   progress risk. Cost: the level test can't claim to certify an official level.
+2. **Migrate to the official lists** — re-seed per-level vocabulary to the
+   official allocations, remap existing learners' cards to the new levels
+   (cards keyed by vocab id survive; *level* progress and story tiers need
+   remapping), re-run coverage for every story, revisit every tier threshold.
+   Highest cost and the only option with real user-progress risk; needs the
+   official list as data (the MOE PDF), a migration with a rollback, and a
+   Chinese-qualified check of the mapping.
+3. **Own syllabus with a published mapping** — rename levels to "Dojo 1–6",
+   publish a transparent mapping table to HSK 3.0. No data risk, but every
+   surface, all marketing, and learner expectations change; SEO/recognition of
+   "HSK" is lost.
+
+**Recommendation: option 1 now** (it makes every public claim true without
+touching learner data), keeping option 2 open as a deliberate later milestone
+if official alignment becomes a product goal. Decision needed before the
+level-test copy (HD-P10.17) and any public "HSK-aligned" marketing claims.
 
 ### HD-P1 report (2026-07-31)
 
