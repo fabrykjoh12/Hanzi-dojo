@@ -10,8 +10,8 @@
   "title": "第三话 · 冷了的面条儿",
   "english_summary": "He has come every day for weeks. Today he does not, and the cat waits at the door until it is late. So you go and find him — and take the noodles with you.",
   "_content_comment": "One beat per line, ‘NAME：text’ with a fullwidth colon. Beat indices are 0-based and are what panels[].bubbles[].beat refers to; INSERTING A LINE MEANS RE-INDEXING THE PANELS.",
-  "content": "他每天都来。\n他不说话，只吃面条儿。\n花花每天在门口等他。\n今天他没有来。\n小美：他去哪儿了？\n妈妈：我不知道。\n花花在门口等到很晚。\n你：我们去找他吧。\n你：他明天会来的。\n小美：我知道他在哪儿。\n我们走了很长的路。\n路的旁边有一个小房间。\n里面很冷，什么都没有。\n他一个人坐在那儿。\n花花进去了。\n花花叫了。\n他起来了。\n他：你们怎么来了？\n小美：花花找你。\n你：面条儿冷了。\n你：妈妈让我们来。\n他笑了。\n这是他第一次笑。\n他：我跟你们回去。\n我们四个一起回饭馆。\n外面开始下雨了。",
-  "english_content": "He comes every day.\nHe doesn't talk, he just eats noodles.\nHuahua waits for him at the door every day.\nToday he didn't come.\nWhere did he go?\nI don't know.\nHuahua waited at the door until very late.\nLet's go and find him.\nHe'll come tomorrow.\nI know where he is.\nWe walked a long way.\nThere's a small room beside the road.\nIt's cold inside, there's nothing there.\nHe's sitting there on his own.\nHuahua went in.\nHuahua called out.\nHe got up.\nHow did you get here?\nHuahua came looking for you.\nThe noodles are cold.\nMum told us to come.\nHe smiled.\nIt's the first time he's smiled.\nI'll come back with you.\nThe four of us go back to the shop together.\nOutside, it starts raining.",
+  "content": "他每天都来。\n他不说话，只吃面条儿。\n花花每天在门口等他。\n今天他没有来。\n小美：他去哪儿了？\n妈妈：我不知道。\n花花在门口等到很晚。\n你：我们去找他吧。\n你：我们现在去。\n小美：我知道他在哪儿。\n我们走了很长的路。\n路的旁边有一个小房间。\n里面很冷，什么都没有。\n他一个人坐在那儿。\n花花进去了。\n花花叫了。\n他起来了。\n他：你们怎么来了？\n小美：花花找你。\n你：面条儿冷了。\n你：妈妈让我们来。\n他笑了。\n这是他第一次笑。\n他：我跟你们回去。\n我们四个一起回饭馆。\n外面开始下雨了。",
+  "english_content": "He comes every day.\nHe doesn't talk, he just eats noodles.\nHuahua waits for him at the door every day.\nToday he didn't come.\nWhere did he go?\nI don't know.\nHuahua waited at the door until very late.\nLet's go and find him.\nLet's go now.\nI know where he is.\nWe walked a long way.\nThere's a small room beside the road.\nIt's cold inside, there's nothing there.\nHe's sitting there on his own.\nHuahua went in.\nHuahua called out.\nHe got up.\nHow did you get here?\nHuahua came looking for you.\nThe noodles are cold.\nMum told us to come.\nHe smiled.\nIt's the first time he's smiled.\nI'll come back with you.\nThe four of us go back to the shop together.\nOutside, it starts raining.",
   "_vocabulary_comment": "Every word is HSK 2 (data/hsk2-vocab-snapshot.json, cumulative). Zero reach words. The level is what shaped the plot: HSK 1 has no 因为, no 但是 and no 告诉, so nobody in episode 1 can explain anything — the whole story is told in actions, food and numbers, which is exactly what HSK 1 has in abundance (十块钱, 九块, 一块钱). 屋子 and 灯 are HSK 3, so the place he is living is 一个小房间 and the detail that carries the cold is 什么都没有 rather than a description of the dark.",
   "names": [
     "小美",
@@ -26,6 +26,7 @@
       "episode_title": "冷了的面条儿",
       "art_base": "/stories/noodleshop/hsk2/ep03/",
       "art_palette": "colour",
+      "text_placement": "below",
       "hook": "You do not ask people like him to come in. You bring the noodles to them.",
       "continues": {
         "label": "第四话",
@@ -127,22 +128,18 @@
             "side": "left",
             "top": 6,
             "width": 52
+          },
+          {
+            "beat": 7,
+            "kind": "reply",
+            "side": "left"
+          },
+          {
+            "beat": 8,
+            "kind": "reply",
+            "side": "left"
           }
         ]
-      },
-      {
-        "id": "p6",
-        "choice": {
-          "prompt": "选择回答",
-          "options": [
-            {
-              "beat": 7
-            },
-            {
-              "beat": 8
-            }
-          ]
-        }
       },
       {
         "id": "p7",

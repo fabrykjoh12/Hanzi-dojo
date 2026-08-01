@@ -10,8 +10,8 @@
   "title": "第三话 · 夜里的字",
   "english_summary": "You go back to the dojo after dark, and 小雨 was telling the truth. 小白 speaks for the first time — he used to be a character, and he has forgotten which one. Then 林老师 arrives and tells you what the school is actually for.",
   "_content_comment": "One beat per line, ‘NAME：text’ with a fullwidth colon. Beat indices are 0-based and are what panels[].bubbles[].beat refers to; INSERTING A LINE MEANS RE-INDEXING THE PANELS.",
-  "content": "晚上，我又来学校了。\n门开着，里面很安静。\n我有点儿害怕。\n小白在桌子上等我。\n小白：你来了。\n我不知道说什么。\n小白：你听见了吗？我在说话。\n你：你是谁？\n你：这不是真的。\n小白：我以前是一个字。\n小白：哪个字？我忘了。\n小白：太久了。\n本子上的字动了。\n它们一个一个下来了。\n房间里都是字。\n小白：晚上，字都会说话。\n小白：但是它们还不认识你。\n你：我说我的名字。\n你：我什么也不说。\n小白：好。它们记得你了。\n小白：它们不喜欢新的人。\n门开了。\n林老师：你来了。\n林老师：我等了很久。\n林老师：小雨没有告诉你吗？\n林老师：这个学校不教写字。\n林老师：我们教字怎么说话。\n我看着他，没有说话。\n林老师：你昨天画的那只鸟。\n林老师：早上它不在本子上了。",
-  "english_content": "That evening I came back to the school.\nThe door was open, and it was very quiet inside.\nI was a little afraid.\nXiao Bai was waiting for me on the table.\nYou came.\nI didn't know what to say.\nDid you hear that? I'm talking.\nWho are you?\nThis isn't real.\nI used to be a character.\nWhich one? I've forgotten.\nIt's been too long.\nThe characters on the notebook moved.\nThey came down one by one.\nThe room was full of characters.\nAt night, all the characters can talk.\nBut they don't know you yet.\nI'll tell them my name.\nI won't say anything.\nGood. They remember you now.\nThey don't like new people.\nThe door opened.\nYou came.\nI've waited a long time.\nDidn't Xiao Yu tell you?\nThis school doesn't teach writing.\nWe teach characters how to talk.\nI looked at him and said nothing.\nThat bird you drew yesterday.\nThis morning it wasn't on the notebook.",
+  "content": "晚上，我又来学校了。\n门开着，里面很安静。\n我有点儿害怕。\n小白在桌子上等我。\n小白：你来了。\n我不知道说什么。\n小白：你听见了吗？我在说话。\n你：你是谁？\n你：这不是真的。\n小白：我以前是一个字。\n小白：哪个字？我忘了。\n小白：太久了。\n本子上的字动了。\n它们一个一个下来了。\n房间里都是字。\n小白：晚上，字都会说话。\n小白：但是它们还不认识你。\n你：我说了我的名字。\n它们都没有说话。\n小白：好。它们记得你了。\n小白：它们不喜欢新的人。\n门开了。\n林老师：你来了。\n林老师：我等了很久。\n林老师：小雨没有告诉你吗？\n林老师：这个学校不教写字。\n林老师：我们教字怎么说话。\n我看着他，没有说话。\n林老师：你昨天画的那只鸟。\n林老师：早上它不在本子上了。",
+  "english_content": "That evening I came back to the school.\nThe door was open, and it was very quiet inside.\nI was a little afraid.\nXiao Bai was waiting for me on the table.\nYou came.\nI didn't know what to say.\nDid you hear that? I'm talking.\nWho are you?\nThis isn't real.\nI used to be a character.\nWhich one? I've forgotten.\nIt's been too long.\nThe characters on the notebook moved.\nThey came down one by one.\nThe room was full of characters.\nAt night, all the characters can talk.\nBut they don't know you yet.\nI said my name.\nNone of them spoke.\nGood. They remember you now.\nThey don't like new people.\nThe door opened.\nYou came.\nI've waited a long time.\nDidn't Xiao Yu tell you?\nThis school doesn't teach writing.\nWe teach characters how to talk.\nI looked at him and said nothing.\nThat bird you drew yesterday.\nThis morning it wasn't on the notebook.",
   "_vocabulary_comment": "Every word is HSK 2 + HSK 3 (data/hsk2-vocab-snapshot.json + data/hsk3.json, which matches the database). Zero reach words. 活 is NOT in the level — the reveal is 我们教字怎么说话 rather than 怎么活, which is the better line anyway because it lands the title of 第二话.",
   "names": [
     "小雨",
@@ -27,6 +27,7 @@
       "episode_title": "夜里的字",
       "art_base": "/stories/inkbound/hsk3/ep03/",
       "art_palette": "mono",
+      "text_placement": "below",
       "hook": "This school does not teach writing. It teaches characters how to talk.",
       "continues": {
         "label": "第四话",
@@ -127,22 +128,18 @@
             "top": 6,
             "width": 72,
             "tail": "bottom-right"
+          },
+          {
+            "beat": 7,
+            "kind": "reply",
+            "side": "left"
+          },
+          {
+            "beat": 8,
+            "kind": "reply",
+            "side": "left"
           }
         ]
-      },
-      {
-        "id": "p6",
-        "choice": {
-          "prompt": "选择回答",
-          "options": [
-            {
-              "beat": 7
-            },
-            {
-              "beat": 8
-            }
-          ]
-        }
       },
       {
         "id": "p7",
@@ -250,22 +247,18 @@
             "top": 56,
             "width": 72,
             "tail": "top-left"
+          },
+          {
+            "beat": 17,
+            "kind": "reply",
+            "side": "left"
+          },
+          {
+            "beat": 18,
+            "kind": "narration",
+            "side": "left"
           }
         ]
-      },
-      {
-        "id": "p13",
-        "choice": {
-          "prompt": "选择回答",
-          "options": [
-            {
-              "beat": 17
-            },
-            {
-              "beat": 18
-            }
-          ]
-        }
       },
       {
         "id": "p14",

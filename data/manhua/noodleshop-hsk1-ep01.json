@@ -74,6 +74,7 @@
       ],
       "art_base": "/stories/noodleshop/hsk1/ep01/",
       "art_palette": "colour",
+      "text_placement": "below",
       "reward": {
         "glyph": "暖",
         "label": "暖心读者"
@@ -181,22 +182,18 @@
             "side": "left",
             "top": 6,
             "width": 62
+          },
+          {
+            "beat": 7,
+            "kind": "reply",
+            "side": "left"
+          },
+          {
+            "beat": 8,
+            "kind": "reply",
+            "side": "left"
           }
         ]
-      },
-      {
-        "id": "p7",
-        "choice": {
-          "prompt": "选择回答",
-          "options": [
-            {
-              "beat": 7
-            },
-            {
-              "beat": 8
-            }
-          ]
-        }
       },
       {
         "id": "p8",
@@ -300,22 +297,18 @@
             "side": "left",
             "top": 56,
             "width": 48
+          },
+          {
+            "beat": 17,
+            "kind": "reply",
+            "side": "left"
+          },
+          {
+            "beat": 18,
+            "kind": "reply",
+            "side": "left"
           }
         ]
-      },
-      {
-        "id": "p14",
-        "choice": {
-          "prompt": "选择回答",
-          "options": [
-            {
-              "beat": 17
-            },
-            {
-              "beat": 18
-            }
-          ]
-        }
       },
       {
         "id": "p15",

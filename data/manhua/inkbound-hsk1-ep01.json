@@ -10,8 +10,8 @@
   "title": "第一话 · 我是新学生",
   "english_summary": "You climb the lantern-lit steps to the Hanzi Dojo, meet 小雨, and kneel at a writing table for your first lesson. Something small and white is watching from behind a lantern.",
   "_content_comment": "One beat per line, 'NAME：text' with a fullwidth colon, exactly as every other authored format stores it — the shared engine (useStoryReaderCore) tokenizes this and the manhua reader only decides where each line is drawn. Beat indices are 0-based and are what panels[].bubbles[].beat refers to; INSERTING A LINE MEANS RE-INDEXING THE PANELS.",
-  "content": "我来学校了。\n这是学校吗？\n小雨：你好！你是新学生吗？\n你：是，我是新学生。\n你：不是！\n小雨：真的吗？\n小雨：我叫小雨。你叫什么名字？\n小雨：来吧！我们去那边。\n学校很大。\n小雨：这是我们的学校。\n林老师：我是林老师。\n林老师：请坐。\n林老师：你会写汉字吗？\n你：会一点儿。\n你：不会。\n林老师：很好。\n林老师：没关系。\n林老师：现在我们学写字。\n小雨：这个字很漂亮。\n那是什么？\n小雨：那是小白。\n小雨：小白喜欢看我们写字。\n小白也想学汉字吗？",
-  "english_content": "I've come to the school.\nIs this the school?\nHello! Are you the new student?\nYes, I'm the new student.\nI'm not!\nReally?\nI'm called Xiao Yu. What's your name?\nCome on! Let's go over there.\nThe school is big.\nThis is our school.\nI am Teacher Lin.\nPlease sit.\nCan you write Chinese characters?\nA little.\nI can't.\nVery good.\nIt doesn't matter.\nNow we'll learn to write.\nThat character is beautiful.\nWhat is that?\nThat's Xiao Bai.\nXiao Bai likes watching us write.\nDoes Xiao Bai want to learn characters too?",
+  "content": "我来学校了。\n这是学校吗？\n小雨：你好！你是新学生吗？\n你：是，我是新学生。\n你：我来学写字。\n小雨：太好了！\n小雨：我叫小雨。你叫什么名字？\n小雨：来吧！我们去那边。\n学校很大。\n小雨：这是我们的学校。\n林老师：我是林老师。\n林老师：请坐。\n林老师：你会写汉字吗？\n你：会一点儿。\n你：我写不好。\n林老师：很好。\n林老师：没关系。\n林老师：现在我们学写字。\n小雨：这个字很漂亮。\n那是什么？\n小雨：那是小白。\n小雨：小白喜欢看我们写字。\n小白也想学汉字吗？",
+  "english_content": "I've come to the school.\nIs this the school?\nHello! Are you the new student?\nYes, I'm the new student.\nI came to learn to write.\nGreat!\nI'm called Xiao Yu. What's your name?\nCome on! Let's go over there.\nThe school is big.\nThis is our school.\nI am Teacher Lin.\nPlease sit.\nCan you write Chinese characters?\nA little.\nI don't write well.\nVery good.\nIt doesn't matter.\nNow we'll learn to write.\nThat character is beautiful.\nWhat is that?\nThat's Xiao Bai.\nXiao Bai likes watching us write.\nDoes Xiao Bai want to learn characters too?",
   "_vocabulary_comment": "Every word in this episode is HSK 1 (data/hsk1-vocab-snapshot.json). There are no reach words at all. The only tokens outside the word list are the three proper names, which are curated in src/characterNames.js so the reader gives them the 'Name' popup with a reading instead of translating them character by character. 小白 rather than the canon's 白: the reader's name matcher only takes names of two characters or more (matchName), so a one-character name would be read as the ordinary word 白 'white' — and 小白 is what you would actually call him.",
   "names": [
     "小雨",
@@ -27,6 +27,7 @@
       "episode_title": "我是新学生",
       "art_base": "/stories/inkbound/hsk1/ep01/",
       "art_palette": "mono",
+      "text_placement": "below",
       "hook": "Something small and white followed you through the gate.",
       "_continues_comment": "What the closing plate promises next, and the level it is written at. `level` is a level NUMBER in this story's own system — the reader prints it with getLevelLabel, so the plate says 'HSK 2' without anything hardcoding that string, and a Japanese or Russian season would print its own system's label. Omit the whole block for an episode that ends a season.",
       "continues": {
@@ -84,24 +85,18 @@
             "top": 8,
             "width": 68,
             "tail": "bottom-left"
+          },
+          {
+            "beat": 3,
+            "kind": "reply",
+            "side": "left"
+          },
+          {
+            "beat": 4,
+            "kind": "reply",
+            "side": "left"
           }
         ]
-      },
-      {
-        "id": "p4",
-        "choice": {
-          "prompt": "选择回答",
-          "options": [
-            {
-              "beat": 3,
-              "tone": "honest"
-            },
-            {
-              "beat": 4,
-              "tone": "nervous"
-            }
-          ]
-        }
       },
       {
         "id": "p5",
@@ -115,11 +110,7 @@
             "side": "left",
             "top": 5,
             "width": 58,
-            "tail": "bottom-right",
-            "when": {
-              "choice": "p4",
-              "option": 1
-            }
+            "tail": "bottom-right"
           },
           {
             "beat": 6,
@@ -207,24 +198,18 @@
             "top": 18,
             "width": 74,
             "tail": "bottom-left"
+          },
+          {
+            "beat": 13,
+            "kind": "reply",
+            "side": "left"
+          },
+          {
+            "beat": 14,
+            "kind": "reply",
+            "side": "left"
           }
         ]
-      },
-      {
-        "id": "p10",
-        "choice": {
-          "prompt": "选择回答",
-          "options": [
-            {
-              "beat": 13,
-              "tone": "modest"
-            },
-            {
-              "beat": 14,
-              "tone": "honest"
-            }
-          ]
-        }
       },
       {
         "id": "p11",
@@ -232,7 +217,7 @@
         "_ratio_comment": "The generation came back 16:9; cropped to 4:3 here because this panel carries two lines and a letterbox has no room for the second. The brush is centred, so the crop only loses outer shadow.",
         "ratio": "4/3",
         "alt": "Extreme close-up of the master's hand and brush beginning a single bold stroke of wet ink on blank paper.",
-        "_bubbles_comment": "Both branches answer here and exactly one is ever visible — 很好 to the learner who can already write a little, 没关系 to the one who cannot. The line after it is common to both, so the story rejoins itself on the same panel.",
+        "_bubbles_comment": "The teacher's encouragement now follows the learner's answer in one uninterrupted reading sequence.",
         "bubbles": [
           {
             "beat": 15,
@@ -240,11 +225,7 @@
             "side": "left",
             "top": 6,
             "width": 50,
-            "tail": "bottom-right",
-            "when": {
-              "choice": "p10",
-              "option": 0
-            }
+            "tail": "bottom-right"
           },
           {
             "beat": 16,
@@ -252,11 +233,7 @@
             "side": "left",
             "top": 6,
             "width": 50,
-            "tail": "bottom-right",
-            "when": {
-              "choice": "p10",
-              "option": 1
-            }
+            "tail": "bottom-right"
           },
           {
             "beat": 17,

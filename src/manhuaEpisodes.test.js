@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { buildVocabMatcher, matchVocabAt, matchName, boundaryAfterSkip, splitSpeaker, atomicSpans, segmentLine } from './storyReading'
 import { CHARACTER_READINGS } from './characterNames'
-import { buildEpisode, visibleBubbles, bubbleLayout, isEpisodeComplete, revealLimit } from './manhuaLayout'
+import { buildEpisode, isEpisodeComplete, revealLimit } from './manhuaLayout'
 
 // Validates every authored manhua episode in data/manhua/ against the real reader:
 // the same vocabulary matcher, the same segmenter, the same layout module. An
@@ -37,18 +37,6 @@ const SNAPSHOTS = {
   'chinese|hsk_3|1': ['../data/hsk1-vocab-snapshot.json'],
   'chinese|hsk_3|2': ['../data/hsk2-vocab-snapshot.json'],
   'chinese|hsk_3|3': ['../data/hsk2-vocab-snapshot.json', '../data/hsk3.json'],
-}
-
-// Answer every gate in an episode with the option at `pick`, clamped to what
-// each gate actually offers. Layout is checked along more than one path because
-// a branch-only bubble is invisible on the other branch — measuring only the
-// first option would leave every "when" bubble in the episode unmeasured.
-function answerAll(panels, pick) {
-  const out = {}
-  for (const panel of panels) {
-    if (panel.choice) out[panel.id] = Math.min(pick, panel.choice.options.length - 1)
-  }
-  return out
 }
 
 // Two shapes are accepted: the [[word, reading]] snapshots and the
@@ -210,8 +198,12 @@ describe('manhua episodes', () => {
       // ── Layout ──────────────────────────────────────────────────────────
       it('every beat is drawn on exactly one panel', () => {
         const drawn = new Map()
+        const readingOrder = []
         for (const panel of built.panels) {
-          for (const b of panel.bubbles) drawn.set(b.beat, (drawn.get(b.beat) || 0) + 1)
+          for (const b of panel.bubbles) {
+            drawn.set(b.beat, (drawn.get(b.beat) || 0) + 1)
+            readingOrder.push(b.beat)
+          }
           if (panel.choice) for (const o of panel.choice.options) drawn.set(o.beat, (drawn.get(o.beat) || 0) + 1)
         }
         const missing = []
@@ -223,6 +215,7 @@ describe('manhua episodes', () => {
         }
         expect(missing, 'beats no panel shows').toEqual([])
         expect(twice, 'beats shown more than once').toEqual([])
+        expect(readingOrder, 'beats appear out of story order').toEqual(lines.map((unused, index) => index))
       })
 
       it('every panel with art names a real file, and every art file is used', () => {
@@ -264,63 +257,20 @@ describe('manhua episodes', () => {
         expect(shapes.size, 'every panel is the same shape').toBeGreaterThanOrEqual(3)
       })
 
-      it('keeps authored text placement safe at phone widths', () => {
-        // An art-first episode deliberately puts every line in the caption rail
-        // below its image. It must not retain empty choice panels or loose text
-        // blocks between images.
-        if (built.meta.textPlacement === 'below') {
-          expect(built.panels.every(panel => panel.bubbles.length === 0 || Boolean(panel.art))).toBe(true)
-          return
-        }
-
-        // This is an overlay layout: the words belong on the picture. Dropping a
-        // bubble into the gutter is the designed escape hatch for a line that
-        // would otherwise cover the whole drawing — but it has to stay the
-        // exception, or the episode stops being a comic and becomes a script
-        // with illustrations.
-        //
-        // 375 and up: every bubble on the art. 320 (an iPhone SE 1) is held to a
-        // lower bar on purpose — at that width a 2:1 letterbox panel genuinely
-        // has no room for a two-line bubble, and a readable line under the
-        // picture beats an unreadable one over it. Distorting the layout for a
-        // 2016 phone would cost every other reader.
-        const FLOOR = { 320: 0.6 }
-        for (const width of [320, 375, 390, 430, 520]) {
-          for (const pick of [0, 1]) {
-            let overlaid = 0
-            let totalBubbles = 0
-            for (const panel of built.panels) {
-              for (const b of visibleBubbles(panel, answerAll(built.panels, pick))) {
-                const beat = lines[b.beat]
-                if (!beat) continue
-                totalBubbles += 1
-                const out = bubbleLayout(b, {
-                  columnWidth: Math.min(width - 24, 520 - 24),
-                  ratio: panel.ratio,
-                  textLength: splitSpeaker(beat).text.length,
-                  withReadings: true,
-                })
-                if (out.mode === 'overlay') overlaid += 1
-              }
-            }
-            expect(overlaid / Math.max(1, totalBubbles), 'bubbles fall out of the art at ' + width + 'px on branch ' + pick)
-              .toBeGreaterThanOrEqual(FLOOR[width] == null ? 1 : FLOOR[width])
+      it('keeps every line below its artwork with no choices', () => {
+        expect(built.meta.textPlacement).toBe('below')
+        for (const panel of built.panels) {
+          expect(panel.art, 'text-only panel: ' + panel.id).toBeTruthy()
+          expect(panel.choice, 'choice panel: ' + panel.id).toBeNull()
+          for (const bubble of panel.bubbles) {
+            expect(bubble.when, 'conditional line on ' + panel.id).toBeNull()
           }
         }
       })
 
-      it('is completable: every gate is answerable and the last panel ends it', () => {
-        // Both branches have to reach the end — a `when` bubble that only ever
-        // appears on option 0 would otherwise hide a dead end on option 1.
-        for (const pick of [0, 1]) {
-          const answered = answerAll(built.panels, pick)
-          expect(revealLimit(built.panels, answered), 'branch ' + pick + ' stops early').toBe(built.panels.length - 1)
-          expect(isEpisodeComplete(built.panels, answered, built.panels.length - 1)).toBe(true)
-        }
-        // …and NOT completable by scrolling past an unanswered choice.
-        if (built.panels.some(p => p.choice)) {
-          expect(isEpisodeComplete(built.panels, {}, built.panels.length - 1)).toBe(false)
-        }
+      it('is completable by reaching the final artwork', () => {
+        expect(revealLimit(built.panels, {})).toBe(built.panels.length - 1)
+        expect(isEpisodeComplete(built.panels, {}, built.panels.length - 1)).toBe(true)
       })
 
       // ── Vocabulary ──────────────────────────────────────────────────────
