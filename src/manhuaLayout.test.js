@@ -63,6 +63,12 @@ describe('buildEpisode', () => {
       .toEqual({ label: '读者', glyph: '读' })
   })
 
+  it('supports an art-first caption rail below every panel', () => {
+    expect(buildEpisode({ meta: { text_placement: 'below' } }, 1).meta.textPlacement).toBe('below')
+    expect(buildEpisode({ meta: { text_placement: 'over-everything' } }, 1).meta.textPlacement).toBe('auto')
+    expect(buildEpisode(null, 1).meta.textPlacement).toBe('auto')
+  })
+
   it('gives every panel an id and a drawable ratio', () => {
     const { panels } = buildEpisode({ panels: [{}, { id: 'x' }] }, 1)
     expect(panels[0].id).toBe('p1')

@@ -258,14 +258,20 @@ export default function ManhuaReader(props) {
   const renderBubble = (panel, bubble, kind, forceBelow) => {
     const beat = c.beats[bubble.beat]
     if (!beat) return null
-    const layout = forceBelow ? { mode: 'below' } : bubbleLayout(bubble, {
-      columnWidth,
-      ratio: panel.ratio,
-      textLength: beat.text.length,
-      withSpeaker: Boolean(speakerLabel(bubble.beat)) && bubble.kind !== 'narration',
-      withEnglish: c.revealedEnglish.has(bubble.beat),
-      withReadings: c.readingMode !== 'hidden',
-    })
+    const captionBelow = meta.textPlacement === 'below'
+    let layout
+    if (captionBelow) layout = { mode: 'below', variant: 'caption' }
+    else if (forceBelow) layout = { mode: 'below' }
+    else {
+      layout = bubbleLayout(bubble, {
+        columnWidth,
+        ratio: panel.ratio,
+        textLength: beat.text.length,
+        withSpeaker: Boolean(speakerLabel(bubble.beat)) && bubble.kind !== 'narration',
+        withEnglish: c.revealedEnglish.has(bubble.beat),
+        withReadings: c.readingMode !== 'hidden',
+      })
+    }
     return {
       layout,
       node: (
@@ -370,7 +376,11 @@ export default function ManhuaReader(props) {
                   priority={i < 2}
                   reduceMotion={c.reduceMotion}
                   style={{ scrollMarginTop: '76px' }}
-                  below={belows.length ? <div style={{ display: 'flex', flexDirection: 'column' }}>{belows}</div> : null}
+                  below={belows.length ? (
+                    meta.textPlacement === 'below'
+                      ? <figcaption style={{ display: 'flex', flexDirection: 'column', margin: '6px 2px 0' }}>{belows}</figcaption>
+                      : <div style={{ display: 'flex', flexDirection: 'column' }}>{belows}</div>
+                  ) : null}
                 >
                   {overlays}
                 </ManhuaPanel>

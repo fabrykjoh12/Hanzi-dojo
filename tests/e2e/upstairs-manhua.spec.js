@@ -4,7 +4,7 @@ import { ReaderPage } from '../pages/ReaderPage.js';
 
 const STORY = UPSTAIRS_MANIFEST.title;
 const PANEL_COUNT = UPSTAIRS_MANIFEST.panels.panels.length;
-const RESUME_PANEL = 12;
+const RESUME_PANEL = 10;
 
 async function serveHsk3Track(page) {
   await page.route('**/rest/v1/language_tracks**', async (route) => {
@@ -45,7 +45,7 @@ test.describe('《楼上没有声音》 standalone story', () => {
     await expect(card.getByText('第一话', { exact: true })).toHaveCount(0);
   });
 
-  test('runs through three choices, resume, lookup, questions, reward, and read state', async ({ page }) => {
+  test('runs linearly through captions, resume, lookup, questions, reward, and read state', async ({ page }) => {
     test.setTimeout(120000);
     await openStory(page);
 
@@ -57,10 +57,8 @@ test.describe('《楼上没有声音》 standalone story', () => {
     await translation.click();
     await expect(page.getByText('I live in a new place.', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: /^Play this line/ }).first().click();
-
-    await page.getByRole('button', { name: /可能她一个人不开心。/ }).click();
-    await expect(page.getByRole('img', { name: /elderly woman opens a teal apartment door/ })).toBeVisible();
-    await page.getByRole('button', { name: /没有。我只是想认识你。/ }).click();
+    await expect(page.getByRole('region', { name: '选择回答' })).toHaveCount(0);
+    await expect(page.locator('[data-manhua-text-layout="overlay"]')).toHaveCount(0);
 
     const sound = page.getByRole('button', { name: '声音', exact: true }).first();
     await sound.scrollIntoViewIfNeeded();
@@ -76,10 +74,6 @@ test.describe('《楼上没有声音》 standalone story', () => {
     await page.getByRole('button', { name: 'Back to stories' }).first().click();
     await openStory(page);
     await expect(page.getByLabel(`Panel ${RESUME_PANEL} of ${PANEL_COUNT}`)).toBeVisible();
-    await expect(page.getByRole('button', { name: /可能她一个人不开心。/ })).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByRole('button', { name: /没有。我只是想认识你。/ })).toHaveAttribute('aria-pressed', 'true');
-
-    await page.getByRole('button', { name: /我应该上去看看。/ }).click();
     await page.getByRole('img', { name: /two warm windows stacked one above the other/ })
       .evaluate(el => el.scrollIntoView({ block: 'center' }));
     await page.mouse.wheel(0, 900);
@@ -101,7 +95,7 @@ test.describe('《楼上没有声音》 standalone story', () => {
   });
 });
 
-for (const width of [320, 390, 430]) {
+for (const width of [320, 375, 390, 430]) {
   test(`fits the opening panel at ${width}px without horizontal overflow`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     await openStory(page);
@@ -113,5 +107,27 @@ for (const width of [320, 390, 430]) {
     const art = await openingArt.boundingBox();
     expect(art.x).toBeGreaterThanOrEqual(0);
     expect(art.x + art.width).toBeLessThanOrEqual(width);
+    const captions = page.locator('[data-manhua-text-layout="caption"]');
+    const captionCount = await captions.count();
+    expect(captionCount).toBeGreaterThan(0);
+    const firstCaption = await captions.first().boundingBox();
+    expect(firstCaption.y).toBeGreaterThanOrEqual(art.y + art.height - 1);
+    expect(await page.locator('[data-manhua-text-layout="overlay"]').count()).toBe(0);
   });
 }
+
+test('keeps the caption rail below the art in phone landscape with reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 844, height: 390 });
+  await openStory(page);
+  const openingArt = page.getByRole('img', { name: /Blue-hour exterior of an older city apartment building/ });
+  await expect(openingArt).toHaveCSS('opacity', '1');
+  const captions = page.locator('[data-manhua-text-layout="caption"]');
+  expect(await captions.count()).toBeGreaterThan(0);
+  const art = await openingArt.boundingBox();
+  const firstCaption = await captions.first().boundingBox();
+  expect(firstCaption.y).toBeGreaterThanOrEqual(art.y + art.height - 1);
+  expect(await page.locator('[data-manhua-text-layout="overlay"]').count()).toBe(0);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+});

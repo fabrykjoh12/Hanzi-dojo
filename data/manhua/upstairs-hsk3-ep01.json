@@ -10,8 +10,8 @@
   "title": "《楼上没有声音》",
   "english_summary": "Every night at nine, the grandmother upstairs sings the same song. Then one night the apartment goes quiet — and the silence tells you something is wrong.",
   "_content_comment": "One beat per line, 'NAME：text' with a fullwidth colon. Beat indices are 0-based and are what panels[].bubbles[].beat refers to; INSERTING A LINE MEANS RE-INDEXING THE PANELS.",
-  "content": "我住在一个新的地方。\n我的房间在三楼。\n楼上住着一位奶奶。\n每天晚上九点，她都会唱歌。\n她的声音不太好听。\n但是每天都一样。\n我学习的时候，她在唱。\n我睡觉的时候，她还在唱。\n你：今天我一定要告诉她。\n你：可能她一个人不开心。\n奶奶打开门。\n奶奶：对不起，声音太大了吗？\n你：有一点儿。\n你：没有。我只是想认识你。\n她看着我，笑了。\n她的房间里有很多照片。\n照片里有一个小孩子。\n你：这是你的女儿吗？\n奶奶：不是，这是我。\n奶奶：我以前很喜欢唱歌。\n奶奶：现在，我常常忘记很多事。\n奶奶：但是我还记得怎么唱。\n第二天晚上，九点到了。\n楼上没有声音。\n九点十分，还是很安静。\n我不能学习了。\n我一直在听。\n你：可能她今天累了。\n你：我应该上去看看。\n我等了五分钟。\n楼上还是没有声音。\n我走上四楼。\n门开着。\n奶奶坐在地上。\n她的电话在很远的地方。\n我马上给医院打电话。\n医生很快来了。\n几天以后，奶奶回家了。\n晚上九点，楼上又有声音了。\n她唱得还是不太好听。\n这一次，我也跟着唱。\n奶奶：你也没有唱好。\n我们都笑了。\n楼上又安静了。\n但是我不再害怕安静。",
-  "english_content": "I live in a new place.\nMy room is on the third floor.\nA grandmother lives upstairs.\nEvery night at nine, she sings.\nHer voice is not very good.\nBut it is the same every day.\nShe sings while I study.\nShe is still singing when I sleep.\nToday I am definitely going to tell her.\nMaybe she is unhappy by herself.\nGrandma opened the door.\nSorry, was the sound too loud?\nA little.\nNo. I just wanted to meet you.\nShe looked at me and smiled.\nThere were many photographs in her room.\nThere was a little child in one photograph.\nIs this your daughter?\nNo, this is me.\nI used to love singing.\nNow I often forget many things.\nBut I still remember how to sing.\nThe next evening, nine o'clock came.\nThere was no sound upstairs.\nAt nine ten, it was still very quiet.\nI could not study.\nI kept listening.\nMaybe she is tired today.\nI should go upstairs and look.\nI waited five minutes.\nThere was still no sound upstairs.\nI walked up to the fourth floor.\nThe door was open.\nGrandma was sitting on the floor.\nHer phone was far away.\nI immediately called the hospital.\nA doctor came quickly.\nA few days later, Grandma came home.\nAt nine that evening, there was sound upstairs again.\nHer singing was still not very good.\nThis time, I sang along too.\nYou did not sing well either.\nWe both laughed.\nUpstairs was quiet again.\nBut I was no longer afraid of the silence.",
+  "content": "我住在一个新的地方。\n我的房间在三楼。\n楼上住着一位奶奶。\n每天晚上九点，她都会唱歌。\n她的声音不太好听。\n但是每天都一样。\n我学习的时候，她在唱。\n我睡觉的时候，她还在唱。\n我想上去看看她。\n可能她一个人不开心。\n奶奶打开门。\n奶奶：对不起，声音太大了吗？\n我想了想。\n你：没有。我只是想认识你。\n她看着我，笑了。\n她的房间里有很多照片。\n照片里有一个小孩子。\n你：这是你的女儿吗？\n奶奶：不是，这是我。\n奶奶：我以前很喜欢唱歌。\n奶奶：现在，我常常忘记很多事。\n奶奶：但是我还记得怎么唱。\n第二天晚上，九点到了。\n楼上没有声音。\n九点十分，还是很安静。\n我不能学习了。\n我一直在听。\n你：可能她今天累了。\n你：我应该上去看看。\n我等了五分钟。\n楼上还是没有声音。\n我走上四楼。\n门开着。\n奶奶坐在地上。\n她的电话在很远的地方。\n我马上给医院打电话。\n医生很快来了。\n几天以后，奶奶回家了。\n晚上九点，楼上又有声音了。\n她唱得还是不太好听。\n这一次，我也跟着唱。\n奶奶：你也没有唱好。\n我们都笑了。\n楼上又安静了。\n但是我不再害怕安静。",
+  "english_content": "I live in a new place.\nMy room is on the third floor.\nA grandmother lives upstairs.\nEvery night at nine, she sings.\nHer voice is not very good.\nBut it is the same every day.\nShe sings while I study.\nShe is still singing when I sleep.\nI wanted to go upstairs and see her.\nMaybe she is unhappy by herself.\nGrandma opened the door.\nSorry, was the sound too loud?\nI thought for a moment.\nNo. I just wanted to meet you.\nShe looked at me and smiled.\nThere were many photographs in her room.\nThere was a little child in one photograph.\nIs this your daughter?\nNo, this is me.\nI used to love singing.\nNow I often forget many things.\nBut I still remember how to sing.\nThe next evening, nine o'clock came.\nThere was no sound upstairs.\nAt nine ten, it was still very quiet.\nI could not study.\nI kept listening.\nMaybe she is tired today.\nI should go upstairs and look.\nI waited five minutes.\nThere was still no sound upstairs.\nI walked up to the fourth floor.\nThe door was open.\nGrandma was sitting on the floor.\nHer phone was far away.\nI immediately called the hospital.\nA doctor came quickly.\nA few days later, Grandma came home.\nAt nine that evening, there was sound upstairs again.\nHer singing was still not very good.\nThis time, I sang along too.\nYou did not sing well either.\nWe both laughed.\nUpstairs was quiet again.\nBut I was no longer afraid of the silence.",
   "_vocabulary_comment": "Every word is in the cumulative HSK 3 pool (data/hsk2-vocab-snapshot.json + data/hsk3.json). Zero reach words. HSK 3 adds the story's load-bearing words 声音, 安静, 照片, 以前, 忘记 and 应该: the learner can notice a broken routine, understand the past inside the photograph, and decide that silence itself is information.",
   "names": [],
   "reach_words": [],
@@ -68,6 +68,7 @@
       ],
       "art_base": "/stories/upstairs/hsk3/ep01/",
       "art_palette": "colour",
+      "text_placement": "below",
       "reward": {
         "glyph": "听",
         "label": "细心读者"
@@ -115,18 +116,10 @@
         "alt": "A quiet split-time composition of the same small room: homework under a desk lamp, then the student awake in bed as the song continues.",
         "bubbles": [
           { "beat": 6, "kind": "narration", "side": "left", "top": 3, "width": 92 },
-          { "beat": 7, "kind": "narration", "side": "right", "top": 42, "width": 92 }
+          { "beat": 7, "kind": "narration", "side": "right", "top": 42, "width": 92 },
+          { "beat": 8, "kind": "narration", "side": "left", "top": 62, "width": 92 },
+          { "beat": 9, "kind": "narration", "side": "right", "top": 76, "width": 92 }
         ]
-      },
-      {
-        "id": "p5",
-        "choice": {
-          "prompt": "选择回答",
-          "options": [
-            { "beat": 8, "tone": "direct" },
-            { "beat": 9, "tone": "kind" }
-          ]
-        }
       },
       {
         "id": "p6",
@@ -135,18 +128,10 @@
         "alt": "On the dim fourth-floor landing, an elderly woman opens a teal apartment door to the student standing in the hall.",
         "bubbles": [
           { "beat": 10, "kind": "narration", "side": "left", "top": 3, "width": 92 },
-          { "beat": 11, "kind": "speech", "side": "right", "top": 44, "width": 92, "tail": "bottom-left" }
+          { "beat": 11, "kind": "speech", "side": "right", "top": 44, "width": 92, "tail": "bottom-left" },
+          { "beat": 12, "kind": "narration", "side": "left", "top": 66, "width": 92 },
+          { "beat": 13, "kind": "speech", "side": "right", "top": 76, "width": 92, "tail": "bottom-left" }
         ]
-      },
-      {
-        "id": "p7",
-        "choice": {
-          "prompt": "选择回答",
-          "options": [
-            { "beat": 12, "tone": "honest" },
-            { "beat": 13, "tone": "warm" }
-          ]
-        }
       },
       {
         "id": "p8",
@@ -198,18 +183,10 @@
         "bubbles": [
           { "beat": 24, "kind": "narration", "side": "left", "top": 3, "width": 92 },
           { "beat": 25, "kind": "narration", "side": "right", "top": 34, "width": 92 },
-          { "beat": 26, "kind": "narration", "side": "left", "top": 65, "width": 92 }
+          { "beat": 26, "kind": "narration", "side": "left", "top": 65, "width": 92 },
+          { "beat": 27, "kind": "thought", "side": "right", "top": 76, "width": 92 },
+          { "beat": 28, "kind": "thought", "side": "left", "top": 84, "width": 92 }
         ]
-      },
-      {
-        "id": "p13",
-        "choice": {
-          "prompt": "选择回答",
-          "options": [
-            { "beat": 27, "tone": "wait" },
-            { "beat": 28, "tone": "act" }
-          ]
-        }
       },
       {
         "id": "p14",

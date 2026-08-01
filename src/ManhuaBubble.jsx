@@ -3,7 +3,7 @@ import { TokenBody, RevealEnglishButton } from './ReadingScaffold'
 import { PAPER, BUBBLE_RADIUS, THOUGHT_RADIUS, BUBBLE_FRAME, THOUGHT_FRAME, NARRATION_RADIUS, TYPE, TAP_TARGET } from './manhuaTokens'
 import { Volume2 } from 'lucide-react'
 
-// A line of the story, drawn as interface over the artwork.
+// A line of the story, drawn as interface over or directly below the artwork.
 //
 // Nothing here is baked into an image: the hanzi is real text, every word is its
 // own button, the pinyin is the shared per-word scaffolding (TokenBody, same
@@ -153,9 +153,17 @@ export default function ManhuaBubble({
   layout = { mode: 'below' }, reduceMotion = false, style = {},
 }) {
   if (!beat) return null
-  const chrome = chromeFor(kind, accentHex)
   const overlay = layout.mode === 'overlay'
+  const caption = !overlay && layout.variant === 'caption'
   const narration = kind === 'narration'
+  const chrome = caption
+    ? {
+      background: 'transparent',
+      border: 'none',
+      borderBottom: '1px solid ' + PAPER.soft,
+      borderRadius: 0,
+    }
+    : chromeFor(kind, accentHex)
 
   const position = overlay
     ? {
@@ -164,12 +172,22 @@ export default function ManhuaBubble({
       left: layout.left + '%',
       width: layout.width + '%',
     }
-    : { position: 'relative', width: '100%', marginTop: '10px' }
+    : { position: 'relative', width: '100%', marginTop: caption ? 0 : '10px' }
+  const padding = caption
+    ? (narration ? '10px 9px 8px' : '11px 9px 9px')
+    : (narration ? '10px 14px' : '11px 16px 12px')
 
   return (
     <div
-      className={reduceMotion ? undefined : 'hd-manhua-bubble'}
-      style={{ ...position, ...chrome, padding: narration ? '10px 14px' : '11px 16px 12px', boxShadow: 'none', ...style }}
+      className={caption ? 'hd-manhua-caption' : (reduceMotion ? undefined : 'hd-manhua-bubble')}
+      data-manhua-text-layout={caption ? 'caption' : (overlay ? 'overlay' : 'below')}
+      style={{
+        ...position,
+        ...chrome,
+        padding,
+        boxShadow: 'none',
+        ...style,
+      }}
     >
       <Tail tail={tail} kind={kind} accentHex={accentHex} />
 

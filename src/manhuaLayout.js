@@ -146,6 +146,9 @@ export function buildEpisode(panelsJson, beatCount) {
     label: typeof rawMeta.episode_label === 'string' ? rawMeta.episode_label : null,
     title: typeof rawMeta.episode_title === 'string' ? rawMeta.episode_title : null,
     artBase: typeof rawMeta.art_base === 'string' ? rawMeta.art_base : '',
+    // Art-first episodes can keep every learning line in a clean caption rail
+    // below the image. `auto` preserves the traditional comic-overlay layout.
+    textPlacement: rawMeta.text_placement === 'below' ? 'below' : 'auto',
     // One English sentence on the closing plate, pointing at the next episode.
     // English on purpose: it is the only line in the reader that is about the
     // series rather than part of it, and an HSK 1 learner cannot be told

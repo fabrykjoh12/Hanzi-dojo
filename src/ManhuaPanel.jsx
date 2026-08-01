@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { PAPER, PANEL_RADIUS, PANEL_FRAME } from './manhuaTokens'
 
-// One cinematic panel: the art, with the dialogue drawn on top of it by the
-// caller.
+// One cinematic panel: the art, with the dialogue drawn on top of it or placed
+// in a caption rail below it by the caller.
 //
 // Two children slots, because a bubble is not always on the picture. `children`
 // is overlaid inside the art box (absolutely positioned, clipped to the panel's
-// rounded corners); `below` is drawn in the gutter under it, which is where
-// manhuaLayout.bubbleLayout sends a bubble whose text would otherwise cover the
-// whole drawing. The panel owns the frame either way, so a bubble never floats
-// loose between two panels.
+// rounded corners); `below` is drawn in the gutter under it, either because the
+// episode asks for an art-first caption rail or because a long line cannot fit
+// safely on the drawing. The panel owns the frame either way, so text never
+// floats loose between two panels.
 //
 // The art box holds its aspect ratio from the FIRST paint, before the image has
 // loaded — an episode is a column of large images, and without a reserved box

@@ -264,7 +264,15 @@ describe('manhua episodes', () => {
         expect(shapes.size, 'every panel is the same shape').toBeGreaterThanOrEqual(3)
       })
 
-      it('places every bubble over its art at phone widths', () => {
+      it('keeps authored text placement safe at phone widths', () => {
+        // An art-first episode deliberately puts every line in the caption rail
+        // below its image. It must not retain empty choice panels or loose text
+        // blocks between images.
+        if (built.meta.textPlacement === 'below') {
+          expect(built.panels.every(panel => panel.bubbles.length === 0 || Boolean(panel.art))).toBe(true)
+          return
+        }
+
         // This is an overlay layout: the words belong on the picture. Dropping a
         // bubble into the gutter is the designed escape hatch for a line that
         // would otherwise cover the whole drawing — but it has to stay the
