@@ -150,7 +150,7 @@ export default function Settings({ session, profile, onUpdate }) {
 
           {/* Audio autoplay */}
           <Card icon={Volume2} title="Audio on flip" text="Automatically play the word's pronunciation when you reveal a card." accentHex={accentHex}>
-            <Toggle accentHex={accentHex} checked={audioAutoplay} onChange={(v) => savePref({ audio_autoplay: v })} />
+            <Toggle accentHex={accentHex} label="Audio on flip" checked={audioAutoplay} onChange={(v) => savePref({ audio_autoplay: v })} />
           </Card>
 
           {/* Audio speed */}
@@ -170,7 +170,7 @@ export default function Settings({ session, profile, onUpdate }) {
           {/* Furigana default — Japanese only */}
           {isJapanese && (
             <Card icon={BookOpenCheck} title="Furigana by default" text="Show readings above kanji on the front of Japanese flashcards." accentHex={accentHex}>
-              <Toggle accentHex={accentHex} checked={furiganaDefault} onChange={(v) => savePref({ furigana_default: v })} />
+              <Toggle accentHex={accentHex} label="Furigana by default" checked={furiganaDefault} onChange={(v) => savePref({ furigana_default: v })} />
             </Card>
           )}
 
@@ -205,6 +205,7 @@ export default function Settings({ session, profile, onUpdate }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
               <Toggle
                 accentHex={accentHex}
+                label="Daily review reminder"
                 checked={remindersOn}
                 onChange={(v) => toggleReminders(v)}
                 disabled={reminderBusy || !pushSupported()}
@@ -431,11 +432,12 @@ function PresetChoice({ legend, name, value, onChange, options, accentHex }) {
   )
 }
 
-function Toggle({ checked, onChange, accentHex, disabled }) {
+function Toggle({ checked, onChange, accentHex, disabled, label }) {
   return (
     <button
       onClick={() => !disabled && onChange(!checked)}
       aria-pressed={checked}
+      aria-label={label}
       disabled={disabled}
       style={{
         width: '50px', height: '28px', borderRadius: '999px', position: 'relative',

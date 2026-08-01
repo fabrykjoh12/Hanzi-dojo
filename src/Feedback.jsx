@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { toast } from './toast'
 import { useIsMobile } from './useIsMobile'
@@ -29,6 +29,22 @@ export default function Feedback({ session, profile, view }) {
   const [error, setError] = useState(null)
 
   const canSend = category != null && message.trim().length > 0 && !sending
+
+  // Dialog focus management (the ReadingScaffold pattern): remember the opener,
+  // focus the panel on open, give focus back on close; Escape closes.
+  const panelRef = useRef(null)
+  const openerRef = useRef(null)
+  useEffect(() => {
+    if (!open) return
+    openerRef.current = document.activeElement
+    if (panelRef.current) panelRef.current.focus()
+    const onKey = (e) => { if (e.key === 'Escape') close() }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      if (openerRef.current && openerRef.current.focus) openerRef.current.focus()
+    }
+  }, [open])
 
   function close() {
     setOpen(false)
@@ -91,18 +107,25 @@ export default function Feedback({ session, profile, view }) {
         <>
           <div
             onClick={close}
+            aria-hidden="true"
             style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.36)', zIndex: 70 }}
           />
-          <div style={{
-            position: 'fixed', zIndex: 71,
-            left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-            width: '100%', maxWidth: '440px', maxHeight: '86vh', overflowY: 'auto',
-            background: 'var(--surface)', borderRadius: '22px',
-            boxShadow: '0 24px 70px rgba(0,0,0,0.28)', padding: '24px',
-          }}>
+          <div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="feedback-title"
+            tabIndex={-1}
+            style={{
+              position: 'fixed', zIndex: 71,
+              left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
+              width: '100%', maxWidth: '440px', maxHeight: '86vh', overflowY: 'auto',
+              background: 'var(--surface)', borderRadius: '22px',
+              boxShadow: '0 24px 70px rgba(0,0,0,0.28)', padding: '24px', outline: 'none',
+            }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
               <div>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>Send feedback</div>
+                <div id="feedback-title" style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>Send feedback</div>
                 <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '3px', lineHeight: 1.5 }}>
                   Found a bug, or have an idea? We read every message.
                 </div>
@@ -142,6 +165,7 @@ export default function Feedback({ session, profile, view }) {
 
             <textarea
               value={message}
+              aria-label="Your feedback"
               onChange={e => setMessage(e.target.value)}
               placeholder={
                 category === 'bug'

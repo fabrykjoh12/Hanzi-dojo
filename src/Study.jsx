@@ -1159,6 +1159,15 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         </div>
       )}
 
+      {/* The screen's h1, visually hidden — the design carries no title text,
+          but heading navigation (screen-reader rotor) still needs a landmark. */}
+      <h1 style={{
+        position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px',
+        overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0,
+      }}>
+        Study session
+      </h1>
+
       <div style={{ ...railStyle, display: 'flex', alignItems: 'center', gap: '12px' }}>
         <HeaderIconButton icon={X} label="Exit" onClick={onBack} />
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -1561,6 +1570,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                     onChange={e => setTypedValue(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') submitTyped() }}
                     placeholder={isJapanese ? 'Type the reading (kana or romaji)' : 'Type the pinyin'}
+                    aria-label={isJapanese ? 'Type the reading' : 'Type the pinyin'}
                     style={{
                       flex: 1, minWidth: 0, height: '54px', padding: '0 18px',
                       borderRadius: '16px', border: '1px solid var(--border)',

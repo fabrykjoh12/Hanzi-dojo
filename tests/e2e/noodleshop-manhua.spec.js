@@ -15,11 +15,12 @@ test.describe('《一块钱》 vertical slice', () => {
 
   test('appears as a complete standalone work beside, not inside, series', async ({ page }) => {
     await page.goto('/stories');
-    const shelf = page.getByRole('tabpanel');
-    const standalone = shelf.locator('section[aria-labelledby="standalone-stories-1"]');
-    await expect(standalone.getByRole('heading', { name: 'Standalone stories' })).toBeVisible();
-    await expect(shelf.getByRole('heading', { name: 'Series' })).toBeVisible();
-    const card = standalone.getByRole('button', { name: new RegExp(STORY) });
+    // The flat shelf: the standalone lives in the HSK 1 level section as its
+    // own card (marked "Complete story"), beside — not inside — the series
+    // card, which announces itself via its chapter-list chip.
+    const shelf = page.getByRole('region', { name: 'HSK 1' });
+    await expect(page.getByRole('button', { name: /All chapters of/ }).first()).toBeVisible();
+    const card = shelf.getByRole('button', { name: new RegExp(STORY) });
     await expect(card.getByText('Complete story', { exact: true })).toBeVisible();
     await expect(card.getByText('3 chapters', { exact: true })).toBeVisible();
     await expect(card.getByText('8 min', { exact: true })).toBeVisible();
@@ -81,7 +82,7 @@ test.describe('《一块钱》 vertical slice', () => {
     await expect(completion.getByRole('status', { name: /暖心读者/ })).toBeVisible();
 
     await completion.getByRole('button', { name: /Back to stories/ }).click();
-    const card = page.getByRole('tabpanel').getByRole('button', { name: new RegExp(STORY) });
+    const card = page.getByRole('region').getByRole('button', { name: new RegExp(STORY) }).first();
     await expect(card.getByText('Read', { exact: true })).toBeVisible();
   });
 });

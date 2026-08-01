@@ -113,6 +113,15 @@ export default function PacedReader(props) {
                         // learner can see at a glance which words aren't on
                         // their syllabus. tokenMark.js owns the decision.
                         const unknown = unknownMarkStyle(t, track.language)
+                        // Keyboard parity for the reader's core interaction:
+                        // tokens on the CURRENT beat are real buttons (Enter/
+                        // Space looks the word up), matching ManhuaBubble.
+                        // Other beats stay inert so they don't flood tab order.
+                        const plainActivate = i === c.cur && tappable ? (e) => {
+                          if (c.playing && c.seekToToken(k)) { e.stopPropagation(); return }
+                          e.stopPropagation()
+                          c.selectToken(t, 'not_started', plainId, i, e.currentTarget)
+                        } : undefined
                         return (
                           <span key={k}
                             onClick={i === c.cur ? (e) => {
@@ -123,6 +132,12 @@ export default function PacedReader(props) {
                               if (!tappable) return
                               e.stopPropagation()
                               c.selectToken(t, 'not_started', plainId, i, e.currentTarget)
+                            } : undefined}
+                            role={plainActivate ? 'button' : undefined}
+                            tabIndex={plainActivate ? 0 : undefined}
+                            aria-label={plainActivate ? t.text : undefined}
+                            onKeyDown={plainActivate ? (e) => {
+                              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); plainActivate(e) }
                             } : undefined}
                             style={{
                               cursor: i === c.cur && tappable ? 'pointer' : 'inherit', borderRadius: '4px',
@@ -141,15 +156,19 @@ export default function PacedReader(props) {
                       const tokenId = i + ':' + k
                       const isSelected = c.selected && c.selected.tokenId === tokenId
                       const isPlace = isPlaceWord(t.vocab.word, track.language)
+                      const vocabActivate = i === c.cur ? (e) => {
+                        e.stopPropagation()
+                        if (c.playing && c.seekToToken(k)) return
+                        c.selectToken(t, status, tokenId, i, e.currentTarget)
+                      } : undefined
                       return (
                         <span key={k}
-                          onClick={i === c.cur ? (e) => {
-                            e.stopPropagation()
-                            // While the line is sounding, a tap means "read from
-                            // here". seekToToken reports false when there is no
-                            // timeline, and then a tap means what it always did.
-                            if (c.playing && c.seekToToken(k)) return
-                            c.selectToken(t, status, tokenId, i, e.currentTarget)
+                          onClick={vocabActivate}
+                          role={vocabActivate ? 'button' : undefined}
+                          tabIndex={vocabActivate ? 0 : undefined}
+                          aria-label={vocabActivate ? t.text : undefined}
+                          onKeyDown={vocabActivate ? (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); vocabActivate(e) }
                           } : undefined}
                           style={{
                             cursor: i === c.cur ? 'pointer' : 'inherit', borderRadius: '4px', padding: '0 1px',

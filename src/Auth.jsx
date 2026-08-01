@@ -144,10 +144,13 @@ export default function Auth({ intro = null }) {
       }}>
         {/* Logo + wordmark */}
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <img src={logo} alt={BRAND_NAME} style={{ width: '52px', height: '52px', objectFit: 'contain', marginBottom: '4px' }} />
-          <div style={heroWordmarkStyle('42px')}>
+          <img src={logo} alt="" style={{ width: '52px', height: '52px', objectFit: 'contain', marginBottom: '4px' }} />
+          {/* The wordmark IS the page heading — a real h1 (margins reset so the
+              wordmark styling renders identically), so heading navigation finds
+              the screen. The logo alt is empty: the name follows immediately. */}
+          <h1 style={{ ...heroWordmarkStyle('42px'), margin: 0 }}>
             {BRAND_NAME}
-          </div>
+          </h1>
         </div>
 
         {/* Tagline — personalized from the pre-login wizard when available */}
