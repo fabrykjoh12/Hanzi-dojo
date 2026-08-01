@@ -8,6 +8,7 @@ import { getDailyStoryCard, firstContentChar } from './homeStory'
 import { HeroPanel, HeroAction, Panel, Eyebrow, PageHeader } from './panels'
 import { rhythmSummary, weekdayInitial } from './studyRhythm'
 import { forecastSummary } from './reviewForecast'
+import { sessionEstimateLabel } from './sessionEstimate'
 import { MICRO, NUM } from './designTokens'
 
 // ── Home ──────────────────────────────────────────────────────────────────
@@ -268,6 +269,12 @@ function QueueBody({ counts, totalDue, goal, doneToday, isMobile, action, accent
         </span>
         <span style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: 600, color: 'rgba(255,255,255,0.86)' }}>
           {clear ? 'all caught up' : 'card' + (totalDue === 1 ? '' : 's') + ' waiting'}
+          {/* Session length from the ACTUAL queue (see sessionEstimate.js). */}
+          {!clear && sessionEstimateLabel(counts) && (
+            <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
+              {' · ' + sessionEstimateLabel(counts)}
+            </span>
+          )}
         </span>
       </div>
 

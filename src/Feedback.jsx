@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { supabase } from './supabase'
 import { toast } from './toast'
 import { useIsMobile } from './useIsMobile'
+import { feedbackStoryContext } from './feedbackContext'
+import { BUILD_SHA } from './version'
 import { MessageCircleHeart, X, Bug, Lightbulb, MessageSquare } from 'lucide-react'
 
 // A small always-available way for users to send bug reports and ideas
@@ -39,6 +41,10 @@ export default function Feedback({ session, profile, view }) {
     if (!canSend) return
     setSending(true)
     setError(null)
+    // Context: the open story (registered by the readers — see
+    // feedbackContext.js) plus the running build, so a content report lands
+    // pinned to the exact story and version it is about.
+    const storyCtx = feedbackStoryContext()
     const { error: insertError } = await supabase.from('feedback').insert({
       user_id: session.user.id,
       email: session.user.email || null,
@@ -46,6 +52,7 @@ export default function Feedback({ session, profile, view }) {
       message: message.trim(),
       page: view || null,
       language: profile ? profile.active_language : null,
+      context: { ...(storyCtx || {}), app_version: BUILD_SHA || null },
     })
     setSending(false)
     if (insertError) {
@@ -152,6 +159,14 @@ export default function Feedback({ session, profile, view }) {
                 resize: 'vertical', boxSizing: 'border-box',
               }}
             />
+
+            {/* When sent from inside a reader, say what the report will be
+                pinned to — no surprises about what gets attached. */}
+            {feedbackStoryContext() && (
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                Attached: the story you have open ({feedbackStoryContext().story_title})
+              </div>
+            )}
 
             {error && (
               <div style={{ fontSize: '12.5px', color: 'var(--danger)', marginTop: '8px' }}>{error}</div>
