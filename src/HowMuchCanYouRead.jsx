@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from './supabase'
 import {
   pickAssessmentQuestions, buildBands, estimateKnownFrontier,
-  estimateReadingPercent, levelLabelForFrontier,
+  estimateReadingPercent, levelLabelForFrontier, startingLevelForFrontier,
 } from './assessment'
+import { getLevelLabel } from './utils'
+import { readPreloginPrefs, savePreloginPrefs } from './prelogin'
 import { languageTheme } from './languageTheme'
 import { BRAND_NAME } from './brand'
 import { track, EVENTS } from './analytics'
@@ -76,14 +78,20 @@ export default function HowMuchCanYouRead() {
     const { frontierIndex, knownVocabIds } = estimateKnownFrontier(next, bands)
     const pct = estimateReadingPercent(knownVocabIds, vocab, corpus, LANGUAGE)
     const label = levelLabelForFrontier(frontierIndex, bands)
+    const startLevel = startingLevelForFrontier(frontierIndex, bands)
     setAnswers(next)
-    setResult({ pct, label })
+    setResult({ pct, label, startLevel })
     track(EVENTS.ASSESSMENT_COMPLETED, { language: LANGUAGE, pct, label })
     setPhase('result')
   }
 
   function goSignup() {
     track(EVENTS.ASSESSMENT_SIGNUP_CLICKED, { language: LANGUAGE })
+    // Carry the estimate into onboarding: the level step opens pre-selected at
+    // the suggested level (still confirmable — an estimate never silently
+    // decides). Merged, not overwritten, so a reason picked earlier survives.
+    const prev = readPreloginPrefs() || {}
+    savePreloginPrefs({ ...prev, language: LANGUAGE, level: result ? result.startLevel : undefined })
     navigate('/')
   }
 
@@ -177,7 +185,11 @@ export default function HowMuchCanYouRead() {
         <div style={{ color: 'var(--text-muted)', fontWeight: 600 }}>You can read about</div>
         <div style={{ color: accent, fontWeight: 800, fontSize: '72px', lineHeight: 1.1 }}>~{result.pct}%</div>
         <div style={{ color: 'var(--text-muted)', marginBottom: '4px' }}>of everyday Chinese</div>
-        <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '24px' }}>You're {result.label}</div>
+        <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '8px' }}>You're {result.label}</div>
+        {/* The estimate becomes a concrete recommendation, not just a number. */}
+        <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginBottom: '24px' }}>
+          We'd start you at {getLevelLabel(LANGUAGE, 'hsk_3', result.startLevel)} — you can adjust it during signup.
+        </div>
 
         <button onClick={share} style={{ ...ctaStyle(accent), background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)', marginBottom: '10px' }}>
           Share my result

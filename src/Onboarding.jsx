@@ -36,7 +36,13 @@ export default function Onboarding({ session, onComplete }) {
   // offered — in both cases the choice is already made.
   const [step, setStep] = useState(() => (initialPrefill() || SOLO_LANGUAGE ? 2 : 1))
   const [language, setLanguage] = useState(() => initialPrefill()?.language || SOLO_LANGUAGE || null)
-  const [level, setLevel] = useState(null)
+  // The public reading test saves its estimated starting level with the
+  // pre-login prefs; the level step opens pre-selected there (still a choice —
+  // the learner confirms or changes it, an estimate never silently decides).
+  const [level, setLevel] = useState(() => {
+    const lv = initialPrefill()?.level
+    return Number.isInteger(lv) && lv >= 1 && lv <= 9 ? lv : null
+  })
   const [tier, setTier] = useState(null)         // selected tier { key, level, test }
   const [placement, setPlacement] = useState(false)  // showing the placement test
   const [goal, setGoal] = useState(10)
