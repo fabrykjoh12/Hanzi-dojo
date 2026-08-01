@@ -250,6 +250,19 @@ export default function Auth({ intro = null }) {
           {loading ? 'Please wait...' : resetMode ? 'Send reset link' : isSignup ? 'Create account' : 'Log in'}
         </button>
 
+        {/* Legal acknowledgment — presented where the account is created. */}
+        {isSignup && !resetMode && (
+          <p style={{
+            fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6,
+            textAlign: 'center', margin: '10px 0 0', fontFamily: 'Inter, sans-serif',
+          }}>
+            By creating an account you agree to the{' '}
+            <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Terms of Use</a>
+            {' '}and{' '}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Privacy Policy</a>.
+          </p>
+        )}
+
         {/* Forgot password / back link */}
         {!isSignup && (
           <button

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pathToView, viewToPath, isKnownView, KNOWN_VIEWS, readStoryId, isAssessmentPath } from './routes'
+import { pathToView, viewToPath, isKnownView, KNOWN_VIEWS, readStoryId, isAssessmentPath, trustPageKey, TRUST_PAGES } from './routes'
 
 describe('pathToView', () => {
   it('maps root and empty to home', () => {
@@ -69,6 +69,26 @@ describe('readStoryId', () => {
   it('returns null for unrelated paths', () => {
     expect(readStoryId('/stories')).toBe(null)
     expect(readStoryId('/')).toBe(null)
+  })
+})
+
+describe('trustPageKey', () => {
+  it('recognizes every trust page (with or without trailing slash)', () => {
+    for (const page of TRUST_PAGES) {
+      expect(trustPageKey('/' + page)).toBe(page)
+      expect(trustPageKey('/' + page + '/')).toBe(page)
+    }
+  })
+  it('rejects other paths', () => {
+    expect(trustPageKey('/')).toBe(null)
+    expect(trustPageKey('/stories')).toBe(null)
+    expect(trustPageKey('/privacy-policy')).toBe(null)
+    expect(trustPageKey('/terms/extra')).toBe(null)
+  })
+  it('is not a known in-app view (renders its own shell)', () => {
+    for (const page of TRUST_PAGES) {
+      expect(isKnownView(page)).toBe(false)
+    }
   })
 })
 

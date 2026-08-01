@@ -551,32 +551,46 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* Footer — community link, hidden until a real Discord invite is set in community.js */}
-        {isDiscordConfigured() && (
+        {/* Footer — community link (hidden until a real Discord invite is set in
+            community.js) plus the trust links, which always render: Privacy and
+            Terms must be reachable before registration. */}
+        <div style={{
+          marginTop: isMobile ? '48px' : '72px', paddingTop: '28px',
+          borderTop: '1px solid var(--border)', textAlign: 'center',
+        }}>
+          {isDiscordConfigured() && (
+            <>
+              <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '16px' }}>
+                {BRAND_NAME} is community-driven. Join learners shaping what we build next.
+              </div>
+              <a
+                href={DISCORD_INVITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  minHeight: '42px', padding: '0 18px', borderRadius: '14px',
+                  border: '1px solid var(--border)', background: 'var(--surface)',
+                  color: 'var(--text)', fontSize: '14px', fontWeight: 650,
+                  fontFamily: 'Inter, sans-serif', textDecoration: 'none',
+                }}
+              >
+                <MessagesSquare size={16} strokeWidth={2} color={SAGE_DARK} />
+                Join our Discord
+              </a>
+            </>
+          )}
           <div style={{
-            marginTop: isMobile ? '48px' : '72px', paddingTop: '28px',
-            borderTop: '1px solid var(--border)', textAlign: 'center',
+            display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap',
+            marginTop: '22px', fontSize: '13px',
           }}>
-            <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '16px' }}>
-              {BRAND_NAME} is community-driven. Join learners shaping what we build next.
-            </div>
-            <a
-              href={DISCORD_INVITE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: '8px',
-                minHeight: '42px', padding: '0 18px', borderRadius: '14px',
-                border: '1px solid var(--border)', background: 'var(--surface)',
-                color: 'var(--text)', fontSize: '14px', fontWeight: 650,
-                fontFamily: 'Inter, sans-serif', textDecoration: 'none',
-              }}
-            >
-              <MessagesSquare size={16} strokeWidth={2} color={SAGE_DARK} />
-              Join our Discord
-            </a>
+            {[['/methodology', 'How it teaches'], ['/privacy', 'Privacy'], ['/terms', 'Terms'], ['/support', 'Support']].map(([href, label]) => (
+              <a key={href} href={href} style={{ color: 'var(--text-muted)', fontWeight: 600, textDecoration: 'none' }}>
+                {label}
+              </a>
+            ))}
           </div>
-        )}
+        </div>
       </div>
     </div>
   )
