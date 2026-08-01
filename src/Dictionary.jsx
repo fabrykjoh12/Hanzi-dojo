@@ -16,6 +16,7 @@ import {
 } from './dictionaryFilters'
 import { buildVocabIndex, searchVocabIndex } from './vocabIndex'
 import { dictSearchReducer, dictSearchView, initialDictSearch } from './dictSearchState'
+import { splitExplicit, hiddenLabel } from './dictExplicit'
 import { searchDict, getDictEntryById, getDictEntryByWord, addDictEntryToDeck, isHeadwordLookup } from './dictSearch'
 import DictEntryView from './DictEntryView'
 import { sheetOverlayStyle, sheetShellStyle, sheetHeaderStyle, sheetHandleStyle, sheetBodyStyle } from './sheetLayout'
@@ -64,6 +65,10 @@ export default function Dictionary({ session, profile, track, onBack }) {
   const [levelFilter, setLevelFilter] = useState('all')
 
   const [scope, setScope] = useState(track.language === 'chinese' ? 'full' : 'syllabus')          // 'full' | 'syllabus'
+  // Explicit (vulgar/offensive) dictionary entries are hidden by default and
+  // revealed per query — keyed to the term so a NEW search always starts
+  // hidden again. See dictExplicit.js.
+  const [explicitRevealedFor, setExplicitRevealedFor] = useState('')
   const [dict, dispatchDict] = useReducer(dictSearchReducer, initialDictSearch)
   const [retryTick, setRetryTick] = useState(0)
   const [entryStack, setEntryStack] = useState([])    // drill-down stack of dict entries
@@ -165,6 +170,10 @@ export default function Dictionary({ session, profile, track, onBack }) {
   const showRecent = !term && !filtersOn && recentRows.length > 0
 
   const view = dictSearchView(dict, query, online)
+  // Explicit entries are split out of the full-dictionary results and hidden
+  // until deliberately revealed for this exact query.
+  const dictResults = useMemo(() => splitExplicit(view.rows), [view.rows])
+  const explicitRevealed = explicitRevealedFor !== '' && explicitRevealedFor === view.term
 
   const openWord = (v) => {
     setSelected({ word: v.word, vocab: v, status: cardStatus(cardByVocab[v.id]) })
@@ -305,7 +314,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
     )
   }
 
-  const renderDictRow = (e) => (
+  const renderDictRow = (e, explicit) => (
     <button key={e.id} onClick={() => openDict(e)} style={rowStyle}>
       <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', fontFamily: langFont + ', Inter, sans-serif', flexShrink: 0 }}>{e.simplified}</span>
       <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
@@ -314,6 +323,13 @@ export default function Dictionary({ session, profile, track, onBack }) {
           {Array.isArray(e.definitions) ? e.definitions.join('; ') : ''}
         </span>
       </span>
+      {explicit === true && (
+        <span style={{
+          fontSize: '10px', fontWeight: 800, color: 'var(--text-faint)', flexShrink: 0,
+          border: '1px solid var(--border)', borderRadius: '999px', padding: '2px 8px',
+          textTransform: 'uppercase', letterSpacing: '0.05em',
+        }}>Explicit</span>
+      )}
     </button>
   )
 
@@ -474,7 +490,21 @@ export default function Dictionary({ session, profile, track, onBack }) {
                 transition: 'opacity 120ms ease',
               }}
             >
-              {view.rows.map(renderDictRow)}
+              {dictResults.shown.map(e => renderDictRow(e))}
+              {explicitRevealed && dictResults.hidden.map(e => renderDictRow(e, true))}
+              {dictResults.hidden.length > 0 && !explicitRevealed && (
+                <button
+                  onClick={() => setExplicitRevealedFor(view.term)}
+                  style={{
+                    minHeight: TAP + 'px', borderRadius: '14px', cursor: 'pointer',
+                    border: '1px dashed var(--border)', background: 'transparent',
+                    color: 'var(--text-muted)', fontSize: '13px', fontWeight: 600,
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  {hiddenLabel(dictResults.hidden.length)} — show
+                </button>
+              )}
             </div>
           )}
         </>
