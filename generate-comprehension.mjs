@@ -28,6 +28,13 @@ const onlyJapanese = args.includes('--japanese')
 const doReplace = args.includes('--replace')
 const doPrune = args.includes('--prune')   // delete existing trivial questions (whole story), no LLM
 const dryRun = args.includes('--dry-run')
+function option(name, fallback) {
+  const i = args.indexOf('--' + name)
+  return i >= 0 && args[i + 1] ? args[i + 1] : fallback
+}
+const limit = Math.max(1, Number(option('limit', Number.MAX_SAFE_INTEGER)))
+const offset = Math.max(0, Number(option('offset', 0)))
+const delayMs = Math.max(0, Number(option('delay-ms', 4000)))
 
 const MODEL = LLM_MODEL
 const PER_STORY = 3
@@ -144,10 +151,13 @@ async function processLanguage(language, system) {
   const { data: existing } = await supabase.from('story_questions').select('story_id')
   const haveQuestions = new Set((existing || []).map(r => r.story_id))
 
-  let done = 0, skipped = 0, failed = 0
+  let done = 0, skipped = 0, failed = 0, pendingSeen = 0
 
   for (const story of stories) {
     if (haveQuestions.has(story.id) && !doReplace) { skipped += 1; continue }
+    if (pendingSeen < offset) { pendingSeen += 1; continue }
+    if (done + failed >= limit) break
+    pendingSeen += 1
     process.stdout.write(`"${story.title}"... `)
 
     try {
@@ -158,17 +168,15 @@ async function processLanguage(language, system) {
         console.log('(preview)')
         questions.forEach((q, i) => console.log(`   Q${i + 1}: ${q.question}  [${q.options[q.correct_index]}]`))
       } else {
-        if (doReplace) await supabase.from('story_questions').delete().eq('story_id', story.id)
-        const rows = questions.map((q, i) => ({
-          story_id: story.id, question_number: i + 1,
-          question: q.question, options: q.options, correct_index: q.correct_index,
-        }))
-        const { error: insErr } = await supabase.from('story_questions').insert(rows)
+        const { error: insErr } = await supabase.rpc('replace_story_questions', {
+          p_story_id: story.id,
+          p_questions: questions,
+        })
         if (insErr) throw new Error(insErr.message)
         console.log('✓')
       }
       done += 1
-      await sleep(4000)
+      await sleep(delayMs)
     } catch (err) {
       failed += 1
       console.log(`✗ ${err.message}`)

@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { getAudioUrl } from './utils'
-import { formatEmoji } from './storyFormat'
+import StoryFormatIcon from './StoryFormatIcon'
 
 // A soft, on-brand gradient standing in for a missing illustration — never the
 // browser's broken-image glyph.
@@ -40,8 +40,8 @@ export default function StoryCover({ story, path, accent, alt = '', radius = 14,
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
         />
       ) : (
-        <span aria-hidden="true" style={{ fontSize: 'clamp(24px, 34%, 44px)', lineHeight: 1, opacity: 0.85, filter: 'saturate(0.9)' }}>
-          {formatEmoji(story)}
+        <span aria-hidden="true" style={{ display: 'grid', placeItems: 'center', opacity: 0.68, color: accent || 'var(--text-muted)' }}>
+          <StoryFormatIcon story={story} size={40} />
         </span>
       )}
       {children}

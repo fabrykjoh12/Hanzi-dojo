@@ -19,6 +19,7 @@
 //   - english_content present but its non-empty line count differs from the
 //     Chinese content's (per-line reveal shows the WRONG translation)
 //   - missing / blank english_summary (the shelf preview)
+//   - missing cover art or a three-question ending check
 // WARNINGS (exit 0 unless --strict — real, but may be deliberate):
 //   - chapter-number gaps among the published chapters of a series, but ONLY
 //     when the missing chapter actually exists UNPUBLISHED at the same level
@@ -27,8 +28,7 @@
 //     multi-level serials, whose chapters deliberately continue numbering
 //     across levels (1–6 at HSK 1, 7–12 at HSK 2, 13–18 at HSK 3) — those are
 //     not flagged.
-//   - no english_content at all (some older chat/scene stories)
-//   - has_audio = false
+//   - no playable legacy audio and no complete generated utterance set
 
 import { createClient } from '@supabase/supabase-js'
 
@@ -42,6 +42,19 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 const strict = process.argv.includes('--strict')
 
 const lines = (s) => String(s || '').split('\n').filter(l => l.trim() !== '')
+
+async function fetchAllPages(build, label) {
+  const rows = []
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await build().range(from, from + 999)
+    if (error) {
+      console.error(label + ' query failed:', error.message)
+      process.exit(1)
+    }
+    rows.push(...(data || []))
+    if (!data || data.length < 1000) return rows
+  }
+}
 
 // Leading chapter number of a title ("3. 商店寻宝记" → 3), mirroring the ASCII
 // half of src/storyArcs.js (the DB titles for serials all use "N. " form).
@@ -60,7 +73,7 @@ function chapterNumber(title) {
 
 const { data: stories, error } = await supabase
   .from('stories')
-  .select('id, title, level, tier, story_number, presentation, content, english_content, english_summary, has_audio')
+  .select('id, title, level, tier, story_number, presentation, content, english_content, english_summary, image_path, has_audio')
   .eq('language', 'chinese')
   .eq('is_published', true)
   .order('level')
@@ -91,6 +104,39 @@ const heldChapters = new Set(
     .map(r => r.level + '#' + r.n)
 )
 
+// `has_audio` describes the older line-file convention. Generated narration
+// is the current source of truth, so validate the actual ready assets as well.
+const publishedIds = new Set((stories || []).map(story => story.id))
+const utterances = (await fetchAllPages(
+  () => supabase.from('story_utterances').select('id, story_id'),
+  'Story utterances'
+)).filter(row => publishedIds.has(row.story_id))
+const readyAudio = await fetchAllPages(
+  () => supabase
+    .from('tts_audio')
+    .select('source_id')
+    .eq('source_type', 'story_utterance')
+    .eq('variant', 'utterance')
+    .eq('status', 'ready')
+    .not('storage_path', 'is', null),
+  'Ready story audio'
+)
+const readyIds = new Set(readyAudio.map(row => row.source_id))
+const utterancesByStory = Map.groupBy(utterances, row => row.story_id)
+const generatedNarration = new Set(
+  Array.from(utterancesByStory.entries())
+    .filter(([, rows]) => rows.length > 0 && rows.every(row => readyIds.has(row.id)))
+    .map(([storyId]) => storyId)
+)
+const questions = await fetchAllPages(
+  () => supabase.from('story_questions').select('story_id').in('story_id', Array.from(publishedIds)),
+  'Story questions'
+)
+const questionsByStory = new Map()
+for (const question of questions) {
+  questionsByStory.set(question.story_id, (questionsByStory.get(question.story_id) || 0) + 1)
+}
+
 const errors = []
 const warnings = []
 const where = (s) => `[L${s.level} #${s.story_number}] ${s.title} (${s.id})`
@@ -101,14 +147,18 @@ for (const s of stories) {
   if (s.tier == null) errors.push(`${where(s)}: null tier`)
   if (s.story_number == null) errors.push(`${where(s)}: null story_number`)
   if (!String(s.english_summary || '').trim()) errors.push(`${where(s)}: missing english_summary (shelf preview)`)
+  if (!String(s.image_path || '').trim()) errors.push(`${where(s)}: missing cover art`)
+  if (questionsByStory.get(s.id) !== 3) errors.push(`${where(s)}: expected exactly 3 ending questions`)
 
   const zh = lines(s.content).length
   const en = lines(s.english_content).length
   if (s.presentation !== 'manhua') {
-    if (en === 0) warnings.push(`${where(s)}: no english_content`)
+    if (en === 0) errors.push(`${where(s)}: no english_content`)
     else if (en !== zh) errors.push(`${where(s)}: line mismatch — ${zh} Chinese vs ${en} English`)
   }
-  if (s.has_audio === false) warnings.push(`${where(s)}: has_audio = false`)
+  if (!s.has_audio && !generatedNarration.has(s.id)) {
+    warnings.push(`${where(s)}: no complete playable narration`)
+  }
 }
 
 // Duplicate (level, story_number) among published rows.

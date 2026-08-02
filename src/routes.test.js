@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { pathToView, viewToPath, isKnownView, KNOWN_VIEWS, readStoryId, isAssessmentPath, trustPageKey, TRUST_PAGES } from './routes'
+import {
+  pathToView, viewToPath, isKnownView, KNOWN_VIEWS, readStoryId, isAssessmentPath,
+  trustPageKey, TRUST_PAGES, storyRoute, storyPath, seriesPath,
+} from './routes'
 
 describe('pathToView', () => {
   it('maps root and empty to home', () => {
@@ -69,6 +72,20 @@ describe('readStoryId', () => {
   it('returns null for unrelated paths', () => {
     expect(readStoryId('/stories')).toBe(null)
     expect(readStoryId('/')).toBe(null)
+  })
+})
+
+describe('signed-in story routes', () => {
+  it('recognizes browse, story and series states', () => {
+    expect(storyRoute('/stories')).toEqual({ kind: 'browse' })
+    expect(storyRoute('/stories/abc-123')).toEqual({ kind: 'story', id: 'abc-123' })
+    expect(storyRoute('/stories/series/Ink%20and%20Rain')).toEqual({ kind: 'series', key: 'Ink and Rain' })
+    expect(storyRoute('/study')).toBeNull()
+  })
+
+  it('builds encoded shareable paths', () => {
+    expect(storyPath('abc 123')).toBe('/stories/abc%20123')
+    expect(seriesPath('Ink & Rain')).toBe('/stories/series/Ink%20%26%20Rain')
   })
 })
 

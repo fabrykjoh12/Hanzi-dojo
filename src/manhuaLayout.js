@@ -175,13 +175,41 @@ export function buildEpisode(panelsJson, beatCount) {
     // sequence of readable sections rather than one undifferentiated wall.
     : Array.from({ length: beatCount }, (unused, i) => ({ id: 'b' + i, bubbles: [{ beat: i }] }))
 
+  // Choice metadata existed briefly in published episodes. Pick the first
+  // authored branch so stale cached rows remain readable without a gate.
+  const legacyChoices = new Map()
+  source.forEach((raw, i) => {
+    const p = raw && typeof raw === 'object' ? raw : {}
+    const id = typeof p.id === 'string' && p.id ? p.id : 'p' + (i + 1)
+    const choice = normalizeChoice(p.choice, beatCount)
+    if (choice) legacyChoices.set(id, choice)
+  })
+
   const panels = source.map((raw, i) => {
     const p = raw && typeof raw === 'object' ? raw : {}
+    const id = typeof p.id === 'string' && p.id ? p.id : 'p' + (i + 1)
+    const legacyChoice = legacyChoices.get(id)
     const bubbles = (Array.isArray(p.bubbles) ? p.bubbles : [])
       .map(b => normalizeBubble(b, beatCount))
       .filter(Boolean)
+      .filter(b => !b.when || !legacyChoices.has(b.when.choice) || b.when.option === 0)
+      .map(b => ({ ...b, when: null }))
+    if (legacyChoice) {
+      const canonical = legacyChoice.options[0]
+      if (!bubbles.some(b => b.beat === canonical.beat)) {
+        bubbles.push({
+          beat: canonical.beat,
+          kind: 'reply',
+          side: 'right',
+          top: 8,
+          width: 68,
+          tail: null,
+          when: null,
+        })
+      }
+    }
     return {
-      id: typeof p.id === 'string' && p.id ? p.id : 'p' + (i + 1),
+      id,
       index: i,
       art: typeof p.art === 'string' && p.art ? p.art : null,
       ratio: normalizeRatio(p.ratio),
@@ -191,7 +219,7 @@ export function buildEpisode(panelsJson, beatCount) {
       // place.
       accent: p.accent === true,
       bubbles,
-      choice: normalizeChoice(p.choice, beatCount),
+      choice: null,
     }
   })
 
@@ -211,58 +239,43 @@ export function panelArtSrc(meta, panel) {
 
 // The bubbles actually on this panel for the branch the learner is in.
 // `choices` maps panelId → the option index picked there.
-export function visibleBubbles(panel, choices) {
+export function visibleBubbles(panel) {
   if (!panel || !panel.bubbles) return []
-  const picked = choices || {}
-  return panel.bubbles.filter(b => {
-    if (!b.when) return true
-    const answer = picked[b.when.choice]
-    return answer === b.when.option
-  })
+  return panel.bubbles
 }
 
 // Is this panel waiting on the learner? A choice panel gates everything after
 // it until an option is picked — which is also what stops a fast scroll from
 // walking to the end of the episode and marking it read.
-export function isGate(panel, choices) {
-  if (!panel || !panel.choice) return false
-  const picked = choices || {}
-  return !Number.isInteger(picked[panel.id])
+export function isGate() {
+  return false
 }
 
 // The last panel index the learner is allowed to see right now: everything up
 // to and including the first unanswered choice.
-export function revealLimit(panels, choices) {
+export function revealLimit(panels) {
   const list = Array.isArray(panels) ? panels : []
-  for (let i = 0; i < list.length; i += 1) {
-    if (isGate(list[i], choices)) return i
-  }
   return Math.max(0, list.length - 1)
 }
 
 // Every beat visible on a panel in the learner's branch, in reading order —
 // including the reply they chose, which is a real line of the story and belongs
 // in the audio order and the reviewed-word count like any other.
-export function panelBeats(panel, choices) {
+export function panelBeats(panel) {
   if (!panel) return []
-  const out = visibleBubbles(panel, choices).map(b => b.beat)
-  const picked = (choices || {})[panel.id]
-  if (panel.choice && Number.isInteger(picked) && panel.choice.options[picked]) {
-    out.push(panel.choice.options[picked].beat)
-  }
-  return out
+  return visibleBubbles(panel).map(b => b.beat)
 }
 
 // Every beat the learner has actually read, across the episode up to and
 // including `throughIndex`. Used by the completion screen so it counts the
 // branch that was read, not both branches.
-export function readBeats(panels, choices, throughIndex) {
+export function readBeats(panels, throughIndex) {
   const list = Array.isArray(panels) ? panels : []
   const end = Number.isInteger(throughIndex) ? Math.min(throughIndex, list.length - 1) : list.length - 1
   const out = []
   const seen = new Set()
   for (let i = 0; i <= end; i += 1) {
-    for (const beat of panelBeats(list[i], choices)) {
+    for (const beat of panelBeats(list[i])) {
       if (seen.has(beat)) continue
       seen.add(beat)
       out.push(beat)
@@ -346,11 +359,11 @@ export function episodeProgress(activeIndex, total) {
 // The episode is only complete when the learner has reached the last panel AND
 // answered every choice on the way. Scrolling alone is not completion — the
 // gates are what make "I read it" mean something.
-export function isEpisodeComplete(panels, choices, throughIndex) {
+export function isEpisodeComplete(panels, throughIndex) {
   const list = Array.isArray(panels) ? panels : []
   if (list.length === 0) return false
   if (!Number.isInteger(throughIndex) || throughIndex < list.length - 1) return false
-  return list.every(p => !isGate(p, choices))
+  return true
 }
 
 // ── Bubble geometry ────────────────────────────────────────────────────────

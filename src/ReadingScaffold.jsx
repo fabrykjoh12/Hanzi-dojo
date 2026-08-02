@@ -4,6 +4,7 @@ import { readingFontOptions, readingFontHint } from './readingFonts'
 import { SPEED_RATES } from './readAlong'
 import { useIsMobile } from './useIsMobile'
 import { Sliders, X, Eye, EyeOff } from 'lucide-react'
+import { trapDialogFocus } from './dialogFocus'
 
 // Per-word reading scaffolding, shared by the paced / chat / scene readers.
 // The DECISION of whether a word shows its reading lives in storyReading.js
@@ -68,6 +69,7 @@ export function RevealEnglishButton({ revealed, onToggle, color = 'var(--text-mu
       title={revealed ? 'Hide translation' : 'Show translation'}
       style={{
         background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
+        minWidth: '44px', minHeight: '44px',
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         ...style,
       }}
@@ -130,6 +132,7 @@ export function ReadingSettings({ mode, setMode, language, accent, onOpenChange,
       role="dialog"
       aria-label="Reader settings"
       onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => trapDialogFocus(e, panelRef.current)}
       style={isMobile ? sheetStyle : (placement === 'bottom' ? popoverBelowStyle : popoverStyle)}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
@@ -145,7 +148,7 @@ export function ReadingSettings({ mode, setMode, language, accent, onOpenChange,
               onClick={() => setMode(value)}
               aria-pressed={on}
               style={{
-                flex: '1 1 auto', minWidth: '68px', fontSize: '12px', fontWeight: 700, padding: '8px 10px',
+                flex: '1 1 auto', minWidth: '68px', minHeight: '44px', fontSize: '12px', fontWeight: 700, padding: '8px 10px',
                 borderRadius: '10px', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                 border: '1px solid ' + (on ? accent + '73' : 'var(--border)'),
                 background: on ? accent + '14' : 'var(--surface)',
@@ -170,7 +173,7 @@ export function ReadingSettings({ mode, setMode, language, accent, onOpenChange,
                   onClick={() => setFont(opt.value)}
                   aria-pressed={on}
                   style={{
-                    flex: '1 1 auto', minWidth: '68px', fontSize: '12px', fontWeight: 700, padding: '8px 10px',
+                    flex: '1 1 auto', minWidth: '68px', minHeight: '44px', fontSize: '12px', fontWeight: 700, padding: '8px 10px',
                     borderRadius: '10px', cursor: 'pointer',
                     // Each option is set in its own face, so the shapes are
                     // visible before the choice is made.
@@ -205,7 +208,7 @@ export function ReadingSettings({ mode, setMode, language, accent, onOpenChange,
                   onClick={() => setRate(value)}
                   aria-pressed={on}
                   style={{
-                    flex: '1 1 auto', fontSize: '12px', fontWeight: 700, padding: '8px 10px',
+                    flex: '1 1 auto', minHeight: '44px', fontSize: '12px', fontWeight: 700, padding: '8px 10px',
                     borderRadius: '10px', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                     border: '1px solid ' + (on ? accent + '73' : 'var(--border)'),
                     background: on ? accent + '14' : 'var(--surface)',
@@ -230,7 +233,7 @@ export function ReadingSettings({ mode, setMode, language, accent, onOpenChange,
         aria-label="Reader settings"
         style={{
           display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700,
-          padding: compact ? '7px' : '7px 13px', borderRadius: '999px', cursor: 'pointer',
+          padding: compact ? '7px' : '7px 13px', minWidth: '44px', minHeight: '44px', borderRadius: '999px', cursor: 'pointer',
           fontFamily: 'Inter, sans-serif',
           border: '1px solid ' + (open ? accent + '73' : (tint ? tint.border : 'var(--border)')),
           background: open ? accent + '14' : (tint ? tint.bg : 'var(--surface)'),
@@ -278,5 +281,5 @@ const scrimStyle = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.28)'
 
 const closeBtn = {
   background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
-  display: 'flex', alignItems: 'center',
+  width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center',
 }

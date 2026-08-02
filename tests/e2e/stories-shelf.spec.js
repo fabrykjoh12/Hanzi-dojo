@@ -111,8 +111,20 @@ test.describe('Story library — flat shelf', () => {
     await page.goto('/stories');
     // st5 is HSK 1 tier 3 — locked at HSK 2’s thresholds, but the level is
     // passed, so it reads. One tap, straight to the reader.
+    await page.getByRole('region', { name: 'HSK 1' }).getByRole('button', { name: 'HSK 1', exact: true }).click();
     await page.getByRole('region').getByRole('button', { name: /老朋友/ }).click();
     await expect(page.getByRole('button', { name: /Start reading/i })).toBeVisible();
+  });
+
+  test('a story URL survives refresh and browser Back returns to the shelf', async ({ page }) => {
+    await page.goto('/stories');
+    await page.getByRole('region').getByRole('button', { name: /公园里的下午/ }).click();
+    await expect(page).toHaveURL('/stories/st1');
+    await page.reload();
+    await expect(page.getByRole('button', { name: /Start reading/i })).toBeVisible();
+    await page.goBack();
+    await expect(page).toHaveURL('/stories');
+    await expect(page.getByRole('heading', { name: 'Stories', exact: true })).toBeVisible();
   });
 
   test('the next level appears as a locked teaser at the end', async ({ page }) => {
@@ -134,6 +146,7 @@ test.describe('Story library — flat shelf', () => {
   test('current level has no stories of its own — a lower level still shows', async ({ page }) => {
     await serveStories(page, [LEVEL_1_STORY]);
     await page.goto('/stories');
+    await page.getByRole('region', { name: 'HSK 1' }).getByRole('button', { name: 'HSK 1', exact: true }).click();
     await expect(page.getByRole('region').getByRole('button', { name: /老朋友/ })).toBeVisible();
   });
 
@@ -150,6 +163,8 @@ test.describe('Story library — flat shelf', () => {
     await expect(page.getByText(/hsk · HSK 3/i)).toBeVisible();
     // ONE page, three sections — no tab switching.
     await expect(page.getByRole('region').getByRole('button', { name: /新的一年/ })).toBeVisible();
+    await page.getByRole('region', { name: 'HSK 2' }).getByRole('button', { name: 'HSK 2', exact: true }).click();
+    await page.getByRole('region', { name: 'HSK 1' }).getByRole('button', { name: 'HSK 1', exact: true }).click();
     await expect(page.getByRole('region').getByRole('button', { name: /公园里的下午/ })).toBeVisible();
     await expect(page.getByRole('region').getByRole('button', { name: /老朋友/ })).toBeVisible();
     const headings = await page.getByRole('heading', { level: 2 }).allTextContents();

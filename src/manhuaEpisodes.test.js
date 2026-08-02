@@ -283,8 +283,8 @@ describe('manhua episodes', () => {
       })
 
       it('is completable by reaching the final artwork', () => {
-        expect(revealLimit(built.panels, {})).toBe(built.panels.length - 1)
-        expect(isEpisodeComplete(built.panels, {}, built.panels.length - 1)).toBe(true)
+        expect(revealLimit(built.panels)).toBe(built.panels.length - 1)
+        expect(isEpisodeComplete(built.panels, built.panels.length - 1)).toBe(true)
       })
 
       // ── Vocabulary ──────────────────────────────────────────────────────

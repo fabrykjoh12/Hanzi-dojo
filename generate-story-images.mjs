@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'node:fs'
+import { extname, resolve } from 'node:path'
 
 // Attach illustrated cover art to stories (product request: make the library
 // feel alive and show what each story is about). Because image generation runs
@@ -77,10 +78,10 @@ async function applyManifest(file) {
   console.log(`Applying ${manifest.length} cover(s)...\n`)
   let ok = 0, failed = 0
   for (const entry of manifest) {
-    const { language: l, system: s, level: lv, story_number: n, url } = entry
+    const { language: l, system: s, level: lv, story_number: n, url, file: localFile } = entry
     const label = `${l}/${s}/${lv}/#${n}`
-    if (!l || !s || lv == null || n == null || !url) {
-      console.log(`✗ ${label}: incomplete entry (need language, system, level, story_number, url)`)
+    if (!l || !s || lv == null || n == null || (!url && !localFile)) {
+      console.log(`✗ ${label}: incomplete entry (need language, system, level, story_number, and url or file)`)
       failed += 1
       continue
     }
@@ -92,15 +93,22 @@ async function applyManifest(file) {
       if (!rows || rows.length === 0) throw new Error('no matching story row')
       const storyId = rows[0].id
 
-      const res = await fetch(url)
-      if (!res.ok) throw new Error('download ' + res.status)
-      const buf = Buffer.from(await res.arrayBuffer())
+      let buf
+      if (localFile) {
+        buf = readFileSync(resolve(process.cwd(), localFile))
+      } else {
+        const res = await fetch(url)
+        if (!res.ok) throw new Error('download ' + res.status)
+        buf = Buffer.from(await res.arrayBuffer())
+      }
 
       // Keep the source format: covers may be webp (Higgsfield) or png/jpg
       // (repo-authored art) — serving a png with an image/webp content type
       // breaks strict decoders.
-      const extMatch = url.toLowerCase().match(/\.(webp|png|jpe?g)(\?|$)/)
-      const ext = extMatch ? (extMatch[1] === 'jpeg' ? 'jpg' : extMatch[1]) : 'webp'
+      const sourceExtension = localFile ? extname(localFile).slice(1) : ''
+      const extMatch = url?.toLowerCase().match(/\.(webp|png|jpe?g)(\?|$)/)
+      const detectedExtension = sourceExtension || extMatch?.[1] || 'webp'
+      const ext = detectedExtension === 'jpeg' ? 'jpg' : detectedExtension
       const contentType = ext === 'png' ? 'image/png' : ext === 'jpg' ? 'image/jpeg' : 'image/webp'
       const path = `stories/${storyId}/cover.${ext}`
       const { error: upErr } = await supabase.storage
@@ -110,6 +118,12 @@ async function applyManifest(file) {
 
       const { error: setErr } = await supabase.from('stories').update({ image_path: path }).eq('id', storyId)
       if (setErr) throw new Error(setErr.message)
+
+      const obsoletePaths = ['webp', 'png', 'jpg']
+        .filter(candidate => candidate !== ext)
+        .map(candidate => `stories/${storyId}/cover.${candidate}`)
+      const { error: cleanupErr } = await supabase.storage.from('audio').remove(obsoletePaths)
+      if (cleanupErr) throw new Error('cover cleanup: ' + cleanupErr.message)
 
       console.log(`✓ ${label} → ${path} (${Math.round(buf.length / 1024)} KB)`)
       ok += 1
