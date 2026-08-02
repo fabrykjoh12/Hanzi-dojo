@@ -426,7 +426,12 @@ export function bubbleLayout(bubble, opts) {
   // three balanced rows, up to the authored/capped maximum.
   const chars = Math.max(1, o.textLength || 1)
   const targetCharsPerLine = chars <= 7 ? chars : Math.ceil(chars / Math.min(3, Math.ceil(chars / 7)))
-  const idealPx = Math.max(150, targetCharsPerLine * HANZI_ADVANCE + BUBBLE_ACTIONS_WIDTH + 34)
+  // Leave one character of compositional breathing room. The percentage is
+  // applied inside the panel's gutters (slightly narrower than columnWidth),
+  // and the rendered balloon uses 40px of horizontal ink clearance. Without
+  // this allowance a planned four-character row became only three characters
+  // wide in the browser and produced tall, skinny balloons.
+  const idealPx = Math.max(150, (targetCharsPerLine + 1) * HANZI_ADVANCE + BUBBLE_ACTIONS_WIDTH + 40)
   const width = Math.min(authoredWidth, Math.max(34, idealPx / columnWidth * 100))
   const widthPx = columnWidth * (width / 100)
   const height = estimateBubbleHeight(o.textLength, widthPx, o)

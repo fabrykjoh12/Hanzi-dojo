@@ -13,6 +13,11 @@ export const INKBOUND_MANIFEST = JSON.parse(readFileSync(
   'utf8',
 ));
 
+export const INKBOUND_HSK3_MANIFEST = JSON.parse(readFileSync(
+  new URL('../../data/manhua/inkbound-hsk3-ep03.json', import.meta.url),
+  'utf8',
+));
+
 export const TRAIN_MANIFEST = JSON.parse(readFileSync(
   new URL('../../data/manhua/train-hsk2-ep01.json', import.meta.url),
   'utf8',
