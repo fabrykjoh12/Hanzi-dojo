@@ -1,15 +1,22 @@
 name: CI
 
-# The gate. Lint, unit tests and build run on every push and every pull request.
+# The gate. Lint, unit tests and build run on every pull request and on every
+# push to main.
 #
 # Before this existed the only PR check was Playwright (e2e.yml) — so the ~1,200
 # vitest specs, the ESLint baseline and the build itself never blocked a merge,
 # and since most work went straight to `main` (which auto-deploys to Vercel), a
 # red suite could reach real users. These three commands are the same ones
 # `/ship` runs locally; keep the two in step.
+#
+# Push is limited to main (matching e2e.yml): a branch with a PR used to run
+# the same job twice per commit — once for the push, once for the PR event —
+# which doubled the wait to merge for zero extra signal. A branch pushed
+# WITHOUT a PR gets no CI now; open the PR and it runs.
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 # A newer push to the same branch supersedes an in-flight run. Never cancel on
