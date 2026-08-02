@@ -1,11 +1,9 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 
-// The Stories library is ONE flat page of level sections (no tier tabs): the
-// learner's current level first, then earlier levels, each a grid with one
-// card per series / standalone story sorted most-readable first, practice
-// formats in their own group, and the NEXT level as a locked teaser at the
-// end. Tier locks render inline on cards ("Learn N more words"), never as a
-// separate wall.
+// The Stories library follows a streaming-shelf rhythm: one featured story,
+// then horizontal rows for top picks, earlier levels, practice, and the next
+// locked level. One card represents a series or standalone story, with the
+// useful "% known" signal preserved and tier locks kept inline.
 //
 // Fixture: track.current_level = 2; level-2 tier-1 stories (st1 + practice),
 // level-1 stories (st5 tier 3, st6 tier 1, manhua), and one HSK 3 manhua
@@ -72,19 +70,16 @@ const LOCKED_TIER_STORY = {
   content: ['以后再看。'].join('\n'),
 };
 
-test.describe('Story library — flat shelf', () => {
-  test('level sections replace the tier tabs, current level first', async ({ page }) => {
+test.describe('Story library — cinematic shelves', () => {
+  test.describe.configure({ mode: 'serial' });
+  test('leads with one feature and calm horizontal rows', async ({ page }) => {
     await page.goto('/stories');
-    // No tab bar anywhere.
-    await expect(page.getByRole('tab', { name: /First Steps/ })).toHaveCount(0);
-    // Sections: HSK 2 (current, marked) and HSK 1, in that order, each with an
-    // honest read count.
-    await expect(page.getByRole('heading', { name: 'HSK 2', exact: true })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'HSK 1', exact: true })).toBeVisible();
-    await expect(page.getByText('Your level')).toBeVisible();
-    await expect(page.getByText(/\d+ of \d+ read/).first()).toBeVisible();
-    const headings = await page.getByRole('heading', { level: 2 }).allTextContents();
-    expect(headings.indexOf('HSK 2')).toBeLessThan(headings.indexOf('HSK 1'));
+    await expect(page.getByRole('heading', { name: 'Stories', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Featured for you/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Top picks for you' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'More stories you can read' })).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Read status' })).toHaveCount(0);
+    await expect(page.getByRole('group', { name: 'Format' })).toHaveCount(0);
   });
 
   test('cards carry a "% known" chip (the sort the shelf is built on)', async ({ page }) => {
@@ -94,8 +89,8 @@ test.describe('Story library — flat shelf', () => {
 
   test('practice formats sit in their own section', async ({ page }) => {
     await page.goto('/stories');
-    await expect(page.getByRole('heading', { name: 'Practice Scenarios' }).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /Practice 朋友的问题/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Practice through stories' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /朋友的问题.*Practice/ })).toBeVisible();
   });
 
   test('a tier the learner has not reached locks INLINE on the card', async ({ page }) => {
@@ -111,14 +106,13 @@ test.describe('Story library — flat shelf', () => {
     await page.goto('/stories');
     // st5 is HSK 1 tier 3 — locked at HSK 2’s thresholds, but the level is
     // passed, so it reads. One tap, straight to the reader.
-    await page.getByRole('region', { name: 'HSK 1' }).getByRole('button', { name: 'HSK 1', exact: true }).click();
-    await page.getByRole('region').getByRole('button', { name: /老朋友/ }).click();
+    await page.getByRole('button', { name: /老朋友/ }).click();
     await expect(page.getByRole('button', { name: /Start reading/i })).toBeVisible();
   });
 
   test('a story URL survives refresh and browser Back returns to the shelf', async ({ page }) => {
     await page.goto('/stories');
-    await page.getByRole('region').getByRole('button', { name: /公园里的下午/ }).click();
+    await page.getByRole('button', { name: /公园里的下午/ }).click();
     await expect(page).toHaveURL('/stories/st1');
     await page.reload();
     await expect(page.getByRole('button', { name: /Start reading/i })).toBeVisible();
@@ -130,24 +124,22 @@ test.describe('Story library — flat shelf', () => {
   test('the next level appears as a locked teaser at the end', async ({ page }) => {
     await page.goto('/stories');
     // The fixture has an HSK 3 manhua; the learner is at HSK 2.
-    await expect(page.getByRole('heading', { name: 'HSK 3', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Coming up in HSK 3' })).toBeVisible();
     await expect(page.getByText(/Unlocks when you pass the HSK 2 test/)).toBeVisible();
     const headings = await page.getByRole('heading', { level: 2 }).allTextContents();
-    expect(headings.indexOf('HSK 3')).toBeGreaterThan(headings.indexOf('HSK 1'));
+    expect(headings.indexOf('Coming up in HSK 3')).toBeGreaterThan(headings.indexOf('Top picks for you'));
   });
 
-  test('the filter row narrows by format', async ({ page }) => {
+  test('desktop shelves have accessible paging controls', async ({ page }) => {
     await page.goto('/stories');
-    await page.getByRole('group', { name: 'Format' }).getByRole('button', { name: 'Practice' }).click();
-    await expect(page.getByRole('button', { name: /Practice 朋友的问题/ })).toBeVisible();
-    await expect(page.getByRole('region').getByRole('button', { name: /公园里的下午/ })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Scroll Top picks for you right' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Scroll Top picks for you left' })).toBeVisible();
   });
 
   test('current level has no stories of its own — a lower level still shows', async ({ page }) => {
     await serveStories(page, [LEVEL_1_STORY]);
     await page.goto('/stories');
-    await page.getByRole('region', { name: 'HSK 1' }).getByRole('button', { name: 'HSK 1', exact: true }).click();
-    await expect(page.getByRole('region').getByRole('button', { name: /老朋友/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: '老朋友 · HSK 1 · Story', exact: true })).toBeVisible();
   });
 
   test('no stories anywhere — a calm empty state, no broken shelf', async ({ page }) => {
@@ -161,23 +153,24 @@ test.describe('Story library — flat shelf', () => {
     await serveStories(page, [LEVEL_1_STORY, LEVEL_2_STORY, LEVEL_3_STORY]);
     await page.goto('/stories');
     await expect(page.getByText(/hsk · HSK 3/i)).toBeVisible();
-    // ONE page, three sections — no tab switching.
-    await expect(page.getByRole('region').getByRole('button', { name: /新的一年/ })).toBeVisible();
-    await page.getByRole('region', { name: 'HSK 2' }).getByRole('button', { name: 'HSK 2', exact: true }).click();
-    await page.getByRole('region', { name: 'HSK 1' }).getByRole('button', { name: 'HSK 1', exact: true }).click();
-    await expect(page.getByRole('region').getByRole('button', { name: /公园里的下午/ })).toBeVisible();
-    await expect(page.getByRole('region').getByRole('button', { name: /老朋友/ })).toBeVisible();
-    const headings = await page.getByRole('heading', { level: 2 }).allTextContents();
-    expect(headings.indexOf('HSK 3')).toBeLessThan(headings.indexOf('HSK 2'));
-    expect(headings.indexOf('HSK 2')).toBeLessThan(headings.indexOf('HSK 1'));
+    await expect(page.getByRole('button', { name: '新的一年 · HSK 3 · Story', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: /公园里的下午/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /老朋友/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Top picks for you' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'More stories you can read' })).toBeVisible();
   });
 
   test('reads on a phone-width viewport without horizontal overflow', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/stories');
-    await expect(page.getByRole('heading', { name: 'HSK 2', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Top picks for you' })).toBeVisible();
     const overflow = await page.evaluate(() =>
       document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
+    const rails = page.getByTestId('story-shelf-rail');
+    const railCount = await rails.count();
+    expect(railCount).toBeGreaterThan(0);
+    const firstRailOverflow = await rails.nth(0).evaluate(el => el.scrollWidth - el.clientWidth);
+    expect(firstRailOverflow).toBeGreaterThan(0);
   });
 });
