@@ -11,6 +11,7 @@
 import { test as base, expect } from '@playwright/test';
 import {
   INKBOUND_MANIFEST,
+  INKBOUND_HSK3_MANIFEST,
   NOODLESHOP_MANIFEST,
   TRAIN_MANIFEST,
   UPSTAIRS_MANIFEST,
@@ -114,6 +115,7 @@ const VOCAB = [
 // because level 1 is complete. It is deliberately NOT tier 1, so "First Steps"
 // stays a unique control on the screen for the existing reader specs.
 export const NOODLESHOP_STORY_ID = 'st-noodleshop-hsk1-ep01';
+export const INKBOUND_HSK3_STORY_ID = 'st-inkbound-hsk3-ep03';
 export const TRAIN_STORY_ID = 'st-train-hsk2-ep01';
 export const UPSTAIRS_STORY_ID = 'st-upstairs-hsk3-ep01';
 
@@ -177,7 +179,22 @@ const STORIES = [{
   id: UPSTAIRS_STORY_ID,
   storyNumber: 1,
   system: TRACK.system,
-})];
+}), {
+  ...storyFromManhuaManifest(INKBOUND_HSK3_MANIFEST, {
+    id: INKBOUND_HSK3_STORY_ID,
+    storyNumber: 6,
+    system: TRACK.system,
+  }),
+  // Keep this exact production episode unlocked in the level-2 E2E profile so
+  // its reported balloon composition has deterministic browser coverage.
+  level: TRACK.current_level,
+  // Keep it out of the mocked HSK 1 series card; this fixture exists only for
+  // direct reader geometry coverage and must not make shelf locators ambiguous.
+  panels: {
+    ...INKBOUND_HSK3_MANIFEST.panels,
+    meta: { ...INKBOUND_HSK3_MANIFEST.panels.meta, series: null },
+  },
+}];
 
 function card(n, o = {}) {
   const state = o.state || 'review';

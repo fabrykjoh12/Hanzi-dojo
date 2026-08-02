@@ -362,6 +362,16 @@ describe('bubbleLayout', () => {
     expect(narrow).toBeGreaterThan(wide)
   })
 
+  it('gives a short two-line exchange enough width after panel gutters', () => {
+    const layout = bubbleLayout(
+      { ...bubble, width: 60 },
+      { columnWidth: 390, ratio: 3 / 4, textLength: 8 },
+    )
+    expect(layout.mode).toBe('overlay')
+    expect(layout.width).toBeGreaterThan(52)
+    expect(layout.width).toBeLessThanOrEqual(60)
+  })
+
   it('survives being asked with nothing', () => {
     const out = bubbleLayout(null, {})
     expect(out.mode).toBe('overlay')

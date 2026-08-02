@@ -335,7 +335,10 @@ export default function ManhuaBubble({
           color: PAPER.ink,
           opacity: narration ? 0.92 : 1,
           paddingRight: hasActions ? (stackedActions ? '52px' : '88px') : 0,
-          textWrap: 'balance',
+          // `balance` can create extra rows inside an intrinsically sized CJK
+          // balloon (for example 哪个 / 字？ / 我忘 / 了。). `pretty` keeps the
+          // natural greedy measure while still avoiding a stranded final word.
+          textWrap: 'pretty',
           // Wrap between words, never inside one.
           //
           // CJK breaks between any two characters by default, which tore 林老师
