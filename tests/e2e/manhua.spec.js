@@ -61,6 +61,7 @@ test.describe('Manhua reader', () => {
     const speech = page.locator('[data-manhua-bubble-kind="speech"][data-manhua-text-layout="overlay"]').first();
     await expect(speech.locator('[data-manhua-balloon-shape="speech"]')).toHaveCount(1);
     await expect(speech.locator('[data-manhua-balloon-tail]')).toHaveCount(1);
+    await expect(speech.locator('[data-manhua-line-actions="stacked"]')).toHaveCount(1);
 
     const thought = page.locator('[data-manhua-bubble-kind="thought"][data-manhua-text-layout="overlay"]').first();
     await expect(thought.locator('[data-manhua-balloon-shape="thought"]')).toHaveCount(1);
