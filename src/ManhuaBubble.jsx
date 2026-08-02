@@ -20,6 +20,7 @@ import { Volume2 } from 'lucide-react'
 const PROPER_NOUN = '#2F9E6D'
 const NUMERAL_HANZI = new Set(['零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '百', '千', '万', '两', '几'])
 const MEASURE_WORDS = new Set(['个', '位', '本', '张', '只', '条', '件', '杯', '碗', '块', '点', '次', '天', '年', '岁'])
+const SENTENCE_END = new Set(['。', '？', '！', '?', '!'])
 
 const SR_ONLY = {
   position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px',
@@ -361,8 +362,12 @@ export default function ManhuaBubble({
           {beat.tokens.map((t, k) => (
             <span key={k}>
               {/* A legal place to wrap — but never in front of punctuation: a
-                  Chinese line may not begin with 。or ？. */}
-              {k > 0 && isWordlikeToken(t.text) && !keepWithPrevious(beat.tokens[k - 1], t) ? <wbr /> : null}
+                  Chinese line may not begin with 。or ？. A second sentence
+                  starts a fresh comic line instead of leaving its subject
+                  stranded after the previous question mark. */}
+              {k > 0 && SENTENCE_END.has(beat.tokens[k - 1].text)
+                ? <br />
+                : (k > 0 && isWordlikeToken(t.text) && !keepWithPrevious(beat.tokens[k - 1], t) ? <wbr /> : null)}
               <Word
                 token={t}
                 tokenId={beatIndex + ':' + k}
