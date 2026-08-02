@@ -18,10 +18,18 @@ import { Volume2 } from 'lucide-react'
 //                ordinary speech so a linear story never looks like a chat UI
 
 const PROPER_NOUN = '#2F9E6D'
+const NUMERAL_HANZI = new Set(['零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '百', '千', '万', '两', '几'])
+const MEASURE_WORDS = new Set(['个', '位', '本', '张', '只', '条', '件', '杯', '碗', '块', '点', '次', '天', '年', '岁'])
 
 const SR_ONLY = {
   position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px',
   overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0,
+}
+
+function keepWithPrevious(previous, current) {
+  if (!previous || !current || !MEASURE_WORDS.has(current.text)) return false
+  const chars = Array.from(previous.text || '')
+  return chars.length > 0 && chars.every(char => NUMERAL_HANZI.has(char))
 }
 
 // The balloon itself. Dialogue and thought use drawn SVG silhouettes instead of
@@ -354,7 +362,7 @@ export default function ManhuaBubble({
             <span key={k}>
               {/* A legal place to wrap — but never in front of punctuation: a
                   Chinese line may not begin with 。or ？. */}
-              {k > 0 && isWordlikeToken(t.text) ? <wbr /> : null}
+              {k > 0 && isWordlikeToken(t.text) && !keepWithPrevious(beat.tokens[k - 1], t) ? <wbr /> : null}
               <Word
                 token={t}
                 tokenId={beatIndex + ':' + k}
