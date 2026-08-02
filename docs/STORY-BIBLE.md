@@ -1,6 +1,8 @@
 # Story Bible — the Chinese track
 
-The human-readable half of the story system. The machine-readable half is
+The human-readable half of the story system. The *production* half — quality
+bar, level framework, workflows, QA rubric, catalogue — is
+[`docs/STORY-FRAMEWORK.md`](STORY-FRAMEWORK.md). The machine-readable half is
 [`data/story-canon.chinese.json`](../data/story-canon.chinese.json) — the
 checker reads that file, so **update the canon in the same change that adds a
 season**. This document explains the universe, its rules, and how a season gets
