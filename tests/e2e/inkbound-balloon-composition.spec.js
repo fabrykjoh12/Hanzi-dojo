@@ -20,4 +20,11 @@ test('keeps the reported Inkbound exchange compact at phone width', async ({ pag
     [...new Set(words.map(word => Math.round(word.getBoundingClientRect().top)))]
   ));
   expect(wordRows).toHaveLength(2);
+
+  const earlierLife = page.locator('[data-manhua-bubble-kind="speech"]')
+    .filter({ has: page.getByRole('button', { name: '以前', exact: true }) });
+  const numeralPairRows = await earlierLife.locator('[data-manhua-word]').evaluateAll(words => Object.fromEntries(
+    words.map(word => [word.getAttribute('aria-label'), Math.round(word.getBoundingClientRect().top)]),
+  ));
+  expect(numeralPairRows['一']).toBe(numeralPairRows['个']);
 });
