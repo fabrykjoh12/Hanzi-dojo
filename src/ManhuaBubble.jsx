@@ -47,7 +47,7 @@ function chromeFor(kind, accentHex) {
   }
 }
 
-const SPEECH_PATH = 'M15 5C7 8 3 20 4 47C3 73 9 89 23 95C40 101 72 98 88 91C98 86 100 69 98 43C97 19 90 8 75 4C57 0 29 1 15 5Z'
+const SPEECH_PATH = 'M49 2C77 1 94 11 98 38C102 67 90 91 63 97C35 103 9 94 3 68C-3 41 7 15 31 5C37 3 43 2 49 2Z'
 const THOUGHT_PATH = 'M15 18C7 18 3 28 8 36C1 42 3 54 11 59C5 67 9 78 19 80C20 90 32 95 41 90C49 99 62 97 68 90C78 96 90 89 89 79C98 76 101 64 94 57C101 49 97 38 89 35C93 24 82 16 74 19C69 8 55 5 47 12C38 3 25 7 22 16C20 17 17 17 15 18Z'
 
 function SpeechTail({ tail }) {
@@ -204,29 +204,39 @@ export default function ManhuaBubble({
   if (!beat) return null
   const overlay = layout.mode === 'overlay'
   const narration = kind === 'narration'
+  const hasActions = Boolean(onPlayLine) || Boolean(onToggleEnglish && english)
+  const stackedActions = hasActions && !narration
   // A narration line is a caption plate. Spoken dialogue that has to leave the
   // art remains a balloon in the gutter instead of becoming generic body copy.
   const caption = !overlay && layout.variant === 'caption' && narration
   const chrome = chromeFor(kind, accentHex)
 
+  const maxWidth = (layout.width || 62) + '%'
+  const bubbleSide = layout.side || side
   const position = overlay
     ? {
       position: 'absolute',
       top: layout.top + '%',
-      left: layout.left + '%',
-      width: layout.width + '%',
+      width: narration ? maxWidth : 'max-content',
+      maxWidth,
+      ...(bubbleSide === 'left'
+        ? { left: '4%' }
+        : (bubbleSide === 'center'
+          ? { left: '50%', translate: '-50% 0' }
+          : { right: '4%' })),
     }
     : {
       position: 'relative',
-      width: caption ? '100%' : ((layout.width || 68) + '%'),
+      width: caption ? '100%' : 'max-content',
+      maxWidth: caption ? '100%' : maxWidth,
       alignSelf: caption
         ? 'stretch'
-        : (layout.side === 'left' ? 'flex-start' : (layout.side === 'center' ? 'center' : 'flex-end')),
+        : (bubbleSide === 'left' ? 'flex-start' : (bubbleSide === 'center' ? 'center' : 'flex-end')),
       marginTop: caption ? 0 : '10px',
     }
   const padding = caption
     ? (narration ? '10px 9px 8px' : '11px 9px 9px')
-    : (narration ? '10px 14px' : '11px 16px 12px')
+    : (narration ? '10px 14px' : (kind === 'thought' ? '15px 22px 17px' : '13px 20px 15px'))
 
   return (
     <div
@@ -272,21 +282,24 @@ export default function ManhuaBubble({
         <span style={SR_ONLY}>{voice}</span>
       )}
 
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        {/* Hear the whole line, and reveal what it means. Two small ink marks,
-            not a toolbar — and FLOATED, not a flex sibling: floated, they cost
-            the sentence width on its first line only and no height at all, so a
-            six-character line stays a six-character line instead of orphaning
-            its last character onto a second row. manhuaLayout's height estimate
-            models exactly this (BUBBLE_ACTIONS_WIDTH). */}
-        <div style={{
-          float: 'right', display: 'flex', alignItems: 'center',
-          marginLeft: '6px', marginTop: '-4px',
-          // The following full-width text block is painted after this float.
-          // Keep the controls in the top painting layer so its transparent box
-          // cannot intercept taps meant for the visible ear/eye buttons.
-          position: 'relative', zIndex: 1,
-        }}>
+      <div style={{
+        position: 'relative', zIndex: 1,
+        minHeight: hasActions ? (stackedActions ? TAP_TARGET * 2 : TAP_TARGET) + 'px' : undefined,
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+      }}>
+        {/* Balloon tools sit in one narrow column instead of floating across the
+            sentence. A horizontal 88px toolbar stole only the first line's
+            width, producing orphaned text like “我 / 以前是一个 / 字”. The
+            vertical stack costs every line the same 52px, so wrapping remains
+            balanced while both controls keep their 44px touch targets.
+            Full-width narration captions have room for an inline pair; keeping
+            that pair to one row also prevents controls from touching the next
+            caption's tap area. */}
+        {hasActions && (
+          <div data-manhua-line-actions={stackedActions ? 'stacked' : 'inline'} style={{
+            position: 'absolute', top: '50%', right: '-5px', translate: '0 -50%',
+            display: 'flex', flexDirection: stackedActions ? 'column' : 'row', alignItems: 'center', zIndex: 2,
+          }}>
           {onPlayLine && (
             <button
               onClick={(e) => { e.stopPropagation(); onPlayLine(beatIndex) }}
@@ -311,7 +324,8 @@ export default function ManhuaBubble({
               style={{ scrollMarginTop: '76px' }}
             />
           )}
-        </div>
+          </div>
+        )}
 
         <div lang={language === 'chinese' ? 'zh-Hans' : undefined} style={{
           fontFamily,
@@ -320,6 +334,8 @@ export default function ManhuaBubble({
           fontWeight: narration ? 500 : 550,
           color: PAPER.ink,
           opacity: narration ? 0.92 : 1,
+          paddingRight: hasActions ? (stackedActions ? '52px' : '88px') : 0,
+          textWrap: 'balance',
           // Wrap between words, never inside one.
           //
           // CJK breaks between any two characters by default, which tore 林老师
@@ -350,7 +366,6 @@ export default function ManhuaBubble({
             </span>
           ))}
         </div>
-        <div style={{ clear: 'both' }} />
       </div>
 
       {revealed && english && (

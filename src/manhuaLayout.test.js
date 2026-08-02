@@ -350,14 +350,15 @@ describe('bubbleLayout', () => {
     expect(full.mode).toBe('below')
   })
 
-  it('costs the floated controls width on the first line only', () => {
-    const opts = { columnWidth: 390, ratio: 16 / 9, textLength: 6, top: 30 }
-    // Six characters fit on one line once the controls are paid for…
-    expect(bubbleLayout({ ...bubble, width: 70 }, opts).mode).toBe('overlay')
-    // …and a bubble too narrow to seat them plus the text wraps, which is what
-    // pushes a tall-enough result out of a short panel.
-    const narrow = estimateBubbleHeight(6, 390 * 0.44)
-    const wide = estimateBubbleHeight(6, 390 * 0.70)
+  it('reserves one consistent column for the stacked line controls', () => {
+    const withControls = estimateBubbleHeight(6, 260)
+    const withoutControls = estimateBubbleHeight(6, 260, { withActions: false })
+    expect(withControls).toBeGreaterThan(withoutControls)
+
+    // A narrow balloon wraps around the same column on every row instead of
+    // stealing space from only the first line and leaving a lone character.
+    const narrow = estimateBubbleHeight(18, 180)
+    const wide = estimateBubbleHeight(18, 300)
     expect(narrow).toBeGreaterThan(wide)
   })
 

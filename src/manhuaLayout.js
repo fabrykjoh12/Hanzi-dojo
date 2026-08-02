@@ -384,24 +384,25 @@ const LINE_HEIGHT = 32
 const RUBY_HEIGHT = 15
 // The bubble's own padding.
 const BUBBLE_CHROME = 34
-// The play-line and reveal-translation controls sit in the bubble's top-right
-// corner and the text wraps around them (they are floated, so they cost width
-// on the FIRST line only and no height at all). Costing them nothing was what
-// orphaned the last character of a short line onto a second row.
-export const BUBBLE_ACTIONS_WIDTH = 64
+// The play-line and reveal-translation controls form one 44px-wide vertical
+// stack. The extra 8px is its breathing room from the dialogue. Cost it on
+// EVERY line: the old horizontal float took 88px from only the first row and
+// was what produced visibly broken lettering such as a lone “我”.
+export const BUBBLE_ACTIONS_WIDTH = 52
+const BUBBLE_ACTIONS_HEIGHT = 88
 
 export function estimateBubbleHeight(textLength, widthPx, opts) {
   const o = opts || {}
   const inner = Math.max(40, widthPx - 32)
   const actions = o.withActions === false ? 0 : BUBBLE_ACTIONS_WIDTH
-  const firstLine = Math.max(1, Math.floor((inner - actions) / HANZI_ADVANCE))
-  const perLine = Math.max(1, Math.floor(inner / HANZI_ADVANCE))
+  const perLine = Math.max(1, Math.floor((inner - actions) / HANZI_ADVANCE))
   const chars = textLength || 1
-  const lines = chars <= firstLine ? 1 : 1 + Math.ceil((chars - firstLine) / perLine)
+  const lines = Math.ceil(chars / perLine)
   const ruby = o.withReadings === false ? 0 : RUBY_HEIGHT
   const speaker = o.withSpeaker ? 18 : 0
   const english = o.withEnglish ? 22 : 0
-  return lines * (LINE_HEIGHT + ruby) + BUBBLE_CHROME + speaker + english
+  const content = lines * (LINE_HEIGHT + ruby)
+  return Math.max(content, actions ? BUBBLE_ACTIONS_HEIGHT : 0) + BUBBLE_CHROME + speaker + english
 }
 
 // Where a bubble goes, given the panel it belongs to and the column it is drawn
