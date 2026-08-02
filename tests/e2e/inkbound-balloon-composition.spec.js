@@ -13,7 +13,7 @@ test('keeps the reported Inkbound exchange compact at phone width', async ({ pag
   await expect(exchange.locator('[data-manhua-line-actions="stacked"]')).toHaveCount(1);
 
   const box = await exchange.boundingBox();
-  expect(box.width).toBeGreaterThanOrEqual(185);
+  expect(box.width).toBeGreaterThanOrEqual(205);
   expect(box.height).toBeLessThanOrEqual(150);
 
   const wordRows = await exchange.locator('[data-manhua-word]').evaluateAll(words => (
