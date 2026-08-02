@@ -33,8 +33,8 @@ const TAILS = ['bottom-left', 'bottom-right', 'top-left', 'top-right']
 // Width the bubble takes, as a percentage of the panel, when metadata doesn't
 // say. Narration is a caption — it wants to be visibly not-a-voice, so it sits
 // narrower and squarer than speech.
-const DEFAULT_WIDTH = { speech: 68, reply: 68, thought: 62, narration: 58 }
-export const MAX_OVERLAY_WIDTH = 68
+const DEFAULT_WIDTH = { speech: 62, reply: 62, thought: 58, narration: 58 }
+export const MAX_OVERLAY_WIDTH = 62
 
 function clamp(n, low, high) {
   if (typeof n !== 'number' || !Number.isFinite(n)) return null
@@ -415,11 +415,18 @@ export function bubbleLayout(bubble, opts) {
   // Even if authored metadata asks for a near-full-width box, a balloon may
   // never become a banner across the picture. Narrowing it can make a long line
   // fall into the gutter below, which is safer than covering the subject.
-  const width = Math.min(
+  const authoredWidth = Math.min(
     bubble && bubble.width ? bubble.width : DEFAULT_WIDTH.speech,
     MAX_OVERLAY_WIDTH,
   )
   const top = bubble && typeof bubble.top === 'number' ? bubble.top : 8
+  // Fit the balloon to the copy instead of forcing every utterance into the
+  // same broad rectangle. Short lines stay compact; longer ones aim for two or
+  // three balanced rows, up to the authored/capped maximum.
+  const chars = Math.max(1, o.textLength || 1)
+  const targetCharsPerLine = chars <= 7 ? chars : Math.ceil(chars / Math.min(3, Math.ceil(chars / 7)))
+  const idealPx = Math.max(150, targetCharsPerLine * HANZI_ADVANCE + BUBBLE_ACTIONS_WIDTH + 34)
+  const width = Math.min(authoredWidth, Math.max(34, idealPx / columnWidth * 100))
   const widthPx = columnWidth * (width / 100)
   const height = estimateBubbleHeight(o.textLength, widthPx, o)
   // The room left under the bubble's top edge, minus the margin that keeps it
@@ -436,7 +443,7 @@ export function bubbleLayout(bubble, opts) {
 
   const side = (bubble && bubble.side) || 'right'
   const edge = 4
-  const base = { mode: 'overlay', top, width }
+  const base = { mode: 'overlay', top, width, side }
   if (side === 'left') return { ...base, left: edge }
   if (side === 'center') return { ...base, left: (100 - width) / 2 }
   return { ...base, left: 100 - width - edge }

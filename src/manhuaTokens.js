@@ -65,22 +65,9 @@ export const PANEL_RADIUS = 3
 export const PANEL_FRAME = 2          // the keyline's weight, in px
 export const GUTTER = 12              // white space between panels
 
-// A speech balloon's corner radius, in PIXELS — deliberately not the elliptical
-// `50% / 42%` this started as.
-//
-// A percentage radius is relative to the box, so a one-line balloon (which is
-// what most lines are, especially with pinyin off) collapses into a flat lens
-// that swallows the panel behind it and leaves the text stranded in the middle
-// of a huge empty oval. A fixed radius degrades the right way instead: on a
-// short box it lands near an oval — properly manga-like — and on a tall one it
-// stays an organic rounded balloon instead of turning into a UI message card.
-//
-// Narration is the exception: a caption plate is a hard-edged box in print, and
-// stays one.
-export const BUBBLE_RADIUS = 38
-export const THOUGHT_RADIUS = 48
-export const BUBBLE_FRAME = 2
-export const THOUGHT_FRAME = 2
+// Speech and thought silhouettes are SVG paths in ManhuaBubble: CSS radii made
+// short copy look like a UI pill and could not draw a real cloud edge or tail.
+// Narration is the exception: a caption plate is a hard-edged box in print.
 export const NARRATION_RADIUS = 2
 
 // Cards below the page (the choice, the closing plate) are interface, not
