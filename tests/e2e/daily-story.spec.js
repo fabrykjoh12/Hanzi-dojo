@@ -1,12 +1,12 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 
-// "A fresh story every day": the Stories library surfaces a calm daily pick from
-// the stories the learner can already read, and it opens the reader.
+// The featured hero uses the daily-story picker: one calm recommendation from
+// what the learner can already read, opening straight into the reader.
 test.describe('Story of the day', () => {
   test('shows a daily pick that opens into the reader', async ({ page }) => {
     await page.goto('/stories');
 
-    const daily = page.getByRole('button', { name: /Today.s story/i });
+    const daily = page.getByRole('button', { name: /Featured for you/i });
     await expect(daily).toBeVisible();
 
     await daily.click();

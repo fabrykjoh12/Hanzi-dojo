@@ -17,12 +17,10 @@ test.describe('《末班车》 standalone story', () => {
 
   test('appears as a complete HSK 2 work outside every series', async ({ page }) => {
     await page.goto('/stories');
-    // The flat shelf: the standalone is its own card in the HSK 2 section.
-    const shelf = page.getByRole('region', { name: 'HSK 2' });
-    const card = shelf.getByRole('button', { name: new RegExp(STORY) });
-    await expect(card.getByText('Complete story', { exact: true })).toBeVisible();
-    await expect(card.getByText('3 chapters', { exact: true })).toBeVisible();
-    await expect(card.getByText('12 min', { exact: true })).toBeVisible();
+    const card = page.getByTestId('story-shelf-rail')
+      .getByRole('button', { name: new RegExp(`${STORY}.*HSK 2.*Manhua`) });
+    await expect(card).toBeVisible();
+    await expect(page.getByRole('button', { name: `All chapters of ${STORY}` })).toHaveCount(0);
     await expect(card.getByText('第一话', { exact: true })).toHaveCount(0);
   });
 
@@ -70,8 +68,9 @@ test.describe('《末班车》 standalone story', () => {
     await expect(completion.getByRole('status', { name: /守时读者/ })).toBeVisible();
 
     await completion.getByRole('button', { name: /Back to stories/ }).click();
-    const card = page.getByRole('region').getByRole('button', { name: new RegExp(STORY) }).first();
-    await expect(card.getByText('Read', { exact: true })).toBeVisible();
+    const card = page.getByTestId('story-shelf-rail')
+      .getByRole('button', { name: new RegExp(`${STORY}.*Read`) });
+    await expect(card).toBeVisible();
   });
 });
 
