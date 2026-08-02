@@ -240,8 +240,15 @@ Hardcoded neutral hexes are a bug.
 2. **No complex regex literals** — OXC breaks on them. Use `indexOf()`, `split()`, `includes()`.
 3. **All styling is inline style objects.** No Tailwind classes in JSX.
 4. **No template literals inside JSX style props** where concatenation works: `'url(' + src + ')'`, not `` `url(${src})` ``.
-5. **No `localStorage` / `sessionStorage`** — they don't work in this environment.
-6. **No `<form>` tags** — use `onClick` / `onChange`.
+5. **Device storage is guarded, never assumed.** `localStorage`/IndexedDB work
+   fine in production — but always through the existing helpers (`offline.js`,
+   the `prelogin.js` try/catch pattern) so a blocked storage API degrades
+   quietly. Durable learner data lives in Supabase; device storage is for
+   caches and prefs only. *(An older version of this rule claimed storage
+   "doesn't work" — that was wrong.)*
+6. **Never rely on native `<form>` submission** — it reloads the SPA. Plain
+   `onClick`/`onChange` is the house style; a real `<form>` is fine when it has
+   `onSubmit` + `preventDefault` (DojoHQ does this).
 7. **Keep components flat.** Extract a subcomponent when it's reused or the file would be unreadable — and extract *logic* to a `.js` module (see §3).
 8. **`src/` must stay at zero ESLint errors.** Run `npm run lint`; don't add new warnings either.
 9. **Verification is not optional** — see §8. The build and the tests are the source of truth, not a read-through.
