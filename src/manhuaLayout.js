@@ -431,7 +431,17 @@ export function bubbleLayout(bubble, opts) {
   // and the rendered balloon uses 40px of horizontal ink clearance. Without
   // this allowance a planned four-character row became only three characters
   // wide in the browser and produced tall, skinny balloons.
-  const idealPx = Math.max(150, (targetCharsPerLine + 1) * HANZI_ADVANCE + BUBBLE_ACTIONS_WIDTH + 40)
+  // Short dialogue with selective pinyin needs one further character of room:
+  // the ruby can be wider than its hanzi even when the plain-text fixture is
+  // not. Keep that allowance narrowly scoped so thoughts and longer speeches
+  // do not become broad banners over the artwork.
+  const shortDialogue = bubble && (bubble.kind === 'speech' || bubble.kind === 'reply')
+    && chars >= 8 && chars <= 10
+  const breathingChars = shortDialogue ? 2 : 1
+  const idealPx = Math.max(
+    150,
+    (targetCharsPerLine + breathingChars) * HANZI_ADVANCE + BUBBLE_ACTIONS_WIDTH + 40,
+  )
   const width = Math.min(authoredWidth, Math.max(34, idealPx / columnWidth * 100))
   const widthPx = columnWidth * (width / 100)
   const height = estimateBubbleHeight(o.textLength, widthPx, o)
