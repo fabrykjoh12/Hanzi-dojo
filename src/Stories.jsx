@@ -1,17 +1,16 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { fetchPagedSafe } from './supabasePaging'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { cacheSet, cacheGet } from './offline'
 import { languageTheme } from './languageTheme'
 import { HeroPanel, HeroAction, Eyebrow } from './panels'
-import { heroSentence, firstContentChar } from './homeStory'
+import { heroSentence } from './homeStory'
 import { tiersFor, learnedByLevel, readingGateCount, nextLockedTier } from './storyTiers'
 import { isLearned } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import { todayStr } from './streak'
 import { pickDailyStory } from './dailyStory'
-import { STATUS_FILTERS, FORMAT_FILTERS } from './storyList'
 import { formatLabel } from './storyFormat'
 import { seriesHasMore, standaloneStoryDetails } from './storyShelf'
 import { buildFlatShelf, buildNextLevelSection } from './storyShelfFlat'
@@ -21,7 +20,7 @@ import StoryReader from './StoryReader'
 import StoryCover from './StoryCover'
 import StoryFormatIcon from './StoryFormatIcon'
 import {
-  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, ChevronDown, Clock, Layers, Library, Lock,
+  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, ChevronLeft, ChevronRight, Clock, Layers, Library, Lock,
 } from 'lucide-react'
 
 // Story tier definitions live in ./storyTiers (shared with the post-study
@@ -59,16 +58,6 @@ function categoryForStory(story, track) {
   return tier ? { ...tier, level } : null
 }
 
-function pillStyle(color, background, border) {
-  return {
-    display: 'inline-flex', alignItems: 'center',
-    fontSize: '12px', fontWeight: 800,
-    color, background, border: '1px solid ' + border,
-    padding: '5px 11px', borderRadius: '999px', lineHeight: 1,
-  }
-}
-
-
 // ─── SHARED COMPONENTS ─────────────────────────────────────────────────────
 
 function IconButton({ icon: Icon, label, onClick }) {
@@ -95,7 +84,6 @@ function IconButton({ icon: Icon, label, onClick }) {
   )
 }
 
-// Small neutral metadata pill used in the card footer.
 const metaTag = {
   display: 'inline-flex', alignItems: 'center', gap: '3px',
   fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)',
@@ -103,6 +91,7 @@ const metaTag = {
   borderRadius: '999px', padding: '3px 8px', lineHeight: 1, whiteSpace: 'nowrap',
 }
 
+// Small neutral metadata pill used in the card footer.
 // The "% known" chip on a card's cover — the one number the flat shelf sorts
 // by, so it's shown where the sort is felt. Dot color tracks readability.
 function KnownPctChip({ pct }) {
@@ -141,11 +130,10 @@ function CoverLock() {
 
 // ─── NORMALIZED STORY CARD ─────────────────────────────────────────────────
 
-// One template for every card, story or practice: a fixed 16:9 cover slot (real
-// art or the designed fallback), the title on one line, a single ellipsized
-// description line (no variable-height wrapping), then a consistent meta row of
-// level tag · format tag · read/unread.
-function StoryCard({ story, read, accentHex, fontFamily, levelLabel, practice, onClick, knownPct = null, locked = false, lockLabel = null }) {
+// One template for every story. The chapter page keeps the fuller card; the
+// library passes `shelf` for a visual-first cover, title, and one quiet detail
+// line so scanning never turns into reading a dashboard.
+function StoryCard({ story, read, accentHex, fontFamily, levelLabel, practice, onClick, knownPct = null, locked = false, lockLabel = null, shelf = false }) {
   const [hovered, setHovered] = useState(false)
   const standalone = standaloneStoryDetails(story)
   const lift = hovered && !locked
@@ -155,20 +143,27 @@ function StoryCard({ story, read, accentHex, fontFamily, levelLabel, practice, o
       disabled={locked}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      aria-label={shelf ? [story.title, levelLabel, practice ? 'Practice' : formatLabel(story), locked ? lockLabel : read ? 'Read' : null].filter(Boolean).join(' · ') : undefined}
+      className="hd-press"
       style={{
         display: 'flex', flexDirection: 'column', textAlign: 'left', width: '100%', padding: 0,
-        border: '1px solid ' + (lift ? accentHex + '55' : 'var(--border)'),
-        borderRadius: '16px', overflow: 'hidden', cursor: locked ? 'default' : 'pointer',
-        background: practice ? accentHex + '0A' : 'var(--surface)',
-        boxShadow: lift ? '0 16px 34px rgba(24,24,27,0.10)' : '0 6px 20px rgba(24,24,27,0.05)',
+        border: shelf ? 'none' : '1px solid ' + (lift ? accentHex + '55' : 'var(--border)'),
+        borderRadius: '16px', overflow: shelf ? 'visible' : 'hidden', cursor: locked ? 'default' : 'pointer',
+        background: shelf ? 'transparent' : practice ? accentHex + '0A' : 'var(--surface)',
+        boxShadow: shelf ? 'none' : lift ? '0 16px 34px rgba(24,24,27,0.10)' : '0 6px 20px rgba(24,24,27,0.05)',
         transform: lift ? 'translateY(-2px)' : 'translateY(0)',
         transition: 'all 170ms ease', fontFamily: 'Inter, sans-serif',
         opacity: locked ? 0.78 : 1,
       }}
     >
       <StoryCover
-        story={story} path={story.image_path} accent={accentHex} radius={0}
-        style={{ width: '100%', aspectRatio: '16 / 9', border: 'none', borderBottom: '1px solid var(--border)' }}
+        story={story} path={story.image_path} accent={accentHex} radius={shelf ? 16 : 0}
+        style={{
+          width: '100%', aspectRatio: '16 / 9',
+          border: shelf ? '1px solid ' + (lift ? accentHex + '66' : 'var(--border)') : '1px solid var(--border)',
+          boxShadow: shelf ? (lift ? '0 16px 32px rgba(24,24,27,0.16)' : '0 5px 16px rgba(24,24,27,0.08)') : undefined,
+          transition: shelf ? 'border-color 170ms ease, box-shadow 170ms ease' : undefined,
+        }}
       >
         {read && (
           <div style={{
@@ -185,7 +180,7 @@ function StoryCard({ story, read, accentHex, fontFamily, levelLabel, practice, o
             color: '#fff', background: 'rgba(24,24,27,0.55)', borderRadius: '999px', padding: '3px 8px', zIndex: 1,
           }}>Practice</div>
         )}
-        {standalone && (
+        {standalone && !shelf && (
           <div style={{
             position: 'absolute', top: '8px', left: '8px', display: 'flex', alignItems: 'center', gap: '5px',
             fontSize: '10.5px', fontWeight: 800, color: '#fff',
@@ -198,14 +193,14 @@ function StoryCard({ story, read, accentHex, fontFamily, levelLabel, practice, o
         {!locked && <KnownPctChip pct={knownPct} />}
         {locked && <CoverLock />}
       </StoryCover>
-      <div style={{ padding: '12px 14px 13px', display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 }}>
+      <div style={{ padding: shelf ? '10px 2px 2px' : '12px 14px 13px', display: 'flex', flexDirection: 'column', gap: shelf ? '4px' : '5px', flex: 1, width: '100%', minWidth: 0 }}>
         <div title={story.title} style={{ fontSize: '16px', fontWeight: 750, fontFamily, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3 }}>
           {story.title}
         </div>
-        <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.4 }}>
+        {!shelf && <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.4 }}>
           {story.english_summary || '—'}
-        </div>
-        {standalone && (standalone.chapters || standalone.minutes) && (
+        </div>}
+        {!shelf && standalone && (standalone.chapters || standalone.minutes) && (
           <div
             aria-label={[
               standalone.chapters ? standalone.chapters + ' chapters' : null,
@@ -227,49 +222,24 @@ function StoryCard({ story, read, accentHex, fontFamily, levelLabel, practice, o
             )}
           </div>
         )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '3px', flexWrap: 'nowrap' }}>
+        {shelf ? (
+          <div style={{ fontSize: '12px', fontWeight: 650, color: locked ? 'var(--text-muted)' : read ? 'var(--success)' : 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {locked ? (lockLabel || 'Locked') : [levelLabel, practice ? 'Practice' : formatLabel(story), standalone?.minutes ? standalone.minutes + ' min' : null].filter(Boolean).join(' · ')}
+            {read && !locked ? ' · Read' : ''}
+          </div>
+        ) : <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '3px', flexWrap: 'nowrap' }}>
           <span style={metaTag}>{levelLabel}</span>
           <span style={metaTag}><StoryFormatIcon story={story} size={13} /> {formatLabel(story)}</span>
           <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 700, color: locked ? 'var(--text-muted)' : read ? 'var(--success)' : 'var(--text-faint)', whiteSpace: 'nowrap' }}>
             {locked ? (lockLabel || 'Locked') : read ? 'Read' : 'New'}
           </span>
-        </div>
+        </div>}
       </div>
     </button>
   )
 }
 
 // ─── FILTER ROW ────────────────────────────────────────────────────────────
-
-function Segmented({ options, value, onChange, accentHex, label }) {
-  return (
-    <div role="group" aria-label={label} style={{ display: 'inline-flex', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '10px', padding: '3px' }}>
-      {options.map(o => {
-        const on = o.key === value
-        return (
-          <button key={o.key} onClick={() => onChange(o.key)} aria-pressed={on}
-            style={{
-              border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '6px 12px', minHeight: '44px',
-              fontSize: '12.5px', fontWeight: on ? 750 : 600, fontFamily: 'Inter, sans-serif',
-              background: on ? 'var(--surface)' : 'transparent', color: on ? accentHex : 'var(--text-muted)',
-              boxShadow: on ? '0 1px 4px rgba(24,24,27,0.08)' : 'none', transition: 'background 140ms ease',
-            }}>
-            {o.label}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
-function FilterRow({ status, setStatus, format, setFormat, accentHex }) {
-  return (
-    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '22px' }}>
-      <Segmented options={STATUS_FILTERS} value={status} onChange={setStatus} accentHex={accentHex} label="Read status" />
-      <Segmented options={FORMAT_FILTERS} value={format} onChange={setFormat} accentHex={accentHex} label="Format" />
-    </div>
-  )
-}
 
 // ─── ARC + PRACTICE SECTIONS ───────────────────────────────────────────────
 
@@ -281,10 +251,66 @@ function CardGrid({ children, isMobile }) {
   )
 }
 
+function shelfItemStyle(isMobile) {
+  return {
+    flex: isMobile ? '0 0 min(78vw, 320px)' : '0 0 276px',
+    scrollSnapAlign: 'start', minWidth: 0,
+  }
+}
+
+function ShelfRow({ id, title, subtitle, isMobile, children }) {
+  const railRef = useRef(null)
+  const scroll = (direction) => {
+    const rail = railRef.current
+    if (!rail) return
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    rail.scrollBy({ left: direction * Math.max(rail.clientWidth * 0.78, 280), behavior: reduced ? 'auto' : 'smooth' })
+  }
+  return (
+    <section aria-labelledby={id} className="hd-rise" style={{ minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: '16px', marginBottom: '12px' }}>
+        <div style={{ minWidth: 0 }}>
+          <h2 id={id} style={{ margin: 0, color: 'var(--text)', fontSize: isMobile ? '18px' : '20px', fontWeight: 800, letterSpacing: '-0.02em' }}>
+            {title}
+          </h2>
+          {subtitle && <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '12.5px', lineHeight: 1.45 }}>{subtitle}</p>}
+        </div>
+        {!isMobile && (
+          <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+            <button type="button" onClick={() => scroll(-1)} aria-label={'Scroll ' + title + ' left'} className="hd-press" style={railArrowStyle}>
+              <ChevronLeft size={19} aria-hidden="true" />
+            </button>
+            <button type="button" onClick={() => scroll(1)} aria-label={'Scroll ' + title + ' right'} className="hd-press" style={railArrowStyle}>
+              <ChevronRight size={19} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+      </div>
+      <div
+        ref={railRef}
+        data-testid="story-shelf-rail"
+        data-shelf={id}
+        style={{
+          display: 'flex', gap: isMobile ? '14px' : '18px', overflowX: 'auto', overflowY: 'visible',
+          overscrollBehaviorInline: 'contain', scrollSnapType: 'x proximity', scrollbarWidth: 'thin',
+          padding: '4px 3px 18px', margin: '0 -3px', minWidth: 0,
+        }}
+      >
+        {children}
+      </div>
+    </section>
+  )
+}
+
+const railArrowStyle = {
+  width: '44px', height: '44px', borderRadius: '999px', border: '1px solid var(--border)',
+  background: 'var(--surface)', color: 'var(--text-muted)', display: 'grid', placeItems: 'center', cursor: 'pointer',
+}
+
 // Tapping the card RESUMES the series (opens the next unread chapter). The
 // chapter-count chip on the cover is a real secondary button that opens the
 // chapter list — it's a sibling of the main button (buttons can't nest).
-function SeriesCard({ arc, readIds, accentHex, fontFamily, isMobile, onOpen, onOpenChapters, knownPct = null, locked = false, lockLabel = null }) {
+function SeriesCard({ arc, readIds, accentHex, fontFamily, isMobile, onOpen, onOpenChapters, knownPct = null, locked = false, lockLabel = null, shelf = false }) {
   const [hovered, setHovered] = useState(false)
   const readCount = arc.parts.filter(p => readIds.has(p.id)).length
   const total = arc.parts.length
@@ -294,38 +320,44 @@ function SeriesCard({ arc, readIds, accentHex, fontFamily, isMobile, onOpen, onO
   const coverStory = arc.parts.find(p => !readIds.has(p.id)) || arc.parts[0]
   const lift = hovered && !locked
   return (
-    <div style={{ position: 'relative', paddingRight: '7px', paddingBottom: '7px' }}>
+    <div style={{ position: 'relative', paddingRight: shelf ? 0 : '7px', paddingBottom: shelf ? 0 : '7px' }}>
       {/* Stacked edges — decorative, so hidden from the accessibility tree. */}
-      <div aria-hidden="true" style={{
+      {!shelf && <div aria-hidden="true" style={{
         position: 'absolute', top: '7px', left: '7px', right: 0, bottom: 0,
         borderRadius: '16px', background: 'var(--surface)',
         border: '1px solid var(--border)', opacity: 0.55,
-      }} />
-      <div aria-hidden="true" style={{
+      }} />}
+      {!shelf && <div aria-hidden="true" style={{
         position: 'absolute', top: '4px', left: '4px', right: '3px', bottom: '3px',
         borderRadius: '16px', background: 'var(--surface)',
         border: '1px solid var(--border)', opacity: 0.8,
-      }} />
+      }} />}
       <button
         onClick={locked ? undefined : onOpen}
         disabled={locked}
         aria-label={locked ? arc.title : arc.title + ' — continue reading'}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        className="hd-press"
         style={{
           position: 'relative', display: 'flex', flexDirection: 'column', textAlign: 'left',
           width: '100%', padding: 0, cursor: locked ? 'default' : 'pointer',
-          border: '1px solid ' + (lift ? accentHex + '55' : 'var(--border)'),
-          borderRadius: '16px', overflow: 'hidden', background: 'var(--surface)',
-          boxShadow: lift ? '0 16px 34px rgba(24,24,27,0.10)' : '0 6px 20px rgba(24,24,27,0.05)',
+          border: shelf ? 'none' : '1px solid ' + (lift ? accentHex + '55' : 'var(--border)'),
+          borderRadius: '16px', overflow: shelf ? 'visible' : 'hidden', background: shelf ? 'transparent' : 'var(--surface)',
+          boxShadow: shelf ? 'none' : lift ? '0 16px 34px rgba(24,24,27,0.10)' : '0 6px 20px rgba(24,24,27,0.05)',
           transform: lift ? 'translateY(-2px)' : 'translateY(0)',
           transition: 'all 170ms ease', fontFamily: 'Inter, sans-serif',
           opacity: locked ? 0.78 : 1,
         }}
       >
         <StoryCover
-          story={coverStory} path={coverStory && coverStory.image_path} accent={accentHex} radius={0}
-          style={{ width: '100%', aspectRatio: '16 / 9', border: 'none', borderBottom: '1px solid var(--border)' }}
+          story={coverStory} path={coverStory && coverStory.image_path} accent={accentHex} radius={shelf ? 16 : 0}
+          style={{
+            width: '100%', aspectRatio: '16 / 9',
+            border: shelf ? '1px solid ' + (lift ? accentHex + '66' : 'var(--border)') : '1px solid var(--border)',
+            boxShadow: shelf ? (lift ? '0 16px 32px rgba(24,24,27,0.16)' : '0 5px 16px rgba(24,24,27,0.08)') : undefined,
+            transition: shelf ? 'border-color 170ms ease, box-shadow 170ms ease' : undefined,
+          }}
         >
           {done && (
             <div style={{
@@ -339,7 +371,7 @@ function SeriesCard({ arc, readIds, accentHex, fontFamily, isMobile, onOpen, onO
           {!locked && <KnownPctChip pct={knownPct} />}
           {locked && <CoverLock />}
         </StoryCover>
-        <div style={{ padding: '12px 14px 13px', display: 'flex', flexDirection: 'column', gap: '7px', flex: 1 }}>
+        <div style={{ padding: shelf ? '10px 2px 2px' : '12px 14px 13px', display: 'flex', flexDirection: 'column', gap: shelf ? '5px' : '7px', flex: 1, width: '100%', minWidth: 0 }}>
           <div title={arc.title} style={{
             fontSize: isMobile ? '15px' : '16px', fontWeight: 750, fontFamily, color: 'var(--text)',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3,
@@ -444,26 +476,6 @@ function SeriesPage({ arc, readIds, accentHex, fontFamily, levelLabelFor, isMobi
 
 // Practice scenarios (chat / scene / reply) live in their own section with a
 // tinted card, so they never look like broken story cards inside an arc.
-function PracticeSection({ stories, readIds, accentHex, fontFamily, levelLabelFor, isMobile, onOpen }) {
-  if (stories.length === 0) return null
-  return (
-    <section>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '9px', margin: '0 0 12px', flexWrap: 'wrap' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text)', margin: 0 }}>Practice Scenarios</h3>
-        <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
-          {stories.length} to try — chat, scene & reply-along
-        </span>
-      </div>
-      <CardGrid isMobile={isMobile}>
-        {stories.map(story => (
-          <StoryCard key={story.id} story={story} read={readIds.has(story.id)} accentHex={accentHex}
-            fontFamily={fontFamily} levelLabel={levelLabelFor(story)} practice onClick={() => onOpen(story)} />
-        ))}
-      </CardGrid>
-    </section>
-  )
-}
-
 function EmptyPanel({ icon: Icon, title, text }) {
   return (
     <div style={{
@@ -486,14 +498,9 @@ export default function Stories({
   routeStoryId = null, routeSeriesKey = null, onStoryRoute, onSeriesRoute, onBrowseRoute,
 }) {
   const [view, setView] = useState('browse')
-  // Which tier tab is open (null → resolve a sensible default once stories load),
-  // and the library filters. All three live only on the browse screen.
   // The next level's stories (light rows, no content) — the locked "road
   // ahead" section at the end of the shelf.
   const [nextLevelStories, setNextLevelStories] = useState([])
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [formatFilter, setFormatFilter] = useState('all')
-  const [expandedLevels, setExpandedLevels] = useState(() => new Set([track.current_level]))
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [selectedStory, setSelectedStory] = useState(null)
   // The open series, and whether the reader was entered from inside one — so
@@ -512,7 +519,7 @@ export default function Stories({
   const isMobile = useIsMobile()
 
   const languageDetails = getLanguageDetails(profile, track)
-  const { accentHex, nativeName, fontFamily } = languageDetails
+  const { accentHex, fontFamily } = languageDetails
   // Today's studied words (from the post-study deep-link), highlighted in the
   // reader. Captured into state so it survives App clearing the pending value.
   const [todayWords, setTodayWords] = useState([])
@@ -559,7 +566,7 @@ export default function Stories({
       cache.set(story.id, knownPct)
       return knownPct
     }
-    const filters = { status: statusFilter, format: formatFilter }
+    const filters = {}
     return {
       sections: buildFlatShelf({
         stories, currentLevel: track.current_level,
@@ -570,7 +577,7 @@ export default function Stories({
         level: track.current_level + 1, stories: nextLevelStories, filters,
       }),
     }
-  }, [stories, nextLevelStories, vocabMap, userCards, readIds, statusFilter, formatFilter, learnedPerLevel, track.language, track.current_level])
+  }, [stories, nextLevelStories, vocabMap, userCards, readIds, learnedPerLevel, track.language, track.current_level])
 
   async function loadData() {
     setLoading(true)
@@ -711,14 +718,17 @@ export default function Stories({
   if (loading) {
     return (
       <div style={pageShell()}>
-        <div style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
-          <div style={{
-            width: '88px', height: '88px', borderRadius: '26px',
-            background: 'var(--surface)', border: '1px solid var(--border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 16px 40px rgba(24,24,27,0.06)',
-          }}>
-            <BookOpen size={34} strokeWidth={1.75} color={accentHex} />
+        <div role="status" aria-label="Loading stories" style={{ maxWidth: '1360px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px' }}>
+          <div style={{ width: '82px', height: '44px', borderRadius: '12px', background: 'var(--surface-2)', marginBottom: '22px' }} />
+          <div style={{ height: isMobile ? '300px' : '360px', borderRadius: '24px', background: accentHex + '18', border: '1px solid ' + accentHex + '24', marginBottom: '34px' }} />
+          <div style={{ width: '190px', height: '24px', borderRadius: '8px', background: 'var(--surface-2)', marginBottom: '14px' }} />
+          <div style={{ display: 'flex', gap: '16px', overflow: 'hidden' }}>
+            {[0, 1, 2, 3].map(i => (
+              <div key={i} style={{ flex: isMobile ? '0 0 76vw' : '0 0 276px' }}>
+                <div style={{ aspectRatio: '16 / 9', borderRadius: '16px', background: 'var(--surface-2)' }} />
+                <div style={{ width: '68%', height: '14px', borderRadius: '6px', background: 'var(--surface-2)', marginTop: '11px' }} />
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -778,7 +788,7 @@ export default function Stories({
     )
   }
 
-  // ── Browse view (tabs + arcs + practice) ────────────────────────────────
+  // ── Browse view (feature + horizontal shelves) ─────────────────────────
 
   // Open a story straight into the reader, carrying its shelf (tier + level) so
   // next-story and the tier-unlock nudge keep working.
@@ -824,185 +834,154 @@ export default function Stories({
     if (onSeriesRoute) onSeriesRoute(arc.key)
   }
 
+  const primarySection = sections.find(sec => sec.isCurrent) || sections[0] || null
+  const continueUnits = sections.flatMap(sec => sec.units.map(unit => ({ unit, section: sec })))
+    .filter(({ unit }) => !unit.locked && unit.readCount > 0 && !unit.allRead)
+  const continueKeys = new Set(continueUnits.map(({ unit }) => unit.key))
+  const primaryUnits = primarySection
+    ? primarySection.units.filter(unit => !continueKeys.has(unit.key)).map(unit => ({ unit, section: primarySection }))
+    : []
+  const moreUnits = sections
+    .filter(sec => sec !== primarySection)
+    .flatMap(sec => sec.units.map(unit => ({ unit, section: sec })))
+  const practiceStories = sections.flatMap(sec => sec.practice.map(story => ({ story, section: sec })))
+  const upcomingUnits = aheadSection ? aheadSection.units.map(unit => ({ unit, section: aheadSection })) : []
+
+  const renderUnit = ({ unit, section }) => {
+    const lockLabel = section.levelLocked
+      ? 'Next level'
+      : unit.locked ? 'Learn ' + unit.remaining + ' more word' + (unit.remaining === 1 ? '' : 's') : null
+    return (
+      <div key={section.level + '-' + unit.key} style={shelfItemStyle(isMobile)}>
+        {unit.kind === 'series' ? (
+          <SeriesCard
+            arc={unit} readIds={readIds} accentHex={accentHex}
+            fontFamily={fontFamily} isMobile={isMobile} shelf
+            knownPct={unit.knownPct} locked={unit.locked} lockLabel={lockLabel}
+            onOpen={() => { setSelectedArc(unit); openStory(unit.next, true) }}
+            onOpenChapters={() => openSeries(unit)}
+          />
+        ) : (
+          <StoryCard
+            story={unit.parts[0]} read={readIds.has(unit.parts[0].id)} shelf
+            accentHex={accentHex} fontFamily={fontFamily}
+            levelLabel={levelLabelFor(unit.parts[0])}
+            knownPct={unit.knownPct} locked={unit.locked} lockLabel={lockLabel}
+            onClick={() => openStory(unit.parts[0])}
+          />
+        )}
+      </div>
+    )
+  }
+
   return (
     <div style={pageShell()}>
-      <div style={{ maxWidth: isMobile ? '860px' : '1040px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px', position: 'relative', zIndex: 1 }}>
+      <div style={{ maxWidth: '1360px', margin: '0 auto', padding: isMobile ? '24px 16px 64px' : '38px 32px 80px', position: 'relative', zIndex: 1 }}>
         <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
 
-        {/* This screen's one lit block — the same treatment Home gives the card
-            queue, here given to the thing Stories is actually about: the story
-            waiting for you today. Falls back to a plain title block before
-            anything is unlocked. */}
-        {daily ? (
-          <>
-          {/* The page h1 lives OUTSIDE the hero: HeroPanel is role="button",
-              and ARIA flattens headings inside a button into its name — an h1
-              in there is not exposed as a heading at all. Visually hidden;
-              the hero carries the visual title. */}
-          <h1 style={{
-            position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px',
-            overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0,
-          }}>
+        <header style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '14px', margin: '22px 0 14px', flexWrap: 'wrap' }}>
+          <h1 style={{ margin: 0, color: 'var(--text)', fontSize: isMobile ? '26px' : '30px', fontWeight: 820, letterSpacing: '-0.035em' }}>
             Stories
           </h1>
+          <Eyebrow>{getSystemLabel(track.system)} · {getLevelLabel(track.language, track.system, track.current_level)}</Eyebrow>
+        </header>
+
+        {daily ? (
           <HeroPanel
             accentHex={accentHex}
             seed={track.language + '-stories'}
-            watermark={firstContentChar(heroSentence(daily.content))}
-            watermarkFont={fontFamily}
+            padding="0"
             compact={isMobile}
             onClick={() => openStory(daily)}
-            style={{ margin: '28px 0 22px' }}
+            style={{ margin: '0 0 34px', minHeight: isMobile ? '300px' : '360px' }}
           >
             {({ hovered }) => (
-              <div>
-                {/* The eyebrow row carries BOTH facts the old header had: what
-                    this block is, and which level the learner is actually on.
-                    Dropping the latter left Stories unable to say where you are. */}
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-                  <Eyebrow onHero>
-                    Today’s story{readIds.has(daily.id) ? ' · revisit' : ''}
-                  </Eyebrow>
-                  <Eyebrow onHero style={{ color: 'rgba(255,255,255,0.5)' }}>
-                    {getSystemLabel(track.system)} · {getLevelLabel(track.language, track.system, track.current_level)}
-                  </Eyebrow>
+              <div style={{ position: 'relative', minHeight: isMobile ? '300px' : '360px', display: 'flex', alignItems: 'end' }}>
+                <StoryCover
+                  story={daily} path={daily.image_path} accent={accentHex} radius={0} loading="eager"
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+                />
+                <div aria-hidden="true" style={{
+                  position: 'absolute', inset: 0,
+                  background: isMobile
+                    ? 'linear-gradient(0deg, rgba(13,13,15,0.94) 0%, rgba(13,13,15,0.58) 58%, rgba(13,13,15,0.16) 100%)'
+                    : 'linear-gradient(90deg, rgba(13,13,15,0.94) 0%, rgba(13,13,15,0.70) 42%, rgba(13,13,15,0.14) 76%)',
+                }} />
+                <div style={{ position: 'relative', zIndex: 1, padding: isMobile ? '24px 22px' : '36px 40px', maxWidth: isMobile ? '100%' : '600px' }}>
+                  <Eyebrow onHero>Featured for you</Eyebrow>
+                  <div style={{
+                    fontFamily: fontFamily + ', Inter, sans-serif', color: '#fff',
+                    fontSize: isMobile ? '28px' : '38px', fontWeight: 700, lineHeight: 1.18,
+                    letterSpacing: '-0.02em', margin: '10px 0 10px',
+                  }}>
+                    {daily.title}
+                  </div>
+                  <div style={{ fontSize: isMobile ? '13px' : '14px', color: 'rgba(255,255,255,0.80)', lineHeight: 1.55, maxWidth: '52ch' }}>
+                    {daily.english_summary || heroSentence(daily.content)}
+                  </div>
+                  <div style={{ marginTop: '10px', color: 'rgba(255,255,255,0.64)', fontSize: '12px', fontWeight: 700 }}>
+                    {getLevelLabel(track.language, track.system, daily.level == null ? track.current_level : daily.level)} · {formatLabel(daily)}
+                  </div>
+                  <HeroAction label={readIds.has(daily.id) ? 'Read again' : 'Start reading'} hovered={hovered} icon={ArrowRight} accentHex={accentHex} />
                 </div>
-                {/* Title first, opening sentence supporting — the headline names
-                    the story; a first sentence can't be told apart from copy.
-                    A div, not a heading: inside role="button" a heading would
-                    be flattened anyway (the real h1 sits above the hero). */}
-                <div style={{
-                  fontFamily: fontFamily + ', Inter, sans-serif', color: '#fff',
-                  fontSize: isMobile ? '25px' : '31px', fontWeight: 600, lineHeight: 1.32,
-                  letterSpacing: '0.01em', margin: '10px 0 8px', maxWidth: '20ch',
-                }}>
-                  {daily.title}
-                </div>
-                <div style={{
-                  fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45,
-                  fontFamily: fontFamily + ', Inter, sans-serif',
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '46ch',
-                }}>
-                  {heroSentence(daily.content)} · {getLevelLabel(track.language, track.system, daily.level == null ? track.current_level : daily.level)}
-                </div>
-                <HeroAction label="Start reading" hovered={hovered} icon={ArrowRight} accentHex={accentHex} />
               </div>
             )}
           </HeroPanel>
-          </>
         ) : (
-          <div style={{ margin: '28px 0 22px' }}>
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-              <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>{nativeName}</span>
-              <span style={pillStyle('var(--text-muted)', 'var(--surface-2)', 'var(--border)')}>
-                {getSystemLabel(track.system)} · {getLevelLabel(track.language, track.system, track.current_level)}
-              </span>
-            </div>
-            <h1 style={{ fontSize: '36px', fontWeight: 800, color: 'var(--text)', margin: '0 0 8px' }}>
-              Stories
-            </h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.6, margin: 0 }}>
-              Everything you can read, from every level you’ve reached.
-            </p>
-          </div>
+          <EmptyPanel icon={Library} title="No stories yet" text="Stories for your level are on the way. Keep learning words — they'll be here waiting." />
         )}
 
-        <FilterRow
-          status={statusFilter} setStatus={setStatusFilter}
-          format={formatFilter} setFormat={setFormatFilter} accentHex={accentHex}
-        />
+        {(sections.length > 0 || aheadSection) && (
+          <div style={{ display: 'grid', gap: isMobile ? '28px' : '34px' }}>
+            {continueUnits.length > 0 && (
+              <ShelfRow id="continue-reading" title="Continue reading" subtitle="Pick up where you left off." isMobile={isMobile}>
+                {continueUnits.map(renderUnit)}
+              </ShelfRow>
+            )}
 
-        {/* The flat shelf: level sections (current level first, then earlier
-            levels closest-first), most-readable units first inside each, and
-            the next level as a locked teaser at the end. One card per series;
-            tier locks render inline on the cards, never as a wall. */}
-        {(() => {
-          const allSections = aheadSection ? [...sections, aheadSection] : [...sections]
-          if (allSections.length === 0) {
-            if (statusFilter !== 'all' || formatFilter !== 'all') {
-              return <EmptyPanel icon={BookOpen} title="Nothing matches" text="No stories match these filters yet — try switching them back to All." />
-            }
-            return <EmptyPanel icon={Library} title="No stories yet" text="Stories for your level are on the way. Keep learning words — they'll be here waiting." />
-          }
-          return (
-            <div style={{ display: 'grid', gap: '38px' }}>
-              {allSections.map(sec => (
-                <section key={sec.level} aria-label={getLevelLabel(track.language, track.system, sec.level)}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '14px', flexWrap: 'wrap' }}>
-                    <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)', margin: 0 }}>
-                      <button
-                        type="button"
-                        aria-expanded={expandedLevels.has(sec.level)}
-                        aria-controls={'story-level-' + sec.level}
-                        onClick={() => setExpandedLevels(prev => {
-                          const next = new Set(prev)
-                          if (next.has(sec.level)) next.delete(sec.level)
-                          else next.add(sec.level)
-                          return next
-                        })}
-                        style={{
-                          minHeight: '44px', display: 'inline-flex', alignItems: 'center', gap: '8px',
-                          padding: '0 4px', marginLeft: '-4px', border: 'none', background: 'transparent',
-                          color: 'var(--text)', font: 'inherit', cursor: 'pointer',
-                        }}
-                      >
-                        {getLevelLabel(track.language, track.system, sec.level)}
-                        <ChevronDown
-                          size={18}
-                          aria-hidden="true"
-                          style={{ transform: expandedLevels.has(sec.level) ? 'rotate(180deg)' : 'none', transition: 'transform 180ms ease' }}
-                        />
-                      </button>
-                    </h2>
-                    {sec.isCurrent && (
-                      <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>Your level</span>
-                    )}
-                    {sec.levelLocked ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'var(--text-muted)', fontWeight: 700 }}>
-                        <Lock size={12} strokeWidth={2.2} color="var(--text-faint)" aria-hidden="true" />
-                        Unlocks when you pass the {getLevelLabel(track.language, track.system, track.current_level)} test
-                      </span>
-                    ) : (
-                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
-                        {sec.readCount} of {sec.total} read
-                      </span>
-                    )}
-                  </div>
-                  {expandedLevels.has(sec.level) && <div id={'story-level-' + sec.level} style={{ display: 'grid', gap: '28px' }}>
-                    <CardGrid isMobile={isMobile}>
-                      {sec.units.map(u => {
-                        const lockLabel = sec.levelLocked
-                          ? 'Next level'
-                          : u.locked ? 'Learn ' + u.remaining + ' more word' + (u.remaining === 1 ? '' : 's') : null
-                        return u.kind === 'series' ? (
-                          <SeriesCard
-                            key={u.key} arc={u} readIds={readIds} accentHex={accentHex}
-                            fontFamily={fontFamily} isMobile={isMobile}
-                            knownPct={u.knownPct} locked={u.locked} lockLabel={lockLabel}
-                            onOpen={() => { setSelectedArc(u); openStory(u.next, true) }}
-                            onOpenChapters={() => openSeries(u)}
-                          />
-                        ) : (
-                          <StoryCard
-                            key={u.key} story={u.parts[0]} read={readIds.has(u.parts[0].id)}
-                            accentHex={accentHex} fontFamily={fontFamily}
-                            levelLabel={levelLabelFor(u.parts[0])}
-                            knownPct={u.knownPct} locked={u.locked} lockLabel={lockLabel}
-                            onClick={() => openStory(u.parts[0])}
-                          />
-                        )
-                      })}
-                    </CardGrid>
-                    <PracticeSection
-                      stories={sec.practice} readIds={readIds} accentHex={accentHex}
-                      fontFamily={fontFamily} levelLabelFor={levelLabelFor} isMobile={isMobile} onOpen={openStory}
+            {primarySection && (
+              <ShelfRow
+                id="top-picks"
+                title="Top picks for you"
+                subtitle={getLevelLabel(track.language, track.system, primarySection.level) + ' · easiest to read first'}
+                isMobile={isMobile}
+              >
+                {(primaryUnits.length ? primaryUnits : primarySection.units.map(unit => ({ unit, section: primarySection }))).map(renderUnit)}
+              </ShelfRow>
+            )}
+
+            {moreUnits.length > 0 && (
+              <ShelfRow id="more-stories" title="More stories you can read" subtitle="From levels you’ve already reached." isMobile={isMobile}>
+                {moreUnits.map(renderUnit)}
+              </ShelfRow>
+            )}
+
+            {practiceStories.length > 0 && (
+              <ShelfRow id="practice-stories" title="Practice through stories" subtitle="Short chats, scenes, and reply-alongs." isMobile={isMobile}>
+                {practiceStories.map(({ story, section }) => (
+                  <div key={section.level + '-' + story.id} style={shelfItemStyle(isMobile)}>
+                    <StoryCard
+                      story={story} read={readIds.has(story.id)} shelf practice
+                      accentHex={accentHex} fontFamily={fontFamily}
+                      levelLabel={levelLabelFor(story)} onClick={() => openStory(story)}
                     />
-                  </div>}
-                </section>
-              ))}
-            </div>
-          )
-        })()}
+                  </div>
+                ))}
+              </ShelfRow>
+            )}
+
+            {upcomingUnits.length > 0 && (
+              <ShelfRow
+                id="coming-up"
+                title={'Coming up in ' + getLevelLabel(track.language, track.system, aheadSection.level)}
+                subtitle={'Unlocks when you pass the ' + getLevelLabel(track.language, track.system, track.current_level) + ' test.'}
+                isMobile={isMobile}
+              >
+                {upcomingUnits.map(renderUnit)}
+              </ShelfRow>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

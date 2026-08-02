@@ -17,7 +17,7 @@ function fallbackBackground(accent) {
 //
 // The caller sizes the slot via `style` (e.g. a fixed aspectRatio); overlays
 // like a "read" badge pass through as children.
-export default function StoryCover({ story, path, accent, alt = '', radius = 14, style, children }) {
+export default function StoryCover({ story, path, accent, alt = '', radius = 14, style, children, loading = 'lazy' }) {
   const src = path ? getAudioUrl(path) : null
   const [failed, setFailed] = useState(false)
   // A new story swapped into the same slot (the reader stays mounted across
@@ -36,7 +36,7 @@ export default function StoryCover({ story, path, accent, alt = '', radius = 14,
     }}>
       {showImg ? (
         <img
-          src={src} alt={alt} loading="lazy" onError={() => setFailed(true)}
+          src={src} alt={alt} loading={loading} onError={() => setFailed(true)}
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
         />
       ) : (
