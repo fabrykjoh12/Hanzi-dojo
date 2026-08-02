@@ -31,6 +31,7 @@ still get full detail — they are read once, on purpose.
 |-----|--------------|-----------|
 | **this file** | Vision, stack, repo shape, coding rules, DB safety rules, workflow | Always, first |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Full DB schema, level/mastery/SRS systems, design system, content pipeline | You need the detail |
+| [`docs/METRICS.md`](docs/METRICS.md) | The metric dictionary — one definition per number the product shows | Touching analytics or any displayed number |
 | [`docs/STORY-BIBLE.md`](docs/STORY-BIBLE.md) | The story universe: world rules, cast, how a season is made. Machine half: `data/story-canon.chinese.json` | Writing or reviewing stories |
 | [`docs/DEPLOY.md`](docs/DEPLOY.md) | Env vars, hosting, routing, PWA, secrets, failure cheat-sheet | Something is broken in prod |
 | [`docs/TESTING.md`](docs/TESTING.md) | What needs manual testing on a real device | Before asking testers |
@@ -78,6 +79,12 @@ Applies to work and to conversation both:
 - **Don't rip them out either.** Deleting their rows, assets, themes or
   language branches is its own pile of risk and work for zero benefit. Frozen
   means untouched, not removed.
+- **The freeze is enforced server-side too** (since 2026-07-31): a DB trigger
+  on `language_tracks` only lets ordinary clients activate languages listed by
+  `public.public_track_languages()`. **Un-pausing a language therefore takes
+  TWO edits**: `PUBLIC_LANGUAGES` in `src/languageTheme.js` AND a migration
+  updating that function — the client-side comment alone is no longer the
+  whole story.
 - Their seeded content, migrations and generator scripts stay in the repo as
   history. Leave them where they are.
 
@@ -134,7 +141,7 @@ public storage bucket `audio` (all TTS MP3s).
 
 ## 3. Shape of the codebase
 
-`src/` is **flat** — ~271 files, no subdirectories except `src/tts/` and
+`src/` is **flat** — ~340 files, no subdirectories except `src/tts/` and
 `src/assets/`. It works because naming is consistent. Keep the convention:
 
 - **`Foo.jsx`** — a screen or component. Components only (react-refresh).
@@ -160,6 +167,9 @@ should arrive as a tested module, not another branch inside the component.
 | `src/srs.js` | FSRS scheduling — `schedule(card, grade)`, `previewLabels(card)` |
 | `src/mastery.js` | `MASTERY_STABILITY_DAYS = 21`, `TEST_UNLOCK_MASTERY_PCT = 0.9` |
 | `src/storyReading.js` | Story segmentation + vocab matching (CJK greedy, Russian whole-token + inflection) |
+| `src/storyShelfFlat.js` | The Stories page's one-page shelf: level sections, series units, % known sorting, inline locks |
+| `src/TrustPages.jsx` | Public `/privacy` `/terms` `/support` `/methodology`. **Legal texts are owner-reviewed drafts — never present them as final** |
+| `src/errorMonitor.js` | Client error → `client_error` analytics events. Name + 40-char message + route ONLY — never stacks or typed text |
 | `src/syncQueue.js` | Durable write outbox — offline grading replay |
 | `src/designTokens.js` + `src/panels.jsx` | The "one lit panel" design language |
 
@@ -186,6 +196,11 @@ Again/Hard/Good/Easy. Learning/relearning cards get `due_at = now()` and re-ente
 the session queue at position `gap`; review cards get a real future date. Reviews
 use **day-based availability** (Anki-style): everything scheduled for today is
 available from local midnight, not at the exact clock time it was last reviewed.
+
+**Metrics.** Every number the product shows has ONE definition, in
+`docs/METRICS.md`. Staff accounts are excluded from engagement aggregates
+(never from error monitoring), and a broken query gets fixed — never clamped
+with `Math.min(100, x)`.
 
 **Database.** ~15 tables; the ones you'll touch most are `profiles`,
 `language_tracks`, `vocabulary`, `cards`, `stories`, `daily_activity`. Progress
@@ -251,7 +266,7 @@ Hardcoded neutral hexes are a bug.
 
 ```bash
 npm run lint     # must be 0 errors in src/
-npm test         # vitest — ~1,200 unit tests
+npm test         # vitest — ~3,000 unit tests
 npm run build    # the build is the source of truth
 ```
 
@@ -298,9 +313,17 @@ longer stops on a permission prompt for every single image. The other
 Higgsfield tools (video, audio, publishing, TikTok, websites) still prompt —
 add one to the allow list only when a real task keeps hitting it.
 
-**CI runs the same three on every push and pull request**
-(`.github/workflows/ci.yml`), plus Playwright e2e (`.github/workflows/e2e.yml`).
-If it's red, it doesn't merge.
+**CI runs the same three on every pull request and every push to `main`**
+(`.github/workflows/ci.yml`), plus Playwright e2e on PRs
+(`.github/workflows/e2e.yml`) — one `check` run + one `playwright` run per PR
+commit, usually green in ~3 minutes. A branch pushed WITHOUT a PR gets no CI.
+If it's red, it doesn't merge. (The two `Workers Builds` checks are a dead
+Cloudflare hookup — always red, always ignorable; see `docs/BACKLOG.md`.)
+
+**Published content has its own validator:** Actions → Content utilities →
+task `check-published` runs `check-published-stories.mjs` against the live
+database (structure, previews, numbering, held-chapter gaps). Run it after any
+content change, and read its warnings — they're real.
 
 **Branch and PR, don't push to `main`.** A push to `main` deploys to real users
 immediately and posts to Discord #announcements. Work on a branch, open a PR, let
