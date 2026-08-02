@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   buildEpisode, normalizeRatio, panelArtSrc, visibleBubbles, isGate, revealLimit,
   panelBeats, readBeats, episodeProgress, isEpisodeComplete, bubbleLayout,
-  panelAtReadingLine, estimateBubbleHeight, DEFAULT_RATIO, READING_LINE,
+  panelAtReadingLine, estimateBubbleHeight, DEFAULT_RATIO, READING_LINE, MAX_OVERLAY_WIDTH,
 } from './manhuaLayout'
 
 // A three-panel episode with a choice in the middle, which is the shape every
@@ -301,16 +301,17 @@ describe('bubbleLayout', () => {
     const out = bubbleLayout(bubble, { columnWidth: 390, ratio: 4 / 3, textLength: 10 })
     expect(out.mode).toBe('overlay')
     expect(out.top).toBe(10)
-    expect(out.width).toBe(68)
+    expect(out.width).toBeLessThanOrEqual(MAX_OVERLAY_WIDTH)
+    expect(out.width).toBeGreaterThan(34)
   })
 
   it('pins each side against its own edge and centres the centre', () => {
     const right = bubbleLayout({ side: 'right', top: 0, width: 70 }, { columnWidth: 390, ratio: 1, textLength: 4 })
     const left = bubbleLayout({ side: 'left', top: 0, width: 70 }, { columnWidth: 390, ratio: 1, textLength: 4 })
     const mid = bubbleLayout({ side: 'center', top: 0, width: 70 }, { columnWidth: 390, ratio: 1, textLength: 4 })
-    expect(right.left).toBe(28)
+    expect(right.left).toBeCloseTo(100 - right.width - 4)
     expect(left.left).toBe(4)
-    expect(mid.left).toBe(16)
+    expect(mid.left).toBeCloseTo((100 - mid.width) / 2)
     // Whatever the side, the box stays inside the panel.
     for (const out of [right, left, mid]) {
       expect(out.left).toBeGreaterThanOrEqual(0)
@@ -321,15 +322,17 @@ describe('bubbleLayout', () => {
   it('drops a long line out of the art rather than covering the drawing', () => {
     const out = bubbleLayout(bubble, { columnWidth: 390, ratio: 21 / 9, textLength: 120 })
     expect(out.mode).toBe('below')
-    expect(out.width).toBe(68)
+    expect(out.width).toBe(MAX_OVERLAY_WIDTH)
     expect(out.side).toBe('right')
   })
 
-  it('caps an oversized authored box before it can become a banner', () => {
-    const out = bubbleLayout({ side: 'left', top: 0, width: 92 }, { columnWidth: 390, ratio: 1, textLength: 4 })
-    expect(out.mode).toBe('overlay')
-    expect(out.width).toBe(68)
-    expect(out.left).toBe(4)
+  it('fits short copy while capping long copy before either becomes a banner', () => {
+    const short = bubbleLayout({ side: 'left', top: 0, width: 92 }, { columnWidth: 390, ratio: 1, textLength: 4 })
+    const long = bubbleLayout({ side: 'left', top: 0, width: 92 }, { columnWidth: 390, ratio: 1, textLength: 40 })
+    expect(short.mode).toBe('overlay')
+    expect(short.width).toBeLessThan(long.width)
+    expect(long.width).toBe(MAX_OVERLAY_WIDTH)
+    expect(short.left).toBe(4)
   })
 
   it('re-decides as the screen narrows', () => {
@@ -361,7 +364,8 @@ describe('bubbleLayout', () => {
   it('survives being asked with nothing', () => {
     const out = bubbleLayout(null, {})
     expect(out.mode).toBe('overlay')
-    expect(out.width).toBe(68)
+    expect(out.width).toBeGreaterThanOrEqual(34)
+    expect(out.width).toBeLessThanOrEqual(MAX_OVERLAY_WIDTH)
   })
 })
 

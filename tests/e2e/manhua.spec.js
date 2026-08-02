@@ -57,6 +57,14 @@ test.describe('Manhua reader', () => {
     const art = await openingArt.boundingBox();
     const firstCaption = await captions.first().boundingBox();
     expect(firstCaption.y).toBeGreaterThanOrEqual(art.y + art.height - 1);
+
+    const speech = page.locator('[data-manhua-bubble-kind="speech"][data-manhua-text-layout="overlay"]').first();
+    await expect(speech.locator('[data-manhua-balloon-shape="speech"]')).toHaveCount(1);
+    await expect(speech.locator('[data-manhua-balloon-tail]')).toHaveCount(1);
+
+    const thought = page.locator('[data-manhua-bubble-kind="thought"][data-manhua-text-layout="overlay"]').first();
+    await expect(thought.locator('[data-manhua-balloon-shape="thought"]')).toHaveCount(1);
+    await expect(thought.locator('[data-manhua-thought-trail]')).toHaveCount(1);
   });
 
   test('updates the panel count while scrolling', async ({ page }) => {

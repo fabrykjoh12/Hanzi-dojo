@@ -1,6 +1,6 @@
 import { wordStatus, isPlaceWord, isWordlikeToken } from './storyReading'
 import { TokenBody, RevealEnglishButton } from './ReadingScaffold'
-import { PAPER, BUBBLE_RADIUS, THOUGHT_RADIUS, BUBBLE_FRAME, THOUGHT_FRAME, NARRATION_RADIUS, TYPE, TAP_TARGET } from './manhuaTokens'
+import { PAPER, NARRATION_RADIUS, TYPE, TAP_TARGET } from './manhuaTokens'
 import { Volume2 } from 'lucide-react'
 
 // A line of the story, drawn as interface over or directly below the artwork.
@@ -12,7 +12,7 @@ import { Volume2 } from 'lucide-react'
 //
 // Four registers, because a panel says different kinds of things:
 //   speech    — the white bubble with a tail, someone talking
-//   thought    — rounder, tailless, drawn in a lighter ink: the learner's head
+//   thought    — a cloud with shrinking circles toward the learner's head
 //   narration  — a caption plate with a cinnabar rule, the story's voice
 //   reply      — a legacy learner line, drawn with the same white balloon as
 //                ordinary speech so a linear story never looks like a chat UI
@@ -24,9 +24,9 @@ const SR_ONLY = {
   overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0,
 }
 
-// The balloon itself. Drawn the way a comic draws one: a heavy ink keyline and
-// a generous but BOUNDED corner radius, with no shadow — ink on paper does not
-// float, and a percentage radius turns a one-line balloon into a flat lens.
+// The balloon itself. Dialogue and thought use drawn SVG silhouettes instead of
+// CSS rounded rectangles: a comic balloon is an irregular ink shape fitted to
+// its words, not a UI card with a triangle stuck to it.
 //
 // Narration is deliberately the odd one out. In print a caption is a hard-edged
 // box, not a balloon, and keeping it square is what tells the reader at a glance
@@ -40,55 +40,89 @@ function chromeFor(kind, accentHex) {
       borderRadius: NARRATION_RADIUS + 'px',
     }
   }
-  if (kind === 'thought') {
-    // Rounder and drawn in a lighter ink than speech. NOT dashed — a dashed
-    // keyline is meant to suggest a scalloped cloud edge and instead reads as a
-    // selection marquee, like the balloon is an object you have clicked on.
-    return {
-      background: PAPER.bubble,
-      border: THOUGHT_FRAME + 'px solid ' + PAPER.ink2,
-      borderRadius: THOUGHT_RADIUS + 'px',
-    }
-  }
-  if (kind === 'reply') {
-    // Kept as a distinct semantic kind for compatibility with saved episodes,
-    // but drawn like ordinary dialogue now that authored stories read linearly.
-    return {
-      background: PAPER.bubble,
-      border: BUBBLE_FRAME + 'px solid ' + PAPER.frame,
-      borderRadius: BUBBLE_RADIUS + 'px',
-    }
-  }
   return {
-    background: PAPER.bubble,
-    border: BUBBLE_FRAME + 'px solid ' + PAPER.frame,
-    borderRadius: BUBBLE_RADIUS + 'px',
+    background: 'transparent',
+    border: 'none',
+    borderRadius: 0,
   }
 }
 
-// The tail. Two stacked triangles (border colour under, bubble colour over) so
-// the 1px edge continues around the point instead of stopping at the bubble.
-function Tail({ tail, kind, accentHex }) {
-  if (!tail || kind === 'narration') return null
-  const chrome = chromeFor(kind, accentHex)
+const SPEECH_PATH = 'M15 5C7 8 3 20 4 47C3 73 9 89 23 95C40 101 72 98 88 91C98 86 100 69 98 43C97 19 90 8 75 4C57 0 29 1 15 5Z'
+const THOUGHT_PATH = 'M15 18C7 18 3 28 8 36C1 42 3 54 11 59C5 67 9 78 19 80C20 90 32 95 41 90C49 99 62 97 68 90C78 96 90 89 89 79C98 76 101 64 94 57C101 49 97 38 89 35C93 24 82 16 74 19C69 8 55 5 47 12C38 3 25 7 22 16C20 17 17 17 15 18Z'
+
+function SpeechTail({ tail }) {
+  if (!tail) return null
   const bottom = tail.indexOf('bottom') === 0
   const left = tail.indexOf('left') !== -1
-  const edge = kind === 'thought' ? PAPER.ink2 : PAPER.frame
-  const base = {
-    position: 'absolute', width: 0, height: 0,
-    borderLeft: '10px solid transparent', borderRight: '10px solid transparent',
-  }
-  const dir = bottom ? 'borderTop' : 'borderBottom'
-  // The outline triangle sits 3px further out than the fill triangle, so the
-  // keyline continues around the point at the same weight as the balloon's edge
-  // instead of thinning to nothing.
-  const pos = bottom ? { bottom: '-19px' } : { top: '-19px' }
-  const posIn = bottom ? { bottom: '-16px' } : { top: '-16px' }
-  const side = left ? { left: '30px' } : { right: '30px' }
+  return (
+    <svg
+      aria-hidden
+      data-manhua-balloon-tail={tail}
+      viewBox="0 0 44 34"
+      preserveAspectRatio="none"
+      style={{
+        position: 'absolute', zIndex: 0, pointerEvents: 'none',
+        width: '44px', height: '34px',
+        ...(bottom ? { bottom: '-25px' } : { top: '-25px' }),
+        ...(left ? { left: '19px' } : { right: '19px' }),
+        transform: 'scale(' + (left ? 1 : -1) + ', ' + (bottom ? 1 : -1) + ')',
+      }}
+    >
+      <path
+        d="M3 1C15 2 28 4 41 0C32 10 24 21 9 32C15 19 14 9 3 1Z"
+        fill={PAPER.bubble}
+        stroke={PAPER.frame}
+        strokeWidth="2"
+        vectorEffect="non-scaling-stroke"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function ThoughtTrail({ side }) {
+  const left = side !== 'left'
+  return (
+    <svg
+      aria-hidden
+      data-manhua-thought-trail={left ? 'bottom-left' : 'bottom-right'}
+      viewBox="0 0 40 34"
+      style={{
+        position: 'absolute', zIndex: 0, pointerEvents: 'none',
+        width: '40px', height: '34px', bottom: '-29px',
+        ...(left ? { left: '18px' } : { right: '18px' }),
+        transform: left ? 'none' : 'scaleX(-1)',
+      }}
+    >
+      <circle cx="29" cy="5" r="6" fill={PAPER.bubble} stroke={PAPER.ink2} strokeWidth="2" />
+      <circle cx="17" cy="17" r="4" fill={PAPER.bubble} stroke={PAPER.ink2} strokeWidth="2" />
+      <circle cx="7" cy="28" r="2.5" fill={PAPER.bubble} stroke={PAPER.ink2} strokeWidth="2" />
+    </svg>
+  )
+}
+
+function BalloonShell({ kind, tail, side, overlay }) {
+  if (kind === 'narration') return null
+  const thought = kind === 'thought'
   return (
     <>
-      <span aria-hidden style={{ ...base, ...pos, ...side, [dir]: '19px solid ' + edge }} />
-      <span aria-hidden style={{ ...base, ...posIn, ...side, [dir]: '16px solid ' + chrome.background }} />
+      {thought && overlay ? <ThoughtTrail side={side} /> : <SpeechTail tail={tail} />}
+      <svg
+        aria-hidden
+        data-manhua-balloon-shape={thought ? 'thought' : 'speech'}
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        style={{ position: 'absolute', inset: '-2px', width: 'calc(100% + 4px)', height: 'calc(100% + 4px)', zIndex: 0, pointerEvents: 'none', overflow: 'visible' }}
+      >
+        <path
+          d={thought ? THOUGHT_PATH : SPEECH_PATH}
+          fill={PAPER.bubble}
+          stroke={thought ? PAPER.ink2 : PAPER.frame}
+          strokeWidth="2"
+          vectorEffect="non-scaling-stroke"
+          strokeLinejoin="round"
+        />
+      </svg>
     </>
   )
 }
@@ -161,7 +195,7 @@ function Word({ token, tokenId, beatIndex, selected, accentHex, readingMode, use
 }
 
 export default function ManhuaBubble({
-  beat, beatIndex, kind = 'speech', tail = null, speaker = null, voice = null,
+  beat, beatIndex, kind = 'speech', tail = null, side = 'right', speaker = null, voice = null,
   accentHex, fontFamily, readingMode, userCards, language,
   selected, onSelectToken, onPlayLine, speaking = false,
   english = '', revealed = false, onToggleEnglish,
@@ -169,16 +203,11 @@ export default function ManhuaBubble({
 }) {
   if (!beat) return null
   const overlay = layout.mode === 'overlay'
-  const caption = !overlay && layout.variant === 'caption'
   const narration = kind === 'narration'
-  const chrome = caption
-    ? {
-      background: 'transparent',
-      border: 'none',
-      borderBottom: '1px solid ' + PAPER.soft,
-      borderRadius: 0,
-    }
-    : chromeFor(kind, accentHex)
+  // A narration line is a caption plate. Spoken dialogue that has to leave the
+  // art remains a balloon in the gutter instead of becoming generic body copy.
+  const caption = !overlay && layout.variant === 'caption' && narration
+  const chrome = chromeFor(kind, accentHex)
 
   const position = overlay
     ? {
@@ -202,6 +231,7 @@ export default function ManhuaBubble({
   return (
     <div
       data-manhua-bubble="true"
+      data-manhua-bubble-kind={kind}
       tabIndex={0}
       role="group"
       aria-label="Story line. Press Enter or the right arrow to explore words."
@@ -218,10 +248,11 @@ export default function ManhuaBubble({
         ...chrome,
         padding,
         boxShadow: 'none',
+        isolation: 'isolate',
         ...style,
       }}
     >
-      <Tail tail={tail} kind={kind} accentHex={accentHex} />
+      <BalloonShell kind={kind} tail={tail} side={side} overlay={overlay} />
 
       {/* Who is talking. A printed label is the exception, not the rule — in a
           manhua panel the drawing says who is speaking, and a name plate over
@@ -230,6 +261,7 @@ export default function ManhuaBubble({
           which have no drawing to go on, are always told. */}
       {speaker && !narration && (
         <div style={{
+          position: 'relative', zIndex: 1,
           fontSize: TYPE.speaker, fontWeight: 800, letterSpacing: '0.08em',
           textTransform: 'uppercase', color: PAPER.muted, marginBottom: '3px',
         }}>
@@ -240,7 +272,7 @@ export default function ManhuaBubble({
         <span style={SR_ONLY}>{voice}</span>
       )}
 
-      <div>
+      <div style={{ position: 'relative', zIndex: 1 }}>
         {/* Hear the whole line, and reveal what it means. Two small ink marks,
             not a toolbar — and FLOATED, not a flex sibling: floated, they cost
             the sentence width on its first line only and no height at all, so a
@@ -323,6 +355,7 @@ export default function ManhuaBubble({
 
       {revealed && english && (
         <div lang="en" style={{
+          position: 'relative', zIndex: 1,
           fontSize: TYPE.english, color: PAPER.muted, lineHeight: 1.5,
           marginTop: '6px', paddingTop: '7px', borderTop: '1px solid ' + PAPER.soft,
         }}>

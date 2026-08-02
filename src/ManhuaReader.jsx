@@ -279,6 +279,7 @@ export default function ManhuaReader(props) {
           beatIndex={bubble.beat}
           kind={kind || bubble.kind}
           tail={layout.mode === 'overlay' ? bubble.tail : null}
+          side={bubble.side}
           speaker={speakerLabel(bubble.beat)}
           voice={beat.speaker}
           accentHex={accent}
