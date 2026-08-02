@@ -195,7 +195,7 @@ export default function PacedReader(props) {
                       title="Got it — next"
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                        width: '34px', height: '34px', borderRadius: '999px', cursor: 'pointer', marginTop: '2px',
+                        width: '44px', height: '44px', borderRadius: '999px', cursor: 'pointer', marginTop: '2px',
                         border: '1.5px solid ' + (isDone ? DONE_GREEN : 'var(--border)'),
                         background: isDone ? DONE_GREEN + '1f' : 'var(--surface)',
                       }}

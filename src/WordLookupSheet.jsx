@@ -10,6 +10,7 @@ import {
 } from './wordLookup'
 import { MICRO } from './designTokens'
 import { X, Volume2, Bookmark, MapPin, UserRound } from 'lucide-react'
+import { trapDialogFocus } from './dialogFocus'
 
 // Same green the story text uses for a name or a curated place name, so the
 // sheet and the word on the page never disagree about what kind of word this is.
@@ -19,7 +20,7 @@ const PROPER_NOUN_COLOR = '#2F9E6D'
 // the icon alone was a 20px target with a 6px pad before.
 const action = {
   background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-  width: '40px', height: '40px', borderRadius: '999px',
+  width: '44px', height: '44px', borderRadius: '999px',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
 }
 
@@ -153,6 +154,7 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
       <div
         ref={(el) => { boxRef.current = el; if (anchored) popRef.current = el }}
         onClick={e => e.stopPropagation()}
+        onKeyDown={e => trapDialogFocus(e, boxRef.current)}
         role="dialog"
         aria-modal={anchored ? undefined : 'true'}
         aria-label={selected.word}
@@ -167,7 +169,7 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
         {/* What did I tap — word and reading own the top line; actions sit clear of them. */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{
+            <div lang={lang === 'chinese' ? 'zh-Hans' : undefined} style={{
               fontSize: anchored ? '26px' : '30px', fontWeight: 800, lineHeight: 1.15, overflowWrap: 'anywhere',
               color: isProperNoun ? PROPER_NOUN_COLOR : accent, fontFamily: theme.font,
             }}>
@@ -238,7 +240,7 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
         {selected.sentence && (
           <div style={{ marginTop: anchored ? '10px' : '14px', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
             <div style={{ ...MICRO, color: 'var(--text-faint)', marginBottom: anchored ? '4px' : '6px' }}>From this line</div>
-            <div style={{ fontSize: anchored ? '14px' : '15px', color: 'var(--text-muted)', lineHeight: anchored ? 1.5 : 1.7, fontFamily: theme.font }}>
+            <div lang={lang === 'chinese' ? 'zh-Hans' : undefined} style={{ fontSize: anchored ? '14px' : '15px', color: 'var(--text-muted)', lineHeight: anchored ? 1.5 : 1.7, fontFamily: theme.font }}>
               {parts ? (
                 <>
                   {parts.before}

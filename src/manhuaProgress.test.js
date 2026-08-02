@@ -31,7 +31,7 @@ describe('progressKey', () => {
 describe('sanitizeProgress', () => {
   it('reads a well-formed record back', () => {
     const out = sanitizeProgress({ panel: 3, choices: { p2: 1 }, tapped: ['学生'], completed: true })
-    expect(out).toEqual({ panel: 3, choices: { p2: 1 }, tapped: ['学生'], completed: true })
+    expect(out).toEqual({ panel: 3, tapped: ['学生'], completed: true })
   })
 
   it('returns the empty default for anything that is not a record', () => {
@@ -43,7 +43,7 @@ describe('sanitizeProgress', () => {
   it('discards fields it cannot trust rather than the whole record', () => {
     const out = sanitizeProgress({ panel: -2, choices: { p2: 'first', p3: 0 }, tapped: ['ok', 5, ''], completed: 'yes' })
     expect(out.panel).toBe(0)
-    expect(out.choices).toEqual({ p3: 0 })
+    expect(out).not.toHaveProperty('choices')
     expect(out.tapped).toEqual(['ok'])
     expect(out.completed).toBe(false)
   })
@@ -55,10 +55,10 @@ describe('sanitizeProgress', () => {
 })
 
 describe('mergeProgress', () => {
-  it('advances the panel and merges choices', () => {
+  it('advances the panel and drops legacy choices', () => {
     const out = mergeProgress({ panel: 1, choices: { p2: 0 } }, { panel: 3, choices: { p5: 1 } })
     expect(out.panel).toBe(3)
-    expect(out.choices).toEqual({ p2: 0, p5: 1 })
+    expect(out).not.toHaveProperty('choices')
   })
 
   it('unions tapped words without duplicating them', () => {
@@ -71,7 +71,7 @@ describe('mergeProgress', () => {
   })
 
   it('leaves the record alone when the patch is empty or junk', () => {
-    const prev = { panel: 2, choices: { p2: 1 }, tapped: ['x'], completed: false }
+    const prev = { panel: 2, tapped: ['x'], completed: false }
     expect(mergeProgress(prev, {})).toEqual(prev)
     expect(mergeProgress(prev, null)).toEqual(prev)
   })
@@ -80,12 +80,6 @@ describe('mergeProgress', () => {
 describe('resumePanel', () => {
   it('returns to where the learner was', () => {
     expect(resumePanel({ panel: 3, choices: { p2: 0 } }, PANELS)).toBe(3)
-  })
-
-  it('never resumes past an unanswered choice', () => {
-    // The choice on p2 was never made, so panel 3 was never legitimately read —
-    // resuming there would show a branch nobody picked.
-    expect(resumePanel({ panel: 3, choices: {} }, PANELS)).toBe(1)
   })
 
   it('clamps into an episode that has since lost panels', () => {
@@ -108,7 +102,7 @@ describe('the rename from manga to manhua', () => {
     store.set(legacyProgressKey('st6'), { panel: 5, choices: { p4: 1 }, tapped: ['学生'], completed: false })
     const out = await loadManhuaProgress('st6')
     expect(out.panel).toBe(5)
-    expect(out.choices).toEqual({ p4: 1 })
+    expect(out).not.toHaveProperty('choices')
   })
 
   it('prefers the new key once anything has been written there', async () => {

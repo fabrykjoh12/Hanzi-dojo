@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useStoryReaderCore } from './useStoryReaderCore'
 import {
-  buildEpisode, panelArtSrc, visibleBubbles, isGate, revealLimit,
+  buildEpisode, panelArtSrc, visibleBubbles, revealLimit,
   readBeats, episodeProgress, isEpisodeComplete, bubbleLayout, panelAtReadingLine,
   MAX_OVERLAY_WIDTH,
 } from './manhuaLayout'
@@ -12,7 +12,6 @@ import { getLevelLabel } from './utils'
 import ManhuaHeader from './ManhuaHeader'
 import ManhuaPanel from './ManhuaPanel'
 import ManhuaBubble from './ManhuaBubble'
-import ManhuaChoiceCard from './ManhuaChoiceCard'
 import ManhuaCompletion from './ManhuaCompletion'
 import WordLookupSheet from './WordLookupSheet'
 
@@ -49,7 +48,6 @@ export default function ManhuaReader(props) {
     ? getLevelLabel(track.language, track.system, meta.continues.level)
     : null
 
-  const [choices, setChoices] = useState({})
   const [active, setActive] = useState(0)
   const [seenThrough, setSeenThrough] = useState(0)
   const [columnWidth, setColumnWidth] = useState(COLUMN_MAX)
@@ -77,7 +75,6 @@ export default function ManhuaReader(props) {
     let live = true
     loadManhuaProgress(story.id).then((saved) => {
       if (!live) return
-      setChoices(saved.choices)
       const at = resumePanel(saved, panels)
       setActive(at)
       setSeenThrough(at)
@@ -120,7 +117,7 @@ export default function ManhuaReader(props) {
   // IntersectionObserver because the question is "what is under the reading
   // line", which needs the panels' live positions, not the moments they crossed
   // a threshold.
-  const limit = revealLimit(panels, choices)
+  const limit = revealLimit(panels)
   useEffect(() => {
     let raf = 0
     const pick = () => {
@@ -147,11 +144,11 @@ export default function ManhuaReader(props) {
   // `active` only changes when a different panel takes over the viewport.
   useEffect(() => {
     if (!restored) return
-    saveManhuaProgress(story.id, { panel: active, choices })
-  }, [restored, active, choices, story.id])
+    saveManhuaProgress(story.id, { panel: active })
+  }, [restored, active, story.id])
 
   // ── Completion ───────────────────────────────────────────────────────────
-  const complete = isEpisodeComplete(panels, choices, seenThrough)
+  const complete = isEpisodeComplete(panels, seenThrough)
   const { finish } = c
   useEffect(() => {
     if (!complete || finishedRef.current) return
@@ -183,16 +180,6 @@ export default function ManhuaReader(props) {
     selectToken(token, status, tokenId, beatIndex, anchorEl)
     saveManhuaProgress(story.id, { tapped: [token.text] })
   }, [selectToken, story.id])
-
-  // ── Choices ──────────────────────────────────────────────────────────────
-  const pick = useCallback((panelId, index) => {
-    setChoices((prev) => {
-      // Already answered: a second tap (or a double-fire) must not rewrite a
-      // line the learner has said.
-      if (Number.isInteger(prev[panelId])) return prev
-      return { ...prev, [panelId]: index }
-    })
-  }, [])
 
   // ── Keyboard ─────────────────────────────────────────────────────────────
   // Escape closes the lookup (the core's own Escape handler is behind its
@@ -235,7 +222,7 @@ export default function ManhuaReader(props) {
     if (!complete) return []
     const out = []
     const seen = new Set()
-    for (const beatIndex of readBeats(panels, choices, seenThrough)) {
+    for (const beatIndex of readBeats(panels, seenThrough)) {
       const beat = c.beats[beatIndex]
       if (!beat) continue
       for (const t of beat.tokens) {
@@ -245,7 +232,7 @@ export default function ManhuaReader(props) {
       }
     }
     return out
-  }, [complete, panels, choices, seenThrough, c.beats])
+  }, [complete, panels, seenThrough, c.beats])
 
   const practiceWords = (c.readability.newWords || [])
     .filter(w => w.example_sentence && w.example_sentence.indexOf(w.word) !== -1)
@@ -314,7 +301,7 @@ export default function ManhuaReader(props) {
   }
 
   return (
-    <div style={{
+    <div lang={track.language === 'chinese' ? 'zh-Hans' : undefined} style={{
       minHeight: '100vh',
       background: PAPER.page,
       color: PAPER.ink,
@@ -348,30 +335,9 @@ export default function ManhuaReader(props) {
         }}
       >
         {panels.slice(0, limit + 1).map((panel, i) => {
-          const gate = isGate(panel, choices)
-          const picked = choices[panel.id]
-          const bubbles = visibleBubbles(panel, choices).map(b => renderBubble(panel, b)).filter(Boolean)
+          const bubbles = visibleBubbles(panel).map(b => renderBubble(panel, b)).filter(Boolean)
           const overlays = bubbles.filter(b => b.layout.mode === 'overlay').map(b => b.node)
           const belows = bubbles.filter(b => b.layout.mode !== 'overlay').map(b => b.node)
-
-          // The learner's own reply, once made, is a line of the story like any
-          // other — same bubble, same tappable words, tinted so it reads as
-          // theirs.
-          // Indexed, not asserted: `picked` comes from durable storage, so an
-          // episode that has since been re-cut can hand back an index its choice
-          // no longer has. Reading `.beat` off the undefined that follows would
-          // take the whole reader down over a stale preference.
-          const chosen = panel.choice && Number.isInteger(picked)
-            ? panel.choice.options[picked]
-            : null
-          // A choice panel carries no art, so the reply is always in flow.
-          const replyBubble = chosen
-            ? renderBubble(panel, {
-              beat: chosen.beat,
-              kind: 'reply', side: 'right', top: 8,
-              width: 78, tail: null, when: null,
-            }, 'reply', true)
-            : null
 
           return (
             <div key={panel.id}>
@@ -406,35 +372,6 @@ export default function ManhuaReader(props) {
                 />
               )}
 
-              {replyBubble && (
-                <div style={{ position: 'relative', marginTop: '10px' }}>{replyBubble.node}</div>
-              )}
-
-              {panel.choice && (
-                <div style={{ marginTop: '14px' }}>
-                  <ManhuaChoiceCard
-                    prompt={panel.choice.prompt}
-                    options={panel.choice.options.map(o => ({
-                      text: (c.beats[o.beat] || {}).text || '',
-                      pinyin: pinyinFor(c.beats[o.beat]),
-                    }))}
-                    chosenIndex={Number.isInteger(picked) ? picked : null}
-                    onPick={(index) => pick(panel.id, index)}
-                    accentHex={accent}
-                    fontFamily={fontFamily}
-                    showPinyin={c.readingMode !== 'hidden'}
-                  />
-                </div>
-              )}
-
-              {gate && (
-                <p aria-live="polite" style={{
-                  margin: '10px 0 0', textAlign: 'center',
-                  fontSize: '12.5px', color: PAPER.muted,
-                }}>
-                  Choose a reply to keep reading.
-                </p>
-              )}
             </div>
           )
         })}
@@ -480,13 +417,4 @@ export default function ManhuaReader(props) {
       />
     </div>
   )
-}
-
-// A whole-line reading for a choice option. The options are candidate lines the
-// learner hasn't said yet, so they carry no per-word learning status and get one
-// reading for the line rather than per-word ruby — the same call the reply-along
-// reader makes for the same reason.
-function pinyinFor(beat) {
-  if (!beat) return ''
-  return beat.tokens.filter(t => t.vocab && t.vocab.reading).map(t => t.vocab.reading).join(' ')
 }

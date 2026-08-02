@@ -26,6 +26,7 @@ import { ArrowLeft, Bookmark, Volume2, Play, Pause, Languages, ChevronRight, Use
 import ComprehensionCheck from './ComprehensionCheck'
 import StoryCover from './StoryCover'
 import { RevealEnglishButton } from './ReadingScaffold'
+import { loadTtsAudio, utteranceAudio } from './ttsAudio'
 
 // HSKStory-inspired immersion reader for BOTH languages. Light theme. Tap a word
 // for a bottom-sheet definition; pinyin (Chinese) / furigana (Japanese) and
@@ -271,6 +272,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const [winWidth, setWinWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200)
   const [questions, setQuestions] = useState([])
   const [answers, setAnswers] = useState({})   // question id → chosen option index
+  const [utteranceIds, setUtteranceIds] = useState({})
   const [adding, setAdding] = useState(false)
   const wordAudioRef = useRef(null)
   const storyAudioRef = useRef(null)
@@ -368,9 +370,19 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     /* eslint-disable react-hooks/set-state-in-effect */
     setAnswers({})
     setQuestions([])
+    setUtteranceIds({})
     /* eslint-enable react-hooks/set-state-in-effect */
     supabase.from('story_questions').select('*').eq('story_id', story.id).order('question_number', { ascending: true })
       .then(({ data }) => { if (active) setQuestions(data || []) })
+    supabase.from('story_utterances').select('id, utterance_index').eq('story_id', story.id)
+      .then(async ({ data }) => {
+        if (!active || !data?.length) return
+        const byIndex = {}
+        data.forEach(row => { byIndex[row.utterance_index] = row.id })
+        await loadTtsAudio('story_utterance', data.map(row => row.id))
+        if (active) setUtteranceIds(byIndex)
+      })
+      .catch(() => {})
     return () => { active = false }
   }, [story.id])
 
@@ -631,8 +643,10 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     setSpeakingLine(index)
     speakingLineRef.current = index
 
-    if (story.has_audio) {
-      const url = getAudioUrl('stories/' + story.id + '/' + index + '.mp3')
+    const utteranceId = utteranceIds[index]
+    const generatedUrl = utteranceId ? utteranceAudio(utteranceId).utterance : null
+    if (generatedUrl || story.has_audio) {
+      const url = generatedUrl || getAudioUrl('stories/' + story.id + '/' + index + '.mp3')
       if (!storyAudioRef.current) storyAudioRef.current = new Audio()
       const el = storyAudioRef.current
       el.playbackRate = rateRef.current
@@ -928,7 +942,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               Tip: tap any line to focus it and dim the rest.
             </span>
             <button onClick={dismissFocusHint} aria-label="Dismiss tip"
-              style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '7px', border: 'none', background: 'none', cursor: 'pointer' }}>
+              style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '10px', border: 'none', background: 'none', cursor: 'pointer' }}>
               <X size={14} strokeWidth={2} color={MUTED} />
             </button>
           </div>
@@ -1335,7 +1349,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             {story.english_content && englishLines[sel.lineIndex] && (
               <div style={{ marginTop: '12px', borderTop: '1px solid var(--border)', paddingTop: '10px' }}>
                 <button onClick={() => setShowSentence(v => !v)}
-                  style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: MUTED, fontSize: '13px', fontWeight: 600, padding: '4px 0', minHeight: '32px' }}>
+                  style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: MUTED, fontSize: '13px', fontWeight: 600, padding: '4px 0', minHeight: '44px' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
                     <Languages size={15} strokeWidth={2} color={MUTED} /> Translate sentence
                   </span>
@@ -1401,12 +1415,12 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontSize: '15px', fontWeight: 700, color: TEXT, fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{story.title}</div>
             <div style={{ fontSize: '12px', color: MUTED }}>
-              {speaking ? 'Reading aloud…' : (story.has_audio ? 'Listen' : 'Listen (text-to-speech)')}
+              {speaking ? 'Reading aloud…' : ((story.has_audio || Object.keys(utteranceIds).length) ? 'Listen' : 'Listen (text-to-speech)')}
             </div>
           </div>
           <button onClick={cycleRate} aria-label="Playback speed" title="Playback speed"
             style={{
-              flexShrink: 0, minWidth: '52px', height: '38px', borderRadius: '11px',
+              flexShrink: 0, minWidth: '52px', height: '44px', borderRadius: '11px',
               background: rate === 0.85 ? 'var(--surface-2)' : accent + '14',
               border: '1px solid ' + (rate === 0.85 ? 'var(--border)' : accent + '40'),
               color: rate === 0.85 ? MUTED : accent, cursor: 'pointer',
@@ -1475,7 +1489,7 @@ function TopToggle({ active, onClick, icon: Icon, label, accent, isMobile, ...re
       background: active ? accent + '1A' : 'transparent',
       border: '1px solid ' + (active ? accent + '66' : 'var(--border)'),
       color: active ? accent : MUTED, borderRadius: '999px',
-      minHeight: '36px', padding: isMobile ? (label ? '6px 12px' : '6px 9px') : (label ? '7px 13px' : '7px 10px'),
+      minHeight: '44px', minWidth: '44px', padding: isMobile ? (label ? '6px 12px' : '6px 9px') : (label ? '7px 13px' : '7px 10px'),
       cursor: 'pointer', fontSize: '13px', fontWeight: 600,
     }}>
       <Icon size={15} strokeWidth={2} />
@@ -1601,7 +1615,7 @@ function ReaderSettings({ furiganaMode, setFuriganaMode, lens, setLens, fontChoi
 function SettingRow({ label, hint, on, onToggle, accent }) {
   return (
     <button onClick={onToggle} role="switch" aria-checked={on} aria-label={label}
-      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
+      style={{ width: '100%', minHeight: '44px', display: 'flex', alignItems: 'center', gap: '12px', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
       <span style={{ flex: 1, minWidth: 0 }}>
         <span style={{ display: 'block', fontSize: '14.5px', fontWeight: 700, color: 'var(--text)' }}>{label}</span>
         <span style={{ display: 'block', fontSize: '11.5px', color: MUTED, marginTop: '2px', lineHeight: 1.4 }}>{hint}</span>

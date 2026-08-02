@@ -113,10 +113,27 @@ function Word({ token, tokenId, beatIndex, selected, accentHex, readingMode, use
   return (
     <span
       role="button"
-      tabIndex={0}
+      tabIndex={-1}
+      data-manhua-word="true"
       aria-label={token.text}
       onClick={(e) => { e.stopPropagation(); onSelectToken(token, status, tokenId, beatIndex, e.currentTarget) }}
       onKeyDown={(e) => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          const bubble = e.currentTarget.closest('[data-manhua-bubble]')
+          const words = bubble ? Array.from(bubble.querySelectorAll('[data-manhua-word]')) : []
+          const at = words.indexOf(e.currentTarget)
+          const next = e.key === 'ArrowRight' ? at + 1 : at - 1
+          if (words[next]) {
+            e.preventDefault()
+            words[next].focus()
+          }
+          return
+        }
+        if (e.key === 'Escape') {
+          const bubble = e.currentTarget.closest('[data-manhua-bubble]')
+          if (bubble) { e.preventDefault(); bubble.focus() }
+          return
+        }
         if (e.key !== 'Enter' && e.key !== ' ') return
         e.preventDefault(); e.stopPropagation()
         onSelectToken(token, status, tokenId, beatIndex, e.currentTarget)
@@ -184,6 +201,16 @@ export default function ManhuaBubble({
 
   return (
     <div
+      data-manhua-bubble="true"
+      tabIndex={0}
+      role="group"
+      aria-label="Story line. Press Enter or the right arrow to explore words."
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return
+        if (e.key !== 'Enter' && e.key !== 'ArrowRight') return
+        const firstWord = e.currentTarget.querySelector('[data-manhua-word]')
+        if (firstWord) { e.preventDefault(); firstWord.focus() }
+      }}
       className={caption ? 'hd-manhua-caption' : (reduceMotion ? undefined : 'hd-manhua-bubble')}
       data-manhua-text-layout={caption ? 'caption' : (overlay ? 'overlay' : 'below')}
       style={{
@@ -235,7 +262,7 @@ export default function ManhuaBubble({
               title="Play this line"
               style={{
                 background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                width: TAP_TARGET * 0.66 + 'px', height: TAP_TARGET * 0.66 + 'px',
+                width: TAP_TARGET + 'px', height: TAP_TARGET + 'px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 scrollMarginTop: '76px',
               }}
@@ -254,7 +281,7 @@ export default function ManhuaBubble({
           )}
         </div>
 
-        <div style={{
+        <div lang={language === 'chinese' ? 'zh-Hans' : undefined} style={{
           fontFamily,
           fontSize: narration ? TYPE.hanziNarration : TYPE.hanzi,
           lineHeight: 1.85,
@@ -295,7 +322,7 @@ export default function ManhuaBubble({
       </div>
 
       {revealed && english && (
-        <div style={{
+        <div lang="en" style={{
           fontSize: TYPE.english, color: PAPER.muted, lineHeight: 1.5,
           marginTop: '6px', paddingTop: '7px', borderTop: '1px solid ' + PAPER.soft,
         }}>

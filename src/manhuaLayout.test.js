@@ -164,30 +164,27 @@ describe('panelArtSrc', () => {
   })
 })
 
-describe('branching', () => {
+describe('legacy choice linearization', () => {
   const { panels } = buildEpisode(EPISODE, 5)
 
-  it('hides a branch-only bubble until its branch is taken', () => {
-    expect(visibleBubbles(panels[2], {}).map(b => b.beat)).toEqual([4])
-    expect(visibleBubbles(panels[2], { p2: 1 }).map(b => b.beat)).toEqual([3, 4])
-    expect(visibleBubbles(panels[2], { p2: 0 }).map(b => b.beat)).toEqual([4])
+  it('keeps the first authored branch and removes conditional metadata', () => {
+    expect(panels[1].choice).toBeNull()
+    expect(visibleBubbles(panels[1]).map(b => b.beat)).toEqual([1])
+    expect(visibleBubbles(panels[2]).map(b => b.beat)).toEqual([4])
+    expect(panels.flatMap(p => p.bubbles).every(b => b.when === null)).toBe(true)
   })
 
-  it('gates everything after an unanswered choice', () => {
-    expect(isGate(panels[1], {})).toBe(true)
-    expect(revealLimit(panels, {})).toBe(1)
-    expect(isGate(panels[1], { p2: 0 })).toBe(false)
-    expect(revealLimit(panels, { p2: 0 })).toBe(2)
+  it('never gates the story', () => {
+    expect(isGate(panels[1])).toBe(false)
+    expect(revealLimit(panels)).toBe(2)
   })
 
-  it('counts the chosen reply as a beat of the story', () => {
-    expect(panelBeats(panels[1], {})).toEqual([])
-    expect(panelBeats(panels[1], { p2: 1 })).toEqual([2])
+  it('counts the canonical reply as a normal beat', () => {
+    expect(panelBeats(panels[1])).toEqual([1])
   })
 
-  it('reads only the branch that was taken', () => {
-    expect(readBeats(panels, { p2: 0 }, 2)).toEqual([0, 1, 4])
-    expect(readBeats(panels, { p2: 1 }, 2)).toEqual([0, 2, 3, 4])
+  it('reads the canonical linear sequence', () => {
+    expect(readBeats(panels, 2)).toEqual([0, 1, 4])
   })
 })
 
@@ -286,17 +283,14 @@ describe('episodeProgress', () => {
 describe('isEpisodeComplete', () => {
   const { panels } = buildEpisode(EPISODE, 5)
 
-  it('is false while a choice is unanswered, however far you scrolled', () => {
-    expect(isEpisodeComplete(panels, {}, 2)).toBe(false)
-  })
   it('is false before the last panel', () => {
-    expect(isEpisodeComplete(panels, { p2: 0 }, 1)).toBe(false)
+    expect(isEpisodeComplete(panels, 1)).toBe(false)
   })
-  it('is true once every gate is answered and the end is reached', () => {
-    expect(isEpisodeComplete(panels, { p2: 0 }, 2)).toBe(true)
+  it('is true once the end is reached', () => {
+    expect(isEpisodeComplete(panels, 2)).toBe(true)
   })
   it('is false for an empty episode', () => {
-    expect(isEpisodeComplete([], {}, 0)).toBe(false)
+    expect(isEpisodeComplete([], 0)).toBe(false)
   })
 })
 

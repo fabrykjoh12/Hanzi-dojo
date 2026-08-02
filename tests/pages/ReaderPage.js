@@ -12,6 +12,18 @@ export class ReaderPage {
   async gotoStories() {
     await this.page.goto('/stories');
   }
+
+  async revealInCollapsedLevel(target) {
+    await this.page.getByRole('region').first().waitFor();
+    if (await target.count()) return;
+    const toggles = this.page.getByRole('heading', { level: 2 }).getByRole('button');
+    for (let i = 0; i < await toggles.count(); i += 1) {
+      const toggle = toggles.nth(i);
+      if (await toggle.getAttribute('aria-expanded') !== 'false') continue;
+      await toggle.click();
+      if (await target.count()) return;
+    }
+  }
   // Opens the seeded first story into the reader.
   async openFirstStory() {
     await this.openStoryByTitle('公园里的下午');
@@ -22,15 +34,18 @@ export class ReaderPage {
   // story" hero — which may show the same title — never shadows the grid card.
   async openStoryByTitle(title) {
     await this.gotoStories();
-    await this.page.getByRole('region').first().waitFor();
-    await this.page.getByRole('region').getByRole('button', { name: new RegExp(title) }).first().click();
+    const card = this.page.getByRole('region').getByRole('button', { name: new RegExp(title) }).first();
+    await this.revealInCollapsedLevel(card);
+    await card.click();
   }
 
   // Serial chapters live behind their series card's chapter list: open it via
   // the "All chapters" chip, then pick the chapter.
   async openSeriesStoryByTitle(seriesTitle, storyTitle) {
     await this.gotoStories();
-    await this.page.getByRole('button', { name: new RegExp('All chapters of .*' + seriesTitle) }).click();
+    const chapters = this.page.getByRole('button', { name: new RegExp('All chapters of .*' + seriesTitle) });
+    await this.revealInCollapsedLevel(chapters);
+    await chapters.click();
     await this.page.getByRole('button', { name: new RegExp(storyTitle) }).click();
   }
 }

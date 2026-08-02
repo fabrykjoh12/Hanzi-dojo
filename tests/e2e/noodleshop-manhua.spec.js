@@ -21,6 +21,7 @@ test.describe('《一块钱》 vertical slice', () => {
     // own card (marked "Complete story"), beside — not inside — the series
     // card, which announces itself via its chapter-list chip.
     const shelf = page.getByRole('region', { name: 'HSK 1' });
+    await shelf.getByRole('button', { name: 'HSK 1', exact: true }).click();
     await expect(page.getByRole('button', { name: /All chapters of/ }).first()).toBeVisible();
     const card = shelf.getByRole('button', { name: new RegExp(STORY) });
     await expect(card.getByText('Complete story', { exact: true })).toBeVisible();

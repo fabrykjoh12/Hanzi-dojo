@@ -44,6 +44,30 @@ export function readStoryId(pathname) {
   return null
 }
 
+function decodeSegment(value) {
+  try { return decodeURIComponent(value) } catch { return value }
+}
+
+// Signed-in story library routes. These make reader and series state shareable
+// and let browser Back return to the exact shelf state that opened them.
+export function storyRoute(pathname) {
+  let p = pathname || '/stories'
+  if (p.startsWith('/')) p = p.slice(1)
+  const segs = p.replace(/\/$/, '').split('/')
+  if (segs[0] !== 'stories') return null
+  if (segs[1] === 'series' && segs[2]) return { kind: 'series', key: decodeSegment(segs[2]) }
+  if (segs[1]) return { kind: 'story', id: decodeSegment(segs[1]) }
+  return { kind: 'browse' }
+}
+
+export function storyPath(storyId) {
+  return '/stories/' + encodeURIComponent(storyId || '')
+}
+
+export function seriesPath(seriesKey) {
+  return '/stories/series/' + encodeURIComponent(seriesKey || '')
+}
+
 // Recognize the public reading-assessment route (/how-much-can-you-read), which
 // works signed-out. Kept here (not in App) so the same route-mapping tests cover
 // it. Tolerates a trailing slash.

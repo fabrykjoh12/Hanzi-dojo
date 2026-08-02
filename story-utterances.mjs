@@ -71,6 +71,7 @@ async function main() {
 
   let totalLines = 0
   let written = 0
+  let removed = 0
 
   for (const story of stories) {
     const rows = parseStoryUtterances(story, { voices: config.voices })
@@ -81,17 +82,54 @@ async function main() {
     for (const part of cast) {
       console.log('   ' + part.speaker_id + ' x' + part.lines + ' -> ' + part.voice)
     }
-    if (rows.length === 0) continue
-
     if (!apply) continue
-    const { error: upsertError } = await supabase
+    if (rows.length > 0) {
+      const { error: upsertError } = await supabase
+        .from('story_utterances')
+        .upsert(rows, { onConflict: 'story_id,utterance_index' })
+      if (upsertError) {
+        console.error('   x could not write utterances: ' + upsertError.message)
+        continue
+      }
+      written += rows.length
+    }
+
+    // Upsert alone leaves old rows behind when an edited story removes beats.
+    // Compare the exact indexes because intentionally silent beats create valid
+    // gaps. Remove stale rows and their polymorphic TTS metadata so a future
+    // batch cannot narrate lines that no longer exist.
+    const authoredIndexes = new Set(rows.map(row => row.utterance_index))
+    const { data: existingRows, error: staleError } = await supabase
       .from('story_utterances')
-      .upsert(rows, { onConflict: 'story_id,utterance_index' })
-    if (upsertError) {
-      console.error('   x could not write utterances: ' + upsertError.message)
+      .select('id, utterance_index')
+      .eq('story_id', story.id)
+    if (staleError) {
+      console.error('   x could not inspect stale utterances: ' + staleError.message)
       continue
     }
-    written += rows.length
+    const staleIds = (existingRows || [])
+      .filter(row => !authoredIndexes.has(row.utterance_index))
+      .map(row => row.id)
+    if (staleIds.length > 0) {
+      const { error: audioDeleteError } = await supabase
+        .from('tts_audio')
+        .delete()
+        .eq('source_type', 'story_utterance')
+        .in('source_id', staleIds)
+      if (audioDeleteError) {
+        console.error('   x could not remove stale audio metadata: ' + audioDeleteError.message)
+        continue
+      }
+      const { error: utteranceDeleteError } = await supabase
+        .from('story_utterances')
+        .delete()
+        .in('id', staleIds)
+      if (utteranceDeleteError) {
+        console.error('   x could not remove stale utterances: ' + utteranceDeleteError.message)
+        continue
+      }
+      removed += staleIds.length
+    }
     console.log('   written')
   }
 
@@ -101,7 +139,7 @@ async function main() {
     console.log('  npm run tts:generate -- --stories --limit 20 --confirm')
     return
   }
-  console.log('\nWrote ' + written + ' utterances. No audio was generated - do that with:')
+  console.log('\nWrote ' + written + ' utterances and removed ' + removed + ' stale rows. No audio was generated - do that with:')
   console.log('  npm run tts:generate -- --stories --limit 20 --confirm')
 }
 

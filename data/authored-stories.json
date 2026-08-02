@@ -68,7 +68,8 @@
     "presentation": "chat",
     "title": "放学以后",
     "english_summary": "Two classmates make an after-school plan over text.",
-    "content": "小明：你好！你现在忙吗？\n朋友：不忙，怎么了？\n小明：放学以后，我们一起去公园吧。\n朋友：好啊！我也想去。\n小明：我们几点去？\n朋友：四点，好吗？\n小明：好，四点在学校门口见。\n朋友：没问题，一会儿见！"
+    "content": "小明：你好！你现在忙吗？\n朋友：不忙，怎么了？\n小明：今天四点，我们一起去学校，好吗？\n朋友：好！我也想去。\n小明：我们几点去？\n朋友：四点，好吗？\n小明：好，四点在学校见。\n朋友：好，一会儿见！",
+    "english_content": "Xiaoming: Hello! Are you busy now?\nFriend: No, what is it?\nXiaoming: Shall we go to school together at four today?\nFriend: Yes! I want to go too.\nXiaoming: What time shall we go?\nFriend: Four o'clock, okay?\nXiaoming: Good, see you at school at four.\nFriend: Good, see you soon!"
   },
   {
     "language": "chinese",
@@ -79,7 +80,8 @@
     "presentation": "chat",
     "title": "今天吃什么",
     "english_summary": "A quick chat about what to eat for dinner.",
-    "content": "妈妈：你今天想吃什么？\n小明：我想吃面条。\n妈妈：家里没有面条了。\n小明：那我们吃米饭和鸡蛋，好吗？\n妈妈：好。你饿了吗？\n小明：有一点饿。\n妈妈：那我现在做饭。\n小明：谢谢妈妈！"
+    "content": "妈妈：你今天想吃什么？\n小明：我想吃面条。\n妈妈：家里没有面条了。\n小明：那我们吃米饭和鸡蛋，好吗？\n妈妈：好。你饿了吗？\n小明：有一点饿。\n妈妈：那我现在做饭。\n小明：谢谢妈妈！",
+    "english_content": "Mom: What do you want to eat today?\nXiaoming: I want noodles.\nMom: There are no noodles at home.\nXiaoming: Then shall we eat rice and eggs?\nMom: Okay. Are you hungry?\nXiaoming: A little hungry.\nMom: Then I will cook now.\nXiaoming: Thank you, Mom!"
   },
   {
     "language": "chinese",
@@ -91,6 +93,7 @@
     "title": "周末做什么",
     "english_summary": "Two friends compare weekend plans.",
     "content": "朋友：这个周末你有空吗？\n小明：有空。你想做什么？\n朋友：我想去看电影。\n小明：好主意！看什么电影？\n朋友：一个新的中国电影，听说很好看。\n小明：几点的？\n朋友：星期六下午三点。\n小明：太好了，我们一起去！",
+    "english_content": "Friend: Are you free this weekend?\nXiaoming: Yes. What do you want to do?\nFriend: I want to see a movie.\nXiaoming: Good idea! Which movie?\nFriend: A new Chinese movie. I heard it is very good.\nXiaoming: What time?\nFriend: Three on Saturday afternoon.\nXiaoming: Great, let us go together!",
     "reach_words": [
       "周末",
       "有空",
@@ -106,8 +109,8 @@
     "presentation": "scene",
     "title": "下雨天",
     "english_summary": "A rainy-day walk in the park, told scene by scene.",
-    "content": "🌧️ 今天下雨了。\n🌂 小明拿着雨伞。\n🌳 他去公园走路。\n🐦 树上有小鸟。\n🌸 雨里的花很美。\n😊 小明很开心。",
-    "english_content": "It is raining today.\nXiaoming is holding an umbrella.\nHe goes to walk in the park.\nThere are little birds in the tree.\nThe flowers in the rain are beautiful.\nXiaoming is very happy."
+    "content": "🌧️ 今天下雨了。\n🏠 小明在家。\n👀 他看外面。\n💧 外面有水。\n🍵 他在家喝茶。\n😊 小明很高兴。",
+    "english_content": "It is raining today.\nXiaoming is at home.\nHe looks outside.\nThere is water outside.\nHe drinks tea at home.\nXiaoming is very happy."
   },
   {
     "language": "chinese",
@@ -118,8 +121,8 @@
     "presentation": "scene",
     "title": "我的早上",
     "english_summary": "One quiet morning, one scene at a time.",
-    "content": "☀️ 早上七点了。\n🛏️ 小明起床了。\n🪥 他刷牙洗脸。\n🍞 他吃面包喝牛奶。\n🎒 他拿书包上学。\n🚌 他坐公共汽车。",
-    "english_content": "It is seven in the morning.\nXiaoming gets out of bed.\nHe brushes his teeth and washes his face.\nHe eats bread and drinks milk.\nHe takes his backpack to school.\nHe rides the bus."
+    "content": "🌅 早上七点了。\n🛏️ 小明起床了。\n🥛 他喝水。\n🍚 他吃米饭和鸡蛋。\n🎒 他去学校。\n🚌 他坐车去学校。",
+    "english_content": "It is seven in the morning.\nXiaoming gets out of bed.\nHe drinks water.\nHe eats rice and eggs.\nHe goes to school.\nHe rides to school."
   },
   {
     "language": "chinese",
@@ -130,17 +133,8 @@
     "presentation": "scene",
     "title": "在动物园",
     "english_summary": "An afternoon at the zoo, animal by animal.",
-    "content": "🦁 这是一只狮子。\n🐼 那是一只熊猫。\n🐒 猴子在树上玩。\n🐘 大象很大很高。\n🍦 我们吃了冰淇淋。\n📸 妈妈拍了照片。",
-    "english_content": "This is a lion.\nThat is a panda.\nThe monkey is playing in the tree.\nThe elephant is very big and tall.\nWe ate ice cream.\nMom took a photo.",
-    "reach_words": [
-      "狮子",
-      "熊猫",
-      "猴子",
-      "大象",
-      "冰淇淋",
-      "拍",
-      "照片"
-    ]
+    "content": "☀️ 我们今天出去玩。\n🐾 我们看见很多猫和狗。\n🐕 这只狗很大。\n🐈 那只猫很小。\n🍱 我们在那里吃东西。\n😊 妈妈说这里很好。",
+    "english_content": "We go out today.\nWe see many cats and dogs.\nThis dog is big.\nThat cat is small.\nWe eat something there.\nMom says this place is very nice."
   },
   {
     "language": "chinese",
@@ -152,6 +146,7 @@
     "title": "放学以后聊天",
     "english_summary": "Reply inside a chat: make an after-school plan with a friend.",
     "content": "朋友：你今天去学校吗？\n小明：去，我现在在学校。\n朋友：放学以后你想做什么？\n小明：我想去公园。\n朋友：好啊，我们几点去？\n小明：四点，在学校门口见。",
+    "english_content": "Friend: Are you going to school today?\nXiaoming: Yes, I am at school now.\nFriend: What do you want to do after school?\nXiaoming: I want to go to the park.\nFriend: Good, what time shall we go?\nXiaoming: Four o'clock. See you at the school gate.",
     "interactions": {
       "you": "小明",
       "distractors": {
@@ -185,7 +180,8 @@
     "presentation": "chat",
     "title": "周末的电影",
     "english_summary": "Reply inside a chat: agree on a weekend movie.",
-    "content": "朋友：这个周末你有空吗？\n小明：有空，你想做什么？\n朋友：我想去看电影。\n小明：好主意！看什么电影？\n朋友：一个新的中国电影。\n小明：太好了，几点的？",
+    "content": "朋友：星期六你忙吗？\n小明：不忙，你想做什么？\n朋友：我想去看电影。\n小明：好！看什么电影？\n朋友：一个新的中国电影。\n小明：太好了，几点的？",
+    "english_content": "Friend: Are you busy on Saturday?\nXiaoming: No. What do you want to do?\nFriend: I want to see a movie.\nXiaoming: Good! Which movie?\nFriend: A new Chinese movie.\nXiaoming: Great, what time?",
     "interactions": {
       "you": "小明",
       "distractors": {
@@ -208,12 +204,7 @@
           }
         ]
       }
-    },
-    "reach_words": [
-      "周末",
-      "有空",
-      "好主意"
-    ]
+    }
   },
   {
     "language": "chinese",
@@ -243,15 +234,8 @@
     "presentation": "chat",
     "title": "新的决定",
     "english_summary": "Xiaochuan tells Lin Yuqing he wants to move back to the village. She hears him out — and backs him.",
-    "content": "小川：雨晴，我有一个决定。\n林雨晴：什么决定？\n小川：我想回村里工作。\n林雨晴：真的吗？你不喜欢城市了？\n小川：城市很好，但是我需要家人。\n林雨晴：我理解你。\n小川：我有点儿紧张。\n林雨晴：这是你的人生，我支持你。\n林雨晴：什么时候走？\n小川：下个月。\n林雨晴：那我们要好好庆祝一下！",
-    "reach_words": [
-      "村里",
-      "理解",
-      "紧张",
-      "人生",
-      "支持",
-      "庆祝"
-    ]
+    "content": "小川：雨晴，我有一个决定。\n林雨晴：什么决定？\n小川：我想回家工作。\n林雨晴：真的吗？你不喜欢城市了？\n小川：城市很好，但是我想和家人在一起。\n林雨晴：我知道。\n小川：我有一点怕。\n林雨晴：这是你的事，我和你一起。\n林雨晴：什么时候走？\n小川：下个月。\n林雨晴：那我们一起吃饭吧！",
+    "english_content": "Xiaochuan: Yuqing, I have made a decision.\nLin Yuqing: What decision?\nXiaochuan: I want to go home to work.\nLin Yuqing: Really? Do you no longer like the city?\nXiaochuan: The city is good, but I want to be with my family.\nLin Yuqing: I understand.\nXiaochuan: I am a little afraid.\nLin Yuqing: It is your decision, and I am with you.\nLin Yuqing: When will you leave?\nXiaochuan: Next month.\nLin Yuqing: Then let us have dinner together!"
   },
   {
     "language": "chinese",
@@ -263,17 +247,8 @@
     "presentation": "paced",
     "title": "坚持",
     "english_summary": "Xiaohua runs her school race. She does not win — and finds that finishing was the point.",
-    "content": "小花是学校比赛的选手。\n昨天的训练很困难。\n她的教练说，慢慢来。\n今天早上，比赛开始了。\n前面的路还很长。\n她很紧张，也有点儿害怕。\n但是她没有停止。\n教练的建议在她心里。\n她终于到达了。\n她不是第一，但是她很高兴。\n坚持就是胜利。",
-    "english_content": "Xiaohua is a competitor in her school race.\nYesterday's training was hard.\nHer coach said: take it slowly.\nThis morning, the race began.\nThe road ahead was still long.\nShe was nervous, and a little afraid too.\nBut she did not stop.\nHer coach's advice stayed in her heart.\nAt last, she reached the end.\nShe was not first, but she was very happy.\nTo keep going is itself a victory.",
-    "reach_words": [
-      "训练",
-      "困难",
-      "紧张",
-      "停止",
-      "建议",
-      "到达",
-      "胜利"
-    ]
+    "content": "小花是学校比赛的选手。\n昨天她跑了很久。\n她的老师说，慢慢来。\n今天早上，比赛开始了。\n前面的路还很长。\n她有一点怕。\n但是她还在跑。\n老师的话在她心里。\n她终于到了。\n她不是第一，但是她很高兴。\n她做完了，这就是最好的。",
+    "english_content": "Xiaohua is a competitor in her school race.\nYesterday she ran for a long time.\nHer teacher said: take it slowly.\nThis morning, the race began.\nThe road ahead was still long.\nShe was a little afraid.\nBut she kept running.\nHer teacher's words stayed in her heart.\nAt last, she arrived.\nShe was not first, but she was very happy.\nShe finished, and that was what mattered."
   },
   {
     "language": "chinese",
@@ -576,7 +551,7 @@
     "is_published": true,
     "title": "2. 一个办法",
     "english_summary": "On a hot afternoon he works out a way to speed things up: if the seedlings need to be taller, he will make them taller himself.",
-    "content": "第二天中午，太热了。\n农民坐在田旁边，看着他的秧苗。\n他想到了一个办法。\n农民：秧苗要高，我就把它们往上拉一点儿。\n他走进田里，拿着第一个秧苗，往上拉一下。\n秧苗真的高了一点儿。\n农民很高兴。\n他一个一个地拉，从早上到晚上。",
+    "content": "第二天中午，太热了。\n农民坐在外面，看着他的秧苗。\n他想到了一个办法。\n农民：秧苗要高，我就把它们往上拉一点儿。\n他走过去，拿着第一个秧苗，往上拉一下。\n秧苗真的高了一点儿。\n农民很高兴。\n他一个一个地拉，从早上到晚上。",
     "english_content": "The next day at noon, it was very hot.\nThe farmer sat by the field, looking at his seedlings.\nThen he thought of a way.\nFarmer: If the seedlings need to be tall, I will pull them up a bit.\nHe walked into the field, took the first seedling, and pulled it up a little.\nThe seedling really was taller.\nThe farmer was delighted.\nHe pulled them one by one, from morning until night.",
     "reach_words": [
       "秧苗",

@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react'
-import StoryReaderImmersive from './StoryReaderImmersive'
-import ManhuaReader from './ManhuaReader'
-import PacedReader from './PacedReader'
-import ChatReader from './ChatReader'
-import InteractiveChatReader from './InteractiveChatReader'
-import SceneReader from './SceneReader'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { resolvePresentation } from './readerMode'
 import { prefsGet, prefsMerge } from './offline'
 
 const PREFS_KEY = 'reader:prefs'
+
+const StoryReaderImmersive = lazy(() => import('./StoryReaderImmersive'))
+const ManhuaReader = lazy(() => import('./ManhuaReader'))
+const PacedReader = lazy(() => import('./PacedReader'))
+const ChatReader = lazy(() => import('./ChatReader'))
+const InteractiveChatReader = lazy(() => import('./InteractiveChatReader'))
+const SceneReader = lazy(() => import('./SceneReader'))
 
 // Chooses the presentation for a story and renders it. All modes receive the
 // same props; 'paced' renders the new beat-by-beat PacedReader, everything
@@ -31,10 +32,19 @@ export default function StoryReader(props) {
   const extra = { readerMode: modePref, onPickReaderMode: chooseMode }
 
   const mode = resolvePresentation(props.story, modePref)
-  if (mode === 'manhua') return <ManhuaReader {...props} />
-  if (mode === 'scene') return <SceneReader {...props} />
-  if (mode === 'chat' && props.story.interactions) return <InteractiveChatReader {...props} />
-  if (mode === 'chat') return <ChatReader {...props} />
-  if (mode === 'paced') return <PacedReader {...props} {...extra} />
-  return <StoryReaderImmersive {...props} {...extra} />
+  let reader
+  if (mode === 'manhua') reader = <ManhuaReader {...props} />
+  else if (mode === 'scene') reader = <SceneReader {...props} />
+  else if (mode === 'chat' && props.story.interactions) reader = <InteractiveChatReader {...props} />
+  else if (mode === 'chat') reader = <ChatReader {...props} />
+  else if (mode === 'paced') reader = <PacedReader {...props} {...extra} />
+  else reader = <StoryReaderImmersive {...props} {...extra} />
+
+  return (
+    <div lang={props.track?.language === 'chinese' ? 'zh-Hans' : undefined} style={{ display: 'contents' }}>
+      <Suspense fallback={<div role="status" style={{ minHeight: '60vh', display: 'grid', placeItems: 'center' }}>Opening story…</div>}>
+        {reader}
+      </Suspense>
+    </div>
+  )
 }

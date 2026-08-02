@@ -12,15 +12,16 @@ import { useIsMobile } from './useIsMobile'
 import { todayStr } from './streak'
 import { pickDailyStory } from './dailyStory'
 import { STATUS_FILTERS, FORMAT_FILTERS } from './storyList'
-import { formatLabel, formatEmoji } from './storyFormat'
+import { formatLabel } from './storyFormat'
 import { seriesHasMore, standaloneStoryDetails } from './storyShelf'
 import { buildFlatShelf, buildNextLevelSection } from './storyShelfFlat'
 import { calculateStoryReadability } from './storyReading'
 import { stripSceneEmoji } from './sceneReading'
 import StoryReader from './StoryReader'
 import StoryCover from './StoryCover'
+import StoryFormatIcon from './StoryFormatIcon'
 import {
-  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock, Layers, Library, Lock,
+  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, ChevronDown, Clock, Layers, Library, Lock,
 } from 'lucide-react'
 
 // Story tier definitions live in ./storyTiers (shared with the post-study
@@ -79,7 +80,7 @@ function IconButton({ icon: Icon, label, onClick }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-        height: '40px', padding: '0 14px', borderRadius: '12px',
+        minHeight: '44px', padding: '0 14px', borderRadius: '12px',
         border: '1px solid var(--border)',
         background: hovered ? 'var(--surface-2)' : 'var(--surface)',
         color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650,
@@ -228,7 +229,7 @@ function StoryCard({ story, read, accentHex, fontFamily, levelLabel, practice, o
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '3px', flexWrap: 'nowrap' }}>
           <span style={metaTag}>{levelLabel}</span>
-          <span style={metaTag}>{formatEmoji(story)} {formatLabel(story)}</span>
+          <span style={metaTag}><StoryFormatIcon story={story} size={13} /> {formatLabel(story)}</span>
           <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 700, color: locked ? 'var(--text-muted)' : read ? 'var(--success)' : 'var(--text-faint)', whiteSpace: 'nowrap' }}>
             {locked ? (lockLabel || 'Locked') : read ? 'Read' : 'New'}
           </span>
@@ -248,7 +249,7 @@ function Segmented({ options, value, onChange, accentHex, label }) {
         return (
           <button key={o.key} onClick={() => onChange(o.key)} aria-pressed={on}
             style={{
-              border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '6px 12px',
+              border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '6px 12px', minHeight: '44px',
               fontSize: '12.5px', fontWeight: on ? 750 : 600, fontFamily: 'Inter, sans-serif',
               background: on ? 'var(--surface)' : 'transparent', color: on ? accentHex : 'var(--text-muted)',
               boxShadow: on ? '0 1px 4px rgba(24,24,27,0.08)' : 'none', transition: 'background 140ms ease',
@@ -274,7 +275,7 @@ function FilterRow({ status, setStatus, format, setFormat, accentHex }) {
 
 function CardGrid({ children, isMobile }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(232px, 1fr))', gap: '16px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(210px, 1fr))', gap: '16px' }}>
       {children}
     </div>
   )
@@ -360,7 +361,7 @@ function SeriesCard({ arc, readIds, accentHex, fontFamily, isMobile, onOpen, onO
             display: 'flex', alignItems: 'center', gap: '5px',
             fontSize: '10.5px', fontWeight: 800, color: '#fff',
             background: 'rgba(24,24,27,0.55)', border: 'none', borderRadius: '999px',
-            padding: '5px 10px', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+            minHeight: '44px', padding: '5px 10px', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
           }}
         >
           <Layers size={12} strokeWidth={2.2} color="#fff" />
@@ -412,7 +413,7 @@ function SeriesPage({ arc, readIds, accentHex, fontFamily, levelLabelFor, isMobi
     <div>
       <button onClick={onBack} style={{
         display: 'inline-flex', alignItems: 'center', gap: '8px',
-        minHeight: '40px', padding: '0 14px', borderRadius: '12px', marginBottom: '18px',
+        minHeight: '44px', padding: '0 14px', borderRadius: '12px', marginBottom: '18px',
         border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)',
         fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
       }}>
@@ -479,7 +480,11 @@ function EmptyPanel({ icon: Icon, title, text }) {
 
 // ─── MAIN STORIES COMPONENT ────────────────────────────────────────────────
 
-export default function Stories({ session, profile, track, onBack, onNavigate, initialStoryId, initialStoryWords, initialStoryFirstMission, onInitialStoryConsumed }) {
+export default function Stories({
+  session, profile, track, onBack, onNavigate, initialStoryId, initialStoryWords,
+  initialStoryFirstMission, onInitialStoryConsumed, routeKind = 'browse',
+  routeStoryId = null, routeSeriesKey = null, onStoryRoute, onSeriesRoute, onBrowseRoute,
+}) {
   const [view, setView] = useState('browse')
   // Which tier tab is open (null → resolve a sensible default once stories load),
   // and the library filters. All three live only on the browse screen.
@@ -488,6 +493,7 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
   const [nextLevelStories, setNextLevelStories] = useState([])
   const [statusFilter, setStatusFilter] = useState('all')
   const [formatFilter, setFormatFilter] = useState('all')
+  const [expandedLevels, setExpandedLevels] = useState(() => new Set([track.current_level]))
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [selectedStory, setSelectedStory] = useState(null)
   // The open series, and whether the reader was entered from inside one — so
@@ -668,10 +674,39 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
     setLoading(false)
   }
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const timer = setTimeout(loadData, 0)
     return () => clearTimeout(timer)
   }, [])
+
+  useEffect(() => {
+    if (loading) return
+    if (routeKind === 'browse') {
+      setView('browse')
+      setSelectedStory(null)
+      setSelectedArc(null)
+      setReaderFromSeries(false)
+      return
+    }
+    if (routeKind === 'story' && routeStoryId) {
+      const target = stories.find(s => s.id === routeStoryId)
+      if (!target || (view === 'reader' && selectedStory?.id === target.id)) return
+      setSelectedCategory(categoryForStory(target, track))
+      setSelectedStory(target)
+      setReaderFromSeries(false)
+      setView('reader')
+      return
+    }
+    if (routeKind === 'series' && routeSeriesKey) {
+      const unit = sections.flatMap(s => s.units).find(u => u.kind === 'series' && u.key === routeSeriesKey)
+      if (!unit || (view === 'series' && selectedArc?.key === unit.key)) return
+      setSelectedArc(unit)
+      setSelectedStory(null)
+      setView('series')
+    }
+  }, [loading, routeKind, routeStoryId, routeSeriesKey, stories, sections, selectedStory?.id, selectedArc?.key, view, track])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (loading) {
     return (
@@ -718,14 +753,25 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
         session={session}
         profile={profile}
         track={track}
-        onBack={() => setView(readerFromSeries && selectedArc ? 'series' : 'browse')}
+        onBack={() => {
+          if (readerFromSeries && selectedArc) {
+            setView('series')
+            if (onSeriesRoute) onSeriesRoute(selectedArc.key)
+          } else {
+            setView('browse')
+            if (onBrowseRoute) onBrowseRoute()
+          }
+        }}
         onHome={onBack}
         onPractice={onNavigate ? (words) => onNavigate('fillblank', { practiceWords: words }) : null}
         todayWords={todayWords}
         firstMission={firstMission}
         nextStory={nextStory}
         nextTierUnlock={nextTierUnlock}
-        onNextStory={() => setSelectedStory(nextStory)}
+        onNextStory={() => {
+          setSelectedStory(nextStory)
+          if (nextStory && onStoryRoute) onStoryRoute(nextStory.id)
+        }}
         isRead={readIds.has(selectedStory.id)}
         onMarkRead={(id) => setReadIds(prev => { const nx = new Set(prev); nx.add(id); return nx })}
       />
@@ -741,6 +787,7 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
     setSelectedStory(story)
     setReaderFromSeries(fromSeries)
     setView('reader')
+    if (onStoryRoute) onStoryRoute(story.id)
   }
 
   const levelLabelFor = (story) => getLevelLabel(track.language, track.system, story.level == null ? track.current_level : story.level)
@@ -760,14 +807,22 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
             levelLabelFor={levelLabelFor}
             isMobile={isMobile}
             onOpen={(story) => openStory(story, true)}
-            onBack={() => { setView('browse'); setSelectedArc(null) }}
+            onBack={() => {
+              setView('browse')
+              setSelectedArc(null)
+              if (onBrowseRoute) onBrowseRoute()
+            }}
           />
         </div>
       </div>
     )
   }
 
-  const openSeries = (arc) => { setSelectedArc(arc); setView('series') }
+  const openSeries = (arc) => {
+    setSelectedArc(arc)
+    setView('series')
+    if (onSeriesRoute) onSeriesRoute(arc.key)
+  }
 
   return (
     <div style={pageShell()}>
@@ -875,7 +930,29 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
                 <section key={sec.level} aria-label={getLevelLabel(track.language, track.system, sec.level)}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '14px', flexWrap: 'wrap' }}>
                     <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)', margin: 0 }}>
-                      {getLevelLabel(track.language, track.system, sec.level)}
+                      <button
+                        type="button"
+                        aria-expanded={expandedLevels.has(sec.level)}
+                        aria-controls={'story-level-' + sec.level}
+                        onClick={() => setExpandedLevels(prev => {
+                          const next = new Set(prev)
+                          if (next.has(sec.level)) next.delete(sec.level)
+                          else next.add(sec.level)
+                          return next
+                        })}
+                        style={{
+                          minHeight: '44px', display: 'inline-flex', alignItems: 'center', gap: '8px',
+                          padding: '0 4px', marginLeft: '-4px', border: 'none', background: 'transparent',
+                          color: 'var(--text)', font: 'inherit', cursor: 'pointer',
+                        }}
+                      >
+                        {getLevelLabel(track.language, track.system, sec.level)}
+                        <ChevronDown
+                          size={18}
+                          aria-hidden="true"
+                          style={{ transform: expandedLevels.has(sec.level) ? 'rotate(180deg)' : 'none', transition: 'transform 180ms ease' }}
+                        />
+                      </button>
                     </h2>
                     {sec.isCurrent && (
                       <span style={pillStyle(accentHex, accentHex + '12', accentHex + '30')}>Your level</span>
@@ -891,7 +968,7 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
                       </span>
                     )}
                   </div>
-                  <div style={{ display: 'grid', gap: '28px' }}>
+                  {expandedLevels.has(sec.level) && <div id={'story-level-' + sec.level} style={{ display: 'grid', gap: '28px' }}>
                     <CardGrid isMobile={isMobile}>
                       {sec.units.map(u => {
                         const lockLabel = sec.levelLocked
@@ -920,7 +997,7 @@ export default function Stories({ session, profile, track, onBack, onNavigate, i
                       stories={sec.practice} readIds={readIds} accentHex={accentHex}
                       fontFamily={fontFamily} levelLabelFor={levelLabelFor} isMobile={isMobile} onOpen={openStory}
                     />
-                  </div>
+                  </div>}
                 </section>
               ))}
             </div>

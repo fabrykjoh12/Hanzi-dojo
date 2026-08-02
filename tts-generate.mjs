@@ -68,9 +68,9 @@ Generate Chinese speech for flashcards and stories.
     --id <uuid,uuid>       Only these source rows.
     --story-id <uuid>      Only the utterances of this story.
     --variant <a,b>        Only these variants (${VARIANT_KEYS.join(', ')}).
-    --language <name>      Vocabulary language filter (default: chinese).
-    --system <name>        Vocabulary system filter (default: hsk_3).
-    --level <n>            Vocabulary level filter.
+    --language <name>      Language filter (default: chinese).
+    --system <name>        Vocabulary/story system filter (vocabulary default: hsk_3).
+    --level <n>            Vocabulary/story level filter.
 
   WHAT TO SKIP
     --missing-only         Only clips that have never been generated.
@@ -191,7 +191,26 @@ async function loadSourceRows() {
     return { rows, jobs }
   }
   if (sourceType === 'story_utterance') {
-    return { rows: await repository.loadUtterances({ storyId: opt('story-id'), ids: list('id'), limit }), jobs: [] }
+    const selectedStoryId = opt('story-id')
+    const ids = list('id')
+    let storyIds = null
+    if (!selectedStoryId && ids.length === 0) {
+      let storyQuery = supabase
+        .from('stories')
+        .select('id')
+        .eq('is_published', true)
+        .eq('language', opt('language', 'chinese'))
+      if (opt('system')) storyQuery = storyQuery.eq('system', opt('system'))
+      if (opt('level') != null) storyQuery = storyQuery.eq('level', Number(opt('level')))
+      const { data: matchingStories, error } = await storyQuery
+      if (error) throw new Error('Could not load stories for speech generation: ' + error.message)
+      storyIds = (matchingStories || []).map(story => story.id)
+      if (storyIds.length === 0) return { rows: [], jobs: [] }
+    }
+    return {
+      rows: await repository.loadUtterances({ storyId: selectedStoryId, storyIds, ids, limit }),
+      jobs: [],
+    }
   }
   const ids = list('id')
   const level = opt('level') == null ? null : Number(opt('level'))

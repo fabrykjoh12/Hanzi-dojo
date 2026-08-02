@@ -17,8 +17,6 @@
 // a few lines of prefsGet/prefsMerge over it, plus the legacy-key read below.
 
 import { prefsGet, prefsMerge } from './offline'
-import { revealLimit } from './manhuaLayout'
-
 export const MANHUA_PROGRESS_PREFIX = 'manhua:'
 
 // The format was called "manga" for its first two days, and positions saved in
@@ -35,7 +33,7 @@ export function legacyProgressKey(storyId) {
   return LEGACY_PROGRESS_PREFIX + (storyId || 'unknown')
 }
 
-export const EMPTY_PROGRESS = { panel: 0, choices: {}, tapped: [], completed: false }
+export const EMPTY_PROGRESS = { panel: 0, tapped: [], completed: false }
 
 // Anything stored can be anything by the time it is read back — an older shape,
 // a half-written record, a panel index from an episode that has since been
@@ -44,18 +42,11 @@ export const EMPTY_PROGRESS = { panel: 0, choices: {}, tapped: [], completed: fa
 // else.
 export function sanitizeProgress(raw) {
   if (!raw || typeof raw !== 'object') return { ...EMPTY_PROGRESS }
-  const choices = {}
-  if (raw.choices && typeof raw.choices === 'object') {
-    for (const key of Object.keys(raw.choices)) {
-      if (Number.isInteger(raw.choices[key])) choices[key] = raw.choices[key]
-    }
-  }
   const tapped = Array.isArray(raw.tapped)
     ? raw.tapped.filter(w => typeof w === 'string' && w).slice(0, 200)
     : []
   return {
     panel: Number.isInteger(raw.panel) && raw.panel >= 0 ? raw.panel : 0,
-    choices,
     tapped,
     completed: raw.completed === true,
   }
@@ -69,12 +60,6 @@ export function mergeProgress(prev, patch) {
   const merged = { ...base }
   if (Number.isInteger(next.panel) && next.panel >= 0) merged.panel = next.panel
   if (next.completed === true) merged.completed = true
-  if (next.choices && typeof next.choices === 'object') {
-    merged.choices = { ...base.choices }
-    for (const key of Object.keys(next.choices)) {
-      if (Number.isInteger(next.choices[key])) merged.choices[key] = next.choices[key]
-    }
-  }
   if (Array.isArray(next.tapped)) {
     const seen = new Set(base.tapped)
     const out = base.tapped.slice()
@@ -95,7 +80,7 @@ export function resumePanel(progress, panels) {
   const p = sanitizeProgress(progress)
   const list = Array.isArray(panels) ? panels : []
   if (list.length === 0) return 0
-  return Math.max(0, Math.min(p.panel, revealLimit(list, p.choices), list.length - 1))
+  return Math.max(0, Math.min(p.panel, list.length - 1))
 }
 
 export function loadManhuaProgress(storyId) {

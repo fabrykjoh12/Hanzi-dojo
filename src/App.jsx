@@ -3,7 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
 import ErrorBoundary from './ErrorBoundary'
 import { getHomeCounts } from './homeCounts'
-import { pathToView, viewToPath, isKnownView, readStoryId, isAssessmentPath, trustPageKey } from './routes'
+import {
+  pathToView, viewToPath, isKnownView, readStoryId, isAssessmentPath, trustPageKey,
+  storyRoute, storyPath, seriesPath,
+} from './routes'
 import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
@@ -120,6 +123,7 @@ export default function App() {
   const publicStoryId = readStoryId(location.pathname)
   const assessment = isAssessmentPath(location.pathname)
   const trustPage = trustPageKey(location.pathname)
+  const storyRouteState = storyRoute(location.pathname)
 
   // Apply the theme to the document so the CSS variables (index.css) switch.
   useEffect(() => {
@@ -227,7 +231,7 @@ export default function App() {
       // into the reader. Same sanctioned pattern as Background/StoryReader.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setPendingStoryId(publicStoryId)
-      routerNavigate(viewToPath('stories'), { replace: true })
+      routerNavigate(storyPath(publicStoryId), { replace: true })
     }
   }, [loading, session, publicStoryId, routerNavigate])
 
@@ -242,7 +246,7 @@ export default function App() {
     if (opts && opts.firstMission) setPendingStoryFirstMission(true)
     if (opts && opts.practiceWords) setPendingPracticeWords(opts.practiceWords)
     else if (key === 'fillblank') setPendingPracticeWords(null) // normal hub open — no stale story pool
-    routerNavigate(viewToPath(key))
+    routerNavigate(key === 'stories' && opts?.storyId ? storyPath(opts.storyId) : viewToPath(key))
     if (session && key === 'home') loadProfile(session.user.id)
   }
 
@@ -512,9 +516,15 @@ export default function App() {
         track={track}
         onBack={() => navigate('home')}
         onNavigate={navigate}
-        initialStoryId={pendingStoryId}
+        initialStoryId={pendingStoryId || (storyRouteState?.kind === 'story' ? storyRouteState.id : null)}
         initialStoryWords={pendingStoryWords}
         initialStoryFirstMission={pendingStoryFirstMission}
+        routeKind={storyRouteState?.kind || 'browse'}
+        routeStoryId={storyRouteState?.kind === 'story' ? storyRouteState.id : null}
+        routeSeriesKey={storyRouteState?.kind === 'series' ? storyRouteState.key : null}
+        onStoryRoute={(id) => routerNavigate(storyPath(id))}
+        onSeriesRoute={(key) => routerNavigate(seriesPath(key))}
+        onBrowseRoute={() => routerNavigate(viewToPath('stories'))}
         onInitialStoryConsumed={() => { setPendingStoryId(null); setPendingStoryWords(null); setPendingStoryFirstMission(false) }}
       />
     )

@@ -77,7 +77,7 @@ export function createTtsRepository(client) {
       return fetchAllPages(build, 'Could not load vocabulary', limit)
     },
 
-    async loadUtterances({ storyId = null, ids = null, limit = null }) {
+    async loadUtterances({ storyId = null, storyIds = null, ids = null, limit = null }) {
       const build = () => {
         let query = client
           .from('story_utterances')
@@ -86,6 +86,7 @@ export function createTtsRepository(client) {
           .order('scene_index', { ascending: true })
           .order('utterance_index', { ascending: true })
         if (storyId) query = query.eq('story_id', storyId)
+        if (storyIds && storyIds.length) query = query.in('story_id', storyIds)
         if (ids && ids.length) query = query.in('id', ids)
         return query
       }

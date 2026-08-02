@@ -1,0 +1,72 @@
+[
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "story_number": 8,
+    "file": "public/story-covers/generated/hsk1-08-work-and-school.webp"
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "story_number": 10,
+    "file": "public/story-covers/generated/hsk1-10-li-ming-sings.webp"
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "story_number": 12,
+    "file": "public/story-covers/generated/hsk1-12-our-song.webp"
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "story_number": 59,
+    "file": "public/stories/noodleshop/hsk1/ep01/panel-01-rain.webp"
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 1,
+    "story_number": 60,
+    "file": "public/stories/noodleshop/hsk1/ep02/panel-01-dry.webp"
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "story_number": 64,
+    "file": "public/stories/inkbound/hsk2/ep02/panel-01-morning.webp"
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "story_number": 65,
+    "file": "public/stories/noodleshop/hsk2/ep03/panel-01-every-day.webp"
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 2,
+    "story_number": 66,
+    "file": "public/stories/train/hsk2/ep01/panel-01-closing-time.webp"
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "story_number": 37,
+    "file": "public/stories/inkbound/hsk3/ep03/panel-01-night-gate.webp"
+  },
+  {
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "story_number": 38,
+    "file": "public/stories/upstairs/hsk3/ep01/panel-01-new-place.webp"
+  }
+]
