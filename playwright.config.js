@@ -15,6 +15,12 @@ export default defineConfig({
   reporter: process.env.CI
     ? [['github'], ['html', { open: 'never' }]]
     : [['list'], ['html', { open: 'never' }]],
+  // Visual baselines (visual.spec.js) are captured and compared on the same CI
+  // runner image, so drift should be near zero; the small ratio absorbs
+  // antialiasing jitter without letting a real layout break through.
+  expect: {
+    toHaveScreenshot: { maxDiffPixelRatio: 0.02 },
+  },
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',

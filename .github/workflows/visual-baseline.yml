@@ -1,0 +1,55 @@
+name: Visual regression baselines
+
+# Regenerates the committed screenshot baselines for tests/e2e/visual.spec.js
+# and commits them back to the branch this was dispatched on.
+#
+# Baselines MUST come from this workflow, not a local run: font rasterization
+# differs between machines, and the E2E workflow that consumes the baselines
+# runs on this same ubuntu-latest image — capture and comparison have to share
+# a renderer. Dispatch this after an intentional visual change (or when the
+# runner image update shifts rendering), review the committed diff, done.
+#
+# ⚠️ The commit is pushed with the workflow's own GITHUB_TOKEN, so — like the
+# manhua-art-fetch commits (see docs/BACKLOG.md) — it does NOT trigger CI on
+# the PR. The baseline images can't break lint/test/build, but the check list
+# on the PR's head commit will look thin; push any real change on top to get a
+# full run.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: visual-baseline
+  cancel-in-progress: false
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Capture baselines
+        run: npx playwright test tests/e2e/visual.spec.js --update-snapshots
+      - name: Commit baselines
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/e2e/visual.spec.js-snapshots
+          if git diff --cached --quiet; then
+            echo "Baselines unchanged — nothing to commit."
+          else
+            git commit -m "test(visual): update screenshot baselines (CI-rendered)"
+            git push
+          fi
