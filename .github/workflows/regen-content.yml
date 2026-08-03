@@ -30,6 +30,10 @@ on:
         description: "tts-flashcards only: how many source records (words) to voice. Above 200 needs override."
         type: string
         default: '20'
+      tts_ids:
+        description: "tts-flashcards only: comma-separated vocabulary row ids — voice exactly these rows (level is ignored)."
+        type: string
+        default: ''
       tts_confirm:
         description: "tts-flashcards only: actually spend money. Unticked = dry run that bills nothing."
         type: boolean
@@ -75,6 +79,13 @@ jobs:
           AZURE_SPEECH_KEY: ${{ secrets.AZURE_SPEECH_KEY }}
           AZURE_SPEECH_REGION: ${{ secrets.AZURE_SPEECH_REGION }}
           TTS_CONCURRENCY: ${{ vars.TTS_CONCURRENCY }}
+          # Free-text workflow inputs reach the shell only through env vars —
+          # never ${{ }} inside the script, which would splice attacker-typed
+          # text into the command line (script injection). Choice inputs are
+          # constrained to fixed options and stay inline.
+          TTS_LEVEL: ${{ inputs.level }}
+          TTS_IDS: ${{ inputs.tts_ids }}
+          TTS_LIMIT: ${{ inputs.tts_limit }}
         run: |
           set -e
           LANG_FLAG=""
@@ -99,10 +110,10 @@ jobs:
           fi
 
           if [ "${{ inputs.task }}" = "examples-fill" ]; then
-            LEVEL_FLAG=""
-            if [ -n "${{ inputs.level }}" ]; then LEVEL_FLAG="--level ${{ inputs.level }}"; fi
-            echo "::group::Example sentences (fill only missing — safe for new levels) $LEVEL_FLAG"
-            node generate-examples.mjs $LANG_FLAG $LEVEL_FLAG
+            LEVEL_FLAG=()
+            if [ -n "$TTS_LEVEL" ]; then LEVEL_FLAG=(--level "$TTS_LEVEL"); fi
+            echo "::group::Example sentences (fill only missing — safe for new levels) ${LEVEL_FLAG[*]}"
+            node generate-examples.mjs $LANG_FLAG "${LEVEL_FLAG[@]}"
             echo "::endgroup::"
           fi
 
@@ -173,8 +184,12 @@ jobs:
           # unlock. This task surfaces those controls rather than bypassing them,
           # so a mistyped level costs a dry run instead of a bill.
           if [ "${{ inputs.task }}" = "tts-flashcards" ]; then
-            LEVEL_FLAG=""
-            if [ -n "${{ inputs.level }}" ]; then LEVEL_FLAG="--level ${{ inputs.level }}"; fi
+            LEVEL_FLAG=()
+            if [ -n "$TTS_LEVEL" ]; then LEVEL_FLAG=(--level "$TTS_LEVEL"); fi
+            # A targeted run (e.g. re-voicing rows whose reading was corrected)
+            # names its exact vocabulary ids; that overrides any level filter.
+            ID_FLAG=()
+            if [ -n "$TTS_IDS" ]; then ID_FLAG=(--id "$TTS_IDS"); LEVEL_FLAG=(); fi
             LANG_NAME="${{ inputs.language }}"
             if [ "$LANG_NAME" = "both" ]; then LANG_NAME="chinese"; fi
             case "$LANG_NAME" in
@@ -182,7 +197,7 @@ jobs:
               japanese) SYSTEM=jlpt ;;
               *)        SYSTEM=hsk_3 ;;
             esac
-            LIMIT="${{ inputs.tts_limit }}"
+            LIMIT="$TTS_LIMIT"
             OVERRIDE=""
             if [ "$LIMIT" -gt 200 ] 2>/dev/null; then OVERRIDE="--override-max"; fi
             CONFIRM=""
@@ -190,10 +205,10 @@ jobs:
             if [ -z "$CONFIRM" ]; then
               echo "DRY RUN — nothing will be billed. Tick tts_confirm to generate."
             fi
-            echo "::group::Azure TTS · $LANG_NAME/$SYSTEM $LEVEL_FLAG · limit $LIMIT"
+            echo "::group::Azure TTS · $LANG_NAME/$SYSTEM ${LEVEL_FLAG[*]} ${ID_FLAG[*]} · limit $LIMIT"
             node tts-generate.mjs \
               --flashcards --missing-only \
-              --language "$LANG_NAME" --system "$SYSTEM" $LEVEL_FLAG \
+              --language "$LANG_NAME" --system "$SYSTEM" "${LEVEL_FLAG[@]}" "${ID_FLAG[@]}" \
               --limit "$LIMIT" $OVERRIDE $CONFIRM
             echo "::endgroup::"
           fi

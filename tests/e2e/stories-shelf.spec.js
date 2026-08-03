@@ -154,8 +154,10 @@ test.describe('Story library — cinematic shelves', () => {
     await page.goto('/stories');
     await expect(page.getByText(/hsk · HSK 3/i)).toBeVisible();
     await expect(page.getByRole('button', { name: '新的一年 · HSK 3 · Story', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: /公园里的下午/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /老朋友/ })).toBeVisible();
+    // .first(): the per-day featured pick may double one of these stories
+    // (hero + its shelf row) — any visible instance is what's being asserted.
+    await expect(page.getByRole('button', { name: /公园里的下午/ }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /老朋友/ }).first()).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Top picks for you' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'More stories you can read' })).toBeVisible();
   });
