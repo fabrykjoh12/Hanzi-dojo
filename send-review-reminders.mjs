@@ -1,15 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
 import webpush from 'web-push'
+import admin from 'firebase-admin'
 // Extension required: Node ESM (unlike Vite) does not resolve extensionless
 // specifiers.
 import { shouldNotifyAt, intendedLocalHour } from './src/reminderSchedule.js'
 
 // Opt-in daily review reminder (product review item #16). Run hourly by a
 // GitHub Action: finds every profile for whom it is now their chosen reminder
-// hour *on their own clock*, counts their due reviews, and sends a Web Push
-// notification to each of their subscribed devices. No Supabase Edge
-// Function — this repo has no Supabase CLI/functions setup, and a plain
-// Node script on a cron is simpler to operate and verify from here.
+// hour *on their own clock*, counts their due reviews, and sends a push
+// notification to each of their subscribed devices — Web Push for browser
+// subscribers, FCM for the native app (both Android and iOS: FCM delivers to
+// APNs devices too once the Firebase project has the APNs auth key
+// configured — see docs/DEPLOY.md). No Supabase Edge Function for the
+// sending itself — this stays a plain Node script on a cron, simpler to
+// operate and verify from here.
 //
 // The per-user "is it their hour?" decision lives in the pure, unit-tested
 // `src/reminderSchedule.js`: it reads the wall clock in `profiles.timezone`
@@ -23,6 +27,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:support@example.com'
+const FCM_SERVICE_ACCOUNT_JSON = process.env.FCM_SERVICE_ACCOUNT_JSON
 
 // Name the vars that are ACTUALLY missing. This used to print the same
 // hardcoded list of all four whatever the cause, which reads as though nothing
@@ -45,20 +50,42 @@ if (missingDb.length > 0) {
   process.exit(1)
 }
 
-// No VAPID keypair means web push was never set up for this repo. There is
-// genuinely nothing to send, so this is "not enabled", not "broken" — exiting 1
-// here just painted the hourly cron red forever without moving anything closer
-// to working. Say so plainly and stop.
-if (missingPush.length > 0) {
+// Web push and native (FCM) are independently optional — a repo can have
+// either, both, or neither configured. Only exit early when NEITHER channel
+// has anything to send through; a repo with just one configured should still
+// run (and reach the subscribers it can). Exiting 1 for "not configured"
+// here just painted the hourly cron red forever without moving anything
+// closer to working, so this stays exit 0.
+const webPushEnabled = missingPush.length === 0
+if (webPushEnabled) {
+  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
+} else {
+  console.log('Web push is not configured (' + missingPush.join(', ') + ' unset).')
+}
+
+let fcmEnabled = false
+if (FCM_SERVICE_ACCOUNT_JSON) {
+  try {
+    const serviceAccount = JSON.parse(FCM_SERVICE_ACCOUNT_JSON)
+    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) })
+    fcmEnabled = true
+  } catch (err) {
+    console.log('FCM_SERVICE_ACCOUNT_JSON is set but invalid (' + err.message + ') — native push skipped.')
+  }
+} else {
+  console.log('FCM_SERVICE_ACCOUNT_JSON is unset — native push skipped.')
+}
+
+if (!webPushEnabled && !fcmEnabled) {
   console.log(
-    'Web push is not configured (' + missingPush.join(', ') + ' unset) — no reminders to send.\n' +
-    'To enable: generate a VAPID keypair (npx web-push generate-vapid-keys) and add\n' +
-    'VITE_VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY to the repository secrets.'
+    'Neither web push nor native push is configured — no reminders to send.\n' +
+    'Web: generate a VAPID keypair (npx web-push generate-vapid-keys) and add\n' +
+    'VITE_VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY to the repository secrets.\n' +
+    'Native: add FCM_SERVICE_ACCOUNT_JSON (see .env.example).'
   )
   process.exit(0)
 }
 
-webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 async function main() {
@@ -129,25 +156,62 @@ async function main() {
     const dueCount = (cards || []).length
     if (dueCount === 0) { skippedNoDue += 1; continue }
 
-    const { data: subs } = await supabase
-      .from('push_subscriptions')
-      .select('id, endpoint, p256dh, auth')
-      .eq('user_id', profile.id)
+    // platform/device_token come from migration 20260803120000, which may
+    // not be applied yet on every environment running this script — degrade
+    // to web-push-only (the pre-native shape) rather than aborting the job.
+    let subs
+    {
+      const { data, error } = await supabase
+        .from('push_subscriptions')
+        .select('id, platform, endpoint, p256dh, auth, device_token')
+        .eq('user_id', profile.id)
+      if (error) {
+        const missingColumns = /column .* does not exist|platform|device_token/i.test(error.message)
+        if (!missingColumns) { console.log(`  ! could not load subscriptions for ${profile.id}: ${error.message}`); continue }
+        const legacy = await supabase.from('push_subscriptions').select('id, endpoint, p256dh, auth').eq('user_id', profile.id)
+        subs = (legacy.data || []).map(s => ({ ...s, platform: 'web', device_token: null }))
+      } else {
+        subs = data
+      }
+    }
     if (!subs || subs.length === 0) continue
 
-    const payload = JSON.stringify({
-      title: dueCount + ' review' + (dueCount === 1 ? '' : 's') + ' waiting',
-      body: 'Your Hanzi Dojo deck has cards ready — a few minutes keeps your streak alive.',
-      url: '/study',
-    })
+    const title = dueCount + ' review' + (dueCount === 1 ? '' : 's') + ' waiting'
+    const body = 'Your Hanzi Dojo deck has cards ready — a few minutes keeps your streak alive.'
+    const webPayload = JSON.stringify({ title, body, url: '/study' })
 
     let deliveredToThisProfile = 0
 
     for (const sub of subs) {
+      if (sub.platform === 'ios' || sub.platform === 'android') {
+        if (!fcmEnabled) continue
+        try {
+          await admin.messaging().send({
+            token: sub.device_token,
+            notification: { title, body },
+            data: { url: '/study' },
+          })
+          sent += 1
+          deliveredToThisProfile += 1
+        } catch (err) {
+          // The device uninstalled the app or its token rotated — prune it
+          // so future runs don't keep retrying a dead token.
+          if (err.code === 'messaging/registration-token-not-registered' || err.code === 'messaging/invalid-registration-token') {
+            await supabase.from('push_subscriptions').delete().eq('id', sub.id)
+            pruned += 1
+          } else {
+            failed += 1
+            console.log(`  ✗ FCM push failed for subscription ${sub.id}: ${err.message}`)
+          }
+        }
+        continue
+      }
+
+      if (!webPushEnabled) continue
       try {
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          payload
+          webPayload
         )
         sent += 1
         deliveredToThisProfile += 1

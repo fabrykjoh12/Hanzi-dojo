@@ -4,11 +4,16 @@ name: Send review reminders
 # matches the current hour, and pushes a notification if they have reviews
 # due. Also runnable by hand for testing.
 #
-# REQUIRES A VAPID KEYPAIR. Without VITE_VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY in
-# the repository secrets there is no way to sign a push, so the script logs that
-# push is not configured and exits 0 rather than failing — it ran red every hour
-# for exactly this reason, which made a real misconfiguration look like noise.
-# Generate one with `npx web-push generate-vapid-keys`.
+# Web and native (FCM) are each optional and independent — see
+# send-review-reminders.mjs. Without VITE_VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY
+# there's no way to sign a web push; without FCM_SERVICE_ACCOUNT_JSON there's
+# no way to reach the native app. Missing either logs that channel as skipped
+# rather than failing; only having BOTH unset exits 0 with nothing sent. It
+# used to run red every hour for exactly this reason, which made a real
+# misconfiguration look like noise.
+# Web: generate a keypair with `npx web-push generate-vapid-keys`.
+# Native: Firebase console → Project settings → Service accounts → Generate
+# new private key, minified to one line (see .env.example).
 
 on:
   schedule:
@@ -40,4 +45,5 @@ jobs:
           VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT }}
+          FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
         run: node send-review-reminders.mjs
