@@ -9,6 +9,7 @@ import {
 } from './routes'
 import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
 import { useIsMobile } from './useIsMobile'
+import { useNativeAuthDeepLink } from './useNativeAuthDeepLink'
 import { ThemeContext } from './ThemeContext'
 // Eager: the app shell + first-paint screens.
 import Landing from './Landing'
@@ -202,6 +203,13 @@ export default function App() {
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') end() })
     return () => window.removeEventListener('pagehide', end)
   }, [])
+
+  // Native only (no-ops on web): catches the hanzidojo://auth/callback the
+  // system browser hands back after Google/Apple sign-in and completes the
+  // session — see useNativeAuthDeepLink.js. Registered here, once, for the
+  // app's whole lifetime rather than in Auth.jsx, since the OS can deliver
+  // the callback after the user has navigated away from the login screen.
+  useNativeAuthDeepLink()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {

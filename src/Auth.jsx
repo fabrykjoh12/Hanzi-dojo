@@ -1,12 +1,18 @@
 import { useState } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Apple } from 'lucide-react'
+import { Capacitor } from '@capacitor/core'
+import { Browser } from '@capacitor/browser'
 import { supabase } from './supabase'
 import { normalizeEmail } from './utils'
 import { track, EVENTS } from './analytics'
 import { emailProblem, passwordProblem, passwordWhitespaceNote, mapAuthError, MIN_PASSWORD } from './authValidation'
+import { AUTH_CALLBACK_URL } from './nativeAuth'
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
+
+const isNative = Capacitor.isNativePlatform()
+const isNativeIOS = isNative && Capacitor.getPlatform() === 'ios'
 
 export default function Auth({ intro = null }) {
   // Arriving from the pre-login wizard (language + reason chosen) means the user
@@ -20,10 +26,16 @@ export default function Auth({ intro = null }) {
   const [message, setMessage] = useState('')
   const [messageKind, setMessageKind] = useState('error')   // 'error' | 'success'
 
-  // Return to wherever the app is actually running — the GitHub Pages URL in
-  // production, localhost in dev — instead of Supabase's default Site URL.
-  // BASE_URL is '/Hanzi-dojo/' in the prod build and '/' during dev.
-  const redirectTo = window.location.origin + import.meta.env.BASE_URL
+  // Return to wherever the app is actually running. Under Capacitor,
+  // window.location.origin is capacitor://localhost (iOS) or
+  // http://localhost (Android) — neither is reachable from outside the
+  // webview, so Supabase would have nowhere real to send the browser back to.
+  // hanzidojo://auth/callback is a custom URL scheme registered in Info.plist
+  // / AndroidManifest.xml that the OS hands back to this app; see
+  // useNativeAuthDeepLink.js for the receiving end. On web this is unchanged:
+  // the GitHub Pages URL in production, localhost in dev. BASE_URL is
+  // '/Hanzi-dojo/' in the prod build and '/' during dev.
+  const redirectTo = isNative ? AUTH_CALLBACK_URL : window.location.origin + import.meta.env.BASE_URL
 
   const handleAuth = async (e) => {
     e.preventDefault()
@@ -100,13 +112,27 @@ export default function Auth({ intro = null }) {
   }
   const onEnter = (e) => { if (e.key === 'Enter') submit(e) }
 
-  const handleGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo },
-    })
+  // Native: supabase-js can't redirect the webview itself, so it's asked for
+  // the provider URL only (skipBrowserRedirect) and that's opened in the
+  // system browser via @capacitor/browser. The browser closes itself once
+  // useNativeAuthDeepLink.js catches the hanzidojo://auth/callback return.
+  // Web: unchanged — supabase-js does its normal full-page redirect.
+  const startOAuth = async (provider) => {
+    if (isNative) {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo, skipBrowserRedirect: true },
+      })
+      if (error) { setMessageKind('error'); setMessage(error.message); return }
+      if (data?.url) await Browser.open({ url: data.url })
+      return
+    }
+    const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } })
     if (error) { setMessageKind('error'); setMessage(error.message) }
   }
+
+  const handleGoogle = () => startOAuth('google')
+  const handleApple = () => startOAuth('apple')
 
   return (
     <div style={{
@@ -330,6 +356,32 @@ export default function Auth({ intro = null }) {
           <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>or continue with</span>
           <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
         </div>
+        )}
+
+        {/* Sign in with Apple — required whenever a third-party sign-in
+            (Google) is offered, per App Store Review Guideline 4.8. Shown on
+            iOS only, above Google, in Apple's black/white HIG style. */}
+        {!resetMode && isNativeIOS && (
+        <button onClick={handleApple} style={{
+          width: '100%',
+          padding: '12px',
+          borderRadius: '12px',
+          border: 'none',
+          background: '#000',
+          color: '#fff',
+          fontSize: '15px',
+          fontWeight: 500,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '10px',
+          fontFamily: 'Inter, sans-serif',
+          marginBottom: '10px',
+        }}>
+          <Apple size={18} strokeWidth={0} fill="#fff" />
+          Sign in with Apple
+        </button>
         )}
 
         {/* Google */}

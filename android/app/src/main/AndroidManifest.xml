@@ -23,6 +23,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- hanzidojo://auth/callback — Supabase OAuth (Google, Apple) return
+                 URL. Handled by @capacitor/app's appUrlOpen listener (see
+                 src/useNativeAuthDeepLink.js). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="hanzidojo" android:host="auth" />
+            </intent-filter>
+
         </activity>
 
         <provider
