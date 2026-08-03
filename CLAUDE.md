@@ -37,6 +37,7 @@ still get full detail — they are read once, on purpose.
 | [`docs/TESTING.md`](docs/TESTING.md) | What needs manual testing on a real device | Before asking testers |
 | [`ROADMAP.md`](ROADMAP.md) | Public plan — **auto-syncs to Discord** | Starting or finishing work |
 | [`docs/BACKLOG.md`](docs/BACKLOG.md) | Engineering backlog, known issues, tech debt | Picking up a fix |
+| [`TASKS.md`](TASKS.md) | The owner's own list, in Norwegian. **Edited through DojoHQ, not by hand** — `tools/dojo-bridge.mjs` has it in `WRITABLE_DOCUMENTS` and DojoHQ renders it as a tab, so do not delete or restructure it | Checking what the owner personally wants next |
 | [`docs/PM-BOARD.md`](docs/PM-BOARD.md) | Current milestone, ownership, merge order | Coordinating parallel work |
 | [`docs/CHANGELOG.md`](docs/CHANGELOG.md) | Session-by-session history (reference only) | Archaeology |
 | [`docs/TTS.md`](docs/TTS.md) | Voice config, pinyin phoneme pinning, the audio pipeline | Touching TTS or regenerating audio |
@@ -46,7 +47,7 @@ still get full detail — they are read once, on purpose.
 | [`docs/DOJO-BRIDGE.md`](docs/DOJO-BRIDGE.md) | The `tools/` bridge | Working on DojoHQ |
 | [`docs/STORY_EXPERIENCE_AUDIT.md`](docs/STORY_EXPERIENCE_AUDIT.md) | Long-form audit of the reading experience | Reworking the reader |
 | [`docs/DATABASE.md`](docs/DATABASE.md) | Older schema notes — **`docs/ARCHITECTURE.md` is the current source of truth**; last touched 2026-07-02 | Rarely; prefer ARCHITECTURE.md |
-| `docs/superpowers/` | Design specs and plans for shipped features. `archive/` holds completed ones | Archaeology on a feature's design |
+| [`docs/superpowers/`](docs/superpowers/README.md) | Design specs and plans for features that already shipped — history, **not** current intent | Archaeology on a feature's design |
 
 ### Keep the roadmap current (every task — it is live in Discord)
 
