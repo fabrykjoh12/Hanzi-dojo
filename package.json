@@ -28,6 +28,7 @@
     "@capacitor/browser": "^8.0.4",
     "@capacitor/core": "^8.5.0",
     "@capacitor/ios": "^8.5.0",
+    "@capacitor/push-notifications": "^8.1.2",
     "@supabase/supabase-js": "^2.107.0",
     "drizzle-orm": "^0.45.2",
     "hanzi-writer": "^3.7.3",
