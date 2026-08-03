@@ -46,3 +46,17 @@ playwright-report/
 
 # Scratch output of tools/manhua-contact-sheet.mjs — regenerate it, do not commit it.
 tools/.contact-sheets/
+
+# Capacitor — native project shells are committed (Info.plist, AndroidManifest.xml
+# etc. carry hand-edited config like the URL scheme), but everything `cap sync`
+# regenerates from the web build is not.
+android/app/build/
+android/.gradle/
+android/local.properties
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+ios/App/Pods/
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+ios/DerivedData/
+

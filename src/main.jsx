@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import { Capacitor } from '@capacitor/core'
 import './index.css'
 import App from './App.jsx'
 import ErrorBoundary from './ErrorBoundary.jsx'
@@ -53,8 +54,12 @@ window.addEventListener('vite:preloadError', () => {
 })
 
 // Register the offline service worker in production only (keeps dev/sandbox
-// clean). Scope follows BASE_URL so it works on both the GitHub Pages subpath
-// and the Vercel root. Failures are non-fatal.
+// clean), and never under Capacitor — app assets are already local in the
+// webview, and a SW fighting the webview's own cache is what causes stale
+// bundles there. offline.js and syncQueue.js stay active on every platform;
+// only this SW registration is native-gated. Scope follows BASE_URL so it
+// works on both the GitHub Pages subpath and the Vercel root. Failures are
+// non-fatal.
 //
 // The worker skipWaiting()s on install, so a new deploy takes control while
 // the page is still running the previous bundle. Surface that as a calm
@@ -76,7 +81,7 @@ function showUpdatePill() {
   document.body.appendChild(btn)
 }
 
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+if (import.meta.env.PROD && !Capacitor.isNativePlatform() && 'serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     // A controller existing now means a later controllerchange is an UPDATE
     // (on first install the controller goes null → worker; no prompt needed).

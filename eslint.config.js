@@ -9,7 +9,12 @@ export default defineConfig([
   // Node scripts vendored from elsewhere, not app source. They aren't built or
   // shipped, so linting them only produces noise (no-undef on `require`/
   // `process` under the browser globals this config targets).
-  globalIgnores(['dist', '.claude/**']),
+  // android/ and ios/ are the native project shells: hand-edited config
+  // (Info.plist, AndroidManifest.xml, MainActivity) plus a copy of the built
+  // web bundle that `cap sync` drops into android/**/assets/public and
+  // ios/**/App/public. That copy is generated output, not source — linting
+  // it is the same class of noise as linting dist/.
+  globalIgnores(['dist', '.claude/**', 'android/**', 'ios/**']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
