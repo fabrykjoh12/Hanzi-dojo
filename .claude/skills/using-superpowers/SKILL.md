@@ -1,62 +1,56 @@
 ---
 name: using-superpowers
-description: Use when starting any conversation - establishes how to find and use skills, requiring skill invocation before ANY response including clarifying questions
+description: How to find and use the vendored skills in .claude/skills. Consult when a task looks like it matches a skill - planning a feature, debugging, reviewing code, writing tests.
 ---
 
 <SUBAGENT-STOP>
 If you were dispatched as a subagent to execute a specific task, ignore this skill.
 </SUBAGENT-STOP>
 
-<EXTREMELY-IMPORTANT>
-If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
+## CLAUDE.md wins
 
-IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT.
+`CLAUDE.md` is the authority in this repo. Where a skill and `CLAUDE.md` disagree,
+**`CLAUDE.md` is right and the skill is wrong** — the skills here are vendored
+from general-purpose upstream projects and know nothing about this codebase.
 
-This is not negotiable. You cannot rationalize your way out of this.
-</EXTREMELY-IMPORTANT>
+That applies especially to `CLAUDE.md`'s "How to answer" section. Short, direct
+answers are a hard requirement here, not a style preference. **Do not add
+ceremony** — no "Using [skill] to…" announcements, no todo list per checklist
+item, no process narration — unless the task genuinely warrants it or the
+maintainer asks. A one-line question gets a one-line answer.
 
-## The Rule
+## The rule
 
-**Invoke relevant or requested skills BEFORE any response or action** — including clarifying questions, exploring the codebase, or checking files. If it turns out wrong for the situation, you don't have to use it.
+Skills are **reference material, not a gate**. Before non-trivial work, check
+whether a skill covers it; if one does, follow it. If none does, or the task is
+small enough that the skill would cost more than it saves, just do the work.
 
-**Before entering plan mode:** if you haven't already brainstormed, invoke the brainstorming skill first.
+Use judgement about what "non-trivial" means. Answering a question, reading a
+file, or making a one-line fix does not require a skill check first.
 
-Then announce "Using [skill] to [purpose]" and follow the skill exactly. If it has a checklist, create a todo per item.
+## Skill priority
 
-## Skill Priority
+When several skills apply, process skills set the approach and implementation
+skills carry it out:
 
-When multiple skills apply, process skills come first — they set the approach, then implementation skills (frontend-design, etc.) carry it out. Brainstorming and systematic-debugging are Superpowers' most common process skills, but the rule holds for any of them.
+- "Let's build X" → `brainstorming`, then the relevant implementation skills
+- "Fix this bug" → `systematic-debugging`, then domain skills
 
-- "Let's build X" → superpowers:brainstorming first, then implementation skills.
-- "Fix this bug" → superpowers:systematic-debugging first, then domain skills.
+## Worth reaching for
 
-## Red Flags
+| Situation | Skill |
+|---|---|
+| Multi-step feature, requirements unclear | `brainstorming`, then `writing-plans` |
+| A bug whose cause isn't obvious | `systematic-debugging` |
+| Before claiming something works | `verification-before-completion` |
+| Writing or fixing tests | `test-driven-development`, `react-testing`, `e2e-testing` |
+| Finishing a branch / opening a PR | `finishing-a-development-branch`, `requesting-code-review` |
+| Touching auth, secrets, user input | `security-review` |
+| Schema or migration work | `database-migrations`, `postgres-patterns` |
 
-These thoughts mean STOP—you're rationalizing:
+## A caveat on the vendored skills
 
-| Thought | Reality |
-|---------|---------|
-| "This is just a simple question" | Questions are tasks. Check for skills. |
-| "I need more context first" | Skill check comes BEFORE clarifying questions. |
-| "Let me explore the codebase first" | Skills tell you HOW to explore. Check first. |
-| "I can check git/files quickly" | Files lack conversation context. Check for skills. |
-| "Let me gather information first" | Skills tell you HOW to gather information. |
-| "This doesn't need a formal skill" | If a skill exists, use it. |
-| "I remember this skill" | Skills evolve. Read current version. |
-| "This doesn't count as a task" | Action = task. Check for skills. |
-| "The skill is overkill" | Simple things become complex. Use it. |
-| "I'll just do this one thing first" | Check BEFORE doing anything. |
-| "This feels productive" | Undisciplined action wastes time. Skills prevent this. |
-| "I know what that means" | Knowing the concept ≠ using the skill. Invoke it. |
-
-## Platform Adaptation
-
-If your harness appears here, read its reference file for special instructions:
-
-- Codex: `references/codex-tools.md`
-- Pi: `references/pi-tools.md`
-- Antigravity: `references/antigravity-tools.md`
-
-## User Instructions
-
-User instructions (CLAUDE.md, AGENTS.md, GEMINI.md, etc, direct requests) take precedence over skills, which in turn override default behavior. Only skip skill workflows or instructions when your human partner has explicitly told you to.
+Several were written for TypeScript codebases and show typed examples
+(`frontend-patterns`, `error-handling`, `vite-patterns`, `security-review`,
+`e2e-testing`). **This repo is plain JSX with no TypeScript — `CLAUDE.md` §6.1.**
+Translate the pattern; never copy the annotations.

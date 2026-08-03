@@ -9,7 +9,9 @@ build/
 # Git internals
 .git/
 
-# Environment files (secrets — never read these)
+# Environment files (secrets — never read these).
+# Belt and braces: `permissions.deny` in .claude/settings.json blocks these too.
+# That is the guarantee; this list is the hint. Don't rely on this file alone.
 .env
 .env.script
 .env.local
@@ -38,3 +40,9 @@ pnpm-lock.yaml
 # Large data files (read only when explicitly asked)
 *.csv
 *.sql
+
+# ...except the migrations, which are not data dumps. CLAUDE.md §7.7 and §10
+# both require reading them ("check supabase/migrations/ against what's
+# actually applied before debugging code"), so the blanket *.sql rule above
+# was working against the documented workflow.
+!supabase/migrations/**

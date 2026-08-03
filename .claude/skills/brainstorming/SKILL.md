@@ -1,6 +1,6 @@
 ---
 name: brainstorming
-description: "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation."
+description: "Use before substantial creative work - a new feature, a new screen, or a behaviour change with real design questions in it. Explores intent, requirements and design before implementation. Skip it for small or well-specified changes; see CLAUDE.md 'How to answer'."
 ---
 
 # Brainstorming Ideas Into Designs
@@ -9,17 +9,28 @@ Help turn ideas into fully formed designs and specs through natural collaborativ
 
 Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design and get user approval.
 
-<HARD-GATE>
-Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have presented a design and the user has approved it. This applies to EVERY project regardless of perceived simplicity.
-</HARD-GATE>
+<GATE>
+Once you are in this skill, do not write implementation code until you have
+presented a design and the maintainer has approved it. Agreeing on the shape
+first is the whole point of brainstorming.
+</GATE>
 
-## Anti-Pattern: "This Is Too Simple To Need A Design"
+## When this skill applies
 
-Every project goes through this process. A todo list, a single-function utility, a config change — all of them. "Simple" projects are where unexamined assumptions cause the most wasted work. The design can be short (a few sentences for truly simple projects), but you MUST present it and get approval.
+Substantial work: a new feature, a new screen, a change to how learners progress,
+anything with real design questions or more than one reasonable approach.
+
+**It does not apply to** a bug fix with an obvious cause, a copy change, a config
+edit, a doc update, or anything the maintainer has already specified. Running the
+full process on those burns the maintainer's attention for no design gain —
+`CLAUDE.md` "How to answer" is explicit that this is a real cost here. Use
+judgement: if you cannot name a genuine open design question, skip the skill and
+do the work.
 
 ## Checklist
 
-You MUST create a task for each of these items and complete them in order:
+For work that clears that bar, work through these in order (scale each to the
+size of the task — a small feature does not need nine ceremonies):
 
 1. **Explore project context** — check files, docs, recent commits
 2. **Offer the visual companion just-in-time** — NOT upfront. The first time a question would genuinely be clearer shown than described, offer it then (its own message); on approval its browser tab opens for you. If no visual question ever arises, never offer it. See the Visual Companion section below.

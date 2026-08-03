@@ -244,7 +244,7 @@ Run axe in component tests for every interactive component. Catches:
 - Missing alt text on images
 - Heading order violations
 
-Cross-link: [skills/accessibility/SKILL.md](../accessibility/SKILL.md) for the broader a11y testing playbook.
+Cross-link: [skills/frontend-a11y/SKILL.md](../frontend-a11y/SKILL.md) for the broader a11y testing playbook.
 
 ## When NOT to Use Snapshot Tests
 
