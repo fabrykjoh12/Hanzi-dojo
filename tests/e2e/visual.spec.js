@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { anonTest, authedTest, expect } from '../fixtures/mockSupabase.js';
 
 // Visual regression for the screens where a layout break wouldn't fail a
@@ -25,12 +26,30 @@ import { anonTest, authedTest, expect } from '../fixtures/mockSupabase.js';
 const DESKTOP = { width: 1280, height: 800 };
 const MOBILE = { width: 390, height: 844 };
 
+// Until the first baseline run has been committed, comparisons SKIP rather
+// than fail — otherwise a fresh branch (or the repo before the baseline
+// workflow ever ran) could never get a green E2E run. A --update-snapshots
+// run (what visual-baseline.yml does) never skips, so the bootstrap is:
+// merge, dispatch the workflow once, baselines exist, skips disappear.
+const HAS_BASELINES = fs.existsSync(new URL('./visual.spec.js-snapshots', import.meta.url));
+
+function skipWithoutBaselines(testObj, testInfo) {
+  // A bare --update-snapshots maps to 'changed' on Playwright ≥1.49 ('all'
+  // when passed explicitly) — both mean "we are capturing, don't skip".
+  const updating = ['all', 'changed'].includes(testInfo.config.updateSnapshots);
+  testObj.skip(
+    !HAS_BASELINES && !updating,
+    'No committed baselines yet — dispatch Actions → "Visual regression baselines" to create them'
+  );
+}
+
 async function fontsReady(page) {
   await page.evaluate(() => document.fonts.ready);
 }
 
 anonTest.describe('visual: landing (logged out)', () => {
-  anonTest('desktop', async ({ page }) => {
+  anonTest('desktop', async ({ page }, testInfo) => {
+    skipWithoutBaselines(anonTest, testInfo);
     await page.setViewportSize(DESKTOP);
     await page.goto('/');
     await expect(page.getByRole('button', { name: /Start your first story/i })).toBeVisible();
@@ -38,7 +57,8 @@ anonTest.describe('visual: landing (logged out)', () => {
     await expect(page).toHaveScreenshot('landing-desktop.png');
   });
 
-  anonTest('mobile', async ({ page }) => {
+  anonTest('mobile', async ({ page }, testInfo) => {
+    skipWithoutBaselines(anonTest, testInfo);
     await page.setViewportSize(MOBILE);
     await page.goto('/');
     await expect(page.getByRole('button', { name: /Start your first story/i })).toBeVisible();
@@ -48,7 +68,8 @@ anonTest.describe('visual: landing (logged out)', () => {
 });
 
 anonTest.describe('visual: trust pages', () => {
-  anonTest('privacy, desktop', async ({ page }) => {
+  anonTest('privacy, desktop', async ({ page }, testInfo) => {
+    skipWithoutBaselines(anonTest, testInfo);
     await page.setViewportSize(DESKTOP);
     await page.goto('/privacy');
     await expect(page.getByRole('heading', { name: /privacy/i }).first()).toBeVisible();
@@ -79,7 +100,8 @@ authedTest.describe('visual: stories shelf', () => {
     });
   });
 
-  authedTest('desktop', async ({ page }) => {
+  authedTest('desktop', async ({ page }, testInfo) => {
+    skipWithoutBaselines(authedTest, testInfo);
     await page.setViewportSize(DESKTOP);
     await page.goto('/stories');
     await expect(page.getByRole('button', { name: /Featured for you/ })).toBeVisible();
@@ -87,7 +109,8 @@ authedTest.describe('visual: stories shelf', () => {
     await expect(page).toHaveScreenshot('stories-shelf-desktop.png');
   });
 
-  authedTest('mobile', async ({ page }) => {
+  authedTest('mobile', async ({ page }, testInfo) => {
+    skipWithoutBaselines(authedTest, testInfo);
     await page.setViewportSize(MOBILE);
     await page.goto('/stories');
     await expect(page.getByRole('button', { name: /Featured for you/ })).toBeVisible();
