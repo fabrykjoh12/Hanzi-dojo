@@ -11,6 +11,7 @@
     "build": "vite build",
     "build:public": "DOJO_PUBLIC_BUILD=1 vite build",
     "build:native": "npm run build:public && node tools/assert-no-hq.mjs && cap sync",
+    "assets:generate": "capacitor-assets generate",
     "lint": "eslint .",
     "test": "vitest run",
     "preview": "vite preview",
@@ -38,10 +39,10 @@
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.17.0",
     "ts-fsrs": "^5.4.1",
-    "wanakana": "^5.3.1",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.5.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.1",

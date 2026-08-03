@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Capacitor } from '@capacitor/core'
 import { getSystemLabel, getLevelLabel } from './utils'
 import { languageTheme, ink } from './languageTheme'
 import { HeroPanel, HeroAction, PageHeader, Eyebrow } from './panels'
@@ -7,7 +8,7 @@ import { buildPracticePlan } from './practicePlan'
 import { useIsMobile } from './useIsMobile'
 import {
   ArrowLeft, ArrowRight, AlertTriangle, Headphones, PenLine,
-  AlignLeft, Blocks, Music2, Languages, Brush, Play, GraduationCap, BookA, ScanText, Mic, Search, Repeat2,
+  AlignLeft, Blocks, Music2, Brush, Play, GraduationCap, BookA, ScanText, Mic, Search, Repeat2,
   ListChecks, ChevronRight,
 } from 'lucide-react'
 
@@ -42,8 +43,6 @@ const ICONS = {
   fillblank: AlignLeft,
   builder: Blocks,
   tones: Music2,
-  kana: Languages,
-  cyrillic: Languages,
   strokes: Brush,
   words: BookA,
   known: ListChecks,
@@ -84,6 +83,16 @@ export default function Practice({ profile, track, counts, onNavigate, onBack })
 
   const primary = plan.primary
   const PrimaryIcon = ICONS[primary.key] || Headphones
+
+  // Web Speech API doesn't exist in WKWebView — see Speaking.jsx. On iOS,
+  // hide the entry point rather than let it route to Speaking's "not
+  // supported" fallback, whose copy ("try Chrome on Android or a desktop")
+  // doesn't make sense inside the app itself.
+  // TODO(native speaking): @capacitor-community/speech-recognition would
+  // give iOS a real on-device recognizer instead of just hiding the drill.
+  const drills = Capacitor.getPlatform() === 'ios'
+    ? plan.drills.filter(item => item.key !== 'speak')
+    : plan.drills
 
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto', padding: isMobile ? '24px 16px 40px' : '44px 32px 60px' }}>
@@ -141,7 +150,7 @@ export default function Practice({ profile, track, counts, onNavigate, onBack })
           display: 'grid', gap: '12px',
           gridTemplateColumns: 'repeat(auto-fill, minmax(' + (isMobile ? '148px' : '198px') + ', 1fr))',
         }}>
-          {plan.drills.map(item => (
+          {drills.map(item => (
             <DrillTile
               key={item.key}
               item={item}

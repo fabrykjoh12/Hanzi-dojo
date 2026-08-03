@@ -2,9 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
-import { isWritingMatch, normalizeRomaji, hasKanji } from './writingMatch'
+import { isWritingMatch, hasKanji } from './writingMatch'
 import { useIsMobile } from './useIsMobile'
-import { toRomaji } from 'wanakana'
 import {
   ArrowLeft, ArrowRight, BarChart3, Check, CheckCircle2,
   Flame, PenLine, RotateCcw, Sparkles, X,
@@ -698,11 +697,6 @@ export default function Writing({ session, track, onBack }) {
           ) : (
             <div style={{ fontSize: '34px', fontWeight: 800, color: 'var(--text)', fontFamily: "'Noto Sans SC'" }}>
               {current.word}
-            </div>
-          )}
-          {isJapanese && (
-            <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
-              {normalizeRomaji(toRomaji(current.reading || ''))}
             </div>
           )}
           {!isJapanese && (

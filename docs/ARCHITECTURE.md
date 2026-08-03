@@ -367,6 +367,15 @@ a deploy-then-publish sequence too.
 
 ## Language and level system
 
+**The app is Chinese-only in the UI** (see CLAUDE.md §1) — `Kana.jsx` and
+`Cyrillic.jsx` were removed 2026-08-03, along with their routes and the
+Practice-hub entries below. The `japanese`/`russian` sections that follow
+still describe the data model accurately: `languageTheme.js`'s config for
+them, and vocabulary/cards/stories rows from before the removal, are
+deliberately still in the DB (never deleted) and still render correctly
+wherever shared code reads them (Profile history, admin dashboard, etc.) —
+there is just no way to reach a Japanese or Russian screen anymore.
+
 **Chinese:** `language='chinese'`, `system='hsk_3'`, levels 1–9, displayed as 'HSK 1' through 'HSK 9'.
 
 **Russian:** `language='russian'`, `system='russian'`, levels 1–6, displayed as CEFR bands:

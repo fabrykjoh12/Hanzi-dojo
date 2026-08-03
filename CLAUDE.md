@@ -63,28 +63,32 @@ commit and PR titles.
 Hanzi-dojo is a free language-learning web app built on the two methods that
 actually work: **FSRS spaced repetition** and **level-matched immersion**.
 
-**Scope: Chinese (HSK 3.0) only.** The two non-Chinese tracks are **frozen** —
-they stay in the app and keep working for anyone already on them, but they are
-out of scope for good: no new content, no new features, no fixes, no design
-work, no migrations, no plans. Treat "Chinese" and "the product" as the same
-thing.
+**Scope: Chinese (HSK 3.0) only.** As of 2026-08-03 the app is Chinese-only in
+the literal sense: Kana.jsx, Cyrillic.jsx, the wanakana dependency, the
+`kana`/`cyrillic` routes and their Practice-hub entries are gone, not just
+paused. Every grandfathered profile that was still on `active_language =
+'japanese' | 'russian'` was moved to Chinese by migration
+`20260803130000_migrate_frozen_track_users_to_chinese.sql` (their old
+`language_tracks` row was deactivated, never deleted — see `docs/BACKLOG.md`
+for whether that migration has actually been applied yet). Treat "Chinese" and
+"the product" as the same thing.
 
 Applies to work and to conversation both:
-- **Never propose, plan, estimate or ask about the frozen tracks.** Not as an
-  option, not as a follow-up, not as a "while we're here". Don't report their
-  content gaps, their broken things, or their test coverage.
-- **Don't spend work on them.** A change that touches all languages because it
-  lives in shared code is fine — that is the architecture doing its job — but
-  never open a task, script run or migration *for* a frozen track.
-- **Don't rip them out either.** Deleting their rows, assets, themes or
-  language branches is its own pile of risk and work for zero benefit. Frozen
-  means untouched, not removed.
+- **Never propose, plan, estimate or ask about Japanese or Russian.** Not as
+  an option, not as a follow-up, not as a "while we're here".
+- **The underlying data stays, deliberately.** `languageTheme.js`'s
+  `japanese`/`russian` entries, and the deep per-language logic in modules
+  like `storyReading.js`/`mastery.js`, are still there — some of it renders
+  historical cards/vocabulary/stories that remain in the DB from before the
+  removal (never deleted, per §7), and ripping it out for no functional gain
+  is its own pile of risk. What's gone is the reachable UI: no screen, no
+  route, no picker entry, no way to end up on either language again.
+  `PUBLIC_LANGUAGES` / `ADMIN_LANGUAGES` in `src/languageTheme.js` were
+  already Chinese-only before this and still gate new activation, alongside
+  the server-side trigger below.
 - **The freeze is enforced server-side too** (since 2026-07-31): a DB trigger
   on `language_tracks` only lets ordinary clients activate languages listed by
-  `public.public_track_languages()`. **Un-pausing a language therefore takes
-  TWO edits**: `PUBLIC_LANGUAGES` in `src/languageTheme.js` AND a migration
-  updating that function — the client-side comment alone is no longer the
-  whole story.
+  `public.public_track_languages()`.
 - Their seeded content, migrations and generator scripts stay in the repo as
   history. Leave them where they are.
 

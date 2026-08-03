@@ -7,7 +7,7 @@
 // falling through to Home — which used to hide typos and dead links.
 export const KNOWN_VIEWS = [
   'home',
-  'study', 'weak', 'test', 'writing', 'listen', 'kana', 'cyrillic',
+  'study', 'weak', 'test', 'writing', 'listen',
   'practice', 'words', 'known', 'dictionary', 'grammar', 'grammarpractice', 'strokes', 'builder', 'fillblank', 'speak',
   'tones', 'stories', 'analyzer', 'profile', 'languages', 'youtube', 'settings',
   'hq',

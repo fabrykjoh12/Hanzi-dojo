@@ -1,6 +1,5 @@
 import { isRecallMatch } from './utils'
 import { lenientPinyin } from './testLogic'
-import { toRomaji } from 'wanakana'
 
 // Pure answer-matching helpers for the writing practice drill (Writing.jsx).
 // Extracted into their own module so Writing.jsx can stay a components-only
@@ -70,15 +69,6 @@ function isMeaningMatch(input, meaning) {
   return normalizeEnglish(withoutParens) === normalizedInput || variants.includes(normalizedInput)
 }
 
-export function normalizeRomaji(value) {
-  // Ignore the separators people sprinkle through romaji — spaces, the
-  // syllable apostrophe (kon'nichiwa), and hyphens — plus any sentence
-  // punctuation, so a stored phrase like いただきます。 (romaji "itadakimasu.")
-  // still matches a typed "itadakimasu". wanakana emits none of these, so this
-  // only ever accepts more.
-  return stripChars((value || '').toLowerCase().trim(), ' \'’‘-.。、，,!！?？')
-}
-
 export function hasKanji(str) {
   const value = str || ''
   for (let i = 0; i < value.length; i += 1) {
@@ -94,15 +84,12 @@ export function isWritingMatch(input, vocab, direction, isJapanese) {
   const word = (vocab.word || '').replace('。', '')
   if (isRecallMatch(input, word)) return true
 
+  // Japanese track removed (wanakana dependency dropped) — isJapanese is
+  // never true in the live app anymore. What's left is an exact/reading
+  // match only, kept rather than deleted so this doesn't crash if it's ever
+  // called with old data.
   if (isJapanese) {
-    if (isRecallMatch(input, vocab.reading)) return true
-    const reading = vocab.reading || ''
-    const expectedRomaji = normalizeRomaji(toRomaji(reading))
-    // Convert the INPUT through toRomaji too, so typing katakana for a word
-    // stored with a hiragana reading (or vice versa) also matches — romaji
-    // passes through toRomaji unchanged.
-    const inputRomaji = normalizeRomaji(toRomaji(input))
-    return inputRomaji.length > 0 && inputRomaji === expectedRomaji
+    return isRecallMatch(input, vocab.reading)
   }
 
   const normalizedInput = normalizeChinesePinyin(input)

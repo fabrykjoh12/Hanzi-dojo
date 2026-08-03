@@ -2,30 +2,15 @@ import { describe, it, expect } from 'vitest'
 
 import { isWritingMatch } from './writingMatch'
 
-describe('isWritingMatch — Japanese reading direction', () => {
-  it('accepts a phrase answer without its trailing 。 (user report: いただきます。)', () => {
-    const v = { word: 'いただきます。', reading: 'いただきます。', meaning: 'let\'s eat' }
-    expect(isWritingMatch('Itadakimasu', v, 'to_target', true)).toBe(true)
-    expect(isWritingMatch('itadakimasu.', v, 'to_target', true)).toBe(true)
-    expect(isWritingMatch('いただきます', v, 'to_target', true)).toBe(true)
-    expect(isWritingMatch('いただきます。', v, 'to_target', true)).toBe(true)
-  })
-
-  it('accepts すみません for すみません。', () => {
-    const v = { word: 'すみません。', reading: 'すみません。', meaning: 'excuse me' }
-    expect(isWritingMatch('sumimasen', v, 'to_target', true)).toBe(true)
-    expect(isWritingMatch('すみません', v, 'to_target', true)).toBe(true)
-  })
-
-  it('still rejects a genuinely wrong reading', () => {
-    const v = { word: 'いただきます。', reading: 'いただきます。', meaning: 'let\'s eat' }
-    expect(isWritingMatch('arigatou', v, 'to_target', true)).toBe(false)
-  })
-
-  it('accepts kana or romaji for a plain word', () => {
+// The Japanese track was removed (see CLAUDE.md — Chinese-only); isJapanese
+// is never true in the live app anymore. Kept as a minimal defensive check
+// that the branch still behaves (exact reading match, no romaji conversion)
+// rather than crashing if it's ever reached with old data.
+describe('isWritingMatch — isJapanese branch (unreachable in the live app)', () => {
+  it('matches the exact stored reading', () => {
     const v = { word: '水', reading: 'みず', meaning: 'water' }
-    expect(isWritingMatch('mizu', v, 'to_target', true)).toBe(true)
     expect(isWritingMatch('みず', v, 'to_target', true)).toBe(true)
+    expect(isWritingMatch('mizu', v, 'to_target', true)).toBe(false)
   })
 })
 

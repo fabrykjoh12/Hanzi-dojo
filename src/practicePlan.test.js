@@ -2,8 +2,9 @@ import { describe, it, expect } from 'vitest'
 import { buildPracticePlan } from './practicePlan'
 
 const CHINESE = { script: 'hanzi', cjk: true }
-const JAPANESE = { script: 'kana', cjk: true }
-const RUSSIAN = { script: 'cyrillic', cjk: false }
+// A grandfathered pre-Chinese-only track (Japanese/Russian screens removed —
+// see CLAUDE.md) reports a script buildPracticePlan no longer recognizes.
+const UNRECOGNIZED_SCRIPT = { script: 'kana', cjk: true }
 
 function keys(list) {
   return list.map(d => d.key)
@@ -98,18 +99,12 @@ describe('buildPracticePlan — per-language drills', () => {
     expect(k).not.toContain('kana')
   })
 
-  it('gives Japanese the kana drill and stroke order', () => {
-    const k = keys(buildPracticePlan(JAPANESE).drills)
-    expect(k).toContain('kana')
+  it('drops the script drill entirely for an unrecognized script (grandfathered non-Chinese track)', () => {
+    const k = keys(buildPracticePlan(UNRECOGNIZED_SCRIPT).drills)
+    expect(k).not.toContain('tones')
+    expect(k).not.toContain('kana')
+    expect(k).not.toContain('cyrillic')
     expect(k).toContain('strokes')
-    expect(k).not.toContain('tones')
-  })
-
-  it('gives Russian an alphabet drill and no stroke order', () => {
-    const k = keys(buildPracticePlan(RUSSIAN).drills)
-    expect(k).toContain('cyrillic')
-    expect(k).not.toContain('strokes')
-    expect(k).not.toContain('tones')
   })
 
   it('drops the script drill entirely for an unknown script', () => {

@@ -31,8 +31,6 @@ const Test = lazy(() => import('./Test'))
 const Stories = lazy(() => import('./Stories'))
 const Listen = lazy(() => import('./Listen'))
 const Tones = lazy(() => import('./Tones'))
-const Kana = lazy(() => import('./Kana'))
-const Cyrillic = lazy(() => import('./Cyrillic'))
 const FillBlank = lazy(() => import('./FillBlank'))
 const Speaking = lazy(() => import('./Speaking'))
 const SentenceBuilder = lazy(() => import('./SentenceBuilder'))
@@ -387,22 +385,6 @@ export default function App() {
     content = (
       <Listen
         session={session}
-        profile={profile}
-        track={track}
-        onBack={() => navigate('home')}
-      />
-    )
-  } else if (view === 'kana') {
-    content = (
-      <Kana
-        profile={profile}
-        track={track}
-        onBack={() => navigate('home')}
-      />
-    )
-  } else if (view === 'cyrillic') {
-    content = (
-      <Cyrillic
         profile={profile}
         track={track}
         onBack={() => navigate('home')}

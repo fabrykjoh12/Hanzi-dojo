@@ -1,5 +1,4 @@
 import { lenientPinyin } from './testLogic'
-import { toRomaji } from 'wanakana'
 import { normalizeVocabForm, expandParenVariants } from './storyReading'
 
 // Common Japanese words with more than one everyday reading. The stored card
@@ -70,16 +69,10 @@ export function checkTypedAnswer(input, v, isJapanese) {
     if (t === al || typedPlain === al) return true
   }
 
-  if (isJapanese) {
-    // Romaji comparison: kana→romaji both sides, spaces dropped.
-    const norm = s => (toRomaji(s || '') || '').toLowerCase().split(' ').join('')
-    const typed = norm(normalizeVocabForm(input))
-    if (!typed) return false
-    return [...accepted].some(a => {
-      const target = norm(a)
-      return target !== '' && typed === target
-    })
-  }
+  // Japanese track removed (wanakana dependency dropped) — isJapanese is
+  // never true in the live app anymore. The exact-form check above already
+  // covers what's left of this branch; there's no romaji fallback now.
+  if (isJapanese) return false
 
   // Chinese: tone-mark AND tone-number insensitive, punctuation/space tolerant —
   // "hai", "hǎi", "hai3" are all the same answer. Both stored forms accepted.

@@ -10,13 +10,13 @@
 // 'accent'); the screen decides what those look like, so the palette stays in
 // one place.
 
-// The script drill matches the language's writing system. Keyed by
-// `languageTheme().script` rather than by language name, so a new language is
-// still a data change (CLAUDE.md §1).
+// The script drill matches the language's writing system. Chinese-only now
+// (see CLAUDE.md), so this is just the one entry — kept keyed by script
+// rather than inlined, so a script this doesn't recognize (a grandfathered
+// track from before the Japanese/Russian removal) gets no drill instead of
+// a wrong one.
 const SCRIPT_DRILLS = {
   hanzi: { key: 'tones', title: 'Tones', desc: 'Hear a word, name its tone' },
-  kana: { key: 'kana', title: 'Kana', desc: 'Hiragana and katakana' },
-  cyrillic: { key: 'cyrillic', title: 'Alphabet', desc: 'Cyrillic letters and sounds' },
 }
 
 // Lookup and reference. These are places to go, not things to practise, so the
