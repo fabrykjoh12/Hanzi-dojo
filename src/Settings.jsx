@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import {
   Palette, Sun, Moon, Keyboard, Eye,
   Volume2, BookOpenCheck, Gauge, Bell, HardDrive, Trash2, CheckCircle2,
-  MessagesSquare, ArrowUpRight, Brain,
+  MessagesSquare, ArrowUpRight, Brain, AlertTriangle,
 } from 'lucide-react'
 import { RETENTION_PRESETS, presetForRetention, setTargetRetention } from './srs'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
@@ -263,6 +263,10 @@ export default function Settings({ session, profile, onUpdate }) {
             </Card>
           )}
 
+          {/* Delete account — required by both app stores as an in-app,
+              user-initiated flow (see supabase/functions/delete-account). */}
+          <DeleteAccountCard session={session} />
+
           {/* Build stamp — confirms which version is running. */}
           <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--text-faint)', fontWeight: 600, marginTop: '4px' }}>
             Version <span style={{ fontFamily: 'ui-monospace, monospace' }}>{buildLabel()}</span>
@@ -332,6 +336,105 @@ function OfflineStorageCard({ accentHex }) {
           ? <><CheckCircle2 size={16} strokeWidth={2} color="#2F9E6D" /> Cleared</>
           : <><Trash2 size={16} strokeWidth={2} /> {confirming ? 'Tap again to clear' : 'Clear downloaded data'}</>}
       </button>
+    </Card>
+  )
+}
+
+// Requires typing the account email before the delete call fires — a
+// deliberate, harder-to-fat-finger confirmation for a permanent action,
+// per both app stores' account-deletion requirements. The actual deletion
+// happens server-side in supabase/functions/delete-account, which re-checks
+// this same confirmation independently.
+function DeleteAccountCard({ session }) {
+  const [open, setOpen] = useState(false)
+  const [confirmText, setConfirmText] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const email = session?.user?.email || ''
+  const matches = confirmText.trim().toLowerCase() === email.trim().toLowerCase()
+
+  const doDelete = async () => {
+    if (!matches || busy) return
+    setBusy(true)
+    setError('')
+    const { data, error: invokeError } = await supabase.functions.invoke('delete-account', {
+      body: { confirmation: confirmText.trim() },
+    })
+    if (invokeError || data?.error) {
+      setError(data?.error || invokeError.message || 'Something went wrong. Please try again.')
+      setBusy(false)
+      return
+    }
+    await supabase.auth.signOut()
+  }
+
+  return (
+    <Card
+      icon={AlertTriangle}
+      title="Delete account"
+      text="Permanently deletes your account and everything tied to it — flashcards, progress, stories read, test history. This can't be undone."
+      accentHex="#DC2626"
+    >
+      {!open ? (
+        <button
+          onClick={() => setOpen(true)}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            height: '40px', padding: '0 16px', borderRadius: '12px', cursor: 'pointer',
+            border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text)',
+            fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          <Trash2 size={16} strokeWidth={2} />
+          Delete account…
+        </button>
+      ) : (
+        <div style={{ display: 'grid', gap: '10px', maxWidth: '360px' }}>
+          <label htmlFor="delete-account-confirm" style={{ fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            Type your email (<strong>{email}</strong>) to confirm.
+          </label>
+          <input
+            id="delete-account-confirm"
+            type="email"
+            autoComplete="off"
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            disabled={busy}
+            style={{
+              height: '40px', padding: '0 12px', borderRadius: '10px',
+              border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)',
+              fontSize: '14px', fontFamily: 'Inter, sans-serif',
+            }}
+          />
+          {error && <div style={{ fontSize: '12.5px', color: '#DC2626', lineHeight: 1.5 }}>{error}</div>}
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={doDelete}
+              disabled={!matches || busy}
+              style={{
+                height: '40px', padding: '0 16px', borderRadius: '12px',
+                border: '1px solid #DC2626', background: '#DC2626',
+                color: '#fff', fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+                cursor: matches && !busy ? 'pointer' : 'not-allowed', opacity: matches && !busy ? 1 : 0.5,
+              }}
+            >
+              {busy ? 'Deleting…' : 'Permanently delete'}
+            </button>
+            <button
+              onClick={() => { setOpen(false); setConfirmText(''); setError('') }}
+              disabled={busy}
+              style={{
+                height: '40px', padding: '0 16px', borderRadius: '12px',
+                border: '1px solid var(--border)', background: 'var(--surface-2)',
+                color: 'var(--text)', fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+                cursor: busy ? 'not-allowed' : 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </Card>
   )
 }

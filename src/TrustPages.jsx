@@ -221,9 +221,10 @@ function Support() {
       </ul>
       <H2>Account deletion</H2>
       <P>
-        To delete your account and its data, ask in Discord or via in-app feedback from the
-        account you want removed, and we’ll confirm and handle it. Progress for a single
-        language can be reset yourself from Profile without deleting the account.
+        Delete your account yourself, any time, from <strong>Settings → Delete account</strong>.
+        It permanently removes your account and everything tied to it — flashcards, progress,
+        stories read, test history — and can’t be undone. Progress for a single language can be
+        reset without deleting the account from Profile instead.
       </P>
       <H2>Data questions</H2>
       <P>
