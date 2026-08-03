@@ -39,6 +39,14 @@ still get full detail — they are read once, on purpose.
 | [`docs/BACKLOG.md`](docs/BACKLOG.md) | Engineering backlog, known issues, tech debt | Picking up a fix |
 | [`docs/PM-BOARD.md`](docs/PM-BOARD.md) | Current milestone, ownership, merge order | Coordinating parallel work |
 | [`docs/CHANGELOG.md`](docs/CHANGELOG.md) | Session-by-session history (reference only) | Archaeology |
+| [`docs/TTS.md`](docs/TTS.md) | Voice config, pinyin phoneme pinning, the audio pipeline | Touching TTS or regenerating audio |
+| [`docs/RELEASE-CHECKLIST.md`](docs/RELEASE-CHECKLIST.md) | Pre-release gate | Cutting a release |
+| [`docs/TESTERS.md`](docs/TESTERS.md) | Who tests, and how they're briefed | Organising a test round |
+| [`docs/DISCORD.md`](docs/DISCORD.md) | Server layout, webhooks, the sync workflows | Changing anything Discord-facing |
+| [`docs/DOJO-BRIDGE.md`](docs/DOJO-BRIDGE.md) | The `tools/` bridge | Working on DojoHQ |
+| [`docs/STORY_EXPERIENCE_AUDIT.md`](docs/STORY_EXPERIENCE_AUDIT.md) | Long-form audit of the reading experience | Reworking the reader |
+| [`docs/DATABASE.md`](docs/DATABASE.md) | Older schema notes — **`docs/ARCHITECTURE.md` is the current source of truth**; last touched 2026-07-02 | Rarely; prefer ARCHITECTURE.md |
+| `docs/superpowers/` | Design specs and plans for shipped features. `archive/` holds completed ones | Archaeology on a feature's design |
 
 ### Keep the roadmap current (every task — it is live in Discord)
 
@@ -120,16 +128,16 @@ them, and a hardcoded `if (active_language === …)` is still a bug.
 | Tool | Version / Notes |
 |------|----------------|
 | React | 19.x |
-| Vite | 8.x (**OXC parser — strict**, see coding rules) |
+| Vite | 8.x (OXC parser) |
 | react-router-dom | 7.x — BrowserRouter; each top-level screen is `/<key>`, home is `/` |
 | Supabase JS | ^2.107 — auth, Postgres, storage (`audio` bucket) |
 | ts-fsrs | ^5.4.1 — FSRS v5 scheduling |
 | wanakana | ^5.3.1 — Japanese romaji conversion |
 | hanzi-writer | ^3.7.3 — animated stroke order (char data from CDN at runtime) |
 | lucide-react | ^1.17 — **all** UI icons; never emoji-as-icon |
-| vitest | ^4.x — unit tests, `src/**/*.test.js` |
+| vitest | ^4.x — unit tests: `src/**/*.test.js` **and** root `*.test.mjs` (the content scripts' pure parts). Both patterns are in `vitest.config.js` |
 | Playwright | ^1.61 — e2e, `tests/e2e/*.spec.js` |
-| Tailwind CSS | installed but **not used in JSX** — all styling is inline style objects |
+| Tailwind CSS | **Preflight only.** No utility classes in JSX — styling is inline style objects. But `src/index.css` does `@tailwind base/components/utilities`, so Tailwind's CSS reset **is** live and styling the app. Removing the dependency would change rendering everywhere; it is not a free delete |
 | openai | content scripts only (Groq/Gemini-compatible API) — **not in the app bundle** |
 | Node | 22+ (`@supabase/supabase-js` v2 needs a global `WebSocket` at `createClient`) |
 | Language | Plain JSX. **No TypeScript.** |
@@ -236,10 +244,20 @@ Hardcoded neutral hexes are a bug.
 
 ## 6. Coding rules (mandatory — the OXC parser is strict)
 
-1. **No TypeScript.** No type annotations anywhere.
-2. **No complex regex literals** — OXC breaks on them. Use `indexOf()`, `split()`, `includes()`.
-3. **All styling is inline style objects.** No Tailwind classes in JSX.
-4. **No template literals inside JSX style props** where concatenation works: `'url(' + src + ')'`, not `` `url(${src})` ``.
+1. **No TypeScript in `src/`.** No type annotations anywhere in app code.
+   (`drizzle.config.ts` is the one exception — it is tooling config, not app code.)
+2. **Regex literals are fine.** *(Corrected 2026-08-04.)* This rule used to say
+   "no complex regex literals — OXC breaks on them". That is no longer true, and
+   the codebase had already outgrown it: ~38 files in `src/` use regex literals
+   today and the build is green, including a Unicode property escape in
+   `homeStory.js` (`/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u`). Write the
+   regex when a regex is clearest; reach for `indexOf()`/`split()`/`includes()`
+   because they read better, not out of fear of the parser.
+3. **All styling is inline style objects.** No Tailwind utility classes in JSX.
+4. **Prefer concatenation in JSX style props** — `'url(' + src + ')'` over
+   `` `url(${src})` ``. This is house style for consistency with the existing
+   code; the original reason (an OXC parser limit) is unverified and probably
+   as stale as rule 2 was. Don't rewrite working template literals to satisfy it.
 5. **Device storage is guarded, never assumed.** `localStorage`/IndexedDB work
    fine in production — but always through the existing helpers (`offline.js`,
    the `prelogin.js` try/catch pattern) so a blocked storage API degrades
@@ -252,6 +270,10 @@ Hardcoded neutral hexes are a bug.
 7. **Keep components flat.** Extract a subcomponent when it's reused or the file would be unreadable — and extract *logic* to a `.js` module (see §3).
 8. **`src/` must stay at zero ESLint errors.** Run `npm run lint`; don't add new warnings either.
 9. **Verification is not optional** — see §8. The build and the tests are the source of truth, not a read-through.
+
+**The vendored skills in `.claude/skills/` do not know these rules.** They come
+from general-purpose upstream projects and several teach in TypeScript. Where a
+skill and this file disagree, **this file wins** — see `.claude/skills/VENDORED.md`.
 
 ---
 
@@ -273,7 +295,7 @@ Hardcoded neutral hexes are a bug.
 
 ```bash
 npm run lint     # must be 0 errors in src/
-npm test         # vitest — ~3,000 unit tests
+npm test         # vitest — ~1,700 unit tests across 129 files
 npm run build    # the build is the source of truth
 ```
 

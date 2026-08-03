@@ -3,7 +3,7 @@ name: CI
 # The gate. Lint, unit tests and build run on every pull request and on every
 # push to main.
 #
-# Before this existed the only PR check was Playwright (e2e.yml) — so the ~1,200
+# Before this existed the only PR check was Playwright (e2e.yml) — so the ~1,700
 # vitest specs, the ESLint baseline and the build itself never blocked a merge,
 # and since most work went straight to `main` (which auto-deploys to Vercel), a
 # red suite could reach real users. These three commands are the same ones
