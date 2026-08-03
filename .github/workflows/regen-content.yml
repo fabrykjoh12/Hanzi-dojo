@@ -30,6 +30,10 @@ on:
         description: "tts-flashcards only: how many source records (words) to voice. Above 200 needs override."
         type: string
         default: '20'
+      tts_ids:
+        description: "tts-flashcards only: comma-separated vocabulary row ids — voice exactly these rows (level is ignored)."
+        type: string
+        default: ''
       tts_confirm:
         description: "tts-flashcards only: actually spend money. Unticked = dry run that bills nothing."
         type: boolean
@@ -175,6 +179,10 @@ jobs:
           if [ "${{ inputs.task }}" = "tts-flashcards" ]; then
             LEVEL_FLAG=""
             if [ -n "${{ inputs.level }}" ]; then LEVEL_FLAG="--level ${{ inputs.level }}"; fi
+            # A targeted run (e.g. re-voicing rows whose reading was corrected)
+            # names its exact vocabulary ids; that overrides any level filter.
+            ID_FLAG=""
+            if [ -n "${{ inputs.tts_ids }}" ]; then ID_FLAG="--id ${{ inputs.tts_ids }}"; LEVEL_FLAG=""; fi
             LANG_NAME="${{ inputs.language }}"
             if [ "$LANG_NAME" = "both" ]; then LANG_NAME="chinese"; fi
             case "$LANG_NAME" in
@@ -193,7 +201,7 @@ jobs:
             echo "::group::Azure TTS · $LANG_NAME/$SYSTEM $LEVEL_FLAG · limit $LIMIT"
             node tts-generate.mjs \
               --flashcards --missing-only \
-              --language "$LANG_NAME" --system "$SYSTEM" $LEVEL_FLAG \
+              --language "$LANG_NAME" --system "$SYSTEM" $LEVEL_FLAG $ID_FLAG \
               --limit "$LIMIT" $OVERRIDE $CONFIRM
             echo "::endgroup::"
           fi
