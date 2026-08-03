@@ -31,8 +31,10 @@ it silently.
       **before** it is applied, and applied exactly as committed (no
       improvised DDL).
 - [ ] §7 safety rules hold: no vocabulary deletes, no card deletes outside the
-      reset RPC, never write `is_easy = true` or `ease_factor`,
-      `level_unlocks` stays append-only.
+      `reset_current_language_progress` RPC, `is_easy = true` written only by
+      the SRS grading flow (`srs.js` + `Study.jsx`) — other code may only set
+      it false — never write `ease_factor`, and `level_unlocks` stays
+      append-only.
 - [ ] Ordering dependencies checked against `docs/BACKLOG.md` §Database before
       any overlapping data script runs.
 - [ ] After applying: run the Supabase **security advisors** (`get_advisors`) —
