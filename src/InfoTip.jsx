@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-export default function InfoTip({ accentHex, text }) {
+export default function InfoTip({ accentHex, text, label = 'More information' }) {
   const [pos, setPos] = useState(null)
   const ref = useRef(null)
 
@@ -41,7 +41,8 @@ export default function InfoTip({ accentHex, text }) {
           fontFamily: 'Inter, sans-serif',
           flexShrink: 0,
         }}
-        aria-label="What does mastered mean?"
+        aria-label={label}
+        aria-expanded={!!pos}
       >
         ?
       </button>

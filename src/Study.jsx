@@ -33,6 +33,8 @@ import {
 } from './cardMarker'
 import { MICRO, NUM } from './designTokens'
 import { useStudyAudio } from './useStudyAudio'
+import { GRADE_HELP, GRADE_HELP_FOOTER, gradeTip } from './gradeHelp'
+import InfoTip from './InfoTip'
 import { useStudyKeyboardShortcuts } from './useStudyKeyboardShortcuts'
 import AudioButton from './AudioButton'
 import { shouldOfferCoach, charBreakdown } from './stuckWord'
@@ -177,6 +179,7 @@ function GradeButton({
       onClick={() => onClick(grade)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      title={gradeTip(grade)}
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         gap: minHeight >= 68 ? '6px' : '3px',
@@ -1317,18 +1320,20 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             {audioUrl && flipped && (
               <div style={{ display: 'flex', gap: '8px' }}>
                 {audioBroken ? (
-                  <span
-                    title="This word's audio file couldn't be loaded"
+                  <button
+                    onClick={e => { e.stopPropagation(); resetAudioBroken(); playAudio() }}
+                    title="This word's audio didn't load — tap to retry"
+                    aria-label="Audio didn't load — retry"
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: '7px',
                       height: '40px', padding: '0 14px', borderRadius: '13px',
-                      background: 'var(--surface-2)', border: '1px solid var(--border)',
+                      background: 'var(--surface-2)', border: '1px solid var(--border)', cursor: 'pointer',
                       color: 'var(--text-faint)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
                     }}
                   >
                     <VolumeX size={18} strokeWidth={2} />
-                    No audio
-                  </span>
+                    Retry audio
+                  </button>
                 ) : (
                 <button
                   onClick={e => { e.stopPropagation(); playAudio() }}
@@ -1652,11 +1657,40 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               </div>
             </div>
           )}
-          {!isMobile && (
-            <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '12px', color: 'var(--text-faint)', fontWeight: 550 }}>
-              {flipped
-                ? '1–4 to grade · Enter = ' + (suggestedGrade === 0 ? 'Again' : 'Good') + ' · R to replay'
-                : (isTyped ? 'Enter to check' : 'Space to reveal')}
+          {(!isMobile || flipped) && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              marginTop: '12px', fontSize: '12px', color: 'var(--text-faint)', fontWeight: 550,
+            }}>
+              {!isMobile && (
+                <span>
+                  {flipped
+                    ? '1–4 to grade · Enter = ' + (suggestedGrade === 0 ? 'Again' : 'Good') + ' · R to replay'
+                    : (isTyped ? 'Enter to check' : 'Space to reveal')}
+                </span>
+              )}
+              {/* One "?" for the whole grade row — the tooltips on each button
+                  cover hover, this covers touch (and reads better as a single
+                  explanation than four competing popovers). */}
+              {flipped && (
+                <InfoTip
+                  accentHex={accentHex}
+                  label="How grading works"
+                  text={
+                    <span>
+                      {GRADE_HELP.map(g => (
+                        <span key={g.grade} style={{ display: 'block', marginBottom: '9px' }}>
+                          <strong style={{ color: 'var(--text)', fontWeight: 750 }}>{g.label}</strong>
+                          {' — ' + g.tip}
+                        </span>
+                      ))}
+                      <span style={{ display: 'block', borderTop: '1px solid var(--border)', paddingTop: '9px', color: 'var(--text-faint)' }}>
+                        {GRADE_HELP_FOOTER}
+                      </span>
+                    </span>
+                  }
+                />
+              )}
             </div>
           )}
           {stuckOffer && (

@@ -396,7 +396,7 @@ export default function Test({ session, profile, track }) {
               <div style={{ fontSize: '34px', fontWeight: 850, color: accentHex }}>
                 {status.masteredCount} / {status.totalWords}
               </div>
-              <InfoTip accentHex={accentHex} text="A word is mastered once the app predicts you'll still recall it about three weeks from now. It can't be rushed - mastery comes from reviewing correctly over time, across multiple days." />
+              <InfoTip accentHex={accentHex} label="What does mastered mean?" text="A word is mastered once the app predicts you'll still recall it about three weeks from now. It can't be rushed - mastery comes from reviewing correctly over time, across multiple days." />
             </div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', marginBottom: '16px' }}>words mastered</div>
             <ProgressBar pct={masteryPct} accentHex={accentHex} />

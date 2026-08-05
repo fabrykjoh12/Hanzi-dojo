@@ -92,7 +92,7 @@ export default function AudioButton({
     fontSize: size === 'sm' ? '12px' : '13px', fontWeight: 750,
   }
 
-  if (unavailable || state === 'error') {
+  if (unavailable) {
     return (
       <span
         style={{
@@ -100,14 +100,36 @@ export default function AudioButton({
           background: 'var(--surface-2)', border: '1px solid var(--border)',
           color: 'var(--text-faint)', fontWeight: 650,
         }}
-        title={state === 'error' ? "This clip couldn't be played" : 'No audio for this yet'}
+        title="No audio for this yet"
       >
         <Icon size={iconSize} strokeWidth={2} aria-hidden="true" />
-        {text ? (state === 'error' ? 'No audio' : text) : null}
-        <span style={SR_ONLY}>
-          {state === 'error' ? label + ' - this clip could not be played' : label + ' - not available yet'}
-        </span>
+        {text || null}
+        <span style={SR_ONLY}>{label + ' - not available yet'}</span>
       </span>
+    )
+  }
+
+  // A failed load is often transient (offline moment, CDN hiccup), so the
+  // error state stays a live button: tapping it tries the clip again rather
+  // than leaving a dead chip for the rest of the card.
+  if (state === 'error') {
+    return (
+      <button
+        type="button"
+        onClick={handlePlay}
+        aria-label={label + " - couldn't play, tap to retry"}
+        title="Couldn't play - tap to retry"
+        style={{
+          ...baseStyle,
+          cursor: 'pointer',
+          background: 'var(--surface-2)', border: '1px solid var(--border)',
+          color: 'var(--text-faint)', fontWeight: 650,
+        }}
+      >
+        <Icon size={iconSize} strokeWidth={2} aria-hidden="true" />
+        {text ? 'Retry' : null}
+        <span aria-live="polite" style={SR_ONLY}>Audio didn't play</span>
+      </button>
     )
   }
 
