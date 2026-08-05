@@ -26,6 +26,9 @@ export const LANGUAGES = {
     backgroundKey: 'chinese',
     cjk: true,
     script: 'hanzi',
+    // BCP-47 tag for lang= attributes on target-language text, so screen
+    // readers pick the right voice instead of reading hanzi with an English one.
+    lang: 'zh-Hans',
   },
   japanese: {
     key: 'japanese',
@@ -40,6 +43,7 @@ export const LANGUAGES = {
     backgroundKey: 'japanese',
     cjk: true,
     script: 'kana',
+    lang: 'ja',
   },
   russian: {
     key: 'russian',
@@ -56,6 +60,7 @@ export const LANGUAGES = {
     backgroundKey: 'russian',
     cjk: false,
     script: 'cyrillic',
+    lang: 'ru',
   },
 }
 

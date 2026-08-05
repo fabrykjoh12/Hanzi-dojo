@@ -1395,7 +1395,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             }}
           >
             {wordFuri ? (
-              <div style={{
+              <div lang={theme.lang} style={{
                 fontSize: charFontSize, fontWeight: 400, color: 'var(--text)',
                 fontFamily: charFont, lineHeight: 1.25,
               }}>
@@ -1407,7 +1407,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                 {wordFuri.trail}
               </div>
             ) : (
-              <div style={{
+              <div lang={theme.lang} style={{
                 fontSize: charFontSize, fontWeight: 400, color: 'var(--text)',
                 fontFamily: charFont, lineHeight: 1.08,
                 overflowWrap: 'anywhere',
@@ -1437,7 +1437,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                         <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '8px' }}>
                           {sourceStoryTitle ? 'From "' + sourceStoryTitle + '"' : 'From a story you read'}
                         </div>
-                        <div style={{ fontSize: '17px', color: 'var(--text)', lineHeight: 1.5, fontFamily: langFont }}>
+                        <div lang={theme.lang} style={{ fontSize: '17px', color: 'var(--text)', lineHeight: 1.5, fontFamily: langFont }}>
                           {renderExampleSentence(sourceSentence, v.word, v.reading)}
                         </div>
                         {sourceTranslation && (
@@ -1449,7 +1449,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                     ) : (
                       <>
                         {v.example_sentence && (
-                          <div style={{
+                          <div lang={theme.lang} style={{
                             fontSize: '17px', color: 'var(--text)', lineHeight: 1.5,
                             fontFamily: langFont,
                           }}>

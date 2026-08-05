@@ -4,6 +4,7 @@ import { getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
 import { chatStyleFor, classifyMissionWords } from './chatMissions'
+import { trapDialogFocus } from './dialogFocus'
 import { X, Volume2, Bookmark, Check, Type, Languages, SplitSquareHorizontal, MessageCircleMore, Trophy } from 'lucide-react'
 
 // Word-to-World Chat Mission runner. Renders a mission (from chatMissions.js) as
@@ -98,10 +99,12 @@ export default function ChatMission({ mission, vocab, session, track, dayBuckets
   const audioElRef = useRef(null)
   const tappedForHelp = useRef(new Set())             // words the learner needed help on
   const closeBtnRef = useRef(null)
+  const dialogRef = useRef(null)
 
   // Dialog a11y: move focus into the overlay when it opens (so keyboard/screen-
   // reader users land inside it), and let Escape close it — keyboard parity with
-  // the Close (X) button. No focus trap here; that's tracked separately.
+  // the Close (X) button. Tab is trapped inside the overlay (see the root's
+  // onKeyDown), matching the reader dialogs.
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
@@ -210,7 +213,7 @@ export default function ChatMission({ mission, vocab, session, track, dayBuckets
   function Sentence({ text }) {
     const tokens = segment(text, dict, spaced)
     return (
-      <span style={{ fontFamily: font, lineHeight: 1.7 }}>
+      <span lang={theme.lang} style={{ fontFamily: font, lineHeight: 1.7 }}>
         {tokens.map((tk, i) => {
           if (!tk.key) return <span key={i}>{tk.text}</span>
           const learned = learnedSet.has(tk.key)
@@ -274,7 +277,16 @@ export default function ChatMission({ mission, vocab, session, track, dayBuckets
   )
 
   return (
-    <div style={shell} className="app-overlay-viewport" role="dialog" aria-modal="true" aria-label={mission.scenario.title}>
+    <div
+      ref={dialogRef}
+      style={shell}
+      className="app-overlay-viewport"
+      role="dialog"
+      aria-modal="true"
+      aria-label={mission.scenario.title}
+      tabIndex={-1}
+      onKeyDown={e => trapDialogFocus(e, dialogRef.current)}
+    >
       {header}
 
       {phase === 'chat' && (
