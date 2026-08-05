@@ -195,8 +195,10 @@ paid generation happens without an explicit `--confirm`.
 - [ ] Global word-status model — one FSRS-driven new/learning/known status per word, powering "% known" across stories, your own text, and video (the foundation for "One '% known' everywhere")
 
 **Accessibility (WCAG 2.2 AA)**
-- [ ] Flashcard reveal surface as a fully focusable control (answer `aria-live` announcements have shipped)
-- [ ] `ChatMission` overlay: a focus trap (the `role="dialog"` + `aria-modal` + Escape-to-close + initial focus have shipped)
+- [x] Flashcard reveal surface as a fully focusable control — shipped 2026-07-30 (`role="button"`, keyboard reveal, answer `aria-live` announcements); this line was stale
+- [x] `ChatMission` overlay: a focus trap (Tab/Shift+Tab now cycle inside the dialog via the shared `trapDialogFocus`, matching the reader dialogs)
+- [x] Screen readers speak Chinese with a Chinese voice on flashcards and chat missions — the word, example sentences and mission text now carry the right language tag (`lang` is per-language data in `languageTheme.js`)
+- [ ] Automated a11y checks in e2e (axe) — considered, needs a new dependency; follow-up
 
 ## ✅ Shipped
 - [x] **Word-by-word read-along** — the word being spoken lights up while the rest of the line quiets, so you never lose your place mid-sentence. Tap any word while a story is reading to jump the audio there, and pick a reading speed (0.6x / 0.8x / 1x) in every guided story format.
