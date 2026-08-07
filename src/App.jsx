@@ -10,6 +10,7 @@ import {
 import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
 import { isBootstrapFailure } from './supabaseErrors'
 import { ensureLanguageFont } from './fontLoader'
+import { shouldRefreshHome } from './homeRefresh'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
 // Eager: the app shell + first-paint screens.
@@ -157,6 +158,10 @@ export default function App() {
   // and screen-reader users land on the new screen instead of being stranded on
   // the nav item they clicked. No-op on views without the shell (e.g. Landing).
   const mainRef = useRef(null)
+  // When the dashboard data was last loaded, so returning to Home can skip a
+  // refetch it doesn't need (homeRefresh.js). A ref, not state: reading it
+  // must never itself trigger a render.
+  const homeLoadedAt = useRef(null)
   useEffect(() => {
     if (mainRef.current) mainRef.current.focus({ preventScroll: true })
   }, [view])
@@ -193,11 +198,13 @@ export default function App() {
   // loadProfile as stable and warn on every effect that calls it.)
   const loadProfile = async (userId) => {
     try {
-    const { data: prof, error: profError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    // Both queries key on the user id alone, so they go out together rather
+    // than tracks waiting on profile — the active track is picked from the
+    // result below. One less round trip before anything can render.
+    const [{ data: prof, error: profError }, { data: allTracks, error: trackError }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', userId).single(),
+      supabase.from('language_tracks').select('*').eq('user_id', userId).eq('is_active', true),
+    ])
 
     // "The query failed" and "there is no profile row" are different worlds:
     // the second means onboarding, the first means we don't KNOW — treating a
@@ -222,16 +229,11 @@ export default function App() {
     // a reminder preference must never break startup.
     recordTimezone(userId, prof.timezone)
 
-    const { data: tr, error: trackError } = await supabase
-      .from('language_tracks')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('language', prof.active_language)
-      .eq('is_active', true)
-      .single()
-
     // Same distinction as the profile above: a missing track means onboarding,
-    // a failed query means retry.
+    // a failed query means retry. (The old per-language `.single()` treated
+    // "no track for this language" as PGRST116, which isBootstrapFailure
+    // already excluded; selecting the list instead makes that explicit — an
+    // account with no track for its active language simply finds none.)
     if (isBootstrapFailure(trackError)) {
       setBootstrapError(true)
       setLoading(false)
@@ -239,13 +241,14 @@ export default function App() {
     }
 
     const finalProf = prof
-    const finalTrack = tr
+    const finalTrack = (allTracks || []).find(t => t.language === prof.active_language) || null
 
     if (finalTrack) {
       const c = await getHomeCounts(userId, finalTrack, finalProf.daily_new_cards)
       setCounts(c)
     }
 
+    homeLoadedAt.current = Date.now()
     setProfile(finalProf)
     setTrack(finalTrack)
     // Analytics context — so every subsequent event carries who / language / level.
@@ -315,7 +318,11 @@ export default function App() {
     if (opts && opts.practiceWords) setPendingPracticeWords(opts.practiceWords)
     else if (key === 'fillblank') setPendingPracticeWords(null) // normal hub open — no stale story pool
     routerNavigate(key === 'stories' && opts?.storyId ? storyPath(opts.storyId) : viewToPath(key))
-    if (session && key === 'home') loadProfile(session.user.id)
+    // Refetch the dashboard when landing on Home — but not after a detour
+    // through a screen that provably changed nothing (see homeRefresh.js).
+    if (session && key === 'home' && shouldRefreshHome(view, homeLoadedAt.current)) {
+      loadProfile(session.user.id)
+    }
   }
 
   const handleLogout = () => supabase.auth.signOut()
