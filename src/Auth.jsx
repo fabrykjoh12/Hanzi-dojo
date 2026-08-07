@@ -8,8 +8,10 @@ import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 import { legalLinkProps } from './externalLink'
+import { useIsMobile } from './useIsMobile'
 
 export default function Auth({ intro = null }) {
+  const isMobile = useIsMobile()
   // Arriving from the pre-login wizard (language + reason chosen) means the user
   // is here to create an account, so default to the Sign-up tab in that case.
   const [isSignup, setIsSignup] = useState(Boolean(intro))
@@ -141,7 +143,9 @@ export default function Auth({ intro = null }) {
         background: 'var(--surface)',
         borderRadius: '20px',
         boxShadow: '0 4px 40px rgba(0,0,0,0.10)',
-        padding: '40px 40px 32px',
+        // 40px of side padding leaves ~232px of content on a 360px phone; the
+        // mobile branch gives the inputs and buttons room to breathe.
+        padding: isMobile ? '28px 20px 24px' : '40px 40px 32px',
       }}>
         {/* Logo + wordmark */}
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
@@ -389,7 +393,9 @@ const inputStyle = {
   padding: '12px 14px',
   borderRadius: '10px',
   border: '1px solid var(--border)',
-  fontSize: '15px',
+  // 16px, never less: an iOS WKWebView zooms the whole page in when a focused
+  // input's text is smaller, and the layout stays shifted afterwards.
+  fontSize: '16px',
   fontFamily: 'Inter, sans-serif',
   color: 'var(--text)',
   background: 'var(--bg)',

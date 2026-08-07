@@ -69,8 +69,10 @@ export default function StuckWordCoach({ vocab, onClose }) {
   const glossMap = glosses.word === vocab.word ? glosses.map : {}
 
   return createPortal(
-    <div onClick={onClose} className="app-overlay-viewport" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.14)' }}>
-      <div onClick={e => e.stopPropagation()} className="hd-sheet-up" style={{ width: '100%', maxWidth: '560px', maxHeight: '88vh', overflowY: 'auto', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px 20px 0 0', padding: '16px 18px 26px', boxShadow: '0 -10px 40px rgba(0,0,0,0.18)' }}>
+    <div onClick={onClose} className="app-overlay-viewport" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.14)' }}>
+      {/* A share of the overlay above (100dvh), not 88vh — vh is the large
+          viewport, so the sheet's last rows would hide behind the toolbar. */}
+      <div onClick={e => e.stopPropagation()} className="hd-sheet-up" style={{ width: '100%', maxWidth: '560px', maxHeight: '88%', overflowY: 'auto', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px 20px 0 0', padding: '16px 18px 26px', boxShadow: '0 -10px 40px rgba(0,0,0,0.18)' }}>
         <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: 'var(--border)', margin: '0 auto 12px' }} />
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>

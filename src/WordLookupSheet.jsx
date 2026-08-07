@@ -124,7 +124,9 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
       // never painted at 0,0 before it knows where it belongs.
       visibility: place ? 'visible' : 'hidden',
       width: 'min(360px, calc(100vw - 24px))',
-      maxHeight: place ? place.maxHeight + 'px' : '60vh',
+      // dvh, not vh: the pre-measurement fallback has to fit the VISIBLE
+      // viewport. This box is anchored to the word, not a child of the overlay.
+      maxHeight: place ? place.maxHeight + 'px' : '60dvh',
       overflowY: 'auto',
       background: 'var(--surface)', border: '1px solid var(--border)',
       borderRadius: '16px', padding: '10px 14px 12px',
@@ -133,7 +135,9 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
       animation: 'hd-pop-in 160ms ease',
     }
     : {
-      width: '100%', maxWidth: '560px', maxHeight: '80vh', overflowY: 'auto',
+      // A share of the `app-overlay-viewport` wrapper below (100dvh) — a vh
+      // height would be measured against the larger, partly hidden viewport.
+      width: '100%', maxWidth: '560px', maxHeight: '80%', overflowY: 'auto',
       background: 'var(--surface)', border: '1px solid var(--border)', borderTop: '1px solid var(--hairline)',
       borderRadius: '22px 22px 0 0',
       // The extra bottom padding clears a phone's home indicator, so the last

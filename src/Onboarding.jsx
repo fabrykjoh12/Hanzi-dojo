@@ -9,6 +9,7 @@ import { seedClaim } from './priorKnowledgeSeed'
 import { readPreloginPrefs, clearPreloginPrefs, encouragementFor } from './prelogin'
 import { daysToWords } from './onboardingGoal'
 import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
+import { useIsMobile } from './useIsMobile'
 import PlacementTest from './PlacementTest'
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
@@ -31,6 +32,7 @@ function initialPrefill() {
 const SOLO_LANGUAGE = ONBOARDING_LANGUAGES.length === 1 ? ONBOARDING_LANGUAGES[0].key : null
 
 export default function Onboarding({ session, onComplete }) {
+  const isMobile = useIsMobile()
   // Skip the language step (start on "What's your level?") when the visitor
   // already picked a language before signing up, OR when only one language is
   // offered — in both cases the choice is already made.
@@ -194,7 +196,9 @@ export default function Onboarding({ session, onComplete }) {
         background: 'var(--surface)',
         borderRadius: '20px',
         boxShadow: '0 4px 40px rgba(0,0,0,0.10)',
-        padding: '40px 40px 36px',
+        // 40px of side padding leaves ~232px of content on a 360px phone, which
+        // is not enough for the tier rows or the language cards below.
+        padding: isMobile ? '28px 20px 24px' : '40px 40px 36px',
       }}>
         {/* Progress dots — the language step (1) is hidden when only one
             language is offered, so the dots start at the level step. */}

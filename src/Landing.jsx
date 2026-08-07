@@ -162,7 +162,9 @@ function WizardShell({ isMobile, back, title, subtitle, children }) {
       <button
         onClick={back}
         style={{
-          position: 'fixed', top: '18px', left: '18px', zIndex: 5,
+          // Fixed to the viewport: clear the status bar / notch, the app shell's
+          // top inset doesn't apply here (Landing renders outside it).
+          position: 'fixed', top: 'calc(18px + env(safe-area-inset-top, 0px))', left: '18px', zIndex: 5,
           display: 'inline-flex', alignItems: 'center', gap: '7px',
           padding: '9px 14px', borderRadius: '12px',
           border: '1px solid var(--border)', background: 'var(--surface)',
@@ -290,7 +292,8 @@ export default function Landing() {
     <button
       onClick={onClick}
       style={{
-        position: 'fixed', top: '18px', left: '18px', zIndex: 5,
+        // Same as WizardShell's chip: viewport-fixed, so it needs the top inset.
+        position: 'fixed', top: 'calc(18px + env(safe-area-inset-top, 0px))', left: '18px', zIndex: 5,
         display: 'inline-flex', alignItems: 'center', gap: '7px',
         padding: '9px 14px', borderRadius: '12px',
         border: '1px solid var(--border)', background: 'var(--surface)',
