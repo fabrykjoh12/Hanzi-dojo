@@ -277,6 +277,8 @@ export default function Writing({ session, track, onBack }) {
   const [showFurigana, setShowFurigana] = useState(true)
   const [roundStats, setRoundStats] = useState({ correct: 0, missed: 0 })
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [loadAttempt, setLoadAttempt] = useState(0)   // bumped by Retry to re-run the loader
 
   const { isJapanese, accentHex, languageName, fontFamily } = getLanguageDetails(track)
   const systemLabel = getSystemLabel(track.system)
@@ -288,6 +290,8 @@ export default function Writing({ session, track, onBack }) {
 
   useEffect(() => {
     async function loadPractice() {
+      setLoading(true)
+      setLoadError(false)
       const [vocabResult, cardsResult, statsResult] = await Promise.all([
         supabase
           .from('vocabulary')
@@ -307,6 +311,15 @@ export default function Writing({ session, track, onBack }) {
           .eq('user_id', session.user.id),
       ])
 
+      // A failed fetch must not read as "no studied words". Stats staying empty
+      // is fine (writing_stats no-ops quietly pre-migration), but vocabulary or
+      // cards failing means we don't know the learner's words at all.
+      if (vocabResult.error || cardsResult.error) {
+        setLoadError(true)
+        setLoading(false)
+        return
+      }
+
       const cardsMap = {}
       ;(cardsResult.data || []).forEach(card => { cardsMap[card.vocab_id] = card })
 
@@ -325,7 +338,7 @@ export default function Writing({ session, track, onBack }) {
     }
 
     loadPractice()
-  }, [session.user.id, track.language, track.system, track.current_level])
+  }, [session.user.id, track.language, track.system, track.current_level, loadAttempt])
 
   const progress = useMemo(() => {
     if (queue.length === 0) return 0
@@ -454,6 +467,23 @@ export default function Writing({ session, track, onBack }) {
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
         <div style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <StateIcon icon={PenLine} accentHex={accentHex} />
+        </div>
+      </Shell>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
+        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+        <div style={centerPanelStyle}>
+          <StateIcon icon={PenLine} accentHex={accentHex} />
+          <h1 style={titleStyle}>Couldn't load your words</h1>
+          <p style={bodyTextStyle}>Check your connection and try again.</p>
+          <div style={{ display: 'flex', gap: '12px', width: '100%', maxWidth: '420px' }}>
+            <GhostButton onClick={onBack} icon={ArrowLeft}>Back home</GhostButton>
+            <PrimaryButton onClick={() => setLoadAttempt(n => n + 1)} accentHex={accentHex} icon={RotateCcw}>Retry</PrimaryButton>
+          </div>
         </div>
       </Shell>
     )
