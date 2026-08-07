@@ -8,6 +8,7 @@ import {
   storyRoute, storyPath, seriesPath,
 } from './routes'
 import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
+import { isBootstrapFailure } from './supabaseErrors'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
 // Eager: the app shell + first-paint screens.
@@ -93,6 +94,9 @@ export default function App() {
   const [track, setTrack] = useState(null)
   const [counts, setCounts] = useState({ newCount: 0, learnCount: 0, dueCount: 0, easyCount: 0, totalWords: 0, learnedCount: 0, masteredCount: 0, masteredPct: 0 })
   const [loading, setLoading] = useState(true)
+  // True when the profile/track bootstrap FAILED (network/server), as opposed
+  // to legitimately finding nothing — the two must render differently.
+  const [bootstrapError, setBootstrapError] = useState(false)
   // A story to open directly when navigating to Stories (set by the post-study
   // recap's "Read unlocked story" CTA). Consumed and cleared by Stories on load.
   const [pendingStoryId, setPendingStoryId] = useState(null)
@@ -148,11 +152,22 @@ export default function App() {
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark')
 
   const loadProfile = async (userId) => {
-    const { data: prof } = await supabase
+    const { data: prof, error: profError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single()
+
+    // "The query failed" and "there is no profile row" are different worlds:
+    // the second means onboarding, the first means we don't KNOW — treating a
+    // flaky network as a blank account would drop an existing learner into
+    // onboarding. Show the retry screen instead (see the render gate below).
+    if (isBootstrapFailure(profError)) {
+      setBootstrapError(true)
+      setLoading(false)
+      return
+    }
+    setBootstrapError(false)
 
     if (!prof) { setLoading(false); return }
 
@@ -166,13 +181,21 @@ export default function App() {
     // a reminder preference must never break startup.
     recordTimezone(userId, prof.timezone)
 
-    const { data: tr } = await supabase
+    const { data: tr, error: trackError } = await supabase
       .from('language_tracks')
       .select('*')
       .eq('user_id', userId)
       .eq('language', prof.active_language)
       .eq('is_active', true)
       .single()
+
+    // Same distinction as the profile above: a missing track means onboarding,
+    // a failed query means retry.
+    if (isBootstrapFailure(trackError)) {
+      setBootstrapError(true)
+      setLoading(false)
+      return
+    }
 
     const finalProf = prof
     const finalTrack = tr
@@ -309,6 +332,35 @@ export default function App() {
         <Background language="chinese" />
         <PasswordReset onDone={() => setRecovery(false)} />
       </>
+    )
+  }
+
+  // The bootstrap FAILED (network/server) — we don't know whether this account
+  // has a profile, so neither Onboarding nor the app would be honest. A calm
+  // retry beats dropping an existing learner into a signup flow.
+  if (bootstrapError) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: '24px' }}>
+        <div style={{ maxWidth: '340px', textAlign: 'center' }}>
+          <div style={{ fontSize: '32px', color: 'var(--chinese-accent)', fontFamily: "'Noto Sans SC'", marginBottom: '14px' }}>学</div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px', fontFamily: 'Inter, sans-serif' }}>
+            Couldn’t load your account
+          </div>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '18px', fontFamily: 'Inter, sans-serif' }}>
+            The connection dropped while loading your profile. Your progress is safe — try again.
+          </div>
+          <button
+            onClick={() => { setBootstrapError(false); setLoading(true); loadProfile(session.user.id) }}
+            style={{
+              padding: '11px 22px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+              background: 'var(--chinese-accent)', color: '#fff',
+              fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
     )
   }
 
