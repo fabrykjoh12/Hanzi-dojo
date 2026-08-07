@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { isNativeApp, routeFromDeepLink, backAction } from './nativeShell'
+import { isAuthCallbackUrl, completeNativeAuth } from './nativeAuth'
 
 // Wires the Capacitor native shell into the router: deep links (universal
 // links, OAuth/magic-link callbacks) route into the SPA instead of opening a
@@ -25,7 +26,17 @@ export default function NativeShellBridge() {
       .then(({ App }) => {
         if (disposed) return
         App.addListener('appUrlOpen', (event) => {
-          const route = routeFromDeepLink(event && event.url)
+          const url = event && event.url
+          // A provider returning from sign-in carries a one-time code, not a
+          // route: exchange it for a session and land on Home. App.jsx's auth
+          // listener picks the session up and renders the app.
+          if (isAuthCallbackUrl(url)) {
+            completeNativeAuth(url).then(({ error }) => {
+              navigate(error ? '/?auth=failed' : '/', { replace: true })
+            })
+            return
+          }
+          const route = routeFromDeepLink(url)
           if (route) navigate(route)
         }).then((handle) => handles.push(handle))
         App.addListener('backButton', (event) => {
