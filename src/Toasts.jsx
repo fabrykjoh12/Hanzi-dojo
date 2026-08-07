@@ -29,11 +29,15 @@ export default function Toasts() {
     }
   }, [])
 
-  if (toasts.length === 0) return null
-
+  // The live region is ALWAYS in the DOM, empty or not. A `role="status"`
+  // container created in the same tick as its first child is usually missed
+  // entirely by VoiceOver — the announcement only lands when the region already
+  // existed and its contents then changed. So only the toasts are conditional.
   return (
-    <div style={{
-      position: 'fixed', top: '18px', right: '18px', zIndex: 60,
+    <div role="status" aria-live="polite" style={{
+      // Fixed to the viewport, so the app shell's top inset doesn't reach it —
+      // clear the status bar / notch here or the first toast lands inside it.
+      position: 'fixed', top: 'calc(18px + env(safe-area-inset-top, 0px))', right: '18px', zIndex: 60,
       display: 'flex', flexDirection: 'column', gap: '10px',
       maxWidth: 'min(340px, calc(100vw - 36px))', pointerEvents: 'none',
     }}>
@@ -43,7 +47,6 @@ export default function Toasts() {
         return (
           <div
             key={t.id}
-            role="status"
             style={{
               display: 'flex', gap: '12px', alignItems: 'flex-start',
               background: 'var(--surface)', border: '1px solid ' + accent + '44',

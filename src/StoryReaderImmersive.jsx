@@ -19,6 +19,7 @@ import { READER_PREFS_KEY, DEFAULT_READING_FONT, normalizeReadingFont, readingFo
 import { FIRST_MISSION_READER_HINT, firstMissionCompletion } from './firstMission'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
 import { setFeedbackStory } from './feedbackContext'
+import { SHEET_MAX_HEIGHT, sheetSafeBottom } from './sheetLayout'
 import { shareReadingCard } from './shareCard'
 import { toast } from './toast'
 import { BRAND_URL } from './brand'
@@ -27,6 +28,7 @@ import ComprehensionCheck from './ComprehensionCheck'
 import StoryCover from './StoryCover'
 import { RevealEnglishButton } from './ReadingScaffold'
 import { loadTtsAudio, utteranceAudio } from './ttsAudio'
+import { trapDialogFocus } from './dialogFocus'
 
 // HSKStory-inspired immersion reader for BOTH languages. Light theme. Tap a word
 // for a bottom-sheet definition; pinyin (Chinese) / furigana (Japanese) and
@@ -741,6 +743,47 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [Boolean(sel), settingsOpen])
   const anchored = Boolean(sel) && popMode !== 'sheet'
+
+  // Dialog focus, the WordLookupSheet pattern (see dialogFocus.js): remember the
+  // word that opened the lookup, move focus into the box — on VoiceOver the
+  // definition is otherwise never announced at all, because focus stays on the
+  // token — and hand focus back when it closes.
+  //
+  // Waiting for `lookupPlaced` matters: the anchored popover is painted
+  // `visibility: hidden` for the one pass it takes to measure itself, and a
+  // hidden element cannot take focus, so focusing before then is a silent no-op.
+  const lookupBoxRef = useRef(null)
+  const lookupOpenerRef = useRef(null)
+  const lookupPlaced = !anchored || Boolean(popPlace)
+  useEffect(() => {
+    if (!sel || !lookupPlaced) return undefined
+    lookupOpenerRef.current = document.activeElement
+    if (lookupBoxRef.current) lookupBoxRef.current.focus({ preventScroll: true })
+    return () => {
+      if (lookupOpenerRef.current && lookupOpenerRef.current.focus) {
+        lookupOpenerRef.current.focus({ preventScroll: true })
+      }
+    }
+  }, [sel, lookupPlaced])
+
+  // Same for the settings sheet. It already declared `aria-modal`, which hides
+  // the whole page from assistive tech — with focus left outside it, that made
+  // the reader unusable rather than more usable.
+  const settingsSheetRef = useRef(null)
+  const settingsOpenerRef = useRef(null)
+  useEffect(() => {
+    // Mobile only: the desktop popover isn't modal and closes on any outside
+    // click, so pulling focus back to the toggle there would be a focus steal.
+    if (!settingsOpen || !isMobile) return undefined
+    settingsOpenerRef.current = document.activeElement
+    if (settingsSheetRef.current) settingsSheetRef.current.focus({ preventScroll: true })
+    return () => {
+      if (settingsOpenerRef.current && settingsOpenerRef.current.focus) {
+        settingsOpenerRef.current.focus({ preventScroll: true })
+      }
+    }
+  }, [settingsOpen, isMobile])
+
   const isName = Boolean(sel && sel.name)
   const isSelPlace = Boolean(sel && sel.vocab && isPlaceWord(sel.vocab.word, track.language))
   const isPlain = Boolean(sel && !sel.vocab && !sel.name)   // tapped a grammar / out-of-list word
@@ -1202,7 +1245,11 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             position: 'fixed', left: 0, right: 0, bottom: 'calc(64px + ' + bottomOffset + ')', zIndex: 25,
             display: 'flex', justifyContent: 'center', padding: '0 12px', pointerEvents: 'none',
           }}>
-          <div ref={anchored ? popRef : null} role="dialog" aria-label={selWord} style={anchored
+          <div
+            ref={(el) => { lookupBoxRef.current = el; if (anchored) popRef.current = el }}
+            role="dialog" aria-label={selWord} tabIndex={-1}
+            onKeyDown={e => trapDialogFocus(e, lookupBoxRef.current)}
+            style={anchored
             ? {
               position: 'fixed',
               top: (popPlace ? popPlace.top : 0) + 'px',
@@ -1211,17 +1258,19 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               // is never painted at 0,0 before it knows where it belongs.
               visibility: popPlace ? 'visible' : 'hidden',
               width: 'min(360px, calc(100vw - 24px))',
-              maxHeight: popPlace ? popPlace.maxHeight + 'px' : '60vh',
+              // dvh, not vh: the fallback height (before the popover has been
+              // measured) must fit the VISIBLE viewport, not the large one.
+              maxHeight: popPlace ? popPlace.maxHeight + 'px' : '60dvh',
               overflowY: 'auto',
               background: PANEL, border: '1px solid var(--border)',
               borderRadius: '16px', boxShadow: 'var(--shadow-2)', padding: '10px 14px 12px',
-              pointerEvents: 'auto', zIndex: 201,
+              pointerEvents: 'auto', zIndex: 201, outline: 'none',
               animation: reduceMotion ? 'none' : 'hd-pop-in 160ms ease',
             }
             : {
               width: '100%', maxWidth: '760px', background: PANEL, border: '1px solid var(--border)',
               borderRadius: '20px', boxShadow: '0 -12px 44px rgba(24,24,27,0.16)', padding: '12px 18px 16px',
-              pointerEvents: 'auto',
+              pointerEvents: 'auto', outline: 'none',
               animation: reduceMotion ? 'none' : 'hd-sheet-up 240ms cubic-bezier(0.22, 1, 0.36, 1)',
             }}>
             {/* The grab handle belongs to the sheet — a popover isn't dragged. */}
@@ -1369,31 +1418,49 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
 
       {/* Reader settings — bottom sheet on mobile (with a tap-to-close scrim) */}
       {settingsOpen && isMobile && (
+        // `app-overlay-viewport` (100dvh), not `inset: 0` — a bottom-hinged
+        // sheet measured against the LARGE viewport puts its own bottom, and
+        // so its Done button, behind the mobile toolbar.
         <div
           onClick={() => setSettingsOpen(false)}
-          style={{ position: 'fixed', inset: 0, zIndex: 30, background: 'rgba(24,24,27,0.28)', display: 'flex', alignItems: 'flex-end' }}
+          className="app-overlay-viewport"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 30, background: 'rgba(24,24,27,0.28)', display: 'flex', alignItems: 'flex-end' }}
         >
           <div
+            ref={settingsSheetRef}
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => trapDialogFocus(e, settingsSheetRef.current)}
             role="dialog"
             aria-modal="true"
             aria-label="Reader settings"
+            tabIndex={-1}
             style={{
-              width: '100%', background: PANEL, borderTopLeftRadius: '22px', borderTopRightRadius: '22px',
+              outline: 'none',
+              width: '100%', maxHeight: SHEET_MAX_HEIGHT,
+              display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden',
+              background: PANEL, borderTopLeftRadius: '22px', borderTopRightRadius: '22px',
               borderTop: '1px solid var(--border)', boxShadow: '0 -12px 44px rgba(24,24,27,0.20)',
-              padding: '12px 18px calc(20px + env(safe-area-inset-bottom))',
+              paddingTop: '12px',
               animation: reduceMotion ? 'none' : 'hd-sheet-up 260ms cubic-bezier(0.22, 1, 0.36, 1)',
             }}
           >
-            <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: 'var(--border)', margin: '0 auto 14px' }} />
-            <ReaderSettings
-              furiganaMode={furiganaMode} setFuriganaMode={setFuriganaMode}
-              lens={lens} setLens={setLens}
-              fontChoice={readingFontChoice} setFontChoice={pickReadingFont}
-              language={track.language}
-              readingLabel={readingLabel}
-              accent={accent} onClose={() => setSettingsOpen(false)} isMobile
-            />
+            <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: 'var(--border)', margin: '0 auto 14px', flexShrink: 0 }} />
+            {/* The settings list is taller than a 360×640 phone, so it scrolls
+                inside the sheet. `min-height: 0` per the flex scroll rule (§5). */}
+            <div style={{
+              flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain',
+              WebkitOverflowScrolling: 'touch',
+              padding: '0 18px ' + sheetSafeBottom(20),
+            }}>
+              <ReaderSettings
+                furiganaMode={furiganaMode} setFuriganaMode={setFuriganaMode}
+                lens={lens} setLens={setLens}
+                fontChoice={readingFontChoice} setFontChoice={pickReadingFont}
+                language={track.language}
+                readingLabel={readingLabel}
+                accent={accent} onClose={() => setSettingsOpen(false)} isMobile
+              />
+            </div>
           </div>
         </div>
       )}
@@ -1531,16 +1598,23 @@ function ReaderSettings({ furiganaMode, setFuriganaMode, lens, setLens, fontChoi
         animation: prefersReducedMotion() ? 'none' : 'hd-pop-in 160ms ease',
       }
   return (
-    <div style={wrap} role="menu" aria-label="Reader settings">
+    // A settings panel, not a menu. `role="menu"` promises arrow-key navigation
+    // between menu items, and this panel's children are toggle buttons, a
+    // nested group and a switch — none of them menu items, so the promise broke
+    // the moment a screen reader tried to keep it. A labelled group says what
+    // this is without claiming a keyboard contract it doesn't implement.
+    <div style={wrap} role="group" aria-label="Reader settings">
       {/* Furigana mode */}
       <div style={{ fontSize: '12px', fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '9px' }}>
         {readingLabel}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px' }}>
+      <div role="group" aria-label={readingLabel} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px' }}>
         {FURIGANA_OPTIONS.map(opt => {
           const on = furiganaMode === opt.value
           return (
-            <button key={opt.value} onClick={() => setFuriganaMode(opt.value)} role="menuitemradio" aria-checked={on}
+            // Pressed-state buttons, like the reading-font row below — the two
+            // rows do the same job and should sound the same.
+            <button key={opt.value} onClick={() => setFuriganaMode(opt.value)} aria-pressed={on}
               style={{
                 minHeight: '42px', borderRadius: '11px', cursor: 'pointer',
                 fontSize: '13.5px', fontWeight: on ? 750 : 600, fontFamily: 'Inter, sans-serif',

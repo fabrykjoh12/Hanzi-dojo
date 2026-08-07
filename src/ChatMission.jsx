@@ -217,9 +217,18 @@ export default function ChatMission({ mission, vocab, session, track, dayBuckets
           const weak = weakSet.has(tk.key)
           const isSel = selected && selected.word === tk.key
           return (
+            // Tapping a word is the core interaction here, so a token is a real
+            // button: reachable by Tab, activated by Enter/Space, and announced
+            // as the word it looks up. Same pattern as the paced reader.
             <span
               key={i}
               onClick={() => selectWord(tk.key)}
+              role="button"
+              tabIndex={0}
+              aria-label={tk.text}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectWord(tk.key) }
+              }}
               style={{
                 cursor: 'pointer',
                 margin: showSegment ? '0 1.5px' : 0,
@@ -248,7 +257,10 @@ export default function ChatMission({ mission, vocab, session, track, dayBuckets
   }
   const header = (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px',
+      display: 'flex', alignItems: 'center', gap: '12px',
+      // The shell is fixed at top:0, so the Close button is the topmost pixel on
+      // screen — the status bar / notch sits on top of it without this inset.
+      padding: 'calc(14px + env(safe-area-inset-top, 0px)) 16px 14px',
       background: '#FFFFFF', borderBottom: '1px solid rgba(0,0,0,0.09)', flexShrink: 0,
     }}>
       <button ref={closeBtnRef} onClick={onClose} aria-label="Close" style={ghost}>

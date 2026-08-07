@@ -192,8 +192,10 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
 
   const hairline = { height: '1px', background: 'var(--border)', opacity: 0.7 }
 
+  // A real navigation landmark: on desktop this rail IS the app's navigation,
+  // and without <nav> a screen-reader user has no way to jump to it.
   return (
-    <div style={{
+    <nav aria-label="Main" style={{
       width: collapsed ? `${COLLAPSED_WIDTH}px` : `${EXPANDED_WIDTH}px`,
       flexShrink: 0,
       height: '100vh', position: 'sticky', top: 0,
@@ -432,6 +434,6 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
         <IconControl icon={Settings} label="Settings" onClick={() => onNavigate('settings')} />
         <IconControl icon={LogOut} label="Log out" danger onClick={onLogout} />
       </div>
-    </div>
+    </nav>
   )
 }

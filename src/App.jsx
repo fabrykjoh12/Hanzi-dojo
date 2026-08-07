@@ -58,11 +58,21 @@ const Dev = lazy(() => import('./Dev'))
 const NotFound = lazy(() => import('./NotFound'))
 const Dashboard = lazy(() => import('./Dashboard'))
 
-// Calm centered fallback while a lazy screen loads.
+// Visually hidden, but read. Inline (the project styles inline), so a screen
+// reader gets a word where the glyph below is only a mood.
+const SR_ONLY = {
+  position: 'absolute', width: '1px', height: '1px', margin: '-1px', padding: 0,
+  overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0,
+}
+
+// Calm centered fallback while a lazy screen loads. The 学 is decoration — a
+// screen reader announcing a lone Chinese character on every route change is
+// noise, so it is hidden and the status line says what is actually happening.
 function ViewFallback() {
   return (
     <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ fontSize: '30px', color: 'var(--text-faint)', fontFamily: "'Noto Sans SC'" }}>学</div>
+      <span role="status" style={SR_ONLY}>Loading…</span>
+      <div aria-hidden="true" lang="zh-Hans" style={{ fontSize: '30px', color: 'var(--text-faint)', fontFamily: "'Noto Sans SC'" }}>学</div>
     </div>
   )
 }
@@ -141,6 +151,21 @@ export default function App() {
   useEffect(() => {
     if (mainRef.current) mainRef.current.focus({ preventScroll: true })
   }, [view])
+  // …and show a ring when it lands, or the skip link is a jump with no visible
+  // confirmation. Only when the focus is keyboard-driven: `:focus-visible`
+  // stays false for the same focus() call made after a mouse click on a nav
+  // item, so pointer users never see the outline. Inline styles can't carry a
+  // pseudo-class, hence the explicit check.
+  const [mainFocusRing, setMainFocusRing] = useState(false)
+  const onMainFocus = (e) => {
+    if (e.target !== e.currentTarget) return
+    let visible = true
+    try { visible = e.currentTarget.matches(':focus-visible') } catch { /* no :focus-visible — show it */ }
+    setMainFocusRing(visible)
+  }
+  const onMainBlur = (e) => {
+    if (e.target === e.currentTarget) setMainFocusRing(false)
+  }
 
   const setTheme = (next) => {
     setThemeState(next)
@@ -687,8 +712,18 @@ export default function App() {
             />
           </div>
         )}
-        <main id="main-content" tabIndex={-1} ref={mainRef} style={{
-          flex: 1, minWidth: 0, position: 'relative', zIndex: 1, outline: 'none',
+        <main id="main-content" tabIndex={-1} ref={mainRef} onFocus={onMainFocus} onBlur={onMainBlur} style={{
+          flex: 1, minWidth: 0, position: 'relative', zIndex: 1,
+          // Drawn inside the box: an outer ring on a full-height pane that
+          // touches the viewport edges would be cropped away.
+          outline: mainFocusRing ? '2px solid var(--text-muted)' : 'none',
+          outlineOffset: mainFocusRing ? '-3px' : 0,
+          // The native shell draws under the status bar / notch (viewport-fit=cover
+          // + iOS contentInset "never"), so the shell owns the top inset once, here,
+          // for every in-flow screen. Fixed overlays (Toasts, ChatMission, the
+          // reader's own bars) are positioned against the viewport, not this box,
+          // so they still carry their own inset.
+          paddingTop: isMobile ? 'env(safe-area-inset-top, 0px)' : 0,
           // Leave room for the fixed bottom bar so content isn't hidden behind it.
           paddingBottom: isMobile ? 'calc(62px + env(safe-area-inset-bottom))' : 0,
         }}>
