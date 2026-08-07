@@ -1,165 +1,246 @@
-# ✅ Pre-release checklist — everything missing before launch
+# ✅ Pre-release checklist — everything before the store launch
 
-**One-time launch list, compiled 2026-08-07.** This is *not* the per-merge gate —
-that lives in [`docs/RELEASE-CHECKLIST.md`](RELEASE-CHECKLIST.md) and still runs on
-every PR. This file collects every open item across `docs/PM-BOARD.md`,
-`docs/BACKLOG.md`, `ROADMAP.md`, `docs/TESTING.md` and `TASKS.md` into one list,
-ordered so we can work top to bottom. Check items off here as they land; delete
-the file (or archive it in `docs/CHANGELOG.md`) once we ship.
+**One-time launch list. Updated 2026-08-07 for the mobile pivot:** Hanzi Dojo
+ships as a **native mobile app on Google Play and the Apple App Store** (see
+CLAUDE.md §1 — this is the distribution decision of record). The plan is to
+**wrap the existing React SPA with Capacitor** — no rewrite, `src/` unchanged,
+the same code runs in the store apps. The web deploy survives only as the
+public/legal surface the stores require (landing, `/privacy` `/terms`
+`/support`, public story links).
 
-**Baseline verified 2026-08-07 (this session):** `npm run lint` 0 errors /
-7 known warnings · `npm test` 3,054/3,054 across 129 files · build clean.
-Also verified against prod: `grade_card` RPC, `public_story` RPC,
-`writing_stats`, `story_questions`, `tts_audio` and the prefs columns **all
-exist** — the "pending migration" entries in older docs are stale; those are
-done.
+This is *not* the per-merge gate — that lives in
+[`docs/RELEASE-CHECKLIST.md`](RELEASE-CHECKLIST.md) and still runs on every PR.
+Work this file top to bottom; §0 is the new critical path.
+
+**Baseline verified 2026-08-07:** lint 0 errors / 7 known warnings ·
+3,054/3,054 unit tests · build clean. Verified against prod: `grade_card`,
+`public_story`, `writing_stats`, `story_questions`, `tts_audio` and the prefs
+columns all exist — older "pending migration" doc entries were stale.
+
+**Store-blocker audit (2026-08-07, verified in code):**
+- Account deletion is "ask in Discord" (`TrustPages.jsx`) — **fails Apple
+  5.1.1(v) and Google Play policy**, both require in-app self-serve deletion.
+- Google sign-in exists (`Auth.jsx` `signInWithOAuth`) with no Apple sign-in —
+  **fails App Store guideline 4.8** (third-party login ⇒ Sign in with Apple
+  mandatory).
+- Reminders are Web Push only (`src/push.js`) — **dead inside an iOS app**;
+  needs native FCM/APNs.
 
 ---
 
-## 1 · Code — release blockers
+## 0 · Mobile app + store release (the new critical path)
 
-Things a coding session can finish, no credentials needed.
+### 0a · Capacitor scaffolding (code)
 
-- [ ] **HD-P5 — Navigation / loading / learner shell pass.** The one milestone
-      phase never started. Reassess against the current app (much has shipped
-      since the brief): route transitions, loading states on every screen,
-      no dead ends, back behavior. (`docs/PM-BOARD.md` HD-P5)
-- [ ] **Accessibility pass (HD-P13).** Finish the a11y audit started 2026-08-01:
-      keyboard reach on every interactive control, focus traps on all dialogs,
-      contrast in both themes, `aria-live` where state changes silently. The
-      known WCAG items are done; this is the systematic sweep.
-- [ ] **Mobile pass (HD-P13).** Every screen at 360–390 px: no horizontal
-      overflow, 44 px touch targets, safe-area insets, the `min-height: 0`
-      flex-scroll rule (CLAUDE.md §5) everywhere it applies.
-- [ ] **Performance pass (HD-P13).** At minimum: Home bootstrap RPC (replace
-      the 4-query load waterfall, stop refetching on every return to Home) and
-      the bundle/font diet (load only the active language's font family).
-      (`ROADMAP.md` §Technical)
-- [ ] **Auth error-path e2e (HD-P11).** Playwright coverage of the common
-      signup/login failures (wrong password, existing account, weak password,
-      network error) — the copy shipped, the e2e didn't.
-- [ ] **HD-P12 leftovers.** Profile number scoping labels (every number says
-      what it counts), achievements determinism audit, Dojo HQ audit trail.
-- [ ] **HD-P11 leftovers.** Suggested first story on the reading-test result;
-      verify the share-flow feedback actually fires.
-- [ ] **`src/devTools.js` rule violations.** `/unlock` writes `is_easy: true`
-      and `ease_factor` — both banned (§7.3, §10). Port it onto
-      `src/creativeMode.js`, which does the same job correctly.
-      (`docs/BACKLOG.md` §Admin tooling)
-- [ ] **Dead code: old `StoryReader`** (+ `CharacterGuide`/`StoryLine`/sidebar
-      cards) in `Stories.jsx` — both readers are unified on
-      `StoryReaderImmersive.jsx`; delete in a cleanup pass.
-- [ ] **Deletable legacy shims** (post-migration, verified applied):
-      `presentationOf` alias in `src/readerMode.js`; the IndexedDB
-      `LEGACY_PROGRESS_PREFIX` fallback in `src/manhuaProgress.js` can stay a
-      while longer as cheap insurance. (`docs/BACKLOG.md` §Database)
-- [ ] **Dictionary polish (small):** 得-particle pinyin in examples renders
-      `dé` where neutral `de` is wanted; CC-CEDICT proper-noun pinyin
-      (Běijīng) displays lower-cased in `src/cedict.js`.
-- [ ] **Migration hardening:** add `drop policy if exists` to `20260719120000`
-      and the partial unique index on `vocabulary` (bounds concurrent
-      dictionary-word inserts). (`docs/BACKLOG.md` §Reference dictionary)
-- [ ] **Timezone-correct reminders.** `send-review-reminders.mjs` fires on a
-      plain UTC hour (~1 h DST drift). Schedule per user timezone.
+- [ ] **Add Capacitor**: `@capacitor/core` + `@capacitor/cli` + `ios`/`android`
+      platforms. App ID `com.hanzidojo.app` (register the same on both stores).
+      Wire `npm run build` → `npx cap sync` so the webview always ships the
+      Vite build. Keep the web build working — it is the same code.
+- [ ] **Routing in the webview**: verify `BrowserRouter` works from the
+      Capacitor origin; add an `@capacitor/app` `appUrlOpen` listener so deep
+      links (auth callbacks, shared story links) route into the SPA.
+- [ ] **Service worker off inside the native app** (assets are local; the SW
+      cache poisoning class of bug goes away). Keep it for the web build. The
+      IndexedDB offline layer (`offline.js`, `syncQueue.js`) works in webviews
+      unchanged — keep it, it becomes the app's offline story.
+- [ ] **Safe areas**: `viewport-fit=cover` + `env(safe-area-inset-*)` on every
+      fixed element — `MobileNav` bottom bar, reader audio bars, the fixed
+      study layout. Status bar styled per theme (`@capacitor/status-bar`).
+- [ ] **Android hardware back button**: `@capacitor/app` `backButton` → router
+      back; exit only from Home. Without this the app just closes.
+- [ ] **Keyboard**: `@capacitor/keyboard` resize mode checked against the
+      fixed-height flashcard and writing screens.
+- [ ] **External links** (Discord, attribution links) open the system browser,
+      never navigate the app webview.
+- [ ] **App icons + splash screens**, all densities, light + dark.
 
-## 2 · Owner / dashboard actions — secrets, config, money
+### 0b · Hard store blockers (rejection-level, code + config)
 
-No coding session can do these; they need dashboard access or billing.
+- [ ] **🔴 In-app account deletion.** Self-serve flow in Profile: deletes the
+      auth user + every owned row (cards, tracks, logs, activity, dojo data).
+      Needs a security-definer RPC or edge function (client can't delete auth
+      users). Also required: a **web** deletion path URL for the Play Data
+      Safety form. Update `TrustPages.jsx` copy once it exists.
+- [ ] **🔴 Sign in with Apple.** Mandatory on iOS because Google sign-in is
+      offered. Enable the Apple provider in Supabase (needs the Apple
+      Developer account, Services ID + key), add the button in `Auth.jsx`
+      (iOS at minimum).
+- [ ] **🔴 Native OAuth flow.** Google blocks OAuth inside webviews: open
+      auth in the system browser (`@capacitor/browser`) and return via deep
+      link (`com.hanzidojo.app://auth-callback` or universal links). Add the
+      scheme to the Supabase redirect allowlist. Same for **magic links and
+      password-reset emails** — they must open the app, not the website.
+- [ ] **🔴 Native push notifications.** Replace Web Push with
+      `@capacitor/push-notifications`: FCM (Android) + APNs (iOS).
+      `send-review-reminders.mjs` sends via FCM instead of Web Push; store
+      device tokens; calm iOS permission prompt (ask in context, never on
+      first launch). Web Push can stay for the web build.
+- [ ] **Privacy declarations**: finalized privacy policy at a public URL
+      (both stores require it — the web `/privacy` page serves this), App
+      Store privacy "nutrition labels", Play **Data Safety** form. Declare:
+      account data in Supabase, first-party analytics events, privacy-safe
+      client error events. No third-party ad/tracking SDKs — say so.
+- [ ] **Age rating questionnaires** — answer honestly that the dictionary
+      contains CC-CEDICT entries flagged explicit (hidden behind a per-query
+      reveal, `dictExplicit.js`); expect Teen/12+ rather than Everyone/4+.
+- [ ] **Apple review prep**: a working demo account + review notes explaining
+      the level system (reviewers must be able to reach a story and a review
+      session without studying for a week — Creative Mode may help seed it).
 
-- [ ] **🔴 Add `AZURE_SPEECH_KEY` + `AZURE_SPEECH_REGION` as Actions secrets.**
-      Blocks two things: the 21 single-character words still *spoken* with the
-      wrong reading (regen is staged: `tts-flashcards`, `tts_ids` list in
-      `docs/BACKLOG.md` §Learning quality), and any HSK 3–6 slow-word/sentence
-      audio.
-- [ ] **🔴 Fund an LLM key** (Anthropic key as `ANTHROPIC_API_KEY` secret, or
-      paid Gemini/Groq) — unblocks the serial-story generator for HSK 3–6
-      volume. Until then the hand-authored lane is the only content path.
-- [ ] **Supabase Auth URL config:** Site URL `https://hanzi-dojo.com`, redirect
-      allowlist `https://hanzi-dojo.com/**` + `http://localhost:5173/**` —
-      fixes login redirects landing on the raw github.io host.
-- [ ] **Custom SMTP live test:** send a real magic link to an external inbox;
-      confirm it arrives (not spam) from `no-reply@hanzi-dojo.com`.
-- [ ] **Google OAuth branding:** set app name "Hanzi Dojo" + logo + authorized
-      domain in Google Cloud Console (free, biggest win); optionally the
-      Supabase custom domain `auth.hanzi-dojo.com` to remove the
-      "continue to …supabase.co" line.
-- [ ] **Disconnect the two Cloudflare "Workers Builds" checks** (dashboard:
-      Workers & Pages → hanzi-dojo + hanzidojo → disconnect repo). Red that
-      means nothing trains everyone to ignore red.
-- [ ] **Turn off the retired GitHub Pages site** (repo Settings → Pages →
-      Source → None).
-- [ ] **Trust pages sign-off:** `/privacy` `/terms` `/support` `/methodology`
-      are owner-reviewed drafts — review and remove the beta note before a
-      wider push.
-- [ ] **Run the Supabase security advisors** (`get_advisors`) one final time
-      before announcing — an unprotected table sat exposed for two days once.
-- [ ] *(optional)* Groq/Gemini quota day to fill the last **25 HSK 6 example
-      sentences** (Actions → `examples-fill`, level 6).
+### 0c · Webview correctness (verify, likely small fixes)
+
+- [ ] **Audio in WKWebView**: flashcard TTS, story narration, slow variants —
+      real-device pass on iOS; autoplay policies differ from Safari.
+- [ ] **Speaking drill**: Web Speech API is absent in WKWebView — confirm the
+      existing "not supported" fallback fires there (it keys off browser
+      detection today, not capability).
+- [ ] **Offline launch**: airplane-mode cold start must not white-screen
+      (reviewers test this). Local assets + cached data should carry it.
+- [ ] **hanzi-writer stroke data** loads from CDN at runtime — fine online;
+      decide whether to bundle it for offline stroke animations (optional).
+- [ ] **localStorage/IndexedDB persistence** in the app context — durable
+      data is in Supabase by design, so eviction is survivable; just verify
+      prefs/caches degrade quietly (the guards in §6.5 already exist).
+
+### 0d · Accounts, signing, pipeline (owner + code)
+
+- [ ] **Google Play Console** account ($25 one-time) — owner.
+- [ ] **Apple Developer Program** ($99/yr) — owner. Needed for Apple sign-in
+      config too (0b).
+- [ ] **Android signing**: generate + safely store the upload keystore
+      (GitHub secret + offline backup — losing it means losing the listing).
+- [ ] **iOS signing**: certificates + provisioning profiles; pick the build
+      lane — owner's Mac with Xcode, GitHub Actions macOS runner, or Xcode
+      Cloud. TestFlight for betas.
+- [ ] **CI**: add `cap sync` + Android AAB build to Actions; keep the
+      existing lint/test/build/e2e exactly as they are (they test the same
+      code the apps ship).
+- [ ] **Versioning + release process**: versionCode/build-number bumping,
+      internal testing tracks (Play internal + TestFlight), and a written
+      release cut procedure — "merged to main" no longer means users have it.
+      Evaluate a JS-bundle OTA service (e.g. Capgo) later for hotfixes; not
+      needed for launch.
+- [ ] **Store listings**: app name, subtitle/short description, full
+      description, keywords, screenshots (6.7" + 5.5" iPhone, Android phone +
+      tablet), feature graphic. Screenshots after the UI passes in §1.
+- [ ] **Announce the pivot in `ROADMAP.md` when ready** — deliberately not
+      done in this change: editing the roadmap posts to Discord instantly, so
+      the owner chooses the moment and the wording.
+
+## 1 · Code quality — now in service of the app
+
+The webview ships these screens, so every pass below is store-launch work.
+
+- [ ] **Navigation/loading/shell pass (HD-P5)** — route transitions, loading
+      states, no dead ends; now includes native back behavior (0a).
+- [ ] **Accessibility sweep (HD-P13)** — keyboard/switch access, focus traps,
+      contrast both themes, `aria-live` on silent state changes.
+- [ ] **Mobile sweep (HD-P13)** — now the *primary* form factor: 360–390 px,
+      44 px targets, no horizontal overflow, `min-height: 0` flex-scroll rule,
+      safe-area insets everywhere.
+- [ ] **Performance pass (HD-P13)** — Home bootstrap RPC (kill the 4-query
+      waterfall; slow starts feel worse in an app), font diet (load only the
+      active language's family).
+- [ ] **Auth error-path e2e (HD-P11)** — plus the new native OAuth/deep-link
+      flows once 0b lands.
+- [ ] **HD-P12 leftovers** — profile number scoping labels, achievements
+      determinism audit, HQ audit trail.
+- [ ] **HD-P11 leftovers** — suggested first story on the reading-test
+      result; verify share-flow feedback fires.
+- [ ] **`src/devTools.js` rule violations** — `/unlock` writes `is_easy: true`
+      + `ease_factor` (banned §7.3/§10); port onto `src/creativeMode.js`.
+- [ ] **Dead code** — old `StoryReader` (+ `CharacterGuide`/`StoryLine`/
+      sidebar cards) in `Stories.jsx`; `presentationOf` alias in
+      `readerMode.js` (migration verified applied).
+- [ ] **Dictionary polish** — 得-particle pinyin in examples; capitalized
+      proper-noun pinyin display in `cedict.js`.
+- [ ] **Migration hardening** — `drop policy if exists` in `20260719120000`;
+      partial unique index on `vocabulary`.
+- [ ] **Timezone-correct reminders** — folds into the FCM rework (0b): store
+      user timezone, schedule per-user, kill the ~1 h DST drift.
+
+## 2 · Owner / dashboard actions
+
+- [ ] **🔴 `AZURE_SPEECH_KEY` + `AZURE_SPEECH_REGION` Actions secrets** —
+      unblocks the 21 mispronounced single-character words (staged
+      `tts-flashcards` run, ids in `docs/BACKLOG.md` §Learning quality) and
+      HSK 3–6 slow/sentence audio.
+- [ ] **🔴 Funded LLM key** (`ANTHROPIC_API_KEY` secret, or paid Gemini/Groq)
+      — unblocks HSK 3–6 serial-story generation.
+- [ ] **Supabase Auth URLs** — Site URL `https://hanzi-dojo.com`, allowlist
+      `https://hanzi-dojo.com/**` + `http://localhost:5173/**` **+ the app
+      deep-link scheme from 0b**.
+- [ ] **SMTP live test** — magic link arrives from `no-reply@hanzi-dojo.com`,
+      not spam.
+- [ ] **Google OAuth branding** — app name "Hanzi Dojo" + logo in Google
+      Cloud Console (the consent screen currently shows the Supabase URL).
+- [ ] **Disconnect the two always-red Cloudflare "Workers Builds" checks.**
+- [ ] **Turn off the retired GitHub Pages site.**
+- [ ] **Trust-pages sign-off** — review `/privacy` `/terms` `/support`
+      `/methodology`; they become *legally load-bearing* store URLs (0b), so
+      this is no longer optional polish.
+- [ ] **Final `get_advisors` security run** before submission.
+- [ ] *(cheap)* Fill the last **25 HSK 6 example sentences** (`examples-fill`,
+      level 6, once quota allows).
 
 ## 3 · Content & editorial
 
-- [ ] **🔴 Chinese editorial sign-off (HD-P9) — needs a qualified Chinese
-      reviewer.** Blocked for a coding session by design: the 14 grammar-guide
-      topics and published stories must not be self-certified by Claude.
-- [ ] **Eight published HSK 1–3 stories sit under their level's coverage bar.**
-      Decision needed on `在动物园` (65%), `下雨天` (64%), `我的早上` (74%);
-      the marginal five may just need a word swapped. List + offending words in
-      `docs/BACKLOG.md` §Content.
-- [ ] **`1. 不见了的苹果` held season (2–6)** still tells the older *flowers*
-      version of the mystery — rewrite one side to match before publishing
-      (owner decided: leave for a content session). (HD-P4b)
-- [ ] **Held-chapter gaps:** L3 `田里的田螺` (6–12 held) and L3 `老王的眼镜`
-      (7–12 held) are each missing most of a season; L2 `兔子` (6 held). Run an
-      editorial `publish-held` pass or decide to hold them deliberately.
-- [ ] **Six older chat/scene stories have no per-line English** — verify that's
-      by design for those formats before "fixing" (HD-P7).
-- [ ] **Wire the HSK 1 pool into `authoredStories.test.js`** — must land in the
-      same change that resolves the under-bar HSK 1 stories above (the test is
-      absolute and would fail them today).
-- [ ] **Run `check-published` (Actions → Content utilities) as final content
-      gate** and actually read its warnings.
-- [ ] *(deferred, noted)* Four small letterbox bars in the two shipped Inkbound
-      episodes — fix next time those episodes are touched anyway.
-- [ ] *(volume, not a blocker)* More stories per level; HSK 3–6 serials once
-      the LLM key exists; more manhua episodes.
+- [ ] **🔴 Chinese editorial sign-off (HD-P9)** — qualified Chinese reviewer
+      for the 14 grammar-guide topics + published stories. Not
+      self-certifiable by Claude; the long pole — start recruiting now.
+- [ ] **Eight HSK 1–3 stories under the coverage bar** — decide on `在动物园`
+      (65%), `下雨天` (64%), `我的早上` (74%); word-swap the 5 marginal ones.
+      Lists in `docs/BACKLOG.md` §Content.
+- [ ] **`1. 不见了的苹果` held season (2–6)** — still the older *flowers*
+      plot; rewrite one side before publishing (owner: content session).
+- [ ] **Held-chapter gaps** — L3 `田里的田螺` (6–12), L3 `老王的眼镜` (7–12),
+      L2 `兔子` (6): publish-held pass or a deliberate hold.
+- [ ] **Six older chat/scene stories lack per-line English** — confirm
+      by-design before "fixing" (HD-P7).
+- [ ] **Wire the HSK 1 pool into `authoredStories.test.js`** — same change
+      as the under-bar HSK 1 fixes (the test is absolute).
+- [ ] **Final `check-published` run**, warnings actually read.
+- [ ] *(deferred)* Inkbound letterbox bars — next time those episodes are
+      touched. *(volume)* More stories per level; HSK 3–6 serials once the
+      LLM key exists.
 
-## 4 · Verification — real device + real account
+## 4 · Verification — on the real apps
 
-The single biggest gap: **everything below is built and unit-tested but has
-never been exercised on a live device.** This is `docs/RELEASE-CHECKLIST.md` §6.
+Everything below now happens **inside the wrapped iOS + Android apps**, not a
+mobile browser. This replaces the old "real-device pass".
 
-- [ ] **Real-device manual pass per `docs/TESTING.md`** — all 16 open items,
-      especially: iOS Safari flashcard + reader audio, the Chinese polyphone
-      spot-check (长 行 银行 重 觉 — also the top item in `TASKS.md`), offline
-      grade replay, Web Push reminders end-to-end.
-- [ ] **Fresh-account walkthrough:** signup → onboarding → first session →
-      first story → reset a language from Profile (confirm the reset completes
-      and a writing answer persists after reload).
-- [ ] **HSK 3–6 as a learner:** study, level test, placement — the new levels'
-      full loop on a real account.
-- [ ] **Creative mode against a real account** (`/dashboard` sandbox —
-      especially level jump, which appends to append-only `level_unlocks`).
-- [ ] **Dojo HQ end-to-end** with a second admin account.
-- [ ] **Email + OAuth checks** from `docs/TESTING.md` (`email-sender`,
-      `oauth-branding`) — after the §2 dashboard items land.
+- [ ] **Full `docs/TESTING.md` pass in both apps** — all 16 open items;
+      audio (polyphones 长 行 银行 重 觉), offline grade replay, and the new
+      native push flow especially.
+- [ ] **Fresh-account walkthrough in-app** — signup (incl. Apple + Google
+      sign-in) → onboarding → first session → first story → language reset →
+      **account deletion** (0b) — the exact loop store reviewers walk.
+- [ ] **HSK 3–6 full loop** as a learner.
+- [ ] **Magic link + password reset** deep-link back into the app from a real
+      inbox.
+- [ ] **Airplane-mode cold start + offline grading + replay on reconnect.**
+- [ ] **Creative mode** against a real account; **Dojo HQ** with a second
+      admin (internal tools stay web — fine).
+- [ ] **TestFlight + Play internal testing round** with the Discord testers
+      (`docs/TESTERS.md`) before public listing.
 
-## 5 · Explicitly post-release (do not block launch)
-
-Tracked so nobody re-litigates them at the gate:
+## 5 · Explicitly post-launch (do not block the stores)
 
 - FSRS parameter tuning (needs real `review_logs` volume).
-- Global word-status model; server-authoritative progression;
-  data-cache normalization; centralized data layer; Supabase generated types.
+- Global word-status model; server-authoritative progression; data-cache
+  normalization; centralized data layer; Supabase generated types.
 - "Read next" weighted by slipping words; graded YouTube; custom flashcards /
   import; pictures on flashcards; HSK 7–9.
 - Continue extracting `Study.jsx` / `DojoHQ.jsx` / `StoryReaderImmersive.jsx`
   logic into tested modules.
-- Axe a11y checks in e2e (new dependency).
-- Drop the dead `profiles` XP/streak columns.
-- HD-P15 differentiation work — starts only after the release gate is healthy.
+- Axe a11y checks in e2e; drop the dead `profiles` XP/streak columns.
+- OTA hotfix service (Capgo/Appflow); native speech-recognition plugin for
+  the Speaking drill; HD-P15 differentiation work.
 
 ---
 
-**Suggested order:** §1 code items in parallel sessions → §2 owner actions in
-one dashboard sitting → §3 editorial (the Chinese reviewer is the long pole —
-start recruiting now) → §4 verification last, on the finished build → launch.
+**Suggested order:** 0a scaffolding first (everything else is testable inside
+it) → 0b store blockers + §1 quality passes in parallel sessions → §2 owner
+sitting (store accounts early — Apple enrollment can take days) → §3 editorial
+in parallel (reviewer is the long pole) → 0d pipeline + listings → §4
+verification on TestFlight/internal track → submit both stores.
