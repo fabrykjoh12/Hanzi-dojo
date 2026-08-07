@@ -3,7 +3,7 @@ import { shuffle } from './utils'
 import { recordMiss, weightedSample } from './drillMemory'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
 import { useIsMobile } from './useIsMobile'
-import { languageTheme } from './languageTheme'
+import { languageTheme, langAttr } from './languageTheme'
 import {
   ArrowLeft, Languages, Check, X, RotateCcw, CheckCircle2, Sparkles,
 } from 'lucide-react'
@@ -170,12 +170,23 @@ export default function Cyrillic({ profile, onBack }) {
           <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{idx + 1} / {questions.length}</span>
         </div>
 
-        <div style={{ height: '6px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden', margin: '0 0 26px' }}>
+        {/* The question view carries no visible title, but heading navigation
+            still needs one (same pattern as Study.jsx). */}
+        <h1 style={srOnly}>Alphabet practice</h1>
+
+        <div
+          role="progressbar"
+          aria-label="Alphabet practice progress"
+          aria-valuemin={0}
+          aria-valuemax={questions.length}
+          aria-valuenow={idx}
+          style={{ height: '6px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden', margin: '0 0 26px' }}
+        >
           <div style={{ height: '100%', borderRadius: '999px', background: ACCENT, width: Math.round((idx / questions.length) * 100) + '%', transition: 'width .4s ease' }} />
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{ fontSize: '110px', fontWeight: 500, color: 'var(--text)', fontFamily: 'Inter, sans-serif', lineHeight: 1.1 }}>{q.letter}</div>
+          <div lang={langAttr(profile.active_language)} style={{ fontSize: '110px', fontWeight: 500, color: 'var(--text)', fontFamily: 'Inter, sans-serif', lineHeight: 1.1 }}>{q.letter}</div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -186,7 +197,10 @@ export default function Cyrillic({ profile, onBack }) {
             if (answered && isCorrect) { bc = '#2F9E6D'; bg = 'var(--success-bg)' }
             else if (answered && isPicked && !isCorrect) { bc = '#DC2626'; bg = 'var(--danger-bg)' }
             return (
-              <button key={opt} onClick={() => choose(opt)} disabled={answered} style={{
+              // `aria-disabled`, not `disabled`: a real `disabled` in the same
+              // tick as the answer drops keyboard focus to <body>. `choose()`
+              // already no-ops once answered.
+              <button key={opt} onClick={() => choose(opt)} aria-disabled={answered} style={{
                 position: 'relative', minHeight: '64px', padding: '14px', borderRadius: '14px',
                 border: '1.5px solid ' + bc, background: bg, cursor: answered ? 'default' : 'pointer',
                 fontSize: '20px', fontWeight: 600, color: 'var(--text)', fontFamily: 'Inter, sans-serif',
@@ -200,12 +214,20 @@ export default function Cyrillic({ profile, onBack }) {
           })}
         </div>
 
-        {answered && (
-          <div style={{ marginTop: '22px' }}>
-            <PrimaryButton onClick={next} icon={Sparkles}>{idx + 1 >= questions.length ? 'See results' : 'Next'}</PrimaryButton>
-          </div>
-        )}
+        {/* Always mounted so the screen reader is already watching it when the
+            answer lands. The colours carry correctness visually. */}
+        <div role="status" aria-live="polite">
+          {answered && (
+            <div style={{ marginTop: '22px' }}>
+              <span style={srOnly}>{picked === q.sound ? 'Correct.' : 'Incorrect — the answer is ' + q.sound + '.'}</span>
+              <PrimaryButton onClick={next} icon={Sparkles}>{idx + 1 >= questions.length ? 'See results' : 'Next'}</PrimaryButton>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
 }
+
+// Visually hidden, still read aloud — the house pattern (see Study.jsx).
+const srOnly = { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }

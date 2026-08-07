@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, shuffle } from './utils'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
-import { languageTheme } from './languageTheme'
+import { languageTheme, langAttr, UI_LANG } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { markWordDue } from './practiceSignal'
 import { getSentenceBank } from './sentenceBank'
@@ -238,13 +238,20 @@ export default function SentenceBuilder({ session, profile, track, onBack }) {
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 750 }}>
-            <Blocks size={17} strokeWidth={1.8} color={accentHex} /> Build the sentence
-          </div>
+          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 750 }}>
+            <Blocks size={17} strokeWidth={1.8} color={accentHex} aria-hidden="true" /> Build the sentence
+          </h1>
           <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>{systemLabel} · {levelLabel}</div>
         </div>
 
-        <div style={{ height: '6px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden', margin: '14px 0 20px' }}>
+        <div
+          role="progressbar"
+          aria-label="Sentence builder progress"
+          aria-valuemin={0}
+          aria-valuemax={questions.length}
+          aria-valuenow={idx}
+          style={{ height: '6px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden', margin: '14px 0 20px' }}
+        >
           <div style={{ height: '100%', borderRadius: '999px', background: accentHex, width: Math.round((idx / questions.length) * 100) + '%', transition: 'width .4s ease' }} />
         </div>
 
@@ -255,15 +262,16 @@ export default function SentenceBuilder({ session, profile, track, onBack }) {
           </div>
         )}
 
-        {/* Build area */}
-        <div style={{
+        {/* Build area. The tiles are target-language text, so the block is
+            tagged once here rather than on every tile. */}
+        <div lang={langAttr(track.language)} style={{
           minHeight: '70px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center',
           padding: '16px', borderRadius: '16px', border: '1.5px solid ' + buildBorder,
           background: result === 'correct' ? 'var(--success-bg)' : result === 'wrong' ? 'var(--danger-bg)' : 'var(--surface)',
           marginBottom: '12px', transition: 'border-color 140ms ease, background 140ms ease',
         }}>
           {placed.length === 0 && (
-            <span style={{ color: 'var(--text-faint)', fontSize: '14px' }}>Tap the words below in order…</span>
+            <span lang={UI_LANG} style={{ color: 'var(--text-faint)', fontSize: '14px' }}>Tap the words below in order…</span>
           )}
           {placed.map(id => (
             <Tile key={id} text={q.tokens[id]} font={langFont} onClick={() => tapPlaced(id)} disabled={Boolean(result)} />
@@ -271,7 +279,7 @@ export default function SentenceBuilder({ session, profile, track, onBack }) {
         </div>
 
         {/* Bank */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', minHeight: '54px', marginBottom: '20px' }}>
+        <div lang={langAttr(track.language)} style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', minHeight: '54px', marginBottom: '20px' }}>
           {bankIds.map(id => (
             <Tile key={id} text={q.tokens[id]} font={langFont} accent onClick={() => tapBank(id)} disabled={Boolean(result)} />
           ))}
@@ -286,22 +294,30 @@ export default function SentenceBuilder({ session, profile, track, onBack }) {
             </div>
           </div>
         )}
-        {result && (
-          <div>
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              padding: '12px 16px', borderRadius: '14px', marginBottom: '14px',
-              background: result === 'correct' ? 'var(--success-bg)' : 'var(--danger-bg)',
-              border: '1px solid ' + (result === 'correct' ? 'var(--success-border)' : 'var(--danger-border)'),
-              color: result === 'correct' ? '#2F9E6D' : '#DC2626', fontSize: '14px', fontWeight: 700,
-            }}>
-              {result === 'correct'
-                ? <><Check size={17} strokeWidth={2.4} color="#2F9E6D" /> Correct!</>
-                : <><X size={17} strokeWidth={2.4} color="#DC2626" /> {q.vocab.example_sentence}</>}
+        {/* Always mounted so the screen reader is already watching it when the
+            answer lands. */}
+        <div role="status" aria-live="polite">
+          {result && (
+            <div>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                padding: '12px 16px', borderRadius: '14px', marginBottom: '14px',
+                background: result === 'correct' ? 'var(--success-bg)' : 'var(--danger-bg)',
+                border: '1px solid ' + (result === 'correct' ? 'var(--success-border)' : 'var(--danger-border)'),
+                color: result === 'correct' ? '#2F9E6D' : '#DC2626', fontSize: '14px', fontWeight: 700,
+              }}>
+                {result === 'correct'
+                  ? <><Check size={17} strokeWidth={2.4} color="#2F9E6D" aria-hidden="true" /> Correct!</>
+                  : <>
+                      <X size={17} strokeWidth={2.4} color="#DC2626" aria-hidden="true" />
+                      <span style={srOnly}>Not quite. The sentence is </span>
+                      <span lang={langAttr(track.language)}>{q.vocab.example_sentence}</span>
+                    </>}
+              </div>
+              <PrimaryButton onClick={next} icon={Sparkles}>{idx + 1 >= questions.length ? 'See results' : 'Next'}</PrimaryButton>
             </div>
-            <PrimaryButton onClick={next} icon={Sparkles}>{idx + 1 >= questions.length ? 'See results' : 'Next'}</PrimaryButton>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )
@@ -309,7 +325,10 @@ export default function SentenceBuilder({ session, profile, track, onBack }) {
 
 function Tile({ text, font, accent, onClick, disabled }) {
   return (
-    <button onClick={onClick} disabled={disabled} style={{
+    // `aria-disabled`, not `disabled`: flipping a focused tile to `disabled`
+    // when the answer is checked drops keyboard focus to <body>. The tap
+    // handlers already no-op once a result is in.
+    <button onClick={onClick} aria-disabled={disabled} style={{
       padding: '10px 14px', borderRadius: '12px', cursor: disabled ? 'default' : 'pointer',
       border: '1px solid ' + (accent ? 'var(--border)' : 'var(--border)'),
       background: accent ? 'var(--surface)' : 'var(--surface-2)',
@@ -320,3 +339,6 @@ function Tile({ text, font, accent, onClick, disabled }) {
     </button>
   )
 }
+
+// Visually hidden, still read aloud — the house pattern (see Study.jsx).
+const srOnly = { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
-import { languageTheme } from './languageTheme'
+import { languageTheme, langAttr } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { grammarFor } from './grammarGuides'
 import { drillsFor } from './grammarDrills'
@@ -141,21 +141,28 @@ export default function GrammarPractice({ session, profile, track, onBack }) {
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 750 }}>
-            <GraduationCap size={17} strokeWidth={1.8} color={accentHex} /> Grammar review
-          </div>
+          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 750 }}>
+            <GraduationCap size={17} strokeWidth={1.8} color={accentHex} aria-hidden="true" /> Grammar review
+          </h1>
           <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>
             {cur.topic ? cur.topic.title : systemLabel + ' · ' + levelLabel}
           </div>
         </div>
 
-        <div style={{ height: '6px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden', margin: '14px 0 22px' }}>
+        <div
+          role="progressbar"
+          aria-label="Grammar review progress"
+          aria-valuemin={0}
+          aria-valuemax={queue.length}
+          aria-valuenow={idx}
+          style={{ height: '6px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden', margin: '14px 0 22px' }}
+        >
           <div style={{ height: '100%', borderRadius: '999px', background: accentHex, width: Math.round((idx / queue.length) * 100) + '%', transition: 'width .4s ease' }} />
         </div>
 
         {/* Sentence with the grammar word blanked out */}
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px 22px', marginBottom: '12px', textAlign: 'center', boxShadow: '0 10px 30px rgba(24,24,27,0.05)' }}>
-          <div style={{ fontSize: isMobile ? '22px' : '26px', lineHeight: 1.7, fontFamily: langFont, color: 'var(--text)' }}>
+          <div lang={langAttr(track.language)} style={{ fontSize: isMobile ? '22px' : '26px', lineHeight: 1.7, fontFamily: langFont, color: 'var(--text)' }}>
             <span>{parts.before}</span>
             <span style={{
               display: 'inline-block', minWidth: '56px', textAlign: 'center',
@@ -185,13 +192,16 @@ export default function GrammarPractice({ session, profile, track, onBack }) {
             if (answered && isCorrect) { bc = '#2F9E6D'; bg = 'var(--success-bg)' }
             else if (answered && isPicked && !isCorrect) { bc = '#DC2626'; bg = 'var(--danger-bg)' }
             return (
-              <button key={opt} onClick={() => choose(opt)} disabled={answered} style={{
+              // `aria-disabled`, not `disabled`: a real `disabled` in the same
+              // tick as the answer drops keyboard focus to <body>. `choose()`
+              // already no-ops once answered.
+              <button key={opt} onClick={() => choose(opt)} aria-disabled={answered} style={{
                 position: 'relative', minHeight: '60px', padding: '12px 14px', borderRadius: '14px',
                 border: '1.5px solid ' + bc, background: bg, cursor: answered ? 'default' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'border-color 140ms ease, background 140ms ease',
               }}>
-                <span style={{ fontSize: '22px', fontWeight: 500, color: 'var(--text)', fontFamily: langFont, lineHeight: 1.2 }}>{opt}</span>
+                <span lang={langAttr(track.language)} style={{ fontSize: '22px', fontWeight: 500, color: 'var(--text)', fontFamily: langFont, lineHeight: 1.2 }}>{opt}</span>
                 {answered && isCorrect && <Check size={16} strokeWidth={2.4} color="#2F9E6D" style={{ position: 'absolute', top: '9px', right: '9px' }} />}
                 {answered && isPicked && !isCorrect && <X size={16} strokeWidth={2.4} color="#DC2626" style={{ position: 'absolute', top: '9px', right: '9px' }} />}
               </button>
@@ -199,14 +209,22 @@ export default function GrammarPractice({ session, profile, track, onBack }) {
           })}
         </div>
 
-        {answered && (
-          <div style={{ marginTop: '20px' }}>
-            <PrimaryButton onClick={next} icon={idx + 1 >= queue.length ? CheckCircle2 : Sparkles}>
-              {idx + 1 >= queue.length ? 'See results' : 'Next'}
-            </PrimaryButton>
-          </div>
-        )}
+        {/* Always mounted so the screen reader is already watching it when the
+            answer lands. The colours carry correctness visually. */}
+        <div role="status" aria-live="polite">
+          {answered && (
+            <div style={{ marginTop: '20px' }}>
+              <span style={srOnly}>{picked === item.blank ? 'Correct.' : 'Incorrect.'}</span>
+              <PrimaryButton onClick={next} icon={idx + 1 >= queue.length ? CheckCircle2 : Sparkles}>
+                {idx + 1 >= queue.length ? 'See results' : 'Next'}
+              </PrimaryButton>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
 }
+
+// Visually hidden, still read aloud — the house pattern (see Study.jsx).
+const srOnly = { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }

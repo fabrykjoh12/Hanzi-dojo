@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabase'
-import { languageTheme } from './languageTheme'
+import { languageTheme, langAttr } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { PageHeader } from './panels'
 import { calculateStoryReadability, buildVocabMatcher, segmentLine, storyNamesFor, particlesFor, wordStatus } from './storyReading'
@@ -143,6 +143,9 @@ export default function Analyzer({ session, track, onBack }) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder={`Paste ${langName} text here…`}
+        // The placeholder disappears the moment there is text, so it can't be
+        // the field's accessible name.
+        aria-label={`Paste ${langName} text to analyze`}
         rows={7}
         style={{
           width: '100%', boxSizing: 'border-box', padding: '14px 16px', borderRadius: '14px',
@@ -252,7 +255,8 @@ export default function Analyzer({ session, track, onBack }) {
           <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '16px' }}>
             New words are underlined. Tap any word to hear it, see the meaning, and add it to your deck.
           </div>
-          <div style={{ fontFamily: font + ', Inter, sans-serif', fontSize: '19px', lineHeight: 2 }}>
+          {/* Tagged once on the reading block, not on every token span. */}
+          <div lang={langAttr(track.language)} style={{ fontFamily: font + ', Inter, sans-serif', fontSize: '19px', lineHeight: 2 }}>
             {parsedLines.map((pl, li) => (
               <p key={li} style={{ margin: '0 0 10px' }}>
                 {pl.tokens.map((t, k) => {

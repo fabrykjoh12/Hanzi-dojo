@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl } from './utils'
 import { PrimaryButton, SecondaryButton } from './ui'
-import { languageTheme } from './languageTheme'
+import { languageTheme, langAttr } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import { markWordDue } from './practiceSignal'
@@ -82,7 +82,9 @@ export default function Speaking({ session, profile, track, onBack }) {
   }
 
   function listen() {
-    if (!SR || listening || !item) return
+    // `denied` is checked here rather than only on the button, so the button can
+    // carry `aria-disabled` instead of `disabled` and keep keyboard focus.
+    if (!SR || listening || denied || !item) return
     stopListening()
     scoredRef.current = false
     setResult(null); setHeard('')
@@ -138,7 +140,7 @@ export default function Speaking({ session, profile, track, onBack }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
       <button onClick={onBack} aria-label="Back" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', display: 'flex' }}><ArrowLeft size={22} color="var(--text-muted)" /></button>
       <div>
-        <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>Speaking</div>
+        <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>Speaking</h1>
         <div style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>{systemLabel} · {levelLabel}</div>
       </div>
     </div>
@@ -162,7 +164,17 @@ export default function Speaking({ session, profile, track, onBack }) {
   }
 
   if (loading) {
-    return <div style={pageShell}>{header}<Centered><Mic size={30} strokeWidth={1.8} color={accentHex} /></Centered></div>
+    return (
+      <div style={pageShell}>
+        {header}
+        <Centered>
+          <div role="status">
+            <span style={srOnly}>Loading words…</span>
+            <Mic size={30} strokeWidth={1.8} color={accentHex} aria-hidden="true" />
+          </div>
+        </Centered>
+      </div>
+    )
   }
 
   if (items.length === 0) {
@@ -203,13 +215,20 @@ export default function Speaking({ session, profile, track, onBack }) {
     <div style={pageShell}>
       {header}
       <div style={{ maxWidth: '520px', margin: '0 auto' }}>
-        <div style={{ height: '6px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden', marginBottom: '26px' }}>
+        <div
+          role="progressbar"
+          aria-label="Speaking drill progress"
+          aria-valuemin={0}
+          aria-valuemax={items.length}
+          aria-valuenow={idx}
+          style={{ height: '6px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden', marginBottom: '26px' }}
+        >
           <div style={{ height: '100%', width: `${(idx / items.length) * 100}%`, background: accentHex, transition: 'width .25s' }} />
         </div>
         <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', marginBottom: '14px' }}>Say this aloud — {idx + 1} of {items.length}</div>
 
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '30px 20px', textAlign: 'center', marginBottom: '18px' }}>
-          <div style={{ fontSize: '44px', fontWeight: 800, color: 'var(--text)', fontFamily: langFont, lineHeight: 1.2 }}>{item.word}</div>
+          <div lang={langAttr(track.language)} style={{ fontSize: '44px', fontWeight: 800, color: 'var(--text)', fontFamily: langFont, lineHeight: 1.2 }}>{item.word}</div>
           {showReading && <div style={{ fontSize: '16px', color: accentHex, fontWeight: 600, marginTop: '8px' }}>{item.reading}</div>}
           <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '6px' }}>{cleanMeaning(item.meaning)}</div>
           <button onClick={playTarget} aria-label="Hear it" style={{ marginTop: '16px', background: 'none', border: '1px solid var(--border)', borderRadius: '999px', padding: '8px 16px', cursor: 'pointer', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '13px', fontWeight: 600 }}>
@@ -217,28 +236,35 @@ export default function Speaking({ session, profile, track, onBack }) {
           </button>
         </div>
 
-        {/* Feedback */}
-        {result === 'correct' && (
-          <div style={{ textAlign: 'center', color: 'var(--success)', fontWeight: 750, marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
-            <Check size={20} strokeWidth={2.6} /> Nailed it{heard ? ` — heard "${heard}"` : ''}
-          </div>
-        )}
-        {result === 'incorrect' && (
-          <div style={{ textAlign: 'center', color: '#DC2626', fontWeight: 700, marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
-            <X size={20} strokeWidth={2.4} /> {heard ? `Heard "${heard}" — try again` : 'Didn’t catch that — try again'}
-          </div>
-        )}
-        {denied && (
-          <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', marginBottom: '14px', lineHeight: 1.5 }}>
-            Microphone access is blocked. Allow the mic in your browser settings to practice speaking.
-          </div>
-        )}
+        {/* Feedback. The wrapper is always mounted — a live region only
+            announces changes to a node the screen reader was already watching,
+            so it cannot be conditionally rendered alongside its content. */}
+        <div role="status" aria-live="polite">
+          {result === 'correct' && (
+            <div style={{ textAlign: 'center', color: 'var(--success)', fontWeight: 750, marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
+              <Check size={20} strokeWidth={2.6} aria-hidden="true" /> Nailed it{heard ? ` — heard "${heard}"` : ''}
+            </div>
+          )}
+          {result === 'incorrect' && (
+            <div style={{ textAlign: 'center', color: '#DC2626', fontWeight: 700, marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
+              <X size={20} strokeWidth={2.4} aria-hidden="true" /> {heard ? `Heard "${heard}" — try again` : 'Didn’t catch that — try again'}
+            </div>
+          )}
+          {denied && (
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', marginBottom: '14px', lineHeight: 1.5 }}>
+              Microphone access is blocked. Allow the mic in your browser settings to practice speaking.
+            </div>
+          )}
+        </div>
 
         {/* Mic / actions */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
           <button
             onClick={listen}
-            disabled={listening || denied}
+            // `aria-disabled`, not `disabled`: the button disables itself the
+            // instant it is pressed, which would throw keyboard focus to <body>
+            // mid-drill. `listen()` no-ops in both states.
+            aria-disabled={listening || denied}
             aria-label={listening ? 'Listening' : 'Tap and speak'}
             style={{
               width: '84px', height: '84px', borderRadius: '50%', cursor: listening || denied ? 'default' : 'pointer',
@@ -250,7 +276,7 @@ export default function Speaking({ session, profile, track, onBack }) {
           >
             <Mic size={34} />
           </button>
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)', minHeight: '18px' }}>
+          <div role="status" aria-live="polite" style={{ fontSize: '13px', color: 'var(--text-muted)', minHeight: '18px' }}>
             {listening ? 'Listening — say the word' : 'Tap the mic and say it'}
           </div>
           {result && (
@@ -264,6 +290,9 @@ export default function Speaking({ session, profile, track, onBack }) {
     </div>
   )
 }
+
+// Visually hidden, still read aloud — the house pattern (see Study.jsx).
+const srOnly = { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }
 
 // Small local layout helper (kept here to avoid touching shared ui.jsx).
 function Centered({ children }) {

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl } from './utils'
 import { PrimaryButton, SecondaryButton } from './ui'
-import { languageTheme } from './languageTheme'
+import { languageTheme, langAttr, UI_LANG } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import { markWordDue } from './practiceSignal'
@@ -192,15 +192,22 @@ export default function Listen({ session, profile, track, onBack }) {
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 750 }}>
-            <Headphones size={17} strokeWidth={1.8} color={accentHex} />
+          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 750 }}>
+            <Headphones size={17} strokeWidth={1.8} color={accentHex} aria-hidden="true" />
             Listening
-          </div>
+          </h1>
           <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>{systemLabel} · {levelLabel}</div>
         </div>
 
         {/* Progress bar */}
-        <div style={{ height: '6px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden', margin: '14px 0 22px' }}>
+        <div
+          role="progressbar"
+          aria-label="Listening quiz progress"
+          aria-valuemin={0}
+          aria-valuemax={questions.length}
+          aria-valuenow={idx}
+          style={{ height: '6px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden', margin: '14px 0 22px' }}
+        >
           <div style={{
             height: '100%', borderRadius: '999px', background: accentHex,
             width: Math.round((idx / questions.length) * 100) + '%', transition: 'width .4s ease',
@@ -239,7 +246,11 @@ export default function Listen({ session, profile, track, onBack }) {
               <button
                 key={opt.id}
                 onClick={() => choose(opt)}
-                disabled={answered}
+                // `aria-disabled`, not `disabled`: a real `disabled` in the same
+                // tick as the answer drops keyboard focus to <body>, so the
+                // learner loses their place. `choose()` already no-ops once
+                // answered, so the button is inert either way.
+                aria-disabled={answered}
                 style={{
                   position: 'relative', minHeight: '76px', padding: '14px 16px',
                   borderRadius: '16px', border: '1.5px solid ' + borderColor, background: bg,
@@ -248,7 +259,7 @@ export default function Listen({ session, profile, track, onBack }) {
                   transition: 'border-color 140ms ease, background 140ms ease',
                 }}
               >
-                <span style={{ fontSize: '26px', fontWeight: 500, color: 'var(--text)', fontFamily: langFont, lineHeight: 1.2 }}>
+                <span lang={langAttr(track.language)} style={{ fontSize: '26px', fontWeight: 500, color: 'var(--text)', fontFamily: langFont, lineHeight: 1.2 }}>
                   {opt.word}
                 </span>
                 {answered && (isCorrect || isPicked) && (
@@ -265,23 +276,31 @@ export default function Listen({ session, profile, track, onBack }) {
           })}
         </div>
 
-        {/* Feedback + next */}
-        {answered && (
-          <div style={{ marginTop: '20px' }}>
-            <div style={{
-              padding: '14px 18px', borderRadius: '14px', textAlign: 'center', marginBottom: '14px',
-              background: 'var(--surface-2)', border: '1px solid var(--border)',
-            }}>
-              <span style={{ fontSize: '20px', fontFamily: langFont, color: 'var(--text)', fontWeight: 500 }}>{q.correct.word}</span>
-              <span style={{ fontSize: '14px', color: accentHex, marginLeft: '10px', fontWeight: 600 }}>{q.correct.reading}</span>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px' }}>{cleanMeaning(q.correct.meaning)}</div>
+        {/* Feedback + next. The live region is always mounted so a screen
+            reader is already watching it when the answer lands; the correctness
+            line is hidden because the colours carry it visually. */}
+        <div role="status" aria-live="polite">
+          {answered && (
+            <div style={{ marginTop: '20px' }}>
+              <span style={srOnly}>{picked === q.correct.id ? 'Correct.' : 'Incorrect.'}</span>
+              <div lang={langAttr(track.language)} style={{
+                padding: '14px 18px', borderRadius: '14px', textAlign: 'center', marginBottom: '14px',
+                background: 'var(--surface-2)', border: '1px solid var(--border)',
+              }}>
+                <span style={{ fontSize: '20px', fontFamily: langFont, color: 'var(--text)', fontWeight: 500 }}>{q.correct.word}</span>
+                <span style={{ fontSize: '14px', color: accentHex, marginLeft: '10px', fontWeight: 600 }}>{q.correct.reading}</span>
+                <div lang={UI_LANG} style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px' }}>{cleanMeaning(q.correct.meaning)}</div>
+              </div>
+              <PrimaryButton onClick={next} icon={Sparkles}>
+                {idx + 1 >= questions.length ? 'See results' : 'Next'}
+              </PrimaryButton>
             </div>
-            <PrimaryButton onClick={next} icon={Sparkles}>
-              {idx + 1 >= questions.length ? 'See results' : 'Next'}
-            </PrimaryButton>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )
 }
+
+// Visually hidden, still read aloud — the house pattern (see Study.jsx).
+const srOnly = { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }

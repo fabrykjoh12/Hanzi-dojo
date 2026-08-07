@@ -37,7 +37,10 @@ export default function ComprehensionCheck({ questions, answers = {}, onAnswer }
                   <button
                     key={oi}
                     onClick={() => { if (!isAnswered && onAnswer) onAnswer(q.id, oi) }}
-                    disabled={isAnswered}
+                    // `aria-disabled`, not `disabled`: flipping the focused
+                    // option to `disabled` in the same tick as the answer drops
+                    // keyboard focus to <body>. The handler already no-ops.
+                    aria-disabled={isAnswered}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px',
                       textAlign: 'left', padding: '11px 14px', borderRadius: '11px',
@@ -46,11 +49,23 @@ export default function ComprehensionCheck({ questions, answers = {}, onAnswer }
                     }}
                   >
                     <span>{opt}</span>
-                    {isAnswered && isCorrect && <Check size={17} strokeWidth={2.4} color="var(--success)" />}
-                    {isAnswered && isChosen && !isCorrect && <X size={17} strokeWidth={2.4} color="#DC2626" />}
+                    {isAnswered && isCorrect && <Check size={17} strokeWidth={2.4} color="var(--success)" aria-hidden="true" />}
+                    {isAnswered && isChosen && !isCorrect && <X size={17} strokeWidth={2.4} color="#DC2626" aria-hidden="true" />}
                   </button>
                 )
               })}
+            </div>
+            {/* Correctness is carried only by colour and a tick, so it needs a
+                live region. Always mounted — a screen reader only announces
+                changes inside a node it was already watching. */}
+            <div role="status" aria-live="polite">
+              {isAnswered && (
+                <span style={srOnly}>
+                  {chosen === q.correct_index
+                    ? 'Correct.'
+                    : 'Incorrect. The answer is ' + q.options[q.correct_index] + '.'}
+                </span>
+              )}
             </div>
           </div>
         )
@@ -58,3 +73,6 @@ export default function ComprehensionCheck({ questions, answers = {}, onAnswer }
     </div>
   )
 }
+
+// Visually hidden, still read aloud — the house pattern (see Study.jsx).
+const srOnly = { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }
