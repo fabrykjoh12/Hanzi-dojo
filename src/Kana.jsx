@@ -4,6 +4,7 @@ import { prefsGet, prefsSet } from './offline'
 import { recordMiss, missCount, weightedSample } from './drillMemory'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
 import { useIsMobile } from './useIsMobile'
+import { langAttr } from './languageTheme'
 import {
   ArrowLeft, Languages, Check, X, RotateCcw, CheckCircle2, Sparkles, Keyboard, MousePointerClick,
   GraduationCap, ChevronLeft, ChevronRight,
@@ -11,6 +12,9 @@ import {
 
 const ACCENT = '#2E3A6E'
 const QUESTION_COUNT = 15
+// This drill is script-specific, so the tag is fixed — but it still comes from
+// the language config rather than a literal, so there is one place to change it.
+const KANA_LANG = langAttr('japanese')
 
 // Gojūon rows (+ dakuten/handakuten), hiragana and katakana side by side —
 // so learners can pick exactly which rows to drill, Kana!-app style.
@@ -92,7 +96,7 @@ function KanaChart({ script }) {
                 padding: '12px 4px', borderRadius: '13px', cursor: 'pointer',
                 border: '1px solid var(--border)', background: 'var(--surface)',
               }}>
-                <span style={{ fontFamily: "'Noto Sans JP'", fontSize: '24px', color: 'var(--text)', lineHeight: 1 }}>{kana}</span>
+                <span lang={KANA_LANG} style={{ fontFamily: "'Noto Sans JP'", fontSize: '24px', color: 'var(--text)', lineHeight: 1 }}>{kana}</span>
                 <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>{r}</span>
               </button>
             )
@@ -523,23 +527,37 @@ export default function Kana({ profile, onBack }) {
           <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{idx + 1} / {questions.length}</span>
         </div>
 
-        <div style={{ height: '6px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden', margin: '0 0 26px' }}>
+        <div
+          role="progressbar"
+          aria-label="Kana practice progress"
+          aria-valuemin={0}
+          aria-valuemax={questions.length}
+          aria-valuenow={idx}
+          style={{ height: '6px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden', margin: '0 0 26px' }}
+        >
           <div style={{ height: '100%', borderRadius: '999px', background: ACCENT, width: Math.round((idx / questions.length) * 100) + '%', transition: 'width .4s ease' }} />
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '26px' }}>
-          <div style={{ fontSize: '110px', fontFamily: "'Noto Sans JP'", color: 'var(--text)', lineHeight: 1.1 }}>{q.kana}</div>
-          {answered && (
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: '7px', marginTop: '10px',
-              fontSize: '15px', fontWeight: 750,
-              color: (picked === q.romaji || typedResult === 'correct') ? 'var(--success)' : '#DC2626',
-            }}>
-              {(picked === q.romaji || typedResult === 'correct')
-                ? <><Check size={17} strokeWidth={2.4} /> {q.romaji}</>
-                : <><X size={17} strokeWidth={2.4} /> {q.romaji}</>}
-            </div>
-          )}
+          <div lang={KANA_LANG} style={{ fontSize: '110px', fontFamily: "'Noto Sans JP'", color: 'var(--text)', lineHeight: 1.1 }}>{q.kana}</div>
+          {/* Always mounted so the screen reader is already watching it when the
+              answer lands. */}
+          <div role="status" aria-live="polite">
+            {answered && (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: '7px', marginTop: '10px',
+                fontSize: '15px', fontWeight: 750,
+                color: (picked === q.romaji || typedResult === 'correct') ? 'var(--success)' : '#DC2626',
+              }}>
+                {/* The tick / cross is the visual answer; the word is for the
+                    screen reader, which cannot see the colour. */}
+                <span style={srOnly}>{(picked === q.romaji || typedResult === 'correct') ? 'Correct.' : 'Incorrect.'}</span>
+                {(picked === q.romaji || typedResult === 'correct')
+                  ? <><Check size={17} strokeWidth={2.4} aria-hidden="true" /> {q.romaji}</>
+                  : <><X size={17} strokeWidth={2.4} aria-hidden="true" /> {q.romaji}</>}
+              </div>
+            )}
+          </div>
         </div>
 
         {answerMode === 'typed' ? (
@@ -587,7 +605,10 @@ export default function Kana({ profile, onBack }) {
                 if (answered && isCorrect) { bc = 'var(--success)'; bg = 'var(--success-bg)' }
                 else if (answered && isPicked && !isCorrect) { bc = '#DC2626'; bg = 'var(--danger-bg)' }
                 return (
-                  <button key={opt} onClick={() => chooseOption(opt)} disabled={answered} style={{
+                  // `aria-disabled`, not `disabled`: a real `disabled` in the
+                  // same tick as the answer drops keyboard focus to <body>.
+                  // `chooseOption()` already no-ops once answered.
+                  <button key={opt} onClick={() => chooseOption(opt)} aria-disabled={answered} style={{
                     minHeight: '62px', borderRadius: '15px', cursor: answered ? 'default' : 'pointer',
                     border: '1.5px solid ' + bc, background: bg,
                     fontSize: '20px', fontWeight: 700, color: 'var(--text)', fontFamily: 'Inter, sans-serif',
@@ -598,13 +619,17 @@ export default function Kana({ profile, onBack }) {
                 )
               })}
             </div>
-            {answered && (
-              <div style={{ marginTop: '16px' }}>
-                <PrimaryButton onClick={next} icon={Sparkles}>
-                  {idx + 1 >= questions.length ? 'See results' : 'Next'}
-                </PrimaryButton>
-              </div>
-            )}
+            {/* Always mounted, so the arrival of the Next action is announced
+                rather than silently appearing under the options. */}
+            <div role="status" aria-live="polite">
+              {answered && (
+                <div style={{ marginTop: '16px' }}>
+                  <PrimaryButton onClick={next} icon={Sparkles}>
+                    {idx + 1 >= questions.length ? 'See results' : 'Next'}
+                  </PrimaryButton>
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>
@@ -617,3 +642,6 @@ const quickBtn = {
   border: '1px solid var(--border)', background: 'var(--surface)',
   color: 'var(--text-muted)', fontSize: '12.5px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
 }
+
+// Visually hidden, still read aloud — the house pattern (see Study.jsx).
+const srOnly = { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }

@@ -2,30 +2,37 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl } from './utils'
 import { PrimaryButton, SecondaryButton } from './ui'
-import { languageTheme } from './languageTheme'
+import { languageTheme, langAttr } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import { markWordDue } from './practiceSignal'
 import { speechMatches } from './speechScore'
 import { ArrowLeft, Mic, Volume2, Check, X, RotateCcw, CheckCircle2, MicOff } from 'lucide-react'
+import { speechRecognitionCtor, speechRecognitionSupported, speechErrorKind } from './speechSupport'
 
 const QUESTION_COUNT = 10
 
-const SR = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null
+const SR = speechRecognitionCtor()
 const LANG_CODE = { chinese: 'zh-CN', japanese: 'ja-JP', russian: 'ru-RU' }
+const SPEECH_OK = speechRecognitionSupported({ ctor: SR })
 
 // Speaking drill: read the word aloud, get a ✓ via the browser's built-in speech
 // recognition (zero marginal cost). Accepts the word (and, for Japanese, its
-// reading). Not supported on iOS/Safari — shows a graceful fallback there.
+// reading). Availability is decided by speechSupport.js — notably NOT by the
+// constructor alone, since the store apps' webviews expose it without
+// implementing it.
 export default function Speaking({ session, profile, track, onBack }) {
   const isMobile = useIsMobile()
-  const [loading, setLoading] = useState(Boolean(SR))
+  const [loading, setLoading] = useState(SPEECH_OK)
   const [items, setItems] = useState([])
   const [idx, setIdx] = useState(0)
   const [result, setResult] = useState(null)     // null | 'correct' | 'incorrect'
   const [heard, setHeard] = useState('')          // what the recognizer thought it heard
   const [listening, setListening] = useState(false)
   const [denied, setDenied] = useState(false)
+  // Set when the recognizer itself reports the service is unavailable — some
+  // embedded browsers only reveal that on the first attempt.
+  const [unsupportedAtRuntime, setUnsupportedAtRuntime] = useState(false)
   const [correctCount, setCorrectCount] = useState(0)
   const [done, setDone] = useState(false)
   const recRef = useRef(null)
@@ -82,7 +89,9 @@ export default function Speaking({ session, profile, track, onBack }) {
   }
 
   function listen() {
-    if (!SR || listening || !item) return
+    // `denied` is checked here rather than only on the button, so the button can
+    // carry `aria-disabled` instead of `disabled` and keep keyboard focus.
+    if (!SR || listening || denied || !item) return
     stopListening()
     scoredRef.current = false
     setResult(null); setHeard('')
@@ -102,7 +111,11 @@ export default function Speaking({ session, profile, track, onBack }) {
     }
     rec.onerror = (e) => {
       setListening(false)
-      if (e && (e.error === 'not-allowed' || e.error === 'service-not-allowed')) setDenied(true)
+      const kind = speechErrorKind(e && e.error)
+      // "the service isn't available" is not "your mic is blocked": telling
+      // that learner to unblock a microphone sends them to a dead end.
+      if (kind === 'unsupported') setUnsupportedAtRuntime(true)
+      else if (kind === 'denied' || kind === 'no-mic') setDenied(true)
     }
     rec.onend = () => setListening(false)
     recRef.current = rec
@@ -138,14 +151,15 @@ export default function Speaking({ session, profile, track, onBack }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
       <button onClick={onBack} aria-label="Back" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', display: 'flex' }}><ArrowLeft size={22} color="var(--text-muted)" /></button>
       <div>
-        <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>Speaking</div>
+        <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>Speaking</h1>
         <div style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>{systemLabel} · {levelLabel}</div>
       </div>
     </div>
   )
 
-  // Unsupported browser (iOS Safari and friends).
-  if (!SR) {
+  // Not available here: no API, an embedded webview that only pretends to
+  // have one, or a recognizer that reported the service as unavailable.
+  if (!SPEECH_OK || unsupportedAtRuntime) {
     return (
       <div style={pageShell}>
         {header}
@@ -153,7 +167,8 @@ export default function Speaking({ session, profile, track, onBack }) {
           <MicOff size={30} strokeWidth={1.8} color={accentHex} style={{ marginBottom: '14px' }} />
           <div style={{ fontSize: '17px', fontWeight: 750, color: 'var(--text)', marginBottom: '8px' }}>Speaking isn't supported here yet</div>
           <div style={{ fontSize: '14px', color: 'var(--text-muted)', maxWidth: '340px', lineHeight: 1.6, marginBottom: '20px' }}>
-            Your browser doesn't offer speech recognition. Try Chrome on Android or a desktop to practice saying words aloud.
+            Speech recognition isn't available here. It works in Chrome on Android
+            or on a desktop browser — everything else in the app is unaffected.
           </div>
           <SecondaryButton onClick={onBack} icon={ArrowLeft}>Back to practice</SecondaryButton>
         </Centered>
@@ -162,7 +177,17 @@ export default function Speaking({ session, profile, track, onBack }) {
   }
 
   if (loading) {
-    return <div style={pageShell}>{header}<Centered><Mic size={30} strokeWidth={1.8} color={accentHex} /></Centered></div>
+    return (
+      <div style={pageShell}>
+        {header}
+        <Centered>
+          <div role="status">
+            <span style={srOnly}>Loading words…</span>
+            <Mic size={30} strokeWidth={1.8} color={accentHex} aria-hidden="true" />
+          </div>
+        </Centered>
+      </div>
+    )
   }
 
   if (items.length === 0) {
@@ -203,13 +228,20 @@ export default function Speaking({ session, profile, track, onBack }) {
     <div style={pageShell}>
       {header}
       <div style={{ maxWidth: '520px', margin: '0 auto' }}>
-        <div style={{ height: '6px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden', marginBottom: '26px' }}>
+        <div
+          role="progressbar"
+          aria-label="Speaking drill progress"
+          aria-valuemin={0}
+          aria-valuemax={items.length}
+          aria-valuenow={idx}
+          style={{ height: '6px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden', marginBottom: '26px' }}
+        >
           <div style={{ height: '100%', width: `${(idx / items.length) * 100}%`, background: accentHex, transition: 'width .25s' }} />
         </div>
         <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', marginBottom: '14px' }}>Say this aloud — {idx + 1} of {items.length}</div>
 
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '30px 20px', textAlign: 'center', marginBottom: '18px' }}>
-          <div style={{ fontSize: '44px', fontWeight: 800, color: 'var(--text)', fontFamily: langFont, lineHeight: 1.2 }}>{item.word}</div>
+          <div lang={langAttr(track.language)} style={{ fontSize: '44px', fontWeight: 800, color: 'var(--text)', fontFamily: langFont, lineHeight: 1.2 }}>{item.word}</div>
           {showReading && <div style={{ fontSize: '16px', color: accentHex, fontWeight: 600, marginTop: '8px' }}>{item.reading}</div>}
           <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '6px' }}>{cleanMeaning(item.meaning)}</div>
           <button onClick={playTarget} aria-label="Hear it" style={{ marginTop: '16px', background: 'none', border: '1px solid var(--border)', borderRadius: '999px', padding: '8px 16px', cursor: 'pointer', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '13px', fontWeight: 600 }}>
@@ -217,28 +249,35 @@ export default function Speaking({ session, profile, track, onBack }) {
           </button>
         </div>
 
-        {/* Feedback */}
-        {result === 'correct' && (
-          <div style={{ textAlign: 'center', color: 'var(--success)', fontWeight: 750, marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
-            <Check size={20} strokeWidth={2.6} /> Nailed it{heard ? ` — heard "${heard}"` : ''}
-          </div>
-        )}
-        {result === 'incorrect' && (
-          <div style={{ textAlign: 'center', color: '#DC2626', fontWeight: 700, marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
-            <X size={20} strokeWidth={2.4} /> {heard ? `Heard "${heard}" — try again` : 'Didn’t catch that — try again'}
-          </div>
-        )}
-        {denied && (
-          <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', marginBottom: '14px', lineHeight: 1.5 }}>
-            Microphone access is blocked. Allow the mic in your browser settings to practice speaking.
-          </div>
-        )}
+        {/* Feedback. The wrapper is always mounted — a live region only
+            announces changes to a node the screen reader was already watching,
+            so it cannot be conditionally rendered alongside its content. */}
+        <div role="status" aria-live="polite">
+          {result === 'correct' && (
+            <div style={{ textAlign: 'center', color: 'var(--success)', fontWeight: 750, marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
+              <Check size={20} strokeWidth={2.6} aria-hidden="true" /> Nailed it{heard ? ` — heard "${heard}"` : ''}
+            </div>
+          )}
+          {result === 'incorrect' && (
+            <div style={{ textAlign: 'center', color: '#DC2626', fontWeight: 700, marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
+              <X size={20} strokeWidth={2.4} aria-hidden="true" /> {heard ? `Heard "${heard}" — try again` : 'Didn’t catch that — try again'}
+            </div>
+          )}
+          {denied && (
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', marginBottom: '14px', lineHeight: 1.5 }}>
+              Microphone access is blocked. Allow the mic in your browser settings to practice speaking.
+            </div>
+          )}
+        </div>
 
         {/* Mic / actions */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
           <button
             onClick={listen}
-            disabled={listening || denied}
+            // `aria-disabled`, not `disabled`: the button disables itself the
+            // instant it is pressed, which would throw keyboard focus to <body>
+            // mid-drill. `listen()` no-ops in both states.
+            aria-disabled={listening || denied}
             aria-label={listening ? 'Listening' : 'Tap and speak'}
             style={{
               width: '84px', height: '84px', borderRadius: '50%', cursor: listening || denied ? 'default' : 'pointer',
@@ -250,7 +289,7 @@ export default function Speaking({ session, profile, track, onBack }) {
           >
             <Mic size={34} />
           </button>
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)', minHeight: '18px' }}>
+          <div role="status" aria-live="polite" style={{ fontSize: '13px', color: 'var(--text-muted)', minHeight: '18px' }}>
             {listening ? 'Listening — say the word' : 'Tap the mic and say it'}
           </div>
           {result && (
@@ -264,6 +303,9 @@ export default function Speaking({ session, profile, track, onBack }) {
     </div>
   )
 }
+
+// Visually hidden, still read aloud — the house pattern (see Study.jsx).
+const srOnly = { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }
 
 // Small local layout helper (kept here to avoid touching shared ui.jsx).
 function Centered({ children }) {

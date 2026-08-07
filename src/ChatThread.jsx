@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react'
 import { wordStatus, isPlaceWord, isWordlikeToken } from './storyReading'
 import { unknownMarkStyle } from './tokenMark'
-import { TokenBody, RevealEnglishButton } from './ReadingScaffold'
+import { TokenBody, RevealEnglishButton, IconButton } from './ReadingScaffold'
 import { spotlightStyle } from './readAlong'
 import { Check } from 'lucide-react'
 
@@ -137,19 +137,19 @@ export default function ChatThread({ revealed, sides, skin, theme, accent, userC
                     style={{ opacity: meta.side === 'right' ? 0.75 : 1 }}
                   />
                 )}
+                {/* The action that advances the whole thread — it has to be a
+                    full 44×44 thumb target, so it uses the shared IconButton.
+                    The check glyph itself stays 16px, so the bubble looks the
+                    same; only the hit area grows. */}
                 {key === activeIndex && onMarkDone && (
-                  <button
+                  <IconButton
                     onClick={(e) => { e.stopPropagation(); onMarkDone() }}
-                    aria-label="Got it — next message"
+                    label="Got it — next message"
                     title="Got it — next"
-                    style={{
-                      background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                      opacity: meta.side === 'right' ? 0.75 : 1,
-                    }}
+                    style={{ opacity: meta.side === 'right' ? 0.75 : 1 }}
                   >
                     <Check size={16} strokeWidth={2.6} color={isDone ? doneColor || skin.myText : (meta.side === 'right' ? skin.myText : '#888')} />
-                  </button>
+                  </IconButton>
                 )}
               </div>
               {b.english && revealedEnglish && revealedEnglish.has(key) && (

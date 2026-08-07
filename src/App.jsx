@@ -8,6 +8,9 @@ import {
   storyRoute, storyPath, seriesPath,
 } from './routes'
 import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
+import { isBootstrapFailure } from './supabaseErrors'
+import { ensureLanguageFont } from './fontLoader'
+import { shouldRefreshHome } from './homeRefresh'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
 // Eager: the app shell + first-paint screens.
@@ -57,11 +60,21 @@ const Dev = lazy(() => import('./Dev'))
 const NotFound = lazy(() => import('./NotFound'))
 const Dashboard = lazy(() => import('./Dashboard'))
 
-// Calm centered fallback while a lazy screen loads.
+// Visually hidden, but read. Inline (the project styles inline), so a screen
+// reader gets a word where the glyph below is only a mood.
+const SR_ONLY = {
+  position: 'absolute', width: '1px', height: '1px', margin: '-1px', padding: 0,
+  overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0,
+}
+
+// Calm centered fallback while a lazy screen loads. The 学 is decoration — a
+// screen reader announcing a lone Chinese character on every route change is
+// noise, so it is hidden and the status line says what is actually happening.
 function ViewFallback() {
   return (
     <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ fontSize: '30px', color: 'var(--text-faint)', fontFamily: "'Noto Sans SC'" }}>学</div>
+      <span role="status" style={SR_ONLY}>Loading…</span>
+      <div aria-hidden="true" lang="zh-Hans" style={{ fontSize: '30px', color: 'var(--text-faint)', fontFamily: "'Noto Sans SC'" }}>学</div>
     </div>
   )
 }
@@ -93,6 +106,9 @@ export default function App() {
   const [track, setTrack] = useState(null)
   const [counts, setCounts] = useState({ newCount: 0, learnCount: 0, dueCount: 0, easyCount: 0, totalWords: 0, learnedCount: 0, masteredCount: 0, masteredPct: 0 })
   const [loading, setLoading] = useState(true)
+  // True when the profile/track bootstrap FAILED (network/server), as opposed
+  // to legitimately finding nothing — the two must render differently.
+  const [bootstrapError, setBootstrapError] = useState(false)
   // A story to open directly when navigating to Stories (set by the post-study
   // recap's "Read unlocked story" CTA). Consumed and cleared by Stories on load.
   const [pendingStoryId, setPendingStoryId] = useState(null)
@@ -130,13 +146,40 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
+  // Fetch the active language's web font if the base stylesheet doesn't
+  // already carry it. Only the paused tracks need this, so for the Chinese
+  // product it is a no-op — which is the point: nobody downloads a CJK family
+  // for a language they never open (see fontLoader.js).
+  useEffect(() => {
+    if (profile && profile.active_language) ensureLanguageFont(profile.active_language)
+  }, [profile])
+
   // Move focus to the main content region when the view changes, so keyboard
   // and screen-reader users land on the new screen instead of being stranded on
   // the nav item they clicked. No-op on views without the shell (e.g. Landing).
   const mainRef = useRef(null)
+  // When the dashboard data was last loaded, so returning to Home can skip a
+  // refetch it doesn't need (homeRefresh.js). A ref, not state: reading it
+  // must never itself trigger a render.
+  const homeLoadedAt = useRef(null)
   useEffect(() => {
     if (mainRef.current) mainRef.current.focus({ preventScroll: true })
   }, [view])
+  // …and show a ring when it lands, or the skip link is a jump with no visible
+  // confirmation. Only when the focus is keyboard-driven: `:focus-visible`
+  // stays false for the same focus() call made after a mouse click on a nav
+  // item, so pointer users never see the outline. Inline styles can't carry a
+  // pseudo-class, hence the explicit check.
+  const [mainFocusRing, setMainFocusRing] = useState(false)
+  const onMainFocus = (e) => {
+    if (e.target !== e.currentTarget) return
+    let visible = true
+    try { visible = e.currentTarget.matches(':focus-visible') } catch { /* no :focus-visible — show it */ }
+    setMainFocusRing(visible)
+  }
+  const onMainBlur = (e) => {
+    if (e.target === e.currentTarget) setMainFocusRing(false)
+  }
 
   const setTheme = (next) => {
     setThemeState(next)
@@ -147,12 +190,32 @@ export default function App() {
   }
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark')
 
+  // The whole bootstrap runs inside try/catch/finally so a throw anywhere
+  // (e.g. getHomeCounts) can never strand the app on the 学 splash with
+  // loading stuck true — the one state with no way out. A throw is a
+  // bootstrap failure like any other. (Kept as ONE function on purpose:
+  // splitting the body into a helper makes the hooks linter stop seeing
+  // loadProfile as stable and warn on every effect that calls it.)
   const loadProfile = async (userId) => {
-    const { data: prof } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    try {
+    // Both queries key on the user id alone, so they go out together rather
+    // than tracks waiting on profile — the active track is picked from the
+    // result below. One less round trip before anything can render.
+    const [{ data: prof, error: profError }, { data: allTracks, error: trackError }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', userId).single(),
+      supabase.from('language_tracks').select('*').eq('user_id', userId).eq('is_active', true),
+    ])
+
+    // "The query failed" and "there is no profile row" are different worlds:
+    // the second means onboarding, the first means we don't KNOW — treating a
+    // flaky network as a blank account would drop an existing learner into
+    // onboarding. Show the retry screen instead (see the render gate below).
+    if (isBootstrapFailure(profError)) {
+      setBootstrapError(true)
+      setLoading(false)
+      return
+    }
+    setBootstrapError(false)
 
     if (!prof) { setLoading(false); return }
 
@@ -166,22 +229,26 @@ export default function App() {
     // a reminder preference must never break startup.
     recordTimezone(userId, prof.timezone)
 
-    const { data: tr } = await supabase
-      .from('language_tracks')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('language', prof.active_language)
-      .eq('is_active', true)
-      .single()
+    // Same distinction as the profile above: a missing track means onboarding,
+    // a failed query means retry. (The old per-language `.single()` treated
+    // "no track for this language" as PGRST116, which isBootstrapFailure
+    // already excluded; selecting the list instead makes that explicit — an
+    // account with no track for its active language simply finds none.)
+    if (isBootstrapFailure(trackError)) {
+      setBootstrapError(true)
+      setLoading(false)
+      return
+    }
 
     const finalProf = prof
-    const finalTrack = tr
+    const finalTrack = (allTracks || []).find(t => t.language === prof.active_language) || null
 
     if (finalTrack) {
       const c = await getHomeCounts(userId, finalTrack, finalProf.daily_new_cards)
       setCounts(c)
     }
 
+    homeLoadedAt.current = Date.now()
     setProfile(finalProf)
     setTrack(finalTrack)
     // Analytics context — so every subsequent event carries who / language / level.
@@ -190,7 +257,11 @@ export default function App() {
       language: finalProf.active_language,
       level: finalTrack ? finalTrack.current_level : null,
     })
-    setLoading(false)
+    } catch {
+      setBootstrapError(true)
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Analytics session envelope: one "session started" per app-load, and a
@@ -247,7 +318,11 @@ export default function App() {
     if (opts && opts.practiceWords) setPendingPracticeWords(opts.practiceWords)
     else if (key === 'fillblank') setPendingPracticeWords(null) // normal hub open — no stale story pool
     routerNavigate(key === 'stories' && opts?.storyId ? storyPath(opts.storyId) : viewToPath(key))
-    if (session && key === 'home') loadProfile(session.user.id)
+    // Refetch the dashboard when landing on Home — but not after a detour
+    // through a screen that provably changed nothing (see homeRefresh.js).
+    if (session && key === 'home' && shouldRefreshHome(view, homeLoadedAt.current)) {
+      loadProfile(session.user.id)
+    }
   }
 
   const handleLogout = () => supabase.auth.signOut()
@@ -309,6 +384,35 @@ export default function App() {
         <Background language="chinese" />
         <PasswordReset onDone={() => setRecovery(false)} />
       </>
+    )
+  }
+
+  // The bootstrap FAILED (network/server) — we don't know whether this account
+  // has a profile, so neither Onboarding nor the app would be honest. A calm
+  // retry beats dropping an existing learner into a signup flow.
+  if (bootstrapError) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: '24px' }}>
+        <div style={{ maxWidth: '340px', textAlign: 'center' }}>
+          <div style={{ fontSize: '32px', color: 'var(--chinese-accent)', fontFamily: "'Noto Sans SC'", marginBottom: '14px' }}>学</div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px', fontFamily: 'Inter, sans-serif' }}>
+            Couldn’t load your account
+          </div>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '18px', fontFamily: 'Inter, sans-serif' }}>
+            The connection dropped while loading your profile. Your progress is safe — try again.
+          </div>
+          <button
+            onClick={() => { setBootstrapError(false); setLoading(true); loadProfile(session.user.id) }}
+            style={{
+              padding: '11px 22px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+              background: 'var(--chinese-accent)', color: '#fff',
+              fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
     )
   }
 
@@ -562,6 +666,7 @@ export default function App() {
         session={session}
         profile={profile}
         onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
+        onBack={() => navigate('home')}
       />
     )
   } else if (view === 'hq') {
@@ -623,8 +728,18 @@ export default function App() {
             />
           </div>
         )}
-        <main id="main-content" tabIndex={-1} ref={mainRef} style={{
-          flex: 1, minWidth: 0, position: 'relative', zIndex: 1, outline: 'none',
+        <main id="main-content" tabIndex={-1} ref={mainRef} onFocus={onMainFocus} onBlur={onMainBlur} style={{
+          flex: 1, minWidth: 0, position: 'relative', zIndex: 1,
+          // Drawn inside the box: an outer ring on a full-height pane that
+          // touches the viewport edges would be cropped away.
+          outline: mainFocusRing ? '2px solid var(--text-muted)' : 'none',
+          outlineOffset: mainFocusRing ? '-3px' : 0,
+          // The native shell draws under the status bar / notch (viewport-fit=cover
+          // + iOS contentInset "never"), so the shell owns the top inset once, here,
+          // for every in-flow screen. Fixed overlays (Toasts, ChatMission, the
+          // reader's own bars) are positioned against the viewport, not this box,
+          // so they still carry their own inset.
+          paddingTop: isMobile ? 'env(safe-area-inset-top, 0px)' : 0,
           // Leave room for the fixed bottom bar so content isn't hidden behind it.
           paddingBottom: isMobile ? 'calc(62px + env(safe-area-inset-bottom))' : 0,
         }}>

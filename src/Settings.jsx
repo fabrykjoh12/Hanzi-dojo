@@ -3,10 +3,11 @@ import { supabase } from './supabase'
 import {
   Palette, Sun, Moon, Keyboard, Eye,
   Volume2, BookOpenCheck, Gauge, Bell, HardDrive, Trash2, CheckCircle2,
-  MessagesSquare, ArrowUpRight, Brain,
+  MessagesSquare, ArrowUpRight, Brain, ArrowLeft,
 } from 'lucide-react'
 import { RETENTION_PRESETS, presetForRetention, setTargetRetention } from './srs'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
+import { externalLinkProps } from './externalLink'
 import { useIsMobile } from './useIsMobile'
 import { useTheme } from './ThemeContext'
 import { languageTheme } from './languageTheme'
@@ -45,12 +46,29 @@ function getLanguageDetails(profile) {
   }
 }
 
-export default function Settings({ session, profile, onUpdate }) {
+function BackButton({ onClick }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} style={{
+      display: 'inline-flex', alignItems: 'center', gap: '8px',
+      minHeight: '40px', padding: '0 14px', borderRadius: '12px',
+      border: '1px solid var(--border)', background: hovered ? 'var(--surface-2)' : 'var(--surface)',
+      color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+    }}>
+      <ArrowLeft size={17} strokeWidth={1.85} color="var(--text-muted)" /> Home
+    </button>
+  )
+}
+
+export default function Settings({ session, profile, onUpdate, onBack }) {
   const { accentHex, isJapanese } = getLanguageDetails(profile)
   const isMobile = useIsMobile()
   const { theme, setTheme } = useTheme()
   const [reminderBusy, setReminderBusy] = useState(false)
   const [reminderError, setReminderError] = useState(null)
+  // Which preference column last failed to save, so the error shows next to
+  // the control the user actually touched.
+  const [prefError, setPrefError] = useState(null)
 
   // Defensive reads so the UI works even before the prefs migration is applied.
   const recallMode = profile.recall_mode === 'typed' ? 'typed' : 'flip'
@@ -66,13 +84,33 @@ export default function Settings({ session, profile, onUpdate }) {
     typeof profile.reminder_hour_utc === 'number' ? profile.reminder_hour_utc : localHourToUtc(9)
   )
 
-  // Persist a single preference column (best-effort) and reflect it live.
+  // Persist a single preference column and reflect it live. Optimistic: the UI
+  // updates first, and a failed write reverts it and says so — a rejected write
+  // must never keep looking saved until the next reload quietly undoes it.
   const savePref = (patch) => {
+    const prev = {}
+    for (const key of Object.keys(patch)) prev[key] = profile[key]
+    setPrefError(null)
     if (onUpdate) onUpdate(patch)
     if (session) {
-      supabase.from('profiles').update(patch).eq('id', session.user.id).then(() => {})
+      const revert = () => {
+        if (onUpdate) onUpdate(prev)
+        setPrefError(Object.keys(patch)[0])
+      }
+      supabase.from('profiles').update(patch).eq('id', session.user.id).then(
+        ({ error }) => { if (error) revert() },
+        () => revert()
+      )
     }
   }
+
+  // The inline error line for a control whose save failed — same treatment as
+  // the reminder error below.
+  const prefErrorLine = (key) => prefError === key ? (
+    <div style={{ fontSize: '12.5px', color: 'var(--danger)', marginTop: '10px', lineHeight: 1.5 }}>
+      That change didn't save — check your connection and try again.
+    </div>
+  ) : null
 
   // The scheduler is a pure module with no database access, so it keeps a
   // device-local mirror of the chosen retention. Sync it from the profile
@@ -116,7 +154,8 @@ export default function Settings({ session, profile, onUpdate }) {
   return (
     <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
       <div style={{ maxWidth: '760px', margin: '0 auto', padding: isMobile ? '32px 16px 56px' : '52px 32px 72px', position: 'relative', zIndex: 1 }}>
-        <PageHeader title="Settings" meta="Preferences" />
+        {onBack && <BackButton onClick={onBack} />}
+        <PageHeader title="Settings" meta="Preferences" style={{ marginTop: onBack ? '18px' : 0 }} />
         <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 0 22px', maxWidth: '560px' }}>
           Tune how studying feels. Daily goal and reset controls live in Profile.
         </p>
@@ -146,11 +185,13 @@ export default function Settings({ session, profile, onUpdate }) {
                 { key: 'typed', label: 'Typed', icon: Keyboard },
               ]}
             />
+            {prefErrorLine('recall_mode')}
           </Card>
 
           {/* Audio autoplay */}
           <Card icon={Volume2} title="Audio on flip" text="Automatically play the word's pronunciation when you reveal a card." accentHex={accentHex}>
             <Toggle accentHex={accentHex} label="Audio on flip" checked={audioAutoplay} onChange={(v) => savePref({ audio_autoplay: v })} />
+            {prefErrorLine('audio_autoplay')}
           </Card>
 
           {/* Audio speed */}
@@ -165,12 +206,14 @@ export default function Settings({ session, profile, onUpdate }) {
                 { key: 0.5, label: '0.5×', icon: Gauge },
               ]}
             />
+            {prefErrorLine('audio_speed')}
           </Card>
 
           {/* Furigana default — Japanese only */}
           {isJapanese && (
             <Card icon={BookOpenCheck} title="Furigana by default" text="Show readings above kanji on the front of Japanese flashcards." accentHex={accentHex}>
               <Toggle accentHex={accentHex} label="Furigana by default" checked={furiganaDefault} onChange={(v) => savePref({ furigana_default: v })} />
+              {prefErrorLine('furigana_default')}
             </Card>
           )}
 
@@ -189,6 +232,7 @@ export default function Settings({ session, profile, onUpdate }) {
               onChange={pickRetention}
               options={RETENTION_PRESETS}
             />
+            {prefErrorLine('target_retention')}
           </Card>
 
           {/* Daily review reminder — opt-in Web Push */}
@@ -217,7 +261,7 @@ export default function Settings({ session, profile, onUpdate }) {
                   disabled={reminderBusy}
                   aria-label="Daily reminder time"
                   style={{
-                    height: '36px', padding: '0 10px', borderRadius: '10px',
+                    minHeight: '44px', padding: '0 10px', borderRadius: '10px',
                     border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text)',
                     fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
                   }}
@@ -245,9 +289,7 @@ export default function Settings({ session, profile, onUpdate }) {
               accentHex={accentHex}
             >
               <a
-                href={DISCORD_INVITE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
+                {...externalLinkProps(DISCORD_INVITE_URL)}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '8px',
                   height: '40px', padding: '0 16px', borderRadius: '12px',

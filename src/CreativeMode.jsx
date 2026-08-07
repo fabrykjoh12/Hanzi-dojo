@@ -314,9 +314,13 @@ export default function CreativeMode({ session, profile, track }) {
               onChange={(e) => { setCountRaw(e.target.value); setArmed(null) }}
               aria-label="Number of words"
               style={{
-                width: '92px', padding: '8px 10px', borderRadius: '10px',
+                // 16px, never less: an iOS WKWebView zooms the whole page in
+                // when a focused input's text is smaller. Vertical padding drops
+                // to 6px so the taller text still lines up with the 12.5px Btns
+                // sharing this row.
+                width: '92px', padding: '6px 10px', borderRadius: '10px',
                 border: '1px solid var(--border)', background: 'var(--surface-2)',
-                color: 'var(--text)', fontSize: '12.5px', fontFamily: 'Inter, sans-serif',
+                color: 'var(--text)', fontSize: '16px', fontFamily: 'Inter, sans-serif',
               }}
             />
           </Field>

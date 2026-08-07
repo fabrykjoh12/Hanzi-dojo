@@ -1,11 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import HanziWriter from 'hanzi-writer'
+import { makeCharDataLoader } from './strokeData'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
-import { languageTheme } from './languageTheme'
+import { languageTheme, langAttr } from './languageTheme'
 import { ArrowLeft, Brush, Play, PenLine, Eye, EyeOff } from 'lucide-react'
+
+// One loader for the screen: stroke data comes from the CDN once and is then
+// served from the device, so practising a character again works offline.
+const CHAR_DATA_LOADER = makeCharDataLoader()
 
 function isIdeograph(ch) {
   const c = ch.charCodeAt(0)
@@ -75,6 +80,9 @@ export default function Writer({ profile, track, onBack }) {
       radicalColor: '#2F9E6D',
       delayBetweenStrokes: 180,
       strokeAnimationSpeed: 1,
+      // Cached on the device, so a character practised once still works with
+      // no connection (strokeData.js).
+      charDataLoader: CHAR_DATA_LOADER,
       onLoadCharDataSuccess: function () {
         if (cancelled) return
         setLoadState('ready')
@@ -156,11 +164,13 @@ export default function Writer({ profile, track, onBack }) {
               <div aria-hidden style={{ position: 'absolute', inset: 0, border: '1px solid var(--border)', borderRadius: '12px', backgroundImage: 'linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)', backgroundSize: '50% 50%', opacity: 0.5 }} />
               <div ref={targetRef} role="img" aria-label={`Stroke order animation for ${selected}`} style={{ position: 'relative', zIndex: 1 }} />
               {loadState === 'loading' && (
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '64px', color: 'var(--text-faint)', fontFamily: langFont }}>{selected}</div>
+                // The character behind the loading state repeats what the
+                // role="img" above already announces, so it is decorative here.
+                <div aria-hidden="true" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '64px', color: 'var(--text-faint)', fontFamily: langFont }}>{selected}</div>
               )}
               {loadState === 'error' && (
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '20px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '64px', color: 'var(--text)', fontFamily: langFont }}>{selected}</div>
+                  <div lang={langAttr(track.language)} style={{ fontSize: '64px', color: 'var(--text)', fontFamily: langFont }}>{selected}</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Stroke data unavailable for this character.</div>
                 </div>
               )}
@@ -198,15 +208,17 @@ export default function Writer({ profile, track, onBack }) {
         </div>
 
         {loading ? (
-          <div style={{ minHeight: '40vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Brush size={32} strokeWidth={1.75} color={accentHex} />
+          <div role="status" style={{ minHeight: '40vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={srOnly}>Loading {kindLabel}…</span>
+            <Brush size={32} strokeWidth={1.75} color={accentHex} aria-hidden="true" />
           </div>
         ) : chars.length === 0 ? (
           <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', marginTop: '40px' }}>
             No {kindLabel} to practice at this level yet.
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(' + (isMobile ? '58px' : '68px') + ', 1fr))', gap: '10px' }}>
+          // Tagged once on the grid rather than on all ~200 tiles.
+          <div lang={langAttr(track.language)} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(' + (isMobile ? '58px' : '68px') + ', 1fr))', gap: '10px' }}>
             {chars.map(ch => (
               <button key={ch} onClick={() => setSelected(ch)} style={{
                 aspectRatio: '1', borderRadius: '14px', border: '1px solid var(--border)',
@@ -257,3 +269,6 @@ function Action({ onClick, icon: Icon, label, primary }) {
     </button>
   )
 }
+
+// Visually hidden, still read aloud — the house pattern (see Study.jsx).
+const srOnly = { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }

@@ -1,0 +1,17 @@
+{
+  "appId": "com.hanzidojo.app",
+  "appName": "Hanzi Dojo",
+  "webDir": "dist/client",
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "never"
+  },
+  "plugins": {
+    "Keyboard": {
+      "resize": "native",
+      "resizeOnFullScreen": true
+    }
+  }
+}

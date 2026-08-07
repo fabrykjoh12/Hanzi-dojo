@@ -61,13 +61,17 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
   useEffect(() => {
     let alive = true
     if (!userId) return undefined
-    getDailyStoryCard(userId, track, learned).then(res => { if (alive) setDaily(res) })
+    getDailyStoryCard(userId, track, learned)
+      .then(res => { if (alive) setDaily(res) })
+      .catch(() => { if (alive) setDaily(null) })
     return () => { alive = false }
   }, [userId, track, learned])
 
   // One action. Cards while there are cards; once the queue is clear the next
   // step in the daily loop is reading, so the button hands over to Stories.
-  const action = totalDue > 0
+  // When the counts failed to load, the zeros are meaningless — keep the button
+  // on Study, which loads its own queue and so doubles as the retry.
+  const action = counts.failed || totalDue > 0
     ? { label: 'Start reviewing', go: 'study' }
     : { label: 'Read a story', go: 'stories' }
 
@@ -251,8 +255,35 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
 // The hero's contents: the whole block is about today's flashcards — how many
 // are waiting, how the day's goal is going, and the one button that starts it.
 function QueueBody({ counts, totalDue, goal, doneToday, isMobile, action, accentHex, hovered }) {
-  const clear = totalDue === 0
+  const failed = Boolean(counts.failed)
+  const clear = !failed && totalDue === 0
   const goalComplete = goal > 0 && doneToday >= goal
+
+  // The counts never arrived, so every number here is a meaningless zero. Say
+  // so plainly instead of showing the ✓ — Study loads its own queue fresh, so
+  // the usual button is the honest retry.
+  if (failed) {
+    return (
+      <div>
+        <span style={{ ...MICRO, color: 'rgba(255,255,255,0.62)' }}>
+          Today's cards
+        </span>
+
+        <div style={{
+          fontSize: isMobile ? '20px' : '24px', fontWeight: 700, color: '#fff',
+          lineHeight: 1.3, margin: '12px 0 6px',
+        }}>
+          Couldn't load today's queue
+        </div>
+
+        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45, marginTop: '12px' }}>
+          Check your connection — starting a session loads it fresh.
+        </div>
+
+        <HeroAction label={action.label} hovered={hovered} icon={ArrowRight} accentHex={accentHex} />
+      </div>
+    )
+  }
 
   return (
     <div>

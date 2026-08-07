@@ -379,7 +379,10 @@ function ReviewList({
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', maxHeight: isMobile ? '54vh' : '460px' }}>
+      {/* dvh, not vh: on mobile vh is the LARGE viewport, so the list would be
+          taller than what is actually on screen and its footer pushed under
+          the browser/WebView toolbar. */}
+      <div style={{ display: 'flex', flexDirection: 'column', maxHeight: isMobile ? '54dvh' : '460px' }}>
         {/* flex scroll rule (§5): the scroller needs min-height 0 or it grows to
             fit thousands of rows and the overflow gets clipped. */}
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>

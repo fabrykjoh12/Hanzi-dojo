@@ -103,7 +103,9 @@ const inputStyle = {
   padding: '12px 14px',
   borderRadius: '10px',
   border: '1px solid var(--border)',
-  fontSize: '15px',
+  // 16px, never less: an iOS WKWebView zooms the whole page in when a focused
+  // input's text is smaller, and the layout stays shifted afterwards.
+  fontSize: '16px',
   fontFamily: 'Inter, sans-serif',
   color: 'var(--text)',
   background: 'var(--bg)',

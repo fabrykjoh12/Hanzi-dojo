@@ -55,6 +55,34 @@ export function TokenBody({ text, reading, mode, status, language, reserve, rtCo
   return <ruby>{text}<rt style={rtStyle}>{shown}</rt></ruby>
 }
 
+// The one icon-button geometry every reader control uses. The app ships as a
+// native mobile app, so an icon-only control has to be at least a thumb wide:
+// the ICON stays its drawn size (14–18px) and only the transparent hit area
+// grows to 44×44, which is why nothing changes visually on desktop.
+// Module-private object — .jsx files may only export components (react-refresh),
+// so `IconButton` below is how other files get at it.
+const ICON_BUTTON = {
+  background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
+  width: '44px', height: '44px', minWidth: '44px', minHeight: '44px',
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+}
+
+// A transparent 44×44 tap target around a single icon. Used for every icon-only
+// reader control (Back, the settings close, the per-bubble "got it" check) so
+// they all obey the same minimum hit size in one place.
+export function IconButton({ onClick, label, title, style, children }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      title={title}
+      style={{ ...ICON_BUTTON, ...style }}
+    >
+      {children}
+    </button>
+  )
+}
+
 // The per-sentence "reveal meaning" control: a plain eye icon that sits beside
 // one sentence/beat/bubble. Each caller owns its own revealed flag (usually one
 // bit in a Set keyed by beat/bubble index) — this button never affects any
@@ -67,12 +95,7 @@ export function RevealEnglishButton({ revealed, onToggle, color = 'var(--text-mu
       aria-label={revealed ? 'Hide English translation' : 'Show English translation'}
       aria-pressed={revealed}
       title={revealed ? 'Hide translation' : 'Show translation'}
-      style={{
-        background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
-        minWidth: '44px', minHeight: '44px',
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        ...style,
-      }}
+      style={{ ...ICON_BUTTON, ...style }}
     >
       <Icon size={16} strokeWidth={2} color={revealed ? (activeColor || color) : color} />
     </button>
@@ -137,7 +160,7 @@ export function ReadingSettings({ mode, setMode, language, accent, onOpenChange,
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
         <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text)', letterSpacing: '0.02em' }}>{label}</div>
-        <button onClick={close} aria-label="Close settings" style={closeBtn}><X size={15} color="var(--text-muted)" /></button>
+        <IconButton onClick={close} label="Close settings"><X size={15} color="var(--text-muted)" /></IconButton>
       </div>
       <div role="group" aria-label={label + ' display'} style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
         {FURIGANA_MODES.map((value) => {
@@ -278,8 +301,3 @@ const sheetStyle = {
 }
 
 const scrimStyle = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.28)', zIndex: 200 }
-
-const closeBtn = {
-  background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
-  width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-}

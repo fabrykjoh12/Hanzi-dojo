@@ -11,6 +11,11 @@ import { shuffle } from './utils'
 import { tokenize, makeSegmenter, isContent, scrambleIndices } from './segment'
 import { ArrowLeft, BookMarked, BookOpen, Check, ChevronRight, Search, Sparkles, X, Volume2, Repeat2 } from 'lucide-react'
 
+// Every control the thumb aims at gets a real target. The app ships as a native
+// mobile app, so touch is the only input that matters — same rule as
+// studyLayout.js MIN_TAP_TARGET and Dictionary.jsx TAP.
+const TAP = 44
+
 // Speak an example aloud with the browser's TTS — grammar examples are
 // arbitrary sentences with no recorded audio, so this is the practical way to
 // let learners hear them (same approach as the story reader / chat missions).
@@ -294,7 +299,7 @@ function Example({ ex, language, font, accentHex }) {
           {ex.segs.map((seg, si) => seg[1] ? (
             <ruby key={si}>
               {seg[0]}
-              <rt style={{ fontSize: '10px', color: accentHex, fontWeight: 600 }}>{seg[1]}</rt>
+              <rt style={{ fontSize: '12px', color: accentHex, fontWeight: 600 }}>{seg[1]}</rt>
             </ruby>
           ) : (
             <span key={si}>{seg[0]}</span>
@@ -307,16 +312,25 @@ function Example({ ex, language, font, accentHex }) {
         <div style={{ fontSize: '13px', color: accentHex, marginTop: '4px', fontWeight: 600 }}>{ex.reading}</div>
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginTop: '6px' }}>
+        {/* The button is a full 44px thumb target; the negative margin pulls the
+            extra padding back out of the layout so the visible 28px chip sits
+            exactly where it did. */}
         <button
           onClick={() => speakText(ex.target, language)}
           aria-label="Play example"
           style={{
-            flexShrink: 0, width: '28px', height: '28px', borderRadius: '9px', cursor: 'pointer',
-            border: '1px solid ' + accentHex + '2A', background: accentHex + '10',
+            flexShrink: 0, width: TAP + 'px', height: TAP + 'px', margin: '-8px',
+            padding: 0, border: 'none', background: 'none', cursor: 'pointer',
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <Volume2 size={14} strokeWidth={2} color={accentHex} />
+          <span style={{
+            width: '28px', height: '28px', borderRadius: '9px',
+            border: '1px solid ' + accentHex + '2A', background: accentHex + '10',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Volume2 size={14} strokeWidth={2} color={accentHex} />
+          </span>
         </button>
         <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{ex.en}</div>
       </div>
@@ -342,7 +356,7 @@ function EnrollRow({ enrolled, onEnroll, accentHex, isMobile }) {
       ) : (
         <button onClick={onEnroll} style={{
           display: 'inline-flex', alignItems: 'center', gap: '8px',
-          height: '40px', padding: '0 16px', borderRadius: '11px', border: 'none',
+          minHeight: TAP + 'px', padding: '0 16px', borderRadius: '11px', border: 'none',
           background: accentHex, color: '#fff', cursor: 'pointer',
           fontSize: '13px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
         }}>
@@ -377,12 +391,12 @@ function buildPuzzle(topic, language, seg) {
 
 function tryBtn(accent) {
   return {
-    height: '38px', padding: '0 18px', borderRadius: '11px', border: 'none',
+    minHeight: TAP + 'px', padding: '0 18px', borderRadius: '11px', border: 'none',
     background: accent, color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
   }
 }
 const tryGhostBtn = {
-  height: '38px', padding: '0 14px', borderRadius: '11px', border: '1px solid var(--border)',
+  minHeight: TAP + 'px', padding: '0 14px', borderRadius: '11px', border: '1px solid var(--border)',
   background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
 }
 
@@ -500,7 +514,7 @@ function SelfCheck({ topic, picked, done, onPick, font, accentHex, isMobile }) {
                         onClick={() => onPick(qi, oi)}
                         style={{
                           textAlign: 'left', cursor: solved ? 'default' : 'pointer',
-                          padding: '9px 12px', borderRadius: '10px',
+                          minHeight: TAP + 'px', padding: '10px 12px', borderRadius: '10px',
                           border: '1px solid ' + (isRight ? 'var(--success-border)' : isWrong ? 'var(--danger-border)' : 'var(--border)'),
                           background: isRight ? 'var(--success-bg)' : isWrong ? 'var(--danger-bg)' : 'var(--surface)',
                           color: isRight ? 'var(--success)' : isWrong ? 'var(--danger)' : 'var(--text)',
@@ -530,7 +544,7 @@ function Ghost({ onClick }) {
   return (
     <button onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)} style={{
       display: 'inline-flex', alignItems: 'center', gap: '8px',
-      minHeight: '40px', padding: '0 14px', borderRadius: '12px',
+      minHeight: TAP + 'px', padding: '0 14px', borderRadius: '12px',
       border: '1px solid var(--border)', background: h ? 'var(--surface-2)' : 'var(--surface)',
       color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
     }}>

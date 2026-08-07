@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
-import { languageTheme } from './languageTheme'
+import { languageTheme, langAttr, UI_LANG } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import { markWordDue } from './practiceSignal'
@@ -143,19 +143,26 @@ export default function FillBlank({ session, profile, track, onBack, pool = null
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 750 }}>
-            <AlignLeft size={17} strokeWidth={1.8} color={accentHex} /> Fill in the blank
-          </div>
+          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 750 }}>
+            <AlignLeft size={17} strokeWidth={1.8} color={accentHex} aria-hidden="true" /> Fill in the blank
+          </h1>
           <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>{systemLabel} · {levelLabel}</div>
         </div>
 
-        <div style={{ height: '6px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden', margin: '14px 0 22px' }}>
+        <div
+          role="progressbar"
+          aria-label="Fill in the blank progress"
+          aria-valuemin={0}
+          aria-valuemax={questions.length}
+          aria-valuenow={idx}
+          style={{ height: '6px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden', margin: '14px 0 22px' }}
+        >
           <div style={{ height: '100%', borderRadius: '999px', background: accentHex, width: Math.round((idx / questions.length) * 100) + '%', transition: 'width .4s ease' }} />
         </div>
 
         {/* Sentence with blank */}
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px 22px', marginBottom: '12px', textAlign: 'center', boxShadow: '0 10px 30px rgba(24,24,27,0.05)' }}>
-          <div style={{ fontSize: isMobile ? '22px' : '26px', lineHeight: 1.7, fontFamily: langFont, color: 'var(--text)' }}>
+          <div lang={langAttr(track.language)} style={{ fontSize: isMobile ? '22px' : '26px', lineHeight: 1.7, fontFamily: langFont, color: 'var(--text)' }}>
             {q.parts.map((part, i) => (
               <span key={i}>
                 {i > 0 && (
@@ -187,13 +194,16 @@ export default function FillBlank({ session, profile, track, onBack, pool = null
             if (answered && isCorrect) { bc = '#2F9E6D'; bg = 'var(--success-bg)' }
             else if (answered && isPicked && !isCorrect) { bc = '#DC2626'; bg = 'var(--danger-bg)' }
             return (
-              <button key={opt.id} onClick={() => choose(opt)} disabled={answered} style={{
+              // `aria-disabled`, not `disabled`: a real `disabled` in the same
+              // tick as the answer drops keyboard focus to <body>. `choose()`
+              // already no-ops once answered.
+              <button key={opt.id} onClick={() => choose(opt)} aria-disabled={answered} style={{
                 position: 'relative', minHeight: '64px', padding: '12px 14px', borderRadius: '14px',
                 border: '1.5px solid ' + bc, background: bg, cursor: answered ? 'default' : 'pointer',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px',
                 transition: 'border-color 140ms ease, background 140ms ease',
               }}>
-                <span style={{ fontSize: '22px', fontWeight: 500, color: 'var(--text)', fontFamily: langFont, lineHeight: 1.2 }}>{opt.word}</span>
+                <span lang={langAttr(track.language)} style={{ fontSize: '22px', fontWeight: 500, color: 'var(--text)', fontFamily: langFont, lineHeight: 1.2 }}>{opt.word}</span>
                 {answered && (isCorrect || isPicked) && (
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{opt.reading}</span>
                 )}
@@ -204,17 +214,25 @@ export default function FillBlank({ session, profile, track, onBack, pool = null
           })}
         </div>
 
-        {answered && (
-          <div style={{ marginTop: '20px' }}>
-            <div style={{ padding: '14px 18px', borderRadius: '14px', textAlign: 'center', marginBottom: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-              <span style={{ fontSize: '20px', fontFamily: langFont, color: 'var(--text)' }}>{q.vocab.word}</span>
-              <span style={{ fontSize: '14px', color: accentHex, marginLeft: '10px', fontWeight: 600 }}>{q.vocab.reading}</span>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px' }}>{cleanMeaning(q.vocab.meaning)}</div>
+        {/* The live region is always mounted — a screen reader only announces
+            changes inside a node it was already watching. */}
+        <div role="status" aria-live="polite">
+          {answered && (
+            <div style={{ marginTop: '20px' }}>
+              <span style={srOnly}>{picked === q.vocab.id ? 'Correct.' : 'Incorrect.'}</span>
+              <div lang={langAttr(track.language)} style={{ padding: '14px 18px', borderRadius: '14px', textAlign: 'center', marginBottom: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                <span style={{ fontSize: '20px', fontFamily: langFont, color: 'var(--text)' }}>{q.vocab.word}</span>
+                <span style={{ fontSize: '14px', color: accentHex, marginLeft: '10px', fontWeight: 600 }}>{q.vocab.reading}</span>
+                <div lang={UI_LANG} style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px' }}>{cleanMeaning(q.vocab.meaning)}</div>
+              </div>
+              <PrimaryButton onClick={next} icon={Sparkles}>{idx + 1 >= questions.length ? 'See results' : 'Next'}</PrimaryButton>
             </div>
-            <PrimaryButton onClick={next} icon={Sparkles}>{idx + 1 >= questions.length ? 'See results' : 'Next'}</PrimaryButton>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )
 }
+
+// Visually hidden, still read aloud — the house pattern (see Study.jsx).
+const srOnly = { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }

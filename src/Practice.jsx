@@ -4,6 +4,7 @@ import { languageTheme, ink } from './languageTheme'
 import { HeroPanel, HeroAction, PageHeader, Eyebrow } from './panels'
 import { flatPanel, ON_HERO } from './designTokens'
 import { buildPracticePlan } from './practicePlan'
+import { speechRecognitionSupported } from './speechSupport'
 import { useIsMobile } from './useIsMobile'
 import {
   ArrowLeft, ArrowRight, AlertTriangle, Headphones, PenLine,
@@ -78,6 +79,9 @@ export default function Practice({ profile, track, counts, onNavigate, onBack })
   const plan = buildPracticePlan({
     script: theme.script,
     cjk: theme.cjk,
+    // Don't offer a drill that can only say "not available here" — the store
+    // apps' webviews expose the speech API without implementing it.
+    speech: speechRecognitionSupported(),
     weakCount: counts ? (counts.weakCount || 0) : 0,
     grammarDueCount: counts ? (counts.grammarDueCount || 0) : 0,
   })
@@ -264,7 +268,7 @@ function BackButton({ onClick }) {
   return (
     <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} style={{
       display: 'inline-flex', alignItems: 'center', gap: '8px',
-      minHeight: '40px', padding: '0 14px', borderRadius: '12px',
+      minHeight: '44px', padding: '0 14px', borderRadius: '12px',
       border: '1px solid var(--border)', background: hovered ? 'var(--surface-2)' : 'var(--surface)',
       color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
     }}>

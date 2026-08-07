@@ -8,17 +8,40 @@ import { studyRhythm, dateKey } from './studyRhythm'
 import { countDueGrammar } from './grammarReview'
 
 export async function getHomeCounts(userId, track, dailyNewCards) {
-  // Cards scoped server-side to the ACTIVE language (every level): the level
-  // counts filter further below, and the fluency score wants exactly this scope
-  // so studying a second language never inflates the first.
-  const cards = await getTrackCards(userId, track, {
-    columns: 'vocab_id, state, due_at, created_at, is_easy, learned, stability, lapses',
-  })
+  const now = new Date()
+
+  // Three independent fetches, so they cost ONE round trip instead of three.
+  // Only `vocab` below genuinely depends on a result (it needs the study floor,
+  // which is derived from the cards), so everything else goes out together —
+  // on a phone each avoided round trip is a visible chunk of the Home load.
+  //
+  //   cards    — scoped server-side to the ACTIVE language (every level): the
+  //              level filter happens below, and the fluency score wants
+  //              exactly this scope so a second language never inflates the
+  //              first.
+  //   acts     — study rhythm for the last 7 days, per user across all
+  //              languages (a study day is a study day). Defensive: any
+  //              failure just yields an empty rhythm.
+  //   grammar  — how many opted-in grammar patterns are due (returns 0 offline
+  //              or before its migration).
+  const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 6)
+  const [cards, actsResult, grammarDueCount] = await Promise.all([
+    getTrackCards(userId, track, {
+      columns: 'vocab_id, state, due_at, created_at, is_easy, learned, stability, lapses',
+    }),
+    supabase
+      .from('daily_activity')
+      .select('activity_date, studied_cards')
+      .eq('user_id', userId)
+      .gte('activity_date', dateKey(weekAgo))
+      .then(r => r, () => ({ data: null })),
+    countDueGrammar({ userId, track, now }),
+  ])
 
   // Cumulative deck: every level from the study floor up to the current level,
   // so advancing a level keeps the earlier levels' words in the counts.
   const floorLevel = studyFloorLevel(cards, track.current_level)
-  const { data: vocab } = await supabase
+  const { data: vocab, error: vocabError } = await supabase
     .from('vocabulary')
     .select('id')
     .eq('language', track.language)
@@ -26,6 +49,12 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
     .gte('level', floorLevel)
     .lte('level', track.current_level)
     .eq('is_active', true)
+
+  // A failed vocabulary fetch must not masquerade as an empty queue: every
+  // count below would come out zero and the UI would show "all caught up" for
+  // a day that never loaded. The shape below stays intact (callers keep every
+  // field); `failed` just tells the UI the numbers can't be trusted.
+  const failed = Boolean(vocabError) || !vocab
 
   const vocabIds = new Set((vocab || []).map(v => v.id))
 
@@ -40,7 +69,6 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
     remainingNew
   )
 
-  const now = new Date()
   const levelCards = (cards || []).filter(c => vocabIds.has(c.vocab_id))
   const learnCount = levelCards
     .filter(c => (c.state === 'learning' || c.state === 'relearning') && isCardDue(c, now)).length
@@ -73,29 +101,14 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   // approximation the UI presents as "~N a day", never a hard promise.
   const forecast7 = reviewForecast(levelCards, now, 7)
 
-  // Study rhythm (last 7 days) — which days had any study, from daily_activity
-  // (per user, all languages). Defensive: any failure just yields an empty
-  // rhythm so the home load never breaks on it. Not track-scoped: a study day
-  // is a study day. Lower-bounded to the window to keep the query small.
-  let studiedDates = []
-  try {
-    const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 6)
-    const { data: acts } = await supabase
-      .from('daily_activity')
-      .select('activity_date, studied_cards')
-      .eq('user_id', userId)
-      .gte('activity_date', dateKey(weekAgo))
-    studiedDates = (acts || []).filter(a => a.studied_cards > 0).map(a => a.activity_date)
-  } catch { /* offline / query failure — leave rhythm empty */ }
+  // Study rhythm (last 7 days), from the activity rows fetched above.
+  const studiedDates = ((actsResult && actsResult.data) || [])
+    .filter(a => a.studied_cards > 0).map(a => a.activity_date)
   const rhythm7 = studyRhythm(studiedDates, now, 7)
 
   // Weak words: cards the user has lapsed on at least twice and that aren't yet
   // mastered — the cleanup-drill pool.
   const weakCount = levelCards.filter(c => (c.lapses || 0) >= 2 && (c.stability || 0) < 21).length
-
-  // Grammar spaced practice: how many opted-in patterns are due. Defensive
-  // (returns 0 offline or before the table is migrated), never blocks the load.
-  const grammarDueCount = await countDueGrammar({ userId, track, now })
 
   const { learnedCount, masteredCount, masteredPct } = countMastery(levelCards, totalWords)
 
@@ -110,5 +123,6 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
     learnedCount, masteredCount, masteredPct,
     newDoneToday, dueTomorrow, weakCount, forecast7, rhythm7,
     lifetimeLearned, lifetimeMastered, grammarDueCount,
+    failed,
   }
 }

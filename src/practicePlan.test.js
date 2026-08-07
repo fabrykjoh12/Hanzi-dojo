@@ -143,3 +143,21 @@ describe('buildPracticePlan — tools', () => {
     keys(plan.drills).forEach(k => expect(toolKeys.has(k)).toBe(false))
   })
 })
+
+describe('speech availability', () => {
+  it('offers the Speaking drill by default (a normal browser)', () => {
+    const plan = buildPracticePlan({ script: 'hanzi', cjk: true })
+    expect(plan.drills.map(d => d.key)).toContain('speak')
+  })
+
+  it('hides Speaking where recognition is unusable, rather than advertising a dead end', () => {
+    const plan = buildPracticePlan({ script: 'hanzi', cjk: true, speech: false })
+    expect(plan.drills.map(d => d.key)).not.toContain('speak')
+  })
+
+  it('drops only Speaking — every other drill survives', () => {
+    const withSpeech = buildPracticePlan({ script: 'hanzi', cjk: true }).drills.map(d => d.key)
+    const without = buildPracticePlan({ script: 'hanzi', cjk: true, speech: false }).drills.map(d => d.key)
+    expect(without).toEqual(withSpeech.filter(k => k !== 'speak'))
+  })
+})

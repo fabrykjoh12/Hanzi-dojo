@@ -3,6 +3,7 @@ import { fetchPagedSafe } from './supabasePaging'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { cacheSet, cacheGet } from './offline'
+import { toast } from './toast'
 import { languageTheme } from './languageTheme'
 import { HeroPanel, HeroAction, Eyebrow } from './panels'
 import { heroSentence } from './homeStory'
@@ -20,7 +21,7 @@ import StoryReader from './StoryReader'
 import StoryCover from './StoryCover'
 import StoryFormatIcon from './StoryFormatIcon'
 import {
-  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, ChevronLeft, ChevronRight, Clock, Layers, Library, Lock,
+  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, ChevronLeft, ChevronRight, Clock, CloudOff, Layers, Library, Lock, RefreshCw,
 } from 'lucide-react'
 
 // Story tier definitions live in ./storyTiers (shared with the post-study
@@ -194,7 +195,14 @@ function StoryCard({ story, read, accentHex, fontFamily, levelLabel, practice, o
         {locked && <CoverLock />}
       </StoryCover>
       <div style={{ padding: shelf ? '10px 2px 2px' : '12px 14px 13px', display: 'flex', flexDirection: 'column', gap: shelf ? '4px' : '5px', flex: 1, width: '100%', minWidth: 0 }}>
-        <div title={story.title} style={{ fontSize: '16px', fontWeight: 750, fontFamily, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3 }}>
+        {/* Two lines, not one + ellipsis: `title` never fires on touch, so a
+            clipped title was unreadable in the app. The reserved height keeps
+            the shelf rows aligned whether a title takes one line or two. */}
+        <div title={story.title} style={{
+          fontSize: '16px', fontWeight: 750, fontFamily, color: 'var(--text)', lineHeight: 1.3,
+          display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2,
+          overflow: 'hidden', minHeight: '2.6em',
+        }}>
           {story.title}
         </div>
         {!shelf && <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.4 }}>
@@ -373,8 +381,9 @@ function SeriesCard({ arc, readIds, accentHex, fontFamily, isMobile, onOpen, onO
         </StoryCover>
         <div style={{ padding: shelf ? '10px 2px 2px' : '12px 14px 13px', display: 'flex', flexDirection: 'column', gap: shelf ? '5px' : '7px', flex: 1, width: '100%', minWidth: 0 }}>
           <div title={arc.title} style={{
-            fontSize: isMobile ? '15px' : '16px', fontWeight: 750, fontFamily, color: 'var(--text)',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3,
+            fontSize: isMobile ? '15px' : '16px', fontWeight: 750, fontFamily, color: 'var(--text)', lineHeight: 1.3,
+            display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2,
+            overflow: 'hidden', minHeight: '2.6em',
           }}>
             {arc.title}
           </div>
@@ -476,7 +485,7 @@ function SeriesPage({ arc, readIds, accentHex, fontFamily, levelLabelFor, isMobi
 
 // Practice scenarios (chat / scene / reply) live in their own section with a
 // tinted card, so they never look like broken story cards inside an arc.
-function EmptyPanel({ icon: Icon, title, text }) {
+function EmptyPanel({ icon: Icon, title, text, actionIcon, actionLabel, onAction }) {
   return (
     <div style={{
       textAlign: 'center', color: 'var(--text-muted)', padding: '54px 28px', fontSize: '15px',
@@ -486,6 +495,11 @@ function EmptyPanel({ icon: Icon, title, text }) {
       <Icon size={30} strokeWidth={1.8} color="var(--text-faint)" />
       <div style={{ color: 'var(--text)', fontSize: '17px', fontWeight: 800, marginTop: '14px' }}>{title}</div>
       <div style={{ marginTop: '6px', lineHeight: 1.6 }}>{text}</div>
+      {actionLabel && (
+        <div style={{ marginTop: '18px', display: 'flex', justifyContent: 'center' }}>
+          <IconButton icon={actionIcon} label={actionLabel} onClick={onAction} />
+        </div>
+      )}
     </div>
   )
 }
@@ -516,6 +530,13 @@ export default function Stories({
   const [vocabMap, setVocabMap] = useState({})
   const [userCards, setUserCards] = useState({})
   const [loading, setLoading] = useState(true)
+  // The stories fetch failed AND no cached snapshot could stand in (a new
+  // device offline, a server error). Distinguished from a genuinely empty
+  // library so the shelf can say "couldn't load" instead of "no stories yet".
+  const [loadFailed, setLoadFailed] = useState(false)
+  // Which unknown /story/:id has already been announced — so a stale deep link
+  // toasts once, not on every effect pass.
+  const missingStoryNotified = useRef(null)
   const isMobile = useIsMobile()
 
   const languageDetails = getLanguageDetails(profile, track)
@@ -581,12 +602,14 @@ export default function Stories({
 
   async function loadData() {
     setLoading(true)
+    setLoadFailed(false)
 
     // Everything the stories screen needs is fetched, then mirrored into
     // IndexedDB so the whole library (list + text + read markers) opens offline.
     // If the network is down, the last good snapshot is served instead.
     const snapKey = 'storiesdata:' + track.language + ':' + track.system + ':' + track.current_level
     let vocabData = null, cardsData = null, storiesData = null, readsData = null, nextData = null
+    let fetchFailed = false
     try {
       // Load all levels so every word in a story is clickable, not just current
       // level — and PAGE it. Unpaged this stopped at PostgREST's 1000-row cap,
@@ -626,7 +649,7 @@ export default function Stories({
         .eq('level', track.current_level + 1).eq('is_published', true)
         .order('tier', { ascending: true }).order('story_number', { ascending: true })
       nextData = nres.data
-    } catch { /* offline — fall back to the cached snapshot below */ }
+    } catch { fetchFailed = true /* offline — fall back to the cached snapshot below */ }
 
     if (storiesData && storiesData.length) {
       cacheSet(snapKey, { vocabData, cardsData, storiesData, readsData, nextData })
@@ -638,6 +661,12 @@ export default function Stories({
         storiesData = snap.storiesData
         readsData = readsData || snap.readsData
         nextData = nextData || snap.nextData
+      } else if (fetchFailed || storiesData == null) {
+        // No snapshot to fall back on, and the fetch either threw or came back
+        // with no rows at all (a Supabase error result is null, an empty
+        // library is []). "No stories yet" would be a false statement about
+        // the library — surface a retry instead.
+        setLoadFailed(true)
       }
     }
 
@@ -698,7 +727,19 @@ export default function Stories({
     }
     if (routeKind === 'story' && routeStoryId) {
       const target = stories.find(s => s.id === routeStoryId)
-      if (!target || (view === 'reader' && selectedStory?.id === target.id)) return
+      if (!target) {
+        // Loading finished and the id matches nothing — a stale or mistyped
+        // link. Say so briefly and settle the URL back on the shelf instead of
+        // leaving it claiming a story that isn't rendered. Skipped while the
+        // load itself failed: a retry may still find the story.
+        if (!loadFailed && missingStoryNotified.current !== routeStoryId) {
+          missingStoryNotified.current = routeStoryId
+          toast({ title: "That story isn't available", accent: accentHex })
+          if (onBrowseRoute) onBrowseRoute()
+        }
+        return
+      }
+      if (view === 'reader' && selectedStory?.id === target.id) return
       setSelectedCategory(categoryForStory(target, track))
       setSelectedStory(target)
       setReaderFromSeries(false)
@@ -712,7 +753,7 @@ export default function Stories({
       setSelectedStory(null)
       setView('series')
     }
-  }, [loading, routeKind, routeStoryId, routeSeriesKey, stories, sections, selectedStory?.id, selectedArc?.key, view, track])
+  }, [loading, loadFailed, routeKind, routeStoryId, routeSeriesKey, stories, sections, selectedStory?.id, selectedArc?.key, view, track, accentHex, onBrowseRoute])
   /* eslint-enable react-hooks/set-state-in-effect */
 
   if (loading) {
@@ -927,6 +968,12 @@ export default function Stories({
               </div>
             )}
           </HeroPanel>
+        ) : loadFailed ? (
+          <EmptyPanel
+            icon={CloudOff} title="Couldn't load stories"
+            text="The library couldn't be reached. Check your connection and try again."
+            actionIcon={RefreshCw} actionLabel="Retry" onAction={loadData}
+          />
         ) : (
           <EmptyPanel icon={Library} title="No stories yet" text="Stories for your level are on the way. Keep learning words — they'll be here waiting." />
         )}

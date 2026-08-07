@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import { getTestStatus, getAttemptsToday } from './testLogic'
+import { getTestStatus, getAttemptsToday, canStartTest } from './testLogic'
 import { getLevelLabel, getNextLevel, shuffle } from './utils'
-import { languageTheme } from './languageTheme'
+import { languageTheme, langAttr } from './languageTheme'
 import { schedule } from './srs'
 import { TEST_UNLOCK_MASTERY_PCT } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
 import {
-  ArrowRight, Check, CheckCircle2, Clock, GraduationCap,
-  Lock, RotateCcw, ShieldCheck, X,
+  ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, CloudOff,
+  GraduationCap, Lock, RotateCcw, ShieldCheck, X,
 } from 'lucide-react'
 
 function generateQuestions(vocabList, allVocab, language) {
@@ -171,12 +171,17 @@ function GhostButton({ onClick, children, icon: Icon }) {
 }
 
 function StatCard({ label, value, color }) {
+  const isMobile = useIsMobile()
   return (
     <div style={{
+      // Three of these sit in a `repeat(3, 1fr)` grid. Grid tracks are
+      // minmax(auto, 1fr), so a label wider than its track pushes the whole grid
+      // past the viewport — the tighter side padding keeps "remaining" inside
+      // its ~101px column at 360px.
       background: 'var(--surface)',
       border: '1px solid var(--border)',
       borderRadius: '18px',
-      padding: '18px 20px',
+      padding: isMobile ? '16px 8px' : '18px 20px',
       textAlign: 'center',
       boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
     }}>
@@ -186,9 +191,16 @@ function StatCard({ label, value, color }) {
   )
 }
 
-function ProgressBar({ pct, accentHex }) {
+function ProgressBar({ pct, accentHex, label = 'Progress' }) {
   return (
-    <div style={{ height: '7px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden' }}>
+    <div
+      role="progressbar"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(pct)}
+      style={{ height: '7px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden' }}
+    >
       <div style={{
         height: '100%',
         width: pct + '%',
@@ -200,8 +212,9 @@ function ProgressBar({ pct, accentHex }) {
   )
 }
 
-export default function Test({ session, profile, track }) {
+export default function Test({ session, profile, track, onBack }) {
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [status, setStatus] = useState(null)
   const [attempts, setAttempts] = useState({ count: 0, passed: false })
   const [allVocab, setAllVocab] = useState([])
@@ -221,6 +234,7 @@ export default function Test({ session, profile, track }) {
 
   async function loadStatus() {
     setLoading(true)
+    setLoadError(false)
     const [s, a, vocabResult] = await Promise.all([
       getTestStatus(session.user.id, track),
       getAttemptsToday(session.user.id, track),
@@ -232,6 +246,13 @@ export default function Test({ session, profile, track }) {
         .eq('level', track.current_level)
         .eq('is_active', true),
     ])
+    // A failed fetch must not render as a fabricated "0 / 0 words mastered"
+    // locked state — surface it and let the learner retry.
+    if (s.error || a.error || vocabResult.error) {
+      setLoadError(true)
+      setLoading(false)
+      return
+    }
     setStatus(s)
     setAttempts(a)
     setAllVocab(vocabResult.data || [])
@@ -244,6 +265,8 @@ export default function Test({ session, profile, track }) {
   }, [])
 
   const startTest = () => {
+    // An empty pool would generate zero questions and crash on questions[0].
+    if (!canStartTest(allVocab)) return
     const qs = generateQuestions(allVocab, allVocab, profile.active_language)
     setQuestions(qs)
     setAnswers([])
@@ -368,8 +391,10 @@ export default function Test({ session, profile, track }) {
   if (loading) {
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
-        <div style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{
+        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+        <div role="status" style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={srOnly}>Loading the test…</span>
+          <div aria-hidden="true" style={{
             width: '88px', height: '88px', borderRadius: '26px',
             background: 'var(--surface)', border: '1px solid var(--border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -382,11 +407,29 @@ export default function Test({ session, profile, track }) {
     )
   }
 
+  if (loadError) {
+    return (
+      <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
+        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+        <div style={centerPanelStyle}>
+          <StateIcon icon={CloudOff} accentHex="var(--text-faint)" />
+          <h1 style={titleStyle}>Couldn't load the test</h1>
+          <p style={bodyTextStyle}>Your words didn't come through this time. Check your connection and try again.</p>
+          <div style={{ display: 'flex', gap: '12px', width: '100%', maxWidth: '360px' }}>
+            <GhostButton onClick={onBack} icon={ArrowLeft}>Back home</GhostButton>
+            <PrimaryButton onClick={loadStatus} accentHex={accentHex} icon={RotateCcw}>Retry</PrimaryButton>
+          </div>
+        </div>
+      </Shell>
+    )
+  }
+
   if (phase === 'intro' && !status.testUnlocked) {
     const unlockPct = Math.round(TEST_UNLOCK_MASTERY_PCT * 100)
     const masteryPct = status.totalWords > 0 ? Math.round(status.masteredPct * 100) : 0
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
+        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
         <div style={centerPanelStyle}>
           <StateIcon icon={Lock} accentHex="var(--text-faint)" />
           <h1 style={titleStyle}>{levelLabel} Test locked</h1>
@@ -399,10 +442,13 @@ export default function Test({ session, profile, track }) {
               <InfoTip accentHex={accentHex} text="A word is mastered once the app predicts you'll still recall it about three weeks from now. It can't be rushed - mastery comes from reviewing correctly over time, across multiple days." />
             </div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', marginBottom: '16px' }}>words mastered</div>
-            <ProgressBar pct={masteryPct} accentHex={accentHex} />
+            <ProgressBar pct={masteryPct} accentHex={accentHex} label="Words mastered at this level" />
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '12px', textAlign: 'center' }}>
               Unlocks at {Math.ceil(status.totalWords * TEST_UNLOCK_MASTERY_PCT)} mastered words
             </div>
+          </div>
+          <div style={{ display: 'flex', width: '100%', maxWidth: '360px', marginTop: '24px' }}>
+            <PrimaryButton onClick={onBack} accentHex={accentHex} icon={ArrowLeft}>Back home</PrimaryButton>
           </div>
         </div>
       </Shell>
@@ -412,10 +458,12 @@ export default function Test({ session, profile, track }) {
   if (phase === 'intro' && attempts.count >= 3 && !attempts.passed) {
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
+        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
         <div style={centerPanelStyle}>
           <StateIcon icon={Clock} accentHex="#D97706" />
           <h1 style={titleStyle}>No attempts left today</h1>
           <p style={bodyTextStyle}>You've used all 3 attempts. Review your words and come back tomorrow.</p>
+          <PrimaryButton onClick={onBack} accentHex={accentHex} icon={ArrowLeft}>Back home</PrimaryButton>
         </div>
       </Shell>
     )
@@ -424,6 +472,7 @@ export default function Test({ session, profile, track }) {
   if (phase === 'intro') {
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
+        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
         <div style={{ textAlign: 'center', margin: '34px 0 28px' }}>
           <StateIcon icon={GraduationCap} accentHex={accentHex} />
           <div style={{ color: accentHex, fontSize: '13px', fontWeight: 800, marginTop: '18px' }}>
@@ -457,8 +506,15 @@ export default function Test({ session, profile, track }) {
           </div>
         </div>
 
+        {!canStartTest(allVocab) && (
+          <p style={{ fontSize: '13px', color: 'var(--text-faint)', textAlign: 'center', margin: '0 0 14px' }}>
+            No words are available at this level right now, so the test can't start.
+          </p>
+        )}
         <div style={{ display: 'flex', gap: '12px' }}>
-          <PrimaryButton onClick={startTest} accentHex={accentHex} icon={ArrowRight}>Start test</PrimaryButton>
+          {canStartTest(allVocab)
+            ? <PrimaryButton onClick={startTest} accentHex={accentHex} icon={ArrowRight}>Start test</PrimaryButton>
+            : <GhostButton onClick={onBack} icon={ArrowLeft}>Back home</GhostButton>}
         </div>
       </Shell>
     )
@@ -468,7 +524,9 @@ export default function Test({ session, profile, track }) {
     if (saving) {
       return (
         <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
-          <div style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+          <div role="status" style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={srOnly}>Saving your result…</span>
             <StateIcon icon={GraduationCap} accentHex={accentHex} />
           </div>
         </Shell>
@@ -481,13 +539,18 @@ export default function Test({ session, profile, track }) {
 
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', gap: '12px' }}>
-          <div>
+        <div style={{ marginBottom: '18px' }}>
+          <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+        </div>
+        {/* Wraps on a phone: the bar shrinks to the space left over next to the
+            End-quiz button, and the two-button confirm drops to its own row. */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 180px', minWidth: 0 }}>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>
               <span style={{ fontWeight: 800, color: 'var(--text)' }}>{index + 1} / {questions.length}</span>
               <span style={{ marginLeft: '8px' }}>{progress}% complete</span>
             </div>
-            <div style={{ width: '220px' }}><ProgressBar pct={progress} accentHex={accentHex} /></div>
+            <div style={{ maxWidth: '220px' }}><ProgressBar pct={progress} accentHex={accentHex} label="Test progress" /></div>
           </div>
           {confirmingEnd ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
@@ -525,10 +588,12 @@ export default function Test({ session, profile, track }) {
           marginBottom: '18px',
           boxShadow: '0 22px 64px rgba(24,24,27,0.07)',
         }}>
-          <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '18px', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+          {/* The task line is the screen's heading while a question is up — the
+              only other h1 lives in the intro / result states. */}
+          <h1 style={{ margin: '0 0 18px', fontSize: '12px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
             {q.type === 'e_to_c' ? 'Choose the target-language word' : 'Choose the English meaning'}
-          </div>
-          <div style={{
+          </h1>
+          <div lang={isTargetPrompt ? langAttr(track.language) : undefined} style={{
             fontSize: isTargetPrompt ? '58px' : '28px',
             fontWeight: 800,
             color: 'var(--text)',
@@ -576,7 +641,12 @@ export default function Test({ session, profile, track }) {
               <button
                 key={optIdx}
                 onClick={() => handleSelect(option)}
-                disabled={hasAnswered}
+                // `aria-disabled`, not `disabled`: this screen auto-advances,
+                // and a real `disabled` on the focused option drops keyboard
+                // focus to <body> the instant the answer lands.
+                // `handleSelect()` already no-ops once answered.
+                aria-disabled={hasAnswered}
+                lang={isTargetOption ? langAttr(track.language) : undefined}
                 style={{
                   padding: '17px 20px',
                   borderRadius: '16px',
@@ -612,32 +682,48 @@ export default function Test({ session, profile, track }) {
           })}
         </div>
 
-        {selected !== null && (
-          <div style={{
-            marginTop: '18px',
-            padding: '15px 18px',
-            borderRadius: '16px',
-            textAlign: 'center',
-            background: selected === questions[index].correctAnswer ? 'var(--success-bg)' : 'var(--danger-bg)',
-            border: '1px solid ' + (selected === questions[index].correctAnswer ? 'var(--success-border)' : 'var(--danger-border)'),
-          }}>
-            <span style={{
-              fontSize: '14px',
-              fontWeight: 750,
-              color: selected === questions[index].correctAnswer ? '#2F9E6D' : '#DC2626',
+        {/* This screen auto-advances after 1.5s, so the verdict is gone before a
+            screen reader would reach it by navigation. The live region is
+            mounted for the whole testing phase — one that appears together with
+            its text announces nothing — and `assertive` because the message is
+            time-boxed. The wrong answer's word is spelled out here too: on
+            screen it is "highlighted", which says nothing without sight. */}
+        <div role="status" aria-live="assertive" aria-atomic="true">
+          {selected !== null && (
+            <div style={{
+              marginTop: '18px',
+              padding: '15px 18px',
+              borderRadius: '16px',
+              textAlign: 'center',
+              background: selected === questions[index].correctAnswer ? 'var(--success-bg)' : 'var(--danger-bg)',
+              border: '1px solid ' + (selected === questions[index].correctAnswer ? 'var(--success-border)' : 'var(--danger-border)'),
             }}>
-              {selected === questions[index].correctAnswer
-                ? 'Correct. Moving on...'
-                : 'Incorrect. The correct answer is highlighted.'}
-            </span>
-          </div>
-        )}
+              <span style={{
+                fontSize: '14px',
+                fontWeight: 750,
+                color: selected === questions[index].correctAnswer ? '#2F9E6D' : '#DC2626',
+              }}>
+                {selected === questions[index].correctAnswer
+                  ? 'Correct. Moving on...'
+                  : 'Incorrect. The correct answer is highlighted.'}
+              </span>
+              {selected !== questions[index].correctAnswer && (
+                <span style={srOnly}>
+                  {' It is '}
+                  <span lang={q.type === 'e_to_c' ? langAttr(track.language) : undefined}>{questions[index].correctAnswer}</span>
+                  .
+                </span>
+              )}
+            </div>
+          )}
+        </div>
       </Shell>
     )
   }
 
   return (
     <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
+      <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
       <div style={centerPanelStyle}>
         <StateIcon icon={lastResult.passed ? CheckCircle2 : RotateCcw} accentHex={lastResult.passed ? '#2F9E6D' : '#D97706'} />
         <h1 style={{ ...titleStyle, fontSize: '32px' }}>
@@ -667,6 +753,9 @@ export default function Test({ session, profile, track }) {
             <GhostButton onClick={() => { setPhase('intro'); loadStatus() }} icon={RotateCcw}>
               Try again
             </GhostButton>
+          )}
+          {(lastResult.passed || attempts.count >= 3) && (
+            <PrimaryButton onClick={onBack} accentHex={accentHex} icon={ArrowLeft}>Back home</PrimaryButton>
           )}
         </div>
       </div>
@@ -724,3 +813,6 @@ const cardStyle = {
   padding: '24px',
   boxShadow: '0 10px 32px rgba(24,24,27,0.055)',
 }
+
+// Visually hidden, still read aloud — the house pattern (see Study.jsx).
+const srOnly = { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }

@@ -14,11 +14,15 @@ import { ArrowLeft } from 'lucide-react'
 export default function ManhuaHeader({ label, title, current, total, pct, onBack, accentHex, fontFamily }) {
   return (
     <header style={{
-      position: 'sticky', top: 0, zIndex: 5,
+      // The shell <main> already pads the notch inset once (App.jsx), so this
+      // sticky header must NOT pad it again — it would sit ~47px low at
+      // scroll-0 on a notched phone. It offsets its PINNED position instead,
+      // which is the case the shell's padding can't cover: once stuck, the
+      // header is out of flow and would otherwise run under the status bar.
+      position: 'sticky', top: 'env(safe-area-inset-top, 0px)', zIndex: 5,
       background: 'color-mix(in srgb, ' + PAPER.page + ' 88%, transparent)',
       backdropFilter: 'saturate(140%) blur(12px)',
       WebkitBackdropFilter: 'saturate(140%) blur(12px)',
-      paddingTop: 'env(safe-area-inset-top, 0px)',
     }}>
       <div style={{
         maxWidth: COLUMN_MAX + 'px', margin: '0 auto',

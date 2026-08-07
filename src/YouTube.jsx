@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
+import { externalLinkProps } from './externalLink'
 
 function getVideoId(url) {
   if (!url) return null
@@ -137,9 +138,7 @@ function PlayerPanel({ video, accentHex, onClose }) {
         </div>
         <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexShrink: 0 }}>
           <a
-            href={video.video_url}
-            target="_blank"
-            rel="noopener noreferrer"
+            {...externalLinkProps(video.video_url)}
             style={{ fontSize: '12.5px', fontWeight: 650, color: accentHex, textDecoration: 'none' }}
           >
             Open on YouTube ↗
@@ -163,6 +162,8 @@ function PlayerPanel({ video, accentHex, onClose }) {
 export default function YouTube({ profile, track, onBack }) {
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [loadAttempt, setLoadAttempt] = useState(0)   // bumped by Retry to re-run the loader
   const [playing, setPlaying] = useState(null)   // video being watched inline
   const isMobile = useIsMobile()
 
@@ -173,6 +174,8 @@ export default function YouTube({ profile, track, onBack }) {
 
   useEffect(function() {
     async function loadVideos() {
+      setLoading(true)
+      setLoadError(false)
       const result = await supabase
         .from('youtube_recommendations')
         .select('*')
@@ -182,11 +185,16 @@ export default function YouTube({ profile, track, onBack }) {
         .eq('is_published', true)
         .order('sort_order', { ascending: true })
 
-      setVideos(result.data || [])
+      if (result.error) {
+        setVideos([])
+        setLoadError(true)
+      } else {
+        setVideos(result.data || [])
+      }
       setLoading(false)
     }
     loadVideos()
-  }, [track.language, track.system, track.current_level])
+  }, [track.language, track.system, track.current_level, loadAttempt])
 
   if (loading) {
     return (
@@ -214,8 +222,15 @@ export default function YouTube({ profile, track, onBack }) {
             color: 'var(--text-muted)',
             cursor: 'pointer',
             fontSize: '14px',
-            padding: 0,
-            marginBottom: '24px',
+            // Bare text is a ~19px-tall target. The padding gives the thumb a
+            // real one; the negative left margin keeps the label optically
+            // aligned with the page's left edge.
+            display: 'inline-flex',
+            alignItems: 'center',
+            minHeight: '44px',
+            padding: '0 12px',
+            marginLeft: '-12px',
+            marginBottom: '12px',
           }}
         >
           Back
@@ -230,7 +245,29 @@ export default function YouTube({ profile, track, onBack }) {
           </p>
         </div>
 
-        {videos.length === 0 && (
+        {loadError && (
+          <div style={{ textAlign: 'center', padding: '80px 0' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>▶</div>
+            <div style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text)', marginBottom: '8px' }}>
+              Couldn't load videos
+            </div>
+            <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '20px' }}>
+              Check your connection and try again.
+            </div>
+            <button
+              onClick={function() { setLoadAttempt(function(n) { return n + 1 }) }}
+              style={{
+                border: 'none', background: accentHex, color: '#fff',
+                borderRadius: '12px', padding: '11px 22px',
+                fontSize: '14px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!loadError && videos.length === 0 && (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>▶</div>
             <div style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text)', marginBottom: '8px' }}>

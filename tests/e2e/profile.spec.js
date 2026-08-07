@@ -54,7 +54,13 @@ test.describe('Profile — month in review', () => {
     });
 
     await page.goto('/profile');
-    await expect(page.getByRole('img', { name: /Reviews over the last 30 days/i })).toBeVisible();
+    // The guarantee is that the chart's shape is available as text, not that it
+    // uses any particular role. It was role="img" while the bars were inert; now
+    // each bar is a button (tapping one shows that day's count, which used to be
+    // hover-only and so unreachable on a phone), and role="img" would hide those
+    // buttons from assistive tech — an img's children are not exposed. The
+    // summary moved to the enclosing group's accessible name.
+    await expect(page.getByRole('group', { name: /Reviews over the last 30 days/i })).toBeVisible();
   });
 
   // The reset used to call the RPC without p_reset_streak, and that argument
@@ -62,7 +68,10 @@ test.describe('Profile — month in review', () => {
   // the account streak. These pin the scope.
   test('reset names the language it clears and leaves the others alone', async ({ page }) => {
     await page.goto('/profile');
-    await expect(page.getByText('Reset a language')).toBeVisible();
+    // Exact: the delete-account panel below also refers to "Reset a language"
+    // (pointing people at the non-destructive option), so a substring match now
+    // finds two nodes.
+    await expect(page.getByText('Reset a language', { exact: true })).toBeVisible();
     await expect(page.getByText(/Clears flashcards, tests, story reads and unlocks for/i)).toBeVisible();
     await expect(page.getByText(/Your other\s+languages are untouched/i)).toBeVisible();
   });

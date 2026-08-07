@@ -98,7 +98,11 @@ function pickPrimary(weakCount, grammarDueCount) {
 // `drills` never repeats `primary`, so the hero and the grid can never show the
 // same drill twice — that duplication is what made the old two-grid layout read
 // as a pile rather than a list.
-export function buildPracticePlan({ script, cjk = false, weakCount = 0, grammarDueCount = 0 } = {}) {
+//   speech  — whether browser speech recognition is usable here. False in the
+//             store apps' webviews (see speechSupport.js), where the Speaking
+//             drill can only show a "not available" screen — so the hub simply
+//             doesn't offer it rather than advertising a dead end.
+export function buildPracticePlan({ script, cjk = false, speech = true, weakCount = 0, grammarDueCount = 0 } = {}) {
   const primary = pickPrimary(weakCount, grammarDueCount)
   const scriptDrill = SCRIPT_DRILLS[script] || null
 
@@ -106,7 +110,7 @@ export function buildPracticePlan({ script, cjk = false, weakCount = 0, grammarD
     weakDrill(weakCount),
     grammarDrill(grammarDueCount),
     { key: 'listen', title: 'Listening', desc: 'Hear a word, pick it', badge: null, tone: 'accent' },
-    { key: 'speak', title: 'Speaking', desc: 'Say it aloud, get it checked', badge: null, tone: 'accent' },
+    speech ? { key: 'speak', title: 'Speaking', desc: 'Say it aloud, get it checked', badge: null, tone: 'accent' } : null,
     { key: 'writing', title: 'Writing', desc: 'Type words from memory', badge: null, tone: 'accent' },
     { key: 'fillblank', title: 'Fill in the blank', desc: 'Complete the sentence', badge: null, tone: 'accent' },
     { key: 'builder', title: 'Sentence builder', desc: 'Reorder the words', badge: null, tone: 'accent' },

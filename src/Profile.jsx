@@ -15,6 +15,7 @@ import InfoTip from './InfoTip'
 import StuckWordCoach from './StuckWordCoach'
 import { STUCK_LAPSES } from './stuckWord'
 import { BRAND_URL } from './brand'
+import { confirmWordOk, forgetDeviceData, DELETE_CONFIRM_WORD } from './accountDeletion'
 import {
   ArrowLeft, Layers, LogOut, RotateCcw, Save,
   Sparkles, Target, CalendarCheck, Award, Share2, Check, AlertTriangle, TrendingUp, BookOpen, Trash2,
@@ -94,6 +95,12 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   const [confirmingRemove, setConfirmingRemove] = useState(false)
   const [removing, setRemoving] = useState(false)
   const [removeError, setRemoveError] = useState('')
+  // Account deletion (a store requirement — see accountDeletion.js). A first
+  // tap arms the panel, typing the word confirms it, the RPC does the rest.
+  const [deleteArmed, setDeleteArmed] = useState(false)
+  const [deleteWord, setDeleteWord] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
   const [loading, setLoading] = useState(true)
   const [activity, setActivity] = useState({})
   const [shared, setShared] = useState(false)
@@ -229,6 +236,29 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   }, [session.user.id])
 
   const targetTrack = tracks.find(t => t.language === resetTarget) || track
+
+  const deleteAccount = async () => {
+    if (!deleteArmed) {
+      setDeleteArmed(true)
+      setDeleteError('')
+      return
+    }
+    if (!confirmWordOk(deleteWord)) return
+    setDeleting(true)
+    setDeleteError('')
+    const { error } = await supabase.rpc('delete_my_account')
+    if (error) {
+      setDeleteError(error.message)
+      setDeleting(false)
+      return
+    }
+    // Server side is gone; clear this device's copy (caches AND the write
+    // outbox — queued grades for a dead account would fail forever), drop the
+    // local session, and start the app over from the top.
+    await forgetDeviceData()
+    try { await supabase.auth.signOut() } catch { /* session already dead */ }
+    window.location.assign('/')
+  }
 
   const resetProgress = async () => {
     if (!confirmingReset) {
@@ -454,7 +484,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
               onClick={shareReport}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '7px',
-                minHeight: '34px', padding: '0 13px', borderRadius: '10px',
+                minHeight: '44px', padding: '0 13px', borderRadius: '10px',
                 border: '1px solid ' + (shared ? '#2F9E6D' : 'var(--border)'),
                 background: shared ? 'var(--success-bg)' : 'var(--surface)',
                 color: shared ? '#2F9E6D' : 'var(--text-muted)',
@@ -469,15 +499,22 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
           <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: 1.5 }}>
             {monthHeadline(mr)}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+          {/* Three across on a phone leaves ~100px a tile, which wraps
+              "Words mastered" onto three lines. Two across, with the third
+              spanning the row below. */}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '12px' }}>
             {[
               { label: 'Active days', value: activeDays, color: accentHex },
               { label: 'Reviews', value: cardsThisMonth, color: '#3E63DD' },
-              { label: 'Words mastered', value: stats.lifetimeMastered || 0, color: '#2F9E6D' },
+              { label: 'Words mastered', value: stats.lifetimeMastered || 0, color: '#2F9E6D', wide: true },
             ].map(s => (
-              <div key={s.label} style={{ padding: '14px 12px', borderRadius: '14px', background: s.color + '0D', border: '1px solid ' + s.color + '22', textAlign: 'center' }}>
+              <div key={s.label} style={{
+                padding: '14px 12px', borderRadius: '14px', background: s.color + '0D',
+                border: '1px solid ' + s.color + '22', textAlign: 'center',
+                gridColumn: isMobile && s.wide ? '1 / -1' : 'auto',
+              }}>
                 <div style={{ fontSize: '26px', fontWeight: 800, color: s.color, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 650 }}>{s.label}</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 650 }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -749,6 +786,79 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         </Panel>
       )}
 
+      {/* Account deletion — self-serve and in-app, as both app stores require.
+          Total and permanent: the delete_my_account RPC removes every owned
+          row and the login itself. One notch sterner than the reset panel:
+          armed by a tap, confirmed by typing the word. */}
+      <Panel danger>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '18px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Delete account</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
+              Permanently deletes your account and everything in it — flashcards, review
+              history, story progress, test results and settings, for every language —
+              and your login with it. <strong style={{ color: '#DC2626', fontWeight: 700 }}>This
+              cannot be undone.</strong> For a fresh start without losing your account,
+              use “Reset a language” above instead.
+            </div>
+          </div>
+          <SmallButton
+            onClick={deleteAccount}
+            danger
+            filled={deleteArmed}
+            disabled={deleting || (deleteArmed && !confirmWordOk(deleteWord))}
+            icon={Trash2}
+          >
+            {deleting ? 'Deleting' : deleteArmed ? 'Delete forever' : 'Delete account'}
+          </SmallButton>
+        </div>
+
+        {deleteArmed && (
+          <div style={{ marginTop: '14px' }}>
+            <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px' }}>
+              Type <strong style={{ color: '#DC2626', fontWeight: 700 }}>{DELETE_CONFIRM_WORD}</strong> to
+              confirm you want your account gone for good.
+            </label>
+            <input
+              type="text"
+              value={deleteWord}
+              onChange={e => setDeleteWord(e.target.value)}
+              disabled={deleting}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              aria-label={'Type ' + DELETE_CONFIRM_WORD + ' to confirm account deletion'}
+              style={{
+                width: '100%', maxWidth: '260px', boxSizing: 'border-box',
+                padding: '10px 12px', borderRadius: '10px',
+                border: '1px solid var(--danger-border)',
+                background: 'var(--surface)', color: 'var(--text)',
+                fontSize: '14px', fontFamily: 'Inter, sans-serif',
+              }}
+            />
+          </div>
+        )}
+
+        {deleteArmed && !deleting && (
+          <button
+            onClick={() => { setDeleteArmed(false); setDeleteWord(''); setDeleteError('') }}
+            style={{
+              marginTop: '12px', background: 'none', border: 'none',
+              padding: 0, color: 'var(--text-muted)', cursor: 'pointer',
+              fontSize: '13px', fontFamily: 'Inter, sans-serif', display: 'block',
+            }}
+          >
+            Cancel — keep my account
+          </button>
+        )}
+
+        {deleteError && (
+          <div style={{ fontSize: '12px', color: '#DC2626', marginTop: '10px', lineHeight: 1.4 }}>
+            {deleteError}
+          </div>
+        )}
+      </Panel>
+
       <button
         onClick={() => supabase.auth.signOut()}
         style={{
@@ -805,6 +915,15 @@ function cellColor(count, accentHex) {
 }
 
 const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+// The heatmap cell and the daily bar both used to carry their day's detail in a
+// `title` alone — which on a phone means the detail does not exist. This is the
+// text both of them now show on tap (and hand to a screen reader).
+function dayDetail(ds, count, noun) {
+  const when = new Date(ds + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  if (!count) return when + ' — no ' + noun + 's'
+  return when + ' — ' + count + ' ' + noun + (count === 1 ? '' : 's')
+}
 
 // Known-Word Map — reading reach across levels, as calm stacked bars. Each
 // level shows how many words you've mastered / know / are learning / haven't met
@@ -872,11 +991,14 @@ export function KnownWordMap({ map, accentHex, language, system }) {
 
 export function StudyCalendar({ activity, accentHex }) {
   const isMobile = useIsMobile()
+  const [picked, setPicked] = useState(null)
   const numWeeks = isMobile ? 17 : 24
   const weeks = buildWeeks(numWeeks)
   const today = todayStr()
   const totalDays = Object.keys(activity).length
-  const cell = isMobile ? 13 : 14
+  // A slightly bigger cell on mobile: 17 weeks × (16 + 3) still fits a 360px
+  // screen, and it is the only thing that makes these cells tappable at all.
+  const cell = isMobile ? 16 : 14
   const gap = 3
 
   return (
@@ -894,23 +1016,44 @@ export function StudyCalendar({ activity, accentHex }) {
           return (
             <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: gap + 'px', position: 'relative', flexShrink: 0 }}>
               {firstOfMonth && (
-                <span style={{ position: 'absolute', top: '-15px', left: 0, fontSize: '9px', color: 'var(--text-faint)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                <span style={{ position: 'absolute', top: '-17px', left: 0, fontSize: '12px', color: 'var(--text-faint)', fontWeight: 600, whiteSpace: 'nowrap' }}>
                   {MONTH_ABBR[parseInt(firstOfMonth.ds.slice(5, 7), 10) - 1]}
                 </span>
               )}
-              {col.map((c) => (
-                <div key={c.ds} title={c.ds + (activity[c.ds] ? ' · ' + activity[c.ds] + ' cards' : '')}
-                  style={{
-                    width: cell + 'px', height: cell + 'px', borderRadius: '3px',
-                    background: c.future ? 'transparent' : cellColor(activity[c.ds], accentHex),
-                    border: c.ds === today ? '1.5px solid ' + accentHex : (c.future ? 'none' : '1px solid rgba(0,0,0,0.04)'),
-                    boxSizing: 'border-box',
-                  }}
-                />
-              ))}
+              {col.map((c) => {
+                const cellStyle = {
+                  width: cell + 'px', height: cell + 'px', borderRadius: '3px', padding: 0,
+                  background: c.future ? 'transparent' : cellColor(activity[c.ds], accentHex),
+                  border: c.ds === today ? '1.5px solid ' + accentHex : (c.future ? 'none' : '1px solid rgba(0,0,0,0.04)'),
+                  boxSizing: 'border-box',
+                }
+                if (c.future) return <div key={c.ds} style={cellStyle} />
+                return (
+                  <button
+                    key={c.ds}
+                    onClick={() => setPicked(picked === c.ds ? null : c.ds)}
+                    aria-label={dayDetail(c.ds, activity[c.ds], 'card')}
+                    style={{
+                      ...cellStyle,
+                      cursor: 'pointer',
+                      outline: picked === c.ds ? '2px solid ' + accentHex : 'none',
+                      outlineOffset: '1px',
+                    }}
+                  />
+                )
+              })}
             </div>
           )
         })}
+      </div>
+
+      {/* The tapped day's detail. `title` alone never reaches a touch device,
+          and this date + count exists nowhere else in the UI. */}
+      <div aria-live="polite" style={{
+        minHeight: '19px', marginTop: '10px',
+        fontSize: '13px', fontWeight: 650, color: picked ? 'var(--text-muted)' : 'var(--text-faint)',
+      }}>
+        {picked ? dayDetail(picked, activity[picked], 'card') : 'Tap a day to see its reviews.'}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', marginTop: '12px', fontSize: '11px', color: 'var(--text-faint)' }}>
@@ -930,6 +1073,7 @@ export function StudyCalendar({ activity, accentHex }) {
 // all count as a successful recall.
 export function ReviewAccuracy({ stats, accentHex }) {
   const isMobile = useIsMobile()
+  const [picked, setPicked] = useState(null)
   if (stats.total === 0) {
     return (
       <div>
@@ -980,21 +1124,38 @@ export function ReviewAccuracy({ stats, accentHex }) {
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 650, marginBottom: '10px' }}>Last 30 days</div>
-          <div role="img" aria-label={last30A11yLabel(last30.map(d => d.count))} style={{ display: 'flex', alignItems: 'flex-end', gap: gap + 'px', height: maxBarH + 'px' }}>
+          {/* Each bar is a full-height button so the thumb has something to aim
+              at, and the tapped day's count is written out below — `title` alone
+              never fires on touch. */}
+          <div role="group" aria-label={last30A11yLabel(last30.map(d => d.count))} style={{ display: 'flex', alignItems: 'flex-end', gap: gap + 'px', height: maxBarH + 'px' }}>
             {last30.map(d => (
-              <div
+              <button
                 key={d.ds}
-                title={d.ds + (d.count > 0 ? ' · ' + d.count + ' review' + (d.count === 1 ? '' : 's') : '')}
+                onClick={() => setPicked(picked === d.ds ? null : d.ds)}
+                aria-label={dayDetail(d.ds, d.count, 'review')}
                 style={{
-                  width: barW + 'px',
+                  width: barW + 'px', height: '100%', padding: 0, border: 'none',
+                  background: 'none', cursor: 'pointer', flexShrink: 0,
+                  display: 'flex', alignItems: 'flex-end',
+                }}
+              >
+                <span style={{
+                  width: '100%',
                   height: Math.max(2, Math.round((d.count / max) * maxBarH)) + 'px',
                   borderRadius: '2px',
                   background: d.count > 0 ? accentHex : 'var(--border)',
-                  opacity: d.count > 0 ? 0.85 : 0.5,
-                  flexShrink: 0,
-                }}
-              />
+                  opacity: picked === d.ds ? 1 : (d.count > 0 ? 0.85 : 0.5),
+                  outline: picked === d.ds ? '1.5px solid ' + accentHex : 'none',
+                  outlineOffset: '1px',
+                }} />
+              </button>
             ))}
+          </div>
+          <div aria-live="polite" style={{
+            minHeight: '19px', marginTop: '10px',
+            fontSize: '13px', fontWeight: 650, color: picked ? 'var(--text-muted)' : 'var(--text-faint)',
+          }}>
+            {picked ? dayDetail(picked, stats.days[picked] || 0, 'review') : 'Tap a bar to see that day.'}
           </div>
         </div>
       </div>
@@ -1074,7 +1235,7 @@ function SmallButton({ children, onClick, accentHex, filled, danger, disabled, i
       onClick={onClick}
       disabled={disabled}
       style={{
-        minHeight: '36px',
+        minHeight: '44px',
         padding: '0 14px',
         borderRadius: '10px',
         border: '1px solid ' + (danger ? 'var(--danger-border)' : filled ? color : 'var(--border)'),

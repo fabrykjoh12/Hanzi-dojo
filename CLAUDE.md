@@ -41,7 +41,8 @@ still get full detail — they are read once, on purpose.
 | [`docs/PM-BOARD.md`](docs/PM-BOARD.md) | Current milestone, ownership, merge order | Coordinating parallel work |
 | [`docs/CHANGELOG.md`](docs/CHANGELOG.md) | Session-by-session history (reference only) | Archaeology |
 | [`docs/TTS.md`](docs/TTS.md) | Voice config, pinyin phoneme pinning, the audio pipeline | Touching TTS or regenerating audio |
-| [`docs/RELEASE-CHECKLIST.md`](docs/RELEASE-CHECKLIST.md) | Pre-release gate | Cutting a release |
+| [`docs/RELEASE-CHECKLIST.md`](docs/RELEASE-CHECKLIST.md) | Per-merge release gate | Cutting a release |
+| [`docs/PRE-RELEASE-CHECKLIST.md`](docs/PRE-RELEASE-CHECKLIST.md) | The one-time launch list — **§0 is the mobile/store work** | Planning any launch work |
 | [`docs/TESTERS.md`](docs/TESTERS.md) | Who tests, and how they're briefed | Organising a test round |
 | [`docs/DISCORD.md`](docs/DISCORD.md) | Server layout, webhooks, the sync workflows | Changing anything Discord-facing |
 | [`docs/DOJO-BRIDGE.md`](docs/DOJO-BRIDGE.md) | The `tools/` bridge | Working on DojoHQ |
@@ -69,8 +70,27 @@ commit and PR titles.
 
 ## 1. Purpose and philosophy
 
-Hanzi-dojo is a free language-learning web app built on the two methods that
+Hanzi-dojo is a free language-learning app built on the two methods that
 actually work: **FSRS spaced repetition** and **level-matched immersion**.
+
+**Distribution: mobile apps, decided 2026-08-07.** The product ships as a
+**native mobile app on the Google Play Store and Apple App Store**, as soon as
+possible — that is the release we are building toward. The plan of record is to
+**wrap the existing React SPA with Capacitor** (no rewrite; `src/` stays
+exactly as it is and the same code runs in the store apps). The web deployment
+survives only as the public/legal surface — landing, `/privacy` `/terms`
+`/support`, public story links — which the stores themselves require; don't
+invest in web-only distribution (PWA install flows, SEO) beyond that. The full
+store-release work list lives in `docs/PRE-RELEASE-CHECKLIST.md` §0. Two rules
+this changes, permanently:
+
+- **"Merged to `main`" no longer means "users have it."** Native releases go
+  through store review and a deliberate release cut. The web deploy continues
+  (it is the same build), but the learners are in the apps.
+- **Every feature must work inside an iOS WKWebView / Android WebView.** No
+  Web-Push-only or Web-Speech-only paths without a native plugin or a graceful
+  fallback; audio, storage and OAuth behave differently in a webview — check
+  before assuming browser behavior.
 
 **Scope: Chinese (HSK 3.0) only.** The two non-Chinese tracks are **frozen** —
 they stay in the app and keep working for anyone already on them, but they are

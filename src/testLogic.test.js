@@ -10,9 +10,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // the chain), and getTrackCards is mocked directly so its own DB-level
 // level-scoping (already covered by data.test.js / the level-scope audit)
 // doesn't need to be re-simulated here.
-const { vocabResult, unlockResult, trackCardsMock } = vi.hoisted(() => ({
+const { vocabResult, unlockResult, attemptsResult, trackCardsMock } = vi.hoisted(() => ({
   vocabResult: { data: [{ id: 'a' }, { id: 'b' }], error: null },
   unlockResult: { data: null, error: null },
+  attemptsResult: { data: [], error: null },
   trackCardsMock: vi.fn(),
 }))
 
@@ -32,13 +33,17 @@ vi.mock('./supabase', () => ({
     from: (table) => {
       if (table === 'vocabulary') return makeChain(vocabResult)
       if (table === 'level_unlocks') return makeChain(unlockResult)
+      if (table === 'test_attempts') return makeChain(attemptsResult)
       throw new Error('unexpected table in test: ' + table)
     },
   },
 }))
 vi.mock('./data', () => ({ getTrackCards: trackCardsMock }))
 
-import { normalizePinyin, checkAnswer, lenientPinyin, getTestStatus } from './testLogic'
+import {
+  normalizePinyin, checkAnswer, lenientPinyin,
+  getTestStatus, getAttemptsToday, resolveTestStatus, canStartTest,
+} from './testLogic'
 
 describe('normalizePinyin', () => {
   it('strips tone marks, spaces and case', () => {
@@ -138,5 +143,109 @@ describe('getTestStatus — level-scoped mastery math excludes NULL-level (dicti
     const status = await getTestStatus('user1', track)
     expect(status.totalWords).toBe(2) // vocab a, b only
     expect(status.masteredCount).toBe(1) // only a; z (null-level) never entered the set
+  })
+})
+
+describe('resolveTestStatus — error vs empty vs locked', () => {
+  const okVocab = { data: [{ id: 'a' }, { id: 'b' }], error: null }
+  const noUnlock = { data: null, error: null }
+
+  it('surfaces a failed vocabulary query as an error, never a fabricated lock', () => {
+    const status = resolveTestStatus({ data: null, error: { message: 'network' } }, [], noUnlock)
+    expect(status.error).toBe(true)
+    expect(status.testUnlocked).toBe(false)
+    expect(status.totalWords).toBe(0)
+  })
+
+  it('surfaces a failed unlock query as an error too', () => {
+    const status = resolveTestStatus(okVocab, [], { data: null, error: { message: 'network' } })
+    expect(status.error).toBe(true)
+  })
+
+  it('a genuinely empty level is NOT an error — it is locked at 0 / 0', () => {
+    const status = resolveTestStatus({ data: [], error: null }, [], noUnlock)
+    expect(status.error).toBe(false)
+    expect(status.totalWords).toBe(0)
+    expect(status.masteredPct).toBe(0)
+    expect(status.testUnlocked).toBe(false)
+  })
+
+  it('computes the real mastery math when every query succeeds', () => {
+    const status = resolveTestStatus(okVocab, [{ vocab_id: 'a', stability: 999 }], noUnlock)
+    expect(status.error).toBe(false)
+    expect(status.totalWords).toBe(2)
+    expect(status.masteredCount).toBe(1)
+    expect(status.masteredPct).toBe(0.5)
+    expect(status.testUnlocked).toBe(false)
+  })
+
+  it('a previously passed level stays unlocked regardless of mastery', () => {
+    const status = resolveTestStatus(okVocab, [], { data: { level: 3 }, error: null })
+    expect(status.error).toBe(false)
+    expect(status.levelPassed).toBe(true)
+    expect(status.testUnlocked).toBe(true)
+  })
+})
+
+describe('getTestStatus — error propagation', () => {
+  const track = { language: 'chinese', system: 'pinyin', current_level: 3 }
+
+  beforeEach(() => {
+    trackCardsMock.mockReset()
+    vocabResult.error = null
+  })
+
+  it('returns error: true when the vocabulary query fails', async () => {
+    trackCardsMock.mockResolvedValue([])
+    vocabResult.error = { message: 'fetch failed' }
+    const status = await getTestStatus('user1', track)
+    expect(status.error).toBe(true)
+    expect(status.testUnlocked).toBe(false)
+    vocabResult.error = null
+  })
+
+  it('returns error: true when a query rejects outright', async () => {
+    trackCardsMock.mockRejectedValue(new Error('offline'))
+    const status = await getTestStatus('user1', track)
+    expect(status.error).toBe(true)
+  })
+
+  it('returns error: false on the happy path', async () => {
+    trackCardsMock.mockResolvedValue([])
+    const status = await getTestStatus('user1', track)
+    expect(status.error).toBe(false)
+  })
+})
+
+describe('getAttemptsToday — error propagation', () => {
+  const track = { language: 'chinese', system: 'pinyin', current_level: 3 }
+
+  it('flags a failed query instead of fabricating 0 attempts', async () => {
+    attemptsResult.error = { message: 'fetch failed' }
+    attemptsResult.data = null
+    const attempts = await getAttemptsToday('user1', track)
+    expect(attempts.error).toBe(true)
+    attemptsResult.error = null
+    attemptsResult.data = []
+  })
+
+  it('counts attempts and passes on the happy path', async () => {
+    attemptsResult.data = [{ id: 't1', passed: false }, { id: 't2', passed: true }]
+    const attempts = await getAttemptsToday('user1', track)
+    expect(attempts.error).toBe(false)
+    expect(attempts.count).toBe(2)
+    expect(attempts.passed).toBe(true)
+    attemptsResult.data = []
+  })
+})
+
+describe('canStartTest — the quiz needs a non-empty vocab pool', () => {
+  it('rejects an empty or missing pool (would crash on questions[0])', () => {
+    expect(canStartTest([])).toBe(false)
+    expect(canStartTest(null)).toBe(false)
+    expect(canStartTest(undefined)).toBe(false)
+  })
+  it('accepts a pool with at least one word', () => {
+    expect(canStartTest([{ id: 'a' }])).toBe(true)
   })
 })

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { MoreHorizontal, X } from 'lucide-react'
 import { languageTheme, ink } from './languageTheme'
 import { MOBILE_PRIMARY, MOBILE_MORE, ADMIN_NAV } from './navConfig'
+import { trapDialogFocus } from './dialogFocus'
 
 const MUTED = 'var(--text-muted)'
 
@@ -10,11 +11,13 @@ const MUTED = 'var(--text-muted)'
 const PRIMARY = MOBILE_PRIMARY
 const MORE_ITEMS = MOBILE_MORE
 
-function Tab({ icon: Icon, label, active, accentHex, onClick }) {
+function Tab({ icon: Icon, label, active, accentHex, onClick, expanded, hasPopup }) {
   return (
     <button
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
+      aria-expanded={expanded}
+      aria-haspopup={hasPopup}
       className={'hd-tab hd-press' + (active ? ' is-active' : '')}
       style={{
         flex: 1, background: 'none', border: 'none', cursor: 'pointer',
@@ -92,7 +95,11 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
               animation: 'hd-fade-in 200ms ease both',
             }}
           />
-          <div ref={sheetRef} role="dialog" aria-modal="true" aria-label="More menu" tabIndex={-1} style={{
+          {/* `aria-modal` hides the rest of the page from assistive tech, so Tab
+              must not be able to leave the sheet — without the trap the next Tab
+              lands on a page the screen reader can no longer see. */}
+          <div ref={sheetRef} role="dialog" aria-modal="true" aria-label="More menu" tabIndex={-1}
+            onKeyDown={(e) => trapDialogFocus(e, sheetRef.current)} style={{
             outline: 'none',
             position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 41,
             background: 'var(--surface)',
@@ -114,8 +121,15 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
               }}>
                 More
               </span>
+              {/* 44x44 thumb target. The negative margin cancels the growth back
+                  to the old 28px box in layout, so the X sits exactly where it did
+                  and the row keeps its height — only the hit area gets bigger. */}
               <button onClick={() => setMoreOpen(false)} aria-label="Close menu" className="hd-press"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex' }}>
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  width: '44px', height: '44px', margin: '-8px -8px -8px 0',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
                 <X size={20} strokeWidth={1.9} color={MUTED} />
               </button>
             </div>
@@ -157,7 +171,7 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
       )}
 
       {/* Fixed bottom navigation bar */}
-      <nav style={{
+      <nav aria-label="Primary" style={{
         position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 30,
         display: 'flex', alignItems: 'stretch',
         background: 'var(--surface-glass)', backdropFilter: 'blur(14px)',
@@ -182,7 +196,8 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
         {PRIMARY.map(item => (
           <Tab key={item.key} icon={item.icon} label={item.label} accentHex={accentInk} active={view === item.key} onClick={() => go(item.key)} />
         ))}
-        <Tab icon={MoreHorizontal} label="More" accentHex={accentInk} active={moreActive} onClick={() => setMoreOpen(o => !o)} />
+        <Tab icon={MoreHorizontal} label="More" accentHex={accentInk} active={moreActive}
+          expanded={moreOpen} hasPopup="dialog" onClick={() => setMoreOpen(o => !o)} />
       </nav>
     </>
   )

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { languageTheme, languageList, availableLanguages, isCjk, DEFAULT_LANGUAGE } from './languageTheme'
+import { languageTheme, languageList, availableLanguages, isCjk, langAttr, UI_LANG, DEFAULT_LANGUAGE } from './languageTheme'
 import { getLevelLabel, getSystemLabel, getLevels } from './utils'
 
 describe('languageTheme', () => {
@@ -62,5 +62,29 @@ describe('russian level system (CEFR)', () => {
 
   it('has six levels', () => {
     expect(getLevels('russian', 'russian')).toEqual([1, 2, 3, 4, 5, 6])
+  })
+})
+
+describe('langAttr', () => {
+  it('gives every language a real BCP-47 tag — a screen reader needs one per script', () => {
+    expect(langAttr('chinese')).toBe('zh-Hans')
+    expect(langAttr('japanese')).toBe('ja')
+    expect(langAttr('russian')).toBe('ru')
+  })
+
+  it('never returns undefined for a supported language', () => {
+    for (const l of languageList()) {
+      expect(typeof langAttr(l.key)).toBe('string')
+      expect(langAttr(l.key).length).toBeGreaterThan(0)
+    }
+  })
+
+  it('falls back to the default language for an unknown key, like the rest of the theme', () => {
+    expect(langAttr('klingon')).toBe(langAttr(DEFAULT_LANGUAGE))
+    expect(langAttr(undefined)).toBe(langAttr(DEFAULT_LANGUAGE))
+  })
+
+  it('tags English UI text so a tagged subtree does not swallow it', () => {
+    expect(UI_LANG).toBe('en')
   })
 })
