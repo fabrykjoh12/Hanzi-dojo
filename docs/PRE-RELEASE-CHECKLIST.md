@@ -113,13 +113,27 @@ columns all exist — older "pending migration" doc entries were stale.
 
 - [ ] **Audio in WKWebView**: flashcard TTS, story narration, slow variants —
       real-device pass on iOS; autoplay policies differ from Safari.
-- [ ] **Speaking drill**: Web Speech API is absent in WKWebView — confirm the
-      existing "not supported" fallback fires there (it keys off browser
-      detection today, not capability).
-- [ ] **Offline launch**: airplane-mode cold start must not white-screen
-      (reviewers test this). Local assets + cached data should carry it.
-- [ ] **hanzi-writer stroke data** loads from CDN at runtime — fine online;
-      decide whether to bundle it for offline stroke animations (optional).
+- [x] **Speaking drill — DONE 2026-08-07.** The gate was "does the
+      constructor exist", and WKWebView/Android WebView both expose
+      `webkitSpeechRecognition` without implementing it — so in the apps the
+      drill would have rendered and then failed on the first tap.
+      `speechSupport.js` decides availability (constructor AND not in the
+      native shell), the Practice hub omits the drill entirely when it isn't
+      usable, and `service-not-allowed` no longer masquerades as a blocked
+      microphone. 11 specs. *A real native speech plugin stays a §5 item.*
+- [x] **Offline launch — DONE 2026-08-07** (`tests/e2e/offline-start.spec.js`).
+      Models the store build honestly: assets are bundled and always load, so
+      the spec kills the backend rather than the whole network (a blanket
+      offline flag stops the test server serving `index.html`, a state the
+      native app can't be in). Asserts the shell renders signed-in and
+      signed-out, and that the signed-in case shows honest copy instead of a
+      false success state.
+- [x] **hanzi-writer stroke data — DONE 2026-08-07.** Decided: cache rather
+      than bundle. `strokeData.js` wraps the library's loader cache-first
+      against IndexedDB, so any character viewed once animates offline and
+      repeat views stop hitting the CDN — without adding megabytes of stroke
+      JSON to the app. Fully best-effort (blocked storage, failed write, 404,
+      no network all fall back to the previous behaviour). 7 specs.
 - [ ] **localStorage/IndexedDB persistence** in the app context — durable
       data is in Supabase by design, so eviction is survivable; just verify
       prefs/caches degrade quietly (the guards in §6.5 already exist).
