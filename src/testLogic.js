@@ -53,39 +53,33 @@ export function checkAnswer(userInput, vocab) {
   return false
 }
 
-// Returns { masteredCount, totalWords, masteredPct, testUnlocked, levelPassed }
-export async function getTestStatus(userId, track) {
-  const [vocabResult, levelCards, unlockResult] = await Promise.all([
-    supabase
-      .from('vocabulary')
-      .select('id')
-      .eq('language', track.language)
-      .eq('system', track.system)
-      .eq('level', track.current_level)
-      .eq('is_active', true),
-    getTrackCards(userId, track, {
-      level: track.current_level,
-      columns: 'vocab_id, stability',
-    }),
-    supabase
-      .from('level_unlocks')
-      .select('level')
-      .eq('user_id', userId)
-      .eq('language', track.language)
-      .eq('system', track.system)
-      .eq('level', track.current_level)
-      .maybeSingle(),
-  ])
+// Pure: fold the three raw query results into the status object the Test
+// screen renders. A failed vocabulary or unlock query surfaces as
+// { error: true } so the screen can offer a retry — it must never be mistaken
+// for a genuine "0 / 0 words mastered" locked state. A query that succeeds
+// with no rows is NOT an error: an empty level really is locked at 0 / 0.
+export function resolveTestStatus(vocabResult, levelCards, unlockResult) {
+  if ((vocabResult && vocabResult.error) || (unlockResult && unlockResult.error)) {
+    return {
+      error: true,
+      masteredCount: 0,
+      totalWords: 0,
+      masteredPct: 0,
+      levelPassed: false,
+      testUnlocked: false,
+    }
+  }
 
-  const vocab = vocabResult.data
+  const vocab = vocabResult && vocabResult.data
   const vocabIds = new Set((vocab || []).map(v => v.id))
 
   const totalWords = vocabIds.size
-  const masteredCount = levelCards.filter(c => isMastered(c)).length
+  const masteredCount = (levelCards || []).filter(c => isMastered(c)).length
   const masteredPct = totalWords > 0 ? masteredCount / totalWords : 0
-  const levelPassed = Boolean(unlockResult.data)
+  const levelPassed = Boolean(unlockResult && unlockResult.data)
 
   return {
+    error: false,
     masteredCount,
     totalWords,
     masteredPct,
@@ -94,11 +88,50 @@ export async function getTestStatus(userId, track) {
   }
 }
 
-// Count today's attempts and check if any passed
+// Pure: a test can only be generated from a non-empty vocab pool — starting
+// with zero words would produce an empty question list and crash the quiz on
+// the first question dereference.
+export function canStartTest(vocabPool) {
+  return Array.isArray(vocabPool) && vocabPool.length > 0
+}
+
+// Returns { error, masteredCount, totalWords, masteredPct, testUnlocked, levelPassed }
+export async function getTestStatus(userId, track) {
+  try {
+    const [vocabResult, levelCards, unlockResult] = await Promise.all([
+      supabase
+        .from('vocabulary')
+        .select('id')
+        .eq('language', track.language)
+        .eq('system', track.system)
+        .eq('level', track.current_level)
+        .eq('is_active', true),
+      getTrackCards(userId, track, {
+        level: track.current_level,
+        columns: 'vocab_id, stability',
+      }),
+      supabase
+        .from('level_unlocks')
+        .select('level')
+        .eq('user_id', userId)
+        .eq('language', track.language)
+        .eq('system', track.system)
+        .eq('level', track.current_level)
+        .maybeSingle(),
+    ])
+
+    return resolveTestStatus(vocabResult, levelCards, unlockResult)
+  } catch {
+    return resolveTestStatus({ data: null, error: true }, [], { data: null, error: null })
+  }
+}
+
+// Count today's attempts and check if any passed. A failed query surfaces as
+// { error: true } — a fabricated count of 0 would silently hand out attempts.
 export async function getAttemptsToday(userId, track) {
   const today = new Date().toISOString().slice(0, 10)
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('test_attempts')
     .select('id, passed')
     .eq('user_id', userId)
@@ -110,5 +143,6 @@ export async function getAttemptsToday(userId, track) {
   return {
     count: (data || []).length,
     passed: (data || []).some(a => a.passed),
+    error: Boolean(error),
   }
 }

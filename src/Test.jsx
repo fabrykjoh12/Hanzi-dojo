@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import { getTestStatus, getAttemptsToday } from './testLogic'
+import { getTestStatus, getAttemptsToday, canStartTest } from './testLogic'
 import { getLevelLabel, getNextLevel, shuffle } from './utils'
 import { languageTheme } from './languageTheme'
 import { schedule } from './srs'
@@ -8,8 +8,8 @@ import { TEST_UNLOCK_MASTERY_PCT } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
 import {
-  ArrowRight, Check, CheckCircle2, Clock, GraduationCap,
-  Lock, RotateCcw, ShieldCheck, X,
+  ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, CloudOff,
+  GraduationCap, Lock, RotateCcw, ShieldCheck, X,
 } from 'lucide-react'
 
 function generateQuestions(vocabList, allVocab, language) {
@@ -200,8 +200,9 @@ function ProgressBar({ pct, accentHex }) {
   )
 }
 
-export default function Test({ session, profile, track }) {
+export default function Test({ session, profile, track, onBack }) {
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [status, setStatus] = useState(null)
   const [attempts, setAttempts] = useState({ count: 0, passed: false })
   const [allVocab, setAllVocab] = useState([])
@@ -221,6 +222,7 @@ export default function Test({ session, profile, track }) {
 
   async function loadStatus() {
     setLoading(true)
+    setLoadError(false)
     const [s, a, vocabResult] = await Promise.all([
       getTestStatus(session.user.id, track),
       getAttemptsToday(session.user.id, track),
@@ -232,6 +234,13 @@ export default function Test({ session, profile, track }) {
         .eq('level', track.current_level)
         .eq('is_active', true),
     ])
+    // A failed fetch must not render as a fabricated "0 / 0 words mastered"
+    // locked state — surface it and let the learner retry.
+    if (s.error || a.error || vocabResult.error) {
+      setLoadError(true)
+      setLoading(false)
+      return
+    }
     setStatus(s)
     setAttempts(a)
     setAllVocab(vocabResult.data || [])
@@ -244,6 +253,8 @@ export default function Test({ session, profile, track }) {
   }, [])
 
   const startTest = () => {
+    // An empty pool would generate zero questions and crash on questions[0].
+    if (!canStartTest(allVocab)) return
     const qs = generateQuestions(allVocab, allVocab, profile.active_language)
     setQuestions(qs)
     setAnswers([])
@@ -368,6 +379,7 @@ export default function Test({ session, profile, track }) {
   if (loading) {
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
+        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
         <div style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{
             width: '88px', height: '88px', borderRadius: '26px',
@@ -382,11 +394,29 @@ export default function Test({ session, profile, track }) {
     )
   }
 
+  if (loadError) {
+    return (
+      <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
+        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+        <div style={centerPanelStyle}>
+          <StateIcon icon={CloudOff} accentHex="var(--text-faint)" />
+          <h1 style={titleStyle}>Couldn't load the test</h1>
+          <p style={bodyTextStyle}>Your words didn't come through this time. Check your connection and try again.</p>
+          <div style={{ display: 'flex', gap: '12px', width: '100%', maxWidth: '360px' }}>
+            <GhostButton onClick={onBack} icon={ArrowLeft}>Back home</GhostButton>
+            <PrimaryButton onClick={loadStatus} accentHex={accentHex} icon={RotateCcw}>Retry</PrimaryButton>
+          </div>
+        </div>
+      </Shell>
+    )
+  }
+
   if (phase === 'intro' && !status.testUnlocked) {
     const unlockPct = Math.round(TEST_UNLOCK_MASTERY_PCT * 100)
     const masteryPct = status.totalWords > 0 ? Math.round(status.masteredPct * 100) : 0
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
+        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
         <div style={centerPanelStyle}>
           <StateIcon icon={Lock} accentHex="var(--text-faint)" />
           <h1 style={titleStyle}>{levelLabel} Test locked</h1>
@@ -404,6 +434,9 @@ export default function Test({ session, profile, track }) {
               Unlocks at {Math.ceil(status.totalWords * TEST_UNLOCK_MASTERY_PCT)} mastered words
             </div>
           </div>
+          <div style={{ display: 'flex', width: '100%', maxWidth: '360px', marginTop: '24px' }}>
+            <PrimaryButton onClick={onBack} accentHex={accentHex} icon={ArrowLeft}>Back home</PrimaryButton>
+          </div>
         </div>
       </Shell>
     )
@@ -412,10 +445,12 @@ export default function Test({ session, profile, track }) {
   if (phase === 'intro' && attempts.count >= 3 && !attempts.passed) {
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
+        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
         <div style={centerPanelStyle}>
           <StateIcon icon={Clock} accentHex="#D97706" />
           <h1 style={titleStyle}>No attempts left today</h1>
           <p style={bodyTextStyle}>You've used all 3 attempts. Review your words and come back tomorrow.</p>
+          <PrimaryButton onClick={onBack} accentHex={accentHex} icon={ArrowLeft}>Back home</PrimaryButton>
         </div>
       </Shell>
     )
@@ -424,6 +459,7 @@ export default function Test({ session, profile, track }) {
   if (phase === 'intro') {
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
+        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
         <div style={{ textAlign: 'center', margin: '34px 0 28px' }}>
           <StateIcon icon={GraduationCap} accentHex={accentHex} />
           <div style={{ color: accentHex, fontSize: '13px', fontWeight: 800, marginTop: '18px' }}>
@@ -457,8 +493,15 @@ export default function Test({ session, profile, track }) {
           </div>
         </div>
 
+        {!canStartTest(allVocab) && (
+          <p style={{ fontSize: '13px', color: 'var(--text-faint)', textAlign: 'center', margin: '0 0 14px' }}>
+            No words are available at this level right now, so the test can't start.
+          </p>
+        )}
         <div style={{ display: 'flex', gap: '12px' }}>
-          <PrimaryButton onClick={startTest} accentHex={accentHex} icon={ArrowRight}>Start test</PrimaryButton>
+          {canStartTest(allVocab)
+            ? <PrimaryButton onClick={startTest} accentHex={accentHex} icon={ArrowRight}>Start test</PrimaryButton>
+            : <GhostButton onClick={onBack} icon={ArrowLeft}>Back home</GhostButton>}
         </div>
       </Shell>
     )
@@ -468,6 +511,7 @@ export default function Test({ session, profile, track }) {
     if (saving) {
       return (
         <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
+          <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
           <div style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <StateIcon icon={GraduationCap} accentHex={accentHex} />
           </div>
@@ -481,6 +525,9 @@ export default function Test({ session, profile, track }) {
 
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
+        <div style={{ marginBottom: '18px' }}>
+          <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+        </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', gap: '12px' }}>
           <div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>
@@ -638,6 +685,7 @@ export default function Test({ session, profile, track }) {
 
   return (
     <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
+      <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
       <div style={centerPanelStyle}>
         <StateIcon icon={lastResult.passed ? CheckCircle2 : RotateCcw} accentHex={lastResult.passed ? '#2F9E6D' : '#D97706'} />
         <h1 style={{ ...titleStyle, fontSize: '32px' }}>
@@ -667,6 +715,9 @@ export default function Test({ session, profile, track }) {
             <GhostButton onClick={() => { setPhase('intro'); loadStatus() }} icon={RotateCcw}>
               Try again
             </GhostButton>
+          )}
+          {(lastResult.passed || attempts.count >= 3) && (
+            <PrimaryButton onClick={onBack} accentHex={accentHex} icon={ArrowLeft}>Back home</PrimaryButton>
           )}
         </div>
       </div>
