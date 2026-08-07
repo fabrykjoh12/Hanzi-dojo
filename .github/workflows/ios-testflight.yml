@@ -96,6 +96,13 @@ jobs:
       # signing errors AND hid the failure itself — the step went green while
       # the archive had failed, and only the next step revealed it. The full
       # log goes to a file; on failure the actual error lines are printed.
+      #
+      # CODE_SIGN_IDENTITY is overridden on purpose. Capacitor's project
+      # template ships `CODE_SIGN_IDENTITY = "iPhone Developer"` in BOTH build
+      # configurations, Release included, so an archive asks Apple for a
+      # *development* profile — which only exists once devices are registered,
+      # and we have none. Forcing "Apple Distribution" makes Xcode request the
+      # App Store profile it should have asked for.
       - name: Archive
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -114,6 +121,7 @@ jobs:
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
             CODE_SIGN_ENTITLEMENTS=App/App.entitlements \
             DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
             2>&1 | tee "$RUNNER_TEMP/archive.log" | tail -40 || {
