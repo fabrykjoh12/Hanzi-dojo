@@ -18,16 +18,20 @@ describe('devEmailList / isDevUser', () => {
 
 describe('card rows', () => {
   const now = new Date('2026-07-14T12:00:00Z')
-  it('mastered row satisfies every mastery signal', () => {
+  it('mastered row satisfies every mastery signal without the banned writes', () => {
     const r = masteredCardRow('u1', 'v1', now)
-    expect(r).toMatchObject({ user_id: 'u1', vocab_id: 'v1', state: 'review', is_easy: true, learned: true })
+    expect(r).toMatchObject({ user_id: 'u1', vocab_id: 'v1', state: 'review', is_easy: false, learned: true })
     expect(r.stability).toBeGreaterThanOrEqual(21)
     expect(new Date(r.due_at).getTime()).toBeGreaterThan(now.getTime())
+    // §7.3 / §10: is_easy true is the grading flow's alone; ease_factor is a
+    // dead column nothing may write. This is the regression the fix exists for.
+    expect(r).not.toHaveProperty('ease_factor')
   })
-  it('learning row is due immediately and unmastered', () => {
+  it('learning row is due immediately, unmastered, and never writes ease_factor', () => {
     const r = learningCardRow('u1', 'v1', now)
     expect(r).toMatchObject({ state: 'learning', is_easy: false, learned: false, stability: 0 })
     expect(r.due_at).toBe(now.toISOString())
+    expect(r).not.toHaveProperty('ease_factor')
   })
 })
 
