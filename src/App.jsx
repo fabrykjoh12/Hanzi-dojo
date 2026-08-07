@@ -151,20 +151,14 @@ export default function App() {
   }
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark')
 
-  // try/catch/finally so a throw anywhere inside (e.g. getHomeCounts) can
-  // never strand the app on the 学 splash with loading stuck true — the one
-  // state with no way out. A throw is a bootstrap failure like any other.
+  // The whole bootstrap runs inside try/catch/finally so a throw anywhere
+  // (e.g. getHomeCounts) can never strand the app on the 学 splash with
+  // loading stuck true — the one state with no way out. A throw is a
+  // bootstrap failure like any other. (Kept as ONE function on purpose:
+  // splitting the body into a helper makes the hooks linter stop seeing
+  // loadProfile as stable and warn on every effect that calls it.)
   const loadProfile = async (userId) => {
     try {
-      await loadProfileInner(userId)
-    } catch {
-      setBootstrapError(true)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadProfileInner = async (userId) => {
     const { data: prof, error: profError } = await supabase
       .from('profiles')
       .select('*')
@@ -226,7 +220,11 @@ export default function App() {
       language: finalProf.active_language,
       level: finalTrack ? finalTrack.current_level : null,
     })
-    setLoading(false)
+    } catch {
+      setBootstrapError(true)
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Analytics session envelope: one "session started" per app-load, and a
@@ -627,6 +625,7 @@ export default function App() {
         session={session}
         profile={profile}
         onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
+        onBack={() => navigate('home')}
       />
     )
   } else if (view === 'hq') {

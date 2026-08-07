@@ -5,7 +5,7 @@ import { getLevelLabel, getSystemLabel, getLevels } from './utils'
 import { languageList, availableLanguages } from './languageTheme'
 import { isMastered } from './mastery'
 import { useIsMobile } from './useIsMobile'
-import { ArrowLeft, ArrowRight, Globe2, Plus } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Globe2, Plus, RefreshCw } from 'lucide-react'
 import { track, EVENTS } from './analytics'
 
 // Built from the shared language config so a new language shows up here for free.
@@ -224,6 +224,12 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
   const [starting, setStarting] = useState(null)
   const [selectedLevel, setSelectedLevel] = useState(null)
   const [saving, setSaving] = useState(false)
+  // The track list failed to load — without it the picker renders empty and
+  // looks like the user has no languages, so show a calm retry instead.
+  const [loadError, setLoadError] = useState(false)
+  // A switch/start write failed. Shown inline; the user stays on this screen
+  // instead of landing on Home still in the old language.
+  const [actionError, setActionError] = useState(null)
   // Levels with seeded vocabulary for the language being started. Keyed by
   // language code so a stale result never gates the wrong language; while
   // loading (or on fetch failure) everything stays selectable (fail open).
@@ -264,11 +270,20 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
 
   async function loadTracks() {
     setLoading(true)
+    setLoadError(false)
 
-    const { data: tracksData } = await supabase
+    const { data: tracksData, error: tracksError } = await supabase
       .from('language_tracks')
       .select('*')
       .eq('user_id', session.user.id)
+
+    // A failed read here would render an empty picker that looks like the user
+    // has no languages — surface it as a retry state instead.
+    if (tracksError) {
+      setLoadError(true)
+      setLoading(false)
+      return
+    }
 
     setTracks(tracksData || [])
 
@@ -323,12 +338,20 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
     setLoading(false)
   }
 
+  // A failed write must not fall through to onSwitch — that navigates Home and
+  // makes the failure look exactly like success. Stay here and say so instead.
   const switchTo = async (langCode) => {
+    setActionError(null)
     setSaving(true)
-    await supabase
+    const { error } = await supabase
       .from('profiles')
       .update({ active_language: langCode })
       .eq('id', session.user.id)
+    if (error) {
+      setSaving(false)
+      setActionError("That switch didn't save — check your connection and try again.")
+      return
+    }
     if (langCode !== profile.active_language) track(EVENTS.LANGUAGE_SWITCHED, { from: profile.active_language, to: langCode })
     onSwitch(langCode)
   }
@@ -340,27 +363,41 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
 
   const switchLevel = async (track, level) => {
     if (track.current_level === level) return
+    setActionError(null)
     setSaving(true)
 
-    await supabase
+    const { error: levelError } = await supabase
       .from('language_tracks')
       .update({ current_level: level })
       .eq('id', track.id)
       .eq('user_id', session.user.id)
 
-    await supabase
+    if (levelError) {
+      setSaving(false)
+      setActionError("That level change didn't save — check your connection and try again.")
+      return
+    }
+
+    const { error: profileError } = await supabase
       .from('profiles')
       .update({ active_language: track.language })
       .eq('id', session.user.id)
+
+    if (profileError) {
+      setSaving(false)
+      setActionError("That switch didn't save — check your connection and try again.")
+      return
+    }
 
     onSwitch(track.language)
   }
 
   const startLanguage = async (lang) => {
     if (!selectedLevel) return
+    setActionError(null)
     setSaving(true)
 
-    await supabase.from('language_tracks').insert({
+    const { error: insertError } = await supabase.from('language_tracks').insert({
       user_id: session.user.id,
       language: lang.code,
       system: lang.system,
@@ -368,10 +405,24 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
       is_active: true,
     })
 
-    await supabase
+    // A duplicate row (23505) means the track already exists — e.g. a retry
+    // after the profile update below failed — so carry on to that update.
+    if (insertError && insertError.code !== '23505') {
+      setSaving(false)
+      setActionError("That didn't save — check your connection and try again.")
+      return
+    }
+
+    const { error: profileError } = await supabase
       .from('profiles')
       .update({ active_language: lang.code })
       .eq('id', session.user.id)
+
+    if (profileError) {
+      setSaving(false)
+      setActionError("That didn't save — check your connection and try again.")
+      return
+    }
 
     if (lang.code !== profile.active_language) track(EVENTS.LANGUAGE_SWITCHED, { from: profile.active_language, to: lang.code })
     onSwitch(lang.code)
@@ -394,11 +445,38 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
     )
   }
 
+  if (loadError) {
+    return (
+      <Shell accentHex={activeLang.accent}>
+        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+        <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center', maxWidth: '380px' }}>
+            <div style={{
+              width: '72px', height: '72px', borderRadius: '24px',
+              background: 'var(--surface)', border: '1px solid var(--border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 18px', boxShadow: '0 16px 40px rgba(24,24,27,0.06)',
+            }}>
+              <Globe2 size={30} strokeWidth={1.75} color={activeLang.accent} />
+            </div>
+            <div style={{ fontSize: '19px', fontWeight: 850, color: 'var(--text)' }}>
+              Couldn't load your languages
+            </div>
+            <p style={{ margin: '10px 0 20px', fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              Check your connection and try again — nothing has changed.
+            </p>
+            <IconButton icon={RefreshCw} label="Try again" onClick={loadTracks} />
+          </div>
+        </div>
+      </Shell>
+    )
+  }
+
   if (starting) {
     const lang = LANGUAGES.find(l => l.code === starting)
     return (
       <Shell accentHex={lang.accent}>
-        <IconButton icon={ArrowLeft} label="Back" onClick={() => { setStarting(null); setSelectedLevel(null) }} />
+        <IconButton icon={ArrowLeft} label="Back" onClick={() => { setStarting(null); setSelectedLevel(null); setActionError(null) }} />
 
         <div style={{ margin: '32px 0 28px', textAlign: 'center' }}>
           <div style={{
@@ -480,6 +558,12 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
           <Plus size={18} strokeWidth={2} color="#fff" />
           {saving ? 'Starting...' : 'Start ' + lang.name}
         </button>
+
+        {actionError && (
+          <div style={{ fontSize: '13px', color: 'var(--danger)', marginTop: '12px', lineHeight: 1.5, textAlign: 'center' }}>
+            {actionError}
+          </div>
+        )}
       </Shell>
     )
   }
@@ -499,6 +583,11 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
         <p style={{ margin: '12px 0 0', fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
           Switch between active tracks, replay a previous level, or start a new language.
         </p>
+        {actionError && (
+          <div style={{ fontSize: '13px', color: 'var(--danger)', marginTop: '12px', lineHeight: 1.5 }}>
+            {actionError}
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'grid', gap: '14px' }}>
@@ -528,7 +617,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
             <NotStartedCard
               key={lang.code}
               lang={lang}
-              onStart={() => { setStarting(lang.code); setSelectedLevel(null) }}
+              onStart={() => { setStarting(lang.code); setSelectedLevel(null); setActionError(null) }}
             />
           )
         })}
