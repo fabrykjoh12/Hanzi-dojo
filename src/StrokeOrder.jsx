@@ -42,6 +42,9 @@ function StrokeChar({ char, accentHex, size }) {
   return (
     <div
       ref={ref}
+      // The tile is a drawn diagram, not a container: without a role the label
+      // on a bare div is ignored by most assistive tech.
+      role="img"
       aria-label={'Stroke order for ' + char}
       style={{ width: size, height: size, border: '1px solid var(--border)', borderRadius: '10px', background: 'var(--surface-2, var(--surface))' }}
     />

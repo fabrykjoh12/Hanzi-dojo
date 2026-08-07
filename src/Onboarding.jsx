@@ -224,17 +224,19 @@ export default function Onboarding({ session, onComplete }) {
               </h1>
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600, marginTop: '2px' }}>Welcome</div>
             </div>
-            <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '28px', marginTop: '8px', fontSize: '14px' }}>
+            <p id="onboarding-language-prompt" style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '28px', marginTop: '8px', fontSize: '14px' }}>
               Which language do you want to learn?
             </p>
 
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div role="radiogroup" aria-labelledby="onboarding-language-prompt" style={{ display: 'flex', gap: '12px' }}>
               {languages.map(lang => {
                 const selected = language === lang.key
                 return (
                   <button
                     key={lang.key}
                     onClick={() => { setLanguage(lang.key); setLevel(null); setTier(null); setPlacement(false) }}
+                    role="radio"
+                    aria-checked={selected}
                     style={{
                       // flex-basis 0 + minWidth 0 keeps all three cards exactly
                       // equal; without it the wider "Русский" label stretched the
@@ -330,7 +332,7 @@ export default function Onboarding({ session, onComplete }) {
                     {greeting}
                   </div>
                 )}
-                <h1 style={{ fontSize: '22px', fontWeight: 700, textAlign: 'center', color: 'var(--text)', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
+                <h1 id="onboarding-level-prompt" style={{ fontSize: '22px', fontWeight: 700, textAlign: 'center', color: 'var(--text)', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
                   What's your level?
                 </h1>
                 <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '22px', fontSize: '14px', lineHeight: 1.5 }}>
@@ -346,7 +348,7 @@ export default function Onboarding({ session, onComplete }) {
                     Content for {selectedTheme.languageName} is coming soon — check back shortly.
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div role="radiogroup" aria-labelledby="onboarding-level-prompt" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {tiers.map(t => {
                       const meta = TIER_META[t.key]
                       const TierIcon = t.key === 'beginner' ? Play : t.key === 'intermediate' ? BookOpen : GraduationCap
@@ -355,6 +357,8 @@ export default function Onboarding({ session, onComplete }) {
                         <button
                           key={t.key}
                           onClick={() => setTier(t)}
+                          role="radio"
+                          aria-checked={Boolean(selected)}
                           style={{
                             display: 'flex', alignItems: 'center', gap: '14px', textAlign: 'left',
                             padding: '16px 18px', borderRadius: '14px',

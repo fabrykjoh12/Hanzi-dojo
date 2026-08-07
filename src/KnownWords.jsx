@@ -198,11 +198,12 @@ export default function KnownWords({ session, profile, track, onBack }) {
 
       {loadError && <div style={errorBox}>{loadError}</div>}
 
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+      <div role="group" aria-label="How to add words" style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
         {[['paste', 'Paste a list'], ['browse', 'Browse & check']].map(([key, label]) => (
           <button
             key={key}
             onClick={() => setMode(key)}
+            aria-pressed={mode === key}
             style={{
               flex: 1, padding: '10px', borderRadius: '10px', cursor: 'pointer',
               border: '2px solid ' + (mode === key ? accentHex : 'var(--border)'),
@@ -399,6 +400,7 @@ function ReviewList({
                 }}>
                   <button
                     onClick={() => onToggleLevel(group.level)}
+                    aria-expanded={open}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '6px', flex: 1,
                       background: 'none', border: 'none', padding: 0, cursor: 'pointer',
@@ -429,6 +431,7 @@ function ReviewList({
                     <button
                       key={v.id}
                       onClick={() => onToggleWord(v.id)}
+                      aria-pressed={on}
                       style={{
                         display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
                         padding: '9px 14px', textAlign: 'left', cursor: 'pointer',

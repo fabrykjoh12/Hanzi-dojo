@@ -160,7 +160,7 @@ export default function Words({ session, profile, track, onBack }) {
         </div>
 
         {/* Status filters */}
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '18px' }}>
+        <div role="group" aria-label="Filter by status" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '18px' }}>
           {[
             { key: 'all', label: 'All', color: accentHex },
             { key: 'new', ...STATUS.new },
@@ -173,6 +173,7 @@ export default function Words({ session, profile, track, onBack }) {
               <button
                 key={f.key}
                 onClick={() => setFilter(f.key)}
+                aria-pressed={active}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '7px',
                   padding: '8px 14px', borderRadius: '999px', cursor: 'pointer',

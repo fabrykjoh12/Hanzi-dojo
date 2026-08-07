@@ -165,6 +165,7 @@ export default function Settings({ session, profile, onUpdate, onBack }) {
           <Card icon={Palette} title="Appearance" text="Choose a light or dark theme for the whole app." accentHex={accentHex}>
             <Segmented
               accentHex={accentHex}
+              label="Theme"
               value={theme}
               onChange={setTheme}
               options={[
@@ -178,6 +179,7 @@ export default function Settings({ session, profile, onUpdate, onBack }) {
           <Card icon={Keyboard} title="Flashcard recall" text="Flip lets you reveal the answer and grade yourself. Typed asks you to type the reading first, for stronger active recall." accentHex={accentHex}>
             <Segmented
               accentHex={accentHex}
+              label="Flashcard recall"
               value={recallMode}
               onChange={(v) => savePref({ recall_mode: v })}
               options={[
@@ -198,6 +200,7 @@ export default function Settings({ session, profile, onUpdate, onBack }) {
           <Card icon={Gauge} title="Audio speed" text="Playback speed for flashcard pronunciation. The speed toggle on the card changes this too." accentHex={accentHex}>
             <Segmented
               accentHex={accentHex}
+              label="Audio speed"
               value={audioSpeed}
               onChange={(v) => savePref({ audio_speed: v })}
               options={[
@@ -401,9 +404,9 @@ function Card({ icon: Icon, title, text, accentHex, children }) {
   )
 }
 
-function Segmented({ value, onChange, options, accentHex }) {
+function Segmented({ value, onChange, options, accentHex, label }) {
   return (
-    <div style={{ display: 'inline-flex', gap: '8px', background: 'var(--surface-2)', padding: '4px', borderRadius: '12px' }}>
+    <div role="group" aria-label={label} style={{ display: 'inline-flex', gap: '8px', background: 'var(--surface-2)', padding: '4px', borderRadius: '12px' }}>
       {options.map(opt => {
         const active = value === opt.key
         const Icon = opt.icon
@@ -411,6 +414,7 @@ function Segmented({ value, onChange, options, accentHex }) {
           <button
             key={opt.key}
             onClick={() => onChange(opt.key)}
+            aria-pressed={active}
             style={{
               display: 'flex', alignItems: 'center', gap: '7px',
               padding: '8px 16px', borderRadius: '9px', cursor: 'pointer',
