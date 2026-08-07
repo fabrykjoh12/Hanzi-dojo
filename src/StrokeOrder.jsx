@@ -1,11 +1,14 @@
 import { useEffect, useRef } from 'react'
 import HanziWriter from 'hanzi-writer'
+import { makeCharDataLoader } from './strokeData'
 
 // Animated stroke order for a word — one mini hanzi-writer per character, reusing
 // the same config as the Writer practice screen. Stroke data loads from
-// hanzi-writer's CDN (same as Writer.jsx); a load failure degrades quietly to an
-// empty tile. Only Han characters are rendered (punctuation/letters are skipped).
+// the CDN through our caching loader (strokeData.js), so a character viewed
+// once still animates offline; a load failure degrades quietly to an empty
+// tile. Only Han characters are rendered (punctuation/letters are skipped).
 const HAN = /\p{Script=Han}/u
+const charDataLoader = makeCharDataLoader()
 
 export default function StrokeOrder({ word, accentHex, size = 84 }) {
   const chars = [...(word || '')].filter(c => HAN.test(c))
@@ -31,6 +34,7 @@ function StrokeChar({ char, accentHex, size }) {
       radicalColor: '#2F9E6D',
       delayBetweenStrokes: 160,
       strokeAnimationSpeed: 1,
+      charDataLoader,
       onLoadCharDataSuccess: () => { if (!cancelled) writer.animateCharacter() },
     })
     return () => { cancelled = true; target.innerHTML = '' }

@@ -1,11 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import HanziWriter from 'hanzi-writer'
+import { makeCharDataLoader } from './strokeData'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import { languageTheme, langAttr } from './languageTheme'
 import { ArrowLeft, Brush, Play, PenLine, Eye, EyeOff } from 'lucide-react'
+
+// One loader for the screen: stroke data comes from the CDN once and is then
+// served from the device, so practising a character again works offline.
+const CHAR_DATA_LOADER = makeCharDataLoader()
 
 function isIdeograph(ch) {
   const c = ch.charCodeAt(0)
@@ -75,6 +80,9 @@ export default function Writer({ profile, track, onBack }) {
       radicalColor: '#2F9E6D',
       delayBetweenStrokes: 180,
       strokeAnimationSpeed: 1,
+      // Cached on the device, so a character practised once still works with
+      // no connection (strokeData.js).
+      charDataLoader: CHAR_DATA_LOADER,
       onLoadCharDataSuccess: function () {
         if (cancelled) return
         setLoadState('ready')
