@@ -115,10 +115,24 @@ passed through a password manager.
 1. **Authentication → Providers → Apple** → toggle **Enable**.
    - **Services ID** (sometimes labelled Client ID): `com.hanzidojo.signin`
    - **Team ID**, **Key ID**: as above
-   - **Private key**: open the `.p8` in any text editor and paste the whole
-     contents, **including** the `-----BEGIN PRIVATE KEY-----` and
-     `-----END PRIVATE KEY-----` lines.
+   - **Secret Key (for OAuth)**: ⚠️ this is **not** the `.p8` itself. Apple
+     wants a short-lived ES256 JWT signed *with* that key. Generate it on your
+     own machine — never in a web "JWT generator", which would be handing over
+     the signing key:
+     ```
+     node tools/apple-client-secret.mjs \
+       --p8 ~/Downloads/AuthKey_XXXXXXXXXX.p8 \
+       --team-id <TEAM ID> \
+       --key-id <KEY ID> \
+       --services-id com.hanzidojo.signin
+     ```
+     Paste the printed token into the box.
    - **Save**.
+
+🔴 **This secret expires after 6 months** (Apple's maximum — the Supabase
+dashboard warns about it too). When it lapses, web sign-in stops working with
+no other symptom. Set a calendar reminder for ~5 months out, keep the `.p8`,
+and regenerate by running the same command again.
 2. **Authentication → URL Configuration**:
    - **Site URL**: `https://hanzi-dojo.com`
    - **Redirect URLs** — all three:
