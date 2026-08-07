@@ -9,6 +9,7 @@ import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 import { legalLinkProps } from './externalLink'
 import { signInWithProvider } from './nativeAuth'
+import { FLAGS } from './flags'
 import { useIsMobile } from './useIsMobile'
 
 export default function Auth({ intro = null }) {
@@ -348,7 +349,7 @@ export default function Auth({ intro = null }) {
             too so the same account works everywhere. Apple's mark is drawn
             inline: their branding requirements are specific, and lucide's
             "apple" is a piece of fruit. */}
-        {!resetMode && (
+        {!resetMode && FLAGS.APPLE_SIGN_IN && (
         <button onClick={() => handleProvider('apple')} style={{
           width: '100%',
           padding: '12px',
