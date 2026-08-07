@@ -4,6 +4,7 @@ import { languageTheme, ink } from './languageTheme'
 import { HeroPanel, HeroAction, PageHeader, Eyebrow } from './panels'
 import { flatPanel, ON_HERO } from './designTokens'
 import { buildPracticePlan } from './practicePlan'
+import { speechRecognitionSupported } from './speechSupport'
 import { useIsMobile } from './useIsMobile'
 import {
   ArrowLeft, ArrowRight, AlertTriangle, Headphones, PenLine,
@@ -78,6 +79,9 @@ export default function Practice({ profile, track, counts, onNavigate, onBack })
   const plan = buildPracticePlan({
     script: theme.script,
     cjk: theme.cjk,
+    // Don't offer a drill that can only say "not available here" — the store
+    // apps' webviews expose the speech API without implementing it.
+    speech: speechRecognitionSupported(),
     weakCount: counts ? (counts.weakCount || 0) : 0,
     grammarDueCount: counts ? (counts.grammarDueCount || 0) : 0,
   })

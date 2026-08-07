@@ -8,24 +8,31 @@ import { cleanMeaning } from './cleanMeaning'
 import { markWordDue } from './practiceSignal'
 import { speechMatches } from './speechScore'
 import { ArrowLeft, Mic, Volume2, Check, X, RotateCcw, CheckCircle2, MicOff } from 'lucide-react'
+import { speechRecognitionCtor, speechRecognitionSupported, speechErrorKind } from './speechSupport'
 
 const QUESTION_COUNT = 10
 
-const SR = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null
+const SR = speechRecognitionCtor()
 const LANG_CODE = { chinese: 'zh-CN', japanese: 'ja-JP', russian: 'ru-RU' }
+const SPEECH_OK = speechRecognitionSupported({ ctor: SR })
 
 // Speaking drill: read the word aloud, get a ✓ via the browser's built-in speech
 // recognition (zero marginal cost). Accepts the word (and, for Japanese, its
-// reading). Not supported on iOS/Safari — shows a graceful fallback there.
+// reading). Availability is decided by speechSupport.js — notably NOT by the
+// constructor alone, since the store apps' webviews expose it without
+// implementing it.
 export default function Speaking({ session, profile, track, onBack }) {
   const isMobile = useIsMobile()
-  const [loading, setLoading] = useState(Boolean(SR))
+  const [loading, setLoading] = useState(SPEECH_OK)
   const [items, setItems] = useState([])
   const [idx, setIdx] = useState(0)
   const [result, setResult] = useState(null)     // null | 'correct' | 'incorrect'
   const [heard, setHeard] = useState('')          // what the recognizer thought it heard
   const [listening, setListening] = useState(false)
   const [denied, setDenied] = useState(false)
+  // Set when the recognizer itself reports the service is unavailable — some
+  // embedded browsers only reveal that on the first attempt.
+  const [unsupportedAtRuntime, setUnsupportedAtRuntime] = useState(false)
   const [correctCount, setCorrectCount] = useState(0)
   const [done, setDone] = useState(false)
   const recRef = useRef(null)
@@ -104,7 +111,11 @@ export default function Speaking({ session, profile, track, onBack }) {
     }
     rec.onerror = (e) => {
       setListening(false)
-      if (e && (e.error === 'not-allowed' || e.error === 'service-not-allowed')) setDenied(true)
+      const kind = speechErrorKind(e && e.error)
+      // "the service isn't available" is not "your mic is blocked": telling
+      // that learner to unblock a microphone sends them to a dead end.
+      if (kind === 'unsupported') setUnsupportedAtRuntime(true)
+      else if (kind === 'denied' || kind === 'no-mic') setDenied(true)
     }
     rec.onend = () => setListening(false)
     recRef.current = rec
@@ -146,8 +157,9 @@ export default function Speaking({ session, profile, track, onBack }) {
     </div>
   )
 
-  // Unsupported browser (iOS Safari and friends).
-  if (!SR) {
+  // Not available here: no API, an embedded webview that only pretends to
+  // have one, or a recognizer that reported the service as unavailable.
+  if (!SPEECH_OK || unsupportedAtRuntime) {
     return (
       <div style={pageShell}>
         {header}
@@ -155,7 +167,8 @@ export default function Speaking({ session, profile, track, onBack }) {
           <MicOff size={30} strokeWidth={1.8} color={accentHex} style={{ marginBottom: '14px' }} />
           <div style={{ fontSize: '17px', fontWeight: 750, color: 'var(--text)', marginBottom: '8px' }}>Speaking isn't supported here yet</div>
           <div style={{ fontSize: '14px', color: 'var(--text-muted)', maxWidth: '340px', lineHeight: 1.6, marginBottom: '20px' }}>
-            Your browser doesn't offer speech recognition. Try Chrome on Android or a desktop to practice saying words aloud.
+            Speech recognition isn't available here. It works in Chrome on Android
+            or on a desktop browser — everything else in the app is unaffected.
           </div>
           <SecondaryButton onClick={onBack} icon={ArrowLeft}>Back to practice</SecondaryButton>
         </Centered>
