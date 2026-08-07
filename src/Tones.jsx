@@ -332,7 +332,9 @@ export default function Tones({ session, profile, track, onBack }) {
           </button>
         </div>
 
-        {/* Tone options */}
+        {/* Tone options. Five columns on a 360px phone is ~60px per tile — too
+            narrow for the tone name, which is the drill's answer text. On mobile
+            the four real tones sit in a 2×2 grid with neutral spanning below. */}
         {q.kind === 'pair' ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
             {q.options.map(opt => {
@@ -360,7 +362,7 @@ export default function Tones({ session, profile, track, onBack }) {
             })}
           </div>
         ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)', gap: '8px' }}>
           {TONES.map(t => {
             const isCorrect = String(t.n) === q.answer
             const isPicked = String(t.n) === picked
@@ -369,14 +371,15 @@ export default function Tones({ session, profile, track, onBack }) {
             else if (answered && isPicked && !isCorrect) { bc = '#DC2626'; bg = 'var(--danger-bg)' }
             return (
               <button key={t.n} onClick={() => choose(String(t.n))} disabled={answered} style={{
-                position: 'relative', minHeight: '84px', padding: '10px 4px', borderRadius: '14px',
+                position: 'relative', minHeight: '84px', padding: '10px 8px', borderRadius: '14px',
+                gridColumn: isMobile && t.n === 5 ? '1 / -1' : 'auto',
                 border: '1.5px solid ' + bc, background: bg, cursor: answered ? 'default' : 'pointer',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px',
                 transition: 'border-color 140ms ease, background 140ms ease',
               }}>
                 <span style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text)', lineHeight: 1 }}>{t.mark}</span>
                 <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>{t.n === 5 ? '·' : t.n}</span>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.2 }}>{t.label}</span>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.2 }}>{t.label}</span>
                 {answered && isCorrect && <Check size={15} strokeWidth={2.4} color="#2F9E6D" style={{ position: 'absolute', top: '7px', right: '7px' }} />}
                 {answered && isPicked && !isCorrect && <X size={15} strokeWidth={2.4} color="#DC2626" style={{ position: 'absolute', top: '7px', right: '7px' }} />}
               </button>

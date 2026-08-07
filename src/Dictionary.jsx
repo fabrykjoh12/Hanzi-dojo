@@ -335,7 +335,18 @@ export default function Dictionary({ session, profile, track, onBack }) {
         <span style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--text-faint)', flexShrink: 0 }}>
           {getLevelLabel(track.language, track.system, v.level)}
         </span>
-        {inDeck && <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: accentHex, flexShrink: 0 }} title="In your deck" />}
+        {inDeck && (
+          // A bare dot with a `title` is invisible information on a phone —
+          // `title` never fires on touch. The dot keeps the visual rhythm; the
+          // label is what actually says what it means.
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: '5px', flexShrink: 0,
+            fontSize: '12px', fontWeight: 700, color: accentInk,
+          }}>
+            <span aria-hidden="true" style={{ width: '7px', height: '7px', borderRadius: '50%', background: accentHex }} />
+            In deck
+          </span>
+        )}
       </button>
     )
   }
@@ -351,7 +362,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
       </span>
       {explicit === true && (
         <span style={{
-          fontSize: '10px', fontWeight: 800, color: 'var(--text-faint)', flexShrink: 0,
+          fontSize: '12px', fontWeight: 800, color: 'var(--text-faint)', flexShrink: 0,
           border: '1px solid var(--border)', borderRadius: '999px', padding: '2px 8px',
           textTransform: 'uppercase', letterSpacing: '0.05em',
         }}>Explicit</span>

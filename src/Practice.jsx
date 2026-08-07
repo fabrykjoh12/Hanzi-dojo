@@ -264,7 +264,7 @@ function BackButton({ onClick }) {
   return (
     <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} style={{
       display: 'inline-flex', alignItems: 'center', gap: '8px',
-      minHeight: '40px', padding: '0 14px', borderRadius: '12px',
+      minHeight: '44px', padding: '0 14px', borderRadius: '12px',
       border: '1px solid var(--border)', background: hovered ? 'var(--surface-2)' : 'var(--surface)',
       color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
     }}>

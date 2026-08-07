@@ -261,7 +261,7 @@ export default function Settings({ session, profile, onUpdate, onBack }) {
                   disabled={reminderBusy}
                   aria-label="Daily reminder time"
                   style={{
-                    height: '36px', padding: '0 10px', borderRadius: '10px',
+                    minHeight: '44px', padding: '0 10px', borderRadius: '10px',
                     border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text)',
                     fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
                   }}

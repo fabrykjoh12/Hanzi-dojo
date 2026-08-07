@@ -195,7 +195,14 @@ function StoryCard({ story, read, accentHex, fontFamily, levelLabel, practice, o
         {locked && <CoverLock />}
       </StoryCover>
       <div style={{ padding: shelf ? '10px 2px 2px' : '12px 14px 13px', display: 'flex', flexDirection: 'column', gap: shelf ? '4px' : '5px', flex: 1, width: '100%', minWidth: 0 }}>
-        <div title={story.title} style={{ fontSize: '16px', fontWeight: 750, fontFamily, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3 }}>
+        {/* Two lines, not one + ellipsis: `title` never fires on touch, so a
+            clipped title was unreadable in the app. The reserved height keeps
+            the shelf rows aligned whether a title takes one line or two. */}
+        <div title={story.title} style={{
+          fontSize: '16px', fontWeight: 750, fontFamily, color: 'var(--text)', lineHeight: 1.3,
+          display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2,
+          overflow: 'hidden', minHeight: '2.6em',
+        }}>
           {story.title}
         </div>
         {!shelf && <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.4 }}>
@@ -374,8 +381,9 @@ function SeriesCard({ arc, readIds, accentHex, fontFamily, isMobile, onOpen, onO
         </StoryCover>
         <div style={{ padding: shelf ? '10px 2px 2px' : '12px 14px 13px', display: 'flex', flexDirection: 'column', gap: shelf ? '5px' : '7px', flex: 1, width: '100%', minWidth: 0 }}>
           <div title={arc.title} style={{
-            fontSize: isMobile ? '15px' : '16px', fontWeight: 750, fontFamily, color: 'var(--text)',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3,
+            fontSize: isMobile ? '15px' : '16px', fontWeight: 750, fontFamily, color: 'var(--text)', lineHeight: 1.3,
+            display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2,
+            overflow: 'hidden', minHeight: '2.6em',
           }}>
             {arc.title}
           </div>

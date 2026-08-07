@@ -222,8 +222,15 @@ export default function YouTube({ profile, track, onBack }) {
             color: 'var(--text-muted)',
             cursor: 'pointer',
             fontSize: '14px',
-            padding: 0,
-            marginBottom: '24px',
+            // Bare text is a ~19px-tall target. The padding gives the thumb a
+            // real one; the negative left margin keeps the label optically
+            // aligned with the page's left edge.
+            display: 'inline-flex',
+            alignItems: 'center',
+            minHeight: '44px',
+            padding: '0 12px',
+            marginLeft: '-12px',
+            marginBottom: '12px',
           }}
         >
           Back

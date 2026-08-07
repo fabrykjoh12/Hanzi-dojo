@@ -90,7 +90,7 @@ function IconButton({ icon: Icon, label, onClick }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-        height: '40px', padding: '0 14px', borderRadius: '12px',
+        minHeight: '44px', padding: '0 14px', borderRadius: '12px',
         border: '1px solid var(--border)',
         background: hovered ? 'var(--surface-2)' : 'var(--surface)',
         color: 'var(--text-muted)',
@@ -260,6 +260,7 @@ function WordStatRow({ word, stat, accentHex, fontFamily }) {
 }
 
 export default function Writing({ session, track, onBack }) {
+  const isMobile = useIsMobile()
   const [studiedWords, setStudiedWords] = useState([])
   const [cardsByVocab, setCardsByVocab] = useState({})
   const [writingStats, setWritingStats] = useState({})
@@ -559,7 +560,7 @@ export default function Writing({ session, track, onBack }) {
 
         <div style={panelStyle}>
           <div style={panelTitleStyle}>Round size</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '8px' }}>
             {ROUND_SIZES.map(size => {
               const disabled = studiedWords.length < size
               return (

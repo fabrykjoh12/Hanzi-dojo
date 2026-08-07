@@ -62,6 +62,7 @@ function IconButton({ icon: Icon, label, onClick }) {
 }
 
 function LanguageCard({ lang, track, prog, levelProgress, isActive, saving, onClick, onLevelSelect }) {
+  const isMobile = useIsMobile()
   const [hovered, setHovered] = useState(false)
   return (
     <div
@@ -129,7 +130,7 @@ function LanguageCard({ lang, track, prog, levelProgress, isActive, saving, onCl
           <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '10px' }}>
             Study level
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '8px' }}>
             {lang.levels.map(lvl => {
               const levelProg = levelProgress[lvl] || { masteredCount: 0, totalWords: 0, unlocked: false }
               const current = track.current_level === lvl
@@ -160,7 +161,7 @@ function LanguageCard({ lang, track, prog, levelProgress, isActive, saving, onCl
                   <div style={{ fontSize: '12px', fontWeight: 800, lineHeight: 1.2 }}>
                     {lang.levelLabel(lvl)}
                   </div>
-                  <div style={{ fontSize: '10px', color: levelProg.unlocked ? '#2F9E6D' : 'var(--text-muted)', marginTop: '5px', fontWeight: 700 }}>
+                  <div style={{ fontSize: '12px', color: levelProg.unlocked ? '#2F9E6D' : 'var(--text-muted)', marginTop: '5px', fontWeight: 700 }}>
                     {!hasContent ? 'Coming soon' : levelProg.unlocked ? 'Passed' : levelProg.masteredCount + '/' + (levelProg.totalWords || 0)}
                   </div>
                 </button>
@@ -218,6 +219,7 @@ function NotStartedCard({ lang, onStart }) {
 }
 
 export default function LanguageSwitcher({ session, profile, onSwitch, onBack }) {
+  const isMobile = useIsMobile()
   const [tracks, setTracks] = useState([])
   const [progress, setProgress] = useState({})
   const [loading, setLoading] = useState(true)
@@ -500,7 +502,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '22px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '10px', marginBottom: '22px' }}>
           {lang.levels.map(lvl => {
             const seeded = !seededLevels || seededLevels.has(lvl)
             return (
@@ -525,7 +527,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
               >
                 {lang.levelLabel(lvl)}
                 {!seeded && (
-                  <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-faint)', marginTop: '4px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-faint)', marginTop: '4px' }}>
                     Coming soon
                   </div>
                 )}
