@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { RETENTION_PRESETS, presetForRetention, setTargetRetention } from './srs'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
+import { externalLinkProps } from './externalLink'
 import { useIsMobile } from './useIsMobile'
 import { useTheme } from './ThemeContext'
 import { languageTheme } from './languageTheme'
@@ -288,9 +289,7 @@ export default function Settings({ session, profile, onUpdate, onBack }) {
               accentHex={accentHex}
             >
               <a
-                href={DISCORD_INVITE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
+                {...externalLinkProps(DISCORD_INVITE_URL)}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '8px',
                   height: '40px', padding: '0 16px', borderRadius: '12px',

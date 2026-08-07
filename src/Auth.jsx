@@ -7,6 +7,7 @@ import { emailProblem, passwordProblem, passwordWhitespaceNote, mapAuthError, MI
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
+import { legalLinkProps } from './externalLink'
 
 export default function Auth({ intro = null }) {
   // Arriving from the pre-login wizard (language + reason chosen) means the user
@@ -302,10 +303,14 @@ export default function Auth({ intro = null }) {
             fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6,
             textAlign: 'center', margin: '10px 0 0', fontFamily: 'Inter, sans-serif',
           }}>
+            {/* Opened outside the signup screen on purpose: reading the terms
+                must never throw away a half-filled form. On the web that is a
+                new tab; in the native shell target="_blank" does nothing, so
+                the hosted copy opens in the system browser instead. */}
             By creating an account you agree to the{' '}
-            <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Terms of Use</a>
+            <a {...legalLinkProps('/terms')} style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Terms of Use</a>
             {' '}and{' '}
-            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Privacy Policy</a>.
+            <a {...legalLinkProps('/privacy')} style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Privacy Policy</a>.
           </p>
         )}
 

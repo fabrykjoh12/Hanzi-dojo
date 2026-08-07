@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
+import { externalLinkProps } from './externalLink'
 
 function getVideoId(url) {
   if (!url) return null
@@ -137,9 +138,7 @@ function PlayerPanel({ video, accentHex, onClose }) {
         </div>
         <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexShrink: 0 }}>
           <a
-            href={video.video_url}
-            target="_blank"
-            rel="noopener noreferrer"
+            {...externalLinkProps(video.video_url)}
             style={{ fontSize: '12.5px', fontWeight: 650, color: accentHex, textDecoration: 'none' }}
           >
             Open on YouTube ↗

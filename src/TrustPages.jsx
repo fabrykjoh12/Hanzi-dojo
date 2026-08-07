@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { BRAND_NAME, BRAND_URL } from './brand'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
+import { externalLinkProps } from './externalLink'
 
 // The public trust pages: Privacy, Terms, Support, Methodology. Reachable
 // signed-out (linked from the Landing footer and the signup screen) and
@@ -35,13 +36,11 @@ function A({ href, children, external }) {
   const navigate = useNavigate()
   return (
     <a
-      href={href}
-      target={external ? '_blank' : undefined}
-      rel={external ? 'noopener noreferrer' : undefined}
       // Internal links navigate client-side (the app is already loaded); the
-      // href stays real for middle-click / open-in-new-tab. External links are
-      // real navigations by design.
-      onClick={external ? undefined : (e) => { e.preventDefault(); navigate(href) }}
+      // href stays real for middle-click / open-in-new-tab. External links go
+      // through externalLinkProps so the native shell hands them to the system
+      // browser instead of replacing the app with a foreign page.
+      {...(external ? externalLinkProps(href) : { href, onClick: (e) => { e.preventDefault(); navigate(href) } })}
       style={{ color: 'var(--text)', fontWeight: 600, textDecorationColor: 'var(--text-faint)' }}
     >{children}</a>
   )

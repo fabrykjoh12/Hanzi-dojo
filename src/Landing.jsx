@@ -16,6 +16,7 @@ import {
   MessagesSquare,
 } from 'lucide-react'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
+import { externalLinkProps } from './externalLink'
 
 const SAGE = '#6E8466'
 const SAGE_DARK = '#5C7155'
@@ -566,9 +567,7 @@ export default function Landing() {
                 {BRAND_NAME} is community-driven. Join learners shaping what we build next.
               </div>
               <a
-                href={DISCORD_INVITE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
+                {...externalLinkProps(DISCORD_INVITE_URL)}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '8px',
                   minHeight: '42px', padding: '0 18px', borderRadius: '14px',
