@@ -166,11 +166,41 @@ The webview ships these screens, so every pass below is store-launch work.
       LanguageSwitcher no longer navigates Home on a failed switch. Screens
       audited clean: Practice, Dictionary, Dashboard, Study, Grammar, Auth,
       all drills, public pages. Lint at main's exact baseline.
-- [ ] **Accessibility sweep (HD-P13)** — keyboard/switch access, focus traps,
-      contrast both themes, `aria-live` on silent state changes.
-- [ ] **Mobile sweep (HD-P13)** — now the *primary* form factor: 360–390 px,
-      44 px targets, no horizontal overflow, `min-height: 0` flex-scroll rule,
-      safe-area insets everywhere.
+- [x] **Accessibility sweep (HD-P13) — DONE 2026-08-07.** Full audit, then
+      fixes in three areas. *Drills:* every practice screen (Speaking,
+      Listen, FillBlank, Cyrillic, GrammarPractice, Kana, SentenceBuilder,
+      ComprehensionCheck, Test) announced nothing when you answered —
+      correctness was colour + a tick — and dropped keyboard focus by
+      disabling the options; all now announce the verdict AND the correct
+      answer from an always-mounted live region, with `aria-disabled`.
+      *Dialogs:* the finish overlay had no dialog semantics at all, and
+      StoryReaderImmersive never imported the focus helper (its lookup
+      popover left focus on the token; its sheet claimed `aria-modal` with
+      focus outside); both fixed, plus traps on MobileNav's sheet and
+      Feedback. *Structure:* real `<nav>` landmarks, toast container always
+      mounted as a live region, InfoTip proper dialog + derived name, chat
+      tokens keyboard-reachable, invalid `role="menu"` dropped, `<h1>` per
+      drill, progressbar roles, announced loading states, visible skip-link
+      focus ring. **`lang` is now per-language data** (`langAttr()` in
+      `languageTheme.js`, 4 specs) and applied across the study screens —
+      without it a screen reader speaks hanzi with the English voice.
+      *Still open:* the `aria-pressed` sweep over ~15 files of custom
+      toggles/chips, `aria-expanded` on the grammar accordion, locked story
+      cards unreachable at `Stories.jsx:143`, and axe-in-e2e (§5).
+- [x] **Mobile sweep (HD-P13) — DONE 2026-08-07.** Audit + fixes. Worst
+      find: all four fixed-format story readers put play/pause and next
+      **below the visible screen on every phone** (a `100vh` shell inside a
+      `<main>` that already reserves the nav height, plus a duplicated
+      safe-area inset) — they now share Study's `MOBILE_SHELL_HEIGHT`.
+      Also: the two chat readers violated the `min-height: 0` flex-scroll
+      rule; nothing but the manhua header handled `env(safe-area-inset-top)`
+      despite `viewport-fit=cover` being live; overlay sheets hinged to the
+      *large* viewport (the bug that once hid a chat overlay's bottom);
+      ~20 touch targets were 19–40 px; grids never collapsed on a phone
+      (the 5-across tone drill); answer text sat at 9–10 px; Auth/Onboarding
+      had no mobile padding branch; four inputs were under 16 px, which
+      makes WKWebView zoom on focus; and calendar/accuracy detail existed
+      only in `title=` tooltips, i.e. nowhere on a touch device.
 - [ ] **Performance pass (HD-P13)** — Home bootstrap RPC (kill the 4-query
       waterfall; slow starts feel worse in an app), font diet (load only the
       active language's family).
