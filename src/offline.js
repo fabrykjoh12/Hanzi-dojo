@@ -136,6 +136,13 @@ export function outboxCount() {
   return tx('outbox', 'readonly', (s) => s.count(), 0).then((n) => n || 0)
 }
 
+// Account deletion only: queued writes for an account that no longer exists
+// would fail on every future replay, so they go too. Never call this on the
+// ordinary path — clearDownloads() deliberately leaves the outbox alone.
+export function outboxClear() {
+  return tx('outbox', 'readwrite', (s) => s.clear(), null)
+}
+
 // ── Audio blob store (offline pronunciation, incl. iOS) ─────────────────────
 export function audioPut(path, blob) {
   if (!path || !blob) return Promise.resolve(null)

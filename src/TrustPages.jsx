@@ -125,9 +125,12 @@ function Privacy() {
       <H2>Your rights and choices</H2>
       <ul style={{ paddingLeft: '20px', margin: '0 0 12px' }}>
         <Li>You can reset your learning progress for your language from Profile at any time.</Li>
-        <Li>You can ask for a copy of your data, ask us to correct it, or ask us to delete
-          your account and everything in it — see <A href="/support">Support</A>. Deletion
-          removes your account data; we don’t keep it beyond that.</Li>
+        <Li>You can delete your account and everything in it yourself, at any time:
+          Profile → Delete account. Deletion is immediate and permanent — flashcards,
+          review history, story progress, test results and the login itself; we don’t
+          keep your data beyond that.</Li>
+        <Li>You can ask for a copy of your data or ask us to correct it — see{' '}
+          <A href="/support">Support</A>.</Li>
         <Li>Your data is kept for as long as you have an account, so your progress is there
           when you come back.</Li>
         <Li>Reminders and audio autoplay are opt-in preferences you control in the app.</Li>
@@ -221,9 +224,12 @@ function Support() {
       </ul>
       <H2>Account deletion</H2>
       <P>
-        To delete your account and its data, ask in Discord or via in-app feedback from the
-        account you want removed, and we’ll confirm and handle it. Progress for a single
-        language can be reset yourself from Profile without deleting the account.
+        You can delete your account yourself: sign in, open <strong>Profile</strong>, and
+        choose <strong>Delete account</strong> at the bottom. It asks you to confirm, then
+        permanently removes your account and all its data — this works the same in the app
+        and on the web at hanzi-dojo.com. Progress for a single language can be reset from
+        Profile without deleting the account. If you can’t sign in, ask in Discord or via
+        the contact below and we’ll handle it after confirming the account is yours.
       </P>
       <H2>Data questions</H2>
       <P>

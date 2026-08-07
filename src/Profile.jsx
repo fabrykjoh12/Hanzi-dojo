@@ -15,6 +15,7 @@ import InfoTip from './InfoTip'
 import StuckWordCoach from './StuckWordCoach'
 import { STUCK_LAPSES } from './stuckWord'
 import { BRAND_URL } from './brand'
+import { confirmWordOk, forgetDeviceData, DELETE_CONFIRM_WORD } from './accountDeletion'
 import {
   ArrowLeft, Layers, LogOut, RotateCcw, Save,
   Sparkles, Target, CalendarCheck, Award, Share2, Check, AlertTriangle, TrendingUp, BookOpen, Trash2,
@@ -94,6 +95,12 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   const [confirmingRemove, setConfirmingRemove] = useState(false)
   const [removing, setRemoving] = useState(false)
   const [removeError, setRemoveError] = useState('')
+  // Account deletion (a store requirement — see accountDeletion.js). A first
+  // tap arms the panel, typing the word confirms it, the RPC does the rest.
+  const [deleteArmed, setDeleteArmed] = useState(false)
+  const [deleteWord, setDeleteWord] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
   const [loading, setLoading] = useState(true)
   const [activity, setActivity] = useState({})
   const [shared, setShared] = useState(false)
@@ -229,6 +236,29 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   }, [session.user.id])
 
   const targetTrack = tracks.find(t => t.language === resetTarget) || track
+
+  const deleteAccount = async () => {
+    if (!deleteArmed) {
+      setDeleteArmed(true)
+      setDeleteError('')
+      return
+    }
+    if (!confirmWordOk(deleteWord)) return
+    setDeleting(true)
+    setDeleteError('')
+    const { error } = await supabase.rpc('delete_my_account')
+    if (error) {
+      setDeleteError(error.message)
+      setDeleting(false)
+      return
+    }
+    // Server side is gone; clear this device's copy (caches AND the write
+    // outbox — queued grades for a dead account would fail forever), drop the
+    // local session, and start the app over from the top.
+    await forgetDeviceData()
+    try { await supabase.auth.signOut() } catch { /* session already dead */ }
+    window.location.assign('/')
+  }
 
   const resetProgress = async () => {
     if (!confirmingReset) {
@@ -748,6 +778,79 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
           )}
         </Panel>
       )}
+
+      {/* Account deletion — self-serve and in-app, as both app stores require.
+          Total and permanent: the delete_my_account RPC removes every owned
+          row and the login itself. One notch sterner than the reset panel:
+          armed by a tap, confirmed by typing the word. */}
+      <Panel danger>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '18px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Delete account</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
+              Permanently deletes your account and everything in it — flashcards, review
+              history, story progress, test results and settings, for every language —
+              and your login with it. <strong style={{ color: '#DC2626', fontWeight: 700 }}>This
+              cannot be undone.</strong> For a fresh start without losing your account,
+              use “Reset a language” above instead.
+            </div>
+          </div>
+          <SmallButton
+            onClick={deleteAccount}
+            danger
+            filled={deleteArmed}
+            disabled={deleting || (deleteArmed && !confirmWordOk(deleteWord))}
+            icon={Trash2}
+          >
+            {deleting ? 'Deleting' : deleteArmed ? 'Delete forever' : 'Delete account'}
+          </SmallButton>
+        </div>
+
+        {deleteArmed && (
+          <div style={{ marginTop: '14px' }}>
+            <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px' }}>
+              Type <strong style={{ color: '#DC2626', fontWeight: 700 }}>{DELETE_CONFIRM_WORD}</strong> to
+              confirm you want your account gone for good.
+            </label>
+            <input
+              type="text"
+              value={deleteWord}
+              onChange={e => setDeleteWord(e.target.value)}
+              disabled={deleting}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              aria-label={'Type ' + DELETE_CONFIRM_WORD + ' to confirm account deletion'}
+              style={{
+                width: '100%', maxWidth: '260px', boxSizing: 'border-box',
+                padding: '10px 12px', borderRadius: '10px',
+                border: '1px solid var(--danger-border)',
+                background: 'var(--surface)', color: 'var(--text)',
+                fontSize: '14px', fontFamily: 'Inter, sans-serif',
+              }}
+            />
+          </div>
+        )}
+
+        {deleteArmed && !deleting && (
+          <button
+            onClick={() => { setDeleteArmed(false); setDeleteWord(''); setDeleteError('') }}
+            style={{
+              marginTop: '12px', background: 'none', border: 'none',
+              padding: 0, color: 'var(--text-muted)', cursor: 'pointer',
+              fontSize: '13px', fontFamily: 'Inter, sans-serif', display: 'block',
+            }}
+          >
+            Cancel — keep my account
+          </button>
+        )}
+
+        {deleteError && (
+          <div style={{ fontSize: '12px', color: '#DC2626', marginTop: '10px', lineHeight: 1.4 }}>
+            {deleteError}
+          </div>
+        )}
+      </Panel>
 
       <button
         onClick={() => supabase.auth.signOut()}
