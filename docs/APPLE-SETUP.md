@@ -76,31 +76,42 @@ com.hanzidojo.app://auth-callback
 *(the third is for Google sign-in inside the app, which does still use a
 browser round-trip — Apple no longer needs it)*
 
-## Step 3 — One click in Xcode (whoever builds the iOS app)
+## Step 3 — The Sign in with Apple entitlement
 
-The native sheet needs the entitlement, which only Xcode can add:
+The native sheet needs an entitlement on the app target.
 
-1. Open `ios/App/App.xcworkspace`.
-2. Select the **App** target → **Signing & Capabilities**.
-3. **+ Capability** → **Sign in with Apple**.
+**This is already handled for CI** — `ios/App/App/App.entitlements` declares
+the capability and the build workflow passes it to Xcode, so no manual step is
+needed for TestFlight builds. It only matters if someone opens the project in
+Xcode directly: App target → **Signing & Capabilities** → **+ Capability** →
+**Sign in with Apple**.
 
-Without this the app compiles and the button fails at the moment it is tapped.
+## Step 4 — Testing it
 
-## Step 6 — Turn it on
+The button is already switched on in code (`FLAGS.APPLE_SIGN_IN`), but it
+renders **only inside the native app** — so it cannot be tested on the
+website. That is the one cost of the native-only choice: the first proof it
+works is a TestFlight build on a real iPhone.
 
-Tell Claude/the maintainer it is done. A one-line flag flip
-(`FLAGS.APPLE_SIGN_IN` in `src/flags.js`) puts the button live, and Apple
-sign-in can then be tested **on the website** — no iOS build required. That
-web test is the proof the whole chain is correct.
+The web sign-in screen is unaffected and keeps Google + email.
 
 ---
 
-## Why the button is hidden until then
+## A different Apple key is needed for BUILDS
 
-Supabase answers `Unsupported provider` for a provider that isn't configured.
-Shipping a visible button that errors is worse than shipping none, and
-`main` deploys to real learners on merge — so the flag stays off until the
-provider is saved.
+Uploading the app to TestFlight uses an **App Store Connect API key**, which
+is not the same thing as the sign-in key above and cannot be substituted for
+it:
+
+| Key | Made where | Used for |
+|-----|-----------|----------|
+| Sign in with Apple (`.p8`) | Certificates, Identifiers & Profiles → Keys | Web Apple sign-in only — **currently unused**, since sign-in is native |
+| App Store Connect API (`.p8`) | App Store Connect → Users and Access → **Integrations** | Building and uploading to TestFlight (`.github/workflows/ios-testflight.yml`) |
+
+For the build, create the second one with role **App Manager** and add these
+repository secrets (Settings → Secrets and variables → Actions):
+`ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_PRIVATE_KEY` (the whole `.p8` contents,
+BEGIN/END lines included) and `APPLE_TEAM_ID`.
 
 ## Where this is required
 
