@@ -140,12 +140,18 @@ function StoryCard({ story, read, accentHex, fontFamily, levelLabel, practice, o
   const lift = hovered && !locked
   return (
     <button
-      onClick={locked ? undefined : onClick}
-      disabled={locked}
+      // `aria-disabled`, not `disabled`: a locked card still has something to
+      // say — WHY it's locked and what opens it — and a real `disabled` takes
+      // the card out of the tab order, so that label can never be reached.
+      // The no-op onClick keeps it inert.
+      onClick={locked ? () => {} : onClick}
+      aria-disabled={locked}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       aria-label={shelf ? [story.title, levelLabel, practice ? 'Practice' : formatLabel(story), locked ? lockLabel : read ? 'Read' : null].filter(Boolean).join(' · ') : undefined}
-      className="hd-press"
+      // A locked card never gave under the finger (a real `disabled` gets no
+      // :active) and shouldn't start now — it can't be opened.
+      className={locked ? undefined : 'hd-press'}
       style={{
         display: 'flex', flexDirection: 'column', textAlign: 'left', width: '100%', padding: 0,
         border: shelf ? 'none' : '1px solid ' + (lift ? accentHex + '55' : 'var(--border)'),
@@ -208,14 +214,11 @@ function StoryCard({ story, read, accentHex, fontFamily, levelLabel, practice, o
         {!shelf && <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.4 }}>
           {story.english_summary || '—'}
         </div>}
+        {/* No aria-label on the row below: a plain div isn't a widget, so the
+            label was ignored — and it sits inside the card's button anyway,
+            whose accessible name already reads the visible "N chapters"/"N min". */}
         {!shelf && standalone && (standalone.chapters || standalone.minutes) && (
-          <div
-            aria-label={[
-              standalone.chapters ? standalone.chapters + ' chapters' : null,
-              standalone.minutes ? 'about ' + standalone.minutes + ' minutes' : null,
-            ].filter(Boolean).join(', ')}
-            style={{ display: 'flex', alignItems: 'center', gap: '12px', minHeight: '18px', color: 'var(--text-muted)', fontSize: '11.5px', fontWeight: 700 }}
-          >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minHeight: '18px', color: 'var(--text-muted)', fontSize: '11.5px', fontWeight: 700 }}>
             {standalone.chapters && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                 <Layers size={13} strokeWidth={2} aria-hidden="true" />
@@ -341,12 +344,16 @@ function SeriesCard({ arc, readIds, accentHex, fontFamily, isMobile, onOpen, onO
         border: '1px solid var(--border)', opacity: 0.8,
       }} />}
       <button
-        onClick={locked ? undefined : onOpen}
-        disabled={locked}
-        aria-label={locked ? arc.title : arc.title + ' — continue reading'}
+        // Same as StoryCard: locked stays focusable (aria-disabled) so the
+        // reason it's locked is reachable, with a no-op click to keep it inert.
+        onClick={locked ? () => {} : onOpen}
+        aria-disabled={locked}
+        aria-label={locked
+          ? [arc.title, lockLabel || 'Locked'].join(' — ')
+          : arc.title + ' — continue reading'}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className="hd-press"
+        className={locked ? undefined : 'hd-press'}
         style={{
           position: 'relative', display: 'flex', flexDirection: 'column', textAlign: 'left',
           width: '100%', padding: 0, cursor: locked ? 'default' : 'pointer',

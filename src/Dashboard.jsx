@@ -172,7 +172,7 @@ function StoriesPanel({ rows, language, onLanguage }) {
   const chip = (key, label) => {
     const on = (key || null) === language
     return (
-      <button key={key || 'all'} onClick={() => onLanguage(key || null)} style={{
+      <button key={key || 'all'} onClick={() => onLanguage(key || null)} aria-pressed={on} style={{
         padding: '4px 10px', borderRadius: '999px', cursor: 'pointer', fontSize: '12px',
         border: '1px solid var(--border)', fontWeight: on ? 600 : 500,
         background: on ? '#E7EDE4' : 'transparent', color: on ? ACCENT : 'var(--text-muted)',
@@ -187,7 +187,7 @@ function StoriesPanel({ rows, language, onLanguage }) {
   return (
     <div>
       {languages.length > 1 && (
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
+        <div role="group" aria-label="Filter stories by language" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
           {chip(null, 'All')}
           {languages.map(l => chip(l, langLabel(l)))}
         </div>
@@ -329,9 +329,9 @@ export default function Dashboard({ onBack, session, profile, track }) {
           </button>
           <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', margin: 0 }}>Dashboard</h1>
         </div>
-        <div style={{ display: 'flex', gap: '6px' }}>
+        <div role="group" aria-label="Date range" style={{ display: 'flex', gap: '6px' }}>
           {RANGES.map(r => (
-            <button key={r.key} onClick={() => setDays(r.key)} style={{
+            <button key={r.key} onClick={() => setDays(r.key)} aria-pressed={days === r.key} style={{
               padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px',
               border: '1px solid var(--border)',
               background: days === r.key ? '#E7EDE4' : 'transparent',

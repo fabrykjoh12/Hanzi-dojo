@@ -156,9 +156,14 @@ columns all exist — older "pending migration" doc entries were stale.
       release cut procedure — "merged to main" no longer means users have it.
       Evaluate a JS-bundle OTA service (e.g. Capgo) later for hotfixes; not
       needed for launch.
-- [ ] **Store listings**: app name, subtitle/short description, full
-      description, keywords, screenshots (6.7" + 5.5" iPhone, Android phone +
-      tablet), feature graphic. Screenshots after the UI passes in §1.
+- [ ] **Store listings** — **copy drafted 2026-08-07 in
+      [`docs/STORE-LISTING.md`](STORE-LISTING.md)**: name, subtitle, short and
+      full description, keywords, "what's new", the screenshot shot list, the
+      App Review notes (incl. the exact account-deletion steps reviewers look
+      for) and every Play Data Safety answer. **Owner: review and edit the
+      wording, then paste into the consoles.** Still to do by hand: capture
+      the screenshots on a real device *after* §4 verification, and produce
+      the 1024×500 feature graphic.
 - [ ] **Announce the pivot in `ROADMAP.md` when ready** — deliberately not
       done in this change: editing the roadmap posts to Discord instantly, so
       the owner chooses the moment and the wording.
@@ -198,9 +203,24 @@ The webview ships these screens, so every pass below is store-launch work.
       focus ring. **`lang` is now per-language data** (`langAttr()` in
       `languageTheme.js`, 4 specs) and applied across the study screens —
       without it a screen reader speaks hanzi with the English voice.
-      *Still open:* the `aria-pressed` sweep over ~15 files of custom
-      toggles/chips, `aria-expanded` on the grammar accordion, locked story
-      cards unreachable at `Stories.jsx:143`, and axe-in-e2e (§5).
+      **Second pass, 2026-08-07 — the deferred items are now done too:**
+      selected state is exposed on every custom toggle and chip (mode
+      switches, filters, category chips, kana view/script/row pickers,
+      the shared `Segmented` control, dashboard filters, writing round size)
+      via `aria-pressed` inside labelled groups, with `role="radio"` reserved
+      for the two Onboarding "choose one, then Continue" card pickers. Three
+      candidates were deliberately **not** changed — the Landing, Tones and
+      Cyrillic cards fire an action and advance immediately, so they have no
+      selected state to expose. Also: `aria-expanded` + `aria-controls` on
+      the grammar accordion (and the same bug found on the KnownWords level
+      accordion), locked story **and series** cards keep their place in the
+      tab order via `aria-disabled` so their "what unlocks this" label is
+      finally reachable, the stroke-order tile got `role="img"` so its label
+      is exposed at all, and YouTube's decorative glyphs are hidden, its
+      load error is a `role="alert"`, and the inline player takes focus when
+      it opens. *Still open:* axe-in-e2e (§5), and the radiogroups don't
+      implement APG roving-tabindex arrow keys — WCAG-passing, APG-advisory,
+      and a behaviour change rather than a semantics one.
 - [x] **Mobile sweep (HD-P13) — DONE 2026-08-07.** Audit + fixes. Worst
       find: all four fixed-format story readers put play/pause and next
       **below the visible screen on every phone** (a `100vh` shell inside a
@@ -247,8 +267,14 @@ The webview ships these screens, so every pass below is store-launch work.
       proper-noun pinyin display in `cedict.js`.
 - [ ] **Migration hardening** — `drop policy if exists` in `20260719120000`;
       partial unique index on `vocabulary`.
-- [ ] **Timezone-correct reminders** — folds into the FCM rework (0b): store
-      user timezone, schedule per-user, kill the ~1 h DST drift.
+- [x] **Timezone-correct reminders — ALREADY DONE (verified 2026-08-07).** The
+      ~1 h DST drift was fixed before this milestone: `reminderSchedule.js`
+      decides per-user from `profiles.timezone` with a `reminder_last_sent_at`
+      guard, and all four columns exist in prod. The checklist entry was
+      stale. **But: 0 of 31 accounts have reminders enabled**, so what remains
+      is a product question (discoverability / the browser permission prompt),
+      not engineering — and the delivery mechanism changes anyway when push
+      moves to FCM/APNs (§0b).
 
 ## 2 · Owner / dashboard actions
 
@@ -267,8 +293,13 @@ The webview ships these screens, so every pass below is store-launch work.
       deep-link scheme from 0b**.
 - [ ] **SMTP live test** — magic link arrives from `no-reply@hanzi-dojo.com`,
       not spam.
-- [ ] **Google OAuth branding** — app name "Hanzi Dojo" + logo in Google
-      Cloud Console (the consent screen currently shows the Supabase URL).
+- [ ] **Google OAuth branding** — Google Cloud Console → APIs & Services →
+      OAuth consent screen: app name **"Hanzi Dojo"**, logo, authorized
+      domain `hanzi-dojo.com`. **Decided 2026-08-07: free fix only** — the
+      `auth.hanzi-dojo.com` custom domain (~$10/mo add-on) is deferred, so
+      the callback stays `bvqvturqupbggxaeihvi.supabase.co` and every
+      provider is configured against that. Changing it later means redoing
+      the Apple Services ID + its domain verification too.
 - [ ] **Disconnect the two always-red Cloudflare "Workers Builds" checks.**
 - [ ] **Turn off the retired GitHub Pages site.**
 - [ ] **Trust-pages sign-off** — review `/privacy` `/terms` `/support`

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useId, useMemo } from 'react'
 import { supabase } from './supabase'
 import { languageTheme } from './languageTheme'
 import { grammarFor } from './grammarGuides'
@@ -74,6 +74,9 @@ export default function Grammar({ session, profile, track, onBack }) {
   const accentHex = theme.accentHex
   const font = theme.font
   const guide = grammarFor(profile.active_language)
+  // Prefix for the topic panels' DOM ids, so each header button can point at
+  // the panel it controls (aria-controls) without colliding with anything else.
+  const panelBase = useId()
   const [open, setOpen] = useState(null)   // id of the expanded topic (null = none)
   const [query, setQuery] = useState('')
   const [stories, setStories] = useState([])
@@ -187,6 +190,7 @@ export default function Grammar({ session, profile, track, onBack }) {
           {shownTopics.map((topic) => {
             const expanded = open === topic.id
             const done = !!rewarded[topic.id]
+            const panelId = panelBase + topic.id
             return (
               <div key={topic.id} style={{
                 background: 'var(--surface)', border: '1px solid ' + (expanded ? accentHex + '44' : 'var(--border)'),
@@ -196,6 +200,11 @@ export default function Grammar({ session, profile, track, onBack }) {
               }}>
                 <button
                   onClick={() => setOpen(expanded ? null : topic.id)}
+                  // The only visual cue that a topic is open is the rotated
+                  // chevron, which says nothing out loud — the state has to be
+                  // announced too.
+                  aria-expanded={expanded}
+                  aria-controls={panelId}
                   style={{
                     width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 'none',
                     padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px', fontFamily: 'Inter, sans-serif',
@@ -222,7 +231,7 @@ export default function Grammar({ session, profile, track, onBack }) {
                 </button>
 
                 {expanded && (
-                  <div style={{ padding: '2px 20px 20px', display: 'grid', gap: '14px' }}>
+                  <div id={panelId} style={{ padding: '2px 20px 20px', display: 'grid', gap: '14px' }}>
                     {topic.pattern && (
                       <div style={{ paddingLeft: isMobile ? 0 : '54px' }}>
                         <span style={{

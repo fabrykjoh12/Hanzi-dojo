@@ -559,8 +559,8 @@ export default function Writing({ session, track, onBack }) {
         </div>
 
         <div style={panelStyle}>
-          <div style={panelTitleStyle}>Round size</div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '8px' }}>
+          <div id="writing-round-size" style={panelTitleStyle}>Round size</div>
+          <div role="group" aria-labelledby="writing-round-size" style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '8px' }}>
             {ROUND_SIZES.map(size => {
               const disabled = studiedWords.length < size
               return (
@@ -568,6 +568,7 @@ export default function Writing({ session, track, onBack }) {
                   key={size}
                   onClick={() => setSelectedCount(size)}
                   disabled={disabled}
+                  aria-pressed={selectedCount === size}
                   style={choiceBox(selectedCount === size, accentHex, disabled)}
                 >
                   {size}
@@ -581,8 +582,8 @@ export default function Writing({ session, track, onBack }) {
         </div>
 
         <div style={panelStyle}>
-          <div style={panelTitleStyle}>Question type</div>
-          <div style={{ display: 'grid', gap: '8px' }}>
+          <div id="writing-question-type" style={panelTitleStyle}>Question type</div>
+          <div role="group" aria-labelledby="writing-question-type" style={{ display: 'grid', gap: '8px' }}>
             <ModeButton active={questionMode === 'mixed'} accentHex={accentHex} title="Mixed" detail="Both directions" onClick={() => setQuestionMode('mixed')} />
             <ModeButton active={questionMode === 'to_target'} accentHex={accentHex} title={'English -> ' + languageName} detail={isJapanese ? 'Kanji, hiragana, or romaji' : 'Hanzi or pinyin'} onClick={() => setQuestionMode('to_target')} />
             <ModeButton active={questionMode === 'to_english'} accentHex={accentHex} title={languageName + ' -> English'} detail="Type the English meaning" onClick={() => setQuestionMode('to_english')} />
@@ -813,7 +814,7 @@ function StateIcon({ icon: Icon, accentHex }) {
 
 function ModeButton({ active, accentHex, title, detail, onClick }) {
   return (
-    <button onClick={onClick} style={modeButtonStyle(active, accentHex)}>
+    <button onClick={onClick} aria-pressed={active} style={modeButtonStyle(active, accentHex)}>
       <div style={{ fontSize: '15px', fontWeight: 850 }}>{title}</div>
       <div style={{ fontSize: '11px', color: active ? accentHex : 'var(--text-muted)', marginTop: '4px' }}>{detail}</div>
     </button>

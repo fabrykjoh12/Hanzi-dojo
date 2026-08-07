@@ -8,6 +8,8 @@ import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 import { legalLinkProps } from './externalLink'
+import { signInWithProvider } from './nativeAuth'
+import { FLAGS } from './flags'
 import { useIsMobile } from './useIsMobile'
 
 export default function Auth({ intro = null }) {
@@ -103,12 +105,13 @@ export default function Auth({ intro = null }) {
   }
   const onEnter = (e) => { if (e.key === 'Enter') submit(e) }
 
-  const handleGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo },
-    })
-    if (error) { setMessageKind('error'); setMessage(error.message) }
+  // Both providers go through the same helper: on the web it is the ordinary
+  // redirect, and in the store apps the provider opens in the system browser
+  // and returns via the app's deep link (see nativeAuth.js).
+  const handleProvider = async (provider) => {
+    setMessage('')
+    const { error } = await signInWithProvider(provider)
+    if (error) { setMessageKind('error'); setMessage(mapAuthError(error.message)) }
   }
 
   return (
@@ -341,9 +344,39 @@ export default function Auth({ intro = null }) {
         </div>
         )}
 
+        {/* Sign in with Apple. Apple requires it wherever a third-party login
+            is offered (App Store guideline 4.8), and it is shown on the web
+            too so the same account works everywhere. Apple's mark is drawn
+            inline: their branding requirements are specific, and lucide's
+            "apple" is a piece of fruit. */}
+        {!resetMode && FLAGS.APPLE_SIGN_IN && (
+        <button onClick={() => handleProvider('apple')} style={{
+          width: '100%',
+          padding: '12px',
+          borderRadius: '12px',
+          border: '1px solid var(--border)',
+          background: 'var(--surface)',
+          color: 'var(--text)',
+          fontSize: '15px',
+          fontWeight: 500,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '10px',
+          fontFamily: 'Inter, sans-serif',
+          marginBottom: '10px',
+        }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="currentColor" d="M17.05 12.54c-.02-2.2 1.8-3.26 1.88-3.31-1.02-1.5-2.61-1.7-3.18-1.73-1.35-.14-2.64.8-3.33.8-.69 0-1.74-.78-2.86-.76-1.47.02-2.83.86-3.59 2.18-1.53 2.66-.39 6.6 1.1 8.76.73 1.06 1.6 2.25 2.74 2.2 1.1-.04 1.51-.71 2.84-.71 1.32 0 1.7.71 2.86.69 1.18-.02 1.93-1.08 2.65-2.14.84-1.23 1.18-2.42 1.2-2.48-.03-.01-2.3-.88-2.32-3.5zM14.9 5.9c.6-.74 1.01-1.75.9-2.77-.87.04-1.93.58-2.56 1.31-.56.65-1.06 1.69-.93 2.68.97.08 1.97-.49 2.59-1.22z"/>
+          </svg>
+          Continue with Apple
+        </button>
+        )}
+
         {/* Google */}
         {!resetMode && (
-        <button onClick={handleGoogle} style={{
+        <button onClick={() => handleProvider('google')} style={{
           width: '100%',
           padding: '12px',
           borderRadius: '12px',

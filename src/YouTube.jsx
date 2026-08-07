@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
@@ -52,7 +52,9 @@ function VideoCard({ video, accentHex, onPlay }) {
           {thumbnail ? (
             <img
               src={thumbnail}
-              alt={video.title}
+              // Decorative: the title is right there in the card's own text, so
+              // a described thumbnail would just say everything twice.
+              alt=""
               style={{
                 position: 'absolute',
                 top: 0,
@@ -70,7 +72,7 @@ function VideoCard({ video, accentHex, onPlay }) {
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '32px',
-            }}>
+            }} aria-hidden="true">
               ▶
             </div>
           )}
@@ -113,9 +115,17 @@ function VideoCard({ video, accentHex, onPlay }) {
 // want captions/settings on YouTube itself.
 function PlayerPanel({ video, accentHex, onClose }) {
   const videoId = getVideoId(video.video_url)
+  const panelRef = useRef(null)
+  // The player opens ABOVE the grid, so a keyboard learner is left standing
+  // where they were with nothing announced. Move focus into the panel that
+  // just appeared — the page already scrolls to it.
+  useEffect(function() {
+    const panel = panelRef.current
+    if (panel) panel.focus({ preventScroll: true })
+  }, [video.id])
   if (!videoId) return null
   return (
-    <div style={{
+    <div ref={panelRef} tabIndex={-1} role="region" aria-label={'Now playing: ' + video.title} style={{
       background: 'var(--surface)', border: '1px solid ' + accentHex + '33',
       borderRadius: '18px', overflow: 'hidden', marginBottom: '24px',
       boxShadow: '0 18px 48px rgba(24,24,27,0.10)',
@@ -246,8 +256,8 @@ export default function YouTube({ profile, track, onBack }) {
         </div>
 
         {loadError && (
-          <div style={{ textAlign: 'center', padding: '80px 0' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>▶</div>
+          <div role="alert" style={{ textAlign: 'center', padding: '80px 0' }}>
+            <div aria-hidden="true" style={{ fontSize: '48px', marginBottom: '16px' }}>▶</div>
             <div style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text)', marginBottom: '8px' }}>
               Couldn't load videos
             </div>
@@ -269,7 +279,7 @@ export default function YouTube({ profile, track, onBack }) {
 
         {!loadError && videos.length === 0 && (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>▶</div>
+            <div aria-hidden="true" style={{ fontSize: '48px', marginBottom: '16px' }}>▶</div>
             <div style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text)', marginBottom: '8px' }}>
               No videos yet
             </div>

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { isNativeApp } from './nativeShell'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -39,11 +40,28 @@ VITE_SUPABASE_ANON_KEY=...</pre>
 // iOS Safari's ~7-day storage eviction for installed web apps on iOS < 17.4 —
 // that's an OS-level purge with no client-side workaround (this is a static
 // SPA with no backend to hold a server-side session).
+// PKCE in the store apps, the existing implicit flow on the web. This is one
+// line but a deliberate trade, so it is worth stating:
+//
+//   Native MUST be PKCE. OAuth returns through the `com.hanzidojo.app://`
+//   custom scheme, and any app on the device can claim a scheme — with the
+//   implicit flow that callback URL carries the access and refresh tokens
+//   themselves, straight into whoever intercepted it. PKCE sends a
+//   single-use code that is worthless without the verifier held here.
+//
+//   Web stays implicit. PKCE requires the verifier to be in the SAME
+//   browser that began the flow, so switching the web to it would break
+//   "sign up on the laptop, open the confirmation email on your phone" —
+//   a real thing people do, and a regression for zero gain, since the web
+//   redirect is a normal https URL nobody else can claim.
+const flowType = isNativeApp() ? 'pkce' : 'implicit'
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    flowType,
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
   },
 })

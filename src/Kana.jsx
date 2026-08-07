@@ -64,7 +64,7 @@ function speakKana(text) {
 // Practice | Chart tab switch, shown at the top of both setup views.
 function ViewTabs({ view, setView, accent }) {
   const tab = (key, label) => (
-    <button key={key} onClick={() => setView(key)} style={{
+    <button key={key} onClick={() => setView(key)} aria-pressed={view === key} style={{
       padding: '8px 20px', borderRadius: '999px', cursor: 'pointer',
       border: '1px solid ' + (view === key ? accent + '66' : 'var(--border)'),
       background: view === key ? accent + '14' : 'var(--surface)',
@@ -73,7 +73,7 @@ function ViewTabs({ view, setView, accent }) {
     }}>{label}</button>
   )
   return (
-    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
+    <div role="group" aria-label="View" style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
       {tab('learn', 'Learn')}
       {tab('practice', 'Practice')}
       {tab('chart', 'Chart')}
@@ -377,9 +377,9 @@ export default function Kana({ profile, onBack }) {
             <h1 style={{ fontSize: '26px', fontWeight: 780, color: 'var(--text)', marginTop: '8px' }}>Tap a kana to hear it</h1>
           </div>
           <ViewTabs view={view} setView={setView} accent={ACCENT} />
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
+          <div role="group" aria-label="Script" style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
             {[['hira', 'Hiragana'], ['kata', 'Katakana']].map(([key, label]) => (
-              <button key={key} onClick={() => setScript(key)} style={{
+              <button key={key} onClick={() => setScript(key)} aria-pressed={script === key} style={{
                 padding: '8px 16px', borderRadius: '999px', cursor: 'pointer',
                 border: '1px solid ' + (script === key ? ACCENT + '66' : 'var(--border)'),
                 background: script === key ? ACCENT + '14' : 'var(--surface)',
@@ -407,7 +407,7 @@ export default function Kana({ profile, onBack }) {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: ACCENT, fontSize: '13px', fontWeight: 750 }}>
               <Languages size={17} strokeWidth={1.8} color={ACCENT} /> Kana practice
             </div>
-            <h1 style={{ fontSize: '26px', fontWeight: 780, color: 'var(--text)', marginTop: '8px' }}>Choose your rows</h1>
+            <h1 id="kana-rows-heading" style={{ fontSize: '26px', fontWeight: 780, color: 'var(--text)', marginTop: '8px' }}>Choose your rows</h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '6px' }}>
               Pick the gojūon rows to drill. Rows you've missed this session are marked.
             </p>
@@ -416,9 +416,9 @@ export default function Kana({ profile, onBack }) {
           <ViewTabs view={view} setView={setView} accent={ACCENT} />
 
           {/* Script + answer-mode toggles */}
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
+          <div role="group" aria-label="Script and answer mode" style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
             {[['hira', 'Hiragana'], ['kata', 'Katakana'], ['both', 'Both']].map(([key, label]) => (
-              <button key={key} onClick={() => setScript(key)} style={{
+              <button key={key} onClick={() => setScript(key)} aria-pressed={script === key} style={{
                 padding: '8px 16px', borderRadius: '999px', cursor: 'pointer',
                 border: '1px solid ' + (script === key ? ACCENT + '66' : 'var(--border)'),
                 background: script === key ? ACCENT + '14' : 'var(--surface)',
@@ -428,7 +428,7 @@ export default function Kana({ profile, onBack }) {
             ))}
             <span style={{ width: '1px', background: 'var(--border)', margin: '4px 2px' }} />
             {[['choice', 'Tap', MousePointerClick], ['typed', 'Type', Keyboard]].map(([key, label, Icon]) => (
-              <button key={key} onClick={() => setAnswerMode(key)} style={{
+              <button key={key} onClick={() => setAnswerMode(key)} aria-pressed={answerMode === key} style={{
                 display: 'inline-flex', alignItems: 'center', gap: '6px',
                 padding: '8px 16px', borderRadius: '999px', cursor: 'pointer',
                 border: '1px solid ' + (answerMode === key ? ACCENT + '66' : 'var(--border)'),
@@ -443,12 +443,12 @@ export default function Kana({ profile, onBack }) {
           </div>
 
           {/* Row grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)', gap: '8px', marginBottom: '12px' }}>
+          <div role="group" aria-labelledby="kana-rows-heading" style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)', gap: '8px', marginBottom: '12px' }}>
             {ROWS.map(row => {
               const active = selectedRows.has(row.key)
               const missed = row.items.some(([h, k]) => missCount('kana', h) > 0 || missCount('kana', k) > 0)
               return (
-                <button key={row.key} onClick={() => toggleRow(row.key)} style={{
+                <button key={row.key} onClick={() => toggleRow(row.key)} aria-pressed={active} style={{
                   position: 'relative', padding: '12px 6px', borderRadius: '13px', cursor: 'pointer',
                   border: '1.5px solid ' + (active ? ACCENT : 'var(--border)'),
                   background: active ? ACCENT + '10' : 'var(--surface)',

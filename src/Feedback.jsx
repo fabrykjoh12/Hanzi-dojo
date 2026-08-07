@@ -158,7 +158,7 @@ export default function Feedback({ session, profile, view }) {
                 </button>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px', marginTop: '18px', flexWrap: 'wrap' }}>
+              <div role="group" aria-label="Feedback category" style={{ display: 'flex', gap: '8px', marginTop: '18px', flexWrap: 'wrap' }}>
                 {CATEGORIES.map(c => {
                   const Icon = c.icon
                   const active = category === c.key
@@ -166,6 +166,7 @@ export default function Feedback({ session, profile, view }) {
                     <button
                       key={c.key}
                       onClick={() => setCategory(c.key)}
+                      aria-pressed={active}
                       style={{
                         display: 'inline-flex', alignItems: 'center', gap: '7px',
                         padding: '9px 13px', borderRadius: '12px', cursor: 'pointer',

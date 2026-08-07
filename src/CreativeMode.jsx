@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useId } from 'react'
 import { AlertTriangle, ChevronDown, ChevronUp, FlaskConical, Gauge, GraduationCap, Trophy, Zap, Trash2 } from 'lucide-react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
@@ -62,31 +62,38 @@ async function fetchPaged(build) {
 }
 
 function Field({ label, children }) {
+  const labelId = useId()
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-      <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
+      <span id={labelId} style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
         {label}
       </span>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>{children}</div>
+      <div role="group" aria-labelledby={labelId} style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>{children}</div>
     </div>
   )
 }
 
-function Btn({ label, icon: Icon, onClick, active, danger, armed, busy, disabled }) {
+// `active` marks a chosen value (announced as a pressed toggle); `current`
+// marks the option you are already on (announced as aria-current). Both look
+// the same, so the shared `on` below keeps the styling identical.
+function Btn({ label, icon: Icon, onClick, active, current, danger, armed, busy, disabled }) {
   const tone = danger ? WARN : 'var(--text)'
+  const on = active || current
   return (
     <button
       onClick={onClick}
       disabled={busy || disabled}
+      aria-pressed={active === undefined ? undefined : Boolean(active)}
+      aria-current={current ? 'true' : undefined}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: '6px',
         padding: '8px 12px', borderRadius: '10px',
         border: '1px solid ' + (armed ? WARN : 'var(--border)'),
         background: armed
           ? 'color-mix(in srgb, ' + WARN + ' 14%, var(--surface))'
-          : (active ? 'var(--surface-2)' : 'var(--surface)'),
+          : (on ? 'var(--surface-2)' : 'var(--surface)'),
         color: armed ? WARN : tone,
-        fontSize: '12.5px', fontWeight: active ? 700 : 600,
+        fontSize: '12.5px', fontWeight: on ? 700 : 600,
         fontFamily: 'Inter, sans-serif',
         cursor: (busy || disabled) ? 'not-allowed' : 'pointer',
         opacity: (busy || disabled) ? 0.55 : 1,
@@ -297,7 +304,7 @@ export default function CreativeMode({ session, profile, track }) {
                 key={o.level}
                 label={o.label}
                 icon={o.isCurrent ? Gauge : undefined}
-                active={o.isCurrent}
+                current={o.isCurrent}
                 busy={busy === 'jump'}
                 disabled={!snapshot}
                 onClick={() => run('jump', 0, () => jumpTo(o.level))}
