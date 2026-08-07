@@ -201,9 +201,23 @@ The webview ships these screens, so every pass below is store-launch work.
       had no mobile padding branch; four inputs were under 16 px, which
       makes WKWebView zoom on focus; and calendar/accuracy detail existed
       only in `title=` tooltips, i.e. nowhere on a touch device.
-- [ ] **Performance pass (HD-P13)** — Home bootstrap RPC (kill the 4-query
-      waterfall; slow starts feel worse in an app), font diet (load only the
-      active language's family).
+- [x] **Performance pass (HD-P13) — DONE 2026-08-07.** Home's six sequential
+      round trips became three: profile + tracks now go out together, and so
+      do cards + the week's activity + grammar-due, leaving only the
+      vocabulary query (which needs the cards' study floor) to follow.
+      Returning to Home no longer refetches the dashboard after a read-only
+      detour (`homeRefresh.js`, conservative by design: unknown screens
+      refetch, plus a staleness ceiling and a local-midnight check). Font
+      diet: Noto Sans JP left the base stylesheet — a full CJK family that
+      only the paused track's screens use — and loads on demand instead.
+      **Deliberately NOT done:** a server-side Home RPC. It would have to
+      reimplement FSRS due-dates in SQL and could then disagree with the
+      client, breaking the one-definition-per-number rule
+      (`docs/METRICS.md`); the parallelisation gets most of the win with
+      none of that risk.
+      *Still open (post-launch, §5):* self-hosting the fonts so a cold
+      start doesn't depend on Google Fonts — worth doing for the app, where
+      the network is least reliable.
 - [ ] **Auth error-path e2e (HD-P11)** — plus the new native OAuth/deep-link
       flows once 0b lands.
 - [ ] **HD-P12 leftovers** — profile number scoping labels, achievements
