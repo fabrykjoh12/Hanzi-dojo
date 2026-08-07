@@ -9,6 +9,7 @@ import {
 } from './routes'
 import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
 import { isBootstrapFailure } from './supabaseErrors'
+import { ensureLanguageFont } from './fontLoader'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
 // Eager: the app shell + first-paint screens.
@@ -143,6 +144,14 @@ export default function App() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
+
+  // Fetch the active language's web font if the base stylesheet doesn't
+  // already carry it. Only the paused tracks need this, so for the Chinese
+  // product it is a no-op — which is the point: nobody downloads a CJK family
+  // for a language they never open (see fontLoader.js).
+  useEffect(() => {
+    if (profile && profile.active_language) ensureLanguageFont(profile.active_language)
+  }, [profile])
 
   // Move focus to the main content region when the view changes, so keyboard
   // and screen-reader users land on the new screen instead of being stranded on

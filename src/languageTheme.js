@@ -23,6 +23,13 @@ export const LANGUAGES = {
     accentHexDark: '#922E1C',
     accentVar: 'var(--chinese-accent)',
     font: "'Noto Sans SC'",
+    // webFont: the Google Fonts family spec to fetch before this language's
+    // text can render properly. null = already in the base stylesheet
+    // (index.html ships Chinese + the UI faces, because Chinese IS the
+    // product and its hanzi are on screen at first paint). A paused track's
+    // font is fetched on demand instead of being downloaded by every learner
+    // who will never see it — see fontLoader.js.
+    webFont: null,
     backgroundKey: 'chinese',
     cjk: true,
     script: 'hanzi',
@@ -40,6 +47,7 @@ export const LANGUAGES = {
     accentHexDark: '#1E2750',
     accentVar: 'var(--japanese-accent)',
     font: "'Noto Sans JP'",
+    webFont: 'Noto+Sans+JP:wght@300;400;500;700',
     backgroundKey: 'japanese',
     cjk: true,
     script: 'kana',
@@ -55,8 +63,9 @@ export const LANGUAGES = {
     accentHexDark: '#1D4EA0',
     accentVar: 'var(--russian-accent)',
     // Inter (the UI font) already ships full Cyrillic coverage, so Russian needs
-    // no dedicated web font.
+    // no dedicated web font — and Inter is always loaded.
     font: 'Inter',
+    webFont: null,
     backgroundKey: 'russian',
     cjk: false,
     script: 'cyrillic',

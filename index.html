@@ -12,10 +12,16 @@
     <meta name="theme-color" content="#B83A24" />
 
     <!-- Fonts: preconnect + direct link (not a CSS @import, which would
-         serialize behind the app stylesheet and delay first text paint). -->
+         serialize behind the app stylesheet and delay first text paint).
+         This carries the UI faces and Noto Sans SC only — Chinese is the
+         product, so its hanzi are on screen at first paint. A full CJK family
+         is the most expensive thing this page fetches, and Noto Sans JP is
+         needed only on the paused Japanese track's own screens, so it is
+         loaded on demand instead (src/fontLoader.js) rather than by every
+         learner who will never see it. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;600&family=Poppins:wght@500;600;700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Inter:wght@300;400;500;600&family=Poppins:wght@500;600;700&display=swap" />
 
     <title>Hanzi Dojo — Learn to read Chinese free</title>
     <meta name="description" content="Learn Chinese with SRS flashcards and stories matched to the words you know. Free forever, no credit card." />
