@@ -18,7 +18,7 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   // Cumulative deck: every level from the study floor up to the current level,
   // so advancing a level keeps the earlier levels' words in the counts.
   const floorLevel = studyFloorLevel(cards, track.current_level)
-  const { data: vocab } = await supabase
+  const { data: vocab, error: vocabError } = await supabase
     .from('vocabulary')
     .select('id')
     .eq('language', track.language)
@@ -26,6 +26,12 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
     .gte('level', floorLevel)
     .lte('level', track.current_level)
     .eq('is_active', true)
+
+  // A failed vocabulary fetch must not masquerade as an empty queue: every
+  // count below would come out zero and the UI would show "all caught up" for
+  // a day that never loaded. The shape below stays intact (callers keep every
+  // field); `failed` just tells the UI the numbers can't be trusted.
+  const failed = Boolean(vocabError) || !vocab
 
   const vocabIds = new Set((vocab || []).map(v => v.id))
 
@@ -110,5 +116,6 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
     learnedCount, masteredCount, masteredPct,
     newDoneToday, dueTomorrow, weakCount, forecast7, rhythm7,
     lifetimeLearned, lifetimeMastered, grammarDueCount,
+    failed,
   }
 }
