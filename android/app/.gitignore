@@ -1,0 +1,6 @@
+/build/*
+!/build/.npmkeep
+/src/main/assets/public/
+/src/main/assets/capacitor.config.json
+/src/main/assets/capacitor.plugins.json
+/src/main/res/xml/config.xml

@@ -4,8 +4,10 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 import ErrorBoundary from './ErrorBoundary.jsx'
+import NativeShellBridge from './NativeShellBridge.jsx'
 import { BUILD_SHA, BUILD_TIME } from './version'
 import { installErrorMonitoring } from './errorMonitor'
+import { isNativeApp } from './nativeShell'
 
 // Announce the running build so "which version is live?" is answerable from the
 // console (also in Settings, and at /version.json).
@@ -25,6 +27,7 @@ createRoot(document.getElementById('root')).render(
     <ErrorBoundary>
       <BrowserRouter basename={basename}>
         <App />
+        <NativeShellBridge />
       </BrowserRouter>
     </ErrorBoundary>
   </StrictMode>,
@@ -76,7 +79,10 @@ function showUpdatePill() {
   document.body.appendChild(btn)
 }
 
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+// Inside the Capacitor shell the assets are served from the app bundle, so the
+// offline service worker is unnecessary — and its cache layer is one more place
+// for staleness bugs. Native builds skip it (PRE-RELEASE-CHECKLIST §0a).
+if (import.meta.env.PROD && !isNativeApp() && 'serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     // A controller existing now means a later controllerchange is an UPDATE
     // (on first install the controller goes null → worker; no prompt needed).

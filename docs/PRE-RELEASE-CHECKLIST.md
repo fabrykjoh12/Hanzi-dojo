@@ -32,27 +32,44 @@ columns all exist — older "pending migration" doc entries were stale.
 
 ### 0a · Capacitor scaffolding (code)
 
-- [ ] **Add Capacitor**: `@capacitor/core` + `@capacitor/cli` + `ios`/`android`
-      platforms. App ID `com.hanzidojo.app` (register the same on both stores).
-      Wire `npm run build` → `npx cap sync` so the webview always ships the
-      Vite build. Keep the web build working — it is the same code.
-- [ ] **Routing in the webview**: verify `BrowserRouter` works from the
-      Capacitor origin; add an `@capacitor/app` `appUrlOpen` listener so deep
-      links (auth callbacks, shared story links) route into the SPA.
-- [ ] **Service worker off inside the native app** (assets are local; the SW
-      cache poisoning class of bug goes away). Keep it for the web build. The
-      IndexedDB offline layer (`offline.js`, `syncQueue.js`) works in webviews
-      unchanged — keep it, it becomes the app's offline story.
-- [ ] **Safe areas**: `viewport-fit=cover` + `env(safe-area-inset-*)` on every
-      fixed element — `MobileNav` bottom bar, reader audio bars, the fixed
-      study layout. Status bar styled per theme (`@capacitor/status-bar`).
-- [ ] **Android hardware back button**: `@capacitor/app` `backButton` → router
-      back; exit only from Home. Without this the app just closes.
+- [x] **Add Capacitor — DONE 2026-08-07.** Capacitor 8: `@capacitor/core` +
+      `app` + `status-bar` (deps), `cli` + `android` + `ios` (dev). App ID
+      `com.hanzidojo.app`, `capacitor.config.json` webDir `dist/client`.
+      ⚠️ The app build is **`npm run build:public`** — plain `npm run build`
+      produces the internal HQ page (vite.config.js `SITES_BUILD`). Scripts:
+      `npm run cap:sync` (public build + sync), `cap:android`, `cap:ios`.
+      Native projects committed; synced web assets gitignored on both
+      platforms; `android/**`+`ios/**` excluded from ESLint. iOS `pod install`
+      still needs a Mac — untested until one builds it.
+- [x] **Deep links route into the SPA — DONE 2026-08-07.**
+      `src/NativeShellBridge.jsx` (mounted in `main.jsx`, inside the router)
+      listens to `appUrlOpen`; `src/nativeShell.js` maps universal links
+      (hanzi-dojo.com hosts only) and the custom scheme to routes — pure,
+      13 specs. The `com.hanzidojo.app` scheme is registered in
+      `AndroidManifest.xml` and `Info.plist`.
+- [ ] **Universal links** so `https://hanzi-dojo.com/read/...` opens the app:
+      host `assetlinks.json` + `apple-app-site-association` on the domain,
+      add `autoVerify` intent filter + Associated Domains entitlement. Needs
+      the store signing identities to exist first (0d).
+- [x] **Service worker off inside the native app — DONE 2026-08-07**
+      (`main.jsx` guards registration with `isNativeApp()`; web build
+      unchanged). The IndexedDB offline layer stays — it is the app's
+      offline story.
+- [x] **Safe-area basics were already in place** (`viewport-fit=cover` in
+      `index.html`; `MobileNav` bar + sheet already pad
+      `env(safe-area-inset-bottom)`). Still open: sweep the *other* fixed
+      elements (reader audio bars, fixed study layout) on real notched
+      devices — folded into §1 mobile sweep. Status-bar theming
+      (`@capacitor/status-bar` is installed, unwired) with it.
+- [x] **Android hardware back button — DONE 2026-08-07**
+      (`NativeShellBridge` + `backAction()`: history back → Home → exit only
+      from Home; tested).
 - [ ] **Keyboard**: `@capacitor/keyboard` resize mode checked against the
       fixed-height flashcard and writing screens.
 - [ ] **External links** (Discord, attribution links) open the system browser,
       never navigate the app webview.
-- [ ] **App icons + splash screens**, all densities, light + dark.
+- [ ] **App icons + splash screens**, all densities, light + dark (defaults
+      are the Capacitor placeholders right now).
 
 ### 0b · Hard store blockers (rejection-level, code + config)
 

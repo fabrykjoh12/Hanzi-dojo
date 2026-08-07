@@ -9,7 +9,10 @@ export default defineConfig([
   // Node scripts vendored from elsewhere, not app source. They aren't built or
   // shipped, so linting them only produces noise (no-undef on `require`/
   // `process` under the browser globals this config targets).
-  globalIgnores(['dist', '.claude/**']),
+  // `android/**` and `ios/**` are the generated Capacitor native projects —
+  // `cap sync` copies the built bundle (dist JS) into their assets, which is
+  // not source and must not be linted.
+  globalIgnores(['dist', '.claude/**', 'android/**', 'ios/**']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

@@ -10,6 +10,9 @@
     "db:generate": "drizzle-kit generate",
     "build": "vite build",
     "build:public": "DOJO_PUBLIC_BUILD=1 vite build",
+    "cap:sync": "npm run build:public && cap sync",
+    "cap:android": "npm run cap:sync && cap open android",
+    "cap:ios": "npm run cap:sync && cap open ios",
     "lint": "eslint .",
     "test": "vitest run",
     "preview": "vite preview",
@@ -22,6 +25,9 @@
     "tts:integration": "node --env-file=.env.script tts-integration-check.mjs"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/status-bar": "^8.0.3",
     "@supabase/supabase-js": "^2.107.0",
     "drizzle-orm": "^0.45.2",
     "hanzi-writer": "^3.7.3",
@@ -34,6 +40,9 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.1",
     "@types/react": "^19.2.14",
