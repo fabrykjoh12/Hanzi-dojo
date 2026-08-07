@@ -108,10 +108,16 @@ it:
 | Sign in with Apple (`.p8`) | Certificates, Identifiers & Profiles → Keys | Web Apple sign-in only — **currently unused**, since sign-in is native |
 | App Store Connect API (`.p8`) | App Store Connect → Users and Access → **Integrations** | Building and uploading to TestFlight (`.github/workflows/ios-testflight.yml`) |
 
-For the build, create the second one with role **App Manager** and add these
-repository secrets (Settings → Secrets and variables → Actions):
-`ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_PRIVATE_KEY` (the whole `.p8` contents,
-BEGIN/END lines included) and `APPLE_TEAM_ID`.
+For the build, create the second one and add these repository secrets
+(Settings → Secrets and variables → Actions): `ASC_KEY_ID`, `ASC_ISSUER_ID`,
+`ASC_PRIVATE_KEY` (the whole `.p8` contents, BEGIN/END lines included) and
+`APPLE_TEAM_ID`.
+
+The key needs to be allowed to **create certificates and provisioning
+profiles**, not only upload builds — the build makes its own signing assets
+rather than relying on a Mac. **This is done and working**: build 7 reached
+TestFlight on 2026-08-07. Details of why it works this way are in
+`docs/PRE-RELEASE-CHECKLIST.md` §0d.
 
 ## Where this is required
 

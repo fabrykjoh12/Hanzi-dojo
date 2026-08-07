@@ -141,13 +141,39 @@ columns all exist — older "pending migration" doc entries were stale.
 ### 0d · Accounts, signing, pipeline (owner + code)
 
 - [ ] **Google Play Console** account ($25 one-time) — owner.
-- [ ] **Apple Developer Program** ($99/yr) — owner. Needed for Apple sign-in
-      config too (0b).
+- [x] **Apple Developer Program** ($99/yr) — owner. *Approved 2026-08-07.*
+      Needed for Apple sign-in config too (0b).
 - [ ] **Android signing**: generate + safely store the upload keystore
       (GitHub secret + offline backup — losing it means losing the listing).
-- [ ] **iOS signing**: certificates + provisioning profiles; pick the build
-      lane — owner's Mac with Xcode, GitHub Actions macOS runner, or Xcode
-      Cloud. TestFlight for betas.
+- [x] **iOS signing + build lane** — *done 2026-08-07, build 7 is on
+      TestFlight.* Lane: GitHub Actions macOS runner
+      (`.github/workflows/ios-testflight.yml`). Nobody needs a Mac.
+
+      Read this before touching it, because the obvious approach does not
+      work: under **automatic** signing `xcodebuild archive` asks Apple for an
+      iOS App *Development* profile, and Apple refuses to issue one to a team
+      with no registered devices. There is no iPhone on the account to
+      register, so automatic signing can never succeed here — and the error it
+      produces ("your team has no devices") describes the symptom, not that.
+      The build therefore signs **manually**: openssl makes a key and CSR on
+      the runner, `.github/scripts/asc-signing-assets.mjs` turns that into a
+      distribution certificate and an App Store profile through the App Store
+      Connect API, and both are imported into a throwaway keychain.
+
+      Two things that will bite otherwise:
+      - The script **revokes** existing distribution certificates before making
+        a new one, because their private keys died with the runner that made
+        them and Apple caps how many a team may hold. That is safe only while
+        nobody owns a Mac holding a real certificate. If that changes, change
+        the script.
+      - The job runs on **macos-26**. App Store Connect rejects any build made
+        with an SDK older than iOS 26, and macos-15 tops out at Xcode 16.
+        A build on the old image signs and exports perfectly, then fails at
+        the upload — an expensive way to find out.
+
+      Run `Actions → iOS signing check` for a read-only inventory of what the
+      Apple account actually has (certificates, devices, profiles, bundle IDs)
+      whenever provisioning misbehaves.
 - [ ] **CI**: add `cap sync` + Android AAB build to Actions; keep the
       existing lint/test/build/e2e exactly as they are (they test the same
       code the apps ship).
