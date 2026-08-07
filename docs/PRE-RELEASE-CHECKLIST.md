@@ -203,9 +203,24 @@ The webview ships these screens, so every pass below is store-launch work.
       focus ring. **`lang` is now per-language data** (`langAttr()` in
       `languageTheme.js`, 4 specs) and applied across the study screens —
       without it a screen reader speaks hanzi with the English voice.
-      *Still open:* the `aria-pressed` sweep over ~15 files of custom
-      toggles/chips, `aria-expanded` on the grammar accordion, locked story
-      cards unreachable at `Stories.jsx:143`, and axe-in-e2e (§5).
+      **Second pass, 2026-08-07 — the deferred items are now done too:**
+      selected state is exposed on every custom toggle and chip (mode
+      switches, filters, category chips, kana view/script/row pickers,
+      the shared `Segmented` control, dashboard filters, writing round size)
+      via `aria-pressed` inside labelled groups, with `role="radio"` reserved
+      for the two Onboarding "choose one, then Continue" card pickers. Three
+      candidates were deliberately **not** changed — the Landing, Tones and
+      Cyrillic cards fire an action and advance immediately, so they have no
+      selected state to expose. Also: `aria-expanded` + `aria-controls` on
+      the grammar accordion (and the same bug found on the KnownWords level
+      accordion), locked story **and series** cards keep their place in the
+      tab order via `aria-disabled` so their "what unlocks this" label is
+      finally reachable, the stroke-order tile got `role="img"` so its label
+      is exposed at all, and YouTube's decorative glyphs are hidden, its
+      load error is a `role="alert"`, and the inline player takes focus when
+      it opens. *Still open:* axe-in-e2e (§5), and the radiogroups don't
+      implement APG roving-tabindex arrow keys — WCAG-passing, APG-advisory,
+      and a behaviour change rather than a semantics one.
 - [x] **Mobile sweep (HD-P13) — DONE 2026-08-07.** Audit + fixes. Worst
       find: all four fixed-format story readers put play/pause and next
       **below the visible screen on every phone** (a `100vh` shell inside a
