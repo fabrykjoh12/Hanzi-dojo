@@ -293,8 +293,13 @@ The webview ships these screens, so every pass below is store-launch work.
       deep-link scheme from 0b**.
 - [ ] **SMTP live test** — magic link arrives from `no-reply@hanzi-dojo.com`,
       not spam.
-- [ ] **Google OAuth branding** — app name "Hanzi Dojo" + logo in Google
-      Cloud Console (the consent screen currently shows the Supabase URL).
+- [ ] **Google OAuth branding** — Google Cloud Console → APIs & Services →
+      OAuth consent screen: app name **"Hanzi Dojo"**, logo, authorized
+      domain `hanzi-dojo.com`. **Decided 2026-08-07: free fix only** — the
+      `auth.hanzi-dojo.com` custom domain (~$10/mo add-on) is deferred, so
+      the callback stays `bvqvturqupbggxaeihvi.supabase.co` and every
+      provider is configured against that. Changing it later means redoing
+      the Apple Services ID + its domain verification too.
 - [ ] **Disconnect the two always-red Cloudflare "Workers Builds" checks.**
 - [ ] **Turn off the retired GitHub Pages site.**
 - [ ] **Trust-pages sign-off** — review `/privacy` `/terms` `/support`
