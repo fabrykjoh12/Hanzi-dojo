@@ -26,6 +26,9 @@ export const LANGUAGES = {
     backgroundKey: 'chinese',
     cjk: true,
     script: 'hanzi',
+    // BCP-47 tag for the `lang` attribute — what makes a screen reader speak
+    // this text with the right voice instead of reading hanzi as English.
+    langTag: 'zh-Hans',
   },
   japanese: {
     key: 'japanese',
@@ -40,6 +43,7 @@ export const LANGUAGES = {
     backgroundKey: 'japanese',
     cjk: true,
     script: 'kana',
+    langTag: 'ja',
   },
   russian: {
     key: 'russian',
@@ -56,6 +60,7 @@ export const LANGUAGES = {
     backgroundKey: 'russian',
     cjk: false,
     script: 'cyrillic',
+    langTag: 'ru',
   },
 }
 
@@ -98,6 +103,24 @@ export function availableLanguages(isAdmin) {
 export function isCjk(language) {
   return languageTheme(language).cjk
 }
+
+// The BCP-47 tag for a block of TARGET-LANGUAGE text, for the `lang` attribute.
+// Without it a screen reader announces hanzi with the English voice, which is
+// unintelligible — so any element rendering study text (not UI chrome, not the
+// English translation) should carry `lang={langAttr(language)}`.
+//
+// This is per-language data, never a ternary at the call site: the old
+// `language === 'chinese' ? 'zh-Hans' : undefined` pattern silently gave every
+// other track no tag at all (CLAUDE.md §1).
+export function langAttr(language) {
+  return languageTheme(language).langTag
+}
+
+// The counterpart for English text — translations, glosses and UI — sitting
+// inside a subtree that has already been tagged as the target language.
+// Without it, a `lang="zh-Hans"` wrapper makes the screen reader read the
+// English translation with a Chinese voice too.
+export const UI_LANG = 'en'
 
 // Adaptive ink. The accent hexes above are picked to read on white paper, so on
 // a dark surface they sink into the background. This mixes a color toward the
