@@ -45,6 +45,7 @@ still get full detail — they are read once, on purpose.
 | [`docs/PRE-RELEASE-CHECKLIST.md`](docs/PRE-RELEASE-CHECKLIST.md) | The one-time launch list — **§0 is the mobile/store work** | Planning any launch work |
 | [`docs/TESTERS.md`](docs/TESTERS.md) | Who tests, and how they're briefed | Organising a test round |
 | [`docs/STORE-LISTING.md`](docs/STORE-LISTING.md) | Play/App Store listing copy, screenshot shot list, App Review notes, Data Safety answers — **owner-editable draft** | Filling in the store consoles |
+| [`docs/APPLE-SETUP.md`](docs/APPLE-SETUP.md) | Step-by-step Apple portal + Supabase setup for Sign in with Apple — written to hand to whoever has portal access | Wiring up Apple sign-in |
 | [`docs/DISCORD.md`](docs/DISCORD.md) | Server layout, webhooks, the sync workflows | Changing anything Discord-facing |
 | [`docs/DOJO-BRIDGE.md`](docs/DOJO-BRIDGE.md) | The `tools/` bridge | Working on DojoHQ |
 | [`docs/STORY_EXPERIENCE_AUDIT.md`](docs/STORY_EXPERIENCE_AUDIT.md) | Long-form audit of the reading experience | Reworking the reader |
