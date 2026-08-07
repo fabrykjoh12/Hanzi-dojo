@@ -149,7 +149,9 @@ function StoryCard({ story, read, accentHex, fontFamily, levelLabel, practice, o
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       aria-label={shelf ? [story.title, levelLabel, practice ? 'Practice' : formatLabel(story), locked ? lockLabel : read ? 'Read' : null].filter(Boolean).join(' · ') : undefined}
-      className="hd-press"
+      // A locked card never gave under the finger (a real `disabled` gets no
+      // :active) and shouldn't start now — it can't be opened.
+      className={locked ? undefined : 'hd-press'}
       style={{
         display: 'flex', flexDirection: 'column', textAlign: 'left', width: '100%', padding: 0,
         border: shelf ? 'none' : '1px solid ' + (lift ? accentHex + '55' : 'var(--border)'),
@@ -351,7 +353,7 @@ function SeriesCard({ arc, readIds, accentHex, fontFamily, isMobile, onOpen, onO
           : arc.title + ' — continue reading'}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className="hd-press"
+        className={locked ? undefined : 'hd-press'}
         style={{
           position: 'relative', display: 'flex', flexDirection: 'column', textAlign: 'left',
           width: '100%', padding: 0, cursor: locked ? 'default' : 'pointer',
