@@ -4,7 +4,9 @@ import { wordStatus, isPlaceWord, isWordlikeToken } from './storyReading'
 import { unknownMarkStyle } from './tokenMark'
 import { spotlightStyle } from './readAlong'
 import { useStoryReaderCore } from './useStoryReaderCore'
-import { TokenBody, ReadingSettings, RevealEnglishButton } from './ReadingScaffold'
+import { useIsMobile } from './useIsMobile'
+import { MOBILE_SHELL_HEIGHT } from './studyLayout'
+import { TokenBody, ReadingSettings, RevealEnglishButton, IconButton } from './ReadingScaffold'
 import ReaderLaunch from './ReaderLaunch'
 import WordLookupSheet from './WordLookupSheet'
 import FinishOverlay from './FinishOverlay'
@@ -34,6 +36,7 @@ export default function PacedReader(props) {
   const { story, track, isRead, onBack, userCards } = props
   const accent = c.theme.accentHex
   const levelLabel = getLevelLabel(track.language, track.system, story.level)
+  const isMobile = useIsMobile()
 
   const stageRef = useRef(null)
   const trackRef = useRef(null)
@@ -72,18 +75,18 @@ export default function PacedReader(props) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+    <div style={{ ...readerShell(isMobile), background: 'var(--bg)', color: 'var(--text)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 16px 8px' }}>
-        <button onClick={c.backToStart} aria-label="Back to start" style={ghost}><ArrowLeft size={18} color="var(--text-muted)" /></button>
+        <IconButton onClick={c.backToStart} label="Back to start"><ArrowLeft size={18} color="var(--text-muted)" /></IconButton>
         <div style={{ flex: 1, textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>{c.cur + 1} / {c.total}</div>
-        <div style={{ width: '34px' }} />
+        <div style={{ width: '44px' }} />
       </div>
       <div style={{ height: '4px', background: 'var(--border)', margin: '0 16px', borderRadius: '999px', overflow: 'hidden' }}>
         <div style={{ height: '100%', background: accent, width: `${((c.cur + 1) / (c.total || 1)) * 100}%`, transition: c.reduceMotion ? 'none' : 'width .4s ease' }} />
       </div>
 
       <div ref={stageRef}
-        style={{ flex: 1, position: 'relative', overflow: 'hidden', WebkitMaskImage: 'linear-gradient(180deg,transparent,#000 16%,#000 82%,transparent)', maskImage: 'linear-gradient(180deg,transparent,#000 16%,#000 82%,transparent)' }}>
+        style={{ flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden', WebkitMaskImage: 'linear-gradient(180deg,transparent,#000 16%,#000 82%,transparent)', maskImage: 'linear-gradient(180deg,transparent,#000 16%,#000 82%,transparent)' }}>
         <div ref={trackRef} style={{ position: 'absolute', left: 0, right: 0, padding: '0 28px', maxWidth: '680px', margin: '0 auto', transition: c.reduceMotion ? 'none' : 'transform .55s cubic-bezier(.33,1,.68,1)' }}>
           {c.beats.map((b, i) => {
             const st = beatStyle(i - c.cur, c.reduceMotion)
@@ -214,7 +217,10 @@ export default function PacedReader(props) {
       </div>
       <div aria-live="polite" style={srOnly}>{c.beats[c.cur] ? c.beats[c.cur].text : ''}</div>
 
-      <div style={{ flexShrink: 0, borderTop: '1px solid var(--border)', padding: '12px 18px calc(14px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* No safe-area inset here: on a phone the shell height already subtracts
+          it (readerShell), and on desktop it is always zero. Adding it a second
+          time is what pushed this bar off the bottom of the screen. */}
+      <div style={{ flexShrink: 0, borderTop: '1px solid var(--border)', padding: '12px 18px 14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
           <ReadingSettings
             mode={c.readingMode} setMode={c.setReadingMode}
@@ -237,6 +243,18 @@ export default function PacedReader(props) {
   )
 }
 
-const ghost ={ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center' }
+// Phone layout is the primary form factor now (the app ships wrapped in
+// Capacitor). `minHeight: 100vh` overshot the visible viewport twice over: `vh`
+// ignores a WebView's collapsing chrome, and App.jsx's <main> ALREADY reserves
+// `62px + env(safe-area-inset-bottom)` for MobileNav — so the reader ended up a
+// whole nav bar taller than the screen and the play/next controls sat below the
+// fold. Lock it to the same shell height Study uses (studyLayout.js) instead.
+// Desktop is untouched: it keeps the growing `100vh` page.
+function readerShell(isMobile) {
+  return isMobile
+    ? { height: MOBILE_SHELL_HEIGHT, maxHeight: MOBILE_SHELL_HEIGHT, overflow: 'hidden' }
+    : { minHeight: '100vh' }
+}
+
 const navBtn = { width: '44px', height: '44px', borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }
 const srOnly = { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }

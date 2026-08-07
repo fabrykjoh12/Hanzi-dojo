@@ -3,14 +3,28 @@ import { getLevelLabel } from './utils'
 import { chatStyleFor } from './chatMissions'
 import { useStoryReaderCore } from './useStoryReaderCore'
 import { assignSpeakerSides } from './chatReading'
-import { ReadingSettings } from './ReadingScaffold'
+import { useIsMobile } from './useIsMobile'
+import { MOBILE_SHELL_HEIGHT } from './studyLayout'
+import { ReadingSettings, IconButton } from './ReadingScaffold'
 import ChatThread from './ChatThread'
 import ReaderLaunch from './ReaderLaunch'
 import WordLookupSheet from './WordLookupSheet'
 import FinishOverlay from './FinishOverlay'
 import { ArrowLeft, Play, Pause } from 'lucide-react'
 
-const ghost = { background: 'none', border: 'none', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center' }
+// Phone layout is the primary form factor now (the app ships wrapped in
+// Capacitor). `minHeight: 100vh` overshot the visible viewport twice over: `vh`
+// ignores a WebView's collapsing chrome, and App.jsx's <main> ALREADY reserves
+// `62px + env(safe-area-inset-bottom)` for MobileNav — so the reader ended up a
+// whole nav bar taller than the screen and the play control sat below the fold.
+// Lock it to the same shell height Study uses (studyLayout.js) instead.
+// Desktop is untouched: it keeps the growing `100vh` page.
+function readerShell(isMobile) {
+  return isMobile
+    ? { height: MOBILE_SHELL_HEIGHT, maxHeight: MOBILE_SHELL_HEIGHT, overflow: 'hidden' }
+    : { minHeight: '100vh' }
+}
+
 // The chat readers paint their own light "messaging app" chrome rather than the
 // app's theme surfaces, so the header control borrows those tones.
 const CHAT_TINT = { bg: 'rgba(255,255,255,0.7)', border: 'rgba(0,0,0,0.12)', text: '#555' }
@@ -25,6 +39,7 @@ export default function ChatReader(props) {
   const skin = chatStyleFor(track.language)
   const sides = useMemo(() => assignSpeakerSides(c.beats), [c.beats])
   const levelLabel = getLevelLabel(track.language, track.system, story.level)
+  const isMobile = useIsMobile()
 
   const [typing, setTyping] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -61,9 +76,9 @@ export default function ChatReader(props) {
   const revealed = c.beats.slice(0, typing ? c.cur : c.cur + 1)
 
   return (
-    <div style={{ minHeight: '100vh', background: skin.bg, color: '#111', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+    <div style={{ ...readerShell(isMobile), background: skin.bg, color: '#111', display: 'flex', flexDirection: 'column', position: 'relative' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 16px 8px', background: skin.bg }}>
-        <button onClick={c.backToStart} aria-label="Back to start" style={ghost}><ArrowLeft size={18} color="#4a4a4a" /></button>
+        <IconButton onClick={c.backToStart} label="Back to start"><ArrowLeft size={18} color="#4a4a4a" /></IconButton>
         <div style={{ flex: 1, textAlign: 'center', fontSize: '13px', fontWeight: 700, color: '#333', fontFamily: c.theme.font }}>{story.title}</div>
         <ReadingSettings
           mode={c.readingMode} setMode={c.setReadingMode}
@@ -75,12 +90,18 @@ export default function ChatReader(props) {
         <div style={{ fontSize: '12px', color: '#666', minWidth: '34px', textAlign: 'right' }}>{c.cur + 1}/{c.total}</div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {/* `minHeight: 0` is mandatory (CLAUDE.md §5): without it this flex child
+          grows to fit the whole thread inside a fixed-height column and the
+          overflow is clipped instead of scrolled. */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '10px 14px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <ChatThread revealed={revealed} sides={sides} skin={skin} theme={c.theme} accent={accent} userCards={userCards} readingMode={c.readingMode} language={track.language} activeIndex={c.cur} typingBeat={typing ? pending : null} reduceMotion={c.reduceMotion} onSelectWord={c.selectWord} onSelectToken={c.selectToken} activeToken={c.activeToken} onSeekToken={c.seekToToken} playing={c.playing} selected={c.selected} revealedEnglish={c.revealedEnglish} onToggleEnglish={c.toggleEnglish} completedBeats={c.completedBeats} readingFontFamily={c.readingFontFamily} onMarkDone={settingsOpen ? undefined : () => c.markBeatDone(c.cur)} />
       </div>
       <div aria-live="polite" style={srOnly}>{revealed.length ? revealed[revealed.length - 1].text : ''}</div>
 
-      <div style={{ flexShrink: 0, borderTop: '1px solid rgba(0,0,0,0.08)', background: skin.bg, padding: '12px 18px calc(14px + env(safe-area-inset-bottom))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+      {/* No safe-area inset here: on a phone the shell height already subtracts
+          it (readerShell), and on desktop it is always zero. Adding it a second
+          time is what pushed this bar off the bottom of the screen. */}
+      <div style={{ flexShrink: 0, borderTop: '1px solid rgba(0,0,0,0.08)', background: skin.bg, padding: '12px 18px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
         <button onClick={c.togglePlay} aria-label={c.playing ? 'Pause' : 'Play'} style={{ width: '48px', height: '48px', borderRadius: '50%', border: 'none', background: accent, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{c.playing ? <Pause size={20} color="#fff" /> : <Play size={20} color="#fff" />}</button>
         <span style={{ fontSize: '12.5px', color: '#555' }}>{c.cur >= c.total - 1 ? 'Tap ✓ to finish' : 'Tap ✓ to continue'}</span>
       </div>
