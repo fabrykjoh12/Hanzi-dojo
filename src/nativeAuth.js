@@ -20,6 +20,10 @@ import { supabase } from './supabase'
 import { isNativeApp, APP_URL_SCHEME } from './nativeShell'
 import { openExternal } from './externalLink'
 
+// The app's own bundle ID. Apple issues a native identity token whose audience
+// is the bundle ID, so this is what Supabase must list under Client IDs.
+export const APP_BUNDLE_ID = 'com.hanzidojo.app'
+
 export const AUTH_CALLBACK_PATH = 'auth-callback'
 export const NATIVE_AUTH_REDIRECT = APP_URL_SCHEME + '://' + AUTH_CALLBACK_PATH
 
@@ -75,5 +79,70 @@ export async function completeNativeAuth(url, deps = {}) {
     return { error: error || null, handled: true }
   } catch (err) {
     return { error: err, handled: true }
+  }
+}
+
+// ── Sign in with Apple, natively ────────────────────────────────────────────
+//
+// Apple requires this in the iOS app because we offer Google (guideline 4.8).
+// It is deliberately NOT wired to the web OAuth flow: that route needs a
+// client secret which Apple forces you to regenerate every 6 months, and web
+// sign-in dies silently when it lapses. The native sheet needs no secret at
+// all — Apple hands back a signed identity token and Supabase verifies it
+// against Apple's public keys.
+//
+// Nonce handling is the part that is easy to get wrong: Apple must receive
+// the SHA-256 HASH of the nonce, while Supabase must receive the RAW one, so
+// it can check that the token it was given was minted for this very request.
+
+export function randomNonce(bytes) {
+  const source = bytes || (typeof crypto !== 'undefined' && crypto.getRandomValues
+    ? crypto.getRandomValues(new Uint8Array(32))
+    : null)
+  if (!source) throw new Error('No secure random source')
+  return Array.from(source).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+export async function sha256Hex(text, subtle) {
+  const impl = subtle || (typeof crypto !== 'undefined' ? crypto.subtle : null)
+  if (!impl) throw new Error('No WebCrypto available')
+  const data = new TextEncoder().encode(text)
+  const digest = await impl.digest('SHA-256', data)
+  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+// Runs Apple's own sheet and exchanges the resulting identity token for a
+// Supabase session. Returns { error } like the other sign-in helpers.
+export async function signInWithAppleNative(deps = {}) {
+  const client = deps.supabase || supabase
+  try {
+    const authorize = deps.authorize || (await import('@capacitor-community/apple-sign-in'))
+      .SignInWithApple.authorize
+    const rawNonce = deps.rawNonce || randomNonce()
+    const hashedNonce = await sha256Hex(rawNonce, deps.subtle)
+
+    const result = await authorize({
+      clientId: APP_BUNDLE_ID,
+      // Unused natively — Apple only requires the field to be present.
+      redirectURI: NATIVE_AUTH_REDIRECT,
+      scopes: 'email name',
+      nonce: hashedNonce,
+    })
+
+    const token = result && result.response && result.response.identityToken
+    if (!token) return { error: new Error('Apple did not return an identity token.') }
+
+    const { error } = await client.auth.signInWithIdToken({
+      provider: 'apple',
+      token,
+      nonce: rawNonce,
+    })
+    return { error: error || null }
+  } catch (err) {
+    // The learner cancelling Apple's sheet is not an error worth shouting
+    // about — it is them changing their mind.
+    const message = String((err && err.message) || err)
+    if (/cancel/i.test(message)) return { error: null, cancelled: true }
+    return { error: err }
   }
 }

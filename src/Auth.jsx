@@ -8,7 +8,8 @@ import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 import { legalLinkProps } from './externalLink'
-import { signInWithProvider } from './nativeAuth'
+import { signInWithProvider, signInWithAppleNative } from './nativeAuth'
+import { isNativeApp } from './nativeShell'
 import { FLAGS } from './flags'
 import { useIsMobile } from './useIsMobile'
 
@@ -111,6 +112,15 @@ export default function Auth({ intro = null }) {
   const handleProvider = async (provider) => {
     setMessage('')
     const { error } = await signInWithProvider(provider)
+    if (error) { setMessageKind('error'); setMessage(mapAuthError(error.message)) }
+  }
+
+  // Apple goes through Apple's own native sheet, never the web OAuth flow —
+  // that route would need a client secret Apple expires every six months
+  // (nativeAuth.js). The button therefore only exists inside the app.
+  const handleApple = async () => {
+    setMessage('')
+    const { error } = await signInWithAppleNative()
     if (error) { setMessageKind('error'); setMessage(mapAuthError(error.message)) }
   }
 
@@ -344,13 +354,15 @@ export default function Auth({ intro = null }) {
         </div>
         )}
 
-        {/* Sign in with Apple. Apple requires it wherever a third-party login
-            is offered (App Store guideline 4.8), and it is shown on the web
-            too so the same account works everywhere. Apple's mark is drawn
-            inline: their branding requirements are specific, and lucide's
-            "apple" is a piece of fruit. */}
-        {!resetMode && FLAGS.APPLE_SIGN_IN && (
-        <button onClick={() => handleProvider('apple')} style={{
+        {/* Sign in with Apple — required in the iOS app because we offer
+            Google (App Store guideline 4.8). Shown ONLY inside the app: it
+            uses Apple's native sheet, which needs no client secret and so
+            never expires, unlike the web OAuth route (see nativeAuth.js).
+            The web keeps Google and email, which Apple does not object to.
+            Apple's mark is drawn inline: their branding requirements are
+            specific, and lucide's "apple" is a piece of fruit. */}
+        {!resetMode && FLAGS.APPLE_SIGN_IN && isNativeApp() && (
+        <button onClick={handleApple} style={{
           width: '100%',
           padding: '12px',
           borderRadius: '12px',

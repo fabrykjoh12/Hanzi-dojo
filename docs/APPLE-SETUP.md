@@ -1,8 +1,11 @@
 # 🍎 Apple sign-in setup — hand this to whoever has portal access
 
 **Purpose:** everything Apple needs so "Continue with Apple" works in Hanzi
-Dojo. The app code is already written, shipped and tested — it is switched
-**off** behind a flag until the four values at the bottom of this page exist.
+Dojo. The app code is written, shipped and tested.
+
+**This is now much shorter than it was.** Apple sign-in is done the NATIVE way,
+which removes the Services ID, the client secret, and the twice-yearly
+rotation that would otherwise break sign-in silently. See Step 2.
 
 **Who can do this:** anyone with access to the Hanzi Dojo Apple Developer
 account (Account Holder or Admin). It is all web forms — no Mac, no Xcode, no
@@ -39,120 +42,49 @@ Direct link: <https://developer.apple.com/account/resources/identifiers/list>
 > Bundle ID **Explicit** = `com.hanzidojo.app`, tick the two capabilities,
 > Continue → Register. (Description accepts letters, numbers and spaces only.)
 
-## Step 2 — Services ID
+## Step 2 — Supabase (the only other step)
 
-This is the identifier Apple associates with *web* sign-in. Supabase needs it.
-It must **not** be the same string as the bundle ID.
+**Decided 2026-08-07: Apple sign-in is NATIVE-ONLY.** The app uses Apple's own
+sign-in sheet and sends Supabase the identity token Apple signs. That choice
+deletes most of this setup:
 
-Direct link: <https://developer.apple.com/account/resources/identifiers/list/serviceId>
+- ❌ **No Services ID needed** — that identifier only exists for *web* sign-in.
+- ❌ **No client secret, and no 6-month rotation.** The web OAuth route needs a
+  JWT signed with the `.p8` that Apple expires every 6 months; when it lapses,
+  sign-in breaks with no other symptom. Native verification uses Apple's public
+  keys instead, so there is nothing to renew, ever.
+- ❌ **No `.p8` in Supabase at all.** Keep the key safe anyway — it is needed if
+  web sign-in is ever added — but nothing here consumes it.
+- ✅ Apple only requires Sign in with Apple **in the app** (guideline 4.8), and
+  the website keeps Google + email, which Apple does not object to.
 
-1. Click the blue **⊕** next to "Identifiers".
-2. Choose **Services IDs** → **Continue**.
-3. Fill in:
-   - Description: `Hanzi Dojo Web`
-   - Identifier: `com.hanzidojo.signin`
-4. **Continue** → **Register**.
-5. Now **click the row you just created** (registering it is not enough — it
-   has to be configured).
-6. Tick **Sign in with Apple**, then click **Configure** beside it.
-7. In the dialog:
-   - **Primary App ID**: `Hanzi Dojo (com.hanzidojo.app)`
-   - **Domains and Subdomains**: `bvqvturqupbggxaeihvi.supabase.co`
-     *(no `https://`, no trailing slash — just the host)*
-   - **Return URLs**: `https://bvqvturqupbggxaeihvi.supabase.co/auth/v1/callback`
-     *(this one DOES include `https://`)*
-8. **Next** / **Done** → **Continue** → **Save**.
+**In Supabase → Authentication → Providers → Apple:**
 
-⚠️ Two things that trip people up here:
-- Apple sometimes shows a "Verify" step for the domain. Supabase's domain is
-  already publicly reachable, so it verifies immediately; if it complains,
-  re-check for a stray space or `https://` in the *Domains* box.
-- If **Save** looks like it did nothing, scroll up — the error appears at the
-  top of the dialog.
+1. **Enable** the provider.
+2. **Client IDs**: `com.hanzidojo.app` — the **bundle ID**. A native identity
+   token's audience is the bundle ID, so this is the value that must be listed.
+   (Leaving `com.hanzidojo.signin` there as well is harmless.)
+3. **Secret Key (for OAuth)**: **leave empty.** It is only read by the web flow.
+4. **Save.**
 
-## Step 3 — Key (.p8)
+**Then Authentication → URL Configuration → Redirect URLs**, add:
+```
+https://hanzi-dojo.com/**
+http://localhost:5173/**
+com.hanzidojo.app://auth-callback
+```
+*(the third is for Google sign-in inside the app, which does still use a
+browser round-trip — Apple no longer needs it)*
 
-Direct link: <https://developer.apple.com/account/resources/authkeys/list>
+## Step 3 — One click in Xcode (whoever builds the iOS app)
 
-1. Click the blue **⊕** next to "Keys".
-2. **Key Name**: `Hanzi Dojo Sign in with Apple`
-3. Tick **Sign in with Apple** → click **Configure** → **Primary App ID**:
-   `Hanzi Dojo (com.hanzidojo.app)` → **Save**.
-4. **Continue** → **Register**.
-5. **Download** the `.p8` file.
+The native sheet needs the entitlement, which only Xcode can add:
 
-🔴 **The download happens once.** Apple will never show that file again. Save
-it somewhere safe (a password manager is ideal). If it is lost, the key must
-be revoked and the whole step redone.
+1. Open `ios/App/App.xcworkspace`.
+2. Select the **App** target → **Signing & Capabilities**.
+3. **+ Capability** → **Sign in with Apple**.
 
-6. On that same screen, note the **Key ID** (10 characters, e.g. `A1B2C3D4E5`).
-
-## Step 4 — Team ID
-
-Direct link: <https://developer.apple.com/account> → scroll to **Membership
-details**. The **Team ID** is 10 characters, e.g. `9XYZ8ABC7D`.
-
----
-
-## What to send back
-
-Four things — three are safe to paste in chat, one is not:
-
-| Value | Example | Where it came from |
-|-------|---------|--------------------|
-| Services ID | `com.hanzidojo.signin` | Step 2 |
-| Team ID | `9XYZ8ABC7D` | Step 4 |
-| Key ID | `A1B2C3D4E5` | Step 3 |
-| The `.p8` file | `AuthKey_A1B2C3D4E5.p8` | Step 3 |
-
-🔴 **The `.p8` is a private key — do not paste it into a chat, an email or a
-ticket.** Whoever holds it can issue Apple sign-ins for this app. It goes
-straight into the Supabase dashboard by the person who downloaded it, or is
-passed through a password manager.
-
-## Step 5 — Supabase (whoever has dashboard access)
-
-1. **Authentication → Providers → Apple** → toggle **Enable**.
-   - **Services ID** (sometimes labelled Client ID): `com.hanzidojo.signin`
-   - **Team ID**, **Key ID**: as above
-   - **Secret Key (for OAuth)**: ⚠️ this is **not** the `.p8` itself. Apple
-     wants a short-lived ES256 JWT signed *with* that key. Generate it on your
-     own machine — never in a web "JWT generator", which would be handing over
-     the signing key:
-     If the key lives in a password manager, copy it there and pipe it in —
-     it then never touches the disk at all:
-     ```
-     # macOS
-     pbpaste | node tools/apple-client-secret.mjs --p8 - \
-       --team-id <TEAM ID> --key-id <KEY ID> --services-id com.hanzidojo.signin
-
-     # Windows (PowerShell)
-     Get-Clipboard | node tools/apple-client-secret.mjs --p8 - `
-       --team-id <TEAM ID> --key-id <KEY ID> --services-id com.hanzidojo.signin
-     ```
-     Or, from a saved file:
-     ```
-     node tools/apple-client-secret.mjs --p8 ~/Desktop/AuthKey.p8 \
-       --team-id <TEAM ID> --key-id <KEY ID> --services-id com.hanzidojo.signin
-     ```
-     Paste the printed token into the box.
-   - **Save**.
-
-🔴 **This secret expires after 6 months** (Apple's maximum — the Supabase
-dashboard warns about it too). When it lapses, web sign-in stops working with
-no other symptom. Set a calendar reminder for ~5 months out, keep the `.p8`,
-and regenerate by running the same command again.
-2. **Authentication → URL Configuration**:
-   - **Site URL**: `https://hanzi-dojo.com`
-   - **Redirect URLs** — all three:
-     ```
-     https://hanzi-dojo.com/**
-     http://localhost:5173/**
-     com.hanzidojo.app://auth-callback
-     ```
-     *(the third is how the phone app gets back from Apple — without it,
-     sign-in in the app succeeds and then lands nowhere)*
-   - **Save**.
+Without this the app compiles and the button fails at the moment it is tapped.
 
 ## Step 6 — Turn it on
 
