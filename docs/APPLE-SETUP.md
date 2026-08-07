@@ -119,12 +119,21 @@ passed through a password manager.
      wants a short-lived ES256 JWT signed *with* that key. Generate it on your
      own machine — never in a web "JWT generator", which would be handing over
      the signing key:
+     If the key lives in a password manager, copy it there and pipe it in —
+     it then never touches the disk at all:
      ```
-     node tools/apple-client-secret.mjs \
-       --p8 ~/Downloads/AuthKey_XXXXXXXXXX.p8 \
-       --team-id <TEAM ID> \
-       --key-id <KEY ID> \
-       --services-id com.hanzidojo.signin
+     # macOS
+     pbpaste | node tools/apple-client-secret.mjs --p8 - \
+       --team-id <TEAM ID> --key-id <KEY ID> --services-id com.hanzidojo.signin
+
+     # Windows (PowerShell)
+     Get-Clipboard | node tools/apple-client-secret.mjs --p8 - `
+       --team-id <TEAM ID> --key-id <KEY ID> --services-id com.hanzidojo.signin
+     ```
+     Or, from a saved file:
+     ```
+     node tools/apple-client-secret.mjs --p8 ~/Desktop/AuthKey.p8 \
+       --team-id <TEAM ID> --key-id <KEY ID> --services-id com.hanzidojo.signin
      ```
      Paste the printed token into the box.
    - **Save**.

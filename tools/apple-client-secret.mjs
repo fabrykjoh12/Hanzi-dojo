@@ -11,12 +11,18 @@
 // a chat, or a ticket. This script keeps it on your machine and prints only the
 // resulting token.
 //
-// Usage:
+// Usage — from a file:
 //   node tools/apple-client-secret.mjs \
 //     --p8 ~/Downloads/AuthKey_ABC123DEFG.p8 \
 //     --team-id 9XYZ8ABC7D \
 //     --key-id ABC123DEFG \
 //     --services-id com.hanzidojo.signin
+//
+// Usage — straight from the clipboard, so the key never touches the disk
+// (copy it out of your password manager first):
+//   macOS:   pbpaste | node tools/apple-client-secret.mjs --p8 - --team-id … --key-id … --services-id …
+//   Windows: powershell -c Get-Clipboard | node tools/apple-client-secret.mjs --p8 - --team-id … --key-id … --services-id …
+//   Linux:   xclip -o    | node tools/apple-client-secret.mjs --p8 - …
 //
 // Then paste the printed token into Supabase → Authentication → Providers →
 // Apple → "Secret Key (for OAuth)" and press Save.
@@ -91,11 +97,22 @@ function main() {
   }
 
   let privateKey
-  try {
-    privateKey = readFileSync(args.p8.replace(/^~/, process.env.HOME || '~'), 'utf8')
-  } catch (err) {
-    console.error('Could not read the .p8 file at ' + args.p8 + '\n' + err.message)
-    process.exit(1)
+  if (args.p8 === '-') {
+    // Read the key from stdin, so it can be piped straight from a password
+    // manager or the clipboard and never has to exist as a file on disk.
+    try {
+      privateKey = readFileSync(0, 'utf8')
+    } catch (err) {
+      console.error('Could not read the key from stdin: ' + err.message)
+      process.exit(1)
+    }
+  } else {
+    try {
+      privateKey = readFileSync(args.p8.replace(/^~/, process.env.HOME || '~'), 'utf8')
+    } catch (err) {
+      console.error('Could not read the .p8 file at ' + args.p8 + '\n' + err.message)
+      process.exit(1)
+    }
   }
 
   if (!privateKey.includes('BEGIN PRIVATE KEY')) {
