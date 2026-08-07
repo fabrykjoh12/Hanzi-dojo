@@ -92,11 +92,16 @@ jobs:
           xcrun agvtool new-version -all ${{ github.run_number }}
           echo "Build number: ${{ github.run_number }}"
 
+      # No xcpretty here. Piping through it swallowed the real compiler and
+      # signing errors AND hid the failure itself — the step went green while
+      # the archive had failed, and only the next step revealed it. The full
+      # log goes to a file; on failure the actual error lines are printed.
       - name: Archive
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
+          set -o pipefail
           cd ios/App
           xcodebuild archive \
             -project App.xcodeproj \
@@ -111,7 +116,15 @@ jobs:
             CODE_SIGN_STYLE=Automatic \
             CODE_SIGN_ENTITLEMENTS=App/App.entitlements \
             DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
-            | xcpretty || exit ${PIPESTATUS[0]}
+            2>&1 | tee "$RUNNER_TEMP/archive.log" | tail -40 || {
+              echo "::group::What actually failed"
+              grep -nE "error:|error |fatal|No profiles|No signing certificate|Provisioning|requires a provisioning|Signing for" "$RUNNER_TEMP/archive.log" | tail -60 || true
+              echo "::endgroup::"
+              echo "::group::Last 120 lines"
+              tail -120 "$RUNNER_TEMP/archive.log"
+              echo "::endgroup::"
+              exit 1
+            }
 
       - name: Export the IPA
         env:
