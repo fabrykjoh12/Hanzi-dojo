@@ -152,7 +152,9 @@ export default function Words({ session, profile, track, onBack }) {
               width: '100%', height: '46px', padding: '0 16px 0 42px',
               borderRadius: '14px', border: '1px solid var(--border)',
               background: 'var(--surface)', color: 'var(--text)',
-              fontSize: '14px', fontFamily: 'Inter, sans-serif', boxSizing: 'border-box',
+              // 16px, never less: an iOS WKWebView zooms the whole page in when
+              // a focused input's text is smaller, and the layout stays shifted.
+              fontSize: '16px', fontFamily: 'Inter, sans-serif', boxSizing: 'border-box',
             }}
           />
         </div>
