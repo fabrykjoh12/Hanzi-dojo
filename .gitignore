@@ -13,6 +13,11 @@ dist-ssr
 *.local
 .env
 .env.local
+
+# Android release signing — never commit the key or its password.
+*.jks
+*.keystore
+keystore.properties
 .env.*.local
 .env.script
 .claude/settings.local.json
