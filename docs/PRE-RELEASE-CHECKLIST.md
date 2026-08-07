@@ -73,11 +73,16 @@ columns all exist — older "pending migration" doc entries were stale.
 
 ### 0b · Hard store blockers (rejection-level, code + config)
 
-- [ ] **🔴 In-app account deletion.** Self-serve flow in Profile: deletes the
-      auth user + every owned row (cards, tracks, logs, activity, dojo data).
-      Needs a security-definer RPC or edge function (client can't delete auth
-      users). Also required: a **web** deletion path URL for the Play Data
-      Safety form. Update `TrustPages.jsx` copy once it exists.
+- [x] **🔴 In-app account deletion — DONE 2026-08-07, migration applied.**
+      `delete_my_account` RPC (security definer, authenticated-only, verified
+      to refuse without a session): deletes the no-FK user tables, the profile
+      (cascading all 12 owned tables), then the auth user. Profile → Delete
+      account panel: arm by tap, type "delete" to confirm
+      (`accountDeletion.js` + specs), then device cleanup (caches + outbox)
+      and sign-out. `/privacy` + `/support` describe the flow; the web
+      Profile doubles as Play's required web deletion path. Dojo HQ board
+      rows deliberately survive (shared team content). Still to do: walk it
+      end-to-end with a throwaway account (§4).
 - [ ] **🔴 Sign in with Apple.** Mandatory on iOS because Google sign-in is
       offered. Enable the Apple provider in Supabase (needs the Apple
       Developer account, Services ID + key), add the button in `Auth.jsx`
@@ -196,6 +201,9 @@ The webview ships these screens, so every pass below is store-launch work.
 - [ ] **Trust-pages sign-off** — review `/privacy` `/terms` `/support`
       `/methodology`; they become *legally load-bearing* store URLs (0b), so
       this is no longer optional polish.
+- [ ] **Enable leaked-password protection** (Supabase Auth → Security —
+      checks passwords against HaveIBeenPwned; flagged by the security
+      advisor 2026-08-07, one toggle).
 - [ ] **Final `get_advisors` security run** before submission.
 - [ ] *(cheap)* Fill the last **25 HSK 6 example sentences** (`examples-fill`,
       level 6, once quota allows).
