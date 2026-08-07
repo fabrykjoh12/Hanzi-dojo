@@ -153,8 +153,19 @@ columns all exist — older "pending migration" doc entries were stale.
 
 The webview ships these screens, so every pass below is store-launch work.
 
-- [ ] **Navigation/loading/shell pass (HD-P5)** — route transitions, loading
-      states, no dead ends; now includes native back behavior (0a).
+- [x] **Navigation/loading/shell pass (HD-P5) — DONE 2026-08-07.** Full
+      screen-by-screen audit, then 12 fixes: a failed profile/track
+      bootstrap shows a retry screen instead of dropping an existing learner
+      into Onboarding (and a throw can't strand the splash); Home no longer
+      claims "all caught up" when the queue fetch failed; the Test screen
+      gained its back button, CTAs on all three dead-end states, an honest
+      error state and an empty-pool crash guard; YouTube/Writing/Stories
+      distinguish "couldn't load — Retry" from genuinely empty; a dead
+      /story/:id link resolves with a toast; Settings reverts + reports
+      failed preference writes and got its missing back button;
+      LanguageSwitcher no longer navigates Home on a failed switch. Screens
+      audited clean: Practice, Dictionary, Dashboard, Study, Grammar, Auth,
+      all drills, public pages. Lint at main's exact baseline.
 - [ ] **Accessibility sweep (HD-P13)** — keyboard/switch access, focus traps,
       contrast both themes, `aria-live` on silent state changes.
 - [ ] **Mobile sweep (HD-P13)** — now the *primary* form factor: 360–390 px,
