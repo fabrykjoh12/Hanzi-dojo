@@ -151,7 +151,20 @@ export default function App() {
   }
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark')
 
+  // try/catch/finally so a throw anywhere inside (e.g. getHomeCounts) can
+  // never strand the app on the 学 splash with loading stuck true — the one
+  // state with no way out. A throw is a bootstrap failure like any other.
   const loadProfile = async (userId) => {
+    try {
+      await loadProfileInner(userId)
+    } catch {
+      setBootstrapError(true)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadProfileInner = async (userId) => {
     const { data: prof, error: profError } = await supabase
       .from('profiles')
       .select('*')
