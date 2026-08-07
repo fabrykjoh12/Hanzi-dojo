@@ -156,9 +156,14 @@ columns all exist — older "pending migration" doc entries were stale.
       release cut procedure — "merged to main" no longer means users have it.
       Evaluate a JS-bundle OTA service (e.g. Capgo) later for hotfixes; not
       needed for launch.
-- [ ] **Store listings**: app name, subtitle/short description, full
-      description, keywords, screenshots (6.7" + 5.5" iPhone, Android phone +
-      tablet), feature graphic. Screenshots after the UI passes in §1.
+- [ ] **Store listings** — **copy drafted 2026-08-07 in
+      [`docs/STORE-LISTING.md`](STORE-LISTING.md)**: name, subtitle, short and
+      full description, keywords, "what's new", the screenshot shot list, the
+      App Review notes (incl. the exact account-deletion steps reviewers look
+      for) and every Play Data Safety answer. **Owner: review and edit the
+      wording, then paste into the consoles.** Still to do by hand: capture
+      the screenshots on a real device *after* §4 verification, and produce
+      the 1024×500 feature graphic.
 - [ ] **Announce the pivot in `ROADMAP.md` when ready** — deliberately not
       done in this change: editing the roadmap posts to Discord instantly, so
       the owner chooses the moment and the wording.
@@ -247,8 +252,14 @@ The webview ships these screens, so every pass below is store-launch work.
       proper-noun pinyin display in `cedict.js`.
 - [ ] **Migration hardening** — `drop policy if exists` in `20260719120000`;
       partial unique index on `vocabulary`.
-- [ ] **Timezone-correct reminders** — folds into the FCM rework (0b): store
-      user timezone, schedule per-user, kill the ~1 h DST drift.
+- [x] **Timezone-correct reminders — ALREADY DONE (verified 2026-08-07).** The
+      ~1 h DST drift was fixed before this milestone: `reminderSchedule.js`
+      decides per-user from `profiles.timezone` with a `reminder_last_sent_at`
+      guard, and all four columns exist in prod. The checklist entry was
+      stale. **But: 0 of 31 accounts have reminders enabled**, so what remains
+      is a product question (discoverability / the browser permission prompt),
+      not engineering — and the delivery mechanism changes anyway when push
+      moves to FCM/APNs (§0b).
 
 ## 2 · Owner / dashboard actions
 
