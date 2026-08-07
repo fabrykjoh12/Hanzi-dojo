@@ -194,10 +194,14 @@ The webview ships these screens, so every pass below is store-launch work.
 
 ## 2 · Owner / dashboard actions
 
-- [ ] **🔴 `AZURE_SPEECH_KEY` + `AZURE_SPEECH_REGION` Actions secrets** —
-      unblocks the 21 mispronounced single-character words (staged
-      `tts-flashcards` run, ids in `docs/BACKLOG.md` §Learning quality) and
-      HSK 3–6 slow/sentence audio.
+- [x] **🔴 Azure secrets + the 21-word audio regen — DONE 2026-08-07.** The
+      owner added `AZURE_SPEECH_KEY`/`AZURE_SPEECH_REGION`; the staged
+      `tts-flashcards` run then executed (dry run verified 21 records/84
+      clips, confirm run generated 84/84, 0 failures, 240 characters) and
+      all 84 rows are verified in `tts_audio`. The mispronounced words
+      (厂 合 约 胖 追 圈 广 抢 藏 匹 保 台 土 朝 美 诗 神 青 井 清 塞) now
+      play correct Azure audio. HSK 3–6 slow/sentence audio is also
+      unblocked (a per-level `tts-flashcards` pass, when wanted).
 - [ ] **🔴 Funded LLM key** (`ANTHROPIC_API_KEY` secret, or paid Gemini/Groq)
       — unblocks HSK 3–6 serial-story generation.
 - [ ] **Supabase Auth URLs** — Site URL `https://hanzi-dojo.com`, allowlist
