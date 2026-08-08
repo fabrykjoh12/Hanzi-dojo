@@ -4,8 +4,8 @@ import Auth from './Auth'
 import { track, EVENTS } from './analytics'
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
-import { BRAND_NAME, heroWordmarkStyle } from './brand'
-import { availableLanguages, languageTheme } from './languageTheme'
+import { BRAND_INK, BRAND_NAME, heroWordmarkStyle } from './brand'
+import { availableLanguages, ink, languageTheme } from './languageTheme'
 import SentenceTaste from './SentenceTaste'
 import { sentenceForReason, charsToLearn } from './starterSentences'
 import { FLAGS } from './flags'
@@ -14,8 +14,8 @@ import { REASONS, encouragementFor, savePreloginPrefs, initialLandingMode } from
 import { isNativeApp } from './nativeShell'
 import NativeWelcome from './NativeWelcome'
 import {
-  ArrowLeft, ArrowRight, BookOpen, Briefcase, Clapperboard, GraduationCap, Home,
-  Layers, PenLine, Plane, Play, Sparkles, Sprout, MessagesSquare,
+  ArrowLeft, ArrowRight, BookOpen, GraduationCap, Layers, PenLine, Play, Sparkles,
+  MessagesSquare,
 } from 'lucide-react'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
 import { externalLinkProps } from './externalLink'
@@ -24,15 +24,18 @@ const SAGE = '#6E8466'
 const SAGE_DARK = '#5C7155'
 const SYSTEM_LABELS = { chinese: 'HSK 3.0', japanese: 'JLPT', russian: 'CEFR' }
 
-// Icon + colour per learning reason (data in prelogin.js). Tints mix into the
-// surface so they hold up in dark mode — CLAUDE.md §5.
-const REASON_ART = {
-  travel: { icon: Plane, accent: '#3E63DD' },
-  family: { icon: Home, accent: '#D97706' },
-  work: { icon: Briefcase, accent: '#6E8466' },
-  exam: { icon: GraduationCap, accent: '#7C5CBF' },
-  culture: { icon: Clapperboard, accent: '#DB2777' },
-  curious: { icon: Sprout, accent: '#2F9E6D' },
+// One hanzi per learning reason (data in prelogin.js). This is a Chinese
+// reading app: the first choice you make should already taste like the
+// product, and one red ink accent reads as a brand where six pastel icons
+// read as a template. 旅 travel · 家 home/family · 工 work · 考 exam ·
+// 影 film · 好 as in 好奇, curious.
+const REASON_HANZI = {
+  travel: '旅',
+  family: '家',
+  work: '工',
+  exam: '考',
+  culture: '影',
+  curious: '好',
 }
 
 // ── Small pieces ────────────────────────────────────────────────────────────
@@ -162,46 +165,68 @@ function StoryMock() {
   )
 }
 
-// Centered, calm frame shared by the pre-login wizard steps (pick language, why).
-function WizardShell({ isMobile, back, title, subtitle, children }) {
+// Calm frame shared by the pre-login wizard steps. Header is IN FLOW — a back
+// button and progress dots on one row — so nothing ever overlaps the content
+// (the old fixed chip sat on top of whatever scrolled under it). Content is
+// top-aligned: vertically centring a short list leaves the screen looking
+// half-loaded on a phone. Inside the app the ground stays flat, matching the
+// welcome screen; the texture is web garnish.
+function WizardShell({ isMobile, back, step, steps = 3, title, subtitle, children }) {
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', background: 'var(--bg)' }}>
+    <div style={{ minHeight: '100dvh', position: 'relative', background: 'var(--bg)' }}>
+      {!isNativeApp() && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 0,
+          backgroundImage: 'url(' + bgLogin + ')',
+          backgroundSize: 'cover', backgroundPosition: 'center',
+          opacity: 0.22, pointerEvents: 'none',
+        }} />
+      )}
       <div style={{
-        position: 'fixed', inset: 0, zIndex: 0,
-        backgroundImage: 'url(' + bgLogin + ')',
-        backgroundSize: 'cover', backgroundPosition: 'center',
-        opacity: 0.22, pointerEvents: 'none',
-      }} />
-      <button
-        onClick={back}
-        style={{
-          // Fixed to the viewport: clear the status bar / notch, the app shell's
-          // top inset doesn't apply here (Landing renders outside it).
-          position: 'fixed', top: 'calc(18px + env(safe-area-inset-top, 0px))', left: '18px', zIndex: 5,
-          display: 'inline-flex', alignItems: 'center', gap: '7px',
-          padding: '9px 14px', borderRadius: '12px',
-          border: '1px solid var(--border)', background: 'var(--surface)',
-          color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650,
-          fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-          boxShadow: '0 6px 18px rgba(24,24,27,0.08)',
-        }}
-      >
-        <ArrowLeft size={15} strokeWidth={2} color="var(--text-muted)" />
-        Back
-      </button>
-      <div style={{
-        position: 'relative', zIndex: 1, minHeight: '100vh',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        padding: isMobile ? '72px 20px 40px' : '80px 32px 56px', textAlign: 'center',
+        position: 'relative', zIndex: 1, minHeight: '100dvh',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        padding: 'calc(10px + env(safe-area-inset-top, 0px)) 20px calc(28px + env(safe-area-inset-bottom, 0px))',
+        textAlign: 'center',
       }}>
-        <img src={logo} alt={BRAND_NAME + ' logo'} style={{ width: '46px', height: '46px', objectFit: 'contain', marginBottom: '18px' }} />
+        {/* Header row: back on the left, dots dead centre, spacer on the right
+            so the dots stay centred. */}
+        <div style={{
+          width: '100%', maxWidth: '520px', display: 'flex', alignItems: 'center',
+          minHeight: '44px', marginBottom: isMobile ? '18px' : '30px',
+        }}>
+          <button
+            onClick={back}
+            aria-label="Back"
+            style={{
+              width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: '12px', border: 'none', background: 'transparent',
+              color: 'var(--text-muted)', cursor: 'pointer', marginLeft: '-8px',
+            }}
+          >
+            <ArrowLeft size={22} strokeWidth={2} color="var(--text-muted)" />
+          </button>
+          {step ? (
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '7px' }} aria-hidden="true">
+              {Array.from({ length: steps }, (_, i) => (
+                <span key={i} style={{
+                  width: i + 1 === step ? '22px' : '7px', height: '7px', borderRadius: '999px',
+                  background: i + 1 <= step ? BRAND_INK : 'var(--border)',
+                  transition: 'width 200ms ease',
+                }} />
+              ))}
+            </div>
+          ) : <div style={{ flex: 1 }} />}
+          <div style={{ width: '40px', marginRight: '-8px' }} />
+        </div>
+
         <h1 style={{
-          fontSize: isMobile ? '25px' : '32px', fontWeight: 800, color: 'var(--text)',
-          lineHeight: 1.2, letterSpacing: '-0.02em', margin: '0 0 10px', fontFamily: 'Inter, sans-serif',
+          fontSize: isMobile ? '24px' : '30px', fontWeight: 800, color: 'var(--text)',
+          lineHeight: 1.25, letterSpacing: '-0.02em', margin: '0 0 8px',
+          fontFamily: 'Inter, sans-serif', maxWidth: '420px',
         }}>
           {title}
         </h1>
-        <p style={{ fontSize: isMobile ? '14px' : '15px', color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 auto 28px', maxWidth: '440px' }}>
+        <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.55, margin: '0 auto 24px', maxWidth: '400px' }}>
           {subtitle}
         </p>
         {children}
@@ -366,7 +391,7 @@ export default function Landing() {
   if (mode === 'taste') {
     const sentence = sentenceForReason(pickedReason)
     return (
-      <WizardShell isMobile={isMobile} back={() => setMode('why')}
+      <WizardShell isMobile={isMobile} back={() => setMode('why')} step={2}
         title="Read your first Chinese sentence"
         subtitle="No account needed — just tap.">
         <SentenceTaste
@@ -383,42 +408,46 @@ export default function Landing() {
   if (mode === 'why') {
     const lang = languageTheme(pickedLang)
     return (
-      <WizardShell isMobile={isMobile} back={() => setMode('lang')}
+      <WizardShell isMobile={isMobile} back={() => setMode(soloLang ? initialLandingMode(isNativeApp()) : 'lang')} step={1}
         title={`Why are you learning ${lang.languageName}?`}
         subtitle="There's no wrong answer — this just tailors your first stories.">
-        {/* One column on purpose, like every big onboarding: a single lane
-            of identical rows reads as one quick question, where a grid reads
-            as a form. Icons in tinted tiles, not emoji (CLAUDE.md §6). */}
+        {/* One column, one accent. Each reason carries a hanzi in the brand
+            ink — the first tap in the app is already a taste of the writing
+            system it teaches, and a single colour reads as a brand where six
+            pastel tiles read as a template. */}
         <div style={{
           display: 'flex', flexDirection: 'column',
-          gap: '10px', width: '100%', maxWidth: '420px',
+          gap: '10px', width: '100%', maxWidth: '400px',
         }}>
-          {REASONS.map(r => {
-            const art = REASON_ART[r.key]
-            return (
-              <button
-                key={r.key}
-                onClick={() => chooseReason(r.key)}
+          {REASONS.map(r => (
+            <button
+              key={r.key}
+              onClick={() => chooseReason(r.key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '14px',
+                minHeight: '62px', padding: '10px 14px',
+                borderRadius: '16px', cursor: 'pointer',
+                background: 'var(--surface)', border: '1px solid var(--border)',
+                boxShadow: '0 1px 4px rgba(24,24,27,0.04)', textAlign: 'left',
+                fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              <span
+                aria-hidden="true"
+                lang="zh-Hans"
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '14px',
-                  minHeight: '64px', padding: '10px 16px',
-                  borderRadius: '16px', cursor: 'pointer',
-                  background: 'var(--surface)', border: '1px solid var(--border)',
-                  boxShadow: '0 2px 10px rgba(24,24,27,0.04)', textAlign: 'left',
-                  fontFamily: 'Inter, sans-serif',
-                }}
-              >
-                <span style={{
                   width: '42px', height: '42px', borderRadius: '13px', flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'color-mix(in srgb, ' + art.accent + ' 12%, var(--surface))',
-                }}>
-                  <art.icon size={21} strokeWidth={1.9} color={art.accent} />
-                </span>
-                <span style={{ fontSize: '16px', fontWeight: 650, color: 'var(--text)' }}>{r.label}</span>
-              </button>
-            )
-          })}
+                  background: 'color-mix(in srgb, ' + BRAND_INK + ' 9%, var(--surface))',
+                  color: ink(BRAND_INK), fontSize: '21px', fontWeight: 600,
+                  fontFamily: "'Noto Sans SC', sans-serif", lineHeight: 1,
+                }}
+              >
+                {REASON_HANZI[r.key]}
+              </span>
+              <span style={{ fontSize: '16px', fontWeight: 650, color: 'var(--text)' }}>{r.label}</span>
+            </button>
+          ))}
         </div>
       </WizardShell>
     )
