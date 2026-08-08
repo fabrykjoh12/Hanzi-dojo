@@ -55,11 +55,18 @@ export default function NativeWelcome({ onStart, onLogIn }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
           <div style={heroWordmarkStyle('32px')}>{BRAND_NAME}</div>
           <p style={{
+            margin: 0,
+            fontSize: '16px', fontWeight: 650, lineHeight: 1.4,
+            color: 'var(--text)', fontFamily: 'Inter, sans-serif',
+          }}>
+            Your path to Chinese starts&nbsp;here.
+          </p>
+          <p style={{
             margin: 0, maxWidth: '300px',
-            fontSize: '15.5px', lineHeight: 1.5,
+            fontSize: '14px', lineHeight: 1.55,
             color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif',
           }}>
-            Your path to Chinese starts here. Learn through stories, conversation and focused&nbsp;practice.
+            Learn new words, discover them in stories, and remember them through&nbsp;practice.
           </p>
         </div>
       </div>

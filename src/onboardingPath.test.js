@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   EXPERIENCE_LEVELS, DEFAULT_EXPERIENCE, PURPOSES, primaryReason,
   TRAINING_STYLES, DEFAULT_STYLE, DAILY_PLANS, DEFAULT_MINUTES,
-  planEstimate, buildPath, FIRST_LESSON,
+  planEstimate, buildPath,
 } from './onboardingPath'
 import { REASONS } from './prelogin'
 
@@ -84,21 +84,5 @@ describe('buildPath', () => {
     const rows = buildPath({})
     expect(rows).toHaveLength(4)
     expect(rows[3].value).toBe('A balanced start')
-  })
-})
-
-describe('the first lesson', () => {
-  it('teaches 你好 with the studio clip, never speech synthesis as primary', () => {
-    expect(FIRST_LESSON.hanzi).toBe('你好')
-    expect(FIRST_LESSON.audioPath).toMatch(/\.mp3$/)
-  })
-
-  it('offers no wrong answer in the tiny conversation', () => {
-    // A brand-new learner knows exactly one expression. Asking them to choose
-    // between it and a word they have never seen is a trick, not a lesson —
-    // every reply must BE the expression.
-    for (const r of FIRST_LESSON.conversation.replies) {
-      expect(r.text).toContain('你好')
-    }
   })
 })

@@ -106,33 +106,3 @@ export function buildPath({ experience, purposes, minutes } = {}) {
     { title: 'Tuned for', value: focus },
   ]
 }
-
-// ── The first micro-lesson: 你好 ───────────────────────────────────────────
-// One expression, for real. Audio resolves like a flashcard's: the Azure
-// neural clip from tts_audio first (vocabId is 你好's row; an anon RLS policy
-// makes ready rows readable pre-signup), then the legacy recording, then
-// speech synthesis — each strictly a fallback for the one before.
-export const FIRST_LESSON = {
-  hanzi: '你好',
-  pinyin: 'nǐ hǎo',
-  meaning: 'hello',
-  vocabId: '7144c752-7385-4062-91e9-81e27fbeaa50',
-  audioPath: 'chinese/hsk_3/level_1/147_ni_hao.mp3',
-  parts: '你 is “you”. 好 is “good”. Saying “you good” is how half a billion people say hello every day.',
-  // The tiny conversation. 小雨 opens; both replies are the SAME correct
-  // answer with different framing, because a brand-new learner knows exactly
-  // one expression — asking them to choose between it and a word they have
-  // never seen is a trick, not a lesson.
-  conversation: {
-    prompt: '小雨 waves at you from the dojo door.',
-    line: '你好！',
-    replies: [
-      { text: '你好', note: 'say hello back' },
-      { text: '你好！', note: 'with feeling' },
-    ],
-  },
-  done: {
-    title: 'First training complete',
-    line: 'You learned your first expression. 你好 — you can greet anyone who speaks Chinese.',
-  },
-}
