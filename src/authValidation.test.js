@@ -57,6 +57,21 @@ describe('mapAuthError', () => {
     expect(mapAuthError('Request rate limit reached')).toContain('wait')
     expect(mapAuthError('TypeError: Failed to fetch')).toContain('connection')
   })
+  it('owns a mail-provider failure instead of blaming the person signing up', () => {
+    // Real outage, 2026-08-08: the SMTP credential was rejected (535 5.7.8) and
+    // every email signup 500'd for nine days. The raw message went straight to
+    // the screen, so people retried something that could never work.
+    for (const raw of [
+      'Error sending confirmation email',
+      'Error sending recovery email',
+      'Error sending magic link email',
+    ]) {
+      const shown = mapAuthError(raw)
+      expect(shown).toContain('our side')
+      expect(shown).toContain('Google')
+      expect(shown).not.toBe(raw)
+    }
+  })
   it('passes unknown messages through unchanged', () => {
     expect(mapAuthError('Something exotic happened')).toBe('Something exotic happened')
     expect(mapAuthError('')).toBe('')

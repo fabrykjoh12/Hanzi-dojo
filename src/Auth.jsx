@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { supabase } from './supabase'
 import { normalizeEmail } from './utils'
 import { track, EVENTS } from './analytics'
@@ -13,7 +13,7 @@ import { isNativeApp } from './nativeShell'
 import { FLAGS } from './flags'
 import { useIsMobile } from './useIsMobile'
 
-export default function Auth({ intro = null }) {
+export default function Auth({ intro = null, onBack = null }) {
   const isMobile = useIsMobile()
   // Arriving from the pre-login wizard (language + reason chosen) means the user
   // is here to create an account, so default to the Sign-up tab in that case.
@@ -126,26 +126,47 @@ export default function Auth({ intro = null }) {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: '100dvh',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       position: 'relative',
-      padding: '24px',
+      padding: 'calc(12px + env(safe-area-inset-top, 0px)) 24px calc(24px + env(safe-area-inset-bottom, 0px))',
       background: 'var(--bg)',
     }}>
-      {/* Background image */}
-      <div style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 0,
-        backgroundImage: 'url(' + bgLogin + ')',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        opacity: 0.35,
-        pointerEvents: 'none',
-      }} />
+      {/* In flow, never floating: a fixed chip sat on top of the card and
+          covered the logo. This row occupies its own height above the card,
+          so overlap is impossible. */}
+      {onBack && (
+        <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '460px', minHeight: '44px', display: 'flex', alignItems: 'center' }}>
+          <button
+            onClick={onBack}
+            aria-label="Back"
+            style={{
+              width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: '12px', border: 'none', background: 'transparent',
+              color: 'var(--text-muted)', cursor: 'pointer', marginLeft: '-8px',
+            }}
+          >
+            <ArrowLeft size={22} strokeWidth={2} color="var(--text-muted)" />
+          </button>
+        </div>
+      )}
+      {/* Background texture — web only. Inside the app the ground stays flat,
+          matching the welcome screen it was opened from. */}
+      {!isNativeApp() && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 0,
+          backgroundImage: 'url(' + bgLogin + ')',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          opacity: 0.35,
+          pointerEvents: 'none',
+        }} />
+      )}
 
       {/* Card */}
       <div style={{
@@ -160,24 +181,23 @@ export default function Auth({ intro = null }) {
         // mobile branch gives the inputs and buttons room to breathe.
         padding: isMobile ? '28px 20px 24px' : '40px 40px 32px',
       }}>
-        {/* Logo + wordmark */}
-        <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <img src={logo} alt="" style={{ width: '52px', height: '52px', objectFit: 'contain', marginBottom: '4px' }} />
-          {/* The wordmark IS the page heading — a real h1 (margins reset so the
-              wordmark styling renders identically), so heading navigation finds
-              the screen. The logo alt is empty: the name follows immediately. */}
-          <h1 style={{ ...heroWordmarkStyle('42px'), margin: 0 }}>
+        {/* Logo + wordmark. The wordmark IS the page heading — a real h1
+            (margins reset so the wordmark styling renders identically), so
+            heading navigation finds the screen. The logo alt is empty: the
+            name follows immediately. No tagline: the person is here to type
+            an email, and the tabs already say which door this is. The wizard's
+            personalized line (intro) is the one sentence worth keeping. */}
+        <div style={{ textAlign: 'center', marginBottom: intro ? '6px' : '22px' }}>
+          <img src={logo} alt="" style={{ width: '56px', height: '56px', objectFit: 'contain', marginBottom: '2px' }} />
+          <h1 style={{ ...heroWordmarkStyle('30px'), margin: 0 }}>
             {BRAND_NAME}
           </h1>
         </div>
-
-        {/* Tagline — personalized from the pre-login wizard when available */}
-        <p style={{ textAlign: 'center', fontSize: '13px', color: intro ? 'var(--text)' : 'var(--text-muted)', marginBottom: '28px', marginTop: '4px', lineHeight: 1.5 }}>
-          {intro || 'Learn words. Unlock stories you can actually read.'}
-        </p>
-
-        {/* Divider */}
-        <div style={{ height: '1px', background: 'var(--border)', marginBottom: '24px' }} />
+        {intro && (
+          <p style={{ textAlign: 'center', fontSize: '13.5px', color: 'var(--text)', margin: '0 0 20px', lineHeight: 1.5 }}>
+            {intro}
+          </p>
+        )}
 
         {/* Tab toggle */}
         <div style={{ display: 'flex', marginBottom: '24px', borderBottom: '1px solid var(--border)' }}>
@@ -222,12 +242,6 @@ export default function Auth({ intro = null }) {
             Sign up
           </button>
         </div>
-
-        {isSignup && (
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', margin: '10px 0 0', lineHeight: 1.5 }}>
-            Save your progress and unlock your first story — free, no card needed.
-          </p>
-        )}
 
         {/* Inputs */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
@@ -426,10 +440,6 @@ export default function Auth({ intro = null }) {
         )}
       </div>
 
-      {/* Below card */}
-      <p style={{ position: 'relative', zIndex: 1, marginTop: '20px', fontSize: '13px', color: 'var(--text-muted)' }}>
-        Start free. Core learning is free — no credit card required.
-      </p>
     </div>
   )
 }

@@ -1,8 +1,9 @@
 // Lightweight, code-level feature flags. Flip a value to false to disable a
 // feature fast without touching its call sites.
 export const FLAGS = {
-  // The pre-signup "read a Chinese sentence" wow moment (SentenceTaste between
-  // the reason step and signup). Default on.
+  // The pre-signup wow moment between the reason step and signup:
+  // CharacterTaste, three taps that get someone to work out 火山 from 火 and
+  // 山 by themselves. Off sends them straight to signup. Default on.
   WOW_ONBOARDING: true,
 
   // "Continue with Apple" — rendered ONLY inside the native app (Auth.jsx

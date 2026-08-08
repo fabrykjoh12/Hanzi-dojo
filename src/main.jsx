@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.jsx'
 import ErrorBoundary from './ErrorBoundary.jsx'
 import NativeShellBridge from './NativeShellBridge.jsx'
+import SplashIntro from './SplashIntro.jsx'
 import { BUILD_SHA, BUILD_TIME } from './version'
 import { installErrorMonitoring } from './errorMonitor'
 import { isNativeApp } from './nativeShell'
@@ -28,6 +29,11 @@ createRoot(document.getElementById('root')).render(
       <BrowserRouter basename={basename}>
         <App />
         <NativeShellBridge />
+        {/* Sibling of App, not a wrapper: it covers whatever App is doing
+            (session fetch, profile fetch, first route) and removes itself on
+            its own timer, so no screen has to know it exists. It renders
+            nothing at all on the web. */}
+        <SplashIntro />
       </BrowserRouter>
     </ErrorBoundary>
   </StrictMode>,

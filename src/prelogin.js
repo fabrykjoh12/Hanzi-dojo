@@ -2,13 +2,28 @@
 // signup and carried into the post-signup Onboarding via localStorage. The pure
 // helpers are unit-tested; the storage helpers degrade quietly if unavailable.
 
+// Which screen a signed-out visitor lands on.
+//
+// The web gets the marketing page: someone arriving at hanzi-dojo.com has not
+// decided anything yet and needs to be told what this is. Someone who has
+// already installed the app from a store has read that pitch — the store
+// listing *is* the landing page — so repeating it wastes their first screen
+// and makes the app feel like a bookmarked website. They get a proper app
+// welcome instead, straight into the two things they might want: start, or
+// sign in.
+export function initialLandingMode(native) {
+  return native ? 'welcome' : 'landing'
+}
+
+// Icons and tints live with the screens that render these (lucide components
+// don't belong in a pure module); this list is the data only.
 export const REASONS = [
-  { key: 'travel', emoji: '✈️', label: 'Travel' },
-  { key: 'family', emoji: '👪', label: 'Family & heritage' },
-  { key: 'work', emoji: '💼', label: 'Work or study' },
-  { key: 'exam', emoji: '🎓', label: 'Pass an exam' },
-  { key: 'culture', emoji: '🎬', label: 'Culture — film, music, anime' },
-  { key: 'curious', emoji: '🌱', label: 'Just curious' },
+  { key: 'travel', label: 'Travel' },
+  { key: 'family', label: 'Family & heritage' },
+  { key: 'work', label: 'Work or study' },
+  { key: 'exam', label: 'Pass an exam' },
+  { key: 'culture', label: 'Culture — film, music, anime' },
+  { key: 'curious', label: 'Just curious' },
 ]
 
 // The exam a reason='exam' learner is aiming at, per language (tailors copy).
