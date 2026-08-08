@@ -19,6 +19,10 @@ export const BRAND_BRUSH_FONT = "'Nanum Brush Script', 'Poppins', cursive"
 // The brand red from the ensō logo — used to tint the brush wordmark.
 export const BRAND_INK = '#B83A24'
 
+// The support inbox. One constant so the trust pages, store listings and any
+// future in-app mention can never drift apart on the address.
+export const SUPPORT_EMAIL = 'support@hanzi-dojo.com'
+
 // Inline style for the small, chrome wordmark (sidebar). Clean geometric sans.
 export function wordmarkStyle(fontSize = '18px') {
   return {
