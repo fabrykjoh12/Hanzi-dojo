@@ -49,8 +49,12 @@ columns all exist — older "pending migration" doc entries were stale.
       `AndroidManifest.xml` and `Info.plist`.
 - [ ] **Universal links** so `https://hanzi-dojo.com/read/...` opens the app:
       host `assetlinks.json` + `apple-app-site-association` on the domain,
-      add `autoVerify` intent filter + Associated Domains entitlement. Needs
-      the store signing identities to exist first (0d).
+      add `autoVerify` intent filter + Associated Domains entitlement.
+      **Not a submission blocker** — the custom scheme above already carries
+      auth callbacks and deep links; this only upgrades ordinary web links.
+      The routing half is written and tested already (`nativeShell.js` maps
+      hanzi-dojo.com URLs); what is missing is the two hosted files, and the
+      Apple one needs the team ID prefix.
 - [x] **Service worker off inside the native app — DONE 2026-08-07**
       (`main.jsx` guards registration with `isNativeApp()`; web build
       unchanged). The IndexedDB offline layer stays — it is the app's
@@ -68,8 +72,11 @@ columns all exist — older "pending migration" doc entries were stale.
       fixed-height flashcard and writing screens.
 - [ ] **External links** (Discord, attribution links) open the system browser,
       never navigate the app webview.
-- [ ] **App icons + splash screens**, all densities, light + dark (defaults
-      are the Capacitor placeholders right now).
+- [x] **App icons + splash screens — DONE 2026-08-07.** 88 assets rasterised
+      from the existing ensō mark for both platforms, all densities, light and
+      dark. The Android adaptive foreground is drawn at 830/1024 on purpose:
+      the adaptive-icon XML adds its own ~16.7% inset, so a full-bleed
+      foreground gets visibly cropped.
 
 ### 0b · Hard store blockers (rejection-level, code + config)
 
@@ -83,15 +90,27 @@ columns all exist — older "pending migration" doc entries were stale.
       Profile doubles as Play's required web deletion path. Dojo HQ board
       rows deliberately survive (shared team content). Still to do: walk it
       end-to-end with a throwaway account (§4).
-- [ ] **🔴 Sign in with Apple.** Mandatory on iOS because Google sign-in is
-      offered. Enable the Apple provider in Supabase (needs the Apple
-      Developer account, Services ID + key), add the button in `Auth.jsx`
-      (iOS at minimum).
-- [ ] **🔴 Native OAuth flow.** Google blocks OAuth inside webviews: open
-      auth in the system browser (`@capacitor/browser`) and return via deep
-      link (`com.hanzidojo.app://auth-callback` or universal links). Add the
-      scheme to the Supabase redirect allowlist. Same for **magic links and
-      password-reset emails** — they must open the app, not the website.
+- [x] **Sign in with Apple** — *code done 2026-08-07; Supabase provider
+      configured by the owner. Unverified until someone signs in on a real
+      device.* Deliberately **native** (`signInWithAppleNative` in
+      `nativeAuth.js`): Apple's own sheet, and Supabase verifies the identity
+      token against Apple's public keys. That removes the Services ID and the
+      client secret entirely — the web route needs a JWT signed with a `.p8`
+      that Apple expires every six months, and when it lapses sign-in breaks
+      with no other symptom. Nothing to renew now, ever.
+      The button renders only inside the app (`Auth.jsx` gates on
+      `isNativeApp()`), so it cannot be tested in a browser — the first proof
+      is a TestFlight install.
+- [x] **Native OAuth flow** — *code done 2026-08-07, unverified on device.*
+      Google refuses OAuth inside a webview, so `signInWithProvider` opens the
+      system browser with `skipBrowserRedirect` and the app returns through
+      `com.hanzidojo.app://auth-callback`, which `NativeShellBridge` hands to
+      `exchangeCodeForSession`. The native client uses **PKCE** while the web
+      stays on the implicit flow — any app can claim a custom URL scheme, so
+      the code exchange must be bound to the client that started it, and web
+      keeps implicit so cross-device email links keep working.
+      Still to check on a device: **magic links and password-reset emails**
+      open the app rather than the website.
 - [ ] **🔴 Native push notifications.** Replace Web Push with
       `@capacitor/push-notifications`: FCM (Android) + APNs (iOS).
       `send-review-reminders.mjs` sends via FCM instead of Web Push; store
