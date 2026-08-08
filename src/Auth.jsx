@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { supabase } from './supabase'
 import { normalizeEmail } from './utils'
 import { track, EVENTS } from './analytics'
@@ -13,7 +13,7 @@ import { isNativeApp } from './nativeShell'
 import { FLAGS } from './flags'
 import { useIsMobile } from './useIsMobile'
 
-export default function Auth({ intro = null }) {
+export default function Auth({ intro = null, onBack = null }) {
   const isMobile = useIsMobile()
   // Arriving from the pre-login wizard (language + reason chosen) means the user
   // is here to create an account, so default to the Sign-up tab in that case.
@@ -126,15 +126,33 @@ export default function Auth({ intro = null }) {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: '100dvh',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       position: 'relative',
-      padding: '24px',
+      padding: 'calc(12px + env(safe-area-inset-top, 0px)) 24px calc(24px + env(safe-area-inset-bottom, 0px))',
       background: 'var(--bg)',
     }}>
+      {/* In flow, never floating: a fixed chip sat on top of the card and
+          covered the logo. This row occupies its own height above the card,
+          so overlap is impossible. */}
+      {onBack && (
+        <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '460px', minHeight: '44px', display: 'flex', alignItems: 'center' }}>
+          <button
+            onClick={onBack}
+            aria-label="Back"
+            style={{
+              width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: '12px', border: 'none', background: 'transparent',
+              color: 'var(--text-muted)', cursor: 'pointer', marginLeft: '-8px',
+            }}
+          >
+            <ArrowLeft size={22} strokeWidth={2} color="var(--text-muted)" />
+          </button>
+        </div>
+      )}
       {/* Background texture — web only. Inside the app the ground stays flat,
           matching the welcome screen it was opened from. */}
       {!isNativeApp() && (

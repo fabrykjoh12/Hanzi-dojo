@@ -328,24 +328,6 @@ export default function Landing() {
     setMode('auth')
   }
 
-  const backChip = (onClick) => (
-    <button
-      onClick={onClick}
-      style={{
-        // Same as WizardShell's chip: viewport-fixed, so it needs the top inset.
-        position: 'fixed', top: 'calc(18px + env(safe-area-inset-top, 0px))', left: '18px', zIndex: 5,
-        display: 'inline-flex', alignItems: 'center', gap: '7px',
-        padding: '9px 14px', borderRadius: '12px',
-        border: '1px solid var(--border)', background: 'var(--surface)',
-        color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650,
-        fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-        boxShadow: '0 6px 18px rgba(24,24,27,0.08)',
-      }}
-    >
-      <ArrowLeft size={15} strokeWidth={2} color="var(--text-muted)" />
-      Back
-    </button>
-  )
 
   // The store apps open here instead of the marketing page.
   if (mode === 'welcome') {
@@ -458,10 +440,10 @@ export default function Landing() {
       ? encouragementFor(pickedLang, pickedReason, languageTheme(pickedLang).languageName)
       : null
     return (
-      <div style={{ position: 'relative' }}>
-        {backChip(() => setMode(pickedReason ? 'why' : initialLandingMode(isNativeApp())))}
-        <Auth intro={intro} />
-      </div>
+      <Auth
+        intro={intro}
+        onBack={() => setMode(pickedReason ? 'why' : initialLandingMode(isNativeApp()))}
+      />
     )
   }
 
