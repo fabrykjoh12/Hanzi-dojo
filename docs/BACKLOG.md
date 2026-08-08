@@ -10,6 +10,34 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+## Competitive strategy — pick up here (2026-08-08)
+
+The full deep competitive analysis lives in
+[`docs/research/2026-08-08-deep-competitive-analysis.md`](research/2026-08-08-deep-competitive-analysis.md)
+— codebase inspection + market research, feature matrix, scored priority table
+(§19), three phased roadmaps (§20–22), and a ranked top-10 (§24). The agreed
+pickup order when work resumes:
+
+1. **Close the onboarding data seam + soften the email-confirm wall** — the
+   wizard's `startLevel` / `purposes` / `minutesPerDay` are collected pre-signup
+   and never read again (verified in code); prefill the post-signup steps
+   instead of re-asking, route "I'm not sure" to the reading test. Then **native
+   push** (`@capacitor/push-notifications` — Web Push is dead in the iOS shell)
+   with one primed ask on the first session recap.
+2. **Fund the LLM key + beginner trust pass** — HSK 3–6 serials unblock for
+   dollars; fix the 8 under-coverage beginner stories, the stale `has_audio`
+   flags, missing covers; dismantle the `Writing.jsx` XP/streak island (it
+   contradicts the Terms page's "no XP" claim in shipping code).
+3. **The episode-readiness loop (the killer feature, §23)** — live %-known on
+   every serial's next chapter, a Home hook line ("Chapter 7 is ready — you now
+   know 96% of it"), recap wiring. The readability engine already computes
+   everything; this is display + plumbing.
+
+After that, Phase 2 opens with **card types inside the SRS** (listening + cloze
+per word, staggered by stability) and the **character decomposition / 声旁
+layer** — the two biggest learning-quality gaps identified. Details, scores and
+reasoning are all in the research doc; don't re-derive them here.
+
 ### An art-fetch commit lands without CI (know it before you merge)
 
 `manhua-art-fetch` commits the panels it downloads back to the branch, using the
