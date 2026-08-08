@@ -135,17 +135,20 @@ export default function Auth({ intro = null }) {
       padding: '24px',
       background: 'var(--bg)',
     }}>
-      {/* Background image */}
-      <div style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 0,
-        backgroundImage: 'url(' + bgLogin + ')',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        opacity: 0.35,
-        pointerEvents: 'none',
-      }} />
+      {/* Background texture — web only. Inside the app the ground stays flat,
+          matching the welcome screen it was opened from. */}
+      {!isNativeApp() && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 0,
+          backgroundImage: 'url(' + bgLogin + ')',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          opacity: 0.35,
+          pointerEvents: 'none',
+        }} />
+      )}
 
       {/* Card */}
       <div style={{
@@ -160,24 +163,23 @@ export default function Auth({ intro = null }) {
         // mobile branch gives the inputs and buttons room to breathe.
         padding: isMobile ? '28px 20px 24px' : '40px 40px 32px',
       }}>
-        {/* Logo + wordmark */}
-        <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <img src={logo} alt="" style={{ width: '52px', height: '52px', objectFit: 'contain', marginBottom: '4px' }} />
-          {/* The wordmark IS the page heading — a real h1 (margins reset so the
-              wordmark styling renders identically), so heading navigation finds
-              the screen. The logo alt is empty: the name follows immediately. */}
-          <h1 style={{ ...heroWordmarkStyle('42px'), margin: 0 }}>
+        {/* Logo + wordmark. The wordmark IS the page heading — a real h1
+            (margins reset so the wordmark styling renders identically), so
+            heading navigation finds the screen. The logo alt is empty: the
+            name follows immediately. No tagline: the person is here to type
+            an email, and the tabs already say which door this is. The wizard's
+            personalized line (intro) is the one sentence worth keeping. */}
+        <div style={{ textAlign: 'center', marginBottom: intro ? '6px' : '22px' }}>
+          <img src={logo} alt="" style={{ width: '56px', height: '56px', objectFit: 'contain', marginBottom: '2px' }} />
+          <h1 style={{ ...heroWordmarkStyle('30px'), margin: 0 }}>
             {BRAND_NAME}
           </h1>
         </div>
-
-        {/* Tagline — personalized from the pre-login wizard when available */}
-        <p style={{ textAlign: 'center', fontSize: '13px', color: intro ? 'var(--text)' : 'var(--text-muted)', marginBottom: '28px', marginTop: '4px', lineHeight: 1.5 }}>
-          {intro || 'Learn words. Unlock stories you can actually read.'}
-        </p>
-
-        {/* Divider */}
-        <div style={{ height: '1px', background: 'var(--border)', marginBottom: '24px' }} />
+        {intro && (
+          <p style={{ textAlign: 'center', fontSize: '13.5px', color: 'var(--text)', margin: '0 0 20px', lineHeight: 1.5 }}>
+            {intro}
+          </p>
+        )}
 
         {/* Tab toggle */}
         <div style={{ display: 'flex', marginBottom: '24px', borderBottom: '1px solid var(--border)' }}>
@@ -222,12 +224,6 @@ export default function Auth({ intro = null }) {
             Sign up
           </button>
         </div>
-
-        {isSignup && (
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', margin: '10px 0 0', lineHeight: 1.5 }}>
-            Save your progress and unlock your first story — free, no card needed.
-          </p>
-        )}
 
         {/* Inputs */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
@@ -426,10 +422,6 @@ export default function Auth({ intro = null }) {
         )}
       </div>
 
-      {/* Below card */}
-      <p style={{ position: 'relative', zIndex: 1, marginTop: '20px', fontSize: '13px', color: 'var(--text-muted)' }}>
-        Start free. Core learning is free — no credit card required.
-      </p>
     </div>
   )
 }

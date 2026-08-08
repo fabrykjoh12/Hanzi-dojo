@@ -14,8 +14,8 @@ import { REASONS, encouragementFor, savePreloginPrefs, initialLandingMode } from
 import { isNativeApp } from './nativeShell'
 import NativeWelcome from './NativeWelcome'
 import {
-  ArrowLeft, ArrowRight, BookOpen, GraduationCap, Layers, PenLine, Play, Sparkles,
-  MessagesSquare,
+  ArrowLeft, ArrowRight, BookOpen, Briefcase, Clapperboard, GraduationCap, Home,
+  Layers, PenLine, Plane, Play, Sparkles, Sprout, MessagesSquare,
 } from 'lucide-react'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
 import { externalLinkProps } from './externalLink'
@@ -23,6 +23,17 @@ import { externalLinkProps } from './externalLink'
 const SAGE = '#6E8466'
 const SAGE_DARK = '#5C7155'
 const SYSTEM_LABELS = { chinese: 'HSK 3.0', japanese: 'JLPT', russian: 'CEFR' }
+
+// Icon + colour per learning reason (data in prelogin.js). Tints mix into the
+// surface so they hold up in dark mode — CLAUDE.md §5.
+const REASON_ART = {
+  travel: { icon: Plane, accent: '#3E63DD' },
+  family: { icon: Home, accent: '#D97706' },
+  work: { icon: Briefcase, accent: '#6E8466' },
+  exam: { icon: GraduationCap, accent: '#7C5CBF' },
+  culture: { icon: Clapperboard, accent: '#DB2777' },
+  curious: { icon: Sprout, accent: '#2F9E6D' },
+}
 
 // ── Small pieces ────────────────────────────────────────────────────────────
 
@@ -374,27 +385,40 @@ export default function Landing() {
     return (
       <WizardShell isMobile={isMobile} back={() => setMode('lang')}
         title={`Why are you learning ${lang.languageName}?`}
-        subtitle="This tailors your first stories and encouragement. There's no wrong answer.">
+        subtitle="There's no wrong answer — this just tailors your first stories.">
+        {/* One column on purpose, like every big onboarding: a single lane
+            of identical rows reads as one quick question, where a grid reads
+            as a form. Icons in tinted tiles, not emoji (CLAUDE.md §6). */}
         <div style={{
-          display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
-          gap: '12px', width: '100%', maxWidth: '520px',
+          display: 'flex', flexDirection: 'column',
+          gap: '10px', width: '100%', maxWidth: '420px',
         }}>
-          {REASONS.map(r => (
-            <button
-              key={r.key}
-              onClick={() => chooseReason(r.key)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '12px',
-                padding: '15px 16px', borderRadius: '15px', cursor: 'pointer',
-                background: 'var(--surface)', border: '1px solid var(--border)',
-                boxShadow: '0 4px 14px rgba(24,24,27,0.05)', textAlign: 'left',
-                fontFamily: 'Inter, sans-serif',
-              }}
-            >
-              <span style={{ fontSize: '22px' }}>{r.emoji}</span>
-              <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>{r.label}</span>
-            </button>
-          ))}
+          {REASONS.map(r => {
+            const art = REASON_ART[r.key]
+            return (
+              <button
+                key={r.key}
+                onClick={() => chooseReason(r.key)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '14px',
+                  minHeight: '64px', padding: '10px 16px',
+                  borderRadius: '16px', cursor: 'pointer',
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  boxShadow: '0 2px 10px rgba(24,24,27,0.04)', textAlign: 'left',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                <span style={{
+                  width: '42px', height: '42px', borderRadius: '13px', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'color-mix(in srgb, ' + art.accent + ' 12%, var(--surface))',
+                }}>
+                  <art.icon size={21} strokeWidth={1.9} color={art.accent} />
+                </span>
+                <span style={{ fontSize: '16px', fontWeight: 650, color: 'var(--text)' }}>{r.label}</span>
+              </button>
+            )
+          })}
         </div>
       </WizardShell>
     )

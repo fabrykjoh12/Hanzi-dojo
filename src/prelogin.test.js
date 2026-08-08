@@ -16,7 +16,7 @@ describe('initialLandingMode', () => {
 describe('prelogin helpers', () => {
   it('exposes the reason set', () => {
     expect(REASONS.map(r => r.key)).toEqual(['travel', 'family', 'work', 'exam', 'culture', 'curious'])
-    expect(REASONS.every(r => r.label && r.emoji)).toBe(true)
+    expect(REASONS.every(r => r.label)).toBe(true)
   })
 
   it('maps the exam label per language', () => {

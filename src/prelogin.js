@@ -15,13 +15,15 @@ export function initialLandingMode(native) {
   return native ? 'welcome' : 'landing'
 }
 
+// Icons and tints live with the screens that render these (lucide components
+// don't belong in a pure module); this list is the data only.
 export const REASONS = [
-  { key: 'travel', emoji: '✈️', label: 'Travel' },
-  { key: 'family', emoji: '👪', label: 'Family & heritage' },
-  { key: 'work', emoji: '💼', label: 'Work or study' },
-  { key: 'exam', emoji: '🎓', label: 'Pass an exam' },
-  { key: 'culture', emoji: '🎬', label: 'Culture — film, music, anime' },
-  { key: 'curious', emoji: '🌱', label: 'Just curious' },
+  { key: 'travel', label: 'Travel' },
+  { key: 'family', label: 'Family & heritage' },
+  { key: 'work', label: 'Work or study' },
+  { key: 'exam', label: 'Pass an exam' },
+  { key: 'culture', label: 'Culture — film, music, anime' },
+  { key: 'curious', label: 'Just curious' },
 ]
 
 // The exam a reason='exam' learner is aiming at, per language (tailors copy).
