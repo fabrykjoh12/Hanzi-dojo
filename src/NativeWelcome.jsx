@@ -41,10 +41,16 @@ export default function NativeWelcome({ onStart, onLogIn }) {
         alignItems: 'center', justifyContent: 'center', gap: '22px',
         paddingBottom: '8vh',
       }}>
+        {/* Same sizing rule as the splash overlay, so the crossfade from
+            launch to welcome reads as the logo staying put rather than two
+            screens swapping. */}
         <img
           src={logo}
           alt=""
-          style={{ width: '112px', height: '112px', objectFit: 'contain' }}
+          style={{
+            width: 'clamp(96px, 15vh, 180px)', height: 'clamp(96px, 15vh, 180px)',
+            objectFit: 'contain',
+          }}
         />
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
           <div style={heroWordmarkStyle('32px')}>{BRAND_NAME}</div>

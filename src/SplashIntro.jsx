@@ -85,7 +85,13 @@ export default function SplashIntro() {
       <svg
         viewBox="0 0 128 128"
         style={{
-          width: '128px', height: '128px', overflow: 'visible',
+          // Matched to the platform launch image, not a fixed pixel size. That
+          // image is drawn scaleAspectFill, so its mark lands at 15% of the
+          // screen HEIGHT; sizing this the same way means the logo does not
+          // jump when the web overlay takes over. Clamped so it stays sane on
+          // a tablet and on a very short screen.
+          width: 'clamp(96px, 15vh, 180px)', height: 'clamp(96px, 15vh, 180px)',
+          overflow: 'visible',
           ...(drawing ? {
             animation: 'hd-splash-settle ' + plan.drawMs + 'ms cubic-bezier(.32,.72,.24,1) forwards',
           } : {}),
