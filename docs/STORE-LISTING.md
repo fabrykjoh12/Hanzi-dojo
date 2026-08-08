@@ -27,6 +27,7 @@ Two rules this copy follows, and any edit should keep:
 | Category | Education (secondary: Reference) |
 | Price | Free, no in-app purchases, no ads |
 | Support URL | `https://hanzi-dojo.com/support` |
+| Support email | `support@hanzi-dojo.com` — Play requires a contact email on the listing; App Store review may email it too. Same address the trust pages show. |
 | Privacy policy URL | `https://hanzi-dojo.com/privacy` |
 | Marketing URL | `https://hanzi-dojo.com` |
 

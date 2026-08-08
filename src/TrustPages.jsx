@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
-import { BRAND_NAME, BRAND_URL } from './brand'
+import { BRAND_NAME, BRAND_URL, SUPPORT_EMAIL } from './brand'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
 import { externalLinkProps } from './externalLink'
 
@@ -156,9 +156,10 @@ function Privacy() {
 
       <H2>Contact</H2>
       <P>
-        During the beta, the contact channel is the community Discord and the in-app feedback
-        button (see <A href="/support">Support</A>). A dedicated support email is coming and
-        will be listed here.
+        Email <a href={'mailto:' + SUPPORT_EMAIL} style={{ color: 'var(--text)', fontWeight: 600 }}>{SUPPORT_EMAIL}</a>{' '}
+        for anything in this policy — data questions, corrections, copies, deletion requests.
+        The community Discord and the in-app feedback button also reach us
+        (see <A href="/support">Support</A>).
       </P>
     </>
   )
@@ -219,7 +220,9 @@ function Terms() {
       <H2>Changes and contact</H2>
       <P>
         We may update these terms as the beta evolves; meaningful changes will be visible on
-        this page. Questions or problems: <A href="/support">Support</A>.
+        this page. Questions or problems:{' '}
+        <a href={'mailto:' + SUPPORT_EMAIL} style={{ color: 'var(--text)', fontWeight: 600 }}>{SUPPORT_EMAIL}</a>{' '}
+        or <A href="/support">Support</A>.
       </P>
     </>
   )
@@ -233,6 +236,9 @@ function Support() {
         human:
       </P>
       <ul style={{ paddingLeft: '20px', margin: '0 0 12px' }}>
+        <Li><strong>Email</strong> — <a href={'mailto:' + SUPPORT_EMAIL} style={{ color: 'var(--text)', fontWeight: 600 }}>{SUPPORT_EMAIL}</a>.
+          Works whether or not you have an account, and it is the address for anything
+          formal: data requests, deletion, account problems.</Li>
         {isDiscordConfigured() && (
           <Li><strong>Discord</strong> — <A external href={DISCORD_INVITE_URL}>join the community server</A>.
             Bug reports go to #feedback-and-ideas; they’re triaged from there.</Li>
@@ -246,8 +252,9 @@ function Support() {
         choose <strong>Delete account</strong> at the bottom. It asks you to confirm, then
         permanently removes your account and all its data — this works the same in the app
         and on the web at hanzi-dojo.com. Progress for a single language can be reset from
-        Profile without deleting the account. If you can’t sign in, ask in Discord or via
-        the contact below and we’ll handle it after confirming the account is yours.
+        Profile without deleting the account. If you can’t sign in, email{' '}
+        <a href={'mailto:' + SUPPORT_EMAIL} style={{ color: 'var(--text)', fontWeight: 600 }}>{SUPPORT_EMAIL}</a>{' '}
+        and we’ll handle it after confirming the account is yours.
       </P>
       <H2>Data questions</H2>
       <P>
