@@ -1,20 +1,22 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Check, Volume2 } from 'lucide-react'
 import { BRAND_INK } from './brand'
 import { ink } from './languageTheme'
 import { FIRST_LESSON } from './onboardingPath'
 import { getAudioUrl, playAudioEl } from './utils'
+import { loadTtsAudio, ttsUrl } from './ttsAudio'
 import { speak } from './starterAudio'
 
 // The first win: one real expression, learned before any account exists.
 // Content in onboardingPath.js (FIRST_LESSON).
 //
 // Four beats — meet 你好, reveal what it is, use it once, be told plainly
-// that the first training is complete. The audio is the studio-recorded
-// flashcard clip, with speech synthesis only as a last-resort fallback; it
-// plays on the reveal tap (a user gesture, so iOS allows it) and from a
-// speaker button after that. Nothing waits on the audio: on a muted phone
-// the lesson is exactly as complete.
+// that the first training is complete. Audio resolves exactly like a
+// flashcard's (ttsAudio.js): the Azure neural clip first, the legacy
+// recording if that lookup has not landed, speech synthesis as the last
+// resort. It plays on the reveal tap (a user gesture, so iOS allows it) and
+// from a speaker button after that. Nothing waits on the audio: on a muted
+// phone the lesson is exactly as complete.
 //
 // The success moment is calm on purpose — an ink check and a plain sentence,
 // not confetti. The reward is being told the truth: you can greet anyone who
@@ -25,8 +27,15 @@ export default function FirstLesson({ onComplete, onEvent }) {
   const [replied, setReplied] = useState(null)
   const audioRef = useRef(null)
 
+  // Warm the Azure clip lookup as soon as the lesson mounts, so by the time
+  // anyone taps reveal the neural URL is in the memo. Fire-and-forget: a
+  // failure just means the fallbacks below carry it.
+  useEffect(() => { loadTtsAudio('vocabulary', [FIRST_LESSON.vocabId]) }, [])
+
   const play = () => {
-    playAudioEl(audioRef.current, getAudioUrl(FIRST_LESSON.audioPath), () => speak(FIRST_LESSON.hanzi))
+    const url = ttsUrl('vocabulary', FIRST_LESSON.vocabId, 'word')
+      || getAudioUrl(FIRST_LESSON.audioPath)
+    playAudioEl(audioRef.current, url, () => speak(FIRST_LESSON.hanzi))
   }
 
   const reveal = () => {
