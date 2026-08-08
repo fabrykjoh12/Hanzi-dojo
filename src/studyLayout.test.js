@@ -102,6 +102,10 @@ describe('studyLayout — mobile locks the screen to one viewport', () => {
   it('subtracts exactly the nav height App.jsx reserves', () => {
     expect(MOBILE_SHELL_HEIGHT.indexOf(MOBILE_NAV_HEIGHT + 'px')).toBeGreaterThan(-1)
     expect(MOBILE_SHELL_HEIGHT.indexOf('env(safe-area-inset-bottom)')).toBeGreaterThan(-1)
+    // The top inset too: App.jsx pads main with env(safe-area-inset-top) on
+    // mobile, so a shell that ignores it overflows by the notch on a real
+    // phone — while every zero-inset CI environment stays green.
+    expect(MOBILE_SHELL_HEIGHT.indexOf('env(safe-area-inset-top)')).toBeGreaterThan(-1)
   })
 })
 

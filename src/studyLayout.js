@@ -127,9 +127,14 @@ export function studyDensity(isMobile, viewportHeight) {
 
 // The CSS height the study shell is locked to on mobile. `dvh` (not `vh`) so
 // the browser's collapsing address bar doesn't make it a chunk too tall, and
-// the safe-area inset matches the padding App.jsx already reserves for the nav.
+// BOTH safe-area insets subtracted, because App.jsx reserves both around
+// `main`: the nav padding at the bottom AND `env(safe-area-inset-top)` above.
+// Missing the top inset made the locked shell taller than the screen by
+// exactly the notch (~59px on an iPhone 14) — a scroll to reach the grade
+// buttons on every card, invisible to the Chromium e2e where insets are 0.
 export const MOBILE_SHELL_HEIGHT =
-  'calc(100dvh - ' + MOBILE_NAV_HEIGHT + 'px - env(safe-area-inset-bottom))'
+  'calc(100dvh - ' + MOBILE_NAV_HEIGHT + 'px' +
+  ' - env(safe-area-inset-bottom) - env(safe-area-inset-top))'
 
 /**
  * Everything the study screen needs to size itself.
