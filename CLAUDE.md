@@ -93,6 +93,12 @@ this changes, permanently:
   Web-Push-only or Web-Speech-only paths without a native plugin or a graceful
   fallback; audio, storage and OAuth behave differently in a webview — check
   before assuming browser behavior.
+- **Web and app differ only through `isNativeApp()`** (`src/nativeShell.js`),
+  branching inside shared code. The decision itself goes in a pure, tested
+  function (`initialLandingMode` in `prelogin.js` is the pattern), never a
+  bare conditional in JSX; and never fork a screen into web/native twin files
+  — twins rot apart. `grep -rn isNativeApp src/` is the complete audit of
+  every place the two surfaces diverge; keep it that way.
 
 **Scope: Chinese (HSK 3.0) only.** The two non-Chinese tracks are **frozen** —
 they stay in the app and keep working for anyone already on them, but they are
