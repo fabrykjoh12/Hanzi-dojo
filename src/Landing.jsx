@@ -6,8 +6,8 @@ import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_INK, BRAND_NAME, heroWordmarkStyle } from './brand'
 import { availableLanguages, ink, languageTheme } from './languageTheme'
-import SentenceTaste from './SentenceTaste'
-import { sentenceForReason, charsToLearn } from './starterSentences'
+import CharacterTaste from './CharacterTaste'
+import { tastedCharacters } from './characterTaste'
 import { FLAGS } from './flags'
 import { useIsMobile } from './useIsMobile'
 import { REASONS, encouragementFor, savePreloginPrefs, initialLandingMode } from './prelogin'
@@ -316,12 +316,11 @@ export default function Landing() {
     }
   }
 
-  // Finished the sentence (fully revealed) or skipped it → the words tapped
-  // are already "learned" (pinyin + gloss + audio all shown), so there's no
-  // separate character-replay step. Persist them for the post-signup welcome
-  // and go straight to signup.
+  // Finished the character taste, or skipped it. Skipping claims nothing —
+  // the post-signup welcome greets you by the characters you actually met, and
+  // it would be a strange greeting for someone who tapped past them.
   const finishTaste = (revealed) => {
-    const tastedWords = revealed ? charsToLearn(sentenceForReason(pickedReason)).map(w => w.hanzi) : []
+    const tastedWords = revealed ? tastedCharacters() : []
     savePreloginPrefs({ language: pickedLang, reason: pickedReason, tastedWords })
     track(EVENTS.TASTE_COMPLETED, { reason: pickedReason, revealed: !!revealed, count: tastedWords.length })
     track(EVENTS.PRELOGIN_SIGNUP_STARTED, { language: pickedLang, reason: pickedReason })
@@ -371,15 +370,12 @@ export default function Landing() {
   }
 
   if (mode === 'taste') {
-    const sentence = sentenceForReason(pickedReason)
     return (
       <WizardShell isMobile={isMobile} back={() => setMode('why')} step={2}
-        title="Read your first Chinese sentence"
-        subtitle="No account needed — just tap.">
-        <SentenceTaste
-          sentence={sentence}
-          accentHex="#B83A24"
-          onWordReveal={() => track(EVENTS.TASTE_WORD_REVEALED, { reason: pickedReason })}
+        title="Chinese is more guessable than it looks"
+        subtitle="Three questions, no account needed.">
+        <CharacterTaste
+          onAnswer={({ id, correct }) => track(EVENTS.TASTE_WORD_REVEALED, { reason: pickedReason, step: id, correct })}
           onComplete={() => finishTaste(true)}
           onSkip={() => finishTaste(false)}
         />
