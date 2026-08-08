@@ -108,12 +108,15 @@ export function buildPath({ experience, purposes, minutes } = {}) {
 }
 
 // ── The first micro-lesson: 你好 ───────────────────────────────────────────
-// One expression, for real: the audio is the studio-recorded clip the
-// flashcards use (verified in the vocabulary table), never speech synthesis.
+// One expression, for real. Audio resolves like a flashcard's: the Azure
+// neural clip from tts_audio first (vocabId is 你好's row; an anon RLS policy
+// makes ready rows readable pre-signup), then the legacy recording, then
+// speech synthesis — each strictly a fallback for the one before.
 export const FIRST_LESSON = {
   hanzi: '你好',
   pinyin: 'nǐ hǎo',
   meaning: 'hello',
+  vocabId: '7144c752-7385-4062-91e9-81e27fbeaa50',
   audioPath: 'chinese/hsk_3/level_1/147_ni_hao.mp3',
   parts: '你 is “you”. 好 is “good”. Saying “you good” is how half a billion people say hello every day.',
   // The tiny conversation. 小雨 opens; both replies are the SAME correct
