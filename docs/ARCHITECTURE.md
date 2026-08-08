@@ -149,6 +149,28 @@ story_questions                  -- migration 20260630010000; end-of-story compr
   UNIQUE (story_id, question_number)
   -- RLS: authenticated users can read; generator writes via the service key.
 
+story_unlocks                    -- migration 20260809090000; the chapter-reward loop
+  user_id uuid REFERENCES profiles ON DELETE CASCADE
+  story_id uuid REFERENCES stories ON DELETE CASCADE
+  source text                    -- 'session' (earned) | 'seed' (grandfathered pre-launch progress)
+  unlocked_at timestamptz
+  PRIMARY KEY (user_id, story_id)
+
+story_reward_claims              -- one session reward per track per LOCAL day
+  user_id uuid REFERENCES profiles ON DELETE CASCADE
+  language text
+  system text
+  claim_date date                -- client-local date (same day model as reviews)
+  story_id uuid REFERENCES stories ON DELETE SET NULL  -- null while banked
+  redeemed_at timestamptz
+  PRIMARY KEY (user_id, language, system, claim_date)
+  -- Writes go ONLY through the claim_story_reward RPC (no insert/update
+  -- policies), so claim + unlock stay atomic and idempotent.
+
+-- language_tracks also gained `active_series text` (the series unit key that
+-- session rewards unlock chapters in; keys derive from panels.meta.series /
+-- title numbering — see src/storyShelf.js).
+
 youtube_recommendations
   id uuid PRIMARY KEY
   language text
@@ -240,6 +262,42 @@ dojo_hq_members()
 
 
 ---
+
+## The chapter reward loop (2026-08)
+
+Stories are organised SERIES → CHAPTER → READER, and chapters are the reward
+for flashcard sessions: **complete the day's review session → the next chapter
+of your active series unlocks**. Decisions live in two pure modules —
+`src/storyChapters.js` (which chapters are open: chapter 1 always, read
+chapters always, otherwise a `story_unlocks` row; CTA states; next-chapter
+info; grandfather seeding) and `src/storyReward.js` (qualifying session =
+completed `review`-mode session with ≥1 graded card; active-series resolution;
+the reward state machine). `src/storyRewardData.js` is the fetch/RPC plumbing
+shared by Study, Stories and Home.
+
+Key properties:
+
+- **One reward per track per local day**, enforced by `story_reward_claims`'
+  primary key, written only via the `claim_story_reward` RPC (idempotent —
+  refresh/retry/multi-device can't double-unlock). A session completed before
+  any series is started **banks** the claim (`story_id` null); Stories
+  auto-redeems it the moment an active series has a locked chapter.
+- **Active series** = `language_tracks.active_series` (set on first read of a
+  series, or explicitly on the series page), falling back to the most recently
+  read unfinished series. Switching never loses progress.
+- **Grandfathering**: a learner with `story_reads` but zero unlock rows gets a
+  one-time seed (`source='seed'`) of everything they could reach pre-launch —
+  each started series up to one past its furthest read chapter.
+- Tier gates (`storyTiers.js`) and level gates are unchanged and sit ABOVE the
+  chapter gate: a tier-locked series stays locked regardless of unlocks.
+- Reset (`reset_language_progress`) clears unlocks + claims and nulls
+  `active_series`; account deletion cascades from profiles.
+- UI: `Stories.jsx` (poster shelf, reward hero, filter chips),
+  `StoryPoster.jsx` (2:3 covers), `SeriesDetail.jsx` (chapter list, dynamic
+  CTA, "words you'll recognize" from the last 3 days of review_logs),
+  `SessionRecap.jsx` (unlock moment), `FinishOverlay.jsx` /
+  `ManhuaCompletion.jsx` / `StoryReaderImmersive.jsx` (end-of-chapter tease
+  back into flashcards), Home (reward teaser panel).
 
 ## Manhua episodes — Hanzi Dojo Stories
 

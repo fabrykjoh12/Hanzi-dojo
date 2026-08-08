@@ -397,6 +397,9 @@ export default function ManhuaReader(props) {
               onPractice={onPractice}
               practiceWords={practiceWords}
               onSelectWord={c.selectWord}
+              nextChapter={props.nextChapter}
+              onNextChapter={props.onNextStory}
+              onStudy={props.onStudy}
             />
           </div>
         )}

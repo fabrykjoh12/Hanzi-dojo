@@ -1,13 +1,14 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 
-// The Stories library follows a streaming-shelf rhythm: one featured story,
-// then horizontal rows for top picks, earlier levels, practice, and the next
-// locked level. One card represents a series or standalone story, with the
-// useful "% known" signal preserved and tier locks kept inline.
+// The Stories library: a poster shelf organised as SERIES → CHAPTER → READER.
+// One featured hero, filter chips, then horizontal poster rails (top picks,
+// earlier levels, manhua, practice, the next locked level). A multi-chapter
+// series opens a detail page with a chapter list; chapter 1 is free and later
+// chapters unlock one per completed flashcard session.
 //
 // Fixture: track.current_level = 2; level-2 tier-1 stories (st1 + practice),
-// level-1 stories (st5 tier 3, st6 tier 1, manhua), and one HSK 3 manhua
-// (the teaser).
+// level-1 stories (st5 tier 3, st6 manhua, the ml1–ml3 series), and one HSK 3
+// manhua (the teaser).
 const LEVEL_1_STORY = {
   id: 'st5', language: 'chinese', system: 'hsk', level: 1, tier: 3, story_number: 1,
   title: '老朋友', is_published: true, presentation: 'paced', has_audio: false,
@@ -21,6 +22,19 @@ const LEVEL_1_STORY = {
 // builder filters to its own level, so extra rows are ignored.
 async function serveStories(page, rows) {
   await page.route('**/rest/v1/stories**', async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback();
+    return route.fulfill({
+      status: 200,
+      headers: { 'access-control-allow-origin': '*', 'content-type': 'application/json' },
+      body: JSON.stringify(rows),
+    });
+  });
+}
+
+// Serve story_reads rows (GET only) — the chapter/reward specs need a learner
+// with history, and the shared mock's default is an empty table.
+async function serveReads(page, rows) {
+  await page.route('**/rest/v1/story_reads**', async (route) => {
     if (route.request().method() !== 'GET') return route.fallback();
     return route.fulfill({
       status: 200,
@@ -70,16 +84,19 @@ const LOCKED_TIER_STORY = {
   content: ['以后再看。'].join('\n'),
 };
 
-test.describe('Story library — cinematic shelves', () => {
+test.describe('Story library — poster shelves', () => {
   test.describe.configure({ mode: 'serial' });
-  test('leads with one feature and calm horizontal rows', async ({ page }) => {
+  test('leads with one hero, filter chips, and level rows — and no back button', async ({ page }) => {
     await page.goto('/stories');
     await expect(page.getByRole('heading', { name: 'Stories', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /Featured for you/ })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Top picks for you' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'More stories you can read' })).toBeVisible();
-    await expect(page.getByRole('group', { name: 'Read status' })).toHaveCount(0);
-    await expect(page.getByRole('group', { name: 'Format' })).toHaveCount(0);
+    // Earlier levels get their own named rows now.
+    await expect(page.getByRole('heading', { name: 'HSK 1', exact: true })).toBeVisible();
+    // Filter chips replace the old status/format groups.
+    await expect(page.getByRole('group', { name: 'Filter stories' })).toBeVisible();
+    // Stories is a primary destination — the artificial back button is gone.
+    await expect(page.getByRole('button', { name: 'Back', exact: true })).toHaveCount(0);
   });
 
   test('cards carry a "% known" chip (the sort the shelf is built on)', async ({ page }) => {
@@ -90,7 +107,19 @@ test.describe('Story library — cinematic shelves', () => {
   test('practice formats sit in their own section', async ({ page }) => {
     await page.goto('/stories');
     await expect(page.getByRole('heading', { name: 'Practice through stories' })).toBeVisible();
-    await expect(page.getByRole('button', { name: /朋友的问题.*Practice/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /朋友的问题.*Practice/ }).first()).toBeVisible();
+  });
+
+  test('manhua get their own discoverable rail', async ({ page }) => {
+    await page.goto('/stories');
+    await expect(page.getByRole('heading', { name: 'Manhua', exact: true })).toBeVisible();
+  });
+
+  test('the Manhua filter chip narrows the shelf to manhua', async ({ page }) => {
+    await page.goto('/stories');
+    await page.getByRole('group', { name: 'Filter stories' }).getByRole('button', { name: 'Manhua' }).click();
+    await expect(page.getByRole('heading', { name: 'Top picks for you' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Manhua', exact: true })).toBeVisible();
   });
 
   test('a tier the learner has not reached locks INLINE on the card', async ({ page }) => {
@@ -99,20 +128,20 @@ test.describe('Story library — cinematic shelves', () => {
     const lockedCard = page.getByRole('button', { name: /还没到的故事/ });
     await expect(lockedCard).toBeVisible();
     await expect(lockedCard).toBeDisabled();
-    await expect(page.getByText(/Learn \d+ more words?/)).toBeVisible();
+    await expect(page.getByText(/Learn \d+ more words?/).first()).toBeVisible();
   });
 
-  test('a passed level’s story stays readable and opens straight into the reader', async ({ page }) => {
+  test('a passed level’s standalone story opens straight into the reader', async ({ page }) => {
     await page.goto('/stories');
     // st5 is HSK 1 tier 3 — locked at HSK 2’s thresholds, but the level is
-    // passed, so it reads. One tap, straight to the reader.
-    await page.getByRole('button', { name: /老朋友/ }).click();
+    // passed, so it reads. A single story never detours through a series page.
+    await page.getByRole('button', { name: /老朋友/ }).first().click();
     await expect(page.getByRole('button', { name: /Start reading/i })).toBeVisible();
   });
 
   test('a story URL survives refresh and browser Back returns to the shelf', async ({ page }) => {
     await page.goto('/stories');
-    await page.getByRole('button', { name: /公园里的下午/ }).click();
+    await page.getByRole('button', { name: /公园里的下午/ }).first().click();
     await expect(page).toHaveURL('/stories/st1');
     await page.reload();
     await expect(page.getByRole('button', { name: /Start reading/i })).toBeVisible();
@@ -139,7 +168,7 @@ test.describe('Story library — cinematic shelves', () => {
   test('current level has no stories of its own — a lower level still shows', async ({ page }) => {
     await serveStories(page, [LEVEL_1_STORY]);
     await page.goto('/stories');
-    await expect(page.getByRole('button', { name: '老朋友 · HSK 1 · Story', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: /老朋友 · HSK 1 · Story/ }).first()).toBeVisible();
   });
 
   test('no stories anywhere — a calm empty state, no broken shelf', async ({ page }) => {
@@ -153,13 +182,13 @@ test.describe('Story library — cinematic shelves', () => {
     await serveStories(page, [LEVEL_1_STORY, LEVEL_2_STORY, LEVEL_3_STORY]);
     await page.goto('/stories');
     await expect(page.getByText(/hsk · HSK 3/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: '新的一年 · HSK 3 · Story', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: /新的一年 · HSK 3 · Story/ }).first()).toBeVisible();
     // .first(): the per-day featured pick may double one of these stories
     // (hero + its shelf row) — any visible instance is what's being asserted.
     await expect(page.getByRole('button', { name: /公园里的下午/ }).first()).toBeVisible();
     await expect(page.getByRole('button', { name: /老朋友/ }).first()).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Top picks for you' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'More stories you can read' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'HSK 2', exact: true })).toBeVisible();
   });
 
   test('reads on a phone-width viewport without horizontal overflow', async ({ page }) => {
@@ -174,5 +203,81 @@ test.describe('Story library — cinematic shelves', () => {
     expect(railCount).toBeGreaterThan(0);
     const firstRailOverflow = await rails.nth(0).evaluate(el => el.scrollWidth - el.clientWidth);
     expect(firstRailOverflow).toBeGreaterThan(0);
+  });
+});
+
+// The series → chapter architecture: a multi-chapter poster opens a detail
+// page (never straight into the reader), chapter 1 is free, later chapters
+// wait behind flashcard sessions, and the primary CTA tracks progress.
+test.describe('Series detail — chapters and unlocks', () => {
+  test.describe.configure({ mode: 'serial' });
+
+  test('a series poster opens the detail page with a chapter list', async ({ page }) => {
+    await page.goto('/stories');
+    await page.getByRole('button', { name: /月下的朋友 · HSK 1 · 3 chapters/ }).first().click();
+    await expect(page).toHaveURL(/\/stories\/series\//);
+    await expect(page.getByRole('heading', { name: 'Chapters' })).toBeVisible();
+    await expect(page.getByText('3 chapters').first()).toBeVisible();
+    // Chapter 1 free; 2 waits behind a session; 3 is simply locked (the hint
+    // sentence appears once, on the first locked row).
+    await expect(page.getByRole('button', { name: /Chapter 1 · 月下的朋友 · up next/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Chapter 2 · 学校的晚上 · locked/ })).toBeDisabled();
+    await expect(page.getByText('Complete a flashcard session to unlock')).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Start story' })).toBeVisible();
+  });
+
+  test('chapter 1 opens into the reader; a locked chapter does not open', async ({ page }) => {
+    await page.goto('/stories');
+    await page.getByRole('button', { name: /月下的朋友 · HSK 1 · 3 chapters/ }).first().click();
+    // Locked chapter: inert.
+    await page.getByRole('button', { name: /Chapter 2 · 学校的晚上/ }).click({ force: true });
+    await expect(page.getByRole('heading', { name: 'Chapters' })).toBeVisible();
+    // Chapter 1: opens the reader (asserted by URL — the featured hero's CTA
+    // can also read "Start reading", so the button alone is ambiguous).
+    await page.getByRole('button', { name: /Chapter 1 · 月下的朋友/ }).click();
+    await expect(page).toHaveURL('/stories/ml1');
+    await expect(page.getByRole('heading', { name: 'Chapters' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Start reading/i }).first()).toBeVisible();
+  });
+
+  test('with chapter 1 read, the CTA turns into the flashcard unlock and the hero carries the reward', async ({ page }) => {
+    await serveReads(page, [{ story_id: 'ml1', read_at: '2026-08-01T10:00:00.000Z' }]);
+    // A non-empty unlocks table (some unrelated story) so the one-time
+    // grandfathering seed doesn't fire and chapter 2 stays honestly locked.
+    await page.route('**/rest/v1/story_unlocks**', async (route) => {
+      if (route.request().method() !== 'GET') return route.fallback();
+      return route.fulfill({
+        status: 200,
+        headers: { 'access-control-allow-origin': '*', 'content-type': 'application/json' },
+        body: JSON.stringify([{ story_id: 'st5' }]),
+      });
+    });
+    await page.goto('/stories');
+    // The hero is now today's story reward for the active (most recent) series.
+    await expect(page.getByRole('button', { name: /Today’s story reward/ })).toBeVisible();
+    await expect(page.getByText('Complete your flashcards to unlock')).toBeVisible();
+    // The series page CTA points at flashcards, not a chapter.
+    await page.getByRole('button', { name: /月下的朋友 · HSK 1 · 3 chapters/ }).first().click();
+    await expect(page.getByRole('button', { name: /Review flashcards to unlock chapter 2/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Chapter 1 · 月下的朋友 · read/ })).toBeVisible();
+  });
+
+  test('an unlocked chapter row opens; progress reads honestly', async ({ page }) => {
+    await serveReads(page, [{ story_id: 'ml1', read_at: '2026-08-01T10:00:00.000Z' }]);
+    await page.route('**/rest/v1/story_unlocks**', async (route) => {
+      if (route.request().method() !== 'GET') return route.fallback();
+      return route.fulfill({
+        status: 200,
+        headers: { 'access-control-allow-origin': '*', 'content-type': 'application/json' },
+        body: JSON.stringify([{ story_id: 'ml2' }]),
+      });
+    });
+    await page.goto('/stories');
+    await page.getByRole('button', { name: /月下的朋友 · HSK 1 · 3 chapters/ }).first().click();
+    await expect(page.getByText('1 / 3 chapters read')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Continue chapter 2/ })).toBeVisible();
+    await page.getByRole('button', { name: /Chapter 2 · 学校的晚上 · up next/ }).click();
+    await expect(page).toHaveURL('/stories/ml2');
+    await expect(page.getByRole('button', { name: /Start reading/i }).first()).toBeVisible();
   });
 });

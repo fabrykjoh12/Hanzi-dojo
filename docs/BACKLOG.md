@@ -167,6 +167,14 @@ when we resume, not scheduled.
 - [ ] *(PAUSED)* **Spanish track**: add a `spanish` entry to `languageTheme.js` (accent, font, system=CEFR), level list + tiers in `storyTiers.js`, seed CEFR vocab, generate content. Onboarding/data layers are already data-driven, so most of the app picks it up for free.
 
 ## Media
+- [ ] **Story cover art is 16:9; the shelf now shows 2:3 posters (2026-08-08 Stories redesign).**
+  `StoryCover` center-crops with `object-fit: cover`, so every existing cover
+  still renders acceptably, but a third of each image is cropped away and
+  compositions with subjects near the left/right edges lose them. Next cover
+  batch should generate portrait 2:3 art directly (`generate-story-images.mjs`
+  prompt + size change); existing covers can be regenerated season by season —
+  it's polish, not breakage. The reader header still uses wide crops, so keep
+  the source art tall and crop wide, not the other way around.
 - [ ] **Pictures on flashcards**: generate/source one image per vocab item (image-gen pipeline → Supabase Storage `images/` bucket, mirror of the audio flow), add `image_path` to `vocabulary`, render lazily on the card back. Keep it optional so a missing image degrades cleanly.
 - [ ] **Better TTS**: current narration is Google TTS (`generate-audio.mjs`, `generate-story-audio.mjs`). Evaluate more natural voices (e.g. Azure Neural, ElevenLabs, OpenAI TTS) per language, pick voices, regenerate vocab + story audio; watch blob size / offline-cache cost. A/B a sample before mass regen.
 

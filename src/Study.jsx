@@ -16,6 +16,8 @@ import { useIsMobile } from './useIsMobile'
 import { useReadingFont } from './useReadingFont'
 import { cleanMeaning } from './cleanMeaning'
 import { pickRecapStory } from './storyMatch'
+import { qualifiesForReward } from './storyReward'
+import { claimSessionReward } from './storyRewardData'
 import { tiersFor, learnedByLevel, readingGateCount } from './storyTiers'
 import { buildStudyQueue, reinsertSoon, queueSeed } from './studyQueue'
 import { isFirstRunSession, firstRunNewTarget } from './firstRun'
@@ -245,6 +247,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // "First Story Unlocked" recommendation for the recap (null until computed;
   // stays null offline or when no story library exists — module stays hidden).
   const [storyUnlock, setStoryUnlock] = useState(null)
+  // The session's chapter reward (the flashcards → story loop): what this
+  // completed session unlocked in the active series. One claim attempt per
+  // session; the RPC behind it is idempotent per day anyway.
+  const [chapterReward, setChapterReward] = useState(null)
+  const chapterRewardRef = useRef(false)
   // True for a brand-new learner's very first session (detected in loadQueue):
   // shows first-session framing and gently caps the new-card count.
   const [firstRun, setFirstRun] = useState(false)
@@ -645,6 +652,14 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     if (done && recap && recap.graded > 0 && !storyUnlock) {
       loadStoryUnlock()
     }
+    // The chapter reward: a qualifying session claims the day's unlock for the
+    // active series. Fire-and-forget with a one-shot guard — the completion
+    // screen shows whatever comes back, and nothing here blocks the recap.
+    if (done && recap && !chapterRewardRef.current &&
+        qualifiesForReward({ mode: isWeak ? 'weak' : 'review', graded: recap.graded })) {
+      chapterRewardRef.current = true
+      claimSessionReward(session.user.id, track).then(res => { if (res) setChapterReward(res) })
+    }
     if (done && recap && recap.graded > 0 && achieveBeforeRef.current && !achieveToastedRef.current) {
       achieveToastedRef.current = true
       celebrateAchievements()
@@ -1010,6 +1025,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           langFont={langFont}
           forecast={forecast}
           storyUnlock={storyUnlock}
+          chapterReward={chapterReward}
           track={track}
           mission={availableMission}
           onOpenMission={() => setMission(availableMission)}
