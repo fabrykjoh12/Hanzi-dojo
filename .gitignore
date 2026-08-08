@@ -58,3 +58,4 @@ tools/.contact-sheets/
 *.p8
 *.pem
 AuthKey*.txt
+store-screenshots/
