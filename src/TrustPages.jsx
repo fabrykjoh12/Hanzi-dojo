@@ -65,16 +65,18 @@ function Privacy() {
     <>
       <BetaNote />
       <P>
-        {BRAND_NAME} is a free language-learning app. This page explains what data the app
-        stores and why. The short version: we store your account and your learning progress
-        so the app can work, we run no third-party trackers and show no ads, and we never
-        sell data.
+        {BRAND_NAME} is a free language-learning app, available on the web at {BRAND_URL} and
+        as an app for iPhone and Android. This policy covers all three — they are the same
+        product, using the same account and the same data. The short version: we store your
+        account and your learning progress so the app can work, we run no third-party
+        trackers and show no ads, and we never sell data.
       </P>
 
       <H2>What we store</H2>
       <ul style={{ paddingLeft: '20px', margin: '0 0 12px' }}>
         <Li><strong>Account:</strong> your email address and a password (stored hashed by our
-          authentication provider), or your Google account identity if you sign in with Google.</Li>
+          authentication provider), or your Google or Apple account identity if you sign in
+          with one of those.</Li>
         <Li><strong>Learning progress:</strong> the words you study, your review history and
           scheduling state, the stories you read, test attempts, and your preferences
           (theme, fonts, reading settings, daily new-card count, timezone for reminders).</Li>
@@ -109,25 +111,42 @@ function Privacy() {
       <P>
         {BRAND_NAME} is an offline-capable app: it caches content (stories, audio, artwork)
         and queues your reviews on your device so studying works without a connection. Your
-        sign-in session is kept in your browser’s storage. Clearing site data removes all of it.
+        sign-in session is kept in your browser’s storage — or, in the iPhone and Android
+        apps, in the app’s own storage. Clearing site data (or deleting the app) removes
+        all of it from that device; your account and progress stay safe on our servers.
+      </P>
+
+      <H2>Reminders and push notifications</H2>
+      <P>
+        Review reminders are off until you turn them on. If you do, we store your chosen
+        reminder time and timezone with your preferences. In the iPhone and Android apps,
+        delivering a reminder uses a push token — an identifier for your device issued by
+        Apple’s Push Notification service (APNs) on iOS or Google’s Firebase Cloud Messaging
+        (FCM) on Android. The token identifies the device, not you as a person; it is used
+        only to deliver the notifications you asked for, and it is removed when you turn
+        reminders off or delete your account. Turning reminders off (in the app or in your
+        phone’s settings) stops all of this — nothing else changes.
       </P>
 
       <H2>Infrastructure</H2>
       <P>
-        Your data is processed by the services that run the app: Supabase (database and
-        authentication), Vercel (site hosting), Cloudflare (DNS), Brevo (sending sign-up and
-        password emails), and Google Fonts (font delivery). Pronunciation audio is generated
-        in advance with text-to-speech services from vocabulary text only — never from
-        anything you type or say.
+        Your account, learning progress and review history are stored in Supabase, the
+        database and authentication service the app is built on. The other services that
+        run the product: Vercel (site hosting), Cloudflare (DNS), Brevo (sending sign-up and
+        password emails), Google Fonts (font delivery on the web), and — for reminder
+        delivery in the apps — APNs and FCM as described above. Pronunciation audio is
+        generated in advance with text-to-speech services from vocabulary text only — never
+        from anything you type or say.
       </P>
 
       <H2>Your rights and choices</H2>
       <ul style={{ paddingLeft: '20px', margin: '0 0 12px' }}>
         <Li>You can reset your learning progress for your language from Profile at any time.</Li>
-        <Li>You can delete your account and everything in it yourself, at any time:
-          Profile → Delete account. Deletion is immediate and permanent — flashcards,
-          review history, story progress, test results and the login itself; we don’t
-          keep your data beyond that.</Li>
+        <Li>You can delete your account and everything in it yourself, at any time, on the
+          website or in the apps: Profile → Delete account. Deletion is immediate and
+          permanent — flashcards, review history, story progress, test results and the
+          login itself; we don’t keep your data beyond that. If you’d rather we do it,
+          ask via <A href="/support">Support</A> and we’ll delete the account for you.</Li>
         <Li>You can ask for a copy of your data or ask us to correct it — see{' '}
           <A href="/support">Support</A>.</Li>
         <Li>Your data is kept for as long as you have an account, so your progress is there
