@@ -2,6 +2,19 @@
 // signup and carried into the post-signup Onboarding via localStorage. The pure
 // helpers are unit-tested; the storage helpers degrade quietly if unavailable.
 
+// Which screen a signed-out visitor lands on.
+//
+// The web gets the marketing page: someone arriving at hanzi-dojo.com has not
+// decided anything yet and needs to be told what this is. Someone who has
+// already installed the app from a store has read that pitch — the store
+// listing *is* the landing page — so repeating it wastes their first screen
+// and makes the app feel like a bookmarked website. They get a proper app
+// welcome instead, straight into the two things they might want: start, or
+// sign in.
+export function initialLandingMode(native) {
+  return native ? 'welcome' : 'landing'
+}
+
 export const REASONS = [
   { key: 'travel', emoji: '✈️', label: 'Travel' },
   { key: 'family', emoji: '👪', label: 'Family & heritage' },

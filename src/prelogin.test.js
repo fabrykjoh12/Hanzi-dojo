@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest'
-import { REASONS, examLabelFor, reasonLabel, encouragementFor, tastedWordsLine } from './prelogin'
+import {
+  REASONS, examLabelFor, reasonLabel, encouragementFor, tastedWordsLine, initialLandingMode,
+} from './prelogin'
+
+describe('initialLandingMode', () => {
+  it('sends the web to the marketing page', () => {
+    expect(initialLandingMode(false)).toBe('landing')
+  })
+
+  it('sends the installed app to a welcome screen — the store listing was the pitch', () => {
+    expect(initialLandingMode(true)).toBe('welcome')
+  })
+})
 
 describe('prelogin helpers', () => {
   it('exposes the reason set', () => {

@@ -10,7 +10,9 @@ import SentenceTaste from './SentenceTaste'
 import { sentenceForReason, charsToLearn } from './starterSentences'
 import { FLAGS } from './flags'
 import { useIsMobile } from './useIsMobile'
-import { REASONS, encouragementFor, savePreloginPrefs } from './prelogin'
+import { REASONS, encouragementFor, savePreloginPrefs, initialLandingMode } from './prelogin'
+import { isNativeApp } from './nativeShell'
+import NativeWelcome from './NativeWelcome'
 import {
   ArrowLeft, ArrowRight, BookOpen, GraduationCap, Layers, PenLine, Play, Sparkles,
   MessagesSquare,
@@ -226,7 +228,9 @@ export default function Landing() {
   // learn its characters → auth (signup), when FLAGS.WOW_ONBOARDING is on
   // ("why" jumps straight to auth otherwise). "Log in" jumps straight to auth
   // for returning users (no wizard).
-  const [mode, setMode] = useState('landing')   // 'landing' | 'lang' | 'why' | 'taste' | 'learn' | 'auth'
+  // 'landing' (web marketing page) | 'welcome' (the app's own first screen)
+  // | 'lang' | 'why' | 'taste' | 'learn' | 'auth'
+  const [mode, setMode] = useState(() => initialLandingMode(isNativeApp()))
   const [pickedLang, setPickedLang] = useState(null)
   const [pickedReason, setPickedReason] = useState(null)
   const isMobile = useIsMobile()
@@ -307,9 +311,19 @@ export default function Landing() {
     </button>
   )
 
+  // The store apps open here instead of the marketing page.
+  if (mode === 'welcome') {
+    return (
+      <NativeWelcome
+        onStart={() => startWizard()}
+        onLogIn={() => setMode('auth')}
+      />
+    )
+  }
+
   if (mode === 'lang') {
     return (
-      <WizardShell isMobile={isMobile} back={() => setMode('landing')}
+      <WizardShell isMobile={isMobile} back={() => setMode(initialLandingMode(isNativeApp()))}
         title="Which language are you learning?"
         subtitle="Pick one to start — you can add the others any time.">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '420px' }}>
@@ -392,7 +406,7 @@ export default function Landing() {
       : null
     return (
       <div style={{ position: 'relative' }}>
-        {backChip(() => setMode(pickedReason ? 'why' : 'landing'))}
+        {backChip(() => setMode(pickedReason ? 'why' : initialLandingMode(isNativeApp())))}
         <Auth intro={intro} />
       </div>
     )
