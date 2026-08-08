@@ -16,7 +16,10 @@ android {
         applicationId "com.hanzidojo.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        // CI passes -PversionCode=<run number>. Play refuses an upload whose
+        // versionCode it has seen before, and the run number is monotonic and
+        // never reused. Local builds keep 1; the store never sees those.
+        versionCode project.hasProperty('versionCode') ? project.property('versionCode').toInteger() : 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
