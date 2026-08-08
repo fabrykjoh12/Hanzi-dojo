@@ -46,7 +46,9 @@ export default function StoryPoster({
     <button
       onClick={locked ? () => {} : onClick}
       aria-disabled={locked}
-      aria-label={ariaLabel || [title, metaLine, locked ? (lockLabel || 'Locked') : read ? 'Read' : null].filter(Boolean).join(' · ')}
+      // metaLine already says "Read" for finished stories, so the label only
+      // adds what the line can't carry: the lock.
+      aria-label={ariaLabel || [title, locked ? (lockLabel || 'Locked') : metaLine].filter(Boolean).join(' · ')}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className={locked ? undefined : 'hd-press'}
