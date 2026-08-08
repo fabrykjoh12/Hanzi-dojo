@@ -77,5 +77,12 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<!-- Answers App Store Connect's export-compliance question once, instead
+	     of it being asked on every single build. False is correct here: the
+	     app implements no encryption of its own and only uses the HTTPS that
+	     iOS provides, which is exempt. Revisit this if the app ever ships its
+	     own crypto — the answer is a legal declaration, not a formality. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
