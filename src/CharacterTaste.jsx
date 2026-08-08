@@ -4,7 +4,7 @@ import { BRAND_INK } from './brand'
 import { ink } from './languageTheme'
 import {
   stepAt, isCorrect, isLastStep, progressLabel, TASTE_STEPS,
-} from './characterTaste'
+} from './tasteSteps'
 
 // The pre-signup wow moment. Content and rules live in characterTaste.js;
 // this is presentation and one piece of local state.

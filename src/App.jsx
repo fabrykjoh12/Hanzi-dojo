@@ -35,7 +35,11 @@ const Listen = lazy(() => import('./Listen'))
 const Tones = lazy(() => import('./Tones'))
 const Kana = lazy(() => import('./Kana'))
 const Cyrillic = lazy(() => import('./Cyrillic'))
-const FillBlank = lazy(() => import('./FillBlank'))
+// .jsx explicitly: fillBlank.js sits beside FillBlank.jsx, and on a
+// case-insensitive filesystem './FillBlank' resolves to the logic module,
+// which has no default export. A dynamic import is not checked at build
+// time, so that failed only at runtime, only in the iOS/macOS build.
+const FillBlank = lazy(() => import('./FillBlank.jsx'))
 const Speaking = lazy(() => import('./Speaking'))
 const SentenceBuilder = lazy(() => import('./SentenceBuilder'))
 const Writer = lazy(() => import('./Writer'))

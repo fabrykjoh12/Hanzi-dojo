@@ -1,4 +1,12 @@
 // The pre-signup wow moment: three taps that prove Chinese is guessable.
+// Rendered by CharacterTaste.jsx.
+//
+// Named tasteSteps rather than characterTaste on purpose. macOS has a
+// case-insensitive filesystem and the resolver tries .js before .jsx, so a
+// `characterTaste.js` beside `CharacterTaste.jsx` makes `import './CharacterTaste'`
+// resolve to THIS file on a Mac and to the component on Linux. That broke the
+// iOS build while every Linux CI check stayed green (see the guard in
+// moduleNames.test.js).
 //
 // It replaces a "tap each word to hear it" exercise, which had two problems.
 // It was busywork — tapping to reveal a gloss teaches nothing and demands no

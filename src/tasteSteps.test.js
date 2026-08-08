@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   TASTE_STEPS, stepAt, isCorrect, isLastStep, tastedCharacters, progressLabel,
-} from './characterTaste'
+} from './tasteSteps'
 
 describe('TASTE_STEPS', () => {
   it('builds to the compound — the payoff only lands if its parts came first', () => {
