@@ -55,11 +55,11 @@ export default function NativeWelcome({ onStart, onLogIn }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
           <div style={heroWordmarkStyle('32px')}>{BRAND_NAME}</div>
           <p style={{
-            margin: 0, maxWidth: '280px',
+            margin: 0, maxWidth: '300px',
             fontSize: '15.5px', lineHeight: 1.5,
             color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif',
           }}>
-            Learn words. Unlock stories you can actually&nbsp;read.
+            Your path to Chinese starts here. Learn through stories, conversation and focused&nbsp;practice.
           </p>
         </div>
       </div>
@@ -86,7 +86,7 @@ export default function NativeWelcome({ onStart, onLogIn }) {
             transform: pressed ? 'scale(0.985)' : 'scale(1)',
           }}
         >
-          Get started
+          Begin training
         </button>
 
         {/* Quiet on purpose: a second boxed button makes the fork read as a

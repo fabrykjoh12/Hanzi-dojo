@@ -6,11 +6,15 @@ import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_INK, BRAND_NAME, heroWordmarkStyle } from './brand'
 import { availableLanguages, ink, languageTheme } from './languageTheme'
-import CharacterTaste from './CharacterTaste'
-import { tastedCharacters } from './tasteSteps'
+import PathBuilding from './PathBuilding'
+import FirstLesson from './FirstLesson'
+import {
+  EXPERIENCE_LEVELS, DEFAULT_EXPERIENCE, PURPOSES, primaryReason,
+  TRAINING_STYLES, DEFAULT_STYLE, DAILY_PLANS, DEFAULT_MINUTES, planEstimate,
+} from './onboardingPath'
 import { FLAGS } from './flags'
 import { useIsMobile } from './useIsMobile'
-import { REASONS, encouragementFor, savePreloginPrefs, initialLandingMode } from './prelogin'
+import { encouragementFor, savePreloginPrefs, initialLandingMode } from './prelogin'
 import { isNativeApp } from './nativeShell'
 import NativeWelcome from './NativeWelcome'
 import {
@@ -24,19 +28,6 @@ const SAGE = '#6E8466'
 const SAGE_DARK = '#5C7155'
 const SYSTEM_LABELS = { chinese: 'HSK 3.0', japanese: 'JLPT', russian: 'CEFR' }
 
-// One hanzi per learning reason (data in prelogin.js). This is a Chinese
-// reading app: the first choice you make should already taste like the
-// product, and one red ink accent reads as a brand where six pastel icons
-// read as a template. 旅 travel · 家 home/family · 工 work · 考 exam ·
-// 影 film · 好 as in 好奇, curious.
-const REASON_HANZI = {
-  travel: '旅',
-  family: '家',
-  work: '工',
-  exam: '考',
-  culture: '影',
-  curious: '好',
-}
 
 // ── Small pieces ────────────────────────────────────────────────────────────
 
@@ -260,15 +251,21 @@ function MethodCard({ icon: Icon, title, children, accent }) {
 // product is, who it's for, and why it's different — then hands off to the
 // existing Auth screen. Returning users get there in one click ("Log in").
 export default function Landing() {
-  // Flow: landing → pick a language → why you're learning → taste a sentence →
-  // learn its characters → auth (signup), when FLAGS.WOW_ONBOARDING is on
-  // ("why" jumps straight to auth otherwise). "Log in" jumps straight to auth
-  // for returning users (no wizard).
+  // The guided path (owner's design, 2026-08-08): entrance → experience →
+  // purpose (multi) → training style → daily minutes → the assembled path →
+  // a first micro-lesson (你好) → THEN the account. The ask comes after the
+  // first win on purpose: someone who has just learned their first expression
+  // has a reason to save it. Every question is skippable and every answer can
+  // be changed later. FLAGS.WOW_ONBOARDING off collapses it to entrance→auth.
   // 'landing' (web marketing page) | 'welcome' (the app's own first screen)
-  // | 'lang' | 'why' | 'taste' | 'learn' | 'auth'
+  // | 'lang' | 'experience' | 'purpose' | 'style' | 'minutes' | 'building'
+  // | 'firstwin' | 'auth'
   const [mode, setMode] = useState(() => initialLandingMode(isNativeApp()))
   const [pickedLang, setPickedLang] = useState(null)
-  const [pickedReason, setPickedReason] = useState(null)
+  const [experience, setExperience] = useState(null)
+  const [purposes, setPurposes] = useState([])
+  const [style, setStyle] = useState(DEFAULT_STYLE)   // preselected: continue instantly
+  const [minutes, setMinutes] = useState(DEFAULT_MINUTES)
   const isMobile = useIsMobile()
   const navigate = useNavigate()
   // Pre-login: no account context yet, so the landing wizard always shows the
@@ -290,7 +287,7 @@ export default function Landing() {
     if (chosen) {
       setPickedLang(chosen)
       track(EVENTS.PRELOGIN_LANGUAGE_PICKED, { language: chosen })
-      setMode('why')
+      setMode(FLAGS.WOW_ONBOARDING ? 'experience' : 'auth')
     } else {
       setMode('lang')
     }
@@ -299,31 +296,49 @@ export default function Landing() {
   const chooseLanguage = (langKey) => {
     setPickedLang(langKey)
     track(EVENTS.PRELOGIN_LANGUAGE_PICKED, { language: langKey })
-    setMode('why')
+    setMode(FLAGS.WOW_ONBOARDING ? 'experience' : 'auth')
   }
 
-  const chooseReason = (reasonKey) => {
-    setPickedReason(reasonKey)
-    track(EVENTS.PRELOGIN_REASON_PICKED, { language: pickedLang, reason: reasonKey })
-    // Persist for the post-signup Onboarding to pre-fill language + greet by reason.
-    savePreloginPrefs({ language: pickedLang, reason: reasonKey })
-    if (FLAGS.WOW_ONBOARDING) {
-      track(EVENTS.TASTE_SHOWN, { reason: reasonKey })
-      setMode('taste')
-    } else {
-      track(EVENTS.PRELOGIN_SIGNUP_STARTED, { language: pickedLang, reason: reasonKey })
-      setMode('auth')
-    }
+  const chooseExperience = (key) => {
+    setExperience(key)
+    setMode('purpose')
   }
 
-  // Finished the character taste, or skipped it. Skipping claims nothing —
-  // the post-signup welcome greets you by the characters you actually met, and
-  // it would be a strange greeting for someone who tapped past them.
-  const finishTaste = (revealed) => {
-    const tastedWords = revealed ? tastedCharacters() : []
-    savePreloginPrefs({ language: pickedLang, reason: pickedReason, tastedWords })
-    track(EVENTS.TASTE_COMPLETED, { reason: pickedReason, revealed: !!revealed, count: tastedWords.length })
-    track(EVENTS.PRELOGIN_SIGNUP_STARTED, { language: pickedLang, reason: pickedReason })
+  const togglePurpose = (key) => {
+    setPurposes(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key])
+  }
+
+  // Questions answered (or skipped — the defaults are real answers). Persist
+  // everything the post-signup onboarding can use, then assemble the path.
+  const finishQuestions = (chosenMinutes) => {
+    const exp = EXPERIENCE_LEVELS.find(e => e.key === experience) || null
+    const reason = primaryReason(purposes)
+    track(EVENTS.PRELOGIN_REASON_PICKED, {
+      language: pickedLang, reason,
+      purposes: purposes.length, experience: experience || 'skipped',
+      style, minutes: chosenMinutes,
+    })
+    savePreloginPrefs({
+      language: pickedLang, reason,
+      experience: experience || DEFAULT_EXPERIENCE,
+      startLevel: exp ? exp.startLevel : 1,
+      placementLater: Boolean(exp && exp.placementLater),
+      purposes, style, minutesPerDay: chosenMinutes,
+    })
+    setMode('building')
+  }
+
+  const finishFirstLesson = () => {
+    // 你好 is genuinely on the HSK 1 list they are about to start, so the
+    // post-signup welcome may greet them by it.
+    const prior = { language: pickedLang, reason: primaryReason(purposes) }
+    savePreloginPrefs({
+      ...prior,
+      experience: experience || DEFAULT_EXPERIENCE, purposes, style,
+      minutesPerDay: minutes, tastedWords: ['你好'],
+    })
+    track(EVENTS.TASTE_COMPLETED, { reason: prior.reason, revealed: true, count: 1 })
+    track(EVENTS.PRELOGIN_SIGNUP_STARTED, { language: pickedLang, reason: prior.reason })
     setMode('auth')
   }
 
@@ -337,6 +352,48 @@ export default function Landing() {
       />
     )
   }
+
+  // Row style shared by the question screens: one lane of identical rows,
+  // one ink accent, selection shown with a tint + check.
+  const questionRow = (selected) => ({
+    display: 'flex', alignItems: 'center', gap: '14px',
+    minHeight: '58px', padding: '10px 14px',
+    borderRadius: '16px', cursor: 'pointer',
+    background: selected
+      ? 'color-mix(in srgb, ' + BRAND_INK + ' 8%, var(--surface))'
+      : 'var(--surface)',
+    border: '1px solid ' + (selected ? BRAND_INK : 'var(--border)'),
+    boxShadow: '0 1px 4px rgba(24,24,27,0.04)', textAlign: 'left',
+    fontFamily: 'Inter, sans-serif',
+    transition: 'background 140ms ease, border-color 140ms ease',
+  })
+
+  const continueBtn = (onClick, label = 'Continue') => (
+    <button
+      onClick={onClick}
+      style={{
+        width: '100%', minHeight: '54px', borderRadius: '999px', border: 'none',
+        background: 'var(--text)', color: 'var(--bg)',
+        fontSize: '16.5px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+        cursor: 'pointer', marginTop: '6px',
+      }}
+    >
+      {label}
+    </button>
+  )
+
+  const skipBtn = (onClick) => (
+    <button
+      onClick={onClick}
+      style={{
+        background: 'none', border: 'none', color: 'var(--text-faint)',
+        fontSize: '13.5px', fontWeight: 600, cursor: 'pointer', padding: '6px',
+        fontFamily: 'Inter, sans-serif',
+      }}
+    >
+      Skip — you can change this later
+    </button>
+  )
 
   if (mode === 'lang') {
     return (
@@ -369,76 +426,144 @@ export default function Landing() {
     )
   }
 
-  if (mode === 'taste') {
+  if (mode === 'experience') {
     return (
-      <WizardShell isMobile={isMobile} back={() => setMode('why')} step={2}
-        title="Chinese is more guessable than it looks"
-        subtitle="Three questions, no account needed.">
-        <CharacterTaste
-          onAnswer={({ id, correct }) => track(EVENTS.TASTE_WORD_REVEALED, { reason: pickedReason, step: id, correct })}
-          onComplete={() => finishTaste(true)}
-          onSkip={() => finishTaste(false)}
-        />
+      <WizardShell isMobile={isMobile} back={() => setMode(soloLang ? initialLandingMode(isNativeApp()) : 'lang')} step={1} steps={4}
+        title="How much Chinese do you know?"
+        subtitle="An honest guess is plenty — nothing here is locked in.">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '400px' }}>
+          {EXPERIENCE_LEVELS.map(e => (
+            <button key={e.key} onClick={() => chooseExperience(e.key)} style={questionRow(false)}>
+              <span style={{ fontSize: '16px', fontWeight: 650, color: 'var(--text)' }}>{e.label}</span>
+            </button>
+          ))}
+          {skipBtn(() => chooseExperience(DEFAULT_EXPERIENCE))}
+        </div>
       </WizardShell>
     )
   }
 
-  if (mode === 'why') {
-    const lang = languageTheme(pickedLang)
+  if (mode === 'purpose') {
     return (
-      <WizardShell isMobile={isMobile} back={() => setMode(soloLang ? initialLandingMode(isNativeApp()) : 'lang')} step={1}
-        title={`Why are you learning ${lang.languageName}?`}
-        subtitle="There's no wrong answer — this just tailors your first stories.">
-        {/* One column, one accent. Each reason carries a hanzi in the brand
-            ink — the first tap in the app is already a taste of the writing
-            system it teaches, and a single colour reads as a brand where six
-            pastel tiles read as a template. */}
-        <div style={{
-          display: 'flex', flexDirection: 'column',
-          gap: '10px', width: '100%', maxWidth: '400px',
-        }}>
-          {REASONS.map(r => (
-            <button
-              key={r.key}
-              onClick={() => chooseReason(r.key)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '14px',
-                minHeight: '62px', padding: '10px 14px',
-                borderRadius: '16px', cursor: 'pointer',
-                background: 'var(--surface)', border: '1px solid var(--border)',
-                boxShadow: '0 1px 4px rgba(24,24,27,0.04)', textAlign: 'left',
-                fontFamily: 'Inter, sans-serif',
-              }}
-            >
-              <span
-                aria-hidden="true"
-                lang="zh-Hans"
-                style={{
+      <WizardShell isMobile={isMobile} back={() => setMode('experience')} step={2} steps={4}
+        title="Why are you learning Chinese?"
+        subtitle="Pick everything that applies — it tunes your stories and examples.">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '400px' }}>
+          {PURPOSES.map(pp => {
+            const selected = purposes.includes(pp.key)
+            return (
+              <button key={pp.key} onClick={() => togglePurpose(pp.key)} aria-pressed={selected} style={questionRow(selected)}>
+                <span aria-hidden="true" lang="zh-Hans" style={{
                   width: '42px', height: '42px', borderRadius: '13px', flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: 'color-mix(in srgb, ' + BRAND_INK + ' 9%, var(--surface))',
                   color: ink(BRAND_INK), fontSize: '21px', fontWeight: 600,
                   fontFamily: "'Noto Sans SC', sans-serif", lineHeight: 1,
-                }}
-              >
-                {REASON_HANZI[r.key]}
-              </span>
-              <span style={{ fontSize: '16px', fontWeight: 650, color: 'var(--text)' }}>{r.label}</span>
-            </button>
-          ))}
+                }}>
+                  {pp.hanzi}
+                </span>
+                <span style={{ flex: 1, fontSize: '16px', fontWeight: 650, color: 'var(--text)' }}>{pp.label}</span>
+                {selected && <Sparkles size={17} strokeWidth={2} color={ink(BRAND_INK)} />}
+              </button>
+            )
+          })}
+          {continueBtn(() => setMode('style'))}
         </div>
+      </WizardShell>
+    )
+  }
+
+  if (mode === 'style') {
+    return (
+      <WizardShell isMobile={isMobile} back={() => setMode('purpose')} step={3} steps={4}
+        title="What sounds most enjoyable?"
+        subtitle="The mix is yours to change any time.">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '400px' }}>
+          {TRAINING_STYLES.map(st => {
+            const selected = style === st.key
+            return (
+              <button key={st.key} onClick={() => setStyle(st.key)} aria-pressed={selected} style={questionRow(selected)}>
+                <span aria-hidden="true" lang="zh-Hans" style={{
+                  width: '42px', height: '42px', borderRadius: '13px', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'color-mix(in srgb, ' + BRAND_INK + ' 9%, var(--surface))',
+                  color: ink(BRAND_INK), fontSize: '21px', fontWeight: 600,
+                  fontFamily: "'Noto Sans SC', sans-serif", lineHeight: 1,
+                }}>
+                  {st.hanzi}
+                </span>
+                <span style={{ flex: 1 }}>
+                  <span style={{ display: 'block', fontSize: '16px', fontWeight: 650, color: 'var(--text)' }}>{st.label}</span>
+                  <span style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)' }}>{st.desc}</span>
+                </span>
+              </button>
+            )
+          })}
+          {continueBtn(() => setMode('minutes'))}
+        </div>
+      </WizardShell>
+    )
+  }
+
+  if (mode === 'minutes') {
+    return (
+      <WizardShell isMobile={isMobile} back={() => setMode('style')} step={4} steps={4}
+        title="Choose your daily training"
+        subtitle={planEstimate(minutes)}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '400px' }}>
+          {DAILY_PLANS.map(plan => {
+            const selected = minutes === plan.minutes
+            return (
+              <button key={plan.minutes} onClick={() => setMinutes(plan.minutes)} aria-pressed={selected} style={questionRow(selected)}>
+                <span style={{ flex: 1, fontSize: '16px', fontWeight: 650, color: 'var(--text)' }}>
+                  {plan.minutes} minutes
+                </span>
+                <span style={{ fontSize: '13.5px', fontWeight: 650, color: selected ? ink(BRAND_INK) : 'var(--text-muted)' }}>
+                  {plan.label}
+                </span>
+              </button>
+            )
+          })}
+          {continueBtn(() => finishQuestions(minutes))}
+        </div>
+      </WizardShell>
+    )
+  }
+
+  if (mode === 'building') {
+    return (
+      <WizardShell isMobile={isMobile} back={() => setMode('minutes')}
+        title="Preparing your training path…"
+        subtitle="Built from your answers — every line of it is changeable later.">
+        <PathBuilding
+          choices={{ experience, purposes, minutes }}
+          onContinue={() => { track(EVENTS.TASTE_SHOWN, { reason: primaryReason(purposes) }); setMode('firstwin') }}
+        />
+      </WizardShell>
+    )
+  }
+
+  if (mode === 'firstwin') {
+    return (
+      <WizardShell isMobile={isMobile} back={() => setMode('building')}
+        title="Your first lesson"
+        subtitle="Sixty seconds. No account needed yet.">
+        <FirstLesson
+          onEvent={(step) => track(EVENTS.TASTE_WORD_REVEALED, { step })}
+          onComplete={finishFirstLesson}
+        />
       </WizardShell>
     )
   }
 
   if (mode === 'auth') {
     const intro = pickedLang
-      ? encouragementFor(pickedLang, pickedReason, languageTheme(pickedLang).languageName)
+      ? encouragementFor(pickedLang, primaryReason(purposes), languageTheme(pickedLang).languageName)
       : null
     return (
       <Auth
         intro={intro}
-        onBack={() => setMode(pickedReason ? 'why' : initialLandingMode(isNativeApp()))}
+        onBack={() => setMode(experience ? 'firstwin' : initialLandingMode(isNativeApp()))}
       />
     )
   }

@@ -14,48 +14,63 @@ test.describe('Landing (logged out)', () => {
   });
 });
 
-// The pre-login wizard: with Chinese as the only public language, the CTA
-// skips straight to the reason step (no language picker, no hero chips — see
-// Landing.jsx's soloLang short-circuit). Picking a reason then leads through
-// the character taste — three guesses ending in 火 + 山 — straight to signup.
-// Those choices personalize the signup screen.
+// The pre-login guided path (owner's design, 2026-08-08): experience →
+// purpose (multi) → training style → daily minutes → the assembled path →
+// the 你好 micro-lesson → and only then the account. The account ask coming
+// AFTER the first win is the design's central choice, so this walks all of it.
 test.describe('Pre-login onboarding wizard', () => {
-  test('CTA → reason → character taste → personalized signup', async ({ page }) => {
+  test('questions → path → first lesson → account ask comes last', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: /Start your first story/i }).click();
 
-    // Chinese-only: the language step is skipped, straight to "why".
+    // Experience — Chinese-only, so the language step is skipped.
+    await expect(page.getByRole('heading', { name: /How much Chinese do you know/i })).toBeVisible();
+    await page.getByRole('button', { name: /completely new/i }).click();
+
+    // Purpose is multi-select with an explicit Continue.
     await expect(page.getByRole('heading', { name: /Why are you learning Chinese/i })).toBeVisible();
-    await page.getByRole('button', { name: /Pass an exam/i }).click();
+    await page.getByRole('button', { name: /Study or HSK/i }).click();
+    await page.getByRole('button', { name: /Travel/i }).click();
+    await page.getByRole('button', { name: /^Continue$/ }).click();
 
-    // Character taste. Answer each of the three, ending on the compound —
-    // 火山 is the payoff, so the run is not meaningful without reaching it.
-    await expect(page.getByRole('heading', { name: /more guessable than it looks/i })).toBeVisible();
+    // Style arrives preselected (balanced) — continuing instantly must work.
+    await expect(page.getByRole('heading', { name: /What sounds most enjoyable/i })).toBeVisible();
+    await page.getByRole('button', { name: /^Continue$/ }).click();
 
-    await page.getByRole('button', { name: /^A mountain$/ }).click();
-    await page.getByRole('button', { name: /^Next$/ }).click();
+    // Minutes: the honest estimate for the default is on screen.
+    await expect(page.getByRole('heading', { name: /Choose your daily training/i })).toBeVisible();
+    await expect(page.getByText(/10 new words and one short review/i)).toBeVisible();
+    await page.getByRole('button', { name: /^Continue$/ }).click();
 
-    await page.getByRole('button', { name: /^Fire$/ }).click();
-    await page.getByRole('button', { name: /^Next$/ }).click();
+    // The assembled path names the real choices, then hands to the lesson.
+    await expect(page.getByRole('heading', { name: /Preparing your training path/i })).toBeVisible();
+    await expect(page.getByText(/HSK 1, most useful words first/i)).toBeVisible();
+    await expect(page.getByText(/Study or HSK/)).toBeVisible();
+    await page.getByRole('button', { name: /Begin first lesson/i }).click();
 
-    await page.getByRole('button', { name: /^A volcano$/ }).click();
-    await expect(page.getByText(/Fire mountain/i)).toBeVisible();
-    await page.getByRole('button', { name: /Start learning/i }).click();
+    // The first win: 你好, revealed, used once, completed.
+    await page.getByRole('button', { name: /Hear it and see what it means/i }).click();
+    await expect(page.getByText(/nǐ hǎo · hello/i)).toBeVisible();
+    await page.getByRole('button', { name: /say hello back/i }).click();
+    await expect(page.getByText(/First training complete/i)).toBeVisible();
+    await page.getByRole('button', { name: /Save my progress/i }).click();
 
-    // Auth screen: Sign-up tab active + personalized, exam-aware intro.
-    await expect(page.getByText(/HSK/)).toBeVisible();
+    // Only now: the account.
+    await expect(page.getByText(/HSK/).first()).toBeVisible();
     await expect(page.getByRole('button', { name: /Create account/i })).toBeVisible();
   });
 
-  test('a wrong guess still explains and moves on — it is not a test', async ({ page }) => {
+  test('every question is skippable and the path still assembles', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: /Start your first story/i }).click();
-    await page.getByRole('button', { name: /Travel/i }).click();
 
-    await page.getByRole('button', { name: /^A river$/ }).click();
-    // The right answer is marked and the explanation appears anyway.
-    await expect(page.getByText(/Three peaks/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /^Next$/ })).toBeVisible();
+    await page.getByRole('button', { name: /Skip/i }).click();          // experience → default
+    await page.getByRole('button', { name: /^Continue$/ }).click();     // purpose: none picked
+    await page.getByRole('button', { name: /^Continue$/ }).click();     // style: balanced default
+    await page.getByRole('button', { name: /^Continue$/ }).click();     // minutes: 10 default
+
+    await expect(page.getByRole('heading', { name: /Preparing your training path/i })).toBeVisible();
+    await expect(page.getByText(/A balanced start/i)).toBeVisible();
   });
 
   test('Log in skips the wizard for returning users', async ({ page }) => {
