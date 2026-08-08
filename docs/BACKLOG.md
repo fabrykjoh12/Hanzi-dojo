@@ -206,13 +206,11 @@ migration to drop them, since this removed the feature, not historical data.
   so it now lives in a module with 22 specs beside it — `shelvesForTier`,
   `tierInfo`, `defaultTier`, `splitShelf` — and the JSX renders a `LevelBlock`
   component instead. No behaviour change; the tier rules are identical.
-- [ ] **Delete the two superseded pre-signup tastes.** `SentenceTaste.jsx` +
-  `starterSentences.js` + `starterSentences.test.js` (replaced 2026-08-08 by
-  the character taste), and then `CharacterTaste.jsx` + `tasteSteps.js` +
-  `tasteSteps.test.js` (replaced the same day by the owner's guided path:
-  experience → purpose → style → minutes → path → 你好 first lesson). Only
-  `starterAudio.js` stays — FirstLesson uses its `speak()` fallback. Delete
-  the rest once the guided path has been judged on a real device.
+- [x] **Deleted the two superseded pre-signup tastes (2026-08-08).**
+  `SentenceTaste.jsx` + `starterSentences.js`(+test), then `CharacterTaste.jsx`
+  + `tasteSteps.js`(+test) — both replaced by the first-encounter flow
+  (FlashcardIntro / MicroStory / EncounterComplete). `starterAudio.js` stays,
+  slimmed to the `speak()` fallback FirstLesson-era code still uses.
 - [ ] Continue extracting the large `Study` screen into focused hooks/components.
 - [ ] Supabase generated types (gradual TypeScript adoption).
 - [ ] Centralize design tokens (colors/spacing/shadows) beyond the current shared primitives.
