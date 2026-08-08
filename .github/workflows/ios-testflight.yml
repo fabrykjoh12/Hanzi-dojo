@@ -78,8 +78,36 @@ jobs:
 
       # The web build the app actually ships. NOT `npm run build` — that one
       # emits the internal HQ page (see vite.config.js).
+      #
+      # Vite inlines VITE_* at BUILD time, so these have to be here. The web
+      # deploy gets them from the hosting provider's environment; a runner has
+      # no such environment, and without them the app installs fine and then
+      # shows "Site can't start" on launch. Build 7 did exactly that.
+      #
+      # The anon key is the publishable one — it is designed to sit in client
+      # code, ships inside the IPA either way, and row-level security is what
+      # actually protects the data. The service key must never appear here.
       - name: Build the web app
-        run: npm run build:public
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          missing=""
+          [ -z "$VITE_SUPABASE_URL" ] && missing="$missing VITE_SUPABASE_URL"
+          [ -z "$VITE_SUPABASE_ANON_KEY" ] && missing="$missing VITE_SUPABASE_ANON_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing — the app would launch to 'Site can't start'."
+            exit 1
+          fi
+          npm run build:public
+          # Cheap proof the config actually made it into the bundle, rather
+          # than finding out on a phone after a 15-minute round trip.
+          if ! grep -rqF "$VITE_SUPABASE_URL" dist/client/assets; then
+            echo "::error::Built bundle does not contain the Supabase URL."
+            exit 1
+          fi
+          echo "Supabase configuration is in the bundle."
 
       - name: Sync into the iOS project
         run: npx cap sync ios
