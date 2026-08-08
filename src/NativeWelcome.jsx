@@ -17,9 +17,6 @@ import { BRAND_NAME, heroWordmarkStyle } from './brand'
 // so its logo position matching the splash's is what makes launch → welcome
 // feel like one motion rather than two screens.
 
-const SAGE = '#6E8466'
-const SAGE_DARK = '#5C7155'
-
 export default function NativeWelcome({ onStart, onLogIn }) {
   const [pressed, setPressed] = useState(false)
 
@@ -62,6 +59,10 @@ export default function NativeWelcome({ onStart, onLogIn }) {
       </div>
 
       <div style={{ width: '100%', maxWidth: '340px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {/* Neutral, not an accent: the red mark above is the only colour on
+            the screen, which is what makes it read as considered. var(--text)
+            on var(--bg) is near-black in light mode and near-white in dark —
+            the high-contrast pill every premium app uses. */}
         <button
           onClick={onStart}
           onPointerDown={() => setPressed(true)}
@@ -69,11 +70,13 @@ export default function NativeWelcome({ onStart, onLogIn }) {
           onPointerCancel={() => setPressed(false)}
           style={{
             width: '100%', minHeight: '54px', padding: '0 24px',
-            borderRadius: '16px', border: 'none',
-            background: pressed ? SAGE_DARK : SAGE, color: '#fff',
-            fontSize: '16.5px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+            borderRadius: '999px', border: 'none',
+            background: 'var(--text)', color: 'var(--bg)',
+            fontSize: '16.5px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+            letterSpacing: '0.01em',
             cursor: 'pointer',
-            transition: 'background 120ms ease, transform 120ms ease',
+            transition: 'opacity 120ms ease, transform 120ms ease',
+            opacity: pressed ? 0.85 : 1,
             transform: pressed ? 'scale(0.985)' : 'scale(1)',
           }}
         >
@@ -87,10 +90,10 @@ export default function NativeWelcome({ onStart, onLogIn }) {
           onClick={onLogIn}
           style={{
             width: '100%', minHeight: '48px',
-            borderRadius: '14px', border: 'none',
+            borderRadius: '999px', border: 'none',
             background: 'transparent',
             color: 'var(--text-muted)',
-            fontSize: '15px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+            fontSize: '15px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
             cursor: 'pointer',
           }}
         >
