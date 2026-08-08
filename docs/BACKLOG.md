@@ -206,6 +206,12 @@ migration to drop them, since this removed the feature, not historical data.
   so it now lives in a module with 22 specs beside it — `shelvesForTier`,
   `tierInfo`, `defaultTier`, `splitShelf` — and the JSX renders a `LevelBlock`
   component instead. No behaviour change; the tier rules are identical.
+- [ ] **Delete the old pre-signup sentence taste.** `SentenceTaste.jsx`,
+  `starterSentences.js`, `starterAudio.js` and `starterSentences.test.js` lost
+  their only caller on 2026-08-08 when `CharacterTaste` replaced them in the
+  wizard — they now reference only each other. Kept for one build so the new
+  flow can be judged on a real device with the old one still one import away;
+  delete once it has been.
 - [ ] Continue extracting the large `Study` screen into focused hooks/components.
 - [ ] Supabase generated types (gradual TypeScript adoption).
 - [ ] Centralize design tokens (colors/spacing/shadows) beyond the current shared primitives.
