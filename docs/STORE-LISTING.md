@@ -123,8 +123,15 @@ listing offers tablet slots. Capture on a real device AFTER the mobile pass is
 verified there (`docs/PRE-RELEASE-CHECKLIST.md` §4) so the screenshots show the
 shipped layout, not the pre-fix one.
 
-**Feature graphic (Play, 1024×500):** the ensō mark on the app's own light
-background with the wordmark — no screenshot collage, no marketing gradient.
+**Feature graphic (Play, 1024×500):** done —
+[`public/store/feature-graphic.png`](../public/store/feature-graphic.png).
+The brand red `#B83A24` as a flat ground, the wordmark centred in white
+(Poppins 700, the `heroWordmarkStyle` face from `src/brand.js`), a hairline
+rule, and the tagline *"Read real Chinese, sooner"* in Inter below — no
+screenshot collage, no marketing gradient. All of it sits inside the centre
+924×400, because Play crops the edges on some layouts. *(Drafted without the
+ensō mark, which the earlier note here called for; the mark can be added above
+the wordmark later without touching the safe area.)*
 
 ---
 

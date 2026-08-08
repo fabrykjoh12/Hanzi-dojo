@@ -206,9 +206,9 @@ columns all exist — older "pending migration" doc entries were stale.
       full description, keywords, "what's new", the screenshot shot list, the
       App Review notes (incl. the exact account-deletion steps reviewers look
       for) and every Play Data Safety answer. **Owner: review and edit the
-      wording, then paste into the consoles.** Still to do by hand: capture
-      the screenshots on a real device *after* §4 verification, and produce
-      the 1024×500 feature graphic.
+      wording, then paste into the consoles.** The 1024×500 Play feature
+      graphic is done — `public/store/feature-graphic.png`. Still to do by
+      hand: capture the screenshots on a real device *after* §4 verification.
 - [ ] **Announce the pivot in `ROADMAP.md` when ready** — deliberately not
       done in this change: editing the roadmap posts to Discord instantly, so
       the owner chooses the moment and the wording.
