@@ -131,8 +131,9 @@ background with the wordmark — no screenshot collage, no marketing gradient.
 ## App Review notes (paste into App Store Connect → Notes for Review)
 
 > **Demo account**
-> Email: `<owner: create a dedicated review account and put it here>`
-> Password: `<…>`
+> Email: `playreview@hanzi-dojo.com`
+> Password: `<owner: the password you set at signup — paste it in the console,
+> never commit it here>`
 >
 > The account is pre-seeded so nothing needs to be studied before the app is
 > usable: it already has vocabulary in review, unlocked stories, and a level in
