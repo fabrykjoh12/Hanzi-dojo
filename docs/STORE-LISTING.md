@@ -124,14 +124,22 @@ verified there (`docs/PRE-RELEASE-CHECKLIST.md` §4) so the screenshots show the
 shipped layout, not the pre-fix one.
 
 **Feature graphic (Play, 1024×500):** done —
-[`public/store/feature-graphic.png`](../public/store/feature-graphic.png).
-The brand red `#B83A24` as a flat ground, the wordmark centred in white
-(Poppins 700, the `heroWordmarkStyle` face from `src/brand.js`), a hairline
-rule, and the tagline *"Read real Chinese, sooner"* in Inter below — no
-screenshot collage, no marketing gradient. All of it sits inside the centre
-924×400, because Play crops the edges on some layouts. *(Drafted without the
-ensō mark, which the earlier note here called for; the mark can be added above
-the wordmark later without touching the safe area.)*
+[`public/store/feature-graphic.png`](../public/store/feature-graphic.png). The
+ensō mark on the app's own light background with the wordmark — no screenshot
+collage, no marketing gradient.
+
+The ground is `#FAFAF8`, the manifest's `background_color`, so the graphic sits
+on the same paper the app opens on. A ~130px ensō in `#B83A24` is centred at
+x=215 on the left: an open brush circle with its gap at the lower right, drawn
+as a filled outline rather than a stroked ring so the weight can taper from a
+heavy entry to a fine lifted tail — a constant-width ring reads as a logo mark,
+not as ink. To its right, "Hanzi Dojo" at 44px in `#1F1E1C`, a 50px `#B83A24`
+rule, then the tagline *"Read real Chinese, sooner"* at 18px in `#5C5B57`. The
+type is Noto Serif, the app's own serif — `src/readingFonts.js`; the app has no
+separate Latin display serif, so the reading face does that job here.
+
+Everything is inside the centre 924×400 (drawn bounds x 153–578, y 190–316),
+because Play crops the edges on some layouts.
 
 ---
 
