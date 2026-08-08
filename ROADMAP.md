@@ -204,6 +204,7 @@ paid generation happens without an explicit `--confirm`.
 - [ ] Automated a11y checks in e2e (axe) — considered, needs a new dependency; follow-up
 
 ## ✅ Shipped
+- [x] **Branded account emails** — the confirmation, login-link and password-reset emails now arrive as a proper Hanzi Dojo email — logo, wordmark, one clear button, and a plain-text link that works when a mail app blocks images — instead of Supabase's default gray placeholder.
 - [x] **Word-by-word read-along** — the word being spoken lights up while the rest of the line quiets, so you never lose your place mid-sentence. Tap any word while a story is reading to jump the audio there, and pick a reading speed (0.6x / 0.8x / 1x) in every guided story format.
 - [x] **Stuck-word help** — when a word keeps slipping, a calm coach card meets it from a fresh angle: slow audio, the word inside a real sentence, and (for Chinese) a character-by-character breakdown — instead of the same flashcard coming back again and again. Surfaces from the "keeps slipping" list in Profile, and in Study when you keep pressing Again on the same word.
 - [x] **Grammar as spaced practice** — opt a grammar pattern into review from the Grammar guide and it comes back as a quick fill-in-the-blank, scheduled by the same memory engine as your flashcards (Practice → Grammar review). Calm and opt-in, one pattern at a time.
