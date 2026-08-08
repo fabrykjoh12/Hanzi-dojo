@@ -16,7 +16,7 @@ import { prefersReducedMotion } from './splashIntro'
 const ROW_STAGGER_MS = 420
 const ROW_ANIM_MS = 380
 
-export default function PathBuilding({ choices, onContinue }) {
+export default function PathBuilding({ choices, onContinue, ctaLabel = 'Continue' }) {
   const [rows] = useState(() => buildPath(choices))
   const [reduced] = useState(() => prefersReducedMotion())
   const [ready, setReady] = useState(reduced)
@@ -85,7 +85,7 @@ export default function PathBuilding({ choices, onContinue }) {
           transition: 'opacity 300ms ease',
         }}
       >
-        Begin first lesson
+        {ctaLabel}
       </button>
     </div>
   )

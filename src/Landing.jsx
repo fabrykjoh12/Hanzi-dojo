@@ -7,14 +7,16 @@ import bgLogin from './assets/bg-login.webp'
 import { BRAND_INK, BRAND_NAME, heroWordmarkStyle } from './brand'
 import { availableLanguages, ink, languageTheme } from './languageTheme'
 import PathBuilding from './PathBuilding'
-import FirstLesson from './FirstLesson'
+import FlashcardIntro from './FlashcardIntro'
+import MicroStory from './MicroStory'
+import EncounterComplete from './EncounterComplete'
 import {
   EXPERIENCE_LEVELS, DEFAULT_EXPERIENCE, PURPOSES, primaryReason,
-  TRAINING_STYLES, DEFAULT_STYLE, DAILY_PLANS, DEFAULT_MINUTES, planEstimate,
+  DEFAULT_STYLE, DAILY_PLANS, DEFAULT_MINUTES, planEstimate,
 } from './onboardingPath'
 import { FLAGS } from './flags'
 import { useIsMobile } from './useIsMobile'
-import { encouragementFor, savePreloginPrefs, initialLandingMode } from './prelogin'
+import { encouragementFor, savePreloginPrefs, readPreloginPrefs, initialLandingMode } from './prelogin'
 import { isNativeApp } from './nativeShell'
 import NativeWelcome from './NativeWelcome'
 import {
@@ -210,16 +212,20 @@ function WizardShell({ isMobile, back, step, steps = 3, title, subtitle, childre
           <div style={{ width: '40px', marginRight: '-8px' }} />
         </div>
 
-        <h1 style={{
-          fontSize: isMobile ? '24px' : '30px', fontWeight: 800, color: 'var(--text)',
-          lineHeight: 1.25, letterSpacing: '-0.02em', margin: '0 0 8px',
-          fontFamily: 'Inter, sans-serif', maxWidth: '420px',
-        }}>
-          {title}
-        </h1>
-        <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.55, margin: '0 auto 24px', maxWidth: '400px' }}>
-          {subtitle}
-        </p>
+        {title ? (
+          <h1 style={{
+            fontSize: isMobile ? '24px' : '30px', fontWeight: 800, color: 'var(--text)',
+            lineHeight: 1.25, letterSpacing: '-0.02em', margin: '0 0 8px',
+            fontFamily: 'Inter, sans-serif', maxWidth: '420px',
+          }}>
+            {title}
+          </h1>
+        ) : null}
+        {subtitle ? (
+          <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.55, margin: '0 auto 24px', maxWidth: '400px' }}>
+            {subtitle}
+          </p>
+        ) : null}
         {children}
       </div>
     </div>
@@ -251,21 +257,38 @@ function MethodCard({ icon: Icon, title, children, accent }) {
 // product is, who it's for, and why it's different — then hands off to the
 // existing Auth screen. Returning users get there in one click ("Log in").
 export default function Landing() {
-  // The guided path (owner's design, 2026-08-08): entrance → experience →
-  // purpose (multi) → training style → daily minutes → the assembled path →
-  // a first micro-lesson (你好) → THEN the account. The ask comes after the
-  // first win on purpose: someone who has just learned their first expression
-  // has a reason to save it. Every question is skippable and every answer can
-  // be changed later. FLAGS.WOW_ONBOARDING off collapses it to entrance→auth.
+  // The first-encounter flow (owner's design, 2026-08-08): entrance →
+  // flashcard (你好, flipped) → micro-story (met in a tea shop, used once) →
+  // completion → the three setup questions → the assembled path → THEN the
+  // account. Demonstration before questions, questions before the ask: by the
+  // time anyone is asked to type an email they have learned a word, used it,
+  // and watched a plan assemble from their own answers. Every question is
+  // skippable. FLAGS.WOW_ONBOARDING off collapses it to entrance → auth.
   // 'landing' (web marketing page) | 'welcome' (the app's own first screen)
-  // | 'lang' | 'experience' | 'purpose' | 'style' | 'minutes' | 'building'
-  // | 'firstwin' | 'auth'
-  const [mode, setMode] = useState(() => initialLandingMode(isNativeApp()))
-  const [pickedLang, setPickedLang] = useState(null)
-  const [experience, setExperience] = useState(null)
-  const [purposes, setPurposes] = useState([])
-  const [style, setStyle] = useState(DEFAULT_STYLE)   // preselected: continue instantly
-  const [minutes, setMinutes] = useState(DEFAULT_MINUTES)
+  // | 'lang' | 'flashcard' | 'story' | 'firstdone' | 'experience'
+  // | 'purpose' | 'minutes' | 'building' | 'auth'
+  //
+  // The current step persists through prelogin prefs, so an accidental app
+  // close resumes where the visitor was instead of forcing a restart. Only
+  // wizard steps resume — never 'auth' (a returning visitor who bailed at
+  // the form should land on the welcome, not be trapped at signup).
+  const RESUMABLE = ['flashcard', 'story', 'firstdone', 'experience', 'purpose', 'minutes', 'building']
+  const [mode, setModeRaw] = useState(() => {
+    const saved = readPreloginPrefs()
+    if (saved && RESUMABLE.indexOf(saved.wizardStep) !== -1) return saved.wizardStep
+    return initialLandingMode(isNativeApp())
+  })
+  const setMode = (next) => {
+    setModeRaw(next)
+    // Merge, never replace: the step must not wipe answers saved so far.
+    const prior = readPreloginPrefs() || {}
+    savePreloginPrefs({ ...prior, wizardStep: RESUMABLE.indexOf(next) !== -1 ? next : null })
+  }
+  const [pickedLang, setPickedLang] = useState(() => readPreloginPrefs()?.language || null)
+  const [experience, setExperience] = useState(() => readPreloginPrefs()?.experience || null)
+  const [purposes, setPurposes] = useState(() => readPreloginPrefs()?.purposes || [])
+  const [style] = useState(DEFAULT_STYLE)   // the style question was cut 2026-08-08; the pref stays for downstream compat
+  const [minutes, setMinutes] = useState(() => readPreloginPrefs()?.minutesPerDay || DEFAULT_MINUTES)
   const isMobile = useIsMobile()
   const navigate = useNavigate()
   // Pre-login: no account context yet, so the landing wizard always shows the
@@ -287,7 +310,7 @@ export default function Landing() {
     if (chosen) {
       setPickedLang(chosen)
       track(EVENTS.PRELOGIN_LANGUAGE_PICKED, { language: chosen })
-      setMode(FLAGS.WOW_ONBOARDING ? 'experience' : 'auth')
+      setMode(FLAGS.WOW_ONBOARDING ? 'flashcard' : 'auth')
     } else {
       setMode('lang')
     }
@@ -296,7 +319,7 @@ export default function Landing() {
   const chooseLanguage = (langKey) => {
     setPickedLang(langKey)
     track(EVENTS.PRELOGIN_LANGUAGE_PICKED, { language: langKey })
-    setMode(FLAGS.WOW_ONBOARDING ? 'experience' : 'auth')
+    setMode(FLAGS.WOW_ONBOARDING ? 'flashcard' : 'auth')
   }
 
   const chooseExperience = (key) => {
@@ -310,6 +333,18 @@ export default function Landing() {
 
   // Questions answered (or skipped — the defaults are real answers). Persist
   // everything the post-signup onboarding can use, then assemble the path.
+  // The story is done — 你好 was discovered and used. Record the encounter in
+  // the structure the post-signup flow already reads (tastedWords), so the
+  // first-mission welcome can greet by it. Recorded at the moment it became
+  // true, not at signup: an accidental close between here and the form must
+  // not lose the fact.
+  const finishEncounter = () => {
+    const prior = readPreloginPrefs() || {}
+    savePreloginPrefs({ ...prior, language: pickedLang, tastedWords: ['你好'], wizardStep: 'firstdone' })
+    track(EVENTS.TASTE_COMPLETED, { reason: primaryReason(purposes), revealed: true, count: 1 })
+    setModeRaw('firstdone')
+  }
+
   const finishQuestions = (chosenMinutes) => {
     const exp = EXPERIENCE_LEVELS.find(e => e.key === experience) || null
     const reason = primaryReason(purposes)
@@ -318,28 +353,17 @@ export default function Landing() {
       purposes: purposes.length, experience: experience || 'skipped',
       style, minutes: chosenMinutes,
     })
+    const prior = readPreloginPrefs() || {}
     savePreloginPrefs({
+      ...prior,
       language: pickedLang, reason,
       experience: experience || DEFAULT_EXPERIENCE,
       startLevel: exp ? exp.startLevel : 1,
       placementLater: Boolean(exp && exp.placementLater),
       purposes, style, minutesPerDay: chosenMinutes,
+      wizardStep: 'building',
     })
-    setMode('building')
-  }
-
-  const finishFirstLesson = () => {
-    // 你好 is genuinely on the HSK 1 list they are about to start, so the
-    // post-signup welcome may greet them by it.
-    const prior = { language: pickedLang, reason: primaryReason(purposes) }
-    savePreloginPrefs({
-      ...prior,
-      experience: experience || DEFAULT_EXPERIENCE, purposes, style,
-      minutesPerDay: minutes, tastedWords: ['你好'],
-    })
-    track(EVENTS.TASTE_COMPLETED, { reason: prior.reason, revealed: true, count: 1 })
-    track(EVENTS.PRELOGIN_SIGNUP_STARTED, { language: pickedLang, reason: prior.reason })
-    setMode('auth')
+    setModeRaw('building')
   }
 
 
@@ -426,9 +450,39 @@ export default function Landing() {
     )
   }
 
+  if (mode === 'flashcard') {
+    return (
+      <WizardShell isMobile={isMobile} back={() => setMode(initialLandingMode(isNativeApp()))}
+        title="Your first flashcard"
+        subtitle="This is how every word starts.">
+        <FlashcardIntro onSeeStory={() => { track(EVENTS.TASTE_SHOWN, { reason: 'encounter' }); setMode('story') }} />
+      </WizardShell>
+    )
+  }
+
+  if (mode === 'story') {
+    return (
+      <WizardShell isMobile={isMobile} back={() => setMode('flashcard')}
+        title="Now meet it in a story"
+        subtitle="A tea shop, a shopkeeper, and the word you just learned.">
+        <MicroStory onComplete={finishEncounter} />
+      </WizardShell>
+    )
+  }
+
+  if (mode === 'firstdone') {
+    return (
+      <WizardShell isMobile={isMobile} back={() => setMode('story')}
+        title=""
+        subtitle="">
+        <EncounterComplete onContinue={() => setMode('experience')} />
+      </WizardShell>
+    )
+  }
+
   if (mode === 'experience') {
     return (
-      <WizardShell isMobile={isMobile} back={() => setMode(soloLang ? initialLandingMode(isNativeApp()) : 'lang')} step={1} steps={4}
+      <WizardShell isMobile={isMobile} back={() => setMode('firstdone')} step={1} steps={3}
         title="How much Chinese do you know?"
         subtitle="An honest guess is plenty — nothing here is locked in.">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '400px' }}>
@@ -445,7 +499,7 @@ export default function Landing() {
 
   if (mode === 'purpose') {
     return (
-      <WizardShell isMobile={isMobile} back={() => setMode('experience')} step={2} steps={4}
+      <WizardShell isMobile={isMobile} back={() => setMode('experience')} step={2} steps={3}
         title="Why are you learning Chinese?"
         subtitle="Pick everything that applies — it tunes your stories and examples.">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '400px' }}>
@@ -467,38 +521,6 @@ export default function Landing() {
               </button>
             )
           })}
-          {continueBtn(() => setMode('style'))}
-        </div>
-      </WizardShell>
-    )
-  }
-
-  if (mode === 'style') {
-    return (
-      <WizardShell isMobile={isMobile} back={() => setMode('purpose')} step={3} steps={4}
-        title="What sounds most enjoyable?"
-        subtitle="The mix is yours to change any time.">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '400px' }}>
-          {TRAINING_STYLES.map(st => {
-            const selected = style === st.key
-            return (
-              <button key={st.key} onClick={() => setStyle(st.key)} aria-pressed={selected} style={questionRow(selected)}>
-                <span aria-hidden="true" lang="zh-Hans" style={{
-                  width: '42px', height: '42px', borderRadius: '13px', flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'color-mix(in srgb, ' + BRAND_INK + ' 9%, var(--surface))',
-                  color: ink(BRAND_INK), fontSize: '21px', fontWeight: 600,
-                  fontFamily: "'Noto Sans SC', sans-serif", lineHeight: 1,
-                }}>
-                  {st.hanzi}
-                </span>
-                <span style={{ flex: 1 }}>
-                  <span style={{ display: 'block', fontSize: '16px', fontWeight: 650, color: 'var(--text)' }}>{st.label}</span>
-                  <span style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)' }}>{st.desc}</span>
-                </span>
-              </button>
-            )
-          })}
           {continueBtn(() => setMode('minutes'))}
         </div>
       </WizardShell>
@@ -507,8 +529,8 @@ export default function Landing() {
 
   if (mode === 'minutes') {
     return (
-      <WizardShell isMobile={isMobile} back={() => setMode('style')} step={4} steps={4}
-        title="Choose your daily training"
+      <WizardShell isMobile={isMobile} back={() => setMode('purpose')} step={3} steps={3}
+        title="How much would you like to train each day?"
         subtitle={planEstimate(minutes)}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '400px' }}>
           {DAILY_PLANS.map(plan => {
@@ -536,21 +558,12 @@ export default function Landing() {
         title="Preparing your training path…"
         subtitle="Built from your answers — every line of it is changeable later.">
         <PathBuilding
+          ctaLabel="Save my path"
           choices={{ experience, purposes, minutes }}
-          onContinue={() => { track(EVENTS.TASTE_SHOWN, { reason: primaryReason(purposes) }); setMode('firstwin') }}
-        />
-      </WizardShell>
-    )
-  }
-
-  if (mode === 'firstwin') {
-    return (
-      <WizardShell isMobile={isMobile} back={() => setMode('building')}
-        title="Your first lesson"
-        subtitle="Sixty seconds. No account needed yet.">
-        <FirstLesson
-          onEvent={(step) => track(EVENTS.TASTE_WORD_REVEALED, { step })}
-          onComplete={finishFirstLesson}
+          onContinue={() => {
+            track(EVENTS.PRELOGIN_SIGNUP_STARTED, { language: pickedLang, reason: primaryReason(purposes) })
+            setMode('auth')
+          }}
         />
       </WizardShell>
     )
@@ -563,7 +576,7 @@ export default function Landing() {
     return (
       <Auth
         intro={intro}
-        onBack={() => setMode(experience ? 'firstwin' : initialLandingMode(isNativeApp()))}
+        onBack={() => setMode(experience ? 'minutes' : initialLandingMode(isNativeApp()))}
       />
     )
   }
