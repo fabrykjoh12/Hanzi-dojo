@@ -201,51 +201,38 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
           ))}
         </div>
 
-        {forecastTotal > 0 && (
-          <div style={{
-            marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap',
-          }}>
-            <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
-              {counts.dueTomorrow > 0
-                ? 'About ' + counts.dueTomorrow + ' waiting tomorrow'
-                : 'Nothing due tomorrow — a free day'}
+        {/* ── Toward the next level, inside the same panel. The week behind
+            you and the road ahead are one story, and on a phone two separate
+            panels of numbers made Home read as a dashboard. ── */}
+        <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
+            <span style={{ fontSize: '13.5px', fontWeight: 650, color: 'var(--text)' }}>
+              Toward {nextLevelLabel}
             </span>
-            <span style={{ ...NUM, fontSize: '12px', color: 'var(--text-faint)' }}>
-              ~{perDay}/day this week
+            <span style={{ ...NUM, fontSize: '12.5px', color: 'var(--text-muted)' }}>
+              {learned} of {totalWords} words
             </span>
           </div>
-        )}
-      </Panel>
 
-      {/* ── Progress toward the next level ── */}
-      <Panel
-        padding={isMobile ? '16px 16px 14px' : '18px 20px 16px'}
-        style={{ animationDelay: '140ms' }}
-      >
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
-          <span style={{ fontSize: '13.5px', fontWeight: 650, color: 'var(--text)' }}>
-            Toward {nextLevelLabel}
-          </span>
-          <span style={{ ...NUM, fontSize: '12.5px', color: 'var(--text-muted)' }}>
-            {learned} of {totalWords} words
-          </span>
-        </div>
+          <div
+            role="img"
+            aria-label={learned + ' of ' + totalWords + ' words learned toward ' + nextLevelLabel + ' — ' + pct + '%'}
+            style={{ height: '5px', borderRadius: '999px', background: 'var(--surface-2)', overflow: 'hidden' }}
+          >
+            <div style={{
+              width: pct + '%', height: '100%', borderRadius: '999px',
+              background: accentInk, transition: 'width 600ms cubic-bezier(0.22,1,0.36,1)',
+            }} />
+          </div>
 
-        <div
-          role="img"
-          aria-label={learned + ' of ' + totalWords + ' words learned toward ' + nextLevelLabel + ' — ' + pct + '%'}
-          style={{ height: '5px', borderRadius: '999px', background: 'var(--surface-2)', overflow: 'hidden' }}
-        >
-          <div style={{
-            width: pct + '%', height: '100%', borderRadius: '999px',
-            background: accentInk, transition: 'width 600ms cubic-bezier(0.22,1,0.36,1)',
-          }} />
-        </div>
-
-        <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '10px', textAlign: 'center' }}>
-          {counts.learnCount} learning
-          {counts.dueTomorrow > 0 && ' · about ' + counts.dueTomorrow + ' due tomorrow'}
+          {/* One quiet line for what's ahead — this was two lines in two
+              different panels saying nearly the same thing. */}
+          <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '10px', textAlign: 'center' }}>
+            {counts.dueTomorrow > 0
+              ? 'About ' + counts.dueTomorrow + ' waiting tomorrow'
+              : 'Nothing due tomorrow — a free day'}
+            {forecastTotal > 0 && ' · ~' + perDay + '/day this week'}
+          </div>
         </div>
       </Panel>
     </div>
@@ -294,7 +281,9 @@ function QueueBody({ counts, totalDue, goal, doneToday, isMobile, action, accent
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', margin: '10px 0 6px' }}>
         <span style={{
           ...NUM, color: '#fff', lineHeight: 0.95,
-          fontSize: isMobile ? '52px' : '64px', fontWeight: 700, letterSpacing: '-0.04em',
+          // A phone screen holds four blocks; a 52px numeral made this one
+          // read as the whole page. The number only needs to win the panel.
+          fontSize: isMobile ? '40px' : '64px', fontWeight: 700, letterSpacing: '-0.04em',
         }}>
           {clear ? '\u2713' : totalDue}
         </span>
@@ -309,9 +298,11 @@ function QueueBody({ counts, totalDue, goal, doneToday, isMobile, action, accent
         </span>
       </div>
 
-      {/* The queue's own breakdown, inside the block that is about it. */}
-      {!clear && (
-        <div style={{ display: 'flex', gap: isMobile ? '14px' : '20px', flexWrap: 'wrap', marginTop: '12px' }}>
+      {/* The queue's breakdown — desktop only. On a phone these three numbers
+          appear the moment Study opens, one tap away; here they were three
+          more numerals on a screen already full of them. */}
+      {!clear && !isMobile && (
+        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '12px' }}>
           {[
             ['New', counts.newCount],
             ['Learning', counts.learnCount],
