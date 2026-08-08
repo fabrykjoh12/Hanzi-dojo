@@ -96,6 +96,16 @@ describe('trustPageKey', () => {
       expect(trustPageKey('/' + page + '/')).toBe(page)
     }
   })
+  it('accepts them however they were typed, and returns the canonical key', () => {
+    // These URLs get typed by hand into the Apple and Google console forms,
+    // and both stores fetch the privacy URL and reject the listing when it
+    // does not load. A capitalised "/Privacy" 404ing is an expensive way to
+    // be strict about case.
+    expect(trustPageKey('/Privacy')).toBe('privacy')
+    expect(trustPageKey('/PRIVACY/')).toBe('privacy')
+    expect(trustPageKey('/Terms')).toBe('terms')
+    expect(trustPageKey('/Methodology')).toBe('methodology')
+  })
   it('rejects other paths', () => {
     expect(trustPageKey('/')).toBe(null)
     expect(trustPageKey('/stories')).toBe(null)
