@@ -22,6 +22,30 @@ export function isNativeApp() {
   }
 }
 
+// The URL the app was LAUNCHED with belongs to the app run, not to a React
+// effect — `App.getLaunchUrl()` keeps returning it for as long as the process
+// lives. Reading it more than once is a real bug with teeth: react-router's
+// `useNavigate` is recreated on every navigation (its callback closes over the
+// current pathname), so an effect that depends on it re-runs on every screen
+// change. That turned every tab tap into "re-read the launch URL, try to spend
+// its one-time auth code again, fail, and bounce back to Home" for anyone whose
+// session had started from an emailed link — reported 2026-08-09, and the
+// reason closing the app "fixed" it (a fresh launch from the icon has no URL).
+//
+// Module scope on purpose: it must survive a remount, not just a re-render.
+let launchUrlConsumed = false
+
+export function consumeLaunchUrl(url) {
+  if (launchUrlConsumed) return null
+  launchUrlConsumed = true
+  return url || null
+}
+
+// Tests only — the flag is process-wide by design.
+export function resetLaunchUrlConsumed() {
+  launchUrlConsumed = false
+}
+
 // Map a deep-link URL (universal link or custom scheme) to an in-app route,
 // or null when the URL is not ours. Never throws on garbage input.
 export function routeFromDeepLink(url) {

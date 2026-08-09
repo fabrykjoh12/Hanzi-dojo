@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { isNativeApp, routeFromDeepLink, backAction } from './nativeShell'
+import { isNativeApp, routeFromDeepLink, backAction, consumeLaunchUrl } from './nativeShell'
 import { isAuthDeepLink, completeNativeAuth, authLandingPath } from './nativeAuth'
 
 // Wires the Capacitor native shell into the router: deep links (universal
@@ -13,17 +13,28 @@ export default function NativeShellBridge() {
   const navigate = useNavigate()
   const location = useLocation()
   const pathRef = useRef(location.pathname)
+  // react-router hands back a NEW `navigate` on every navigation (its callback
+  // closes over the current pathname). Depending on it would re-run the effect
+  // below on every screen change — re-registering listeners, and re-reading the
+  // launch URL. Held in a ref instead, so the listeners are registered exactly
+  // once and always call the current one.
+  const navigateRef = useRef(navigate)
 
   useEffect(() => {
     pathRef.current = location.pathname
   }, [location.pathname])
 
   useEffect(() => {
+    navigateRef.current = navigate
+  }, [navigate])
+
+  useEffect(() => {
     if (!isNativeApp()) return undefined
     let disposed = false
     const handles = []
-    // One URL is handled once. `getLaunchUrl` and `appUrlOpen` can describe the
-    // same arrival, and a one-time auth code survives exactly one exchange.
+    // The same arrival can reach us twice (a launch URL is also delivered as an
+    // appUrlOpen on some platforms), and a one-time auth code survives exactly
+    // one exchange.
     const seen = new Set()
 
     const handleUrl = (url) => {
@@ -41,12 +52,12 @@ export default function NativeShellBridge() {
       if (isAuthDeepLink(url)) {
         completeNativeAuth(url).then((result) => {
           if (disposed) return
-          navigate(authLandingPath(result), { replace: true })
+          navigateRef.current(authLandingPath(result), { replace: true })
         })
         return
       }
       const route = routeFromDeepLink(url)
-      if (route) navigate(route)
+      if (route) navigateRef.current(route)
     }
 
     import('@capacitor/app')
@@ -56,18 +67,25 @@ export default function NativeShellBridge() {
         // that `appUrlOpen` fires long before this listener exists — the WebView
         // has to boot, React has to mount, and this plugin import is dynamic.
         // Without asking for the launch URL the app simply opened on the login
-        // screen and the reset link appeared to do nothing (reported
-        // 2026-08-09). Warm opens still come through the listener below.
+        // screen and the reset link appeared to do nothing.
+        //
+        // consumeLaunchUrl() makes it a one-shot for the whole app run: the
+        // plugin keeps returning that URL forever, and re-handling it re-spends
+        // an auth code that is already gone. Warm opens come through the
+        // listener below instead.
         App.getLaunchUrl()
-          .then((launch) => { if (!disposed) handleUrl(launch && launch.url) })
+          .then((launch) => {
+            if (disposed) return
+            handleUrl(consumeLaunchUrl(launch && launch.url))
+          })
           .catch(() => { /* nothing was launched with — ordinary open */ })
 
         App.addListener('appUrlOpen', (event) => handleUrl(event && event.url))
           .then((handle) => handles.push(handle))
         App.addListener('backButton', (event) => {
           const action = backAction(pathRef.current, Boolean(event && event.canGoBack))
-          if (action === 'back') navigate(-1)
-          else if (action === 'home') navigate('/', { replace: true })
+          if (action === 'back') navigateRef.current(-1)
+          else if (action === 'home') navigateRef.current('/', { replace: true })
           else App.exitApp()
         }).then((handle) => handles.push(handle))
       })
@@ -78,7 +96,10 @@ export default function NativeShellBridge() {
       disposed = true
       handles.forEach((handle) => handle.remove())
     }
-  }, [navigate])
+    // Mount only — and the linter agrees, because everything time-varying
+    // (navigate, the current path) is read through a ref rather than closed
+    // over. That is the point: this effect must never re-run.
+  }, [])
 
   return null
 }
