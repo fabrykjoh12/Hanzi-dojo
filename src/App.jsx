@@ -549,7 +549,6 @@ export default function App() {
           session={session}
           profile={profile}
           track={track}
-          onBack={() => navigate('home')}
           onNavigate={navigate}
           onProfileUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
           onSessionStateChange={setStudySession}
@@ -564,7 +563,6 @@ export default function App() {
           session={session}
           profile={profile}
           track={track}
-          onBack={() => navigate('home')}
           onNavigate={navigate}
           initialStoryId={pendingStoryId || storiesR.storyId}
           initialStoryWords={pendingStoryWords}
@@ -585,7 +583,6 @@ export default function App() {
           track={track}
           counts={counts}
           onNavigate={navigate}
-          onBack={() => navigate('home')}
         />
       )
     }
@@ -609,7 +606,7 @@ export default function App() {
         profile={profile}
         track={track}
         mode="weak"
-        onBack={() => navigate('home')}
+        onBack={nav.back}
         onNavigate={navigate}
         onProfileUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
@@ -620,7 +617,7 @@ export default function App() {
         session={session}
         profile={profile}
         track={track}
-        onBack={() => navigate('home')}
+        onBack={nav.back}
       />
     )
   } else if (view === 'writing') {
@@ -629,7 +626,7 @@ export default function App() {
         session={session}
         profile={profile}
         track={track}
-        onBack={() => navigate('home')}
+        onBack={nav.back}
       />
     )
   } else if (view === 'listen') {
@@ -638,7 +635,7 @@ export default function App() {
         session={session}
         profile={profile}
         track={track}
-        onBack={() => navigate('home')}
+        onBack={nav.back}
       />
     )
   } else if (view === 'kana') {
@@ -646,7 +643,7 @@ export default function App() {
       <Kana
         profile={profile}
         track={track}
-        onBack={() => navigate('home')}
+        onBack={nav.back}
       />
     )
   } else if (view === 'cyrillic') {
@@ -654,7 +651,7 @@ export default function App() {
       <Cyrillic
         profile={profile}
         track={track}
-        onBack={() => navigate('home')}
+        onBack={nav.back}
       />
     )
   } else if (view === 'words') {
@@ -663,7 +660,7 @@ export default function App() {
         session={session}
         profile={profile}
         track={track}
-        onBack={() => navigate('practice')}
+        onBack={nav.back}
       />
     )
   } else if (view === 'analyzer') {
@@ -671,7 +668,7 @@ export default function App() {
       <Analyzer
         session={session}
         track={track}
-        onBack={() => navigate('practice')}
+        onBack={nav.back}
       />
     )
   } else if (view === 'known') {
@@ -680,7 +677,7 @@ export default function App() {
         session={session}
         profile={profile}
         track={track}
-        onBack={() => navigate('home')}
+        onBack={nav.back}
       />
     )
   } else if (view === 'dictionary') {
@@ -689,7 +686,7 @@ export default function App() {
         session={session}
         profile={profile}
         track={track}
-        onBack={() => navigate('practice')}
+        onBack={nav.back}
       />
     )
   } else if (view === 'grammar') {
@@ -698,7 +695,7 @@ export default function App() {
         session={session}
         profile={profile}
         track={track}
-        onBack={() => navigate('home')}
+        onBack={nav.back}
       />
     )
   } else if (view === 'grammarpractice') {
@@ -707,7 +704,7 @@ export default function App() {
         session={session}
         profile={profile}
         track={track}
-        onBack={() => navigate('practice')}
+        onBack={nav.back}
       />
     )
   } else if (view === 'strokes') {
@@ -715,7 +712,7 @@ export default function App() {
       <Writer
         profile={profile}
         track={track}
-        onBack={() => navigate('home')}
+        onBack={nav.back}
       />
     )
   } else if (view === 'builder') {
@@ -724,7 +721,7 @@ export default function App() {
         session={session}
         profile={profile}
         track={track}
-        onBack={() => navigate('home')}
+        onBack={nav.back}
       />
     )
   } else if (view === 'fillblank') {
@@ -734,7 +731,7 @@ export default function App() {
         profile={profile}
         track={track}
         pool={pendingPracticeWords}
-        onBack={() => { setPendingPracticeWords(null); navigate(pendingPracticeWords ? 'stories' : 'home') }}
+        onBack={() => { setPendingPracticeWords(null); nav.back() }}
       />
     )
   } else if (view === 'speak') {
@@ -743,7 +740,7 @@ export default function App() {
         session={session}
         profile={profile}
         track={track}
-        onBack={() => navigate('practice')}
+        onBack={nav.back}
       />
     )
   } else if (view === 'tones') {
@@ -752,7 +749,7 @@ export default function App() {
         session={session}
         profile={profile}
         track={track}
-        onBack={() => navigate('home')}
+        onBack={nav.back}
       />
     )
   } else if (view === 'profile') {
@@ -761,7 +758,7 @@ export default function App() {
         session={session}
         profile={profile}
         track={track}
-        onBack={() => navigate('home')}
+        onBack={nav.back}
         onNavigate={navigate}
         onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
@@ -772,7 +769,7 @@ export default function App() {
         session={session}
         profile={profile}
         onSwitch={() => navigate('home')}
-        onBack={() => navigate('home')}
+        onBack={nav.back}
       />
     )
   } else if (view === 'youtube') {
@@ -780,7 +777,7 @@ export default function App() {
       <YouTube
         profile={profile}
         track={track}
-        onBack={() => navigate('home')}
+        onBack={nav.back}
       />
     )
   } else if (view === 'settings') {
@@ -789,7 +786,7 @@ export default function App() {
         session={session}
         profile={profile}
         onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
-        onBack={() => navigate('home')}
+        onBack={nav.back}
       />
     )
   } else if (view === 'hq') {
@@ -807,13 +804,13 @@ export default function App() {
         session={session}
         profile={profile}
         track={track}
-        onBack={() => navigate('home')}
+        onBack={nav.back}
         onNavigate={navigate}
       />
     )
   } else if (view === 'dashboard') {
     content = profile.is_admin
-      ? <Dashboard onBack={() => navigate('home')} session={session} profile={profile} track={track} />
+      ? <Dashboard onBack={nav.back} session={session} profile={profile} track={track} />
       : <NotFound onHome={() => navigate('home')} />
   } else if (isKnownView(view)) {
     // Every root is rendered persistently by TabHost below, so reaching here

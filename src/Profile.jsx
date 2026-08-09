@@ -17,9 +17,10 @@ import { STUCK_LAPSES } from './stuckWord'
 import { BRAND_URL } from './brand'
 import { confirmWordOk, forgetDeviceData, DELETE_CONFIRM_WORD } from './accountDeletion'
 import {
-  ArrowLeft, Layers, LogOut, RotateCcw, Save,
+  Layers, LogOut, RotateCcw, Save,
   Sparkles, Target, CalendarCheck, Award, Share2, Check, AlertTriangle, TrendingUp, BookOpen, Trash2,
 } from 'lucide-react'
+import AppBar from './AppBar'
 
 const ACH_ICONS = { layers: Layers, sparkles: Sparkles, calendar: CalendarCheck, book: BookOpen }
 
@@ -47,30 +48,6 @@ function Shell({ children }) {
   )
 }
 
-function IconButton({ icon: Icon, label, onClick }) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-        height: '40px', padding: '0 14px', borderRadius: '12px',
-        border: '1px solid var(--border)',
-        background: hovered ? 'var(--surface-2)' : 'var(--surface)',
-        color: 'var(--text-muted)',
-        fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
-        cursor: 'pointer',
-        transition: 'background 160ms ease, transform 160ms ease',
-        transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
-      }}
-    >
-      <Icon size={17} strokeWidth={1.85} color="var(--text-muted)" />
-      {label}
-    </button>
-  )
-}
 
 export default function Profile({ session, profile, track, onBack, onNavigate, onUpdate }) {
   const [stats, setStats] = useState({ learned: 0, totalCards: 0, masteredCount: 0, totalWords: 0 })
@@ -394,7 +371,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
 
   return (
     <Shell accentHex={accentHex} fontFamily={fontFamily}>
-      <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+      <AppBar kind="close" onBack={onBack} sticky={false} />
 
       <PageHeader
         title={profile.display_name || session.user.email}

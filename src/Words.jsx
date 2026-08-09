@@ -7,10 +7,10 @@ import { PageHeader } from './panels'
 import { isLearned, isMastered } from './mastery'
 import { cleanMeaning } from './cleanMeaning'
 import { useIsMobile } from './useIsMobile'
-import { SecondaryButton } from './ui'
 import WordLookupSheet from './WordLookupSheet'
 import { foldIncludes } from './searchFold'
-import { ArrowLeft, BookA, Search } from 'lucide-react'
+import { BookA, Search } from 'lucide-react'
+import AppBar from './AppBar'
 
 function ttsLangFor(language) {
   return language === 'japanese' ? 'ja-JP' : language === 'chinese' ? 'zh-CN' : 'ru-RU'
@@ -132,7 +132,7 @@ export default function Words({ session, profile, track, onBack }) {
   return (
     <div style={pageShell}>
       <div style={{ maxWidth: '760px', margin: '0 auto' }}>
-        <SecondaryButton onClick={onBack} icon={ArrowLeft}>Back</SecondaryButton>
+        <AppBar kind="back" onBack={onBack} sticky={false} />
 
         <PageHeader
           title="Your words"

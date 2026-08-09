@@ -12,7 +12,8 @@ import {
   buildReviewGroups, selectAll, toggleSelection, setSelected,
   groupState, idsOf, claimIdsFor, initialOpenLevels, toggleLevelOpen,
 } from './knownWordsReview'
-import { ArrowLeft, Check, ChevronDown, ChevronRight, Minus } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, Minus } from 'lucide-react'
+import AppBar from './AppBar'
 
 // "Words you already know" — bring prior knowledge into review.
 //
@@ -184,9 +185,7 @@ export default function KnownWords({ session, profile, track, onBack }) {
 
   return (
     <div style={{ maxWidth: '760px', margin: '0 auto', padding: pad }}>
-      <button onClick={onBack} style={backBtn}>
-        <ArrowLeft size={16} strokeWidth={2} /> Back
-      </button>
+      <AppBar kind="back" onBack={onBack} sticky={false} />
 
       <h1 style={{ fontSize: '24px', fontWeight: 750, color: 'var(--text)', margin: '10px 0 6px', fontFamily: 'Inter, sans-serif' }}>
         Words you already know
@@ -482,10 +481,6 @@ function ReviewList({
   )
 }
 
-const backBtn = {
-  display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none',
-  padding: 0, cursor: 'pointer', color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'Inter, sans-serif',
-}
 
 function primaryBtn(accentHex) {
   return {

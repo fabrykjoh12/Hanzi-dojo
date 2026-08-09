@@ -6,7 +6,8 @@ import { PageHeader } from './panels'
 import { calculateStoryReadability, buildVocabMatcher, segmentLine, storyNamesFor, particlesFor, wordStatus } from './storyReading'
 import WordLookupSheet from './WordLookupSheet'
 import { track as trackEvent, EVENTS } from './analytics'
-import { ArrowLeft, ScanText, Bookmark, Sparkles } from 'lucide-react'
+import { ScanText, Bookmark, Sparkles } from 'lucide-react'
+import AppBar from './AppBar'
 
 // Known-Content Analyzer: paste any text, see how much of it you can already
 // read. Reuses the exact readability engine the story reader / recap rank with
@@ -126,9 +127,7 @@ export default function Analyzer({ session, track, onBack }) {
 
   return (
     <div style={{ maxWidth: '760px', margin: '0 auto', padding: isMobile ? '24px 16px 48px' : '40px 32px 64px' }}>
-      <button onClick={onBack} style={ghostBtn}>
-        <ArrowLeft size={17} strokeWidth={1.85} color="var(--text-muted)" /> Practice
-      </button>
+      <AppBar kind="back" onBack={onBack} sticky={false} />
 
       <PageHeader
         title="How much can you read?"
@@ -297,10 +296,3 @@ export default function Analyzer({ session, track, onBack }) {
   )
 }
 
-const ghostBtn = {
-  display: 'inline-flex', alignItems: 'center', gap: '8px',
-  minHeight: '40px', padding: '0 14px', borderRadius: '12px',
-  border: '1px solid var(--border)', background: 'var(--surface)',
-  color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650,
-  fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-}

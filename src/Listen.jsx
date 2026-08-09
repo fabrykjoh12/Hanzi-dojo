@@ -137,7 +137,7 @@ export default function Listen({ session, profile, track, onBack }) {
             <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
               This level needs at least a few words with audio before a listening quiz can run.
             </p>
-            <PrimaryButton onClick={onBack} icon={ArrowLeft}>Back home</PrimaryButton>
+            <PrimaryButton onClick={onBack} icon={ArrowLeft}>Done</PrimaryButton>
           </div>
         </div>
       </div>
@@ -170,7 +170,7 @@ export default function Listen({ session, profile, track, onBack }) {
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <SecondaryButton onClick={onBack} icon={ArrowLeft}>Home</SecondaryButton>
+              <SecondaryButton onClick={onBack} icon={ArrowLeft}>Done</SecondaryButton>
               <PrimaryButton onClick={restart} icon={RotateCcw}>Again</PrimaryButton>
             </div>
           </div>

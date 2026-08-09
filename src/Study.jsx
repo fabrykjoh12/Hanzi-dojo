@@ -1245,7 +1245,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       </h1>
 
       <div style={{ ...railStyle, display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <HeaderIconButton icon={X} label="Exit session" onClick={exitSession} />
+        <HeaderIconButton icon={X} label="Close study session" onClick={exitSession} />
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* The rail is the session's composition, not one flat number: work
               done, then the new / learning / due cards still ahead. It is fully

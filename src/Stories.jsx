@@ -254,7 +254,7 @@ function StoriesHero({ hero, accentHex, fontFamily, isMobile, levelLabelOf }) {
 // ─── MAIN STORIES COMPONENT ────────────────────────────────────────────────
 
 export default function Stories({
-  session, profile, track, onBack, onNavigate, initialStoryId, initialStoryWords,
+  session, profile, track, onNavigate, initialStoryId, initialStoryWords,
   initialStoryFirstMission, onInitialStoryConsumed, routeKind = 'browse',
   routeStoryId = null, routeSeriesKey = null, onStoryRoute, onSeriesRoute, onBrowseRoute,
 }) {
@@ -727,7 +727,7 @@ export default function Stories({
             if (onBrowseRoute) onBrowseRoute()
           }
         }}
-        onHome={onBack}
+        onHome={onNavigate ? () => onNavigate('home') : null}
         onPractice={onNavigate ? (words) => onNavigate('fillblank', { practiceWords: words }) : null}
         onStudy={onNavigate ? () => onNavigate('study') : null}
         todayWords={todayWords}

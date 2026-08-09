@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import {
   Palette, Sun, Moon, Keyboard, Eye,
   Volume2, BookOpenCheck, Gauge, Bell, HardDrive, Trash2, CheckCircle2,
-  MessagesSquare, ArrowUpRight, Brain, ArrowLeft, Compass,
+  MessagesSquare, ArrowUpRight, Brain, Compass,
 } from 'lucide-react'
 import { RETENTION_PRESETS, presetForRetention, setTargetRetention } from './srs'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
@@ -17,6 +17,7 @@ import { audioCount, estimateStorage, clearDownloads, offlineAvailable } from '.
 import { resetTourSeen } from './tour'
 import { pendingWrites } from './syncQueue'
 import { buildLabel } from './version'
+import AppBar from './AppBar'
 
 // The picker shows times the user actually recognizes ("9:00 AM" local),
 // while reminder_hour_utc stores UTC for the sender script — convert at the
@@ -47,19 +48,6 @@ function getLanguageDetails(profile) {
   }
 }
 
-function BackButton({ onClick }) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} style={{
-      display: 'inline-flex', alignItems: 'center', gap: '8px',
-      minHeight: '40px', padding: '0 14px', borderRadius: '12px',
-      border: '1px solid var(--border)', background: hovered ? 'var(--surface-2)' : 'var(--surface)',
-      color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-    }}>
-      <ArrowLeft size={17} strokeWidth={1.85} color="var(--text-muted)" /> Home
-    </button>
-  )
-}
 
 export default function Settings({ session, profile, onUpdate, onBack }) {
   const { accentHex, isJapanese } = getLanguageDetails(profile)
@@ -155,7 +143,7 @@ export default function Settings({ session, profile, onUpdate, onBack }) {
   return (
     <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
       <div style={{ maxWidth: '760px', margin: '0 auto', padding: isMobile ? '32px 16px 56px' : '52px 32px 72px', position: 'relative', zIndex: 1 }}>
-        {onBack && <BackButton onClick={onBack} />}
+        {onBack && <AppBar kind="back" onBack={onBack} sticky={false} />}
         <PageHeader title="Settings" meta="Preferences" style={{ marginTop: onBack ? '18px' : 0 }} />
         <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 0 22px', maxWidth: '560px' }}>
           Tune how studying feels. Daily goal and reset controls live in Profile.

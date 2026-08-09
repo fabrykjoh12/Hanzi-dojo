@@ -7,6 +7,7 @@ import { isMastered } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import { ArrowLeft, ArrowRight, Globe2, Plus, RefreshCw } from 'lucide-react'
 import { track, EVENTS } from './analytics'
+import AppBar from './AppBar'
 
 // Built from the shared language config so a new language shows up here for free.
 const LANGUAGES = languageList().map(t => ({
@@ -450,7 +451,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
   if (loadError) {
     return (
       <Shell accentHex={activeLang.accent}>
-        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+        <AppBar kind="back" onBack={onBack} sticky={false} />
         <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ textAlign: 'center', maxWidth: '380px' }}>
             <div style={{
@@ -572,7 +573,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
 
   return (
     <Shell accentHex={activeLang.accent}>
-      <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+      <AppBar kind="back" onBack={onBack} sticky={false} />
 
       <div style={{ margin: '32px 0 26px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: activeLang.accent, fontSize: '13px', fontWeight: 850, marginBottom: '10px' }}>

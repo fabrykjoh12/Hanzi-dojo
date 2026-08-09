@@ -7,7 +7,7 @@ import { buildPracticePlan } from './practicePlan'
 import { speechRecognitionSupported } from './speechSupport'
 import { useIsMobile } from './useIsMobile'
 import {
-  ArrowLeft, ArrowRight, AlertTriangle, Headphones, PenLine,
+  ArrowRight, AlertTriangle, Headphones, PenLine,
   AlignLeft, Blocks, Music2, Languages, Brush, Play, GraduationCap, BookA, ScanText, Mic, Search, Repeat2,
   ListChecks, ChevronRight,
 } from 'lucide-react'
@@ -67,7 +67,7 @@ function tintBorder(color, pct) {
   return 'color-mix(in srgb, ' + color + ' ' + pct + '%, var(--border))'
 }
 
-export default function Practice({ profile, track, counts, onNavigate, onBack }) {
+export default function Practice({ profile, track, counts, onNavigate }) {
   const isMobile = useIsMobile()
   const theme = languageTheme(profile.active_language)
   const accentHex = theme.accentHex
@@ -91,8 +91,6 @@ export default function Practice({ profile, track, counts, onNavigate, onBack })
 
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto', padding: isMobile ? '24px 16px 40px' : '44px 32px 60px' }}>
-      <BackButton onClick={onBack} />
-
       <PageHeader
         title="Practice"
         meta={systemLabel + ' · ' + levelLabel}
@@ -263,16 +261,3 @@ function ToolRow({ tool, accentHex, first, onClick }) {
   )
 }
 
-function BackButton({ onClick }) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} style={{
-      display: 'inline-flex', alignItems: 'center', gap: '8px',
-      minHeight: '44px', padding: '0 14px', borderRadius: '12px',
-      border: '1px solid var(--border)', background: hovered ? 'var(--surface-2)' : 'var(--surface)',
-      color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-    }}>
-      <ArrowLeft size={17} strokeWidth={1.85} color="var(--text-muted)" /> Home
-    </button>
-  )
-}

@@ -21,6 +21,7 @@ import { searchDict, getDictEntryById, getDictEntryByWord, addDictEntryToDeck, i
 import DictEntryView from './DictEntryView'
 import { sheetOverlayStyle, sheetShellStyle, sheetHeaderStyle, sheetHandleStyle, sheetBodyStyle } from './sheetLayout'
 import { ArrowLeft, Search, Clock, X, WifiOff, AlertCircle } from 'lucide-react'
+import AppBar from './AppBar'
 
 // Built-in dictionary: search ANY word in the current language (every level, not
 // just your own), hear it, and add it to your deck — the same lookup sheet the
@@ -408,9 +409,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
 
   return (
     <div style={shell}>
-      <button onClick={onBack} style={ghostBtn}>
-        <ArrowLeft size={17} strokeWidth={1.85} color="var(--text-muted)" /> Practice
-      </button>
+      <AppBar kind="back" onBack={onBack} sticky={false} />
 
       <PageHeader
         title="Look up any word"
@@ -676,7 +675,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
             <div style={sheetHandleStyle()} />
             <div style={{ ...sheetHeaderStyle(), minHeight: TAP + 'px' }}>
               {entryStack.length > 1
-                ? <button onClick={() => setEntryStack(s => s.slice(0, -1))} style={ghostBtn}><ArrowLeft size={16} strokeWidth={1.85} color="var(--text-muted)" /> Back</button>
+                ? <button onClick={() => setEntryStack(s => s.slice(0, -1))} aria-label="Back to the previous entry" style={ghostBtn}><ArrowLeft size={16} strokeWidth={1.85} color="var(--text-muted)" /> Back</button>
                 : <span />}
               <button onClick={closeEntry} aria-label="Close entry" style={{
                 width: TAP + 'px', height: TAP + 'px', display: 'flex', alignItems: 'center', justifyContent: 'center',

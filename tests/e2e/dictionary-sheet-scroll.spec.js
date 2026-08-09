@@ -78,8 +78,10 @@ for (const size of [{ width: 390, height: 844 }, { width: 360, height: 640 }]) {
       expect(reachable).toBe(true);
 
       // Clicking it really does drill down rather than hitting the nav.
+      // Named precisely: the screen's own header Back exists too now (the
+      // shared AppBar), and this assertion is about the SHEET's control.
       await last.click();
-      await expect(page.getByRole('button', { name: 'Back' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Back to the previous entry' })).toBeVisible();
     });
 
     test('the close button stays pinned while the body scrolls', async ({ page }) => {

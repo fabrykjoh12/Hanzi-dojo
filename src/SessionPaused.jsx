@@ -8,10 +8,12 @@ import { MICRO, NUM, flatPanel } from './designTokens'
 // anywhere — otherwise the first press on the most focused screen in the app
 // jumped to Home, which is not "leaving the session", it is leaving Cards.
 //
-// Nothing is lost by pausing: cards are written as they are graded, and the
-// Cards tab root is persistent now, so the queue is still in memory. This screen
-// is the queue made visible — the state the session was always in, with the two
-// things a learner can do about it.
+// Nothing is lost by dismissing the session: cards are written as they are
+// graded, and the Cards tab root is persistent now, so the queue is still in
+// memory. This screen is the queue made visible — the state the session was
+// always in, with the two things a learner can do about it, and an explicit
+// line saying the work is safe so the absence of a confirmation dialog reads as
+// deliberate rather than careless.
 export default function SessionPaused({ studied, remaining, accentHex, onResume, onFinish }) {
   return (
     <div style={{ maxWidth: '440px', margin: '0 auto', padding: '48px 16px 40px' }}>
@@ -19,20 +21,22 @@ export default function SessionPaused({ studied, remaining, accentHex, onResume,
         <span style={{ ...MICRO, color: 'var(--text-faint)' }}>Session paused</span>
 
         <div style={{
-          ...NUM, fontSize: '40px', fontWeight: 700, color: 'var(--text)',
-          lineHeight: 1, margin: '14px 0 6px', letterSpacing: '-0.03em',
+          fontSize: '19px', fontWeight: 700, color: 'var(--text)',
+          lineHeight: 1.3, margin: '12px 0 8px',
         }}>
-          {remaining}
+          <span style={NUM}>{studied}</span>
+          {' reviewed'}
+          <span style={{ color: 'var(--text-faint)', fontWeight: 500 }}>{' · '}</span>
+          <span style={NUM}>{remaining}</span>
+          {' remaining'}
         </div>
-        <div style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-          {remaining === 1 ? 'card still waiting' : 'cards still waiting'}
-          {studied > 0 && (
-            <>
-              {' · '}
-              <span style={NUM}>{studied}</span>
-              {' reviewed, and saved'}
-            </>
-          )}
+
+        {/* The reason there is no "are you sure?" here: there is nothing to be
+            sure about. Cards are written the moment they are graded. Saying so
+            plainly is what makes the absence of a confirmation feel deliberate
+            rather than careless. */}
+        <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+          Your progress has been saved.
         </div>
 
         <button
