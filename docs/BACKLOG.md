@@ -10,6 +10,32 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+## Home is the next cache migration (recorded 2026-08-09)
+
+Measured, not estimated: **one visit to Home costs ~34 Supabase requests**, and
+it pays them again every time the Home tab becomes visible. The persistent-tab
+shell (Phase 2 commit 2) means a tab root keeps its state but re-runs its
+effects on every show — so Home's data, which still lives in mount effects
+(`loadProfile` via `shouldRefreshHome`, then `getDailyStoryCard` and
+`getSessionRewardTeaser` inside `Home.jsx`), reconnects each time.
+
+Stories was migrated to `dataCache.js` in the same commit and now costs **zero**
+requests on return; Home is the same job with the same tools:
+
+- `home:counts` (`getHomeCounts`), `home:reward` (`getSessionRewardTeaser`),
+  `home:dailyStory` (`getDailyStoryCard`) as cache keys — the names are already
+  reserved in NAV-MODEL §3.2.
+- `Study.jsx` already publishes `invalidate('home:')` when a session finishes,
+  so the invalidation half exists and is unused.
+- `getDailyStoryCard` is fetched and then thrown away for any learner with an
+  active series (`Home.jsx` renders it only when `rewardTeaser` is null) — worth
+  fixing in the same pass rather than caching a wasted query.
+- Resume-from-background rules (local-midnight crossing, 15-minute staleness)
+  are specified in NAV-MODEL §3.5 and not implemented anywhere yet.
+
+The bar to clear: **Home → Stories → Home must not cost dozens of requests
+merely because Home became visible again.**
+
 ## Competitive strategy — pick up here (2026-08-08)
 
 The full deep competitive analysis lives in
