@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import {
   Palette, Sun, Moon, Keyboard, Eye,
   Volume2, BookOpenCheck, Gauge, Bell, HardDrive, Trash2, CheckCircle2,
-  MessagesSquare, ArrowUpRight, Brain, ArrowLeft,
+  MessagesSquare, ArrowUpRight, Brain, ArrowLeft, Compass,
 } from 'lucide-react'
 import { RETENTION_PRESETS, presetForRetention, setTargetRetention } from './srs'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
@@ -14,6 +14,7 @@ import { languageTheme } from './languageTheme'
 import { PageHeader } from './panels'
 import { pushSupported, enableReminders, disableReminders, setReminderHour } from './push'
 import { audioCount, estimateStorage, clearDownloads, offlineAvailable } from './offline'
+import { resetTourSeen } from './tour'
 import { pendingWrites } from './syncQueue'
 import { buildLabel } from './version'
 
@@ -283,6 +284,9 @@ export default function Settings({ session, profile, onUpdate, onBack }) {
           {/* Offline downloads + storage */}
           <OfflineStorageCard accentHex={accentHex} />
 
+          {/* Replay the first-run tour */}
+          <TourReplayCard accentHex={accentHex} />
+
           {/* Community — hidden until a real Discord invite is set in community.js */}
           {isDiscordConfigured() && (
             <Card
@@ -315,6 +319,37 @@ export default function Settings({ session, profile, onUpdate, onBack }) {
         </div>
       </div>
     </div>
+  )
+}
+
+// A quiet row that clears the tour's seen state (tour.js) so the coach marks
+// show once more on Home and Stories — for anyone who skipped too fast.
+function TourReplayCard({ accentHex }) {
+  const [done, setDone] = useState(false)
+  const replay = () => { resetTourSeen().then(() => setDone(true)) }
+  return (
+    <Card
+      icon={Compass}
+      title="App tour"
+      text="The short walkthrough that points out where things live on Home and Stories."
+      accentHex={accentHex}
+    >
+      <button
+        onClick={replay}
+        disabled={done}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: '8px',
+          height: '40px', padding: '0 16px', borderRadius: '12px',
+          border: '1px solid var(--border)', background: 'var(--surface-2)',
+          color: 'var(--text)', fontSize: '13px', fontWeight: 700,
+          fontFamily: 'Inter, sans-serif', cursor: done ? 'default' : 'pointer',
+        }}
+      >
+        {done
+          ? <><CheckCircle2 size={16} strokeWidth={2} color="#2F9E6D" /> It will show again on your next visit</>
+          : <><Compass size={16} strokeWidth={2} /> Replay the app tour</>}
+      </button>
+    </Card>
   )
 }
 

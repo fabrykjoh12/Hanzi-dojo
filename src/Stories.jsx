@@ -22,6 +22,8 @@ import StoryReader from './StoryReader'
 import StoryCover from './StoryCover'
 import StoryPoster from './StoryPoster'
 import SeriesDetail from './SeriesDetail'
+import TourOverlay from './TourOverlay'
+import { maybeStartTour, markTourSeen } from './tour'
 import {
   ArrowRight, BookOpen, CheckCircle2, ChevronLeft, ChevronRight, CloudOff, Library, RefreshCw, Zap,
 } from 'lucide-react'
@@ -68,7 +70,7 @@ function posterItemStyle(isMobile) {
   }
 }
 
-function ShelfRow({ id, title, subtitle, isMobile, children }) {
+function ShelfRow({ id, title, subtitle, isMobile, children, dataTour }) {
   const railRef = useRef(null)
   const scroll = (direction) => {
     const rail = railRef.current
@@ -77,7 +79,7 @@ function ShelfRow({ id, title, subtitle, isMobile, children }) {
     rail.scrollBy({ left: direction * Math.max(rail.clientWidth * 0.78, 280), behavior: reduced ? 'auto' : 'smooth' })
   }
   return (
-    <section aria-labelledby={id} className="hd-rise" style={{ minWidth: 0 }}>
+    <section aria-labelledby={id} data-tour={dataTour} className="hd-rise" style={{ minWidth: 0 }}>
       <div style={{ display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: '16px', marginBottom: '10px' }}>
         <div style={{ minWidth: 0 }}>
           <h2 id={id} style={{ margin: 0, color: 'var(--text)', fontSize: isMobile ? '17px' : '19px', fontWeight: 800, letterSpacing: '-0.02em' }}>
@@ -195,6 +197,7 @@ function StoriesHero({ hero, accentHex, fontFamily, isMobile, levelLabelOf }) {
       compact={isMobile}
       onClick={hero.onAction}
       style={{ margin: '0 0 26px', minHeight: isMobile ? '280px' : '340px' }}
+      dataTour="stories-hero"
     >
       {({ hovered }) => (
         <div style={{ position: 'relative', minHeight: isMobile ? '280px' : '340px', display: 'flex', alignItems: 'end' }}>
@@ -551,6 +554,21 @@ export default function Stories({
   }, [loading, loadFailed, routeKind, routeStoryId, routeSeriesKey, stories, sections, selectedStory?.id, selectedArc?.key, view, track, accentHex, onBrowseRoute])
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  // First-visit tour of the library — browse view only, never over the reader
+  // or a series page, and only once (rules in tour.js). The delay lets the
+  // shelf paint before anything is pointed at.
+  const [tourSteps, setTourSteps] = useState(null)
+  const profileCreatedAt = profile.created_at
+  useEffect(() => {
+    if (loading || view !== 'browse') return undefined
+    let alive = true
+    const timer = setTimeout(() => {
+      maybeStartTour({ screen: 'stories', profileCreatedAt })
+        .then(steps => { if (alive && steps) setTourSteps(steps) })
+    }, 600)
+    return () => { alive = false; clearTimeout(timer) }
+  }, [loading, view, profileCreatedAt])
+
   // ── Shared actions ───────────────────────────────────────────────────────
 
   const levelLabelFor = (story) => getLevelLabel(track.language, track.system, story.level == null ? track.current_level : story.level)
@@ -882,6 +900,7 @@ export default function Stories({
       <ShelfRow
         key={'level-' + sec.level}
         id={isCurrent ? 'top-picks' : 'level-' + sec.level}
+        dataTour={isCurrent ? 'stories-shelf' : undefined}
         title={isCurrent ? 'Top picks for you' : getLevelLabel(track.language, track.system, sec.level)}
         subtitle={isCurrent
           ? getLevelLabel(track.language, track.system, sec.level) + ' · easiest to read first'
@@ -968,12 +987,24 @@ export default function Stories({
                   title={'Coming up in ' + getLevelLabel(track.language, track.system, aheadSection.level)}
                   subtitle={'Unlocks when you pass the ' + getLevelLabel(track.language, track.system, track.current_level) + ' test.'}
                   isMobile={isMobile}
+                  dataTour="stories-ahead"
                 >
                   {upcomingUnits.map(posterFor)}
                 </ShelfRow>
               )}
             </div>
           </>
+        )}
+
+        {tourSteps && (
+          <TourOverlay
+            steps={tourSteps}
+            accentHex={accentHex}
+            onClose={(outcome) => {
+              setTourSteps(null)
+              if (outcome) markTourSeen('stories', outcome)
+            }}
+          />
         )}
       </div>
     </div>

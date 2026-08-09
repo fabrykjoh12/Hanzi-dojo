@@ -22,7 +22,7 @@ let litCount = 0
 // function receiving { hovered } so a CTA inside shares the panel's hover.
 export function HeroPanel({
   accentHex, seed = 'a', watermark, watermarkFont,
-  onClick, children, padding, compact = false, style = {},
+  onClick, children, padding, compact = false, style = {}, dataTour,
 }) {
   const [hovered, setHovered] = useState(false)
   const interactive = typeof onClick === 'function'
@@ -61,6 +61,7 @@ export function HeroPanel({
         ...style,
       }}
       data-hovered={hovered ? '' : undefined}
+      data-tour={dataTour}
     >
       {/* Rule 1: the atmosphere lives here and nowhere else on the screen. */}
       <InkWash seed={seed} opacity={0.09} />
@@ -110,9 +111,9 @@ export function HeroAction({ label, hovered, icon: Icon, accentHex }) {
 
 // A flat supporting block. Deliberately plain — it is the quiet around the
 // hero, and quiet is what makes the hero read.
-export function Panel({ children, padding, radius, style = {}, className = '' }) {
+export function Panel({ children, padding, radius, style = {}, className = '', dataTour }) {
   return (
-    <div className={('hd-rise ' + className).trim()} style={{ ...flatPanel({ radius, padding }), ...style }}>
+    <div className={('hd-rise ' + className).trim()} data-tour={dataTour} style={{ ...flatPanel({ radius, padding }), ...style }}>
       {children}
     </div>
   )

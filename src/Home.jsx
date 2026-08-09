@@ -10,6 +10,8 @@ import { HeroPanel, HeroAction, Panel, Eyebrow, PageHeader } from './panels'
 import { rhythmSummary, weekdayInitial } from './studyRhythm'
 import { forecastSummary } from './reviewForecast'
 import { sessionEstimateLabel } from './sessionEstimate'
+import { maybeStartTour, markTourSeen } from './tour'
+import TourOverlay from './TourOverlay'
 import { MICRO, NUM } from './designTokens'
 
 // ── Home ──────────────────────────────────────────────────────────────────
@@ -74,6 +76,22 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
     return () => { alive = false }
   }, [userId, track, learned])
 
+  // First-run tour: once per device for a new account, on the first Home render
+  // (onboarding and the first-mission welcome replace Home entirely, so the
+  // tour can never sit over them). All the rules live in tour.js; the short
+  // delay lets the screen settle — and the story hand-off arrive — before
+  // anything gets pointed at.
+  const [tourSteps, setTourSteps] = useState(null)
+  const profileCreatedAt = profile.created_at
+  useEffect(() => {
+    let alive = true
+    const timer = setTimeout(() => {
+      maybeStartTour({ screen: 'home', profileCreatedAt })
+        .then(steps => { if (alive && steps) setTourSteps(steps) })
+    }, 600)
+    return () => { alive = false; clearTimeout(timer) }
+  }, [profileCreatedAt])
+
   // One action. Cards while there are cards; once the queue is clear the next
   // step in the daily loop is reading, so the button hands over to Stories.
   // When the counts failed to load, the zeros are meaningless — keep the button
@@ -115,6 +133,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         compact={isMobile}
         onClick={() => onNavigate(action.go)}
         style={{ marginBottom: '14px' }}
+        dataTour="home-queue"
       >
         {({ hovered }) => (
           <QueueBody
@@ -137,6 +156,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         <Panel
           padding={isMobile ? '14px 16px' : '15px 20px'}
           style={{ marginBottom: '14px', animationDelay: '80ms', cursor: 'pointer' }}
+          dataTour="home-then-read"
         >
           <div
             role="button"
@@ -180,6 +200,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         <Panel
           padding={isMobile ? '14px 16px' : '15px 20px'}
           style={{ marginBottom: '14px', animationDelay: '80ms', cursor: 'pointer' }}
+          dataTour="home-then-read"
         >
           <div
             role="button"
@@ -214,6 +235,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
       <Panel
         padding={isMobile ? '16px 16px 14px' : '18px 20px 16px'}
         style={{ marginBottom: '14px', animationDelay: '140ms' }}
+        dataTour="home-week"
       >
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '14px' }}>
           <Eyebrow>Your week</Eyebrow>
@@ -286,6 +308,17 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
           </div>
         </div>
       </Panel>
+
+      {tourSteps && (
+        <TourOverlay
+          steps={tourSteps}
+          accentHex={accentHex}
+          onClose={(outcome) => {
+            setTourSteps(null)
+            if (outcome) markTourSeen('home', outcome)
+          }}
+        />
+      )}
     </div>
   )
 }
