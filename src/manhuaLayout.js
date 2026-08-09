@@ -405,6 +405,39 @@ export function estimateBubbleHeight(textLength, widthPx, opts) {
   return Math.max(content, actions ? BUBBLE_ACTIONS_HEIGHT : 0) + BUBBLE_CHROME + speaker + english
 }
 
+// Width for a balloon drawn in the gutter BELOW the art, as a percent of the
+// gutter rail it sits in. The old rule was a blind 62% cap — the overlay
+// default reused where there is no artwork to protect — and it broke short
+// dialogue: 62% of a 390px phone leaves ~132px of text after the 52px action
+// rail and 40px of balloon padding, so a six-character line like 你想吃什么？
+// wrapped into two orphaned rows inside a balloon spanning most of the screen.
+//
+// In the gutter the only job is to FIT THE WORDS: give a line that can be one
+// row the room to be one row, and aim longer copy at two or three balanced
+// rows. The balloon itself renders at max-content, so a generous cap only
+// permits the single row — it never inflates a short line into a banner.
+//
+// `withReadings` widens the per-character estimate: with pinyin scaffolding on
+// (the brand-new-learner worst case, every word carrying a ruby) a short
+// word's pinyin can be wider than its hanzi, and the row must not wrap for it.
+export function gutterBalloonWidth(textLength, opts) {
+  const o = opts || {}
+  const rail = o.railWidth > 0 ? o.railWidth : 362
+  const advance = o.withReadings === false ? HANZI_ADVANCE : HANZI_ADVANCE + 3
+  const chrome = 40 + BUBBLE_ACTIONS_WIDTH
+  const chars = Math.max(1, textLength || 1)
+  // The most characters one row can hold on this rail.
+  const most = Math.max(3, Math.floor((rail * 0.96 - chrome) / advance))
+  const lines = Math.ceil(chars / most)
+  const perLine = Math.ceil(chars / lines)
+  // One character of breathing room, same allowance the overlay layout uses.
+  const idealPx = (perLine + 1) * advance + chrome
+  return {
+    pct: Math.min(96, Math.max(34, (idealPx / rail) * 100)),
+    lines,
+  }
+}
+
 // Where a bubble goes, given the panel it belongs to and the column it is drawn
 // in. Returns { mode: 'overlay' | 'below', top, left, right, width } with
 // percentages for overlay and nothing positional for 'below'.

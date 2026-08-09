@@ -1,4 +1,4 @@
-import { PAPER, COLUMN_MAX, TYPE, TAP_TARGET } from './manhuaTokens'
+import { PAPER, COLUMN_MAX, TYPE, TAP_TARGET, stickyPaperBar } from './manhuaTokens'
 import { ArrowLeft } from 'lucide-react'
 
 // The episode's only chrome: where you are, what you're reading, how far in.
@@ -8,22 +8,13 @@ import { ArrowLeft } from 'lucide-react'
 // library link all live one tap back, on the story shelf, which is where a
 // reader looks for them anyway.
 //
-// Sticky, with the paper carried up behind it (a blur plus the page tone) so the
-// panels scroll under it without the title becoming unreadable over a dark
-// establishing shot.
+// Sticky, with the paper carried up behind it so the panels scroll under it
+// without the title becoming unreadable over a dark establishing shot.
+// Opaque, and it covers the notch — both rules, and why, live in
+// stickyPaperBar (manhuaTokens.js), where they are tested.
 export default function ManhuaHeader({ label, title, current, total, pct, onBack, accentHex, fontFamily }) {
   return (
-    <header style={{
-      // The shell <main> already pads the notch inset once (App.jsx), so this
-      // sticky header must NOT pad it again — it would sit ~47px low at
-      // scroll-0 on a notched phone. It offsets its PINNED position instead,
-      // which is the case the shell's padding can't cover: once stuck, the
-      // header is out of flow and would otherwise run under the status bar.
-      position: 'sticky', top: 'env(safe-area-inset-top, 0px)', zIndex: 5,
-      background: 'color-mix(in srgb, ' + PAPER.page + ' 88%, transparent)',
-      backdropFilter: 'saturate(140%) blur(12px)',
-      WebkitBackdropFilter: 'saturate(140%) blur(12px)',
-    }}>
+    <header data-manhua-header="true" style={stickyPaperBar(5)}>
       <div style={{
         maxWidth: COLUMN_MAX + 'px', margin: '0 auto',
         display: 'flex', alignItems: 'center', gap: '10px',

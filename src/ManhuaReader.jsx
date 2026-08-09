@@ -3,7 +3,7 @@ import { useStoryReaderCore } from './useStoryReaderCore'
 import {
   buildEpisode, panelArtSrc, visibleBubbles, revealLimit,
   readBeats, episodeProgress, isEpisodeComplete, bubbleLayout, panelAtReadingLine,
-  MAX_OVERLAY_WIDTH,
+  gutterBalloonWidth,
 } from './manhuaLayout'
 import { loadManhuaProgress, saveManhuaProgress, resumePanel } from './manhuaProgress'
 import { PAPER, COLUMN_MAX, GUTTER, manhuaAccent, manhuaFontStack } from './manhuaTokens'
@@ -251,14 +251,7 @@ export default function ManhuaReader(props) {
     const replyBelow = meta.textPlacement === 'hybrid' && bubble.kind === 'reply'
     let layout
     if (captionBelow) layout = { mode: 'below', variant: 'caption' }
-    else if (replyBelow) {
-      layout = {
-        mode: 'below',
-        variant: 'bubble-rail',
-        width: Math.min(bubble.width, MAX_OVERLAY_WIDTH),
-        side: bubble.side,
-      }
-    }
+    else if (replyBelow) layout = { mode: 'below', variant: 'bubble-rail', side: bubble.side }
     else if (forceBelow) layout = { mode: 'below' }
     else {
       layout = bubbleLayout(bubble, {
@@ -269,6 +262,22 @@ export default function ManhuaReader(props) {
         withEnglish: c.revealedEnglish.has(bubble.beat),
         withReadings: c.readingMode !== 'hidden',
       })
+    }
+    // A balloon in the gutter is sized by ITS WORDS, not by the authored
+    // overlay width — there is no artwork under it to protect, and the blind
+    // 62% cap is what wrapped a six-character line into two orphaned rows
+    // inside a balloon spanning most of the phone (see gutterBalloonWidth).
+    // The rail is the column minus its 12px paddings and the figcaption's 2px
+    // margins; using the narrower base errs the balloon slightly wider, which
+    // is the safe direction against wrapping.
+    if (layout.mode === 'below' && layout.variant !== 'caption') {
+      layout = {
+        ...layout,
+        width: gutterBalloonWidth(beat.text.length, {
+          railWidth: columnWidth - 28,
+          withReadings: c.readingMode !== 'hidden',
+        }).pct,
+      }
     }
     return {
       layout,
