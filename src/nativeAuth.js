@@ -19,6 +19,7 @@
 import { supabase } from './supabase'
 import { isNativeApp, APP_URL_SCHEME } from './nativeShell'
 import { openExternal } from './externalLink'
+import { RESET_PASSWORD_PATH } from './routes'
 
 // The app's own bundle ID. Apple issues a native identity token whose audience
 // is the bundle ID, so this is what Supabase must list under Client IDs.
@@ -101,19 +102,77 @@ export async function signInWithProvider(provider, deps = {}) {
   return { error: null }
 }
 
+// The parameters a returning auth link carries. GoTrue puts them in the query
+// for PKCE (`?code=…`) and in the fragment for an error, so both are read.
+// Hand-parsed rather than via `new URL`: the scheme here is a custom one
+// (`com.hanzidojo.app://`), and this has to behave identically in the WebView,
+// in Node under vitest, and for a half-formed URL the OS hands us.
+export function authParamsFromUrl(url) {
+  const s = typeof url === 'string' ? url : ''
+  const cut = s.search(/[?#]/)
+  if (cut === -1) return {}
+  const out = {}
+  for (const part of s.slice(cut + 1).split(/[&#?]/)) {
+    if (!part) continue
+    const eq = part.indexOf('=')
+    const key = eq === -1 ? part : part.slice(0, eq)
+    if (!key || out[key] !== undefined) continue
+    const raw = eq === -1 ? '' : part.slice(eq + 1)
+    try { out[key] = decodeURIComponent(raw.replace(/\+/g, ' ')) } catch { out[key] = raw }
+  }
+  return out
+}
+
+// The one-time code to exchange. NOT the URL: `exchangeCodeForSession` posts
+// whatever it is given as `auth_code`, so handing it the whole deep link makes
+// every exchange fail server-side — which is precisely how the reset screen
+// came back as the login screen (2026-08-09).
+export function authCodeFromUrl(url) {
+  return authParamsFromUrl(url).code || null
+}
+
+// GoTrue can also come back having refused the link outright — an expired or
+// already-used token arrives as `?error=access_denied&error_code=otp_expired`.
+// Reading it means saying what happened instead of attempting an exchange that
+// was never going to work.
+export function authLinkError(url) {
+  const p = authParamsFromUrl(url)
+  const message = p.error_description || p.error_code || p.error
+  return message || null
+}
+
 // Finish a sign-in — or a password recovery — from the deep link we were sent
 // back on. `recovery` tells the caller the learner arrived to CHOOSE a new
 // password, so it can land them on the reset screen instead of Home.
+//
+// On success supabase-js fires PASSWORD_RECOVERY on its own (it remembers that
+// the verifier was minted for a recovery), so App's auth listener puts the app
+// into reset mode without being told twice.
 export async function completeNativeAuth(url, deps = {}) {
   const client = deps.supabase || supabase
   if (!isAuthDeepLink(url)) return { error: null, handled: false, recovery: false }
   const recovery = isPasswordResetUrl(url)
+
+  const refused = authLinkError(url)
+  if (refused) return { error: new Error(refused), handled: true, recovery }
+
+  const code = authCodeFromUrl(url)
+  if (!code) return { error: new Error('That link carried no sign-in code.'), handled: true, recovery }
+
   try {
-    const { error } = await client.auth.exchangeCodeForSession(url)
+    const { error } = await client.auth.exchangeCodeForSession(code)
     return { error: error || null, handled: true, recovery }
   } catch (err) {
     return { error: err, handled: true, recovery }
   }
+}
+
+// Where the app should land after handling a returning auth link. Pure, so the
+// four outcomes (sign-in or recovery, worked or didn't) are pinned by tests
+// rather than living as branches inside the native bridge.
+export function authLandingPath({ error, recovery } = {}) {
+  if (error) return '/?auth=' + (recovery ? 'reset-failed' : 'failed')
+  return recovery ? RESET_PASSWORD_PATH : '/'
 }
 
 // Why a returning auth link did not work, in words a learner can act on.

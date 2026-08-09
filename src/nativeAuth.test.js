@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
   authRedirectTo, isAuthCallbackUrl, isPasswordResetUrl, isAuthDeepLink,
   signInWithProvider, completeNativeAuth, authNoticeFor, authNoticeFromSearch,
+  authCodeFromUrl, authLinkError, authParamsFromUrl, authLandingPath,
   signInWithAppleNative, randomNonce, NATIVE_AUTH_REDIRECT, NATIVE_RESET_REDIRECT,
   APP_BUNDLE_ID,
 } from './nativeAuth'
@@ -58,6 +59,46 @@ describe('isPasswordResetUrl', () => {
     expect(isAuthDeepLink('com.hanzidojo.app://password-reset?code=a')).toBe(true)
     expect(isAuthDeepLink('com.hanzidojo.app://auth-callback?code=a')).toBe(true)
     expect(isAuthDeepLink('com.hanzidojo.app://read/abc')).toBe(false)
+  })
+})
+
+describe('reading a returning link', () => {
+  it('pulls the code out of the query', () => {
+    expect(authCodeFromUrl('com.hanzidojo.app://password-reset?code=abc123')).toBe('abc123')
+    expect(authCodeFromUrl('com.hanzidojo.app://auth-callback/?code=a-b_c&x=1')).toBe('a-b_c')
+  })
+
+  it('is null when there is no code to exchange', () => {
+    expect(authCodeFromUrl('com.hanzidojo.app://password-reset')).toBe(null)
+    expect(authCodeFromUrl('com.hanzidojo.app://password-reset?error=access_denied')).toBe(null)
+    expect(authCodeFromUrl(undefined)).toBe(null)
+  })
+
+  it('reads an error GoTrue put in the query or the fragment', () => {
+    expect(authLinkError('com.hanzidojo.app://password-reset?error_description=Email+link+is+invalid'))
+      .toBe('Email link is invalid')
+    expect(authLinkError('com.hanzidojo.app://password-reset#error=access_denied'))
+      .toBe('access_denied')
+    expect(authLinkError('com.hanzidojo.app://password-reset?code=fine')).toBe(null)
+  })
+
+  it('decodes values and keeps the first of a repeated key', () => {
+    const p = authParamsFromUrl('x://y?a=one%20two&a=three&b=')
+    expect(p.a).toBe('one two')
+    expect(p.b).toBe('')
+  })
+})
+
+describe('authLandingPath', () => {
+  it('a recovery that worked goes to the password screen', () => {
+    expect(authLandingPath({ error: null, recovery: true })).toBe('/reset-password')
+  })
+  it('a sign-in that worked goes home', () => {
+    expect(authLandingPath({ error: null, recovery: false })).toBe('/')
+  })
+  it('a failure carries its reason, so the screen can explain itself', () => {
+    expect(authLandingPath({ error: new Error('x'), recovery: true })).toBe('/?auth=reset-failed')
+    expect(authLandingPath({ error: new Error('x'), recovery: false })).toBe('/?auth=failed')
   })
 })
 
@@ -141,15 +182,49 @@ describe('signInWithProvider', () => {
 })
 
 describe('completeNativeAuth', () => {
-  it('exchanges the one-time code for a session', async () => {
+  // The whole point. `exchangeCodeForSession` POSTs its argument as
+  // `auth_code`, so passing the deep-link URL (as this used to) fails every
+  // exchange server-side — the app then showed the login screen where the
+  // reset form belonged. It must receive the bare code.
+  it('exchanges the CODE — not the URL it arrived in', async () => {
     const exchangeCodeForSession = vi.fn(() => Promise.resolve({ error: null }))
     const { error, handled } = await completeNativeAuth(
       'com.hanzidojo.app://auth-callback?code=abc',
       { supabase: { auth: { exchangeCodeForSession } } }
     )
-    expect(exchangeCodeForSession).toHaveBeenCalledWith('com.hanzidojo.app://auth-callback?code=abc')
+    expect(exchangeCodeForSession).toHaveBeenCalledWith('abc')
     expect(handled).toBe(true)
     expect(error).toBe(null)
+  })
+
+  it('finds the code whatever else rides along in the URL', async () => {
+    const exchangeCodeForSession = vi.fn(() => Promise.resolve({ error: null }))
+    await completeNativeAuth(
+      'com.hanzidojo.app://password-reset/?foo=1&code=xyz-123&type=recovery',
+      { supabase: { auth: { exchangeCodeForSession } } }
+    )
+    expect(exchangeCodeForSession).toHaveBeenCalledWith('xyz-123')
+  })
+
+  it('refuses to exchange a link that carries no code', async () => {
+    const exchangeCodeForSession = vi.fn()
+    const { error, handled } = await completeNativeAuth('com.hanzidojo.app://password-reset', {
+      supabase: { auth: { exchangeCodeForSession } },
+    })
+    expect(handled).toBe(true)
+    expect(error).toBeTruthy()
+    expect(exchangeCodeForSession).not.toHaveBeenCalled()
+  })
+
+  it('reports GoTrue refusing the link, without a pointless round trip', async () => {
+    const exchangeCodeForSession = vi.fn()
+    const { error } = await completeNativeAuth(
+      'com.hanzidojo.app://password-reset?error=access_denied&error_code=otp_expired'
+        + '&error_description=Email+link+is+invalid+or+has+expired',
+      { supabase: { auth: { exchangeCodeForSession } } }
+    )
+    expect(exchangeCodeForSession).not.toHaveBeenCalled()
+    expect(String(error.message)).toMatch(/invalid or has expired/i)
   })
 
   it('ignores a deep link that is not a sign-in', async () => {
@@ -177,6 +252,13 @@ describe('completeNativeAuth', () => {
       supabase: { auth: { exchangeCodeForSession: () => Promise.reject(new Error('expired')) } },
     })
     expect(recovery).toBe(true)
+    expect(error).toBeTruthy()
+  })
+
+  it('surfaces a rejected exchange as an error, not a silent success', async () => {
+    const { error } = await completeNativeAuth('com.hanzidojo.app://password-reset?code=stale', {
+      supabase: { auth: { exchangeCodeForSession: () => Promise.resolve({ error: new Error('invalid request') }) } },
+    })
     expect(error).toBeTruthy()
   })
 
