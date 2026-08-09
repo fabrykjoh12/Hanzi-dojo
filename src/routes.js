@@ -33,6 +33,19 @@ export function isKnownView(view) {
   return KNOWN_VIEWS.indexOf(view) !== -1
 }
 
+// Where a password-recovery link lands. Kept here (not inlined) because two
+// unrelated places must agree on it: the native deep-link bridge navigates
+// here after exchanging the recovery code, and App renders the set-a-password
+// screen for it. It is deliberately NOT in KNOWN_VIEWS — it is a transient
+// state with no nav entry, and App intercepts it before the view switch.
+export const RESET_PASSWORD_PATH = '/reset-password'
+
+export function isResetPasswordPath(pathname) {
+  let p = pathname || '/'
+  if (p.startsWith('/')) p = p.slice(1)
+  return p.replace(/\/$/, '') === 'reset-password'
+}
+
 // Recognize the public story route (/read/<id>), which works signed-out.
 // Returns the story id, or null for any other path. Kept here (not in App)
 // so it's covered by the same route-mapping tests.

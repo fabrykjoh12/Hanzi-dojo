@@ -89,13 +89,33 @@ branch on the `VERCEL` env var; that branch is gone now that Vercel is the only
 host. Code still reads `import.meta.env.BASE_URL` rather than hardcoding `/`, so
 a future subpath host stays possible — keep it that way.
 
-### OAuth redirect (Supabase)
-- `Auth.jsx` passes `redirectTo: window.location.origin + import.meta.env.BASE_URL`, so Google login returns to whichever host the user came from.
-- Supabase only honors a `redirectTo` that is allow-listed. In Supabase → Authentication → URL Configuration → **Redirect URLs**, keep:
-  - `https://hanzi-dojo.com/**`
-  - `https://hanzi-dojo-jet.vercel.app/**`
-  - `http://localhost:5173/**`
-- The **Site URL** should be `https://hanzi-dojo.com`. Adding a new host = add its URL to the Redirect URLs allow-list. *(Setting Site URL + the allowlist is still an open dashboard task — see `docs/BACKLOG.md` → Auth / email / hosting.)*
+### Auth redirects (Supabase) — web AND the store apps
+
+Everything that returns a learner to us — Google/Apple OAuth, the signup
+confirmation email, the password-reset email — goes through
+`authRedirectTo()` in `src/nativeAuth.js`. It returns the page origin on the
+web and the app's **own URL scheme** inside the store apps.
+
+⚠️ **`window.location.origin` is not a usable redirect inside the app.** In the
+Capacitor WebView it is `capacitor://localhost` (iOS) / `https://localhost`
+(Android). Supabase refuses a redirect that is not allow-listed, **consumes the
+one-time token anyway**, and bounces to the Site URL with an error and no
+tokens — so the learner lands on the public website's welcome screen with no
+way to finish. That is exactly how password reset broke (fixed 2026-08-09);
+never reintroduce a bare `window.location.origin` here.
+
+In Supabase → Authentication → URL Configuration → **Redirect URLs**, keep:
+
+| Entry | Used by |
+|-------|---------|
+| `https://hanzi-dojo.com/**` | the web app |
+| `https://hanzi-dojo-jet.vercel.app/**` | preview deploys |
+| `http://localhost:5173/**` | local dev |
+| **`com.hanzidojo.app://**`** | **the iOS/Android apps — OAuth callbacks, signup confirmation, and password reset. Without it every emailed link from the app dead-ends on the website.** |
+
+- The **Site URL** should be `https://hanzi-dojo.com`. Adding a new host = add its URL to the Redirect URLs allow-list.
+- The app's two callback paths (`nativeAuth.js`): `com.hanzidojo.app://auth-callback` for sign-in, `com.hanzidojo.app://password-reset` for recovery. They are separate so the app can tell "signed in" from "signed in only to choose a new password" — GoTrue's PKCE redirect carries no reliable `type=recovery` marker.
+- **PKCE is per-device.** A link requested in the app can only be completed in that app, on that device: the verifier lives in its storage. Opening it on a laptop cannot work, so the app says so (`?auth=reset-failed`) instead of failing silently.
 
 ### Failure-mode cheat sheet
 | Symptom | Cause | Fix |
@@ -104,6 +124,7 @@ a future subpath host stays possible — keep it that way.
 | Blank/white page, 404 on `/assets/*` | `base` no longer resolves to `/` | check `base` in `vite.config.js` |
 | Deep link 404s on refresh | `vercel.json` rewrite missing | restore the `/(.*)` → `/index.html` rewrite |
 | Google login bounces to localhost | host URL not in Supabase Redirect URLs | add `https://<host>/**` to the allow-list |
+| Reset/confirmation email opened **from the app** lands on the website's welcome screen | `com.hanzidojo.app://**` missing from the Redirect URLs allow-list — GoTrue rejected the redirect and fell back to the Site URL | add it to the allow-list (the app itself has sent the right URL since 2026-08-09) |
 | Env var change had no effect | Vercel bakes `VITE_*` in at build time | redeploy; env changes only apply to **new** builds |
 
 ### PWA / installable + offline

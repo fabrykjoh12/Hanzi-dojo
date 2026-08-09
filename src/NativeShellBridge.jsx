@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { isNativeApp, routeFromDeepLink, backAction } from './nativeShell'
-import { isAuthCallbackUrl, completeNativeAuth } from './nativeAuth'
+import { isAuthDeepLink, completeNativeAuth } from './nativeAuth'
+import { RESET_PASSWORD_PATH } from './routes'
 
 // Wires the Capacitor native shell into the router: deep links (universal
 // links, OAuth/magic-link callbacks) route into the SPA instead of opening a
@@ -27,12 +28,22 @@ export default function NativeShellBridge() {
         if (disposed) return
         App.addListener('appUrlOpen', (event) => {
           const url = event && event.url
-          // A provider returning from sign-in carries a one-time code, not a
-          // route: exchange it for a session and land on Home. App.jsx's auth
-          // listener picks the session up and renders the app.
-          if (isAuthCallbackUrl(url)) {
-            completeNativeAuth(url).then(({ error }) => {
-              navigate(error ? '/?auth=failed' : '/', { replace: true })
+          // An emailed or provider link returning to us carries a one-time
+          // code, not a route: exchange it for a session, then land where that
+          // link was FOR — Home for a sign-in, the set-a-new-password screen
+          // for a recovery. App.jsx's auth listener picks the session up.
+          //
+          // A failed exchange is not silent: the code expires after an hour,
+          // and PKCE cannot complete on a device other than the one that asked
+          // for the link — both are things a learner needs told, not a quiet
+          // bounce to the welcome screen.
+          if (isAuthDeepLink(url)) {
+            completeNativeAuth(url).then(({ error, recovery }) => {
+              if (error) {
+                navigate('/?auth=' + (recovery ? 'reset-failed' : 'failed'), { replace: true })
+                return
+              }
+              navigate(recovery ? RESET_PASSWORD_PATH : '/', { replace: true })
             })
             return
           }

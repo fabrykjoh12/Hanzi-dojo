@@ -256,7 +256,11 @@ function MethodCard({ icon: Icon, title, children, accent }) {
 // Shown to signed-out visitors instead of a bare login card: states what the
 // product is, who it's for, and why it's different — then hands off to the
 // existing Auth screen. Returning users get there in one click ("Log in").
-export default function Landing() {
+// `authNotice` — set when the visitor arrived from an auth link that could not
+// be completed (an expired or wrong-device password-reset link). It skips the
+// wizard entirely: someone who came here to finish resetting a password should
+// land on the form, with the reason, not at the top of an onboarding funnel.
+export default function Landing({ authNotice = null }) {
   // The first-encounter flow (owner's design, 2026-08-08): entrance →
   // flashcard (你好, flipped) → micro-story (met in a tea shop, used once) →
   // completion → the three setup questions → the assembled path → THEN the
@@ -274,6 +278,7 @@ export default function Landing() {
   // the form should land on the welcome, not be trapped at signup).
   const RESUMABLE = ['flashcard', 'story', 'firstdone', 'experience', 'purpose', 'minutes', 'building']
   const [mode, setModeRaw] = useState(() => {
+    if (authNotice) return 'auth'
     const saved = readPreloginPrefs()
     if (saved && RESUMABLE.indexOf(saved.wizardStep) !== -1) return saved.wizardStep
     return initialLandingMode(isNativeApp())
@@ -576,6 +581,7 @@ export default function Landing() {
     return (
       <Auth
         intro={intro}
+        notice={authNotice}
         onBack={() => setMode(experience ? 'minutes' : initialLandingMode(isNativeApp()))}
       />
     )

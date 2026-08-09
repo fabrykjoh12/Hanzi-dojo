@@ -8,28 +8,34 @@ import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 import { legalLinkProps } from './externalLink'
-import { signInWithProvider, signInWithAppleNative } from './nativeAuth'
+import { signInWithProvider, signInWithAppleNative, authRedirectTo } from './nativeAuth'
 import { isNativeApp } from './nativeShell'
 import { FLAGS } from './flags'
 import { useIsMobile } from './useIsMobile'
 
-export default function Auth({ intro = null, onBack = null }) {
+export default function Auth({ intro = null, onBack = null, notice = null }) {
   const isMobile = useIsMobile()
   // Arriving from the pre-login wizard (language + reason chosen) means the user
   // is here to create an account, so default to the Sign-up tab in that case.
   const [isSignup, setIsSignup] = useState(Boolean(intro))
-  const [resetMode, setResetMode] = useState(false)
+  // A returning reset link that could not be completed opens straight into the
+  // "email me a link" form, with the reason on screen — the learner's next
+  // action is to request a fresh one.
+  const [resetMode, setResetMode] = useState(Boolean(notice))
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState(notice || '')
   const [messageKind, setMessageKind] = useState('error')   // 'error' | 'success'
 
-  // Return to wherever the app is actually running — the GitHub Pages URL in
-  // production, localhost in dev — instead of Supabase's default Site URL.
-  // BASE_URL is '/Hanzi-dojo/' in the prod build and '/' during dev.
-  const redirectTo = window.location.origin + import.meta.env.BASE_URL
+  // Where an emailed link must come back to. On the web that is this origin;
+  // inside the store apps it is the app's own URL scheme, because
+  // `window.location.origin` there is `capacitor://localhost` — a URL Supabase
+  // rejects, which silently dumped the learner on the public website with no
+  // way to finish (see authRedirectTo).
+  const redirectTo = authRedirectTo()
+  const recoveryRedirectTo = authRedirectTo({ kind: 'recovery' })
 
   const handleAuth = async (e) => {
     e.preventDefault()
@@ -87,7 +93,7 @@ export default function Auth({ intro = null, onBack = null }) {
     }
     setLoading(true)
     setMessage('')
-    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo })
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo: recoveryRedirectTo })
     if (error) {
       setMessageKind('error')
       setMessage(error.message)

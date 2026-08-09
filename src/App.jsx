@@ -5,8 +5,9 @@ import ErrorBoundary from './ErrorBoundary'
 import { getHomeCounts } from './homeCounts'
 import {
   pathToView, viewToPath, isKnownView, readStoryId, isAssessmentPath, trustPageKey,
-  storyRoute, storyPath, seriesPath,
+  storyRoute, storyPath, seriesPath, isResetPasswordPath,
 } from './routes'
+import { authNoticeFromSearch } from './nativeAuth'
 import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
 import { isBootstrapFailure } from './supabaseErrors'
 import { ensureLanguageFont } from './fontLoader'
@@ -372,7 +373,10 @@ export default function App() {
   }
 
   if (!session) {
-    return <Landing />
+    // A returning auth link that could not be completed (expired, or opened on
+    // a device that never held the PKCE verifier) explains itself on the
+    // sign-in screen rather than looking like a broken app.
+    return <Landing authNotice={authNoticeFromSearch(location.search)} />
   }
 
   // A signed-in visitor on /read/:id is being redirected into the reader by the
@@ -382,11 +386,14 @@ export default function App() {
     return <ViewFallback />
   }
 
-  if (recovery) {
+  // Two ways in, one screen: the web link fires PASSWORD_RECOVERY (Supabase
+  // reads its own tokens out of the URL), while the app arrives on the
+  // recovery route after NativeShellBridge exchanges the deep link's code.
+  if (recovery || isResetPasswordPath(location.pathname)) {
     return (
       <>
         <Background language="chinese" />
-        <PasswordReset onDone={() => setRecovery(false)} />
+        <PasswordReset onDone={() => { setRecovery(false); routerNavigate(viewToPath('home'), { replace: true }) }} />
       </>
     )
   }
