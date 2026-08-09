@@ -36,6 +36,32 @@ requests on return; Home is the same job with the same tools:
 The bar to clear: **Home → Stories → Home must not cost dozens of requests
 merely because Home became visible again.**
 
+## Navigation motion — the three deferred halves (recorded 2026-08-09)
+
+Phase 2 commit 3C ships enter-motion for every navigation (`navMotion.js` +
+`useNavMotion.js`, spec in NAV-MODEL §5.4). Three pieces were deliberately left
+out, each with a reason that is not "ran out of time":
+
+- **The outgoing layer never animates.** The View Transitions API is the right
+  tool — it snapshots the old DOM for you — but it needs the update inside its
+  callback, i.e. `flushSync`. Safe on the forward path (an event handler), NOT
+  on a POP, which is adopted in an effect where `flushSync` warns and de-opts.
+  Unblocking it means moving POP adoption out of an effect (a `popstate`
+  listener that owns the update) — real work, and worth doing only once someone
+  is looking at the transition on a device and wants the other half.
+- **`series` and `reader` only cross-fade**, because Stories.jsx still renders
+  them itself (`navShell.INLINE_VIEWS`), so the layer that changes is the tab
+  pane and a pane must not be transformed (fixed bars). Lifting them into real
+  overlay screens gives the app's most-used push its slide, and removes the
+  `INLINE_VIEWS` exception from four places at once.
+- **iOS interactive swipe-back is not implemented.** `swipeBackEligible()`
+  decides where it is allowed and is tested; what is missing is the gesture
+  itself, which has to drive `pop()` interactively (follow the finger, commit
+  past ~35% or on velocity, rubber-band back otherwise). A non-interactive
+  "swipe fires pop()" would be the fake version — worse than none.
+  `allowsBackForwardNavigationGestures` stays off regardless: browser history is
+  not the app's stack.
+
 ## Competitive strategy — pick up here (2026-08-08)
 
 The full deep competitive analysis lives in
