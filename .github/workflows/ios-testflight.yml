@@ -60,8 +60,21 @@ jobs:
           set -euo pipefail
           NEWEST="$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
           sudo xcode-select -s "$NEWEST"
-          xcodebuild -version
-          MAJOR="$(xcodebuild -version | head -1 | sed -E 's/Xcode ([0-9]+).*/\1/')"
+          # Capture once, parse from the variable. NEVER `xcodebuild -version |
+          # head -1`: head closes the pipe after the first line, xcodebuild
+          # turns the resulting SIGPIPE into an uncaught NSException and aborts
+          # with 134, and `pipefail` then fails this step — for a version check
+          # that had already succeeded. It is a race (head sometimes drains
+          # both lines first), so it failed roughly one run in four and looked
+          # like "Xcode is too old" when it was nothing of the sort. Build 25
+          # died this way on 2026-08-09 with Xcode 26.6 sitting right there.
+          VERSION_OUT="$(xcodebuild -version)"
+          printf '%s\n' "$VERSION_OUT"
+          MAJOR="$(printf '%s\n' "$VERSION_OUT" | sed -n '1s/Xcode \([0-9][0-9]*\).*/\1/p')"
+          if [ -z "$MAJOR" ]; then
+            echo "::error::Could not read the Xcode version from: $VERSION_OUT"
+            exit 1
+          fi
           if [ "$MAJOR" -lt 26 ]; then
             echo "::error::Xcode $MAJOR is too old — App Store Connect requires the iOS 26 SDK."
             echo "Available: $(ls -d /Applications/Xcode*.app | tr '\n' ' ')"

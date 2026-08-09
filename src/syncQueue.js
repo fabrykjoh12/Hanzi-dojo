@@ -45,6 +45,14 @@ export function enqueueStoryRead(op) {
   return outboxAdd({ kind: 'storyRead', ...op })
 }
 
+// A session's story-chapter reward claimed while offline. Replaying calls the
+// claim_story_reward RPC, whose daily claim row makes any repeat a no-op — so
+// a claim queued on one device and also made online on another still unlocks
+// exactly one chapter.
+export function enqueueStoryClaim(op) {
+  return outboxAdd({ kind: 'storyClaim', ...op })
+}
+
 // Analytics events queued while offline. Reuses this outbox (no second queue);
 // on flush they're best-effort inserted and ALWAYS dropped — analytics is lossy
 // by design and must never wedge the critical grade writes.
@@ -230,6 +238,19 @@ async function replayOp(supabase, op) {
       .from('story_reads')
       .upsert({ user_id: op.userId, story_id: op.storyId }, { onConflict: 'user_id,story_id' })
     return { ok: !error, reconcile: false }
+  }
+  if (op.kind === 'storyClaim') {
+    // The RPC is idempotent per (track, claim_date). A claim whose day has a
+    // redeemed row already just reports that state — never a second unlock.
+    // An absent RPC (migration not applied) drops the op rather than wedging
+    // the queue behind the grade writes.
+    const { error } = await supabase.rpc('claim_story_reward', {
+      p_language: op.language,
+      p_system: op.system,
+      p_claim_date: op.claimDate,
+      p_story_id: op.storyId || null,
+    })
+    return { ok: !error || isMissingRpc(error), reconcile: false }
   }
   if (op.kind === 'grade') {
     // Same transaction the online screen uses. `opId` makes a repeat a no-op,

@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { offlineAvailable } from './offline'
 import { prefetchLevel } from './prefetch'
+import StoryCover from './StoryCover'
 import {
   ArrowLeft, CheckCircle2,
-  MessageCircleMore, ChevronRight, BookOpen, Download, CheckCheck,
+  MessageCircleMore, ChevronRight, BookOpen, BookOpenCheck, Download, CheckCheck,
 } from 'lucide-react'
 
 // The study session's completed/"done" screen, extracted verbatim from Study.jsx
@@ -36,6 +37,58 @@ function PrimaryButton({ onClick, children, icon: Icon }) {
       <Icon size={18} strokeWidth={2.1} color="#fff" />
       {children}
     </button>
+  )
+}
+
+// The chapter-unlock moment: this session just opened the next chapter of the
+// learner's active series. A small poster reveal — the story IS the reward, so
+// the artwork and the chapter name carry it; no confetti, no points.
+function ChapterUnlockCard({ reward, accentHex, langFont, onRead }) {
+  const [hovered, setHovered] = useState(false)
+  const { chapter, unit } = reward
+  const story = chapter.story
+  const chapterLine = (chapter.nativeLabel ? chapter.nativeLabel + ' · ' : 'Chapter ' + chapter.number + ' · ') + chapter.title
+  return (
+    <div className="hd-rise" style={{
+      width: '100%', marginBottom: '14px', textAlign: 'left',
+      background: accentHex + '0D', border: '1px solid ' + accentHex + '2A', borderRadius: '18px',
+      padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <StoryCover
+          story={story} path={story && story.image_path} accent={accentHex} radius={10}
+          style={{ width: '54px', aspectRatio: '2 / 3', flexShrink: 0, border: '1px solid ' + accentHex + '2A' }}
+        />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 800, letterSpacing: '0.3px', textTransform: 'uppercase', color: accentHex }}>
+            <BookOpenCheck size={14} strokeWidth={2.2} aria-hidden="true" />
+            Chapter unlocked
+          </div>
+          <div style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text)', fontFamily: langFont, marginTop: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {unit ? unit.title : chapter.title}
+          </div>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {chapterLine}
+          </div>
+        </div>
+      </div>
+      <button
+        onClick={() => onRead(story.id)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
+          width: '100%', minHeight: '48px', borderRadius: '14px', border: 'none',
+          background: hovered ? accentHex : accentHex + 'E6', color: '#fff',
+          fontSize: '14.5px', fontWeight: 800, fontFamily: 'Inter, sans-serif',
+          cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease',
+          transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
+        }}
+      >
+        <BookOpen size={18} strokeWidth={2.1} color="#fff" />
+        Read now
+      </button>
+    </div>
   )
 }
 
@@ -166,7 +219,7 @@ function OfflineSaveButton({ track, accentHex }) {
 // still renders the chat-mission modal itself (it owns that state); this
 // component renders the card and calls back for read-story / open-mission / back.
 export default function SessionRecap({
-  recap, isWeak, firstRun, accentHex, langFont, forecast, storyUnlock, track,
+  recap, isWeak, firstRun, accentHex, langFont, forecast, storyUnlock, chapterReward, track,
   mission, onOpenMission, onReadStory, onBack,
 }) {
   const s = recap
@@ -174,6 +227,9 @@ export default function SessionRecap({
   // A brand-new learner's first session gets framing that names the milestone
   // and points at the story their words just unlocked.
   const firstDone = Boolean(firstRun && didStudy)
+  // This session opened the next chapter of the active series — the loop's
+  // payoff moment. It takes the "recommended next" slot outright.
+  const chapterUnlocked = Boolean(chapterReward && chapterReward.state === 'unlocked' && chapterReward.chapter)
 
   // The single most useful next action, so the recap ALWAYS ends with a direct
   // "do this next" instead of a menu the learner has to weigh — or, worse, a
@@ -195,6 +251,11 @@ export default function SessionRecap({
   // same action — so suppress it. It still shows when a chat mission is the top
   // CTA, where surfacing the unlocked story adds something rather than repeating.
   const nextStepIsUnlockStory = Boolean(story) && (!storyUnlock.isRead || !mission)
+  // The chapter-unlock card carries its own Read-now button, so with it on
+  // screen both the generic next-step row and the story recommendation would
+  // be duplicate "go read" boxes.
+  const showNextStep = nextStep && !chapterUnlocked
+  const showStoryUnlock = didStudy && storyUnlock && !nextStepIsUnlockStory && !chapterUnlocked
 
 
   return (
@@ -246,7 +307,16 @@ export default function SessionRecap({
           </div>
         )}
 
-        {nextStep && (
+        {chapterUnlocked && (
+          <ChapterUnlockCard
+            reward={chapterReward}
+            accentHex={accentHex}
+            langFont={langFont}
+            onRead={onReadStory}
+          />
+        )}
+
+        {showNextStep && (
           <div style={{ marginBottom: '14px', textAlign: 'left' }}>
             <div style={{
               fontSize: '11px', fontWeight: 850, letterSpacing: '0.5px', textTransform: 'uppercase',
@@ -276,7 +346,7 @@ export default function SessionRecap({
           </div>
         )}
 
-        {didStudy && storyUnlock && !nextStepIsUnlockStory && (
+        {showStoryUnlock && (
           <StoryUnlockCard
             unlock={storyUnlock}
             accentHex={accentHex}

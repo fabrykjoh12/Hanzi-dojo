@@ -105,6 +105,33 @@ export function manhuaAccent(theme) {
   return (theme && theme.accentHex) || '#B83A24'
 }
 
+// The reader's sticky bar box.
+//
+// Two rules a phone taught us, kept here rather than inline so they are tested
+// once instead of re-derived by every bar this reader ever grows:
+//
+//   1. OPAQUE. The bar used to be 88% paper over a backdrop-filter blur. That
+//      filter is unreliable inside an iOS WKWebView, and a full-bleed ink panel
+//      scrolling under a translucent bar is exactly the artwork you can read
+//      through the title. A reader's only chrome outranks the picture.
+//   2. It COVERS THE NOTCH. The native shell draws under the status bar
+//      (viewport-fit=cover, iOS contentInset "never") and App.jsx pads that
+//      inset once on <main>. A sticky bar pinned BELOW the inset leaves a strip
+//      of live artwork scrolling behind the clock — so this cancels the shell's
+//      padding with a negative margin and re-adds it as its own padding. The
+//      bar lands in exactly the same place at scroll-0, but its background now
+//      reaches the top of the screen once pinned.
+export function stickyPaperBar(zIndex) {
+  return {
+    position: 'sticky',
+    top: 0,
+    zIndex: zIndex || 5,
+    marginTop: 'calc(-1 * env(safe-area-inset-top, 0px))',
+    paddingTop: 'env(safe-area-inset-top, 0px)',
+    background: PAPER.page,
+  }
+}
+
 // A tint of the accent mixed INTO the paper, never an alpha hex — the same rule
 // the themed screens follow, applied to this reader's fixed paper.
 export function accentTint(accentHex, pct) {

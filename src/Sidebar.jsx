@@ -195,7 +195,7 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
   // A real navigation landmark: on desktop this rail IS the app's navigation,
   // and without <nav> a screen-reader user has no way to jump to it.
   return (
-    <nav aria-label="Main" style={{
+    <nav aria-label="Main" data-tour="nav" style={{
       width: collapsed ? `${COLLAPSED_WIDTH}px` : `${EXPANDED_WIDTH}px`,
       flexShrink: 0,
       height: '100vh', position: 'sticky', top: 0,

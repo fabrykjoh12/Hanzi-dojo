@@ -1,7 +1,7 @@
 import { wordStatus } from './storyReading'
 import { ink } from './languageTheme'
 import { PAPER, CARD_RADIUS, TYPE, TAP_TARGET } from './manhuaTokens'
-import { ArrowLeft, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Lock, Sparkles, Zap } from 'lucide-react'
 import ComprehensionCheck from './ComprehensionCheck'
 import { scoreComprehension } from './comprehension'
 
@@ -76,6 +76,7 @@ export default function ManhuaCompletion({
   hook, reward = null, continues = null, continuesLevelLabel = null,
   questions = [], answers = {}, onAnswer,
   onBack, onPractice, practiceWords = [], onSelectWord,
+  nextChapter = null, onNextChapter = null, onStudy = null,
 }) {
   const newCount = words.filter(v => wordStatus(v.id, userCards) === 'not_started').length
   const comprehension = scoreComprehension(questions, answers)
@@ -161,8 +162,10 @@ export default function ManhuaCompletion({
           {/* Where the story goes next, and — the part that actually helps —
               the level it is written at. A serial that climbs the ladder should
               say so on the plate the learner reaches at the end, rather than
-              leaving them to hunt a shelf for an episode that is a level up. */}
-          {continues && (
+              leaving them to hunt a shelf for an episode that is a level up.
+              Suppressed when a concrete next chapter is on the plate below —
+              two "next" lines about the same episode is noise. */}
+          {continues && !nextChapter && (
             <p style={{
               margin: hook ? '10px 0 0' : 0,
               fontSize: TYPE.meta, fontWeight: 800,
@@ -176,15 +179,92 @@ export default function ManhuaCompletion({
         </div>
       )}
 
+      {/* The chapter loop's closing beat: the next episode, either openable
+          right now or waiting behind today's flashcard session. */}
+      {nextChapter && nextChapter.kind !== 'unlocked' && (
+        <div style={{
+          marginTop: '18px', padding: '13px 14px',
+          border: '1px solid ' + PAPER.hairline, borderRadius: '14px', background: PAPER.card,
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '7px',
+            fontSize: TYPE.meta, fontWeight: 800, letterSpacing: '0.12em',
+            textTransform: 'uppercase', color: PAPER.muted,
+          }}>
+            <Lock size={13} strokeWidth={2.2} aria-hidden="true" />
+            {nextChapter.kind === 'series-complete' ? 'Series complete' : 'Next'}
+          </div>
+          <div style={{ marginTop: '4px', fontFamily, fontSize: '17px', fontWeight: 750, color: PAPER.ink }}>
+            {nextChapter.kind === 'series-complete'
+              ? 'You read all ' + nextChapter.total + ' chapters.'
+              : (nextChapter.nativeLabel ? nextChapter.nativeLabel + ' · ' : '') + nextChapter.title}
+          </div>
+          {nextChapter.kind === 'locked' && (
+            <div style={{ marginTop: '3px', fontSize: '13px', color: PAPER.ink2, lineHeight: 1.55 }}>
+              Complete your next flashcard session to continue.
+            </div>
+          )}
+        </div>
+      )}
+
+      <CompletionButtons
+        nextChapter={nextChapter} onNextChapter={onNextChapter} onStudy={onStudy}
+        onBack={onBack} onPractice={onPractice} practiceWords={practiceWords} accentHex={accentHex}
+      />
+    </section>
+  )
+}
+
+// The plate's action row. When the loop offers a forward action (read the
+// unlocked next episode / review flashcards), it takes the accent and "Back to
+// stories" steps back to a quiet secondary.
+function CompletionButtons({ nextChapter, onNextChapter, onStudy, onBack, onPractice, practiceWords, accentHex }) {
+  const forward = nextChapter && (
+    (nextChapter.kind === 'unlocked' && onNextChapter) ||
+    (nextChapter.kind === 'locked' && onStudy)
+  )
+  return (
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '18px' }}>
+        {nextChapter && nextChapter.kind === 'unlocked' && onNextChapter ? (
+          <button
+            onClick={onNextChapter}
+            className="hd-press"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              minHeight: TAP_TARGET + 'px', padding: '0 18px',
+              borderRadius: '14px', border: 'none', cursor: 'pointer',
+              background: accentHex, color: '#fff', fontSize: '15px', fontWeight: 700,
+            }}
+          >
+            Read {nextChapter.nativeLabel || 'chapter ' + nextChapter.number}
+            <ArrowRight size={17} strokeWidth={2.4} />
+          </button>
+        ) : nextChapter && nextChapter.kind === 'locked' && onStudy ? (
+          <button
+            onClick={onStudy}
+            className="hd-press"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              minHeight: TAP_TARGET + 'px', padding: '0 18px',
+              borderRadius: '14px', border: 'none', cursor: 'pointer',
+              background: accentHex, color: '#fff', fontSize: '15px', fontWeight: 700,
+            }}
+          >
+            <Zap size={17} strokeWidth={2.2} />
+            Review flashcards
+          </button>
+        ) : null}
         <button
           onClick={onBack}
           className="hd-press"
           style={{
             display: 'inline-flex', alignItems: 'center', gap: '8px',
             minHeight: TAP_TARGET + 'px', padding: '0 18px',
-            borderRadius: '14px', border: 'none', cursor: 'pointer',
-            background: accentHex, color: '#fff', fontSize: '15px', fontWeight: 700,
+            borderRadius: '14px', cursor: 'pointer',
+            border: forward ? '1px solid ' + PAPER.hairline : 'none',
+            background: forward ? PAPER.card : accentHex,
+            color: forward ? PAPER.ink : '#fff',
+            fontSize: '15px', fontWeight: 700,
           }}
         >
           <ArrowLeft size={17} strokeWidth={2.4} />
@@ -207,6 +287,5 @@ export default function ManhuaCompletion({
           </button>
         )}
       </div>
-    </section>
   )
 }

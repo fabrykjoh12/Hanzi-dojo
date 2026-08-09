@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, Sunrise } from 'lucide-react'
+import { ArrowRight, BookOpenCheck, Lock, Sunrise } from 'lucide-react'
 import { getLevelLabel } from './utils'
 import { languageTheme, ink } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
 import { getDailyStoryCard, firstContentChar } from './homeStory'
+import { getSessionRewardTeaser } from './storyRewardData'
 import { HeroPanel, HeroAction, Panel, Eyebrow, PageHeader } from './panels'
 import { rhythmSummary, weekdayInitial } from './studyRhythm'
 import { forecastSummary } from './reviewForecast'
 import { sessionEstimateLabel } from './sessionEstimate'
+import { maybeStartTour, markTourSeen } from './tour'
+import TourOverlay from './TourOverlay'
 import { MICRO, NUM } from './designTokens'
 
 // ── Home ──────────────────────────────────────────────────────────────────
@@ -29,6 +32,9 @@ const WEEKDAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday
 export default function Home({ profile, track, counts, session, onNavigate }) {
   const isMobile = useIsMobile()
   const [daily, setDaily] = useState(undefined) // undefined = loading, null = none
+  // Today's story reward: the chapter this session unlocks (or just unlocked).
+  // Null when no series is going — the daily-story hand-off shows instead.
+  const [rewardTeaser, setRewardTeaser] = useState(null)
 
   const theme = languageTheme(profile.active_language)
   const accentHex = theme.accentHex
@@ -64,8 +70,27 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
     getDailyStoryCard(userId, track, learned)
       .then(res => { if (alive) setDaily(res) })
       .catch(() => { if (alive) setDaily(null) })
+    getSessionRewardTeaser(userId, track)
+      .then(res => { if (alive) setRewardTeaser(res) })
+      .catch(() => { if (alive) setRewardTeaser(null) })
     return () => { alive = false }
   }, [userId, track, learned])
+
+  // First-run tour: once per device for a new account, on the first Home render
+  // (onboarding and the first-mission welcome replace Home entirely, so the
+  // tour can never sit over them). All the rules live in tour.js; the short
+  // delay lets the screen settle — and the story hand-off arrive — before
+  // anything gets pointed at.
+  const [tourSteps, setTourSteps] = useState(null)
+  const profileCreatedAt = profile.created_at
+  useEffect(() => {
+    let alive = true
+    const timer = setTimeout(() => {
+      maybeStartTour({ screen: 'home', profileCreatedAt })
+        .then(steps => { if (alive && steps) setTourSteps(steps) })
+    }, 600)
+    return () => { alive = false; clearTimeout(timer) }
+  }, [profileCreatedAt])
 
   // One action. Cards while there are cards; once the queue is clear the next
   // step in the daily loop is reading, so the button hands over to Stories.
@@ -108,6 +133,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         compact={isMobile}
         onClick={() => onNavigate(action.go)}
         style={{ marginBottom: '14px' }}
+        dataTour="home-queue"
       >
         {({ hovered }) => (
           <QueueBody
@@ -123,12 +149,58 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         )}
       </HeroPanel>
 
-      {/* ── The next step in the loop, deliberately quiet. The hero owns the
-          screen's action; this is a hand-off, not a rival CTA. ── */}
-      {daily && (
+      {/* ── Today's story reward: what the session is FOR. Shown when a series
+          is going — the locked chapter waiting behind today's flashcards, or
+          the one already unlocked. Quiet panel; the hero owns the action. ── */}
+      {rewardTeaser && (
         <Panel
           padding={isMobile ? '14px 16px' : '15px 20px'}
           style={{ marginBottom: '14px', animationDelay: '80ms', cursor: 'pointer' }}
+          dataTour="home-then-read"
+        >
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => onNavigate('stories', rewardTeaser.state === 'unlocked-today' ? { storyId: rewardTeaser.storyId } : undefined)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate('stories', rewardTeaser.state === 'unlocked-today' ? { storyId: rewardTeaser.storyId } : undefined) } }}
+            className="hd-press"
+            style={{ display: 'flex', alignItems: 'center', gap: '14px' }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Eyebrow style={{ display: 'block', marginBottom: '5px' }}>Today&rsquo;s story reward</Eyebrow>
+              <div style={{
+                fontFamily: langFont, fontSize: '15px', fontWeight: 600, color: 'var(--text)',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {rewardTeaser.seriesTitle}
+              </div>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '3px', minWidth: 0,
+              }}>
+                {rewardTeaser.state === 'unlocked-today'
+                  ? <BookOpenCheck size={13} strokeWidth={2.2} color={accentInk} style={{ flexShrink: 0 }} aria-hidden="true" />
+                  : <Lock size={13} strokeWidth={2.2} style={{ flexShrink: 0 }} aria-hidden="true" />}
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {(rewardTeaser.chapter.nativeLabel || 'Chapter ' + rewardTeaser.chapter.number) + ' · '}
+                  {rewardTeaser.state === 'unlocked-today'
+                    ? 'unlocked — read it now'
+                    : 'unlocks after today’s session'}
+                </span>
+              </div>
+            </div>
+            <ArrowRight size={18} strokeWidth={2.1} color={accentInk} style={{ flexShrink: 0 }} />
+          </div>
+        </Panel>
+      )}
+
+      {/* ── The next step in the loop, deliberately quiet. The hero owns the
+          screen's action; this is a hand-off, not a rival CTA. ── */}
+      {!rewardTeaser && daily && (
+        <Panel
+          padding={isMobile ? '14px 16px' : '15px 20px'}
+          style={{ marginBottom: '14px', animationDelay: '80ms', cursor: 'pointer' }}
+          dataTour="home-then-read"
         >
           <div
             role="button"
@@ -163,6 +235,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
       <Panel
         padding={isMobile ? '16px 16px 14px' : '18px 20px 16px'}
         style={{ marginBottom: '14px', animationDelay: '140ms' }}
+        dataTour="home-week"
       >
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '14px' }}>
           <Eyebrow>Your week</Eyebrow>
@@ -235,6 +308,17 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
           </div>
         </div>
       </Panel>
+
+      {tourSteps && (
+        <TourOverlay
+          steps={tourSteps}
+          accentHex={accentHex}
+          onClose={(outcome) => {
+            setTourSteps(null)
+            if (outcome) markTourSeen('home', outcome)
+          }}
+        />
+      )}
     </div>
   )
 }

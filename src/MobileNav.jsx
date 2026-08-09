@@ -171,7 +171,7 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
       )}
 
       {/* Fixed bottom navigation bar */}
-      <nav aria-label="Primary" style={{
+      <nav aria-label="Primary" data-tour="nav" style={{
         position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 30,
         display: 'flex', alignItems: 'stretch',
         background: 'var(--surface-glass)', backdropFilter: 'blur(14px)',

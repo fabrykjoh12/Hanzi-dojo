@@ -19,18 +19,39 @@
 import { supabase } from './supabase'
 import { isNativeApp, APP_URL_SCHEME } from './nativeShell'
 import { openExternal } from './externalLink'
+import { RESET_PASSWORD_PATH } from './routes'
 
 // The app's own bundle ID. Apple issues a native identity token whose audience
 // is the bundle ID, so this is what Supabase must list under Client IDs.
 export const APP_BUNDLE_ID = 'com.hanzidojo.app'
 
 export const AUTH_CALLBACK_PATH = 'auth-callback'
+// Password recovery comes back on its own path, so the app can tell "you are
+// signed in" from "you are signed in ONLY to choose a new password". The code
+// exchange is identical; what differs is where the learner must land, and
+// GoTrue gives us no reliable `type=recovery` marker on the PKCE redirect —
+// the path is the one thing we control end to end.
+export const PASSWORD_RESET_PATH = 'password-reset'
 export const NATIVE_AUTH_REDIRECT = APP_URL_SCHEME + '://' + AUTH_CALLBACK_PATH
+export const NATIVE_RESET_REDIRECT = APP_URL_SCHEME + '://' + PASSWORD_RESET_PATH
 
-// Where the provider should send the learner back to.
-export function authRedirectTo({ native, origin } = {}) {
+// Where a provider — or an emailed link — should send the learner back to.
+//
+// `kind` is 'oauth' (the default) or 'recovery'. On the web both are the plain
+// origin: the SPA reads Supabase's tokens out of the URL on load and the
+// recovery event puts it into reset mode.
+//
+// In the store apps this MUST be the app's own registered scheme. The old code
+// used `window.location.origin`, which inside the Capacitor WebView is
+// `capacitor://localhost` (iOS) / `https://localhost` (Android) — not a URL
+// Supabase will ever accept. GoTrue rejects a redirect that is not on the
+// project's allow-list, consumes the one-time token anyway, and bounces to the
+// project's Site URL with an error and NO tokens: the learner lands on the
+// public website's welcome screen with no way to set a password. That was the
+// whole bug (reported 2026-08-09).
+export function authRedirectTo({ native, origin, kind = 'oauth' } = {}) {
   const isNative = native === undefined ? isNativeApp() : native
-  if (isNative) return NATIVE_AUTH_REDIRECT
+  if (isNative) return kind === 'recovery' ? NATIVE_RESET_REDIRECT : NATIVE_AUTH_REDIRECT
   const base = origin !== undefined
     ? origin
     : (typeof window !== 'undefined' ? window.location.origin + import.meta.env.BASE_URL : '/')
@@ -41,6 +62,17 @@ export function authRedirectTo({ native, origin } = {}) {
 export function isAuthCallbackUrl(url) {
   if (typeof url !== 'string') return false
   return url.indexOf(APP_URL_SCHEME + '://' + AUTH_CALLBACK_PATH) === 0
+}
+
+// Is this deep link a password-recovery email coming back into the app?
+export function isPasswordResetUrl(url) {
+  if (typeof url !== 'string') return false
+  return url.indexOf(APP_URL_SCHEME + '://' + PASSWORD_RESET_PATH) === 0
+}
+
+// Any deep link that carries a one-time auth code to exchange.
+export function isAuthDeepLink(url) {
+  return isAuthCallbackUrl(url) || isPasswordResetUrl(url)
 }
 
 // Start a provider sign-in. On the web this is the ordinary redirect; in the
@@ -70,16 +102,107 @@ export async function signInWithProvider(provider, deps = {}) {
   return { error: null }
 }
 
-// Finish a sign-in from the deep link the provider sent us back on.
+// The parameters a returning auth link carries. GoTrue puts them in the query
+// for PKCE (`?code=…`) and in the fragment for an error, so both are read.
+// Hand-parsed rather than via `new URL`: the scheme here is a custom one
+// (`com.hanzidojo.app://`), and this has to behave identically in the WebView,
+// in Node under vitest, and for a half-formed URL the OS hands us.
+export function authParamsFromUrl(url) {
+  const s = typeof url === 'string' ? url : ''
+  const cut = s.search(/[?#]/)
+  if (cut === -1) return {}
+  const out = {}
+  for (const part of s.slice(cut + 1).split(/[&#?]/)) {
+    if (!part) continue
+    const eq = part.indexOf('=')
+    const key = eq === -1 ? part : part.slice(0, eq)
+    if (!key || out[key] !== undefined) continue
+    const raw = eq === -1 ? '' : part.slice(eq + 1)
+    try { out[key] = decodeURIComponent(raw.replace(/\+/g, ' ')) } catch { out[key] = raw }
+  }
+  return out
+}
+
+// The one-time code to exchange. NOT the URL: `exchangeCodeForSession` posts
+// whatever it is given as `auth_code`, so handing it the whole deep link makes
+// every exchange fail server-side — which is precisely how the reset screen
+// came back as the login screen (2026-08-09).
+export function authCodeFromUrl(url) {
+  return authParamsFromUrl(url).code || null
+}
+
+// GoTrue can also come back having refused the link outright — an expired or
+// already-used token arrives as `?error=access_denied&error_code=otp_expired`.
+// Reading it means saying what happened instead of attempting an exchange that
+// was never going to work.
+export function authLinkError(url) {
+  const p = authParamsFromUrl(url)
+  const message = p.error_description || p.error_code || p.error
+  return message || null
+}
+
+// Finish a sign-in — or a password recovery — from the deep link we were sent
+// back on. `recovery` tells the caller the learner arrived to CHOOSE a new
+// password, so it can land them on the reset screen instead of Home.
+//
+// On success supabase-js fires PASSWORD_RECOVERY on its own (it remembers that
+// the verifier was minted for a recovery), so App's auth listener puts the app
+// into reset mode without being told twice.
 export async function completeNativeAuth(url, deps = {}) {
   const client = deps.supabase || supabase
-  if (!isAuthCallbackUrl(url)) return { error: null, handled: false }
+  if (!isAuthDeepLink(url)) return { error: null, handled: false, recovery: false }
+  const recovery = isPasswordResetUrl(url)
+
+  const refused = authLinkError(url)
+  if (refused) return { error: new Error(refused), handled: true, recovery }
+
+  const code = authCodeFromUrl(url)
+  if (!code) return { error: new Error('That link carried no sign-in code.'), handled: true, recovery }
+
   try {
-    const { error } = await client.auth.exchangeCodeForSession(url)
-    return { error: error || null, handled: true }
+    const { error } = await client.auth.exchangeCodeForSession(code)
+    return { error: error || null, handled: true, recovery }
   } catch (err) {
-    return { error: err, handled: true }
+    return { error: err, handled: true, recovery }
   }
+}
+
+// Where the app should land after handling a returning auth link. Pure, so the
+// four outcomes (sign-in or recovery, worked or didn't) are pinned by tests
+// rather than living as branches inside the native bridge.
+export function authLandingPath({ error, recovery } = {}) {
+  if (error) return '/?auth=' + (recovery ? 'reset-failed' : 'failed')
+  return recovery ? RESET_PASSWORD_PATH : '/'
+}
+
+// Why a returning auth link did not work, in words a learner can act on.
+//
+// The PKCE verifier lives in the storage of the app that STARTED the flow, so
+// a link opened on another device cannot complete — and an emailed link is
+// exactly the thing people open on another device. Saying so beats a silent
+// bounce to the welcome screen, which is indistinguishable from "the app is
+// broken". `value` is the `auth` query parameter set by NativeShellBridge.
+export function authNoticeFor(value) {
+  if (value === 'reset-failed') {
+    return 'That password reset link could not be opened. Reset links only work '
+      + 'on the device you requested them from, and expire after an hour — '
+      + 'request a new one below.'
+  }
+  if (value === 'failed') {
+    return 'That sign-in link could not be completed. Please try signing in again.'
+  }
+  return null
+}
+
+// Read the notice out of a location search string ('?auth=reset-failed').
+export function authNoticeFromSearch(search) {
+  if (typeof search !== 'string' || !search) return null
+  const query = search.charAt(0) === '?' ? search.slice(1) : search
+  for (const part of query.split('&')) {
+    const [key, raw] = part.split('=')
+    if (key === 'auth') return authNoticeFor(decodeURIComponent(raw || ''))
+  }
+  return null
 }
 
 // ── Sign in with Apple, natively ────────────────────────────────────────────
