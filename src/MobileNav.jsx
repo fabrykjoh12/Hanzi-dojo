@@ -3,6 +3,7 @@ import { MoreHorizontal, X } from 'lucide-react'
 import { languageTheme, ink } from './languageTheme'
 import { MOBILE_PRIMARY, MOBILE_MORE, ADMIN_NAV } from './navConfig'
 import { trapDialogFocus } from './dialogFocus'
+import { pushSheet } from './sheetStack'
 import { tapFeedback } from './haptics'
 
 const MUTED = 'var(--text-muted)'
@@ -64,6 +65,14 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
     const onKey = (e) => { if (e.key === 'Escape') setMoreOpen(false) }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
+  }, [moreOpen])
+
+  // …and Android's hardware Back closes it too. It used to navigate the screen
+  // UNDERNEATH while the sheet stayed open on top of the result, because the
+  // sheet's state lives here and the back handler could not see it.
+  useEffect(() => {
+    if (!moreOpen) return undefined
+    return pushSheet(() => setMoreOpen(false))
   }, [moreOpen])
 
   // aria-modal hides the page from assistive tech, so focus must actually move

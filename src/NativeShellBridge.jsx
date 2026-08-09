@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { isNativeApp, routeFromDeepLink, backAction, consumeLaunchUrl } from './nativeShell'
+import { runBackHandler } from './backHandler'
 import { isAuthDeepLink, completeNativeAuth, authLandingPath } from './nativeAuth'
 
 // Wires the Capacitor native shell into the router: deep links (universal
@@ -83,6 +84,19 @@ export default function NativeShellBridge() {
         App.addListener('appUrlOpen', (event) => handleUrl(event && event.url))
           .then((handle) => handles.push(handle))
         App.addListener('backButton', (event) => {
+          // Ask the shell first. When the authenticated app is mounted, the
+          // navigation model is the only thing that knows what Back means —
+          // close a sheet, pop a screen, dismiss a flow, step to the Home tab,
+          // or leave. See useAndroidBack.js.
+          const handled = runBackHandler()
+          if (handled === 'handled') return
+          if (handled === 'exit') { App.exitApp(); return }
+
+          // No shell: the sign-in screen, onboarding, the password-reset
+          // screen. These live outside the tab shell entirely, so the original
+          // path-based behaviour is still the right answer for them — and it
+          // is the reason this listener cannot simply move inside the shell,
+          // which does not exist yet when an emailed auth link arrives.
           const action = backAction(pathRef.current, Boolean(event && event.canGoBack))
           if (action === 'back') navigateRef.current(-1)
           else if (action === 'home') navigateRef.current('/', { replace: true })

@@ -15,6 +15,7 @@ import { shouldRefreshHome } from './homeRefresh'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
 import { useNavigation } from './useNavigation'
+import { useAndroidBack } from './useAndroidBack'
 import { setCacheScope } from './dataCache'
 import { overlayScreen, tabBarVisible, storiesRoute } from './navShell'
 import TabHost from './TabHost'
@@ -164,6 +165,10 @@ export default function App() {
   // bottom bar from inside a tab root (NAV-MODEL §8.2). Study reports it; the
   // shell does not try to infer it.
   const [studySession, setStudySession] = useState({ immersive: false, inProgress: false })
+  // Android's hardware back key now resolves from the model above, not from
+  // the URL. Registered here and only here — the bridge holds the listener and
+  // asks this shell for the answer (backHandler.js).
+  useAndroidBack(nav)
   const publicStoryId = readStoryId(location.pathname)
   const assessment = isAssessmentPath(location.pathname)
   const trustPage = trustPageKey(location.pathname)
