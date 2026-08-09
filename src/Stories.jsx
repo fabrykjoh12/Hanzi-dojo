@@ -14,6 +14,7 @@ import { pickDailyStory } from './dailyStory'
 import { formatLabel } from './storyFormat'
 import { buildFlatShelf, buildNextLevelSection } from './storyShelfFlat'
 import { calculateStoryReadability } from './storyReading'
+import { readCache, writeCache } from './dataCache'
 import { stripSceneEmoji } from './sceneReading'
 import { chapterInfo, nextChapterInfo, readingMinutes, seedUnlockIds } from './storyChapters'
 import { buildSeriesUnits, resolveActiveSeries, rewardStateFor } from './storyReward'
@@ -36,6 +37,9 @@ import {
 // in storyChapters.js / storyReward.js — this file only renders it.
 
 // ─── CONSTANTS / SMALL HELPERS ─────────────────────────────────────────────
+
+// One key for "the shelf's data". Scoped per user and language by dataCache.
+const STORIES_CACHE_KEY = 'stories:shelf'
 
 function getLanguageDetails(profile, track) {
   const language = track.language || profile.active_language
@@ -279,6 +283,7 @@ export default function Stories({
   const [filter, setFilter] = useState('all')
   const missingStoryNotified = useRef(null)
   const redeemAttempted = useRef(false)
+  const loadInFlight = useRef(false)
   const isMobile = useIsMobile()
 
   const { accentHex, fontFamily } = getLanguageDetails(profile, track)
@@ -494,10 +499,34 @@ export default function Stories({
   }
 
   /* eslint-disable react-hooks/set-state-in-effect */
+  // The shelf is loaded ONCE, and again only when something actually changed it.
+  //
+  // This effect used to fire on every mount, and the shell unmounted this
+  // screen on every navigation — so Home → Stories → Home → Stories was four
+  // runs of loadData and about nine Supabase queries each time. The Stories
+  // root is now persistent (TabHost/<Activity>), which keeps the component's
+  // state but re-runs its effects on every show; without a guard that would be
+  // the same storm with extra steps.
+  //
+  // dataCache is the guard. It records that the shelf has been loaded and is
+  // still valid; finishing a flashcard session invalidates it (Study.jsx), and
+  // the next time this tab is shown it reloads exactly once. Switching tabs on
+  // its own does nothing at all.
   useEffect(() => {
-    const timer = setTimeout(loadData, 0)
+    if (loadInFlight.current) return undefined
+    const cached = readCache(STORIES_CACHE_KEY)
+    if (cached && !cached.invalidated) return undefined
+    const timer = setTimeout(() => {
+      // The effect has no dependency array (it must re-check on every show),
+      // so without this a burst of renders during the first load would each
+      // see an empty cache and start another one.
+      loadInFlight.current = true
+      loadData()
+        .then(() => { writeCache(STORIES_CACHE_KEY, true) }, () => {})
+        .then(() => { loadInFlight.current = false })
+    }, 0)
     return () => clearTimeout(timer)
-  }, [])
+  })
 
   // A banked claim (session completed with nothing to unlock at the time)
   // redeems itself the moment an active series with a locked chapter exists —

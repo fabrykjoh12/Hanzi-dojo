@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import { playAudioEl } from './utils'
 import { ensureAudio } from './audioCache'
 import { flashcardAudio } from './ttsAudio'
-import { claimPlayback } from './audioPlayback'
+import { claimPlayback, releasePlayback } from './audioPlayback'
 
 // Audio for the study session, lifted out of Study.jsx verbatim so that file
 // stays focused on the card/grading loop. Behavior is unchanged: same speed
@@ -63,6 +63,48 @@ export function useStudyAudio({ queue, flipped, profile, session, onProfileUpdat
       return next
     })
   }
+
+  // Give the element back when this hook goes away.
+  //
+  // Until now there was no cleanup here at all: both effects returned nothing,
+  // and the <audio> element lived in a ref that outlived them. That was
+  // survivable while Study was unmounted on every navigation — the element went
+  // with the component. It stops being survivable the moment the Cards tab
+  // becomes a PERSISTENT root: hiding it (React's <Activity>) runs effect
+  // cleanups, and with none to run a word would go on speaking from a tab the
+  // learner had already left.
+  //
+  // Four things, in order, and all of them matter:
+  //   1. pause, so the sound actually stops;
+  //   2. releasePlayback, so the one-voice-at-a-time registry
+  //      (audioPlayback.js) stops holding a reference to a dead element —
+  //      without it, whatever plays next silences an element nobody can hear;
+  //   3. invalidate the in-flight attempt. playAudioEl's fallback path fetches
+  //      a blob and then plays it, guarded by `el.__hdAttempt`. A fetch still in
+  //      the air when the tab hides would come back, see its attempt was still
+  //      current, and start playing into the void. Setting the marker to -1
+  //      makes every outstanding attempt read as stale;
+  //   4. revoke the fallback blob URL, or each hide/show cycle leaks one.
+  //
+  // The ref is nulled so a re-show builds a fresh element rather than reviving
+  // a torn-down one — one element per mount, so repeated cycles cannot
+  // accumulate.
+  useEffect(() => {
+    return () => {
+      const el = audioRef.current
+      if (!el) return
+      audioRef.current = null
+      el.__hdAttempt = -1
+      try { el.pause() } catch { /* already detached */ }
+      releasePlayback(el)
+      el.onerror = null
+      if (el.__hdBlobUrl) {
+        try { URL.revokeObjectURL(el.__hdBlobUrl) } catch { /* already revoked */ }
+        el.__hdBlobUrl = null
+        el.__hdBlobFor = null
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (flipped && queue.length > 0 && profile.audio_autoplay !== false) {

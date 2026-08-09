@@ -4,8 +4,8 @@ import { supabase } from './supabase'
 import ErrorBoundary from './ErrorBoundary'
 import { getHomeCounts } from './homeCounts'
 import {
-  pathToView, viewToPath, isKnownView, readStoryId, isAssessmentPath, trustPageKey,
-  storyRoute, storyPath, seriesPath, isResetPasswordPath,
+  viewToPath, isKnownView, readStoryId, isAssessmentPath, trustPageKey,
+  storyPath, isResetPasswordPath,
 } from './routes'
 import { authNoticeFromSearch } from './nativeAuth'
 import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
@@ -14,6 +14,10 @@ import { ensureLanguageFont } from './fontLoader'
 import { shouldRefreshHome } from './homeRefresh'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
+import { useNavigation } from './useNavigation'
+import { setCacheScope } from './dataCache'
+import { overlayScreen, tabBarVisible, storiesRoute } from './navShell'
+import TabHost from './TabHost'
 import { initialTheme, rememberTheme } from './themeBoot'
 import { syncStatusBar } from './statusBar'
 import { markAppReady } from './appReady'
@@ -151,11 +155,18 @@ export default function App() {
   const isMobile = useIsMobile()
   const routerNavigate = useNavigate()
   const location = useLocation()
-  const view = pathToView(location.pathname)
+  // The navigation model is the runtime source of truth now; the pathname is
+  // its projection. `view` is what is VISIBLE, which for a flow above the tabs
+  // is the flow, not the tab underneath it.
+  const nav = useNavigation()
+  const view = nav.view
+  // True while an actual flashcard is on screen — the one state that hides the
+  // bottom bar from inside a tab root (NAV-MODEL §8.2). Study reports it; the
+  // shell does not try to infer it.
+  const [studySession, setStudySession] = useState({ immersive: false, inProgress: false })
   const publicStoryId = readStoryId(location.pathname)
   const assessment = isAssessmentPath(location.pathname)
   const trustPage = trustPageKey(location.pathname)
-  const storyRouteState = storyRoute(location.pathname)
 
   // Apply the theme to the document so the CSS variables (index.css) switch,
   // remember it on the device so the NEXT launch is right before first paint,
@@ -167,6 +178,23 @@ export default function App() {
     rememberTheme(theme)
     syncStatusBar(theme, { native: isNativeApp() })
   }, [theme])
+
+  // Scope every cached query to who is signed in and what they are learning.
+  //
+  // The cache outlives components by design, so without this a shelf loaded for
+  // one account could be read by the next one to sign in on the same device.
+  // Namespacing makes that impossible by construction; the clear that comes
+  // with a user change is what stops a signed-out learner's progress sitting in
+  // memory. Runs before anything queries, and on every boundary — login,
+  // logout, account change, language change.
+  // A safety net for the paths loadProfile does not cover — a sign-out, or an
+  // in-memory profile patch that changes the language. Returns 'unchanged' and
+  // does nothing on an ordinary render.
+  const activeLanguage = profile ? profile.active_language : null
+  const currentUserId = session ? session.user.id : null
+  useEffect(() => {
+    setCacheScope({ userId: currentUserId, language: activeLanguage })
+  }, [currentUserId, activeLanguage])
 
   // Tell the launch overlay it can leave (appReady.js → SplashIntro.jsx).
   //
@@ -276,6 +304,13 @@ export default function App() {
     const finalProf = prof
     const finalTrack = (allTracks || []).find(t => t.language === prof.active_language) || null
 
+    // Scope the cache HERE, not in an effect. Effects run child-first, so an
+    // effect in App fires AFTER the tab roots' own effects — which meant
+    // Stories wrote its shelf under the anonymous scope and App then changed
+    // the scope and cleared it, one load later. Setting it inline, before any
+    // screen can mount, is the only ordering that holds.
+    setCacheScope({ userId, language: finalProf.active_language })
+
     if (finalTrack) {
       const c = await getHomeCounts(userId, finalTrack, finalProf.daily_new_cards)
       setCounts(c)
@@ -350,12 +385,24 @@ export default function App() {
     if (opts && opts.firstMission) setPendingStoryFirstMission(true)
     if (opts && opts.practiceWords) setPendingPracticeWords(opts.practiceWords)
     else if (key === 'fillblank') setPendingPracticeWords(null) // normal hub open — no stale story pool
-    routerNavigate(key === 'stories' && opts?.storyId ? storyPath(opts.storyId) : viewToPath(key))
+    // Through the reducer, not around it. It decides whether this is a tab
+    // selection, a push, or a flow — and whether it is a navigation at all.
+    nav.navigate(key, opts)
     // Refetch the dashboard when landing on Home — but not after a detour
     // through a screen that provably changed nothing (see homeRefresh.js).
     if (session && key === 'home' && shouldRefreshHome(view, homeLoadedAt.current)) {
       loadProfile(session.user.id)
     }
+  }
+
+  // The bottom bar's own taps: re-tapping the active tab must dismiss, pop to
+  // root or scroll — never mint a history entry (NAV-MODEL §5.1).
+  const onTabSelect = (key) => {
+    if (key === nav.state.activeTab && !nav.state.overlay) {
+      nav.reselect(key, { sessionInProgress: studySession.inProgress })
+      return
+    }
+    navigate(key)
   }
 
   const handleLogout = () => supabase.auth.signOut()
@@ -475,20 +522,82 @@ export default function App() {
     )
   }
 
-  // ── Content for the selected view ─────────────────────────────────────────
-  let content
-  if (view === 'study') {
-    content = (
-      <Study
-        session={session}
-        profile={profile}
-        track={track}
-        onBack={() => navigate('home')}
-        onNavigate={navigate}
-        onProfileUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
-      />
+  // ── The four persistent tab roots ─────────────────────────────────────────
+  // Built the first time their tab is selected, then kept for the app run.
+  // Their own error boundary lives here rather than around the whole shell.
+  const storiesR = storiesRoute(nav.state)
+  function renderTabRoot(tab) {
+    let root = null
+    if (tab === 'home') {
+      root = (
+        <Home
+          profile={profile}
+          track={track}
+          counts={counts}
+          session={session}
+          onNavigate={navigate}
+        />
+      )
+    } else if (tab === 'study') {
+      root = (
+        <Study
+          session={session}
+          profile={profile}
+          track={track}
+          onBack={() => navigate('home')}
+          onNavigate={navigate}
+          onProfileUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
+          onSessionStateChange={setStudySession}
+        />
+      )
+    } else if (tab === 'stories') {
+      // Stories still renders its own series page and reader (see
+      // navShell.INLINE_VIEWS); the model owns the route, Stories owns the
+      // pixels, until commit 3 lifts them out.
+      root = (
+        <Stories
+          session={session}
+          profile={profile}
+          track={track}
+          onBack={() => navigate('home')}
+          onNavigate={navigate}
+          initialStoryId={pendingStoryId || storiesR.storyId}
+          initialStoryWords={pendingStoryWords}
+          initialStoryFirstMission={pendingStoryFirstMission}
+          routeKind={storiesR.kind}
+          routeStoryId={storiesR.storyId}
+          routeSeriesKey={storiesR.seriesKey}
+          onStoryRoute={(id) => navigate('stories', { storyId: id })}
+          onSeriesRoute={(key) => nav.navigate('series', { params: { key } })}
+          onBrowseRoute={() => nav.back()}
+          onInitialStoryConsumed={() => { setPendingStoryId(null); setPendingStoryWords(null); setPendingStoryFirstMission(false) }}
+        />
+      )
+    } else if (tab === 'practice') {
+      root = (
+        <Practice
+          profile={profile}
+          track={track}
+          counts={counts}
+          onNavigate={navigate}
+          onBack={() => navigate('home')}
+        />
+      )
+    }
+    return (
+      <Suspense fallback={<ViewFallback />}>
+        <ErrorBoundary>{root}</ErrorBoundary>
+      </Suspense>
     )
-  } else if (view === 'weak') {
+  }
+
+  // What sits above them, if anything, and whether the bar is on screen.
+  const topScreen = overlayScreen(nav.state)
+  const showTabBar = tabBarVisible(nav.state, { studyImmersive: studySession.immersive })
+
+  // ── Content for the screen above the tabs ─────────────────────────────────
+  let content
+  if (view === 'weak') {
     content = (
       <Study
         session={session}
@@ -540,16 +649,6 @@ export default function App() {
       <Cyrillic
         profile={profile}
         track={track}
-        onBack={() => navigate('home')}
-      />
-    )
-  } else if (view === 'practice') {
-    content = (
-      <Practice
-        profile={profile}
-        track={track}
-        counts={counts}
-        onNavigate={navigate}
         onBack={() => navigate('home')}
       />
     )
@@ -651,26 +750,6 @@ export default function App() {
         onBack={() => navigate('home')}
       />
     )
-  } else if (view === 'stories') {
-    content = (
-      <Stories
-        session={session}
-        profile={profile}
-        track={track}
-        onBack={() => navigate('home')}
-        onNavigate={navigate}
-        initialStoryId={pendingStoryId || (storyRouteState?.kind === 'story' ? storyRouteState.id : null)}
-        initialStoryWords={pendingStoryWords}
-        initialStoryFirstMission={pendingStoryFirstMission}
-        routeKind={storyRouteState?.kind || 'browse'}
-        routeStoryId={storyRouteState?.kind === 'story' ? storyRouteState.id : null}
-        routeSeriesKey={storyRouteState?.kind === 'series' ? storyRouteState.key : null}
-        onStoryRoute={(id) => routerNavigate(storyPath(id))}
-        onSeriesRoute={(key) => routerNavigate(seriesPath(key))}
-        onBrowseRoute={() => routerNavigate(viewToPath('stories'))}
-        onInitialStoryConsumed={() => { setPendingStoryId(null); setPendingStoryWords(null); setPendingStoryFirstMission(false) }}
-      />
-    )
   } else if (view === 'profile') {
     content = (
       <Profile
@@ -732,16 +811,9 @@ export default function App() {
       ? <Dashboard onBack={() => navigate('home')} session={session} profile={profile} track={track} />
       : <NotFound onHome={() => navigate('home')} />
   } else if (isKnownView(view)) {
-    // Only 'home' reaches here (every other known view has a branch above).
-    content = (
-      <Home
-        profile={profile}
-        track={track}
-        counts={counts}
-        session={session}
-        onNavigate={navigate}
-      />
-    )
+    // Every root is rendered persistently by TabHost below, so reaching here
+    // for one would mean the classification and the shell disagree.
+    content = null
   } else {
     // A genuinely unknown path — show an explicit 404 instead of silently
     // falling through to Home, which used to hide typos and dead links.
@@ -780,21 +852,34 @@ export default function App() {
           // so they still carry their own inset.
           paddingTop: isMobile ? 'env(safe-area-inset-top, 0px)' : 0,
           // Leave room for the fixed bottom bar so content isn't hidden behind it.
-          paddingBottom: isMobile ? 'calc(62px + env(safe-area-inset-bottom))' : 0,
+          paddingBottom: isMobile && showTabBar ? 'calc(62px + env(safe-area-inset-bottom))' : 0,
         }}>
-          {/* Per-view boundary keyed on `view`: a screen that throws (or a stale
-              lazy chunk after a deploy) degrades to the recovery UI without
-              taking down the shell, and recovers on the next navigation. */}
-          <Suspense fallback={<ViewFallback />}>
-            <ErrorBoundary key={view}>
-              {content}
-            </ErrorBoundary>
-          </Suspense>
+          {/* The four tab roots, mounted once and kept. Each keeps its own
+              error boundary so a screen that throws degrades without taking the
+              shell down — the property the old `key={view}` was protecting,
+              now without the remount that came with it. */}
+          <TabHost
+            nav={nav.state}
+            mounted={nav.mounted}
+            render={renderTabRoot}
+            scrollFor={nav.scrollFor}
+            onScrollCapture={nav.captureScroll}
+          />
+          {/* Whatever is on top of them: a pushed detail screen, or a
+              fullscreen flow. Mounted on demand and torn down on the way out,
+              which is what a pushed screen should do. */}
+          {topScreen && (
+            <Suspense fallback={<ViewFallback />}>
+              <ErrorBoundary key={topScreen.view}>
+                {content}
+              </ErrorBoundary>
+            </Suspense>
+          )}
         </main>
-        {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} isAdmin={!!profile.is_admin} language={profile.active_language} />}
+        {isMobile && showTabBar && <MobileNav view={nav.state.activeTab} onNavigate={onTabSelect} onLogout={handleLogout} isAdmin={!!profile.is_admin} language={profile.active_language} />}
         {/* Calm screens only — floating over Study it covered the Easy grade
             button, and the story reader has its own bottom audio bar. */}
-        {['home', 'practice', 'profile', 'settings', 'words', 'grammar', 'languages'].indexOf(view) !== -1 && (
+        {showTabBar && ['home', 'practice', 'profile', 'settings', 'words', 'grammar', 'languages'].indexOf(view) !== -1 && (
           <Feedback session={session} profile={profile} view={view} />
         )}
         <Toasts />

@@ -17,8 +17,12 @@ test.describe('Practice Lab', () => {
     const practice = new PracticePage(page);
     await practice.goto();
     await practice.mode('Speaking').click();
+    // `.filter({ visible: true })` because the Practice hub is a persistent tab
+    // root now: it stays in the DOM behind the drill (display:none, out of the
+    // accessibility tree), so its own "Speaking" tile is still matchable by
+    // text. The assertion is unchanged in intent — the drill's header renders.
     // Header renders whether or not the browser supports speech recognition.
-    await expect(page.getByText('Speaking').first()).toBeVisible();
+    await expect(page.getByText('Speaking').filter({ visible: true }).first()).toBeVisible();
     await expect(page.getByText(/Say this aloud|isn.t supported here/i)).toBeVisible();
   });
 });

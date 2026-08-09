@@ -35,6 +35,7 @@ import {
 } from './cardMarker'
 import { MICRO, NUM } from './designTokens'
 import { tapFeedback } from './haptics'
+import { invalidate } from './dataCache'
 import { useStudyAudio } from './useStudyAudio'
 import { useStudyKeyboardShortcuts } from './useStudyKeyboardShortcuts'
 import AudioButton from './AudioButton'
@@ -203,7 +204,7 @@ function GradeButton({
   )
 }
 
-export default function Study({ session, profile, track, mode = 'review', onBack, onNavigate, onProfileUpdate }) {
+export default function Study({ session, profile, track, mode = 'review', onBack, onNavigate, onProfileUpdate, onSessionStateChange }) {
   const isWeak = mode === 'weak'
   const [queue, setQueue] = useState([])
   const [loading, setLoading] = useState(true)
@@ -866,6 +867,13 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           language: track.language,
           level: track.current_level,
         }))
+        // The session is over, so anything derived from it is now behind:
+        // the shelf's unlocked chapters, Home's counts, the reward teaser.
+        // Stories may be sitting hidden and fully mounted, so nothing will
+        // refetch on its own — this is what tells it to, the next time the
+        // learner looks at it (dataCache.js).
+        invalidate('stories:')
+        invalidate('home:')
         setDone(true)
       }
       return rest
@@ -954,6 +962,24 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // still the load-time estimate; the rail's denominator comes from the live
   // queue so a growing session stays honest.
   const mix = sessionMix(queue, studied)
+
+  // Tell the shell when a flashcard is actually on screen.
+  //
+  // The bottom tab bar has no business sitting under a card — the session is
+  // the one place in the app that owns the whole screen (NAV-MODEL §8.2). The
+  // shell cannot infer that from the route, because this IS the Cards tab's
+  // root: only Study knows whether it is showing a card, a recap, or a loading
+  // state. `inProgress` is separate and is what stops a stray tap on the Cards
+  // tab throwing a half-finished session away.
+  const immersive = !loading && !done && queue.length > 0
+  const inProgress = immersive && studied > 0
+  useEffect(() => {
+    if (!onSessionStateChange) return undefined
+    onSessionStateChange({ immersive, inProgress })
+    // Leaving the session must always give the bar back, including when this
+    // unmounts mid-card (a deep link, a sign-out).
+    return () => onSessionStateChange({ immersive: false, inProgress: false })
+  }, [immersive, inProgress, onSessionStateChange])
 
   // Guided first-mission coaching for the current card (progressive disclosure).
   // Null except during the first run's early cards. A calm banner above the
