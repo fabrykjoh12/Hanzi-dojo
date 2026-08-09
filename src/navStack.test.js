@@ -209,6 +209,20 @@ describe('Android back', () => {
     expect(androidBack(present(S(), makeEntry('test'), 'fullscreen'))).toBe('dismiss')
   })
 
+  it('lets a tab root consume Back while it is presenting a flow of its own', () => {
+    // The flashcard session owns the whole Cards screen. Without this rung the
+    // first press on the most focused screen in the app jumped to Home, which
+    // is leaving Cards, not leaving the session.
+    const cards = selectTab(S(), 'study')
+    expect(androidBack(cards, { immersiveFlow: true })).toBe('exit-flow')
+    expect(androidBack(cards, { immersiveFlow: false })).toBe('home-tab')
+  })
+
+  it('still closes a sheet before the flow gets it', () => {
+    const cards = selectTab(S(), 'study')
+    expect(androidBack(cards, { immersiveFlow: true, sheetOpen: true })).toBe('close-sheet')
+  })
+
   it('pops a deep stack', () => {
     expect(androidBack(push(selectTab(S(), 'practice'), makeEntry('words')))).toBe('pop')
   })

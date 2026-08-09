@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from './supabase'
 import { isOnline } from './useOnline'
 import { enqueueGrade, gradeCardWrite, nextActivityCounts, newOpId } from './syncQueue'
@@ -35,6 +35,7 @@ import {
 } from './cardMarker'
 import { MICRO, NUM } from './designTokens'
 import { tapFeedback } from './haptics'
+import SessionPaused from './SessionPaused'
 import { invalidate } from './dataCache'
 import { useStudyAudio } from './useStudyAudio'
 import { useStudyKeyboardShortcuts } from './useStudyKeyboardShortcuts'
@@ -210,6 +211,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const [loading, setLoading] = useState(true)
   const [flipped, setFlipped] = useState(false)
   const [done, setDone] = useState(false)
+  // The session stepped aside without ending. See SessionPaused.jsx and the
+  // 'exit-flow' rung in navStack.androidBack.
+  const [paused, setPaused] = useState(false)
   const [showFurigana, setShowFurigana] = useState(profile.furigana_default !== false)
   const [saveError, setSaveError] = useState(null)
   const [typedValue, setTypedValue] = useState('')
@@ -971,15 +975,21 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // root: only Study knows whether it is showing a card, a recap, or a loading
   // state. `inProgress` is separate and is what stops a stray tap on the Cards
   // tab throwing a half-finished session away.
-  const immersive = !loading && !done && queue.length > 0
-  const inProgress = immersive && studied > 0
+  const immersive = !loading && !done && !paused && queue.length > 0
+  const inProgress = !loading && !done && queue.length > 0 && studied > 0
+
+  // ONE exit action. The X in the session header and Android's hardware back
+  // key both call this, so they cannot drift apart — and neither of them
+  // reaches for Home, which was never what "leave the session" meant.
+  const exitSession = useCallback(() => { setPaused(true) }, [])
+
   useEffect(() => {
     if (!onSessionStateChange) return undefined
-    onSessionStateChange({ immersive, inProgress })
+    onSessionStateChange({ immersive, inProgress, exit: exitSession })
     // Leaving the session must always give the bar back, including when this
     // unmounts mid-card (a deep link, a sign-out).
-    return () => onSessionStateChange({ immersive: false, inProgress: false })
-  }, [immersive, inProgress, onSessionStateChange])
+    return () => onSessionStateChange({ immersive: false, inProgress: false, exit: null })
+  }, [immersive, inProgress, exitSession, onSessionStateChange])
 
   // Guided first-mission coaching for the current card (progressive disclosure).
   // Null except during the first run's early cards. A calm banner above the
@@ -1039,6 +1049,24 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             <BookOpenCheck size={34} strokeWidth={1.75} color={accentHex} />
           </div>
         </div>
+      </div>
+    )
+  }
+
+  // Paused: the queue is still in memory (the Cards root is persistent), and
+  // every graded card was written when it was graded, so there is nothing to
+  // confirm and nothing to lose. Checked before the recap so a paused session
+  // with cards left never renders as a finished one.
+  if (paused && !done && queue.length > 0) {
+    return (
+      <div style={pageShell}>
+        <SessionPaused
+          studied={studied}
+          remaining={queue.length}
+          accentHex={accentHex}
+          onResume={() => setPaused(false)}
+          onFinish={() => { setPaused(false); setDone(true) }}
+        />
       </div>
     )
   }
@@ -1217,7 +1245,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       </h1>
 
       <div style={{ ...railStyle, display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <HeaderIconButton icon={X} label="Exit" onClick={onBack} />
+        <HeaderIconButton icon={X} label="Exit session" onClick={exitSession} />
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* The rail is the session's composition, not one flat number: work
               done, then the new / learning / due cards still ahead. It is fully

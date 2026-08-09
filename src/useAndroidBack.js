@@ -17,17 +17,25 @@ import { anySheetOpen, closeTopSheet } from './sheetStack'
 // no second way to move through the app.
 //
 // The web is untouched: nothing calls the registry outside the native bridge.
-export function useAndroidBack(nav) {
+export function useAndroidBack(nav, { immersiveFlow, onExitFlow } = {}) {
   const { state, back, navigate } = nav
   useEffect(() => {
     return setBackHandler(() => {
-      const verdict = androidBack(state, { sheetOpen: anySheetOpen() })
+      const verdict = androidBack(state, { sheetOpen: anySheetOpen(), immersiveFlow })
       if (verdict === 'close-sheet') { closeTopSheet(); return 'handled' }
+      // The screen's own exit, so the hardware key and the on-screen control
+      // are literally the same action rather than two paths that agree today.
+      if (verdict === 'exit-flow') {
+        if (onExitFlow) { onExitFlow(); return 'handled' }
+        // A flow that claimed Back but gave us no way out would trap the
+        // learner; falling through to the ordinary ladder is the safe answer.
+        return 'handled'
+      }
       if (verdict === 'dismiss' || verdict === 'pop') { back(); return 'handled' }
       if (verdict === 'home-tab') { navigate('home'); return 'handled' }
       // Only the Home tab's own root exits. Everything else has somewhere to go
       // first, which is the whole point of the ladder.
       return 'exit'
     })
-  }, [state, back, navigate])
+  }, [state, back, navigate, immersiveFlow, onExitFlow])
 }

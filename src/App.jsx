@@ -168,7 +168,7 @@ export default function App() {
   // Android's hardware back key now resolves from the model above, not from
   // the URL. Registered here and only here — the bridge holds the listener and
   // asks this shell for the answer (backHandler.js).
-  useAndroidBack(nav)
+  useAndroidBack(nav, { immersiveFlow: studySession.immersive, onExitFlow: studySession.exit })
   const publicStoryId = readStoryId(location.pathname)
   const assessment = isAssessmentPath(location.pathname)
   const trustPage = trustPageKey(location.pathname)

@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { useEffect } from 'react'
 import { render, act, cleanup } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router-dom'
@@ -22,18 +22,18 @@ beforeEach(() => { resetLedger(); resetBackHandler(); resetSheets() })
 let api = null
 let path = null
 
-function Shell() {
+function Shell({ flow }) {
   const nav = useNavigation()
   const location = useLocation()
-  useAndroidBack(nav)
+  useAndroidBack(nav, flow || {})
   useEffect(() => { api = nav; path = location.pathname })
   return null
 }
 
-function mount(initialPath = '/') {
+function mount(initialPath = '/', flow) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
-      <Shell />
+      <Shell flow={flow} />
     </MemoryRouter>
   )
 }
@@ -143,16 +143,70 @@ describe('the account stack', () => {
   })
 })
 
-describe('sessions and flows', () => {
-  it('leaves a flashcard session by stepping to Home, with the session tab intact', () => {
-    mount('/study')
+describe('the flashcard session consumes Back before the tab does', () => {
+  it('exits the session to Cards, and does NOT go to Home', () => {
+    const exit = vi.fn()
+    mount('/study', { immersiveFlow: true, onExitFlow: exit })
     expect(api.state.activeTab).toBe('study')
+
     expect(press()).toBe('handled')
-    expect(api.state.activeTab).toBe('home')
-    // The Cards stack is untouched — the session is still there to return to,
-    // and graded cards were saved as they were graded.
-    expect(api.state.stacks.study.map(e => e.view)).toEqual(['study'])
+
+    // The session's own exit ran…
+    expect(exit).toHaveBeenCalledTimes(1)
+    // …and nothing navigated. Home was never involved.
+    expect(api.state.activeTab).toBe('study')
+    expect(path).toBe('/study')
   })
+
+  it('leaves the Cards stack valid', () => {
+    mount('/study', { immersiveFlow: true, onExitFlow: () => {} })
+    press()
+    expect(api.state.stacks.study.map(e => e.view)).toEqual(['study'])
+    expect(api.state.overlay).toBe(null)
+  })
+
+  it('follows the ordinary ladder on the SECOND press, once the session has stepped aside', () => {
+    // The shell re-renders with immersiveFlow false after the session pauses,
+    // which is what the real signal from Study does.
+    const view = render(
+      <MemoryRouter initialEntries={['/study']}>
+        <Shell flow={{ immersiveFlow: true, onExitFlow: () => {} }} />
+      </MemoryRouter>
+    )
+    expect(press()).toBe('handled')          // session steps aside
+    act(() => {
+      view.rerender(
+        <MemoryRouter initialEntries={['/study']}>
+          <Shell flow={{ immersiveFlow: false }} />
+        </MemoryRouter>
+      )
+    })
+    expect(press()).toBe('handled')          // Cards root → Home tab
+    expect(api.state.activeTab).toBe('home')
+    expect(press()).toBe('exit')
+    view.unmount()
+  })
+
+  it('cannot leave an orphaned session however many times Back is pressed', () => {
+    const exit = vi.fn()
+    mount('/study', { immersiveFlow: true, onExitFlow: exit })
+    for (let i = 0; i < 8; i += 1) press()
+    // A flow that keeps reporting itself immersive keeps consuming Back — it
+    // never falls through to move the tab out from under itself.
+    expect(exit).toHaveBeenCalledTimes(8)
+    expect(api.state.activeTab).toBe('study')
+    expect(api.state.stacks.study).toHaveLength(1)
+    expect(api.state.overlay).toBe(null)
+  })
+
+  it('does not trap the learner if a flow claims Back but offers no way out', () => {
+    mount('/study', { immersiveFlow: true })
+    expect(press()).toBe('handled')
+    expect(api.state.activeTab).toBe('study')
+  })
+})
+
+describe('other flows', () => {
 
   it('dismisses a weak-words drill back to where it was opened', () => {
     mount('/')

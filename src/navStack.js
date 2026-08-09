@@ -232,9 +232,15 @@ export function tabReselect(state, { sessionInProgress } = {}) {
 
 // Android hardware back. NAV-MODEL §5.2 — a strict ladder, returned as a
 // decision so the effectful half stays in the bridge.
-export function androidBack(state, { sheetOpen } = {}) {
+export function androidBack(state, { sheetOpen, immersiveFlow } = {}) {
   if (sheetOpen) return 'close-sheet'
   if (state.overlay) return 'dismiss'
+  // A tab ROOT can be presenting a flow of its own — the flashcard session owns
+  // the whole screen from inside the Cards tab. It has to consume Back before
+  // the tab is allowed to move, or the first press on the most focused screen
+  // in the app jumps to Home, which is not "leaving the session", it is leaving
+  // Cards. Only the screen itself knows it is in that state, so it reports it.
+  if (immersiveFlow) return 'exit-flow'
   if (state.stacks[state.activeTab].length > 1) return 'pop'
   if (state.activeTab !== 'home') return 'home-tab'
   return 'exit'
