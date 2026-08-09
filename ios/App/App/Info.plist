@@ -62,11 +62,19 @@
 	<array>
 		<string>armv7</string>
 	</array>
+	<!-- iPhone is portrait-only, matching AndroidManifest's
+	     android:screenOrientation="portrait". The two platforms disagreeing was
+	     not a preference, it was a bug: the app shell switches on viewport
+	     WIDTH, so an iPhone turned sideways crossed the 768px breakpoint and
+	     rendered the desktop WEBSITE — left sidebar, hover affordances — and
+	     dropped the top safe-area inset with it, putting content under the
+	     notch. useIsMobile now pins the app shell inside the native wrapper
+	     regardless, so this is belt and braces; but nothing in the product is
+	     designed to be read sideways, and a reader that silently reflows
+	     mid-chapter is not a feature. -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>

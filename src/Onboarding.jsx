@@ -172,7 +172,10 @@ export default function Onboarding({ session, onComplete }) {
       alignItems: 'center',
       justifyContent: 'center',
       position: 'relative',
-      padding: '24px',
+      // Rendered outside the shell's <main>, so the top inset it would have
+      // inherited has to be spelled out here. Resolves to a plain 24px where
+      // there is no notch, so the web is untouched.
+      padding: 'calc(24px + env(safe-area-inset-top, 0px)) 24px calc(24px + env(safe-area-inset-bottom, 0px))',
       background: 'var(--bg)',
     }}>
       {/* Background image */}

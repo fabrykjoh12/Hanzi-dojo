@@ -9,14 +9,33 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <!-- The theme the activity wears once the splash is done. DayNight so the
+         window background behind the WebView matches the app's theme instead
+         of being permanently light — that background is what shows for the
+         instant before the WebView paints, and through any overscroll. -->
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
     </style>
 
+    <!-- The launch theme.
+         This was the untouched Capacitor scaffold: `Theme.SplashScreen` with
+         only `android:background`, which Android 12+ ignores. The system then
+         drew its own splash — the launcher icon on the default window
+         background — so a dark-mode launch started on a light window, and the
+         handoff to the app's own ensō animation was a visible flash.
 
+         The three attributes below are the Android 12+ contract:
+           windowSplashScreenBackground  — day/night, matched to SPLASH_BG
+           windowSplashScreenAnimatedIcon — the real mark, masked by the system
+           postSplashScreenTheme          — what the activity becomes afterwards
+         `android:background` stays for Android 11 and below, which still uses
+         the drawable (and has its own -night variants). -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
         <item name="android:background">@drawable/splash</item>
     </style>
 </resources>

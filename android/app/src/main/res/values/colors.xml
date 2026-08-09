@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The launch background, light. Must equal SPLASH_BG.light in
+         src/splashIntro.js and the light splash drawables, or the handoff from
+         the system splash to the app's own launch animation flashes. -->
+    <color name="splash_background">#FAFAF8</color>
+
+    <!-- The Capacitor scaffold's styles.xml references these three but never
+         shipped a colors.xml to define them; they resolve only because
+         AppTheme is unused in practice (MainActivity uses
+         AppTheme.NoActionBarLaunch). Defined here so the file is honest. -->
+    <color name="colorPrimary">#B83A24</color>
+    <color name="colorPrimaryDark">#922E1C</color>
+    <color name="colorAccent">#B83A24</color>
+</resources>

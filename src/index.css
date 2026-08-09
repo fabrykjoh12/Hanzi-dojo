@@ -30,6 +30,71 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ── Inside the store app only ────────────────────────────────────────────
+   Everything under `:root[data-native]` is the difference between the app and
+   the website, expressed once, in CSS. The attribute is set in main.jsx from
+   isNativeApp(); the web never matches any of it and behaves exactly as it
+   always has. (CLAUDE.md §1: web and app diverge through isNativeApp(), inside
+   shared code — never a forked file.)
+
+   These are the browser affordances that give a webview away. On a web page
+   they are correct behaviour; in an app they are artefacts:
+
+   1. **Rubber-band overscroll.** Swiping past the end of a screen dragged the
+      whole page and let the ground behind it show through.
+      `overscroll-behavior: none` stops that at the document boundary while
+      leaving ordinary scrolling completely alone.
+
+      Deliberately NOT `overflow: hidden` on <html>/<body>: the app shell still
+      scrolls the *document* (App.jsx's <main> has no scroller of its own), so
+      locking the document would leave every screen unscrollable. Giving the
+      shell its own scroll region is a Phase 2 change, and this rule is written
+      to survive it.
+   2. **The long-press callout and selection on things you PRESS.** Press and
+      hold a tab icon, a grade button or a story cover on iOS and WKWebView
+      offers Copy / Look Up / Save Image, and a drag paints the label blue and
+      leaves selection handles behind. No native control does either.
+
+      Scoped to pressable surfaces on purpose, not to <body>. A blanket
+      `user-select: none` would also stop a learner selecting a sentence in a
+      story — and long-press → Look Up on Chinese text is a *feature* in a
+      language app, not an artefact. Prose is left completely alone.
+   3. **The tap flash.** Tailwind's preflight already sets
+      `-webkit-tap-highlight-color: transparent`; restated here so removing
+      Tailwind later cannot silently bring the grey rectangle back. */
+:root[data-native],
+:root[data-native] body {
+  overscroll-behavior: none;
+}
+
+:root[data-native] body {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root[data-native] button,
+:root[data-native] a,
+:root[data-native] label,
+:root[data-native] nav,
+:root[data-native] svg,
+:root[data-native] img,
+:root[data-native] [role="button"],
+:root[data-native] [role="tab"] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* …but never at the cost of a field the learner has to type into, or anything
+   that has deliberately asked to stay selectable. */
+:root[data-native] input,
+:root[data-native] textarea,
+:root[data-native] [contenteditable],
+:root[data-native] [data-selectable] {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 :root {
   --chinese-accent: #B83A24;
   --chinese-accent-dark: #922E1C;

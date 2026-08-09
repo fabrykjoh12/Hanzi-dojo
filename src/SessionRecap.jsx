@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { offlineAvailable } from './offline'
 import { prefetchLevel } from './prefetch'
+import { successFeedback } from './haptics'
 import StoryCover from './StoryCover'
 import {
   ArrowLeft, CheckCircle2,
@@ -230,6 +231,15 @@ export default function SessionRecap({
   // This session opened the next chapter of the active series — the loop's
   // payoff moment. It takes the "recommended next" slot outright.
   const chapterUnlocked = Boolean(chapterReward && chapterReward.state === 'unlocked' && chapterReward.chapter)
+
+  // The one confirmation haptic in the app, on the one screen that has earned
+  // it: the session is finished, and often a chapter has just opened. Fired
+  // once on arrival, and only when cards were actually graded — bouncing off an
+  // empty queue is not an achievement, and buzzing for it would cheapen the
+  // times it means something.
+  useEffect(() => {
+    if (didStudy) successFeedback()
+  }, [didStudy])
 
   // The single most useful next action, so the recap ALWAYS ends with a direct
   // "do this next" instead of a menu the learner has to weigh — or, worse, a

@@ -1,6 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+// Bundled typefaces — must come before index.css so the @font-face rules are
+// in the stylesheet ahead of anything that uses them.
+import './fonts'
 import './index.css'
 import App from './App.jsx'
 import ErrorBoundary from './ErrorBoundary.jsx'
@@ -9,6 +12,7 @@ import SplashIntro from './SplashIntro.jsx'
 import { BUILD_SHA, BUILD_TIME } from './version'
 import { installErrorMonitoring } from './errorMonitor'
 import { isNativeApp } from './nativeShell'
+import { hideNativeSplash } from './nativeSplash'
 
 // Announce the running build so "which version is live?" is answerable from the
 // console (also in Settings, and at /version.json).
@@ -17,6 +21,35 @@ console.info('Hanzi Dojo · build ' + BUILD_SHA + (BUILD_TIME ? ' · ' + BUILD_T
 // Unhandled exceptions / rejections become capped, privacy-safe analytics
 // events, so production failures are diagnosable (see errorMonitor.js).
 installErrorMonitoring()
+
+// Mark the document when we are inside the store app, so CSS can hold the two
+// surfaces to different rules without a single JS branch in a screen.
+//
+// This is the styling half of the isNativeApp() contract in CLAUDE.md §1: the
+// app suppresses the browser affordances that give a webview away — the iOS
+// long-press callout, text selection on chrome, the rubber-band overscroll
+// behind a fixed layout — while the web keeps every one of them, because on
+// the web they are correct. Everything scoped to `:root[data-native]` in
+// index.css is native-only by construction, which also makes the divergence
+// greppable in one place.
+if (isNativeApp()) document.documentElement.setAttribute('data-native', '')
+
+// Backstop for the held launch image.
+//
+// `launchAutoHide: false` (capacitor.config.json) means the platform splash
+// stays up until something calls hide(). SplashIntro.jsx does that two frames
+// after it paints, which is the whole point — the handoff happens when the web
+// overlay is already covering the same pixels. But SplashIntro can only run if
+// React mounted, and "the splash never hides" is an app that is simply dead on
+// launch: a frozen logo with no way past it.
+//
+// So the guarantee lives out here, before React, where a render failure cannot
+// reach it. Long enough that the normal path always wins the race; short enough
+// that a broken bundle still shows whatever the ErrorBoundary can draw.
+const SPLASH_BACKSTOP_MS = 3500
+if (isNativeApp()) {
+  setTimeout(() => { hideNativeSplash() }, SPLASH_BACKSTOP_MS)
+}
 
 // react-router basename must match the host's base path (Pages serves under
 // /Hanzi-dojo/, Vercel/dev under /). Strip the trailing slash for a subpath.

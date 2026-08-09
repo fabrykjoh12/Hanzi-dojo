@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react'
 import logo from './assets/Hanzi-logo.png'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 import {
-  SPLASH_BG, splashPlan, splashFadeAtMs, splashDoneAtMs, prefersReducedMotion,
+  SPLASH_BG, splashPlan, splashFadeAtMs, prefersReducedMotion,
+  splashShouldExit, SPLASH_MAX_WAIT_MS,
 } from './splashIntro'
 import { isNativeApp } from './nativeShell'
+import { onAppReady } from './appReady'
+import { hideNativeSplash } from './nativeSplash'
 
 // The launch animation: the real logo — the brush-textured ensō PNG — is
 // revealed along its own circle, as if the stroke were being drawn. Timing and
@@ -34,12 +37,68 @@ export default function SplashIntro() {
   }))
   const [phase, setPhase] = useState('in')   // 'in' | 'out' | 'gone'
 
+  // Hand the platform launch image over to this overlay. It is held open by
+  // `launchAutoHide: false`, so it covers the WebView's boot — the white gap
+  // that used to sit between the OS splash and React's first paint. Two frames
+  // of headroom so this overlay is definitely on screen first: the two images
+  // are identical, so the seam is invisible.
   useEffect(() => {
-    // No timers when it isn't playing; the render below already bails out.
+    if (!isNativeApp()) return undefined
+    let raf2 = 0
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => { hideNativeSplash() })
+    })
+    // Belt and braces: if rAF never runs (a backgrounded launch throttles it),
+    // a held splash would be a permanently black app.
+    const fallback = setTimeout(() => { hideNativeSplash() }, 1200)
+    return () => {
+      cancelAnimationFrame(raf1)
+      if (raf2) cancelAnimationFrame(raf2)
+      clearTimeout(fallback)
+    }
+  }, [])
+
+  // The exit. Not a stopwatch any more: the overlay leaves when the stroke has
+  // finished AND the app has something to show, whichever is later — capped, so
+  // a dead network cannot trap anyone here. See splashShouldExit.
+  useEffect(() => {
     if (!plan.show) return undefined
-    const toFade = setTimeout(() => setPhase('out'), splashFadeAtMs(plan))
-    const toGone = setTimeout(() => setPhase('gone'), splashDoneAtMs(plan))
-    return () => { clearTimeout(toFade); clearTimeout(toGone) }
+    // Stamped here rather than during render: the clock is impure, and this
+    // effect runs once (the plan is frozen by a useState initialiser), so
+    // "when the effect ran" is both stable and the more accurate answer to
+    // "when did the overlay actually appear".
+    const startedAt = Date.now()
+    const animationDoneMs = splashFadeAtMs(plan)
+    let readyNow = false
+    let timer = 0
+    let leaving = false
+
+    const leave = () => {
+      if (leaving) return
+      leaving = true
+      setPhase('out')
+      timer = setTimeout(() => setPhase('gone'), plan.fadeMs)
+    }
+
+    // Re-check on every event that can change the answer: the app reporting
+    // ready, the animation finishing, and the give-up cap.
+    const check = () => {
+      if (leaving) return
+      const elapsedMs = Date.now() - startedAt
+      if (splashShouldExit({ elapsedMs, animationDoneMs, ready: readyNow })) leave()
+    }
+
+    const offReady = onAppReady(() => { readyNow = true; check() })
+    const atAnimationEnd = setTimeout(check, animationDoneMs)
+    const atCap = setTimeout(check, SPLASH_MAX_WAIT_MS)
+    check()
+
+    return () => {
+      offReady()
+      clearTimeout(atAnimationEnd)
+      clearTimeout(atCap)
+      clearTimeout(timer)
+    }
   }, [plan])
 
   if (!plan.show || phase === 'gone') return null

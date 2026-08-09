@@ -3,6 +3,7 @@ import { MoreHorizontal, X } from 'lucide-react'
 import { languageTheme, ink } from './languageTheme'
 import { MOBILE_PRIMARY, MOBILE_MORE, ADMIN_NAV } from './navConfig'
 import { trapDialogFocus } from './dialogFocus'
+import { tapFeedback } from './haptics'
 
 const MUTED = 'var(--text-muted)'
 
@@ -49,6 +50,9 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
   const moreKeys = moreItems.map(i => i.key)
 
   const go = (key) => {
+    // A tick when the bar actually changes tab — not on a tap that lands you
+    // where you already are, which would be the app buzzing at nothing.
+    if (key !== view && key !== 'logout') tapFeedback()
     setMoreOpen(false)
     if (key === 'logout') onLogout()
     else onNavigate(key)

@@ -20,7 +20,13 @@ export default function FirstMissionWelcome({ onStart, tastedWords }) {
     <div style={{
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      position: 'relative', padding: '24px', background: 'var(--bg)',
+      position: 'relative', background: 'var(--bg)',
+      // App.jsx renders this OUTSIDE the shell's <main>, so it does not inherit
+      // the top inset that every in-flow screen gets. The content is centred
+      // and usually clears the notch anyway — but a tall step on a short phone
+      // did not, and this is a brand-new learner's second screen. Resolves to
+      // a plain 24px on hardware with no inset.
+      padding: 'calc(24px + env(safe-area-inset-top, 0px)) 24px calc(24px + env(safe-area-inset-bottom, 0px))',
     }}>
       <div style={{
         position: 'fixed', inset: 0, zIndex: 0,

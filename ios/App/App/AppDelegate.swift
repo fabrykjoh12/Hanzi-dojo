@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import AVFoundation
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -7,8 +8,47 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        configureAudioSession()
         return true
+    }
+
+    /// Pronunciation has to be audible with the ring/silent switch on.
+    ///
+    /// WKWebView's default session category is `.ambient`, which is the
+    /// correct default for a web page — incidental sound that must never
+    /// interrupt anything and is silenced by the hardware switch. It is the
+    /// wrong default for this app: every word, example sentence and story line
+    /// is spoken audio the learner deliberately asked to hear, and a phone
+    /// left on silent (which is most phones, most of the time) played nothing
+    /// at all, with no indication why. That is the single most confusing
+    /// "is it broken?" failure the app can have, and it is a webview artefact.
+    ///
+    /// `.playback` is the category for audio that *is* the point. Three
+    /// deliberate details:
+    ///
+    /// - **No options.** `.duckOthers` looks kinder — a learner's podcast
+    ///   quietens instead of stopping — but nothing here ever deactivates the
+    ///   session, and a duck lasts as long as the session is active. Their
+    ///   podcast would stay quiet for the whole time the app is open, with no
+    ///   way to explain why. Un-ducking properly means driving
+    ///   setActive(false) off playback-ended events that live in JavaScript,
+    ///   several layers away. Plain `.playback` is honest instead: the first
+    ///   word you play takes the audio, exactly like every media app.
+    /// - **Configured, not activated.** Activation is what actually interrupts
+    ///   other audio, and iOS does it implicitly on first playback — so merely
+    ///   opening the app costs a listener nothing.
+    /// - **No `audio` background mode**, so playback stops when the app is
+    ///   backgrounded. Intended: this is not a media app, and the capability
+    ///   invites an App Review question we have no reason to answer.
+    private func configureAudioSession() {
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+        } catch {
+            // A device that refuses the category still plays through the
+            // default one — quieter, switch-dependent, but not broken. There
+            // is nothing useful to tell the learner here.
+            CAPLog.print("⚡️  Audio session unavailable: \(error.localizedDescription)")
+        }
     }
 
     func applicationWillResignActive(_ application: UIApplication) {

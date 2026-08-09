@@ -11,17 +11,36 @@
     <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
     <meta name="theme-color" content="#B83A24" />
 
-    <!-- Fonts: preconnect + direct link (not a CSS @import, which would
-         serialize behind the app stylesheet and delay first text paint).
-         This carries the UI faces and Noto Sans SC only — Chinese is the
-         product, so its hanzi are on screen at first paint. A full CJK family
-         is the most expensive thing this page fetches, and Noto Sans JP is
-         needed only on the paused Japanese track's own screens, so it is
-         loaded on demand instead (src/fontLoader.js) rather than by every
-         learner who will never see it. -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Inter:wght@300;400;500;600&family=Poppins:wght@500;600;700&display=swap" />
+    <!-- Fonts are BUNDLED (src/fonts.js), not fetched. They used to come from
+         a render-blocking fonts.googleapis.com stylesheet, which meant a
+         downloaded native app waited on a third-party CDN before it could
+         paint, rendered in the system fallback when offline, and made a
+         request to Google on every launch. Noto Sans JP is still loaded on
+         demand (src/fontLoader.js) for the paused Japanese track, so nobody
+         downloads a second CJK family for a language they never open. -->
+
+    <!-- The theme, before the first pixel.
+         The app used to start every launch at light and only learn the truth
+         from the server profile a few hundred milliseconds later, which is a
+         full-screen white flash on every cold start in dark mode. This runs
+         before the stylesheet paints, so there is nothing to flash.
+         It is a deliberate transcription of bootTheme() in src/themeBoot.js —
+         a module cannot run earlier than the bundle that contains it. Change
+         one, change the other; themeBoot.test.js holds the rules. -->
+    <script>
+      (function () {
+        try {
+          var stored = null
+          try { stored = localStorage.getItem('hd:theme') } catch (e) { stored = null }
+          var theme = (stored === 'dark' || stored === 'light')
+            ? stored
+            : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          document.documentElement.setAttribute('data-theme', theme)
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light')
+        }
+      })()
+    </script>
 
     <title>Hanzi Dojo — Learn to read Chinese free</title>
     <meta name="description" content="Learn Chinese with SRS flashcards and stories matched to the words you know. Free forever, no credit card." />

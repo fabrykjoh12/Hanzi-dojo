@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   splashPlan, splashFadeAtMs, splashDoneAtMs, prefersReducedMotion, SPLASH_BG,
+  splashShouldExit, SPLASH_MAX_WAIT_MS,
 } from './splashIntro'
 
 describe('splashPlan', () => {
@@ -35,6 +36,39 @@ describe('splashPlan', () => {
     const plan = splashPlan({ native: false })
     expect(splashFadeAtMs(plan)).toBe(0)
     expect(splashDoneAtMs(plan)).toBe(0)
+  })
+})
+
+describe('splashShouldExit', () => {
+  const animationDoneMs = splashFadeAtMs(splashPlan({ native: true }))
+
+  it('holds while the stroke is still being drawn, even once the app is ready', () => {
+    expect(splashShouldExit({ elapsedMs: 200, animationDoneMs, ready: true })).toBe(false)
+  })
+
+  it('holds after the stroke finishes while the app is still loading', () => {
+    expect(splashShouldExit({ elapsedMs: animationDoneMs + 500, animationDoneMs, ready: false })).toBe(false)
+  })
+
+  it('leaves once both the animation has finished and the app is ready', () => {
+    expect(splashShouldExit({ elapsedMs: animationDoneMs, animationDoneMs, ready: true })).toBe(true)
+  })
+
+  it('gives up waiting rather than trapping someone on a logo', () => {
+    // The whole point of the cap: a dead network must not mean an app that
+    // never opens. Whatever App renders underneath is more useful than this.
+    expect(splashShouldExit({ elapsedMs: SPLASH_MAX_WAIT_MS, animationDoneMs, ready: false })).toBe(true)
+    expect(splashShouldExit({ elapsedMs: SPLASH_MAX_WAIT_MS + 1, animationDoneMs, ready: false })).toBe(true)
+  })
+
+  it('caps at a length someone would actually sit through', () => {
+    expect(SPLASH_MAX_WAIT_MS).toBeLessThanOrEqual(6000)
+    expect(SPLASH_MAX_WAIT_MS).toBeGreaterThan(splashDoneAtMs(splashPlan({ native: true })))
+  })
+
+  it('treats missing input as "not yet" rather than throwing', () => {
+    expect(splashShouldExit()).toBe(false)
+    expect(splashShouldExit({})).toBe(false)
   })
 })
 

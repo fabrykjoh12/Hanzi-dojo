@@ -14,6 +14,10 @@ import { ensureLanguageFont } from './fontLoader'
 import { shouldRefreshHome } from './homeRefresh'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
+import { initialTheme, rememberTheme } from './themeBoot'
+import { syncStatusBar } from './statusBar'
+import { markAppReady } from './appReady'
+import { isNativeApp } from './nativeShell'
 // Eager: the app shell + first-paint screens.
 import Landing from './Landing'
 import PasswordReset from './PasswordReset'
@@ -134,9 +138,16 @@ export default function App() {
   // True while the user arrived via a password-recovery email link and hasn't
   // set a new password yet (Supabase signs them in and fires PASSWORD_RECOVERY).
   const [recovery, setRecovery] = useState(false)
-  // Start light before a profile loads; a signed-in user's saved preference
-  // takes over once their profile arrives, so a deliberate dark choice is kept.
-  const [theme, setThemeState] = useState('light')
+  // The theme is already correct before this component mounts — index.html's
+  // inline script sets `data-theme` from the same rules (themeBoot.js) before
+  // the stylesheet paints. Seeding state from those rules rather than from a
+  // hardcoded 'light' is what keeps React's first render agreeing with the
+  // document it is rendering into: starting light and correcting later was a
+  // full-screen white flash on every dark-mode cold start.
+  //
+  // The server profile still wins the moment it lands — this is the device
+  // cache, not the record.
+  const [theme, setThemeState] = useState(initialTheme)
   const isMobile = useIsMobile()
   const routerNavigate = useNavigate()
   const location = useLocation()
@@ -146,10 +157,27 @@ export default function App() {
   const trustPage = trustPageKey(location.pathname)
   const storyRouteState = storyRoute(location.pathname)
 
-  // Apply the theme to the document so the CSS variables (index.css) switch.
+  // Apply the theme to the document so the CSS variables (index.css) switch,
+  // remember it on the device so the NEXT launch is right before first paint,
+  // and repaint the native status bar to match — otherwise the clock and
+  // battery stay in the old theme's colours over the new background, which on
+  // dark meant dark icons on a near-black bar.
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
+    rememberTheme(theme)
+    syncStatusBar(theme, { native: isNativeApp() })
   }, [theme])
+
+  // Tell the launch overlay it can leave (appReady.js → SplashIntro.jsx).
+  //
+  // `loading` false is the honest signal: it means the session/profile
+  // bootstrap has SETTLED, and every way it can settle — a signed-in learner,
+  // a blank account heading for onboarding, a network failure heading for the
+  // retry card — is a screen worth revealing. Waiting for success instead
+  // would hold the logo over the very failure it needs to show.
+  useEffect(() => {
+    if (!loading) markAppReady()
+  }, [loading])
 
   // Fetch the active language's web font if the base stylesheet doesn't
   // already carry it. Only the paused tracks need this, so for the Chinese

@@ -34,6 +34,7 @@ import {
   cardMarker, markerCardShadow, markerPillStyle, markerDotStyle, MARKER_DOT,
 } from './cardMarker'
 import { MICRO, NUM } from './designTokens'
+import { tapFeedback } from './haptics'
 import { useStudyAudio } from './useStudyAudio'
 import { useStudyKeyboardShortcuts } from './useStudyKeyboardShortcuts'
 import AudioButton from './AudioButton'
@@ -716,9 +717,14 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       logId: null,
     }
 
-    // Fire the colored grade-feedback ring (restarts via the bumped key).
+    // Fire the colored grade-feedback ring (restarts via the bumped key), and
+    // the physical half of the same confirmation. Grading is the most-repeated
+    // action in the app, so this is the lightest tick available and the same
+    // one for all four grades: a heavier buzz for Again would be the app
+    // tutting at a learner, which is the opposite of the stated stance.
     setGradeColor(GRADE_COLORS[grade])
     setGradeId(id => id + 1)
+    tapFeedback()
 
     // Pure decision: how this grade changes the session recap counters + the
     // chat-mission word metadata (see studyTally.js). The ref mutations below
