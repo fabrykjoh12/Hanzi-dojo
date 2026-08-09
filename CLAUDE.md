@@ -32,6 +32,7 @@ still get full detail — they are read once, on purpose.
 | **this file** | Vision, stack, repo shape, coding rules, DB safety rules, workflow | Always, first |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Full DB schema, level/mastery/SRS systems, design system, content pipeline | You need the detail |
 | [`docs/METRICS.md`](docs/METRICS.md) | The metric dictionary — one definition per number the product shows | Touching analytics or any displayed number |
+| [`docs/NAV-MODEL.md`](docs/NAV-MODEL.md) | The mobile navigation model — persistent tabs, per-tab stacks, deep-link seeding, data freshness. **Specification, not yet implemented** | Touching `App.jsx`'s view switch, routing, or tab state |
 | [`docs/STORY-BIBLE.md`](docs/STORY-BIBLE.md) | The story universe: world rules, cast, how a season is made. Machine half: `data/story-canon.chinese.json` | Writing or reviewing stories |
 | [`docs/DEPLOY.md`](docs/DEPLOY.md) | Env vars, hosting, routing, PWA, secrets, failure cheat-sheet | Something is broken in prod |
 | [`docs/TESTING.md`](docs/TESTING.md) | What needs manual testing on a real device | Before asking testers |
