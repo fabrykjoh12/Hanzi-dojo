@@ -362,15 +362,47 @@ browser history — it calls the reducer, like every other navigation.
 
 ### 5.4 Transitions
 
-| Class | Transition |
-|---|---|
-| Tab switch | cross-fade, 120ms |
-| Push / pop | slide from the trailing edge, 240ms; the parent parallaxes -25% |
-| Fullscreen present / dismiss | slide up from the bottom edge, 280ms |
-| Sheet | existing `hd-sheet-up`, 280ms, with a scrim fade |
+Motion is a property of the **transition**, not of the screen: the difference
+between two NavStates says whether something was pushed, popped, presented,
+dismissed, or whether the learner simply changed tab. `navMotion.js` names it
+and returns one plan; `useNavMotion.js` runs it. **One animation, on one
+element, per navigation** — no screen animates itself in.
 
-`prefers-reduced-motion` collapses all four to an opacity change — the catch-all
-already in `index.css` does this without further work.
+| Transition | What moves (shipped) |
+|---|---|
+| Tab switch | opacity 0.62 → 1, 150ms. Deliberately **no** translation: tabs are peers, and sliding them would claim an order between them that does not exist |
+| Push | the arriving screen: 18px from the trailing edge + fade, 240ms |
+| Pop | the arriving screen: 14px from the leading edge + fade, 220ms — the push in reverse |
+| Present (fullscreen flow) | 20px rise + fade, 280ms. Distinct from a push, because it is not one |
+| Dismiss | the shell returns: opacity 0.55 → 1, 180ms, nothing travels |
+| Sheet | existing `hd-sheet-up`, 280ms, with a scrim fade — component-owned, unchanged |
+
+**Only the entering layer animates.** The layer being left is already gone by
+the time we could animate it: a tab root is behind `display: none` (`Activity`)
+and a pushed screen is unmounted. The parallaxing parent this section used to
+specify would mean keeping both alive and stacking them, which turns every
+pushed screen into an absolutely-positioned scroller — a layout change on every
+screen for a 240ms effect.
+
+**The View Transitions API is the right way to get the outgoing half, and it is
+not safe here yet.** It needs the DOM update inside its callback, i.e.
+`flushSync`. That is fine on the forward path (always an event handler) but not
+on the way back: a POP arrives as a location change and is adopted in an effect,
+where `flushSync` warns and de-opts. Back and forward looking different is worse
+than both looking simple, so the outgoing half is recorded in `docs/BACKLOG.md`
+rather than half-done.
+
+**Tab panes are never transformed.** A transform makes an element the containing
+block for `position: fixed` descendants, and the story reader is built out of
+fixed bars. Opacity does not (it creates a stacking context, not a containing
+block), so the two pane-side transitions are opacity-only by construction, and
+`NO_TRANSFORM_VIEWS` covers the transitional case where a `full` view is still
+rendered inside its root (`navShell.INLINE_VIEWS`).
+
+`prefers-reduced-motion` is checked **in JavaScript**, and the answer is no
+animation at all rather than a shortened one. The `index.css` catch-all cannot
+help here: it sets `animation-duration`, which has no effect on a Web Animations
+animation.
 
 ### 5.5 Web
 

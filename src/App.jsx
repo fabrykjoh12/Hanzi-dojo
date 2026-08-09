@@ -16,6 +16,7 @@ import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
 import { useNavigation } from './useNavigation'
 import { useAndroidBack } from './useAndroidBack'
+import { useNavMotion } from './useNavMotion'
 import { setCacheScope } from './dataCache'
 import { overlayScreen, tabBarVisible, storiesRoute } from './navShell'
 import TabHost from './TabHost'
@@ -169,6 +170,10 @@ export default function App() {
   // the URL. Registered here and only here — the bridge holds the listener and
   // asks this shell for the answer (backHandler.js).
   useAndroidBack(nav, { immersiveFlow: studySession.immersive, onExitFlow: studySession.exit })
+  // Transitions come from the same model. The shell animates the layer that
+  // just became visible, in the direction the reducer says the hierarchy moved
+  // — no screen decides how it arrives (navMotion.js).
+  useNavMotion(nav.state)
   const publicStoryId = readStoryId(location.pathname)
   const assessment = isAssessmentPath(location.pathname)
   const trustPage = trustPageKey(location.pathname)
@@ -871,11 +876,15 @@ export default function App() {
               fullscreen flow. Mounted on demand and torn down on the way out,
               which is what a pushed screen should do. */}
           {topScreen && (
-            <Suspense fallback={<ViewFallback />}>
-              <ErrorBoundary key={topScreen.view}>
-                {content}
-              </ErrorBoundary>
-            </Suspense>
+            // One wrapper, so a push/present has a single element to animate
+            // and the screen inside never has to know it is being animated.
+            <div data-nav-layer="overlay">
+              <Suspense fallback={<ViewFallback />}>
+                <ErrorBoundary key={topScreen.view}>
+                  {content}
+                </ErrorBoundary>
+              </Suspense>
+            </div>
           )}
         </main>
         {isMobile && showTabBar && <MobileNav view={nav.state.activeTab} onNavigate={onTabSelect} onLogout={handleLogout} isAdmin={!!profile.is_admin} language={profile.active_language} />}
