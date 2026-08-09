@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Users, Activity, Clock, BookOpen, Repeat, AlertTriangle } from 'lucide-react'
+import { Users, Activity, Clock, BookOpen, Repeat, AlertTriangle } from 'lucide-react'
 import { supabase } from './supabase'
 import { useIsMobile } from './useIsMobile'
 import { languageTheme } from './languageTheme'
@@ -8,6 +8,7 @@ import {
   withConversion, fillDailySeries, storyCompletionRate,
   filterStoryRows, storyLanguageBreakdown, retentionSummary, retentionAverages,
 } from './dashboardMetrics'
+import AppBar from './AppBar'
 
 const RANGES = [
   { key: 7, label: '7 days' },
@@ -324,9 +325,7 @@ export default function Dashboard({ onBack, session, profile, track }) {
     <div style={{ padding: pad, maxWidth: '960px', margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button onClick={onBack} aria-label="Back" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
-            <ArrowLeft size={20} strokeWidth={1.85} />
-          </button>
+          <AppBar kind="close" onBack={onBack} sticky={false} />
           <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', margin: 0 }}>Dashboard</h1>
         </div>
         <div role="group" aria-label="Date range" style={{ display: 'flex', gap: '6px' }}>

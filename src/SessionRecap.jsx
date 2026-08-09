@@ -50,7 +50,7 @@ function ChapterUnlockCard({ reward, accentHex, langFont, onRead }) {
   const story = chapter.story
   const chapterLine = (chapter.nativeLabel ? chapter.nativeLabel + ' · ' : 'Chapter ' + chapter.number + ' · ') + chapter.title
   return (
-    <div className="hd-rise" style={{
+    <div style={{
       width: '100%', marginBottom: '14px', textAlign: 'left',
       background: accentHex + '0D', border: '1px solid ' + accentHex + '2A', borderRadius: '18px',
       padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px',

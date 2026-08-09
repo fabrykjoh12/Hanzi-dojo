@@ -101,7 +101,7 @@ export default function FillBlank({ session, profile, track, onBack, pool = null
           <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
             This level needs a few example sentences before fill-in-the-blank can run.
           </p>
-          <PrimaryButton onClick={onBack} icon={ArrowLeft}>Back home</PrimaryButton>
+          <PrimaryButton onClick={onBack} icon={ArrowLeft}>Exit</PrimaryButton>
         </Centered>
       </div>
     )
@@ -124,7 +124,7 @@ export default function FillBlank({ session, profile, track, onBack, pool = null
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <SecondaryButton onClick={onBack} icon={ArrowLeft}>Home</SecondaryButton>
+            <SecondaryButton onClick={onBack} icon={ArrowLeft}>Exit</SecondaryButton>
             <PrimaryButton onClick={restart} icon={RotateCcw}>Again</PrimaryButton>
           </div>
         </Centered>

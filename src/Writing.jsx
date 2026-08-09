@@ -9,6 +9,7 @@ import {
   ArrowLeft, ArrowRight, BarChart3, Check, CheckCircle2,
   Flame, PenLine, RotateCcw, Sparkles, X,
 } from 'lucide-react'
+import AppBar from './AppBar'
 
 const ROUND_SIZES = [10, 15, 20, 30]
 const XP_PER_CORRECT = 10
@@ -476,7 +477,7 @@ export default function Writing({ session, track, onBack }) {
   if (loadError) {
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
-        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+        <AppBar kind="close" onBack={onBack} sticky={false} />
         <div style={centerPanelStyle}>
           <StateIcon icon={PenLine} accentHex={accentHex} />
           <h1 style={titleStyle}>Couldn't load your words</h1>
@@ -493,7 +494,7 @@ export default function Writing({ session, track, onBack }) {
   if (studiedWords.length === 0) {
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
-        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+        <AppBar kind="close" onBack={onBack} sticky={false} />
         <div style={centerPanelStyle}>
           <StateIcon icon={PenLine} accentHex={accentHex} />
           <h1 style={titleStyle}>No studied words yet</h1>
@@ -545,7 +546,7 @@ export default function Writing({ session, track, onBack }) {
   if (phase === 'start') {
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
-        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+        <AppBar kind="close" onBack={onBack} sticky={false} />
 
         <div style={{ margin: '32px 0 24px', textAlign: 'center' }}>
           <StateIcon icon={PenLine} accentHex={accentHex} />

@@ -190,7 +190,7 @@ export default function Tones({ session, profile, track, onBack }) {
             <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
               Switch your active language to Chinese to drill the four tones.
             </p>
-            <PrimaryButton onClick={onBack} icon={ArrowLeft}>Back home</PrimaryButton>
+            <PrimaryButton onClick={onBack} icon={ArrowLeft}>Exit</PrimaryButton>
           </div>
         </div>
       </div>
@@ -222,7 +222,7 @@ export default function Tones({ session, profile, track, onBack }) {
             <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
               This level has no suitable words to drill tones with yet.
             </p>
-            <PrimaryButton onClick={onBack} icon={ArrowLeft}>Back home</PrimaryButton>
+            <PrimaryButton onClick={onBack} icon={ArrowLeft}>Exit</PrimaryButton>
           </div>
         </div>
       </div>
@@ -285,7 +285,7 @@ export default function Tones({ session, profile, track, onBack }) {
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <SecondaryButton onClick={onBack} icon={ArrowLeft}>Home</SecondaryButton>
+              <SecondaryButton onClick={onBack} icon={ArrowLeft}>Exit</SecondaryButton>
               <PrimaryButton onClick={restart} icon={RotateCcw}>Again</PrimaryButton>
             </div>
           </div>

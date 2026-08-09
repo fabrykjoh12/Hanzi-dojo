@@ -110,7 +110,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
 
       {/* ── Welcome back after a break ── */}
       {gentleActive && (
-        <div role="status" aria-live="polite" className="hd-rise" style={{
+        <div role="status" aria-live="polite" style={{
           display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px',
           background: `color-mix(in srgb, ${accentHex} 7%, var(--surface))`,
           border: '1px solid color-mix(in srgb, ' + accentHex + ' 26%, var(--border))',

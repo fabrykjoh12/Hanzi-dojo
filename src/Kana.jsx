@@ -278,7 +278,7 @@ export default function Kana({ profile, onBack }) {
           <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
             Switch your active language to Japanese to drill hiragana and katakana.
           </p>
-          <PrimaryButton onClick={onBack} icon={ArrowLeft}>Back home</PrimaryButton>
+          <PrimaryButton onClick={onBack} icon={ArrowLeft}>Exit</PrimaryButton>
         </Centered>
       </div>
     )

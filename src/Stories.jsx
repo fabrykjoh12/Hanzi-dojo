@@ -83,7 +83,7 @@ function ShelfRow({ id, title, subtitle, isMobile, children, dataTour }) {
     rail.scrollBy({ left: direction * Math.max(rail.clientWidth * 0.78, 280), behavior: reduced ? 'auto' : 'smooth' })
   }
   return (
-    <section aria-labelledby={id} data-tour={dataTour} className="hd-rise" style={{ minWidth: 0 }}>
+    <section aria-labelledby={id} data-tour={dataTour} style={{ minWidth: 0 }}>
       <div style={{ display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: '16px', marginBottom: '10px' }}>
         <div style={{ minWidth: 0 }}>
           <h2 id={id} style={{ margin: 0, color: 'var(--text)', fontSize: isMobile ? '17px' : '19px', fontWeight: 800, letterSpacing: '-0.02em' }}>

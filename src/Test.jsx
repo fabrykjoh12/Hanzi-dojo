@@ -11,6 +11,7 @@ import {
   ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, CloudOff,
   GraduationCap, Lock, RotateCcw, ShieldCheck, X,
 } from 'lucide-react'
+import AppBar from './AppBar'
 
 function generateQuestions(vocabList, allVocab, language) {
   const selected = shuffle(vocabList).slice(0, Math.min(30, vocabList.length))
@@ -391,7 +392,7 @@ export default function Test({ session, profile, track, onBack }) {
   if (loading) {
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
-        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+        <AppBar kind="close" onBack={onBack} sticky={false} />
         <div role="status" style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span style={srOnly}>Loading the test…</span>
           <div aria-hidden="true" style={{
@@ -410,7 +411,7 @@ export default function Test({ session, profile, track, onBack }) {
   if (loadError) {
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
-        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+        <AppBar kind="close" onBack={onBack} sticky={false} />
         <div style={centerPanelStyle}>
           <StateIcon icon={CloudOff} accentHex="var(--text-faint)" />
           <h1 style={titleStyle}>Couldn't load the test</h1>
@@ -429,7 +430,7 @@ export default function Test({ session, profile, track, onBack }) {
     const masteryPct = status.totalWords > 0 ? Math.round(status.masteredPct * 100) : 0
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
-        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+        <AppBar kind="close" onBack={onBack} sticky={false} />
         <div style={centerPanelStyle}>
           <StateIcon icon={Lock} accentHex="var(--text-faint)" />
           <h1 style={titleStyle}>{levelLabel} Test locked</h1>
@@ -458,7 +459,7 @@ export default function Test({ session, profile, track, onBack }) {
   if (phase === 'intro' && attempts.count >= 3 && !attempts.passed) {
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
-        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+        <AppBar kind="close" onBack={onBack} sticky={false} />
         <div style={centerPanelStyle}>
           <StateIcon icon={Clock} accentHex="#D97706" />
           <h1 style={titleStyle}>No attempts left today</h1>
@@ -472,7 +473,7 @@ export default function Test({ session, profile, track, onBack }) {
   if (phase === 'intro') {
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
-        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+        <AppBar kind="close" onBack={onBack} sticky={false} />
         <div style={{ textAlign: 'center', margin: '34px 0 28px' }}>
           <StateIcon icon={GraduationCap} accentHex={accentHex} />
           <div style={{ color: accentHex, fontSize: '13px', fontWeight: 800, marginTop: '18px' }}>
@@ -524,7 +525,7 @@ export default function Test({ session, profile, track, onBack }) {
     if (saving) {
       return (
         <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
-          <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+          <AppBar kind="close" onBack={onBack} sticky={false} />
           <div role="status" style={{ minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <span style={srOnly}>Saving your result…</span>
             <StateIcon icon={GraduationCap} accentHex={accentHex} />
@@ -540,7 +541,7 @@ export default function Test({ session, profile, track, onBack }) {
     return (
       <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
         <div style={{ marginBottom: '18px' }}>
-          <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
+          <AppBar kind="close" onBack={onBack} sticky={false} />
         </div>
         {/* Wraps on a phone: the bar shrinks to the space left over next to the
             End-quiz button, and the two-button confirm drops to its own row. */}

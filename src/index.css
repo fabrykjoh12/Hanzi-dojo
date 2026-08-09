@@ -207,8 +207,15 @@ body {
    `:hover` descendants and keyframes, none of which inline styles can express.
    All of them are neutralized by the reduced-motion catch-all below. */
 
-/* Sections settle in from below, staggered by an inline animation-delay, so
-   Home assembles itself instead of appearing all at once. */
+/* Sections settle in from below, staggered by an inline animation-delay.
+   OPT-IN ONLY since the shell became persistent (Phase 2 commit 2): panels.jsx
+   used to apply this to every PageHeader, Panel and HeroPanel automatically,
+   and a CSS animation restarts when an element goes from `display: none` back
+   to displayed — which is exactly what <Activity> does on every tab show. So
+   returning to an already-mounted Home replayed its whole staggered page-load,
+   which is the single loudest "freshly loaded webpage" tell the app had, and
+   the persistent shell made it worse rather than better.
+   Reach for it deliberately, on something that genuinely just arrived. */
 @keyframes hd-rise-in {
   from { transform: translateY(10px); opacity: 0; }
   to   { transform: translateY(0); opacity: 1; }

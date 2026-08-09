@@ -122,7 +122,7 @@ export default function GrammarPractice({ session, profile, track, onBack }) {
             <div style={{ fontSize: '26px', fontWeight: 760, color: accentHex, lineHeight: 1 }}>{pct}%</div>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
           </div>
-          <PrimaryButton onClick={onBack} icon={ArrowLeft}>Back to Practice</PrimaryButton>
+          <PrimaryButton onClick={onBack} icon={ArrowLeft}>Exit</PrimaryButton>
         </Centered>
       </div>
     )

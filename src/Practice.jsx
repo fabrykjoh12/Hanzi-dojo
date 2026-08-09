@@ -135,7 +135,7 @@ export default function Practice({ profile, track, counts, onNavigate }) {
       </HeroPanel>
 
       {/* ── Everything else you can drill. One grid, one tile size. ── */}
-      <section className="hd-rise" style={{ marginBottom: SECTION_GAP, animationDelay: '80ms' }}>
+      <section style={{ marginBottom: SECTION_GAP }}>
         <div style={{ marginBottom: LABEL_GAP }}>
           <Eyebrow>More drills</Eyebrow>
         </div>
@@ -155,7 +155,7 @@ export default function Practice({ profile, track, counts, onNavigate }) {
       </section>
 
       {/* ── Reference, deliberately quieter than a drill. ── */}
-      <section className="hd-rise" style={{ animationDelay: '140ms' }}>
+      <section>
         <div style={{ marginBottom: LABEL_GAP }}>
           <Eyebrow>Look things up</Eyebrow>
         </div>

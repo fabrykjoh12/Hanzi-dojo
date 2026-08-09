@@ -9,6 +9,7 @@ import { markWordDue } from './practiceSignal'
 import { speechMatches } from './speechScore'
 import { ArrowLeft, Mic, Volume2, Check, X, RotateCcw, CheckCircle2, MicOff } from 'lucide-react'
 import { speechRecognitionCtor, speechRecognitionSupported, speechErrorKind } from './speechSupport'
+import AppBar from './AppBar'
 
 const QUESTION_COUNT = 10
 
@@ -149,7 +150,7 @@ export default function Speaking({ session, profile, track, onBack }) {
   const pageShell = { minHeight: '100vh', position: 'relative', overflow: 'hidden', padding: isMobile ? '16px 14px 28px' : '20px 32px 36px' }
   const header = (
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-      <button onClick={onBack} aria-label="Back" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', display: 'flex' }}><ArrowLeft size={22} color="var(--text-muted)" /></button>
+      <AppBar kind="close" onBack={onBack} sticky={false} />
       <div>
         <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>Speaking</h1>
         <div style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>{systemLabel} · {levelLabel}</div>

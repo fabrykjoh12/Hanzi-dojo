@@ -125,7 +125,7 @@ export default function Writer({ profile, track, onBack }) {
     return (
       <div style={pageShell}>
         <div style={{ maxWidth: '520px', margin: '0 auto', paddingTop: isMobile ? '8px' : '20px' }}>
-          <Ghost onClick={onBack} icon={ArrowLeft} label="Back home" />
+          <Ghost onClick={onBack} icon={ArrowLeft} label="Exit" />
           <div style={{
             marginTop: '18px', textAlign: 'center', background: 'var(--surface)',
             border: '1px solid var(--border)', borderRadius: '24px', padding: '42px 30px',
@@ -198,7 +198,7 @@ export default function Writer({ profile, track, onBack }) {
   return (
     <div style={pageShell}>
       <div style={{ maxWidth: '760px', margin: '0 auto' }}>
-        <Ghost onClick={onBack} icon={ArrowLeft} label="Home" />
+        <Ghost onClick={onBack} icon={ArrowLeft} label="Exit" />
         <div style={{ textAlign: 'center', margin: '18px 0 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 750 }}>
             <Brush size={17} strokeWidth={1.8} color={accentHex} /> Stroke order

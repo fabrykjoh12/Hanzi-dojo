@@ -49,7 +49,7 @@ export function HeroPanel({
         : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={interactive ? 'hd-press hd-rise' : 'hd-rise'}
+      className={interactive ? 'hd-press' : undefined}
       style={{
         position: 'relative', overflow: 'hidden',
         borderRadius: '22px',
@@ -113,7 +113,7 @@ export function HeroAction({ label, hovered, icon: Icon, accentHex }) {
 // hero, and quiet is what makes the hero read.
 export function Panel({ children, padding, radius, style = {}, className = '', dataTour }) {
   return (
-    <div className={('hd-rise ' + className).trim()} data-tour={dataTour} style={{ ...flatPanel({ radius, padding }), ...style }}>
+    <div className={className || undefined} data-tour={dataTour} style={{ ...flatPanel({ radius, padding }), ...style }}>
       {children}
     </div>
   )
@@ -152,7 +152,7 @@ export function Readout({ value, label, tone, first, compact = false }) {
 // title like a billboard just pushed that panel down the page.
 export function PageHeader({ title, meta, style = {} }) {
   return (
-    <div className="hd-rise" style={{
+    <div style={{
       display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
       gap: '12px', marginBottom: '16px', flexWrap: 'wrap', ...style,
     }}>

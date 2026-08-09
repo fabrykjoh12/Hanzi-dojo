@@ -93,7 +93,7 @@ export default function Cyrillic({ profile, onBack }) {
           <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
             Switch your active language to Russian to drill the Cyrillic alphabet.
           </p>
-          <PrimaryButton onClick={onBack} icon={ArrowLeft}>Back home</PrimaryButton>
+          <PrimaryButton onClick={onBack} icon={ArrowLeft}>Exit</PrimaryButton>
         </Centered>
       </div>
     )
