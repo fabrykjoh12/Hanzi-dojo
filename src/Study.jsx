@@ -214,6 +214,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // The session stepped aside without ending. See SessionPaused.jsx and the
   // 'exit-flow' rung in navStack.androidBack.
   const [paused, setPaused] = useState(false)
+  // An unfinished session the learner left behind, waiting to be picked back
+  // up. Distinct from `paused` on purpose — see exitSession below.
+  const [awaitingContinue, setAwaitingContinue] = useState(false)
   const [showFurigana, setShowFurigana] = useState(profile.furigana_default !== false)
   const [saveError, setSaveError] = useState(null)
   const [typedValue, setTypedValue] = useState('')
@@ -980,13 +983,35 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // root: only Study knows whether it is showing a card, a recap, or a loading
   // state. `inProgress` is separate and is what stops a stray tap on the Cards
   // tab throwing a half-finished session away.
-  const immersive = !loading && !done && !paused && queue.length > 0
+  const immersive = !loading && !done && !paused && !awaitingContinue && queue.length > 0
   const inProgress = !loading && !done && queue.length > 0 && studied > 0
 
   // ONE exit action. The X in the session header and Android's hardware back
   // key both call this, so they cannot drift apart — and neither of them
   // reaches for Home, which was never what "leave the session" meant.
   const exitSession = useCallback(() => { setPaused(true) }, [])
+
+  // `paused` is the immediate result of pressing X. It must NOT outlive the
+  // visit.
+  //
+  // The Cards root is persistent (<Activity>), so component state survives
+  // leaving the tab — which turned one tap on X into a takeover screen that
+  // greeted the learner on EVERY later visit to Cards, in an app run they had
+  // not started a card in. Found on a device; invisible on the web, where you
+  // rarely come back to the tab hours later.
+  //
+  // So on hide it converts into `awaitingContinue`: the same unfinished
+  // session, offered rather than imposed. Nothing is lost either way — every
+  // graded card was written when it was graded.
+  const pausedRef = useRef(paused)
+  useEffect(() => { pausedRef.current = paused }, [paused])
+  useEffect(() => () => {
+    // Cleanup with no deps: runs exactly when the Cards tab is hidden.
+    if (pausedRef.current) {
+      setPaused(false)
+      setAwaitingContinue(true)
+    }
+  }, [])
 
   useEffect(() => {
     if (!onSessionStateChange) return undefined
@@ -1062,15 +1087,21 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // every graded card was written when it was graded, so there is nothing to
   // confirm and nothing to lose. Checked before the recap so a paused session
   // with cards left never renders as a finished one.
-  if (paused && !done && queue.length > 0) {
+  if ((paused || awaitingContinue) && !done && queue.length > 0) {
+    const resume = () => { setPaused(false); setAwaitingContinue(false) }
     return (
       <div style={pageShell}>
         <SessionPaused
+          // Returning to the tab is an OFFER ("Continue session"); pressing X
+          // is an outcome ("Session paused"). Same session, same buttons — the
+          // difference is whether the learner just did something or is being
+          // met by something.
+          variant={paused ? 'paused' : 'continue'}
           studied={studied}
           remaining={queue.length}
           accentHex={accentHex}
-          onResume={() => setPaused(false)}
-          onFinish={() => { setPaused(false); setDone(true) }}
+          onResume={resume}
+          onFinish={() => { resume(); setDone(true) }}
         />
       </div>
     )

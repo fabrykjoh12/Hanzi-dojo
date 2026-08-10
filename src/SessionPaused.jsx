@@ -14,11 +14,18 @@ import { MICRO, NUM, flatPanel } from './designTokens'
 // always in, with the two things a learner can do about it, and an explicit
 // line saying the work is safe so the absence of a confirmation dialog reads as
 // deliberate rather than careless.
-export default function SessionPaused({ studied, remaining, accentHex, onResume, onFinish }) {
+export default function SessionPaused({ variant = 'paused', studied, remaining, accentHex, onResume, onFinish }) {
+  // Two moments, one screen. Pressing X is an OUTCOME — the learner just did
+  // it, so the screen reports what happened. Coming back to the Cards tab with
+  // an unfinished session is an OFFER — nothing just happened, and a screen
+  // that says "paused" there reads as the app having decided something.
+  const offering = variant === 'continue'
   return (
     <div style={{ maxWidth: '440px', margin: '0 auto', padding: '48px 16px 40px' }}>
       <div style={{ ...flatPanel({ radius: 20, padding: '26px 22px' }), textAlign: 'center' }}>
-        <span style={{ ...MICRO, color: 'var(--text-faint)' }}>Session paused</span>
+        <span style={{ ...MICRO, color: 'var(--text-faint)' }}>
+          {offering ? 'Unfinished session' : 'Session paused'}
+        </span>
 
         <div style={{
           fontSize: '19px', fontWeight: 700, color: 'var(--text)',
@@ -28,7 +35,7 @@ export default function SessionPaused({ studied, remaining, accentHex, onResume,
           {' reviewed'}
           <span style={{ color: 'var(--text-faint)', fontWeight: 500 }}>{' · '}</span>
           <span style={NUM}>{remaining}</span>
-          {' remaining'}
+          {offering ? ' cards remaining' : ' remaining'}
         </div>
 
         {/* The reason there is no "are you sure?" here: there is nothing to be
@@ -36,7 +43,7 @@ export default function SessionPaused({ studied, remaining, accentHex, onResume,
             plainly is what makes the absence of a confirmation feel deliberate
             rather than careless. */}
         <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-          Your progress has been saved.
+          {offering ? 'Pick up where you left off.' : 'Your progress has been saved.'}
         </div>
 
         <button
@@ -51,7 +58,7 @@ export default function SessionPaused({ studied, remaining, accentHex, onResume,
           }}
         >
           <Play size={18} strokeWidth={2.2} color="#fff" />
-          Resume session
+          {offering ? 'Continue session' : 'Resume session'}
         </button>
 
         <button
