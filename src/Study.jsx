@@ -11,7 +11,6 @@ import { todayStr } from './streak'
 import { evaluateAchievements } from './achievements'
 import { toast } from './toast'
 import { languageTheme } from './languageTheme'
-import { GRADE_STYLES } from './gradePalette'
 import { vocabCacheKey } from './vocabCacheKey'
 import { checkTypedAnswer } from './typedAnswer'
 import { useIsMobile } from './useIsMobile'
@@ -32,9 +31,9 @@ import { buildMissionOffer } from './missionOffer'
 import { computeStudyTally } from './studyTally'
 import { sessionMix, bandTone, MIX_KEYS, MIX_LABELS } from './sessionMix'
 import { studyLayout, MOBILE_SHELL_HEIGHT } from './studyLayout'
-import {
-  cardMarker, markerCardShadow, markerPillStyle, markerDotStyle, MARKER_DOT,
-} from './cardMarker'
+import { cardMarker, MARKER_DOT } from './cardMarker'
+import Flashcard from './Flashcard'
+import GradeRow from './GradeRow'
 import { MICRO, NUM } from './designTokens'
 import { tapFeedback } from './haptics'
 import SessionPaused from './SessionPaused'
@@ -46,7 +45,7 @@ import { shouldOfferCoach, charBreakdown } from './stuckWord'
 import StuckWordCoach from './StuckWordCoach'
 import { loadTtsAudio, flashcardAudio } from './ttsAudio'
 import {
-  Volume2, VolumeX, RotateCcw, AlertTriangle, Check,
+  RotateCcw, AlertTriangle, Check,
   Sparkles, BookOpenCheck, X,
 } from 'lucide-react'
 
@@ -158,45 +157,6 @@ function HeaderIconButton({ icon: Icon, label, onClick, disabled }) {
 // Word and interval only — no icon. Four grades sit in one row, so each button
 // is a narrow column; an icon beside the label crowds it and forces the word to
 // shrink or wrap. The colour already carries the meaning the icon was adding.
-function GradeButton({
-  grade, label, interval, bg, border, text, onClick, suggested,
-  // Sizing comes from studyLayout.js so a short phone can fit all four grades
-  // on screen without ever dropping below a comfortable tap target.
-  minHeight = 76, labelSize = 14, intervalSize = 11,
-}) {
-  const [hovered, setHovered] = useState(false)
-  // Hover/suggested strengthens by swapping in the button's own border tone —
-  // one step darker than its resting bg, given directly by the palette rather
-  // than derived, so no new shades are invented.
-  const activeBg = hovered || suggested ? border : bg
-  return (
-    <button
-      onClick={() => onClick(grade)}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        gap: minHeight >= 68 ? '6px' : '3px',
-        minHeight: minHeight + 'px', padding: minHeight >= 68 ? '12px 8px' : '8px 4px',
-        borderRadius: '16px',
-        border: (suggested ? '2px solid ' : '1.5px solid ') + border,
-        background: activeBg,
-        color: text, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-        transition: 'background 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease',
-        transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
-        boxShadow: hovered ? 'var(--shadow-1)' : 'none',
-      }}
-    >
-      <span style={{ fontSize: labelSize + 'px', fontWeight: 750 }}>
-        {label}
-      </span>
-      <span style={{ fontSize: intervalSize + 'px', fontWeight: 650, color: 'var(--text-muted)' }}>
-        {interval}
-      </span>
-    </button>
-  )
-}
-
 export default function Study({ session, profile, track, mode = 'review', onBack, onNavigate, onProfileUpdate, onSessionStateChange }) {
   const isWeak = mode === 'weak'
   const [queue, setQueue] = useState([])
@@ -1183,9 +1143,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const showRuby = canUseFurigana && (showFurigana || flipped)
   const wordFuri = showRuby ? furiganaParts(v.word, v.reading) : null
   const showReadingLine = flipped && v.reading && !isJapanese
-  // The character is the focal point of the redesigned card; `charFont` above
-  // is whichever reading font the learner chose (readingFonts.js).
-  const charFontSize = layout.wordSize + 'px'
   // Prefer the sentence the learner actually read (captured when they added the
   // word from a story) over the generic example — real context is more memorable.
   const sourceSentence = card.source_sentence || null
@@ -1402,153 +1359,33 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', justifyItems: 'center',
         }}
       >
-        <div
-          onClick={() => !flipped && setFlipped(true)}
-          aria-live="polite"
-          role={!flipped ? 'button' : undefined}
-          tabIndex={!flipped ? 0 : undefined}
-          aria-label={!flipped ? langChars + ' flashcard — tap to reveal the answer' : undefined}
-          style={{
-            width: '100%', maxWidth: '680px',
-            // Desktop keeps its fixed 420px card; on mobile the card shrinks to
-            // whatever is left over instead of forcing the page to overflow.
-            minHeight: layout.cardMinHeight + 'px',
-            ...(layout.cardFlex ? { flex: layout.cardFlex } : {}),
-            background: 'var(--surface)',
-            border: '1px solid var(--border)', borderRadius: '26px',
-            // The front-of-card status band — new vs. review only, never a
-            // struggling/leech signal (that would bias the recall attempt;
-            // see the leech panel further down, which is answer-side only).
-            // Geometry and tone live in cardMarker.js.
-            boxShadow: markerCardShadow(marker),
-            display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'space-between',
-            cursor: flipped ? 'default' : 'pointer', padding: layout.cardPadding + 'px',
-            position: 'relative', perspective: '1200px',
-          }}
+        <Flashcard
+          layout={layout}
+          marker={marker}
+          flipped={flipped}
+          word={v.word}
+          ruby={wordFuri}
+          charFont={charFont}
+          wordLabel={langChars + ' flashcard — tap to reveal the answer'}
+          reading={showReadingLine ? v.reading : null}
+          readingColor={accent}
+          meaning={cleanMeaning(v.meaning)}
+          accentHex={accentHex}
+          audioUrl={audioUrl}
+          audioBroken={audioBroken}
+          audioSpeed={audioSpeed}
+          onReplay={playAudio}
+          onCycleSpeed={cycleSpeed}
+          footerHint={flipped ? 'How well did you remember this?' : (isTyped ? 'Type the reading, then check' : 'Recall first, then reveal')}
+          flash={gradeColor ? { color: gradeColor, id: gradeId } : null}
+          onReveal={() => setFlipped(true)}
         >
-          {gradeColor && (
-            <div
-              key={gradeId}
-              aria-hidden
-              style={{
-                position: 'absolute', inset: 0, borderRadius: '26px', pointerEvents: 'none',
-                ['--flash']: gradeColor, zIndex: 3,
-                animation: 'hd-grade-flash 460ms ease-out forwards',
-              }}
-            />
-          )}
-          {/* State pill + audio controls share one header row: the controls
-              used to float absolutely over the card, which covered the word's
-              furigana on narrow screens. In flow they can't cover anything. */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', flexShrink: 0, position: 'relative', zIndex: 2 }}>
-            {/* The band above carries the colour; this pill carries the word,
-                so the state never depends on colour alone. The dot is the same
-                mark the header legend uses, which is what ties the two. */}
-            <span style={markerPillStyle()}>
-              <span aria-hidden style={markerDotStyle(marker)} />
-              {marker.label}
-            </span>
-            {audioUrl && flipped && (
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {audioBroken ? (
-                  <span
-                    title="This word's audio file couldn't be loaded"
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: '7px',
-                      height: '40px', padding: '0 14px', borderRadius: '13px',
-                      background: 'var(--surface-2)', border: '1px solid var(--border)',
-                      color: 'var(--text-faint)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
-                    }}
-                  >
-                    <VolumeX size={18} strokeWidth={2} />
-                    No audio
-                  </span>
-                ) : (
-                <button
-                  onClick={e => { e.stopPropagation(); playAudio() }}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '7px',
-                    height: '40px', padding: '0 14px', borderRadius: '13px',
-                    background: accentHex + '10', border: '1px solid ' + accentHex + '2A', cursor: 'pointer',
-                    color: accentHex, fontSize: '13px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
-                    boxShadow: '0 10px 24px rgba(24,24,27,0.07)',
-                  }}
-                  title="Replay audio"
-                  aria-label="Replay audio"
-                >
-                  <Volume2 size={18} strokeWidth={2} />
-                  Replay
-                </button>
-                )}
-                {/* The turtle button used to sit here, playing a separately
-                    synthesized slow reading. Three controls for one feature —
-                    Replay, turtle, speed — was the clutter reported from a
-                    device, and two of them meant "slower". The speed control
-                    below now owns that, and Replay uses whatever it is set to. */}
-                <button
-                  onClick={e => { e.stopPropagation(); cycleSpeed() }}
-                  style={{
-                    width: '48px', height: '40px', borderRadius: '13px',
-                    background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer',
-                    color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, fontFamily: 'Inter, sans-serif',
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 10px 24px rgba(24,24,27,0.07)',
-                  }}
-                  title={'Playback speed: ' + audioSpeed + '×'}
-                  // The label states the CURRENT rate and what tapping does,
-                  // because the glyph alone ("1×") reads as a value, not a
-                  // control, to anyone who cannot see it change.
-                  aria-label={'Playback speed ' + audioSpeed + '×. Tap to change.'}
-                >
-                  {audioSpeed}×
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div
-            key={flipped ? 'back' : 'front'}
-            style={{
-              flex: 1, minHeight: 0, overflowY: 'auto',
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              textAlign: 'center', padding: layout.contentPadding,
-              transformOrigin: 'center', willChange: 'transform',
-              animation: 'hd-flip-in 260ms ease',
-            }}
-          >
-            {wordFuri ? (
-              <div style={{
-                fontSize: charFontSize, fontWeight: 400, color: 'var(--text)',
-                fontFamily: charFont, lineHeight: 1.25,
-              }}>
-                {wordFuri.lead}
-                <ruby>
-                  {wordFuri.core}
-                  <rt style={{ fontSize: '18px', color: 'var(--text-muted)' }}>{wordFuri.coreReading}</rt>
-                </ruby>
-                {wordFuri.trail}
-              </div>
-            ) : (
-              <div style={{
-                fontSize: charFontSize, fontWeight: 400, color: 'var(--text)',
-                fontFamily: charFont, lineHeight: 1.08,
-                overflowWrap: 'anywhere',
-              }}>
-                {v.word}
-              </div>
-            )}
-
-            {flipped && (
-              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                {showReadingLine && (
-                  <div style={{ fontSize: '21px', color: accent, marginTop: '18px', fontWeight: 650 }}>
-                    {v.reading}
-                  </div>
-                )}
-                <div style={{ fontSize: layout.meaningSize + 'px', color: 'var(--text-muted)', marginTop: '10px', lineHeight: 1.45, fontWeight: 550 }}>
-                  {cleanMeaning(v.meaning)}
-                </div>
+          {/* Everything answer-side that belongs to a REAL learner's card: the
+              example sentence with its story attribution, and the leech panel.
+              It stays here rather than in Flashcard because it reaches for
+              Supabase (findStoryForWord, resetCard) and for this card's own
+              history — neither of which the card component should know about. */}
+          <>
                 {hasExample && (
                   <div style={{
                     width: '100%', maxWidth: '430px',
@@ -1667,25 +1504,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                     </div>
                   </div>
                 )}
-              </div>
-            )}
-          </div>
-
-          {/* The prompt line is the first thing sacrificed on a short phone —
-              the grade buttons themselves are never negotiable. */}
-          {layout.showFooterHint && (
-            <div style={{
-              flexShrink: 0,
-              minHeight: layout.footerMinHeight + 'px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              borderTop: '1px solid var(--surface-2)', paddingTop: layout.footerPadTop + 'px',
-            }}>
-              <span style={{ fontSize: '12px', color: 'var(--text-faint)', fontWeight: 650 }}>
-                {flipped ? 'How well did you remember this?' : (isTyped ? 'Type the reading, then check' : 'Recall first, then reveal')}
-              </span>
-            </div>
-          )}
-        </div>
+          </>
+        </Flashcard>
 
         <div style={{ width: '100%', maxWidth: '680px', marginTop: layout.gradeTopGap + 'px', flexShrink: 0 }}>
           {!flipped ? (
@@ -1747,37 +1567,12 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                     : <><X size={16} strokeWidth={2.4} color="#DC2626" /> You typed “{typedValue}”</>}
                 </div>
               )}
-              {/* One row of four on every width. The 2x2 mobile grid was the
-                  other half of why grading fell below the fold — two rows of
-                  76px buttons plus their gap is most of a phone's card area.
-                  studyLayout shrinks the buttons instead, never past 44px. */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-                gap: layout.gradeGap + 'px',
-              }}>
-                {[
-                  { grade: 0, label: 'Again' },
-                  { grade: 1, label: 'Hard' },
-                  { grade: 2, label: 'Good' },
-                  { grade: 3, label: 'Easy' },
-                ].map(item => (
-                  <GradeButton
-                    key={item.grade}
-                    grade={item.grade}
-                    label={item.label}
-                    interval={labels[item.grade]}
-                    bg={GRADE_STYLES[item.grade].bg}
-                    border={GRADE_STYLES[item.grade].border}
-                    text={GRADE_STYLES[item.grade].text}
-                    onClick={handleGrade}
-                    suggested={suggestedGrade === item.grade}
-                    minHeight={layout.gradeMinHeight}
-                    labelSize={layout.gradeLabelSize}
-                    intervalSize={layout.gradeIntervalSize}
-                  />
-                ))}
-              </div>
+              <GradeRow
+                labels={labels}
+                onGrade={handleGrade}
+                suggested={suggestedGrade}
+                layout={layout}
+              />
             </div>
           )}
           {!isMobile && (

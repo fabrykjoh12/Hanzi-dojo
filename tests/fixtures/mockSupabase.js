@@ -44,7 +44,14 @@ function vocabFull(n) {
     id: `v${n}`, level: (n % 2) + 1, system: 'hsk', language: 'chinese', is_active: true,
     word: w.word, hanzi: w.word, pinyin: w.pinyin, reading: w.pinyin, meaning: w.meaning,
     example_sentence: `我和${w.word}。`, example_reading: w.pinyin,
-    example_translation: `A sentence with ${w.meaning}.`, audio_path: null,
+    // A real bucket path, so the flashcard's audio controls actually render.
+    // They are gated on a clip existing, and with `audio_path: null` every card
+    // in every spec was silently a card with no Replay and no speed control —
+    // the two controls P3 reshaped had no end-to-end coverage at all. The file
+    // need not resolve: the controls are drawn from the URL, and a failed load
+    // is its own state ("No audio"), which is worth reaching too.
+    example_translation: `A sentence with ${w.meaning}.`,
+    audio_path: `chinese/hsk_3/level_1/${n}_word.mp3`,
   };
 }
 
@@ -103,7 +110,12 @@ const VOCAB = [
   // the manifest-derived story is wired to the learner vocabulary map.
   { id: 'noodle-v1', word: '面条儿', reading: 'miàntiáor', meaning: 'noodles', level: 1, system: 'hsk', language: 'chinese', is_active: true },
   { id: 'upstairs-v1', word: '声音', reading: 'shēngyīn', meaning: 'sound, voice', level: 3, system: 'hsk', language: 'chinese', is_active: true },
-];
+// Every row gets a clip. The flashcard's Replay and speed controls are gated on
+// one existing, so with no `audio_path` anywhere the two controls P3 reshaped
+// had no end-to-end coverage at all — they simply never rendered in any spec.
+// The file need not resolve: the controls are drawn from the URL, and a failed
+// load is its own state ("No audio"), which is worth being able to reach.
+].map(v => ({ audio_path: 'chinese/hsk_3/level_' + (v.level || 1) + '/' + v.id + '.mp3', ...v }));
 
 // One published, Paced-Reveal story, and one published Chat-format story.
 // Both share tier 1 so they land in the same "First Steps" story list.
@@ -245,7 +257,14 @@ const CARDS = [
   // excluded from level-scoped views but still surfaces in the review deck.
   card(13, {
     vocab_id: 'dv1', state: 'review', due_at: dueNow,
-    vocabulary: { id: 'dv1', level: null, word: '中文', reading: 'zhōng wén', meaning: 'Chinese language', language: 'chinese', system: 'hsk', is_active: true },
+    // Carries a clip like every other row — without one this card is the only
+    // one in the deck with no Replay button, which made any spec that happened
+    // to draw it first fail intermittently.
+    vocabulary: {
+      id: 'dv1', level: null, word: '中文', reading: 'zhōng wén', meaning: 'Chinese language',
+      language: 'chinese', system: 'hsk', is_active: true,
+      audio_path: 'chinese/hsk_3/level_1/dv1.mp3',
+    },
   }),
 ];
 
@@ -302,11 +321,45 @@ export const ASSESSMENT_VOCAB = (() => {
   return rows;
 })();
 
+// A tenth of a second of silence, 8-bit mono WAV, built rather than pasted.
+//
+// The `audio` bucket is a real public bucket in production and nothing stood in
+// for it here: every clip 404'd, so any card that reached the screen dropped
+// into the flashcard's "No audio" state a beat after it rendered. That made the
+// audio controls untestable — and intermittently wrong for every other spec
+// that happened to look at a card. Chromium decodes by content, not by the
+// .mp3 in the path, so a WAV served from an .mp3 URL is fine.
+function silentWav(samples = 800) {
+  const header = Buffer.alloc(44);
+  header.write('RIFF', 0);
+  header.writeUInt32LE(36 + samples, 4);
+  header.write('WAVE', 8);
+  header.write('fmt ', 12);
+  header.writeUInt32LE(16, 16);      // PCM header size
+  header.writeUInt16LE(1, 20);       // format: PCM
+  header.writeUInt16LE(1, 22);       // mono
+  header.writeUInt32LE(8000, 24);    // sample rate
+  header.writeUInt32LE(8000, 28);    // byte rate
+  header.writeUInt16LE(1, 32);       // block align
+  header.writeUInt16LE(8, 34);       // bits per sample
+  header.write('data', 36);
+  header.writeUInt32LE(samples, 40);
+  // 0x80 is the zero point for unsigned 8-bit audio.
+  return Buffer.concat([header, Buffer.alloc(samples, 0x80)]);
+}
+
 export async function mockSupabaseRoutes(page) {
   await page.route(`**/${REF}.supabase.co/**`, async (route) => {
     const req = route.request();
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS, body: '' });
     const url = new URL(req.url());
+    if (url.pathname.startsWith('/storage/v1/object/public/audio/')) {
+      return route.fulfill({
+        status: 200,
+        headers: { ...CORS, 'content-type': 'audio/wav', 'accept-ranges': 'bytes' },
+        body: silentWav(),
+      });
+    }
     const wantsObject = (req.headers()['accept'] || '').includes('pgrst.object');
     if (url.pathname.startsWith('/rest/v1/rpc/')) {
       const fn = url.pathname.replace('/rest/v1/rpc/', '');
