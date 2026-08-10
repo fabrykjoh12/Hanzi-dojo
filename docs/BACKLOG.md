@@ -70,6 +70,18 @@ is going — pushes start at the top, returns land where you left. Note this is
 not only the browser-Back path: the in-app back control commits FORWARD through
 the reducer, so direction had to be asked rather than inferred from POP.
 
+## Sentence pronunciation should probably follow the word's model (2026-08-10)
+
+The flashcard's WORD audio is now one Replay plus one speed control (P3): the
+turtle went, and 0.5x with it. The example sentence further down the same card
+still has its own play/slow pair (`Study.jsx` ~1586, two `AudioButton`s).
+
+Evaluate whether it should adopt the same Replay + Speed interaction. It is not
+a trivial swap: the sentence plays through `AudioButton`, which would have to be
+verified against the shared playback rate, and the two clips (`sentence` and
+`sentence_slow`) are separately synthesized the way `word_slow` was. Deliberately
+left alone in the P3 pass rather than folded in unverified.
+
 ## Profile — Download vocabulary / deck (recorded 2026-08-10)
 
 A possible future export: the learner's learned words, or their current HSK
