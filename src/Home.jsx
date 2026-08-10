@@ -6,7 +6,7 @@ import { useIsMobile } from './useIsMobile'
 import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
 import { firstContentChar } from './homeStory'
 import { fetchHandoff, trackSignature } from './homeData'
-import { query } from './dataCache'
+import { query, subscribe } from './dataCache'
 import { HOME_HANDOFF } from './cacheEvents'
 import { HeroPanel, HeroAction, Panel, Eyebrow, PageHeader } from './panels'
 import { rhythmSummary, weekdayInitial } from './studyRhythm'
@@ -72,6 +72,14 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
   // ran this whole block a second time on every arrival (homeData.js).
   const trackKey = trackSignature(track)
 
+  // Home can be the screen someone leaves open. Everything else that
+  // invalidates the hand-off happens on another screen, so the tab show is what
+  // picks it up — but a resume across local midnight (appResume.js) arrives
+  // while Home is the thing being looked at, and nothing would re-run without
+  // this. One counter, bumped by the cache, re-runs the effect below.
+  const [cacheTick, setCacheTick] = useState(0)
+  useEffect(() => subscribe(HOME_HANDOFF, () => setCacheTick(t => t + 1)), [])
+
   /* eslint-disable react-hooks/set-state-in-effect */
   // The hand-off is fetched once and again only when something changed it.
   //
@@ -103,7 +111,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
     // `track` is read inside but deliberately not a dependency — trackKey is
     // its value-equal stand-in, and the identity is the bug this replaced.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, trackKey, learned, countsLoaded])
+  }, [userId, trackKey, learned, countsLoaded, cacheTick])
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // First-run tour: once per device for a new account, on the first Home render

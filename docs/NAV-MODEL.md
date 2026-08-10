@@ -307,19 +307,29 @@ route the learner arrived from.
 The learner sees the shelf instantly and the unlock lands a moment later,
 instead of either a stale shelf forever or a full reload on every tab tap.
 
-### 3.5 Resume from background
+### 3.5 Resume from background — **shipped**
 
-Wired to Capacitor `appStateChange` (native) and `visibilitychange` (web) —
-neither of which the app listens to today.
+`appResume.js` decides, `useAppResume.js` listens. Time is the one thing that
+changes data with nobody to publish an event about it (§3.3), which is the whole
+reason this exists — and why it is **not** "refetch on resume": a resume is a
+moment to ask the question, not an answer to it.
 
-- **Local calendar day changed** since `home:counts` was fetched → invalidate
-  `home:counts`, `home:reward`, `practice:plan`. Reviews are day-based
-  (CLAUDE.md §4), so a midnight crossing is the event that genuinely changes
-  what is due.
-- **Else away longer than 15 minutes** → invalidate `home:counts` alone
-  (learning-step cards mature during the day).
+- **Local calendar day changed** while the app was away → invalidate
+  `home:counts` **and** `home:handoff`. Reviews are day-based (CLAUDE.md §4), and
+  the reward claim is keyed on today's date, so a midnight crossing changes both.
+- **Else away at least `HOME_COUNTS_STALE_MS`** (10 minutes, the same constant
+  the arrival check uses) → `home:counts` alone.
+- **Anything shorter → nothing.** Glancing at a notification must be free.
 - **Content caches are never invalidated on resume.** The story library does not
-  change because a phone was in a pocket.
+  change because a phone was in a pocket, so `stories:` is outside this file's
+  reach by construction.
+
+**One platform's events, never both.** A WKWebView fires `visibilitychange` as
+well as `appStateChange`, so listening to both would run every resume twice;
+`isNativeApp()` picks the authoritative one and the web path carries no
+Capacitor import at all. Home subscribes to `home:handoff` so an invalidation
+that lands *while Home is the screen being looked at* — which is exactly the
+overnight case — actually re-runs its query instead of only being marked.
 
 ### 3.6 What stays as it is
 

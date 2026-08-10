@@ -16,6 +16,7 @@ import { ThemeContext } from './ThemeContext'
 import { useNavigation } from './useNavigation'
 import { useAndroidBack } from './useAndroidBack'
 import { useNavMotion } from './useNavMotion'
+import { useAppResume } from './useAppResume'
 import { setCacheScope, readCache, writeCache } from './dataCache'
 import { HOME_IDENTITY, HOME_COUNTS } from './cacheEvents'
 import { countsExpired } from './homeData'
@@ -451,6 +452,13 @@ export default function App() {
   }
 
   const handleLogout = () => supabase.auth.signOut()
+
+  // Coming back from the background. The only thing in the app that goes wrong
+  // with nobody to publish an event about it is TIME: cards fall due in a
+  // pocket, and at local midnight the day's reviews and today's reward claim
+  // roll over. appResume.js decides whether either happened; this just does the
+  // refresh behind it, and does nothing at all when the cache is clean.
+  useAppResume(refreshHomeIfNeeded)
 
   // ── Loading ─────────────────────────────────────────────────────────────
   if (loading) {

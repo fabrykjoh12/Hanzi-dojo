@@ -29,11 +29,8 @@ What is left, deliberately:
   splitting `getDailyStoryCard`'s inputs so the shared half rides along with the
   reward context: ~2 queries saved on that one cold path. Not worth the seam
   until someone measures cold-start on a phone and finds it.
-- **Resume-from-background** (NAV-MODEL §3.5) is still not implemented. What
-  ships is the local-midnight rollover and a 10-minute window on `home:counts`
-  only, evaluated when Home is navigated to — not on `visibilitychange`. An app
-  left open on Home across midnight still shows yesterday's numbers until the
-  learner navigates.
+- ~~Resume-from-background~~ — done in the follow-up commit
+  (`appResume.js` + `useAppResume.js`, NAV-MODEL §3.5).
 - **Practice and Profile are the same job, unstarted.** Neither has been
   measured; both fetch in mount effects and both are persistent roots now.
 
