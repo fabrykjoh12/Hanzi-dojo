@@ -12,6 +12,7 @@ import { evaluateAchievements } from './achievements'
 import { toast } from './toast'
 import { languageTheme } from './languageTheme'
 import { GRADE_STYLES } from './gradePalette'
+import { vocabCacheKey } from './vocabCacheKey'
 import { checkTypedAnswer } from './typedAnswer'
 import { useIsMobile } from './useIsMobile'
 import { useReadingFont } from './useReadingFont'
@@ -335,7 +336,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     const cards = await getTrackCards(session.user.id, track, { includeUnleveled: true })
     const floorLevel = studyFloorLevel(cards, track.current_level)
 
-    const vocabKey = 'vocab:' + track.language + ':' + track.system + ':' + floorLevel + '-' + track.current_level
+    const vocabKey = vocabCacheKey({
+      language: track.language, system: track.system,
+      floorLevel, currentLevel: track.current_level,
+    })
     let vocab = null
     try {
       const res = await supabase
@@ -1113,7 +1117,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           forecast={forecast}
           storyUnlock={storyUnlock}
           chapterReward={chapterReward}
-          track={track}
           mission={availableMission}
           onOpenMission={() => setMission(availableMission)}
           onReadStory={(storyId) => onNavigate && onNavigate('stories', storyId ? {

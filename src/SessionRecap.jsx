@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react'
-import { offlineAvailable } from './offline'
-import { prefetchLevel } from './prefetch'
 import { successFeedback } from './haptics'
 import StoryCover from './StoryCover'
 import {
   ArrowLeft, CheckCircle2,
-  MessageCircleMore, ChevronRight, BookOpen, BookOpenCheck, Download, CheckCheck,
+  MessageCircleMore, ChevronRight, BookOpen, BookOpenCheck,
 } from 'lucide-react'
 
 // The study session's completed/"done" screen, extracted verbatim from Study.jsx
@@ -175,52 +173,12 @@ function StoryUnlockCard({ unlock, accentHex, langFont, firstRun, onRead }) {
   )
 }
 
-// "Save this level for offline": warms the vocabulary snapshot and every
-// pronunciation MP3 into the offline caches so a later no-network session has
-// its cards and audio. Hidden when IndexedDB isn't available.
-function OfflineSaveButton({ track, accentHex }) {
-  const [state, setState] = useState('idle') // idle | saving | done
-  const [pct, setPct] = useState(0)
-  if (!offlineAvailable()) return null
-
-  const run = async () => {
-    if (state === 'saving') return
-    setState('saving')
-    setPct(0)
-    try {
-      await prefetchLevel(track, track.current_level, (done, total) => {
-        setPct(total ? Math.round((done / total) * 100) : 100)
-      })
-      setState('done')
-    } catch {
-      setState('idle')
-    }
-  }
-
-  const label = state === 'saving'
-    ? 'Saving for offline… ' + pct + '%'
-    : state === 'done'
-      ? 'Saved — reviews and audio work offline'
-      : 'Save this level for offline'
-  const Icon = state === 'done' ? CheckCheck : Download
-
-  return (
-    <button onClick={run} disabled={state !== 'idle'} style={{
-      width: '100%', marginBottom: '10px', padding: '12px 16px', borderRadius: '14px',
-      border: '1px solid ' + accentHex + '2A', background: accentHex + '0D', color: accentHex,
-      cursor: state === 'idle' ? 'pointer' : 'default', font: '700 13.5px Inter, sans-serif',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-    }}>
-      <Icon size={16} strokeWidth={2.2} /> {label}
-    </button>
-  )
-}
 
 // The completed-session recap card. Study.jsx wraps this in the page shell and
 // still renders the chat-mission modal itself (it owns that state); this
 // component renders the card and calls back for read-story / open-mission / back.
 export default function SessionRecap({
-  recap, isWeak, firstRun, accentHex, langFont, forecast, storyUnlock, chapterReward, track,
+  recap, isWeak, firstRun, accentHex, langFont, forecast, storyUnlock, chapterReward,
   mission, onOpenMission, onReadStory, onBack,
 }) {
   const s = recap
@@ -385,7 +343,6 @@ export default function SessionRecap({
           </button>
         )}
 
-        <OfflineSaveButton track={track} accentHex={accentHex} />
 
         {nextStep ? (
           <button

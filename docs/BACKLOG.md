@@ -70,6 +70,39 @@ is going — pushes start at the top, returns land where you left. Note this is
 not only the browser-Back path: the in-app back control commits FORWARD through
 the reducer, so direction had to be asked rather than inferred from POP.
 
+## Profile — Download vocabulary / deck (recorded 2026-08-10)
+
+A possible future export: the learner's learned words, or their current HSK
+deck, as CSV/JSON or similar, from Profile.
+
+**This is not offline caching, and must not be confused with it.** Offline
+caching (`prefetch.js`, `audioCache.js`, `vocabCacheKey.js`) exists so a session
+WORKS without a network. An export exists so a learner can take their words
+somewhere else. Different feature, different surface, different data shape.
+Not implemented, and deliberately not started.
+
+## The offline system after the completion-screen cleanup (2026-08-10)
+
+The user-facing "Save this level for offline" button is gone from
+`SessionRecap` — a completion screen is for the session result, the reward and
+the next step, not for download management. The infrastructure underneath is
+kept and is now correct, ready for a proper Downloads/automatic-offline surface
+later:
+
+- **`vocabCacheKey.js` is the single key builder**, used by both the writer
+  (`prefetch.js`) and the reader (`Study.jsx`). They used to build the string
+  by hand in two files and had never matched: the writer stored
+  `vocab:chinese:hsk:2`, the reader looked for `vocab:chinese:hsk:1-2`.
+- **The range is the intended granularity**, taken from the reader: the study
+  queue is the cumulative deck `[floor..current]` (`levelScope.js`), so a
+  one-level snapshot could never have answered it. `prefetchLevel` now fetches
+  the range its key promises, via a `floorLevel` option.
+- **The audio half always worked** and is untouched: `ensureAudio` persists each
+  MP3 to IndexedDB and `utils.js`/`readyUrl` play it back. Caveat unchanged and
+  still in the source: on iOS the service worker bypasses ranged media.
+- **`prefetchLevel` currently has no caller.** That is deliberate — it is
+  infrastructure waiting for a surface, not dead code to delete.
+
 ## The geometry sweep (2026-08-10) — what it found, and what it cannot answer
 
 A measurement pass over every navigation class at four phone widths plus a
