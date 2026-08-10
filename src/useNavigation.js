@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 import { stackForPath, urlForState, visibleEntry, resetTab, TABS } from './navStack'
 import { recordNavState, restoreForPop } from './navLedger'
 import { applyNavigate, applyBack } from './navShell'
+import { transitionFor } from './navMotion'
 import { tabReselect } from './navStack'
 
 // The runtime source of truth, wired to the router.
@@ -36,9 +37,30 @@ export function useNavigation() {
   }, [])
 
   // Scroll offsets live outside the history-committed state on purpose: they
-  // change constantly and must never mint a history entry. Per-stack-entry
-  // offsets (for pushed screens) follow in commit 3; this covers the four roots.
+  // change constantly and must never mint a history entry.
+  //
+  // The DOCUMENT is the scroller — the shell has never moved scrolling into a
+  // pane, and `<Activity>` swaps panes in and out of `display: none`, so the
+  // browser has nothing to restore by itself. Without this, pushing a screen
+  // landed at whatever offset the previous one was scrolled to, and popping
+  // back landed at whatever offset the pushed screen left behind.
+  //
+  // Keyed by URL because that is exactly one key per stack entry, already
+  // computed, and already unique.
   const scrollByTab = useRef({})
+  const scrollByEntry = useRef({})
+
+  const rememberScroll = (state) => {
+    if (typeof window === 'undefined') return
+    scrollByEntry.current[urlForState(state)] = window.scrollY || 0
+  }
+  const restoreScroll = (state, { top = false } = {}) => {
+    if (typeof window === 'undefined') return
+    const target = top ? 0 : (scrollByEntry.current[urlForState(state)] || 0)
+    // After paint, or the browser clamps to the OLD document height — the new
+    // screen has not been laid out yet at the moment the state changes.
+    requestAnimationFrame(() => { window.scrollTo(0, target) })
+  }
   const captureScroll = useCallback((tab, top) => {
     scrollByTab.current[tab] = top
   }, [])
@@ -66,6 +88,7 @@ export function useNavigation() {
       : undefined
     const { state: restored } = restoreForPop({ navId, pathname: location.pathname })
     stateRef.current = restored
+    restoreScroll(restored)
     // Sanctioned: a POP is an external event (the browser's back button, the
     // Android hardware key) and adopting the state it lands on is exactly the
     // synchronisation an effect is for. Same pattern, and same disable, as the
@@ -83,6 +106,18 @@ export function useNavigation() {
     // a tap on the tab you are already on. Pushing a history entry for that is
     // exactly how Back came to walk a browsing history.
     if (next === prev) return
+    // Where the learner was on the screen they are leaving, so going back to it
+    // lands there. Whether the arriving screen starts at its top depends on the
+    // DIRECTION, and the motion model already names that: a push or a
+    // presentation is a new screen and starts at the top; a pop, a dismissal or
+    // a tab change is a return, and returns land where you left.
+    //
+    // This is not only the browser-Back path: the in-app back control commits
+    // forward through the reducer (it never calls history.back), so without
+    // asking the direction here, every Back would have landed at the top.
+    rememberScroll(prev)
+    const direction = transitionFor(prev, next)
+    restoreScroll(next, { top: direction === 'push' || direction === 'present' })
     stateRef.current = next
     setState(next)
     rememberMounted(next.activeTab)

@@ -45,8 +45,25 @@ function TabPane({ tab, mode, scrollTop, onScrollCapture, children }) {
     return undefined
   }, [mode, tab, scrollTop, onScrollCapture])
 
+  // The wrapper has to go out of flow with its contents.
+  //
+  // <Activity mode="hidden"> puts `display: none` on ITS OWN subtree — not on
+  // this div, which is ours. So a hidden pane kept an empty `height: 100%` box
+  // in the document, and every pushed or presented screen rendered BELOW it:
+  // measured on /words, the covered Practice pane was 3,714px tall and the
+  // screen the learner had just opened started at y=3714. A blank screen with
+  // the real one underneath the fold.
+  //
+  // The e2e suite could not see it — `toBeVisible()` asks for a non-empty box,
+  // not for being on screen, and every spec that clicks scrolls first. So it
+  // survived from the day the shell became persistent until someone measured a
+  // bounding box.
   return (
-    <div ref={ref} data-tab-root={tab} style={{ height: '100%' }}>
+    <div
+      ref={ref}
+      data-tab-root={tab}
+      style={{ height: '100%', ...(mode === 'visible' ? null : { display: 'none' }) }}
+    >
       <Activity mode={mode}>{children}</Activity>
     </div>
   )

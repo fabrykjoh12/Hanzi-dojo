@@ -36,6 +36,7 @@ still get full detail — they are read once, on purpose.
 | [`docs/STORY-BIBLE.md`](docs/STORY-BIBLE.md) | The story universe: world rules, cast, how a season is made. Machine half: `data/story-canon.chinese.json` | Writing or reviewing stories |
 | [`docs/DEPLOY.md`](docs/DEPLOY.md) | Env vars, hosting, routing, PWA, secrets, failure cheat-sheet | Something is broken in prod |
 | [`docs/TESTING.md`](docs/TESTING.md) | What needs manual testing on a real device | Before asking testers |
+| [`docs/MOBILE-DEVICE-QA.md`](docs/MOBILE-DEVICE-QA.md) | The one-page TestFlight / Android pass for the mobile shell — launch, tabs, Study, Stories, the whole loop, hardware Back | Handing a build to a device |
 | [`ROADMAP.md`](ROADMAP.md) | Public plan — **auto-syncs to Discord** | Starting or finishing work |
 | [`docs/BACKLOG.md`](docs/BACKLOG.md) | Engineering backlog, known issues, tech debt | Picking up a fix |
 | [`TASKS.md`](TASKS.md) | The owner's own list, in Norwegian. **Edited through DojoHQ, not by hand** — `tools/dojo-bridge.mjs` has it in `WRITABLE_DOCUMENTS` and DojoHQ renders it as a tab, so do not delete or restructure it | Checking what the owner personally wants next |
