@@ -23,7 +23,6 @@ import { tiersFor, learnedByLevel, readingGateCount } from './storyTiers'
 import { buildStudyQueue, reinsertSoon, queueSeed } from './studyQueue'
 import { isFirstRunSession, firstRunNewTarget } from './firstRun'
 import { isReturningFromBreak, gentleReviewTarget } from './gentleReturn'
-import { firstMissionCardHint } from './firstMission'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
 import SessionRecap from './SessionRecap'
 import ChatMission from './ChatMission'
@@ -988,19 +987,18 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     return () => onSessionStateChange({ immersive: false, inProgress: false, exit: null })
   }, [immersive, inProgress, exitSession, onSessionStateChange])
 
-  // Guided first-mission coaching for the current card (progressive disclosure).
-  // Null except during the first run's early cards. A calm banner above the
-  // card — never over the grade buttons; auto-advances as `studied` grows.
-  // Computed here (rather than at the render site) because it is one of the
-  // optional banners the layout has to budget vertical space for.
-  const firstMissionHint = firstRun ? firstMissionCardHint(studied, { flipped, isTyped }) : null
+  // No card coaching here any more. The onboarding tutorial teaches reveal,
+  // Replay and grading on the real card before the account exists, so a
+  // learner arriving at their FIRST real session has already done all three —
+  // repeating it is the tutorial-on-tutorial problem. `firstRun` still matters:
+  // it is what caps this session to five new cards (firstRun.js).
 
   // All the size arithmetic lives in studyLayout.js. On a phone this returns a
   // height-locked shell so the grade buttons can never fall below the fold.
   const layout = studyLayout({
     isMobile,
     viewportHeight,
-    banners: (saveError ? 1 : 0) + (firstMissionHint ? 1 : 0) + (isJapanese ? 1 : 0),
+    banners: (saveError ? 1 : 0) + (isJapanese ? 1 : 0),
   })
 
   // The recap and loading states are ordinary scrollable pages — only the card
@@ -1325,23 +1323,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             background={showFurigana ? accentHex + '10' : 'var(--surface)'}
             border={'1px solid ' + (showFurigana ? accentHex + '30' : 'var(--border)')}
           />
-        </div>
-      )}
-
-      {firstMissionHint && (
-        <div
-          role="status"
-          aria-live="polite"
-          style={{
-            ...railStyle,
-            display: 'flex', alignItems: 'center', gap: '9px',
-            padding: '11px 15px', borderRadius: '14px',
-            background: accentHex + '10', border: '1px solid ' + accentHex + '2A',
-            color: accentHex, fontSize: '13.5px', fontWeight: 650, lineHeight: 1.45,
-          }}
-        >
-          <Sparkles size={16} strokeWidth={2} color={accentHex} style={{ flexShrink: 0 }} />
-          <span>{firstMissionHint}</span>
         </div>
       )}
 

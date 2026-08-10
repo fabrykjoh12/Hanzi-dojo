@@ -1,147 +1,126 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import { getLevelLabel, getSystemLabel, getLevels } from './utils'
+import { getLevelLabel, getLevels } from './utils'
 import { track, EVENTS } from './analytics'
 import { availableLanguages, languageTheme } from './languageTheme'
 import { resolveTiers, TIER_META } from './tiers'
 import { PACING } from './priorKnowledge'
 import { seedClaim } from './priorKnowledgeSeed'
-import { readPreloginPrefs, clearPreloginPrefs, encouragementFor } from './prelogin'
-import { daysToWords } from './onboardingGoal'
-import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
+import { readPreloginPrefs, clearPreloginPrefs } from './prelogin'
 import { useIsMobile } from './useIsMobile'
 import PlacementTest from './PlacementTest'
 import logo from './assets/Hanzi-logo.png'
 import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
-import { ArrowRight, BookOpen, GraduationCap, Layers, Lock, PenLine, Play } from 'lucide-react'
+import { BookOpen, GraduationCap, Lock, Play } from 'lucide-react'
 
-// The languages onboarding offers. With non-Chinese tracks paused this is a
-// single language, so we skip the picker step and start on "What's your level?"
-// pre-selected. Un-pausing a track (see languageTheme.js) restores the picker
-// automatically — SOLO_LANGUAGE goes null and the language step reappears.
-const ONBOARDING_LANGUAGES = availableLanguages(false)
+// Setup, after the account. ONE question.
+//
+// This used to be four screens: a language picker, a tier grid, a daily-goal
+// picker and a diagram of the daily loop. The learner had already answered two
+// of them before signing up, in different words, and the answers were thrown
+// away (docs/ONBOARDING-AUDIT.md). The tutorial now teaches the loop by running
+// it, so the only thing left that the app genuinely cannot work out for itself
+// is where to start.
+//
+// Three answers, and only the third one asks anything more:
+//
+//   new       HSK 1. Nothing else to decide.
+//   some      HSK 1 as well — starting a level low costs a few easy reviews,
+//             starting it high costs comprehension — with the placement test
+//             offered as a link rather than imposed as a step.
+//   know      the existing tier rows, including the test that higher tiers have
+//             always had to pass. Nothing about that changed.
+//
+// The daily goal is seeded at the same 10 it always defaulted to and is Settings'
+// business from then on; the first session is capped at five cards by
+// firstRun.js regardless, from the account's own card count.
 
-// Read the pre-login wizard choices, but only trust a language onboarding
-// actually offers — a hand-edited stored value must not smuggle in a paused
-// track. Pure and idempotent (a plain read), so it's safe in useState initializers.
-function initialPrefill() {
-  const p = readPreloginPrefs()
-  return p && ONBOARDING_LANGUAGES.some(l => l.key === p.language) ? p : null
-}
-const SOLO_LANGUAGE = ONBOARDING_LANGUAGES.length === 1 ? ONBOARDING_LANGUAGES[0].key : null
+const LANGUAGE = availableLanguages(false)[0].key
+
+const ANSWERS = [
+  { key: 'new', label: "I'm new to Chinese", level: 1 },
+  { key: 'some', label: 'I know some Chinese', level: 1, offerTest: true },
+  { key: 'know', label: 'I know my HSK level', tiers: true },
+]
+
+// What every new account starts with. Settings owns it afterwards.
+export const DEFAULT_DAILY_NEW_CARDS = 10
 
 export default function Onboarding({ session, onComplete }) {
   const isMobile = useIsMobile()
-  // Skip the language step (start on "What's your level?") when the visitor
-  // already picked a language before signing up, OR when only one language is
-  // offered — in both cases the choice is already made.
-  const [step, setStep] = useState(() => (initialPrefill() || SOLO_LANGUAGE ? 2 : 1))
-  const [language, setLanguage] = useState(() => initialPrefill()?.language || SOLO_LANGUAGE || null)
-  // The public reading test saves its estimated starting level with the
-  // pre-login prefs; the level step opens pre-selected there (still a choice —
-  // the learner confirms or changes it, an estimate never silently decides).
-  const [level, setLevel] = useState(() => {
-    const lv = initialPrefill()?.level
-    return Number.isInteger(lv) && lv >= 1 && lv <= 9 ? lv : null
-  })
-  const [tier, setTier] = useState(null)         // selected tier { key, level, test }
-  const [placement, setPlacement] = useState(false)  // showing the placement test
-  const [goal, setGoal] = useState(10)
+  const theme = languageTheme(LANGUAGE)
+  const accentHex = theme.accentHex
+  const system = theme.system
+
+  const [answer, setAnswer] = useState(null)
+  const [tier, setTier] = useState(null)
+  const [placement, setPlacement] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  // When the learner placed above the lowest tier, offer to bring the earlier
-  // levels into review as spread-out check-ups (prior-knowledge claim).
-  const [claimEarlier, setClaimEarlier] = useState(true)
-  const [claimPacing, setClaimPacing] = useState('steady')
-  // Tier 2's word threshold for the chosen language — the "next library" the
-  // goal step projects a days-to-unlock estimate against.
-  const nextLibraryWords = (CATEGORIES_BY_LANGUAGE[language] || [])[1]?.minWords || 100
-  // A one-line, reason-aware greeting shown atop the level step for pre-login users.
-  const [greeting] = useState(() => {
-    const p = initialPrefill()
-    return p ? encouragementFor(p.language, p.reason, languageTheme(p.language).languageName) : null
+
+  // The public reading test (/how-much-can-you-read) is the one thing outside
+  // this screen that can know a starting level. If a visitor took it, their
+  // estimate is the starting point — still a choice, never a silent decision.
+  const [suggested] = useState(() => {
+    const lv = readPreloginPrefs()?.level
+    return Number.isInteger(lv) && lv >= 1 && lv <= 9 ? lv : null
   })
-  // Captured during render (before the clear effect below) so the value survives
-  // to be handed to the first-session welcome after onboarding completes.
-  const [tastedWords] = useState(() => readPreloginPrefs()?.tastedWords || [])
 
   useEffect(() => { track(EVENTS.ONBOARDING_STARTED) }, [])
-  // Consume the pre-login prefs once so returning to onboarding later starts clean.
-  useEffect(() => { clearPreloginPrefs() }, [])
 
-  // Data-driven: the language cards + level grid come from the shared config.
-  // New signups get the public set (Chinese-only); un-pausing a track restores
-  // the picker automatically.
-  const languages = ONBOARDING_LANGUAGES
-  const selectedTheme = language ? languageTheme(language) : null
-  const accentHex = selectedTheme ? selectedTheme.accentHex : '#B83A24'
-
-  // Which levels actually have vocabulary seeded. Levels without content are
-  // shown as "Coming soon" instead of dropping a new user into an empty queue.
-  // Keyed by language so a stale result never gates the wrong language; while
-  // loading (or on fetch failure) everything stays selectable (fail open).
-  const [seededData, setSeededData] = useState(null)   // { lang, levels: Set|null }
+  // Which levels actually have vocabulary seeded — a level with no content
+  // would drop a new learner into an empty queue. Fails open.
+  const [seeded, setSeeded] = useState(null)
   useEffect(() => {
-    if (!language) return
     let cancelled = false
     supabase
       .from('vocabulary')
       .select('level')
-      .eq('language', language)
-      .eq('system', languageTheme(language).system)
+      .eq('language', LANGUAGE)
+      .eq('system', system)
       .eq('is_active', true)
       .then(({ data }) => {
         if (cancelled) return
-        // On a fetch failure, record levels: null (unknown) so the UI fails open
-        // to the full level range instead of getting stuck on a spinner.
-        setSeededData({ lang: language, levels: data ? new Set(data.map(r => r.level)) : null })
+        setSeeded(data ? Array.from(new Set(data.map(r => r.level))) : null)
       })
     return () => { cancelled = true }
-  }, [language])
-  const seededResolved = Boolean(seededData && seededData.lang === language)
-  const seededLevels = seededResolved ? seededData.levels : null
+  }, [system])
 
-  // The proficiency tiers (Beginner / Intermediate / Professional) offered for
-  // this language, derived from the levels that actually have seeded content.
-  // While the seeded set is still loading we fall back to the full level range.
-  const availableLevels = seededLevels
-    ? Array.from(seededLevels)
-    : (selectedTheme ? getLevels(language, selectedTheme.system) : [])
+  const availableLevels = seeded || getLevels(LANGUAGE, system)
   const tiers = resolveTiers(availableLevels)
-  const tierLevelLabel = (t) => getLevelLabel(language, selectedTheme.system, t.level)
 
-  const handleFinish = async () => {
+  async function finish(level) {
     setSaving(true)
     setError('')
-
     try {
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: session.user.id,
-        active_language: language,
-        daily_new_cards: goal,
+        active_language: LANGUAGE,
+        daily_new_cards: DEFAULT_DAILY_NEW_CARDS,
       })
       if (profileError) throw profileError
 
-      const system = languageTheme(language).system
       const { error: trackError } = await supabase.from('language_tracks').upsert({
         user_id: session.user.id,
-        language,
+        language: LANGUAGE,
         system,
         current_level: level,
         is_active: true,
       })
       if (trackError) throw trackError
 
-      // Claim the levels below the placed level so prior knowledge stays sharp.
-      // Best-effort: never block onboarding if the seed write fails.
-      if (claimEarlier && level > 1) {
+      // Someone who placed above the first level is treated as already knowing
+      // the levels below it, so those words come back as spread-out check-ups
+      // rather than vanishing. This used to be a question on a fourth screen;
+      // it is now simply what placing high means. Best-effort — a failed seed
+      // must never block setup.
+      if (level > 1) {
         try {
-          const perDay = (PACING.find(p => p.key === claimPacing) || PACING[1]).perDay
           const { data: earlier } = await supabase
             .from('vocabulary')
             .select('id')
-            .eq('language', language)
+            .eq('language', LANGUAGE)
             .eq('system', system)
             .eq('is_active', true)
             .lt('level', level)
@@ -149,485 +128,217 @@ export default function Onboarding({ session, onComplete }) {
             .order('level').order('sort_order')
           const ids = (earlier || []).map(v => v.id)
           if (ids.length) {
-            await seedClaim({ userId: session.user.id, vocabIds: ids, perDay, source: 'placement' })
+            await seedClaim({
+              userId: session.user.id,
+              vocabIds: ids,
+              perDay: PACING[1].perDay,
+              source: 'placement',
+            })
           }
         } catch (seedErr) {
           console.error('prior-knowledge seed failed', seedErr)
         }
       }
 
-      track(EVENTS.ONBOARDING_COMPLETED, { language, level, goal })
-      onComplete(tastedWords)
+      track(EVENTS.ONBOARDING_COMPLETED, { language: LANGUAGE, level })
+      // Only now. The handoff has actually happened — a profile and a track
+      // exist — so the transitional state that got the learner here has done
+      // its job. Clearing it any earlier (this screen used to do it on mount)
+      // meant an app killed mid-setup lost the reading test's estimate and
+      // restarted with nothing.
+      clearPreloginPrefs()
+      onComplete()
     } catch (e) {
       setError(e.message)
       setSaving(false)
     }
   }
 
-  return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative',
-      // Rendered outside the shell's <main>, so the top inset it would have
-      // inherited has to be spelled out here. Resolves to a plain 24px where
-      // there is no notch, so the web is untouched.
-      padding: 'calc(24px + env(safe-area-inset-top, 0px)) 24px calc(24px + env(safe-area-inset-bottom, 0px))',
-      background: 'var(--bg)',
-    }}>
-      {/* Background image */}
-      <div style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 0,
-        backgroundImage: 'url(' + bgLogin + ')',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        opacity: 0.35,
-        pointerEvents: 'none',
-      }} />
+  const rowStyle = (selected) => ({
+    display: 'flex', alignItems: 'center', gap: '14px', textAlign: 'left',
+    width: '100%', padding: '17px 18px', borderRadius: '16px',
+    border: '1.5px solid ' + (selected ? accentHex : 'var(--border)'),
+    background: selected
+      ? 'color-mix(in srgb, ' + accentHex + ' 9%, var(--surface))'
+      : 'var(--surface)',
+    cursor: 'pointer', transition: 'border-color 140ms ease, background 140ms ease',
+    fontFamily: 'Inter, sans-serif', minHeight: '58px',
+  })
 
-      {/* Card */}
-      <div style={{
-        position: 'relative',
-        zIndex: 1,
-        width: '100%',
-        maxWidth: '460px',
-        background: 'var(--surface)',
-        borderRadius: '20px',
-        boxShadow: '0 4px 40px rgba(0,0,0,0.10)',
-        // 40px of side padding leaves ~232px of content on a 360px phone, which
-        // is not enough for the tier rows or the language cards below.
-        padding: isMobile ? '28px 20px 24px' : '40px 40px 36px',
-      }}>
-        {/* Progress dots — the language step (1) is hidden when only one
-            language is offered, so the dots start at the level step. */}
-        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '32px' }}>
-          {(SOLO_LANGUAGE ? [2, 3, 4] : [1, 2, 3, 4]).map(n => (
-            <div key={n} style={{
-              width: step === n ? '24px' : '8px',
-              height: '8px',
-              borderRadius: '4px',
-              background: step >= n ? accentHex : 'var(--border)',
-              transition: 'all 0.3s',
-            }} />
+  const primary = {
+    width: '100%', minHeight: '54px', borderRadius: '16px', border: 'none',
+    background: accentHex, color: '#fff', marginTop: '24px',
+    fontSize: '16.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+    cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1,
+  }
+
+  if (placement && tier) {
+    return (
+      <div style={shell(isMobile)}>
+        <Backdrop />
+        <div style={card(isMobile)}>
+          <PlacementTest
+            language={LANGUAGE}
+            system={system}
+            level={tier.level}
+            accentHex={accentHex}
+            fontFamily={theme.font}
+            tierLabel={TIER_META[tier.key].label}
+            levelLabel={getLevelLabel(LANGUAGE, system, tier.level)}
+            onPass={(lvl) => finish(lvl)}
+            onCancel={() => { setPlacement(false); setTier(null) }}
+            onFallback={() => finish(tiers[0] ? tiers[0].level : 1)}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  const showTiers = answer === 'know'
+
+  return (
+    <div style={shell(isMobile)}>
+      <Backdrop />
+      <div style={card(isMobile)}>
+        <div style={{ textAlign: 'center', marginBottom: '22px' }}>
+          <img src={logo} alt="" style={{ width: '42px', height: '42px', objectFit: 'contain', marginBottom: '4px' }} />
+          <div style={{ ...heroWordmarkStyle('28px'), margin: 0 }}>{BRAND_NAME}</div>
+        </div>
+
+        <h1 id="onboarding-level-prompt" style={{
+          fontSize: '22px', fontWeight: 800, textAlign: 'center', color: 'var(--text)',
+          margin: '0 0 20px', fontFamily: 'Inter, sans-serif', letterSpacing: '-0.01em',
+        }}>
+          Where should we start you?
+        </h1>
+
+        <div role="radiogroup" aria-labelledby="onboarding-level-prompt" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {ANSWERS.map(a => (
+            <button
+              key={a.key}
+              role="radio"
+              aria-checked={answer === a.key}
+              onClick={() => { setAnswer(a.key); setTier(null) }}
+              style={rowStyle(answer === a.key)}
+            >
+              <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)' }}>{a.label}</span>
+            </button>
           ))}
         </div>
 
-        {/* STEP 1: Language */}
-        {step === 1 && (
-          <div>
-            <div style={{ textAlign: 'center', marginBottom: '6px' }}>
-              <img src={logo} alt={BRAND_NAME} style={{ width: '48px', height: '48px', objectFit: 'contain', marginBottom: '4px' }} />
-              <h1 style={{ ...heroWordmarkStyle('40px'), margin: 0 }}>
-                {BRAND_NAME}
-              </h1>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600, marginTop: '2px' }}>Welcome</div>
-            </div>
-            <p id="onboarding-language-prompt" style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '28px', marginTop: '8px', fontSize: '14px' }}>
-              Which language do you want to learn?
-            </p>
+        {showTiers && (
+          <div style={{ marginTop: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {tiers.map(t => {
+              const meta = TIER_META[t.key]
+              const TierIcon = t.key === 'beginner' ? Play : t.key === 'intermediate' ? BookOpen : GraduationCap
+              const selected = tier && tier.key === t.key
+              return (
+                <button key={t.key} onClick={() => setTier(t)} aria-pressed={Boolean(selected)} style={rowStyle(selected)}>
+                  <span style={{
+                    width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0,
+                    background: 'color-mix(in srgb, ' + accentHex + ' 11%, var(--surface))',
+                    border: '1px solid color-mix(in srgb, ' + accentHex + ' 24%, var(--border))',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <TierIcon size={19} strokeWidth={1.85} color={accentHex} />
+                  </span>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>{meta.label}</span>
+                      {t.test && (
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '3px',
+                          fontSize: '10px', fontWeight: 700, color: accentHex,
+                          background: 'color-mix(in srgb, ' + accentHex + ' 12%, var(--surface))',
+                          borderRadius: '999px', padding: '2px 7px',
+                        }}>
+                          <Lock size={9} strokeWidth={2.4} color={accentHex} /> Quick test
+                        </span>
+                      )}
+                    </span>
+                    <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '3px', lineHeight: 1.4 }}>
+                      {meta.blurb}
+                    </span>
+                  </span>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>
+                    {getLevelLabel(LANGUAGE, system, t.level)}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        )}
 
-            <div role="radiogroup" aria-labelledby="onboarding-language-prompt" style={{ display: 'flex', gap: '12px' }}>
-              {languages.map(lang => {
-                const selected = language === lang.key
-                return (
-                  <button
-                    key={lang.key}
-                    onClick={() => { setLanguage(lang.key); setLevel(null); setTier(null); setPlacement(false) }}
-                    role="radio"
-                    aria-checked={selected}
-                    style={{
-                      // flex-basis 0 + minWidth 0 keeps all three cards exactly
-                      // equal; without it the wider "Русский" label stretched the
-                      // Russian card past the two CJK ones.
-                      flex: '1 1 0',
-                      minWidth: 0,
-                      padding: '24px 12px',
-                      borderRadius: '14px',
-                      border: selected ? ('2px solid ' + lang.accentHex) : '2px solid var(--border)',
-                      background: selected ? (lang.accentHex + '0D') : 'var(--surface)',
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      transition: 'all 0.2s',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <span style={{ fontSize: '34px', lineHeight: 1 }}>{lang.flag}</span>
-                    {/* Native name sizes down a touch and never wraps, so a longer
-                        label (Русский) fits the equal-width card like the CJK ones. */}
-                    <span style={{ fontSize: '23px', fontWeight: 700, color: lang.accentHex, fontFamily: lang.font + ', sans-serif', lineHeight: 1, whiteSpace: 'nowrap', maxWidth: '100%' }}>{lang.nativeName}</span>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', fontFamily: 'Inter, sans-serif' }}>{lang.languageName}</span>
-                  </button>
-                )
-              })}
-            </div>
-
+        {answer === 'some' && (
+          <p style={{ margin: '14px 2px 0', fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55 }}>
+            We&apos;ll start at {getLevelLabel(LANGUAGE, system, suggested || 1)} — the words you already know
+            will go by quickly.{' '}
             <button
-              onClick={() => setStep(2)}
-              disabled={!language}
+              onClick={() => { setAnswer('know'); setTier(null) }}
               style={{
-                width: '100%',
-                marginTop: '28px',
-                padding: '13px',
-                borderRadius: '12px',
-                border: 'none',
-                background: language ? accentHex : 'var(--border)',
-                color: language ? 'var(--surface)' : 'var(--text-muted)',
-                fontSize: '15px',
-                fontWeight: 600,
-                cursor: language ? 'pointer' : 'not-allowed',
-                fontFamily: 'Inter, sans-serif',
-                transition: 'all 0.2s',
+                background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                color: accentHex, fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+                textDecoration: 'underline', textUnderlineOffset: '3px',
               }}
             >
-              Continue
+              Take a quick test instead
             </button>
-          </div>
+          </p>
         )}
 
-        {/* STEP 2: Proficiency tier (+ placement test to prove higher tiers) */}
-        {step === 2 && (
-          <div>
-            {placement && tier ? (
-              <PlacementTest
-                language={language}
-                system={selectedTheme.system}
-                level={tier.level}
-                accentHex={accentHex}
-                fontFamily={selectedTheme.font}
-                tierLabel={TIER_META[tier.key].label}
-                levelLabel={tierLevelLabel(tier)}
-                onPass={(lvl) => { setLevel(lvl); setPlacement(false); setStep(3) }}
-                onCancel={() => { setPlacement(false); setTier(null); setLevel(null) }}
-                onFallback={() => {
-                  // Failed the placement — start at the Beginner tier's level.
-                  const beginner = tiers[0]
-                  setTier(beginner)
-                  setLevel(beginner.level)
-                  setPlacement(false)
-                  setStep(3)
-                }}
-              />
-            ) : (
-              <>
-                {/* Solo-language direct signups skip the branded step 1, so give
-                    the level step a compact welcome. Pre-login users already saw
-                    the brand on the landing wizard (they have a greeting). */}
-                {SOLO_LANGUAGE && !greeting && (
-                  <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                    <img src={logo} alt={BRAND_NAME} style={{ width: '44px', height: '44px', objectFit: 'contain', marginBottom: '4px' }} />
-                    <div style={{ ...heroWordmarkStyle('30px'), margin: 0 }}>{BRAND_NAME}</div>
-                  </div>
-                )}
-                {greeting && (
-                  <div style={{
-                    fontSize: '13px', color: accentHex, fontWeight: 650, textAlign: 'center',
-                    background: accentHex + '0D', border: '1px solid ' + accentHex + '22',
-                    borderRadius: '12px', padding: '10px 14px', marginBottom: '18px', lineHeight: 1.5,
-                  }}>
-                    {greeting}
-                  </div>
-                )}
-                <h1 id="onboarding-level-prompt" style={{ fontSize: '22px', fontWeight: 700, textAlign: 'center', color: 'var(--text)', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
-                  What's your level?
-                </h1>
-                <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '22px', fontSize: '14px', lineHeight: 1.5 }}>
-                  Choose where to start. Higher tiers assume you already know the earlier {getSystemLabel(selectedTheme.system)} vocabulary — a quick test proves it.
-                </p>
+        {error && <p style={{ color: '#DC2626', fontSize: '13px', marginTop: '12px', textAlign: 'center' }}>{error}</p>}
 
-                {!seededResolved ? (
-                  <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--text-muted)', fontSize: '14px' }}>
-                    Loading levels…
-                  </div>
-                ) : tiers.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6 }}>
-                    Content for {selectedTheme.languageName} is coming soon — check back shortly.
-                  </div>
-                ) : (
-                  <div role="radiogroup" aria-labelledby="onboarding-level-prompt" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {tiers.map(t => {
-                      const meta = TIER_META[t.key]
-                      const TierIcon = t.key === 'beginner' ? Play : t.key === 'intermediate' ? BookOpen : GraduationCap
-                      const selected = tier && tier.key === t.key
-                      return (
-                        <button
-                          key={t.key}
-                          onClick={() => setTier(t)}
-                          role="radio"
-                          aria-checked={Boolean(selected)}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '14px', textAlign: 'left',
-                            padding: '16px 18px', borderRadius: '14px',
-                            border: selected ? ('2px solid ' + accentHex) : '2px solid var(--border)',
-                            background: selected ? (accentHex + '0D') : 'var(--surface)',
-                            cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'Inter, sans-serif',
-                          }}
-                        >
-                          <span style={{
-                            width: '42px', height: '42px', borderRadius: '12px', flexShrink: 0,
-                            background: accentHex + '12', border: '1px solid ' + accentHex + '22',
-                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                          }}>
-                            <TierIcon size={20} strokeWidth={1.85} color={accentHex} />
-                          </span>
-                          <span style={{ flex: 1, minWidth: 0 }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontSize: '15px', fontWeight: 700, color: selected ? accentHex : 'var(--text)' }}>{meta.label}</span>
-                              {t.test && (
-                                <span style={{
-                                  display: 'inline-flex', alignItems: 'center', gap: '3px',
-                                  fontSize: '10px', fontWeight: 700, color: accentHex,
-                                  background: accentHex + '14', borderRadius: '999px', padding: '2px 7px',
-                                }}>
-                                  <Lock size={9} strokeWidth={2.4} color={accentHex} /> Placement test
-                                </span>
-                              )}
-                            </span>
-                            <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '3px', lineHeight: 1.4 }}>
-                              {meta.blurb}
-                            </span>
-                          </span>
-                          <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>
-                            {tierLevelLabel(t)}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', gap: '12px', marginTop: '28px' }}>
-                  {!SOLO_LANGUAGE && (
-                    <button onClick={() => { setStep(1); setTier(null); setLevel(null) }} style={backBtn}>Back</button>
-                  )}
-                  <button
-                    onClick={() => {
-                      if (!tier) return
-                      if (tier.test) { setPlacement(true); return }
-                      setLevel(tier.level)
-                      setStep(3)
-                    }}
-                    disabled={!tier}
-                    style={{
-                      flex: 2,
-                      padding: '13px',
-                      borderRadius: '12px',
-                      border: 'none',
-                      background: tier ? accentHex : 'var(--border)',
-                      color: tier ? 'var(--surface)' : 'var(--text-muted)',
-                      cursor: tier ? 'pointer' : 'not-allowed',
-                      fontSize: '15px',
-                      fontWeight: 600,
-                      fontFamily: 'Inter, sans-serif',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    {tier && tier.test ? 'Take placement test' : 'Continue'}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* STEP 3: Daily goal */}
-        {step === 3 && (
-          <div>
-            <h1 style={{ fontSize: '22px', fontWeight: 700, textAlign: 'center', color: 'var(--text)', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
-              Set your daily goal
-            </h1>
-            <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '28px', fontSize: '14px' }}>
-              How many new words do you want to learn each day?
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {[
-                { val: 5, label: 'Casual', cards: '5 cards / day', desc: 'A little each day' },
-                { val: 10, label: 'Regular', cards: '10 cards / day', desc: 'Steady progress' },
-                { val: 15, label: 'Intensive', cards: '15 cards / day', desc: 'Fast track' },
-              ].map(opt => (
-                <button
-                  key={opt.val}
-                  onClick={() => setGoal(opt.val)}
-                  style={{
-                    padding: '16px 20px',
-                    borderRadius: '12px',
-                    border: goal === opt.val ? ('2px solid ' + accentHex) : '2px solid var(--border)',
-                    background: goal === opt.val ? (accentHex + '0D') : 'var(--surface)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: '15px', fontWeight: 600, color: goal === opt.val ? accentHex : 'var(--text)', fontFamily: 'Inter, sans-serif' }}>
-                      {opt.label}
-                    </div>
-                    <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>{opt.desc}</div>
-                    <div style={{ fontSize: '12px', color: accentHex, fontWeight: 650, marginTop: '2px' }}>
-                      ~{daysToWords(opt.val, nextLibraryWords)} days to unlock more stories
-                    </div>
-                  </div>
-                  <div style={{ fontSize: '13px', fontWeight: 500, color: goal === opt.val ? accentHex : 'var(--text-muted)' }}>
-                    {opt.cards}
-                  </div>
-                </button>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '28px' }}>
-              <button onClick={() => setStep(2)} style={backBtn}>Back</button>
-              <button
-                onClick={() => setStep(4)}
-                style={{
-                  flex: 2,
-                  padding: '13px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  background: accentHex,
-                  color: '#fff',
-                  cursor: 'pointer',
-                  fontSize: '15px',
-                  fontWeight: 600,
-                  fontFamily: 'Inter, sans-serif',
-                  transition: 'opacity 0.2s',
-                }}
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 4: What happens next */}
-        {step === 4 && (
-          <div>
-            <h1 style={{ fontSize: '22px', fontWeight: 700, textAlign: 'center', color: 'var(--text)', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
-              Here's your daily loop
-            </h1>
-            <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '26px', fontSize: '14px', lineHeight: 1.6 }}>
-              Review your flashcards, then read a story with the words you just
-              practiced. About 15 focused minutes a day.
-            </p>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap', marginBottom: '26px' }}>
-              {[
-                { icon: Layers, label: 'Flashcards' },
-                { icon: BookOpen, label: 'Stories' },
-                { icon: Play, label: 'Videos' },
-                { icon: PenLine, label: 'Writing' },
-              ].map((s, i, arr) => (
-                <span key={s.label} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '7px', minWidth: '66px' }}>
-                    <span style={{
-                      width: '40px', height: '40px', borderRadius: '12px',
-                      background: accentHex + '10', border: '1px solid ' + accentHex + '22',
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <s.icon size={19} strokeWidth={1.8} color={accentHex} />
-                    </span>
-                    <span style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-muted)' }}>{s.label}</span>
-                  </span>
-                  {i < arr.length - 1 && <ArrowRight size={14} strokeWidth={2} color="var(--text-faint)" />}
-                </span>
-              ))}
-            </div>
-
-            <div style={{
-              padding: '14px 16px', borderRadius: '12px', marginBottom: '4px',
-              background: accentHex + '0A', border: '1px solid ' + accentHex + '20',
-              fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, textAlign: 'center',
-            }}>
-              Your first session starts with 5 words — just enough to unlock your
-              first story. After that you'll learn {goal} new words a day, and each
-              word comes back for review right before you'd forget it.
-            </div>
-
-            {tiers.length > 0 && level > tiers[0].level && (
-              <div style={{ border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', marginTop: '18px', background: 'var(--surface)' }}>
-                <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px' }}>
-                  Bring your earlier words into review?
-                </div>
-                <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '14px' }}>
-                  You placed at {getLevelLabel(language, languageTheme(language).system, level)}, so we treat the
-                  earlier words as known. We can check a few each day so they stay sharp instead of quietly fading.
-                </p>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                  {PACING.map(p => (
-                    <button
-                      key={p.key}
-                      onClick={() => { setClaimEarlier(true); setClaimPacing(p.key) }}
-                      style={{
-                        flex: 1, padding: '10px 8px', borderRadius: '10px', cursor: 'pointer',
-                        border: '2px solid ' + (claimEarlier && claimPacing === p.key ? accentHex : 'var(--border)'),
-                        background: 'var(--surface)', color: 'var(--text)',
-                        fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
-                      }}
-                    >
-                      {p.label}
-                      <span style={{ display: 'block', fontSize: '11px', fontWeight: 500, color: 'var(--text-muted)', marginTop: '2px' }}>
-                        {p.perDay} a day
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={() => setClaimEarlier(v => !v)}
-                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '12px', color: claimEarlier ? 'var(--text-muted)' : accentHex, fontFamily: 'Inter, sans-serif' }}
-                >
-                  {claimEarlier ? 'No thanks, skip this' : 'Skipped — tap to turn back on'}
-                </button>
-              </div>
-            )}
-
-            {error && <p style={{ color: '#DC2626', fontSize: '13px', marginTop: '12px', textAlign: 'center' }}>{error}</p>}
-            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-              <button onClick={() => setStep(3)} style={backBtn}>Back</button>
-              <button
-                onClick={handleFinish}
-                disabled={saving}
-                style={{
-                  flex: 2,
-                  padding: '13px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  background: accentHex,
-                  color: '#fff',
-                  cursor: saving ? 'not-allowed' : 'pointer',
-                  fontSize: '15px',
-                  fontWeight: 600,
-                  fontFamily: 'Inter, sans-serif',
-                  opacity: saving ? 0.7 : 1,
-                  transition: 'opacity 0.2s',
-                }}
-              >
-                {saving ? 'Setting up...' : 'Start your first session'}
-              </button>
-            </div>
-          </div>
-        )}
+        <button
+          disabled={saving || !answer || (showTiers && !tier)}
+          onClick={() => {
+            if (!answer) return
+            if (showTiers) {
+              if (!tier) return
+              if (tier.test) { setPlacement(true); return }
+              finish(tier.level)
+              return
+            }
+            const chosen = ANSWERS.find(a => a.key === answer)
+            // The reading test's estimate wins for someone who says they know
+            // some Chinese — they took a test that measured it.
+            finish(answer === 'some' && suggested ? suggested : chosen.level)
+          }}
+          style={{
+            ...primary,
+            background: (!answer || (showTiers && !tier)) ? 'var(--border)' : accentHex,
+            color: (!answer || (showTiers && !tier)) ? 'var(--text-muted)' : '#fff',
+          }}
+        >
+          {saving ? 'Setting up…' : 'Start learning'}
+        </button>
       </div>
     </div>
   )
 }
 
-const backBtn = {
-  flex: 1,
-  padding: '13px',
-  borderRadius: '12px',
-  border: '1px solid var(--border)',
-  background: 'var(--surface)',
-  cursor: 'pointer',
-  fontSize: '15px',
-  fontWeight: 500,
-  fontFamily: 'Inter, sans-serif',
-  color: 'var(--text)',
+function Backdrop() {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 0,
+      backgroundImage: 'url(' + bgLogin + ')',
+      backgroundSize: 'cover', backgroundPosition: 'center',
+      opacity: 0.35, pointerEvents: 'none',
+    }} />
+  )
 }
+
+const shell = (isMobile) => ({
+  minHeight: '100dvh',
+  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+  position: 'relative', background: 'var(--bg)',
+  // Rendered outside the shell's <main>, so both insets are this screen's own.
+  padding: 'calc(24px + env(safe-area-inset-top, 0px)) ' + (isMobile ? '16px' : '24px')
+    + ' calc(24px + env(safe-area-inset-bottom, 0px))',
+})
+
+const card = (isMobile) => ({
+  position: 'relative', zIndex: 1, width: '100%', maxWidth: '440px',
+  background: 'var(--surface)', borderRadius: '20px',
+  boxShadow: '0 4px 40px rgba(0,0,0,0.10)',
+  padding: isMobile ? '26px 18px 22px' : '34px 34px 30px',
+})

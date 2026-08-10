@@ -104,7 +104,9 @@ export const TUTORIAL_COPY = {
   },
   recap: {
     title: 'Session complete',
-    line: '3 words learned',
+    // "practiced", never "learned": nothing here entered a schedule. The three
+    // words are met again, properly, in the learner's real first session.
+    line: '3 words practiced',
     cta: 'Continue',
   },
   unlock: {

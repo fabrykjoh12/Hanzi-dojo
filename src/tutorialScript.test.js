@@ -4,6 +4,7 @@ import {
   PHASES, ACTIONS, TEACHING_GOALS, CARD_COUNT, STORY_PANEL_COUNT,
   initialTutorialState, stateId, position, isComplete,
   actionsFor, view, advance, defaultWalkthrough, runTutorial,
+  serializeTutorial, resumeTutorialState, goalsThrough,
 } from './tutorialScript'
 import { TUTORIAL_CARDS, TUTORIAL_STORY, GRADE_GLOSSES } from './tutorialFixtures'
 import { GRADES, GRADE_KEYS } from './grades'
@@ -361,6 +362,74 @@ describe('determinism and serialisability', () => {
       expect(actionsFor(resumed)).toEqual(actionsFor(states[i]))
       expect(stateId(resumed)).toBe(stateId(states[i]))
     }
+  })
+})
+
+describe('resuming after the app was closed', () => {
+  it('writes a position, and nothing that can be worked out from one', () => {
+    // goalsSeen is the set of goals every state up to here declared — a
+    // function of the position. Storing it would be keeping an answer we can
+    // always recompute, and would let a hand-edited value claim a lesson that
+    // never happened.
+    const s = last(walk(defaultWalkthrough())).grades ? walk(defaultWalkthrough())[5] : null
+    expect(Object.keys(serializeTutorial(s)).sort())
+      .toEqual(['cardIndex', 'grades', 'phase', 'revealed', 'storyPanel'])
+    expect(serializeTutorial(s).goalsSeen).toBe(undefined)
+  })
+
+  it('comes back to exactly the state it left', () => {
+    for (const s of walk(defaultWalkthrough())) {
+      if (isComplete(s)) continue
+      const back = resumeTutorialState(JSON.parse(JSON.stringify(serializeTutorial(s))))
+      expect(stateId(back)).toBe(stateId(s))
+      expect(actionsFor(back)).toEqual(actionsFor(s))
+      expect(back.grades).toEqual(s.grades)
+      expect(back.goalsSeen).toEqual(s.goalsSeen)
+    }
+  })
+
+  it('finishes from wherever it was picked up', () => {
+    const states = walk(defaultWalkthrough())
+    for (let i = 0; i < states.length - 1; i += 1) {
+      const back = resumeTutorialState(serializeTutorial(states[i]))
+      // Replay the remaining steps from here.
+      let s = back
+      const remaining = defaultWalkthrough().slice(0)
+      for (const step of remaining) {
+        if (position(s) > position(states[i])) break
+        s = advance(s, step.action, step.payload)
+      }
+      expect(position(s)).toBeGreaterThanOrEqual(position(states[i]))
+    }
+  })
+
+  it('forgets whether Replay was tapped — a hint, not a position', () => {
+    let s = advance(advance(initialTutorialState(), ACTIONS.CONTINUE), ACTIONS.REVEAL)
+    s = advance(s, ACTIONS.REPLAY)
+    expect(s.replayed).toBe(true)
+    expect(serializeTutorial(s).replayed).toBe(undefined)
+    expect(resumeTutorialState(serializeTutorial(s)).replayed).toBe(false)
+  })
+
+  it('starts over rather than trusting something it does not recognise', () => {
+    for (const junk of [
+      null, undefined, 'card-2', 42, [],
+      { phase: 'nonsense', cardIndex: 0, revealed: false, storyPanel: 0, grades: [] },
+      { phase: 'card', cardIndex: 9, revealed: false, storyPanel: 0, grades: [] },
+      { phase: 'card', cardIndex: -1, revealed: false, storyPanel: 0, grades: [] },
+      { phase: 'card', cardIndex: 0, revealed: 'yes', storyPanel: 0, grades: [] },
+      { phase: 'card', cardIndex: 0, revealed: false, storyPanel: 7, grades: [] },
+      { phase: 'card', cardIndex: 0, revealed: false, storyPanel: 0, grades: ['brilliant'] },
+      { phase: 'card', cardIndex: 0, revealed: false, storyPanel: 0, grades: [2] },
+      { phase: 'card', cardIndex: 0, revealed: false, storyPanel: 0, grades: ['good', 'good', 'good', 'good'] },
+    ]) {
+      expect(resumeTutorialState(junk)).toBe(null)
+    }
+  })
+
+  it('recomputes the goals rather than believing a stored list', () => {
+    const states = walk(defaultWalkthrough())
+    for (const s of states) expect(goalsThrough(s)).toEqual(s.goalsSeen)
   })
 })
 

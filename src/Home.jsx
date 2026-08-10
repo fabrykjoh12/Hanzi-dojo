@@ -13,6 +13,7 @@ import { rhythmSummary, weekdayInitial } from './studyRhythm'
 import { forecastSummary } from './reviewForecast'
 import { sessionEstimateLabel } from './sessionEstimate'
 import { maybeStartTour, markTourSeen } from './tour'
+import { isTutorialDone } from './prelogin'
 import TourOverlay from './TourOverlay'
 import { MICRO, NUM } from './designTokens'
 
@@ -114,17 +115,22 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
   }, [userId, trackKey, learned, countsLoaded, cacheTick])
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  // First-run tour: once per device for a new account, on the first Home render
-  // (onboarding and the first-mission welcome replace Home entirely, so the
-  // tour can never sit over them). All the rules live in tour.js; the short
-  // delay lets the screen settle — and the story hand-off arrive — before
-  // anything gets pointed at.
+  // First-run tour: once per device for a new account, on the first Home render.
+  // All the rules live in tour.js; the short delay lets the screen settle — and
+  // the story hand-off arrive — before anything gets pointed at.
+  //
+  // Suppressed for anyone who has just been through the onboarding tutorial.
+  // They have done a session, watched it complete, watched a story open and
+  // read it; being handed four coach marks on arrival would be a second
+  // tutorial immediately after the first one, which is exactly the problem the
+  // rebuild set out to remove. What the tour still teaches that the tutorial
+  // does not is under review — see docs/ONBOARDING-AUDIT.md.
   const [tourSteps, setTourSteps] = useState(null)
   const profileCreatedAt = profile.created_at
   useEffect(() => {
     let alive = true
     const timer = setTimeout(() => {
-      maybeStartTour({ screen: 'home', profileCreatedAt })
+      maybeStartTour({ screen: 'home', profileCreatedAt, suppressed: isTutorialDone() })
         .then(steps => { if (alive && steps) setTourSteps(steps) })
     }, 600)
     return () => { alive = false; clearTimeout(timer) }

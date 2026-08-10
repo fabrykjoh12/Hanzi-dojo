@@ -21,12 +21,7 @@ import { BUILD_SHA } from './version'
 export const EVENTS = {
   // Top-of-funnel (pre-auth)
   LANDING_VIEWED: 'landing_viewed',
-  PRELOGIN_LANGUAGE_PICKED: 'prelogin_language_picked',
-  PRELOGIN_REASON_PICKED: 'prelogin_reason_picked',
   PRELOGIN_SIGNUP_STARTED: 'prelogin_signup_started',
-  TASTE_SHOWN: 'taste_shown',
-  TASTE_WORD_REVEALED: 'taste_word_revealed',
-  TASTE_COMPLETED: 'taste_completed',
   SIGNUP_STARTED: 'signup_started',
   SIGNUP_COMPLETED: 'signup_completed',
   // Public story links (pre-auth, anonymous funnel)
@@ -40,7 +35,6 @@ export const EVENTS = {
   // Activation
   ONBOARDING_STARTED: 'onboarding_started',
   ONBOARDING_COMPLETED: 'onboarding_completed',
-  FIRST_MISSION_STARTED: 'first_mission_started',
   FIRST_MISSION_COMPLETED: 'first_mission_completed',
   FIRST_STORY_OPENED: 'first_story_opened',
   FIRST_STORY_COMPLETED: 'first_story_completed',

@@ -328,6 +328,69 @@ export function defaultWalkthrough(grade = 'good') {
   return steps
 }
 
+// ── Resuming ─────────────────────────────────────────────────────────────────
+// The tutorial runs signed out, so a learner who closes the app mid-way has no
+// account to remember them by. What gets written to the device is a POSITION,
+// and it is deliberately the smallest thing that can be one.
+//
+// `goalsSeen` is NOT part of it: it is the set of goals every state up to here
+// declared, which is a function of the position and nothing else. Persisting it
+// would be storing an answer we can always recompute — and would let a
+// hand-edited value claim a lesson that never happened.
+
+// Every goal taught at or before this position, in the order they are met.
+export function goalsThrough(state) {
+  const here = position(state)
+  const seen = []
+  for (const s of runTutorial(defaultWalkthrough())) {
+    if (position(s) > here) break
+    for (const goal of teachesAt(s)) if (seen.indexOf(goal) === -1) seen.push(goal)
+  }
+  return seen
+}
+
+export function serializeTutorial(state) {
+  return {
+    phase: state.phase,
+    cardIndex: state.cardIndex,
+    revealed: state.revealed,
+    storyPanel: state.storyPanel,
+    // Kept because they are answers the learner gave, not something derived.
+    // Three short strings at most.
+    grades: state.grades,
+  }
+}
+
+// Rebuild a full state from a saved position, or return null for anything that
+// is not one. Anything unrecognised — a hand-edited value, a shape from an
+// older build — resumes from the start rather than half-way into a tutorial
+// that never happened.
+export function resumeTutorialState(saved) {
+  if (!saved || typeof saved !== 'object') return null
+  const phases = Object.values(PHASES)
+  if (phases.indexOf(saved.phase) === -1) return null
+  const cardIndex = saved.cardIndex
+  const storyPanel = saved.storyPanel
+  if (!Number.isInteger(cardIndex) || cardIndex < 0 || cardIndex >= CARD_COUNT) return null
+  if (!Number.isInteger(storyPanel) || storyPanel < 0 || storyPanel >= STORY_PANEL_COUNT) return null
+  if (typeof saved.revealed !== 'boolean') return null
+  if (!Array.isArray(saved.grades) || saved.grades.length > CARD_COUNT) return null
+  if (!saved.grades.every(isGradeKey)) return null
+
+  const state = {
+    phase: saved.phase,
+    cardIndex,
+    revealed: saved.revealed,
+    // Not persisted: a hint about the card in front of you, worth nothing once
+    // the app has been closed.
+    replayed: false,
+    storyPanel,
+    grades: saved.grades,
+    goalsSeen: [],
+  }
+  return { ...state, goalsSeen: goalsThrough(state) }
+}
+
 // Run a list of {action, payload} from a starting state. Returns every state
 // passed through, first to last, so a test can assert about the whole journey
 // rather than only where it ended up.

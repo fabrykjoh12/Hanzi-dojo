@@ -1,54 +1,106 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
-  REASONS, examLabelFor, reasonLabel, encouragementFor, tastedWordsLine, initialLandingMode,
+  initialLandingMode,
+  savePreloginPrefs, readPreloginPrefs, clearPreloginPrefs, mergePreloginPrefs,
+  readTutorialProgress, saveTutorialPosition, markTutorialDone, isTutorialDone,
 } from './prelogin'
 
-describe('initialLandingMode', () => {
-  it('sends the web to the marketing page', () => {
-    expect(initialLandingMode(false)).toBe('landing')
-  })
+// What a visitor carries from before they have an account to after they have
+// one. It used to be nine keys, four of which nothing ever read — which is how
+// a learner ended up answering the same two questions twice. It is two now.
 
-  it('sends the installed app to a welcome screen — the store listing was the pitch', () => {
+describe('where a signed-out visitor lands', () => {
+  it('shows the app its own welcome and the web its marketing page', () => {
     expect(initialLandingMode(true)).toBe('welcome')
+    expect(initialLandingMode(false)).toBe('landing')
+    expect(initialLandingMode(undefined)).toBe('landing')
   })
 })
 
-describe('prelogin helpers', () => {
-  it('exposes the reason set', () => {
-    expect(REASONS.map(r => r.key)).toEqual(['travel', 'family', 'work', 'exam', 'culture', 'curious'])
-    expect(REASONS.every(r => r.label)).toBe(true)
+describe('the store', () => {
+  beforeEach(() => {
+    const store = new Map()
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => store.set(k, String(v)),
+      removeItem: (k) => store.delete(k),
+    })
   })
 
-  it('maps the exam label per language', () => {
-    expect(examLabelFor('chinese')).toBe('HSK')
-    expect(examLabelFor('japanese')).toBe('JLPT')
-    expect(examLabelFor('russian')).toBe('TORFL')
-    expect(examLabelFor('klingon')).toMatch(/proficiency/i)
+  it('round-trips what it was given', () => {
+    savePreloginPrefs({ language: 'chinese', level: 3 })
+    expect(readPreloginPrefs()).toEqual({ language: 'chinese', level: 3 })
+    clearPreloginPrefs()
+    expect(readPreloginPrefs()).toBe(null)
   })
 
-  it('looks up a reason label', () => {
-    expect(reasonLabel('travel')).toBe('Travel')
-    expect(reasonLabel('nope')).toBe(null)
+  it('merges rather than replaces', () => {
+    // The reading test's level and the tutorial's position are written by
+    // different screens at different times. One must not erase the other.
+    savePreloginPrefs({ language: 'chinese', level: 3 })
+    mergePreloginPrefs({ tutorial: { done: true } })
+    expect(readPreloginPrefs()).toEqual({ language: 'chinese', level: 3, tutorial: { done: true } })
   })
 
-  it('builds encouragement copy that reflects language + reason', () => {
-    expect(encouragementFor('chinese', 'travel', 'Chinese')).toMatch(/travel/i)
-    expect(encouragementFor('chinese', 'exam', 'Chinese')).toContain('HSK')
-    expect(encouragementFor('japanese', 'exam', 'Japanese')).toContain('JLPT')
-    // Unknown reason still yields a friendly, language-aware line.
-    expect(encouragementFor('russian', 'zzz', 'Russian')).toMatch(/Russian/)
+  it('survives a blocked or broken store without throwing', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => { throw new Error('denied') },
+      setItem: () => { throw new Error('denied') },
+      removeItem: () => { throw new Error('denied') },
+    })
+    expect(() => savePreloginPrefs({ level: 1 })).not.toThrow()
+    expect(readPreloginPrefs()).toBe(null)
+    expect(() => clearPreloginPrefs()).not.toThrow()
+    expect(isTutorialDone()).toBe(false)
+  })
+
+  it('treats unreadable stored json as nothing at all', () => {
+    localStorage.setItem('prelogin:prefs', '{not json')
+    expect(readPreloginPrefs()).toBe(null)
   })
 })
 
-describe('tastedWordsLine', () => {
-  it('returns null for no words', () => {
-    expect(tastedWordsLine([])).toBe(null)
-    expect(tastedWordsLine(null)).toBe(null)
+describe('the tutorial position', () => {
+  beforeEach(() => {
+    const store = new Map()
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => store.set(k, String(v)),
+      removeItem: (k) => store.delete(k),
+    })
   })
-  it('names one word', () => {
-    expect(tastedWordsLine(['钱'])).toBe('You already met 钱 — nice start.')
+
+  it('is nothing until the tutorial has been started', () => {
+    expect(readTutorialProgress()).toBe(null)
+    expect(isTutorialDone()).toBe(false)
   })
-  it('names two words and stops there', () => {
-    expect(tastedWordsLine(['我', '爱', '家'])).toBe('You already met 我 and 爱 — nice start.')
+
+  it('remembers where the learner got to', () => {
+    saveTutorialPosition({ phase: 'card', cardIndex: 1, revealed: true, storyPanel: 0, grades: ['good'] })
+    expect(readTutorialProgress().state.cardIndex).toBe(1)
+    expect(isTutorialDone()).toBe(false)
+  })
+
+  it('keeps the position when it is marked done, and the done flag when it moves', () => {
+    saveTutorialPosition({ phase: 'card', cardIndex: 1, revealed: false, storyPanel: 0, grades: [] })
+    markTutorialDone()
+    expect(isTutorialDone()).toBe(true)
+    expect(readTutorialProgress().state.cardIndex).toBe(1)
+
+    saveTutorialPosition({ phase: 'recap', cardIndex: 2, revealed: false, storyPanel: 0, grades: [] })
+    expect(isTutorialDone()).toBe(true)
+  })
+
+  it('does not disturb the reading test\'s estimate', () => {
+    savePreloginPrefs({ language: 'chinese', level: 4 })
+    saveTutorialPosition({ phase: 'welcome', cardIndex: 0, revealed: false, storyPanel: 0, grades: [] })
+    markTutorialDone()
+    expect(readPreloginPrefs().level).toBe(4)
+  })
+
+  it('ignores a stored value of the wrong shape', () => {
+    savePreloginPrefs({ tutorial: 'yes' })
+    expect(readTutorialProgress()).toBe(null)
+    expect(isTutorialDone()).toBe(false)
   })
 })

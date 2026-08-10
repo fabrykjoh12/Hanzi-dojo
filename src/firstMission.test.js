@@ -1,42 +1,40 @@
 import { describe, it, expect } from 'vitest'
-import { firstMissionCardHint, firstMissionCompletion } from './firstMission'
+import { readFileSync } from 'node:fs'
+import { FIRST_MISSION_READER_HINT, firstMissionCompletion } from './firstMission'
 
-describe('firstMissionCardHint', () => {
-  it('card 1 (index 0) is context-aware: flip first, then grade', () => {
-    expect(firstMissionCardHint(0, { flipped: false })).toMatch(/reveal the answer/i)
-    expect(firstMissionCardHint(0, { flipped: true })).toMatch(/tap good/i)
-  })
+// What is left of the First Mission after the onboarding rebuild, and — just as
+// importantly — what must not come back.
 
-  it('card 2 (index 1) has no hint', () => {
-    expect(firstMissionCardHint(1)).toBeNull()
-  })
-
-  it('card 3 (index 2) introduces audio', () => {
-    expect(firstMissionCardHint(2)).toMatch(/speaker/i)
-  })
-
-  it('card 4 (index 3) introduces typing only when typed recall is on', () => {
-    expect(firstMissionCardHint(3, { isTyped: true })).toMatch(/type/i)
-    expect(firstMissionCardHint(3, { isTyped: false })).toBeNull()
-    expect(firstMissionCardHint(3)).toBeNull()
-  })
-
-  it('card 5 and beyond have no hint (guidance disappears)', () => {
-    expect(firstMissionCardHint(4, { isTyped: true })).toBeNull()
-    expect(firstMissionCardHint(9)).toBeNull()
-  })
-
-  it('is safe with missing options', () => {
-    expect(firstMissionCardHint(0)).toMatch(/flashcard/i)
-    expect(firstMissionCardHint(2, undefined)).toMatch(/speaker/i)
+describe('the reader hint', () => {
+  it('names what the highlighting means, in one line', () => {
+    expect(FIRST_MISSION_READER_HINT).toMatch(/highlighted words/i)
+    expect(FIRST_MISSION_READER_HINT.length).toBeLessThan(80)
   })
 })
 
 describe('firstMissionCompletion', () => {
-  it('names the language', () => {
+  it('names the language when there is one', () => {
     expect(firstMissionCompletion('Chinese')).toBe('You’ve already read your first Chinese story.')
   })
-  it('stays clean when the language is missing', () => {
+
+  it('reads correctly when there is not', () => {
     expect(firstMissionCompletion()).toBe('You’ve already read your first story.')
+    expect(firstMissionCompletion(null)).toBe('You’ve already read your first story.')
+  })
+})
+
+describe('the card hints are gone', () => {
+  const source = readFileSync(new URL('./firstMission.js', import.meta.url), 'utf8')
+
+  it('no longer coaches inside the learner\'s real first session', () => {
+    // The tutorial teaches reveal, Replay and grading on the real card before
+    // the account exists. Teaching them again in the first real session is the
+    // tutorial-on-tutorial problem this rebuild exists to remove.
+    expect(source).not.toContain('firstMissionCardHint')
+    expect(source).not.toContain('CARD_HINTS')
+  })
+
+  it('no longer carries a welcome screen', () => {
+    expect(source).not.toContain('FIRST_MISSION_WELCOME')
   })
 })

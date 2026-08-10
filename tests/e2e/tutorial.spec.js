@@ -20,7 +20,16 @@ const startBtn = (page) => page.getByRole('button', { name: 'Start' });
 const card = (page) => page.getByRole('button', { name: /flashcard — tap to reveal/i });
 const grade = (page, name) => page.getByRole('button', { name: new RegExp('^' + name) });
 
+// The tutorial remembers where a learner got to, so a spec that walks it more
+// than once has to say it wants a clean run. Resuming has its own spec.
+const primed = new WeakSet();
 async function open(page) {
+  if (!primed.has(page)) {
+    primed.add(page);
+    await page.addInitScript(() => {
+      try { localStorage.removeItem('prelogin:prefs'); } catch { /* blocked storage */ }
+    });
+  }
   await page.goto('/tutorial');
   await expect(startBtn(page)).toBeVisible();
 }
@@ -91,7 +100,7 @@ for (const phone of PHONES) {
       }
 
       await expect(page.getByText('Session complete')).toBeVisible();
-      await expect(page.getByText('3 words learned')).toBeVisible();
+      await expect(page.getByText('3 words practiced')).toBeVisible();
       await page.getByRole('button', { name: 'Continue' }).click();
 
       await expect(page.getByText('Story unlocked')).toBeVisible();
@@ -317,6 +326,40 @@ test.describe('Teaching', () => {
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByRole('button', { name: 'Read it' }).click();
     expect(writes).toEqual([]);
+  });
+});
+
+test.describe('Picking it back up', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('resumes where the learner left off after the app was closed', async ({ page }) => {
+    // Deliberately NOT open(): that primes the page to forget its position on
+    // every load, which is the opposite of what this spec is about. A fresh
+    // context starts with empty storage anyway.
+    await page.goto('/tutorial');
+    await expect(startBtn(page)).toBeVisible();
+    await startBtn(page).click();
+    await doCard(page);                       // card 1 graded
+    await card(page).click();                 // card 2 revealed
+    await expect(page.getByText('谢谢', { exact: true }).first()).toBeVisible();
+
+    // Killed and relaunched.
+    await page.goto('/tutorial');
+    await expect(page.getByText('谢谢', { exact: true }).first()).toBeVisible();
+    await expect(startBtn(page)).toHaveCount(0);
+    // Still revealed, still ungraded, and the way on is still there.
+    await expect(grade(page, 'Good')).toBeVisible();
+  });
+
+  test('starts over rather than trusting a nonsense position', async ({ page }) => {
+    await page.goto('/tutorial');
+    await page.evaluate(() => {
+      localStorage.setItem('prelogin:prefs', JSON.stringify({
+        tutorial: { state: { phase: 'somewhere', cardIndex: 99, revealed: 'yes' } },
+      }));
+    });
+    await page.goto('/tutorial');
+    await expect(startBtn(page)).toBeVisible();
   });
 });
 

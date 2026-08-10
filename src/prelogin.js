@@ -1,6 +1,24 @@
-// Pre-login onboarding choices (language + why-you're-learning), captured before
-// signup and carried into the post-signup Onboarding via localStorage. The pure
-// helpers are unit-tested; the storage helpers degrade quietly if unavailable.
+// State a visitor carries from before they have an account to after they have
+// one. Two things, now — and it used to be nine.
+//
+// The nine were the pre-signup wizard's answers: experience, purposes, style,
+// minutes per day, a start level, a placement flag, the words they had tasted,
+// which step they were on. Four of them were never read by anything, which is
+// how a learner ended up being asked their level twice and their daily
+// commitment twice in two different units. The wizard is gone (see Tutorial.jsx
+// and the onboarding audit); so are its keys.
+//
+// What survives:
+//
+//   language, level   written by the public reading test
+//                     (HowMuchCanYouRead.jsx) and read by Onboarding as a
+//                     starting-level prefill. A genuinely separate web feature
+//                     with a live producer and a live consumer.
+//   tutorial          where the signed-out tutorial had got to, and whether it
+//                     finished. See tutorialScript.serializeTutorial.
+//
+// Storage degrades quietly, as everywhere else: a blocked localStorage costs a
+// prefill and a resume, never the app.
 
 // Which screen a signed-out visitor lands on.
 //
@@ -15,53 +33,6 @@ export function initialLandingMode(native) {
   return native ? 'welcome' : 'landing'
 }
 
-// Icons and tints live with the screens that render these (lucide components
-// don't belong in a pure module); this list is the data only.
-export const REASONS = [
-  { key: 'travel', label: 'Travel' },
-  { key: 'family', label: 'Family & heritage' },
-  { key: 'work', label: 'Work or study' },
-  { key: 'exam', label: 'Pass an exam' },
-  { key: 'culture', label: 'Culture — film, music, anime' },
-  { key: 'curious', label: 'Just curious' },
-]
-
-// The exam a reason='exam' learner is aiming at, per language (tailors copy).
-export function examLabelFor(language) {
-  if (language === 'chinese') return 'HSK'
-  if (language === 'japanese') return 'JLPT'
-  if (language === 'russian') return 'TORFL'
-  return 'a proficiency exam'
-}
-
-export function reasonLabel(key) {
-  const r = REASONS.find(x => x.key === key)
-  return r ? r.label : null
-}
-
-// A short, encouraging line for the signup screen, given the choices.
-export function encouragementFor(language, reason, languageName) {
-  const lang = languageName || 'your language'
-  const map = {
-    travel: `Learning ${lang} for travel — let's get you reading signs and menus fast.`,
-    family: `Reconnecting with ${lang} — a warm reason to keep going.`,
-    work: `${lang} for work or study — we'll build a steady, real vocabulary.`,
-    exam: `Aiming for ${examLabelFor(language)} — we'll match your level and grow it.`,
-    culture: `${lang} for the culture — soon you'll follow it in the original.`,
-    curious: `Curious about ${lang}? Perfect — your first words are moments away.`,
-  }
-  return map[reason] || `Great choice — your first ${lang} words are moments away.`
-}
-
-// A warm one-liner for the first-session welcome, naming up to two words the
-// visitor already tasted pre-signup. Returns null when there's nothing to say.
-export function tastedWordsLine(words) {
-  const list = (words || []).filter(Boolean)
-  if (list.length === 0) return null
-  const named = list.slice(0, 2).join(' and ')
-  return `You already met ${named} — nice start.`
-}
-
 const KEY = 'prelogin:prefs'
 
 export function savePreloginPrefs(prefs) {
@@ -72,4 +43,37 @@ export function readPreloginPrefs() {
 }
 export function clearPreloginPrefs() {
   try { localStorage.removeItem(KEY) } catch { /* ignore */ }
+}
+
+// Merge, never replace — the reading test's level and the tutorial's position
+// are written by different screens at different times and must not overwrite
+// each other.
+export function mergePreloginPrefs(patch) {
+  savePreloginPrefs({ ...(readPreloginPrefs() || {}), ...patch })
+}
+
+// ── The tutorial's position ──────────────────────────────────────────────────
+// `{ state, done }`. `state` is what tutorialScript.serializeTutorial produced;
+// `done` is set once, when the learner asks for an account, and is what stops a
+// finished tutorial replaying on the next launch.
+
+export function readTutorialProgress() {
+  const saved = readPreloginPrefs()
+  const t = saved && saved.tutorial
+  return t && typeof t === 'object' ? t : null
+}
+
+export function saveTutorialPosition(state) {
+  const prior = readTutorialProgress() || {}
+  mergePreloginPrefs({ tutorial: { ...prior, state } })
+}
+
+export function markTutorialDone() {
+  const prior = readTutorialProgress() || {}
+  mergePreloginPrefs({ tutorial: { ...prior, done: true } })
+}
+
+export function isTutorialDone() {
+  const t = readTutorialProgress()
+  return Boolean(t && t.done)
 }

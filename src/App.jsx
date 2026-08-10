@@ -8,7 +8,7 @@ import {
   storyPath, isResetPasswordPath, isTutorialPath,
 } from './routes'
 import { authNoticeFromSearch } from './nativeAuth'
-import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
+import { startSession, endSession, setAnalyticsContext } from './analytics'
 import { isBootstrapFailure } from './supabaseErrors'
 import { ensureLanguageFont } from './fontLoader'
 import { useIsMobile } from './useIsMobile'
@@ -37,7 +37,6 @@ import OfflineBar from './OfflineBar'
 import Feedback from './Feedback'
 import Onboarding from './Onboarding'
 import Tutorial from './Tutorial'
-import FirstMissionWelcome from './FirstMissionWelcome'
 import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
 import Background from './Background'
@@ -141,15 +140,6 @@ export default function App() {
   // from the post-study recap; consumed by Stories with the story id).
   const [pendingStoryWords, setPendingStoryWords] = useState(null)
   const [pendingPracticeWords, setPendingPracticeWords] = useState(null)
-  // First mission: true from onboarding completion until the welcome hands off
-  // to the guided first session; and carried into the reader (via the deep-link)
-  // for the "first story" reading hint + completion line.
-  const [justOnboarded, setJustOnboarded] = useState(false)
-  // Words the user tasted during onboarding's pre-login taste flow (if any),
-  // captured on completion so the first-session welcome can reference them —
-  // Onboarding clears the pre-login prefs itself on mount, so it can't be read
-  // back out of storage afterward.
-  const [justTastedWords, setJustTastedWords] = useState([])
   const [pendingStoryFirstMission, setPendingStoryFirstMission] = useState(false)
   // True while the user arrived via a password-recovery email link and hasn't
   // set a new password yet (Supabase signs them in and fires PASSWORD_RECOVERY).
@@ -573,21 +563,15 @@ export default function App() {
     return (
       <>
         <Background language="chinese" />
-        <Onboarding session={session} onComplete={(tastedWords) => { loadProfile(session.user.id); setJustOnboarded(true); setJustTastedWords(tastedWords || []) }} />
+        <Onboarding session={session} onComplete={() => { loadProfile(session.user.id); navigate('study') }} />
       </>
     )
   }
 
-  // First Mission — a clean welcome, then straight into the guided first session
-  // (Study self-detects first-run and caps it to 5 words).
-  if (justOnboarded) {
-    return (
-      <>
-        <Background language={profile.active_language} />
-        <FirstMissionWelcome tastedWords={justTastedWords} onStart={() => { trackOnce(EVENTS.FIRST_MISSION_STARTED); setJustOnboarded(false); navigate('study') }} />
-      </>
-    )
-  }
+  // No welcome screen between setup and the first session any more. Setup ends
+  // by navigating straight to Cards, where Study caps the first run at five new
+  // cards on its own (firstRun.js) — a screen whose only content was a promise
+  // about what the next screen would do had no business existing.
 
   // ── The four persistent tab roots ─────────────────────────────────────────
   // Built the first time their tab is selected, then kept for the app run.

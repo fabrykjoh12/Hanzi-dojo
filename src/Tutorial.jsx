@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { BookOpen, Check } from 'lucide-react'
 import {
   initialTutorialState, view, advance, isComplete, ACTIONS,
+  serializeTutorial, resumeTutorialState,
 } from './tutorialScript'
+import { readTutorialProgress, saveTutorialPosition } from './prelogin'
 import { TUTORIAL_STORY } from './tutorialFixtures'
 import Flashcard from './Flashcard'
 import GradeRow from './GradeRow'
@@ -35,6 +37,10 @@ import { NUM } from './designTokens'
 // One prop: `onComplete`, fired when the learner asks for an account. Where
 // that goes is the caller's business — this file knows nothing about auth or
 // navigation.
+//
+// `sandbox` (default true) means: remember where you got to, so a learner who
+// closes the app mid-tutorial is not made to start again. Settings' Replay
+// passes false — a replay is a look, not a position to be resumed from.
 
 const MAX_WIDTH = 680
 
@@ -123,9 +129,21 @@ function StoryLine({ text, known, accentHex, font }) {
   )
 }
 
-export default function Tutorial({ onComplete }) {
-  const [state, setState] = useState(initialTutorialState)
+export default function Tutorial({ onComplete, resumable = true }) {
+  const [state, setState] = useState(() => {
+    if (!resumable) return initialTutorialState()
+    const saved = readTutorialProgress()
+    // Anything unrecognised resumes from the beginning rather than half-way
+    // into a tutorial that never happened (resumeTutorialState validates).
+    return (saved && resumeTutorialState(saved.state)) || initialTutorialState()
+  })
   const v = view(state)
+
+  // Where the learner got to, written on every state change. Five plain values
+  // — the position, and the grades they actually pressed. Nothing derived.
+  useEffect(() => {
+    if (resumable && !isComplete(state)) saveTutorialPosition(serializeTutorial(state))
+  }, [state, resumable])
 
   const isMobile = useIsMobile()
   const viewportHeight = useViewportHeight()
@@ -206,9 +224,12 @@ export default function Tutorial({ onComplete }) {
           onReplay={() => { tapFeedback(); audio.play(); send(ACTIONS.REPLAY) }}
           onCycleSpeed={() => audio.cycleSpeed()}
           audioHint={coachAt('audio')}
+          // The real card's front prompt, except on card 1 — where "Tap to
+          // reveal" is already saying it, louder and in the right place. Two
+          // instructions for one action is one too many.
           footerHint={v.revealed
             ? 'How well did you remember this?'
-            : 'Recall first, then reveal'}
+            : (v.cardIndex === 0 ? null : 'Recall first, then reveal')}
           onReveal={v.revealed ? null : () => { tapFeedback(); send(ACTIONS.REVEAL) }}
         />
 

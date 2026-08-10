@@ -14,95 +14,126 @@ test.describe('Landing (logged out)', () => {
   });
 });
 
-// The first-encounter flow (owner's design, 2026-08-08): flashcard →
-// micro-story → completion → the three setup questions → the assembled
-// path → and only then the account. Demonstration before questions,
-// questions before the ask — this walks the whole loop, including a wrong
-// answer in the story, because the gentle-retry behaviour is a design
-// decision a tidy-up could easily "fix" into a buzzer.
-test.describe('Pre-login onboarding wizard', () => {
-  test('flashcard → story → completion → questions → path → account last', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: /Start your first story/i }).click();
+// The first run, end to end — and the proof that the old maze is gone.
+//
+// What a new learner used to walk: a marketing page, a flashcard mock, a
+// tea-shop micro-story, a completion card, "How much Chinese do you know?",
+// "Why are you learning Chinese?", "How much would you like to train each
+// day?", an animated "Preparing your training path…", the account, a tier
+// grid, a daily-goal picker, a diagram of the daily loop, a First Mission
+// welcome — and then, on arriving at Home, four coach marks. Nineteen states,
+// four of whose answers nothing ever read (docs/ONBOARDING-AUDIT.md).
+//
+// What they walk now is below. The second half of this file is the list of
+// screens that must never appear again: deletions rot back in, and a spec that
+// only asserts the happy path would not notice.
 
-    // The flashcard: flip it, see the meaning, head into the story.
-    await expect(page.getByRole('heading', { name: /Your first flashcard/i })).toBeVisible();
-    await page.getByRole('button', { name: /Reveal the meaning/i }).click();
-    await expect(page.getByText('nǐ hǎo')).toBeVisible();
-    await page.getByRole('button', { name: /See it in a story/i }).click();
+const DELETED = [
+  /How much Chinese do you know/i,
+  /Why are you learning Chinese/i,
+  /would you like to train each day/i,
+  /Preparing your training path/i,
+  /Set your daily goal/i,
+  /Here's your daily loop/i,
+  /Start First Mission/i,
+  /Build my training path/i,
+  /You understood your first Chinese story/i,
+  /Which language are you learning/i,
+];
 
-    // The story: arrive, be greeted, answer — wrongly first, on purpose.
-    await expect(page.getByText(/small tea shop/i)).toBeVisible();
-    await page.getByRole('button', { name: /^Continue$/ }).click();
-    await expect(page.getByText('你好！')).toBeVisible();
-    await page.getByRole('button', { name: /^Continue$/ }).click();
-    await expect(page.getByText(/What should Mei say/i)).toBeVisible();
+async function assertNoOldWizard(page) {
+  for (const gone of DELETED) {
+    await expect(page.getByText(gone), String(gone)).toHaveCount(0);
+  }
+}
 
-    await page.getByRole('button', { name: '谢谢', exact: true }).click();
-    await expect(page.getByText(/thank you/i)).toBeVisible();     // gentle, explains
-    await page.getByRole('button', { name: '你好', exact: true }).click();
-    await expect(page.getByText(/She said it/i)).toBeVisible();
-    await page.getByRole('button', { name: /^Continue$/ }).click();
+const PHONES = [
+  { name: 'iPhone 14', width: 390, height: 844 },
+  { name: 'iPhone SE', width: 320, height: 568 },
+];
 
-    // Completion claims discovery, not mastery, then the questions begin.
-    await expect(page.getByText(/You understood your first Chinese story/i)).toBeVisible();
-    await page.getByRole('button', { name: /Build my training path/i }).click();
+for (const phone of PHONES) {
+  test.describe('A brand-new learner on ' + phone.name, () => {
+    test.use({ viewport: { width: phone.width, height: phone.height } });
 
-    await expect(page.getByRole('heading', { name: /How much Chinese do you know/i })).toBeVisible();
-    await page.getByRole('button', { name: /completely new/i }).click();
+    test('walks welcome → tutorial → payoff → account → one question → learning', async ({ page }) => {
+      await page.goto('/');
+      await assertNoOldWizard(page);
+      await page.getByRole('button', { name: /Start your first story/i }).click();
 
-    await expect(page.getByRole('heading', { name: /Why are you learning Chinese/i })).toBeVisible();
-    await page.getByRole('button', { name: /HSK or study|Study or HSK/i }).click();
-    await page.getByRole('button', { name: /^Continue$/ }).click();
+      // ── The tutorial: three cards on the real flashcard.
+      await expect(page.getByText('Learn Chinese through words and stories.')).toBeVisible();
+      await page.getByRole('button', { name: 'Start' }).click();
 
-    await expect(page.getByRole('heading', { name: /train each day/i })).toBeVisible();
-    await expect(page.getByText(/10 new words and one short review/i)).toBeVisible();
-    await page.getByRole('button', { name: /^Continue$/ }).click();
+      for (const word of ['你好', '谢谢', '再见']) {
+        await expect(page.getByText(word, { exact: true }).first()).toBeVisible();
+        await page.getByRole('button', { name: /flashcard — tap to reveal/i }).click();
+        await page.getByRole('button', { name: /^Good/ }).click();
+      }
+      await assertNoOldWizard(page);
 
-    // The path assembles from the answers; the account comes only now.
-    await expect(page.getByRole('heading', { name: /Preparing your training path/i })).toBeVisible();
-    await expect(page.getByText(/HSK 1, most useful words first/i)).toBeVisible();
-    await page.getByRole('button', { name: /Save my path/i }).click();
-    await expect(page.getByRole('button', { name: /Create account/i })).toBeVisible();
-  });
+      // ── The payoff.
+      await expect(page.getByText('Session complete')).toBeVisible();
+      await page.getByRole('button', { name: 'Continue' }).click();
+      await expect(page.getByText('Story unlocked')).toBeVisible();
+      await page.getByRole('button', { name: 'Read it' }).click();
+      await expect(page.getByText('你好！')).toBeVisible();
+      await page.getByRole('button', { name: 'Continue' }).click();
+      await page.getByRole('button', { name: 'Continue' }).click();
 
-  test('an accidental reload resumes the wizard instead of restarting it', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: /Start your first story/i }).click();
-    await expect(page.getByRole('heading', { name: /Your first flashcard/i })).toBeVisible();
-    await page.getByRole('button', { name: /Reveal the meaning/i }).click();
-    await page.getByRole('button', { name: /See it in a story/i }).click();
-    await expect(page.getByText(/small tea shop/i)).toBeVisible();
+      // ── The loop, then the account. No bridge screen between them.
+      await expect(page.getByText('Learn', { exact: true })).toBeVisible();
+      await page.getByRole('button', { name: 'Create account' }).click();
+      await expect(page.getByLabel('Email')).toBeVisible();
+      await assertNoOldWizard(page);
+    });
 
-    await page.reload();
-    // Straight back into the story step — not the marketing page.
-    await expect(page.getByText(/small tea shop/i)).toBeVisible();
-  });
-
-  test.describe('on a small phone (360x640)', () => {
-    test.use({ viewport: { width: 360, height: 640 } });
-
-    test('the whole encounter stays reachable without horizontal scroll', async ({ page }) => {
+    test('never scrolls sideways on the way through', async ({ page }) => {
       await page.goto('/');
       await page.getByRole('button', { name: /Start your first story/i }).click();
-      await page.getByRole('button', { name: /Reveal the meaning/i }).click();
-      await page.getByRole('button', { name: /See it in a story/i }).click();
-      await page.getByRole('button', { name: /^Continue$/ }).click();
-      await page.getByRole('button', { name: /^Continue$/ }).click();
-      await page.getByRole('button', { name: '你好', exact: true }).click();
-      await expect(page.getByText(/She said it/i)).toBeVisible();
-      // The page must never scroll sideways on a narrow phone.
-      const overflow = await page.evaluate(() =>
-        document.documentElement.scrollWidth - document.documentElement.clientWidth);
-      expect(overflow).toBeLessThanOrEqual(1);
+      await page.getByRole('button', { name: 'Start' }).click();
+      for (let i = 0; i < 3; i += 1) {
+        const overflow = await page.evaluate(() =>
+          document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        expect(overflow).toBeLessThanOrEqual(1);
+        await page.getByRole('button', { name: /flashcard — tap to reveal/i }).click();
+        await page.getByRole('button', { name: /^Good/ }).click();
+      }
     });
   });
+}
 
-  test('Log in skips the wizard for returning users', async ({ page }) => {
+test.describe('Returning visitors', () => {
+  test('Log in goes straight to the form — no tutorial', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: /^Log in$/i }).click();
-    // Straight to the auth card (email field), no language/reason step.
     await expect(page.getByLabel('Email')).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Which language are you learning/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Start' })).toHaveCount(0);
+    await assertNoOldWizard(page);
+  });
+
+  test('a finished tutorial is not shown twice', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => {
+      localStorage.setItem('prelogin:prefs', JSON.stringify({ tutorial: { done: true } }));
+    });
+    await page.reload();
+    // Start now means "make an account" — the second thing a returning
+    // visitor wants is never the introduction.
+    await page.getByRole('button', { name: /Start your first story/i }).click();
+    await expect(page.getByLabel('Email')).toBeVisible();
+    await expect(page.getByText('Learn Chinese through words and stories.')).toHaveCount(0);
+  });
+
+  test('Back from the account form lands on the landing page, not a deleted step', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Log in$/i }).click();
+    await expect(page.getByLabel('Email')).toBeVisible();
+    const back = page.getByRole('button', { name: /back/i });
+    if (await back.count()) {
+      await back.first().click();
+      await assertNoOldWizard(page);
+      await expect(page.getByRole('button', { name: /Start your first story/i })).toBeVisible();
+    }
   });
 });

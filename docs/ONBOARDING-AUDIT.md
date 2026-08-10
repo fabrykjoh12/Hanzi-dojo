@@ -1,7 +1,14 @@
 # Onboarding — audit and three concepts (P9)
 
-**Status: proposal, awaiting approval. Nothing here is implemented.**
-Written 2026-08-10 against `claude/hanzi-dojo-mobile-rebuild-c1nb3u` @ `030b87c`.
+**Status: Concept A approved 2026-08-10 and being built.** §1 and §2 are now
+history — they describe what the app did before the rebuild, and are kept
+because the reasoning behind the replacement is only legible next to them.
+Written against `claude/hanzi-dojo-mobile-rebuild-c1nb3u` @ `030b87c`.
+
+Shipped so far: `Flashcard`/`GradeRow` extracted from Study (`a746198`), the
+pure state machine (`b5cbb11`), the runner (`d9f8cca`), and the resequencing
+that removed the old maze. What remains is the persistence hardening, the Home
+first-use emphasis, Settings' Replay, and the tour decision.
 
 The brief: a learner should finish onboarding understanding what to do each day,
 how a flashcard works, what Again/Hard/Good/Easy mean, how pronunciation works,
