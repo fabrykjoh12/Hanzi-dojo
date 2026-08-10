@@ -6,7 +6,8 @@ import {
   actionsFor, view, advance, defaultWalkthrough, runTutorial,
   serializeTutorial, resumeTutorialState, goalsThrough,
 } from './tutorialScript'
-import { TUTORIAL_CARDS, TUTORIAL_STORY, GRADE_GLOSSES } from './tutorialFixtures'
+import { TUTORIAL_CARDS, TUTORIAL_STORY } from './tutorialFixtures'
+import { gradeGlosses } from './gradePrompt'
 import { GRADES, GRADE_KEYS } from './grades'
 
 // The onboarding tutorial, before any of it is drawn.
@@ -195,11 +196,13 @@ describe('coaching decreases', () => {
       .filter(v => v.glosses !== null)
     expect(withGlosses).toHaveLength(1)
     expect(withGlosses[0].id).toBe('card-1-back')
-    expect(withGlosses[0].glosses).toEqual(GRADE_GLOSSES)
+    // New cards, so the meanings are about familiarity rather than recall.
+    expect(withGlosses[0].glosses).toEqual(gradeGlosses('new'))
+    expect(withGlosses[0].glosses).toEqual(['New to me', 'Barely knew it', 'Knew it', 'Already knew it'])
   })
 
   it('gives one gloss per real grade, in the real order', () => {
-    expect(GRADE_GLOSSES).toHaveLength(GRADES.length)
+    expect(gradeGlosses('new')).toHaveLength(GRADES.length)
     expect(GRADES.map(g => g.label)).toEqual(['Again', 'Hard', 'Good', 'Easy'])
   })
 
@@ -444,9 +447,10 @@ describe('the sandbox', () => {
 
   it('imports nothing but its own fixtures', () => {
     const imports = [...source.matchAll(/from '([^']+)'/g)].map(m => m[1])
-    // grades.js is the canonical Again/Hard/Good/Easy table and imports
-    // nothing itself — it is the one thing this may reach for.
-    expect(imports).toEqual(['./grades', './tutorialFixtures'])
+    // Four, and every one of them is presentation vocabulary that reaches for
+    // nothing: the canonical grade table, what a card's status marker is, what
+    // to ask about a card in that state, and its own fixtures.
+    expect(imports).toEqual(['./grades', './cardMarker', './gradePrompt', './tutorialFixtures'])
     expect([...fixtures.matchAll(/from '([^']+)'/g)]).toHaveLength(0)
   })
 

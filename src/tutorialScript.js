@@ -26,7 +26,9 @@
 // layout. `view()` says what is true; Tutorial.jsx says what that looks like.
 
 import { isGradeKey } from './grades'
-import { TUTORIAL_CARDS, TUTORIAL_STORY, TUTORIAL_COPY, GRADE_GLOSSES } from './tutorialFixtures'
+import { cardMarker } from './cardMarker'
+import { gradePrompt } from './gradePrompt'
+import { TUTORIAL_CARDS, TUTORIAL_STORY, TUTORIAL_COPY } from './tutorialFixtures'
 
 export const CARD_COUNT = TUTORIAL_CARDS.length
 export const STORY_PANEL_COUNT = TUTORIAL_STORY.panels.length
@@ -94,7 +96,10 @@ const COACHING = {
     front: [{ anchor: 'card', text: TUTORIAL_COPY.coach.reveal }],
     back: [
       { anchor: 'audio', text: TUTORIAL_COPY.coach.pronunciation },
-      { anchor: 'grades', text: TUTORIAL_COPY.coach.grading },
+      // The question itself is the card's, not the tutorial's — see
+      // gradePrompt.js. All three fixture cards are new, so this asks how
+      // familiar the word was rather than how well it was remembered.
+      { anchor: 'grades', text: gradePrompt('new').prompt },
     ],
   },
   1: {
@@ -233,7 +238,7 @@ export function view(state) {
       revealed: state.revealed,
       replayed: state.replayed,
       showGrades: state.revealed,
-      glosses: state.revealed && first ? GRADE_GLOSSES : null,
+      glosses: state.revealed && first ? gradePrompt(cardMarker(TUTORIAL_CARDS[state.cardIndex]).key).glosses : null,
       // The pronunciation pointer is spent once used: it says "this can be
       // tapped", and once it has been, it is noise.
       coach: (state.revealed ? coaching.back : coaching.front)

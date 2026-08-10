@@ -77,14 +77,6 @@ export const TUTORIAL_STORY = {
   ],
 }
 
-// The one-word meaning of each grade, shown once — on the first revealed card,
-// under the real labels. Index matches GRADES in gradePalette.js: the row is
-// Again / Hard / Good / Easy, always, in that order.
-//
-// One word each on purpose. Four sentences under four buttons is a paragraph,
-// and a learner mid-recall will not read it.
-export const GRADE_GLOSSES = ['Forgot', 'Barely', 'Remembered', 'Effortless']
-
 // Every line the tutorial says. Short enough to read at a glance, because a
 // learner who is being taught by doing is not reading.
 export const TUTORIAL_COPY = {
@@ -97,7 +89,9 @@ export const TUTORIAL_COPY = {
   coach: {
     reveal: 'Tap to reveal',
     pronunciation: 'Tap to hear it',
-    grading: 'How well did you remember it?',
+    // The prompt itself is NOT here: it depends on whether the card is new or
+    // a review, and gradePrompt.js owns that for the whole app. All three
+    // tutorial cards are new, so the tutorial asks the new-card question.
     // Said after the first grade, on the next card, because it can only be
     // understood once you have actually pressed one of them.
     scheduled: 'Your grade decides when you see it again.',

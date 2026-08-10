@@ -9,6 +9,7 @@ import { TUTORIAL_STORY } from './tutorialFixtures'
 import Flashcard from './Flashcard'
 import GradeRow from './GradeRow'
 import { cardMarker } from './cardMarker'
+import { gradePromptText } from './gradePrompt'
 import { studyLayout } from './studyLayout'
 import { useIsMobile } from './useIsMobile'
 import { useViewportHeight } from './useViewportHeight'
@@ -257,12 +258,13 @@ export default function Tutorial({ onComplete, resumable = true, finishLabel = n
           onReplay={() => { tapFeedback(); audio.play(); send(ACTIONS.REPLAY) }}
           onCycleSpeed={() => audio.cycleSpeed()}
           audioHint={coachAt('audio')}
-          // The real card's front prompt, except on card 1 — where "Tap to
-          // reveal" is already saying it, louder and in the right place. Two
-          // instructions for one action is one too many.
-          footerHint={v.revealed
-            ? 'How well did you remember this?'
-            : (v.cardIndex === 0 ? null : 'Recall first, then reveal')}
+          // The card's own prompts, except on card 1 — where the tutorial is
+          // already saying both of them, louder and in the right place ("Tap to
+          // reveal" above the card, the grade question above the buttons).
+          // Printing them twice is how a taught screen starts to look busy.
+          footerHint={v.cardIndex === 0
+            ? null
+            : (v.revealed ? gradePromptText(marker.key) : 'Recall first, then reveal')}
           onReveal={v.revealed ? null : () => { tapFeedback(); send(ACTIONS.REVEAL) }}
         />
 

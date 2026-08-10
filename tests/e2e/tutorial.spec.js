@@ -198,15 +198,17 @@ test.describe('Teaching', () => {
   test('explains what the grades mean, once, on the first revealed card', async ({ page }) => {
     await walkTo(page, 'card1');
     await card(page).click();
-    for (const gloss of ['Forgot', 'Barely', 'Remembered', 'Effortless']) {
+    for (const gloss of ['New to me', 'Barely knew it', 'Knew it', 'Already knew it']) {
       await expect(page.getByText(gloss, { exact: true })).toBeVisible();
     }
-    await expect(page.getByText('How well did you remember it?')).toBeVisible();
+    // A word met for the first time cannot be remembered — see gradePrompt.js.
+    await expect(page.getByText('How familiar was this word?')).toBeVisible();
+    await expect(page.getByText('How well did you remember it?')).toHaveCount(0);
 
     // Card 2: the meanings are not repeated.
     await grade(page, 'Good').click();
     await card(page).click();
-    for (const gloss of ['Forgot', 'Barely', 'Remembered', 'Effortless']) {
+    for (const gloss of ['New to me', 'Barely knew it', 'Knew it', 'Already knew it']) {
       await expect(page.getByText(gloss, { exact: true })).toHaveCount(0);
     }
   });
@@ -222,7 +224,9 @@ test.describe('Teaching', () => {
     await expect(page.getByText('Your grade decides when you see it again.')).toBeVisible();
     await expect(page.getByText('Tap to reveal')).toHaveCount(0);
     await card(page).click();
-    await expect(page.getByText('How well did you remember it?')).toHaveCount(0);
+    // The card's own footer prompt is product, not coaching — it is on cards 2
+    // and 3 exactly as it is in a real session. What must be gone is the
+    // tutorial's own line above the buttons, and the meanings under them.
     await grade(page, 'Good').click();
 
     // Card 3 is the product.

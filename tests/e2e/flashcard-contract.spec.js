@@ -47,9 +47,12 @@ async function cardContract(page) {
       // studyLayout drops the prompt line first on a short phone — the grade
       // buttons are never negotiable, a sentence of encouragement is. So this
       // is 'front' | 'back' | null, and null is a legitimate answer.
+      // The answer-side prompt follows the card's state (gradePrompt.js): a
+      // word met for the first time is asked how familiar it was, one seen
+      // before how well it was remembered.
       footer: card.textContent.includes('Recall first, then reveal')
         ? 'front'
-        : (card.textContent.includes('How well did you remember this?') ? 'back' : null),
+        : (/How familiar was this word\?|How well did you remember it\?/.test(card.textContent) ? 'back' : null),
     };
   });
 }
@@ -141,6 +144,48 @@ for (const phone of PHONES) {
       // The label names the CURRENT rate — a glyph alone reads as a value, not
       // a control, to anyone who cannot see it change.
       expect(await speed.getAttribute('aria-label')).toMatch(/^Playback speed \d(\.\d+)?×\. Tap to change\.$/);
+    });
+
+    test('asks the question the card\'s own state deserves', async ({ page }) => {
+      const study = new StudyPage(page);
+      await study.goto();
+      const before = await cardContract(page);
+      await study.reveal();
+      const after = await cardContract(page);
+
+      // Whichever card the queue served, the prompt matches its status pill.
+      // A word being met for the first time cannot be remembered, and a word
+      // seen yesterday is not new — one rule, in gradePrompt.js, shared with
+      // the onboarding tutorial.
+      const text = await page.evaluate(() => document.body.textContent);
+      if (before.pill === 'FIRST TIME') {
+        expect(after.footer === null || text.includes('How familiar was this word?')).toBe(true);
+        expect(text).not.toContain('How well did you remember it?');
+      } else {
+        expect(after.footer === null || text.includes('How well did you remember it?')).toBe(true);
+        expect(text).not.toContain('How familiar was this word?');
+      }
+
+      // Either way this is COPY: the four grades are the same four grades.
+      const labels = await page.evaluate(() => {
+        const names = ['Again', 'Hard', 'Good', 'Easy'];
+        return Array.from(document.querySelectorAll('button'))
+          .filter(b => names.some(n => (b.textContent || '').trim().startsWith(n)))
+          .map(b => b.querySelectorAll('span')[0].textContent.trim());
+      });
+      expect(labels).toEqual(['Again', 'Hard', 'Good', 'Easy']);
+    });
+
+    test('never explains the grades in a real session — that is the tutorial\'s job', async ({ page }) => {
+      const study = new StudyPage(page);
+      await study.goto();
+      await study.reveal();
+      const text = await page.evaluate(() => document.body.textContent);
+      // The one-word meanings are a first-run teaching device. In a session the
+      // second line under each button is the real schedule preview.
+      for (const gloss of ['New to me', 'Already knew it', 'Forgot', 'Effortless']) {
+        expect(text, gloss).not.toContain(gloss);
+      }
     });
 
     test('grades in one row of four, each its own colour, each tappable', async ({ page }) => {

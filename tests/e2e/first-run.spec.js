@@ -44,8 +44,11 @@ async function walkTutorial(page, { replay = false } = {}) {
 
   // Card 1 is the taught one: reveal, hear it, and what the grades mean.
   await cardEl(page).click();
-  await expect(page.getByText('How well did you remember it?')).toBeVisible();
-  for (const gloss of ['Forgot', 'Barely', 'Remembered', 'Effortless']) {
+  // All three tutorial words are being met for the first time, so the question
+  // is about familiarity — there is nothing yet to remember.
+  await expect(page.getByText('How familiar was this word?')).toBeVisible();
+  await expect(page.getByText('How well did you remember it?')).toHaveCount(0);
+  for (const gloss of ['New to me', 'Barely knew it', 'Knew it', 'Already knew it']) {
     await expect(page.getByText(gloss, { exact: true })).toBeVisible();
   }
   await page.getByRole('button', { name: 'Replay audio' }).click();
@@ -55,7 +58,7 @@ async function walkTutorial(page, { replay = false } = {}) {
   await cardEl(page).click();
   await gradeBtn(page, 'Hard').click();
   await cardEl(page).click();
-  await expect(page.getByText('Forgot', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('New to me', { exact: true })).toHaveCount(0);
   await gradeBtn(page, 'Easy').click();
 
   await expect(page.getByText('Session complete')).toBeVisible();
@@ -188,13 +191,13 @@ for (const phone of PHONES) {
       // The real study screen, with no tutorial copy on it.
       await expect(cardEl(page)).toBeVisible({ timeout: 15000 });
       await expect(page.getByText('Tap to reveal')).toHaveCount(0);
-      await expect(page.getByText('How well did you remember it?')).toHaveCount(0);
+      await expect(page.getByText('New to me', { exact: true })).toHaveCount(0);
       await assertClean(page, 'first session');
 
       // …and the real grades, with real schedule previews rather than glosses.
       await cardEl(page).click();
       await expect(gradeBtn(page)).toBeVisible();
-      await expect(page.getByText('Remembered', { exact: true })).toHaveCount(0);
+      await expect(page.getByText('Knew it', { exact: true })).toHaveCount(0);
     });
   });
 }

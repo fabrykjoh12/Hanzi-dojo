@@ -31,6 +31,7 @@ import { computeStudyTally } from './studyTally'
 import { sessionMix, bandTone, MIX_KEYS, MIX_LABELS } from './sessionMix'
 import { studyLayout, MOBILE_SHELL_HEIGHT } from './studyLayout'
 import { cardMarker, MARKER_DOT } from './cardMarker'
+import { gradePromptText } from './gradePrompt'
 import Flashcard from './Flashcard'
 import GradeRow from './GradeRow'
 import { MICRO, NUM } from './designTokens'
@@ -1357,7 +1358,12 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           audioSpeed={audioSpeed}
           onReplay={playAudio}
           onCycleSpeed={cycleSpeed}
-          footerHint={flipped ? 'How well did you remember this?' : (isTyped ? 'Type the reading, then check' : 'Recall first, then reveal')}
+          // A word being met for the first time cannot be remembered, so the
+          // question follows the card's state (gradePrompt.js). Copy only —
+          // the four grades and everything they do are untouched.
+          footerHint={flipped
+            ? gradePromptText(marker.key)
+            : (isTyped ? 'Type the reading, then check' : 'Recall first, then reveal')}
           flash={gradeColor ? { color: gradeColor, id: gradeId } : null}
           onReveal={() => setFlipped(true)}
         >
