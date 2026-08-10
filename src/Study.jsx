@@ -11,6 +11,7 @@ import { todayStr } from './streak'
 import { evaluateAchievements } from './achievements'
 import { toast } from './toast'
 import { languageTheme } from './languageTheme'
+import { GRADE_STYLES } from './gradePalette'
 import { checkTypedAnswer } from './typedAnswer'
 import { useIsMobile } from './useIsMobile'
 import { useReadingFont } from './useReadingFont'
@@ -52,16 +53,6 @@ const SAGE = '#6E8466'
 // Grade → feedback color (Again / Hard / Good / Easy) — the post-grade flash
 // ring only, kept vivid so the ring reads clearly against the card.
 const GRADE_COLORS = ['#DC2626', '#D97706', '#3E63DD', '#2F9E6D']
-
-// Grade button palette — desaturated to sit quietly on the card until pressed.
-// Fixed positions + text labels carry the meaning; color is a second signal,
-// never the only one (kept in sync with the icon/label per button below).
-const GRADE_STYLES = [
-  { bg: '#FBEDEA', border: '#E9C9C0', text: '#9B3521' }, // Again
-  { bg: '#FBF1E4', border: '#EBD7B8', text: '#8A5F1E' }, // Hard
-  { bg: '#E9F2EA', border: '#C4DCC7', text: '#35603C' }, // Good
-  { bg: '#E7EFF3', border: '#C2D6DF', text: '#2F5A6B' }, // Easy
-]
 
 function hasKanji(text) {
   const value = text || ''
@@ -192,7 +183,7 @@ function GradeButton({
         color: text, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
         transition: 'background 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease',
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
-        boxShadow: hovered ? '0 10px 22px rgba(24,24,27,0.08)' : 'none',
+        boxShadow: hovered ? 'var(--shadow-1)' : 'none',
       }}
     >
       <span style={{ fontSize: labelSize + 'px', fontWeight: 750 }}>
