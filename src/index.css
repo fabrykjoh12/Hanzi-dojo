@@ -136,6 +136,12 @@ body {
      one expression. */
   --watermark-pct: 4.5%;
 
+  /* How much of a card marker's hue goes into the flashcard's own surface for
+     the band across the top of the card (cardMarker.js). The band is a TINT on
+     the card, not a mark drawn over it, so it has to mix into `--surface` —
+     100% here means the light-mode band is exactly the tone it always was. */
+  --card-strip-mix: 55%;
+
   /* Answer-feedback tokens (quizzes, typing, fill-in-the-blank). Kept as
      semantic vars so the correct/wrong panels adapt to dark mode instead of
      glowing as near-white blocks. */
@@ -333,6 +339,13 @@ body {
   --ink-lift: #FFFFFF;
   --ink-lift-pct: 30%;
   --watermark-pct: 8%;
+  /* The card's status band, reported from a device as the last light-mode
+     treatment surviving inside the dark card: a full-width cream bar across
+     the top of an otherwise dark surface. Its tones are pale by design (they
+     are marks on white paper), so on a dark card they have to become a tint of
+     that card rather than a colour laid on top of it. A third of the hue is
+     enough to say new-vs-review and nowhere near enough to glow. */
+  --card-strip-mix: 32%;
   /* The language background image is bright; keep it barely-there on dark so it
      blends instead of glowing. */
   --bg-image-opacity: 0.06;

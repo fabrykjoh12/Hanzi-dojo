@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   sessionMix, mixKey, bandTone,
-  TONE_NEW, TONE_LEARNING, TONE_DUE, MIX_KEYS, MIX_LABELS,
+  TONE_NEW, TONE_LEARNING, TONE_DUE, HUE_NEW, HUE_DUE, MIX_KEYS, MIX_LABELS,
 } from './sessionMix'
 
 const q = (...states) => states.map(state => ({ state }))
@@ -122,6 +122,42 @@ describe('bandTone', () => {
 
   it('falls back to the due tone for an unknown key', () => {
     expect(bandTone('#B83A24', 'nonsense')).toBe(TONE_DUE)
+  })
+})
+
+// The hues exist so the card's 8px band can be a tint of the card instead of a
+// pale bar laid over it (see cardMarker.js). The contract that keeps light mode
+// exactly as it was: each tone IS its hue on white paper, at the light theme's
+// mix. If that stops holding, the light-mode card changed colour.
+describe('the card hues behind the tones', () => {
+  const LIGHT_MIX = 0.55   // --card-strip-mix in :root
+
+  const rgb = (hex) => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16))
+  // What color-mix(in srgb, hue P%, #FFFFFF) resolves to, rounded as a browser
+  // rounds it to an 8-bit channel.
+  const onWhite = (hex, p) => rgb(hex).map(c => Math.round(p * c + (1 - p) * 255))
+
+  it('reproduces the first-time tone exactly, on white', () => {
+    expect(onWhite(HUE_NEW, LIGHT_MIX)).toEqual(rgb(TONE_NEW))
+  })
+
+  it('reproduces the review tone exactly, on white', () => {
+    expect(onWhite(HUE_DUE, LIGHT_MIX)).toEqual(rgb(TONE_DUE))
+  })
+
+  it('keeps the two hues distinguishable rather than two shades of one', () => {
+    expect(HUE_NEW).not.toBe(HUE_DUE)
+    const [r1, g1, b1] = rgb(HUE_NEW)
+    const [r2, g2, b2] = rgb(HUE_DUE)
+    expect(Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2)).toBeGreaterThan(120)
+  })
+
+  it('is a hue, not a pastel — it has somewhere to go on a dark card', () => {
+    // A near-neutral hue mixes into any surface as grey. These have chroma.
+    for (const hex of [HUE_NEW, HUE_DUE]) {
+      const [r, g, b] = rgb(hex)
+      expect(Math.max(r, g, b) - Math.min(r, g, b)).toBeGreaterThan(40)
+    }
   })
 })
 

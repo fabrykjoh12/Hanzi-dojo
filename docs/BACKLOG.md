@@ -10,6 +10,45 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+## Build-30 device findings — the three that were fixed (2026-08-10)
+
+Physical iPhone, TestFlight build 30. All three are the same shape of bug: a
+thing that is correct on a web page and wrong in an app.
+
+**1. A hidden card kept its voice.** An unfinished session, left via X and a tab
+switch, came back to the Continue screen — and the pronunciation of the card
+that had been open played behind it. Two independent causes:
+
+- `<Activity>` tears effects DOWN on hide and runs them again on show. The
+  autoplay effect's dependency was `[flipped]`, and `flipped` was still `true`,
+  so a re-attachment was indistinguishable from a reveal. **This applies to
+  every card-entry side effect anyone adds to Study, not just audio** — a
+  persistent root means "the effect ran" no longer implies "something happened".
+- Nothing in the condition asked whether the card was on screen. `flipped &&
+  queue.length > 0` are both true behind the Continue screen.
+
+Fixed by `studyAutoplay.js`: a reveal is identified by *which card* was revealed,
+the identity is remembered in a ref (refs survive `<Activity>`, effects don't),
+and nothing fires unless `cardPresented` — the same derivation the shell uses to
+hide the tab bar. `useStudyAudio` now takes `presenting`.
+
+**2. The card's status band was a light-mode colour at full strength.**
+`TONE_NEW`/`TONE_DUE` are pale marks tuned for white paper; at `MARKER_HEIGHT`
+across the full card width they stop being marks and become a lit surface.
+`cardMarker.markerStripTint()` now mixes the marker's hue into `--surface` at
+`--card-strip-mix` (55% light — byte-identical to before, 32% dark). **The rail
+segments and the legend/pill dots deliberately still use the raw tones**: a
+small pale mark on a dark ground is correct, and darkening a 7px dot would make
+it disappear. If a device ever disagrees, that is a separate decision.
+
+**3. P4 identified — the right-edge scroll indicator was the WKWebView's.** It
+was never the Stories rail. The app shell scrolls the *document*, so the bar
+belonged to WKWebView's own `UIScrollView` (and, on Android, to the WebView's
+fading scrollbar). Hidden in the two native shells; `::-webkit-scrollbar` could
+never have reached the iOS one. **Still needs device verification** — see
+`docs/MOBILE-DEVICE-QA.md` §A. `Stories.jsx`'s `scrollbarWidth: 'thin'` is
+untouched and remains an open, separate question.
+
 ## Home's cache migration — done (2026-08-10)
 
 Measured on a production bundle against the authed E2E fixture, before: a Home

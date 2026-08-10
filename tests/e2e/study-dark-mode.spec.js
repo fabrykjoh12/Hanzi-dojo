@@ -123,6 +123,99 @@ test.describe('grade buttons in dark mode', () => {
   });
 });
 
+// The band across the top of the flashcard — the second thing a device caught
+// in dark mode, and the same class of bug as the grade buttons: a colour picked
+// for white paper, drawn at full strength on a dark card. 8px of cream across
+// the whole card width is not a mark, it is a lit surface.
+//
+// The band is drawn as an inset box-shadow (it follows the card's radius for
+// free), so it is read out of the computed shadow rather than off an element.
+async function stripColours(page) {
+  return page.evaluate(() => {
+    // COLOR <offsets…> [inset] — colours contain commas, so the layers cannot
+    // simply be split on them.
+    const LAYER = /((?:rgba?\([^)]*\)|color\([^)]*\)))((?:\s+-?[\d.]+px)+)(\s+inset)?/g;
+    let best = null;
+    for (const el of document.querySelectorAll('div')) {
+      const cs = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      if (r.width < 200 || r.height < 200) continue;
+      for (const m of (cs.boxShadow || '').matchAll(LAYER)) {
+        if (!m[3]) continue;                       // not an inset layer
+        const offsets = m[2].trim().split(/\s+/);  // x y blur spread
+        if (offsets[1] !== '8px') continue;        // MARKER_HEIGHT
+        const area = r.width * r.height;
+        if (!best || area > best.area) {
+          best = { area, strip: m[1], card: cs.backgroundColor, width: Math.round(r.width) };
+        }
+      }
+    }
+    return best && { ...best, body: getComputedStyle(document.body).backgroundColor };
+  });
+}
+
+// The exact 8-bit triple a computed colour resolves to, in either notation.
+function channels(value) {
+  const m = value.match(/-?\d*\.?\d+/g);
+  const nums = m.slice(0, 3).map(Number);
+  const scale = value.indexOf('color(') === 0 ? 255 : 1;
+  return nums.map((n) => Math.round(n * scale));
+}
+
+test.describe('the flashcard status band in dark mode', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test.beforeEach(async ({ page }) => { await setTheme(page, 'dark'); });
+
+  test('is a tint of the dark card, not a bright bar across it', async ({ page }) => {
+    await revealCard(page, 'dark');
+    const s = await stripColours(page);
+    expect(s).not.toBe(null);
+
+    expect(luminance(s.body)).toBeLessThan(0.3);     // genuinely dark mode
+    // The finding, as a number. #E4DCCB — the old band — is ~0.87 here.
+    expect(luminance(s.strip)).toBeLessThan(0.35);
+    // And it belongs to the card it sits on rather than floating over it.
+    expect(Math.abs(luminance(s.strip) - luminance(s.card))).toBeLessThan(0.25);
+  });
+
+  test('still says something — it is quiet, not invisible', async ({ page }) => {
+    await revealCard(page, 'dark');
+    const s = await stripColours(page);
+    const [cr, cg, cb] = channels(s.card);
+    const [sr, sg, sb] = channels(s.strip);
+    // Separated from the card face by lightness or by hue, and in practice both.
+    expect(Math.abs(sr - cr) + Math.abs(sg - cg) + Math.abs(sb - cb)).toBeGreaterThan(20);
+    expect(s.strip).not.toBe(s.card);
+  });
+
+  test('spans the card, so its calm matters more than its colour', async ({ page }) => {
+    await revealCard(page, 'dark');
+    const s = await stripColours(page);
+    // This is why 8px of a pale colour reads as a second surface: it is as wide
+    // as the card. Kept as an assertion so a future "just make it thicker" has
+    // to answer for it.
+    expect(s.width).toBeGreaterThan(280);
+  });
+});
+
+test.describe('the flashcard status band in light mode', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test.beforeEach(async ({ page }) => { await setTheme(page, 'light'); });
+
+  test('is exactly the colour it has always been', async ({ page }) => {
+    await revealCard(page, 'light');
+    const s = await stripColours(page);
+    // The two card tones, unchanged: #7FA0B5 (first time) and #E4DCCB (review).
+    // The dark-mode fix is a mix that resolves to precisely these on white
+    // paper, so light mode has to come out byte-identical — anything else is a
+    // regression dressed up as a fix.
+    const rgb = channels(s.strip);
+    expect([[127, 160, 181], [228, 220, 203]]).toContainEqual(rgb);
+  });
+});
+
 test.describe('grade buttons in light mode', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 

@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import {
-  cardMarker, markerStripShadow, markerCardShadow,
+  cardMarker, markerStripShadow, markerStripTint, markerCardShadow,
   markerPillStyle, markerDotStyle,
   MARKER_HEIGHT, MARKER_EDGE, MARKER_DOT,
 } from './cardMarker'
-import { TONE_NEW, TONE_DUE } from './sessionMix'
+import { TONE_NEW, TONE_DUE, HUE_NEW, HUE_DUE } from './sessionMix'
 
 describe('cardMarker', () => {
   it('marks a new card as first time', () => {
@@ -12,6 +12,7 @@ describe('cardMarker', () => {
     expect(marker.key).toBe('new')
     expect(marker.label).toBe('FIRST TIME')
     expect(marker.color).toBe(TONE_NEW)
+    expect(marker.hue).toBe(HUE_NEW)
   })
 
   it('marks every seen state as a review', () => {
@@ -20,6 +21,7 @@ describe('cardMarker', () => {
       expect(marker.key).toBe('due')
       expect(marker.label).toBe('REVIEW')
       expect(marker.color).toBe(TONE_DUE)
+      expect(marker.hue).toBe(HUE_DUE)
     }
   })
 
@@ -46,10 +48,37 @@ describe('cardMarker', () => {
   })
 })
 
+// The band is a TINT of the card, not a mark drawn on it. Reported from a
+// device: the raw tone is pale by design, and 8px of a pale colour across a
+// dark card is a lit bar, not a signal. These specs hold the shape of the fix —
+// the theme decides how much hue reaches the surface, so there is exactly one
+// place the light/dark difference can live.
+describe('markerStripTint', () => {
+  it('mixes the marker hue into the card surface, by the theme', () => {
+    expect(markerStripTint(cardMarker({ state: 'new' })))
+      .toBe('color-mix(in srgb, ' + HUE_NEW + ' var(--card-strip-mix), var(--surface))')
+    expect(markerStripTint(cardMarker({ state: 'review' })))
+      .toBe('color-mix(in srgb, ' + HUE_DUE + ' var(--card-strip-mix), var(--surface))')
+  })
+
+  it('never hardcodes the surface it sits on', () => {
+    // A fixed light colour here is the bug: it cannot follow the card.
+    for (const state of ['new', 'review']) {
+      const tint = markerStripTint(cardMarker({ state }))
+      expect(tint).toContain('var(--surface)')
+      expect(tint).toContain('var(--card-strip-mix)')
+    }
+  })
+})
+
 describe('markerStripShadow', () => {
-  it('draws a band of the marker tone at the full marker height', () => {
+  it('draws a band of the marker tint at the full marker height', () => {
     const shadow = markerStripShadow(cardMarker({ state: 'new' }))
-    expect(shadow).toContain('inset 0 ' + MARKER_HEIGHT + 'px 0 0 ' + TONE_NEW)
+    expect(shadow).toContain(
+      'inset 0 ' + MARKER_HEIGHT + 'px 0 0 ' + markerStripTint(cardMarker({ state: 'new' }))
+    )
+    // Not the raw mark colour any more — that is what glowed.
+    expect(shadow).not.toContain('inset 0 ' + MARKER_HEIGHT + 'px 0 0 ' + TONE_NEW)
   })
 
   it('closes the band with a themed edge one pixel below it', () => {

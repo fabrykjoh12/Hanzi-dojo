@@ -30,6 +30,13 @@ Then background it for **20+ minutes** and resume:
 - [ ] Home's numbers refresh quietly, nothing blanks
 - [ ] Background for a few seconds instead: nothing visibly happens at all
 
+Scroll a long screen — Practice, Stories, Profile — and watch the **right edge**:
+
+- [ ] No grey bar rides the edge of the screen while scrolling (the web view's
+      own scroll indicator; hidden in the native shells, verifiable only here)
+- [ ] Scrolling itself is unchanged: it still flings, decelerates and rubber-
+      bands, and coming back to a screen still lands where you left it
+
 ## B · Tabs
 
 Home → Cards → Stories → Practice → Home, several laps, briskly.
@@ -57,6 +64,15 @@ one more → **Finish for now**.
 - [ ] X reads as "leave this session", not as a pause button
 - [ ] The paused screen is understandable in one glance, and the counts are right
 - [ ] Resume continues the same session; Finish keeps the progress
+
+Then, with the answer of a card revealed: **X** → another tab → back to Cards.
+
+- [ ] The Continue screen appears in **silence** — no word plays behind it
+- [ ] Do the tab round trip several more times: still silent, every time
+- [ ] Continue → the same card, still revealed → Replay still speaks it
+- [ ] In dark mode, the band across the top of the card is a quiet tint of the
+      card, not a bright bar laid across it — and in light mode it looks exactly
+      as it always has
 
 ## D · Stories
 

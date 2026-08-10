@@ -25,10 +25,23 @@ export function mixKey(card) {
   return 'due'
 }
 
-// The card's own status colours — the 3px line drawn across the top of the
-// flashcard. The rail reuses them so a band and the card it will become are
-// the same colour, rather than two unrelated vocabularies for one fact. These
-// live here, not in Study.jsx, so there is one definition of them.
+// The card's own status colours — the band across the top of the flashcard and
+// the dots that name it. The rail reuses them so a band and the card it will
+// become are the same colour, rather than two unrelated vocabularies for one
+// fact. These live here, not in Study.jsx, so there is one definition of them.
+//
+// The TONES are marks: small drawn things (a 6px rail segment, a 7px dot) on
+// whatever ground they sit on. Pale is right for a mark.
+//
+// The HUES are the same two colours before they were mixed with paper —
+// TONE_NEW is HUE_NEW at 55% on white, TONE_DUE is HUE_DUE at 55% on white,
+// exactly. They exist because the card's 8px band is not a mark: it is a large
+// tint of the card's own surface, and a tint has to be mixed INTO the surface
+// or it stays light when the surface goes dark (CLAUDE.md §5). Reported from a
+// device — a cream bar glowing across the top of a dark card. See
+// cardMarker.js, which does the mixing at the theme's `--card-strip-mix`.
+export const HUE_NEW = '#165278'
+export const HUE_DUE = '#CEBFA0'
 export const TONE_NEW = '#7FA0B5'
 export const TONE_DUE = '#E4DCCB'
 // The card marker has no learning colour of its own — a learning card wears the

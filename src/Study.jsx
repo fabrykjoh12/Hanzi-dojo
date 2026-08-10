@@ -301,10 +301,22 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const langFont = theme.font
   const langChars = theme.languageName
 
-  // Audio (speed pref, iOS-safe playback + fallback, autoplay-on-flip, and
-  // current+next prefetch) lives in a focused hook. Behavior is unchanged.
+  // Is the CARD the thing this tab is currently showing?
+  //
+  // One derivation, because two different systems need exactly this fact and
+  // must never disagree about it:
+  //   - the shell hides the bottom tab bar while a card is up (NAV-MODEL §8.2);
+  //   - card-entry side effects (the pronunciation) may only fire while the
+  //     card is genuinely being presented — not merely while the persistent
+  //     Cards root happens to be mounted or visible. See studyAutoplay.js.
+  // It mirrors the render branches below in order: loading, then the
+  // paused/continue screen, then the recap, then the card.
+  const cardPresented = !loading && !done && !paused && !awaitingContinue && queue.length > 0
+
+  // Audio (speed pref, iOS-safe playback + fallback, card-entry autoplay, and
+  // current+next prefetch) lives in a focused hook.
   const { audioSpeed, audioBroken, playAudio, cycleSpeed, resetAudioBroken } = useStudyAudio({
-    queue, flipped, profile, session, onProfileUpdate,
+    queue, flipped, presenting: cardPresented, profile, session, onProfileUpdate,
   })
 
   // Look up the generated clips for the cards about to be shown, before the
@@ -978,7 +990,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // root: only Study knows whether it is showing a card, a recap, or a loading
   // state. `inProgress` is separate and is what stops a stray tap on the Cards
   // tab throwing a half-finished session away.
-  const immersive = !loading && !done && !paused && !awaitingContinue && queue.length > 0
+  const immersive = cardPresented
   const inProgress = !loading && !done && queue.length > 0 && studied > 0
 
   // ONE exit action. The X in the session header and Android's hardware back

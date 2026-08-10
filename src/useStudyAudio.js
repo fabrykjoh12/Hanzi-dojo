@@ -3,13 +3,15 @@ import { supabase } from './supabase'
 import { playAudioEl } from './utils'
 import { ensureAudio } from './audioCache'
 import { nextSpeed, seedSpeed } from './audioSpeed'
+import { autoplayDecision } from './studyAutoplay'
 import { flashcardAudio } from './ttsAudio'
 import { claimPlayback, releasePlayback } from './audioPlayback'
 
-// Audio for the study session, lifted out of Study.jsx verbatim so that file
-// stays focused on the card/grading loop. Behavior is unchanged: same speed
-// preference, same iOS-safe playback + fallback, same autoplay-on-flip, same
-// current+next prefetch. Study still owns `queue`/`flipped` and passes them in.
+// Audio for the study session, lifted out of Study.jsx so that file stays
+// focused on the card/grading loop: the speed preference, iOS-safe playback +
+// fallback, card-entry autoplay, and the current+next prefetch. Study owns
+// `queue`/`flipped` and whether the card view is being `presenting`-ed, and
+// passes them in; the autoplay RULE is pure, in studyAutoplay.js.
 //
 // Returns { audioSpeed, audioBroken, playAudio, cycleSpeed, resetAudioBroken }.
 // `resetAudioBroken` clears the broken flag when the card changes (Study calls
@@ -17,7 +19,7 @@ import { claimPlayback, releasePlayback } from './audioPlayback'
 
 
 
-export function useStudyAudio({ queue, flipped, profile, session, onProfileUpdate }) {
+export function useStudyAudio({ queue, flipped, presenting, profile, session, onProfileUpdate }) {
   const audioRef = useRef(null)
   // TTS playback rate, seeded from the saved preference (audioSpeed.js).
   const [audioSpeed, setAudioSpeed] = useState(() => seedSpeed(profile.audio_speed))
@@ -105,11 +107,30 @@ export function useStudyAudio({ queue, flipped, profile, session, onProfileUpdat
     }
   }, [])
 
+  // Card-entry audio. The rule is in studyAutoplay.js; this is the plumbing.
+  //
+  // The ref holds the last reveal this hook actually handled, and it survives
+  // the Cards tab being hidden (component state does; effects don't). That is
+  // precisely what lets the re-run on return read as "the same reveal, already
+  // dealt with" instead of a fresh one — which is how a word ended up speaking
+  // from behind the Continue-session screen.
+  const lastEntryRef = useRef(null)
+  const card = queue[0]
+  const cardId = card ? card.id : null
   useEffect(() => {
-    if (flipped && queue.length > 0 && profile.audio_autoplay !== false) {
-      playAudio()
-    }
-  }, [flipped])
+    const decision = autoplayDecision({
+      presenting,
+      enabled: profile.audio_autoplay !== false,
+      card,
+      flipped,
+      lastToken: lastEntryRef.current,
+    })
+    lastEntryRef.current = decision.token
+    if (decision.play) playAudio()
+    // `card` itself is intentionally not a dependency — a new object for the
+    // same card (a re-render of the queue) is not a new card entry. `cardId` is.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presenting, flipped, cardId, profile.audio_autoplay])
 
   // Warm the current + next card's audio into an in-memory object URL so tap
   // playback works offline — on iOS especially, where a ranged network request
