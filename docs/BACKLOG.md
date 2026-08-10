@@ -10,6 +10,31 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+## Onboarding rebuild — what is left after Commit 5 (2026-08-10)
+
+The maze is gone (`docs/ONBOARDING-AUDIT.md`). Three things were deliberately
+left standing:
+
+- **The Home tour still exists, and still has four marks.** It no longer starts
+  by itself for anyone who finished the tutorial, and Home now carries a single
+  inline line — *Your first session is ready* — derived from the account having
+  no cards at all. Settings can still replay the marks. Whether the four should
+  survive at all is a decision to take after device testing, not before.
+- **The Stories tour is down to two marks**: chapter one is free, and locked
+  stories say what opens them. The reward mark went, because the tutorial ends
+  with a session completing, a story unlocking and two lines of Chinese read out
+  of it. Of the two that remain, the LOCK one is arguably self-explanatory — the
+  shelf already prints the condition under each locked cover — but it prints it
+  small, and nobody has watched a first-time learner read it. Keep it until
+  someone has.
+- **`/tutorial` stays.** Signed out it is the real first run; signed in it is a
+  replay, same component and same script, one flag. The e2e suite drives the
+  tutorial through it. It is not a second onboarding system and must not become
+  one.
+
+Not done, and deliberately: an Android pass over the new first run, and a
+decision on whether the four Home marks earn their place.
+
 ## Build-30 device findings — the three that were fixed (2026-08-10)
 
 Physical iPhone, TestFlight build 30. All three are the same shape of bug: a

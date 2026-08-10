@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { countsExpired, trackSignature, HOME_COUNTS_STALE_MS } from './homeData'
+import { countsExpired, trackSignature, HOME_COUNTS_STALE_MS, firstSessionPending } from './homeData'
 
 const TRACK = { language: 'chinese', system: 'hsk', current_level: 2 }
 
@@ -97,5 +97,37 @@ describe('fetchHandoff', () => {
     expect(res).toEqual({ reward: null, daily: null })
     expect(getSessionRewardTeaser).not.toHaveBeenCalled()
     expect(getDailyStoryCard).not.toHaveBeenCalled()
+  })
+})
+
+// Home's one first-use nudge. Derived from the account's own data — cards, or
+// the absence of them — because a flag that has to be set correctly AND cleared
+// correctly is a flag that eventually greets an established learner.
+describe('firstSessionPending', () => {
+  const fresh = { loaded: true, failed: false, cardCount: 0, newCount: 12 }
+
+  it('is true for an account that has never graded anything', () => {
+    expect(firstSessionPending(fresh)).toBe(true)
+  })
+
+  it('goes away the moment there is a single card', () => {
+    expect(firstSessionPending({ ...fresh, cardCount: 1 })).toBe(false)
+  })
+
+  it('says nothing until the counts are actually known', () => {
+    expect(firstSessionPending({ ...fresh, loaded: false })).toBe(false)
+    expect(firstSessionPending({ ...fresh, failed: true })).toBe(false)
+    expect(firstSessionPending(null)).toBe(false)
+    expect(firstSessionPending({})).toBe(false)
+  })
+
+  it('says nothing when an older build left no card count at all', () => {
+    const legacy = { ...fresh }
+    delete legacy.cardCount
+    expect(firstSessionPending(legacy)).toBe(false)
+  })
+
+  it('says nothing when there is no work to point at', () => {
+    expect(firstSessionPending({ ...fresh, newCount: 0 })).toBe(false)
   })
 })

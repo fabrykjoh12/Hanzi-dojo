@@ -119,6 +119,10 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   const lifetimeMastered = (cards || []).filter(c => (c.stability || 0) >= 21).length
 
   return {
+    // How many cards this track has at all. Zero means the learner has never
+    // graded anything here — the same data-derived signal firstRun.js uses to
+    // cap a first session, rather than a second flag that can go stale.
+    cardCount: cards.length,
     newCount, learnCount, dueCount, easyCount, totalWords,
     learnedCount, masteredCount, masteredPct,
     newDoneToday, dueTomorrow, weakCount, forecast7, rhythm7,

@@ -333,10 +333,19 @@ export function defaultWalkthrough(grade = 'good') {
 // account to remember them by. What gets written to the device is a POSITION,
 // and it is deliberately the smallest thing that can be one.
 //
-// `goalsSeen` is NOT part of it: it is the set of goals every state up to here
-// declared, which is a function of the position and nothing else. Persisting it
-// would be storing an answer we can always recompute — and would let a
-// hand-edited value claim a lesson that never happened.
+// Four values, and every one of them is the position. Nothing else is stored:
+//
+//   goalsSeen  the set of goals every state up to here declared — a function of
+//              the position. Storing it would keep an answer we can always
+//              recompute, and would let a hand-edited value claim a lesson that
+//              never happened.
+//   grades     which of the four buttons the learner pressed. Nothing on screen
+//              depends on them, so they are a record of a run rather than a
+//              place in one; a resumed tutorial simply does not know, and says
+//              so by starting the list empty.
+//   replayed   whether Replay was tapped on the card in front of you. It
+//              retires one line of coaching and is worth nothing once the app
+//              has been closed.
 
 // Every goal taught at or before this position, in the order they are met.
 export function goalsThrough(state) {
@@ -355,9 +364,6 @@ export function serializeTutorial(state) {
     cardIndex: state.cardIndex,
     revealed: state.revealed,
     storyPanel: state.storyPanel,
-    // Kept because they are answers the learner gave, not something derived.
-    // Three short strings at most.
-    grades: state.grades,
   }
 }
 
@@ -374,18 +380,14 @@ export function resumeTutorialState(saved) {
   if (!Number.isInteger(cardIndex) || cardIndex < 0 || cardIndex >= CARD_COUNT) return null
   if (!Number.isInteger(storyPanel) || storyPanel < 0 || storyPanel >= STORY_PANEL_COUNT) return null
   if (typeof saved.revealed !== 'boolean') return null
-  if (!Array.isArray(saved.grades) || saved.grades.length > CARD_COUNT) return null
-  if (!saved.grades.every(isGradeKey)) return null
 
   const state = {
     phase: saved.phase,
     cardIndex,
     revealed: saved.revealed,
-    // Not persisted: a hint about the card in front of you, worth nothing once
-    // the app has been closed.
     replayed: false,
     storyPanel,
-    grades: saved.grades,
+    grades: [],
     goalsSeen: [],
   }
   return { ...state, goalsSeen: goalsThrough(state) }

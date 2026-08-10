@@ -61,14 +61,15 @@ test.describe('First-run tour', () => {
     await page.goto('/stories');
     await expect(page.getByRole('heading', { name: 'Stories', exact: true })).toBeVisible();
 
-    const first = page.getByRole('dialog', { name: 'Today’s story reward' });
+    // Two marks, not three: the reward mark is gone, because the onboarding
+    // tutorial ends with a session completing, a story unlocking and two lines
+    // of Chinese read out of it. Saying it again here would be its third
+    // telling.
+    const first = page.getByRole('dialog', { name: 'Chapter one is always free' });
     await expect(first).toBeVisible();
     await first.getByRole('button', { name: 'Next' }).click();
 
-    await expect(page.getByRole('dialog', { name: 'Your library' })).toBeVisible();
-    await page.getByRole('dialog').getByRole('button', { name: 'Next' }).click();
-
-    await expect(page.getByRole('dialog', { name: 'The road ahead' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Locked stories say why' })).toBeVisible();
     // Last step finishes the tour rather than advancing into nothing.
     await page.getByRole('dialog').getByRole('button', { name: 'Done' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);

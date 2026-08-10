@@ -482,14 +482,26 @@ export default function App() {
     )
   }
 
-  // The onboarding tutorial. Signed-out and sandboxed: fixture words, no queue,
-  // no writes of any kind. It ends by asking for an account, and for now that
-  // is the landing page's signup — wiring it into the landing flow properly is
-  // the next commit's job.
+  // The onboarding tutorial, by URL. Sandboxed either way — fixture words, no
+  // queue, no writes of any kind — but it means two different things:
+  //
+  //   signed out  the real first run. It remembers its position, reports the
+  //               funnel, and hands over to the account when it finishes.
+  //   signed in   a replay, exactly as Settings offers. It remembers nothing,
+  //               reports nothing, cannot touch this learner's onboarding
+  //               state or progress, and simply returns them to the app.
+  //
+  // The route stays because the e2e suite drives the tutorial through it, and
+  // because a link to it is the honest way to send someone to the intro. It is
+  // NOT a second onboarding system: same component, same script, one flag.
   if (tutorial) {
     return (
       <Suspense fallback={<ViewFallback />}>
-        <Tutorial onComplete={() => routerNavigate('/', { replace: true })} />
+        <Tutorial
+          resumable={!session}
+          finishLabel={session ? 'Done' : null}
+          onComplete={() => routerNavigate('/', { replace: true })}
+        />
       </Suspense>
     )
   }

@@ -112,17 +112,18 @@ test.describe('Returning visitors', () => {
     await assertNoOldWizard(page);
   });
 
-  test('a finished tutorial is not shown twice', async ({ page }) => {
+  test('a finished tutorial is not shown twice — the app opens on the form', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => {
       localStorage.setItem('prelogin:prefs', JSON.stringify({ tutorial: { done: true } }));
     });
     await page.reload();
-    // Start now means "make an account" — the second thing a returning
-    // visitor wants is never the introduction.
-    await page.getByRole('button', { name: /Start your first story/i }).click();
+    // They spent ninety seconds on the introduction and then closed the app
+    // before signing up. Landing them on the welcome again would read as the
+    // app having forgotten, so the account form IS the entry now.
     await expect(page.getByLabel('Email')).toBeVisible();
     await expect(page.getByText('Learn Chinese through words and stories.')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Start your first story/i })).toHaveCount(0);
   });
 
   test('Back from the account form lands on the landing page, not a deleted step', async ({ page }) => {

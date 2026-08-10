@@ -74,3 +74,17 @@ export function trackSignature(track) {
   if (!track) return ''
   return [track.language, track.system, track.current_level].join('|')
 }
+
+// Has this learner never actually started?
+//
+// Home's one first-use nudge hangs off this, and it is derived from the
+// account's own data — cards, or the absence of them — rather than from a flag
+// that has to be set correctly and cleared correctly. The moment a first card is
+// graded there is a card, and the nudge is gone on the next refresh with nothing
+// to remember. Unloaded or failed counts say nothing: silence beats a wrong
+// greeting on an established account.
+export function firstSessionPending(counts) {
+  if (!counts || !counts.loaded || counts.failed) return false
+  if (!Number.isInteger(counts.cardCount)) return false
+  return counts.cardCount === 0 && (counts.newCount || 0) > 0
+}

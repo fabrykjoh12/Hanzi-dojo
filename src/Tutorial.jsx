@@ -19,6 +19,7 @@ import { BRAND_NAME, heroWordmarkStyle } from './brand'
 import { tapFeedback, successFeedback } from './haptics'
 import { prefersReducedMotion } from './splashIntro'
 import { NUM } from './designTokens'
+import { track, EVENTS } from './analytics'
 
 // The onboarding tutorial: the Mini First Session.
 //
@@ -34,13 +35,21 @@ import { NUM } from './designTokens'
 // gradePalette, studyLayout), because the whole argument for this design is
 // that a learner should not have to learn the control twice.
 //
-// One prop: `onComplete`, fired when the learner asks for an account. Where
-// that goes is the caller's business — this file knows nothing about auth or
-// navigation.
+// Three props, and none of them is a second tutorial:
 //
-// `sandbox` (default true) means: remember where you got to, so a learner who
-// closes the app mid-tutorial is not made to start again. Settings' Replay
-// passes false — a replay is a look, not a position to be resumed from.
+//   onComplete   fired when the learner finishes. Where that goes is the
+//                caller's business — this file knows nothing about auth or
+//                navigation.
+//   resumable    remember where you got to, so a learner who closes the app
+//                mid-tutorial is not made to start again. A replay passes
+//                false: a replay is a look, not a position to be resumed from,
+//                and it must not overwrite a real first run's place.
+//   finishLabel  what the last button says. "Create account" for someone who
+//                does not have one; Settings' replay says "Done", because
+//                offering an account to a signed-in learner is nonsense.
+//
+// Replay is the same component and the same script — there is no second
+// tutorial to keep in step with this one.
 
 const MAX_WIDTH = 680
 
@@ -48,6 +57,17 @@ const MAX_WIDTH = 680
 // card and nothing else reserving the insets. It says so, and gets the whole
 // screen (studyLayout.js).
 const RESERVED_BOTTOM = 0
+
+// Which states are worth reporting. Deliberately not one per Continue tap:
+// where a learner stops is the signal, and an event for every advance buries it.
+const FUNNEL = {
+  'card-1-front': EVENTS.TUTORIAL_STARTED,
+  'card-1-back': EVENTS.TUTORIAL_FIRST_REVEAL,
+  'card-2-front': EVENTS.TUTORIAL_FIRST_GRADE,
+  recap: EVENTS.TUTORIAL_SESSION_COMPLETE,
+  'story-1': EVENTS.TUTORIAL_STORY_REACHED,
+  account: EVENTS.TUTORIAL_COMPLETED,
+}
 
 function Shell({ children, locked, height }) {
   return (
@@ -129,7 +149,7 @@ function StoryLine({ text, known, accentHex, font }) {
   )
 }
 
-export default function Tutorial({ onComplete, resumable = true }) {
+export default function Tutorial({ onComplete, resumable = true, finishLabel = null }) {
   const [state, setState] = useState(() => {
     if (!resumable) return initialTutorialState()
     const saved = readTutorialProgress()
@@ -169,6 +189,19 @@ export default function Tutorial({ onComplete, resumable = true }) {
       successFeedback()
     }
   }, [v.id, v.feedback])
+
+  // The funnel: six milestones, each fired once. A replay is not a funnel, so
+  // it reports nothing.
+  const firedRef = useRef(null)
+  useEffect(() => {
+    if (!resumable) return
+    if (!firedRef.current) firedRef.current = new Set()
+    const event = FUNNEL[v.id]
+    if (event && !firedRef.current.has(event)) {
+      firedRef.current.add(event)
+      track(event)
+    }
+  }, [v.id, resumable])
 
   // The handoff. The tutorial does not navigate and does not know what an
   // account is; it says it is finished.
@@ -374,7 +407,7 @@ export default function Tutorial({ onComplete, resumable = true }) {
               </div>
             ))}
           </div>
-          <PrimaryAction label={v.copy.cta} onClick={advanceOnce} accentHex={accentHex} />
+          <PrimaryAction label={finishLabel || v.copy.cta} onClick={advanceOnce} accentHex={accentHex} />
         </div>
       </Shell>
     )

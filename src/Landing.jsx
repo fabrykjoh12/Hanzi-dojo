@@ -7,7 +7,7 @@ import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 import Tutorial from './Tutorial'
 import { useIsMobile } from './useIsMobile'
-import { initialLandingMode, isTutorialDone, markTutorialDone } from './prelogin'
+import { initialLandingMode, landingEntry, isTutorialDone, markTutorialDone } from './prelogin'
 import { isNativeApp } from './nativeShell'
 import NativeWelcome from './NativeWelcome'
 import {
@@ -153,10 +153,11 @@ export default function Landing({ authNotice = null }) {
   // A tutorial that has already been finished on this device is not shown
   // again: Start goes straight to the account, because the second thing a
   // returning visitor wants is never the introduction.
-  const [mode, setMode] = useState(() => {
-    if (authNotice) return 'auth'
-    return initialLandingMode(isNativeApp())
-  })
+  const [mode, setMode] = useState(() => landingEntry({
+    native: isNativeApp(),
+    tutorialDone: isTutorialDone(),
+    authNotice,
+  }))
   const isMobile = useIsMobile()
   const navigate = useNavigate()
   useEffect(() => { track(EVENTS.LANDING_VIEWED) }, [])

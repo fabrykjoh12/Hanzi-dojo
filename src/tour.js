@@ -60,26 +60,28 @@ export const TOURS = {
       placement: 'auto',
     },
   ],
+  // Two marks, and only what the onboarding tutorial does not already teach.
+  //
+  // The reward mark is gone: the tutorial ends with a session completing, a
+  // story unlocking and two lines of Chinese read out of it. Explaining that
+  // again on the shelf would be the third telling of the same thing.
+  //
+  // What is left is the one rule the shelf shows but never states — that the
+  // first chapter of anything is free — and the locks, which do say what opens
+  // them but say it in a small line that is easy to read as decoration.
   stories: [
-    {
-      id: 'stories-hero',
-      anchor: 'stories-hero',
-      title: 'Today’s story reward',
-      body: 'Finish a flashcard session and the next chapter of your story unlocks. That’s the loop: study, read, want to know what happens.',
-      placement: 'below',
-    },
     {
       id: 'stories-shelf',
       anchor: 'stories-shelf',
-      title: 'Your library',
-      body: 'Tap a cover to open a series and pick a chapter. Chapter one is always free — start anything that looks good.',
+      title: 'Chapter one is always free',
+      body: 'Tap any cover and start reading.',
       placement: 'auto',
     },
     {
       id: 'stories-ahead',
       anchor: 'stories-ahead',
-      title: 'The road ahead',
-      body: 'Locked stories say exactly what opens them — a few more learned words, or the next level test.',
+      title: 'Locked stories say why',
+      body: 'A few more learned words, or the next level test.',
       placement: 'auto',
     },
   ],

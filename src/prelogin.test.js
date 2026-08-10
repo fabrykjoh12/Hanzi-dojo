@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
-  initialLandingMode,
+  initialLandingMode, landingEntry, tutorialStage,
   savePreloginPrefs, readPreloginPrefs, clearPreloginPrefs, mergePreloginPrefs,
   readTutorialProgress, saveTutorialPosition, markTutorialDone, isTutorialDone,
 } from './prelogin'
@@ -14,6 +14,25 @@ describe('where a signed-out visitor lands', () => {
     expect(initialLandingMode(true)).toBe('welcome')
     expect(initialLandingMode(false)).toBe('landing')
     expect(initialLandingMode(undefined)).toBe('landing')
+  })
+})
+
+describe('where a returning signed-out visitor resumes', () => {
+  it('is the account form once the tutorial has been finished', () => {
+    // They spent ninety seconds on it and then closed the app before signing
+    // up. Showing the welcome again would read as the app having forgotten.
+    expect(landingEntry({ native: true, tutorialDone: true })).toBe('auth')
+    expect(landingEntry({ native: false, tutorialDone: true })).toBe('auth')
+  })
+
+  it('is the ordinary first screen otherwise', () => {
+    expect(landingEntry({ native: true, tutorialDone: false })).toBe('welcome')
+    expect(landingEntry({ native: false, tutorialDone: false })).toBe('landing')
+    expect(landingEntry({})).toBe('landing')
+  })
+
+  it('lets a failed auth link speak first', () => {
+    expect(landingEntry({ native: true, tutorialDone: false, authNotice: 'expired' })).toBe('auth')
   })
 })
 
@@ -102,5 +121,19 @@ describe('the tutorial position', () => {
     savePreloginPrefs({ tutorial: 'yes' })
     expect(readTutorialProgress()).toBe(null)
     expect(isTutorialDone()).toBe(false)
+  })
+
+  it('has three stages, all derived — never a fourth thing to keep in sync', () => {
+    expect(tutorialStage()).toBe('not-started')
+
+    saveTutorialPosition({ phase: 'card', cardIndex: 0, revealed: true, storyPanel: 0 })
+    expect(tutorialStage()).toBe('in-progress')
+
+    markTutorialDone()
+    expect(tutorialStage()).toBe('complete')
+
+    // Setup finishing is what ends the transitional state entirely.
+    clearPreloginPrefs()
+    expect(tutorialStage()).toBe('not-started')
   })
 })

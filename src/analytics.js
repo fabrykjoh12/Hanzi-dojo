@@ -21,6 +21,16 @@ import { BUILD_SHA } from './version'
 export const EVENTS = {
   // Top-of-funnel (pre-auth)
   LANDING_VIEWED: 'landing_viewed',
+  // The onboarding tutorial, as a funnel. Six milestones, not one per tap:
+  // where a learner stops is the useful signal, and an event for every Continue
+  // would bury it. None of these is progression state — the tutorial's position
+  // lives in prelogin prefs and nothing reads an event back.
+  TUTORIAL_STARTED: 'tutorial_started',
+  TUTORIAL_FIRST_REVEAL: 'tutorial_first_reveal',
+  TUTORIAL_FIRST_GRADE: 'tutorial_first_grade',
+  TUTORIAL_SESSION_COMPLETE: 'tutorial_session_complete',
+  TUTORIAL_STORY_REACHED: 'tutorial_story_reached',
+  TUTORIAL_COMPLETED: 'tutorial_completed',
   PRELOGIN_SIGNUP_STARTED: 'prelogin_signup_started',
   SIGNUP_STARTED: 'signup_started',
   SIGNUP_COMPLETED: 'signup_completed',

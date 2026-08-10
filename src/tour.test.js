@@ -28,7 +28,14 @@ describe('TOURS step definitions', () => {
   it('has a home tour and a stories tour, nothing for study mid-session', () => {
     expect(Object.keys(TOURS).sort()).toEqual(['home', 'stories'])
     expect(TOURS.home.length).toBe(4)
-    expect(TOURS.stories.length).toBe(3)
+    expect(TOURS.stories.length).toBe(2)
+  })
+
+  it('no longer explains the reward the tutorial already delivered', () => {
+    // The onboarding tutorial ends with a session completing, a story
+    // unlocking, and two lines of Chinese read out of it. A coach mark on the
+    // shelf saying the same thing would be its third telling.
+    expect(TOURS.stories.map(s => s.id)).toEqual(['stories-shelf', 'stories-ahead'])
   })
 
   it('every step carries id, anchor, title and a short body', () => {

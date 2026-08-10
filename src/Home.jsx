@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, BookOpenCheck, Lock, Sunrise } from 'lucide-react'
+import { ArrowRight, BookOpenCheck, Lock, Sparkles, Sunrise } from 'lucide-react'
 import { getLevelLabel } from './utils'
 import { languageTheme, ink } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
@@ -14,6 +14,7 @@ import { forecastSummary } from './reviewForecast'
 import { sessionEstimateLabel } from './sessionEstimate'
 import { maybeStartTour, markTourSeen } from './tour'
 import { isTutorialDone } from './prelogin'
+import { firstSessionPending } from './homeData'
 import TourOverlay from './TourOverlay'
 import { MICRO, NUM } from './designTokens'
 
@@ -136,6 +137,9 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
     return () => { alive = false; clearTimeout(timer) }
   }, [profileCreatedAt])
 
+  // Nothing has been studied on this track yet — see homeData.firstSessionPending.
+  const firstRunNudge = firstSessionPending(counts)
+
   // One action. Cards while there are cards; once the queue is clear the next
   // step in the daily loop is reading, so the button hands over to Stories.
   // When the counts failed to load, the zeros are meaningless — keep the button
@@ -165,6 +169,24 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
           <span style={{ fontSize: '13.5px', color: 'var(--text)', fontWeight: 550, lineHeight: 1.5 }}>
             {gentleReturnMessage(gentleReady)}
           </span>
+        </div>
+      )}
+
+      {/* ── The learner's very first arrival ──
+          One line, in flow, above the panel it is about. Not a modal, not an
+          overlay, nothing to dismiss: the tutorial already taught what a card
+          is, so all this does is point at the thing to tap. It is derived from
+          the account having no cards at all, so it disappears by itself the
+          moment the first one is graded — there is no flag to clear and none
+          to go stale on an established account. */}
+      {firstRunNudge && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '10px',
+          padding: '0 2px', fontSize: '13.5px', fontWeight: 750,
+          color: accentInk, fontFamily: 'Inter, sans-serif',
+        }}>
+          <Sparkles size={16} strokeWidth={2} color={accentInk} style={{ flexShrink: 0 }} />
+          Your first session is ready
         </div>
       )}
 

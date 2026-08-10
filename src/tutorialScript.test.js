@@ -371,10 +371,12 @@ describe('resuming after the app was closed', () => {
     // function of the position. Storing it would be keeping an answer we can
     // always recompute, and would let a hand-edited value claim a lesson that
     // never happened.
-    const s = last(walk(defaultWalkthrough())).grades ? walk(defaultWalkthrough())[5] : null
+    const s = walk(defaultWalkthrough())[5]
     expect(Object.keys(serializeTutorial(s)).sort())
-      .toEqual(['cardIndex', 'grades', 'phase', 'revealed', 'storyPanel'])
+      .toEqual(['cardIndex', 'phase', 'revealed', 'storyPanel'])
     expect(serializeTutorial(s).goalsSeen).toBe(undefined)
+    // Which buttons were pressed is a record of a run, not a place in one.
+    expect(serializeTutorial(s).grades).toBe(undefined)
   })
 
   it('comes back to exactly the state it left', () => {
@@ -383,7 +385,6 @@ describe('resuming after the app was closed', () => {
       const back = resumeTutorialState(JSON.parse(JSON.stringify(serializeTutorial(s))))
       expect(stateId(back)).toBe(stateId(s))
       expect(actionsFor(back)).toEqual(actionsFor(s))
-      expect(back.grades).toEqual(s.grades)
       expect(back.goalsSeen).toEqual(s.goalsSeen)
     }
   })
@@ -418,10 +419,7 @@ describe('resuming after the app was closed', () => {
       { phase: 'card', cardIndex: 9, revealed: false, storyPanel: 0, grades: [] },
       { phase: 'card', cardIndex: -1, revealed: false, storyPanel: 0, grades: [] },
       { phase: 'card', cardIndex: 0, revealed: 'yes', storyPanel: 0, grades: [] },
-      { phase: 'card', cardIndex: 0, revealed: false, storyPanel: 7, grades: [] },
-      { phase: 'card', cardIndex: 0, revealed: false, storyPanel: 0, grades: ['brilliant'] },
-      { phase: 'card', cardIndex: 0, revealed: false, storyPanel: 0, grades: [2] },
-      { phase: 'card', cardIndex: 0, revealed: false, storyPanel: 0, grades: ['good', 'good', 'good', 'good'] },
+      { phase: 'card', cardIndex: 0, revealed: false, storyPanel: 7 },
     ]) {
       expect(resumeTutorialState(junk)).toBe(null)
     }

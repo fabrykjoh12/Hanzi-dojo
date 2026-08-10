@@ -15,6 +15,7 @@ import { PageHeader } from './panels'
 import { pushSupported, enableReminders, disableReminders, setReminderHour } from './push'
 import { audioCount, estimateStorage, clearDownloads, offlineAvailable } from './offline'
 import { resetTourSeen } from './tour'
+import Tutorial from './Tutorial'
 import { pendingWrites } from './syncQueue'
 import { buildLabel } from './version'
 import AppBar from './AppBar'
@@ -317,33 +318,62 @@ export default function Settings({ session, profile, onUpdate, onBack }) {
   )
 }
 
-// A quiet row that clears the tour's seen state (tour.js) so the coach marks
-// show once more on Home and Stories — for anyone who skipped too fast.
+// Two replays, one card.
+//
+// "Replay introduction" runs the REAL onboarding tutorial — the same component
+// and the same script a new learner gets — in sandbox mode: it remembers
+// nothing, reports nothing to the funnel, writes no card, no review, no track
+// and no unlock, and ends on "Done" rather than offering an account to someone
+// who plainly has one. It closes back to exactly this screen.
+//
+// "Replay the app tour" is the older thing: it clears the coach marks' seen
+// state so they show once more.
 function TourReplayCard({ accentHex }) {
   const [done, setDone] = useState(false)
-  const replay = () => { resetTourSeen().then(() => setDone(true)) }
+  const [replaying, setReplaying] = useState(false)
+  const replayTour = () => { resetTourSeen().then(() => setDone(true)) }
+
+  if (replaying) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'var(--bg)', overflowY: 'auto' }}>
+        <Tutorial
+          resumable={false}
+          finishLabel="Done"
+          onComplete={() => setReplaying(false)}
+        />
+      </div>
+    )
+  }
+
+  const rowStyle = {
+    display: 'inline-flex', alignItems: 'center', gap: '8px',
+    height: '40px', padding: '0 16px', borderRadius: '12px',
+    border: '1px solid var(--border)', background: 'var(--surface-2)',
+    color: 'var(--text)', fontSize: '13px', fontWeight: 700,
+    fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+  }
+
   return (
     <Card
       icon={Compass}
-      title="App tour"
-      text="The short walkthrough that points out where things live on Home and Stories."
+      title="Introduction"
+      text="The ninety-second walkthrough you saw when you first opened the app, and the coach marks that point out where things live."
       accentHex={accentHex}
     >
-      <button
-        onClick={replay}
-        disabled={done}
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: '8px',
-          height: '40px', padding: '0 16px', borderRadius: '12px',
-          border: '1px solid var(--border)', background: 'var(--surface-2)',
-          color: 'var(--text)', fontSize: '13px', fontWeight: 700,
-          fontFamily: 'Inter, sans-serif', cursor: done ? 'default' : 'pointer',
-        }}
-      >
-        {done
-          ? <><CheckCircle2 size={16} strokeWidth={2} color="#2F9E6D" /> It will show again on your next visit</>
-          : <><Compass size={16} strokeWidth={2} /> Replay the app tour</>}
-      </button>
+      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <button onClick={() => setReplaying(true)} style={rowStyle}>
+          <Compass size={16} strokeWidth={2} /> Replay introduction
+        </button>
+        <button
+          onClick={replayTour}
+          disabled={done}
+          style={{ ...rowStyle, cursor: done ? 'default' : 'pointer' }}
+        >
+          {done
+            ? <><CheckCircle2 size={16} strokeWidth={2} color="#2F9E6D" /> It will show again on your next visit</>
+            : <>Replay the app tour</>}
+        </button>
+      </div>
     </Card>
   )
 }
