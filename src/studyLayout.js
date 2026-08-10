@@ -111,15 +111,20 @@ const PRESETS = {
 // Order matters: `studyLayout` guarantees values only ever shrink along it.
 export const DENSITIES = ['desktop', 'roomy', 'compact', 'tight']
 
-// How much vertical room the study screen actually gets on a phone.
-export function availableHeight(viewportHeight) {
-  return Math.max(0, (viewportHeight || 0) - MOBILE_NAV_HEIGHT)
+// How much vertical room a card screen actually gets on a phone.
+//
+// `reserved` is what something else has already claimed at the bottom — the tab
+// bar, normally. The onboarding tutorial runs outside the app shell and has no
+// tab bar, so it passes 0 and gets the whole screen; everything else takes the
+// default and behaves exactly as it always has.
+export function availableHeight(viewportHeight, reserved = MOBILE_NAV_HEIGHT) {
+  return Math.max(0, (viewportHeight || 0) - reserved)
 }
 
 // Pick the density band for a viewport.
-export function studyDensity(isMobile, viewportHeight) {
+export function studyDensity(isMobile, viewportHeight, reserved = MOBILE_NAV_HEIGHT) {
   if (!isMobile) return 'desktop'
-  const available = availableHeight(viewportHeight)
+  const available = availableHeight(viewportHeight, reserved)
   if (available >= ROOMY_MIN) return 'roomy'
   if (available >= COMPACT_MIN) return 'compact'
   return 'tight'
@@ -132,9 +137,12 @@ export function studyDensity(isMobile, viewportHeight) {
 // Missing the top inset made the locked shell taller than the screen by
 // exactly the notch (~59px on an iPhone 14) — a scroll to reach the grade
 // buttons on every card, invisible to the Chromium e2e where insets are 0.
-export const MOBILE_SHELL_HEIGHT =
-  'calc(100dvh - ' + MOBILE_NAV_HEIGHT + 'px' +
-  ' - env(safe-area-inset-bottom) - env(safe-area-inset-top))'
+export function shellHeightCss(reserved = MOBILE_NAV_HEIGHT) {
+  return 'calc(100dvh - ' + reserved + 'px' +
+    ' - env(safe-area-inset-bottom) - env(safe-area-inset-top))'
+}
+
+export const MOBILE_SHELL_HEIGHT = shellHeightCss()
 
 /**
  * Everything the study screen needs to size itself.
@@ -144,9 +152,11 @@ export const MOBILE_SHELL_HEIGHT =
  * @param {number}  opts.viewportHeight  window.innerHeight
  * @param {number}  opts.banners    how many optional banners are showing above
  *                                  the card (save error, first-mission hint …)
+ * @param {number}  opts.reservedBottom  what is already claimed below the card
+ *                                  (the tab bar, by default; 0 outside the shell)
  */
-export function studyLayout({ isMobile, viewportHeight, banners } = {}) {
-  const density = studyDensity(isMobile, viewportHeight)
+export function studyLayout({ isMobile, viewportHeight, banners, reservedBottom = MOBILE_NAV_HEIGHT } = {}) {
+  const density = studyDensity(isMobile, viewportHeight, reservedBottom)
   const preset = PRESETS[density]
   const bannerCount = banners || 0
 
@@ -162,8 +172,8 @@ export function studyLayout({ isMobile, viewportHeight, banners } = {}) {
     showSubtitle,
     // True when the shell is height-locked and laid out as a flex column.
     fixed: density !== 'desktop',
-    shellHeight: density === 'desktop' ? null : MOBILE_SHELL_HEIGHT,
-    available: density === 'desktop' ? null : availableHeight(viewportHeight),
+    shellHeight: density === 'desktop' ? null : shellHeightCss(reservedBottom),
+    available: density === 'desktop' ? null : availableHeight(viewportHeight, reservedBottom),
     // The card is the only element allowed to give up space.
     cardFlex: density === 'desktop' ? null : 1,
   }

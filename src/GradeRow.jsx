@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { GRADE_STYLES, GRADES } from './gradePalette'
+import { GRADE_STYLES } from './gradePalette'
+import { GRADES } from './grades'
 
 // The four grades, as a component.
 //
@@ -13,7 +14,7 @@ import { GRADE_STYLES, GRADES } from './gradePalette'
 // `labels` (from srs.previewLabels) and `onGrade`.
 
 function GradeButton({
-  grade, label, interval, bg, border, text, onClick, suggested,
+  grade, gradeKey, label, interval, bg, border, text, onClick, suggested,
   // Sizing comes from studyLayout.js so a short phone can fit all four grades
   // on screen without ever dropping below a comfortable tap target.
   minHeight = 76, labelSize = 14, intervalSize = 11,
@@ -25,7 +26,10 @@ function GradeButton({
   const activeBg = hovered || suggested ? border : bg
   return (
     <button
-      onClick={() => onClick(grade)}
+      // Both: the number the scheduler wants, and the key anything outside the
+      // scheduler should store or replay (grades.js). Study uses the first and
+      // ignores the second; the tutorial does the opposite.
+      onClick={() => onClick(grade, gradeKey)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -44,9 +48,15 @@ function GradeButton({
       <span style={{ fontSize: labelSize + 'px', fontWeight: 750 }}>
         {label}
       </span>
-      <span style={{ fontSize: intervalSize + 'px', fontWeight: 650, color: 'var(--text-muted)' }}>
-        {interval}
-      </span>
+      {/* The schedule preview, or — in the onboarding tutorial's first row —
+          what the grade MEANS. Omitted rather than left blank when there is
+          neither: nothing is being scheduled there, and an empty line under
+          four buttons reads as a rendering fault. */}
+      {interval ? (
+        <span style={{ fontSize: intervalSize + 'px', fontWeight: 650, color: 'var(--text-muted)' }}>
+          {interval}
+        </span>
+      ) : null}
     </button>
   )
 }
@@ -65,6 +75,7 @@ export default function GradeRow({ labels, onGrade, suggested, layout }) {
         <GradeButton
           key={item.grade}
           grade={item.grade}
+          gradeKey={item.key}
           label={item.label}
           interval={labels[item.grade]}
           bg={GRADE_STYLES[item.grade].bg}

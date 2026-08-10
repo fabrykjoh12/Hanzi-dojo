@@ -5,7 +5,7 @@ import ErrorBoundary from './ErrorBoundary'
 import { getHomeCounts } from './homeCounts'
 import {
   viewToPath, isKnownView, readStoryId, isAssessmentPath, trustPageKey,
-  storyPath, isResetPasswordPath,
+  storyPath, isResetPasswordPath, isTutorialPath,
 } from './routes'
 import { authNoticeFromSearch } from './nativeAuth'
 import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
@@ -36,6 +36,7 @@ import Toasts from './Toasts'
 import OfflineBar from './OfflineBar'
 import Feedback from './Feedback'
 import Onboarding from './Onboarding'
+import Tutorial from './Tutorial'
 import FirstMissionWelcome from './FirstMissionWelcome'
 import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
@@ -185,6 +186,7 @@ export default function App() {
   useNavMotion(nav.state)
   const publicStoryId = readStoryId(location.pathname)
   const assessment = isAssessmentPath(location.pathname)
+  const tutorial = isTutorialPath(location.pathname)
   const trustPage = trustPageKey(location.pathname)
 
   // Apply the theme to the document so the CSS variables (index.css) switch,
@@ -486,6 +488,18 @@ export default function App() {
     return (
       <Suspense fallback={<ViewFallback />}>
         <HowMuchCanYouRead />
+      </Suspense>
+    )
+  }
+
+  // The onboarding tutorial. Signed-out and sandboxed: fixture words, no queue,
+  // no writes of any kind. It ends by asking for an account, and for now that
+  // is the landing page's signup — wiring it into the landing flow properly is
+  // the next commit's job.
+  if (tutorial) {
+    return (
+      <Suspense fallback={<ViewFallback />}>
+        <Tutorial onComplete={() => routerNavigate('/', { replace: true })} />
       </Suspense>
     )
   }

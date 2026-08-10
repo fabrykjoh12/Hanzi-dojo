@@ -1,0 +1,370 @@
+import { useState, useEffect, useRef } from 'react'
+import { BookOpen, Check } from 'lucide-react'
+import {
+  initialTutorialState, view, advance, isComplete, ACTIONS,
+} from './tutorialScript'
+import { TUTORIAL_STORY } from './tutorialFixtures'
+import Flashcard from './Flashcard'
+import GradeRow from './GradeRow'
+import { cardMarker } from './cardMarker'
+import { studyLayout } from './studyLayout'
+import { useIsMobile } from './useIsMobile'
+import { useViewportHeight } from './useViewportHeight'
+import { useReadingFont } from './useReadingFont'
+import { useTutorialAudio } from './useTutorialAudio'
+import { languageTheme, ink } from './languageTheme'
+import { BRAND_NAME, heroWordmarkStyle } from './brand'
+import { tapFeedback, successFeedback } from './haptics'
+import { prefersReducedMotion } from './splashIntro'
+import { NUM } from './designTokens'
+
+// The onboarding tutorial: the Mini First Session.
+//
+// ── The boundary ────────────────────────────────────────────────────────────
+// This file renders tutorialScript.js and nothing else decides anything. It may
+// own two things: what is on screen, and one <audio> element. It may NOT touch
+// Supabase, FSRS, the study queue, a profile, a track, a story unlock, or any
+// learner progress — and it does not import a single module that could. A grade
+// pressed here advances a state machine and is then forgotten; the learner's
+// real first session starts later, from zero.
+//
+// The card and the grades are the REAL components (Flashcard.jsx, GradeRow.jsx,
+// gradePalette, studyLayout), because the whole argument for this design is
+// that a learner should not have to learn the control twice.
+//
+// One prop: `onComplete`, fired when the learner asks for an account. Where
+// that goes is the caller's business — this file knows nothing about auth or
+// navigation.
+
+const MAX_WIDTH = 680
+
+// The tutorial runs OUTSIDE the app shell, so there is no tab bar below the
+// card and nothing else reserving the insets. It says so, and gets the whole
+// screen (studyLayout.js).
+const RESERVED_BOTTOM = 0
+
+function Shell({ children, locked, height }) {
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'var(--bg)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      // Outside <main>, so both insets are this screen's own problem.
+      padding: 'calc(16px + env(safe-area-inset-top, 0px)) 16px calc(20px + env(safe-area-inset-bottom, 0px))',
+    }}>
+      <div style={{
+        width: '100%', maxWidth: MAX_WIDTH + 'px',
+        flex: 1, minHeight: 0,
+        display: 'flex', flexDirection: 'column',
+        // The card states are height-locked exactly as the real study screen
+        // is; everything else is an ordinary column that can grow.
+        ...(locked ? { height, maxHeight: height, justifyContent: 'space-between' } : { justifyContent: 'center' }),
+      }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+// One primary action. Every non-card state has exactly one.
+function PrimaryAction({ label, onClick, accentHex }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: '100%', minHeight: '54px', borderRadius: '16px', border: 'none',
+        background: accentHex, color: '#fff',
+        fontSize: '16.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+        cursor: 'pointer', flexShrink: 0,
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
+// A story line with the words the learner just met marked in it.
+//
+// `<mark>` rather than a coloured span: the emphasis is semantic, so it survives
+// a screen reader and a learner who cannot separate the accent from the text.
+// It is underlined as well as tinted, because colour is never the only carrier.
+function StoryLine({ text, known, accentHex, font }) {
+  const parts = []
+  let rest = text
+  let guard = 0
+  while (rest.length > 0 && guard < 50) {
+    guard += 1
+    // The earliest known word remaining in the line.
+    let at = -1
+    let hit = null
+    for (const word of known) {
+      const i = rest.indexOf(word)
+      if (i !== -1 && (at === -1 || i < at)) { at = i; hit = word }
+    }
+    if (at === -1) { parts.push({ text: rest }); break }
+    if (at > 0) parts.push({ text: rest.slice(0, at) })
+    parts.push({ text: hit, known: true })
+    rest = rest.slice(at + hit.length)
+  }
+  return (
+    <span lang="zh-Hans" style={{ fontFamily: font, fontSize: '30px', lineHeight: 1.5, color: 'var(--text)' }}>
+      {parts.map((p, i) => (p.known ? (
+        <mark
+          key={i}
+          style={{
+            background: 'none', color: ink(accentHex),
+            borderBottom: '2px solid ' + accentHex + '88',
+          }}
+        >
+          {p.text}
+        </mark>
+      ) : <span key={i}>{p.text}</span>))}
+    </span>
+  )
+}
+
+export default function Tutorial({ onComplete }) {
+  const [state, setState] = useState(initialTutorialState)
+  const v = view(state)
+
+  const isMobile = useIsMobile()
+  const viewportHeight = useViewportHeight()
+  const theme = languageTheme('chinese')
+  const accentHex = theme.accentHex
+  const { fontFamily: charFont } = useReadingFont('chinese')
+  const [reduced] = useState(() => prefersReducedMotion())
+
+  const layout = studyLayout({ isMobile, viewportHeight, banners: 0, reservedBottom: RESERVED_BOTTOM })
+  const audio = useTutorialAudio(v.card ? v.card.audioPath : null)
+
+  // Rule 2 of the audio boundary: changing state silences whatever was playing.
+  // Keyed on the state id, so it covers card → card as well as card → recap.
+  const stop = audio.stop
+  useEffect(() => { return () => stop() }, [v.id, stop])
+
+  // The two moments that are worth feeling. Ordinary taps get their own tap
+  // feedback where they happen, exactly as they do in a real session.
+  const feltRef = useRef('')
+  useEffect(() => {
+    if (v.feedback === 'success' && feltRef.current !== v.id) {
+      feltRef.current = v.id
+      successFeedback()
+    }
+  }, [v.id, v.feedback])
+
+  // The handoff. The tutorial does not navigate and does not know what an
+  // account is; it says it is finished.
+  const done = isComplete(state)
+  useEffect(() => { if (done && onComplete) onComplete() }, [done, onComplete])
+
+  const send = (action, payload) => setState(s => advance(s, action, payload))
+  const advanceOnce = () => { tapFeedback(); send(ACTIONS.CONTINUE) }
+
+  const coachAt = (anchor) => {
+    const found = v.coach.find(c => c.anchor === anchor)
+    return found ? found.text : null
+  }
+
+  // ── Card ──────────────────────────────────────────────────────────────────
+  if (v.phase === 'card') {
+    const marker = cardMarker(v.card)
+    const cardCoach = coachAt('card')
+    const gradesCoach = coachAt('grades')
+    return (
+      <Shell locked={layout.fixed} height={layout.shellHeight}>
+        <div style={{
+          flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: '12px', marginBottom: layout.headerGap + 'px', minHeight: '24px',
+        }}>
+          <span style={{ ...NUM, fontSize: '12.5px', fontWeight: 700, color: 'var(--text-faint)' }}>
+            {v.cardNumber} / {v.cardTotal}
+          </span>
+          {cardCoach && (
+            <span style={{
+              fontSize: '13px', fontWeight: 650, color: ink(accentHex),
+              fontFamily: 'Inter, sans-serif', textAlign: 'right',
+            }}>
+              {cardCoach}
+            </span>
+          )}
+        </div>
+
+        <Flashcard
+          layout={layout}
+          marker={marker}
+          flipped={v.revealed}
+          word={v.card.word}
+          charFont={charFont}
+          wordLabel={'Chinese flashcard — tap to reveal the answer'}
+          reading={v.revealed ? v.card.reading : null}
+          readingColor={theme.accentVar}
+          meaning={v.card.meaning}
+          accentHex={accentHex}
+          audioUrl={audio.url}
+          audioBroken={audio.broken}
+          audioSpeed={audio.speed}
+          onReplay={() => { tapFeedback(); audio.play(); send(ACTIONS.REPLAY) }}
+          onCycleSpeed={() => audio.cycleSpeed()}
+          audioHint={coachAt('audio')}
+          footerHint={v.revealed
+            ? 'How well did you remember this?'
+            : 'Recall first, then reveal'}
+          onReveal={v.revealed ? null : () => { tapFeedback(); send(ACTIONS.REVEAL) }}
+        />
+
+        <div style={{ marginTop: layout.gradeTopGap + 'px', flexShrink: 0 }}>
+          {v.revealed && (
+            <>
+              {gradesCoach && (
+                <div style={{
+                  textAlign: 'center', marginBottom: '10px',
+                  fontSize: '13.5px', fontWeight: 700, color: 'var(--text)',
+                  fontFamily: 'Inter, sans-serif',
+                }}>
+                  {gradesCoach}
+                </div>
+              )}
+              <GradeRow
+                labels={v.glosses || ['', '', '', '']}
+                onGrade={(_grade, key) => { tapFeedback(); send(ACTIONS.GRADE, key) }}
+                suggested={null}
+                layout={layout}
+              />
+            </>
+          )}
+        </div>
+      </Shell>
+    )
+  }
+
+  // ── Everything else ───────────────────────────────────────────────────────
+  // One transition, the app's own (index.css). Reduced motion drops it entirely
+  // — and its keyframes are already flattened to a fade under the media query,
+  // so this is belt and braces rather than a second motion system.
+  const rise = reduced ? undefined : 'hd-rise-in 260ms cubic-bezier(.32,.72,.24,1) both'
+
+  if (v.phase === 'welcome') {
+    return (
+      <Shell>
+        <div style={{ textAlign: 'center', animation: rise }}>
+          <div style={{ ...heroWordmarkStyle('34px'), marginBottom: '18px' }}>{BRAND_NAME}</div>
+          <h1 style={{
+            margin: '0 0 34px', fontSize: '26px', lineHeight: 1.35, fontWeight: 800,
+            color: 'var(--text)', letterSpacing: '-0.01em', textWrap: 'balance',
+          }}>
+            {v.copy.title}
+          </h1>
+          <PrimaryAction label={v.copy.cta} onClick={advanceOnce} accentHex={accentHex} />
+        </div>
+      </Shell>
+    )
+  }
+
+  if (v.phase === 'recap' || v.phase === 'unlock') {
+    const unlock = v.phase === 'unlock'
+    return (
+      <Shell>
+        <div style={{ textAlign: 'center', animation: rise }} key={v.id}>
+          <div style={{
+            width: '64px', height: '64px', borderRadius: '20px', margin: '0 auto 20px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'color-mix(in srgb, ' + accentHex + ' 11%, var(--surface))',
+            border: '1px solid color-mix(in srgb, ' + accentHex + ' 26%, var(--border))',
+          }}>
+            {unlock
+              ? <BookOpen size={28} strokeWidth={1.8} color={ink(accentHex)} />
+              : <Check size={30} strokeWidth={2.2} color={ink(accentHex)} />}
+          </div>
+          <h1 style={{
+            margin: '0 0 8px', fontSize: '24px', fontWeight: 800,
+            color: 'var(--text)', letterSpacing: '-0.01em',
+          }}>
+            {v.copy.title}
+          </h1>
+          <p style={{ margin: '0 0 32px', fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.55 }}>
+            {v.copy.line}
+          </p>
+          <PrimaryAction label={v.copy.cta} onClick={advanceOnce} accentHex={accentHex} />
+        </div>
+      </Shell>
+    )
+  }
+
+  if (v.phase === 'story') {
+    const panel = v.panel
+    const isLast = v.id === 'story-' + TUTORIAL_STORY.panels.length
+    return (
+      <Shell>
+        <div style={{ width: '100%', animation: rise }} key={v.id}>
+          {v.setting && (
+            <p style={{
+              margin: '0 0 20px', padding: '12px 15px', borderRadius: '4px',
+              background: 'var(--surface-2)', borderLeft: '3px solid var(--border)',
+              fontSize: '14px', fontStyle: 'italic', color: 'var(--text-muted)',
+              lineHeight: 1.55, textAlign: 'left',
+            }}>
+              {v.setting}
+            </p>
+          )}
+          <div style={{
+            padding: '20px 18px', borderRadius: '18px',
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            boxShadow: 'var(--shadow-1)', textAlign: 'left',
+          }}>
+            <div style={{
+              fontSize: '11.5px', fontWeight: 700, letterSpacing: '0.05em',
+              textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: '10px',
+            }}>
+              {panel.speaker}
+            </div>
+            <StoryLine text={panel.text} known={panel.known} accentHex={accentHex} font={charFont} />
+            <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginTop: '12px', lineHeight: 1.5 }}>
+              {panel.translation}
+            </div>
+          </div>
+          {isLast && (
+            <p style={{
+              margin: '20px 0 0', textAlign: 'center', fontSize: '15px',
+              fontWeight: 700, color: ink(accentHex), lineHeight: 1.5,
+            }}>
+              {v.copy.line}
+            </p>
+          )}
+          <div style={{ marginTop: '28px' }}>
+            <PrimaryAction label={v.copy.cta} onClick={advanceOnce} accentHex={accentHex} />
+          </div>
+        </div>
+      </Shell>
+    )
+  }
+
+  if (v.phase === 'loop') {
+    return (
+      <Shell>
+        <div style={{ width: '100%', textAlign: 'center', animation: rise }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '34px' }}>
+            {v.copy.steps.map((step, i) => (
+              <div key={step} style={{
+                fontSize: '26px', fontWeight: 800, letterSpacing: '-0.01em',
+                color: i === v.copy.steps.length - 1 ? ink(accentHex) : 'var(--text)',
+                lineHeight: 1.45,
+              }}>
+                {step}
+              </div>
+            ))}
+          </div>
+          <PrimaryAction label={v.copy.cta} onClick={advanceOnce} accentHex={accentHex} />
+        </div>
+      </Shell>
+    )
+  }
+
+  // Complete. The caller has been told; there is nothing left to show.
+  return (
+    <Shell>
+      <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '15px' }} data-tutorial="complete">
+        {BRAND_NAME}
+      </div>
+    </Shell>
+  )
+}

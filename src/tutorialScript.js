@@ -6,11 +6,12 @@
 // asked for an account. Ninety seconds, and every part of it is the real
 // product's own components — see Flashcard.jsx and GradeRow.jsx.
 //
-// **Sandboxed, structurally.** This module imports one thing: its own fixtures.
-// It cannot reach Supabase, FSRS, the study queue, a profile, a track, a story
-// unlock or the router, because it does not import them and there is a test
-// that proves it never will. A tutorial that could write a grade would be a
-// tutorial that could quietly ruin a learner's first schedule.
+// **Sandboxed, structurally.** This module imports two things: its own
+// fixtures, and the canonical Again/Hard/Good/Easy table, which imports nothing
+// itself. It cannot reach Supabase, FSRS, the study queue, a profile, a track,
+// a story unlock or the router, because it does not import them and there is a
+// test that proves it never will. A tutorial that could write a grade would be
+// a tutorial that could quietly ruin a learner's first schedule.
 //
 // It records tutorial-local facts — which card, revealed or not, whether Replay
 // was used, which grades were pressed — and none of that is scheduling data.
@@ -24,6 +25,7 @@
 // What it does NOT decide: anything visual. No JSX, no CSS, no animation, no
 // layout. `view()` says what is true; Tutorial.jsx says what that looks like.
 
+import { isGradeKey } from './grades'
 import { TUTORIAL_CARDS, TUTORIAL_STORY, TUTORIAL_COPY, GRADE_GLOSSES } from './tutorialFixtures'
 
 export const CARD_COUNT = TUTORIAL_CARDS.length
@@ -33,6 +35,9 @@ export const STORY_PANEL_COUNT = TUTORIAL_STORY.panels.length
 // The learner journey, named after what the learner is doing — never step1,
 // step2. A card phase carries which card and whether it is revealed; the story
 // phase carries which panel.
+//
+// Thirteen states in all: welcome, three cards front and back, recap, unlock,
+// two story panels, the loop, and the account handoff.
 export const PHASES = {
   WELCOME: 'welcome',
   CARD: 'card',
@@ -110,8 +115,10 @@ export function initialTutorialState() {
     // per card: it drives one piece of coaching, not a score.
     replayed: false,
     storyPanel: 0,
-    // Which grade was pressed for each card, in order. Tutorial-local — this is
-    // never written anywhere and never becomes a review.
+    // Which grade was pressed for each card, in order, BY KEY ('again' …
+    // 'easy' — grades.js). Tutorial-local: never written anywhere, never a
+    // review. Keys rather than the scheduler's numbers so that reordering the
+    // grade row can never turn a stored "Good" into a "Hard".
     grades: [],
     goalsSeen: [],
   }
@@ -276,12 +283,12 @@ export function advance(state, action, payload) {
     // Any of the four. The tutorial teaches what they mean; it does not have an
     // opinion about which one is true for this learner.
     //
-    // Strict, deliberately: `Number(null)` is 0, so coercing here would turn a
-    // caller's missing argument into a silent "Again". GradeRow hands over the
-    // real number, and nothing else should be calling this.
-    const grade = payload
-    if (!Number.isInteger(grade) || grade < 0 || grade > 3) return state
-    const grades = [...state.grades, grade]
+    // A key, strictly — not the scheduler's 0-3. Numbers are positional, and a
+    // future reorder of the grade row would silently rewrite what a recorded
+    // grade meant. Strict also because a missing argument must be refused
+    // rather than coerced into a quiet "Again".
+    if (!isGradeKey(payload)) return state
+    const grades = [...state.grades, payload]
     const next = state.cardIndex + 1
     if (next < CARD_COUNT) {
       return withGoals({ ...state, cardIndex: next, revealed: false, replayed: false, grades })
@@ -309,7 +316,7 @@ export function advance(state, action, payload) {
 // The shortest honest walkthrough: never taps Replay, grades everything Good.
 // Exported because both the tests and (later) the e2e spec want one canonical
 // path, and two hand-written copies of it would drift.
-export function defaultWalkthrough(grade = 2) {
+export function defaultWalkthrough(grade = 'good') {
   const steps = [{ action: ACTIONS.CONTINUE }]
   for (let i = 0; i < CARD_COUNT; i += 1) {
     steps.push({ action: ACTIONS.REVEAL })

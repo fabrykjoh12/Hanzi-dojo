@@ -1,15 +1,5 @@
 import { ink } from './languageTheme'
 
-// The four grades, in fixed order. Position and label carry the meaning; the
-// palette below is a second signal, never the only one. Lives here rather than
-// in GradeRow.jsx so both can be imported without breaking fast refresh.
-export const GRADES = [
-  { grade: 0, label: 'Again' },
-  { grade: 1, label: 'Hard' },
-  { grade: 2, label: 'Good' },
-  { grade: 3, label: 'Easy' },
-]
-
 // Grade button palette — desaturated to sit quietly on the card until pressed.
 // Fixed positions + text labels carry the meaning; color is a second signal,
 // never the only one (kept in sync with the icon/label per button below).

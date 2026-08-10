@@ -23,6 +23,9 @@ import { markerCardShadow, markerPillStyle, markerDotStyle } from './cardMarker'
 //   flash       { color, id } — the post-grade feedback wash, or null
 //   onReveal    null makes the card inert (it is already revealed, or the
 //               caller is driving the reveal some other way)
+//   audioHint   a short line under the audio controls, pointing at them. Only
+//               the onboarding tutorial uses it — the pointer has to be
+//               attached to the control it names, or it is just more prose.
 
 export default function Flashcard({
   layout,
@@ -41,6 +44,7 @@ export default function Flashcard({
   audioSpeed = 1,
   onReplay,
   onCycleSpeed,
+  audioHint = null,
   footerHint = null,
   flash = null,
   onReveal = null,
@@ -98,7 +102,8 @@ export default function Flashcard({
           {marker.label}
         </span>
         {audioUrl && flipped && (
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
             {audioBroken ? (
               <span
                 title="This word's audio file couldn't be loaded"
@@ -151,6 +156,15 @@ export default function Flashcard({
             >
               {audioSpeed}×
             </button>
+            </div>
+            {audioHint && (
+              <span style={{
+                fontSize: '11.5px', fontWeight: 650, color: 'var(--text-faint)',
+                fontFamily: 'Inter, sans-serif',
+              }}>
+                {audioHint}
+              </span>
+            )}
           </div>
         )}
       </div>

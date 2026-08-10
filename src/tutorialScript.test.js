@@ -6,7 +6,7 @@ import {
   actionsFor, view, advance, defaultWalkthrough, runTutorial,
 } from './tutorialScript'
 import { TUTORIAL_CARDS, TUTORIAL_STORY, GRADE_GLOSSES } from './tutorialFixtures'
-import { GRADES } from './gradePalette'
+import { GRADES, GRADE_KEYS } from './grades'
 
 // The onboarding tutorial, before any of it is drawn.
 //
@@ -45,7 +45,7 @@ describe('the shape of the journey', () => {
     const done = last(walk(defaultWalkthrough()))
     expect(actionsFor(done)).toEqual([])
     for (const action of Object.values(ACTIONS)) {
-      expect(advance(done, action, 2)).toBe(done)
+      expect(advance(done, action, 'good')).toBe(done)
     }
   })
 
@@ -90,7 +90,7 @@ describe('legal actions', () => {
     expect(stateId(s)).toBe('card-1-front')
     expect(actionsFor(s)).toEqual([ACTIONS.REVEAL])
     // Identity, not a copy: nothing happened at all.
-    expect(advance(s, ACTIONS.GRADE, 2)).toBe(s)
+    expect(advance(s, ACTIONS.GRADE, 'good')).toBe(s)
   })
 
   it('refuses Replay before the answer is on screen', () => {
@@ -107,7 +107,9 @@ describe('legal actions', () => {
   it('refuses a grade that is not one of the four', () => {
     let s = advance(initialTutorialState(), ACTIONS.CONTINUE)
     s = advance(s, ACTIONS.REVEAL)
-    for (const bad of [-1, 4, 1.5, null, undefined, 'Good', NaN]) {
+    // Including the scheduler's own numbers: this contract is keys, and a 2
+    // that used to mean Good must not be accepted as one.
+    for (const bad of [0, 2, -1, 4, 1.5, null, undefined, 'Good', 'GOOD', '', NaN]) {
       expect(advance(s, ACTIONS.GRADE, bad)).toBe(s)
     }
   })
@@ -115,7 +117,7 @@ describe('legal actions', () => {
   it('refuses an action it has never heard of', () => {
     const s = initialTutorialState()
     expect(advance(s, 'skip')).toBe(s)
-    expect(advance(s, ACTIONS.GRADE, 2)).toBe(s)
+    expect(advance(s, ACTIONS.GRADE, 'good')).toBe(s)
   })
 })
 
@@ -130,24 +132,24 @@ describe('the three cards', () => {
   })
 
   it('records exactly one grade per card, and nothing else', () => {
-    const done = last(walk(defaultWalkthrough(3)))
-    expect(done.grades).toEqual([3, 3, 3])
+    const done = last(walk(defaultWalkthrough('easy')))
+    expect(done.grades).toEqual(['easy', 'easy', 'easy'])
   })
 
   it('accepts every grade — the tutorial has no opinion about which is true', () => {
-    for (const { grade } of GRADES) {
-      const done = last(walk(defaultWalkthrough(grade)))
+    for (const key of GRADE_KEYS) {
+      const done = last(walk(defaultWalkthrough(key)))
       expect(isComplete(done)).toBe(true)
-      expect(done.grades).toEqual([grade, grade, grade])
+      expect(done.grades).toEqual([key, key, key])
     }
   })
 
   it('takes a different grade per card just as happily', () => {
     const steps = defaultWalkthrough()
     let g = 0
-    for (const step of steps) if (step.action === ACTIONS.GRADE) step.payload = g++
+    for (const step of steps) if (step.action === ACTIONS.GRADE) step.payload = GRADE_KEYS[g++]
     const done = last(walk(steps))
-    expect(done.grades).toEqual([0, 1, 2])
+    expect(done.grades).toEqual(['again', 'hard', 'good'])
     expect(isComplete(done)).toBe(true)
   })
 
@@ -157,7 +159,7 @@ describe('the three cards', () => {
       expect(s.phase).toBe(PHASES.CARD)
       s = advance(s, ACTIONS.REVEAL)
       expect(s.phase).toBe(PHASES.CARD)
-      s = advance(s, ACTIONS.GRADE, 2)
+      s = advance(s, ACTIONS.GRADE, 'good')
     }
     expect(s.phase).toBe(PHASES.RECAP)
   })
@@ -255,7 +257,7 @@ describe('pronunciation is offered, never required', () => {
   it('forgets it between cards — it is a hint, not a score', () => {
     let s = advance(advance(initialTutorialState(), ACTIONS.CONTINUE), ACTIONS.REVEAL)
     s = advance(s, ACTIONS.REPLAY)
-    s = advance(s, ACTIONS.GRADE, 2)
+    s = advance(s, ACTIONS.GRADE, 'good')
     expect(s.replayed).toBe(false)
   })
 })
@@ -333,8 +335,8 @@ describe('teaching goals', () => {
 
 describe('determinism and serialisability', () => {
   it('gives the same result for the same steps, every time', () => {
-    const a = last(walk(defaultWalkthrough(1)))
-    const b = last(walk(defaultWalkthrough(1)))
+    const a = last(walk(defaultWalkthrough('hard')))
+    const b = last(walk(defaultWalkthrough('hard')))
     expect(a).toEqual(b)
   })
 
@@ -375,7 +377,9 @@ describe('the sandbox', () => {
 
   it('imports nothing but its own fixtures', () => {
     const imports = [...source.matchAll(/from '([^']+)'/g)].map(m => m[1])
-    expect(imports).toEqual(['./tutorialFixtures'])
+    // grades.js is the canonical Again/Hard/Good/Easy table and imports
+    // nothing itself — it is the one thing this may reach for.
+    expect(imports).toEqual(['./grades', './tutorialFixtures'])
     expect([...fixtures.matchAll(/from '([^']+)'/g)]).toHaveLength(0)
   })
 

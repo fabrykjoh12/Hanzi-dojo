@@ -90,6 +90,16 @@ export function isAssessmentPath(pathname) {
   return p.replace(/\/$/, '') === 'how-much-can-you-read'
 }
 
+// The onboarding tutorial (/tutorial). Signed-out, outside the app shell, and
+// entirely sandboxed — it teaches on fixture words and writes nothing. Kept
+// here rather than in App so the route-mapping tests cover it, and so the
+// landing flow can hand off to a URL rather than to a component instance.
+export function isTutorialPath(pathname) {
+  let p = pathname || '/'
+  if (p.startsWith('/')) p = p.slice(1)
+  return p.replace(/\/$/, '') === 'tutorial'
+}
+
 // The public trust pages (/privacy, /terms, /support, /methodology), which work
 // signed-out AND signed-in — a visitor must be able to read them before
 // registering. Returns the page key, or null for any other path.
