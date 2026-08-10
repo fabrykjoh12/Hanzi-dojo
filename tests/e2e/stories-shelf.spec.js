@@ -217,7 +217,10 @@ test.describe('Series detail — chapters and unlocks', () => {
     await page.getByRole('button', { name: /月下的朋友 · HSK 1 · 3 chapters/ }).first().click();
     await expect(page).toHaveURL(/\/stories\/series\//);
     await expect(page.getByRole('heading', { name: 'Chapters' })).toBeVisible();
-    await expect(page.getByText('3 chapters').first()).toBeVisible();
+    // Scoped to the visible one: the shelf stays MOUNTED underneath the pushed
+    // series page now (it is a real navigation stack), so its copy of this text
+    // is still in the DOM — hidden, and first in document order.
+    await expect(page.getByText('3 chapters').filter({ visible: true }).first()).toBeVisible();
     // Chapter 1 free; 2 waits behind a session; 3 is simply locked (the hint
     // sentence appears once, on the first locked row).
     await expect(page.getByRole('button', { name: /Chapter 1 · 月下的朋友 · up next/ })).toBeVisible();

@@ -1,31 +1,20 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
-import { fetchPagedSafe } from './supabasePaging'
-import { supabase } from './supabase'
+import { useState, useEffect, useRef } from 'react'
 import { getLevelLabel, getSystemLabel } from './utils'
-import { cacheSet, cacheGet, prefsGet, prefsMerge } from './offline'
 import { toast } from './toast'
-import { languageTheme } from './languageTheme'
 import { HeroPanel, HeroAction, Eyebrow } from './panels'
-import { tiersFor, learnedByLevel, readingGateCount, nextLockedTier } from './storyTiers'
-import { isLearned } from './mastery'
+import { tiersFor, readingGateCount } from './storyTiers'
 import { useIsMobile } from './useIsMobile'
 import { todayStr } from './streak'
 import { pickDailyStory } from './dailyStory'
 import { formatLabel } from './storyFormat'
-import { buildFlatShelf, buildNextLevelSection } from './storyShelfFlat'
-import { calculateStoryReadability } from './storyReading'
-import { readCache, writeCache } from './dataCache'
-import { publish } from './cacheEvents'
-import { stripSceneEmoji } from './sceneReading'
-import { chapterInfo, nextChapterInfo, readingMinutes, seedUnlockIds } from './storyChapters'
-import { buildSeriesUnits, resolveActiveSeries, rewardStateFor } from './storyReward'
+import { chapterInfo, readingMinutes } from './storyChapters'
 import { claimStoryReward } from './storyRewardData'
-import StoryReader from './StoryReader'
 import StoryCover from './StoryCover'
 import StoryPoster from './StoryPoster'
-import SeriesDetail from './SeriesDetail'
 import TourOverlay from './TourOverlay'
 import { maybeStartTour, markTourSeen } from './tour'
+import { useStoriesData } from './storiesDataContext'
+import { getLanguageDetails, pageShell } from './storiesScreenShared'
 import {
   ArrowRight, BookOpen, CheckCircle2, ChevronLeft, ChevronRight, CloudOff, Library, RefreshCw, Zap,
 } from 'lucide-react'
@@ -38,28 +27,6 @@ import {
 // in storyChapters.js / storyReward.js — this file only renders it.
 
 // ─── CONSTANTS / SMALL HELPERS ─────────────────────────────────────────────
-
-// One key for "the shelf's data". Scoped per user and language by dataCache.
-const STORIES_CACHE_KEY = 'stories:shelf'
-
-function getLanguageDetails(profile, track) {
-  const language = track.language || profile.active_language
-  const t = languageTheme(language)
-  return { accentHex: t.accentHex, languageName: t.languageName, fontFamily: t.font }
-}
-
-function pageShell() {
-  return { minHeight: '100vh', position: 'relative', overflow: 'hidden' }
-}
-
-// The selected "category" is a tier *at a level* — see storyTiers. Returns a
-// COPY of the shared tier object tagged with the level it belongs to.
-function categoryForStory(story, track) {
-  if (!story) return null
-  const level = story.level == null ? track.current_level : story.level
-  const tier = tiersFor(track.language, level).find(c => c.tier === story.tier)
-  return tier ? { ...tier, level } : null
-}
 
 function isManhuaUnit(unit) {
   return (unit.parts || []).some(p => p && p.presentation === 'manhua')
@@ -254,43 +221,23 @@ function StoriesHero({ hero, accentHex, fontFamily, isMobile, levelLabelOf }) {
 
 // ─── MAIN STORIES COMPONENT ────────────────────────────────────────────────
 
-export default function Stories({
-  session, profile, track, onNavigate, initialStoryId, initialStoryWords,
-  initialStoryFirstMission, onInitialStoryConsumed, routeKind = 'browse',
-  routeStoryId = null, routeSeriesKey = null, onStoryRoute, onSeriesRoute, onBrowseRoute,
-}) {
-  const [view, setView] = useState('browse')
-  const [nextLevelStories, setNextLevelStories] = useState([])
-  const [selectedCategory, setSelectedCategory] = useState(null)
-  const [selectedStory, setSelectedStory] = useState(null)
-  // The open series, and whether the reader was entered from inside one — so
-  // Back out of a chapter returns to its series rather than the shelf.
-  const [selectedArc, setSelectedArc] = useState(null)
-  const [readerFromSeries, setReaderFromSeries] = useState(false)
-  const [stories, setStories] = useState([])
-  const [readIds, setReadIds] = useState(new Set())
-  const [reads, setReads] = useState([])
-  // Chapters unlocked by flashcard sessions (story_unlocks) + today's claim.
-  const [unlockIds, setUnlockIds] = useState(new Set())
-  const [claim, setClaim] = useState(null)
-  const [activeSeriesKey, setActiveSeriesKey] = useState(null)
-  // Vocab ids reviewed in the last few days — the "words you'll recognize" pool.
-  const [recentVocabIds, setRecentVocabIds] = useState([])
-  const [learnedCount, setLearnedCount] = useState(0)
-  const [vocabMap, setVocabMap] = useState({})
-  const [userCards, setUserCards] = useState({})
-  const [loading, setLoading] = useState(true)
-  const [loadFailed, setLoadFailed] = useState(false)
+export default function Stories({ onNavigate, onOpenStory, onOpenSeries }) {
+  // The shelf owns the shelf. Everything the three Stories destinations share —
+  // stories, reads, unlocks, the vocabulary map, the derived sections — lives
+  // above all three now (StoriesDataContext.jsx), because the series page and
+  // the reader are real pushed and presented screens rather than branches of
+  // this component.
+  const data = useStoriesData()
+  const {
+    session, profile, track, stories, readIds, learnedCount,
+    learnedPerLevel, loading, loadFailed,
+    sections, aheadSection, rewardUnits, activeUnit, rewardState,
+  } = data
   const [filter, setFilter] = useState('all')
-  const missingStoryNotified = useRef(null)
   const redeemAttempted = useRef(false)
-  const loadInFlight = useRef(false)
   const isMobile = useIsMobile()
 
   const { accentHex, fontFamily } = getLanguageDetails(profile, track)
-  const [todayWords, setTodayWords] = useState([])
-  const [firstMission, setFirstMission] = useState(false)
-  const [learnedPerLevel, setLearnedPerLevel] = useState({})
 
   const levelOf = (lvl) => (lvl == null ? track.current_level : lvl)
   const tiersAt = (lvl) => tiersFor(track.language, levelOf(lvl))
@@ -301,233 +248,15 @@ export default function Stories({
     tiers: tiersAt(lvl),
   })
   const CATEGORIES = tiersAt(track.current_level)
-  const storiesIn = (cat) => (cat
-    ? stories.filter(s => s.tier === cat.tier && levelOf(s.level) === cat.level)
-    : [])
 
-  // The flat shelf (level sections of units), same machinery as before the
-  // poster redesign — tier gates and % known sorting are unchanged.
-  const { sections, aheadSection } = useMemo(() => {
-    const tiersAtL = (lvl) => tiersFor(track.language, lvl == null ? track.current_level : lvl)
-    const learnedAtL = (lvl) => readingGateCount({
-      level: lvl == null ? track.current_level : lvl,
-      currentLevel: track.current_level,
-      learnedAtLevel: learnedPerLevel[lvl == null ? track.current_level : lvl] || 0,
-      tiers: tiersAtL(lvl),
-    })
-    const cache = new Map()
-    const knownPctFor = (story) => {
-      if (cache.has(story.id)) return cache.get(story.id)
-      const content = story.presentation === 'scene' ? stripSceneEmoji(story.content) : story.content
-      const { knownPct } = calculateStoryReadability({ content, vocabMap, cards: userCards, language: track.language })
-      cache.set(story.id, knownPct)
-      return knownPct
-    }
-    const filters = {}
-    return {
-      sections: buildFlatShelf({
-        stories, currentLevel: track.current_level,
-        tiersFor: tiersAtL, learnedFor: learnedAtL,
-        readIds, filters, knownPctFor,
-      }),
-      aheadSection: buildNextLevelSection({
-        level: track.current_level + 1, stories: nextLevelStories, filters,
-      }),
-    }
-  }, [stories, nextLevelStories, vocabMap, userCards, readIds, learnedPerLevel, track.language, track.current_level])
-
-  // Series units for the reward loop (cross-section, reward rules only —
-  // independent of tier gating so the pointer never dangles).
-  const rewardUnits = useMemo(() => buildSeriesUnits(stories), [stories])
-  const activeUnit = useMemo(
-    () => resolveActiveSeries({ units: rewardUnits, activeSeriesKey, recentReads: reads }),
-    [rewardUnits, activeSeriesKey, reads]
-  )
-  const rewardState = useMemo(
-    () => rewardStateFor({ unit: activeUnit, readIds, unlockIds, claim }),
-    [activeUnit, readIds, unlockIds, claim]
-  )
-
-  async function loadData() {
-    setLoading(true)
-    setLoadFailed(false)
-
-    // Everything the stories screen needs, mirrored into IndexedDB so the
-    // library opens offline. Key bumped when the payload shape grew unlocks.
-    const snapKey = 'storiesdata2:' + track.language + ':' + track.system + ':' + track.current_level
-    let vocabData = null, cardsData = null, storiesData = null, readsData = null, nextData = null
-    let unlocksData = null, claimData = null, activeSeriesData = null, recentData = null
-    let fetchFailed = false
-    try {
-      // All levels so every word in a story is clickable — and PAGED past
-      // PostgREST's 1000-row cap (see supabasePaging).
-      vocabData = await fetchPagedSafe(() => supabase
-        .from('vocabulary').select('*')
-        .eq('language', track.language).eq('system', track.system).eq('is_active', true)
-        .order('id', { ascending: true }))
-      cardsData = await fetchPagedSafe(() => supabase
-        .from('cards').select('vocab_id, is_easy, state, learned, due_at')
-        .eq('user_id', session.user.id)
-        .order('vocab_id', { ascending: true }))
-      // Reading is CUMULATIVE: every level the learner has reached.
-      const sres = await supabase
-        .from('stories').select('*')
-        .eq('language', track.language).eq('system', track.system)
-        .lte('level', track.current_level).eq('is_published', true)
-        .order('level', { ascending: false })
-        .order('tier', { ascending: true }).order('story_number', { ascending: true })
-      storiesData = sres.data
-      const rres = await supabase
-        .from('story_reads').select('story_id, read_at').eq('user_id', session.user.id)
-      readsData = rres.data
-      // The next level's stories, WITHOUT content — the "road ahead" teaser.
-      const nres = await supabase
-        .from('stories')
-        .select('id, title, level, tier, story_number, presentation, panels, image_path, english_summary')
-        .eq('language', track.language).eq('system', track.system)
-        .eq('level', track.current_level + 1).eq('is_published', true)
-        .order('tier', { ascending: true }).order('story_number', { ascending: true })
-      nextData = nres.data
-      // Chapter unlocks + today's reward claim + the active-series pointer.
-      // Each is best-effort: before the migration lands these come back as
-      // errors and the shelf simply behaves as if nothing is unlocked yet.
-      const [ures, cres, tres, rvres] = await Promise.all([
-        supabase.from('story_unlocks').select('story_id').eq('user_id', session.user.id),
-        supabase.from('story_reward_claims').select('claim_date, story_id')
-          .eq('user_id', session.user.id).eq('language', track.language)
-          .eq('system', track.system).eq('claim_date', todayStr()).maybeSingle(),
-        supabase.from('language_tracks').select('active_series')
-          .eq('user_id', session.user.id).eq('language', track.language)
-          .eq('system', track.system).maybeSingle(),
-        supabase.from('review_logs').select('vocab_id')
-          .eq('user_id', session.user.id)
-          .gte('reviewed_at', new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString())
-          .limit(400),
-      ])
-      unlocksData = ures.error ? null : (ures.data || [])
-      claimData = cres.error ? null : (cres.data || null)
-      activeSeriesData = tres.error ? null : ((tres.data && tres.data.active_series) || null)
-      recentData = rvres.error ? null : (rvres.data || [])
-    } catch { fetchFailed = true /* offline — fall back to the cached snapshot below */ }
-
-    if (storiesData && storiesData.length) {
-      cacheSet(snapKey, {
-        vocabData, cardsData, storiesData, readsData, nextData,
-        unlocksData, claimData, activeSeriesData, recentData,
-      })
-    } else {
-      const snap = await cacheGet(snapKey)
-      if (snap) {
-        vocabData = vocabData || snap.vocabData
-        cardsData = cardsData || snap.cardsData
-        storiesData = snap.storiesData
-        readsData = readsData || snap.readsData
-        nextData = nextData || snap.nextData
-        unlocksData = unlocksData || snap.unlocksData
-        claimData = claimData || snap.claimData
-        activeSeriesData = activeSeriesData || snap.activeSeriesData
-        recentData = recentData || snap.recentData
-      } else if (fetchFailed || storiesData == null) {
-        setLoadFailed(true)
-      }
-    }
-
-    const map = {}
-    ;(vocabData || []).forEach(v => { map[v.word] = v })
-    setVocabMap(map)
-
-    const cardsMap = {}
-    ;(cardsData || []).forEach(c => { cardsMap[c.vocab_id] = c })
-    setUserCards(cardsMap)
-
-    const perLevel = learnedByLevel(vocabData || [], cardsData || [])
-    setLearnedPerLevel(perLevel)
-    const currentLevelIds = new Set(
-      (vocabData || []).filter(v => v.level === track.current_level).map(v => v.id)
-    )
-    const learned = (cardsData || []).filter(c => currentLevelIds.has(c.vocab_id) && isLearned(c)).length
-    setLearnedCount(learned)
-
-    setStories(storiesData || [])
-    setNextLevelStories(nextData || [])
-    const readRows = readsData || []
-    const readSet = new Set(readRows.map(r => r.story_id))
-    setReads(readRows)
-    setReadIds(readSet)
-    let unlockSet = new Set((unlocksData || []).map(u => u.story_id))
-    // A cached snapshot can hand back YESTERDAY'S claim — a claim only means
-    // anything on the local day it was made.
-    setClaim(claimData && claimData.claim_date === todayStr() ? claimData : null)
-    setActiveSeriesKey(activeSeriesData || null)
-    setRecentVocabIds((recentData || []).map(r => r.vocab_id))
-
-    // Grandfathering: a learner with reads but NO unlock rows was reading
-    // before the chapter system existed. Seed what they could already reach
-    // (their read chapters' series, one past the furthest read) once.
-    if (unlockSet.size === 0 && readSet.size > 0 && (unlocksData !== null)) {
-      const seedFlagKey = 'storyUnlocks:seeded:' + track.language + ':' + track.system
-      const seeded = await prefsGet(seedFlagKey)
-      if (!seeded) {
-        const seedIds = seedUnlockIds(buildSeriesUnits(storiesData || []), readSet)
-        if (seedIds.length > 0) {
-          try {
-            const rows = seedIds.map(id => ({ user_id: session.user.id, story_id: id, source: 'seed' }))
-            const { error } = await supabase.from('story_unlocks')
-              .upsert(rows, { onConflict: 'user_id,story_id', ignoreDuplicates: true })
-            if (!error) unlockSet = new Set([...unlockSet, ...seedIds])
-          } catch { /* seeding retries next load */ }
-        }
-        prefsMerge(seedFlagKey, { done: true })
-      }
-    }
-    setUnlockIds(unlockSet)
-
-    // Deep-link from the post-study recap ("Read now"): open the story
-    // straight into the reader instead of the shelf.
-    if (initialStoryId) {
-      const target = (storiesData || []).find(s => s.id === initialStoryId)
-      if (target) {
-        setSelectedCategory(categoryForStory(target, track))
-        setSelectedStory(target)
-        setView('reader')
-        if (initialStoryWords && initialStoryWords.length) setTodayWords(initialStoryWords)
-        if (initialStoryFirstMission) setFirstMission(true)
-      }
-      if (onInitialStoryConsumed) onInitialStoryConsumed()
-    }
-
-    setLoading(false)
-  }
-
-  /* eslint-disable react-hooks/set-state-in-effect */
-  // The shelf is loaded ONCE, and again only when something actually changed it.
-  //
-  // This effect used to fire on every mount, and the shell unmounted this
-  // screen on every navigation — so Home → Stories → Home → Stories was four
-  // runs of loadData and about nine Supabase queries each time. The Stories
-  // root is now persistent (TabHost/<Activity>), which keeps the component's
-  // state but re-runs its effects on every show; without a guard that would be
-  // the same storm with extra steps.
-  //
-  // dataCache is the guard. It records that the shelf has been loaded and is
-  // still valid; finishing a flashcard session invalidates it (Study.jsx), and
-  // the next time this tab is shown it reloads exactly once. Switching tabs on
-  // its own does nothing at all.
-  useEffect(() => {
-    if (loadInFlight.current) return undefined
-    const cached = readCache(STORIES_CACHE_KEY)
-    if (cached && !cached.invalidated) return undefined
-    const timer = setTimeout(() => {
-      // The effect has no dependency array (it must re-check on every show),
-      // so without this a burst of renders during the first load would each
-      // see an empty cache and start another one.
-      loadInFlight.current = true
-      loadData()
-        .then(() => { writeCache(STORIES_CACHE_KEY, true) }, () => {})
-        .then(() => { loadInFlight.current = false })
-    }, 0)
-    return () => clearTimeout(timer)
-  })
+  // Ask on every show. The cache answers for free unless an event
+  // invalidated it (StoriesDataContext.ensureLoaded), so switching tabs, going
+  // into a series and coming back all do no network work at all.
+  // No dependency array: it must re-check on every show, which is exactly what
+  // <Activity> gives it. `data` changes identity whenever the payload does, and
+  // depending on it would mean re-running for reasons that are not shows.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { data.ensureLoaded() })
 
   // A banked claim (session completed with nothing to unlock at the time)
   // redeems itself the moment an active series with a locked chapter exists —
@@ -540,134 +269,42 @@ export default function Stories({
     const chapter = rewardState.chapter
     claimStoryReward({ userId: session.user.id, track, storyId: chapter.id }).then(res => {
       if (res && res.redeemed && res.story_id === chapter.id) {
-        setUnlockIds(prev => { const nx = new Set(prev); nx.add(chapter.id); return nx })
-        setClaim({ claim_date: todayStr(), story_id: chapter.id })
-        // Home's hand-off is now behind. The shelf is not — this screen just
-        // applied the unlock to its own state — so it re-validates itself
-        // rather than paying for a reload of something it already knows.
-        publish('chapter:unlocked')
-        writeCache(STORIES_CACHE_KEY, true)
+        data.applyUnlock(chapter.id)
         const info = chapterInfo(chapter, (activeUnit ? activeUnit.parts.indexOf(chapter) : 0))
         toast({ title: 'Chapter unlocked — ' + (info.nativeLabel || 'Chapter ' + info.number), accent: accentHex })
       }
     })
   }, [loading, rewardState, session.user.id, track, activeUnit, accentHex])
 
-  useEffect(() => {
-    if (loading) return
-    if (routeKind === 'browse') {
-      setView('browse')
-      setSelectedStory(null)
-      setSelectedArc(null)
-      setReaderFromSeries(false)
-      return
-    }
-    if (routeKind === 'story' && routeStoryId) {
-      const target = stories.find(s => s.id === routeStoryId)
-      if (!target) {
-        if (!loadFailed && missingStoryNotified.current !== routeStoryId) {
-          missingStoryNotified.current = routeStoryId
-          toast({ title: "That story isn't available", accent: accentHex })
-          if (onBrowseRoute) onBrowseRoute()
-        }
-        return
-      }
-      if (view === 'reader' && selectedStory?.id === target.id) return
-      setSelectedCategory(categoryForStory(target, track))
-      setSelectedStory(target)
-      setReaderFromSeries(false)
-      setView('reader')
-      return
-    }
-    if (routeKind === 'series' && routeSeriesKey) {
-      const unit = sections.flatMap(s => s.units).find(u => u.kind === 'series' && u.key === routeSeriesKey)
-      if (!unit || (view === 'series' && selectedArc?.key === unit.key)) return
-      setSelectedArc(unit)
-      setSelectedStory(null)
-      setView('series')
-    }
-  }, [loading, loadFailed, routeKind, routeStoryId, routeSeriesKey, stories, sections, selectedStory?.id, selectedArc?.key, view, track, accentHex, onBrowseRoute])
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  // First-visit tour of the library — browse view only, never over the reader
-  // or a series page, and only once (rules in tour.js). The delay lets the
-  // shelf paint before anything is pointed at.
+  // First-visit tour of the library. It can no longer land on the wrong screen
+  // by accident: this component IS the shelf now, and <Activity> stops effects
+  // in a hidden root, so a tour can only start while the shelf is on screen.
   const [tourSteps, setTourSteps] = useState(null)
   const profileCreatedAt = profile.created_at
   useEffect(() => {
-    if (loading || view !== 'browse') return undefined
+    if (loading) return undefined
     let alive = true
     const timer = setTimeout(() => {
       maybeStartTour({ screen: 'stories', profileCreatedAt })
         .then(steps => { if (alive && steps) setTourSteps(steps) })
     }, 600)
     return () => { alive = false; clearTimeout(timer) }
-  }, [loading, view, profileCreatedAt])
+  }, [loading, profileCreatedAt])
 
   // ── Shared actions ───────────────────────────────────────────────────────
 
   const levelLabelFor = (story) => getLevelLabel(track.language, track.system, story.level == null ? track.current_level : story.level)
 
-  const openStory = (story, fromSeries = false) => {
-    setSelectedCategory(categoryForStory(story, track))
-    setSelectedStory(story)
-    setReaderFromSeries(fromSeries)
-    setView('reader')
-    if (onStoryRoute) onStoryRoute(story.id)
-  }
-
-  const openSeries = (arc) => {
-    setSelectedArc(arc)
-    setView('series')
-    if (onSeriesRoute) onSeriesRoute(arc.key)
-  }
+  // Opening anything is a NAVIGATION now, not a state change. The shelf asks
+  // the model for the destination and stays exactly where it is underneath.
+  const openStory = (story) => { if (onOpenStory) onOpenStory(story.id) }
+  const openSeries = (arc) => { if (onOpenSeries) onOpenSeries(arc.key) }
 
   // A unit opens as a series page when it has chapters to choose between, and
   // straight into the reader when it is a single story (no pointless stop).
   const openUnit = (unit) => {
     if (unit.parts.length > 1) openSeries(unit)
     else openStory(unit.parts[0])
-  }
-
-  const setActiveSeries = async (key) => {
-    setActiveSeriesKey(key)
-    try {
-      await supabase.from('language_tracks')
-        .update({ active_series: key })
-        .eq('user_id', session.user.id)
-        .eq('language', track.language)
-        .eq('system', track.system)
-    } catch { /* the fallback (most recent read) keeps rewards flowing */ }
-  }
-
-  // Finishing a chapter: record it locally, adopt its series as active when
-  // none is chosen yet, and let a banked claim redeem against what's next.
-  const handleMarkRead = (id) => {
-    setReadIds(prev => { const nx = new Set(prev); nx.add(id); return nx })
-    setReads(prev => [...prev, { story_id: id, read_at: new Date().toISOString() }])
-    // What to read next changed, so Home's hand-off is behind. The shelf is
-    // not: the two lines above just applied the read to it. Re-validating here
-    // is not a nicety — the reader is rendered INSIDE this screen today
-    // (navShell.INLINE_VIEWS), so letting the shelf reload would tear down the
-    // finish overlay the learner is looking at.
-    publish('story:read')
-    writeCache(STORIES_CACHE_KEY, true)
-    const unit = rewardUnits.find(u => u.parts.some(p => p.id === id))
-    if (unit && !activeSeriesKey) setActiveSeries(unit.key)
-    if (unit && claim && !claim.story_id) {
-      const idx = unit.parts.findIndex(p => p.id === id)
-      const next = unit.parts[idx + 1]
-      if (next && !readIds.has(next.id) && !unlockIds.has(next.id)) {
-        claimStoryReward({ userId: session.user.id, track, storyId: next.id }).then(res => {
-          if (res && res.redeemed && res.story_id === next.id) {
-            setUnlockIds(prev => { const nx = new Set(prev); nx.add(next.id); return nx })
-            setClaim({ claim_date: todayStr(), story_id: next.id })
-            publish('chapter:unlocked')
-            writeCache(STORIES_CACHE_KEY, true)
-          }
-        })
-      }
-    }
   }
 
   // ── Loading skeleton ─────────────────────────────────────────────────────
@@ -687,115 +324,6 @@ export default function Stories({
               </div>
             ))}
           </div>
-        </div>
-      </div>
-    )
-  }
-
-  // ── Reader view ──────────────────────────────────────────────────────────
-
-  // The reader opens on the story alone — selectedCategory only enriches the
-  // "next" logic, so a story whose tier isn't in the tier table (bad data)
-  // still reads instead of silently bouncing back to the shelf.
-  if (view === 'reader' && selectedStory) {
-    // Chapter-aware "next": inside a series the next chapter (open or locked)
-    // drives the finish state; outside one the old same-shelf next remains.
-    const readerUnit = rewardUnits.find(u => u.parts.some(p => p.id === selectedStory.id)) || null
-    const chapterNext = readerUnit
-      ? nextChapterInfo({ parts: readerUnit.parts, storyId: selectedStory.id, readIds, unlockIds })
-      : null
-
-    const catStories = storiesIn(selectedCategory)
-    const currentIdx = catStories.findIndex(s => s.id === selectedStory.id)
-    const shelfNext = currentIdx >= 0 && currentIdx < catStories.length - 1
-      ? catStories[currentIdx + 1] : null
-    const nextStory = readerUnit
-      ? (chapterNext && chapterNext.kind === 'unlocked' ? chapterNext.story : null)
-      : shelfNext
-
-    const shelfLevel = selectedCategory ? selectedCategory.level : levelOf(selectedStory.level)
-    const tiersWithStories = new Set(
-      stories.filter(s => levelOf(s.level) === shelfLevel).map(s => s.tier)
-    )
-    const nextTierUnlock = nextStory || readerUnit
-      ? null
-      : nextLockedTier(tiersAt(shelfLevel), learnedAt(shelfLevel), tiersWithStories)
-
-    return (
-      <StoryReader
-        // Keyed by story so moving to the next chapter remounts the reader
-        // cleanly — every reader engine starts the new chapter from its top.
-        key={selectedStory.id}
-        story={selectedStory}
-        vocabMap={vocabMap}
-        userCards={userCards}
-        setUserCards={setUserCards}
-        session={session}
-        profile={profile}
-        track={track}
-        onBack={() => {
-          if (readerFromSeries && selectedArc) {
-            setView('series')
-            if (onSeriesRoute) onSeriesRoute(selectedArc.key)
-          } else {
-            setView('browse')
-            if (onBrowseRoute) onBrowseRoute()
-          }
-        }}
-        onHome={onNavigate ? () => onNavigate('home') : null}
-        onPractice={onNavigate ? (words) => onNavigate('fillblank', { practiceWords: words }) : null}
-        onStudy={onNavigate ? () => onNavigate('study') : null}
-        todayWords={todayWords}
-        firstMission={firstMission}
-        nextStory={nextStory}
-        nextChapter={chapterNext && readerUnit ? { ...chapterNext, seriesTitle: readerUnit.title } : null}
-        nextTierUnlock={nextTierUnlock}
-        onNextStory={() => {
-          if (!nextStory) return
-          setSelectedStory(nextStory)
-          if (onStoryRoute) onStoryRoute(nextStory.id)
-        }}
-        isRead={readIds.has(selectedStory.id)}
-        onMarkRead={handleMarkRead}
-      />
-    )
-  }
-
-  // ── Series detail view ───────────────────────────────────────────────────
-
-  if (view === 'series' && selectedArc) {
-    const arcHasLockedChapters = selectedArc.parts.length > 1
-    const rewardKeyOf = (arc) => {
-      const match = rewardUnits.find(u => u.parts.some(p => arc.parts.some(ap => ap.id === p.id)))
-      return match ? match.key : arc.key
-    }
-    const arcRewardKey = rewardKeyOf(selectedArc)
-    return (
-      <div style={pageShell()}>
-        <div style={{ maxWidth: isMobile ? '860px' : '980px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px', position: 'relative', zIndex: 1 }}>
-          <SeriesDetail
-            unit={selectedArc}
-            readIds={readIds}
-            unlockIds={unlockIds}
-            accentHex={accentHex}
-            fontFamily={fontFamily}
-            levelLabel={levelLabelFor(selectedArc.parts[0])}
-            isMobile={isMobile}
-            vocabMap={vocabMap}
-            userCards={userCards}
-            recentVocabIds={recentVocabIds}
-            language={track.language}
-            isActiveSeries={activeUnit ? activeUnit.key === arcRewardKey : false}
-            canMakeActive={arcHasLockedChapters && (!activeUnit || activeUnit.key !== arcRewardKey)}
-            onMakeActive={() => setActiveSeries(arcRewardKey)}
-            onOpenChapter={(story) => openStory(story, true)}
-            onStudy={onNavigate ? () => onNavigate('study') : null}
-            onBack={() => {
-              setView('browse')
-              setSelectedArc(null)
-              if (onBrowseRoute) onBrowseRoute()
-            }}
-          />
         </div>
       </div>
     )
@@ -977,7 +505,7 @@ export default function Stories({
           <EmptyPanel
             icon={CloudOff} title="Couldn't load stories"
             text="The library couldn't be reached. Check your connection and try again."
-            actionIcon={RefreshCw} actionLabel="Retry" onAction={loadData}
+            actionIcon={RefreshCw} actionLabel="Retry" onAction={data.reload}
           />
         ) : (
           <EmptyPanel icon={Library} title="No stories yet" text="Stories for your level are on the way. Keep learning words — they'll be here waiting." />

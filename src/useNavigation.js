@@ -93,7 +93,10 @@ export function useNavigation() {
 
   // The signature every existing screen already calls.
   const navigate = useCallback((key, opts) => {
-    commit((prev) => applyNavigate(prev, key, opts))
+    // `replace` is how moving to the NEXT chapter works: it swaps the reader
+    // for the next one instead of stacking a second reader, so three chapters
+    // in a row are still one Back to get out.
+    commit((prev) => applyNavigate(prev, key, opts), { replace: Boolean(opts && opts.replace) })
   }, [commit])
 
   const back = useCallback(() => {

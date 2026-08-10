@@ -12,25 +12,6 @@ import {
   makeEntry, visibleEntry, selectTab, push, present, pop, dismiss,
 } from './navStack'
 
-// ── Transitional: overlays a tab root renders itself ─────────────────────
-//
-// The model says the reader is a fullscreen flow above Stories, and the series
-// page is pushed onto it. Both are TRUE of the navigation — URL, back, tab-bar
-// visibility and swipe-back eligibility all follow from it — but neither is a
-// separate component yet: Stories.jsx has owned its own reader and series page
-// since #207, driven by the route props App already passes it.
-//
-// Lifting them out is a component refactor with no navigational content, so it
-// is commit 3's job. Until then the shell keeps the Stories root VISIBLE while
-// one of these is on top, and hands it the route instead of rendering a
-// sibling. The model is not bent to fit: only the rendering is.
-export const INLINE_VIEWS = { stories: ['series', 'reader'] }
-
-export function isInlineView(tab, view) {
-  const inline = INLINE_VIEWS[tab]
-  return Boolean(inline && inline.indexOf(view) !== -1)
-}
-
 // ── Which roots are alive ────────────────────────────────────────────────
 
 // 'visible' | 'hidden' — fed straight to <Activity mode>. Hidden roots keep
@@ -41,7 +22,6 @@ export function tabRootMode(state, tab) {
   const top = visibleEntry(state)
   if (!top) return 'hidden'
   if (top.view === tab) return 'visible'
-  if (isInlineView(tab, top.view)) return 'visible'
   // Something is covering the root — a pushed screen, or a flow. The root
   // stays mounted; it just stops doing work.
   return 'hidden'
@@ -53,7 +33,6 @@ export function overlayScreen(state) {
   const top = visibleEntry(state)
   if (!top) return null
   if (classOf(top.view) === 'root') return null
-  if (isInlineView(state.activeTab, top.view)) return null
   return top
 }
 
@@ -67,22 +46,8 @@ export function tabBarVisible(state, { studyImmersive } = {}) {
   const top = visibleEntry(state)
   const cls = classOf(top && top.view)
   if (cls === 'full' || cls === 'admin' || cls === 'account') return false
-  if (isInlineView(state.activeTab, top && top.view) && top.view === 'reader') return false
   if (state.activeTab === 'study' && top && top.view === 'study' && studyImmersive) return false
   return true
-}
-
-// ── The route Stories is driven by ───────────────────────────────────────
-
-export function storiesRoute(state) {
-  const top = visibleEntry(state)
-  if (top && top.view === 'reader') {
-    return { kind: 'story', storyId: (top.params && top.params.id) || null, seriesKey: null }
-  }
-  if (top && top.view === 'series') {
-    return { kind: 'series', storyId: null, seriesKey: (top.params && top.params.key) || null }
-  }
-  return { kind: 'browse', storyId: null, seriesKey: null }
 }
 
 // ── The adapter for the existing navigate() call sites ───────────────────

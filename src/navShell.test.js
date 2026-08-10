@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  applyNavigate, applyBack, tabBarVisible, tabRootMode, storiesRoute,
-  overlayScreen, isInlineView,
+  applyNavigate, applyBack, tabBarVisible, tabRootMode, overlayScreen,
 } from './navShell'
 import { initialNavState, makeEntry, selectTab, push, visibleEntry, urlForState } from './navStack'
 
@@ -104,17 +103,23 @@ describe('which tab root is alive', () => {
     expect(overlayScreen(s).view).toBe('words')
   })
 
-  it('keeps Stories visible for the screens it renders itself', () => {
-    // Transitional: Stories owns its series page and reader (INLINE_VIEWS).
+  it('covers the Stories root with the series page and the reader, like any other stack', () => {
+    // Stories used to render these two itself (the old INLINE_VIEWS exception),
+    // so the root stayed "visible" underneath its own pane swap. They are real
+    // destinations now: the root goes quiet and the shell draws them on top.
     const series = push(selectTab(S(), 'stories'), makeEntry('series', { key: 'x' }))
     const reader = applyNavigate(S(), 'stories', { storyId: 'abc' })
-    expect(tabRootMode(series, 'stories')).toBe('visible')
-    expect(tabRootMode(reader, 'stories')).toBe('visible')
-    // …and the shell does NOT render a second screen over them.
-    expect(overlayScreen(series)).toBe(null)
-    expect(overlayScreen(reader)).toBe(null)
-    expect(isInlineView('stories', 'reader')).toBe(true)
-    expect(isInlineView('practice', 'reader')).toBe(false)
+    expect(tabRootMode(series, 'stories')).toBe('hidden')
+    expect(tabRootMode(reader, 'stories')).toBe('hidden')
+    expect(overlayScreen(series).view).toBe('series')
+    expect(overlayScreen(reader).view).toBe('reader')
+  })
+
+  it('keeps the tab bar on the series page and hides it in the reader', () => {
+    const series = push(selectTab(S(), 'stories'), makeEntry('series', { key: 'x' }))
+    const reader = applyNavigate(S(), 'stories', { storyId: 'abc' })
+    expect(tabBarVisible(series)).toBe(true)
+    expect(tabBarVisible(reader)).toBe(false)
   })
 })
 
@@ -151,22 +156,6 @@ describe('the bottom bar', () => {
 
   it('is not hidden by a session on some OTHER tab', () => {
     expect(tabBarVisible(selectTab(S(), 'stories'), { studyImmersive: true })).toBe(true)
-  })
-})
-
-describe('the route Stories is driven by', () => {
-  it('browses by default', () => {
-    expect(storiesRoute(selectTab(S(), 'stories'))).toEqual({ kind: 'browse', storyId: null, seriesKey: null })
-  })
-
-  it('carries the story id into the reader', () => {
-    expect(storiesRoute(applyNavigate(S(), 'stories', { storyId: 'abc' })))
-      .toEqual({ kind: 'story', storyId: 'abc', seriesKey: null })
-  })
-
-  it('carries the series key', () => {
-    const s = push(selectTab(S(), 'stories'), makeEntry('series', { key: 'inkbound' }))
-    expect(storiesRoute(s)).toEqual({ kind: 'series', storyId: null, seriesKey: 'inkbound' })
   })
 })
 

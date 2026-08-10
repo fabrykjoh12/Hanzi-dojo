@@ -279,11 +279,10 @@ language, so a switch reads an empty namespace and switching back finds the
 previous language still valid. Publishing for it would throw away correct data.
 
 Two publishers immediately **re-validate their own key** after publishing
-(`writeCache(STORIES_CACHE_KEY, true)`): Stories' chapter-claim and mark-read
-handlers have already applied the change to their own state, so reloading the
-shelf would be pure cost — and, while `series`/`reader` are still rendered
-inside Stories (`navShell.INLINE_VIEWS`), it would tear down the finish overlay
-the learner is looking at.
+(`writeCache(STORIES_CACHE_KEY, true)`): the chapter-claim and mark-read
+handlers in `StoriesDataProvider` have already applied the change to the data
+every Stories screen reads, so reloading the shelf would be pure cost — and it
+would tear down the finish overlay the learner is looking at.
 
 Counts carry the one clock in the system: `HOME_COUNTS_STALE_MS` (10 minutes)
 plus a local-midnight rollover, in `homeData.js`. Cards fall due while the app
@@ -425,8 +424,8 @@ rather than half-done.
 block for `position: fixed` descendants, and the story reader is built out of
 fixed bars. Opacity does not (it creates a stacking context, not a containing
 block), so the two pane-side transitions are opacity-only by construction, and
-`NO_TRANSFORM_VIEWS` covers the transitional case where a `full` view is still
-rendered inside its root (`navShell.INLINE_VIEWS`).
+`NO_TRANSFORM_VIEWS` keeps the reader out of the transform path wherever it is
+presented.
 
 `prefers-reduced-motion` is checked **in JavaScript**, and the answer is no
 animation at all rather than a shortened one. The `index.css` catch-all cannot

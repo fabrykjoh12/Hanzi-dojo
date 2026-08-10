@@ -111,11 +111,13 @@ describe('useNavMotion', () => {
     expect(calls.length).toBe(0)
   })
 
-  it('animates the pane, not a sibling, for a screen its root renders itself', () => {
+  it('gives the series page a real push, on the overlay layer', () => {
     const stories = selectTab(initialNavState(), 'stories')
     render(<Driver initial={stories} />)
     navigateTo(push(stories, makeEntry('series', { key: 'k' })))
     expect(calls.length).toBe(1)
-    expect(calls[0].el.getAttribute('data-tab-root')).toBe('stories')
+    expect(calls[0].el.getAttribute('data-nav-layer')).toBe('overlay')
+    // A push travels. The pane fade it used to get did not.
+    expect(calls[0].keyframes[0].transform).toBeTruthy()
   })
 })

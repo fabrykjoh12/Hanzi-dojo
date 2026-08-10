@@ -20,8 +20,11 @@ import { useAppResume } from './useAppResume'
 import { setCacheScope, readCache, writeCache } from './dataCache'
 import { HOME_IDENTITY, HOME_COUNTS } from './cacheEvents'
 import { countsExpired } from './homeData'
-import { overlayScreen, tabBarVisible, storiesRoute } from './navShell'
+import { overlayScreen, tabBarVisible } from './navShell'
 import TabHost from './TabHost'
+import { StoriesDataProvider } from './StoriesDataProvider'
+import SeriesScreen from './SeriesScreen'
+import ReaderScreen from './ReaderScreen'
 import { initialTheme, rememberTheme } from './themeBoot'
 import { syncStatusBar } from './statusBar'
 import { markAppReady } from './appReady'
@@ -132,7 +135,7 @@ export default function App() {
   const [bootstrapError, setBootstrapError] = useState(false)
   // A story to open directly when navigating to Stories (set by the post-study
   // recap's "Read unlocked story" CTA). Consumed and cleared by Stories on load.
-  const [pendingStoryId, setPendingStoryId] = useState(null)
+
   // Today's studied words to highlight in the reader (set alongside a deep-link
   // from the post-study recap; consumed by Stories with the story id).
   const [pendingStoryWords, setPendingStoryWords] = useState(null)
@@ -382,10 +385,8 @@ export default function App() {
   // so this never flashes for a genuine anonymous visitor).
   useEffect(() => {
     if (!loading && session && publicStoryId) {
-      // Intentional: hand the story id to the deep-link machinery, then redirect
-      // into the reader. Same sanctioned pattern as Background/StoryReader.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setPendingStoryId(publicStoryId)
+      // The URL is the hand-off now: /stories/<id> seeds [Stories → Reader]
+      // through stackForPath, so there is nothing to remember on the side.
       routerNavigate(storyPath(publicStoryId), { replace: true })
     }
   }, [loading, session, publicStoryId, routerNavigate])
@@ -396,7 +397,6 @@ export default function App() {
   // onUpdate/onStreakUpdate callbacks. (Previously every view switch refired
   // ~5 queries, so opening Settings cost a full dashboard reload.)
   const navigate = (key, opts) => {
-    if (opts && opts.storyId) setPendingStoryId(opts.storyId)
     if (opts && opts.todayWords) setPendingStoryWords(opts.todayWords)
     if (opts && opts.firstMission) setPendingStoryFirstMission(true)
     if (opts && opts.practiceWords) setPendingPracticeWords(opts.practiceWords)
@@ -578,7 +578,6 @@ export default function App() {
   // ── The four persistent tab roots ─────────────────────────────────────────
   // Built the first time their tab is selected, then kept for the app run.
   // Their own error boundary lives here rather than around the whole shell.
-  const storiesR = storiesRoute(nav.state)
   function renderTabRoot(tab) {
     let root = null
     if (tab === 'home') {
@@ -603,25 +602,11 @@ export default function App() {
         />
       )
     } else if (tab === 'stories') {
-      // Stories still renders its own series page and reader (see
-      // navShell.INLINE_VIEWS); the model owns the route, Stories owns the
-      // pixels, until commit 3 lifts them out.
       root = (
         <Stories
-          session={session}
-          profile={profile}
-          track={track}
           onNavigate={navigate}
-          initialStoryId={pendingStoryId || storiesR.storyId}
-          initialStoryWords={pendingStoryWords}
-          initialStoryFirstMission={pendingStoryFirstMission}
-          routeKind={storiesR.kind}
-          routeStoryId={storiesR.storyId}
-          routeSeriesKey={storiesR.seriesKey}
-          onStoryRoute={(id) => navigate('stories', { storyId: id })}
-          onSeriesRoute={(key) => nav.navigate('series', { params: { key } })}
-          onBrowseRoute={() => nav.back()}
-          onInitialStoryConsumed={() => { setPendingStoryId(null); setPendingStoryWords(null); setPendingStoryFirstMission(false) }}
+          onOpenStory={(id) => navigate('stories', { storyId: id })}
+          onOpenSeries={(key) => nav.navigate('series', { params: { key } })}
         />
       )
     } else if (tab === 'practice') {
@@ -647,7 +632,35 @@ export default function App() {
 
   // ── Content for the screen above the tabs ─────────────────────────────────
   let content
-  if (view === 'weak') {
+  if (view === 'series') {
+    // A real pushed destination on the Stories stack now, not a branch inside
+    // Stories.jsx. Back is the reducer's pop, so it lands on the shelf the
+    // learner left — still mounted, still scrolled where it was.
+    content = (
+      <SeriesScreen
+        seriesKey={(topScreen && topScreen.params && topScreen.params.key) || null}
+        onBack={nav.back}
+        onNavigate={navigate}
+        onOpenChapter={(story) => navigate('stories', { storyId: story.id })}
+      />
+    )
+  } else if (view === 'reader') {
+    // Presented above the Stories tab (VIEW_CLASS: `full`), so the tab bar
+    // hides and dismissing returns to whatever is underneath — the series page
+    // when it was pushed, the shelf when it was not.
+    content = (
+      <ReaderScreen
+        storyId={(topScreen && topScreen.params && topScreen.params.id) || null}
+        onBack={nav.back}
+        onNavigate={navigate}
+        todayWords={pendingStoryWords}
+        firstMission={pendingStoryFirstMission}
+        onConsumed={() => { setPendingStoryWords(null); setPendingStoryFirstMission(false) }}
+        onOpenStory={(id, opts) => navigate('stories', { storyId: id, replace: opts && opts.replace })}
+        onMissingStory={nav.back}
+      />
+    )
+  } else if (view === 'weak') {
     content = (
       <Study
         session={session}
@@ -873,6 +886,10 @@ export default function App() {
   // ── App shell: persistent sidebar + content area ──────────────────────────
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+      {/* The Stories tab's data, owned above its three destinations. The shelf,
+          the series page and the reader are separate screens in the model but
+          one body of data; this is what stops each of them refetching it. */}
+      <StoriesDataProvider session={session} profile={profile} track={track}>
       <a href="#main-content" className="skip-link">Skip to content</a>
       <div style={{
         display: 'flex', minHeight: '100vh', alignItems: 'stretch',
@@ -939,6 +956,7 @@ export default function App() {
         <Toasts />
         <OfflineBar session={session} />
       </div>
+      </StoriesDataProvider>
     </ThemeContext.Provider>
   )
 }

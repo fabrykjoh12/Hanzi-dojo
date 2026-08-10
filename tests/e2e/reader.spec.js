@@ -6,7 +6,8 @@ test.describe('Story reader', () => {
     const reader = new ReaderPage(page);
     await reader.openFirstStory();
     // The story title appears in the reader.
-    await expect(page.getByText('公园里的下午').first()).toBeVisible();
+    // The shelf stays mounted underneath the reader, so scope to what is shown.
+    await expect(page.getByText('公园里的下午').filter({ visible: true }).first()).toBeVisible();
   });
 
   test('paced reveal: starts on one tap and advances beat by beat', async ({ page }) => {

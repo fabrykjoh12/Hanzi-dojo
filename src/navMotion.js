@@ -33,8 +33,7 @@
 // bars, so a transform on the Stories pane would re-anchor them mid-animation.
 // The kinds that land on a pane (a tab change, a dismissal) are the two the
 // spec asks to keep subtle anyway, so this costs nothing — and NO_TRANSFORM
-// covers the transitional case where a `full` view is still rendered inside its
-// root (navShell.INLINE_VIEWS).
+// keeps the reader itself out of the transform path wherever it is presented.
 
 import { visibleEntry } from './navStack'
 import { overlayScreen } from './navShell'
@@ -99,8 +98,8 @@ export function transitionFor(prev, next) {
 }
 
 // Which element the transition happens on. Whatever just became visible: the
-// overlay when one is on top, otherwise the tab root itself — including the
-// transitional case where a root renders its own detail screen.
+// overlay layer when a pushed screen or a flow is on top, otherwise the tab
+// root itself.
 export function layerFor(state) {
   return overlayScreen(state) ? 'overlay' : 'tab'
 }

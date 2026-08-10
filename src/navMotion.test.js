@@ -136,12 +136,13 @@ describe('layerFor / selectorFor', () => {
     expect(selectorFor(flow)).toBe('[data-nav-layer="overlay"]')
   })
 
-  it('targets the tab root for a screen the root still renders itself', () => {
-    // series and reader live inside Stories.jsx (navShell.INLINE_VIEWS), so the
-    // layer that changes is the pane, not a sibling overlay.
+  it('targets the overlay for the series page, like every other pushed screen', () => {
+    // These two used to live inside Stories.jsx, so the layer that changed was
+    // the pane and all they could get was a fade. They are real destinations
+    // now, which is what earns them the push and present plans.
     const stories = selectTab(home, 'stories')
     const series = push(stories, makeEntry('series', { key: 'k' }))
-    expect(layerFor(series)).toBe('tab')
-    expect(selectorFor(series)).toBe('[data-tab-root="stories"]')
+    expect(layerFor(series)).toBe('overlay')
+    expect(selectorFor(series)).toBe('[data-nav-layer="overlay"]')
   })
 })
