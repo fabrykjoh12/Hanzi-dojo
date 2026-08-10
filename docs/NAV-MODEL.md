@@ -248,10 +248,10 @@ work, which is the requirement.
 
 | Key | Holds |
 |---|---|
-| `home:counts` | `getHomeCounts` — due/new/learning, goal, rhythm, forecast |
-| `home:reward` | `getSessionRewardTeaser` |
-| `home:dailyStory` | `getDailyStoryCard` |
-| `stories:shelf` | the shelf query set |
+| `home:identity` | the profile + active track (`loadProfile`'s pair) — **shipped** |
+| `home:counts` | `getHomeCounts` — due/new/learning, goal, rhythm, forecast — **shipped** |
+| `home:handoff` | the story hand-off: the reward teaser, or the daily card — **shipped** |
+| `stories:shelf` | the shelf query set — **shipped** |
 | `stories:series:<key>` | one series' chapters + progress |
 | `practice:plan` | weak/grammar counts behind the hub |
 | `progress:stats` | Profile's learned/mastered/achievements |
@@ -259,18 +259,37 @@ work, which is the requirement.
 
 ### 3.3 Invalidation is event-driven
 
-`src/dataEvents.js` publishes domain events; a single table maps them to keys.
-Screens publish; they never reach into another screen's cache.
+`src/cacheEvents.js` publishes domain events; a single table maps them to keys.
+Screens publish; they never reach into another screen's cache. An event names a
+key **only if it can change that key's value** — that is the whole rule, and it
+is what stops a graded card costing a profile fetch.
 
 | Event | Published by | Invalidates |
 |---|---|---|
-| `card:graded` | `Study.jsx` grade handler | `home:counts`, `practice:plan` |
-| `session:completed` | `Study.jsx` on recap | `home:*`, `progress:stats`, `practice:plan` |
-| `chapter:unlocked` | `storyReward` claim | `stories:shelf`, `stories:series:*`, `home:reward` |
-| `story:read` | reader completion | `stories:shelf`, `stories:series:<key>`, `progress:stats` |
-| `level:unlocked` | level test pass | everything except `dict:*` |
-| `profile:updated` | Settings / goal change | `home:counts`, `practice:plan` |
-| `language:switched` | LanguageSwitcher | everything |
+| `card:graded` | `Study.jsx` `applyGrade` | `home:counts` |
+| `session:completed` | `Study.jsx` on recap | `home:counts`, `home:handoff`, `stories:` |
+| `chapter:unlocked` | `Stories.jsx` claim sites | `home:handoff`, `stories:` |
+| `story:read` | `Stories.jsx` `handleMarkRead` | `home:handoff`, `stories:` |
+| `level:unlocked` | `Test.jsx` on a pass | `home:identity`, `home:counts`, `home:handoff`, `stories:` |
+| `profile:updated` | `Settings.jsx` `savePref` | `home:identity`, `home:counts` |
+| `words:changed` | deck add / reset | `home:counts` |
+
+**`language:switched` is deliberately not an event.** Every key is namespaced by
+language, so a switch reads an empty namespace and switching back finds the
+previous language still valid. Publishing for it would throw away correct data.
+
+Two publishers immediately **re-validate their own key** after publishing
+(`writeCache(STORIES_CACHE_KEY, true)`): Stories' chapter-claim and mark-read
+handlers have already applied the change to their own state, so reloading the
+shelf would be pure cost — and, while `series`/`reader` are still rendered
+inside Stories (`navShell.INLINE_VIEWS`), it would tear down the finish overlay
+the learner is looking at.
+
+Counts carry the one clock in the system: `HOME_COUNTS_STALE_MS` (10 minutes)
+plus a local-midnight rollover, in `homeData.js`. Cards fall due while the app
+sits open and no event fires when they do. This is the surviving half of the
+deleted `homeRefresh.js` — the half that was about data rather than about which
+route the learner arrived from.
 
 ### 3.4 The scenario that must work
 

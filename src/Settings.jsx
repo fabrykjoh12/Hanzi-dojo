@@ -18,6 +18,7 @@ import { resetTourSeen } from './tour'
 import { pendingWrites } from './syncQueue'
 import { buildLabel } from './version'
 import AppBar from './AppBar'
+import { publish } from './cacheEvents'
 
 // The picker shows times the user actually recognizes ("9:00 AM" local),
 // while reminder_hour_utc stores UTC for the sender script — convert at the
@@ -90,6 +91,12 @@ export default function Settings({ session, profile, onUpdate, onBack }) {
         ({ error }) => { if (error) revert() },
         () => revert()
       )
+      // Home holds its own copy of the profile and of the counts derived from
+      // it — `daily_new_cards` is one of their inputs — so both go behind here
+      // (cacheEvents.js). `onUpdate` has already patched the in-memory profile,
+      // which is why the screen updates instantly and the refetch is only about
+      // the numbers being right the next time Home is looked at.
+      publish('profile:updated')
     }
   }
 

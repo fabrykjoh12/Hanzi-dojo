@@ -10,31 +10,41 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
-## Home is the next cache migration (recorded 2026-08-09)
+## Home's cache migration — done (2026-08-10)
 
-Measured, not estimated: **one visit to Home costs ~34 Supabase requests**, and
-it pays them again every time the Home tab becomes visible. The persistent-tab
-shell (Phase 2 commit 2) means a tab root keeps its state but re-runs its
-effects on every show — so Home's data, which still lives in mount effects
-(`loadProfile` via `shouldRefreshHome`, then `getDailyStoryCard` and
-`getSessionRewardTeaser` inside `Home.jsx`), reconnects each time.
+Measured on a production bundle against the authed E2E fixture, before: a Home
+revisit cost **25 Supabase requests**, identically every time. After: **0**.
+After grading a card: **4**, and only the counts. Keys, the event table and the
+one surviving clock are in NAV-MODEL §3.2–3.3; the shape is `cacheEvents.js` +
+`homeData.js` + `dataCache.js`. `homeRefresh.js` is deleted — it answered a data
+question by looking at which route the learner came from.
 
-Stories was migrated to `dataCache.js` in the same commit and now costs **zero**
-requests on return; Home is the same job with the same tools:
+What is left, deliberately:
 
-- `home:counts` (`getHomeCounts`), `home:reward` (`getSessionRewardTeaser`),
-  `home:dailyStory` (`getDailyStoryCard`) as cache keys — the names are already
-  reserved in NAV-MODEL §3.2.
-- `Study.jsx` already publishes `invalidate('home:')` when a session finishes,
-  so the invalidation half exists and is unused.
-- `getDailyStoryCard` is fetched and then thrown away for any learner with an
-  active series (`Home.jsx` renders it only when `rewardTeaser` is null) — worth
-  fixing in the same pass rather than caching a wasted query.
-- Resume-from-background rules (local-midnight crossing, 15-minute staleness)
-  are specified in NAV-MODEL §3.5 and not implemented anywhere yet.
+- **A learner with no active series pays one extra round trip on a COLD Home
+  load.** The daily-story card is fetched only when the reward teaser comes back
+  empty, because Home renders `!rewardTeaser && daily` — so for anyone with a
+  series going those four queries (one of which pulls every reachable story's
+  full text) could never be shown. Making the two concurrent again would mean
+  splitting `getDailyStoryCard`'s inputs so the shared half rides along with the
+  reward context: ~2 queries saved on that one cold path. Not worth the seam
+  until someone measures cold-start on a phone and finds it.
+- **Resume-from-background** (NAV-MODEL §3.5) is still not implemented. What
+  ships is the local-midnight rollover and a 10-minute window on `home:counts`
+  only, evaluated when Home is navigated to — not on `visibilitychange`. An app
+  left open on Home across midnight still shows yesterday's numbers until the
+  learner navigates.
+- **Practice and Profile are the same job, unstarted.** Neither has been
+  measured; both fetch in mount effects and both are persistent roots now.
 
-The bar to clear: **Home → Stories → Home must not cost dozens of requests
-merely because Home became visible again.**
+## `npm run build` emits the HQ page as the app's index.html (found 2026-08-10)
+
+`dist/client/index.html` and `dist/client/hq.html` are both Dojo HQ after a
+plain `npm run build` — the multi-entry build (`SITES_BUILD`) clobbers the app's
+entry. Nothing shipping is affected: Vercel and `cap:sync` both use
+`npm run build:public` (`DOJO_PUBLIC_BUILD=1`), which emits one correct
+`index.html`. But `npm run build && vite preview` serves HQ at `/`, which makes
+the default build unservable and cost an afternoon to notice.
 
 ## Navigation motion — the three deferred halves (recorded 2026-08-09)
 

@@ -15,6 +15,7 @@ import { formatLabel } from './storyFormat'
 import { buildFlatShelf, buildNextLevelSection } from './storyShelfFlat'
 import { calculateStoryReadability } from './storyReading'
 import { readCache, writeCache } from './dataCache'
+import { publish } from './cacheEvents'
 import { stripSceneEmoji } from './sceneReading'
 import { chapterInfo, nextChapterInfo, readingMinutes, seedUnlockIds } from './storyChapters'
 import { buildSeriesUnits, resolveActiveSeries, rewardStateFor } from './storyReward'
@@ -541,6 +542,11 @@ export default function Stories({
       if (res && res.redeemed && res.story_id === chapter.id) {
         setUnlockIds(prev => { const nx = new Set(prev); nx.add(chapter.id); return nx })
         setClaim({ claim_date: todayStr(), story_id: chapter.id })
+        // Home's hand-off is now behind. The shelf is not — this screen just
+        // applied the unlock to its own state — so it re-validates itself
+        // rather than paying for a reload of something it already knows.
+        publish('chapter:unlocked')
+        writeCache(STORIES_CACHE_KEY, true)
         const info = chapterInfo(chapter, (activeUnit ? activeUnit.parts.indexOf(chapter) : 0))
         toast({ title: 'Chapter unlocked — ' + (info.nativeLabel || 'Chapter ' + info.number), accent: accentHex })
       }
@@ -639,6 +645,13 @@ export default function Stories({
   const handleMarkRead = (id) => {
     setReadIds(prev => { const nx = new Set(prev); nx.add(id); return nx })
     setReads(prev => [...prev, { story_id: id, read_at: new Date().toISOString() }])
+    // What to read next changed, so Home's hand-off is behind. The shelf is
+    // not: the two lines above just applied the read to it. Re-validating here
+    // is not a nicety — the reader is rendered INSIDE this screen today
+    // (navShell.INLINE_VIEWS), so letting the shelf reload would tear down the
+    // finish overlay the learner is looking at.
+    publish('story:read')
+    writeCache(STORIES_CACHE_KEY, true)
     const unit = rewardUnits.find(u => u.parts.some(p => p.id === id))
     if (unit && !activeSeriesKey) setActiveSeries(unit.key)
     if (unit && claim && !claim.story_id) {
@@ -649,6 +662,8 @@ export default function Stories({
           if (res && res.redeemed && res.story_id === next.id) {
             setUnlockIds(prev => { const nx = new Set(prev); nx.add(next.id); return nx })
             setClaim({ claim_date: todayStr(), story_id: next.id })
+            publish('chapter:unlocked')
+            writeCache(STORIES_CACHE_KEY, true)
           }
         })
       }

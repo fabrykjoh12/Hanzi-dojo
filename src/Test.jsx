@@ -12,6 +12,7 @@ import {
   GraduationCap, Lock, RotateCcw, ShieldCheck, X,
 } from 'lucide-react'
 import AppBar from './AppBar'
+import { publish } from './cacheEvents'
 
 function generateQuestions(vocabList, allVocab, language) {
   const selected = shuffle(vocabList).slice(0, Math.min(30, vocabList.length))
@@ -381,6 +382,11 @@ export default function Test({ session, profile, track, onBack }) {
           .eq('id', track.id)
           .eq('user_id', session.user.id)
       }
+
+      // The level moves, and the level is what scopes everything: the deck, the
+      // counts, which stories are reachable. This is the one event that puts
+      // every Home key behind at once (cacheEvents.js).
+      publish('level:unlocked')
     }
 
     setLastResult({ passed, score: Math.round(score), wrongCount: finalWrong.length, correctCount })

@@ -36,7 +36,7 @@ import {
 import { MICRO, NUM } from './designTokens'
 import { tapFeedback } from './haptics'
 import SessionPaused from './SessionPaused'
-import { invalidate } from './dataCache'
+import { publish } from './cacheEvents'
 import { useStudyAudio } from './useStudyAudio'
 import { useStudyKeyboardShortcuts } from './useStudyKeyboardShortcuts'
 import AudioButton from './AudioButton'
@@ -756,6 +756,12 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     // Reactive card counter for the guided first-mission hint (no effect on SRS).
     setStudied(n => n + 1)
 
+    // The queue has moved, so Home's counts are behind — even if the learner
+    // leaves this session half-finished and never reaches the recap. Marking is
+    // free; the refetch happens once, when Home is next looked at. Nothing else
+    // on Home changes from one grade, so nothing else is touched.
+    publish('card:graded')
+
     // Record today as a study day (once per session) — purely factual, feeds
     // the calm "gentle return after a break" welcome, not a streak/guilt mechanic.
     if (!lastStudiedRecordedRef.current) {
@@ -875,9 +881,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         // the shelf's unlocked chapters, Home's counts, the reward teaser.
         // Stories may be sitting hidden and fully mounted, so nothing will
         // refetch on its own — this is what tells it to, the next time the
-        // learner looks at it (dataCache.js).
-        invalidate('stories:')
-        invalidate('home:')
+        // learner looks at it (cacheEvents.js says which keys that is).
+        publish('session:completed')
         setDone(true)
       }
       return rest

@@ -4,8 +4,10 @@ import { getLevelLabel } from './utils'
 import { languageTheme, ink } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
-import { getDailyStoryCard, firstContentChar } from './homeStory'
-import { getSessionRewardTeaser } from './storyRewardData'
+import { firstContentChar } from './homeStory'
+import { fetchHandoff, trackSignature } from './homeData'
+import { query } from './dataCache'
+import { HOME_HANDOFF } from './cacheEvents'
 import { HeroPanel, HeroAction, Panel, Eyebrow, PageHeader } from './panels'
 import { rhythmSummary, weekdayInitial } from './studyRhythm'
 import { forecastSummary } from './reviewForecast'
@@ -60,21 +62,49 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
   const { studiedDays, days: rhythmDays } = rhythmSummary(rhythm)
   const { total: forecastTotal, perDay } = forecastSummary(counts.forecast7 || [])
 
+  const countsLoaded = Boolean(counts.loaded)
   const gentleReady = Math.min(counts.dueCount || 0, GENTLE_REVIEW_CAP)
   const gentleActive = isReturningFromBreak(profile) && (counts.dueCount || 0) > GENTLE_REVIEW_CAP
 
   const userId = session?.user?.id
+  // The signature, not the object: `loadProfile` hands down a freshly-fetched
+  // `track` whose fields are usually identical, and depending on its identity
+  // ran this whole block a second time on every arrival (homeData.js).
+  const trackKey = trackSignature(track)
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  // The hand-off is fetched once and again only when something changed it.
+  //
+  // This effect re-runs on every tab show — <Activity> re-runs effects by
+  // design, and this file must not fight that (NAV-MODEL §2). dataCache is what
+  // makes re-running free: a `fresh` read does no network work at all, and an
+  // invalidated one keeps the old value on screen while the new one is fetched
+  // behind it, so returning to Home never blanks or flashes a skeleton.
+  //
+  // Gated on `counts.loaded`, because `learned` is an input to the daily pick
+  // and starts at 0. Fetching before the counts land would cache a story chosen
+  // for a learner who knows nothing.
   useEffect(() => {
     let alive = true
-    if (!userId) return undefined
-    getDailyStoryCard(userId, track, learned)
-      .then(res => { if (alive) setDaily(res) })
-      .catch(() => { if (alive) setDaily(null) })
-    getSessionRewardTeaser(userId, track)
-      .then(res => { if (alive) setRewardTeaser(res) })
-      .catch(() => { if (alive) setRewardTeaser(null) })
+    if (!userId || !track || !countsLoaded) return undefined
+    const res = query(HOME_HANDOFF, () => fetchHandoff(userId, track, learned))
+    if (res.value) {
+      setRewardTeaser(res.value.reward || null)
+      setDaily(res.value.daily === undefined ? null : res.value.daily)
+    }
+    if (res.promise) {
+      res.promise.then((settled) => {
+        if (!alive || !settled || !settled.ok) return
+        setRewardTeaser(settled.value.reward || null)
+        setDaily(settled.value.daily === undefined ? null : settled.value.daily)
+      })
+    }
     return () => { alive = false }
-  }, [userId, track, learned])
+    // `track` is read inside but deliberately not a dependency — trackKey is
+    // its value-equal stand-in, and the identity is the bug this replaced.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, trackKey, learned, countsLoaded])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // First-run tour: once per device for a new account, on the first Home render
   // (onboarding and the first-mission welcome replace Home entirely, so the

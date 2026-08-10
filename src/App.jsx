@@ -11,13 +11,14 @@ import { authNoticeFromSearch } from './nativeAuth'
 import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
 import { isBootstrapFailure } from './supabaseErrors'
 import { ensureLanguageFont } from './fontLoader'
-import { shouldRefreshHome } from './homeRefresh'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
 import { useNavigation } from './useNavigation'
 import { useAndroidBack } from './useAndroidBack'
 import { useNavMotion } from './useNavMotion'
-import { setCacheScope } from './dataCache'
+import { setCacheScope, readCache, writeCache } from './dataCache'
+import { HOME_IDENTITY, HOME_COUNTS } from './cacheEvents'
+import { countsExpired } from './homeData'
 import { overlayScreen, tabBarVisible, storiesRoute } from './navShell'
 import TabHost from './TabHost'
 import { initialTheme, rememberTheme } from './themeBoot'
@@ -119,7 +120,11 @@ export default function App() {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [track, setTrack] = useState(null)
-  const [counts, setCounts] = useState({ newCount: 0, learnCount: 0, dueCount: 0, easyCount: 0, totalWords: 0, learnedCount: 0, masteredCount: 0, masteredPct: 0 })
+  // `loaded` is the shell's flag, not homeCounts': it separates "every count is
+  // zero because nothing has been fetched" from "every count is zero because
+  // the learner is done". Home waits for it before choosing a daily story,
+  // which would otherwise be picked for someone who knows no words.
+  const [counts, setCounts] = useState({ newCount: 0, learnCount: 0, dueCount: 0, easyCount: 0, totalWords: 0, learnedCount: 0, masteredCount: 0, masteredPct: 0, loaded: false })
   const [loading, setLoading] = useState(true)
   // True when the profile/track bootstrap FAILED (network/server), as opposed
   // to legitimately finding nothing — the two must render differently.
@@ -229,10 +234,6 @@ export default function App() {
   // and screen-reader users land on the new screen instead of being stranded on
   // the nav item they clicked. No-op on views without the shell (e.g. Landing).
   const mainRef = useRef(null)
-  // When the dashboard data was last loaded, so returning to Home can skip a
-  // refetch it doesn't need (homeRefresh.js). A ref, not state: reading it
-  // must never itself trigger a render.
-  const homeLoadedAt = useRef(null)
   useEffect(() => {
     if (mainRef.current) mainRef.current.focus({ preventScroll: true })
   }, [view])
@@ -323,10 +324,14 @@ export default function App() {
 
     if (finalTrack) {
       const c = await getHomeCounts(userId, finalTrack, finalProf.daily_new_cards)
-      setCounts(c)
+      setCounts({ ...c, loaded: true })
+      writeCache(HOME_COUNTS, c)
     }
 
-    homeLoadedAt.current = Date.now()
+    // Both Home keys are now valid. `home:identity` holds the pair rather than
+    // a flag so that switching language and back finds the previous track
+    // already there — the namespace keeps them apart (dataCache.js).
+    writeCache(HOME_IDENTITY, { profile: finalProf, track: finalTrack })
     setProfile(finalProf)
     setTrack(finalTrack)
     // Analytics context — so every subsequent event carries who / language / level.
@@ -398,10 +403,40 @@ export default function App() {
     // Through the reducer, not around it. It decides whether this is a tab
     // selection, a push, or a flow — and whether it is a navigation at all.
     nav.navigate(key, opts)
-    // Refetch the dashboard when landing on Home — but not after a detour
-    // through a screen that provably changed nothing (see homeRefresh.js).
-    if (session && key === 'home' && shouldRefreshHome(view, homeLoadedAt.current)) {
-      loadProfile(session.user.id)
+    if (key === 'home') refreshHomeIfNeeded()
+  }
+
+  // Landing on Home. This used to be `shouldRefreshHome(view, …)` — refetch
+  // unless the learner came from one of six named read-only screens — which
+  // decided a DATA question by looking at a ROUTE, and so paid the full
+  // seven-request profile + track + counts reload every time anyone arrived
+  // from Stories, changed or not.
+  //
+  // Now the cache answers it, and each key answers for itself: nothing
+  // invalidated means nothing is fetched, and a graded card costs exactly the
+  // counts, not the profile as well.
+  const refreshHomeIfNeeded = () => {
+    if (!session) return
+    const identity = readCache(HOME_IDENTITY)
+    // No identity, or something moved the level underneath us: loadProfile is
+    // the whole bootstrap and refreshes the counts on its way through.
+    if (!identity || identity.invalidated) { loadProfile(session.user.id); return }
+    const cached = readCache(HOME_COUNTS)
+    if (!cached || cached.invalidated || countsExpired(cached.fetchedAt)) refreshCounts()
+  }
+
+  // Counts alone. Cards fall due while the app sits open and no event fires
+  // when they do, so this is the one Home key with a clock on it
+  // (HOME_COUNTS_STALE_MS + the local-midnight rollover, in homeData.js).
+  const refreshCounts = async () => {
+    if (!session || !profile || !track) return
+    try {
+      const c = await getHomeCounts(session.user.id, track, profile.daily_new_cards)
+      setCounts({ ...c, loaded: true })
+      writeCache(HOME_COUNTS, c)
+    } catch {
+      // A failed refresh leaves the last good counts on screen, still marked
+      // invalid, so the next arrival tries again. Never a blank dashboard.
     }
   }
 
