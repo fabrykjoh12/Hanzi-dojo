@@ -31,7 +31,7 @@ import ChatMission from './ChatMission'
 import { buildMissionOffer } from './missionOffer'
 import { computeStudyTally } from './studyTally'
 import { sessionMix, bandTone, MIX_KEYS, MIX_LABELS } from './sessionMix'
-import { studyLayout } from './studyLayout'
+import { studyLayout, MOBILE_SHELL_HEIGHT } from './studyLayout'
 import {
   cardMarker, markerCardShadow, markerPillStyle, markerDotStyle, MARKER_DOT,
 } from './cardMarker'
@@ -1033,8 +1033,24 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
   // The recap and loading states are ordinary scrollable pages — only the card
   // view is locked to one viewport.
+  // The shell the recap and the paused state sit in.
+  //
+  // `minHeight: 100vh` was wrong here, and measurably so: these two screens
+  // render INSIDE App's <main>, which already reserves the bottom tab bar and
+  // both safe-area insets. Asking for a full viewport on top of a reservation
+  // made a completion screen whose content fits scroll by exactly the height of
+  // the bar — measured at +62px on both a 390x844 and a 430x932 phone, which is
+  // MOBILE_NAV_HEIGHT to the pixel.
+  //
+  // MOBILE_SHELL_HEIGHT is the usable area inside <main> and already exists for
+  // the card view: 100dvh minus the nav, minus each inset exactly once. Using
+  // it here is the same principle, not a second one — and `dvh` also stops the
+  // collapsing address bar making it a chunk too tall on the web.
+  //
+  // Desktop keeps 100vh: there is no bottom bar to reserve, and the card view's
+  // desktop fallback spreads this object.
   const pageShell = {
-    minHeight: '100vh',
+    minHeight: isMobile ? MOBILE_SHELL_HEIGHT : '100vh',
     position: 'relative',
     overflow: 'hidden',
     padding: isMobile ? '16px 14px 28px' : '20px 32px 36px',
