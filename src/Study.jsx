@@ -1468,20 +1468,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                   Replay
                 </button>
                 )}
-                {/* A genuinely slower reading, not the same clip dragged out:
-                    synthesized at a slower speaking rate so the tones and the
-                    syllable boundaries stay natural. Only shown once that
-                    variant has been generated for this word. */}
-                {cardAudio.word_slow && (
-                  <AudioButton
-                    url={cardAudio.word_slow}
-                    label={'Play ' + v.word + ' slowly'}
-                    icon="slow"
-                    tone="quiet"
-                    accentHex={accentHex}
-                    preload
-                  />
-                )}
+                {/* The turtle button used to sit here, playing a separately
+                    synthesized slow reading. Three controls for one feature —
+                    Replay, turtle, speed — was the clutter reported from a
+                    device, and two of them meant "slower". The speed control
+                    below now owns that, and Replay uses whatever it is set to. */}
                 <button
                   onClick={e => { e.stopPropagation(); cycleSpeed() }}
                   style={{
@@ -1491,8 +1482,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     boxShadow: '0 10px 24px rgba(24,24,27,0.07)',
                   }}
-                  title="Playback speed"
-                  aria-label="Change playback speed"
+                  title={'Playback speed: ' + audioSpeed + '×'}
+                  // The label states the CURRENT rate and what tapping does,
+                  // because the glyph alone ("1×") reads as a value, not a
+                  // control, to anyone who cannot see it change.
+                  aria-label={'Playback speed ' + audioSpeed + '×. Tap to change.'}
                 >
                   {audioSpeed}×
                 </button>

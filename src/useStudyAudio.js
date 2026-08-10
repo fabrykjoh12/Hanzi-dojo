@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { supabase } from './supabase'
 import { playAudioEl } from './utils'
 import { ensureAudio } from './audioCache'
+import { nextSpeed, seedSpeed } from './audioSpeed'
 import { flashcardAudio } from './ttsAudio'
 import { claimPlayback, releasePlayback } from './audioPlayback'
 
@@ -14,14 +15,12 @@ import { claimPlayback, releasePlayback } from './audioPlayback'
 // `resetAudioBroken` clears the broken flag when the card changes (Study calls
 // it in the same spot it used to call setAudioBroken(false) — on grade + undo).
 
-const SPEEDS = [1, 0.75, 0.5]
+
 
 export function useStudyAudio({ queue, flipped, profile, session, onProfileUpdate }) {
   const audioRef = useRef(null)
-  // TTS playback rate (1× / 0.75× / 0.5×), seeded from the saved preference.
-  const [audioSpeed, setAudioSpeed] = useState(
-    profile.audio_speed === 0.75 || profile.audio_speed === 0.5 ? profile.audio_speed : 1
-  )
+  // TTS playback rate, seeded from the saved preference (audioSpeed.js).
+  const [audioSpeed, setAudioSpeed] = useState(() => seedSpeed(profile.audio_speed))
   const [audioBroken, setAudioBroken] = useState(false)   // current card's audio failed to load
 
   function playAudio() {
@@ -55,7 +54,7 @@ export function useStudyAudio({ queue, flipped, profile, session, onProfileUpdat
 
   function cycleSpeed() {
     setAudioSpeed(prev => {
-      const next = SPEEDS[(SPEEDS.indexOf(prev) + 1) % SPEEDS.length]
+      const next = nextSpeed(prev)
       // Persist as a preference (best-effort) and patch the in-memory profile
       // so the choice survives reloads instead of resetting to 1×.
       supabase.from('profiles').update({ audio_speed: next }).eq('id', session.user.id).then(() => {})
