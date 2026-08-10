@@ -70,6 +70,40 @@ is going — pushes start at the top, returns land where you left. Note this is
 not only the browser-Back path: the in-app back control commits FORWARD through
 the reducer, so direction had to be asked rather than inferred from POP.
 
+## The geometry sweep (2026-08-10) — what it found, and what it cannot answer
+
+A measurement pass over every navigation class at four phone widths plus a
+simulated native tablet, asserting coordinates rather than existence
+(`tests/e2e/geometry.spec.js`, 61 specs). After the two fixes above, the shell
+came back clean: every destination's own heading lands inside the first
+viewport, every arrival starts at scroll 0, every covered pane occupies zero
+height, every overlay begins at the top of `main`, the bar is either present
+and paid for or absent and reclaimed, and there is no horizontal overflow at
+320px.
+
+One real defect fell out of it: **browser Forward did not restore a pushed
+entry's own offset.** A browser Back is a POP, not a commit, so the entry it
+LEFT was never measured — `useNavigation` now records the outgoing offset on
+the POP path too. Measured: shelf 700 → series 0 → scroll series to 62 → Back
+700 → Forward 62.
+
+Deliberately not asserted: a document-height ceiling for fullscreen flows.
+Writing, Languages and Profile legitimately scroll, and any number picked would
+be a guess about their content rather than a rule about the shell. The failure
+mode it was meant to catch — a flow "extending the document" — is a phantom
+viewport contributed by a covered pane, which the zero-height assertion catches
+at its source.
+
+**What a browser cannot answer, and TestFlight must:** `env(safe-area-inset-*)`
+is 0 in Chromium, so notch and home-indicator geometry is unverified by any
+test in this repo. The static audit says the top inset is applied exactly once
+for in-flow content (App's `<main>`), subtracted once by `studyLayout`'s locked
+height, and carried independently by fixed overlays (Toasts, ChatMission,
+manhua) which are positioned against the viewport by design — but "applied
+once in the source" and "correct on a device" are different claims. Also
+unverifiable here: real touch latency, whether the 150ms tab fade reads as
+motion or lag, haptics, and the iOS silent switch.
+
 ## Navigation motion — the three deferred halves (recorded 2026-08-09)
 
 Phase 2 commit 3C ships enter-motion for every navigation (`navMotion.js` +
