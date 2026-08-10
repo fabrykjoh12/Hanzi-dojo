@@ -56,11 +56,10 @@ out, each with a reason that is not "ran out of time":
   Unblocking it means moving POP adoption out of an effect (a `popstate`
   listener that owns the update) — real work, and worth doing only once someone
   is looking at the transition on a device and wants the other half.
-- **`series` and `reader` only cross-fade**, because Stories.jsx still renders
-  them itself (`navShell.INLINE_VIEWS`), so the layer that changes is the tab
-  pane and a pane must not be transformed (fixed bars). Lifting them into real
-  overlay screens gives the app's most-used push its slide, and removes the
-  `INLINE_VIEWS` exception from four places at once.
+- ~~`series` and `reader` only cross-fade~~ — done in the Stories stack
+  extraction. Both are real destinations now, so the series page gets the push
+  plan and the reader the present plan, and the `INLINE_VIEWS` exception is
+  gone from all four places.
 - **iOS interactive swipe-back is not implemented.** `swipeBackEligible()`
   decides where it is allowed and is tested; what is missing is the gesture
   itself, which has to drive `pop()` interactively (follow the finger, commit
