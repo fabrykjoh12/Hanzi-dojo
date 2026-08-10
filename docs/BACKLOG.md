@@ -43,6 +43,33 @@ entry. Nothing shipping is affected: Vercel and `cap:sync` both use
 `index.html`. But `npm run build && vite preview` serves HQ at `/`, which makes
 the default build unservable and cost an afternoon to notice.
 
+## A covered tab pane kept its box (found and fixed 2026-08-10)
+
+Found by measuring a bounding box during the covered-layer check, and it had
+been shipping since the shell became persistent (Phase 2 commit 2).
+
+`<Activity mode="hidden">` puts `display: none` on ITS OWN subtree — not on
+TabHost's wrapper div, which is ours and carried `height: 100%`. So every hidden
+tab pane kept a full-height empty box in the document flow, and every pushed or
+presented screen rendered underneath it. Measured on `/words`: the covered
+Practice pane was **3,714px tall**, and the screen the learner had just opened
+started at y=3714 — a blank screen with the real one below the fold.
+
+**Why no test caught it:** Playwright's `toBeVisible()` asks for a non-empty
+bounding box, not for being on screen, and every spec that clicks something
+auto-scrolls to it first. 142 e2e specs passed over a screen nobody could see.
+The guard now asserts the covered pane's height is 0 and that a pushed screen's
+heading is inside the viewport (`tests/e2e/covered-layers.spec.js`).
+
+A second, smaller one fell out of the same measurement: the document is the
+scroller and `<Activity>` swaps panes out of layout, so nothing restored scroll
+by itself. A push landed at whatever offset the previous screen was scrolled to,
+and Back landed wherever the pushed screen left off. `useNavigation` now
+remembers an offset per stack entry and asks `transitionFor` which direction it
+is going — pushes start at the top, returns land where you left. Note this is
+not only the browser-Back path: the in-app back control commits FORWARD through
+the reducer, so direction had to be asked rather than inferred from POP.
+
 ## Navigation motion — the three deferred halves (recorded 2026-08-09)
 
 Phase 2 commit 3C ships enter-motion for every navigation (`navMotion.js` +
