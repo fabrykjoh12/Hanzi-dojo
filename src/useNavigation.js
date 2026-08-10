@@ -86,6 +86,11 @@ export function useNavigation() {
     const navId = location.state && typeof location.state.navId === 'number'
       ? location.state.navId
       : undefined
+    // Record where the screen being LEFT was scrolled to, before adopting the
+    // one we are landing on. A browser Back is a POP, not a commit, so without
+    // this the entry it leaves is never measured — which is exactly what made
+    // Forward land at the top instead of where the learner had been.
+    rememberScroll(stateRef.current)
     const { state: restored } = restoreForPop({ navId, pathname: location.pathname })
     stateRef.current = restored
     restoreScroll(restored)
