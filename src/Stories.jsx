@@ -78,6 +78,23 @@ function ShelfRow({ id, title, subtitle, isMobile, children, dataTour }) {
           display: 'flex', gap: isMobile ? '12px' : '16px', overflowX: 'auto', overflowY: 'visible',
           overscrollBehaviorInline: 'contain', scrollSnapType: 'x proximity', scrollbarWidth: 'thin',
           padding: '4px 3px 16px', margin: '0 -3px', minWidth: 0,
+          // The covers used to sit 3px left of every other element on the page
+          // — the heading, the subtitle, the hero all start at the page inset,
+          // the posters started 3px outside it. Reported as "off-centre" from a
+          // device, and consistent at 320, 390 and 430.
+          //
+          // Not a margin bug. The padding was applied correctly (the first
+          // item's offsetLeft was the padding edge); the RAIL WAS SCROLLED. The
+          // snapport defaults to the scrollport's border edge, so snapping the
+          // first item's start to it means scrolling by exactly the padding —
+          // measured scrollLeft: 3. The negative-margin/padding pattern that
+          // keeps shadows and focus rings from being clipped and scroll-snap
+          // were fighting, and snap won.
+          //
+          // scroll-padding is the spec's answer: it moves the snapport in to
+          // the padding edge, so the first item snaps at scrollLeft 0 and lands
+          // on the page column. The breathing room is untouched.
+          scrollPaddingInline: '3px',
         }}
       >
         {children}
