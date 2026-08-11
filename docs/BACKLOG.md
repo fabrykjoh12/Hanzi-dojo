@@ -163,6 +163,9 @@ What is left, deliberately:
   (`appResume.js` + `useAppResume.js`, NAV-MODEL §3.5).
 - **Practice and Profile are the same job, unstarted.** Neither has been
   measured; both fetch in mount effects and both are persistent roots now.
+  *(P10-B rebuilt what Profile SHOWS, and dropped two queries on the way — the
+  lifetime-mastered scan and `reviewed_at` — but did not touch when it fetches.
+  Profile still loads in a mount effect and still re-runs on every visit.)*
 
 ## `npm run build` emits the HQ page as the app's index.html (found 2026-08-10)
 
@@ -516,9 +519,11 @@ leagues, no guilt* promise, not just its Home/recap presentation. Deleted
 two plain date helpers (`todayStr`, `daysBetween`) still needed elsewhere. Removed
 the account-level badge (Home), the level-up card (session recap), the streak/
 streak-freeze/account-level stat cards (Profile), the streak/level achievement
-groups (`src/achievements.js`), the dev-only streak/XP debug actions (`src/Dev.jsx`),
+groups (`src/achievements.js` — the file itself is gone as of P10-B1, see below), the
+dev-only streak/XP debug actions (`src/Dev.jsx`),
 and the "+N XP" completion copy from all 11 drill/reader screens. Deliberately kept:
-`daily_activity` day-counting (feeds the Study Calendar heatmap) and a minimal
+`daily_activity` day-counting (fed the Study Calendar heatmap until P10-B2; it
+now feeds the one-sentence study rhythm — `studyRhythm` in `profileProgress.js`) and a minimal
 `profiles.last_studied_on` write-back in `Study.jsx` (feeds the calm "gentle return
 after a break" welcome — the one non-gamified consumer of that field, previously
 written only by the now-removed streak updater). DB columns (`total_xp`,
@@ -616,3 +621,42 @@ before acting, and delete an entry once it is resolved rather than annotating it
   - **Zero errors remain in `src/`. Keep it that way** — don't add new ones.
 - **Existing ESLint hook-dependency warnings** in some files — don't add new ones.
 - **Legacy DB columns** `ease_factor` and old SM-2 `learning_step` semantics are kept in the cards table but unused. Do not write to `ease_factor`.
+
+## Profile after P10-B (2026-08-11)
+
+The redesign is on `claude/hanzi-dojo-continuation-e3vnbg` (`898ad91`, `e3970f6`,
+`95c9b74`, `8c24055`, `9cb7ed5`) and **awaiting physical-device QA**. What it
+leaves behind, deliberately:
+
+- **The achievement mechanic is gone, by owner decision** — the wall,
+  `src/achievements.js`, its test, `ACH_ICONS`, the `EVENTS.ACHIEVEMENT_UNLOCKED`
+  analytics event and the Study "Seal earned" toast. Nothing replaces it: no
+  streaks, XP, trophies, badges, levels-as-rewards or celebration overlays. The
+  `achievement_unlocked` rows already in `analytics_events` are history and were
+  left alone.
+- **The 17×7 contribution grid is gone**, with `StudyCalendar`, `buildWeeks`,
+  `cellColor` and the day-detail interaction. It had quietly reintroduced the
+  streak mechanic §Streak-removal deleted. Replaced by "Studied N of the last 30
+  days" — descriptive, never consecutive.
+- **`monthReview.js` and `reviewAccuracy.js` are deleted**, along with their
+  tests. Both existed only for panels P10-B3 removed.
+- **The duplicate-metric defect is fixed at the source.** "Words mastered"
+  appeared twice on one screen with two different numbers; every figure now comes
+  from `src/profileProgress.js` and its label names its scope. The unit tests
+  assert the ambiguous wording cannot return.
+- **Type styles came to 11, against the audit's target of 8.** Owner-accepted:
+  the remaining eleven each carry a distinct job, and reaching eight means
+  collapsing hanzi against pinyin against gloss inside one row. Not a debt item —
+  a closed decision.
+
+### Two things worth knowing for the next Profile change
+
+- **`tests/e2e/profile-shape.spec.js` is a budget, and it will fail you.** It
+  pins ≤2.2 viewports, ≤8 containers, ≤12 type styles and **zero** sub-44px tap
+  targets at 320/390/430. Adding a panel is meant to be a deliberate act.
+- **The e2e fixture returns leech rows unfiltered.** The `cards` mock ignores
+  `.gte('lapses', …)`, so the old panel rendered six words at "missed 0×" and
+  nobody noticed for months. `weakList()` now re-checks the threshold client-side
+  and `withWeakWords(page, n)` (in `tests/fixtures/mockSupabase.js`) describes a
+  learner who really has words slipping. Assume the same about any other mocked
+  server-side filter.
