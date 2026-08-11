@@ -10,6 +10,25 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+## P8 nav audit — two defects found while auditing (2026-08-11)
+
+Full audit and the three options: [`docs/P8-NAV-AUDIT.md`](P8-NAV-AUDIT.md).
+Neither of these depends on which option is approved.
+
+- **The level test is reachable on mobile only through the More sheet.** `test`
+  is owned by the Practice tab (`VIEW_CLASS`) and the desktop sidebar gives it a
+  top-level rail slot, but no screen navigates to it — `buildPracticePlan` lists
+  it among neither the drills nor the tools. So the gate on progression sits in
+  the same drawer as Log out. Fix: a gated entry on the Practice screen
+  (`TEST_UNLOCK_MASTERY_PCT` vs `counts.masteredPct`, both already in scope),
+  then drop it from `MOBILE_MORE`.
+- **`MOBILE_NAV_HEIGHT = 62` over-reserves by 4.25px.** The bar measures 57.75px
+  (+ safe area) at 320/390/430; `App.jsx` pads `main` with 62 and
+  `studyLayout.js` subtracts 62 from the flashcard's available height, so every
+  screen carries a 4px dead strip and the card is 4px shorter than it needs to
+  be on a 568px phone. `geometry.spec.js` asserts `barTop` within ±8px, which is
+  exactly wide enough to hide it — tighten that tolerance with the fix.
+
 ## Onboarding rebuild — what is left after Commit 5 (2026-08-10)
 
 The maze is gone (`docs/ONBOARDING-AUDIT.md`). Three things were deliberately
