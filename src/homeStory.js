@@ -50,6 +50,10 @@ export function firstContentChar(sentence) {
   return m ? m[0] : ''
 }
 
+// The columns the daily-story query asks for. Exported so a spec can assert them
+// against what `stories` actually has — see the note inside the query.
+export const DAILY_STORY_COLUMNS = 'id, title, content, level, tier, story_number, image_path'
+
 // The daily story plus its readability, or null when nothing is unlocked yet
 // (a brand-new account) or the fetch fails. Callers render an honest empty
 // state on null rather than a fake story.
@@ -59,7 +63,15 @@ export async function getDailyStoryCard(userId, track, learnedCount, dateStr = t
   try {
     const [storiesRes, readsRes, vocabRes] = await Promise.all([
       supabase
-        .from('stories').select('id, title, content, level, tier, story_number, cover_url')
+        // `image_path` — NOT `cover_url`, which does not exist on `stories` and
+        // never has. PostgREST answers an unknown column with a 400, supabase-js
+        // puts that in `error` and leaves `data` null, and the `stories.length
+        // === 0` guard below then returned null for every learner on every
+        // load — so Home's story hand-off has never once rendered in production
+        // (found 2026-08-11, verified against the live schema). The column list
+        // is asserted in a unit test now, because nothing else could see it: the
+        // e2e mock answers any select with its own rows.
+        .from('stories').select(DAILY_STORY_COLUMNS)
         .eq('language', track.language).eq('system', track.system)
         .lte('level', track.current_level).eq('is_published', true),
       supabase
@@ -95,6 +107,9 @@ export async function getDailyStoryCard(userId, track, learnedCount, dateStr = t
 
     return {
       story,
+      // The artwork Home anchors the hand-off on (P10-C2). Null is fine —
+      // StoryCover falls back to its own accent wash.
+      coverPath: story.image_path || null,
       sentence: heroSentence(story.content),
       // knownPct is already rounded by calculateStoryReadability.
       knownPct: readability.knownPct,

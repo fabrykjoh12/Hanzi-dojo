@@ -54,6 +54,13 @@ export async function fetchRewardContext(userId, track) {
   }
 }
 
+// A story's cover, or its series' first chapter's, or nothing.
+export function coverPathFor(story, unit) {
+  if (story && story.image_path) return story.image_path
+  const first = unit && unit.parts && unit.parts[0]
+  return (first && first.image_path) || null
+}
+
 // Claim today's reward, unlocking `storyId` when one is given. Online it goes
 // through the idempotent RPC; offline (or with the RPC missing) the claim is
 // queued in the outbox so the day's reward survives the network. Returns the
@@ -132,6 +139,10 @@ export async function getSessionRewardTeaser(userId, track) {
       state: state.state,
       seriesTitle: ctx.activeUnit.title,
       chapter: chapterInfo(state.chapter, idx),
+      // The artwork Home anchors the hand-off on (P10-C2). A chapter without its
+      // own illustration borrows the series' first, the same fallback the shelf
+      // uses; null is fine — StoryCover has its own accent wash.
+      coverPath: coverPathFor(state.chapter, ctx.activeUnit),
     }
   }
   if (state.state === 'unlocked-today') {
@@ -142,6 +153,7 @@ export async function getSessionRewardTeaser(userId, track) {
       storyId: story.id,
       seriesTitle: unit ? unit.title : story.title,
       chapter: chapterInfo(story, unit ? unit.parts.findIndex(p => p.id === story.id) : 0),
+      coverPath: coverPathFor(story, unit),
     } : null
   }
   return null

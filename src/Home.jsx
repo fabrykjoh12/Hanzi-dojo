@@ -8,7 +8,7 @@ import { firstContentChar } from './homeStory'
 import { fetchHandoff, trackSignature } from './homeData'
 import { query, subscribe } from './dataCache'
 import { HOME_HANDOFF } from './cacheEvents'
-import { HeroPanel, HeroAction, Panel, Eyebrow, PageHeader } from './panels'
+import { HeroPanel, HeroAction, PageHeader } from './panels'
 import { rhythmSummary, weekdayInitial } from './studyRhythm'
 import { forecastSummary } from './reviewForecast'
 import { sessionEstimateLabel } from './sessionEstimate'
@@ -17,6 +17,7 @@ import { isTutorialDone } from './prelogin'
 import { firstSessionPending } from './homeData'
 import TourOverlay from './TourOverlay'
 import { MICRO, NUM } from './designTokens'
+import StoryCover from './StoryCover'
 
 // ── Home ──────────────────────────────────────────────────────────────────
 // The one lit block is TODAY'S FLASHCARDS, end to end: how many cards are
@@ -219,78 +220,38 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
           is going — the locked chapter waiting behind today's flashcards, or
           the one already unlocked. Quiet panel; the hero owns the action. ── */}
       {rewardTeaser && (
-        <Panel
-          padding={isMobile ? '14px 16px' : '15px 20px'}
-          style={{ marginBottom: '14px', animationDelay: '80ms', cursor: 'pointer' }}
+        <StoryHandoff
           dataTour="home-then-read"
-        >
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => onNavigate('stories', rewardTeaser.state === 'unlocked-today' ? { storyId: rewardTeaser.storyId } : undefined)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate('stories', rewardTeaser.state === 'unlocked-today' ? { storyId: rewardTeaser.storyId } : undefined) } }}
-            className="hd-press"
-            style={{ display: 'flex', alignItems: 'center', gap: '14px' }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <Eyebrow style={{ display: 'block', marginBottom: '5px' }}>Today&rsquo;s story reward</Eyebrow>
-              <div style={{
-                fontFamily: langFont, fontSize: '15px', fontWeight: 600, color: 'var(--text)',
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}>
-                {rewardTeaser.seriesTitle}
-              </div>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '3px', minWidth: 0,
-              }}>
-                {rewardTeaser.state === 'unlocked-today'
-                  ? <BookOpenCheck size={13} strokeWidth={2.2} color={accentInk} style={{ flexShrink: 0 }} aria-hidden="true" />
-                  : <Lock size={13} strokeWidth={2.2} style={{ flexShrink: 0 }} aria-hidden="true" />}
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {(rewardTeaser.chapter.nativeLabel || 'Chapter ' + rewardTeaser.chapter.number) + ' · '}
-                  {rewardTeaser.state === 'unlocked-today'
-                    ? 'unlocked — read it now'
-                    : 'unlocks after today’s session'}
-                </span>
-              </div>
-            </div>
-            <ArrowRight size={18} strokeWidth={2.1} color={accentInk} style={{ flexShrink: 0 }} />
-          </div>
-        </Panel>
+          accentInk={accentInk}
+          accentHex={accentHex}
+          coverPath={rewardTeaser.coverPath}
+          coverStory={rewardTeaser.chapter}
+          heading={rewardTeaser.state === 'unlocked-today' ? 'Read it now' : 'Next chapter'}
+          title={rewardTeaser.seriesTitle}
+          titleFont={langFont}
+          meta={(rewardTeaser.chapter.nativeLabel || 'Chapter ' + rewardTeaser.chapter.number) + ' · '
+            + (rewardTeaser.state === 'unlocked-today'
+              ? 'unlocked' : 'unlocks after today’s session')}
+          metaIcon={rewardTeaser.state === 'unlocked-today' ? BookOpenCheck : Lock}
+          onOpen={() => onNavigate('stories', rewardTeaser.state === 'unlocked-today' ? { storyId: rewardTeaser.storyId } : undefined)}
+        />
       )}
 
       {/* ── The next step in the loop, deliberately quiet. The hero owns the
           screen's action; this is a hand-off, not a rival CTA. ── */}
       {!rewardTeaser && daily && (
-        <Panel
-          padding={isMobile ? '14px 16px' : '15px 20px'}
-          style={{ marginBottom: '14px', animationDelay: '80ms', cursor: 'pointer' }}
+        <StoryHandoff
           dataTour="home-then-read"
-        >
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => onNavigate('stories')}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate('stories') } }}
-            className="hd-press"
-            style={{ display: 'flex', alignItems: 'center', gap: '14px' }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <Eyebrow style={{ display: 'block', marginBottom: '5px' }}>Then read</Eyebrow>
-              <div style={{
-                fontFamily: langFont, fontSize: '15px', fontWeight: 600, color: 'var(--text)',
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}>
-                {daily.sentence}
-              </div>
-              <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '3px' }}>
-                {daily.story.title} · you know {daily.knownPct}% of it
-              </div>
-            </div>
-            <ArrowRight size={18} strokeWidth={2.1} color={accentInk} style={{ flexShrink: 0 }} />
-          </div>
-        </Panel>
+          accentInk={accentInk}
+          accentHex={accentHex}
+          coverPath={daily.coverPath}
+          coverStory={daily.story}
+          heading="Then read"
+          title={daily.sentence}
+          titleFont={langFont}
+          meta={daily.story.title + ' · you know ' + daily.knownPct + '% of it'}
+          onOpen={() => onNavigate('stories')}
+        />
       )}
 
       {/* ── Your week: the rhythm behind you and the load ahead. This is the
@@ -298,13 +259,14 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
           doesn't depend on guilt. Observational copy only: the app's stated
           stance is no streak pressure, so there is no counter to protect and
           nothing to "keep". ── */}
-      <Panel
-        padding={isMobile ? '16px 16px 14px' : '18px 20px 16px'}
-        style={{ marginBottom: '14px', animationDelay: '140ms' }}
-        dataTour="home-week"
+      <section
+        data-tour="home-week"
+        style={{ marginTop: '26px', animationDelay: '140ms' }}
       >
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '14px' }}>
-          <Eyebrow>Your week</Eyebrow>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '12px' }}>
+          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+            Your week
+          </h2>
           <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
             {studiedDays === 0
               ? 'No sessions yet'
@@ -321,9 +283,12 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
             <div key={day.date} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
               <span style={{
                 width: '100%', height: '30px', borderRadius: '8px',
+                // Mixed against the TEXT, not against a panel colour: these
+                // marks sit on the page now, and `--surface-2` is 6/255 from it
+                // (P10-C2). One recipe, correct in both themes by construction.
                 background: day.studied
                   ? accentInk
-                  : `color-mix(in srgb, ${accentHex} 8%, var(--surface-2))`,
+                  : 'color-mix(in srgb, var(--text) 10%, transparent)',
                 // Today is outlined rather than filled until it's earned — the
                 // ring is an invitation, the fill is the record.
                 boxShadow: day.isToday && !day.studied
@@ -340,10 +305,12 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
           ))}
         </div>
 
-        {/* ── Toward the next level, inside the same panel. The week behind
-            you and the road ahead are one story, and on a phone two separate
-            panels of numbers made Home read as a dashboard. ── */}
-        <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
+        {/* ── Toward the next level, in the same section. The week behind you
+            and the road ahead are one story, and on a phone two separate panels
+            of numbers made Home read as a dashboard. The rectangle around all of
+            it went the same way, for the same reason (P10-C2): a heading and one
+            hairline group this as well as four borders did. ── */}
+        <div style={{ marginTop: '18px', paddingTop: '16px', borderTop: '1px solid var(--hairline)' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
             <span style={{ fontSize: '13.5px', fontWeight: 650, color: 'var(--text)' }}>
               Toward {nextLevelLabel}
@@ -356,7 +323,10 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
           <div
             role="img"
             aria-label={learned + ' of ' + totalWords + ' words learned toward ' + nextLevelLabel + ' — ' + pct + '%'}
-            style={{ height: '5px', borderRadius: '999px', background: 'var(--surface-2)', overflow: 'hidden' }}
+            style={{
+              height: '6px', borderRadius: '999px', overflow: 'hidden',
+              background: 'color-mix(in srgb, var(--text) 10%, transparent)',
+            }}
           >
             <div style={{
               width: pct + '%', height: '100%', borderRadius: '999px',
@@ -366,14 +336,16 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
 
           {/* One quiet line for what's ahead — this was two lines in two
               different panels saying nearly the same thing. */}
-          <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '10px', textAlign: 'center' }}>
+          {/* Left-aligned now: centred text inside a box reads as a caption on
+              a widget, and there is no box. */}
+          <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '10px' }}>
             {counts.dueTomorrow > 0
               ? 'About ' + counts.dueTomorrow + ' waiting tomorrow'
               : 'Nothing due tomorrow — a free day'}
             {forecastTotal > 0 && ' · ~' + perDay + '/day this week'}
           </div>
         </div>
-      </Panel>
+      </section>
 
       {tourSteps && (
         <TourOverlay
@@ -386,6 +358,69 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         />
       )}
     </div>
+  )
+}
+
+// The story hand-off: the next step in the loop, and the second thing on Home.
+//
+// It used to sit inside a flat `Panel` — a bordered rectangle drawn around a row
+// that was already the tap target, on a screen where the panel above it and the
+// panel below it looked the same (P10-C2). The box is gone. What anchors the row
+// now is the story's own cover, which is real content rather than another
+// surface, and one hairline separates it from the hero.
+//
+// Still the whole row, still `hd-press`, still reachable by keyboard.
+function StoryHandoff({
+  coverPath, coverStory, heading, title, titleFont, meta, metaIcon: MetaIcon,
+  accentInk, accentHex, onOpen, dataTour,
+}) {
+  return (
+    <section style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--hairline)' }}>
+    {/* Sentence case, and a real heading — this was an ALL-CAPS eyebrow, which
+        is how a screen invents a taxonomy over itself (P10-C2). It sits outside
+        the row because the row is a button, and a button's content is its
+        label. */}
+    <h2 style={{ margin: '0 0 10px', fontSize: '15px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+      {heading}
+    </h2>
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() } }}
+      className="hd-press"
+      data-tour={dataTour}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '13px',
+        minHeight: '44px', cursor: 'pointer', animationDelay: '80ms',
+      }}
+    >
+      <StoryCover
+        story={coverStory}
+        path={coverPath}
+        accent={accentHex}
+        radius={8}
+        loading="eager"
+        style={{ width: '46px', flexShrink: 0, aspectRatio: '2 / 3' }}
+      />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontFamily: titleFont, fontSize: '15px', fontWeight: 600, color: 'var(--text)',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {title}
+        </div>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '5px',
+          fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '3px', minWidth: 0,
+        }}>
+          {MetaIcon && <MetaIcon size={13} strokeWidth={2.2} color={accentInk} style={{ flexShrink: 0 }} aria-hidden="true" />}
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta}</span>
+        </div>
+      </div>
+      <ArrowRight size={18} strokeWidth={2.1} color={accentInk} style={{ flexShrink: 0 }} />
+    </div>
+    </section>
   )
 }
 
