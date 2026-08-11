@@ -52,9 +52,12 @@ clearly slow. Do not change it before this is answered on a real device.
 
 ### B2 · The bar itself (P8 — the questions this build exists to answer)
 
-Answer in words, not ticks. The bar is now **Practice · Home · Cards · Stories ·
+Answer in words, not ticks. The bar is **Practice · Home · Cards · Stories ·
 More** with Cards in the physical centre, five icons drawn for this app, and
-nothing else on it — no count, no top indicator, no container, no raised button.
+still no count, no top indicator and no raised button. Since build 34, Cards
+alone carries a **container**: a 42×34 rounded box behind its glyph, inside the
+bar, neutral at rest and accent-tinted when selected. Cards' glyph is 27.5px,
+the other four 21–22px, and Practice is drawn quieter than it was.
 
 **The one that decides the task:**
 
@@ -65,24 +68,40 @@ nothing else on it — no count, no top indicator, no container, no raised butto
        breaks the contiguous Home → Cards → Stories loop the order exists for.
        It reopens the information architecture instead.
 
-**The rest:**
+**The Cards-emphasis pass (build 35), in priority order:**
 
-2. [ ] Does the eye naturally land on **Cards**, and does it still read as a tab
-       rather than a floating action button?
-3. [ ] Do **Home → Cards → Stories** read as the central learning loop?
-4. [ ] Do the five icons look like **one designed family**? Is the Cards glyph
-       recognisable as flashcards at 25px, and does Practice read as drills now
-       that the bullseye is gone?
-5. [ ] Is the **selected tab obvious without the underline**, in dark mode
+2. [ ] Does the eye **immediately** understand that Cards is the core action —
+       and does it still read as a **tab**, not a button parked on the bar?
+3. [ ] **The risk this pass introduced:** at rest, Cards has a grey container
+       and no other tab does. A box behind a tab is Android's convention for
+       *selected*. On the screens where Cards is NOT the current tab (Home,
+       Stories), is there any moment where you read Cards as the selected tab?
+       If yes, the fix is one line — the resting container drops to a fainter
+       mix — and it is worth reporting precisely rather than as a feeling.
+4. [ ] Is the active container **restrained**? It is a 12% tint of the accent,
+       not a red block, deliberately. Too loud / about right / too faint?
+5. [ ] Does **Practice** still read as a shelf of drills now that it is drawn
+       quieter, or has it gone too far and become decoration? (It was measurably
+       the heaviest object on the bar before this pass — 158px² of ink against
+       Cards' 147 — which is what "Practice competes with Cards" was.)
+6. [ ] Is the Cards glyph recognisable as **flashcards** at 27.5px? It is two
+       portrait cards now, one behind the other, where it used to be two
+       landscape ones that read as abstract rectangles.
+7. [ ] Do the five icons still look like **one designed family** after the
+       rebalance?
+8. [ ] Do **Home → Cards → Stories** read as the central learning loop?
+9. [ ] Is the **selected tab obvious without the underline**, in dark mode
        especially? Measured, active and inactive differ by hue and almost not at
        all by brightness (1.26:1 dark), so the outline→filled swap is carrying
        it — check that it does.
-6. [ ] Does the bar **feel any taller**? It must not — 58px, unchanged.
-7. [ ] Does the **320px Study screen** feel marginally less cramped? (It gained
-       4px it was never using.)
-8. [ ] Is the **level test discoverable from Practice**, and does its locked row
+10. [ ] Does the bar **feel any taller**? It must not — 58px, unchanged, and the
+       container is inside that.
+11. [ ] Does the **320px Study screen** feel marginally less cramped? (It gained
+       4px it was never using.) Check the bar on a 320 too: the container has
+       11px of column either side of it there.
+12. [ ] Is the **level test discoverable from Practice**, and does its locked row
        explain what opens it?
-9. [ ] Does the whole bar look **less like a stock template** than build 33 did?
+13. [ ] Does the whole bar look **less like a stock template** than build 33 did?
 
 ## C · Study
 

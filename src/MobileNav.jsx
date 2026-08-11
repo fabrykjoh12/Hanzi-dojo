@@ -4,6 +4,7 @@ import { languageTheme, ink } from './languageTheme'
 import { MOBILE_PRIMARY, MOBILE_MORE, ADMIN_NAV } from './navConfig'
 import { MoreIcon } from './NavIcons'
 import { MOBILE_NAV_SPACE } from './navMetrics'
+import { NAV_COLUMN, navIconPx, iconRowStyle, cardsShellStyle } from './navEmphasis'
 import { trapDialogFocus } from './dialogFocus'
 import { pushSheet } from './sheetStack'
 import { tapFeedback } from './haptics'
@@ -12,12 +13,9 @@ const MUTED = 'var(--text-muted)'
 // More is utility navigation and is meant to be the quietest thing here.
 const FAINT = 'var(--text-faint)'
 
-// Icon sizes. Cards is one step larger because it is the primary daily action;
-// every icon is centred in a row of the LARGEST size, so the four smaller ones
-// share a baseline with it and the bar gains no height from the difference.
-const ICON = 22
-const ICON_CARDS = 25
-const ICON_ROW = ICON_CARDS
+// Icon sizes, the Cards container and the column's height budget all live in
+// navEmphasis.js, with the ink measurements that chose them. Nothing about the
+// bar's hierarchy is a literal in this file any more.
 
 // Primary tabs live directly in the bottom bar; the rest go behind the "More"
 // sheet. Study/practice modes are reached through the Practice tab.
@@ -29,7 +27,15 @@ const MORE_ITEMS = MOBILE_MORE
 // only one is colour; the accent line that used to ride the bar's top edge is
 // gone, and with it the last thing on here that was decoration rather than
 // information.
-function Tab({ icon: Icon, label, active, accentHex, onClick, expanded, hasPopup, size, quiet, emphasis }) {
+//
+// `shell` is the fourth signal, and it belongs to exactly one tab: Cards gets a
+// rounded container behind its glyph. It is inside the bar, not floating over
+// it — no notch, no circle, no raised button, and the bar's height is untouched
+// (navEmphasis.js owns that budget and a test holds it).
+function Tab({
+  icon: Icon, label, active, accentHex, shellAccent, onClick,
+  expanded, hasPopup, size, quiet, emphasis, shell,
+}) {
   const tone = active ? accentHex : (quiet ? FAINT : MUTED)
   return (
     <button
@@ -41,24 +47,23 @@ function Tab({ icon: Icon, label, active, accentHex, onClick, expanded, hasPopup
       style={{
         flex: 1, background: 'none', border: 'none', cursor: 'pointer',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        // 7 + 25 + 2.5 + 15.75 (the label's line box) + 6 = 56.25, inside the
-        // bar's 57px content box with a little to spare. It has to add up: the
-        // column shrinks its children when it doesn't, and the first thing to
-        // give is the icon row — which crops the glyphs from the top.
-        gap: '2.5px', padding: '7px 0 6px', minWidth: 0,
+        // It has to add up: the column shrinks its children when it doesn't, and
+        // the first thing to give is the icon row — which crops the glyphs from
+        // the top. navColumnHeight() is this sum, and navEmphasis.test.js
+        // asserts it stays inside the bar.
+        gap: NAV_COLUMN.gap + 'px',
+        padding: NAV_COLUMN.paddingTop + 'px 0 ' + NAV_COLUMN.paddingBottom + 'px',
+        minWidth: 0,
       }}
     >
-      {/* Every icon sits in a row of the same height, so a bigger Cards glyph
-          grows about a shared centre instead of pushing the labels out of
-          line — and the bar's height does not move. */}
-      <span style={{
-        height: ICON_ROW + 'px', flexShrink: 0, display: 'flex',
-        alignItems: 'center', justifyContent: 'center',
-      }}>
-        <Icon size={size || ICON} active={active} color={tone} />
+      {/* Every icon sits in a row of the same height — the container's height —
+          so the five glyphs share one centre line whatever their size, and the
+          one that has a container does not sit a pixel off the others. */}
+      <span style={shell ? cardsShellStyle({ active, accentHex: shellAccent }) : iconRowStyle()}>
+        <Icon size={size} active={active} color={tone} />
       </span>
       <span style={{
-        fontSize: '10.5px',
+        fontSize: '10.5px', lineHeight: NAV_COLUMN.labelLine + 'px',
         // Cards carries one step more weight at rest than its neighbours. Same
         // face, same size, same colour — the difference is meant to be felt
         // rather than noticed.
@@ -226,11 +231,16 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
       }}>
         {PRIMARY.map(item => (
           <Tab key={item.key} icon={item.icon} label={item.label} accentHex={accentInk}
+            // The glyph is a drawn mark, so it takes the ink-lifted accent; the
+            // container is a TINT and takes the raw hex, because it mixes into a
+            // surface (CLAUDE.md §5). Two different values on purpose.
+            shellAccent={accentHex}
             active={view === item.key} onClick={() => go(item.key)}
-            size={item.key === 'study' ? ICON_CARDS : ICON}
-            emphasis={item.key === 'study'} />
+            size={navIconPx(item.key)}
+            emphasis={item.key === 'study'} shell={item.key === 'study'} />
         ))}
         <Tab icon={MoreIcon} label="More" accentHex={accentInk} active={moreActive} quiet
+          size={navIconPx('more')}
           expanded={moreOpen} hasPopup="dialog" onClick={() => setMoreOpen(o => !o)} />
       </nav>
     </>

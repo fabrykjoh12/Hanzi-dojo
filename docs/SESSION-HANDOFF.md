@@ -1,7 +1,11 @@
 # Session handoff
 
-**What is true as of 2026-08-11, branch `claude/hanzi-dojo-mobile-rebuild-c1nb3u`,
-head `a60b916`.** Read `CLAUDE.md` first, then this. It says what the app is
+**What is true as of 2026-08-11, branch
+`claude/hanzi-dojo-continuation-e3vnbg`.** Development moved to that branch,
+started from `29e2065` — the exact head of
+`claude/hanzi-dojo-mobile-rebuild-c1nb3u`, which is now frozen as the historical
+checkpoint for TestFlight build 34 and must not receive further commits. Read
+`CLAUDE.md` first, then this. It says what the app is
 now — not the history of how it got here (`git log` and `docs/CHANGELOG.md` have
 that) and not ideas that were considered and dropped.
 
@@ -31,8 +35,10 @@ automatic Home coach-mark tour is suppressed for anyone who did the tutorial
 and their future is undecided.
 
 **TestFlight: build 34**, commit `a60b916`, version 1.0, uploaded successfully
-(Delivery UUID `3ff64903-2a65-47e3-9f6d-07c9b783abeb`). It is the build carrying
-the P8 navigation prototype and is the one awaiting the device verdict below.
+(Delivery UUID `3ff64903-2a65-47e3-9f6d-07c9b783abeb`). It carried the P8
+navigation prototype as first drawn; its device review is what produced the
+Cards-emphasis pass below, so **build 34 no longer matches `main`-of-this-branch
+and a new build is needed before the remaining questions can be answered.**
 Builds 31–33 covered the onboarding work and the earlier P8 pass.
 
 ---
@@ -80,7 +86,44 @@ not a plan. **Do not rewrite any of this to solve a presentation problem.**
 
 ## Current P8 status
 
-**Prototype commit: `c7eb6c6`.** (`a60b916` on top of it is documentation only.)
+**Prototype commits: `c7eb6c6`, then the Cards-emphasis pass on top of it.**
+
+The device review of build 34 accepted the direction and rejected one thing:
+Cards still did not read as the primary action, and Practice competed with it.
+That turned out to be measurable rather than a matter of taste. Rasterising each
+glyph and summing its alpha — ink coverage, the thing "optical weight" actually
+means — the bar at `c7eb6c6` read:
+
+| | Practice | Cards | Stories | Home | More |
+|---|---|---|---|---|---|
+| `c7eb6c6` | **158** | 147 | 111 | 106 | 19 |
+| now | 103 | **182** | 111 | 106 | 15 |
+
+Practice was the heaviest object on the bar, ahead of the tab the product is
+about, *despite* Cards being drawn 3px larger. Size was never going to fix it.
+
+What the pass changed, and nothing else:
+
+- **Cards has a container** — 42×34, radius 12, icon-only, inside the bar. A
+  neutral `--surface-2` at rest; a 12% accent tint with a 26% accent hairline
+  when selected. No float, no notch, no circle, no glow, no gradient.
+- **Cards' glyph is 27.5px**; the other four are 21–22.
+- **The glyph was redrawn**: two PORTRAIT cards, one behind the other, and the
+  occlusion is done with an SVG mask instead of by hand. The old pair were
+  landscape, nearly the same size as each other, and hand-authored around a gap
+  that stroke width then closed up — which is why they read as two abstract
+  rounded rectangles. The mask guarantees a 1.0-unit band of background between
+  the two cards in both states, and outline/filled are now the same two rects.
+- **Practice was quieted** — 21px, smaller tiles (6.0), a wider gap and a
+  lighter 1.65 stroke. It is a drawer; it should not out-draw the daily action.
+- **More went to 20px** with its dots pulled in slightly.
+- **The bar is still 58px.** The container's height is paid for out of the
+  column's own budget (`navEmphasis.js`: 3.5 + 34 + 2 + 13 + 3.5 = 56 inside
+  57), and `navEmphasis.test.js` fails if that ever stops being true — the
+  flashcard spends every pixel the bar does not.
+
+The numbers all live in **`src/navEmphasis.js`**, with the measurements that
+chose them. `MobileNav.jsx` has no hierarchy literals left in it.
 
 **Physical tab order — approved: `Practice · Home · Cards · Stories · More`.**
 Home remains the default/root destination: the app launches there, `/` resolves
@@ -108,10 +151,12 @@ Prototype decisions, all approved:
 
 ---
 
-## Pending decision
+## Pending decisions
 
-The prototype has **not** been finally approved on hardware. Build 34 exists to
-answer one question:
+The prototype has **not** been finally approved on hardware. Two questions are
+open, and the next build exists to answer them.
+
+**1. The order.** Carried over from build 34, still unanswered:
 
 > Does `Practice · Home · Cards · Stories · More` feel natural with **Practice
 > in the far-left position**?
@@ -123,7 +168,22 @@ breaks the contiguous `Home → Cards → Stories` middle loop, which is the who
 reason for the ordering. Report it and reopen the information architecture
 instead.
 
-The full device checklist is `docs/MOBILE-DEVICE-QA.md` §B2.
+**2. The Cards emphasis**, new in this pass:
+
+> Does the eye immediately understand that Cards is the core action, while it
+> still clearly belongs to the navigation bar?
+
+And the specific risk it introduced, which is worth looking for rather than
+waiting to notice: **at rest, Cards has a container and no other tab does, and a
+box behind a tab is Android's convention for *selected*.** Three signals are
+meant to keep the two apart — the selected tab's glyph fills, its label goes
+bold, and its container takes the accent while Cards' resting one is neutral
+grey — but "meant to" is not the same as "does". If Cards ever reads as the
+selected tab on a screen it is not, the resting container drops to a fainter
+mix; that is one line in `navEmphasis.js` and no other change.
+
+The full device checklist is `docs/MOBILE-DEVICE-QA.md` §B2, which now runs to
+thirteen questions in priority order.
 
 ---
 
@@ -155,6 +215,9 @@ Practice screen's design (the Level Test row is done), the Stories screen and
 reader, Home's layout, the caching layer, the shell architecture, animations
 outside `MobileNav.jsx`, and the typography system.
 
+P8's whole surface is three files — `MobileNav.jsx`, `NavIcons.jsx` and
+`navEmphasis.js`. If a change to the bar needs a fourth, it is not a P8 change.
+
 Standing repo-wide freeze: **the two non-Chinese language tracks.** See
 CLAUDE.md §1 — never propose, plan, estimate, fix or mention them.
 
@@ -162,13 +225,16 @@ CLAUDE.md §1 — never propose, plan, estimate, fix or mention them.
 
 ## Verification state
 
-At `a60b916`, all run locally and green:
+After the Cards-emphasis pass, all run locally and green:
 
 - `npm run lint` — **0 errors**, 7 warnings (unchanged long-standing baseline)
-- `npm test` — **3,775 unit tests across 177 files**, all passing
+- `npm test` — **3,790 unit tests across 178 files**, all passing
 - `npm run build` — clean
-- `npx cap sync` — clean
-- `npx playwright test` — **310 passing, 2 failing**
+- `npx playwright test` — **318 passing, 2 failing** (the two below)
+
+The visual baseline `stories-shelf-mobile` contains the bar and was re-compared
+rather than re-recorded: the icon changes are well inside the 2% diff ratio, so
+it still passes. Nothing was regenerated locally.
 
 The two Playwright failures are `visual.spec.js` → *landing, mobile* and *trust
 pages: privacy, desktop*. They are **sandbox-only font-loading artifacts**, not
@@ -180,10 +246,14 @@ they are CI-owned.
 
 ## Recent important commits
 
-Newest first, on `claude/hanzi-dojo-mobile-rebuild-c1nb3u`:
+Newest first. Everything from `29e2065` down was written on
+`claude/hanzi-dojo-mobile-rebuild-c1nb3u`; work continues on
+`claude/hanzi-dojo-continuation-e3vnbg`, which starts from that commit:
 
 | Commit | What it is |
 |---|---|
+| *(head)* | **The Cards-emphasis pass**: a container behind one glyph, the Cards card redrawn portrait with a masked occlusion, Practice and More quieted |
+| `29e2065` | The session handoff, and three docs that had gone stale |
 | `a60b916` | Docs brought in line with the shipped bar |
 | `c7eb6c6` | **The P8 prototype**: Cards centred, five custom icons, badge and marker removed |
 | `b2e644f` | Level Test moved from the More sheet onto Practice |

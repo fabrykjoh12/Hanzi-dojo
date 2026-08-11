@@ -64,7 +64,13 @@ async function barState(page) {
           labelColor: ls.color,
           // Outline vs filled: the glyph's own shape carries the selection,
           // which is the signal that does not depend on seeing colour.
+          //
+          // Anything inside a <mask> is skipped. The Cards glyph occludes its
+          // back card with one, and a mask's black and white are geometry, not
+          // paint — counting them made the RESTING Cards tab look filled and
+          // failed the assertion that selection is a shape.
           filledParts: Array.from(svg.querySelectorAll('*'))
+            .filter((n) => !n.closest('mask'))
             .filter((n) => (n.getAttribute('fill') || 'none') !== 'none').length,
         };
       }),
@@ -200,14 +206,61 @@ test.describe('Cards carries weight without taking space', () => {
     const others = bar.tabs.filter((t) => t.name !== 'Cards');
 
     expect(cards.icon).toBeGreaterThan(others[0].icon);
-    expect(cards.icon - others[0].icon).toBeLessThanOrEqual(4); // a step, not a shout
+    // The step was ≤4px while Cards was carried by size alone. It is 27.5
+    // against 21–22 now, because size alone lost: measured as ink coverage the
+    // 22px Practice grid out-drew the 25px Cards glyph, 158px² to 147. The
+    // emphasis is deliberate and it is bounded — navEmphasis.test.js pins the
+    // band, and the ceiling here is what stops it becoming a badge.
+    expect(cards.icon - others[0].icon).toBeLessThanOrEqual(7);
     // One step of label weight, same face and same size as every other tab.
     expect(cards.labelSize).toBe(others[0].labelSize);
     expect(cards.labelWeight).toBe(others[0].labelWeight + 100);
     // Unselected, it is still grey: the emphasis must not read as "selected".
+    // The container is a neutral surface step at rest and takes the accent only
+    // when the tab actually is the one you are on.
     expect(cards.current).toBe(null);
     expect(cards.labelColor).toBe(others[0].labelColor);
     expect(cards.filledParts).toBe(0);
+  });
+
+  test('has a container, and it is inside the bar rather than over it', async ({ page }) => {
+    await page.goto('/');
+    await page.getByText('Today', { exact: true }).waitFor();
+    const shell = await page.evaluate(() => {
+      const nav = document.querySelector('nav[aria-label="Primary"]');
+      const nr = nav.getBoundingClientRect();
+      const tabs = Array.from(nav.querySelectorAll('button'));
+      const box = (b) => b.querySelector('svg').parentElement;
+      const cards = box(tabs.find((b) => b.textContent.trim() === 'Cards'));
+      const cr = cards.getBoundingClientRect();
+      const cs = getComputedStyle(cards);
+      return {
+        w: Math.round(cr.width), h: Math.round(cr.height),
+        radius: parseFloat(cs.borderRadius),
+        // Above the bar's top edge would be a floating button; below its
+        // bottom would be a notch. Neither is allowed.
+        insetTop: Math.round((cr.top - nr.top) * 10) / 10,
+        clearsBottom: cr.bottom < nr.bottom,
+        painted: cs.backgroundColor,
+        // Every other tab's icon box is bare — the container belongs to one tab.
+        others: tabs.filter((b) => b.textContent.trim() !== 'Cards')
+          .map((b) => getComputedStyle(box(b)).backgroundColor),
+        // …and it is the same height as theirs, so the five glyphs share a line.
+        rows: tabs.map((b) => Math.round(box(b).getBoundingClientRect().height)),
+      };
+    });
+
+    expect(shell.w).toBeGreaterThanOrEqual(40);
+    expect(shell.w).toBeLessThanOrEqual(44);
+    expect(shell.h).toBeGreaterThanOrEqual(34);
+    expect(shell.h).toBeLessThanOrEqual(38);
+    // A rounded rectangle, not a circle: a FAB is the thing this is not.
+    expect(shell.radius).toBeLessThan(shell.h / 2);
+    expect(shell.insetTop).toBeGreaterThan(2);
+    expect(shell.clearsBottom).toBe(true);
+    expect(shell.painted).not.toBe('rgba(0, 0, 0, 0)');
+    for (const bg of shell.others) expect(bg).toBe('rgba(0, 0, 0, 0)');
+    expect(new Set(shell.rows).size).toBe(1);
   });
 
   test('shares its column width and its baseline with the rest', async ({ page }) => {
