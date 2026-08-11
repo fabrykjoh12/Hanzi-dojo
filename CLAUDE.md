@@ -30,9 +30,11 @@ still get full detail — they are read once, on purpose.
 | Doc | What's in it | Read when |
 |-----|--------------|-----------|
 | **this file** | Vision, stack, repo shape, coding rules, DB safety rules, workflow | Always, first |
+| [`docs/SESSION-HANDOFF.md`](docs/SESSION-HANDOFF.md) | **Read this second.** What is true right now: current product state, what is frozen, the one decision waiting on a device | Always, before picking anything up |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Full DB schema, level/mastery/SRS systems, design system, content pipeline | You need the detail |
 | [`docs/METRICS.md`](docs/METRICS.md) | The metric dictionary — one definition per number the product shows | Touching analytics or any displayed number |
-| [`docs/NAV-MODEL.md`](docs/NAV-MODEL.md) | The mobile navigation model — persistent tabs, per-tab stacks, deep-link seeding, data freshness. **Specification, not yet implemented** | Touching `App.jsx`'s view switch, routing, or tab state |
+| [`docs/NAV-MODEL.md`](docs/NAV-MODEL.md) | The mobile navigation model — persistent tabs, per-tab stacks, deep-link seeding, data freshness. **Shipped; the doc describes what exists. Treat the engine as frozen** | Touching routing, tab state, Back, or scroll restoration |
+| [`docs/P8-NAV-AUDIT.md`](docs/P8-NAV-AUDIT.md) | The bottom bar: what it was, the three options, and why the shipped one won | Touching `MobileNav.jsx`, `navConfig.js` or `NavIcons.jsx` |
 | [`docs/STORY-BIBLE.md`](docs/STORY-BIBLE.md) | The story universe: world rules, cast, how a season is made. Machine half: `data/story-canon.chinese.json` | Writing or reviewing stories |
 | [`docs/DEPLOY.md`](docs/DEPLOY.md) | Env vars, hosting, routing, PWA, secrets, failure cheat-sheet | Something is broken in prod |
 | [`docs/TESTING.md`](docs/TESTING.md) | What needs manual testing on a real device | Before asking testers |
@@ -51,7 +53,7 @@ still get full detail — they are read once, on purpose.
 | [`docs/DISCORD.md`](docs/DISCORD.md) | Server layout, webhooks, the sync workflows | Changing anything Discord-facing |
 | [`docs/DOJO-BRIDGE.md`](docs/DOJO-BRIDGE.md) | The `tools/` bridge | Working on DojoHQ |
 | [`docs/STORY_EXPERIENCE_AUDIT.md`](docs/STORY_EXPERIENCE_AUDIT.md) | Long-form audit of the reading experience | Reworking the reader |
-| [`docs/ONBOARDING-AUDIT.md`](docs/ONBOARDING-AUDIT.md) | Why the onboarding was rebuilt: the audit of what it used to be, and the approved design. **Concept A approved and being built** — `Tutorial.jsx` + `tutorialScript.js` are the implementation | Touching first-run, `Tutorial.jsx`, `Onboarding.jsx` or the tour |
+| [`docs/ONBOARDING-AUDIT.md`](docs/ONBOARDING-AUDIT.md) | Why the onboarding was rebuilt: the audit of what it used to be, and the approved design. **Built, shipped and device-approved** — `Tutorial.jsx` + `tutorialScript.js` are the implementation | Touching first-run, `Tutorial.jsx`, `Onboarding.jsx` or the tour |
 | [`docs/DATABASE.md`](docs/DATABASE.md) | Older schema notes — **`docs/ARCHITECTURE.md` is the current source of truth**; last touched 2026-07-02 | Rarely; prefer ARCHITECTURE.md |
 | [`docs/superpowers/`](docs/superpowers/README.md) | Design specs and plans for features that already shipped — history, **not** current intent | Archaeology on a feature's design |
 

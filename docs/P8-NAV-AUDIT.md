@@ -1,12 +1,16 @@
 # P8 — Mobile bottom navigation: audit and three options
 
-**Status: superseded by the device review.** Option A shipped first (three
-commits, 2026-08-11) and was then tested on an iPhone, where the bar still read
-as busy and generic. The approved direction is now closer to Option B: the bar
-is **Practice · Home · Cards · Stories · More** with Cards in the physical
-centre, no waiting count, no top marker, and a five-glyph icon family drawn for
-this app. What survives from Option A is the level test's move to Practice and
-the corrected 58px nav geometry.
+**Status: superseded by the device review. The bar that exists today is
+`c7eb6c6`; the pending decision is in
+[`docs/SESSION-HANDOFF.md`](SESSION-HANDOFF.md).**
+
+Option A shipped first (three commits, 2026-08-11) and was then tested on an
+iPhone, where the bar still read as busy and generic. The approved direction is
+now closer to Option B: the bar is **Practice · Home · Cards · Stories · More**
+with Cards in the physical centre, no waiting count, no top marker, and a
+five-glyph icon family drawn for this app (`src/NavIcons.jsx`). What survives
+from Option A is the level test's move to Practice and the corrected 58px nav
+geometry.
 
 The audit below is left exactly as written — against `574501d`, TestFlight
 build 33 — because it is the record of what the bar was and why, and every

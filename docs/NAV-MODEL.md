@@ -1,7 +1,28 @@
-# The navigation model (Phase 2 spec)
+# The navigation model
 
-**Status: specification. Not implemented.** Written 2026-08-09, after the Phase 1
-native foundation landed. Nothing in `src/` implements this yet.
+**Status: SHIPPED and in production. This is now a description, not a plan.**
+Written 2026-08-09 as a specification; built and wired into the shell over the
+days that followed. The "Not implemented — nothing in `src/` implements this
+yet" banner that used to stand here was true for about a week and then quietly
+became the most misleading sentence in the docs.
+
+What implements it, so nobody goes looking for the old `if/else` shell:
+
+| Module | Role |
+|---|---|
+| `src/navStack.js` | the pure reducer — tabs, stacks, overlays, `VIEW_CLASS`, Android Back, deep-link seeding, URL projection |
+| `src/navShell.js` | the questions the shell asks — which root is alive, what is on top, is the tab bar visible |
+| `src/navLedger.js` | history snapshots keyed by `navId`; a POP adopts a snapshot rather than re-deriving |
+| `src/useNavigation.js` | the hook `App.jsx` holds: `navigate`, `back`, `reselect`, scroll capture/restore |
+| `src/useAndroidBack.js` | performs the reducer's Back decision on the native shell |
+| `src/TabHost.jsx` | the four persistent roots, each wrapped in `<Activity>` |
+| `src/navMotion.js` + `src/useNavMotion.js` | the transitions in §5.4 |
+
+**Treat this model as frozen.** It is load-bearing for every screen and has its
+own property tests (`navStack.test.js`, `navShell.test.js`, `navLedger.test.js`).
+Presentation work on the bar — order, icons, sizing — happens in `MobileNav.jsx`
+and `navConfig.js` and must not reach in here. §0 below is kept as the record of
+what the shell used to be and why it changed.
 
 The change this describes, in one line:
 

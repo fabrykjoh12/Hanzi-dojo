@@ -45,22 +45,28 @@ bar's visibility as an input rather than assuming it, and re-checking the
 density bands — a 568px phone would move from 510 to 568 available, which
 crosses `COMPACT_MIN`. Worth doing; worth doing on its own, with device photos.
 
-## P8 nav audit — one defect left (2026-08-11)
+## P8 nav audit — both defects fixed (2026-08-11)
 
 Full audit and the three options: [`docs/P8-NAV-AUDIT.md`](P8-NAV-AUDIT.md).
+Current state and the one decision still open:
+[`docs/SESSION-HANDOFF.md`](SESSION-HANDOFF.md).
 
-- ~~`MOBILE_NAV_HEIGHT = 62` over-reserves by 4.25px~~ — fixed in P8 commit 2.
-  The bar's height is declared in `src/navMetrics.js` and the bar, `main`'s
-  bottom padding, the study shell and the immersive reader's bottom offset all
-  read it; `geometry.spec.js` now asserts the bar's height and position exactly
-  rather than within ±8px, which is what let the drift hide.
-- **The level test is reachable on mobile only through the More sheet.** `test`
-  is owned by the Practice tab (`VIEW_CLASS`) and the desktop sidebar gives it a
-  top-level rail slot, but no screen navigates to it — `buildPracticePlan` lists
-  it among neither the drills nor the tools. So the gate on progression sits in
-  the same drawer as Log out. Fix: a gated entry on the Practice screen
-  (`TEST_UNLOCK_MASTERY_PCT` vs `counts.masteredPct`, both already in scope),
-  then drop it from `MOBILE_MORE`. *(P8 commit 3.)*
+- ~~`MOBILE_NAV_HEIGHT = 62` over-reserves by 4.25px~~ — fixed. The bar's height
+  is declared in `src/navMetrics.js` and the bar, `main`'s bottom padding, the
+  study shell and the immersive reader's bottom offset all read it;
+  `geometry.spec.js` now asserts the bar's height and position exactly rather
+  than within ±8px, which is what let the drift hide.
+- ~~The level test is reachable on mobile only through the More sheet~~ — fixed.
+  It is a gated row on the Practice screen (`levelTestEntry` in
+  `practicePlan.js`, `TEST_UNLOCK_MASTERY_PCT` vs `counts.masteredPct`) and is
+  gone from `MOBILE_MORE`. The locked row is still openable on purpose:
+  `Test.jsx` owns the real gate and also unlocks for anyone who already passed
+  the level, which the Home counts cannot see.
+
+One thing NOT to re-add without a fresh decision: the Cards waiting count in
+`MobileNav`. It shipped for one build and was removed after the device review —
+it made the bar read as a dashboard. `navBadges.js` survives and still feeds
+Home and the desktop rail; only the bottom bar's caller went away.
 
 ## Onboarding rebuild — what is left after Commit 5 (2026-08-10)
 
