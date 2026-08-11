@@ -34,6 +34,7 @@ still get full detail — they are read once, on purpose.
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Full DB schema, level/mastery/SRS systems, design system, content pipeline | You need the detail |
 | [`docs/METRICS.md`](docs/METRICS.md) | The metric dictionary — one definition per number the product shows | Touching analytics or any displayed number |
 | [`docs/NAV-MODEL.md`](docs/NAV-MODEL.md) | The mobile navigation model — persistent tabs, per-tab stacks, deep-link seeding, data freshness. **Shipped; the doc describes what exists. Treat the engine as frozen** | Touching routing, tab state, Back, or scroll restoration |
+| [`docs/P11-PRACTICE-AUDIT.md`](docs/P11-PRACTICE-AUDIT.md) | The Practice hub: every action classified, what the database says learners actually use, and three layouts with one recommended | Redesigning Practice |
 | [`docs/P10-CONTAINER-AUDIT.md`](docs/P10-CONTAINER-AUDIT.md) | The container census: every drawn box on Home/Profile/Practice/Stories/Study, classified, with the Home before→after | Adding or removing a panel, card or tile |
 | [`docs/P8-NAV-AUDIT.md`](docs/P8-NAV-AUDIT.md) | The bottom bar: what it was, the three options, and why the shipped one won | Touching `MobileNav.jsx`, `navConfig.js` or `NavIcons.jsx` |
 | [`docs/STORY-BIBLE.md`](docs/STORY-BIBLE.md) | The story universe: world rules, cast, how a season is made. Machine half: `data/story-canon.chinese.json` | Writing or reviewing stories |

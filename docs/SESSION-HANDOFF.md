@@ -309,8 +309,26 @@ see it: the unit suite never touches Supabase and the e2e mock answers any selec
 with its own rows. `DAILY_STORY_COLUMNS` is pinned against the real schema now.
 Assume the same blindness about any other mocked server-side behaviour.
 
-Not to be resumed without the owner's word: the Practice redesign and the global
-token cleanup were both explicitly held until Profile has been reviewed.
+### Frozen as of TestFlight build 39 (`5c358f7`), device-approved
+
+**Home, Stories, Profile, navigation and Study.** No further changes to any of
+them without a concrete bug. Build 39 carried Home Option B (lit hero + one quiet
+supporting surface holding the story row, Your week and the HSK progress) and the
+Stories correction (% known back on the artwork over a scrim, two-line captions,
+no default "Story" label).
+
+### The active phase: P11 — the Practice hub
+
+[`docs/P11-PRACTICE-AUDIT.md`](P11-PRACTICE-AUDIT.md) — audit plus three layouts,
+**awaiting the owner's pick.** Option A (Guided Practice) is recommended. Two
+findings from the live database that bear on it: **no drill screen is instrumented
+at all**, so most of the grid's usage is unmeasurable, and **no learner has ever
+finished a level test** (`test_attempts` empty, `level_unlocks` empty) because
+21-day FSRS stability on 90% of a level is out of reach for a weeks-old tester
+pool — a prominence change will not fix that.
+
+Not to be resumed without the owner's word: the global token cleanup, and any
+further Home/Stories/Profile iteration.
 
 ---
 
