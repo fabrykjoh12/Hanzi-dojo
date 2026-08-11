@@ -10,24 +10,41 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
-## P8 nav audit — two defects found while auditing (2026-08-11)
+## The study shell reserves a tab bar that is not there (found 2026-08-11)
+
+Found while fixing the nav-height drift (P8 commit 2), and deliberately **not**
+fixed there: it is a Study layout change, not a navigation one.
+
+While a flashcard is on screen the tab bar is hidden (`tabBarVisible` →
+`studyImmersive`), so `main`'s bottom padding is 0 — but `MOBILE_SHELL_HEIGHT`
+still subtracts `MOBILE_NAV_HEIGHT`. Measured on `/study`: viewport 568, shell
+510, document 568, bar absent. The bottom 58px (+ the home-indicator inset on a
+real phone) is empty, on the most-repeated screen in the app and the one whose
+whole geometry module exists to avoid a scroll.
+
+The reservation is correct for the two states that *do* show the bar (the recap
+and the paused screen, which is what the `+62px` measurement in `Study.jsx` was
+about) and wrong for the card view. Fixing it means `studyLayout` taking the
+bar's visibility as an input rather than assuming it, and re-checking the
+density bands — a 568px phone would move from 510 to 568 available, which
+crosses `COMPACT_MIN`. Worth doing; worth doing on its own, with device photos.
+
+## P8 nav audit — one defect left (2026-08-11)
 
 Full audit and the three options: [`docs/P8-NAV-AUDIT.md`](P8-NAV-AUDIT.md).
-Neither of these depends on which option is approved.
 
+- ~~`MOBILE_NAV_HEIGHT = 62` over-reserves by 4.25px~~ — fixed in P8 commit 2.
+  The bar's height is declared in `src/navMetrics.js` and the bar, `main`'s
+  bottom padding, the study shell and the immersive reader's bottom offset all
+  read it; `geometry.spec.js` now asserts the bar's height and position exactly
+  rather than within ±8px, which is what let the drift hide.
 - **The level test is reachable on mobile only through the More sheet.** `test`
   is owned by the Practice tab (`VIEW_CLASS`) and the desktop sidebar gives it a
   top-level rail slot, but no screen navigates to it — `buildPracticePlan` lists
   it among neither the drills nor the tools. So the gate on progression sits in
   the same drawer as Log out. Fix: a gated entry on the Practice screen
   (`TEST_UNLOCK_MASTERY_PCT` vs `counts.masteredPct`, both already in scope),
-  then drop it from `MOBILE_MORE`.
-- **`MOBILE_NAV_HEIGHT = 62` over-reserves by 4.25px.** The bar measures 57.75px
-  (+ safe area) at 320/390/430; `App.jsx` pads `main` with 62 and
-  `studyLayout.js` subtracts 62 from the flashcard's available height, so every
-  screen carries a 4px dead strip and the card is 4px shorter than it needs to
-  be on a 568px phone. `geometry.spec.js` asserts `barTop` within ±8px, which is
-  exactly wide enough to hide it — tighten that tolerance with the fix.
+  then drop it from `MOBILE_MORE`. *(P8 commit 3.)*
 
 ## Onboarding rebuild — what is left after Commit 5 (2026-08-10)
 

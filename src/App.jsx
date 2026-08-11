@@ -21,6 +21,7 @@ import { setCacheScope, readCache, writeCache } from './dataCache'
 import { HOME_IDENTITY, HOME_COUNTS } from './cacheEvents'
 import { countsExpired } from './homeData'
 import { overlayScreen, tabBarVisible } from './navShell'
+import { MOBILE_NAV_SPACE } from './navMetrics'
 import TabHost from './TabHost'
 import { StoriesDataProvider } from './StoriesDataProvider'
 import SeriesScreen from './SeriesScreen'
@@ -928,8 +929,9 @@ export default function App() {
           // reader's own bars) are positioned against the viewport, not this box,
           // so they still carry their own inset.
           paddingTop: isMobile ? 'env(safe-area-inset-top, 0px)' : 0,
-          // Leave room for the fixed bottom bar so content isn't hidden behind it.
-          paddingBottom: isMobile && showTabBar ? 'calc(62px + env(safe-area-inset-bottom))' : 0,
+          // Leave room for the fixed bottom bar so content isn't hidden behind
+          // it — the bar's own height, not a number that looks like it.
+          paddingBottom: isMobile && showTabBar ? MOBILE_NAV_SPACE : 0,
         }}>
           {/* The four tab roots, mounted once and kept. Each keeps its own
               error boundary so a screen that throws degrades without taking the

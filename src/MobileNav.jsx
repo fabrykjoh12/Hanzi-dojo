@@ -3,11 +3,21 @@ import { MoreHorizontal, X } from 'lucide-react'
 import { languageTheme, ink } from './languageTheme'
 import { MOBILE_PRIMARY, MOBILE_MORE, ADMIN_NAV } from './navConfig'
 import { navBadge, navItemLabel } from './navBadges'
+import { MOBILE_NAV_SPACE } from './navMetrics'
 import { trapDialogFocus } from './dialogFocus'
 import { pushSheet } from './sheetStack'
 import { tapFeedback } from './haptics'
 
 const MUTED = 'var(--text-muted)'
+
+// The selected-tab marker. Three values, tuned against the rendered bar rather
+// than chosen on paper: the gap that stops it reading as part of the bar's
+// hairline border, how heavy the mark is, and how much of its column it spans —
+// enough to sit under the widest label ("Practice"), so it underlines the tab
+// instead of ticking it.
+const MARKER_INSET = '3px'
+const MARKER_THICKNESS = '3px'
+const MARKER_WIDTH = '62%'
 
 // Primary tabs live directly in the bottom bar; the rest go behind the "More"
 // sheet. Study/practice modes are reached through the Practice tab.
@@ -212,11 +222,22 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
         display: 'flex', alignItems: 'stretch',
         background: 'var(--surface-glass)', backdropFilter: 'blur(14px)',
         borderTop: '1px solid var(--border)',
+        // Declared, not emergent. The bar used to be however tall its padding,
+        // icon and label happened to add up to, while App.jsx reserved a
+        // different number it had been told once — see navMetrics.js.
+        boxSizing: 'border-box', height: MOBILE_NAV_SPACE,
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}>
-        {/* One ink marker riding the top edge, sliding between columns. */}
+        {/* One ink marker sliding between columns.
+            It used to be a 3px dash flush against the bar's own 1px top border,
+            42% of its column wide — narrower than most of the labels it was
+            meant to be marking. At arm's length the two lines read as one, so
+            the selected tab was carried almost entirely by colour.
+            Now it is held clear of the border by MARKER_INSET, rounded at both
+            ends so it is a mark rather than a segment of a rule, and wide
+            enough to underline the tab rather than tick it. */}
         <span aria-hidden style={{
-          position: 'absolute', top: 0, left: 0, height: '3px',
+          position: 'absolute', top: MARKER_INSET, left: 0, height: MARKER_THICKNESS,
           width: `${100 / columns}%`,
           transform: `translateX(${Math.max(0, activeColumn) * 100}%)`,
           opacity: activeColumn < 0 ? 0 : 1,
@@ -224,8 +245,8 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
           pointerEvents: 'none',
         }}>
           <span style={{
-            display: 'block', height: '100%', width: '42%', margin: '0 auto',
-            borderRadius: '0 0 3px 3px', background: accentInk,
+            display: 'block', height: '100%', width: MARKER_WIDTH, margin: '0 auto',
+            borderRadius: '999px', background: accentInk,
           }} />
         </span>
 

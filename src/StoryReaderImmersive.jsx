@@ -29,6 +29,7 @@ import StoryCover from './StoryCover'
 import { RevealEnglishButton } from './ReadingScaffold'
 import { loadTtsAudio, utteranceAudio } from './ttsAudio'
 import { trapDialogFocus } from './dialogFocus'
+import { MOBILE_NAV_SPACE } from './navMetrics'
 
 // HSKStory-inspired immersion reader for BOTH languages. Light theme. Tap a word
 // for a bottom-sheet definition; pinyin (Chinese) / furigana (Japanese) and
@@ -857,7 +858,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   const selCount = sel && sel.vocab ? (counts.get(sel.vocab.word) || 0) : 0
   const selCard = sel && sel.vocab ? userCards[sel.vocab.id] : null
   const selDueSoon = Boolean(selCard && selStatus !== 'not_started' && isDueSoon(selCard.due_at))
-  const bottomOffset = isMobile ? 'calc(62px + env(safe-area-inset-bottom))' : '0px'
+  const bottomOffset = isMobile ? MOBILE_NAV_SPACE : '0px'
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: TEXT, position: 'relative', overflow: 'hidden' }}>

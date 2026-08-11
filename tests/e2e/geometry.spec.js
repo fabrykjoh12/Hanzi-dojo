@@ -1,4 +1,7 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
+// The bar's height, from the module that declares it — not a literal that can
+// fall out of step with the bar again (navMetrics.js).
+import { MOBILE_NAV_HEIGHT } from '../../src/navMetrics.js';
 
 // Where destinations actually LAND, measured — not whether their elements exist.
 //
@@ -38,7 +41,7 @@ const DESTINATIONS = [
   { label: 'full: FillBlank', path: '/fillblank', bar: false },
 ];
 
-const NAV_HEIGHT = 62;
+const NAV_HEIGHT = MOBILE_NAV_HEIGHT;
 
 async function geometry(page) {
   return page.evaluate(() => {
@@ -62,6 +65,10 @@ async function geometry(page) {
       barTop: (() => {
         const n = document.querySelector('nav[aria-label="Primary"]');
         return n ? Math.round(n.getBoundingClientRect().top) : null;
+      })(),
+      barHeight: (() => {
+        const n = document.querySelector('nav[aria-label="Primary"]');
+        return n ? Math.round(n.getBoundingClientRect().height * 100) / 100 : null;
       })(),
     };
   });
@@ -97,9 +104,14 @@ for (const phone of PHONES) {
         expect(g.barPresent).toBe(dest.bar);
         expect(g.padBottom).toBe(dest.bar ? NAV_HEIGHT : 0);
         if (dest.bar) {
-          // Pinned to the bottom edge, not floating in the middle of the page.
-          expect(g.barTop).toBeGreaterThan(g.viewportH - NAV_HEIGHT - 8);
-          expect(g.barTop).toBeLessThanOrEqual(g.viewportH - NAV_HEIGHT + 8);
+          // Pinned to the bottom edge, and EXACTLY as tall as the space
+          // reserved for it. This used to allow ±8px, which is precisely why a
+          // 4.25px drift between the bar (57.75px, emergent from its padding
+          // and label) and the reservation (a flat 62px) lived here unseen for
+          // as long as it did. The bar declares its height now (navMetrics.js),
+          // so there is no reason for any slack at all.
+          expect(g.barHeight).toBe(NAV_HEIGHT);
+          expect(g.barTop).toBe(g.viewportH - NAV_HEIGHT);
         }
 
         // Deliberately NOT asserted: a document-height ceiling. Several

@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import {
   studyLayout, studyDensity, availableHeight,
-  MOBILE_NAV_HEIGHT, MIN_TAP_TARGET, DESKTOP_CARD_MIN_HEIGHT,
+  MIN_TAP_TARGET, DESKTOP_CARD_MIN_HEIGHT,
   MOBILE_SHELL_HEIGHT, DENSITIES,
 } from './studyLayout'
+// The bar's height belongs to the bar, not to the flashcard's geometry — the
+// study screen is one of its consumers, which is the whole point of the module.
+import { MOBILE_NAV_HEIGHT } from './navMetrics'
 
 const PHONES = [
   { name: 'iPhone 14', height: 844, density: 'roomy' },

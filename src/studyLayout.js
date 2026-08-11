@@ -13,10 +13,12 @@
 //
 // All of it is plain arithmetic so it can be tested without a browser.
 
-// Height of the fixed bottom navigation (MobileNav.jsx), which App.jsx already
-// reserves as `main`'s bottom padding. The study shell must subtract the same
-// amount or the page ends up exactly one nav-bar taller than the viewport.
-export const MOBILE_NAV_HEIGHT = 62
+// Height of the fixed bottom navigation, which App.jsx already reserves as
+// `main`'s bottom padding. The study shell must subtract the same amount or the
+// page ends up exactly one nav-bar taller than the viewport — so it takes the
+// number from navMetrics.js rather than keeping a second copy, which is the
+// mistake that put 4.25px of dead space under every screen.
+import { MOBILE_NAV_HEIGHT } from './navMetrics'
 
 // Never render a grade button smaller than a comfortable thumb.
 export const MIN_TAP_TARGET = 44
