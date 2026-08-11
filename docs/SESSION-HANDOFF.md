@@ -34,11 +34,20 @@ automatic Home coach-mark tour is suppressed for anyone who did the tutorial
 (`maybeStartTour({ suppressed: isTutorialDone() })`); its four marks still exist
 and their future is undecided.
 
-**TestFlight: build 35 is the approved state** — commit `78cf09e`, version 1.0,
-Delivery UUID `ddd7954e-3dd8-45c9-8cd1-db3b7c046719`, uploaded and reviewed on a
-physical iPhone. Build 34 (`a60b916`) carried the P8 bar as first drawn and its
-device review produced the Cards-emphasis pass; builds 31–33 covered the
-onboarding work. **Anything newer than `78cf09e` has not been on a device.**
+**TestFlight: build 40 is uploaded and awaiting device review** — commit
+`8f061a1`, version 1.0, Delivery UUID `f54bcb9d-14fb-436c-9fde-8db58338c46e`. It
+is the P11 Practice hub (P11-0 instrumentation + P11-1 Guided Practice) on top of
+the device-approved build 39.
+
+**Build 39 (`5c358f7`) is the last device-approved state** — Home Option B and the
+Stories `% known` correction, reviewed positively on a physical iPhone. Build 37
+(`576082e6`) produced the reset-copy and container findings; build 35 (`78cf09e`)
+closed the onboarding work; build 34 (`a60b916`) carried the P8 bar as first drawn
+and produced the Cards-emphasis pass. **Anything newer than `5c358f7` has not been
+on a device.**
+
+Build numbers are the `ios-testflight.yml` run number, so they are monotonic and
+never reused; the marketing version stays 1.0 until the release cut.
 
 ---
 
@@ -326,7 +335,10 @@ owner's report review.** §7 of that doc carries the before/after measurements.
 | commit | what |
 |--------|------|
 | `04ac484` | **P11-0** — `practice_drill_started {key, from}`, zero visual change |
-| *(this one)* | **P11-1** — Option A: hero + one row list + a quiet level-test row + the tools |
+| `8f061a1` | **P11-1** — Option A: hero + one row list + a quiet level-test row + the tools |
+
+Both are in **TestFlight build 40**, awaiting device review. Practice is otherwise
+closed until that review comes back.
 
 The screen went from **11 depth-0 panels to 3** (hero, drill list, tools) and from
 1585 px to 1468 px at 390; all eight drill rows now sit above the fold at 390 and
