@@ -362,3 +362,55 @@ in this document found the problem; it does not define success. A screen with
 two excellent surfaces beats a screen with one surface and poor structure.
 Judge hierarchy, density, rhythm, grouping and whether the screen looks
 intentionally composed on a phone.
+
+### C3 — Home, Option B (the shape that ships)
+
+Two surfaces, clearly different jobs:
+
+```
+Today                          HSK 2 · Tuesday
+┌─────────────────────────────────────┐
+│ READY TO REVIEW                  中 │   lit accent · "act now"
+│ 10  cards waiting · ~7 min          │   205px, unchanged
+│ [ Start reviewing → ]               │
+└─────────────────────────────────────┘   14px
+┌─────────────────────────────────────┐
+│ ▛▀▜ Then read                       │   flat --surface · "context"
+│ ▌ ▐ 晚上八点，外面在下雨。        › │   327px, one tappable row
+│ ▙▄▟ 《末班车》 · you know 0% of it  │   cover 56×84
+│ ─────────────────────────────────   │   --border, not --hairline
+│ Your week            No sessions yet│
+│ ▢ ▢ ▢ ▢ ▢ ▢ ▣   W T F S S M T       │
+│ ─────────────────────────────────   │
+│ Toward HSK 3            0 of 44     │
+│ ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁              │
+│ Nothing due tomorrow — a free day   │
+└─────────────────────────────────────┘
+```
+
+Measured, identical in light and dark at all three widths:
+
+| | 320×568 | 390×844 | 430×932 |
+|---|---|---|---|
+| Document height | 726 (1.28 vp) | 844 (1.00 vp) | 932 (1.00 vp) |
+| Content ends at | 654 | 654 | 654 |
+| Hero | 205 | 205 | 205 |
+| Supporting surface | 327 | 327 | 327 |
+| Story row | 84 | 84 | 84 |
+| Gap between them | 14 | 14 | 14 |
+| Targets · under 44px | 2 · **0** | 2 · **0** | 2 · **0** |
+| Cards inside the card | **0** | **0** | **0** |
+
+**One defect this pass found in its own first draft:** the internal dividers were
+`var(--hairline)`, which is a *white* inset top-edge highlight
+(`rgba(255,255,255,0.75)` in light) — invisible as a divider on a white surface,
+which is precisely the "empty band" symptom build 38 was criticised for. They are
+`var(--border)` now (#E7E5E4 on #FFFFFF — a 24/255 step), and
+`home-shape.spec.js` measures each divider against the surface it sits on rather
+than trusting the token name.
+
+`tests/e2e/home-shape.spec.js` asserts ROLES, not counts: the hero carries the
+gradient ground and white text, the supporting surface carries neither; no card
+exists inside the card; exactly one thing in the surface is pressable, and it is
+the story row; the week strip and the progress bar are `role="img"` readouts with
+no tabindex and no controls inside them.

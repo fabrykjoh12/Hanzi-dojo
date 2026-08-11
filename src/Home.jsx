@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, BookOpenCheck, Lock, Sparkles, Sunrise } from 'lucide-react'
+import { ArrowRight, BookOpenCheck, ChevronRight, Lock, Sparkles, Sunrise } from 'lucide-react'
 import { getLevelLabel } from './utils'
 import { languageTheme, ink } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
@@ -8,7 +8,7 @@ import { firstContentChar } from './homeStory'
 import { fetchHandoff, trackSignature } from './homeData'
 import { query, subscribe } from './dataCache'
 import { HOME_HANDOFF } from './cacheEvents'
-import { HeroPanel, HeroAction, PageHeader } from './panels'
+import { HeroPanel, HeroAction, Panel, PageHeader } from './panels'
 import { rhythmSummary, weekdayInitial } from './studyRhythm'
 import { forecastSummary } from './reviewForecast'
 import { sessionEstimateLabel } from './sessionEstimate'
@@ -149,6 +149,31 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
     ? { label: 'Start reviewing', go: 'study' }
     : { label: 'Read a story', go: 'stories' }
 
+  // The hand-off, derived once — Home shows the session's reward when a series
+  // is going, otherwise today's story pick, never both (homeData.js). Both are
+  // the same row in the same place; only the words and the destination differ.
+  const handoff = rewardTeaser
+    ? {
+      coverPath: rewardTeaser.coverPath,
+      coverStory: rewardTeaser.chapter,
+      label: rewardTeaser.state === 'unlocked-today' ? 'Read it now' : 'Next chapter',
+      title: rewardTeaser.seriesTitle,
+      meta: (rewardTeaser.chapter.nativeLabel || 'Chapter ' + rewardTeaser.chapter.number) + ' · '
+        + (rewardTeaser.state === 'unlocked-today' ? 'unlocked' : 'unlocks after today’s session'),
+      metaIcon: rewardTeaser.state === 'unlocked-today' ? BookOpenCheck : Lock,
+      onOpen: () => onNavigate('stories', rewardTeaser.state === 'unlocked-today' ? { storyId: rewardTeaser.storyId } : undefined),
+    }
+    : daily
+      ? {
+        coverPath: daily.coverPath,
+        coverStory: daily.story,
+        label: 'Then read',
+        title: daily.sentence,
+        meta: daily.story.title + ' · you know ' + daily.knownPct + '% of it',
+        onOpen: () => onNavigate('stories'),
+      }
+      : null
+
   const today = new Date()
 
   return (
@@ -216,54 +241,47 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         )}
       </HeroPanel>
 
-      {/* ── Today's story reward: what the session is FOR. Shown when a series
-          is going — the locked chapter waiting behind today's flashcards, or
-          the one already unlocked. Quiet panel; the hero owns the action. ── */}
-      {rewardTeaser && (
-        <StoryHandoff
-          dataTour="home-then-read"
-          accentInk={accentInk}
-          accentHex={accentHex}
-          coverPath={rewardTeaser.coverPath}
-          coverStory={rewardTeaser.chapter}
-          heading={rewardTeaser.state === 'unlocked-today' ? 'Read it now' : 'Next chapter'}
-          title={rewardTeaser.seriesTitle}
-          titleFont={langFont}
-          meta={(rewardTeaser.chapter.nativeLabel || 'Chapter ' + rewardTeaser.chapter.number) + ' · '
-            + (rewardTeaser.state === 'unlocked-today'
-              ? 'unlocked' : 'unlocks after today’s session')}
-          metaIcon={rewardTeaser.state === 'unlocked-today' ? BookOpenCheck : Lock}
-          onOpen={() => onNavigate('stories', rewardTeaser.state === 'unlocked-today' ? { storyId: rewardTeaser.storyId } : undefined)}
-        />
-      )}
+      {/* ── The one quiet surface: everything AROUND today's learning ──
+          What comes after the session, the week behind, the road ahead. One flat
+          panel, three rows, two hairlines — deliberately not a rival to the lit
+          block above it, and with no card inside it.
 
-      {/* ── The next step in the loop, deliberately quiet. The hero owns the
-          screen's action; this is a hand-off, not a rival CTA. ── */}
-      {!rewardTeaser && daily && (
-        <StoryHandoff
-          dataTour="home-then-read"
-          accentInk={accentInk}
-          accentHex={accentHex}
-          coverPath={daily.coverPath}
-          coverStory={daily.story}
-          heading="Then read"
-          title={daily.sentence}
-          titleFont={langFont}
-          meta={daily.story.title + ' · you know ' + daily.knownPct + '% of it'}
-          onOpen={() => onNavigate('stories')}
-        />
-      )}
-
-      {/* ── Your week: the rhythm behind you and the load ahead. This is the
-          return hook — "25 waiting tomorrow" is a reason to come back that
-          doesn't depend on guilt. Observational copy only: the app's stated
-          stance is no streak pressure, so there is no counter to protect and
-          nothing to "keep". ── */}
-      <section
-        data-tour="home-week"
-        style={{ marginTop: '26px', animationDelay: '140ms' }}
+          Build 38 gave each of these its own open section on the page, and on a
+          real iPhone that read as unfinished: headings floating away from their
+          data, hairlines making empty bands, the lower half disconnected from the
+          hero. Two surfaces with clearly different jobs is the shape that works —
+          lit accent means act now, flat surface means context (P10-C3). */}
+      <Panel
+        padding={isMobile ? '15px 16px 16px' : '17px 20px 18px'}
+        style={{ marginBottom: '14px', animationDelay: '80ms' }}
       >
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '12px' }}>
+        {handoff && (
+          <StoryHandoff
+            dataTour="home-then-read"
+            accentInk={accentInk}
+            accentHex={accentHex}
+            titleFont={langFont}
+            {...handoff}
+          />
+        )}
+
+        {/* ── Your week: the rhythm behind you and the load ahead. This is the
+            return hook — "25 waiting tomorrow" is a reason to come back that
+            doesn't depend on guilt. Observational copy only: the app's stated
+            stance is no streak pressure, so there is no counter to protect and
+            nothing to "keep". ── */}
+        <div
+          data-tour="home-week"
+          // `--border`, not `--hairline`: the hairline token is a WHITE inset
+          // top-edge highlight (rgba(255,255,255,0.75) in light), so as a divider
+          // on a white surface it is invisible — which is exactly how it rendered
+          // for one build. `--border` is the app's separator, the same one
+          // Profile's control rows use.
+          style={handoff
+            ? { marginTop: '15px', paddingTop: '15px', borderTop: '1px solid var(--border)' }
+            : undefined}
+        >
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
           <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
             Your week
           </h2>
@@ -305,12 +323,10 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
           ))}
         </div>
 
-        {/* ── Toward the next level, in the same section. The week behind you
+        {/* ── Toward the next level, in the same surface. The week behind you
             and the road ahead are one story, and on a phone two separate panels
-            of numbers made Home read as a dashboard. The rectangle around all of
-            it went the same way, for the same reason (P10-C2): a heading and one
-            hairline group this as well as four borders did. ── */}
-        <div style={{ marginTop: '18px', paddingTop: '16px', borderTop: '1px solid var(--hairline)' }}>
+            of numbers made Home read as a dashboard. ── */}
+        <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
             <span style={{ fontSize: '13.5px', fontWeight: 650, color: 'var(--text)' }}>
               Toward {nextLevelLabel}
@@ -335,9 +351,8 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
           </div>
 
           {/* One quiet line for what's ahead — this was two lines in two
-              different panels saying nearly the same thing. */}
-          {/* Left-aligned now: centred text inside a box reads as a caption on
-              a widget, and there is no box. */}
+              different panels saying nearly the same thing. Left-aligned: a
+              centred caption is what a widget does. */}
           <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '10px' }}>
             {counts.dueTomorrow > 0
               ? 'About ' + counts.dueTomorrow + ' waiting tomorrow'
@@ -345,7 +360,8 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
             {forecastTotal > 0 && ' · ~' + perDay + '/day this week'}
           </div>
         </div>
-      </section>
+        </div>
+      </Panel>
 
       {tourSteps && (
         <TourOverlay
@@ -361,28 +377,24 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
   )
 }
 
-// The story hand-off: the next step in the loop, and the second thing on Home.
+// The story hand-off — the first row of the supporting surface.
 //
-// It used to sit inside a flat `Panel` — a bordered rectangle drawn around a row
-// that was already the tap target, on a screen where the panel above it and the
-// panel below it looked the same (P10-C2). The box is gone. What anchors the row
-// now is the story's own cover, which is real content rather than another
-// surface, and one hairline separates it from the hero.
+// It has been three shapes now. A bordered `Panel` wrapped around a row that was
+// already the tap target; then a bare row on the open page, which read as
+// unfinished on a phone; now a row INSIDE the one quiet surface, which is what it
+// always was semantically. No rectangle of its own — the surface is the boundary,
+// the hairline below is the separator.
 //
-// Still the whole row, still `hd-press`, still reachable by keyboard.
+// The cover is the anchor: the story's real 2:3 artwork, 56px wide, which is
+// content rather than another drawn box. The label ("Then read", "Read it now")
+// is the row's first line rather than a heading above it, because a heading over
+// a single control is a taxonomy for one thing — and because the row is a button,
+// whose content is its label.
 function StoryHandoff({
-  coverPath, coverStory, heading, title, titleFont, meta, metaIcon: MetaIcon,
+  coverPath, coverStory, label, title, titleFont, meta, metaIcon: MetaIcon,
   accentInk, accentHex, onOpen, dataTour,
 }) {
   return (
-    <section style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--hairline)' }}>
-    {/* Sentence case, and a real heading — this was an ALL-CAPS eyebrow, which
-        is how a screen invents a taxonomy over itself (P10-C2). It sits outside
-        the row because the row is a button, and a button's content is its
-        label. */}
-    <h2 style={{ margin: '0 0 10px', fontSize: '15px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
-      {heading}
-    </h2>
     <div
       role="button"
       tabIndex={0}
@@ -392,7 +404,7 @@ function StoryHandoff({
       data-tour={dataTour}
       style={{
         display: 'flex', alignItems: 'center', gap: '13px',
-        minHeight: '44px', cursor: 'pointer', animationDelay: '80ms',
+        minHeight: '44px', cursor: 'pointer',
       }}
     >
       <StoryCover
@@ -401,9 +413,12 @@ function StoryHandoff({
         accent={accentHex}
         radius={8}
         loading="eager"
-        style={{ width: '46px', flexShrink: 0, aspectRatio: '2 / 3' }}
+        style={{ width: '56px', flexShrink: 0, aspectRatio: '2 / 3' }}
       />
       <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
+          {label}
+        </div>
         <div style={{
           fontFamily: titleFont, fontSize: '15px', fontWeight: 600, color: 'var(--text)',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -418,9 +433,8 @@ function StoryHandoff({
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta}</span>
         </div>
       </div>
-      <ArrowRight size={18} strokeWidth={2.1} color={accentInk} style={{ flexShrink: 0 }} />
+      <ChevronRight size={19} strokeWidth={2.1} color="var(--text-faint)" style={{ flexShrink: 0 }} />
     </div>
-    </section>
   )
 }
 

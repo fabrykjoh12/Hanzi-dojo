@@ -294,10 +294,12 @@ the measured before/after — **plus the build-38 device correction at the end,
 which changes a rule: surface counts are diagnostic, never the goal.** Build 38
 (`0388865`) was device-reviewed: Practice and the C0 gating passed; Stories'
 "% known" line under the titles was rejected and is back on the artwork as text
-over a bottom scrim; Home's open layout reads as unfinished and is awaiting the
-owner's pick among three composition options (open-improved / hero + one unified
-secondary surface / two purpose-specific cards). Do not reintroduce the old
-three-equal-panels Home.
+over a bottom scrim; Home's open layout read as unfinished, so three
+composition options went to the owner and **Option B was approved and built**:
+the lit hero, then ONE flat surface holding the story row, a divider, Your week,
+a divider, and Toward HSK 3. Two surfaces, clearly different jobs — lit means act
+now, flat means context. Do not reintroduce the old three-equal-panels Home, and
+do not go back to open floating sections.
 
 **One production defect fixed on the way** (`5c69ea2`): `homeStory.js` selected
 `cover_url` from `stories`, a column that does not exist, so the query 400'd,
