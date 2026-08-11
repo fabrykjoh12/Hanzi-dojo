@@ -16,10 +16,12 @@ import { TEST_UNLOCK_MASTERY_PCT } from './mastery'
 // The script drill matches the language's writing system. Keyed by
 // `languageTheme().script` rather than by language name, so a new language is
 // still a data change (CLAUDE.md §1).
+// The script drill. Title only — "Tones" needs no gloss, and a line under every
+// row is what makes a list look templated (see `hint` below).
 const SCRIPT_DRILLS = {
-  hanzi: { key: 'tones', title: 'Tones', desc: 'Hear a word, name its tone' },
-  kana: { key: 'kana', title: 'Kana', desc: 'Hiragana and katakana' },
-  cyrillic: { key: 'cyrillic', title: 'Alphabet', desc: 'Cyrillic letters and sounds' },
+  hanzi: { key: 'tones', title: 'Tones' },
+  kana: { key: 'kana', title: 'Kana' },
+  cyrillic: { key: 'cyrillic', title: 'Alphabet' },
 }
 
 // Lookup and reference. These are places to go, not things to practise, so the
@@ -55,11 +57,23 @@ function plural(n, word) {
   return n + ' ' + word + (n === 1 ? '' : 's')
 }
 
+// ── `hint`: a line of explanation, and only where the name needs one ──────
+//
+// UNEVEN BY DESIGN (P11 audit, amendment 1). Every row carrying `icon + title +
+// one-line description` is the template that made this screen read as generated,
+// and the fix is not shorter descriptions — it is giving them only to the rows
+// whose name genuinely is not enough. Listening, Writing, Tones, Stroke order and
+// Speaking say what they are. Fill in the blank, Sentence builder and Grammar
+// review do not.
+//
+// A row with a live count needs no hint either: the count IS the explanation, and
+// printing both says the same thing twice. So Weak words carries a hint only when
+// nothing is waiting.
 function weakDrill(count) {
   return {
     key: 'weak',
     title: 'Weak words',
-    desc: count > 0 ? plural(count, 'word') + ' keep slipping' : 'Clean up the words that trip you',
+    hint: count > 0 ? null : 'Clean up the words that trip you',
     badge: count > 0 ? count : null,
     tone: count > 0 ? 'signal' : 'accent',
   }
@@ -69,7 +83,7 @@ function grammarDrill(count) {
   return {
     key: 'grammarpractice',
     title: 'Grammar review',
-    desc: count > 0 ? plural(count, 'pattern') + ' due' : 'Keep your patterns sharp',
+    hint: count > 0 ? null : 'Patterns you have met, on a schedule',
     badge: count > 0 ? count : null,
     tone: count > 0 ? 'signal' : 'accent',
   }
@@ -86,7 +100,8 @@ function pickPrimary(weakCount, grammarDueCount) {
       key: 'weak',
       title: 'Weak words',
       eyebrow: 'Waiting for you',
-      reason: plural(weakCount, 'word') + ' keep slipping. A short pass puts them back in the queue.',
+      reason: plural(weakCount, 'word') + (weakCount === 1 ? ' keeps' : ' keep')
+        + ' slipping. A short pass puts ' + (weakCount === 1 ? 'it' : 'them') + ' back in the queue.',
       cta: 'Practise these',
       tone: 'signal',
     }
@@ -96,7 +111,8 @@ function pickPrimary(weakCount, grammarDueCount) {
       key: 'grammarpractice',
       title: 'Grammar review',
       eyebrow: 'Waiting for you',
-      reason: plural(grammarDueCount, 'pattern') + ' are due. Ten quiet minutes keeps them.',
+      reason: plural(grammarDueCount, 'pattern') + (grammarDueCount === 1 ? ' is' : ' are')
+        + ' due. Ten quiet minutes keeps ' + (grammarDueCount === 1 ? 'it' : 'them') + '.',
       cta: 'Review patterns',
       tone: 'signal',
     }
@@ -140,6 +156,16 @@ export function levelTestEntry({ masteredCount = 0, totalWords = 0 } = {}) {
   }
 }
 
+// What a counted row says out loud. The screen shows the bare number beside the
+// title — a screen reader needs the noun, and "6" alone is not a status.
+export function drillCountLabel(drill) {
+  if (!drill || drill.badge == null) return ''
+  const one = drill.badge === 1
+  if (drill.key === 'weak') return plural(drill.badge, 'word') + (one ? ' keeps' : ' keep') + ' slipping'
+  if (drill.key === 'grammarpractice') return plural(drill.badge, 'pattern') + (one ? ' is' : ' are') + ' due'
+  return String(drill.badge)
+}
+
 // The full screen plan.
 //
 //   script  — languageTheme().script ('hanzi' | 'kana' | 'cyrillic')
@@ -162,13 +188,13 @@ export function buildPracticePlan({
   const drills = [
     weakDrill(weakCount),
     grammarDrill(grammarDueCount),
-    { key: 'listen', title: 'Listening', desc: 'Hear a word, pick it', badge: null, tone: 'accent' },
-    speech ? { key: 'speak', title: 'Speaking', desc: 'Say it aloud, get it checked', badge: null, tone: 'accent' } : null,
-    { key: 'writing', title: 'Writing', desc: 'Type words from memory', badge: null, tone: 'accent' },
-    { key: 'fillblank', title: 'Fill in the blank', desc: 'Complete the sentence', badge: null, tone: 'accent' },
-    { key: 'builder', title: 'Sentence builder', desc: 'Reorder the words', badge: null, tone: 'accent' },
-    scriptDrill ? { ...scriptDrill, badge: null, tone: 'accent' } : null,
-    cjk ? { key: 'strokes', title: 'Stroke order', desc: 'Animated writing', badge: null, tone: 'accent' } : null,
+    { key: 'listen', title: 'Listening', hint: null, badge: null, tone: 'accent' },
+    speech ? { key: 'speak', title: 'Speaking', hint: null, badge: null, tone: 'accent' } : null,
+    { key: 'writing', title: 'Writing', hint: null, badge: null, tone: 'accent' },
+    { key: 'fillblank', title: 'Fill in the blank', hint: 'Complete the sentence', badge: null, tone: 'accent' },
+    { key: 'builder', title: 'Sentence builder', hint: 'Reorder the words', badge: null, tone: 'accent' },
+    scriptDrill ? { ...scriptDrill, hint: null, badge: null, tone: 'accent' } : null,
+    cjk ? { key: 'strokes', title: 'Stroke order', hint: null, badge: null, tone: 'accent' } : null,
   ].filter(Boolean).filter(d => d.key !== primary.key)
 
   // Anything still carrying a count leads the grid, so a second waiting drill

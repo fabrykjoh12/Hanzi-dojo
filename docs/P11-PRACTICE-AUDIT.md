@@ -324,3 +324,85 @@ Not touched: every drill screen, `Test.jsx`, the tools, the navigation model,
   with them.
 - **Instrumentation (proposed separately)** — `practice_drill_started` so the next
   pass measures instead of guessing.
+
+---
+
+## 7 · What shipped (P11-0 + P11-1)
+
+Approved as **Option A — Guided Practice**, with both amendments. Two commits.
+
+### P11-0 — instrumentation first, zero visual change
+
+`practice_drill_started { key, from }`, fired in `Practice.jsx`'s `openDrill()`.
+
+- **On the tap, never on mount.** The Practice tab is an `<Activity>` in the
+  nav engine (`docs/NAV-MODEL.md`), so its effects re-run every time the tab is
+  shown. A mount-based event would count tab switches as practice. `openDrill`
+  runs once, from a real press.
+- **`isDrillKey` gates it**, so the level test and the six lookup tools are not
+  counted as practice. `DRILL_KEYS` is walked by
+  `practicePlan.test.js` across every script/CJK/speech combination — a drill
+  added to the plan but not to the list fails the suite rather than silently
+  going unmeasured.
+- **No PII.** A stable key and the surface it was pressed from.
+- **Not used for ordering yet.** The order below is the audit's, not the data's.
+  Two or three weeks of events, then revisit.
+
+Speaking's absence in the store apps is recorded separately in
+`docs/BACKLOG.md` — it is a product decision, not a layout one.
+
+### P11-1 — the layout
+
+**Before → after, at 390 (light; dark is identical, measured):**
+
+| | before | after |
+|---|---|---|
+| Depth-0 panels | **11** (hero, level-test card, 8 tiles, tools) | **3** (hero, drill list, tools) |
+| Lit surfaces | 1 | 1 |
+| Nested boxes | hero CTA pill | hero CTA pill |
+| `docH`, nothing waiting | 1585 px (1.88 vp) | 1468 px (1.74 vp) |
+| `docH`, weak waiting | 1565 px | 1438 px |
+| `docH`, both waiting | 1554 px | 1429 px |
+| Tap targets | 16 | 16 |
+| Targets under 44 px | 0 | 0 |
+| Type styles | 9 | 12–13 |
+| Horizontal overflow | none | none |
+
+At 320 the page is 1470–1482 px (2.6 vp) with four drill rows above the fold; at
+390 and 430 all eight rows are above the fold — the whole drill list is visible
+without scrolling, which the 2-column tile grid never managed.
+
+**Type styles went up, not down, and that is the point.** Nine styles bought
+eight identical tiles; twelve buy a hero, a counted row, a hinted row, a bare
+row and a quieter tool row. Style count is a proxy for consistency, and here it
+is measuring the hierarchy that replaced the repetition. Not a target to chase.
+
+**Row heights** at 390, nothing waiting: `[63, 64, 54, 54, 64, 64, 54, 54]`.
+The variance is amendment 1 working — a hinted row is ~10 px taller, so the list
+has a visible rhythm instead of eight identical bands. On the store apps it is
+seven rows, no gap where Speaking was (`practice-shape.spec.js` measures the
+panel against the sum of its rows to prove it).
+
+**How the two row families differ without another box:** a drill's icon is the
+accent through `ink()` and its title is 14.5px/700; a tool's icon is
+`--text-muted` and its title 13.5px/650. Asserted, not eyeballed — the spec reads
+the svg's computed `stroke` (lucide takes its `color` prop there, not to `color`).
+
+**The level test is an open row now** — no background, no border, no shadow,
+`4px 1px` of padding, a progress bar mixed against `var(--text)`. It reads as a
+line of status with a chevron rather than a fourth card competing with the hero.
+It stays openable when locked: `Test.jsx` owns the gate and can see a pass this
+screen cannot.
+
+**Two copy bugs found while testing the count label.** `1 pattern are due. Ten
+quiet minutes keeps them.` was live hero copy, and the row label said `1 word
+keep slipping`. Pluralising the noun was only half the job; the verbs and
+pronouns now agree, pinned by an exact-string spec.
+
+### Verification
+
+`npm run lint` 0 errors · `npm test` 3872 passing across 179 files ·
+`npm run build` · `npm run build:public` · `npx cap sync` ·
+Playwright 460 passing, 2 failing — `landing-mobile` and `privacy-desktop`,
+the two known sandbox-only visual artifacts (`docs/BACKLOG.md`). No Practice
+screenshot baseline exists, so nothing needed reblessing.

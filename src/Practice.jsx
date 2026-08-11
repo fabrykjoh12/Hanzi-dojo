@@ -3,7 +3,7 @@ import { getSystemLabel, getLevelLabel, metaLine} from './utils'
 import { languageTheme, ink } from './languageTheme'
 import { HeroPanel, HeroAction, PageHeader, Eyebrow } from './panels'
 import { flatPanel, ON_HERO, NUM } from './designTokens'
-import { buildPracticePlan, isDrillKey } from './practicePlan'
+import { buildPracticePlan, isDrillKey, drillCountLabel } from './practicePlan'
 import { speechRecognitionSupported } from './speechSupport'
 // `track as trackEvent`: this component already has a `track` prop — the
 // language track — and the bare name would be shadowed by it. Same alias Study
@@ -62,14 +62,6 @@ const ICONS = {
 // 11px gaps, which is most of what "messy" actually looked like.
 const SECTION_GAP = '26px'
 const LABEL_GAP = '10px'
-
-function tint(color, pct) {
-  return 'color-mix(in srgb, ' + color + ' ' + pct + '%, var(--surface))'
-}
-
-function tintBorder(color, pct) {
-  return 'color-mix(in srgb, ' + color + ' ' + pct + '%, var(--border))'
-}
 
 export default function Practice({ profile, track, counts, onNavigate }) {
   const isMobile = useIsMobile()
@@ -153,11 +145,36 @@ export default function Practice({ profile, track, counts, onNavigate }) {
         )}
       </HeroPanel>
 
-      {/* ── The gate on the level, directly under the hero. ──
-          Not a drill and not a lookup, so it sits in neither labelled section:
-          one wide row between the hero and the grid, which is where the screen
-          reads "and this is what it is all for". It used to be reachable on a
-          phone only through the More sheet, filed between Profile and Log out. */}
+      {/* ── The alternatives. ──
+          Eight identical 173×136 tiles in a 2-column grid used to sit here, each
+          with a tinted icon square, a title and a description — the most
+          template-looking pattern in the app, and a claim that all eight matter
+          equally, which is false (P11 audit). One panel of rows now: the ones
+          carrying a real count lead, the rest follow in a stable order, and only
+          the names that need explaining get a line.
+
+          No heading. The hero asked "what should I practise?"; this is the rest
+          of the answer, not a new topic. */}
+      <section aria-label="Practice drills" style={{ marginBottom: SECTION_GAP }}>
+        <div style={{ ...flatPanel({ radius: 16 }), overflow: 'hidden' }}>
+          {plan.drills.map((item, i) => (
+            <DrillRow
+              key={item.key}
+              item={item}
+              accentHex={accentHex}
+              first={i === 0}
+              onClick={() => openDrill(item.key, 'list')}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* ── The gate on the level. Quiet and honest: an open row, not a card. ──
+          Nobody in the tester pool has ever finished one, and the obstacle is the
+          requirement (FSRS stability ≥ 21 days on 90% of the level), not the
+          button — so this states the requirement and stays out of the way.
+          Test.jsx owns the real rule; the row is always openable. It used to be
+          reachable on a phone only through the More sheet. */}
       <LevelTestRow
         entry={plan.levelTest}
         levelLabel={levelLabel}
@@ -166,37 +183,18 @@ export default function Practice({ profile, track, counts, onNavigate }) {
         onClick={() => onNavigate('test')}
       />
 
-      {/* ── Everything else you can drill. One grid, one tile size. ── */}
-      <section style={{ marginBottom: SECTION_GAP }}>
-        <div style={{ marginBottom: LABEL_GAP }}>
-          <Eyebrow>More drills</Eyebrow>
-        </div>
-        <div style={{
-          display: 'grid', gap: '12px',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(' + (isMobile ? '148px' : '198px') + ', 1fr))',
-        }}>
-          {plan.drills.map(item => (
-            <DrillTile
-              key={item.key}
-              item={item}
-              accentHex={accentHex}
-              onClick={() => openDrill(item.key, 'list')}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* ── Reference, deliberately quieter than a drill. ── */}
+      {/* ── Reference. Places to go, not things to practise — so this family is
+          drawn quieter than the drills above: a heading of its own, muted icons
+          rather than accent ones, and no counts. ── */}
       <section>
-        <div style={{ marginBottom: LABEL_GAP }}>
-          <Eyebrow>Look things up</Eyebrow>
-        </div>
+        <h2 style={{ margin: '0 0 ' + LABEL_GAP, fontSize: '15px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+          Look things up
+        </h2>
         <div style={{ ...flatPanel({ radius: 16 }), overflow: 'hidden' }}>
           {plan.tools.map((tool, i) => (
             <ToolRow
               key={tool.key}
               tool={tool}
-              accentHex={accentHex}
               first={i === 0}
               onClick={() => onNavigate(tool.key)}
             />
@@ -207,15 +205,21 @@ export default function Practice({ profile, track, counts, onNavigate }) {
   )
 }
 
-// The level test. One row, two states.
+// The level test. One open row, two states.
 //
-// Locked, it is quiet and explains itself: what the bar is, how far along it is,
-// and the number that opens it. It is still openable — Test.jsx owns the real
-// rule (it also unlocks for anyone who has already passed this level, which the
-// Home counts cannot see), so this row shows the requirement and never refuses.
-// Hiding it was the old behaviour and it is what made the gate invisible.
+// It was a bordered card between the hero and the grid. It is a row on the page
+// now — no surface of its own, because it is neither the recommendation nor one
+// of the alternatives, and a third card competing with the hero is what the P11
+// audit asked to remove. Quiet and honest: nobody in the tester pool has ever
+// finished one, and the obstacle is the requirement (FSRS stability ≥ 21 days
+// across 90% of the level), not the button. So the row states the requirement
+// and does not push.
+//
+// Still openable, always — Test.jsx owns the real rule (it also unlocks for
+// anyone who has already passed this level, which the Home counts cannot see), so
+// this row explains and never refuses. Hiding it was the old behaviour, and that
+// is what made the gate invisible.
 function LevelTestRow({ entry, levelLabel, nextLevelLabel, accentHex, onClick }) {
-  const [hovered, setHovered] = useState(false)
   const open = entry.unlocked
   const Icon = open ? ClipboardCheck : Lock
   const color = open ? accentHex : 'var(--text-faint)'
@@ -223,22 +227,18 @@ function LevelTestRow({ entry, levelLabel, nextLevelLabel, accentHex, onClick })
   return (
     <button
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      className="hd-press"
       aria-label={open
         ? levelLabel + ' test — unlocked'
         : levelLabel + ' test — locked. ' + entry.masteredCount + ' of ' + entry.totalWords
           + ' words mastered; unlocks at ' + entry.needed + '.'}
       style={{
-        ...flatPanel({ radius: 16 }),
         width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-        padding: '14px 15px', marginBottom: SECTION_GAP,
-        border: '1px solid ' + (open && hovered ? tintBorder(accentHex, 45) : 'var(--border)'),
-        transition: 'border-color 160ms ease, background 140ms ease',
-        background: hovered ? 'var(--surface-2)' : 'var(--surface)',
+        background: 'none', border: 'none', padding: '4px 1px',
+        marginBottom: SECTION_GAP, minHeight: '44px',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '13px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         {/* Locked or open is carried by the icon — a padlock or a clipboard —
             and by its colour. The 34px tinted square around it was the last of
             the sixteen on this screen, and one left behind reads as an
@@ -262,8 +262,14 @@ function LevelTestRow({ entry, levelLabel, nextLevelLabel, accentHex, onClick })
       {/* Locked: how far along, in the one shape the app already uses for it.
           Observational — a position, not a nag. */}
       {!open && entry.totalWords > 0 && (
-        <div style={{ marginTop: '12px' }}>
-          <div style={{ height: '4px', borderRadius: '999px', background: 'var(--surface-2)', overflow: 'hidden' }}>
+        <div style={{ marginTop: '10px' }}>
+          {/* Mixed against the TEXT, not against `--surface-2`: this bar sits on
+              the page now, and a panel colour is 6/255 from it (the same
+              correction Home needed in C2). */}
+          <div style={{
+            height: '4px', borderRadius: '999px', overflow: 'hidden',
+            background: 'color-mix(in srgb, var(--text) 10%, transparent)',
+          }}>
             <div style={{
               width: entry.pct + '%', height: '100%', borderRadius: '999px',
               background: ink(accentHex),
@@ -277,60 +283,80 @@ function LevelTestRow({ entry, levelLabel, nextLevelLabel, accentHex, onClick })
     </button>
   )
 }
-
-// One drill. Every tile is the same size with the same icon, title and one line
-// of description — the only variation is the amber treatment when something is
-// genuinely waiting, so that variation actually means something.
-function DrillTile({ item, accentHex, onClick }) {
+// A drill, as a row.
+//
+// This was `DrillTile`: a 173×136 bounded card, one of eight in a 2-column grid,
+// each with a tinted icon square, a title and a description. C1 took the square
+// away; P11 takes the card away. What is left is a row — the panel around the
+// list is the grouping surface, and a row inside it must not look like a card
+// inside a card.
+//
+// Three things vary between rows, and that is the whole point: the count (only
+// Weak words and Grammar review can carry one), the hint (only the names that
+// need one), and the icon's colour (amber when something is waiting). Rows that
+// all look identical are what the redesign is for.
+function DrillRow({ item, accentHex, first, onClick }) {
   const [hovered, setHovered] = useState(false)
   const Icon = ICONS[item.key] || Headphones
-  const signal = item.tone === 'signal'
-  const color = signal ? SIGNAL : accentHex
+  const waiting = item.tone === 'signal' && item.badge != null
+  const color = waiting ? SIGNAL : accentHex
+  const countLabel = drillCountLabel(item)
 
   return (
     <button
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      className="hd-press"
+      // The count is a number on screen; a screen reader gets the noun with it.
+      aria-label={[item.title, countLabel, item.hint].filter(Boolean).join(' — ')}
       style={{
-        ...flatPanel({ radius: 16 }),
-        position: 'relative', textAlign: 'left', cursor: 'pointer',
-        padding: '15px 14px 16px', fontFamily: 'Inter, sans-serif',
-        border: '1px solid ' + (hovered ? tintBorder(color, 45) : 'var(--border)'),
-        boxShadow: (hovered ? 'var(--shadow-2)' : 'var(--shadow-1)') + ', inset 0 1px 0 var(--hairline)',
-        transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
-        transition: 'transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease',
-        display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '112px',
+        display: 'flex', alignItems: 'center', gap: '12px', width: '100%',
+        minHeight: '54px', padding: '11px 15px', textAlign: 'left',
+        background: hovered ? 'var(--surface-2)' : 'transparent',
+        border: 'none', borderTop: first ? 'none' : '1px solid var(--border)',
+        cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+        transition: 'background 140ms ease',
       }}
     >
-      {/* The icon belongs to the tile, not to a box inside it. This was a 36px
-          tinted rounded square with its own border — eight of them in a grid,
-          the most template-looking pattern in the app (P10-C1). The colour is
-          still intentional; the container is gone. */}
-      <Icon size={22} strokeWidth={1.8} color={ink(color)} style={{ flexShrink: 0 }} />
-      <span style={{ display: 'block' }}>
-        <span style={{ display: 'block', fontSize: '14.5px', fontWeight: 700, color: 'var(--text)', lineHeight: 1.25 }}>
+      <Icon size={19} strokeWidth={1.8} color={ink(color)} style={{ flexShrink: 0 }} />
+
+      <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+        <span style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text)' }}>
           {item.title}
         </span>
-        <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.4 }}>
-          {item.desc}
-        </span>
+        {item.hint && (
+          <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.35 }}>
+            {item.hint}
+          </span>
+        )}
       </span>
+
+      {/* The count leads, as a figure — not a capsule. Typography and alignment
+          carry it: amber ink, tabular, right against the chevron. */}
       {item.badge != null && (
-        <span style={{
-          position: 'absolute', top: '13px', right: '13px',
-          fontSize: '11.5px', fontWeight: 750, lineHeight: 1,
-          color: ink(SIGNAL), background: tint(SIGNAL, 16),
-          border: '1px solid ' + tintBorder(SIGNAL, 34),
-          borderRadius: '999px', padding: '4px 9px',
-        }}>{item.badge}</span>
+        <span aria-hidden style={{
+          ...NUM, fontSize: '14px', fontWeight: 750, color: ink(SIGNAL), flexShrink: 0,
+        }}>
+          {item.badge}
+        </span>
       )}
+
+      <ChevronRight size={17} strokeWidth={2} color="var(--text-faint)" style={{ flexShrink: 0 }} />
     </button>
   )
 }
 
+
 // One line per tool: icon, name, what it's for, chevron.
-function ToolRow({ tool, accentHex, first, onClick }) {
+// A lookup tool, as a row — deliberately quieter than a DrillRow above it.
+//
+// The two families sit on the same kind of panel, so the difference has to come
+// from type and colour rather than another box: a tool's icon is muted where a
+// drill's is accent (things you do are coloured; places you look are not), its
+// title is a step smaller, and it never carries a count. `accentHex` is gone from
+// the signature for exactly that reason.
+function ToolRow({ tool, first, onClick }) {
   const [hovered, setHovered] = useState(false)
   const Icon = ICONS[tool.key] || Search
   return (
@@ -342,17 +368,19 @@ function ToolRow({ tool, accentHex, first, onClick }) {
         display: 'flex', alignItems: 'center', gap: '13px', width: '100%',
         textAlign: 'left', cursor: 'pointer', padding: '13px 15px',
         background: hovered ? 'var(--surface-2)' : 'transparent',
-        border: 'none', borderTop: first ? 'none' : '1px solid var(--hairline)',
+        // `--border`, not `--hairline`: the hairline token is a white inset
+        // highlight and vanishes as a divider on a light surface (Home C3).
+        border: 'none', borderTop: first ? 'none' : '1px solid var(--border)',
         fontFamily: 'Inter, sans-serif', transition: 'background 140ms ease',
       }}
     >
-      {/* Same rule as the tiles: the icon marks the row, a 34px tinted square
-          around it marks nothing (P10-C1). This is the pattern Profile's control
-          rows already use. */}
-      <Icon size={18} strokeWidth={1.8} color={ink(accentHex)} style={{ flexShrink: 0 }} />
+      {/* Muted, not accent — the one difference that tells this family from the
+          drill rows without drawing anything extra. (The 34px tinted square that
+          used to sit here went in P10-C1.) */}
+      <Icon size={18} strokeWidth={1.8} color="var(--text-muted)" style={{ flexShrink: 0 }} />
       <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-        <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>{tool.title}</span>
-        <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.35 }}>{tool.desc}</span>
+        <span style={{ fontSize: '13.5px', fontWeight: 650, color: 'var(--text)' }}>{tool.title}</span>
+        <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '1px', lineHeight: 1.35 }}>{tool.desc}</span>
       </span>
       <ChevronRight size={17} strokeWidth={2} color="var(--text-faint)" style={{ flexShrink: 0 }} />
     </button>

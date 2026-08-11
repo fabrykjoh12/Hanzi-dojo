@@ -319,13 +319,30 @@ no default "Story" label).
 
 ### The active phase: P11 — the Practice hub
 
-[`docs/P11-PRACTICE-AUDIT.md`](P11-PRACTICE-AUDIT.md) — audit plus three layouts,
-**awaiting the owner's pick.** Option A (Guided Practice) is recommended. Two
-findings from the live database that bear on it: **no drill screen is instrumented
-at all**, so most of the grid's usage is unmeasurable, and **no learner has ever
-finished a level test** (`test_attempts` empty, `level_unlocks` empty) because
-21-day FSRS stability on 90% of a level is out of reach for a weeks-old tester
-pool — a prominence change will not fix that.
+[`docs/P11-PRACTICE-AUDIT.md`](P11-PRACTICE-AUDIT.md) — audit, three layouts,
+**Option A (Guided Practice) approved with both amendments, built, awaiting the
+owner's report review.** §7 of that doc carries the before/after measurements.
+
+| commit | what |
+|--------|------|
+| `04ac484` | **P11-0** — `practice_drill_started {key, from}`, zero visual change |
+| *(this one)* | **P11-1** — Option A: hero + one row list + a quiet level-test row + the tools |
+
+The screen went from **11 depth-0 panels to 3** (hero, drill list, tools) and from
+1585 px to 1468 px at 390; all eight drill rows now sit above the fold at 390 and
+430, which the 2-column tile grid never managed. Descriptions are **uneven by
+design** — a hint only where the drill's name is not enough — and a waiting count
+renders as amber text, not a pill.
+
+Two facts from the live database that shaped it and still hold: **no drill screen
+is instrumented** beyond P11-0's hub-level event, so drill *completion* is still
+unmeasurable, and **no learner has ever finished a level test** (`test_attempts`
+empty, `level_unlocks` empty) because 21-day FSRS stability on 90% of a level is
+out of reach for a weeks-old tester pool — the new row's prominence will not fix
+that, and it was not built to.
+
+**Do not use P11-0's data to reorder the list yet.** The order is the audit's
+argument, not a measurement; two or three weeks of events first.
 
 Not to be resumed without the owner's word: the global token cleanup, and any
 further Home/Stories/Profile iteration.

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildPracticePlan, levelTestEntry, DRILL_KEYS, isDrillKey } from './practicePlan'
+import { buildPracticePlan, levelTestEntry, drillCountLabel, DRILL_KEYS, isDrillKey } from './practicePlan'
 import { TEST_UNLOCK_MASTERY_PCT } from './mastery'
 import { MOBILE_MORE } from './navConfig'
 import { resolveTestStatus } from './testLogic'
@@ -41,6 +41,19 @@ describe('buildPracticePlan — the primary action', () => {
   it('says one word, one pattern — not "1 words"', () => {
     expect(buildPracticePlan({ ...CHINESE, weakCount: 1 }).primary.reason).toContain('1 word ')
     expect(buildPracticePlan({ ...CHINESE, grammarDueCount: 1 }).primary.reason).toContain('1 pattern ')
+  })
+
+  it('agrees its verbs and pronouns with the count', () => {
+    // "1 pattern are due. Ten quiet minutes keeps them." was live copy until
+    // P11-1. Pluralising the noun is only half of it.
+    expect(buildPracticePlan({ ...CHINESE, weakCount: 1 }).primary.reason)
+      .toBe('1 word keeps slipping. A short pass puts it back in the queue.')
+    expect(buildPracticePlan({ ...CHINESE, weakCount: 5 }).primary.reason)
+      .toBe('5 words keep slipping. A short pass puts them back in the queue.')
+    expect(buildPracticePlan({ ...CHINESE, grammarDueCount: 1 }).primary.reason)
+      .toBe('1 pattern is due. Ten quiet minutes keeps it.')
+    expect(buildPracticePlan({ ...CHINESE, grammarDueCount: 5 }).primary.reason)
+      .toBe('5 patterns are due. Ten quiet minutes keeps them.')
   })
 
   it('always offers a call to action', () => {
@@ -90,6 +103,108 @@ describe('buildPracticePlan — the drill grid', () => {
     const quiet = buildPracticePlan(CHINESE)
     const busy = buildPracticePlan({ ...CHINESE, weakCount: 9 })
     expect(busy.drills.length).toBe(quiet.drills.length)
+  })
+})
+
+// ── P11-1, amendment 1: descriptions are UNEVEN on purpose ────────────────
+//
+// The grid this replaced gave all eight drills `icon + title + one line`, which
+// is the pattern that made the screen read as generated. The fix is not shorter
+// lines, it is fewer of them: a hint goes to a row whose name genuinely is not
+// enough, and nowhere else. So these specs assert the *absence* of a hint as
+// hard as its presence — a well-meant "add a description to every row" patch
+// has to fail here.
+describe('buildPracticePlan — hints, and where they are missing', () => {
+  const hintOf = (plan, key) => plan.drills.find(d => d.key === key)
+
+  it('explains the drills whose name is not self-evident', () => {
+    const plan = buildPracticePlan(CHINESE)
+    expect(hintOf(plan, 'fillblank').hint).toBe('Complete the sentence')
+    expect(hintOf(plan, 'builder').hint).toBe('Reorder the words')
+  })
+
+  it('leaves the self-evident ones bare', () => {
+    // "Writing", "Speaking", "Tones", "Stroke order" — a gloss under these is
+    // filler, and filler on every row is the template.
+    const plan = buildPracticePlan(CHINESE)
+    for (const key of ['writing', 'speak', 'tones', 'strokes']) {
+      expect(hintOf(plan, key).hint, key + ' should carry no hint').toBeNull()
+    }
+  })
+
+  it('keeps the list uneven in every state — never all rows, never none', () => {
+    // Deliberately not a ratio. The share moves with the data (an idle Weak
+    // words row carries a hint, a busy one does not) and on the store apps it
+    // is 4 of 7 rather than 4 of 8, because Speaking — a bare row — is absent
+    // there. Pinning a fraction would fail for a reason nobody should have to
+    // debug. What must hold is that a hint is earned: some rows have one, some
+    // never do, and `leaves the self-evident ones bare` above names which.
+    for (const c of [{}, { weakCount: 6 }, { grammarDueCount: 4 }, { weakCount: 6, grammarDueCount: 4 }, { speech: false }]) {
+      const plan = buildPracticePlan({ ...CHINESE, ...c })
+      const hinted = plan.drills.filter(d => d.hint).length
+      expect(hinted, JSON.stringify(c)).toBeGreaterThan(0)
+      expect(hinted, JSON.stringify(c)).toBeLessThan(plan.drills.length)
+      // And at least three rows are bare, so the block of hinted rows can never
+      // become the whole list by accretion.
+      expect(plan.drills.length - hinted, JSON.stringify(c)).toBeGreaterThanOrEqual(3)
+    }
+  })
+
+  it('drops the hint the moment a row has a count to show instead', () => {
+    // The count IS the explanation; printing both says one thing twice.
+    const quiet = buildPracticePlan(CHINESE)
+    expect(hintOf(quiet, 'weak').hint).toBe('Clean up the words that trip you')
+    expect(hintOf(quiet, 'grammarpractice').hint).toBe('Patterns you have met, on a schedule')
+
+    const busy = buildPracticePlan({ ...CHINESE, weakCount: 6, grammarDueCount: 2 })
+    // Weak took the hero, so grammar is the counted row left in the list.
+    expect(hintOf(busy, 'grammarpractice').hint).toBeNull()
+    expect(hintOf(busy, 'grammarpractice').badge).toBe(2)
+  })
+
+  it('always gives `hint` a value the renderer can test — null, never undefined', () => {
+    // `{item.hint && …}` is the whole render branch; an undefined would work by
+    // luck and a stray '' would draw an empty line at row height.
+    for (const c of [{}, { weakCount: 3 }, { grammarDueCount: 3 }, { speech: false }]) {
+      for (const d of buildPracticePlan({ ...CHINESE, ...c }).drills) {
+        expect(d.hint === null || (typeof d.hint === 'string' && d.hint.length > 0),
+          d.key + ' has a hint of ' + JSON.stringify(d.hint)).toBe(true)
+      }
+    }
+  })
+})
+
+// ── P11-1, amendment 2: a count is typography, not a pill ─────────────────
+//
+// The number renders as amber text beside the title, which leaves "6" with no
+// noun for anyone listening to the screen instead of looking at it.
+describe('drillCountLabel', () => {
+  it('names what the number counts', () => {
+    expect(drillCountLabel({ key: 'weak', badge: 6 })).toBe('6 words keep slipping')
+    expect(drillCountLabel({ key: 'grammarpractice', badge: 3 })).toBe('3 patterns are due')
+  })
+
+  it('says one word, one pattern', () => {
+    expect(drillCountLabel({ key: 'weak', badge: 1 })).toBe('1 word keeps slipping')
+    expect(drillCountLabel({ key: 'grammarpractice', badge: 1 })).toBe('1 pattern is due')
+  })
+
+  it('is empty for a row with nothing waiting, so nothing is announced', () => {
+    expect(drillCountLabel({ key: 'weak', badge: null })).toBe('')
+    expect(drillCountLabel(null)).toBe('')
+    expect(drillCountLabel(undefined)).toBe('')
+  })
+
+  it('falls back to the bare number for a drill that grows a count later', () => {
+    expect(drillCountLabel({ key: 'listen', badge: 4 })).toBe('4')
+  })
+
+  it('has a label for every counted row the plan can actually emit', () => {
+    for (const c of [{ weakCount: 5 }, { grammarDueCount: 5 }, { weakCount: 5, grammarDueCount: 5 }]) {
+      for (const d of buildPracticePlan({ ...CHINESE, ...c }).drills.filter(x => x.badge != null)) {
+        expect(drillCountLabel(d).length, d.key + ' announces nothing').toBeGreaterThan(3)
+      }
+    }
   })
 })
 

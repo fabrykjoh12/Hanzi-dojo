@@ -83,3 +83,60 @@ test.describe('the level test', () => {
     await expect(page.locator('nav[aria-label="Primary"]')).toHaveCount(0);
   });
 });
+
+// ── Every destination still works after the tiles became rows (P11-1) ──────
+//
+// The grid of eight bounded tiles is one panel of rows now. The rows are the
+// same targets going to the same places, and this walks all of them rather than
+// trusting that a restyle could not have unhooked one.
+test.describe('every Practice destination', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  const DRILLS = [
+    ['Weak words', '/weak'],
+    ['Grammar review', '/grammarpractice'],
+    ['Listening', '/listen'],
+    ['Speaking', '/speak'],
+    ['Writing', '/writing'],
+    ['Fill in the blank', '/fillblank'],
+    ['Sentence builder', '/builder'],
+    ['Tones', '/tones'],
+    ['Stroke order', '/strokes'],
+  ];
+
+  const TOOLS = [
+    ['Word list', '/words'],
+    ['Words you already know', '/known'],
+    ['Dictionary', '/dictionary'],
+    ['Analyze text', '/analyzer'],
+    ['Grammar guide', '/grammar'],
+    ['Videos', '/youtube'],
+  ];
+
+  test('opens every drill, from the hero or the list', async ({ page }) => {
+    for (const [name, path] of DRILLS) {
+      await page.goto('/practice');
+      await page.waitForTimeout(500);
+      // The hero holds one of these; the list holds the rest. Either is fine —
+      // what matters is that the name on this screen reaches that route. Not
+      // anchored: the hero's accessible name is its whole text ("START HERE
+      // Listening Nothing is overdue…"), so the drill's name sits inside it.
+      const target = page.getByRole('button', { name: new RegExp(name) }).first();
+      await expect(target, name).toBeVisible();
+      await target.click();
+      await expect.poll(() => new URL(page.url()).pathname, { message: name }).toBe(path);
+    }
+  });
+
+  test('opens every lookup tool', async ({ page }) => {
+    for (const [name, path] of TOOLS) {
+      await page.goto('/practice');
+      await page.waitForTimeout(500);
+      const row = page.getByRole('button', { name: new RegExp(name, 'i') }).first();
+      await expect(row, name).toBeVisible();
+      await row.click();
+      await expect.poll(() => new URL(page.url()).pathname, { message: name }).toBe(path);
+    }
+  });
+});
+
