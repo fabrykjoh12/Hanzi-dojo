@@ -11,7 +11,7 @@ import { controlGroups, CONTROL_ROW_MIN_HEIGHT } from './profileControls'
 import { knownWordMap, readableSummary, rowA11yLabel } from './knownWordMap'
 import { useIsMobile } from './useIsMobile'
 import StuckWordCoach from './StuckWordCoach'
-import { STUCK_LAPSES } from './stuckWord'
+import { STUCK_LAPSES, WEAK_LIST_MAX, weakList, weakActionLabel } from './stuckWord'
 import { confirmWordOk, forgetDeviceData, DELETE_CONFIRM_WORD } from './accountDeletion'
 import {
   LogOut, RotateCcw, Save, ChevronDown, UserX,
@@ -29,6 +29,10 @@ const ROW_ICONS = {
   remove: Trash2,
   delete: UserX,
 }
+
+// Amber means "needs attention" — a status colour, so it stays hardcoded
+// (CLAUDE.md §5), named once rather than repeated as a literal.
+const STATUS_WARN = '#D97706'
 
 const GOAL_OPTIONS = [
   { val: 5, label: 'Casual', desc: '5 cards / day' },
@@ -189,6 +193,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   const [loading, setLoading] = useState(true)
   const [activity, setActivity] = useState({})
   const [leeches, setLeeches] = useState([])
+  const [weakCount, setWeakCount] = useState(0)   // before the list is capped
   const [coachVocab, setCoachVocab] = useState(null)   // stuck-word coach target
   const [reviewStats, setReviewStats] = useState({ total: 0, correct: 0 })
   const [wordMap, setWordMap] = useState({ levels: [], totals: { total: 0, mastered: 0, known: 0, learning: 0, new: 0, readable: 0 } })
@@ -248,13 +253,12 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       .eq('user_id', session.user.id)
       .gte('lapses', STUCK_LAPSES)
       .order('lapses', { ascending: false })
-    const leechList = (leechData || [])
-      .filter(l => l.vocabulary
-        && l.vocabulary.language === track.language
-        && l.vocabulary.system === track.system
-        && l.vocabulary.level === track.current_level)
-      .slice(0, 6)
-    setLeeches(leechList)
+    // Capped for the panel; the true total drives the action's label.
+    const allWeak = weakList(leechData, {
+      language: track.language, system: track.system, level: track.current_level, max: Infinity,
+    })
+    setLeeches(allWeak.slice(0, WEAK_LIST_MAX))
+    setWeakCount(allWeak.length)
 
     // Retention: grade 0 = "Again" (forgotten), grades 1–3 all count as a
     // successful recall. Scoped to the current track, same as everything else
@@ -695,7 +699,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
           <span style={{ fontSize: '40px', fontWeight: 800, color: '#fff', lineHeight: 1, ...NUM }}>
             {loading ? '—' : progress.learned.value}
           </span>
-          <span style={{ fontSize: '15px', color: ON_HERO.body, fontWeight: 650 }}>
+          <span style={{ fontSize: '14px', color: ON_HERO.body, fontWeight: 700 }}>
             {loading ? '' : 'of ' + progress.learned.of + ' words learned'}
           </span>
         </div>
@@ -711,10 +715,10 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
           style={{ marginTop: '20px' }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '12px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13.5px', color: '#fff', fontWeight: 700 }}>
+            <span style={{ fontSize: '13px', color: '#fff', fontWeight: 650 }}>
               {progress.mastered.label}
             </span>
-            <span style={{ fontSize: '13.5px', color: ON_HERO.body, fontWeight: 650, ...NUM }}>
+            <span style={{ fontSize: '13px', color: ON_HERO.body, fontWeight: 650, ...NUM }}>
               {progress.mastered.value} of {progress.mastered.of}
             </span>
           </div>
@@ -751,48 +755,70 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         )}
       </HeroPanel>
 
+      {/* Needs attention (P10-B5). This was six full-width cards, each with its
+          own border, its own tinted pill and its own tap target — a third of the
+          screen for a list. It is five hairline rows now, capped by `weakList`,
+          and it stays hidden entirely when nothing is slipping: an empty state
+          here would be a panel explaining that there is no panel. */}
       {!loading && leeches.length > 0 && (
         <Panel>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
-            <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
-              <AlertTriangle size={17} strokeWidth={1.95} color="#D97706" />
-              Words that keep slipping
-            </h2>
-            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{leeches.length}</span>
+          <h2 style={{ margin: '0 0 3px', display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
+            <AlertTriangle size={17} strokeWidth={1.95} color={STATUS_WARN} />
+            Needs attention
+          </h2>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            These keep slipping. Tap one to see it a different way.
           </div>
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '14px', lineHeight: 1.5 }}>
-            These have lapsed the most. A focused drill helps them stick.
-          </div>
-          <div style={{ display: 'grid', gap: '8px', marginBottom: '16px' }}>
+
+          <div style={{ marginTop: '10px' }}>
             {leeches.map((l, i) => (
-              <button key={i} onClick={() => setCoachVocab(l.vocabulary)} title="See it a different way" style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', width: '100%', textAlign: 'left',
-                padding: '10px 14px', borderRadius: '12px', background: 'var(--surface-2)', border: '1px solid var(--border)',
-                cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', minWidth: 0 }}>
-                  <span style={{ fontSize: '20px', fontFamily, color: 'var(--text)', flexShrink: 0 }}>{l.vocabulary.word}</span>
-                  <span style={{ fontSize: '12px', color: pinyinInk(accentHex), fontWeight: 600, flexShrink: 0 }}>{l.vocabulary.reading}</span>
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cleanMeaning(l.vocabulary.meaning)}</span>
-                </div>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#D97706', background: 'rgba(217,119,6,0.12)', border: '1px solid rgba(217,119,6,0.28)', borderRadius: '999px', padding: '3px 9px' }}>
-                    missed {l.lapses}×
-                  </span>
-                  <Sparkles size={15} strokeWidth={2} color={accentHex} />
+              <button
+                key={l.vocabulary.id || i}
+                onClick={() => setCoachVocab(l.vocabulary)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  width: '100%', minHeight: '48px', padding: '6px 0',
+                  textAlign: 'left', background: 'none', border: 'none',
+                  borderTop: i === 0 ? 'none' : '1px solid var(--border)',
+                  cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                <span style={{ fontSize: '19px', fontFamily, color: 'var(--text)', flexShrink: 0 }}>
+                  {l.vocabulary.word}
                 </span>
+                <span style={{ fontSize: '12px', color: pinyinInk(accentHex), fontWeight: 600, flexShrink: 0 }}>
+                  {l.vocabulary.reading}
+                </span>
+                <span style={{
+                  flex: 1, minWidth: 0, fontSize: '12px', color: 'var(--text-muted)',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {cleanMeaning(l.vocabulary.meaning)}
+                </span>
+                {/* The count is the reason the word is here, so it stays — as
+                    text, not as a bordered pill repeated five times. */}
+                <span style={{ fontSize: '11.5px', fontWeight: 650, color: ink(STATUS_WARN), flexShrink: 0, ...NUM }}>
+                  {l.lapses}×
+                </span>
+                <Sparkles size={15} strokeWidth={2} color={accentHex} style={{ flexShrink: 0 }} />
               </button>
             ))}
           </div>
+
+          {/* One action, in the app's primary-action colour — the amber above is
+              the status, not the button. Says the real total when the list is
+              capped, so "review these" can't quietly mean five of nine. */}
           {onNavigate && (
             <button onClick={() => onNavigate('weak')} style={{
-              width: '100%', minHeight: '44px', borderRadius: '12px',
-              border: '1px solid rgba(217,119,6,0.30)', background: 'rgba(217,119,6,0.08)',
-              color: '#B45309', fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+              width: '100%', minHeight: '46px', marginTop: '14px', borderRadius: '12px',
+              border: '1px solid color-mix(in srgb, ' + accentHex + ' 28%, var(--surface))',
+              background: 'color-mix(in srgb, ' + accentHex + ' 8%, var(--surface))',
+              color: ink(accentHex), fontSize: '14px', fontWeight: 700,
+              fontFamily: 'Inter, sans-serif', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
             }}>
-              <RotateCcw size={16} strokeWidth={2} color="#D97706" />
-              Review weak words
+              <RotateCcw size={16} strokeWidth={2} color={ink(accentHex)} />
+              {weakActionLabel(leeches.length, weakCount)}
             </button>
           )}
         </Panel>
@@ -847,7 +873,7 @@ export function KnownWordMap({ map, accentHex, language, system }) {
   const SEGMENTS = [
     { key: 'mastered', label: 'Mastered', color: '#2F9E6D' },
     { key: 'known', label: 'Known', color: accentHex },
-    { key: 'learning', label: 'Learning', color: '#D97706' },
+    { key: 'learning', label: 'Learning', color: STATUS_WARN },
     { key: 'new', label: 'Not yet', color: 'var(--border)' },
   ]
   return (
@@ -864,7 +890,7 @@ export function KnownWordMap({ map, accentHex, language, system }) {
         {map.levels.map(row => (
           <div key={row.level}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '10px', marginBottom: '6px' }}>
-              <span style={{ fontSize: '12.5px', fontWeight: 750, color: 'var(--text)' }}>
+              <span style={{ fontSize: '13px', fontWeight: 650, color: 'var(--text)' }}>
                 {getLevelLabel(language, system, row.level)}
               </span>
               <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: 650, fontVariantNumeric: 'tabular-nums' }}>
@@ -894,7 +920,7 @@ export function KnownWordMap({ map, accentHex, language, system }) {
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '16px' }}>
         {SEGMENTS.map(seg => (
-          <span key={seg.key} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: 600 }}>
+          <span key={seg.key} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: 650 }}>
             <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: seg.color, flexShrink: 0 }} />
             {seg.label} ({map.totals[seg.key]})
           </span>

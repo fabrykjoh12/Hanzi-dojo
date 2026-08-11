@@ -348,6 +348,37 @@ function silentWav(samples = 800) {
   return Buffer.concat([header, Buffer.alloc(samples, 0x80)]);
 }
 
+// A learner with `count` genuinely stuck words at the current level, for the
+// Profile "Needs attention" panel and the weak-word drill. The `cards` table is
+// queried several times per screen, so this only takes over the query that
+// selects `lapses`; everything else falls through to the deck above.
+export async function withWeakWords(page, count = 9) {
+  await page.route('**/rest/v1/cards*', async (route) => {
+    const req = route.request();
+    if (req.method() !== 'GET' || !req.url().includes('lapses')) return route.fallback();
+    const rows = Array.from({ length: count }, (_, i) => ({
+      lapses: 3 + i,
+      vocabulary: {
+        id: 'w' + i, word: '词' + i, reading: 'cí' + i, meaning: 'word ' + i,
+        language: 'chinese', system: 'hsk', level: 2,
+      },
+    }));
+    // Plus one that has not slipped, which the panel must never list.
+    rows.push({
+      lapses: 1,
+      vocabulary: {
+        id: 'ok', word: '好', reading: 'hǎo', meaning: 'fine',
+        language: 'chinese', system: 'hsk', level: 2,
+      },
+    });
+    return route.fulfill({
+      status: 200,
+      headers: { ...CORS, 'content-type': 'application/json', 'content-range': '0-' + rows.length + '/*' },
+      body: JSON.stringify(rows),
+    });
+  });
+}
+
 export async function mockSupabaseRoutes(page) {
   await page.route(`**/${REF}.supabase.co/**`, async (route) => {
     const req = route.request();

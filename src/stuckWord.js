@@ -9,6 +9,38 @@ import { toneOf } from './toneColor'
 // surfaces while a word is still slipping, not only after it's badly stuck.
 export const STUCK_LAPSES = 3
 
+// ── Profile's "Needs attention" list ─────────────────────────────────────
+// How many stuck words Profile lists. Five is enough to recognise the pattern
+// without the panel becoming the page — it used to show six full-width cards
+// and take a third of the screen (P10-B5). The rest are one tap away in the
+// weak-words drill.
+export const WEAK_LIST_MAX = 5
+
+// The rows the panel shows: this track's stuck words, worst first, capped.
+// `rows` come from a cards query joined to vocabulary — { lapses, vocabulary }.
+//
+// The lapse threshold is re-checked here even though the query asks for it: a
+// panel titled "words that keep slipping" must never be able to list a word
+// that has not slipped, whatever the query returns.
+export function weakList(rows, { language, system, level, max = WEAK_LIST_MAX } = {}) {
+  return (rows || [])
+    .filter(r => r && r.vocabulary
+      && r.vocabulary.language === language
+      && r.vocabulary.system === system
+      && r.vocabulary.level === level
+      && isStuck(r))
+    .sort((a, b) => (b.lapses || 0) - (a.lapses || 0))
+    .slice(0, Math.max(0, max))
+}
+
+// One action under the list. When the list is capped it says so, because
+// "review these words" would otherwise quietly mean "review five of nine".
+export function weakActionLabel(shown, total) {
+  return (total || 0) > (shown || 0)
+    ? 'Review all ' + total + ' weak words'
+    : 'Review these words'
+}
+
 export function isStuck(card) {
   return !!(card && (card.lapses || 0) >= STUCK_LAPSES)
 }

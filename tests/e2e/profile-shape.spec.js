@@ -1,4 +1,4 @@
-import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
+import { authedTest as test, expect, withWeakWords } from '../fixtures/mockSupabase.js';
 
 // P10-B — the shape of Profile, as a contract.
 //
@@ -123,6 +123,9 @@ test.describe('Profile shape — the budget', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
   test('reports its measurements', async ({ page }) => {
+    // The worst case: a learner with words slipping, so the "Needs attention"
+    // panel is on screen. The audit's 4.48 viewports was measured this way too.
+    await withWeakWords(page, 9);
     await page.goto('/profile');
     await page.waitForTimeout(1200);
     const s = await shape(page);
@@ -131,8 +134,12 @@ test.describe('Profile shape — the budget', () => {
       typeStyles: s.typeStyles, controls: s.controls, under44: s.under44.length,
       headings: s.headings,
     }));
-    // The audit's numbers were 4.48 / 55 / 24 / 117.
-    expect(s.viewports).toBeLessThan(4.48);
+    // The audit's numbers were 4.48 viewports, 55 containers, 24 type styles and
+    // 117 sub-44px targets. These are the ceilings B1-B5 brought them under, set
+    // just above the measured values so a real regression trips them.
+    expect(s.viewports).toBeLessThan(2.2);
+    expect(s.containers).toBeLessThanOrEqual(8);
+    expect(s.typeStyles).toBeLessThanOrEqual(12);
     // B4 gave the last two sub-44px targets a real hit area; nothing may
     // reintroduce one.
     expect(s.under44.length, JSON.stringify(s.under44)).toBe(0);
@@ -142,6 +149,7 @@ test.describe('Profile shape — the budget', () => {
   // panels and a button, ~590px of permanent screen. As collapsed rows they are
   // a fraction of that, with every option still one tap away (P10-B4).
   test('keeps the controls to a band of rows, not a stack of panels', async ({ page }) => {
+    await withWeakWords(page, 9);
     await page.goto('/profile');
     await page.waitForTimeout(1200);
     const band = await page.evaluate(() => {

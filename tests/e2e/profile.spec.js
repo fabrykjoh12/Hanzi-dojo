@@ -1,4 +1,4 @@
-import { authedTest as test, expect, ACTIVE_VOCAB_COUNT } from '../fixtures/mockSupabase.js';
+import { authedTest as test, expect, ACTIVE_VOCAB_COUNT, withWeakWords } from '../fixtures/mockSupabase.js';
 
 // P10-B4: the controls are rows now — the daily goal, reset, remove and delete
 // each open from a labelled row instead of occupying a panel apiece. The
@@ -299,5 +299,46 @@ test.describe('Profile — recent progress', () => {
     expect(writes[0].daily_new_cards).toBe(15);
     await expect(page.getByRole('button', { name: /Daily new cards/, expanded: false })).toBeVisible();
     await expect(page.getByText('15 a day')).toBeVisible();
+  });
+
+  // P10-B5: the panel was six full-width cards and a third of the screen.
+  test('lists at most five slipping words, worst first', async ({ page }) => {
+    await withWeakWords(page, 9);
+    await page.goto('/profile');
+
+    await expect(page.getByRole('heading', { name: 'Needs attention' })).toBeVisible();
+    // 词8 has the most lapses (11), 词4 the fifth most (7).
+    for (const word of ['词8', '词7', '词6', '词5', '词4']) {
+      await expect(page.getByText(word, { exact: true })).toBeVisible();
+    }
+    await expect(page.getByText('词3', { exact: true })).toHaveCount(0);
+    // A word that has not slipped is never listed here, whatever the query returns.
+    await expect(page.getByText('好', { exact: true })).toHaveCount(0);
+
+    // And the action admits what the cap hides.
+    await expect(page.getByRole('button', { name: 'Review all 9 weak words' })).toBeVisible();
+  });
+
+  test('says nothing about a total when nothing is hidden', async ({ page }) => {
+    await withWeakWords(page, 3);
+    await page.goto('/profile');
+    await expect(page.getByRole('button', { name: 'Review these words' })).toBeVisible();
+  });
+
+  test('hides the panel entirely when nothing is slipping', async ({ page }) => {
+    await page.goto('/profile');   // the mock deck has no stuck words
+    await expect(page.getByRole('heading', { name: 'Needs attention' })).toHaveCount(0);
+    await expect(page.getByText(/keep slipping/i)).toHaveCount(0);
+  });
+
+  test('a slipping word opens the coach rather than a new screen', async ({ page }) => {
+    await withWeakWords(page, 5);
+    await page.goto('/profile');
+    await page.getByRole('button', { name: /词4/ }).click();
+    // The coach sheet, not a route change: the URL is still /profile.
+    await expect(page.getByText('A different angle')).toBeVisible();
+    // (The AppBar's own Close is the other one — the sheet's is outside #main-content.)
+    await expect(page.getByRole('button', { name: 'Close' })).toHaveCount(2);
+    expect(new URL(page.url()).pathname).toBe('/profile');
   });
 });
