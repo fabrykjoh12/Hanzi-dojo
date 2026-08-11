@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { MoreHorizontal, X } from 'lucide-react'
 import { languageTheme, ink } from './languageTheme'
 import { MOBILE_PRIMARY, MOBILE_MORE, ADMIN_NAV } from './navConfig'
+import { navBadge, navItemLabel } from './navBadges'
 import { trapDialogFocus } from './dialogFocus'
 import { pushSheet } from './sheetStack'
 import { tapFeedback } from './haptics'
@@ -13,13 +14,16 @@ const MUTED = 'var(--text-muted)'
 const PRIMARY = MOBILE_PRIMARY
 const MORE_ITEMS = MOBILE_MORE
 
-function Tab({ icon: Icon, label, active, accentHex, onClick, expanded, hasPopup }) {
+function Tab({ icon: Icon, label, active, accentHex, onClick, expanded, hasPopup, badge }) {
   return (
     <button
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
       aria-expanded={expanded}
       aria-haspopup={hasPopup}
+      // The count is drawn as digits and spoken as words; without this the
+      // screen reader would say "Cards 24", which is a different sentence.
+      aria-label={badge ? navItemLabel(label, badge) : undefined}
       className={'hd-tab hd-press' + (active ? ' is-active' : '')}
       style={{
         flex: 1, background: 'none', border: 'none', cursor: 'pointer',
@@ -27,11 +31,30 @@ function Tab({ icon: Icon, label, active, accentHex, onClick, expanded, hasPopup
         gap: '3px', padding: '9px 0 7px', minWidth: 0,
       }}
     >
-      <Icon
-        className="hd-tab-icon"
-        size={22} strokeWidth={active ? 2.2 : 1.85}
-        color={active ? accentHex : MUTED}
-      />
+      <span style={{ position: 'relative', display: 'flex' }}>
+        <Icon
+          className="hd-tab-icon"
+          size={22} strokeWidth={active ? 2.2 : 1.85}
+          color={active ? accentHex : MUTED}
+        />
+        {/* How many cards are waiting. Plain accent digits beside the icon —
+            not a filled pill, not a circle, not a red dot. The rail already
+            made this call once (Sidebar.jsx) and it is the same call: this is
+            information, not an alert, and the bar is not a notification tray.
+            Absolutely positioned so it cannot shift the icon or the label, and
+            it carries no transition — a number that animates when it changes
+            is a number asking to be watched. */}
+        {badge && (
+          <span aria-hidden style={{
+            position: 'absolute', left: '100%', top: '-4px', marginLeft: '1px',
+            fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
+            fontSize: '10px', fontWeight: 750, lineHeight: 1,
+            letterSpacing: '-0.01em', color: accentHex,
+          }}>
+            {badge}
+          </span>
+        )}
+      </span>
       <span style={{
         fontSize: '10.5px', fontWeight: active ? 700 : 500,
         letterSpacing: '0.1px', color: active ? accentHex : MUTED,
@@ -43,7 +66,7 @@ function Tab({ icon: Icon, label, active, accentHex, onClick, expanded, hasPopup
   )
 }
 
-export default function MobileNav({ view, onNavigate, onLogout, isAdmin, language }) {
+export default function MobileNav({ view, onNavigate, onLogout, isAdmin, language, counts }) {
   const [moreOpen, setMoreOpen] = useState(false)
   const accentHex = languageTheme(language).accentHex
   const accentInk = ink(accentHex)
@@ -207,7 +230,8 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
         </span>
 
         {PRIMARY.map(item => (
-          <Tab key={item.key} icon={item.icon} label={item.label} accentHex={accentInk} active={view === item.key} onClick={() => go(item.key)} />
+          <Tab key={item.key} icon={item.icon} label={item.label} accentHex={accentInk}
+            active={view === item.key} badge={navBadge(item.key, counts)} onClick={() => go(item.key)} />
         ))}
         <Tab icon={MoreHorizontal} label="More" accentHex={accentInk} active={moreActive}
           expanded={moreOpen} hasPopup="dialog" onClick={() => setMoreOpen(o => !o)} />

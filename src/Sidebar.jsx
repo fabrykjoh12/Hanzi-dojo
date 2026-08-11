@@ -5,6 +5,7 @@ import { useTheme } from './ThemeContext'
 import { languageTheme, ink } from './languageTheme'
 import { getLevelLabel } from './utils'
 import { PRIMARY_NAV, NAV_GROUPS, ADMIN_NAV } from './navConfig'
+import { navBadge, navItemLabel } from './navBadges'
 import { BRAND_NAME, wordmarkStyle } from './brand'
 
 // ── Sidebar ───────────────────────────────────────────────────────────────
@@ -65,7 +66,7 @@ function NavItem({ item, isActive, collapsed, accentInk, badge, onClick }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       aria-current={isActive ? 'page' : undefined}
-      aria-label={badge ? `${item.label}, ${badge} waiting` : item.label}
+      aria-label={navItemLabel(item.label, badge)}
       className={'hd-nav-item hd-press' + (collapsed ? ' is-collapsed' : '')}
       style={{
         position: 'relative',
@@ -184,11 +185,11 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
   // The level lives on the active track, not the profile.
   const levelLabel = track ? getLevelLabel(language, track.system, track.current_level) : null
 
-  // The one live number in the rail. Same total the Home hero shows, so the two
-  // never disagree; hidden at zero, because "0" is a nag and the product's
-  // stance is that a cleared queue should look cleared, not scored.
-  const waiting = (counts?.newCount || 0) + (counts?.learnCount || 0) + (counts?.dueCount || 0)
-  const badgeFor = (key) => (key === 'study' && waiting > 0 ? waiting : null)
+  // The one live number in the rail. Same total the Home hero shows and the
+  // same total the mobile bar shows, because all three now ask navBadges.js —
+  // hidden at zero, because "0" is a nag and the product's stance is that a
+  // cleared queue should look cleared, not scored.
+  const badgeFor = (key) => navBadge(key, counts)
 
   const hairline = { height: '1px', background: 'var(--border)', opacity: 0.7 }
 
