@@ -1,23 +1,134 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, metaLine} from './utils'
-import { languageTheme, availableLanguages, pinyinInk} from './languageTheme'
+import { languageTheme, availableLanguages, pinyinInk, ink} from './languageTheme'
 import { PageHeader, HeroPanel, Eyebrow } from './panels'
 import { ON_HERO, NUM } from './designTokens'
 import { isMastered, TEST_UNLOCK_MASTERY_PCT } from './mastery'
 import { cleanMeaning } from './cleanMeaning'
 import { profileProgress } from './profileProgress'
+import { controlGroups, CONTROL_ROW_MIN_HEIGHT } from './profileControls'
 import { knownWordMap, readableSummary, rowA11yLabel } from './knownWordMap'
 import { useIsMobile } from './useIsMobile'
 import StuckWordCoach from './StuckWordCoach'
 import { STUCK_LAPSES } from './stuckWord'
 import { confirmWordOk, forgetDeviceData, DELETE_CONFIRM_WORD } from './accountDeletion'
 import {
-  LogOut, RotateCcw, Save,
+  LogOut, RotateCcw, Save, ChevronDown, UserX,
   Sparkles, Target, CalendarCheck, AlertTriangle, BookOpen, Trash2,
 } from 'lucide-react'
 import AppBar from './AppBar'
 
+
+// One icon per control row. lucide, like every other icon in the app — the
+// custom family is the bottom nav's alone (P8).
+const ROW_ICONS = {
+  goal: Target,
+  signout: LogOut,
+  reset: RotateCcw,
+  remove: Trash2,
+  delete: UserX,
+}
+
+const GOAL_OPTIONS = [
+  { val: 5, label: 'Casual', desc: '5 cards / day' },
+  { val: 10, label: 'Regular', desc: '10 cards / day' },
+  { val: 15, label: 'Intensive', desc: '15 cards / day' },
+]
+
+// A labelled row that opens its own control. The row IS the disclosure button:
+// label on the left, current value on the right, chevron last.
+function ControlRow({ row, icon: Icon, accentHex, danger, first, open, onActivate, children }) {
+  const bodyId = 'profile-control-' + row.key
+  return (
+    <div style={{ borderTop: first ? 'none' : '1px solid var(--border)' }}>
+      <button
+        onClick={onActivate}
+        aria-expanded={row.expands ? open : undefined}
+        aria-controls={row.expands && open ? bodyId : undefined}
+        style={{
+          width: '100%', minHeight: CONTROL_ROW_MIN_HEIGHT + 'px',
+          display: 'flex', alignItems: 'center', gap: '11px',
+          padding: '6px 0', background: 'none', border: 'none',
+          textAlign: 'left', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+        }}
+      >
+        <Icon size={17} strokeWidth={1.85} color={danger ? 'var(--danger)' : accentHex} />
+        <span style={{
+          flex: 1, minWidth: 0, fontSize: '14px', fontWeight: 700,
+          color: danger ? 'var(--danger)' : 'var(--text)',
+        }}>
+          {row.label}
+        </span>
+        {row.value && (
+          <span style={{ fontSize: '13px', fontWeight: 650, color: 'var(--text-muted)', flexShrink: 0, ...NUM }}>
+            {row.value}
+          </span>
+        )}
+        {row.expands && (
+          <ChevronDown
+            size={17}
+            strokeWidth={2}
+            color="var(--text-faint)"
+            style={{
+              flexShrink: 0, transition: 'transform 160ms ease',
+              transform: open ? 'rotate(180deg)' : 'none',
+            }}
+          />
+        )}
+      </button>
+
+      {row.expands && open && (
+        <div id={bodyId} style={{ paddingBottom: '16px' }}>{children}</div>
+      )}
+    </div>
+  )
+}
+
+// The language chips inside the reset and remove controls. A real 44px target —
+// they used to be 31px tall.
+function TrackChip({ track, on, disabled, dim, onClick }) {
+  return (
+    <button
+      role="radio"
+      aria-checked={on}
+      disabled={disabled}
+      onClick={onClick}
+      style={{
+        minHeight: '44px', padding: '0 14px', borderRadius: '11px',
+        cursor: disabled ? 'default' : 'pointer',
+        fontFamily: 'Inter, sans-serif', fontSize: '13px',
+        fontWeight: on ? 700 : 550,
+        border: '1px solid ' + (on ? 'var(--danger)' : 'var(--border)'),
+        background: on ? 'var(--danger-bg)' : 'var(--surface)',
+        color: on ? 'var(--danger)' : 'var(--text-muted)',
+        opacity: dim ? 0.5 : 1,
+      }}
+    >
+      {languageTheme(track.language).languageName}
+      <span style={{ opacity: 0.7, fontWeight: 500 }}>
+        {' · ' + getLevelLabel(track.language, track.system, track.current_level)}
+      </span>
+    </button>
+  )
+}
+
+// "Cancel reset" and friends: text, not a button shape, but still a full-height
+// target rather than the 19px line of type it used to be.
+function QuietButton({ onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        minHeight: '44px', padding: '0 4px', background: 'none', border: 'none',
+        color: 'var(--text-muted)', cursor: 'pointer',
+        fontSize: '13px', fontFamily: 'Inter, sans-serif',
+      }}
+    >
+      {children}
+    </button>
+  )
+}
 
 function getLanguageDetails(profile) {
   const t = languageTheme(profile.active_language)
@@ -46,7 +157,9 @@ function Shell({ children }) {
 
 export default function Profile({ session, profile, track, onBack, onNavigate, onUpdate }) {
   const [stats, setStats] = useState({ learned: 0, totalCards: 0, masteredCount: 0, totalWords: 0 })
-  const [editingGoal, setEditingGoal] = useState(false)
+  // Which control row is open. One at a time, so the screen stays short and an
+  // armed destructive action can never hide behind a collapsed row.
+  const [openRow, setOpenRow] = useState(null)
   const [newGoal, setNewGoal] = useState(profile.daily_new_cards)
   const [saving, setSaving] = useState(false)
   const [confirmingReset, setConfirmingReset] = useState(false)
@@ -162,7 +275,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   }
 
   const saveGoal = async () => {
-    if (newGoal === profile.daily_new_cards) { setEditingGoal(false); return }
+    if (newGoal === profile.daily_new_cards) { setOpenRow(null); return }
     setSaving(true)
     const { error } = await supabase
       .from('profiles')
@@ -170,7 +283,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       .eq('id', session.user.id)
     if (!error && onUpdate) onUpdate({ daily_new_cards: newGoal })
     setSaving(false)
-    setEditingGoal(false)
+    setOpenRow(null)
   }
 
   useEffect(() => {
@@ -328,6 +441,237 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     ? Math.round((reviewStats.correct / reviewStats.total) * 100)
     : null
 
+  // Tapping a row opens its control; tapping it again, or opening another,
+  // closes and DISARMS it — a half-confirmed reset must never survive out of
+  // sight. Sign out is the one row that simply acts.
+  const toggleRow = (row) => {
+    if (row.key === 'signout') { supabase.auth.signOut(); return }
+    const next = openRow === row.key ? null : row.key
+    setOpenRow(next)
+    if (row.key === 'goal' && next) setNewGoal(profile.daily_new_cards)
+    setConfirmingReset(false); setResetError('')
+    setConfirmingRemove(false); setRemoveError('')
+    setDeleteArmed(false); setDeleteWord(''); setDeleteError('')
+  }
+
+  // The control each row opens. Same options, same warnings, same two-step
+  // confirmations as the four panels these replaced.
+  const rowBody = (key) => {
+    if (key === 'goal') return (
+      <div>
+        <div style={{ display: 'grid', gap: '9px' }}>
+          {GOAL_OPTIONS.map(opt => (
+            <button
+              key={opt.val}
+              onClick={() => setNewGoal(opt.val)}
+              aria-pressed={newGoal === opt.val}
+              style={{
+                minHeight: '48px', padding: '12px 16px', borderRadius: '14px', textAlign: 'left',
+                border: '1.5px solid ' + (newGoal === opt.val ? accentHex : 'var(--border)'),
+                background: newGoal === opt.val
+                  ? 'color-mix(in srgb, ' + accentHex + ' 8%, var(--surface))'
+                  : 'var(--surface)',
+                cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              <span style={{ fontWeight: 750, fontSize: '14px', color: newGoal === opt.val ? ink(accentHex) : 'var(--text)' }}>
+                {opt.label}
+              </span>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{opt.desc}</span>
+            </button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+          <SmallButton onClick={() => setOpenRow(null)}>Cancel</SmallButton>
+          <SmallButton onClick={saveGoal} accentHex={accentHex} filled disabled={saving} icon={Save}>
+            {saving ? 'Saving' : 'Save'}
+          </SmallButton>
+        </div>
+      </div>
+    )
+
+    // Reset is scoped to ONE language. The account-wide part — the study
+    // history — is a separate opt-in, because daily_activity has no language
+    // column and so cannot be cleared for one track alone.
+    if (key === 'reset') return (
+      <div>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+          Clears flashcards, tests, story reads and unlocks for{' '}
+          <strong style={{ color: 'var(--text)', fontWeight: 700 }}>
+            {languageTheme(targetTrack.language).languageName}
+          </strong>{' '}
+          and puts that track back to{' '}
+          {getLevelLabel(targetTrack.language, targetTrack.system, 1)}. Your other
+          languages are untouched.
+        </div>
+
+        {/* Only a choice once there is something to choose between. */}
+        {tracks.length > 1 && !confirmingReset && (
+          <div role="radiogroup" aria-label="Language to reset" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '14px' }}>
+            {tracks.map(t => (
+              <TrackChip
+                key={t.language}
+                track={t}
+                on={t.language === targetTrack.language}
+                onClick={() => setResetTarget(t.language)}
+              />
+            ))}
+          </div>
+        )}
+
+        <label style={{
+          display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px',
+          minHeight: '44px', cursor: 'pointer',
+          fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.45,
+        }}>
+          <input
+            type="checkbox"
+            checked={clearHistory}
+            onChange={e => setClearHistory(e.target.checked)}
+            style={{ width: '18px', height: '18px', flexShrink: 0, accentColor: 'var(--danger)', cursor: 'pointer' }}
+          />
+          <span>
+            Also clear my study history.{' '}
+            <span style={{ color: 'var(--danger)', fontWeight: 650 }}>
+              This one covers every language
+            </span>{' '}
+            — the record is of days you studied, not which language you studied.
+          </span>
+        </label>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px', flexWrap: 'wrap' }}>
+          <SmallButton onClick={resetProgress} danger filled={confirmingReset} disabled={resetting} icon={RotateCcw}>
+            {resetting ? 'Resetting' : confirmingReset ? 'Confirm reset' : 'Reset'}
+          </SmallButton>
+          {confirmingReset && !resetting && (
+            <QuietButton onClick={() => { setConfirmingReset(false); setResetError('') }}>
+              Cancel reset
+            </QuietButton>
+          )}
+        </div>
+
+        {resetError && (
+          <div style={{ fontSize: '12px', color: 'var(--danger)', marginTop: '10px', lineHeight: 1.4 }}>
+            {resetError}
+          </div>
+        )}
+      </div>
+    )
+
+    // Only reachable for a track whose language has since been paused — it
+    // stuck around so it's never silently orphaned, but the learner can choose
+    // to actually drop it here.
+    if (key === 'remove') return (
+      <div>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+          {removeTarget
+            ? <>Deletes your <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{languageTheme(removeTarget).languageName}</strong> track and its flashcards, tests, story reads and unlocks. This can't be undone.</>
+            : "These tracks are for a language that's not offered right now — pick one to remove it."}
+        </div>
+
+        <div role="radiogroup" aria-label="Language to remove" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '14px' }}>
+          {removableTracks.map(t => (
+            <TrackChip
+              key={t.language}
+              track={t}
+              on={t.language === removeTarget}
+              disabled={confirmingRemove}
+              dim={confirmingRemove && t.language !== removeTarget}
+              onClick={() => { setRemoveTarget(t.language); setConfirmingRemove(false); setRemoveError('') }}
+            />
+          ))}
+        </div>
+
+        {removeTarget && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px', flexWrap: 'wrap' }}>
+            <SmallButton onClick={() => removeLanguageTrack(removeTarget)} danger filled={confirmingRemove} disabled={removing} icon={Trash2}>
+              {removing ? 'Removing' : confirmingRemove ? 'Confirm remove' : 'Remove'}
+            </SmallButton>
+            {confirmingRemove && !removing && (
+              <QuietButton onClick={() => { setConfirmingRemove(false); setRemoveError('') }}>
+                Cancel remove
+              </QuietButton>
+            )}
+          </div>
+        )}
+
+        {removeError && (
+          <div style={{ fontSize: '12px', color: 'var(--danger)', marginTop: '10px', lineHeight: 1.4 }}>
+            {removeError}
+          </div>
+        )}
+      </div>
+    )
+
+    // Account deletion — self-serve and in-app, as both app stores require.
+    // Total and permanent: the delete_my_account RPC removes every owned row and
+    // the login itself. One notch sterner than the reset: armed by a tap,
+    // confirmed by typing the word.
+    if (key === 'delete') return (
+      <div>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+          Permanently deletes your account and everything in it — flashcards, review
+          history, story progress, test results and settings, for every language —
+          and your login with it. <strong style={{ color: 'var(--danger)', fontWeight: 700 }}>This
+          cannot be undone.</strong> For a fresh start without losing your account,
+          use “Reset a language” instead.
+        </div>
+
+        {deleteArmed && (
+          <div style={{ marginTop: '14px' }}>
+            <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px' }}>
+              Type <strong style={{ color: 'var(--danger)', fontWeight: 700 }}>{DELETE_CONFIRM_WORD}</strong> to
+              confirm you want your account gone for good.
+            </label>
+            <input
+              type="text"
+              value={deleteWord}
+              onChange={e => setDeleteWord(e.target.value)}
+              disabled={deleting}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              aria-label={'Type ' + DELETE_CONFIRM_WORD + ' to confirm account deletion'}
+              style={{
+                width: '100%', maxWidth: '260px', boxSizing: 'border-box',
+                minHeight: '44px', padding: '10px 12px', borderRadius: '10px',
+                border: '1px solid var(--danger-border)',
+                background: 'var(--surface)', color: 'var(--text)',
+                fontSize: '14px', fontFamily: 'Inter, sans-serif',
+              }}
+            />
+          </div>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px', flexWrap: 'wrap' }}>
+          <SmallButton
+            onClick={deleteAccount}
+            danger
+            filled={deleteArmed}
+            disabled={deleting || (deleteArmed && !confirmWordOk(deleteWord))}
+            icon={Trash2}
+          >
+            {deleting ? 'Deleting' : deleteArmed ? 'Delete forever' : 'Delete account'}
+          </SmallButton>
+          {deleteArmed && !deleting && (
+            <QuietButton onClick={() => { setDeleteArmed(false); setDeleteWord(''); setDeleteError('') }}>
+              Cancel — keep my account
+            </QuietButton>
+          )}
+        </div>
+
+        {deleteError && (
+          <div style={{ fontSize: '12px', color: 'var(--danger)', marginTop: '10px', lineHeight: 1.4 }}>
+            {deleteError}
+          </div>
+        )}
+      </div>
+    )
+
+    return null
+  }
+
   return (
     <Shell accentHex={accentHex} fontFamily={fontFamily}>
       <AppBar kind="close" onBack={onBack} sticky={false} />
@@ -462,319 +806,39 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         </Panel>
       )}
 
-      <Panel>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '18px', marginBottom: editingGoal ? '16px' : 0 }}>
-          <div>
-            <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
-              <Target size={17} strokeWidth={1.85} color={accentHex} />
-              Daily new cards
-            </h2>
-            {!editingGoal && (
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                {profile.daily_new_cards} new cards per day
-              </div>
-            )}
-          </div>
-          {!editingGoal ? (
-            <SmallButton onClick={() => { setEditingGoal(true); setNewGoal(profile.daily_new_cards) }}>
-              Change
-            </SmallButton>
-          ) : (
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <SmallButton onClick={() => setEditingGoal(false)}>Cancel</SmallButton>
-              <SmallButton onClick={saveGoal} accentHex={accentHex} filled disabled={saving} icon={Save}>
-                {saving ? 'Saving' : 'Save'}
-              </SmallButton>
-            </div>
-          )}
-        </div>
-
-        {editingGoal && (
-          <div style={{ display: 'grid', gap: '9px' }}>
-            {[
-              { val: 5, label: 'Casual', desc: '5 cards / day' },
-              { val: 10, label: 'Regular', desc: '10 cards / day' },
-              { val: 15, label: 'Intensive', desc: '15 cards / day' },
-            ].map(opt => (
-              <button
-                key={opt.val}
-                onClick={() => setNewGoal(opt.val)}
-                style={{
-                  padding: '14px 16px', borderRadius: '14px', textAlign: 'left',
-                  border: '1.5px solid ' + (newGoal === opt.val ? accentHex : 'var(--border)'),
-                  background: newGoal === opt.val ? accentHex + '08' : 'var(--surface)',
-                  cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  fontFamily: 'Inter, sans-serif',
-                }}
-              >
-                <span style={{ fontWeight: 750, fontSize: '14px', color: newGoal === opt.val ? accentHex : 'var(--text)' }}>
-                  {opt.label}
-                </span>
-                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{opt.desc}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </Panel>
-
-      {/* Reset is scoped to ONE language. The account-wide part — study history
-          and streak — is a separate opt-in below, because daily_activity has no
-          language column and so cannot be cleared for one track alone. */}
-      <Panel danger>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '18px', alignItems: 'center' }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Reset a language</h2>
-            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
-              Clears flashcards, tests, story reads and unlocks for{' '}
-              <strong style={{ color: 'var(--text)', fontWeight: 700 }}>
-                {languageTheme(targetTrack.language).languageName}
-              </strong>{' '}
-              and puts that track back to{' '}
-              {getLevelLabel(targetTrack.language, targetTrack.system, 1)}. Your other
-              languages are untouched.
-            </div>
-          </div>
-          <SmallButton onClick={resetProgress} danger filled={confirmingReset} disabled={resetting} icon={RotateCcw}>
-            {resetting ? 'Resetting' : confirmingReset ? 'Confirm reset' : 'Reset'}
-          </SmallButton>
-        </div>
-
-        {/* Only a choice once there is something to choose between. */}
-        {tracks.length > 1 && !confirmingReset && (
-          <div role="radiogroup" aria-label="Language to reset" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '14px' }}>
-            {tracks.map(t => {
-              const on = t.language === targetTrack.language
-              return (
-                <button
-                  key={t.language}
-                  role="radio"
-                  aria-checked={on}
-                  onClick={() => setResetTarget(t.language)}
-                  style={{
-                    padding: '7px 13px', borderRadius: '9px', cursor: 'pointer',
-                    fontFamily: 'Inter, sans-serif', fontSize: '13px',
-                    fontWeight: on ? 700 : 550,
-                    border: '1px solid ' + (on ? 'var(--danger)' : 'var(--border)'),
-                    background: on ? 'var(--danger-bg)' : 'var(--surface)',
-                    color: on ? 'var(--danger)' : 'var(--text-muted)',
-                  }}
-                >
-                  {languageTheme(t.language).languageName}
-                  <span style={{ opacity: 0.7, fontWeight: 500 }}>
-                    {' · ' + getLevelLabel(t.language, t.system, t.current_level)}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        )}
-
-        <label style={{
-          display: 'flex', alignItems: 'flex-start', gap: '9px', marginTop: '14px',
-          cursor: 'pointer', fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.45,
-        }}>
-          <input
-            type="checkbox"
-            checked={clearHistory}
-            onChange={e => setClearHistory(e.target.checked)}
-            style={{ marginTop: '2px', accentColor: 'var(--danger)', cursor: 'pointer' }}
-          />
-          <span>
-            Also clear my study history.{' '}
-            <span style={{ color: 'var(--danger)', fontWeight: 650 }}>
-              This one covers every language
-            </span>{' '}
-            — the record is of days you studied, not which language you studied.
-          </span>
-        </label>
-
-        {confirmingReset && !resetting && (
-          <button
-            onClick={() => { setConfirmingReset(false); setResetError('') }}
-            style={{
-              marginTop: '12px', background: 'none', border: 'none',
-              padding: 0, color: 'var(--text-muted)', cursor: 'pointer',
-              fontSize: '13px', fontFamily: 'Inter, sans-serif',
-            }}
-          >
-            Cancel reset
-          </button>
-        )}
-
-        {resetError && (
-          <div style={{ fontSize: '12px', color: 'var(--danger)', marginTop: '10px', lineHeight: 1.4 }}>
-            {resetError}
-          </div>
-        )}
-      </Panel>
-
-      {/* Only shows up for a track whose language has since been paused (e.g.
-          Japanese/Russian) — it stuck around so it's never silently orphaned,
-          but the learner can choose to actually drop it here. */}
-      {removableTracks.length > 0 && (
-        <Panel danger>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '18px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div>
-              <h2 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Remove a language</h2>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
-                {removeTarget
-                  ? <>Deletes your <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{languageTheme(removeTarget).languageName}</strong> track and its flashcards, tests, story reads and unlocks. This can't be undone.</>
-                  : "These tracks are for a language that's not offered right now — pick one to remove it."}
-              </div>
-            </div>
-            {removeTarget && (
-              <SmallButton onClick={() => removeLanguageTrack(removeTarget)} danger filled={confirmingRemove} disabled={removing} icon={Trash2}>
-                {removing ? 'Removing' : confirmingRemove ? 'Confirm remove' : 'Remove'}
-              </SmallButton>
-            )}
-          </div>
-
-          <div role="radiogroup" aria-label="Language to remove" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '14px' }}>
-            {removableTracks.map(t => {
-              const on = t.language === removeTarget
-              return (
-                <button
-                  key={t.language}
-                  role="radio"
-                  aria-checked={on}
-                  disabled={confirmingRemove}
-                  onClick={() => { setRemoveTarget(t.language); setConfirmingRemove(false); setRemoveError('') }}
-                  style={{
-                    padding: '7px 13px', borderRadius: '9px', cursor: confirmingRemove ? 'default' : 'pointer',
-                    fontFamily: 'Inter, sans-serif', fontSize: '13px',
-                    fontWeight: on ? 700 : 550,
-                    border: '1px solid ' + (on ? 'var(--danger)' : 'var(--border)'),
-                    background: on ? 'var(--danger-bg)' : 'var(--surface)',
-                    color: on ? 'var(--danger)' : 'var(--text-muted)',
-                    opacity: confirmingRemove && !on ? 0.5 : 1,
-                  }}
-                >
-                  {languageTheme(t.language).languageName}
-                  <span style={{ opacity: 0.7, fontWeight: 500 }}>
-                    {' · ' + getLevelLabel(t.language, t.system, t.current_level)}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-
-          {confirmingRemove && !removing && (
-            <button
-              onClick={() => { setConfirmingRemove(false); setRemoveError('') }}
-              style={{
-                marginTop: '12px', background: 'none', border: 'none',
-                padding: 0, color: 'var(--text-muted)', cursor: 'pointer',
-                fontSize: '13px', fontFamily: 'Inter, sans-serif',
-              }}
+      {/* The controls, as rows (P10-B4). These were four stacked panels — daily
+          goal, reset a language, remove a language, delete account — each with
+          a heading, a paragraph and a button, plus a fifth standalone Sign out
+          button: ~590px of permanent screen for four things a learner touches
+          roughly once ever. Nothing was removed. Every option, warning and
+          confirmation step is still here, one tap inside its own row. */}
+      {controlGroups({
+        dailyNewCards: profile.daily_new_cards,
+        resetLanguageName: languageTheme(targetTrack.language).languageName,
+        removableCount: removableTracks.length,
+      }).map(group => (
+        <Panel key={group.key} danger={group.tone === 'danger'}>
+          <h2 style={{ margin: '0 0 2px' }}>
+            <Eyebrow style={group.tone === 'danger' ? { color: 'var(--danger)' } : {}}>
+              {group.heading}
+            </Eyebrow>
+          </h2>
+          {group.rows.map((row, i) => (
+            <ControlRow
+              key={row.key}
+              row={row}
+              icon={ROW_ICONS[row.key]}
+              accentHex={accentHex}
+              danger={group.tone === 'danger'}
+              first={i === 0}
+              open={openRow === row.key}
+              onActivate={() => toggleRow(row)}
             >
-              Cancel remove
-            </button>
-          )}
-
-          {removeError && (
-            <div style={{ fontSize: '12px', color: 'var(--danger)', marginTop: '10px', lineHeight: 1.4 }}>
-              {removeError}
-            </div>
-          )}
+              {rowBody(row.key)}
+            </ControlRow>
+          ))}
         </Panel>
-      )}
-
-      {/* Account deletion — self-serve and in-app, as both app stores require.
-          Total and permanent: the delete_my_account RPC removes every owned
-          row and the login itself. One notch sterner than the reset panel:
-          armed by a tap, confirmed by typing the word. */}
-      <Panel danger>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '18px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Delete account</h2>
-            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
-              Permanently deletes your account and everything in it — flashcards, review
-              history, story progress, test results and settings, for every language —
-              and your login with it. <strong style={{ color: 'var(--danger)', fontWeight: 700 }}>This
-              cannot be undone.</strong> For a fresh start without losing your account,
-              use “Reset a language” above instead.
-            </div>
-          </div>
-          <SmallButton
-            onClick={deleteAccount}
-            danger
-            filled={deleteArmed}
-            disabled={deleting || (deleteArmed && !confirmWordOk(deleteWord))}
-            icon={Trash2}
-          >
-            {deleting ? 'Deleting' : deleteArmed ? 'Delete forever' : 'Delete account'}
-          </SmallButton>
-        </div>
-
-        {deleteArmed && (
-          <div style={{ marginTop: '14px' }}>
-            <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px' }}>
-              Type <strong style={{ color: 'var(--danger)', fontWeight: 700 }}>{DELETE_CONFIRM_WORD}</strong> to
-              confirm you want your account gone for good.
-            </label>
-            <input
-              type="text"
-              value={deleteWord}
-              onChange={e => setDeleteWord(e.target.value)}
-              disabled={deleting}
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              aria-label={'Type ' + DELETE_CONFIRM_WORD + ' to confirm account deletion'}
-              style={{
-                width: '100%', maxWidth: '260px', boxSizing: 'border-box',
-                padding: '10px 12px', borderRadius: '10px',
-                border: '1px solid var(--danger-border)',
-                background: 'var(--surface)', color: 'var(--text)',
-                fontSize: '14px', fontFamily: 'Inter, sans-serif',
-              }}
-            />
-          </div>
-        )}
-
-        {deleteArmed && !deleting && (
-          <button
-            onClick={() => { setDeleteArmed(false); setDeleteWord(''); setDeleteError('') }}
-            style={{
-              marginTop: '12px', background: 'none', border: 'none',
-              padding: 0, color: 'var(--text-muted)', cursor: 'pointer',
-              fontSize: '13px', fontFamily: 'Inter, sans-serif', display: 'block',
-            }}
-          >
-            Cancel — keep my account
-          </button>
-        )}
-
-        {deleteError && (
-          <div style={{ fontSize: '12px', color: 'var(--danger)', marginTop: '10px', lineHeight: 1.4 }}>
-            {deleteError}
-          </div>
-        )}
-      </Panel>
-
-      <button
-        onClick={() => supabase.auth.signOut()}
-        style={{
-          width: '100%',
-          minHeight: '52px',
-          borderRadius: '16px',
-          border: '1px solid var(--danger-border)',
-          background: 'var(--danger-bg)',
-          color: 'var(--danger)',
-          cursor: 'pointer',
-          fontSize: '14px',
-          fontWeight: 750,
-          fontFamily: 'Inter, sans-serif',
-          marginTop: '8px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-        }}
-      >
-        <LogOut size={18} strokeWidth={1.9} color='var(--danger)' />
-        Sign out
-      </button>
+      ))}
     </Shell>
   )
 }

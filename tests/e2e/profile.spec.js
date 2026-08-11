@@ -1,5 +1,15 @@
 import { authedTest as test, expect, ACTIVE_VOCAB_COUNT } from '../fixtures/mockSupabase.js';
 
+// P10-B4: the controls are rows now — the daily goal, reset, remove and delete
+// each open from a labelled row instead of occupying a panel apiece. The
+// behaviour underneath is unchanged, so these specs open the row and then make
+// exactly the assertions they always made.
+const openControl = async (page, name) => {
+  const row = page.getByRole('button', { name, expanded: false });
+  await row.click();
+  await expect(page.getByRole('button', { name, expanded: true })).toBeVisible();
+};
+
 const dayKey = (daysAgo) => {
   const d = new Date(); d.setDate(d.getDate() - daysAgo);
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-'
@@ -98,16 +108,18 @@ test.describe('Profile — recent progress', () => {
   // the account streak. These pin the scope.
   test('reset names the language it clears and leaves the others alone', async ({ page }) => {
     await page.goto('/profile');
-    // Exact: the delete-account panel below also refers to "Reset a language"
+    // Exact: the delete-account control also refers to "Reset a language"
     // (pointing people at the non-destructive option), so a substring match now
     // finds two nodes.
     await expect(page.getByText('Reset a language', { exact: true })).toBeVisible();
+    await openControl(page, /Reset a language/);
     await expect(page.getByText(/Clears flashcards, tests, story reads and unlocks for/i)).toBeVisible();
     await expect(page.getByText(/Your other\s+languages are untouched/i)).toBeVisible();
   });
 
   test('clearing study history is opt-in, and off by default', async ({ page }) => {
     await page.goto('/profile');
+    await openControl(page, /Reset a language/);
     const box = page.getByRole('checkbox', { name: /Also clear my study history/i });
     await expect(box).toBeVisible();
     await expect(box).not.toBeChecked();
@@ -127,6 +139,7 @@ test.describe('Profile — recent progress', () => {
     });
 
     await page.goto('/profile');
+    await openControl(page, /Reset a language/);
     await page.getByRole('button', { name: /^Reset$/ }).click();
     await page.getByRole('button', { name: /Confirm reset/i }).click();
 
@@ -147,6 +160,7 @@ test.describe('Profile — recent progress', () => {
     });
 
     await page.goto('/profile');
+    await openControl(page, /Reset a language/);
     await page.getByRole('checkbox', { name: /Also clear my study history/i }).check();
     await page.getByRole('button', { name: /^Reset$/ }).click();
     await page.getByRole('button', { name: /Confirm reset/i }).click();
@@ -171,6 +185,7 @@ test.describe('Profile — recent progress', () => {
     });
 
     await page.goto('/profile');
+    await openControl(page, /Reset a language/);
     const group = page.getByRole('radiogroup', { name: 'Language to reset' });
     await expect(group.getByRole('radio', { name: /Chinese/ })).toBeVisible();
     // An inactive track is still resettable — the old RPC required is_active.
@@ -196,5 +211,93 @@ test.describe('Profile — recent progress', () => {
     // LEVEL, so it keeps its literals: the mock deck's five known words are all
     // HSK 2, and that stays true however much vocabulary other levels gain.
     await expect(page.getByRole('img', { name: /HSK 2: 5 of 7 words readable/i })).toBeVisible();
+  });
+
+  // The rows themselves: collapsed by default, one open at a time, and an armed
+  // destructive action can never be left hidden behind a closed row.
+  test('every control is a collapsed row until it is asked for', async ({ page }) => {
+    await page.goto('/profile');
+    for (const name of [/Daily new cards/, /Reset a language/, /Delete account/]) {
+      await expect(page.getByRole('button', { name, expanded: false })).toBeVisible();
+    }
+    // Sign out acts rather than opens, so it is not a disclosure at all.
+    const signOut = page.getByRole('button', { name: /Sign out/ });
+    await expect(signOut).toBeVisible();
+    expect(await signOut.getAttribute('aria-expanded')).toBeNull();
+    // The goal reads its current value on the row, without opening anything.
+    await expect(page.getByText('10 a day')).toBeVisible();
+  });
+
+  test('opening one control closes the last', async ({ page }) => {
+    await page.goto('/profile');
+    await openControl(page, /Reset a language/);
+    await openControl(page, /Delete account/);
+    await expect(page.getByRole('button', { name: /Reset a language/, expanded: false })).toBeVisible();
+    await expect(page.getByText(/Clears flashcards, tests, story reads/i)).toHaveCount(0);
+  });
+
+  test('closing a half-confirmed reset disarms it', async ({ page }) => {
+    await page.goto('/profile');
+    await openControl(page, /Reset a language/);
+    await page.getByRole('button', { name: /^Reset$/ }).click();
+    await expect(page.getByRole('button', { name: /Confirm reset/i })).toBeVisible();
+
+    // Collapse the row, reopen it: back to the first step, not one tap from a wipe.
+    await page.getByRole('button', { name: /Reset a language/, expanded: true }).click();
+    await openControl(page, /Reset a language/);
+    await expect(page.getByRole('button', { name: /Confirm reset/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Reset$/ })).toBeVisible();
+  });
+
+  test('deleting the account still takes a tap and a typed word', async ({ page }) => {
+    const calls = [];
+    await page.route('**/rest/v1/rpc/delete_my_account', async (route) => {
+      calls.push(1);
+      return route.fulfill({
+        status: 200,
+        headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+        body: 'null',
+      });
+    });
+
+    await page.goto('/profile');
+    await openControl(page, /Delete account/);
+    // Scoped to the opened control: the row that opens it carries the same words.
+    const body = page.locator('#profile-control-delete');
+    await body.getByRole('button', { name: /^Delete account$/ }).click();
+
+    const armed = page.getByRole('button', { name: /Delete forever/i });
+    await expect(armed).toBeVisible();
+    await expect(armed).toBeDisabled();          // nothing typed yet
+    expect(calls).toHaveLength(0);
+
+    await page.getByRole('textbox', { name: /to confirm account deletion/i }).fill('DELETE');
+    await expect(armed).toBeEnabled();
+  });
+
+  test('the daily goal still saves, and the row closes with the new value', async ({ page }) => {
+    const writes = [];
+    await page.route('**/rest/v1/profiles*', async (route) => {
+      const req = route.request();
+      if (req.method() !== 'PATCH') return route.fallback();
+      // The app patches `profiles` for several reasons; only the goal is ours.
+      const body = JSON.parse(req.postData() || '{}');
+      if ('daily_new_cards' in body) writes.push(body);
+      return route.fulfill({
+        status: 200,
+        headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+        body: '[]',
+      });
+    });
+
+    await page.goto('/profile');
+    await openControl(page, /Daily new cards/);
+    await page.getByRole('button', { name: /Intensive/ }).click();
+    await page.getByRole('button', { name: /^Save$/ }).click();
+
+    await expect.poll(() => writes.length).toBe(1);
+    expect(writes[0].daily_new_cards).toBe(15);
+    await expect(page.getByRole('button', { name: /Daily new cards/, expanded: false })).toBeVisible();
+    await expect(page.getByText('15 a day')).toBeVisible();
   });
 });

@@ -87,10 +87,10 @@ for (const phone of PHONES) {
       await page.goto('/profile');
       await page.waitForTimeout(1200);
       const s = await shape(page);
-      // 115 of the old 117 sub-44px targets were 16x16 day cells. What is left
-      // after the grid goes is the Level-mastery InfoTip at 18px, which B3 gives
-      // a full 44px hit area when it absorbs that panel.
-      expect(s.tinyButtons, JSON.stringify(s.under44)).toBeLessThanOrEqual(1);
+      // 115 of the old 117 sub-44px targets were 16x16 day cells; the last two
+      // were the Level-mastery InfoTip and the language chips. B3 and B4 removed
+      // or resized all of them, so the count is now zero and stays zero.
+      expect(s.tinyButtons, JSON.stringify(s.under44)).toBe(0);
       expect(s.text).not.toMatch(/Study activity/);
       expect(s.text).not.toMatch(/days studied/);
       // No grid replaced it, in any form.
@@ -133,6 +133,26 @@ test.describe('Profile shape — the budget', () => {
     }));
     // The audit's numbers were 4.48 / 55 / 24 / 117.
     expect(s.viewports).toBeLessThan(4.48);
-    expect(s.under44.length, JSON.stringify(s.under44)).toBeLessThanOrEqual(2);
+    // B4 gave the last two sub-44px targets a real hit area; nothing may
+    // reintroduce one.
+    expect(s.under44.length, JSON.stringify(s.under44)).toBe(0);
+  });
+
+  // The five controls — daily goal, reset, remove, delete, sign out — were four
+  // panels and a button, ~590px of permanent screen. As collapsed rows they are
+  // a fraction of that, with every option still one tap away (P10-B4).
+  test('keeps the controls to a band of rows, not a stack of panels', async ({ page }) => {
+    await page.goto('/profile');
+    await page.waitForTimeout(1200);
+    const band = await page.evaluate(() => {
+      const rows = Array.from(document.querySelectorAll('#main-content button'))
+        .filter((b) => b.hasAttribute('aria-expanded') || /sign out/i.test(b.textContent || ''));
+      const tops = rows.map((b) => b.getBoundingClientRect().top);
+      const bottoms = rows.map((b) => b.getBoundingClientRect().bottom);
+      return { count: rows.length, height: Math.round(Math.max(...bottoms) - Math.min(...tops)) };
+    });
+    console.log('PROFILE_CONTROL_BAND ' + JSON.stringify(band));
+    expect(band.count).toBe(4);          // goal, sign out, reset, delete
+    expect(band.height).toBeLessThan(320);
   });
 });
