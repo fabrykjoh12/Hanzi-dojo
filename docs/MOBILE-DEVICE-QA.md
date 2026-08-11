@@ -52,32 +52,40 @@ clearly slow. Do not change it before this is answered on a real device.
 
 ### B2 · The bar itself (P8 — the questions this build exists to answer)
 
-Answer in words, not ticks. The bar is **Practice · Home · Cards · Stories ·
+Answer in words, not ticks. The bar is **Home · Stories · Cards · Practice ·
 More** with Cards in the physical centre, five icons drawn for this app, and
-still no count, no top indicator and no raised button. Since build 34, Cards
-alone carries a **container**: a 42×34 rounded box behind its glyph, inside the
-bar, neutral at rest and accent-tinted when selected. Cards' glyph is 27.5px,
-the other four 21–22px, and Practice is drawn quieter than it was.
+still no count, no top indicator and no raised button. Cards alone carries a
+**container**: a 42×34 rounded box behind its glyph, inside the bar,
+barely-there neutral at rest and accent-tinted when selected. Cards' glyph is
+27.5px, the other four 21–22px, and Practice is drawn quieter than it was.
 
-**The one that decides the task:**
+**The one that decides the task — this is an A/B against build 34:**
 
-1. [ ] Does having **Practice on the far-left edge** feel unnatural in real use?
-       The left column is where the eye starts a row, and it now holds the
-       quietest destination. If it feels wrong, say so and stop there — the
-       answer is *not* to slide Practice between Home and Cards, because that
-       breaks the contiguous Home → Cards → Stories loop the order exists for.
-       It reopens the information architecture instead.
+1. [ ] Build 34 read **Practice · Home · Cards · Stories · More**. This one
+       reads **Home · Stories · Cards · Practice · More**. Which is better in
+       the hand? Home now starts the row, where the eye starts and where the app
+       opens; Stories sits beside Cards so the centre of the bar is the language
+       itself; Practice is demoted rightward to what it is. The old order bought
+       a contiguous Home → Cards → Stories loop and paid for it by opening on a
+       drawer. **Judge it physically — do not reason back to the loop.** If
+       neither feels right, that reopens the information architecture rather
+       than a third permutation.
+       - [ ] Does the row feel **balanced**, or does the centre feel crowded now
+             that Stories and Cards are adjacent?
+       - [ ] Does **Practice** feel appropriately secondary at index 3?
 
-**The Cards-emphasis pass (build 35), in priority order:**
+**The Cards-emphasis pass, in priority order:**
 
 2. [ ] Does the eye **immediately** understand that Cards is the core action —
        and does it still read as a **tab**, not a button parked on the bar?
-3. [ ] **The risk this pass introduced:** at rest, Cards has a grey container
-       and no other tab does. A box behind a tab is Android's convention for
-       *selected*. On the screens where Cards is NOT the current tab (Home,
-       Stories), is there any moment where you read Cards as the selected tab?
-       If yes, the fix is one line — the resting container drops to a fainter
-       mix — and it is worth reporting precisely rather than as a feeling.
+3. [ ] **The risk this pass introduced, now cut by 45%:** at rest, Cards has a
+       container and no other tab does. A box behind a tab is Android's
+       convention for *selected*. It has already been quieted once — measured
+       against the bar's own ground it moves 6 of 255 at rest against 19 when
+       selected — so the question is whether it went far enough, and whether it
+       is now so faint it does nothing. On Home, Stories and Practice, is there
+       any moment where you read Cards as the selected tab? Can you see the
+       container at all in daylight? Report which of the two it is.
 4. [ ] Is the active container **restrained**? It is a 12% tint of the accent,
        not a red block, deliberately. Too loud / about right / too faint?
 5. [ ] Does **Practice** still read as a shelf of drills now that it is drawn

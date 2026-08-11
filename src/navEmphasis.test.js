@@ -59,11 +59,39 @@ describe('the Cards container', () => {
   it('is a neutral surface step at rest, and the same size in both states', () => {
     const rest = cardsShellStyle({ active: false, accentHex: '#B83A24' })
     const on = cardsShellStyle({ active: true, accentHex: '#B83A24' })
-    expect(rest.background).toBe('var(--surface-2)')
+    expect(rest.background).toContain('var(--surface-2)')
+    expect(rest.background).not.toContain('#B83A24')
     expect(rest.border).toBe('1px solid transparent')
     expect(rest.boxSizing).toBe('border-box')
     expect(on.width).toBe(rest.width)
     expect(on.height).toBe(rest.height)
+  })
+
+  it('lands the resting container at roughly half the step it used to make', () => {
+    // It was a flat --surface-2 for one build and read as a second selected
+    // tab. Mixing with `transparent` mixes the ALPHA, so this is 55% of the
+    // composite delta against the bar's ground — in both themes, from one
+    // number, with no second colour to keep in step.
+    const rest = cardsShellStyle({ active: false, accentHex: '#B83A24' })
+    expect(rest.background).toBe('color-mix(in srgb, var(--surface-2) 55%, transparent)')
+    const pct = Number(/ (\d+)%/.exec(rest.background)[1])
+    expect(pct).toBeGreaterThanOrEqual(50) // 50% quieter is the far end of the ask
+    expect(pct).toBeLessThanOrEqual(60) // …and it still has to be visible at all
+  })
+
+  it('keeps the two states unmistakable — hue, strength and edge all differ', () => {
+    const rest = cardsShellStyle({ active: false, accentHex: '#B83A24' })
+    const on = cardsShellStyle({ active: true, accentHex: '#B83A24' })
+    // Hue: neutral token vs the accent.
+    expect(rest.background).not.toBe(on.background)
+    expect(on.background).toContain('#B83A24')
+    expect(rest.background).toContain('var(--surface-2)')
+    // Edge: only the selected one is drawn.
+    expect(rest.border).not.toBe(on.border)
+    expect(on.border).toContain('#B83A24')
+    // Strength: the resting one is the only one that is part transparent.
+    expect(rest.background).toContain('transparent')
+    expect(on.background).not.toContain('transparent')
   })
 
   it('mixes the accent into a surface when active, never an alpha hex over it', () => {

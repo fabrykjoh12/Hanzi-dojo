@@ -105,8 +105,17 @@ about, *despite* Cards being drawn 3px larger. Size was never going to fix it.
 What the pass changed, and nothing else:
 
 - **Cards has a container** — 42×34, radius 12, icon-only, inside the bar. A
-  neutral `--surface-2` at rest; a 12% accent tint with a 26% accent hairline
-  when selected. No float, no notch, no circle, no glow, no gradient.
+  12% accent tint with a 26% accent hairline when selected; a barely-there
+  neutral at rest. No float, no notch, no circle, no glow, no gradient.
+
+  The resting one was a flat `--surface-2` for one build and read as a *second
+  selected tab* — a filled box behind a tab is Android's "you are here". It is
+  `color-mix(in srgb, var(--surface-2) 55%, transparent)` now: mixing with
+  transparent mixes the ALPHA, so it lands at 55% of the step it used to make,
+  in both themes, from one number. Measured as composite delta against the bar's
+  own ground (the bar is translucent, so this is the only number that means
+  anything): **11 → 6.1 of 255 at rest, against 19 when selected.** The selected
+  container is 3.1× the resting one, and only the selected one has an edge.
 - **Cards' glyph is 27.5px**; the other four are 21–22.
 - **The glyph was redrawn**: two PORTRAIT cards, one behind the other, and the
   occlusion is done with an SVG mask instead of by hand. The old pair were
@@ -125,10 +134,20 @@ What the pass changed, and nothing else:
 The numbers all live in **`src/navEmphasis.js`**, with the measurements that
 chose them. `MobileNav.jsx` has no hierarchy literals left in it.
 
-**Physical tab order — approved: `Practice · Home · Cards · Stories · More`.**
+**Physical tab order — now `Home · Stories · Cards · Practice · More`.** Second
+arrangement, and the one being judged on hardware. The first was
+`Practice · Home · Cards · Stories · More`, which kept the daily loop contiguous
+in the middle (Home → Cards → Stories) and paid for it by starting the row on
+the quietest destination in the bar; the device review asked for the
+alternative. Home first, Stories beside Cards, Practice demoted rightward.
+
+**Cards stays at index 2 in both.** That is the fixed point, and
+`navConfig.test.js` says so in as many words.
+
 Home remains the default/root destination: the app launches there, `/` resolves
-there, and Android Back climbs there. Tab position is presentation, not routing,
-and `src/navConfig.test.js` pins the two apart.
+there, and Android Back climbs there. That it is ALSO the first column now is a
+coincidence, not a connection — tab position is presentation, not routing, and
+`src/navConfig.test.js` pins the two apart deliberately.
 
 Prototype decisions, all approved:
 
@@ -156,31 +175,36 @@ Prototype decisions, all approved:
 The prototype has **not** been finally approved on hardware. Two questions are
 open, and the next build exists to answer them.
 
-**1. The order.** Carried over from build 34, still unanswered:
+**1. The order — a straight A/B against build 34.** Build 34 shipped
+`Practice · Home · Cards · Stories · More` and the far-left Practice did not
+survive the device. The next build ships the alternative:
 
-> Does `Practice · Home · Cards · Stories · More` feel natural with **Practice
-> in the far-left position**?
+> Does `Home · Stories · Cards · Practice · More` feel more natural in the hand
+> than what build 34 had?
 
-The left column is where the eye starts a row and it now holds the quietest
-destination. If it feels wrong on the device, **do not** switch to
-`Home · Practice · Cards · Stories · More`. That separates Home from Cards and
-breaks the contiguous `Home → Cards → Stories` middle loop, which is the whole
-reason for the ordering. Report it and reopen the information architecture
-instead.
+What each arrangement is buying: the old one kept `Home → Cards → Stories`
+contiguous in the middle — the daily loop, left to right — at the cost of
+opening the row on a drawer. The new one starts where the eye starts and where
+the app opens, puts the two things a learner does with the language either side
+of centre, and demotes Practice to the right. **Judge them physically; do not
+re-derive the loop argument and revert.** Cards is at index 2 in both, so the
+comparison is only about what surrounds it.
+
+If the new order also feels wrong, that is the signal to reopen the information
+architecture rather than to try a third permutation.
 
 **2. The Cards emphasis**, new in this pass:
 
 > Does the eye immediately understand that Cards is the core action, while it
 > still clearly belongs to the navigation bar?
 
-And the specific risk it introduced, which is worth looking for rather than
-waiting to notice: **at rest, Cards has a container and no other tab does, and a
-box behind a tab is Android's convention for *selected*.** Three signals are
-meant to keep the two apart — the selected tab's glyph fills, its label goes
-bold, and its container takes the accent while Cards' resting one is neutral
-grey — but "meant to" is not the same as "does". If Cards ever reads as the
-selected tab on a screen it is not, the resting container drops to a fainter
-mix; that is one line in `navEmphasis.js` and no other change.
+And the specific risk it introduced: **at rest, Cards has a container and no
+other tab does, and a box behind a tab is Android's convention for *selected*.**
+That was reported on the first build of it and the resting container has already
+been cut to 55% in response. It is now four signals apart from selection — the
+selected glyph fills, its label goes bold, its container takes the accent and
+gains an edge — but "meant to" is not the same as "does". If Cards can still be
+mistaken for the selected tab, say so; the same one line goes lower again.
 
 The full device checklist is `docs/MOBILE-DEVICE-QA.md` §B2, which now runs to
 thirteen questions in priority order.

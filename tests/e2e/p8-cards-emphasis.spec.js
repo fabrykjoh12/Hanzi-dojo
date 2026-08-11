@@ -19,6 +19,7 @@ const OUT = process.env.P8_OUT || '/tmp/p8';
 
 const PHONE = { width: 390, height: 844 };
 const SMALL = { width: 320, height: 568 };
+const LARGE = { width: 430, height: 932 };
 
 async function emptyQueue(page) {
   await page.route('**/rest/v1/vocabulary*', (route) => route.fulfill({
@@ -97,8 +98,27 @@ async function barGeometry(page) {
     const shell = cards.querySelector('svg').parentElement;
     const sr = shell.getBoundingClientRect();
     const cs = getComputedStyle(shell);
+    // What the container ACTUALLY moves, composited over the bar's own ground.
+    // The bar is translucent, so a token name says nothing about what lands.
+    //
+    // A color-mix() computes to `color(srgb r g b / a)` with components on 0–1,
+    // while a plain token computes to `rgb(0–255)`. Mixing the two scales
+    // silently — the first version of this read 19.7 for a step that is really
+    // 6 — so both are normalised to 0–255 here.
+    const rgba = (c) => {
+      const n = (c.match(/[\d.]+/g) || []).map(Number);
+      const k = c.indexOf('color(') === 0 ? 255 : 1;
+      return [n[0] * k, n[1] * k, n[2] * k, n.length > 3 ? n[3] : 1];
+    };
+    const ground = rgba(getComputedStyle(nav).backgroundColor);
+    const box = rgba(cs.backgroundColor);
+    const alpha = box[3];
+    const delta = Math.max(...[0, 1, 2].map(
+      (i) => Math.abs((box[i] * alpha + ground[i] * (1 - alpha)) - ground[i]),
+    ));
     return {
       bar: { height: Math.round(nr.height * 100) / 100, top: Math.round(nr.top * 100) / 100 },
+      shellDelta: Math.round(delta * 10) / 10,
       shell: {
         w: Math.round(sr.width * 100) / 100,
         h: Math.round(sr.height * 100) / 100,
@@ -178,6 +198,41 @@ test.describe('P8 Cards emphasis — renders and measurements', () => {
     await page.getByText('Today', { exact: true }).waitFor();
     await theme(page, 'light');
     await shots(page, 'home-light-390');
+  });
+
+  test('Practice active, dark, 390', async ({ page }) => {
+    await page.goto('/practice');
+    await page.locator('nav[aria-label="Primary"]').waitFor();
+    await page.waitForTimeout(700);
+    await theme(page, 'dark');
+    await shots(page, 'practice-dark-390');
+    console.log('GEO practice-dark-390 ' + JSON.stringify(await barGeometry(page)));
+  });
+
+  test('More open, dark, 390 — the sheet still belongs to the far-right column', async ({ page }) => {
+    await page.goto('/');
+    await page.getByText('Today', { exact: true }).waitFor();
+    await theme(page, 'dark');
+    await page.getByRole('button', { name: 'More' }).click();
+    await page.getByRole('dialog', { name: 'More menu' }).waitFor();
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: OUT + '/screen-more-dark-390.png' });
+  });
+});
+
+test.describe('P8 Cards emphasis — the largest phone', () => {
+  test.use({ viewport: LARGE, deviceScaleFactor: 3 });
+
+  test('Cards active, dark, 430', async ({ page }) => {
+    await emptyQueue(page);
+    await page.goto('/study');
+    await page.locator('nav[aria-label="Primary"]').waitFor();
+    await page.waitForTimeout(900);
+    await theme(page, 'dark');
+    await shots(page, 'cards-dark-430');
+    const geo = await barGeometry(page);
+    console.log('GEO cards-dark-430 ' + JSON.stringify(geo));
+    expect(geo.bar.height).toBe(58);
   });
 });
 

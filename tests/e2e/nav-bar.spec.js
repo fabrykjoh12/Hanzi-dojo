@@ -21,7 +21,7 @@ const PHONES = [
   { name: 'iPhone Pro Max', width: 430, height: 932 },
 ];
 
-const ORDER = ['Practice', 'Home', 'Cards', 'Stories', 'More'];
+const ORDER = ['Home', 'Stories', 'Cards', 'Practice', 'More'];
 
 // An empty curriculum lands Study on its recap instead of on a card, which is
 // the one way to see the Cards tab SELECTED — a card on screen hides the bar.
@@ -81,7 +81,7 @@ async function barState(page) {
 test.describe('the order', () => {
   test.use({ viewport: PHONE });
 
-  test('is Practice · Home · Cards · Stories · More, left to right', async ({ page }) => {
+  test('is Home · Stories · Cards · Practice · More, left to right', async ({ page }) => {
     await page.goto('/');
     await page.getByText('Today', { exact: true }).waitFor();
     const bar = await barState(page);
@@ -104,8 +104,24 @@ test.describe('the order', () => {
     const barCentre = Math.round(cards.left + cards.w / 2);
     const viewport = await page.evaluate(() => window.innerWidth);
     expect(Math.abs(barCentre - viewport / 2)).toBeLessThanOrEqual(1);
-    // Home and Stories flank it: the middle three are the daily loop.
-    expect([bar.tabs[1].name, bar.tabs[3].name]).toEqual(['Home', 'Stories']);
+    // Stories and Practice flank it now. The order around Cards changed once
+    // already and may change again; Cards' column is the part that does not.
+    expect([bar.tabs[1].name, bar.tabs[3].name]).toEqual(['Stories', 'Practice']);
+  });
+
+  test('puts the Cards GLYPH on the viewport centre line, not just its column', async ({ page }) => {
+    // The container is wider than the glyph and the glyph is bigger than its
+    // neighbours', so "the column is centred" is not by itself the claim being
+    // made about the bar.
+    await page.goto('/');
+    await page.getByText('Today', { exact: true }).waitFor();
+    const off = await page.evaluate(() => {
+      const svg = Array.from(document.querySelectorAll('nav[aria-label="Primary"] button'))
+        .find((b) => b.textContent.trim() === 'Cards').querySelector('svg');
+      const r = svg.getBoundingClientRect();
+      return Math.abs((r.left + r.width / 2) - window.innerWidth / 2);
+    });
+    expect(off).toBeLessThanOrEqual(1);
   });
 
   test('does not make Cards the tab the app opens on', async ({ page }) => {
@@ -203,7 +219,13 @@ test.describe('Cards carries weight without taking space', () => {
     await page.getByText('Today', { exact: true }).waitFor();
     const bar = await barState(page);
     const cards = bar.tabs.find((t) => t.name === 'Cards');
-    const others = bar.tabs.filter((t) => t.name !== 'Cards');
+    // RESTING peers only. This used to read `others[0]`, which was fine while
+    // column 0 was Practice and broke the moment Home moved into it: Home is
+    // the selected tab on `/`, so "one step heavier than my neighbour" started
+    // measuring against a 700 and demanding 800. The claim was always about
+    // tabs at rest.
+    const others = bar.tabs.filter((t) => t.name !== 'Cards' && t.current !== 'page');
+    expect(others.length).toBeGreaterThan(1);
 
     expect(cards.icon).toBeGreaterThan(others[0].icon);
     // The step was ≤4px while Cards was carried by size alone. It is 27.5
@@ -213,6 +235,7 @@ test.describe('Cards carries weight without taking space', () => {
     // band, and the ceiling here is what stops it becoming a badge.
     expect(cards.icon - others[0].icon).toBeLessThanOrEqual(7);
     // One step of label weight, same face and same size as every other tab.
+    for (const t of others) expect(t.labelWeight, t.name).toBe(500);
     expect(cards.labelSize).toBe(others[0].labelSize);
     expect(cards.labelWeight).toBe(others[0].labelWeight + 100);
     // Unselected, it is still grey: the emphasis must not read as "selected".
@@ -250,6 +273,7 @@ test.describe('Cards carries weight without taking space', () => {
       };
     });
 
+    expect(shell.painted).not.toBe(shell.others[0]); // the container exists at all
     expect(shell.w).toBeGreaterThanOrEqual(40);
     expect(shell.w).toBeLessThanOrEqual(44);
     expect(shell.h).toBeGreaterThanOrEqual(34);
@@ -262,6 +286,67 @@ test.describe('Cards carries weight without taking space', () => {
     for (const bg of shell.others) expect(bg).toBe('rgba(0, 0, 0, 0)');
     expect(new Set(shell.rows).size).toBe(1);
   });
+
+  // The container's whole risk: a filled box behind a tab is what Android uses
+  // to mean "you are here", and Cards wears one on every screen. These measure
+  // the two states as COMPOSITED PIXELS against the bar's own ground, because
+  // the bar is translucent and a token name tells you nothing about what lands.
+  for (const theme of ['light', 'dark']) {
+    test('resting and selected containers are different objects in ' + theme, async ({ page }) => {
+      const read = async () => page.evaluate(() => {
+        const nav = document.querySelector('nav[aria-label="Primary"]');
+        const cards = Array.from(nav.querySelectorAll('button'))
+          .find((b) => b.textContent.trim() === 'Cards');
+        const shell = cards.querySelector('svg').parentElement;
+        // A color-mix() computes to `color(srgb r g b / a)` on 0–1; a plain
+        // token computes to `rgb(0–255)`. Normalise both, or the comparison is
+        // between two different scales and means nothing.
+        const rgba = (c) => {
+          const n = (c.match(/[\d.]+/g) || []).map(Number);
+          const k = c.indexOf('color(') === 0 ? 255 : 1;
+          return [n[0] * k, n[1] * k, n[2] * k, n.length > 3 ? n[3] : 1];
+        };
+        const bg = rgba(getComputedStyle(nav).backgroundColor);
+        const box = rgba(getComputedStyle(shell).backgroundColor);
+        // Composite the container over the bar's ground and report the biggest
+        // channel it moves. That number IS "how prominent is it".
+        const a = box[3];
+        const delta = [0, 1, 2].map((i) => Math.abs((box[i] * a + bg[i] * (1 - a)) - bg[i]));
+        return {
+          selected: cards.getAttribute('aria-current') === 'page',
+          border: getComputedStyle(shell).borderTopColor,
+          borderDrawn: getComputedStyle(shell).borderTopColor !== 'rgba(0, 0, 0, 0)',
+          delta: Math.round(Math.max(...delta) * 10) / 10,
+        };
+      });
+
+      await page.goto('/');
+      await page.getByText('Today', { exact: true }).waitFor();
+      await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme);
+      await page.waitForTimeout(300);
+      const rest = await read();
+
+      await emptyQueue(page);
+      await page.goto('/study');
+      await page.locator('nav[aria-label="Primary"]').waitFor();
+      await page.waitForTimeout(900);
+      await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme);
+      await page.waitForTimeout(300);
+      const on = await read();
+
+      expect(rest.selected).toBe(false);
+      expect(on.selected).toBe(true);
+      // Present at rest…
+      expect(rest.delta).toBeGreaterThan(1.5);
+      // …and barely. A flat --surface-2 measured ~13 here and read as selected.
+      expect(rest.delta).toBeLessThan(9);
+      // The selected one has to be unmistakably the stronger object.
+      expect(on.delta).toBeGreaterThan(rest.delta * 1.6);
+      // And it is the only one with an edge.
+      expect(rest.borderDrawn).toBe(false);
+      expect(on.borderDrawn).toBe(true);
+    });
+  }
 
   test('shares its column width and its baseline with the rest', async ({ page }) => {
     await page.goto('/');
@@ -353,7 +438,8 @@ test.describe('everything underneath is unchanged', () => {
   test('a tab still goes to its own tab, whatever column it now sits in', async ({ page }) => {
     await page.goto('/');
     await page.getByText('Today', { exact: true }).waitFor();
-    // Practice moved from column 4 to column 1 and still owns /practice.
+    // Practice has now been column 4, column 1 and column 4 again, and has
+    // owned /practice throughout. That is the point of the assertion.
     await page.getByRole('button', { name: 'Practice', exact: true }).click();
     await expect(page).toHaveURL(/\/practice$/);
     const bar = await barState(page);

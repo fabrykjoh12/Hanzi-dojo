@@ -44,19 +44,33 @@ describe('navigation config', () => {
 // looks like routing. It is not. These pin the two apart.
 
 describe('the mobile bar', () => {
-  it('reads Practice · Home · Cards · Stories, then More', () => {
-    expect(MOBILE_PRIMARY.map(i => i.label)).toEqual(['Practice', 'Home', 'Cards', 'Stories'])
+  it('reads Home · Stories · Cards · Practice, then More', () => {
+    expect(MOBILE_PRIMARY.map(i => i.key)).toEqual(['home', 'stories', 'study', 'practice'])
+    expect(MOBILE_PRIMARY.map(i => i.label)).toEqual(['Home', 'Stories', 'Cards', 'Practice'])
     // "More" is not in the array — MobileNav appends it — so the bar is five
     // columns and Cards is index 2 of five: the physical centre.
     expect(MOBILE_PRIMARY.length + 1).toBe(5)
     expect(MOBILE_PRIMARY.findIndex(i => i.key === 'study')).toBe(2)
   })
 
-  it('keeps the daily loop contiguous in the middle', () => {
-    // Home → Cards → Stories: open the app, review, read. The two drawers sit
-    // outside it, which is the whole point of the ordering.
-    expect(MOBILE_PRIMARY.slice(1).map(i => i.key)).toEqual(['home', 'study', 'stories'])
-    expect(MOBILE_PRIMARY[0].key).toBe('practice')
+  it('keeps Cards in the centre through a reorder', () => {
+    // The one fixed point. The first arrangement was
+    // Practice · Home · Cards · Stories and this is the second; both put Cards
+    // at index 2, because that is the part of the layout that is not in
+    // question. If a future order moves it, that is a different decision and
+    // this assertion is where it has to be made deliberately.
+    expect(MOBILE_PRIMARY[2].key).toBe('study')
+    const centre = (MOBILE_PRIMARY.length + 1 - 1) / 2
+    expect(MOBILE_PRIMARY.findIndex(i => i.key === 'study')).toBe(centre)
+  })
+
+  it('starts the row on Home and ends the tabs on Practice', () => {
+    // Home first because it is where the eye starts and where the app opens;
+    // Stories beside Cards so the centre of the bar is the language itself;
+    // Practice rightward, where a drawer of drills belongs.
+    expect(MOBILE_PRIMARY[0].key).toBe('home')
+    expect(MOBILE_PRIMARY[1].key).toBe('stories')
+    expect(MOBILE_PRIMARY[3].key).toBe('practice')
   })
 
   it('spells every label out — nothing abbreviated to fit a 320px phone', () => {
@@ -68,9 +82,12 @@ describe('the mobile bar', () => {
 })
 
 describe('position is not routing', () => {
-  it('still launches on Home, which is no longer the first column', () => {
+  it('still launches on Home — which this order happens to put first, and that is a coincidence', () => {
+    // It read Practice · Home · … for a build and Home was still the launch
+    // tab; it reads Home · … now and Home is still the launch tab for exactly
+    // the same reason. The two facts have never been connected and must not
+    // become connected: `initialNavState` is the one that decides.
     expect(initialNavState().activeTab).toBe('home')
-    expect(MOBILE_PRIMARY[0].key).not.toBe('home')
   })
 
   it('still climbs to Home on Back, from every other tab', () => {

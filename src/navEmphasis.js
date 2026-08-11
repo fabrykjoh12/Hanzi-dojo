@@ -103,16 +103,39 @@ export function iconRowStyle() {
   }
 }
 
+// How much of the resting container actually lands.
+//
+// It was a flat `var(--surface-2)` for one build, and on a device that read as
+// a SECOND selected tab: a filled box behind a tab is what Android uses to mean
+// "you are here", and Cards was wearing one on every screen. Measured as the
+// composite delta against the bar's own ground — the only number that matters,
+// since the bar is translucent — `--surface-2` sat about 13/255 above it in
+// dark and about 10 below it in light.
+//
+// 55% of that. Mixing a colour with `transparent` is a mix of its ALPHA, so the
+// container composites at 0.55 of the step it used to make, in both themes,
+// without a second hardcoded colour to keep in step. ~6/255 is present when you
+// look for it and gone when you are not looking — which is the whole brief.
+//
+// The resting hierarchy is meant to be carried by the centre column, the larger
+// glyph and the heavier label FIRST, and by this only last.
+const REST_SHELL_STRENGTH = '55%'
+
 // The container, in both states.
 //
-// Inactive: a neutral surface step. Present enough to say "this tab is the
-// one", quiet enough that it is not competing with the selected tab.
+// Inactive: a barely-perceptible neutral step (above).
 //
 // Active: the accent MIXED INTO a surface, never an alpha hex over it
 // (CLAUDE.md §5 — an `accent + '14'` stays light in dark mode). 12% is a tint,
 // not a block: a saturated red rectangle at the bottom of every screen is the
 // thing this was explicitly not allowed to become, and the accent still reads
 // unmistakably because the glyph inside it is the accent at full ink.
+//
+// The two states have to stay obviously different, and they differ three ways
+// on purpose: hue (neutral vs accent), strength (0.55 alpha vs a full 12% tint)
+// and edge (no border vs a 26% accent hairline) — on top of the glyph filling
+// and the label going bold, which are the signals that do not depend on the
+// container existing at all.
 export function cardsShellStyle({ active, accentHex }) {
   return {
     boxSizing: 'border-box',
@@ -125,7 +148,7 @@ export function cardsShellStyle({ active, accentHex }) {
     flexShrink: 0,
     background: active
       ? 'color-mix(in srgb, ' + accentHex + ' 12%, var(--surface))'
-      : 'var(--surface-2)',
+      : 'color-mix(in srgb, var(--surface-2) ' + REST_SHELL_STRENGTH + ', transparent)',
     // Transparent when inactive rather than absent, so the box is the same size
     // in both states and the glyph cannot shift by a pixel on selection.
     border: active
