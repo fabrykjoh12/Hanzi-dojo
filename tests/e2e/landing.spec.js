@@ -85,6 +85,16 @@ for (const phone of PHONES) {
       await expect(page.getByText('Learn', { exact: true })).toBeVisible();
       await page.getByRole('button', { name: 'Create account' }).click();
       await expect(page.getByLabel('Email')).toBeVisible();
+
+      // "Create account" opens the form that CREATES one. This regressed once
+      // — the tab was inferred from a prop the deleted wizard used to pass, so
+      // every learner got the login form and signed in to an account that did
+      // not exist (P12 audit §3.1). Assert the whole signup posture, not just
+      // that an email field exists — an email field exists on both tabs.
+      await expect(page.getByRole('button', { name: 'Sign up' })).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.getByRole('button', { name: /^Log in$/ })).toHaveAttribute('aria-pressed', 'false');
+      await expect(page.getByRole('button', { name: 'Create account' })).toBeVisible();
+      await expect(page.getByText(/At least \d+ characters/)).toBeVisible();
       await assertNoOldWizard(page);
     });
 
@@ -104,10 +114,13 @@ for (const phone of PHONES) {
 }
 
 test.describe('Returning visitors', () => {
-  test('Log in goes straight to the form — no tutorial', async ({ page }) => {
+  test('Log in goes straight to the form — no tutorial, and the LOGIN tab', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: /^Log in$/i }).click();
     await expect(page.getByLabel('Email')).toBeVisible();
+    // An explicit Log in tap opens login — the signup default is only for the
+    // tutorial's hand-off (prelogin.authEntryTab).
+    await expect(page.getByRole('button', { name: /^Log in$/ }).first()).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByRole('button', { name: 'Start' })).toHaveCount(0);
     await assertNoOldWizard(page);
   });
@@ -115,15 +128,30 @@ test.describe('Returning visitors', () => {
   test('a finished tutorial is not shown twice — the app opens on the form', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => {
-      localStorage.setItem('prelogin:prefs', JSON.stringify({ tutorial: { done: true } }));
+      localStorage.setItem('hd:tutorial-done', '1');
     });
     await page.reload();
     // They spent ninety seconds on the introduction and then closed the app
     // before signing up. Landing them on the welcome again would read as the
-    // app having forgotten, so the account form IS the entry now.
+    // app having forgotten, so the account form IS the entry now — and it is
+    // the SIGNUP side of it: what this learner is missing is an account.
     await expect(page.getByLabel('Email')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sign up' })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByText('Learn Chinese through words and stories.')).toHaveCount(0);
     await expect(page.getByRole('button', { name: /Start your first story/i })).toHaveCount(0);
+  });
+
+  test('the OLD done flag — a learner from an earlier build — still counts', async ({ page }) => {
+    // Before P12-0 the done flag lived inside prelogin:prefs. A learner who
+    // finished the tutorial on that build and then updated must not be shown
+    // the introduction again.
+    await page.goto('/');
+    await page.evaluate(() => {
+      localStorage.setItem('prelogin:prefs', JSON.stringify({ tutorial: { done: true } }));
+    });
+    await page.reload();
+    await expect(page.getByLabel('Email')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sign up' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('Back from the account form lands on the landing page, not a deleted step', async ({ page }) => {

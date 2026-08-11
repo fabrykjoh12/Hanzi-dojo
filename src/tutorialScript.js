@@ -318,6 +318,53 @@ export function advance(state, action, payload) {
   return state
 }
 
+// ── Back ─────────────────────────────────────────────────────────────────────
+// One step backwards — the hardware Back button's walk (P12 audit §3.3).
+//
+// Deliberately NOT an ACTION and not offered by actionsFor(): the four actions
+// are the learner's forward vocabulary, and the invariant that every legal
+// action increases position() is what makes the tutorial provably unable to
+// loop. Back belongs to the platform, not the script, and it is the one thing
+// allowed to decrease position — by exactly one state.
+//
+// Returns null at the very first state, which tells the caller the tutorial
+// has nothing left to step out of (Landing then returns to the welcome screen,
+// and only THAT screen exits the app).
+//
+// Two details worth their lines:
+//   grades     stepping back across a grade un-records it, so grading again
+//              can never double-count a card.
+//   goalsSeen  is kept. Teaching that happened, happened — retreating past the
+//              grade explanation does not entitle anyone to a second showing.
+export function retreat(state) {
+  if (state.phase === PHASES.WELCOME) return null
+  if (state.phase === PHASES.CARD) {
+    if (state.revealed) return { ...state, revealed: false, replayed: false }
+    if (state.cardIndex === 0) return { ...state, phase: PHASES.WELCOME, replayed: false }
+    return {
+      ...state,
+      cardIndex: state.cardIndex - 1, revealed: true, replayed: false,
+      grades: state.grades.slice(0, -1),
+    }
+  }
+  if (state.phase === PHASES.RECAP) {
+    return {
+      ...state,
+      phase: PHASES.CARD, cardIndex: CARD_COUNT - 1, revealed: true, replayed: false,
+      grades: state.grades.slice(0, -1),
+    }
+  }
+  if (state.phase === PHASES.UNLOCK) return { ...state, phase: PHASES.RECAP }
+  if (state.phase === PHASES.STORY) {
+    if (state.storyPanel === 0) return { ...state, phase: PHASES.UNLOCK, storyPanel: 0 }
+    return { ...state, storyPanel: state.storyPanel - 1 }
+  }
+  if (state.phase === PHASES.LOOP) return { ...state, phase: PHASES.STORY, storyPanel: STORY_PANEL_COUNT - 1 }
+  // ACCOUNT: complete. The runner has already handed over; there is nothing
+  // here to step back into.
+  return null
+}
+
 // The shortest honest walkthrough: never taps Replay, grades everything Good.
 // Exported because both the tests and (later) the e2e spec want one canonical
 // path, and two hand-written copies of it would drift.

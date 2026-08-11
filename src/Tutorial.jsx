@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useImperativeHandle } from 'react'
 import { BookOpen, Check } from 'lucide-react'
 import {
-  initialTutorialState, view, advance, isComplete, ACTIONS,
+  initialTutorialState, view, advance, retreat, isComplete, ACTIONS,
   serializeTutorial, resumeTutorialState,
 } from './tutorialScript'
 import { readTutorialProgress, saveTutorialPosition } from './prelogin'
@@ -150,7 +150,7 @@ function StoryLine({ text, known, accentHex, font }) {
   )
 }
 
-export default function Tutorial({ onComplete, resumable = true, finishLabel = null }) {
+export default function Tutorial({ onComplete, resumable = true, finishLabel = null, backRef = null }) {
   const [state, setState] = useState(() => {
     if (!resumable) return initialTutorialState()
     const saved = readTutorialProgress()
@@ -159,6 +159,21 @@ export default function Tutorial({ onComplete, resumable = true, finishLabel = n
     return (saved && resumeTutorialState(saved.state)) || initialTutorialState()
   })
   const v = view(state)
+
+  // Hardware Back (native): step one state backwards. The caller owns the ONE
+  // registered back handler for the pre-login flow (Landing) and consults this
+  // handle — the tutorial only answers whether it had somewhere to step. The
+  // state is read through a ref (mirrored after each commit, never during
+  // render) so the answer is synchronous; the handle itself goes through
+  // useImperativeHandle, which also clears it on unmount.
+  const stateRef = useRef(state)
+  useEffect(() => { stateRef.current = state })
+  useImperativeHandle(backRef, () => () => {
+    const prev = retreat(stateRef.current)
+    if (prev === null) return false
+    setState(prev)
+    return true
+  }, [])
 
   // Where the learner got to, written on every state change. Five plain values
   // — the position, and the grades they actually pressed. Nothing derived.

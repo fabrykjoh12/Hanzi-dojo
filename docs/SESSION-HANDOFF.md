@@ -34,17 +34,13 @@ automatic Home coach-mark tour is suppressed for anyone who did the tutorial
 (`maybeStartTour({ suppressed: isTutorialDone() })`); its four marks still exist
 and their future is undecided.
 
-**TestFlight: build 40 is uploaded and awaiting device review** — commit
-`8f061a1`, version 1.0, Delivery UUID `f54bcb9d-14fb-436c-9fde-8db58338c46e`. It
-is the P11 Practice hub (P11-0 instrumentation + P11-1 Guided Practice) on top of
-the device-approved build 39.
-
-**Build 39 (`5c358f7`) is the last device-approved state** — Home Option B and the
-Stories `% known` correction, reviewed positively on a physical iPhone. Build 37
+**TestFlight: build 41 carries the P12-0 onboarding bug fixes** on top of build
+40. **Build 40 (`8f061a1`) is the last device-approved state** — the P11 Practice
+hub, reviewed positively on a physical iPhone; Practice is frozen on it. Build 39
+(`5c358f7`) carried Home Option B and the Stories `% known` correction; build 37
 (`576082e6`) produced the reset-copy and container findings; build 35 (`78cf09e`)
-closed the onboarding work; build 34 (`a60b916`) carried the P8 bar as first drawn
-and produced the Cards-emphasis pass. **Anything newer than `5c358f7` has not been
-on a device.**
+closed the P9 onboarding work. **Anything newer than `8f061a1` has not been on a
+device.**
 
 Build numbers are the `ios-testflight.yml` run number, so they are monotonic and
 never reused; the marketing version stays 1.0 until the release cut.
@@ -326,19 +322,18 @@ supporting surface holding the story row, Your week and the HSK progress) and th
 Stories correction (% known back on the artwork over a scrim, two-line captions,
 no default "Story" label).
 
-### The active phase: P11 — the Practice hub
+### P11 — the Practice hub: DONE and FROZEN (build 40, device-approved)
 
 [`docs/P11-PRACTICE-AUDIT.md`](P11-PRACTICE-AUDIT.md) — audit, three layouts,
-**Option A (Guided Practice) approved with both amendments, built, awaiting the
-owner's report review.** §7 of that doc carries the before/after measurements.
+Option A (Guided Practice) shipped with both amendments; §7 carries the
+before/after measurements. **Do not iterate on the drill rows, hero, level-test
+row or tools without a concrete bug.** `practice_drill_started` keeps running so
+the next decision is made from usage, not guesses.
 
 | commit | what |
 |--------|------|
 | `04ac484` | **P11-0** — `practice_drill_started {key, from}`, zero visual change |
 | `8f061a1` | **P11-1** — Option A: hero + one row list + a quiet level-test row + the tools |
-
-Both are in **TestFlight build 40**, awaiting device review. Practice is otherwise
-closed until that review comes back.
 
 The screen went from **11 depth-0 panels to 3** (hero, drill list, tools) and from
 1585 px to 1468 px at 390; all eight drill rows now sit above the fold at 390 and
@@ -356,8 +351,28 @@ that, and it was not built to.
 **Do not use P11-0's data to reorder the list yet.** The order is the audit's
 argument, not a measurement; two or three weeks of events first.
 
+### The active phase: P12 — the first-run journey
+
+[`docs/P12-ONBOARDING-AUDIT.md`](P12-ONBOARDING-AUDIT.md) — the audit, three
+verified defects, three concepts, **Concept B (the story frame) approved as an
+amendment to the shipped tutorial**. Fixed product decisions: account stays
+after the value moment; Concept C is not built; the B→C gradient stops at real
+interval previews and a production-shaped recap — never the real queue,
+Supabase scheduling, or the production reader in pre-login.
+
+- **P12-0 — the three defects — is FIXED** and cut as TestFlight build 41:
+  `authEntryTab` (the signup/login tab is an explicit decision, never inferred),
+  the durable `hd:tutorial-done` teaching record with old-key migration (the
+  Home tour suppression works now), and hardware Back walking the pre-login
+  flow (`preloginBackAction` + `tutorialScript.retreat`).
+- **Next: P12-1..5** — scene-before/scene-after from ONE `TUTORIAL_SCENE`
+  fixture (delete the `loop` slide), Skip with `tutorial_skipped {state_id}`,
+  real interval previews on cards 2–3 (card 1 keeps the grade meanings), recap
+  alignment without weakening `SessionRecap`'s interface, docs. **Stop for the
+  owner's 17-point walkthrough report before cutting the onboarding build.**
+
 Not to be resumed without the owner's word: the global token cleanup, and any
-further Home/Stories/Profile iteration.
+further Home/Stories/Profile/Practice iteration.
 
 ---
 

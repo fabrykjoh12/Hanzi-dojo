@@ -12,11 +12,13 @@ long-lived engineering backlog; the board holds short-lived execution state.
 
 ## Onboarding — three verified defects (found 2026-08-11, P12 audit)
 
-Reproduced against build 40 while auditing the first-run journey. Full context,
-evidence and the fix plan are in
-[`docs/P12-ONBOARDING-AUDIT.md`](P12-ONBOARDING-AUDIT.md) §3 and §9 (P12-0).
-**Recorded here because these are live bugs, not redesign opinions — they are
-worth fixing whether or not the redesign is approved.**
+**All three FIXED in P12-0 (2026-08-12), shipped in TestFlight build 41.**
+The auth tab is an explicit decision now (`authEntryTab` in `prelogin.js`); the
+tutorial-done record lives under its own durable key (`hd:tutorial-done`) with
+old-key migration; hardware Back walks the pre-login flow through
+`preloginBackAction` + `tutorialScript.retreat`, registered via the same
+`backHandler` registry the shell uses. Kept below as the record of what they
+were. Full evidence in [`docs/P12-ONBOARDING-AUDIT.md`](P12-ONBOARDING-AUDIT.md) §3.
 
 1. **"Create account" opens the LOG IN form.** `Auth.jsx:20` sets the initial tab
    from `Boolean(intro)`, and `intro` was the old pre-signup wizard's prop.

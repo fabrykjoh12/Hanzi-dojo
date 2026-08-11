@@ -13,11 +13,14 @@ import { isNativeApp } from './nativeShell'
 import { FLAGS } from './flags'
 import { useIsMobile } from './useIsMobile'
 
-export default function Auth({ intro = null, onBack = null, notice = null }) {
+export default function Auth({ startTab = 'login', onBack = null, notice = null }) {
   const isMobile = useIsMobile()
-  // Arriving from the pre-login wizard (language + reason chosen) means the user
-  // is here to create an account, so default to the Sign-up tab in that case.
-  const [isSignup, setIsSignup] = useState(Boolean(intro))
+  // Which tab this screen OPENS on is the caller's explicit decision
+  // (prelogin.authEntryTab), never inferred from the presence of some other
+  // prop. The old inference — `Boolean(intro)`, a prop only the deleted
+  // pre-signup wizard ever passed — meant the tutorial's "Create account"
+  // button opened the LOG IN form for every learner (P12 audit §3.1).
+  const [isSignup, setIsSignup] = useState(startTab === 'signup')
   // A returning reset link that could not be completed opens straight into the
   // "email me a link" form, with the reason on screen — the learner's next
   // action is to request a fresh one.
@@ -191,19 +194,13 @@ export default function Auth({ intro = null, onBack = null, notice = null }) {
             (margins reset so the wordmark styling renders identically), so
             heading navigation finds the screen. The logo alt is empty: the
             name follows immediately. No tagline: the person is here to type
-            an email, and the tabs already say which door this is. The wizard's
-            personalized line (intro) is the one sentence worth keeping. */}
-        <div style={{ textAlign: 'center', marginBottom: intro ? '6px' : '22px' }}>
+            an email, and the tabs already say which door this is. */}
+        <div style={{ textAlign: 'center', marginBottom: '22px' }}>
           <img src={logo} alt="" style={{ width: '56px', height: '56px', objectFit: 'contain', marginBottom: '2px' }} />
           <h1 style={{ ...heroWordmarkStyle('30px'), margin: 0 }}>
             {BRAND_NAME}
           </h1>
         </div>
-        {intro && (
-          <p style={{ textAlign: 'center', fontSize: '13.5px', color: 'var(--text)', margin: '0 0 20px', lineHeight: 1.5 }}>
-            {intro}
-          </p>
-        )}
 
         {/* Tab toggle */}
         <div style={{ display: 'flex', marginBottom: '24px', borderBottom: '1px solid var(--border)' }}>

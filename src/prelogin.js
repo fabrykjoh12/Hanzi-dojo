@@ -14,8 +14,13 @@
 //                     (HowMuchCanYouRead.jsx) and read by Onboarding as a
 //                     starting-level prefill. A genuinely separate web feature
 //                     with a live producer and a live consumer.
-//   tutorial          where the signed-out tutorial had got to, and whether it
-//                     finished. See tutorialScript.serializeTutorial.
+//   tutorial          where the signed-out tutorial had got to. See
+//                     tutorialScript.serializeTutorial.
+//
+// Whether the tutorial FINISHED is deliberately not in here — it is a durable
+// device-scoped teaching record under its own key (see isTutorialDone below),
+// because everything in prelogin:prefs is cleared once setup completes and the
+// teaching record has to outlive that.
 //
 // Storage degrades quietly, as everywhere else: a blocked localStorage costs a
 // prefill and a resume, never the app.
@@ -59,10 +64,52 @@ export function landingEntry({ native, tutorialDone, authNotice } = {}) {
 //   'in-progress'  a position, no completion
 //   'complete'     finished; from here on the account is what is missing
 export function tutorialStage() {
+  if (isTutorialDone()) return 'complete'
   const t = readTutorialProgress()
-  if (!t) return 'not-started'
-  if (t.done === true) return 'complete'
-  return t.state ? 'in-progress' : 'not-started'
+  return t && t.state ? 'in-progress' : 'not-started'
+}
+
+// ── Which tab the account screen opens on ────────────────────────────────────
+// The decision, pure, because it was previously inferred from the presence of a
+// prop the deleted pre-signup wizard used to pass — which meant "Create
+// account" opened the LOG IN form for every learner (P12 audit §3.1).
+//
+//   notice        an auth link that could not be completed. They came to fix a
+//                 password, so the login side — Auth opens its reset form.
+//   fromTutorial  the tutorial's hand-off. Its last button says "Create
+//                 account", and the form it opens has to be the one that does.
+//
+// Default is login: an unexplained arrival at the auth screen is far more
+// often a returning learner than a new one.
+export function authEntryTab({ fromTutorial = false, notice = null } = {}) {
+  if (notice) return 'login'
+  return fromTutorial ? 'signup' : 'login'
+}
+
+// ── What Android's hardware Back does before login ───────────────────────────
+// The whole pre-login flow lives at `/`, so the bridge's path-based fallback
+// sees one root screen and exits the app from the middle of a flashcard
+// (P12 audit §3.3). This is the real answer, consulted through the same
+// backHandler registry the authenticated shell uses — Landing registers it
+// while it is mounted, exactly as the shell lends its own answer.
+//
+//   'exit'      this is the genuine first screen; Back leaves the app
+//   'retreat'   step the tutorial one state backwards (tutorialScript.retreat)
+//   otherwise   the mode to switch to
+//
+// `authArrival` is how the auth screen was reached:
+//   'entry'     it was the launch screen (a finished tutorial, an auth notice)
+//   'tutorial'  the tutorial's hand-off — Back returns to the tutorial
+//   'screen'    a tap from the welcome/landing screen — Back returns there
+export function preloginBackAction({ mode, native = false, authArrival = 'screen' } = {}) {
+  if (mode === 'auth') {
+    if (authArrival === 'entry') return 'exit'
+    if (authArrival === 'tutorial') return 'tutorial'
+    return initialLandingMode(native)
+  }
+  if (mode === 'tutorial') return 'retreat'
+  // 'welcome' and 'landing' are the genuine first screens.
+  return 'exit'
 }
 
 const KEY = 'prelogin:prefs'
@@ -85,9 +132,10 @@ export function mergePreloginPrefs(patch) {
 }
 
 // ── The tutorial's position ──────────────────────────────────────────────────
-// `{ state, done }`. `state` is what tutorialScript.serializeTutorial produced;
-// `done` is set once, when the learner asks for an account, and is what stops a
-// finished tutorial replaying on the next launch.
+// `{ state }` — what tutorialScript.serializeTutorial produced. Transitional by
+// nature: it exists so a learner who closes the app mid-tutorial resumes, and
+// once an account exists it has done its job, so it lives (and dies) with the
+// rest of the prelogin handoff state.
 
 export function readTutorialProgress() {
   const saved = readPreloginPrefs()
@@ -100,12 +148,32 @@ export function saveTutorialPosition(state) {
   mergePreloginPrefs({ tutorial: { ...prior, state } })
 }
 
+// ── Whether this device has already been taught ──────────────────────────────
+// Its own key, deliberately NOT inside `prelogin:prefs`. The done flag used to
+// live there, and `clearPreloginPrefs()` — which Onboarding rightly calls once
+// the handoff has happened — erased it, so the Home tour's "the tutorial
+// already taught this" suppression could never fire (P12 audit §3.2). The
+// clearing was correct; the mistake was a device-scoped teaching record
+// sharing a key with a transitional handoff blob. Now they have separate
+// lifetimes: the blob dies at setup, the teaching record dies with the device.
+
+const TUTORIAL_DONE_KEY = 'hd:tutorial-done'
+
 export function markTutorialDone() {
-  const prior = readTutorialProgress() || {}
-  mergePreloginPrefs({ tutorial: { ...prior, done: true } })
+  try { localStorage.setItem(TUTORIAL_DONE_KEY, '1') } catch { /* ignore */ }
 }
 
 export function isTutorialDone() {
+  try {
+    if (localStorage.getItem(TUTORIAL_DONE_KEY) === '1') return true
+  } catch { return false }
+  // The old shape — `tutorial.done` inside prelogin:prefs — from a learner who
+  // finished the tutorial on an earlier build. Honour it, and migrate it to
+  // the durable key so it survives the setup screen clearing the old one.
   const t = readTutorialProgress()
-  return Boolean(t && t.done)
+  if (t && t.done === true) {
+    try { localStorage.setItem(TUTORIAL_DONE_KEY, '1') } catch { /* ignore */ }
+    return true
+  }
+  return false
 }

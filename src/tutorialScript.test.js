@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import {
   PHASES, ACTIONS, TEACHING_GOALS, CARD_COUNT, STORY_PANEL_COUNT,
   initialTutorialState, stateId, position, isComplete,
-  actionsFor, view, advance, defaultWalkthrough, runTutorial,
+  actionsFor, view, advance, retreat, defaultWalkthrough, runTutorial,
   serializeTutorial, resumeTutorialState, goalsThrough,
 } from './tutorialScript'
 import { TUTORIAL_CARDS, TUTORIAL_STORY } from './tutorialFixtures'
@@ -83,6 +83,94 @@ describe('no loops', () => {
     expect(position(s)).toBe(before)
     // …and the way out is still open.
     expect(actionsFor(s)).toContain(ACTIONS.GRADE)
+  })
+})
+
+// ── Back — the hardware button's walk (P12-0) ────────────────────────────────
+// Not an ACTION: the four actions are the learner's forward vocabulary and the
+// no-loops invariant above depends on every one of them increasing position().
+// retreat() is the platform's, and it is the one thing allowed to decrease it.
+
+describe('retreat', () => {
+  it('steps position back by exactly one state, everywhere', () => {
+    let s = initialTutorialState()
+    for (const step of defaultWalkthrough()) {
+      const before = s
+      s = advance(s, step.action, step.payload)
+      // ACCOUNT is complete — the runner has handed over, nothing to step into.
+      if (isComplete(s)) continue
+      const back = retreat(s)
+      expect(back, 'retreat from ' + stateId(s)).not.toBe(null)
+      expect(stateId(back)).toBe(stateId(before))
+      expect(position(back)).toBe(position(s) - 1)
+    }
+  })
+
+  it('walks the whole way back to the welcome, and only the welcome says stop', () => {
+    // Drive to the last pre-complete state, then Back all the way home.
+    const states = runTutorial(defaultWalkthrough().slice(0, -1))
+    let s = states[states.length - 1]
+    const walked = []
+    let guard = 0
+    while (s !== null && guard < 50) {
+      guard += 1
+      walked.push(position(s))
+      s = retreat(s)
+    }
+    expect(guard).toBeLessThan(50)
+    // Strictly descending, ending at the welcome — Back can never make
+    // progress, loop, or find a second way out.
+    for (let i = 1; i < walked.length; i += 1) expect(walked[i]).toBeLessThan(walked[i - 1])
+    expect(walked[walked.length - 1]).toBe(0)
+  })
+
+  it('un-reveals a revealed card rather than skipping it', () => {
+    let s = initialTutorialState()
+    s = advance(s, ACTIONS.CONTINUE)
+    s = advance(s, ACTIONS.REVEAL)
+    const back = retreat(s)
+    expect(stateId(back)).toBe('card-1-front')
+    expect(back.revealed).toBe(false)
+  })
+
+  it('un-records a grade when stepping back across it, so re-grading cannot double-count', () => {
+    let s = initialTutorialState()
+    s = advance(s, ACTIONS.CONTINUE)
+    s = advance(s, ACTIONS.REVEAL)
+    s = advance(s, ACTIONS.GRADE, 'good')
+    expect(s.grades).toEqual(['good'])
+    const back = retreat(s)      // card-2-front → card-1-back
+    expect(stateId(back)).toBe('card-1-back')
+    expect(back.grades).toEqual([])
+    // Forward again, with a different answer — one grade, not two.
+    const again = advance(back, ACTIONS.GRADE, 'hard')
+    expect(again.grades).toEqual(['hard'])
+  })
+
+  it('keeps goalsSeen — teaching that happened, happened', () => {
+    let s = initialTutorialState()
+    s = advance(s, ACTIONS.CONTINUE)
+    s = advance(s, ACTIONS.REVEAL)
+    const taught = s.goalsSeen
+    expect(taught.length).toBeGreaterThan(0)
+    expect(retreat(s).goalsSeen).toEqual(taught)
+  })
+
+  it('returns null at the welcome — the caller owns what leaving means', () => {
+    expect(retreat(initialTutorialState())).toBe(null)
+  })
+
+  it('advance still works normally after any retreat', () => {
+    // Back one, forward two, from a few places — the machine never wedges.
+    let s = initialTutorialState()
+    for (const step of defaultWalkthrough()) {
+      s = advance(s, step.action, step.payload)
+      const back = retreat(s)
+      if (back === null) continue
+      const forward = actionsFor(back)
+      expect(forward.length, stateId(back) + ' offers nothing').toBeGreaterThan(0)
+    }
+    expect(isComplete(s)).toBe(true)
   })
 })
 

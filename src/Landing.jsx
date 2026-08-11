@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Auth from './Auth'
 import { track, EVENTS } from './analytics'
@@ -7,7 +7,11 @@ import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 import Tutorial from './Tutorial'
 import { useIsMobile } from './useIsMobile'
-import { initialLandingMode, landingEntry, isTutorialDone, markTutorialDone } from './prelogin'
+import {
+  initialLandingMode, landingEntry, isTutorialDone, markTutorialDone,
+  authEntryTab, preloginBackAction,
+} from './prelogin'
+import { setBackHandler } from './backHandler'
 import { isNativeApp } from './nativeShell'
 import NativeWelcome from './NativeWelcome'
 import {
@@ -158,14 +162,57 @@ export default function Landing({ authNotice = null }) {
     tutorialDone: isTutorialDone(),
     authNotice,
   }))
+  // How the auth screen was reached, and which tab it opens on. Both are set
+  // at every door into it, never inferred once there (prelogin.authEntryTab).
+  // The initializer covers the case where auth IS the launch screen — a
+  // finished tutorial waiting on its account, or an expired auth link.
+  const [auth, setAuth] = useState(() => ({
+    arrival: 'entry',
+    tab: authEntryTab({ fromTutorial: isTutorialDone(), notice: authNotice }),
+  }))
+  const openAuth = (arrival, tab) => { setAuth({ arrival, tab }); setMode('auth') }
   const isMobile = useIsMobile()
   const navigate = useNavigate()
   useEffect(() => { track(EVENTS.LANDING_VIEWED) }, [])
 
+  // Android's hardware Back, for the whole pre-login flow. Everything here
+  // lives at `/`, so without this the bridge's path fallback saw one root
+  // screen and exited the app from the middle of a flashcard. Registered
+  // through the same backHandler registry the authenticated shell uses;
+  // the decision itself is pure (prelogin.preloginBackAction) and the
+  // tutorial contributes its own single step via tutorialBackRef.
+  const tutorialBackRef = useRef(null)
+  const modeRef = useRef(mode)
+  const authRef = useRef(auth)
+  // Mirrored after each commit (never during render — the hooks lint is right
+  // that a render must not write). Back is an event, so it always reads a
+  // committed value.
+  useEffect(() => { modeRef.current = mode; authRef.current = auth })
+  useEffect(() => {
+    return setBackHandler(() => {
+      const action = preloginBackAction({
+        mode: modeRef.current,
+        native: isNativeApp(),
+        authArrival: authRef.current.arrival,
+      })
+      if (action === 'exit') return 'exit'
+      if (action === 'retreat') {
+        const stepped = tutorialBackRef.current ? tutorialBackRef.current() : false
+        // The tutorial's own welcome state: leave the tutorial the way it was
+        // entered rather than exiting the app.
+        if (!stepped) setMode(initialLandingMode(isNativeApp()))
+        return 'handled'
+      }
+      setMode(action)
+      return 'handled'
+    })
+  }, [])
+
   const beginTraining = () => {
     if (isTutorialDone()) {
       track(EVENTS.PRELOGIN_SIGNUP_STARTED, { language: 'chinese' })
-      setMode('auth')
+      // Taught already, account still missing — the ask is still signup.
+      openAuth('screen', 'signup')
       return
     }
     setMode('tutorial')
@@ -177,7 +224,7 @@ export default function Landing({ authNotice = null }) {
   const finishTutorial = () => {
     markTutorialDone()
     track(EVENTS.PRELOGIN_SIGNUP_STARTED, { language: 'chinese' })
-    setMode('auth')
+    openAuth('tutorial', 'signup')
   }
 
   // The store apps open here instead of the marketing page.
@@ -185,19 +232,20 @@ export default function Landing({ authNotice = null }) {
     return (
       <NativeWelcome
         onStart={beginTraining}
-        onLogIn={() => setMode('auth')}
+        onLogIn={() => openAuth('screen', 'login')}
       />
     )
   }
 
   if (mode === 'tutorial') {
-    return <Tutorial onComplete={finishTutorial} />
+    return <Tutorial onComplete={finishTutorial} backRef={tutorialBackRef} />
   }
 
   if (mode === 'auth') {
     return (
       <Auth
         notice={authNotice}
+        startTab={auth.tab}
         onBack={() => setMode(initialLandingMode(isNativeApp()))}
       />
     )
@@ -228,7 +276,7 @@ export default function Landing({ authNotice = null }) {
             <img src={logo} alt={BRAND_NAME + ' logo'} style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
             <span style={{ ...heroWordmarkStyle('26px') }}>{BRAND_NAME}</span>
           </div>
-          <GhostButton onClick={() => setMode('auth')}>Log in</GhostButton>
+          <GhostButton onClick={() => openAuth('screen', 'login')}>Log in</GhostButton>
         </div>
 
         {/* Hero */}

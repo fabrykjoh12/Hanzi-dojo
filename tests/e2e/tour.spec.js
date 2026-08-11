@@ -82,4 +82,22 @@ test.describe('First-run tour', () => {
     await page.waitForTimeout(1500);
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });
+
+  test('a learner the tutorial already taught is never toured on Home', async ({ page }) => {
+    // The redundancy the suppression exists to prevent: the tutorial ends with
+    // a session completing, a story unlocking and two lines of Chinese read —
+    // being then told "this is today's session" in a dimmed overlay is the
+    // third telling. This could never fire before P12-0, because the done flag
+    // lived inside prelogin:prefs and setup cleared that whole key on its way
+    // to Home (P12 audit §3.2). The durable record survives setup; assert the
+    // suppression it feeds actually holds on a brand-new account.
+    await page.addInitScript(() => {
+      try { localStorage.setItem('hd:tutorial-done', '1'); } catch { /* blocked */ }
+    });
+    await serveFreshProfile(page);
+    await page.goto('/');
+    await expect(page.getByText('Today', { exact: true })).toBeVisible();
+    await page.waitForTimeout(1500);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
 });
