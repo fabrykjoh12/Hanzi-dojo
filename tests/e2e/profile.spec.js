@@ -1,30 +1,37 @@
 import { authedTest as test, expect, ACTIVE_VOCAB_COUNT } from '../fixtures/mockSupabase.js';
 
-// Month-in-review recap on the Profile screen. We override daily_activity for
-// the current month so the enriched headline + best-day line are deterministic.
-test.describe('Profile — month in review', () => {
-  test('shows the calm month recap with a best day', async ({ page }) => {
-    const now = new Date();
-    const ym = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-    const rows = [
-      { activity_date: ym + '-01', studied_cards: 4 },
-      { activity_date: ym + '-02', studied_cards: 12 },
-    ];
+const dayKey = (daysAgo) => {
+  const d = new Date(); d.setDate(d.getDate() - daysAgo);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-'
+    + String(d.getDate()).padStart(2, '0');
+};
+
+test.describe('Profile — recent progress', () => {
+  // P10-B3: recent activity is ONE sentence on the progress panel. It replaced a
+  // month-in-review panel (headline, best day, share button) and a 17x7 grid of
+  // 115 tappable cells — three representations of the same fact. This spec pins
+  // the sentence AND the fact that the others cannot come back.
+  test('says the rhythm in one descriptive line, with no streak language', async ({ page }) => {
     await page.route('**/rest/v1/daily_activity*', route =>
       route.fulfill({
         status: 200,
-        headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'content-range': '0-1/*' },
-        body: JSON.stringify(rows),
+        headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'content-range': '0-2/*' },
+        body: JSON.stringify([
+          { activity_date: dayKey(0), studied_cards: 4 },
+          { activity_date: dayKey(3), studied_cards: 12 },
+          { activity_date: dayKey(40), studied_cards: 30 },   // outside the window
+        ]),
       }));
 
     await page.goto('/profile');
 
-    // The panel headline reflects days shown up out of days elapsed.
-    await expect(page.getByText(/shown up 2 of \d+ days so far/i)).toBeVisible();
-    // The best day is highlighted from the higher-count row.
-    await expect(page.getByText(/Best day so far — 12 reviews/i)).toBeVisible();
-    // The recap stays shareable.
-    await expect(page.getByRole('button', { name: /Share/i })).toBeVisible();
+    await expect(page.getByText('Studied 2 of the last 30 days')).toBeVisible();
+    // Descriptive, never coercive (CLAUDE.md §1 — streaks were removed).
+    await expect(page.getByText(/streak|consecutive|in a row|days in a row/i)).toHaveCount(0);
+    // And the two panels it replaced are gone, share button included.
+    await expect(page.getByText(/shown up \d+ of \d+ days so far/i)).toHaveCount(0);
+    await expect(page.getByText(/Best day so far/i)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Share/i })).toHaveCount(0);
   });
 
   // P10-B1: the achievement wall is gone, by owner decision — the app shows real
@@ -41,33 +48,49 @@ test.describe('Profile — month in review', () => {
     }
   });
 
-  test('exposes a screen-reader summary for the review-accuracy chart', async ({ page }) => {
-    const now = new Date();
-    const iso = (daysAgo) => {
-      const d = new Date(now); d.setDate(d.getDate() - daysAgo); return d.toISOString();
-    };
-    // Provide a few review logs so the 30-day chart renders (mock returns [] by default).
+  // Retention used to be a whole panel: a big percentage tile plus 30 bar
+  // buttons, each a 6px-wide tap target. It is now the tail of the rhythm line,
+  // and it is omitted entirely rather than showing a misleading 0%.
+  test('states retention as one figure, with no bar chart behind it', async ({ page }) => {
     await page.route('**/rest/v1/review_logs*', async (route) => {
       if (route.request().method() !== 'GET') return route.fallback();
       return route.fulfill({
         status: 200,
         headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'content-range': '0-2/*' },
         body: JSON.stringify([
-          { grade: 3, reviewed_at: iso(0), vocabulary: { language: 'chinese', system: 'hsk' } },
-          { grade: 2, reviewed_at: iso(1), vocabulary: { language: 'chinese', system: 'hsk' } },
-          { grade: 0, reviewed_at: iso(1), vocabulary: { language: 'chinese', system: 'hsk' } },
+          { grade: 3, vocabulary: { language: 'chinese', system: 'hsk' } },
+          { grade: 2, vocabulary: { language: 'chinese', system: 'hsk' } },
+          { grade: 0, vocabulary: { language: 'chinese', system: 'hsk' } },
         ]),
       });
     });
 
     await page.goto('/profile');
-    // The guarantee is that the chart's shape is available as text, not that it
-    // uses any particular role. It was role="img" while the bars were inert; now
-    // each bar is a button (tapping one shows that day's count, which used to be
-    // hover-only and so unreachable on a phone), and role="img" would hide those
-    // buttons from assistive tech — an img's children are not exposed. The
-    // summary moved to the enclosing group's accessible name.
-    await expect(page.getByRole('group', { name: /Reviews over the last 30 days/i })).toBeVisible();
+
+    await expect(page.getByText(/67% recalled/)).toBeVisible();   // 2 of 3 recalled
+    await expect(page.getByText('Review accuracy')).toHaveCount(0);
+    await expect(page.getByRole('group', { name: /Reviews over the last 30 days/i })).toHaveCount(0);
+    // No day-sized tap targets survive anywhere on the screen.
+    await expect(page.getByRole('button', { name: /— \d+ reviews?$/ })).toHaveCount(0);
+  });
+
+  test('omits retention rather than reporting 0% with no data', async ({ page }) => {
+    await page.goto('/profile');   // the mock returns no review_logs
+    await expect(page.getByText(/recalled/i)).toHaveCount(0);
+  });
+
+  // The defect this panel was built to fix: "Words mastered" appeared twice, on
+  // the current level's number and on the lifetime total, under identical words.
+  // Every figure is now scoped by name and stated once.
+  test('gives mastery a level-scoped label, and states it once', async ({ page }) => {
+    await page.goto('/profile');
+
+    await expect(page.getByText('HSK 2 mastered')).toHaveCount(1);
+    await expect(page.getByText('Words mastered', { exact: true })).toHaveCount(0);
+    await expect(page.getByText(/of \d+ words learned$/)).toHaveCount(1);
+    // The bar is decoration; the numbers are readable without it.
+    await expect(page.getByRole('img', { name: /\d+ of \d+ words learned, \d+ mastered at HSK 2/ }))
+      .toBeVisible();
   });
 
   // The reset used to call the RPC without p_reset_streak, and that argument

@@ -1,23 +1,20 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, metaLine} from './utils'
-import { languageTheme, availableLanguages, pinyinInk, inkStrong} from './languageTheme'
-import { PageHeader } from './panels'
-import { isMastered } from './mastery'
+import { languageTheme, availableLanguages, pinyinInk} from './languageTheme'
+import { PageHeader, HeroPanel, Eyebrow } from './panels'
+import { ON_HERO, NUM } from './designTokens'
+import { isMastered, TEST_UNLOCK_MASTERY_PCT } from './mastery'
 import { cleanMeaning } from './cleanMeaning'
-import { studyRhythm } from './profileProgress'
-import { monthReview, monthHeadline, monthShareText } from './monthReview'
+import { profileProgress } from './profileProgress'
 import { knownWordMap, readableSummary, rowA11yLabel } from './knownWordMap'
-import { last30A11yLabel } from './reviewAccuracy'
 import { useIsMobile } from './useIsMobile'
-import InfoTip from './InfoTip'
 import StuckWordCoach from './StuckWordCoach'
 import { STUCK_LAPSES } from './stuckWord'
-import { BRAND_URL } from './brand'
 import { confirmWordOk, forgetDeviceData, DELETE_CONFIRM_WORD } from './accountDeletion'
 import {
-  Layers, LogOut, RotateCcw, Save,
-  Sparkles, Target, CalendarCheck, Share2, Check, AlertTriangle, TrendingUp, BookOpen, Trash2,
+  LogOut, RotateCcw, Save,
+  Sparkles, Target, CalendarCheck, AlertTriangle, BookOpen, Trash2,
 } from 'lucide-react'
 import AppBar from './AppBar'
 
@@ -78,13 +75,11 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   const [deleteError, setDeleteError] = useState('')
   const [loading, setLoading] = useState(true)
   const [activity, setActivity] = useState({})
-  const [shared, setShared] = useState(false)
   const [leeches, setLeeches] = useState([])
   const [coachVocab, setCoachVocab] = useState(null)   // stuck-word coach target
-  const [reviewStats, setReviewStats] = useState({ total: 0, correct: 0, days: {} })
+  const [reviewStats, setReviewStats] = useState({ total: 0, correct: 0 })
   const [wordMap, setWordMap] = useState({ levels: [], totals: { total: 0, mastered: 0, known: 0, learning: 0, new: 0, readable: 0 } })
 
-  const isMobile = useIsMobile()
   const { accentHex, fontFamily } = getLanguageDetails(profile)
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
@@ -123,8 +118,6 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       totalCards: levelCards.length,
       masteredCount: levelCards.filter(c => isMastered(c)).length,
       totalWords: vocabIds.size,
-      // Lifetime mastered — read by the month tile and the share text.
-      lifetimeMastered: (cards || []).filter(c => isMastered(c)).length,
     })
 
     const { data: acts } = await supabase
@@ -150,25 +143,20 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       .slice(0, 6)
     setLeeches(leechList)
 
-    // Retention (item #17b): grade 0 = "Again" (forgotten), grades 1–3 all
-    // count as a successful recall. Scoped to the current track, same as
-    // everything else on this page. review_logs only started being written
-    // recently, so early accounts may simply have nothing yet — that's fine,
-    // the panel shows an honest empty state rather than a misleading 0%.
+    // Retention: grade 0 = "Again" (forgotten), grades 1–3 all count as a
+    // successful recall. Scoped to the current track, same as everything else
+    // on this page. review_logs only started being written recently, so early
+    // accounts may simply have nothing yet — then the line is omitted rather
+    // than showing a misleading 0%.
     const { data: reviewLogs } = await supabase
       .from('review_logs')
-      .select('grade, reviewed_at, vocabulary!inner(language, system)')
+      .select('grade, vocabulary!inner(language, system)')
       .eq('user_id', session.user.id)
       .eq('vocabulary.language', track.language)
       .eq('vocabulary.system', track.system)
-    const days = {}
     let correct = 0
-    ;(reviewLogs || []).forEach(r => {
-      if (r.grade > 0) correct += 1
-      const d = (r.reviewed_at || '').slice(0, 10)
-      if (d) days[d] = (days[d] || 0) + 1
-    })
-    setReviewStats({ total: (reviewLogs || []).length, correct, days })
+    ;(reviewLogs || []).forEach(r => { if (r.grade > 0) correct += 1 })
+    setReviewStats({ total: (reviewLogs || []).length, correct })
 
     setLoading(false)
   }
@@ -323,35 +311,22 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     if (wasActive && fallback) onNavigate('home')
   }
 
-  const masteryPct = stats.totalWords > 0
-    ? Math.round((stats.masteredCount / stats.totalWords) * 100)
-    : 0
+  // Every figure the progress panel shows, decided in one pure place so two
+  // labels can never disagree about what they are counting (profileProgress.js).
+  const progress = profileProgress({
+    levelLearned: stats.learned,
+    levelMastered: stats.masteredCount,
+    levelTotal: stats.totalWords,
+    levelLabel,
+    testUnlockPct: TEST_UNLOCK_MASTERY_PCT,
+    activity,
+  })
 
-  const rhythm = studyRhythm(activity)
-
-  // This-month report (from daily_activity; presence is exact, counts approximate).
-  const mr = monthReview(activity)
-  const monthName = mr.monthName
-  const activeDays = mr.activeDays
-  const cardsThisMonth = mr.reviews
-
-  const shareReport = async () => {
-    const lang = profile.active_language === 'japanese' ? 'Japanese'
-      : profile.active_language === 'russian' ? 'Russian' : 'Chinese'
-    const text = monthShareText(mr, {
-      languageName: lang,
-      mastered: stats.lifetimeMastered || 0,
-      brandUrl: BRAND_URL,
-    })
-    try {
-      if (navigator.share) { await navigator.share({ text }); return }
-    } catch { return /* user cancelled */ }
-    try {
-      await navigator.clipboard.writeText(text)
-      setShared(true)
-      setTimeout(() => setShared(false), 2000)
-    } catch { /* clipboard unavailable */ }
-  }
+  // Retention is the one number that comes from review_logs rather than cards,
+  // so it stays here; it only appears once there is something honest to report.
+  const retentionPct = reviewStats.total > 0
+    ? Math.round((reviewStats.correct / reviewStats.total) * 100)
+    : null
 
   return (
     <Shell accentHex={accentHex} fontFamily={fontFamily}>
@@ -363,18 +338,82 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         style={{ margin: '22px 0 18px' }}
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px', marginBottom: '18px' }}>
-        <StatCard label="Words learned" value={loading ? '-' : stats.learned} unit={'of ' + stats.totalWords} icon={Layers} color={inkStrong(accentHex)} bg={accentHex + '10'} />
-        <StatCard label="Words mastered" value={loading ? '-' : stats.masteredCount} unit={masteryPct + '%'} icon={Sparkles} color="#2F9E6D" bg="var(--success-bg)" />
-      </div>
+      {/* The one lit thing on this screen (R1). It answers "how much Chinese
+          have I learned?" once, in one object, instead of across four panels
+          that used to contradict each other — "Words mastered" appeared twice
+          with the level's number and the lifetime number under identical words.
+          Every figure here is scoped and labelled by `profileProgress`. */}
+      <HeroPanel accentHex={accentHex} seed="profile" style={{ marginBottom: '14px' }}>
+        {/* The level is the section's heading — no extra chrome, and a screen
+            reader still gets a landmark to jump to. */}
+        <h2 style={{ margin: 0 }}><Eyebrow onHero>{levelLabel}</Eyebrow></h2>
+        <div style={{ marginTop: '12px', display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+          <span style={{ fontSize: '40px', fontWeight: 800, color: '#fff', lineHeight: 1, ...NUM }}>
+            {loading ? '—' : progress.learned.value}
+          </span>
+          <span style={{ fontSize: '15px', color: ON_HERO.body, fontWeight: 650 }}>
+            {loading ? '' : 'of ' + progress.learned.of + ' words learned'}
+          </span>
+        </div>
+
+        {/* Mastery, named by its level so it can never be read as a lifetime
+            total. The bar is decoration over the sentence, not the source of
+            it — the numbers are written out beside it. Held back until the
+            counts have actually arrived: "0 of 0" is a lie, not a skeleton. */}
+        {!loading && (
+        <div
+          role="img"
+          aria-label={progress.a11yLabel}
+          style={{ marginTop: '20px' }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '12px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '13.5px', color: '#fff', fontWeight: 700 }}>
+              {progress.mastered.label}
+            </span>
+            <span style={{ fontSize: '13.5px', color: ON_HERO.body, fontWeight: 650, ...NUM }}>
+              {progress.mastered.value} of {progress.mastered.of}
+            </span>
+          </div>
+          <div style={{ height: '7px', borderRadius: '999px', background: 'rgba(255,255,255,0.18)', overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', borderRadius: '999px', background: '#fff',
+              width: progress.mastered.pct + '%', transition: 'width 700ms ease',
+            }} />
+          </div>
+        </div>
+        )}
+
+        {!loading && progress.test.label && (
+          <div style={{ marginTop: '12px', fontSize: '13px', color: ON_HERO.body }}>
+            {progress.test.label}
+          </div>
+        )}
+
+        {/* Recent activity, in one line. Home owns the richer weekly rhythm. */}
+        {!loading && (
+        <div style={{
+          marginTop: '18px', paddingTop: '14px',
+          borderTop: '1px solid rgba(255,255,255,0.16)',
+          display: 'flex', alignItems: 'center', gap: '9px',
+        }}>
+          <CalendarCheck size={15} strokeWidth={1.9} color={ON_HERO.body} />
+          <span style={{ fontSize: '13px', color: ON_HERO.body }}>{progress.rhythm.label}</span>
+          {retentionPct !== null && (
+            <span style={{ fontSize: '13px', color: ON_HERO.body, ...NUM }}>
+              · {retentionPct}% recalled
+            </span>
+          )}
+        </div>
+        )}
+      </HeroPanel>
 
       {!loading && leeches.length > 0 && (
         <Panel>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
+            <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
               <AlertTriangle size={17} strokeWidth={1.95} color="#D97706" />
               Words that keep slipping
-            </span>
+            </h2>
             <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{leeches.length}</span>
           </div>
           <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '14px', lineHeight: 1.5 }}>
@@ -417,119 +456,19 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
 
       <StuckWordCoach vocab={coachVocab} onClose={() => setCoachVocab(null)} />
 
-      {!loading && (
-        <Panel>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
-              <CalendarCheck size={17} strokeWidth={1.85} color={accentHex} />
-              {monthName} so far
-            </span>
-            <button
-              onClick={shareReport}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: '7px',
-                minHeight: '44px', padding: '0 13px', borderRadius: '10px',
-                border: '1px solid ' + (shared ? '#2F9E6D' : 'var(--border)'),
-                background: shared ? 'var(--success-bg)' : 'var(--surface)',
-                color: shared ? '#2F9E6D' : 'var(--text-muted)',
-                cursor: 'pointer', fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
-              }}
-            >
-              {shared
-                ? <><Check size={15} strokeWidth={2.4} color="#2F9E6D" /> Copied</>
-                : <><Share2 size={15} strokeWidth={2} color="var(--text-muted)" /> Share</>}
-            </button>
-          </div>
-          <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: 1.5 }}>
-            {monthHeadline(mr)}
-          </div>
-          {/* Three across on a phone leaves ~100px a tile, which wraps
-              "Words mastered" onto three lines. Two across, with the third
-              spanning the row below. */}
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '12px' }}>
-            {[
-              { label: 'Active days', value: activeDays, color: inkStrong(accentHex) },
-              { label: 'Reviews', value: cardsThisMonth, color: '#3E63DD' },
-              { label: 'Words mastered', value: stats.lifetimeMastered || 0, color: '#2F9E6D', wide: true },
-            ].map(s => (
-              <div key={s.label} style={{
-                padding: '14px 12px', borderRadius: '14px', background: s.color + '0D',
-                border: '1px solid ' + s.color + '22', textAlign: 'center',
-                gridColumn: isMobile && s.wide ? '1 / -1' : 'auto',
-              }}>
-                <div style={{ fontSize: '26px', fontWeight: 800, color: s.color, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 650 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-          {mr.bestDay && mr.bestDay.count > 0 && (
-            <div style={{ fontSize: '12.5px', color: 'var(--text-faint)', marginTop: '14px', textAlign: 'center' }}>
-              Best day so far — {mr.bestDay.count} review{mr.bestDay.count === 1 ? '' : 's'} on{' '}
-              {new Date(mr.bestDay.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}.
-            </div>
-          )}
-        </Panel>
-      )}
-
       {!loading && wordMap.totals.total > 0 && (
         <Panel>
           <KnownWordMap map={wordMap} accentHex={accentHex} language={track.language} system={track.system} />
         </Panel>
       )}
 
-      {/* What the 17x7 heatmap said, in one line. It reported that you opened
-          the app, never what you learned; it duplicated Home's week strip and
-          the month tile; and 115 individually-tappable 16px cells were 115 of
-          this screen's 117 sub-44px targets. Descriptive, never coercive —
-          `studyRhythm` counts distinct days and has no concept of a streak. */}
-      {!loading && (
-        <Panel compact>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-            <CalendarCheck size={16} strokeWidth={1.85} color="var(--text-muted)" />
-            <span style={{ fontSize: '13.5px', color: 'var(--text)', fontWeight: 650 }}>
-              {rhythm.label}
-            </span>
-          </div>
-        </Panel>
-      )}
-
-      {!loading && (
-        <Panel>
-          <ReviewAccuracy stats={reviewStats} accentHex={accentHex} />
-        </Panel>
-      )}
-
-      {!loading && (
-        <Panel>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
-              Level mastery
-              <InfoTip accentHex={accentHex} text="A word is mastered once the app predicts you'll still recall it about three weeks from now. It can't be rushed - mastery comes from reviewing correctly over time, across multiple days." />
-            </span>
-            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{stats.masteredCount}/{stats.totalWords} mastered</span>
-          </div>
-          <div style={{ height: '8px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden' }}>
-            <div style={{
-              height: '100%',
-              borderRadius: '999px',
-              background: 'linear-gradient(90deg, ' + accentHex + ', ' + accentHex + 'AA)',
-              width: masteryPct + '%',
-              transition: 'width 700ms ease',
-            }} />
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '9px' }}>
-            Test unlocks at 90% mastery.
-          </div>
-        </Panel>
-      )}
-
       <Panel>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '18px', marginBottom: editingGoal ? '16px' : 0 }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
+            <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
               <Target size={17} strokeWidth={1.85} color={accentHex} />
               Daily new cards
-            </div>
+            </h2>
             {!editingGoal && (
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>
                 {profile.daily_new_cards} new cards per day
@@ -584,7 +523,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       <Panel danger>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '18px', alignItems: 'center' }}>
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Reset a language</div>
+            <h2 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Reset a language</h2>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
               Clears flashcards, tests, story reads and unlocks for{' '}
               <strong style={{ color: 'var(--text)', fontWeight: 700 }}>
@@ -676,7 +615,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         <Panel danger>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '18px', alignItems: 'center', flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Remove a language</div>
+              <h2 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Remove a language</h2>
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
                 {removeTarget
                   ? <>Deletes your <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{languageTheme(removeTarget).languageName}</strong> track and its flashcards, tests, story reads and unlocks. This can't be undone.</>
@@ -747,7 +686,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       <Panel danger>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '18px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Delete account</div>
+            <h2 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Delete account</h2>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
               Permanently deletes your account and everything in it — flashcards, review
               history, story progress, test results and settings, for every language —
@@ -840,15 +779,6 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   )
 }
 
-// Shared by ReviewAccuracy's per-day bars. It used to live with the heatmap's
-// helpers and went out with them once; it belongs to the accuracy chart, which
-// is the only thing that still labels a day.
-function dayDetail(ds, count, noun) {
-  const when = new Date(ds + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-  if (!count) return when + ' — no ' + noun + 's'
-  return when + ' — ' + count + ' ' + noun + (count === 1 ? '' : 's')
-}
-
 export function KnownWordMap({ map, accentHex, language, system }) {
   const SEGMENTS = [
     { key: 'mastered', label: 'Mastered', color: '#2F9E6D' },
@@ -858,10 +788,10 @@ export function KnownWordMap({ map, accentHex, language, system }) {
   ]
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)', marginBottom: '6px' }}>
+      <h2 style={{ margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
         <BookOpen size={17} strokeWidth={1.85} color={accentHex} />
         Known-word map
-      </div>
+      </h2>
       <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '18px', lineHeight: 1.5 }}>
         {readableSummary(map)}
       </div>
@@ -910,98 +840,6 @@ export function KnownWordMap({ map, accentHex, language, system }) {
   )
 }
 
-export function ReviewAccuracy({ stats, accentHex }) {
-  const isMobile = useIsMobile()
-  const [picked, setPicked] = useState(null)
-  if (stats.total === 0) {
-    return (
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)', marginBottom: '8px' }}>
-          <TrendingUp size={17} strokeWidth={1.85} color={accentHex} />
-          Review accuracy
-        </div>
-        <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-          Once you've graded a few cards, your retention rate and daily review count will show up here.
-        </div>
-      </div>
-    )
-  }
-
-  const pct = Math.round((stats.correct / stats.total) * 100)
-
-  // Last 30 calendar days, oldest to newest.
-  const today = new Date()
-  const last30 = []
-  for (let i = 29; i >= 0; i -= 1) {
-    const d = new Date(today)
-    d.setDate(d.getDate() - i)
-    const ds = d.toISOString().slice(0, 10)
-    last30.push({ ds, count: stats.days[ds] || 0 })
-  }
-  const max = Math.max(1, ...last30.map(d => d.count))
-  const barW = isMobile ? 6 : 8
-  const gap = isMobile ? 2 : 3
-  const maxBarH = 46
-
-  return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)', marginBottom: '16px' }}>
-        <TrendingUp size={17} strokeWidth={1.85} color={accentHex} />
-        Review accuracy
-      </div>
-
-      <div style={{ display: 'flex', gap: '14px', alignItems: 'stretch', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
-        <div style={{
-          flexShrink: 0, minWidth: isMobile ? '100%' : '150px', textAlign: 'center',
-          padding: '16px 12px', borderRadius: '14px', background: accentHex + '0D', border: '1px solid ' + accentHex + '22',
-        }}>
-          <div style={{ fontSize: '30px', fontWeight: 800, color: accentHex, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{pct}%</div>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 650 }}>
-            Recalled successfully — {stats.total} review{stats.total === 1 ? '' : 's'}
-          </div>
-        </div>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 650, marginBottom: '10px' }}>Last 30 days</div>
-          {/* Each bar is a full-height button so the thumb has something to aim
-              at, and the tapped day's count is written out below — `title` alone
-              never fires on touch. */}
-          <div role="group" aria-label={last30A11yLabel(last30.map(d => d.count))} style={{ display: 'flex', alignItems: 'flex-end', gap: gap + 'px', height: maxBarH + 'px' }}>
-            {last30.map(d => (
-              <button
-                key={d.ds}
-                onClick={() => setPicked(picked === d.ds ? null : d.ds)}
-                aria-label={dayDetail(d.ds, d.count, 'review')}
-                style={{
-                  width: barW + 'px', height: '100%', padding: 0, border: 'none',
-                  background: 'none', cursor: 'pointer', flexShrink: 0,
-                  display: 'flex', alignItems: 'flex-end',
-                }}
-              >
-                <span style={{
-                  width: '100%',
-                  height: Math.max(2, Math.round((d.count / max) * maxBarH)) + 'px',
-                  borderRadius: '2px',
-                  background: d.count > 0 ? accentHex : 'var(--border)',
-                  opacity: picked === d.ds ? 1 : (d.count > 0 ? 0.85 : 0.5),
-                  outline: picked === d.ds ? '1.5px solid ' + accentHex : 'none',
-                  outlineOffset: '1px',
-                }} />
-              </button>
-            ))}
-          </div>
-          <div aria-live="polite" style={{
-            minHeight: '19px', marginTop: '10px',
-            fontSize: '13px', fontWeight: 650, color: picked ? 'var(--text-muted)' : 'var(--text-faint)',
-          }}>
-            {picked ? dayDetail(picked, stats.days[picked] || 0, 'review') : 'Tap a bar to see that day.'}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function Panel({ children, compact, danger }) {
   return (
     <div style={{
@@ -1013,29 +851,6 @@ function Panel({ children, compact, danger }) {
       marginBottom: '14px',
     }}>
       {children}
-    </div>
-  )
-}
-
-function StatCard({ label, value, unit, icon: Icon, color, bg }) {
-  return (
-    <div style={{
-      background: 'var(--surface)',
-      borderRadius: '18px',
-      border: '1px solid var(--border)',
-      boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
-      padding: '18px',
-    }}>
-      <div style={{
-        width: '38px', height: '38px', borderRadius: '13px',
-        background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        marginBottom: '14px',
-      }}>
-        <Icon size={19} strokeWidth={1.85} color={color} />
-      </div>
-      <div style={{ fontSize: '29px', fontWeight: 850, color, lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '5px', fontWeight: 650 }}>{unit}</div>
-      <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '7px' }}>{label}</div>
     </div>
   )
 }
