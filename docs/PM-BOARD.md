@@ -41,6 +41,32 @@ The detailed plan lives **here**, not in `ROADMAP.md`/`docs/BACKLOG.md`, because
 those two sync to public Discord and this tracker enumerates security
 boundaries. The public roadmap carries a one-line "Public-beta hardening" item.
 
+---
+
+## ⚠️ Two phase tracks, two numberings — do not conflate them
+
+There are two sets of "P" numbers in this project and they are unrelated:
+
+- **`HD-Pn`** — the *hardening* phases below, from the owner's 2026-07-31 master
+  brief. `HD-P8` there is "Manhua, chats, scenes, replies".
+- **`Pn`** (no prefix) — the *mobile-app rebuild* phases, tracked in
+  [`docs/SESSION-HANDOFF.md`](SESSION-HANDOFF.md). `P8` there is the bottom
+  navigation, `P9` the onboarding rebuild, `P10` the visual system.
+
+A note about "P8" is ambiguous unless it carries the prefix. Use `HD-P8` or
+`nav-P8`.
+
+### Mobile-app rebuild track — status
+
+| ID | Phase | Status | Notes |
+|----|-------|--------|-------|
+| P1–P7 | Native foundation, navigation model, device-review fixes | **complete** | Capacitor shell, the reducer-owned navigation model, persistent tab roots, per-tab stacks, the caching migration, and the P1–P7 device fixes. Architecture; frozen. |
+| P8 | Mobile bottom navigation | **complete — FROZEN 2026-08-11** | Approved on physical device, TestFlight **build 35**, commit **`78cf09e`**. Final: `Home · Stories · Cards · Practice · More`, Cards centred at index 2 with a resting/active container, five custom glyphs in `NavIcons.jsx` (Cards = masked portrait card pair), ~27.5px vs ~21–22px, outline→filled selection, no badge, no top marker, no FAB, 58px, level test on Practice, engine untouched. Three files: `MobileNav.jsx`, `NavIcons.jsx`, `navEmphasis.js`. **No further changes without a concrete usability bug.** Two bugs found during it stay open in `docs/BACKLOG.md` (reselect scroll-to-top; the study shell reserving an absent bar). |
+| P9 | Onboarding rebuild | **complete** | Tutorial-first first run; device-approved on builds 31–33. `Tutorial.jsx` + `tutorialScript.js`. Frozen. Open, deliberately: an Android pass, and whether the four Home coach-marks earn their place. |
+| P10 | App-wide visual system and release polish | **in progress — audit** | Started 2026-08-11. Audit first, no redesign: [`docs/P10-VISUAL-AUDIT.md`](P10-VISUAL-AUDIT.md). Deliverable is a prioritised backlog (P10-A blockers → P10-D optional) plus a commit sequence, for owner review before any implementation. |
+
+---
+
 | ID | Phase | Status | Notes |
 |----|-------|--------|-------|
 | HD-P0 | Baseline, safety, task infra | **complete** | Baseline 2026-07-31 (branch `claude/new-session-tllaz3`): lint **0 errors** (7 pre-existing warnings), vitest **3,000/3,000 pass** (122 files), build **clean** (one cosmetic Rolldown plugin-timing notice). No console-error or e2e baseline captured this session — e2e runs in CI. Test-account strategy: Creative Mode sandbox on `/dashboard` + `/unlock` + `/reset` cover the learner scenarios; fixtures in `tests/fixtures/`. No production mutation was needed. |

@@ -50,7 +50,29 @@ Home → Cards → Stories → Practice → Home, several laps, briskly.
 **Record explicitly — the 150ms tab fade feels:** good / slightly slow /
 clearly slow. Do not change it before this is answered on a real device.
 
-### B2 · The bar itself (P8 — the questions this build exists to answer)
+### B2 · The bar itself — ✅ SIGNED OFF on build 35 (2026-08-11)
+
+**P8 is done.** `Home · Stories · Cards · Practice · More`, Cards centred at
+index 2 with its container, passed physical review on TestFlight build 35
+(commit `78cf09e`). The bar is frozen: no further changes without a concrete
+usability bug found in real use.
+
+What this section is now: a **regression checklist**, not an open question. Run
+these on any build that touches the shell, and stop at the first one that fails.
+
+- [ ] Order reads `Home · Stories · Cards · Practice · More`, left to right
+- [ ] Cards is visibly the primary tab, and still reads as a tab
+- [ ] Inactive Cards is never mistaken for the selected tab
+- [ ] The bar does not feel taller than 58px, and Study is not cramped by it
+- [ ] No number, dot or badge anywhere on the bar
+- [ ] The level test is reachable from Practice
+- [ ] Tapping Cards enters the session and the bar gets out of the way
+
+The original decision questions, and the two device rounds that answered them,
+are preserved below for the record.
+
+<details>
+<summary>The questions builds 34 and 35 existed to answer (answered — do not re-run)</summary>
 
 Answer in words, not ticks. The bar is **Home · Stories · Cards · Practice ·
 More** with Cards in the physical centre, five icons drawn for this app, and
@@ -110,6 +132,13 @@ barely-there neutral at rest and accent-tinted when selected. Cards' glyph is
 12. [ ] Is the **level test discoverable from Practice**, and does its locked row
        explain what opens it?
 13. [ ] Does the whole bar look **less like a stock template** than build 33 did?
+
+**How they were answered.** Build 34 (`a60b916`): direction accepted, Cards not
+yet primary enough, Practice competing with it, far-left Practice wrong. Build 35
+(`78cf09e`): reordered to `Home · Stories · Cards · Practice · More`, resting
+container down 45% — **approved.**
+
+</details>
 
 ## C · Study
 

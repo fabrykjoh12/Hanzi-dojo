@@ -45,11 +45,19 @@ bar's visibility as an input rather than assuming it, and re-checking the
 density bands — a 568px phone would move from 510 to 568 available, which
 crosses `COMPACT_MIN`. Worth doing; worth doing on its own, with device photos.
 
-## P8 nav audit — both defects fixed (2026-08-11)
+## P8 nav — DONE and FROZEN (approved on TestFlight build 35, `78cf09e`)
 
-Full audit and the three options: [`docs/P8-NAV-AUDIT.md`](P8-NAV-AUDIT.md).
-Current state and the one decision still open:
-[`docs/SESSION-HANDOFF.md`](SESSION-HANDOFF.md).
+The bottom navigation is finished: `Home · Stories · Cards · Practice · More`,
+Cards centred at index 2 with its container, five custom glyphs, 58px. **No
+further changes without a concrete usability bug found in real use.** The full
+approved spec is at the top of [`docs/SESSION-HANDOFF.md`](SESSION-HANDOFF.md);
+the audit that got there is [`docs/P8-NAV-AUDIT.md`](P8-NAV-AUDIT.md); §B2 of
+[`docs/MOBILE-DEVICE-QA.md`](MOBILE-DEVICE-QA.md) is now a regression checklist
+rather than an open question.
+
+The two bugs found *while* doing P8 and deliberately left are still open, at the
+top of this file — the reselect scroll-to-top no-op and the study shell reserving
+a bar that is not there. Neither is a nav-design change; both survive the freeze.
 
 - ~~`MOBILE_NAV_HEIGHT = 62` over-reserves by 4.25px~~ — fixed. The bar's height
   is declared in `src/navMetrics.js` and the bar, `main`'s bottom padding, the

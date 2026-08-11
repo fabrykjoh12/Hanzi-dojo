@@ -34,12 +34,11 @@ automatic Home coach-mark tour is suppressed for anyone who did the tutorial
 (`maybeStartTour({ suppressed: isTutorialDone() })`); its four marks still exist
 and their future is undecided.
 
-**TestFlight: build 34**, commit `a60b916`, version 1.0, uploaded successfully
-(Delivery UUID `3ff64903-2a65-47e3-9f6d-07c9b783abeb`). It carried the P8
-navigation prototype as first drawn; its device review is what produced the
-Cards-emphasis pass below, so **build 34 no longer matches `main`-of-this-branch
-and a new build is needed before the remaining questions can be answered.**
-Builds 31–33 covered the onboarding work and the earlier P8 pass.
+**TestFlight: build 35 is the approved state** — commit `78cf09e`, version 1.0,
+Delivery UUID `ddd7954e-3dd8-45c9-8cd1-db3b7c046719`, uploaded and reviewed on a
+physical iPhone. Build 34 (`a60b916`) carried the P8 bar as first drawn and its
+device review produced the Cards-emphasis pass; builds 31–33 covered the
+onboarding work. **Anything newer than `78cf09e` has not been on a device.**
 
 ---
 
@@ -84,7 +83,35 @@ not a plan. **Do not rewrite any of this to solve a presentation problem.**
 
 ---
 
-## Current P8 status
+## P8 — DONE, and frozen (2026-08-11)
+
+**TestFlight build 35, commit `78cf09e`, passed physical-device review. The
+bottom navigation is finished.** No further changes to it without a concrete
+usability bug found in real use — not a preference, not a better idea, a bug.
+
+The approved design, in full, so nothing has to be inferred from the history
+below:
+
+- order **`Home · Stories · Cards · Practice · More`**; Home is the default/root
+  destination and Cards is physically centred at index 2
+- Cards is the primary visual action: ~27.5px glyph, the other four ~21–22px
+- five custom glyphs in `NavIcons.jsx`, Cards being the portrait
+  overlapping-card pair with the masked occlusion
+- inactive = outline; active = filled + accent + stronger label
+- Cards carries a subtle resting container and a stronger accent-tinted one when
+  selected
+- no numeric Cards badge · no top active marker · no floating/FAB treatment
+- nav height 58px
+- the level test lives on Practice
+- the navigation engine is untouched
+
+Everything below this line is the record of how it got there. The numbers still
+matter — they are the reference if the bar is ever measured again — but the
+decisions are closed.
+
+---
+
+## How P8 was resolved
 
 **Prototype commits: `c7eb6c6`, then the Cards-emphasis pass on top of it.**
 
@@ -170,44 +197,29 @@ Prototype decisions, all approved:
 
 ---
 
-## Pending decisions
+## How the two open questions were answered
 
-The prototype has **not** been finally approved on hardware. Two questions are
-open, and the next build exists to answer them.
+Both were answered on a phone, on build 35, and both are closed.
 
-**1. The order — a straight A/B against build 34.** Build 34 shipped
-`Practice · Home · Cards · Stories · More` and the far-left Practice did not
-survive the device. The next build ships the alternative:
+**1. The order.** Build 34 shipped `Practice · Home · Cards · Stories · More`,
+which kept `Home → Cards → Stories` contiguous in the middle — the daily loop,
+left to right — and paid for it by opening the row on the quietest destination in
+the bar. The far-left Practice did not survive the device. Build 35 shipped the
+alternative, `Home · Stories · Cards · Practice · More`, and **that is the one
+that was approved.** The loop argument is on the record and lost; do not
+re-derive it.
 
-> Does `Home · Stories · Cards · Practice · More` feel more natural in the hand
-> than what build 34 had?
+**2. The Cards emphasis.** Approved. The resting container was cut to 55% of its
+first strength between builds 34 and 35 precisely because it read as a second
+selected tab, and at 6.1 of 255 against 19 it no longer does.
 
-What each arrangement is buying: the old one kept `Home → Cards → Stories`
-contiguous in the middle — the daily loop, left to right — at the cost of
-opening the row on a drawer. The new one starts where the eye starts and where
-the app opens, puts the two things a learner does with the language either side
-of centre, and demotes Practice to the right. **Judge them physically; do not
-re-derive the loop argument and revert.** Cards is at index 2 in both, so the
-comparison is only about what surrounds it.
+---
 
-If the new order also feels wrong, that is the signal to reopen the information
-architecture rather than to try a third permutation.
+## The current phase: P10 — app-wide visual system
 
-**2. The Cards emphasis**, new in this pass:
-
-> Does the eye immediately understand that Cards is the core action, while it
-> still clearly belongs to the navigation bar?
-
-And the specific risk it introduced: **at rest, Cards has a container and no
-other tab does, and a box behind a tab is Android's convention for *selected*.**
-That was reported on the first build of it and the resting container has already
-been cut to 55% in response. It is now four signals apart from selection — the
-selected glyph fills, its label goes bold, its container takes the accent and
-gains an edge — but "meant to" is not the same as "does". If Cards can still be
-mistaken for the selected tab, say so; the same one line goes lower again.
-
-The full device checklist is `docs/MOBILE-DEVICE-QA.md` §B2, which now runs to
-thirteen questions in priority order.
+P8 and P9 are closed. The active work is **P10: making every screen look like
+one deliberately designed app**, starting with an audit rather than a redesign —
+[`docs/P10-VISUAL-AUDIT.md`](P10-VISUAL-AUDIT.md).
 
 ---
 
@@ -231,16 +243,23 @@ Full list in `docs/BACKLOG.md`. Three found recently and deliberately left:
 
 ---
 
-## Frozen scope while P8 is being resolved
+## Frozen scope under P10
 
-Do not touch: the navigation engine (everything under "Navigation architecture"
-above), onboarding/P9, Study and FSRS scheduling, the flashcard design, the
-Practice screen's design (the Level Test row is done), the Stories screen and
-reader, Home's layout, the caching layer, the shell architecture, animations
-outside `MobileNav.jsx`, and the typography system.
+P10 is a visual pass, not an architecture pass. **Superficial styling fixes to
+the screens below are in scope when a P10 finding specifically calls for one; the
+architecture underneath is not, and no rewrites.**
 
-P8's whole surface is three files — `MobileNav.jsx`, `NavIcons.jsx` and
-`navEmphasis.js`. If a change to the bar needs a fourth, it is not a P8 change.
+Frozen outright — approved and shipped, do not reopen:
+
+- **P8, the bottom navigation** (see the top of this file). Its whole surface is
+  `MobileNav.jsx`, `NavIcons.jsx` and `navEmphasis.js`.
+- **P9, onboarding** — `Tutorial.jsx`, `tutorialScript.js`, the first-run logic.
+- the navigation engine: `navStack.js`, `navLedger.js`, `useNavigation.js`,
+  `TabHost.jsx`, Android Back, the navigation motion architecture.
+- Study scheduling and FSRS: `srs.js`, `mastery.js`, the grading flow.
+- the Stories routing architecture (three real destinations, per-tab stacks).
+- the caching layer: `dataCache.js`, `cacheEvents.js`, `homeData.js`.
+- the offline infrastructure: `syncQueue.js`, `prefetch.js`, `audioCache.js`.
 
 Standing repo-wide freeze: **the two non-Chinese language tracks.** See
 CLAUDE.md §1 — never propose, plan, estimate, fix or mention them.
@@ -276,7 +295,8 @@ Newest first. Everything from `29e2065` down was written on
 
 | Commit | What it is |
 |---|---|
-| *(head)* | **The Cards-emphasis pass**: a container behind one glyph, the Cards card redrawn portrait with a masked occlusion, Practice and More quieted |
+| `78cf09e` | **Build 35 — the approved bar**: the order becomes `Home · Stories · Cards · Practice · More`, and the resting Cards container drops to 55% |
+| `280dd26` | **The Cards-emphasis pass**: a container behind one glyph, the Cards card redrawn portrait with a masked occlusion, Practice and More quieted |
 | `29e2065` | The session handoff, and three docs that had gone stale |
 | `a60b916` | Docs brought in line with the shipped bar |
 | `c7eb6c6` | **The P8 prototype**: Cards centred, five custom icons, badge and marker removed |
