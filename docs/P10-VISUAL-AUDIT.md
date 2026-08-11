@@ -1,6 +1,7 @@
 # P10 — App-wide visual system: audit and prioritised plan
 
-**Status: audit APPROVED. P10-A is shipped; P10-B/C/D are not started.**
+**Status: P10-A shipped and device-approved. P10-B1 (Profile) is audited and
+awaiting a direction decision. P10-B2+/C/D are not started.**
 
 - audit written and approved at `86581af`
 - **`263c71b`** — A1 Settings at 320, A2/A3 the feedback FAB, A7 the system label
@@ -780,3 +781,295 @@ it rather than inventing a role for it.** The audit found 8 hand-declared copies
 and no legitimate success semantics among them — the Reader's "Start reading",
 NotFound's CTA, the empty-state "Exit" buttons and the feedback FAB are all
 primary or navigational, so the likely outcome is removal.
+
+---
+
+# P10-B1 — Profile: audit and three information architectures
+
+**Status: audit only. No Profile code has been modified.** Written 2026-08-11,
+after P10-A was device-approved on TestFlight build 36.
+
+Measured with `tests/e2e/p10b-profile-probe.spec.js` (throwaway): every top-level
+block's height, its share of the viewport, its type-style count, its interactive
+elements and how many of those are under 44px, at 320/390/430 in dark mode.
+
+## B1.1 — What Profile is today
+
+**`src/Profile.jsx` is 1,237 lines** and renders 14 top-level blocks. Document
+height, measured:
+
+| Width | Document | Viewports |
+|---|---|---|
+| 320×568 | 3,928px | **6.92** |
+| 390×844 | 3,779px | **4.48** |
+| 430×932 | 3,742px | **4.02** |
+
+The audit's headline figure (4.5 viewports) was the 390 reading. **On the
+smallest supported phone it is nearly seven screens of scrolling.**
+
+### The full inventory, in render order (390×844)
+
+| # | Section | Height | Viewports | Type styles | Taps | <44px | Answers which question? |
+|---|---------|-------:|----------:|------------:|-----:|------:|-------------------------|
+| 1 | AppBar (close) | 52 | 0.06 | – | 1 | 0 | — |
+| 2 | Identity — name + `HSK 2` | 29 | 0.03 | 2 | 0 | 0 | **Who am I / what level** |
+| 3 | Two stat cards — Words learned, Words mastered | 166 | 0.20 | 3 | 0 | 0 | **How much have I learned** |
+| 4 | **Achievements** — 11 badges, 2-up grid | **928** | **1.10** | 4 | 0 | 0 | none |
+| 5 | Words that keep slipping (leeches) | 538 | 0.64 | 8 | 7 | 0 | partly recent progress |
+| 6 | "August so far" — 3 stat tiles + Share | 335 | 0.40 | 5 | 1 | 0 | recent progress |
+| 7 | Known-word map — bars per level | 311 | 0.37 | 5 | 0 | 0 | how much have I learned |
+| 8 | **Study activity** — 17×7 heatmap | 272 | 0.32 | 4 | **115** | **115** | recent progress |
+| 9 | Review accuracy | 117 | 0.14 | 2 | 0 | 0 | recent progress |
+| 10 | Level mastery — bar + "Test unlocks at 90%" | 115 | 0.14 | 4 | 1 | 1 | **progress to next level** |
+| 11 | Daily new cards — inline goal editor | 91 | 0.11 | 3 | 1 | 0 | account action |
+| 12 | Reset a language (danger) | 252 | 0.30 | 6 | 2 | 1 | account action |
+| 13 | Delete account (danger) | 246 | 0.29 | 4 | 1 | 0 | account action |
+| 14 | Sign out | 52 | 0.06 | – | 0 | 0 | account action |
+
+Plus a conditional 15th, *Remove a language*, for anyone holding a track whose
+language has since been paused.
+
+**Achievements alone is 1.10 viewports — 24.6% of the entire document.**
+
+## B1.2 — Redundant information
+
+Profile currently answers "how am I doing?" **five separate times**:
+
+1. **Words learned / mastered** (§3, two cards)
+2. **"August so far"** — Active days, Reviews, Words mastered *(mastered appears
+   here for the second time, and it is the lifetime figure while §3 shows the
+   level figure — two different numbers under the same words)*
+3. **Known-word map** — learned-per-level bars *(the same learned count as §3,
+   distributed)*
+4. **Study activity heatmap** — 17 weeks of study days
+5. **Review accuracy** — grade-0 rate
+
+And **Home already shows the same rhythm**: `Your week`, a 7-day strip with
+"Studied N of the last 7 days". Profile's heatmap is that, at 17× the range, with
+115 tap targets instead of one `role="img"`.
+
+Mastery is stated **three** times: the §3 card (`0%`), §10's "Level mastery
+0/44 mastered · Test unlocks at 90% mastery", and §6's lifetime tile. Practice
+states it a fourth time, on the level-test row.
+
+## B1.3 — Interactions below 44px
+
+**117 at every width.** They are not spread around:
+
+| Where | Count | Size | Note |
+|---|---:|---|---|
+| Heatmap day cells | **115** | 16×16 | each an individual `<button>` with its own `aria-label` |
+| "Level mastery" InfoTip `?` | 1 | 18×18 | also measured 2.95:1 before A5 fixed it |
+| Reset-language radio | 1 | 16×16 | a real `<input type=radio>`, so the row label is the target — acceptable |
+
+So **115 of the 117 are one component**, and the other two are defensible. This
+is not a screen full of small buttons; it is one GitHub-shaped widget.
+
+## B1.4 — The heatmap: recommendation is REMOVE
+
+Judged on its merits, not its existence:
+
+- **Does it help a Chinese learner?** No. It reports *that* you opened the app,
+  never *what you learned*. A learner cannot act on it.
+- **Is it understandable without explanation?** Only by people who already know
+  GitHub's contribution graph. It has no legend on mobile; the five tints are
+  distinguishable only if you tap cells and read the detail line.
+- **Does it duplicate activity counts?** Yes, three times over — Home's `Your
+  week`, Profile's own "Active days" tile, and its own "N days studied" header.
+- **Does it mainly imitate GitHub/streak products?** Yes. And a streak grid is
+  the shape of the mechanic CLAUDE.md §1 says was deliberately removed: it
+  creates an unbroken-chain to protect. The copy avoids the word "streak"; the
+  visual does not.
+- **Cost:** 272px, 115 interactive elements, 153 DOM nodes, and 311 lines of
+  `Profile.jsx` (`buildWeeks`, `cellColor`, `dayDetail`, `StudyCalendar`).
+
+**Recommendation: remove.** Home's 7-day strip already carries rhythm, in one
+line, with one label, at a range a learner can act on. If a longer view is ever
+wanted it should be *learning*, not *attendance* — words mastered per week, which
+the known-word map already almost is.
+
+*(Second choice, if you want to keep something: replace with a single line —
+"Studied 12 of the last 30 days" — which is 1 element instead of 153.)*
+
+## B1.5 — Achievements: what can be deleted
+
+Once the wall goes:
+
+| Item | Lines | Note |
+|---|---:|---|
+| `Badge` component in `Profile.jsx` | 58 | used only by the wall |
+| The Achievements panel + `ACH_ICONS` + `earnedCount` | ~20 | |
+| `src/achievements.js` | 34 | **but see the blocker below** |
+| `src/achievements.test.js` | 54 | goes with it |
+| The `story_reads` count query | ~5 | its only consumer is the Reading achievements |
+| `stats.lifetimeLearned` / `lifetimeMastered` | ~3 | only the wall and §6's tile read them |
+
+**Blocker — the wall is not the only surface.** `Study.jsx` imports
+`evaluateAchievements` and, at the end of every session, toasts
+`"Seal earned — First Words"` and fires an `ACHIEVEMENT_UNLOCKED` analytics
+event (`Study.jsx:588-601`, plus `loadAchievementStats` at 461). That is the same
+mechanic, in its most celebratory form, on the app's most-repeated screen.
+
+Removing the wall while keeping the toast leaves a reward with nowhere to live —
+a learner is told they earned a seal and can never see it again.
+
+**This needs your call, and it is a Study change, which is currently frozen:**
+either (a) remove the toast too and delete `achievements.js` entirely, or (b)
+keep both out of scope for now and remove only the wall, accepting the orphaned
+toast for one build. **My recommendation is (a)** — it is the same decision you
+already made, applied consistently, and it is ~15 lines in `Study.jsx` plus two
+file deletions. It does not touch scheduling.
+
+## B1.6 — Three information architectures
+
+All three keep the owner's list of permitted content: words learned, words
+mastered, current level, recent activity, progress toward the next level, and
+genuinely useful history. All three delete the badge wall.
+
+Estimated heights are computed from the measured section heights above, not
+guessed: reused sections keep their measured height, merged ones are estimated at
+the height of their largest constituent plus a row.
+
+### Option A — "Two panels" *(most aggressive; ~1.5 viewports)*
+
+```
+1  AppBar (close)                                    52
+2  Identity: name · HSK 2 · member since             ~70
+3  PROGRESS PANEL (one lit panel)                    ~300
+     44 words at HSK 2 · 5 learned · 0 mastered
+     one bar: mastery toward the level test (90%)
+     one line: "Studied 3 of the last 7 days"
+4  Known-word map (kept, it is the one view that     311
+   shows learning rather than attendance)
+5  ACCOUNT PANEL (rows, not cards)                   ~230
+     Daily new cards          10  >
+     Reset a language             >
+     Delete account               >
+     Sign out
+                                          total ≈ 1,270px = 1.50 vp @390
+```
+
+- **Stays:** identity, the two counts, level mastery, the known-word map, all
+  account actions.
+- **Removed:** achievements (928), the heatmap (272), "August so far" (335),
+  review accuracy (117), the leeches panel (538).
+- **Moves to Settings:** nothing (see B1.7).
+- **Shared component:** one `ProgressPanel` replaces sections 3, 6, 8, 9 and 10.
+- **Why better:** it answers the four questions once each, in order, and it is
+  the only option that gets Profile below 2 viewports. Losing the leeches panel
+  is the real cost — see the note under Option B.
+
+### Option B — "Two panels plus what's slipping" *(recommended; ~2.1 viewports)*
+
+```
+1  AppBar (close)                                    52
+2  Identity: name · HSK 2                            ~70
+3  PROGRESS PANEL (as Option A)                      ~300
+4  Known-word map                                    311
+5  Words that keep slipping  (kept, capped at 5,     ~420
+   with its existing "practise these" hand-off)
+6  ACCOUNT PANEL (rows)                              ~230
+7  Review accuracy folded into the progress panel
+   as one line: "You recall 87% of reviews"           —
+                                          total ≈ 1,780px = 2.11 vp @390
+```
+
+- **Stays:** everything in A, plus the leeches list at a cap of 5 rows.
+- **Removed:** achievements, heatmap, "August so far" as a panel (its Active-days
+  figure becomes the progress panel's one rhythm line; Reviews and lifetime
+  Mastered are dropped as duplicates).
+- **Why better:** the leeches panel is the only block on Profile that is
+  *actionable* — it names specific words and offers a way to drill them. Cutting
+  it to make a number smaller would be the wrong trade. This is the option that
+  keeps Profile useful rather than merely short.
+
+### Option C — "Progress, history, account" *(most conservative; ~2.8 viewports)*
+
+```
+1  AppBar (close)                                    52
+2  Identity                                          ~70
+3  PROGRESS PANEL                                    ~300
+4  Known-word map                                    311
+5  Words that keep slipping                          ~420
+6  HISTORY PANEL                                     ~330
+     "August so far" kept as three tiles
+     + review accuracy as a line
+     + "Studied 12 of the last 30 days" (no grid)
+7  ACCOUNT PANEL                                     ~230
+                                          total ≈ 2,340px = 2.77 vp @390
+```
+
+- **Stays:** everything in B, plus a single history panel.
+- **Removed:** achievements, the heatmap grid.
+- **Why better:** the smallest change from today, and it keeps the monthly view
+  for anyone who liked it. **Why I do not recommend it:** it preserves the
+  "several panels of statistics" shape that made Profile the outlier, and a
+  history panel is exactly where widgets accumulate again.
+
+### Comparison
+
+| | Today | A | B (rec.) | C |
+|---|---:|---:|---:|---:|
+| Viewports @390 | 4.48 | **1.50** | **2.11** | 2.77 |
+| Viewports @320 | 6.92 | ~2.3 | ~3.2 | ~4.2 |
+| Top-level blocks | 14 | 5 | 6 | 7 |
+| Containers (measured today: 55) | 55 | ~8 | ~14 | ~18 |
+| Type styles (today: 24) | 24 | ≤8 | ≤8 | ≤10 |
+| Sub-44px targets | 117 | **0–2** | **0–2** | 0–2 |
+| Actionable content | leeches only | none | leeches | leeches |
+
+## B1.7 — What moves to Settings: nothing, deliberately
+
+`Daily new cards`, `Reset a language` and `Delete account` look like Settings
+material. They must stay on Profile for now, because **Settings' own opening line
+says so**: *"Tune how studying feels. Daily goal and reset controls live in
+Profile."* Moving them means editing Settings, which is frozen, and it would
+leave that sentence lying.
+
+Recommendation: keep them, restyled as **rows** rather than three bordered cards
+(that alone takes ~590px to ~230px), and revisit the Profile/Settings split as
+its own decision later.
+
+## B1.8 — The visual rules, taken from the strongest screens
+
+No Profile-only design language. Straight from §1's reference set:
+
+| Rule | From | Applied to Profile |
+|---|---|---|
+| One lit panel, everything else flat | Home | The progress panel is the hero; nothing else is lit |
+| The screen is the object | Study | Profile is *your progress*, not a page of widgets about it |
+| ≤6 type styles | Study (6) | 24 → ≤8 |
+| Colour carries data | Study's grades | accent = your progress; green stays for mastery only; no other hues |
+| Section = one question | Session complete | four questions, four blocks, in the order asked |
+| Numbers are calm, one size | Home's hero | one big number (learned), not five competing 26–29px stats |
+| A range needs one label, not 115 | Home's `Your week` (`role="img"`) | the heatmap goes |
+
+## B1.9 — Files likely affected
+
+| File | Change | Risk |
+|---|---|---|
+| `src/Profile.jsx` | the redesign; 1,237 → ~450 lines expected | Medium |
+| `src/profileProgress.js` *(new)* | pure: assemble the progress figures + the rhythm line, tested | Low |
+| `src/achievements.js`, `src/achievements.test.js` | delete (if B1.5(a) approved) | Low |
+| `src/Study.jsx` | remove `celebrateAchievements` + its stats loader (~15 lines) — **frozen; needs explicit approval** | Low, but it is Study |
+| `src/analytics.js` | `ACHIEVEMENT_UNLOCKED` becomes unused — leave the constant, stop firing it | Low |
+| `tests/e2e/profile.spec.js` | rewrite the assertions that cover the removed panels | Low |
+| `tests/e2e/p10-visual-audit.spec.js` | re-run to confirm the new numbers | Low |
+
+Nothing in this list touches Settings, the nav, onboarding, FSRS, Stories,
+Practice, the global tokens, auth or the cache.
+
+## B1.10 — Proposed implementation commits
+
+Each one independently revertable and visually verifiable.
+
+| Commit | Content | Verify |
+|---|---|---|
+| **B1** | Delete the achievement wall and (pending approval) the Study toast; delete `achievements.js` + its test; drop the now-unused `story_reads` count and the lifetime stats | Profile drops ~1.1 viewports; no orphaned import; e2e green |
+| **B2** | Remove the heatmap; `StudyCalendar`/`buildWeeks`/`cellColor`/`dayDetail` deleted; the rhythm becomes one line | sub-44px targets 117 → ≤2; a spec asserts it |
+| **B3** | The `ProgressPanel` — identity, counts, level mastery, rhythm, accuracy in one lit panel; `profileProgress.js` + unit tests | one lit panel per screen; type styles ≤8 |
+| **B4** | Account actions become rows; the three danger cards collapse | ~590px → ~230px; destructive confirmations unchanged and still tested |
+| **B5** | Leeches capped and restyled to match | Profile ≈2.1 viewports at 390, ≈3.2 at 320 |
+
+**Do not start any of these until the direction is approved.** B1 additionally
+needs the Study-toast decision (B1.5).
