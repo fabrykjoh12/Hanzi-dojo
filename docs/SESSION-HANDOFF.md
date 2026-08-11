@@ -258,6 +258,29 @@ stands for when it is: sage green gets exactly one semantic role —
 positive/successful/completed, behind one token — or is removed. Coral is the one
 primary-action colour. See the audit's §15.
 
+Build 37 (`576082e`) passed device QA. Two things came out of it:
+
+1. **The reset/delete copy said "language"** on a product that publicly offers
+   one. Fixed in `419f02c`: the row is "Reset Chinese progress", the body says
+   where you restart instead of which of your languages survives, and the delete
+   copy quotes the reset label instead of naming it by hand. Multi-track accounts
+   (staff) still get the multi-track wording, because there it is true.
+2. **The container audit** — [`docs/P10-CONTAINER-AUDIT.md`](P10-CONTAINER-AUDIT.md),
+   **audit only, nothing implemented.** The "generated app" feeling is real and it
+   is not the card count: Home has four boxes, Profile six. It is the 16 tinted
+   icon chips inside Practice's tiles, the 23 badges and % pills on Stories'
+   covers, and the fact that every section on Home is a rectangle with an
+   ALL-CAPS label. Recommended order: delete the nested chips and pills first,
+   then dissolve Home's two flat panels, then let Practice inherit the rule.
+
+One user-facing leak found and NOT fixed, because it is navigation rather than
+copy and needs a decision: **`MOBILE_MORE` in `navConfig.js` gives every account
+a "Language" entry** into `LanguageSwitcher`, whose own copy offers to "start a
+new language". For a Chinese-only product that is the largest remaining
+multi-language tell. Gating that entry on `profile.is_admin` (as `ADMIN_NAV`
+already is) is a one-line change — it needs the owner's word because the nav is
+frozen.
+
 Not to be resumed without the owner's word: the Practice redesign and the global
 token cleanup were both explicitly held until Profile has been reviewed.
 
