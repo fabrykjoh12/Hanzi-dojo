@@ -255,3 +255,87 @@ What NOT to do: strip the flashcard, the story covers, the drill tiles or the
 lit hero. Those four are the app's distinctiveness, and every one of them is a
 target or a piece of artwork. The problem was never the cards — it was the
 rectangles that had nothing to hold.
+
+---
+
+## C0 – C2 — what was implemented (2026-08-11)
+
+Approved, and done in three commits. Everything below is measured at 320 / 390 /
+430, light and dark, with the e2e mock account.
+
+### C0 · `6b634b6` — the language entry
+
+`MOBILE_MORE` handed every learner a "Language" row into a screen offering to
+"start a new language". It is staff-only now, via `moreItemsFor(isAdmin)` in
+`navConfig.js`; the desktop rail's seal is a button for staff and a plain label
+for everyone else. **The `/languages` route stays open deliberately** — anyone
+already on a paused track keeps it, and closing the exit would strand them.
+
+### C1 · `8468bfb` — 39 decorative surfaces
+
+| | before | after |
+|---|---|---|
+| **Practice** | 28 (12 major + **16** small) | **12** (12 major + **0** small) |
+| **Stories** | 45 (20 major + **25** small) | **22** (20 major + 2 small) |
+
+Practice lost all sixteen tinted icon squares — eight on the drill tiles, seven
+on the tool rows, one on the hero, one on the level-test row — and kept every
+tile boundary, every target and its 2-up grid. The icons grew (22px on tiles,
+18–19px on rows) and stayed intentional in colour.
+
+Stories lost the twelve format capsules and the eleven "% known" capsules from
+the artwork. The format moved into the meta row *and only when it is not the
+usual prose* (`distinctiveFormatLabel`, new and pure — `formatLabel` was printing
+"Story" on every prose card). "% known" is a line of full-strength text under the
+title: folded into the meta row instead, it pushed "Manhua" past the ellipsis on
+a 148px card. What stays on the cover is only what artwork cannot say — the read
+check, the progress sliver, the lock.
+
+Targets: Practice 16, none under 44px. Stories 20, with four filter chips at 38px
+tall **that were 38px before this change** — noted, untouched, since making them
+44 moves the shelf.
+
+### C2 · `5c69ea2` — Home
+
+| | before | after |
+|---|---|---|
+| Major **panels** | 4 | **1** |
+| Total rounded surfaces | 11 | 10 |
+| Height at 390 / 430 | 1.00 vp | **1.00 vp** |
+| Height at 320 | 1.20 vp | 1.26 vp |
+| Headings | `H1:Today` | `H1:Today`, `H2:Then read`, `H2:Your week` |
+| Targets under 44px | 0 | 0 |
+
+The one panel left is the HeroPanel, untouched. The story hand-off is a row
+anchored on the story's own 2:3 cover — no background, border, radius or shadow
+of its own, whole row tappable, `hd-press` intact, Enter/Space working. "Your
+week" is an open section: heading, strip, hairline, "Toward HSK 3", bar, forecast
+line, every number it had.
+
+Two data marks had to be re-mixed. The week cells and the progress track were
+`color-mix(… var(--surface-2))` — a *panel* colour that sits 6/255 from the page
+ground, so on an open page the bar was invisible at 0%. Both are 10% of
+`var(--text)` over the page now: a 22–23/255 step in light and dark, from one
+recipe.
+
+### The defect C2 found
+
+`homeStory.js` selected `cover_url` from `stories`. **That column does not exist**
+— the live schema fails `select id, cover_url from stories` with 42703. PostgREST
+answers an unknown column with a 400, supabase-js reports it in `error` and leaves
+`data` null, and the function's own `stories.length === 0` guard returned null. So
+**Home's story hand-off had never rendered in production** for a learner without
+an active series.
+
+Nothing could have caught it: the unit suite never touches Supabase and the e2e
+mock answers any select with its own rows. `DAILY_STORY_COLUMNS` is exported and
+pinned against the real column list in `homeStory.columns.test.js`; every other
+`stories` select in `src/` was audited and this was the only phantom.
+
+### Still open, by choice
+
+- **Profile stays as P10-B shipped it.** Items 3 and 4 in its table (Known-word
+  map, Account rows) remain candidates; "Reset and delete" keeps its box for good.
+- **Practice's information architecture is untouched** — C1 only deleted
+  decoration. The redesign inherits the rule.
+- **Stories' four 38px filter chips.**

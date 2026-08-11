@@ -281,6 +281,26 @@ multi-language tell. Gating that entry on `profile.is_admin` (as `ADMIN_NAV`
 already is) is a one-line change — it needs the owner's word because the nav is
 frozen.
 
+### P10-C — approved and implemented, awaiting device review
+
+| | | |
+|---|---|---|
+| `6b634b6` | **C0** | the "Language" row in the More sheet is staff-only; the `/languages` route stays open so nobody on a paused track is stranded |
+| `8468bfb` | **C1** | 39 decorative surfaces deleted — Practice 28→12, Stories 45→22 |
+| `5c69ea2` | **C2** | Home keeps one panel out of four; the story hand-off is a row on the story's own cover art |
+
+`docs/P10-CONTAINER-AUDIT.md` carries the census, the A/B/C/D classification and
+the measured before/after. **Build 37 is still the newest thing on a device** —
+everything from `419f02c` onward has not been.
+
+**One production defect fixed on the way** (`5c69ea2`): `homeStory.js` selected
+`cover_url` from `stories`, a column that does not exist, so the query 400'd,
+`data` came back null, and the `stories.length === 0` guard returned null —
+**Home's "Then read" hand-off had never rendered in production.** Nothing could
+see it: the unit suite never touches Supabase and the e2e mock answers any select
+with its own rows. `DAILY_STORY_COLUMNS` is pinned against the real schema now.
+Assume the same blindness about any other mocked server-side behaviour.
+
 Not to be resumed without the owner's word: the Practice redesign and the global
 token cleanup were both explicitly held until Profile has been reviewed.
 
