@@ -10,6 +10,51 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+## Onboarding — three verified defects (found 2026-08-11, P12 audit)
+
+Reproduced against build 40 while auditing the first-run journey. Full context,
+evidence and the fix plan are in
+[`docs/P12-ONBOARDING-AUDIT.md`](P12-ONBOARDING-AUDIT.md) §3 and §9 (P12-0).
+**Recorded here because these are live bugs, not redesign opinions — they are
+worth fixing whether or not the redesign is approved.**
+
+1. **"Create account" opens the LOG IN form.** `Auth.jsx:20` sets the initial tab
+   from `Boolean(intro)`, and `intro` was the old pre-signup wizard's prop.
+   Nothing passes it any more (`Landing.jsx:199` is the only caller), so the tab
+   is always Log in and the submit button always says "Log in". A learner who
+   finishes the tutorial and taps **Create account** gets a login form, types
+   credentials for an account that does not exist, and fails. This sits exactly
+   where the funnel already loses half its accounts. `landing.spec.js:88` asserts
+   only that an Email field is visible — true on both tabs, which is why it was
+   never caught. **Two-line fix; highest priority in this list.**
+
+2. **The Home tour's tutorial suppression can never fire.** `Home.jsx:135` passes
+   `suppressed: isTutorialDone()`, which reads `prelogin:prefs` —
+   and `Onboarding.finish()` (`Onboarding.jsx:149`) calls `clearPreloginPrefs()`,
+   removing that whole key, before any new account can reach Home
+   (`App.jsx:575`). Verified with a fresh-account profile: flag present → no
+   dialog; flag cleared → "Step 1 of 4 — Start here each day". So a learner who
+   just did the 13-state tutorial is then told in a dimmed overlay what today's
+   session is. The clearing is itself correct (it fixed a lost reading-test
+   estimate); the bug is that a device-scoped *teaching record* and a
+   *transitional handoff blob* share one storage key. Fix: move the tutorial-done
+   record to the `offline.js` prefs store where `tour.js` already keeps its own,
+   reading the old key as a fallback.
+
+3. **Android hardware Back quits the app during onboarding.** The whole pre-login
+   flow (NativeWelcome → tutorial → Auth) is `useState` inside `Landing.jsx` at
+   path `/`. No shell is mounted, so `runBackHandler()` returns null and
+   `NativeShellBridge` falls back to `backAction('/', canGoBack)`, which
+   short-circuits on `atRoot` and returns `'exit'`. Back on tutorial card 2 closes
+   the app, unwarned, on the platform where Back is the primary gesture. Not
+   destructive (the position resumes) but jarring.
+
+Also found, and NOT a bug: `signup_started` / `signup_completed` fire only on the
+email/password path (`Auth.jsx:61,72`), never for Google or Apple. That is why the
+database shows 3 `signup_completed` against 32 `onboarding_started`. It means **we
+cannot currently tell how many accounts arrive via OAuth.** Worth its own small
+analytics commit, separate from any onboarding work.
+
 ## Re-tapping the active tab does not scroll to the top (found 2026-08-11)
 
 One line, pre-existing, found while writing the P8 prototype's reselect test and
