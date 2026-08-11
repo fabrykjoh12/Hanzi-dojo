@@ -8,7 +8,6 @@ import { studyFloorLevel } from './levelScope'
 import { missingVocabIds, mergeVocab } from './deckVocab'
 import { schedule, previewLabels, isCardDue, endOfLocalDay } from './srs'
 import { todayStr } from './streak'
-import { evaluateAchievements } from './achievements'
 import { toast } from './toast'
 import { languageTheme, pinyinInk} from './languageTheme'
 import { vocabCacheKey } from './vocabCacheKey'
@@ -189,10 +188,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // fresh-angle coach; `coachVocab` is the word whose coach sheet is open.
   const [stuckOffer, setStuckOffer] = useState(null)
   const [coachVocab, setCoachVocab] = useState(null)
-  // Achievement stats at session start, so newly crossed thresholds can be
-  // celebrated at the recap (same live-derived inputs Profile uses).
-  const achieveBeforeRef = useRef(null)
-  const achieveToastedRef = useRef(false)
   const lastStudiedRecordedRef = useRef(false)
   // Running counts of today's study session, persisted to daily_activity so the
   // Profile calendar can show which days were studied.
@@ -456,28 +451,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     }
   }
 
-  // Lifetime stats that feed achievements (cross-language, like Profile).
-  // Two cheap queries: two columns of the cards table + a row count.
-  async function loadAchievementStats() {
-    const [cardsResult, daysResult] = await Promise.all([
-      supabase.from('cards').select('learned, stability').eq('user_id', session.user.id),
-      supabase.from('daily_activity')
-        .select('activity_date', { count: 'exact', head: true })
-        .eq('user_id', session.user.id)
-        .gt('studied_cards', 0),
-    ])
-    const rows = cardsResult.data || []
-    return {
-      learned: rows.filter(c => c.learned).length,
-      mastered: rows.filter(c => (c.stability || 0) >= 21).length,
-      daysStudied: daysResult.count || 0,
-    }
-  }
-
   useEffect(() => {
     const timer = setTimeout(loadQueue, 0)
-    // Non-blocking before-snapshot for end-of-session achievement toasts.
-    loadAchievementStats().then(stats => { achieveBeforeRef.current = stats })
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -586,22 +561,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     }
   }
 
-  // Toast any achievement seals newly earned this session (compare the live
-  // stats against the snapshot taken at session start).
-  async function celebrateAchievements() {
-    const before = achieveBeforeRef.current
-    const after = await loadAchievementStats()
-    const beforeEarned = new Set(
-      evaluateAchievements(before).filter(a => a.earned).map(a => a.id)
-    )
-    evaluateAchievements(after)
-      .filter(a => a.earned && !beforeEarned.has(a.id))
-      .forEach(a => {
-        toast({ kind: 'seal', title: 'Seal earned — ' + a.title, body: a.desc })
-        trackEvent(EVENTS.ACHIEVEMENT_UNLOCKED, { id: a.id })
-      })
-  }
-
   useEffect(() => {
     // Session-completed analytics — once per session, with the metrics.
     if (done && recap && recap.graded > 0 && !analyticsRef.current.completed) {
@@ -635,10 +594,6 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         qualifiesForReward({ mode: isWeak ? 'weak' : 'review', graded: recap.graded })) {
       chapterRewardRef.current = true
       claimSessionReward(session.user.id, track).then(res => { if (res) setChapterReward(res) })
-    }
-    if (done && recap && recap.graded > 0 && achieveBeforeRef.current && !achieveToastedRef.current) {
-      achieveToastedRef.current = true
-      celebrateAchievements()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done, recap])

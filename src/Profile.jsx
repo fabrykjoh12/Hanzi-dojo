@@ -5,7 +5,6 @@ import { languageTheme, availableLanguages, pinyinInk, inkStrong} from './langua
 import { PageHeader } from './panels'
 import { isMastered } from './mastery'
 import { cleanMeaning } from './cleanMeaning'
-import { evaluateAchievements } from './achievements'
 import { todayStr } from './streak'
 import { monthReview, monthHeadline, monthShareText } from './monthReview'
 import { knownWordMap, readableSummary, rowA11yLabel } from './knownWordMap'
@@ -18,11 +17,10 @@ import { BRAND_URL } from './brand'
 import { confirmWordOk, forgetDeviceData, DELETE_CONFIRM_WORD } from './accountDeletion'
 import {
   Layers, LogOut, RotateCcw, Save,
-  Sparkles, Target, CalendarCheck, Award, Share2, Check, AlertTriangle, TrendingUp, BookOpen, Trash2,
+  Sparkles, Target, CalendarCheck, Share2, Check, AlertTriangle, TrendingUp, BookOpen, Trash2,
 } from 'lucide-react'
 import AppBar from './AppBar'
 
-const ACH_ICONS = { layers: Layers, sparkles: Sparkles, calendar: CalendarCheck, book: BookOpen }
 
 function getLanguageDetails(profile) {
   const t = languageTheme(profile.active_language)
@@ -120,21 +118,13 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     for (const c of (cards || [])) cardById[c.vocab_id] = c
     setWordMap(knownWordMap(allVocab || [], cardById))
 
-    // Stories finished (lifetime, all languages) — drives the Reading achievements.
-    const { count: storiesRead } = await supabase
-      .from('story_reads')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', session.user.id)
-
     setStats({
       learned: levelCards.filter(c => c.learned).length,
       totalCards: levelCards.length,
       masteredCount: levelCards.filter(c => isMastered(c)).length,
       totalWords: vocabIds.size,
-      // Lifetime counts (across all levels) for achievements.
-      lifetimeLearned: (cards || []).filter(c => c.learned).length,
+      // Lifetime mastered — read by the month tile and the share text.
       lifetimeMastered: (cards || []).filter(c => isMastered(c)).length,
-      storiesRead: storiesRead || 0,
     })
 
     const { data: acts } = await supabase
@@ -337,14 +327,6 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     ? Math.round((stats.masteredCount / stats.totalWords) * 100)
     : 0
 
-  const achievements = evaluateAchievements({
-    learned: stats.lifetimeLearned || 0,
-    mastered: stats.lifetimeMastered || 0,
-    daysStudied: Object.keys(activity).length,
-    storiesRead: stats.storiesRead || 0,
-  })
-  const earnedCount = achievements.filter(a => a.earned).length
-
   // This-month report (from daily_activity; presence is exact, counts approximate).
   const mr = monthReview(activity)
   const monthName = mr.monthName
@@ -383,23 +365,6 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         <StatCard label="Words learned" value={loading ? '-' : stats.learned} unit={'of ' + stats.totalWords} icon={Layers} color={inkStrong(accentHex)} bg={accentHex + '10'} />
         <StatCard label="Words mastered" value={loading ? '-' : stats.masteredCount} unit={masteryPct + '%'} icon={Sparkles} color="#2F9E6D" bg="var(--success-bg)" />
       </div>
-
-      {!loading && (
-        <Panel>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
-              <Award size={17} strokeWidth={1.85} color={accentHex} />
-              Achievements
-            </span>
-            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{earnedCount}/{achievements.length} unlocked</span>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '12px' }}>
-            {achievements.map(a => (
-              <Badge key={a.id} ach={a} accentHex={accentHex} Icon={ACH_ICONS[a.icon] || Award} />
-            ))}
-          </div>
-        </Panel>
-      )}
 
       {!loading && leeches.length > 0 && (
         <Panel>
@@ -1174,33 +1139,6 @@ function StatCard({ label, value, unit, icon: Icon, color, bg }) {
       <div style={{ fontSize: '29px', fontWeight: 850, color, lineHeight: 1 }}>{value}</div>
       <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '5px', fontWeight: 650 }}>{unit}</div>
       <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '7px' }}>{label}</div>
-    </div>
-  )
-}
-
-function Badge({ ach, accentHex, Icon }) {
-  const earned = ach.earned
-  return (
-    <div
-      title={ach.desc}
-      style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '8px',
-        padding: '16px 10px', borderRadius: '16px',
-        border: '1px solid ' + (earned ? accentHex + '33' : 'var(--border)'),
-        background: earned ? accentHex + '0A' : 'var(--surface-2)',
-        opacity: earned ? 1 : 0.65,
-      }}
-    >
-      <div style={{
-        width: '46px', height: '46px', borderRadius: '14px',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: earned ? accentHex + '16' : 'var(--surface)',
-        border: '1px solid ' + (earned ? accentHex + '2E' : 'var(--border)'),
-      }}>
-        <Icon size={22} strokeWidth={1.9} color={earned ? accentHex : 'var(--text-faint)'} />
-      </div>
-      <div style={{ fontSize: '13px', fontWeight: 750, color: earned ? 'var(--text)' : 'var(--text-muted)' }}>{ach.title}</div>
-      <div style={{ fontSize: '11px', color: 'var(--text-faint)', lineHeight: 1.4 }}>{ach.desc}</div>
     </div>
   )
 }

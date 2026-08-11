@@ -60,7 +60,6 @@ export const EVENTS = {
   GRAMMAR_ENROLLED: 'grammar_enrolled',
   GRAMMAR_REVIEWED: 'grammar_reviewed',
   // Signals
-  ACHIEVEMENT_UNLOCKED: 'achievement_unlocked',
   LANGUAGE_SWITCHED: 'language_switched',
   // App session envelope
   SESSION_STARTED: 'session_started',

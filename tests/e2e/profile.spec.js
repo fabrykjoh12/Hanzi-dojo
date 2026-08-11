@@ -27,11 +27,18 @@ test.describe('Profile — month in review', () => {
     await expect(page.getByRole('button', { name: /Share/i })).toBeVisible();
   });
 
-  test('shows reading achievements', async ({ page }) => {
+  // P10-B1: the achievement wall is gone, by owner decision — the app shows real
+  // learning progress, not badges. This spec used to assert the Reading group's
+  // badges rendered; it now asserts they cannot come back, which is the claim
+  // worth keeping.
+  test('shows no achievement badges — the mechanic is gone', async ({ page }) => {
     await page.goto('/profile');
-    // The new Reading group renders its badges (locked in the mock, but present).
-    await expect(page.getByText('First Story')).toBeVisible();
-    await expect(page.getByText('Bookworm')).toBeVisible();
+    await page.waitForTimeout(900);
+    for (const gone of ['First Story', 'Bookworm', 'Well Read', 'First Words',
+      'Building Up', 'Century', 'Sticking', 'Deep Roots', 'Locked In',
+      'Habit Forming', 'Part of Life', 'Achievements', 'unlocked']) {
+      await expect(page.getByText(gone, { exact: false }), gone).toHaveCount(0);
+    }
   });
 
   test('exposes a screen-reader summary for the review-accuracy chart', async ({ page }) => {
