@@ -145,7 +145,7 @@ export default function Dev({ session, profile, track, onBack, onNavigate }) {
         <span style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>Developer tools</span>
       </div>
       <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '18px', lineHeight: 1.6 }}>
-        {email} · build {buildLabel()} · {getSystemLabel(track.system)} {lvlLabel(track.current_level)}
+        {email} · build {buildLabel()} · {[getSystemLabel(track.system), lvlLabel(track.current_level)].filter(Boolean).join(' ')}
         {counts && <> · cards: {counts.total} ({counts.new} new / {counts.learning + counts.relearning} learning / {counts.review} review)</>}
         <br />All actions affect ONLY this account (RLS) — safe to experiment.
       </div>

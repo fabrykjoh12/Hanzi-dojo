@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { fetchPagedSafe } from './supabasePaging'
 import { supabase } from './supabase'
-import { getLevelLabel, getSystemLabel, getLevels } from './utils'
+import { getLevelLabel, getSystemLabel, getLevels, metaLine} from './utils'
 import { languageList, availableLanguages } from './languageTheme'
 import { isMastered } from './mastery'
 import { useIsMobile } from './useIsMobile'
@@ -95,7 +95,7 @@ function LanguageCard({ lang, track, prog, levelProgress, isActive, saving, onCl
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: '19px', fontWeight: 850, color: 'var(--text)' }}>{lang.name}</div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 600 }}>
-              {lang.systemLabel} · {lang.levelLabel(track.current_level)}
+              {metaLine(lang.systemLabel, lang.levelLabel(track.current_level))}
             </div>
           </div>
         </div>

@@ -181,7 +181,11 @@ test.describe('Story library — poster shelves', () => {
     await serveTrackLevel(page, 3);
     await serveStories(page, [LEVEL_1_STORY, LEVEL_2_STORY, LEVEL_3_STORY]);
     await page.goto('/stories');
-    await expect(page.getByText(/hsk · HSK 3/i)).toBeVisible();
+    // Was `/hsk · HSK 3/i` — which pinned a DEFECT. The fixture's track carries
+    // `system: 'hsk'`, an enum `getSystemLabel` does not recognise, and it used
+    // to print that raw value into the eyebrow. It returns '' now and `metaLine`
+    // drops the empty part (P10-A7), so the level stands alone.
+    await expect(page.getByText(/^HSK 3$/i).first()).toBeVisible();
     await expect(page.getByRole('button', { name: /新的一年 · HSK 3 · Story/ }).first()).toBeVisible();
     // .first(): the per-day featured pick may double one of these stories
     // (hero + its shelf row) — any visible instance is what's being asserted.

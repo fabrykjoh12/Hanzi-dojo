@@ -417,7 +417,9 @@ export default function Dictionary({ session, profile, track, onBack }) {
         style={{ margin: '10px 0 8px' }}
       />
       <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: '0 0 18px', lineHeight: 1.5 }}>
-        Search every {systemLabel} word, hear it, and save it to your deck.
+        {/* The label is '' for a system we do not recognise, so it has to be
+            able to drop out of the sentence rather than leave a double space. */}
+        Search every {systemLabel ? systemLabel + ' ' : ''}word, hear it, and save it to your deck.
       </p>
 
       <div style={{ position: 'relative', marginBottom: '12px' }}>

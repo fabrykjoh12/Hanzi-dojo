@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
-import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl } from './utils'
+import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl, metaLine} from './utils'
 import { PrimaryButton, SecondaryButton } from './ui'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
@@ -309,7 +309,7 @@ export default function Tones({ session, profile, track, onBack }) {
             <Music2 size={17} strokeWidth={1.8} color={ACCENT} />
             Tone practice
           </div>
-          <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>{systemLabel} · {levelLabel}</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>{metaLine(systemLabel, levelLabel)}</div>
         </div>
 
         <div style={{ height: '6px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden', margin: '14px 0 22px' }}>

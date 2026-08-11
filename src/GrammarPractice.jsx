@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getLevelLabel, getSystemLabel } from './utils'
+import { getLevelLabel, getSystemLabel, metaLine} from './utils'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
 import { languageTheme, langAttr } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
@@ -145,7 +145,7 @@ export default function GrammarPractice({ session, profile, track, onBack }) {
             <GraduationCap size={17} strokeWidth={1.8} color={accentHex} aria-hidden="true" /> Grammar review
           </h1>
           <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>
-            {cur.topic ? cur.topic.title : systemLabel + ' · ' + levelLabel}
+            {cur.topic ? cur.topic.title : metaLine(systemLabel, levelLabel)}
           </div>
         </div>
 

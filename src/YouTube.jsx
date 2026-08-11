@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
-import { getLevelLabel, getSystemLabel } from './utils'
+import { getLevelLabel, getSystemLabel, metaLine} from './utils'
 import { languageTheme } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { externalLinkProps } from './externalLink'
@@ -251,7 +251,7 @@ export default function YouTube({ profile, track, onBack }) {
             YouTube
           </h1>
           <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-            {'Curated videos for ' + systemLabel + ' · ' + levelLabel}
+            {'Curated videos for ' + metaLine(systemLabel, levelLabel)}
           </p>
         </div>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
-import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl } from './utils'
+import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl, metaLine} from './utils'
 import { PrimaryButton, SecondaryButton } from './ui'
 import { languageTheme, langAttr, UI_LANG } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
@@ -196,7 +196,7 @@ export default function Listen({ session, profile, track, onBack }) {
             <Headphones size={17} strokeWidth={1.8} color={accentHex} aria-hidden="true" />
             Listening
           </h1>
-          <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>{systemLabel} · {levelLabel}</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>{metaLine(systemLabel, levelLabel)}</div>
         </div>
 
         {/* Progress bar */}

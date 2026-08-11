@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import HanziWriter from 'hanzi-writer'
 import { makeCharDataLoader } from './strokeData'
 import { supabase } from './supabase'
-import { getLevelLabel, getSystemLabel } from './utils'
+import { getLevelLabel, getSystemLabel, metaLine} from './utils'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import { languageTheme, langAttr } from './languageTheme'
@@ -204,7 +204,7 @@ export default function Writer({ profile, track, onBack }) {
             <Brush size={17} strokeWidth={1.8} color={accentHex} /> Stroke order
           </div>
           <h1 style={{ fontSize: '28px', fontWeight: 780, color: 'var(--text)', marginTop: '8px' }}>Writing practice</h1>
-          <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '5px' }}>{systemLabel} · {levelLabel} · {chars.length} {kindLabel}</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '5px' }}>{metaLine(systemLabel, levelLabel, chars.length + ' ' + kindLabel)}</div>
         </div>
 
         {loading ? (

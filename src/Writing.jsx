@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
-import { getLevelLabel, getSystemLabel } from './utils'
+import { getLevelLabel, getSystemLabel, metaLine} from './utils'
 import { languageTheme } from './languageTheme'
 import { isWritingMatch, normalizeRomaji, hasKanji } from './writingMatch'
 import { useIsMobile } from './useIsMobile'
@@ -510,7 +510,7 @@ export default function Writing({ session, track, onBack }) {
       <Shell accentHex={accentHex} fontFamily={fontFamily}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
           <IconButton icon={ArrowLeft} label="Back" onClick={() => setPhase('start')} />
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{systemLabel} · {levelLabel}</div>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{metaLine(systemLabel, levelLabel)}</div>
         </div>
 
         <div style={{ marginBottom: '24px' }}>

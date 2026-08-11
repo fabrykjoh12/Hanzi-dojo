@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getLevelLabel, getSystemLabel } from './utils'
+import { getLevelLabel, getSystemLabel, metaLine} from './utils'
 import { toast } from './toast'
 import { HeroPanel, HeroAction, Eyebrow } from './panels'
 import { tiersFor, readingGateCount } from './storyTiers'
@@ -513,7 +513,7 @@ export default function Stories({ onNavigate, onOpenStory, onOpenSeries }) {
           <h1 style={{ margin: 0, color: 'var(--text)', fontSize: isMobile ? '26px' : '30px', fontWeight: 820, letterSpacing: '-0.035em' }}>
             Stories
           </h1>
-          <Eyebrow>{getSystemLabel(track.system)} · {getLevelLabel(track.language, track.system, track.current_level)}</Eyebrow>
+          <Eyebrow>{metaLine(getSystemLabel(track.system), getLevelLabel(track.language, track.system, track.current_level))}</Eyebrow>
         </header>
 
         {hero ? (

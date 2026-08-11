@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getSystemLabel, getLevelLabel } from './utils'
+import { getSystemLabel, getLevelLabel, metaLine} from './utils'
 import { languageTheme, ink } from './languageTheme'
 import { HeroPanel, HeroAction, PageHeader, Eyebrow } from './panels'
 import { flatPanel, ON_HERO, NUM } from './designTokens'
@@ -96,7 +96,7 @@ export default function Practice({ profile, track, counts, onNavigate }) {
     <div style={{ maxWidth: '720px', margin: '0 auto', padding: isMobile ? '24px 16px 40px' : '44px 32px 60px' }}>
       <PageHeader
         title="Practice"
-        meta={systemLabel + ' · ' + levelLabel}
+        meta={metaLine(systemLabel, levelLabel)}
         style={{ margin: '18px 0 14px' }}
       />
 

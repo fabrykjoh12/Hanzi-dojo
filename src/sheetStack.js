@@ -12,6 +12,28 @@
 
 const open = []
 
+// Anything that needs to RENDER differently while a sheet is open, rather than
+// just answer Back. The feedback control uses this to get out of the way: it is
+// a fixed button, and a fixed button over a modal dialog is a defect however
+// high or low its z-index happens to be.
+//
+// Deliberately not a second source of truth — it is a subscription to the one
+// that already exists, so a sheet cannot be open for Back and closed for a
+// listener.
+const listeners = new Set()
+
+function notify() {
+  for (const fn of listeners) {
+    try { fn(open.length > 0) } catch { /* a bad listener must not wedge a sheet */ }
+  }
+}
+
+export function subscribeSheets(fn) {
+  if (typeof fn !== 'function') return () => {}
+  listeners.add(fn)
+  return () => { listeners.delete(fn) }
+}
+
 // `close` is called when Back reaches this sheet. Returns an unregister for the
 // ordinary case where the sheet is dismissed some other way (backdrop, X, a
 // navigation) — so the stack never holds a sheet that is already gone.
@@ -19,9 +41,13 @@ export function pushSheet(close) {
   if (typeof close !== 'function') return () => {}
   const entry = { close }
   open.push(entry)
+  notify()
   return () => {
     const at = open.indexOf(entry)
-    if (at !== -1) open.splice(at, 1)
+    if (at !== -1) {
+      open.splice(at, 1)
+      notify()
+    }
   }
 }
 
@@ -33,6 +59,7 @@ export function anySheetOpen() {
 export function closeTopSheet() {
   const entry = open.pop()
   if (!entry) return false
+  notify()
   try { entry.close() } catch { /* a sheet that cannot close must not wedge Back */ }
   return true
 }
@@ -40,4 +67,5 @@ export function closeTopSheet() {
 // Tests only.
 export function resetSheets() {
   open.length = 0
+  notify()
 }

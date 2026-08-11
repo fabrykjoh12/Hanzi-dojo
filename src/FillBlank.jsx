@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import { getLevelLabel, getSystemLabel } from './utils'
+import { getLevelLabel, getSystemLabel, metaLine} from './utils'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
 import { languageTheme, langAttr, UI_LANG } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
@@ -146,7 +146,7 @@ export default function FillBlank({ session, profile, track, onBack, pool = null
           <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 750 }}>
             <AlignLeft size={17} strokeWidth={1.8} color={accentHex} aria-hidden="true" /> Fill in the blank
           </h1>
-          <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>{systemLabel} · {levelLabel}</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>{metaLine(systemLabel, levelLabel)}</div>
         </div>
 
         <div

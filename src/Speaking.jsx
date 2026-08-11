@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
-import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl } from './utils'
+import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl, metaLine} from './utils'
 import { PrimaryButton, SecondaryButton } from './ui'
 import { languageTheme, langAttr } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
@@ -153,7 +153,7 @@ export default function Speaking({ session, profile, track, onBack }) {
       <AppBar kind="close" onBack={onBack} sticky={false} />
       <div>
         <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>Speaking</h1>
-        <div style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>{systemLabel} · {levelLabel}</div>
+        <div style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>{metaLine(systemLabel, levelLabel)}</div>
       </div>
     </div>
   )

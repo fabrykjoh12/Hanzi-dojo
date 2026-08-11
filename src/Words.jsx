@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabase'
 import { getTrackCards } from './data'
-import { getLevelLabel, getSystemLabel } from './utils'
+import { getLevelLabel, getSystemLabel, metaLine} from './utils'
 import { languageTheme } from './languageTheme'
 import { PageHeader } from './panels'
 import { isLearned, isMastered } from './mastery'
@@ -136,7 +136,7 @@ export default function Words({ session, profile, track, onBack }) {
 
         <PageHeader
           title="Your words"
-          meta={`${systemLabel} · ${levelLabel} · ${vocab.length} words`}
+          meta={metaLine(systemLabel, levelLabel, vocab.length + ' words')}
           style={{ margin: '20px 0 16px' }}
         />
 

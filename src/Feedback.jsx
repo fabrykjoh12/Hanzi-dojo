@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { toast } from './toast'
 import { useIsMobile } from './useIsMobile'
+import { anySheetOpen, subscribeSheets } from './sheetStack'
+import { MOBILE_NAV_HEIGHT } from './navMetrics'
 import { feedbackStoryContext } from './feedbackContext'
 import { BUILD_SHA } from './version'
 import { MessageCircleHeart, X, Bug, Lightbulb, MessageSquare } from 'lucide-react'
@@ -21,9 +23,30 @@ const CATEGORIES = [
 const SAGE = '#6E8466'
 const SAGE_DARK = '#5C7155'
 
+// How far the floating button sits above the bottom edge, on a phone.
+//
+// This was a hardcoded `72px`. The bar has been 62 and is now 58
+// (`navMetrics.js`), and this number did not follow either change — it happened
+// to still look right because 58 + 14 is 72, which is exactly the kind of
+// coincidence that stops being one. There is ONE navigation height in this
+// project and this reads it.
+const FAB_GAP_ABOVE_NAV = 14
+
 export default function Feedback({ session, profile, view }) {
   const isMobile = useIsMobile()
   const [open, setOpen] = useState(false)
+  // A blocking sheet is open somewhere: get out of the way entirely.
+  //
+  // The More sheet renders at z-index 41 and this button at 45, so it floated
+  // ON TOP of a modal dialog — visible in the P10 audit's own screenshot. The
+  // fix is not a higher z-index on the sheet; a z-index race has no end. The
+  // button simply does not exist while a dialog does.
+  //
+  // `sheetStack` is the same registry Android Back reads, so any overlay that
+  // is already a first-class sheet is covered by construction — and any future
+  // one has to register there anyway to make Back work (NAV-MODEL §5.2).
+  const [sheetOpen, setSheetOpen] = useState(anySheetOpen)
+  useEffect(() => subscribeSheets(setSheetOpen), [])
   const [category, setCategory] = useState(null)
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
@@ -87,6 +110,7 @@ export default function Feedback({ session, profile, view }) {
 
   return (
     <>
+      {!sheetOpen && (
       <button
         onClick={() => setOpen(true)}
         title="Send feedback"
@@ -94,7 +118,9 @@ export default function Feedback({ session, profile, view }) {
         style={{
           position: 'fixed', zIndex: 45,
           right: isMobile ? '16px' : '24px',
-          bottom: isMobile ? 'calc(72px + env(safe-area-inset-bottom))' : '24px',
+          bottom: isMobile
+            ? 'calc(' + (MOBILE_NAV_HEIGHT + FAB_GAP_ABOVE_NAV) + 'px + env(safe-area-inset-bottom))'
+            : '24px',
           width: '50px', height: '50px', borderRadius: '999px',
           background: SAGE, border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -103,6 +129,7 @@ export default function Feedback({ session, profile, view }) {
       >
         <MessageCircleHeart size={22} strokeWidth={1.9} color="#fff" />
       </button>
+      )}
 
       {open && (
         <>

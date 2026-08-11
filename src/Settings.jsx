@@ -9,6 +9,8 @@ import { RETENTION_PRESETS, presetForRetention, setTargetRetention } from './srs
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
 import { externalLinkProps } from './externalLink'
 import { useIsMobile } from './useIsMobile'
+import { useViewportWidth } from './useViewportWidth'
+import { settingsCardLayout, segmentedLayout } from './settingsLayout'
 import { useTheme } from './ThemeContext'
 import { languageTheme } from './languageTheme'
 import { PageHeader } from './panels'
@@ -441,22 +443,54 @@ function OfflineStorageCard({ accentHex }) {
   )
 }
 
+// A settings row.
+//
+// Two compositions, one component. On a desktop the icon sits to the left of the
+// text; on a phone the icon and title share the top line and the description and
+// control get the card's full inner width underneath. The rule and the
+// arithmetic live in settingsLayout.js — see the defect it fixes there.
 function Card({ icon: Icon, title, text, accentHex, children }) {
+  const width = useViewportWidth()
+  const L = settingsCardLayout(width)
   return (
     <div style={{
       background: 'var(--surface)', borderRadius: '20px',
-      border: '1px solid var(--border)', boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
-      padding: '22px 24px', display: 'flex', alignItems: 'flex-start', gap: '16px',
+      border: '1px solid var(--border)', boxShadow: 'var(--shadow-1)',
+      padding: L.padding,
+      display: 'flex', flexDirection: L.stacked ? 'column' : 'row',
+      alignItems: L.stacked ? 'stretch' : 'flex-start',
+      gap: L.gap + 'px',
+      // The card may never be wider than what it was given. Belt and braces
+      // against a future unshrinkable child doing what the segmented control
+      // did — a clipped row is worse than a wrapped one, and this makes the
+      // clipped version impossible rather than unlikely.
+      minWidth: 0, maxWidth: '100%',
     }}>
       <div style={{
-        width: '44px', height: '44px', borderRadius: '15px',
-        background: accentHex + '10', border: '1px solid ' + accentHex + '18',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        display: 'flex', alignItems: 'center',
+        gap: L.stacked ? '12px' : 0, minWidth: 0,
       }}>
-        <Icon size={21} strokeWidth={1.85} color={accentHex} />
+        <div style={{
+          width: L.iconBox + 'px', height: L.iconBox + 'px', borderRadius: '15px',
+          background: accentHex + '10', border: '1px solid ' + accentHex + '18',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          <Icon size={L.iconGlyph} strokeWidth={1.85} color={accentHex} />
+        </div>
+        {/* Stacked, the title rides beside the icon: it keeps the row's identity
+            without spending a whole line on a 38px square. */}
+        {L.stacked && (
+          <div style={{ fontSize: '15px', fontWeight: 850, color: 'var(--text)', minWidth: 0 }}>
+            {title}
+          </div>
+        )}
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '15px', fontWeight: 850, color: 'var(--text)', marginBottom: '5px' }}>{title}</div>
+      <div style={{ flex: L.stacked ? 'none' : 1, minWidth: 0 }}>
+        {!L.stacked && (
+          <div style={{ fontSize: '15px', fontWeight: 850, color: 'var(--text)', marginBottom: '5px' }}>
+            {title}
+          </div>
+        )}
         <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: '14px' }}>{text}</div>
         {children}
       </div>
@@ -464,9 +498,24 @@ function Card({ icon: Icon, title, text, accentHex, children }) {
   )
 }
 
+// A segmented control that divides the width it has.
+//
+// It was `display: inline-flex` with 16px of padding per option and no wrap, so
+// its min-content width became a floor its parent could not shrink below — the
+// direct cause of the 320px clipping. A grid can be told to share the space it
+// is given, which is exactly the property that was missing.
 function Segmented({ value, onChange, options, accentHex, label }) {
+  const width = useViewportWidth()
+  const longest = options.reduce((n, o) => Math.max(n, String(o.label).length), 0)
+  const S = segmentedLayout({ width, count: options.length, longestLabel: longest })
   return (
-    <div role="group" aria-label={label} style={{ display: 'inline-flex', gap: '8px', background: 'var(--surface-2)', padding: '4px', borderRadius: '12px' }}>
+    <div role="group" aria-label={label} style={{
+      display: S.fullWidth ? 'grid' : 'inline-flex',
+      gridTemplateColumns: S.fullWidth ? 'repeat(' + S.columns + ', minmax(0, 1fr))' : undefined,
+      width: S.fullWidth ? '100%' : undefined,
+      gap: '8px', background: 'var(--surface-2)', padding: '4px', borderRadius: '12px',
+      boxSizing: 'border-box', maxWidth: '100%',
+    }}>
       {options.map(opt => {
         const active = value === opt.key
         const Icon = opt.icon
@@ -476,16 +525,24 @@ function Segmented({ value, onChange, options, accentHex, label }) {
             onClick={() => onChange(opt.key)}
             aria-pressed={active}
             style={{
-              display: 'flex', alignItems: 'center', gap: '7px',
-              padding: '8px 16px', borderRadius: '9px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: S.showIcons ? '7px' : 0,
+              // 44px in both layouts. It was 38 — under the floor — on the
+              // controls a learner touches most often in Settings.
+              minHeight: S.minHeight + 'px',
+              padding: S.optionPadding, borderRadius: '9px', cursor: 'pointer',
               border: '1px solid ' + (active ? accentHex + '40' : 'transparent'),
               background: active ? 'var(--surface)' : 'transparent',
               color: active ? 'var(--text)' : 'var(--text-muted)',
               fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
               boxShadow: active ? '0 1px 4px rgba(24,24,27,0.08)' : 'none',
+              minWidth: 0, whiteSpace: 'nowrap',
             }}
           >
-            <Icon size={16} strokeWidth={2} color={active ? accentHex : 'var(--text-muted)'} />
+            {/* The icons are the only thing that gives way, and only when the
+                arithmetic says a label would otherwise be squeezed. On the
+                audio-speed row they were three copies of one glyph anyway. */}
+            {S.showIcons && <Icon size={16} strokeWidth={2} color={active ? accentHex : 'var(--text-muted)'} />}
             {opt.label}
           </button>
         )

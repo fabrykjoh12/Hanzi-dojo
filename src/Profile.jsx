@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import { getLevelLabel, getSystemLabel } from './utils'
+import { getLevelLabel, getSystemLabel, metaLine} from './utils'
 import { languageTheme, availableLanguages } from './languageTheme'
 import { PageHeader } from './panels'
 import { isMastered } from './mastery'
@@ -375,7 +375,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
 
       <PageHeader
         title={profile.display_name || session.user.email}
-        meta={`${systemLabel} · ${levelLabel}`}
+        meta={metaLine(systemLabel, levelLabel)}
         style={{ margin: '22px 0 18px' }}
       />
 

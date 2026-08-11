@@ -27,11 +27,37 @@ export function getLevelLabel(language, system, level) {
   return 'HSK ' + level
 }
 
+// The learner-facing name of a curriculum system.
+//
+// Returns '' for anything it does not recognise, and that is the whole point
+// (P10-A7). It used to `return system` — the raw column value — so an
+// unrecognised or renamed enum printed itself into a screen header. The E2E
+// fixture's `system: 'hsk'` rendered a lowercase **"hsk · HSK 2"** in the app's
+// own audit screenshots, and a future rename would do the same thing in
+// production with nothing to catch it.
+//
+// A missing label is a gap a caller can compose around; a raw identifier is a
+// bug the learner reads.
 export function getSystemLabel(system) {
   if (system === 'jlpt') return 'JLPT'
   if (system === 'hsk_3') return 'HSK 3.0'
   if (system === 'russian') return 'CEFR'
-  return system
+  return ''
+}
+
+// A "·"-separated metadata line, built from parts that may legitimately be
+// missing.
+//
+// Every screen header composed these by hand with template literals, so a blank
+// system label would have produced " · HSK 2" or "HSK 2 · " or "HSK 2 ·  · 44
+// words" — trading one presentation bug for three. One composer, and the
+// separator can only appear between two things that exist.
+export function metaLine(...parts) {
+  return parts
+    .flat()
+    .filter((p) => p !== null && p !== undefined && String(p).trim() !== '')
+    .map((p) => String(p).trim())
+    .join(' · ')
 }
 
 export function getLevelRange(language, system) {

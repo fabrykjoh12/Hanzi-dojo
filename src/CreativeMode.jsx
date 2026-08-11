@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useId } from 'react'
 import { AlertTriangle, ChevronDown, ChevronUp, FlaskConical, Gauge, GraduationCap, Trophy, Zap, Trash2 } from 'lucide-react'
 import { supabase } from './supabase'
-import { getLevelLabel, getSystemLabel } from './utils'
+import { getLevelLabel, getSystemLabel, metaLine} from './utils'
 import { languageTheme, ink } from './languageTheme'
 import { chunk } from './devTools'
 import { toast } from './toast'
@@ -234,7 +234,7 @@ export default function CreativeMode({ session, profile, track }) {
     })
     if (error) throw new Error(error.message)
     setLevel(1)
-    return getSystemLabel(track.system) + ' progress reset — go Home to reload'
+    return metaLine(getSystemLabel(track.system), 'progress reset — go Home to reload')
   }
 
   const started = snapshot ? snapshot.cards.length : 0
@@ -289,7 +289,7 @@ export default function CreativeMode({ session, profile, track }) {
           </div>
 
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-            <span style={{ color: ink(accent), fontWeight: 700 }}>{getSystemLabel(track.system)} {label(level)}</span>
+            <span style={{ color: ink(accent), fontWeight: 700 }}>{[getSystemLabel(track.system), label(level)].filter(Boolean).join(' ')}</span>
             {' · '}
             {loadError
               ? <span style={{ color: WARN }}>Couldn’t read your progress: {loadError}</span>
@@ -352,7 +352,7 @@ export default function CreativeMode({ session, profile, track }) {
 
           <Field label="Start over">
             <Btn
-              label={'Reset ' + getSystemLabel(track.system) + ' progress'} icon={Trash2} danger
+              label={metaLine('Reset', getSystemLabel(track.system)) + ' progress'} icon={Trash2} danger
               busy={busy === 'reset'} armed={armed === 'reset'}
               onClick={() => run('reset', 0, resetLanguage)}
             />
