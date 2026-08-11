@@ -10,6 +10,22 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+## Re-tapping the active tab does not scroll to the top (found 2026-08-11)
+
+One line, pre-existing, found while writing the P8 prototype's reselect test and
+deliberately left alone there (reselect semantics were frozen for that task).
+
+`useNavigation.js` restores a remembered scroll offset with `window.scrollTo`
+(line 62) but `reselect`'s `scroll-top` branch calls `el.scrollTo(...)` on the
+`[data-tab-root]` element (line 163). That element is `height: 100%` with no
+`overflow` (`TabHost.jsx`), so it is not a scroller — the document is. The call
+is a no-op: the tap zeroes the remembered offset and leaves the page where it
+was, so "tap the tab you're on to go back to the top" has never worked on
+mobile. NAV-MODEL §5.1 says it should.
+
+Fix is to scroll the window, matching the restore path. It needs a test that
+asserts the offset actually changes, which is what would have caught it.
+
 ## The study shell reserves a tab bar that is not there (found 2026-08-11)
 
 Found while fixing the nav-height drift (P8 commit 2), and deliberately **not**
