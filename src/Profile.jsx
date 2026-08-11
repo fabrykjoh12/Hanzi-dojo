@@ -5,7 +5,7 @@ import { languageTheme, availableLanguages, pinyinInk, inkStrong} from './langua
 import { PageHeader } from './panels'
 import { isMastered } from './mastery'
 import { cleanMeaning } from './cleanMeaning'
-import { todayStr } from './streak'
+import { studyRhythm } from './profileProgress'
 import { monthReview, monthHeadline, monthShareText } from './monthReview'
 import { knownWordMap, readableSummary, rowA11yLabel } from './knownWordMap'
 import { last30A11yLabel } from './reviewAccuracy'
@@ -327,6 +327,8 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     ? Math.round((stats.masteredCount / stats.totalWords) * 100)
     : 0
 
+  const rhythm = studyRhythm(activity)
+
   // This-month report (from daily_activity; presence is exact, counts approximate).
   const mr = monthReview(activity)
   const monthName = mr.monthName
@@ -475,9 +477,19 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         </Panel>
       )}
 
+      {/* What the 17x7 heatmap said, in one line. It reported that you opened
+          the app, never what you learned; it duplicated Home's week strip and
+          the month tile; and 115 individually-tappable 16px cells were 115 of
+          this screen's 117 sub-44px targets. Descriptive, never coercive —
+          `studyRhythm` counts distinct days and has no concept of a streak. */}
       {!loading && (
-        <Panel>
-          <StudyCalendar activity={activity} accentHex={accentHex} />
+        <Panel compact>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+            <CalendarCheck size={16} strokeWidth={1.85} color="var(--text-muted)" />
+            <span style={{ fontSize: '13.5px', color: 'var(--text)', fontWeight: 650 }}>
+              {rhythm.label}
+            </span>
+          </div>
         </Panel>
       )}
 
@@ -629,11 +641,11 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
             style={{ marginTop: '2px', accentColor: 'var(--danger)', cursor: 'pointer' }}
           />
           <span>
-            Also clear my study history and streak.{' '}
+            Also clear my study history.{' '}
             <span style={{ color: 'var(--danger)', fontWeight: 650 }}>
               This one covers every language
             </span>{' '}
-            — the calendar records days you studied, not which language you studied.
+            — the record is of days you studied, not which language you studied.
           </span>
         </label>
 
@@ -828,48 +840,15 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   )
 }
 
-function pad2(n) { return String(n).padStart(2, '0') }
-function dateToStr(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) }
-
-// Build numWeeks columns (Sun→Sat) ending with the current week.
-function buildWeeks(numWeeks) {
-  const today = new Date(); today.setHours(12, 0, 0, 0)
-  const end = new Date(today); end.setDate(end.getDate() + (6 - end.getDay()))   // Saturday of this week
-  const start = new Date(end); start.setDate(start.getDate() - (numWeeks * 7 - 1)) // Sunday, numWeeks back
-  const weeks = []
-  const cur = new Date(start)
-  for (let w = 0; w < numWeeks; w += 1) {
-    const col = []
-    for (let d = 0; d < 7; d += 1) {
-      col.push({ ds: dateToStr(cur), future: cur > today })
-      cur.setDate(cur.getDate() + 1)
-    }
-    weeks.push(col)
-  }
-  return weeks
-}
-
-function cellColor(count, accentHex) {
-  if (!count) return 'var(--surface-2)'
-  if (count < 5) return accentHex + '55'
-  if (count < 15) return accentHex + 'AA'
-  return accentHex
-}
-
-const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-// The heatmap cell and the daily bar both used to carry their day's detail in a
-// `title` alone — which on a phone means the detail does not exist. This is the
-// text both of them now show on tap (and hand to a screen reader).
+// Shared by ReviewAccuracy's per-day bars. It used to live with the heatmap's
+// helpers and went out with them once; it belongs to the accuracy chart, which
+// is the only thing that still labels a day.
 function dayDetail(ds, count, noun) {
   const when = new Date(ds + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
   if (!count) return when + ' — no ' + noun + 's'
   return when + ' — ' + count + ' ' + noun + (count === 1 ? '' : 's')
 }
 
-// Known-Word Map — reading reach across levels, as calm stacked bars. Each
-// level shows how many words you've mastered / know / are learning / haven't met
-// yet. Data comes from the pure knownWordMap module (fully unit-tested).
 export function KnownWordMap({ map, accentHex, language, system }) {
   const SEGMENTS = [
     { key: 'mastered', label: 'Mastered', color: '#2F9E6D' },
@@ -931,88 +910,6 @@ export function KnownWordMap({ map, accentHex, language, system }) {
   )
 }
 
-export function StudyCalendar({ activity, accentHex }) {
-  const isMobile = useIsMobile()
-  const [picked, setPicked] = useState(null)
-  const numWeeks = isMobile ? 17 : 24
-  const weeks = buildWeeks(numWeeks)
-  const today = todayStr()
-  const totalDays = Object.keys(activity).length
-  // A slightly bigger cell on mobile: 17 weeks × (16 + 3) still fits a 360px
-  // screen, and it is the only thing that makes these cells tappable at all.
-  const cell = isMobile ? 16 : 14
-  const gap = 3
-
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '12px', marginBottom: '14px' }}>
-        <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>Study activity</span>
-        <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>
-          {totalDays} {totalDays === 1 ? 'day' : 'days'} studied
-        </span>
-      </div>
-
-      <div style={{ display: 'flex', gap: gap + 'px', overflowX: 'auto', paddingBottom: '2px' }}>
-        {weeks.map((col, wi) => {
-          const firstOfMonth = col.find(c => c.ds.slice(8) === '01')
-          return (
-            <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: gap + 'px', position: 'relative', flexShrink: 0 }}>
-              {firstOfMonth && (
-                <span style={{ position: 'absolute', top: '-17px', left: 0, fontSize: '12px', color: 'var(--text-faint)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                  {MONTH_ABBR[parseInt(firstOfMonth.ds.slice(5, 7), 10) - 1]}
-                </span>
-              )}
-              {col.map((c) => {
-                const cellStyle = {
-                  width: cell + 'px', height: cell + 'px', borderRadius: '3px', padding: 0,
-                  background: c.future ? 'transparent' : cellColor(activity[c.ds], accentHex),
-                  border: c.ds === today ? '1.5px solid ' + accentHex : (c.future ? 'none' : '1px solid rgba(0,0,0,0.04)'),
-                  boxSizing: 'border-box',
-                }
-                if (c.future) return <div key={c.ds} style={cellStyle} />
-                return (
-                  <button
-                    key={c.ds}
-                    onClick={() => setPicked(picked === c.ds ? null : c.ds)}
-                    aria-label={dayDetail(c.ds, activity[c.ds], 'card')}
-                    style={{
-                      ...cellStyle,
-                      cursor: 'pointer',
-                      outline: picked === c.ds ? '2px solid ' + accentHex : 'none',
-                      outlineOffset: '1px',
-                    }}
-                  />
-                )
-              })}
-            </div>
-          )
-        })}
-      </div>
-
-      {/* The tapped day's detail. `title` alone never reaches a touch device,
-          and this date + count exists nowhere else in the UI. */}
-      <div aria-live="polite" style={{
-        minHeight: '19px', marginTop: '10px',
-        fontSize: '13px', fontWeight: 650, color: picked ? 'var(--text-muted)' : 'var(--text-faint)',
-      }}>
-        {picked ? dayDetail(picked, activity[picked], 'card') : 'Tap a day to see its reviews.'}
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', marginTop: '12px', fontSize: '11px', color: 'var(--text-faint)' }}>
-        <span>Less</span>
-        {['var(--surface-2)', accentHex + '55', accentHex + 'AA', accentHex].map((bg, i) => (
-          <span key={i} style={{ width: '11px', height: '11px', borderRadius: '3px', background: bg }} />
-        ))}
-        <span>More</span>
-      </div>
-    </div>
-  )
-}
-
-// Retention rate + a 30-day reviews bar, both from review_logs (product
-// review item #17b — the calendar above already covered the 6-month
-// heatmap half of that item). Grade 0 = "Again" (forgotten); grades 1–3
-// all count as a successful recall.
 export function ReviewAccuracy({ stats, accentHex }) {
   const isMobile = useIsMobile()
   const [picked, setPicked] = useState(null)

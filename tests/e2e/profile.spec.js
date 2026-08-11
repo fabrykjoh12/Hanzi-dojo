@@ -85,7 +85,7 @@ test.describe('Profile — month in review', () => {
 
   test('clearing study history is opt-in, and off by default', async ({ page }) => {
     await page.goto('/profile');
-    const box = page.getByRole('checkbox', { name: /Also clear my study history and streak/i });
+    const box = page.getByRole('checkbox', { name: /Also clear my study history/i });
     await expect(box).toBeVisible();
     await expect(box).not.toBeChecked();
     // The account-wide reach is stated where the choice is made, not buried.
@@ -124,7 +124,7 @@ test.describe('Profile — month in review', () => {
     });
 
     await page.goto('/profile');
-    await page.getByRole('checkbox', { name: /Also clear my study history and streak/i }).check();
+    await page.getByRole('checkbox', { name: /Also clear my study history/i }).check();
     await page.getByRole('button', { name: /^Reset$/ }).click();
     await page.getByRole('button', { name: /Confirm reset/i }).click();
 
