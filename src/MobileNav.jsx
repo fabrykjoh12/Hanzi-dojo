@@ -1,72 +1,68 @@
 import { useState, useEffect, useRef } from 'react'
-import { MoreHorizontal, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { languageTheme, ink } from './languageTheme'
 import { MOBILE_PRIMARY, MOBILE_MORE, ADMIN_NAV } from './navConfig'
-import { navBadge, navItemLabel } from './navBadges'
+import { MoreIcon } from './NavIcons'
 import { MOBILE_NAV_SPACE } from './navMetrics'
 import { trapDialogFocus } from './dialogFocus'
 import { pushSheet } from './sheetStack'
 import { tapFeedback } from './haptics'
 
 const MUTED = 'var(--text-muted)'
+// More is utility navigation and is meant to be the quietest thing here.
+const FAINT = 'var(--text-faint)'
 
-// The selected-tab marker. Three values, tuned against the rendered bar rather
-// than chosen on paper: the gap that stops it reading as part of the bar's
-// hairline border, how heavy the mark is, and how much of its column it spans —
-// enough to sit under the widest label ("Practice"), so it underlines the tab
-// instead of ticking it.
-const MARKER_INSET = '3px'
-const MARKER_THICKNESS = '3px'
-const MARKER_WIDTH = '62%'
+// Icon sizes. Cards is one step larger because it is the primary daily action;
+// every icon is centred in a row of the LARGEST size, so the four smaller ones
+// share a baseline with it and the bar gains no height from the difference.
+const ICON = 22
+const ICON_CARDS = 25
+const ICON_ROW = ICON_CARDS
 
 // Primary tabs live directly in the bottom bar; the rest go behind the "More"
 // sheet. Study/practice modes are reached through the Practice tab.
 const PRIMARY = MOBILE_PRIMARY
 const MORE_ITEMS = MOBILE_MORE
 
-function Tab({ icon: Icon, label, active, accentHex, onClick, expanded, hasPopup, badge }) {
+// One tab. Selection is carried by the glyph's own shape — outline becomes
+// filled — then by colour, then by the label's weight. Three signals, of which
+// only one is colour; the accent line that used to ride the bar's top edge is
+// gone, and with it the last thing on here that was decoration rather than
+// information.
+function Tab({ icon: Icon, label, active, accentHex, onClick, expanded, hasPopup, size, quiet, emphasis }) {
+  const tone = active ? accentHex : (quiet ? FAINT : MUTED)
   return (
     <button
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
       aria-expanded={expanded}
       aria-haspopup={hasPopup}
-      // The count is drawn as digits and spoken as words; without this the
-      // screen reader would say "Cards 24", which is a different sentence.
-      aria-label={badge ? navItemLabel(label, badge) : undefined}
       className={'hd-tab hd-press' + (active ? ' is-active' : '')}
       style={{
         flex: 1, background: 'none', border: 'none', cursor: 'pointer',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        gap: '3px', padding: '9px 0 7px', minWidth: 0,
+        // 7 + 25 + 2.5 + 15.75 (the label's line box) + 6 = 56.25, inside the
+        // bar's 57px content box with a little to spare. It has to add up: the
+        // column shrinks its children when it doesn't, and the first thing to
+        // give is the icon row — which crops the glyphs from the top.
+        gap: '2.5px', padding: '7px 0 6px', minWidth: 0,
       }}
     >
-      <span style={{ position: 'relative', display: 'flex' }}>
-        <Icon
-          className="hd-tab-icon"
-          size={22} strokeWidth={active ? 2.2 : 1.85}
-          color={active ? accentHex : MUTED}
-        />
-        {/* How many cards are waiting. Plain accent digits beside the icon —
-            not a filled pill, not a circle, not a red dot. The rail already
-            made this call once (Sidebar.jsx) and it is the same call: this is
-            information, not an alert, and the bar is not a notification tray.
-            Absolutely positioned so it cannot shift the icon or the label, and
-            it carries no transition — a number that animates when it changes
-            is a number asking to be watched. */}
-        {badge && (
-          <span aria-hidden style={{
-            position: 'absolute', left: '100%', top: '-4px', marginLeft: '1px',
-            fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
-            fontSize: '10px', fontWeight: 750, lineHeight: 1,
-            letterSpacing: '-0.01em', color: accentHex,
-          }}>
-            {badge}
-          </span>
-        )}
+      {/* Every icon sits in a row of the same height, so a bigger Cards glyph
+          grows about a shared centre instead of pushing the labels out of
+          line — and the bar's height does not move. */}
+      <span style={{
+        height: ICON_ROW + 'px', flexShrink: 0, display: 'flex',
+        alignItems: 'center', justifyContent: 'center',
+      }}>
+        <Icon size={size || ICON} active={active} color={tone} />
       </span>
       <span style={{
-        fontSize: '10.5px', fontWeight: active ? 700 : 500,
+        fontSize: '10.5px',
+        // Cards carries one step more weight at rest than its neighbours. Same
+        // face, same size, same colour — the difference is meant to be felt
+        // rather than noticed.
+        fontWeight: active ? 700 : (emphasis ? 600 : 500),
         letterSpacing: '0.1px', color: active ? accentHex : MUTED,
         transition: 'color 160ms ease',
       }}>
@@ -76,7 +72,11 @@ function Tab({ icon: Icon, label, active, accentHex, onClick, expanded, hasPopup
   )
 }
 
-export default function MobileNav({ view, onNavigate, onLogout, isAdmin, language, counts }) {
+// No counts, deliberately. The waiting number lived here for one build and on a
+// real phone it made the bar read as a dashboard: the bar's job is "where do I
+// want to go", and it should not answer a question Home already answers better.
+// It stays on Home and on the desktop rail (navBadges.js).
+export default function MobileNav({ view, onNavigate, onLogout, isAdmin, language }) {
   const [moreOpen, setMoreOpen] = useState(false)
   const accentHex = languageTheme(language).accentHex
   const accentInk = ink(accentHex)
@@ -122,10 +122,6 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
   }, [moreOpen])
 
   const moreActive = moreKeys.indexOf(view) !== -1
-  // The bar is PRIMARY tabs plus "More"; the marker slides across that many
-  // equal columns, so adding a tab needs no other change here.
-  const columns = PRIMARY.length + 1
-  const activeColumn = moreActive ? columns - 1 : PRIMARY.findIndex(i => i.key === view)
 
   return (
     <>
@@ -228,33 +224,13 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
         boxSizing: 'border-box', height: MOBILE_NAV_SPACE,
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}>
-        {/* One ink marker sliding between columns.
-            It used to be a 3px dash flush against the bar's own 1px top border,
-            42% of its column wide — narrower than most of the labels it was
-            meant to be marking. At arm's length the two lines read as one, so
-            the selected tab was carried almost entirely by colour.
-            Now it is held clear of the border by MARKER_INSET, rounded at both
-            ends so it is a mark rather than a segment of a rule, and wide
-            enough to underline the tab rather than tick it. */}
-        <span aria-hidden style={{
-          position: 'absolute', top: MARKER_INSET, left: 0, height: MARKER_THICKNESS,
-          width: `${100 / columns}%`,
-          transform: `translateX(${Math.max(0, activeColumn) * 100}%)`,
-          opacity: activeColumn < 0 ? 0 : 1,
-          transition: 'transform 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease',
-          pointerEvents: 'none',
-        }}>
-          <span style={{
-            display: 'block', height: '100%', width: MARKER_WIDTH, margin: '0 auto',
-            borderRadius: '999px', background: accentInk,
-          }} />
-        </span>
-
         {PRIMARY.map(item => (
           <Tab key={item.key} icon={item.icon} label={item.label} accentHex={accentInk}
-            active={view === item.key} badge={navBadge(item.key, counts)} onClick={() => go(item.key)} />
+            active={view === item.key} onClick={() => go(item.key)}
+            size={item.key === 'study' ? ICON_CARDS : ICON}
+            emphasis={item.key === 'study'} />
         ))}
-        <Tab icon={MoreHorizontal} label="More" accentHex={accentInk} active={moreActive}
+        <Tab icon={MoreIcon} label="More" accentHex={accentInk} active={moreActive} quiet
           expanded={moreOpen} hasPopup="dialog" onClick={() => setMoreOpen(o => !o)} />
       </nav>
     </>

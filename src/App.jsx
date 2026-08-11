@@ -959,7 +959,7 @@ export default function App() {
             </div>
           )}
         </main>
-        {isMobile && showTabBar && <MobileNav view={nav.state.activeTab} onNavigate={onTabSelect} onLogout={handleLogout} isAdmin={!!profile.is_admin} language={profile.active_language} counts={counts} />}
+        {isMobile && showTabBar && <MobileNav view={nav.state.activeTab} onNavigate={onTabSelect} onLogout={handleLogout} isAdmin={!!profile.is_admin} language={profile.active_language} />}
         {/* Calm screens only — floating over Study it covered the Easy grade
             button, and the story reader has its own bottom audio bar. */}
         {showTabBar && ['home', 'practice', 'profile', 'settings', 'words', 'grammar', 'languages'].indexOf(view) !== -1 && (

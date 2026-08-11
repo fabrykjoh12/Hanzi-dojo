@@ -1,11 +1,16 @@
 // The one definition of the number the navigation shows.
 //
-// It existed in one place and was missing from the other: the desktop rail
-// (Sidebar.jsx) summed the three queue counts inline, and the mobile bar was
-// never passed `counts` at all. A number shown in two chromes and derived in
-// two chromes is a number that eventually disagrees with itself — and this one
-// also has to agree with the Home hero, which is the same three counts a third
-// time (docs/METRICS.md: one definition per displayed number).
+// It existed in one place and was derived inline there: the desktop rail
+// (Sidebar.jsx) summed the three queue counts itself. A number shown in more
+// than one chrome and derived in more than one chrome is a number that
+// eventually disagrees with itself — and this one also has to agree with the
+// Home hero, which is the same three counts again (docs/METRICS.md: one
+// definition per displayed number).
+//
+// The mobile bottom bar carried it for one build and no longer does: on a real
+// phone it made the bar read as a dashboard rather than a set of destinations.
+// The rule below is unchanged and is still what the rail and Home go by; only
+// one caller went away.
 //
 // Pure: no React, no Supabase, no colours. The chromes decide what a badge
 // looks like; this decides whether there is one and what it says.
@@ -30,13 +35,12 @@ export function waitingCount(counts) {
   return n > 0 ? n : null
 }
 
-// Which nav entry carries a badge. One key today — Cards — and the map is here
-// rather than in the two chromes so that stays a decision with a home, not a
-// condition duplicated twice.
+// Which nav entry carries a badge. One key — Flashcards — and the map is here
+// rather than inside the rail so that stays a decision with a home.
 //
 // Stories deliberately has none: the unlocked chapter is already announced by
-// the session recap and by Home's reward panel, and a bottom bar that turns
-// into a row of counters stops being navigation.
+// the session recap and by Home's reward panel, and navigation that turns into
+// a row of counters stops being navigation.
 export function navBadge(key, counts) {
   return key === 'study' ? waitingCount(counts) : null
 }
