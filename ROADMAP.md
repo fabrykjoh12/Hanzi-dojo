@@ -13,6 +13,7 @@ so the community always sees the latest. Keep it current — move things to
 
 ## 🚧 Now — in progress
 
+- [x] **Four things that were plainly broken are fixed.** The Settings screen was cut off down the right edge on smaller phones — every description ended mid-word — and now lays itself out for the width it has. The little feedback button was floating on top of the More menu, and it gets out of the way. **And pinyin is properly readable in dark mode**: it was drawn in a red tuned for white paper, which on a dark screen was too dim to read comfortably — the most-read text in the app after the characters themselves. Small red labels all over the app had the same problem and are legible now; a few of them turned out not to need to be red at all. Light mode is unchanged, to the pixel.
 - [ ] **Making every screen look as considered as the new bottom bar.** The last few months went into the parts you can't see — how the app navigates, how it starts up, how it remembers where you were. That work is done. Now the same attention goes to how it *looks*: one set of spacings, one set of type sizes, one way a button behaves, dark mode that reads properly everywhere, and no screen that still looks like a web page in a phone-shaped window. It starts with an honest audit of every screen rather than a redesign, so nothing that already works gets churned.
 
 **Just shipped**
