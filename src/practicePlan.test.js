@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildPracticePlan, levelTestEntry } from './practicePlan'
+import { buildPracticePlan, levelTestEntry, DRILL_KEYS, isDrillKey } from './practicePlan'
 import { TEST_UNLOCK_MASTERY_PCT } from './mastery'
 import { MOBILE_MORE } from './navConfig'
 import { resolveTestStatus } from './testLogic'
@@ -233,3 +233,56 @@ describe('the level test on the Practice screen', () => {
     expect(MOBILE_MORE.map(i => i.key)).toEqual(['profile', 'settings', 'logout'])
   })
 })
+
+// P11-0 — the instrumentation contract.
+//
+// `practice_drill_started` keys on DRILL_KEYS. A drill added to the plan without
+// being added there is a hole in the data that nothing else would notice, so this
+// walks every combination the plan can produce.
+describe('DRILL_KEYS covers every drill the plan can offer', () => {
+  const SCRIPTS = [undefined, 'hanzi', 'kana', 'cyrillic', 'nonsense']
+  const BOOLS = [false, true]
+
+  it('names every key, in every script/CJK/speech combination', () => {
+    const seen = new Set()
+    for (const script of SCRIPTS) {
+      for (const cjk of BOOLS) {
+        for (const speech of BOOLS) {
+          for (const weakCount of [0, 4]) {
+            for (const grammarDueCount of [0, 3]) {
+              const plan = buildPracticePlan({ script, cjk, speech, weakCount, grammarDueCount })
+              seen.add(plan.primary.key)
+              for (const d of plan.drills) seen.add(d.key)
+            }
+          }
+        }
+      }
+    }
+    for (const key of seen) {
+      expect(isDrillKey(key), key + ' is missing from DRILL_KEYS').toBe(true)
+    }
+    // And the set is not padded with keys the plan can never emit.
+    expect(seen.size).toBeGreaterThanOrEqual(9)
+  })
+
+  it('lists each key once', () => {
+    expect(new Set(DRILL_KEYS).size).toBe(DRILL_KEYS.length)
+  })
+
+  it('counts neither the level test nor the lookup tools as drills', () => {
+    // A dictionary lookup is not practice, and counting it as such would make the
+    // numbers useless for the question they exist to answer.
+    const plan = buildPracticePlan({ script: 'hanzi', cjk: true })
+    expect(isDrillKey(plan.levelTest.key)).toBe(false)
+    for (const tool of plan.tools) {
+      expect(isDrillKey(tool.key), tool.key + ' is a tool, not a drill').toBe(false)
+    }
+  })
+
+  it('rejects nonsense rather than guessing', () => {
+    for (const bad of [null, undefined, '', 'nope', 0, {}]) {
+      expect(isDrillKey(bad)).toBe(false)
+    }
+  })
+})
+

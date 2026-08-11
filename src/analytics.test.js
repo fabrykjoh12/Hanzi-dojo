@@ -134,3 +134,20 @@ it('defines the public-story funnel events', () => {
   expect(EVENTS.PUBLIC_STORY_LEVEL_PICKED).toBe('public_story_level_picked')
   expect(EVENTS.PUBLIC_STORY_SIGNUP_CLICKED).toBe('public_story_signup_clicked')
 })
+
+it('names the practice-drill event, and keys it on a drill', () => {
+  // Fired on the tap that enters a drill, never on the drill screen's mount —
+  // <Activity> re-runs effects on every tab show, so mount would over-count
+  // (NAV-MODEL §2). The name is asserted here because the analysis queries are
+  // written against the string, not the constant.
+  expect(EVENTS.PRACTICE_DRILL_STARTED).toBe('practice_drill_started')
+})
+
+it('keeps a drill start free of anything personal', () => {
+  const props = sanitizeProps({ key: 'weak', from: 'hero', note: 'my private note '.repeat(20) })
+  expect(props.key).toBe('weak')
+  expect(props.from).toBe('hero')
+  // Long free text is dropped or truncated by the sanitiser, never sent whole.
+  expect(props.note === undefined || props.note.length < 40).toBe(true)
+})
+

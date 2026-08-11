@@ -59,6 +59,18 @@ export const EVENTS = {
   // Grammar spaced practice
   GRAMMAR_ENROLLED: 'grammar_enrolled',
   GRAMMAR_REVIEWED: 'grammar_reviewed',
+  // The Practice hub — which drill a learner actually picks, and whether they
+  // took the recommendation (`from`: 'hero' | 'list').
+  //
+  // Fired on the TAP that enters the drill, never on the drill screen's mount.
+  // The drills live in the Practice tab's stack and <Activity> re-runs effects on
+  // every tab show (NAV-MODEL §2), so a mount-based event would count coming back
+  // to the tab as a fresh start. One tap, one event, no de-duplication needed.
+  //
+  // Scope, so nobody reads more into the data than it holds: this counts drills
+  // started FROM THE HUB. Weak words can also be entered from Profile's "Review
+  // all N weak words", and that path is not instrumented here.
+  PRACTICE_DRILL_STARTED: 'practice_drill_started',
   // Signals
   LANGUAGE_SWITCHED: 'language_switched',
   // App session envelope

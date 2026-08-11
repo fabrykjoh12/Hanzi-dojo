@@ -33,6 +33,24 @@ const TOOLS = [
   { key: 'youtube', title: 'Videos', desc: 'Curated listening' },
 ]
 
+// Every drill key this hub can offer, as a stable set.
+//
+// The `practice_drill_started` event keys on these, so a drill added to the plan
+// without being added here would be a measurement hole — `practicePlan.test.js`
+// walks every script/cjk/speech combination and fails if one appears.
+//
+// Not drills, deliberately: `test` is progression and the six `TOOLS` are places
+// to look things up. Counting a dictionary lookup as practice would make the
+// numbers useless for the question they exist to answer.
+export const DRILL_KEYS = [
+  'weak', 'grammarpractice', 'listen', 'speak', 'writing', 'fillblank', 'builder',
+  'tones', 'kana', 'cyrillic', 'strokes',
+]
+
+export function isDrillKey(key) {
+  return DRILL_KEYS.indexOf(key) !== -1
+}
+
 function plural(n, word) {
   return n + ' ' + word + (n === 1 ? '' : 's')
 }

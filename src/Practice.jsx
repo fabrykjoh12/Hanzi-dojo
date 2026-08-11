@@ -3,8 +3,12 @@ import { getSystemLabel, getLevelLabel, metaLine} from './utils'
 import { languageTheme, ink } from './languageTheme'
 import { HeroPanel, HeroAction, PageHeader, Eyebrow } from './panels'
 import { flatPanel, ON_HERO, NUM } from './designTokens'
-import { buildPracticePlan } from './practicePlan'
+import { buildPracticePlan, isDrillKey } from './practicePlan'
 import { speechRecognitionSupported } from './speechSupport'
+// `track as trackEvent`: this component already has a `track` prop — the
+// language track — and the bare name would be shadowed by it. Same alias Study
+// uses, for the same reason.
+import { track as trackEvent, EVENTS } from './analytics'
 import { useIsMobile } from './useIsMobile'
 import {
   ArrowRight, AlertTriangle, Headphones, PenLine,
@@ -92,6 +96,19 @@ export default function Practice({ profile, track, counts, onNavigate }) {
   const primary = plan.primary
   const PrimaryIcon = ICONS[primary.key] || Headphones
 
+  // Entering a drill, counted once. On the tap rather than on the drill's mount:
+  // <Activity> re-runs effects every time the Practice tab is shown, so a
+  // mount-based event would count returning to the tab as a new start
+  // (NAV-MODEL §2). `from` separates taking the recommendation from picking off
+  // the list — which is the question this screen's next iteration needs answered.
+  //
+  // Nothing reads this back: the ordering and the recommendation still come from
+  // buildPracticePlan alone. The dataset does not exist yet.
+  const openDrill = (key, from) => {
+    if (isDrillKey(key)) trackEvent(EVENTS.PRACTICE_DRILL_STARTED, { key, from })
+    onNavigate(key)
+  }
+
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto', padding: isMobile ? '24px 16px 40px' : '44px 32px 60px' }}>
       <PageHeader
@@ -105,7 +122,7 @@ export default function Practice({ profile, track, counts, onNavigate }) {
         accentHex={accentHex}
         seed={profile.active_language + '-practice'}
         compact={isMobile}
-        onClick={() => onNavigate(primary.key)}
+        onClick={() => openDrill(primary.key, 'hero')}
         style={{ marginBottom: SECTION_GAP }}
       >
         {({ hovered }) => (
@@ -163,7 +180,7 @@ export default function Practice({ profile, track, counts, onNavigate }) {
               key={item.key}
               item={item}
               accentHex={accentHex}
-              onClick={() => onNavigate(item.key)}
+              onClick={() => openDrill(item.key, 'list')}
             />
           ))}
         </div>
