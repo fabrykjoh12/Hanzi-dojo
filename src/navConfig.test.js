@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { PRIMARY_NAV, NAV_GROUPS, MOBILE_PRIMARY, MOBILE_MORE, ADMIN_NAV } from './navConfig'
+import {
+  PRIMARY_NAV, NAV_GROUPS, MOBILE_PRIMARY, MOBILE_MORE, ADMIN_NAV,
+  ACCOUNT_MORE_ADMIN, moreItemsFor,
+} from './navConfig'
 import { TABS, VIEW_CLASS, initialNavState, androidBack } from './navStack'
 
 // Dojo HQ is internal tooling — workspaces, invite codes, member management.
@@ -115,10 +118,53 @@ describe('position is not routing', () => {
 
 describe('the sheet and the rail are unaffected', () => {
   it('leaves More as the account drawer', () => {
-    expect(MOBILE_MORE.map(i => i.key)).toEqual(['profile', 'languages', 'settings', 'logout'])
+    expect(MOBILE_MORE.map(i => i.key)).toEqual(['profile', 'settings', 'logout'])
   })
 
   it('keeps the desktop rail in its own order, with the level test beside Practice', () => {
     expect(PRIMARY_NAV.map(i => i.key)).toEqual(['home', 'study', 'stories', 'practice', 'test'])
   })
 })
+
+// P10-C0. Publicly the product is Chinese (CLAUDE.md §1), and the More sheet was
+// handing every learner a "Language" row into a screen that offers to start a new
+// one. The screen and the tracks behind it are untouched; the invitation is what
+// went.
+describe('who sees the Language entry', () => {
+  it('is not in the public account drawer at all', () => {
+    expect(MOBILE_MORE.map(i => i.key)).not.toContain('languages')
+    expect(moreItemsFor(false).map(i => i.key)).toEqual(['profile', 'settings', 'logout'])
+  })
+
+  it('stays available to staff, next to Profile', () => {
+    const keys = moreItemsFor(true).map(i => i.key)
+    expect(keys).toEqual(['dashboard', 'hq', 'profile', 'languages', 'settings', 'logout'])
+  })
+
+  it('treats anything falsy as a public account', () => {
+    for (const notAdmin of [false, undefined, null, 0, '']) {
+      expect(moreItemsFor(notAdmin).map(i => i.key)).not.toContain('languages')
+    }
+  })
+
+  it('keeps every public row a public account already had', () => {
+    // Nothing else moved: Profile, Settings and Log out are where they were.
+    expect(moreItemsFor(false)).toEqual(MOBILE_MORE)
+  })
+
+  it('carries a label and an icon on the staff row, like every other', () => {
+    for (const item of [...ACCOUNT_MORE_ADMIN, ...MOBILE_MORE, ...ADMIN_NAV]) {
+      expect(item.key).toBeTruthy()
+      expect(item.label).toBeTruthy()
+      expect(item.icon).toBeTruthy()   // lucide icons are objects, not plain functions
+    }
+  })
+
+  it('never lists the same destination twice for either account', () => {
+    for (const isAdmin of [false, true]) {
+      const keys = moreItemsFor(isAdmin).map(i => i.key)
+      expect(new Set(keys).size).toBe(keys.length)
+    }
+  })
+})
+

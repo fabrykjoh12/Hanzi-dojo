@@ -165,6 +165,30 @@ function IconControl({ icon: Icon, label, danger, onClick }) {
   )
 }
 
+// The seal wrapper. With an onClick it is a real button; without one it is a
+// plain block — a dead button that looks tappable is worse than a label.
+function SealTag({ onClick, onMouseEnter, onMouseLeave, label, style, children }) {
+  if (!onClick) {
+    return (
+      <div aria-label={label} style={{ ...style, cursor: 'default' }}>
+        {children}
+      </div>
+    )
+  }
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      aria-label={label}
+      className="hd-press"
+      style={style}
+    >
+      {children}
+    </button>
+  )
+}
+
 export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language, profile, track, email, counts }) {
   const [collapsed, setCollapsed] = useState(false)
   const [logoHovered, setLogoHovered] = useState(false)
@@ -254,19 +278,24 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
         </button>
       )}
 
-      {/* ── The seal: what you're studying, and the switcher. ──
+      {/* ── The seal: what you're studying. ──
           A filled accent square with the script in white — the form a name
           stamp takes in the writing traditions this app teaches. It sits at the
           top because it is the context every row below it is scoped to, and it
           is the rail's single saturated object, so it does the work an outlined
           card was doing without adding another rounded box to a UI already made
-          of them. */}
-      <button
-        onClick={() => onNavigate('languages')}
+          of them.
+
+          It is also the switcher — for staff only. Publicly the product is
+          Chinese, so for everyone else it is exactly what it looks like: a label
+          saying what you are studying, with no affordance and nothing to tap.
+          Same seal, same place, same colours. */}
+      <SealTag
+        onClick={isAdmin ? () => onNavigate('languages') : null}
         onMouseEnter={() => setSealHovered(true)}
         onMouseLeave={() => setSealHovered(false)}
-        aria-label={'Studying ' + lang.languageName + (levelLabel ? ', ' + levelLabel : '') + '. Switch language'}
-        className="hd-press"
+        label={'Studying ' + lang.languageName + (levelLabel ? ', ' + levelLabel : '')
+          + (isAdmin ? '. Switch language' : '')}
         style={{
           position: 'relative',
           display: 'flex', alignItems: 'center', gap: '10px',
@@ -310,8 +339,10 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
             )}
           </span>
         )}
-        {collapsed && sealHovered && <Tip>{lang.languageName} · switch</Tip>}
-      </button>
+        {collapsed && sealHovered && (
+          <Tip>{lang.languageName}{isAdmin ? ' · switch' : ''}</Tip>
+        )}
+      </SealTag>
 
       <div style={{ ...hairline, margin: collapsed ? '14px 0' : '16px 0' }} />
 

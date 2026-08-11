@@ -229,6 +229,7 @@ describe('the level test on the Practice screen', () => {
   it('is gone from the "More" sheet, so it lives in exactly one place', () => {
     expect(MOBILE_MORE.map(i => i.key)).not.toContain('test')
     // …and what remains there really is the account drawer.
-    expect(MOBILE_MORE.map(i => i.key)).toEqual(['profile', 'languages', 'settings', 'logout'])
+    // (Language left this list in P10-C0 — staff-only now, see navConfig.test.js.)
+    expect(MOBILE_MORE.map(i => i.key)).toEqual(['profile', 'settings', 'logout'])
   })
 })

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { languageTheme, ink } from './languageTheme'
-import { MOBILE_PRIMARY, MOBILE_MORE, ADMIN_NAV } from './navConfig'
+import { MOBILE_PRIMARY, moreItemsFor } from './navConfig'
 import { MoreIcon } from './NavIcons'
 import { MOBILE_NAV_SPACE } from './navMetrics'
 import { NAV_COLUMN, navIconPx, iconRowStyle, cardsShellStyle } from './navEmphasis'
@@ -20,7 +20,6 @@ const FAINT = 'var(--text-faint)'
 // Primary tabs live directly in the bottom bar; the rest go behind the "More"
 // sheet. Study/practice modes are reached through the Practice tab.
 const PRIMARY = MOBILE_PRIMARY
-const MORE_ITEMS = MOBILE_MORE
 
 // One tab. Selection is carried by the glyph's own shape — outline becomes
 // filled — then by colour, then by the label's weight. Three signals, of which
@@ -85,7 +84,8 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
   const [moreOpen, setMoreOpen] = useState(false)
   const accentHex = languageTheme(language).accentHex
   const accentInk = ink(accentHex)
-  const moreItems = isAdmin ? [...ADMIN_NAV, ...MORE_ITEMS] : MORE_ITEMS
+  // Who sees which rows is decided in navConfig.js, and tested there.
+  const moreItems = moreItemsFor(isAdmin)
   const moreKeys = moreItems.map(i => i.key)
 
   const go = (key) => {

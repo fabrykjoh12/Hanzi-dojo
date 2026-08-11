@@ -79,10 +79,36 @@ export const MOBILE_PRIMARY = [
 // Practice, which is the grouping NAV_GROUPS already describes.
 export const MOBILE_MORE = [
   { key: 'profile', label: 'Profile', icon: User },
-  { key: 'languages', label: 'Language', icon: Globe },
   { key: 'settings', label: 'Settings', icon: Settings },
   { key: 'logout', label: 'Log out', icon: LogOut },
 ]
+
+// Language switching is staff-only, and this is the whole of that decision.
+//
+// Publicly the product is Chinese (CLAUDE.md §1), so an entry into
+// LanguageSwitcher — a screen that offers to "switch between active tracks,
+// replay a previous level, or start a new language" — was inviting every learner
+// into a product that does not exist. It is one menu row, not an architecture:
+// the screen, the route and the tracks behind it are untouched, and staff still
+// reach it here.
+//
+// The ROUTE stays open on purpose. Anyone already on one of the paused tracks
+// keeps it (CLAUDE.md §1), and gating `/languages` as well would strand such an
+// account on whatever track it happened to be on. Removing the invitation is the
+// fix; removing the exit is not.
+export const ACCOUNT_MORE_ADMIN = [
+  { key: 'languages', label: 'Language', icon: Globe },
+]
+
+// The account drawer as one account actually sees it, in order. A function so
+// MobileNav and its spec cannot disagree about who gets what: admin entries
+// first (they are tools), then Profile, then the staff-only language row beside
+// it, then Settings and Log out.
+export function moreItemsFor(isAdmin) {
+  if (!isAdmin) return MOBILE_MORE
+  const [profileItem, ...rest] = MOBILE_MORE
+  return [...ADMIN_NAV, profileItem, ...ACCOUNT_MORE_ADMIN, ...rest]
+}
 
 // Admin-only entries — prepended to the bottom nav (Sidebar) / "More" sheet
 // (MobileNav) only when profile.is_admin is true. Kept out of the default

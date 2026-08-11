@@ -67,9 +67,12 @@ test.describe('the level test', () => {
     await expect(sheet).toBeVisible();
     // What is left is the account drawer, and the test is not filed in it.
     await expect(sheet.getByRole('button', { name: 'Test' })).toHaveCount(0);
-    for (const item of ['Profile', 'Language', 'Settings', 'Log out']) {
+    for (const item of ['Profile', 'Settings', 'Log out']) {
       await expect(sheet.getByRole('button', { name: item })).toBeVisible();
     }
+    // And neither is Language: publicly the product is Chinese, so the row into
+    // the switcher is staff-only now (P10-C0, navConfig.moreItemsFor).
+    await expect(sheet.getByRole('button', { name: 'Language' })).toHaveCount(0);
   });
 
   test('its own route still works, unchanged', async ({ page }) => {
