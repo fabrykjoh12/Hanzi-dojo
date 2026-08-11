@@ -1073,3 +1073,51 @@ Each one independently revertable and visually verifiable.
 
 **Do not start any of these until the direction is approved.** B1 additionally
 needs the Study-toast decision (B1.5).
+
+---
+
+## B — what was actually built (2026-08-11)
+
+Option B, in the five commits above. All five are on
+`claude/hanzi-dojo-continuation-e3vnbg` and green; **none has been to a physical
+device yet.**
+
+| Commit | | Landed |
+|---|---|---|
+| `898ad91` | **B1** | The achievement wall, `achievements.js`, its test, `ACH_ICONS`, the `EVENTS.ACHIEVEMENT_UNLOCKED` event and the Study "Seal earned" toast. The Study diff is `0 45` — forty-five deletions, zero insertions — so the behavioural freeze held to the line. |
+| `e3970f6` | **B2** | The 17×7 grid of 115 tappable day cells, `StudyCalendar`, `buildWeeks`, `cellColor` and the day-detail interaction, replaced by `studyRhythm()`: "Studied 12 of the last 30 days". No streak language, and a unit test asserts twelve *consecutive* days still produce that sentence and nothing warmer. |
+| `95c9b74` | **B3** | One `HeroPanel` fed by `profileProgress.js`. The month recap and its share button, the standalone rhythm panel, the Review-accuracy panel (a percentage tile plus thirty 6px bar buttons) and the Level-mastery panel all went with it; retention survives as four words on the activity line. `monthReview.js` and `reviewAccuracy.js` were deleted as dead. |
+| `8c24055` | **B4** | The five controls became rows in two groups, from `profileControls.js`. Closing a row disarms it, so a half-confirmed reset cannot sit hidden. Language chips 31px → 44px; "Cancel reset" 19px → 44px. |
+| `9cb7ed5` | **B5** | `weakList()` caps the slipping words at five, worst first, and re-checks the lapse threshold the query already asks for — the e2e fixture returns unfiltered rows, so the old panel rendered six words at "missed 0×". `weakActionLabel()` makes the action admit the cap. |
+
+### Measured, at 390×844, with words slipping (as the audit measured it)
+
+| | Audit | Now |
+|---|---|---|
+| Document height | 4.48 viewports | **1.92** |
+| Containers | 55 | **5** |
+| Type styles | 24 | **11** |
+| Tap targets under 44px | 117 | **0** |
+| The control stack | ~590px | **296px** |
+
+320×568 is 2.86 viewports and 430×932 is 1.72; a learner with nothing slipping
+sees 1.41. `tests/e2e/profile-shape.spec.js` pins ceilings of 2.2 viewports, 8
+containers, 12 type styles and zero sub-44px targets.
+
+### Where the audit's targets were not met, and why
+
+- **Type styles: 11, not ≤8.** The remaining eleven are one figure, one page
+  title, the hanzi, one section heading, one row label, one value, one body
+  size, pinyin, gloss, one small-meta size, and the MICRO eyebrow. Reaching
+  eight means collapsing hanzi against pinyin against gloss inside a single
+  row, which is real hierarchy, not drift.
+- **Containers: 5, against a target of ≤14** — well under, because the weak-word
+  rows and the control rows both lost their per-row borders.
+
+### The defect that justified the whole phase
+
+"Words mastered" appeared twice on one screen, with the current level's number
+and the lifetime total, under identical words (§B1.2). Every figure now comes
+from `profileProgress.js`, and the label names its scope — "HSK 2 mastered".
+`src/profileProgress.test.js` asserts the ambiguous wording cannot return and
+that no two displayed numbers can ever share a label.

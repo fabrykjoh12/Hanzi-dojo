@@ -229,11 +229,37 @@ its release blockers (P10-A) have shipped:
   2.8–3.5:1, both below AA. Two named treatments (`pinyinInk`, `inkStrong`) now
   exist and are 0% in light, so the light theme is byte-identical.
 
-**Nothing from P10-B, C or D has been started**, and two owner decisions are
-recorded for when it is: Profile's achievement wall is to be **removed** (not
-replaced with any other badge/streak/XP mechanic), and sage green gets exactly
-one semantic role — positive/successful/completed, behind one token — or is
-removed. Coral is the one primary-action colour. See the audit's §15.
+**P10-B, the Profile redesign, is built and awaiting the owner's review** (it has
+NOT been to a device yet). Option B from the audit — "two panels plus what's
+slipping" — in five commits:
+
+| | | |
+|---|---|---|
+| `898ad91` | B1 | the achievement mechanic, gone everywhere |
+| `e3970f6` | B2 | the 115-cell contribution grid → one sentence |
+| `95c9b74` | B3 | one progress panel, from `profileProgress.js` |
+| `8c24055` | B4 | the five controls → rows in two groups |
+| `9cb7ed5` | B5 | the slipping words → five hairline rows |
+
+Profile at 390px, measured with words slipping: **4.48 → 1.92 viewports, 55 → 5
+containers, 24 → 11 type styles, 117 → 0 sub-44px tap targets.** The controls
+were ~590px and are a 296px band. Three owner decisions drove it: achievements
+go completely (no streak/XP/badge/trophy replacement, ever), the heatmap goes
+(replaced by "Studied N of the last 30 days", never streak language), and the
+daily goal + reset stay on Profile, restyled.
+
+The defect that made the panel necessary: **"Words mastered" appeared twice, with
+the current level's number and the lifetime total, under identical words.** Every
+figure now comes from `profileProgress.js` and carries a label naming its scope
+("HSK 2 mastered"), so it cannot come back.
+
+**Nothing from P10-C or D has been started.** The second owner decision still
+stands for when it is: sage green gets exactly one semantic role —
+positive/successful/completed, behind one token — or is removed. Coral is the one
+primary-action colour. See the audit's §15.
+
+Not to be resumed without the owner's word: the Practice redesign and the global
+token cleanup were both explicitly held until Profile has been reviewed.
 
 ---
 
