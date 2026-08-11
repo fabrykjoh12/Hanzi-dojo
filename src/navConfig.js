@@ -42,8 +42,13 @@ export const MOBILE_PRIMARY = [
   { key: 'practice', label: 'Practice', icon: Target },
 ]
 
+// What is left is the account drawer. The level test used to head this list,
+// which put the gate on progression between Profile and Log out — and nothing
+// on any screen linked to it, so on a phone that WAS its only entrance. It
+// belongs to the Practice tab (navStack.js VIEW_CLASS) and Practice now shows
+// it, locked state and all; the desktop rail keeps its own slot next to
+// Practice, which is the grouping NAV_GROUPS already describes.
 export const MOBILE_MORE = [
-  { key: 'test', label: 'Test', icon: ClipboardCheck },
   { key: 'profile', label: 'Profile', icon: User },
   { key: 'languages', label: 'Language', icon: Globe },
   { key: 'settings', label: 'Settings', icon: Settings },

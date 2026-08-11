@@ -50,6 +50,27 @@ Home → Cards → Stories → Practice → Home, several laps, briskly.
 **Record explicitly — the 150ms tab fade feels:** good / slightly slow /
 clearly slow. Do not change it before this is answered on a real device.
 
+### B2 · The bar itself (P8 Option A — the questions this build exists to answer)
+
+Answer all seven in words, not ticks. The whole point of Option A was to see
+whether Cards reads as the day's action *without* moving it or raising it; if
+it does not, Option B (Cards centred) is the next reversible experiment, and
+this is the evidence for that call.
+
+1. [ ] Does **Cards** now read immediately as the main daily action?
+2. [ ] Is the waiting count **useful or distracting**? (It is deliberately plain
+       accent digits — no pill, no circle, no red.)
+3. [ ] Does the **selected tab read clearly in dark mode**? Measured, the active
+       and inactive glyphs differ by hue and not brightness (1.26:1), so the
+       marker and the heavier icon/label are doing the work — check they do.
+4. [ ] Does the **wider marker look intentional** rather than heavy?
+5. [ ] Does the bar **feel any taller**? It must not — 58px, unchanged from what
+       build 33 rendered.
+6. [ ] Does the **320px Study screen** feel marginally less cramped? (It gained
+       4px it was never using.)
+7. [ ] Is the **level test discoverable from Practice**, and does its locked row
+       explain what opens it?
+
 ## C · Study
 
 Cards → grade several → play pronunciation → **X** → paused → Resume → grade

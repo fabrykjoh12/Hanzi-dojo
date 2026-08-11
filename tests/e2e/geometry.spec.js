@@ -221,12 +221,19 @@ test.describe('scroll restoration', () => {
   test('a second pushed class behaves identically', async ({ page }) => {
     await page.goto('/practice');
     await page.waitForTimeout(900);
-    await page.mouse.wheel(0, 500);
+
+    // Scroll by bringing the target into view rather than by a fixed wheel
+    // distance. `click()` auto-scrolls to whatever it is clicking, so a wheel
+    // of N followed by a click on something below the fold navigates from a
+    // DIFFERENT offset than the one the spec measured — and then correctly
+    // restores that one, which reads as a restoration bug and is not.
+    const dictionary = page.getByRole('button', { name: /Dictionary/i }).first();
+    await dictionary.scrollIntoViewIfNeeded();
     await page.waitForTimeout(300);
     const practice = await y(page);
     expect(practice).toBeGreaterThan(0);
 
-    await page.getByRole('button', { name: /Dictionary/i }).first().click();
+    await dictionary.click();
     await page.waitForTimeout(800);
     expect(new URL(page.url()).pathname).toBe('/dictionary');
     expect(await y(page)).toBe(0);

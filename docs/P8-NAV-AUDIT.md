@@ -1,8 +1,13 @@
 # P8 — Mobile bottom navigation: audit and three options
 
-**Status: audit only. Nothing in the tab bar has changed.** Written against
-`574501d` (TestFlight build 33). Every number below is read from the code or
-measured in a real render, not estimated.
+**Status: Option A approved and implemented** (three commits, 2026-08-11).
+The audit below is unchanged from the state it described — written against
+`574501d`, TestFlight build 33 — and every number in it is read from the code or
+measured in a real render, not estimated. Options B and C were not implemented;
+B stays on the shelf as the next reversible experiment if device testing shows
+Cards still does not read as primary. What was actually built, and the seven
+questions the next build exists to answer, are in
+[`docs/MOBILE-DEVICE-QA.md`](MOBILE-DEVICE-QA.md) §B2.
 
 ---
 

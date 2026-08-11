@@ -5,10 +5,13 @@
 // still carry a "this is waiting for you" count. Practice.jsx only maps the
 // result onto panels and icons.
 //
-// Pure data in, pure data out — no React, no Supabase, no colours. A drill
-// carries a `tone` ('signal' when a real count is behind it, otherwise
-// 'accent'); the screen decides what those look like, so the palette stays in
-// one place.
+// Pure data in, pure data out — no React, no Supabase, no colours (one import:
+// the mastery threshold, which is a rule rather than a value this file gets to
+// pick). A drill carries a `tone` ('signal' when a real count is behind it,
+// otherwise 'accent'); the screen decides what those look like, so the palette
+// stays in one place.
+
+import { TEST_UNLOCK_MASTERY_PCT } from './mastery'
 
 // The script drill matches the language's writing system. Keyed by
 // `languageTheme().script` rather than by language name, so a new language is
@@ -90,6 +93,35 @@ function pickPrimary(weakCount, grammarDueCount) {
   }
 }
 
+// The level test's place on this screen.
+//
+// It used to have none. `test` is owned by the Practice tab (navStack.js
+// VIEW_CLASS) and the desktop rail gives it a slot next to Practice, but on a
+// phone it lived in the "More" sheet between Profile and Log out — so the gate
+// on progression, the one thing in the app that requires 100%, was filed with
+// the account settings and nothing on any screen linked to it.
+//
+// This is a DISCOVERABILITY surface, not the gate. Test.jsx owns the gate: it
+// fetches its own status and also unlocks for anyone who already passed this
+// level, which the Home counts do not carry. So the row is always openable and
+// the locked state is an explanation, never a refusal — a screen that can't see
+// the whole rule must not be the thing that says no.
+export function levelTestEntry({ masteredCount = 0, totalWords = 0 } = {}) {
+  const mastered = Math.max(0, masteredCount)
+  // The same threshold Test.jsx prints, so the two screens never advertise
+  // different targets.
+  const needed = Math.ceil(totalWords * TEST_UNLOCK_MASTERY_PCT)
+  return {
+    key: 'test',
+    unlocked: totalWords > 0 && mastered >= needed,
+    masteredCount: mastered,
+    totalWords,
+    needed,
+    remaining: Math.max(0, needed - mastered),
+    pct: totalWords > 0 ? Math.min(100, Math.round((mastered / totalWords) * 100)) : 0,
+  }
+}
+
 // The full screen plan.
 //
 //   script  — languageTheme().script ('hanzi' | 'kana' | 'cyrillic')
@@ -102,7 +134,10 @@ function pickPrimary(weakCount, grammarDueCount) {
 //             store apps' webviews (see speechSupport.js), where the Speaking
 //             drill can only show a "not available" screen — so the hub simply
 //             doesn't offer it rather than advertising a dead end.
-export function buildPracticePlan({ script, cjk = false, speech = true, weakCount = 0, grammarDueCount = 0 } = {}) {
+export function buildPracticePlan({
+  script, cjk = false, speech = true, weakCount = 0, grammarDueCount = 0,
+  masteredCount = 0, totalWords = 0,
+} = {}) {
   const primary = pickPrimary(weakCount, grammarDueCount)
   const scriptDrill = SCRIPT_DRILLS[script] || null
 
@@ -123,5 +158,10 @@ export function buildPracticePlan({ script, cjk = false, speech = true, weakCoun
   const waiting = drills.filter(d => d.badge != null)
   const rest = drills.filter(d => d.badge == null)
 
-  return { primary: primary, drills: waiting.concat(rest), tools: TOOLS }
+  return {
+    primary: primary,
+    levelTest: levelTestEntry({ masteredCount, totalWords }),
+    drills: waiting.concat(rest),
+    tools: TOOLS,
+  }
 }

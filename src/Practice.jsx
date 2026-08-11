@@ -2,14 +2,14 @@ import { useState } from 'react'
 import { getSystemLabel, getLevelLabel } from './utils'
 import { languageTheme, ink } from './languageTheme'
 import { HeroPanel, HeroAction, PageHeader, Eyebrow } from './panels'
-import { flatPanel, ON_HERO } from './designTokens'
+import { flatPanel, ON_HERO, NUM } from './designTokens'
 import { buildPracticePlan } from './practicePlan'
 import { speechRecognitionSupported } from './speechSupport'
 import { useIsMobile } from './useIsMobile'
 import {
   ArrowRight, AlertTriangle, Headphones, PenLine,
   AlignLeft, Blocks, Music2, Languages, Brush, Play, GraduationCap, BookA, ScanText, Mic, Search, Repeat2,
-  ListChecks, ChevronRight,
+  ListChecks, ChevronRight, ClipboardCheck, Lock,
 } from 'lucide-react'
 
 // The Practice hub: every drill and reference tool in one calm place, so the
@@ -73,6 +73,7 @@ export default function Practice({ profile, track, counts, onNavigate }) {
   const accentHex = theme.accentHex
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
+  const nextLevelLabel = getLevelLabel(profile.active_language, track.system, track.current_level + 1)
 
   // Which drills exist is a property of the language's script, never of its
   // name — a new language is a data change in languageTheme.js.
@@ -84,6 +85,8 @@ export default function Practice({ profile, track, counts, onNavigate }) {
     speech: speechRecognitionSupported(),
     weakCount: counts ? (counts.weakCount || 0) : 0,
     grammarDueCount: counts ? (counts.grammarDueCount || 0) : 0,
+    masteredCount: counts ? (counts.masteredCount || 0) : 0,
+    totalWords: counts ? (counts.totalWords || 0) : 0,
   })
 
   const primary = plan.primary
@@ -134,6 +137,19 @@ export default function Practice({ profile, track, counts, onNavigate }) {
         )}
       </HeroPanel>
 
+      {/* ── The gate on the level, directly under the hero. ──
+          Not a drill and not a lookup, so it sits in neither labelled section:
+          one wide row between the hero and the grid, which is where the screen
+          reads "and this is what it is all for". It used to be reachable on a
+          phone only through the More sheet, filed between Profile and Log out. */}
+      <LevelTestRow
+        entry={plan.levelTest}
+        levelLabel={levelLabel}
+        nextLevelLabel={nextLevelLabel}
+        accentHex={accentHex}
+        onClick={() => onNavigate('test')}
+      />
+
       {/* ── Everything else you can drill. One grid, one tile size. ── */}
       <section style={{ marginBottom: SECTION_GAP }}>
         <div style={{ marginBottom: LABEL_GAP }}>
@@ -172,6 +188,80 @@ export default function Practice({ profile, track, counts, onNavigate }) {
         </div>
       </section>
     </div>
+  )
+}
+
+// The level test. One row, two states.
+//
+// Locked, it is quiet and explains itself: what the bar is, how far along it is,
+// and the number that opens it. It is still openable — Test.jsx owns the real
+// rule (it also unlocks for anyone who has already passed this level, which the
+// Home counts cannot see), so this row shows the requirement and never refuses.
+// Hiding it was the old behaviour and it is what made the gate invisible.
+function LevelTestRow({ entry, levelLabel, nextLevelLabel, accentHex, onClick }) {
+  const [hovered, setHovered] = useState(false)
+  const open = entry.unlocked
+  const Icon = open ? ClipboardCheck : Lock
+  const color = open ? accentHex : 'var(--text-faint)'
+
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      aria-label={open
+        ? levelLabel + ' test — unlocked'
+        : levelLabel + ' test — locked. ' + entry.masteredCount + ' of ' + entry.totalWords
+          + ' words mastered; unlocks at ' + entry.needed + '.'}
+      style={{
+        ...flatPanel({ radius: 16 }),
+        width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+        padding: '14px 15px', marginBottom: SECTION_GAP,
+        border: '1px solid ' + (open && hovered ? tintBorder(accentHex, 45) : 'var(--border)'),
+        transition: 'border-color 160ms ease, background 140ms ease',
+        background: hovered ? 'var(--surface-2)' : 'var(--surface)',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '13px' }}>
+        <span style={{
+          width: '34px', height: '34px', borderRadius: '10px', flexShrink: 0,
+          background: open ? tint(accentHex, 11) : 'var(--surface-2)',
+          border: '1px solid ' + (open ? tintBorder(accentHex, 26) : 'var(--border)'),
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Icon size={17} strokeWidth={1.85} color={open ? ink(accentHex) : color} />
+        </span>
+        <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+          <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
+            {levelLabel} test
+          </span>
+          <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.35 }}>
+            {open
+              ? 'You’re ready. Pass it to open ' + nextLevelLabel + '.'
+              : entry.totalWords > 0
+                ? 'Unlocks at ' + entry.needed + ' mastered words'
+                : 'Unlocks once you’ve mastered this level'}
+          </span>
+        </span>
+        <ChevronRight size={17} strokeWidth={2} color="var(--text-faint)" style={{ flexShrink: 0 }} />
+      </div>
+
+      {/* Locked: how far along, in the one shape the app already uses for it.
+          Observational — a position, not a nag. */}
+      {!open && entry.totalWords > 0 && (
+        <div style={{ marginTop: '12px' }}>
+          <div style={{ height: '4px', borderRadius: '999px', background: 'var(--surface-2)', overflow: 'hidden' }}>
+            <div style={{
+              width: entry.pct + '%', height: '100%', borderRadius: '999px',
+              background: ink(accentHex),
+            }} />
+          </div>
+          <div style={{ ...NUM, fontSize: '11.5px', color: 'var(--text-faint)', marginTop: '7px' }}>
+            {entry.masteredCount} of {entry.totalWords} words mastered
+          </div>
+        </div>
+      )}
+    </button>
   )
 }
 

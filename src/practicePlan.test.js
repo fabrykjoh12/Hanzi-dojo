@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { buildPracticePlan } from './practicePlan'
+import { buildPracticePlan, levelTestEntry } from './practicePlan'
+import { TEST_UNLOCK_MASTERY_PCT } from './mastery'
+import { MOBILE_MORE } from './navConfig'
+import { resolveTestStatus } from './testLogic'
 
 const CHINESE = { script: 'hanzi', cjk: true }
 const JAPANESE = { script: 'kana', cjk: true }
@@ -159,5 +162,73 @@ describe('speech availability', () => {
     const withSpeech = buildPracticePlan({ script: 'hanzi', cjk: true }).drills.map(d => d.key)
     const without = buildPracticePlan({ script: 'hanzi', cjk: true, speech: false }).drills.map(d => d.key)
     expect(without).toEqual(withSpeech.filter(k => k !== 'speak'))
+  })
+})
+
+// ── The level test's place on this screen ─────────────────────────────────
+//
+// It had none. `test` is owned by the Practice tab, the desktop rail gives it a
+// slot beside Practice, and no screen in the app linked to it — so on a phone
+// the gate on progression was reachable only from the "More" sheet, filed
+// between Profile and Log out.
+
+describe('the level test on the Practice screen', () => {
+  it('is part of the plan, always — locked is a state, not an absence', () => {
+    const plan = buildPracticePlan({ ...CHINESE, masteredCount: 0, totalWords: 50 })
+    expect(plan.levelTest.key).toBe('test')
+    expect(plan.levelTest.unlocked).toBe(false)
+  })
+
+  it('opens at the mastery threshold the test itself uses', () => {
+    const pct = TEST_UNLOCK_MASTERY_PCT
+    expect(levelTestEntry({ masteredCount: 44, totalWords: 50 }).unlocked).toBe(false)
+    expect(levelTestEntry({ masteredCount: 45, totalWords: 50 }).unlocked).toBe(true)
+    expect(levelTestEntry({ masteredCount: 50, totalWords: 50 }).unlocked).toBe(true)
+    expect(45 / 50).toBeGreaterThanOrEqual(pct)
+    expect(44 / 50).toBeLessThan(pct)
+  })
+
+  it('agrees with Test.jsx about whether the test is open', () => {
+    // Two screens, one rule. The Practice row derives it from the Home counts
+    // and Test derives it from its own queries; if these ever disagree, one of
+    // them is lying to the learner about what they have to do.
+    for (const [mastered, total] of [[0, 10], [8, 10], [9, 10], [10, 10], [26, 30], [27, 30], [0, 0]]) {
+      const cards = Array.from({ length: mastered }, () => ({ stability: 30 }))
+        .concat(Array.from({ length: total - mastered }, () => ({ stability: 1 })))
+      const status = resolveTestStatus(
+        { data: Array.from({ length: total }, (_, i) => ({ id: 'v' + i })) },
+        cards,
+        { data: null },
+      )
+      expect(levelTestEntry({ masteredCount: mastered, totalWords: total }).unlocked)
+        .toBe(status.testUnlocked)
+    }
+  })
+
+  it('says how many words are still needed, not just that it is locked', () => {
+    const e = levelTestEntry({ masteredCount: 12, totalWords: 41 })
+    expect(e.needed).toBe(37)      // ceil(41 × 0.9)
+    expect(e.remaining).toBe(25)
+    expect(e.pct).toBe(29)
+  })
+
+  it('never reports a negative remainder or a bar past full', () => {
+    const e = levelTestEntry({ masteredCount: 60, totalWords: 50 })
+    expect(e.remaining).toBe(0)
+    expect(e.pct).toBe(100)
+  })
+
+  it('survives a level with no vocabulary, and stays locked', () => {
+    for (const e of [levelTestEntry(), levelTestEntry({ totalWords: 0, masteredCount: 0 })]) {
+      expect(e.unlocked).toBe(false)
+      expect(e.pct).toBe(0)
+      expect(e.needed).toBe(0)
+    }
+  })
+
+  it('is gone from the "More" sheet, so it lives in exactly one place', () => {
+    expect(MOBILE_MORE.map(i => i.key)).not.toContain('test')
+    // …and what remains there really is the account drawer.
+    expect(MOBILE_MORE.map(i => i.key)).toEqual(['profile', 'languages', 'settings', 'logout'])
   })
 })
