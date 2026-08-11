@@ -290,8 +290,14 @@ frozen.
 | `5c69ea2` | **C2** | Home keeps one panel out of four; the story hand-off is a row on the story's own cover art |
 
 `docs/P10-CONTAINER-AUDIT.md` carries the census, the A/B/C/D classification and
-the measured before/after. **Build 37 is still the newest thing on a device** —
-everything from `419f02c` onward has not been.
+the measured before/after — **plus the build-38 device correction at the end,
+which changes a rule: surface counts are diagnostic, never the goal.** Build 38
+(`0388865`) was device-reviewed: Practice and the C0 gating passed; Stories'
+"% known" line under the titles was rejected and is back on the artwork as text
+over a bottom scrim; Home's open layout reads as unfinished and is awaiting the
+owner's pick among three composition options (open-improved / hero + one unified
+secondary surface / two purpose-specific cards). Do not reintroduce the old
+three-equal-panels Home.
 
 **One production defect fixed on the way** (`5c69ea2`): `homeStory.js` selected
 `cover_url` from `stories`, a column that does not exist, so the query 400'd,

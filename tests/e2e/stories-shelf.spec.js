@@ -99,24 +99,32 @@ test.describe('Story library — poster shelves', () => {
     await expect(page.getByRole('button', { name: 'Back', exact: true })).toHaveCount(0);
   });
 
-  // P10-C1: this was a capsule floating over the artwork. It is the signal the
-  // shelf's whole sort is felt through, so it kept its prominence and lost its
-  // pill — it is now a line of full-strength text under the title.
-  test('cards say what share of the words the reader knows', async ({ page }) => {
+  // The reading share lives ON the artwork — device-reviewed twice. The old
+  // floating capsule went in P10-C1; the text line under the title that replaced
+  // it stacked three captions under every poster and the build-38 device review
+  // rejected that too. It is now compact text over a bottom scrim: on the cover,
+  // but never a pill, and the caption under the title stays two lines.
+  test('cards say what share of the words the reader knows, on the artwork', async ({ page }) => {
     await page.goto('/stories');
     await expect(page.getByText(/% known/).first()).toBeVisible();
-    // Not reversed out of a dark capsule over the illustration any more.
-    const pills = await page.evaluate(() => Array.from(
+    const marks = await page.evaluate(() => Array.from(
       document.querySelectorAll('#main-content *'))
       .filter((el) => (el.textContent || '').indexOf('% known') !== -1)
       .filter((el) => el.children.length === 0)
       .map((el) => {
         const cs = getComputedStyle(el);
-        return { radius: parseFloat(cs.borderTopLeftRadius) || 0, pos: cs.position };
+        const cover = el.closest('[style*="aspect-ratio"]');
+        return {
+          radius: parseFloat(cs.borderTopLeftRadius) || 0,
+          pos: cs.position,
+          onCover: Boolean(cover),
+        };
       }));
-    for (const p of pills) {
-      expect(p.radius).toBeLessThan(6);
-      expect(p.pos).not.toBe('absolute');
+    expect(marks.length).toBeGreaterThan(0);
+    for (const m of marks) {
+      expect(m.radius).toBeLessThan(6);   // text over a scrim, never a capsule
+      expect(m.pos).toBe('absolute');     // on the artwork, not a caption row
+      expect(m.onCover).toBe(true);
     }
   });
 

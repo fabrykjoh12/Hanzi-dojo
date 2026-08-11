@@ -339,3 +339,26 @@ pinned against the real column list in `homeStory.columns.test.js`; every other
 - **Practice's information architecture is untouched** — C1 only deleted
   decoration. The redesign inherits the rule.
 - **Stories' four 38px filter chips.**
+
+---
+
+## Build-38 device correction (2026-08-11)
+
+Build 38 took C0–C2 to a phone. Two findings, and a standing rule change:
+
+1. **Stories: the "% known" text line under every title was worse than the pill
+   it replaced.** Three stacked caption lines per poster made the shelf noisy.
+   Corrected: the share is back **on the artwork** — compact white text over a
+   quiet bottom scrim, clipped by the cover's corners. Not the old floating
+   capsule, and the caption is back to two lines (title + one meta line). The
+   format stays in the meta line, only when it is not prose.
+2. **Home is cleaner in theory but reads as unfinished on the device.** Not
+   corrected yet — three composition options were put to the owner (mostly-open
+   improved · hero + one unified secondary surface · two purpose-specific
+   cards). The old three-equal-panels layout is not coming back either way.
+
+**The rule change: surface counts are diagnostic, never the goal.** The census
+in this document found the problem; it does not define success. A screen with
+two excellent surfaces beats a screen with one surface and poor structure.
+Judge hierarchy, density, rhythm, grouping and whether the screen looks
+intentionally composed on a phone.
