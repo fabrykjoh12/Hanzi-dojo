@@ -1,5 +1,12 @@
 # Onboarding — audit and three concepts (P9)
 
+> **Superseded as the current picture by
+> [`P12-ONBOARDING-AUDIT.md`](P12-ONBOARDING-AUDIT.md) (2026-08-11).** Concept A
+> here shipped in TestFlight build 40. P12 audits what it actually became,
+> records three verified defects in it, and proposes the story-frame amendment.
+> Read this one for *why the nine-screen wizard died*; read P12 for what is true
+> now. Where they disagree, P12 was measured.
+
 **Status: Concept A approved 2026-08-10 and being built.** §1 and §2 are now
 history — they describe what the app did before the rebuild, and are kept
 because the reasoning behind the replacement is only legible next to them.
