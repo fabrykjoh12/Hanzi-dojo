@@ -1,6 +1,14 @@
 # P10 — App-wide visual system: audit and prioritised plan
 
-**Status: audit only. Nothing here is implemented. Awaiting owner review.**
+**Status: audit APPROVED. P10-A is shipped; P10-B/C/D are not started.**
+
+- audit written and approved at `86581af`
+- **`263c71b`** — A1 Settings at 320, A2/A3 the feedback FAB, A7 the system label
+- **`795de4d`** — A4 pinyin, A5 small accent text (plus three hardcoded
+  light-mode colours found by its own assertions)
+- owner decisions on the two questions this audit raised: **§15**
+
+Everything from P10-B down is untouched and awaits its own approval.
 
 Written 2026-08-11 on `claude/hanzi-dojo-continuation-e3vnbg` at `78cf09e` — the
 commit approved on TestFlight build 35. P8 (bottom navigation) and P9
@@ -560,19 +568,21 @@ The app is currently **cheap to render**, and that must survive P10.
 Risk = chance of breaking something. Scope = Tiny (<1h) / Small (a few hours) /
 Medium (a day) / Large (multi-day). **Device** = needs physical validation.
 
-### P10-A — Release blockers
+### P10-A — Release blockers — ✅ ALL SHIPPED
 
-Things that make the app look broken or unfinished.
+Things that make the app look broken or unfinished. **Done in commits
+`263c71b` (A1/A2/A3/A7) and `795de4d` (A4/A5)**, verified at 320/390/430 in both
+themes. Two owner decisions were taken alongside them and are recorded in §15.
 
 | # | Screen/component | Problem | Evidence | Recommended change | Risk | Scope | Device |
 |---|---|---|---|---|---|---|---|
-| A1 | `Settings.jsx` `Card` + `Segmented` | Row content clipped 55px off-screen at 320 | measured right edge 375 vs vw 320; text cut mid-word | Let `Segmented` wrap (or scroll) below ~360px; reduce option padding at that width | Low | Small | ✓ |
-| A2 | `Feedback.jsx` | FAB renders above the More sheet modal | FAB z 45 vs sheet z 41; visible in `shots/more-sheet.390.dark.png` | Raise the sheet above the FAB, or hide the FAB while any sheet/overlay is open | Low | Tiny | — |
-| A3 | `Feedback.jsx` | FAB offset hardcoded 72px; nav is 58 | `bottom: calc(72px + …)` vs `MOBILE_NAV_HEIGHT` | Derive from `navMetrics` | Low | Tiny | — |
-| A4 | Pinyin, all screens | Fails AA in dark (2.62–2.95:1) | §8.1.1 | Lift pinyin's dark-mode colour to ≥4.5:1 (one shared token, not per screen) | Low | Small | ✓ |
-| A5 | Accent small text, ≥12 screens | Fails AA in dark (2.8–3.3:1) | §8.1.2 | Raise `--ink-lift-pct` for small text, or a second `inkStrong()` for ≤15px | Medium | Small | ✓ |
-| A6 | `Test.jsx` | Three framings of one gate; primary button is "Back home" | §5.9 | One sentence, one number; demote "Back home" to secondary | Low | Small | — |
-| A7 | `utils.js getSystemLabel` | Unknown `system` prints raw DB value into the UI | fixture renders `hsk` | Fall back to `''`/the level label alone | Low | Tiny | — |
+| A1 | `Settings.jsx` `Card` + `Segmented` | Row content clipped 55px off-screen at 320 | measured right edge 375 vs vw 320; text cut mid-word | Let `Segmented` wrap (or scroll) below ~360px; reduce option padding at that width | Low | Small | ✓ | ✅
+| A2 | `Feedback.jsx` | FAB renders above the More sheet modal | FAB z 45 vs sheet z 41; visible in `shots/more-sheet.390.dark.png` | Raise the sheet above the FAB, or hide the FAB while any sheet/overlay is open | Low | Tiny | — | ✅
+| A3 | `Feedback.jsx` | FAB offset hardcoded 72px; nav is 58 | `bottom: calc(72px + …)` vs `MOBILE_NAV_HEIGHT` | Derive from `navMetrics` | Low | Tiny | — | ✅
+| A4 | Pinyin, all screens | Fails AA in dark (2.62–2.95:1) | §8.1.1 | Lift pinyin's dark-mode colour to ≥4.5:1 (one shared token, not per screen) | Low | Small | ✓ | ✅
+| A5 | Accent small text, ≥12 screens | Fails AA in dark (2.8–3.3:1) | §8.1.2 | Raise `--ink-lift-pct` for small text, or a second `inkStrong()` for ≤15px | Medium | Small | ✓ | ✅
+| A6 | `Test.jsx` | Three framings of one gate; primary button is "Back home" | §5.9 | One sentence, one number; demote "Back home" to secondary | Low | Small | — | ⏳ not started (not a defect — deferred with B)
+| A7 | `utils.js getSystemLabel` | Unknown `system` prints raw DB value into the UI | fixture renders `hsk` | Fall back to `''`/the level label alone | Low | Tiny | — | ✅
 
 ### P10-B — High-impact polish
 
@@ -673,7 +683,42 @@ unit + Playwright green and a before/after render at 320/390 in both themes.
 
 ---
 
-## 13. What must be fixed before the next TestFlight build
+## 13. What must be fixed before the next TestFlight build — ✅ DONE
+
+**Shipped in `263c71b` + `795de4d`.** Measured outcomes:
+
+| Item | Before | After |
+|---|---|---|
+| A1 Settings at 320 | content column right edge **375px** on a 320 viewport, text cut mid-word | every meaningful rect inside the viewport at 320/390/430, both themes; segmented options ≥44px |
+| A2 FAB vs the More sheet | rendered at z-45 **above** the z-41 dialog | not rendered while any sheet is open; a spec asserts nothing fixed outranks the dialog |
+| A3 FAB offset | hardcoded `72px` | `MOBILE_NAV_HEIGHT + 14`, asserted at three widths |
+| A4 pinyin, dark | 2.62–2.95:1 | **5.1–6.0:1** |
+| A5 small accent text, dark | 2.82–3.49:1 | **≥4.5:1**, or muted where the accent was decoration |
+| A7 unknown system | prints the raw enum (`hsk · HSK 2`) | `''` + a `metaLine()` composer; no dangling separators |
+
+Three hardcoded light-mode colours found by the new assertions and fixed in
+passing (all byte-identical in light, all previously wrong in dark): the More
+sheet's "Log out" 3.49:1, Profile's five destructive labels 2.84–3.49:1, and
+Words' "New" pill 3.22:1.
+
+### Still below AA, deliberately deferred — with numbers
+
+Printed by `tests/e2e/contrast-legibility.spec.js` on every run:
+
+- status colours: "Learned" blue **3.02:1**, "Learning"/"missed N×" amber
+  **2.57–4.02:1**, "Review weak words" **3.05:1** → B8 + a palette decision
+- grade colours: "Hard" **3.51:1**, "Good" **4.4:1** (light) → Study's design
+- `--text-muted` in light on `--surface-2`: **4.4:1** vs 4.5 — the token's own
+  2% miss, on achievement titles, "REVIEW", interval hints, recap stats
+- `--danger` in light on `--danger-bg`: **4.41:1** — pre-existing; dark was the
+  failing side and is fixed
+
+The last two are one global token change each, with app-wide reach and a device
+round of their own.
+
+---
+
+## 13b. The original list, for the record
 
 - **A1** — Settings clipped at 320 (broken)
 - **A2, A3** — the FAB above modals, and its stale offset
@@ -701,3 +746,37 @@ else is quality, and quality can iterate across builds.
 - **Screenshots:** `<P10_OUT>/shots/` — 120 files at 320 and 390, both themes
 - **Not committed:** the JSON and PNGs are regenerable in ~4 minutes and would
   add ~40MB to the repo. Re-run the probe rather than trusting a stale copy.
+
+
+---
+
+## 15. Owner decisions taken (2026-08-11)
+
+Both were asked for by this audit and are now settled. **Neither is implemented
+yet** — they are constraints on the work when it happens.
+
+### Profile achievements — REMOVE
+
+When the Profile redesign happens (B2), the achievement/badge wall goes. It is
+not to be replaced by streaks, XP, trophies, another badge grid, or locked
+achievement cards. Hanzi Dojo communicates real learning progress, not
+gamification pressure.
+
+What may remain: words learned, words mastered, current HSK level, recent
+activity.
+
+### Sage green — ONE semantic role, or gone
+
+**Coral is the one primary-action colour.** Sage green is not a second brand or
+CTA colour. If it survives at all it has exactly one declared role —
+**positive / successful / completed** — behind one token.
+
+It must not be used for: "Start reading", primary navigation, primary CTAs,
+arbitrary empty-state buttons, or generic emphasis.
+
+At B1/C5, migrate the inappropriate uses to coral or to semantic neutrals. **If
+there are too few legitimate semantic-success uses to justify the colour, remove
+it rather than inventing a role for it.** The audit found 8 hand-declared copies
+and no legitimate success semantics among them — the Reader's "Start reading",
+NotFound's CTA, the empty-state "Exit" buttons and the feedback FAB are all
+primary or navigational, so the likely outcome is removal.

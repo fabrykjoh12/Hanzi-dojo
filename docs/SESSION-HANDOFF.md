@@ -217,9 +217,23 @@ selected tab, and at 6.1 of 255 against 19 it no longer does.
 
 ## The current phase: P10 — app-wide visual system
 
-P8 and P9 are closed. The active work is **P10: making every screen look like
-one deliberately designed app**, starting with an audit rather than a redesign —
-[`docs/P10-VISUAL-AUDIT.md`](P10-VISUAL-AUDIT.md).
+P8 and P9 are closed. The active work is **P10: making every screen look like one
+deliberately designed app**. It began with an audit rather than a redesign —
+[`docs/P10-VISUAL-AUDIT.md`](P10-VISUAL-AUDIT.md), approved at `86581af` — and
+its release blockers (P10-A) have shipped:
+
+- **`263c71b`** — Settings was clipped 55px off the right edge at 320px; the
+  feedback button rendered above a modal sheet and offset itself from a stale
+  72px; an unrecognised curriculum enum printed itself into screen headers.
+- **`795de4d`** — pinyin measured 2.62–2.95:1 in dark mode and small accent text
+  2.8–3.5:1, both below AA. Two named treatments (`pinyinInk`, `inkStrong`) now
+  exist and are 0% in light, so the light theme is byte-identical.
+
+**Nothing from P10-B, C or D has been started**, and two owner decisions are
+recorded for when it is: Profile's achievement wall is to be **removed** (not
+replaced with any other badge/streak/XP mechanic), and sage green gets exactly
+one semantic role — positive/successful/completed, behind one token — or is
+removed. Coral is the one primary-action colour. See the audit's §15.
 
 ---
 
@@ -271,9 +285,10 @@ CLAUDE.md §1 — never propose, plan, estimate, fix or mention them.
 After the Cards-emphasis pass, all run locally and green:
 
 - `npm run lint` — **0 errors**, 7 warnings (unchanged long-standing baseline)
-- `npm test` — **3,790 unit tests across 178 files**, all passing
+- `npm test` — **3,819 unit tests across 179 files**, all passing
 - `npm run build` — clean
-- `npx playwright test` — **318 passing, 2 failing** (the two below)
+- `npx playwright test` — **368 passing, 2 failing** (the two below)
+- `npm run cap:sync` — clean
 
 The visual baseline `stories-shelf-mobile` contains the bar and was re-compared
 rather than re-recorded: the icon changes are well inside the 2% diff ratio, so
