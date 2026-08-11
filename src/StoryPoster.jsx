@@ -1,17 +1,19 @@
 import { useState } from 'react'
-import { BookImage, CheckCircle2, Lock } from 'lucide-react'
+import { CheckCircle2, Lock } from 'lucide-react'
 import StoryCover from './StoryCover'
+import { NUM } from './designTokens'
 
 // The library's vertical poster card — one per series or standalone story.
 // The artwork carries the card: a 2:3 cover, a two-line title, and ONE quiet
 // meta line. Everything richer (description, chapter list, progress detail)
 // belongs on the series page, not here.
 //
-// Overlays are deliberately few: a read check, a small Manhua tag so the two
-// reading formats never blur together, the "% known" chip the shelf sort is
-// felt through, a thin progress sliver for a started series, and the calm
-// lock. Locked posters stay focusable (aria-disabled + no-op click) so the
-// unlock requirement is reachable — same pattern the old cards used.
+// Overlays are three, and each one is a STATE the artwork cannot say by itself:
+// a read check, a thin progress sliver for a started series, and the calm lock.
+// The two that were LABELS — a "Manhua" tag and a "% known" chip — moved into the
+// meta row under the title, where they are text rather than capsules floating
+// over the illustration (P10-C1). Locked posters stay focusable (aria-disabled +
+// no-op click) so the unlock requirement is reachable.
 
 function PosterLock() {
   return (
@@ -33,7 +35,7 @@ function PosterLock() {
 export default function StoryPoster({
   story, title, metaLine, accentHex, fontFamily,
   read = false, locked = false, lockLabel = null,
-  manhua = false, practice = false, knownPct = null,
+  knownPct = null,
   progress = null, // { readCount, total } for a started series
   onClick, ariaLabel,
 }) {
@@ -78,30 +80,6 @@ export default function StoryPoster({
             <CheckCircle2 size={14} strokeWidth={2.4} color="#fff" />
           </div>
         )}
-        {(manhua || practice) && (
-          <div style={{
-            position: 'absolute', top: '8px', left: '8px', display: 'flex', alignItems: 'center', gap: '4px',
-            fontSize: '10px', fontWeight: 800, letterSpacing: '0.04em', color: '#fff',
-            background: 'rgba(24,24,27,0.6)', borderRadius: '999px', padding: '4px 8px', zIndex: 1,
-          }}>
-            {manhua && <BookImage size={11} strokeWidth={2.4} color="#fff" aria-hidden="true" />}
-            {manhua ? 'Manhua' : 'Practice'}
-          </div>
-        )}
-        {!locked && knownPct != null && (
-          <div style={{
-            position: 'absolute', bottom: started ? '11px' : '8px', left: '8px',
-            display: 'flex', alignItems: 'center', gap: '5px',
-            fontSize: '10px', fontWeight: 800, color: '#fff',
-            background: 'rgba(24,24,27,0.62)', borderRadius: '999px', padding: '3px 8px', zIndex: 1,
-          }}>
-            <span aria-hidden="true" style={{
-              width: '6px', height: '6px', borderRadius: '50%',
-              background: knownPct >= 95 ? '#2F9E6D' : knownPct >= 85 ? '#7BA05B' : '#CA8A04',
-            }} />
-            {knownPct}% known
-          </div>
-        )}
         {started && !done && (
           <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '4px', background: 'rgba(24,24,27,0.35)', zIndex: 1 }}>
             <div style={{ width: pct + '%', height: '100%', background: accentHex }} />
@@ -116,8 +94,23 @@ export default function StoryPoster({
       }}>
         {title}
       </div>
+      {/* The reading share, on its own line under the title.
+          It was a capsule floating over the artwork, and the format was a second
+          one — two of the twenty-three overlays this screen was drawing (P10-C1).
+          This is the number the shelf's whole sort is felt through, so it gets a
+          line rather than a share of one: folded into the meta row it pushed
+          "Manhua" past the ellipsis on a 148px card. Full-strength text, not
+          reversed out of a dark pill. */}
+      {!locked && knownPct != null && (
+        <div style={{
+          marginTop: '4px', fontSize: '11.5px', fontWeight: 750, width: '100%',
+          color: 'var(--text)', ...NUM,
+        }}>
+          {knownPct}% known
+        </div>
+      )}
       <div style={{
-        marginTop: '3px', fontSize: '11.5px', fontWeight: 650, width: '100%',
+        marginTop: '2px', fontSize: '11.5px', fontWeight: 650, width: '100%',
         color: locked ? 'var(--text-muted)' : done ? 'var(--success)' : 'var(--text-muted)',
         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
       }}>

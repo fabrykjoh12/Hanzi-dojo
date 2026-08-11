@@ -6,7 +6,7 @@ import { tiersFor, readingGateCount } from './storyTiers'
 import { useIsMobile } from './useIsMobile'
 import { todayStr } from './streak'
 import { pickDailyStory } from './dailyStory'
-import { formatLabel } from './storyFormat'
+import { distinctiveFormatLabel } from './storyFormat'
 import { chapterInfo, readingMinutes } from './storyChapters'
 import { claimStoryReward } from './storyRewardData'
 import StoryCover from './StoryCover'
@@ -226,7 +226,9 @@ function StoriesHero({ hero, accentHex, fontFamily, isMobile, levelLabelOf }) {
               </div>
             )}
             <div style={{ marginTop: '10px', color: 'rgba(255,255,255,0.64)', fontSize: '12px', fontWeight: 700 }}>
-              {hero.metaStory ? levelLabelOf(hero.metaStory) + ' · ' + formatLabel(hero.metaStory) : hero.meta}
+              {hero.metaStory
+                ? metaLine(levelLabelOf(hero.metaStory), distinctiveFormatLabel(hero.metaStory))
+                : hero.meta}
             </div>
             <HeroAction label={hero.actionLabel} hovered={hovered} icon={hero.actionIcon || ArrowRight} accentHex={accentHex} />
           </div>
@@ -457,22 +459,23 @@ export default function Stories({ onNavigate, onOpenStory, onOpenSeries }) {
     const series = unit.parts.length > 1
     const first = unit.parts[0]
     const minutes = !series ? readingMinutes(first) : null
-    const metaLine = series
-      ? [levelLabelFor(first), unit.total + ' chapters'].join(' · ')
-      : [levelLabelFor(first), formatLabel(first), minutes ? minutes + ' min' : null].filter(Boolean).join(' · ')
+    const meta = series
+      ? [levelLabelFor(first), distinctiveFormatLabel(first), unit.total + ' chapters']
+        .filter(Boolean).join(' · ')
+      : [levelLabelFor(first), distinctiveFormatLabel(first), minutes ? minutes + ' min' : null]
+        .filter(Boolean).join(' · ')
         + (unit.readCount > 0 ? ' · Read' : '')
     return (
       <div key={section.level + '-' + unit.key} style={posterItemStyle(isMobile)}>
         <StoryPoster
           story={first}
           title={unit.title}
-          metaLine={metaLine}
+          metaLine={meta}
           accentHex={accentHex}
           fontFamily={fontFamily}
           read={!series && unit.readCount > 0}
           locked={unit.locked}
           lockLabel={lockLabel}
-          manhua={isManhuaUnit(unit)}
           knownPct={unit.knownPct}
           progress={series ? { readCount: unit.readCount, total: unit.total } : null}
           onClick={() => openUnit(unit)}
@@ -558,10 +561,10 @@ export default function Stories({ onNavigate, onOpenStory, onOpenSeries }) {
                       <StoryPoster
                         story={story}
                         title={story.title}
-                        metaLine={[levelLabelFor(story), 'Practice'].join(' · ') + (readIds.has(story.id) ? ' · Read' : '')}
+                        metaLine={[levelLabelFor(story), distinctiveFormatLabel(story) || 'Practice']
+                          .join(' · ') + (readIds.has(story.id) ? ' · Read' : '')}
                         accentHex={accentHex}
                         fontFamily={fontFamily}
-                        practice
                         read={readIds.has(story.id)}
                         onClick={() => openStory(story)}
                       />

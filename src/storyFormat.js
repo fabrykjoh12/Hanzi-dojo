@@ -42,3 +42,18 @@ export function formatLabel(story) {
   if (p === 'scene') return 'Scene'
   return 'Story'
 }
+
+// The default format, said out loud, is noise.
+//
+// Every prose card was carrying a "Story" tag in its meta row and, if it was a
+// manhua or a practice scenario, a capsule over the artwork saying so as well —
+// the format was announced twice on the cards where it differs and once on the
+// cards where it does not (P10-C1). Format metadata is worth showing exactly
+// when it tells the reader this item is not the usual thing.
+export const DEFAULT_FORMAT_LABEL = 'Story'
+
+export function distinctiveFormatLabel(story) {
+  const label = formatLabel(story)
+  return label === DEFAULT_FORMAT_LABEL ? '' : label
+}
+

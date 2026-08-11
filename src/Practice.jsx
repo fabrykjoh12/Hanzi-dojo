@@ -126,13 +126,12 @@ export default function Practice({ profile, track, counts, onNavigate }) {
               </p>
               <HeroAction label={primary.cta} hovered={hovered} icon={ArrowRight} accentHex={accentHex} />
             </div>
-            <span aria-hidden style={{
-              flexShrink: 0, width: '44px', height: '44px', borderRadius: '14px',
-              background: 'rgba(255,255,255,0.13)', border: '1px solid rgba(255,255,255,0.22)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <PrimaryIcon size={22} strokeWidth={1.85} color="#fff" />
-            </span>
+            {/* The mode's mark. It wore a 44px tinted square with its own
+                border — a box drawn around a decoration, on the one panel that
+                is already the most saturated object on the screen (P10-C1). The
+                icon says the same thing without it. */}
+            <PrimaryIcon aria-hidden size={26} strokeWidth={1.7} color="rgba(255,255,255,0.82)"
+              style={{ flexShrink: 0, marginTop: '2px' }} />
           </div>
         )}
       </HeroPanel>
@@ -223,14 +222,11 @@ function LevelTestRow({ entry, levelLabel, nextLevelLabel, accentHex, onClick })
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '13px' }}>
-        <span style={{
-          width: '34px', height: '34px', borderRadius: '10px', flexShrink: 0,
-          background: open ? tint(accentHex, 11) : 'var(--surface-2)',
-          border: '1px solid ' + (open ? tintBorder(accentHex, 26) : 'var(--border)'),
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Icon size={17} strokeWidth={1.85} color={open ? ink(accentHex) : color} />
-        </span>
+        {/* Locked or open is carried by the icon — a padlock or a clipboard —
+            and by its colour. The 34px tinted square around it was the last of
+            the sixteen on this screen, and one left behind reads as an
+            oversight rather than a system (P10-C1). */}
+        <Icon size={19} strokeWidth={1.8} color={open ? ink(accentHex) : color} style={{ flexShrink: 0 }} />
         <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
           <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
             {levelLabel} test
@@ -290,13 +286,11 @@ function DrillTile({ item, accentHex, onClick }) {
         display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '112px',
       }}
     >
-      <span style={{
-        width: '36px', height: '36px', borderRadius: '11px',
-        background: tint(color, 11), border: '1px solid ' + tintBorder(color, 26),
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <Icon size={19} strokeWidth={1.85} color={ink(color)} />
-      </span>
+      {/* The icon belongs to the tile, not to a box inside it. This was a 36px
+          tinted rounded square with its own border — eight of them in a grid,
+          the most template-looking pattern in the app (P10-C1). The colour is
+          still intentional; the container is gone. */}
+      <Icon size={22} strokeWidth={1.8} color={ink(color)} style={{ flexShrink: 0 }} />
       <span style={{ display: 'block' }}>
         <span style={{ display: 'block', fontSize: '14.5px', fontWeight: 700, color: 'var(--text)', lineHeight: 1.25 }}>
           {item.title}
@@ -335,13 +329,10 @@ function ToolRow({ tool, accentHex, first, onClick }) {
         fontFamily: 'Inter, sans-serif', transition: 'background 140ms ease',
       }}
     >
-      <span style={{
-        width: '34px', height: '34px', borderRadius: '10px', flexShrink: 0,
-        background: tint(accentHex, 9), border: '1px solid ' + tintBorder(accentHex, 20),
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <Icon size={17} strokeWidth={1.85} color={ink(accentHex)} />
-      </span>
+      {/* Same rule as the tiles: the icon marks the row, a 34px tinted square
+          around it marks nothing (P10-C1). This is the pattern Profile's control
+          rows already use. */}
+      <Icon size={18} strokeWidth={1.8} color={ink(accentHex)} style={{ flexShrink: 0 }} />
       <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
         <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>{tool.title}</span>
         <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.35 }}>{tool.desc}</span>

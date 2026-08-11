@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isPracticeFormat, formatEmoji, formatLabel } from './storyFormat'
+import { isPracticeFormat, formatEmoji, formatLabel, distinctiveFormatLabel, DEFAULT_FORMAT_LABEL } from './storyFormat'
 
 describe('isPracticeFormat', () => {
   it('is false for a plain paced/narrative story', () => {
@@ -41,3 +41,28 @@ describe('the legacy manga tag', () => {
     expect(formatLabel({ presentation: 'manga' })).toBe('Manhua')
   })
 })
+
+describe('distinctiveFormatLabel', () => {
+  it('says nothing about the default format', () => {
+    // A prose story is what a story is. "HSK 2 · Story · 4 min" spent a third of
+    // the line saying so on every card in the library.
+    expect(distinctiveFormatLabel({ presentation: 'prose' })).toBe('')
+    expect(distinctiveFormatLabel({})).toBe('')
+    expect(distinctiveFormatLabel(null)).toBe('')
+    expect(DEFAULT_FORMAT_LABEL).toBe('Story')
+  })
+
+  it('names a format that genuinely reads differently', () => {
+    expect(distinctiveFormatLabel({ presentation: 'manhua' })).toBe('Manhua')
+    expect(distinctiveFormatLabel({ presentation: 'chat' })).toBe('Chat')
+    expect(distinctiveFormatLabel({ presentation: 'scene' })).toBe('Scene')
+    expect(distinctiveFormatLabel({ presentation: 'prose', interactions: [1] })).toBe('Reply')
+  })
+
+  it('agrees with formatLabel wherever it says anything at all', () => {
+    for (const story of [{ presentation: 'manhua' }, { presentation: 'chat' }, { presentation: 'scene' }]) {
+      expect(distinctiveFormatLabel(story)).toBe(formatLabel(story))
+    }
+  })
+})
+

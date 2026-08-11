@@ -99,15 +99,42 @@ test.describe('Story library — poster shelves', () => {
     await expect(page.getByRole('button', { name: 'Back', exact: true })).toHaveCount(0);
   });
 
-  test('cards carry a "% known" chip (the sort the shelf is built on)', async ({ page }) => {
+  // P10-C1: this was a capsule floating over the artwork. It is the signal the
+  // shelf's whole sort is felt through, so it kept its prominence and lost its
+  // pill — it is now a line of full-strength text under the title.
+  test('cards say what share of the words the reader knows', async ({ page }) => {
     await page.goto('/stories');
     await expect(page.getByText(/% known/).first()).toBeVisible();
+    // Not reversed out of a dark capsule over the illustration any more.
+    const pills = await page.evaluate(() => Array.from(
+      document.querySelectorAll('#main-content *'))
+      .filter((el) => (el.textContent || '').indexOf('% known') !== -1)
+      .filter((el) => el.children.length === 0)
+      .map((el) => {
+        const cs = getComputedStyle(el);
+        return { radius: parseFloat(cs.borderTopLeftRadius) || 0, pos: cs.position };
+      }));
+    for (const p of pills) {
+      expect(p.radius).toBeLessThan(6);
+      expect(p.pos).not.toBe('absolute');
+    }
   });
 
   test('practice formats sit in their own section', async ({ page }) => {
     await page.goto('/stories');
     await expect(page.getByRole('heading', { name: 'Practice through stories' })).toBeVisible();
-    await expect(page.getByRole('button', { name: /朋友的问题.*Practice/ }).first()).toBeVisible();
+    // The section heading gives the framing; the card names the actual format,
+    // which is more specific than the "Practice" bucket it used to repeat.
+    await expect(page.getByRole('button', { name: /朋友的问题.*Chat/ }).first()).toBeVisible();
+  });
+
+  // The format used to be announced twice on a manhua card — a capsule on the
+  // artwork and a word in the meta row — and once on every prose card, which is
+  // the default and needs no announcement at all (P10-C1).
+  test('names a format only when it is not the usual prose', async ({ page }) => {
+    await page.goto('/stories');
+    await expect(page.getByRole('button', { name: /《末班车》.*Manhua/ }).first()).toBeVisible();
+    await expect(page.getByText(/·\s*Story\s*·/)).toHaveCount(0);
   });
 
   test('manhua get their own discoverable rail', async ({ page }) => {
@@ -168,7 +195,9 @@ test.describe('Story library — poster shelves', () => {
   test('current level has no stories of its own — a lower level still shows', async ({ page }) => {
     await serveStories(page, [LEVEL_1_STORY]);
     await page.goto('/stories');
-    await expect(page.getByRole('button', { name: /老朋友 · HSK 1 · Story/ }).first()).toBeVisible();
+    // "· Story" left the label with the rest of the default-format noise (P10-C1);
+    // the card names its level and its length, and says nothing about being prose.
+    await expect(page.getByRole('button', { name: /老朋友 · HSK 1/ }).first()).toBeVisible();
   });
 
   test('no stories anywhere — a calm empty state, no broken shelf', async ({ page }) => {
@@ -186,7 +215,7 @@ test.describe('Story library — poster shelves', () => {
     // to print that raw value into the eyebrow. It returns '' now and `metaLine`
     // drops the empty part (P10-A7), so the level stands alone.
     await expect(page.getByText(/^HSK 3$/i).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /新的一年 · HSK 3 · Story/ }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /新的一年 · HSK 3/ }).first()).toBeVisible();
     // .first(): the per-day featured pick may double one of these stories
     // (hero + its shelf row) — any visible instance is what's being asserted.
     await expect(page.getByRole('button', { name: /公园里的下午/ }).first()).toBeVisible();
