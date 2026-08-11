@@ -1,4 +1,5 @@
 import { Volume2, VolumeX } from 'lucide-react'
+import { inkStrong } from './languageTheme'
 import { markerCardShadow, markerPillStyle, markerDotStyle } from './cardMarker'
 
 // The flashcard itself, as a component.
@@ -124,7 +125,7 @@ export default function Flashcard({
                   display: 'inline-flex', alignItems: 'center', gap: '7px',
                   height: '40px', padding: '0 14px', borderRadius: '13px',
                   background: accentHex + '10', border: '1px solid ' + accentHex + '2A', cursor: 'pointer',
-                  color: accentHex, fontSize: '13px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+                  color: inkStrong(accentHex), fontSize: '13px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
                   boxShadow: '0 10px 24px rgba(24,24,27,0.07)',
                 }}
                 title="Replay audio"

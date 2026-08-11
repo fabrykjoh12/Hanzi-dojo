@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { fetchPagedSafe } from './supabasePaging'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, getLevels, metaLine} from './utils'
-import { languageList, availableLanguages } from './languageTheme'
+import { languageList, availableLanguages, inkStrong} from './languageTheme'
 import { isMastered } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import { ArrowLeft, ArrowRight, Globe2, Plus, RefreshCw } from 'lucide-react'
@@ -100,7 +100,7 @@ function LanguageCard({ lang, track, prog, levelProgress, isActive, saving, onCl
           </div>
         </div>
         {isActive ? (
-          <span style={pillStyle(lang.accent, lang.accent + '12', lang.accent + '30')}>
+          <span style={pillStyle(inkStrong(lang.accent), lang.accent + '12', lang.accent + '30')}>
             Active
           </span>
         ) : (
@@ -152,7 +152,7 @@ function LanguageCard({ lang, track, prog, levelProgress, isActive, saving, onCl
                     borderRadius: '13px',
                     border: '1.5px solid ' + (current ? lang.accent : 'var(--border)'),
                     background: current ? lang.accent + '10' : 'var(--surface)',
-                    color: current ? lang.accent : (hasContent ? 'var(--text)' : 'var(--text-faint)'),
+                    color: current ? inkStrong(lang.accent) : (hasContent ? 'var(--text)' : 'var(--text-faint)'),
                     cursor: current || saving || !hasContent ? 'default' : 'pointer',
                     fontFamily: 'Inter, sans-serif',
                     textAlign: 'center',
@@ -492,7 +492,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
           }}>
             {lang.flag}
           </div>
-          <div style={{ color: lang.accent, fontSize: '13px', fontWeight: 850, marginBottom: '8px' }}>
+          <div style={{ color: inkStrong(lang.accent), fontSize: '13px', fontWeight: 850, marginBottom: '8px' }}>
             {lang.nativeName}
           </div>
           <h1 style={{ margin: 0, color: 'var(--text)', fontSize: '34px', fontWeight: 850, lineHeight: 1.1 }}>
@@ -516,7 +516,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
                   borderRadius: '16px',
                   border: '1.5px solid ' + (selectedLevel === lvl ? lang.accent : 'var(--border)'),
                   background: selectedLevel === lvl ? lang.accent + '10' : 'var(--surface)',
-                  color: selectedLevel === lvl ? lang.accent : (seeded ? 'var(--text)' : 'var(--text-faint)'),
+                  color: selectedLevel === lvl ? inkStrong(lang.accent) : (seeded ? 'var(--text)' : 'var(--text-faint)'),
                   fontSize: '15px',
                   fontWeight: 800,
                   cursor: seeded ? 'pointer' : 'not-allowed',
@@ -576,7 +576,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
       <AppBar kind="back" onBack={onBack} sticky={false} />
 
       <div style={{ margin: '32px 0 26px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: activeLang.accent, fontSize: '13px', fontWeight: 850, marginBottom: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '13px', fontWeight: 850, marginBottom: '10px' }}>
           <Globe2 size={17} strokeWidth={1.85} color={activeLang.accent} />
           Language tracks
         </div>

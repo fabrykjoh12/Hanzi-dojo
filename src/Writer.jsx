@@ -5,7 +5,7 @@ import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, metaLine} from './utils'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
-import { languageTheme, langAttr } from './languageTheme'
+import { languageTheme, langAttr, pinyinInk, inkStrong} from './languageTheme'
 import { ArrowLeft, Brush, Play, PenLine, Eye, EyeOff } from 'lucide-react'
 
 // One loader for the screen: stroke data comes from the CDN once and is then
@@ -178,7 +178,7 @@ export default function Writer({ profile, track, onBack }) {
 
             {meta && (
               <div style={{ textAlign: 'center', marginTop: '14px' }}>
-                <div style={{ fontSize: '16px', color: accentHex, fontWeight: 650 }}>{meta.reading}</div>
+                <div style={{ fontSize: '16px', color: pinyinInk(accentHex), fontWeight: 650 }}>{meta.reading}</div>
                 <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '2px' }}>{cleanMeaning(meta.meaning)}</div>
               </div>
             )}
@@ -200,7 +200,7 @@ export default function Writer({ profile, track, onBack }) {
       <div style={{ maxWidth: '760px', margin: '0 auto' }}>
         <Ghost onClick={onBack} icon={ArrowLeft} label="Exit" />
         <div style={{ textAlign: 'center', margin: '18px 0 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 750 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(accentHex), fontSize: '13px', fontWeight: 750 }}>
             <Brush size={17} strokeWidth={1.8} color={accentHex} /> Stroke order
           </div>
           <h1 style={{ fontSize: '28px', fontWeight: 780, color: 'var(--text)', marginTop: '8px' }}>Writing practice</h1>

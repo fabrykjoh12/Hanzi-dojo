@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, shuffle, metaLine} from './utils'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
-import { languageTheme, langAttr, UI_LANG } from './languageTheme'
+import { languageTheme, langAttr, UI_LANG, inkStrong} from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { markWordDue } from './practiceSignal'
 import { getSentenceBank } from './sentenceBank'
@@ -213,7 +213,7 @@ export default function SentenceBuilder({ session, profile, track, onBack }) {
             You ordered <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {questions.length} correctly.
           </p>
           <div style={{ padding: '16px 10px', borderRadius: '14px', background: accentHex + '0D', border: '1px solid ' + accentHex + '22', marginBottom: '22px' }}>
-            <div style={{ fontSize: '26px', fontWeight: 760, color: accentHex, lineHeight: 1 }}>{pct}%</div>
+            <div style={{ fontSize: '26px', fontWeight: 760, color: inkStrong(accentHex), lineHeight: 1 }}>{pct}%</div>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -238,7 +238,7 @@ export default function SentenceBuilder({ session, profile, track, onBack }) {
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 750 }}>
+          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(accentHex), fontSize: '13px', fontWeight: 750 }}>
             <Blocks size={17} strokeWidth={1.8} color={accentHex} aria-hidden="true" /> Build the sentence
           </h1>
           <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>{metaLine(systemLabel, levelLabel)}</div>

@@ -15,7 +15,7 @@ import { useIsMobile } from './useIsMobile'
 import { useViewportHeight } from './useViewportHeight'
 import { useReadingFont } from './useReadingFont'
 import { useTutorialAudio } from './useTutorialAudio'
-import { languageTheme, ink } from './languageTheme'
+import { languageTheme, ink, pinyinInk} from './languageTheme'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 import { tapFeedback, successFeedback } from './haptics'
 import { prefersReducedMotion } from './splashIntro'
@@ -249,7 +249,7 @@ export default function Tutorial({ onComplete, resumable = true, finishLabel = n
           charFont={charFont}
           wordLabel={'Chinese flashcard — tap to reveal the answer'}
           reading={v.revealed ? v.card.reading : null}
-          readingColor={theme.accentVar}
+          readingColor={pinyinInk(theme.accentVar)}
           meaning={v.card.meaning}
           accentHex={accentHex}
           audioUrl={audio.url}

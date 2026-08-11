@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getLevelLabel, getSystemLabel, metaLine} from './utils'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
-import { languageTheme, langAttr } from './languageTheme'
+import { languageTheme, langAttr, inkStrong} from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { grammarFor } from './grammarGuides'
 import { drillsFor } from './grammarDrills'
@@ -119,7 +119,7 @@ export default function GrammarPractice({ session, profile, track, onBack }) {
             You got <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {queue.length} right. Each is scheduled to return right before you’d forget.
           </p>
           <div style={{ padding: '16px 10px', borderRadius: '14px', background: accentHex + '0D', border: '1px solid ' + accentHex + '22', marginBottom: '22px' }}>
-            <div style={{ fontSize: '26px', fontWeight: 760, color: accentHex, lineHeight: 1 }}>{pct}%</div>
+            <div style={{ fontSize: '26px', fontWeight: 760, color: inkStrong(accentHex), lineHeight: 1 }}>{pct}%</div>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
           </div>
           <PrimaryButton onClick={onBack} icon={ArrowLeft}>Exit</PrimaryButton>
@@ -141,7 +141,7 @@ export default function GrammarPractice({ session, profile, track, onBack }) {
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 750 }}>
+          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(accentHex), fontSize: '13px', fontWeight: 750 }}>
             <GraduationCap size={17} strokeWidth={1.8} color={accentHex} aria-hidden="true" /> Grammar review
           </h1>
           <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>

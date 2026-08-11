@@ -139,3 +139,48 @@ export const UI_LANG = 'en'
 export function ink(hex) {
   return `color-mix(in srgb, ${hex}, var(--ink-lift) var(--ink-lift-pct))`
 }
+
+// Pinyin — and any reading printed beside a character (P10-A4).
+//
+// This is the most-read secondary text in the product and it was being drawn in
+// the RAW accent: measured 2.95:1 on `--surface` and **2.62:1** on `--surface-2`
+// in dark mode, against a 4.5:1 bar. Not one of the failing sites used `ink()` —
+// they all reached for `accentHex` directly, so the accent-as-ink rule was never
+// the problem, its adoption was.
+//
+// A treatment of its own rather than plain `ink()`, for two reasons: a reading is
+// content (a label can be muted; a reading has to be read), and it wants more
+// lift than a mark does — `--ink-lift-pct` at 30% clears 4.5:1 on `--surface` but
+// only just clears it on `--surface-2`, which is exactly where Profile's readings
+// sit. 38% holds ≥5:1 on every flat surface in the app.
+//
+// A no-op in light mode (`--pinyin-lift-pct: 0%`), where the raw accent already
+// measures 5.78:1 on white — so nothing about the light theme changes, to the
+// byte.
+//
+// It stays well below `--text`, so the hierarchy the flashcard depends on —
+// hanzi, then pinyin, then meaning — is untouched. This makes the reading
+// legible, not louder.
+export function pinyinInk(hex) {
+  return `color-mix(in srgb, ${hex}, var(--ink-lift) var(--pinyin-lift-pct))`
+}
+
+// Small accent text that has to be read (P10-A5).
+//
+// `ink()` is tuned for a drawn mark — an icon, a rule, a filled glyph — where
+// 30% of lift is plenty. At 11–14px the same colour lands at 2.8–3.3:1 on the
+// app's dark surfaces, so every accent EYEBROW, pill and selected-option label
+// failed AA.
+//
+// Deliberately a separate, explicitly-called helper rather than a bump to
+// `--ink-lift-pct`: raising that would brighten every accent mark in the app,
+// including the large ones and the filled glyphs that are correct today. Nothing
+// here infers a treatment from a font size at runtime — the caller says which
+// it means.
+//
+// Before reaching for this, ask whether the text deserves the accent at all. A
+// section eyebrow usually wants `--text-muted`; the accent should mean "this one,
+// here" — a selected option, an active state, an action.
+export function inkStrong(hex) {
+  return `color-mix(in srgb, ${hex}, var(--ink-lift) var(--ink-strong-pct))`
+}

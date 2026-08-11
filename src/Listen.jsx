@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl, metaLine} from './utils'
 import { PrimaryButton, SecondaryButton } from './ui'
-import { languageTheme, langAttr, UI_LANG } from './languageTheme'
+import { languageTheme, langAttr, UI_LANG, pinyinInk, inkStrong} from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import { markWordDue } from './practiceSignal'
@@ -166,7 +166,7 @@ export default function Listen({ session, profile, track, onBack }) {
               You matched <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {questions.length} by ear.
             </p>
             <div style={{ padding: '16px 10px', borderRadius: '14px', background: accentHex + '0D', border: '1px solid ' + accentHex + '22', marginBottom: '22px' }}>
-              <div style={{ fontSize: '26px', fontWeight: 760, color: accentHex, lineHeight: 1 }}>{pct}%</div>
+              <div style={{ fontSize: '26px', fontWeight: 760, color: inkStrong(accentHex), lineHeight: 1 }}>{pct}%</div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -192,7 +192,7 @@ export default function Listen({ session, profile, track, onBack }) {
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 750 }}>
+          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(accentHex), fontSize: '13px', fontWeight: 750 }}>
             <Headphones size={17} strokeWidth={1.8} color={accentHex} aria-hidden="true" />
             Listening
           </h1>
@@ -288,7 +288,7 @@ export default function Listen({ session, profile, track, onBack }) {
                 background: 'var(--surface-2)', border: '1px solid var(--border)',
               }}>
                 <span style={{ fontSize: '20px', fontFamily: langFont, color: 'var(--text)', fontWeight: 500 }}>{q.correct.word}</span>
-                <span style={{ fontSize: '14px', color: accentHex, marginLeft: '10px', fontWeight: 600 }}>{q.correct.reading}</span>
+                <span style={{ fontSize: '14px', color: pinyinInk(accentHex), marginLeft: '10px', fontWeight: 600 }}>{q.correct.reading}</span>
                 <div lang={UI_LANG} style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px' }}>{cleanMeaning(q.correct.meaning)}</div>
               </div>
               <PrimaryButton onClick={next} icon={Sparkles}>

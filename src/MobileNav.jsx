@@ -184,8 +184,13 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
               const Icon = item.icon
               const active = view === item.key
               const danger = item.key === 'logout'
-              const tint = danger ? '#DC2626' : accentHex
-              const tintInk = danger ? '#DC2626' : accentInk
+              // `var(--danger)` rather than the literal, which was a
+              // LIGHT-mode red shipping into dark mode: #DC2626 on the dark
+              // sheet measured 3.49:1 (P10-A5). The token is #DC2626 in light —
+              // so light is byte-identical — and #F87171 in dark, at 6.1:1.
+              // A colour correction, not a change to the bar's design.
+              const tint = danger ? 'var(--danger)' : accentHex
+              const tintInk = danger ? 'var(--danger)' : accentInk
               return (
                 <button
                   key={item.key}
@@ -197,7 +202,7 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
                     background: active ? `color-mix(in srgb, ${tint} 11%, var(--surface))` : 'none',
                     display: 'flex', alignItems: 'center', gap: '14px',
                     padding: '13px 14px', borderRadius: '12px',
-                    color: danger ? '#DC2626' : (active ? tintInk : 'var(--text)'),
+                    color: danger ? 'var(--danger)' : (active ? tintInk : 'var(--text)'),
                     fontSize: '15px', fontWeight: active ? 650 : 500, textAlign: 'left',
                     animationDelay: `${40 + i * 22}ms`,
                   }}
@@ -208,7 +213,7 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
                       width: '3px', borderRadius: '0 3px 3px 0', background: tintInk,
                     }} />
                   )}
-                  <Icon size={20} strokeWidth={active ? 2.1 : 1.85} color={danger ? '#DC2626' : (active ? tintInk : MUTED)} />
+                  <Icon size={20} strokeWidth={active ? 2.1 : 1.85} color={danger ? 'var(--danger)' : (active ? tintInk : MUTED)} />
                   {item.label}
                 </button>
               )

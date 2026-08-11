@@ -129,6 +129,12 @@ body {
      values — a no-op in light, a lift toward white in dark. */
   --ink-lift: #FFFFFF;
   --ink-lift-pct: 0%;
+  /* Pinyin, and small accent text that has to be read (P10-A4/A5). Both are
+     no-ops here: the raw accent measures 5.78:1 on white, so the light theme is
+     byte-identical to before. See `pinyinInk` / `inkStrong` in
+     languageTheme.js for why they are separate from `--ink-lift-pct`. */
+  --pinyin-lift-pct: 0%;
+  --ink-strong-pct: 0%;
 
   /* Watermark strength for the sidebar's language character. The accents are
      saturated reds/blues tuned for white paper, so the same alpha that reads as
@@ -338,6 +344,12 @@ body {
   --hairline: rgba(255, 255, 255, 0.045);
   --ink-lift: #FFFFFF;
   --ink-lift-pct: 30%;
+  /* 30% is tuned for a drawn mark and lands small accent TEXT at 2.8-3.3:1.
+     Pinyin was worse still, because it was drawn in the raw accent: 2.62:1 on
+     --surface-2. These two lifts are what carry those to AA — measured, both
+     themes, in tests/e2e/contrast-legibility.spec.js. */
+  --pinyin-lift-pct: 38%;
+  --ink-strong-pct: 40%;
   --watermark-pct: 8%;
   /* The card's status band, reported from a device as the last light-mode
      treatment surviving inside the dark card: a full-width cream bar across

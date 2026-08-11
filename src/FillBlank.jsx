@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, metaLine} from './utils'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
-import { languageTheme, langAttr, UI_LANG } from './languageTheme'
+import { languageTheme, langAttr, UI_LANG, pinyinInk, inkStrong} from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import { markWordDue } from './practiceSignal'
@@ -120,7 +120,7 @@ export default function FillBlank({ session, profile, track, onBack, pool = null
             You filled <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {questions.length} correctly.
           </p>
           <div style={{ padding: '16px 10px', borderRadius: '14px', background: accentHex + '0D', border: '1px solid ' + accentHex + '22', marginBottom: '22px' }}>
-            <div style={{ fontSize: '26px', fontWeight: 760, color: accentHex, lineHeight: 1 }}>{pct}%</div>
+            <div style={{ fontSize: '26px', fontWeight: 760, color: inkStrong(accentHex), lineHeight: 1 }}>{pct}%</div>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -143,7 +143,7 @@ export default function FillBlank({ session, profile, track, onBack, pool = null
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: accentHex, fontSize: '13px', fontWeight: 750 }}>
+          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(accentHex), fontSize: '13px', fontWeight: 750 }}>
             <AlignLeft size={17} strokeWidth={1.8} color={accentHex} aria-hidden="true" /> Fill in the blank
           </h1>
           <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>{metaLine(systemLabel, levelLabel)}</div>
@@ -222,7 +222,7 @@ export default function FillBlank({ session, profile, track, onBack, pool = null
               <span style={srOnly}>{picked === q.vocab.id ? 'Correct.' : 'Incorrect.'}</span>
               <div lang={langAttr(track.language)} style={{ padding: '14px 18px', borderRadius: '14px', textAlign: 'center', marginBottom: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
                 <span style={{ fontSize: '20px', fontFamily: langFont, color: 'var(--text)' }}>{q.vocab.word}</span>
-                <span style={{ fontSize: '14px', color: accentHex, marginLeft: '10px', fontWeight: 600 }}>{q.vocab.reading}</span>
+                <span style={{ fontSize: '14px', color: pinyinInk(accentHex), marginLeft: '10px', fontWeight: 600 }}>{q.vocab.reading}</span>
                 <div lang={UI_LANG} style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px' }}>{cleanMeaning(q.vocab.meaning)}</div>
               </div>
               <PrimaryButton onClick={next} icon={Sparkles}>{idx + 1 >= questions.length ? 'See results' : 'Next'}</PrimaryButton>

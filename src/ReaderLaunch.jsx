@@ -1,4 +1,5 @@
 import { ArrowLeft, Play } from 'lucide-react'
+import { inkStrong } from './languageTheme'
 
 const SAGE = '#6E8466'
 const ghost = { background: 'none', border: 'none', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center' }
@@ -21,7 +22,7 @@ function ReadingStyleToggle({ mode, onPick, accent }) {
               style={{
                 flex: 1, border: 'none', cursor: 'pointer', borderRadius: '9px', padding: '10px',
                 fontSize: '13.5px', fontWeight: on ? 800 : 650, fontFamily: 'Inter, sans-serif',
-                background: on ? 'var(--surface)' : 'transparent', color: on ? accent : 'var(--text-muted)',
+                background: on ? 'var(--surface)' : 'transparent', color: on ? inkStrong(accent) : 'var(--text-muted)',
                 boxShadow: on ? '0 1px 6px rgba(24,24,27,0.10)' : 'none', transition: 'background 140ms ease',
               }}>
               {o.label}

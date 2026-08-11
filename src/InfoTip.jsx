@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useId } from 'react'
+import { inkStrong } from './languageTheme'
 
 // The button's accessible name comes from the text it reveals, not a hardcoded
 // question — this tip explains more than one thing (Profile and Test both use
@@ -68,7 +69,7 @@ export default function InfoTip({ accentHex, text }) {
           borderRadius: '50%',
           border: '1.5px solid ' + (accentHex || 'var(--text-muted)') + '66',
           background: pos ? (accentHex || 'var(--text-muted)') + '18' : 'transparent',
-          color: accentHex || 'var(--text-muted)',
+          color: accentHex ? inkStrong(accentHex) : 'var(--text-muted)',
           fontSize: '11px', fontWeight: 700,
           cursor: 'pointer', lineHeight: '15px',
           padding: 0, display: 'inline-flex',

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, metaLine} from './utils'
-import { languageTheme } from './languageTheme'
+import { languageTheme, inkStrong} from './languageTheme'
 import { isWritingMatch, normalizeRomaji, hasKanji } from './writingMatch'
 import { useIsMobile } from './useIsMobile'
 import { toRomaji } from 'wanakana'
@@ -550,7 +550,7 @@ export default function Writing({ session, track, onBack }) {
 
         <div style={{ margin: '32px 0 24px', textAlign: 'center' }}>
           <StateIcon icon={PenLine} accentHex={accentHex} />
-          <div style={{ color: accentHex, fontSize: '13px', fontWeight: 800, marginTop: '18px' }}>
+          <div style={{ color: inkStrong(accentHex), fontSize: '13px', fontWeight: 800, marginTop: '18px' }}>
             {languageName} active recall
           </div>
           <h1 style={{ ...titleStyle, fontSize: '32px' }}>Writing practice</h1>
@@ -817,7 +817,7 @@ function ModeButton({ active, accentHex, title, detail, onClick }) {
   return (
     <button onClick={onClick} aria-pressed={active} style={modeButtonStyle(active, accentHex)}>
       <div style={{ fontSize: '15px', fontWeight: 850 }}>{title}</div>
-      <div style={{ fontSize: '11px', color: active ? accentHex : 'var(--text-muted)', marginTop: '4px' }}>{detail}</div>
+      <div style={{ fontSize: '11px', color: active ? inkStrong(accentHex) : 'var(--text-muted)', marginTop: '4px' }}>{detail}</div>
     </button>
   )
 }
@@ -875,7 +875,7 @@ const choiceBox = (active, accent, disabled) => ({
   borderRadius: '14px',
   border: '1.5px solid ' + (active ? accent : 'var(--border)'),
   background: active ? accent + '10' : 'var(--surface)',
-  color: active ? accent : 'var(--text)',
+  color: active ? inkStrong(accent) : 'var(--text)',
   opacity: disabled ? 0.4 : 1,
   cursor: disabled ? 'default' : 'pointer',
   fontSize: '15px',
@@ -889,7 +889,7 @@ const modeButtonStyle = (active, accent) => ({
   borderRadius: '14px',
   border: '1.5px solid ' + (active ? accent : 'var(--border)'),
   background: active ? accent + '10' : 'var(--surface)',
-  color: active ? accent : 'var(--text)',
+  color: active ? inkStrong(accent) : 'var(--text)',
   cursor: 'pointer',
   fontFamily: 'Inter, sans-serif',
   textAlign: 'left',

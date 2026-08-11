@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabase'
-import { languageTheme, ink } from './languageTheme'
+import { languageTheme, ink, inkStrong} from './languageTheme'
 import { getLevelLabel } from './utils'
 import { useIsMobile } from './useIsMobile'
 import { flatPanel, NUM } from './designTokens'
@@ -492,7 +492,7 @@ function primaryBtn(accentHex) {
 function secondaryBtn(accentHex) {
   return {
     padding: '10px 16px', borderRadius: '10px', border: '1px solid ' + accentHex,
-    background: 'var(--surface)', color: accentHex, fontSize: '14px', fontWeight: 600,
+    background: 'var(--surface)', color: inkStrong(accentHex), fontSize: '14px', fontWeight: 600,
     fontFamily: 'Inter, sans-serif', cursor: 'pointer',
   }
 }
@@ -500,7 +500,7 @@ function secondaryBtn(accentHex) {
 function linkBtn(accentHex) {
   return {
     background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-    color: accentHex, fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
+    color: inkStrong(accentHex), fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
   }
 }
 

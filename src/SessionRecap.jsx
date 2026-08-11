@@ -288,7 +288,7 @@ export default function SessionRecap({
           <div style={{ marginBottom: '14px', textAlign: 'left' }}>
             <div style={{
               fontSize: '11px', fontWeight: 850, letterSpacing: '0.5px', textTransform: 'uppercase',
-              color: accentHex, marginBottom: '8px', paddingLeft: '2px',
+              color: 'var(--text-muted)', marginBottom: '8px', paddingLeft: '2px',
             }}>
               Recommended next
             </div>

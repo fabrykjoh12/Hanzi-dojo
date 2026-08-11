@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl, metaLine} from './utils'
 import { PrimaryButton, SecondaryButton } from './ui'
-import { languageTheme, langAttr } from './languageTheme'
+import { languageTheme, langAttr, pinyinInk} from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import { markWordDue } from './practiceSignal'
@@ -243,7 +243,7 @@ export default function Speaking({ session, profile, track, onBack }) {
 
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '30px 20px', textAlign: 'center', marginBottom: '18px' }}>
           <div lang={langAttr(track.language)} style={{ fontSize: '44px', fontWeight: 800, color: 'var(--text)', fontFamily: langFont, lineHeight: 1.2 }}>{item.word}</div>
-          {showReading && <div style={{ fontSize: '16px', color: accentHex, fontWeight: 600, marginTop: '8px' }}>{item.reading}</div>}
+          {showReading && <div style={{ fontSize: '16px', color: pinyinInk(accentHex), fontWeight: 600, marginTop: '8px' }}>{item.reading}</div>}
           <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '6px' }}>{cleanMeaning(item.meaning)}</div>
           <button onClick={playTarget} aria-label="Hear it" style={{ marginTop: '16px', background: 'none', border: '1px solid var(--border)', borderRadius: '999px', padding: '8px 16px', cursor: 'pointer', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '13px', fontWeight: 600 }}>
             <Volume2 size={16} /> Hear it

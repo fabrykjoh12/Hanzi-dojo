@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { inkStrong } from './languageTheme'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl, metaLine} from './utils'
 import { PrimaryButton, SecondaryButton } from './ui'
@@ -240,7 +241,7 @@ export default function Tones({ session, profile, track, onBack }) {
         <div style={{ maxWidth: '560px', margin: '0 auto', paddingTop: isMobile ? '8px' : '20px' }}>
           <SecondaryButton onClick={onBack} icon={ArrowLeft}>Exit</SecondaryButton>
           <div style={{ textAlign: 'center', margin: '24px 0 28px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: ACCENT, fontSize: '13px', fontWeight: 750 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(ACCENT), fontSize: '13px', fontWeight: 750 }}>
               <Music2 size={17} strokeWidth={1.8} color={ACCENT} /> Tone practice
             </div>
             <h1 style={{ fontSize: '26px', fontWeight: 780, color: 'var(--text)', marginTop: '8px' }}>Which drill?</h1>
@@ -281,7 +282,7 @@ export default function Tones({ session, profile, track, onBack }) {
               You heard <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {questions.length} tones correctly.
             </p>
             <div style={{ padding: '16px 10px', borderRadius: '14px', background: ACCENT + '0D', border: '1px solid ' + ACCENT + '22', marginBottom: '22px' }}>
-              <div style={{ fontSize: '26px', fontWeight: 760, color: ACCENT, lineHeight: 1 }}>{pct}%</div>
+              <div style={{ fontSize: '26px', fontWeight: 760, color: inkStrong(ACCENT), lineHeight: 1 }}>{pct}%</div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -305,7 +306,7 @@ export default function Tones({ session, profile, track, onBack }) {
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: ACCENT, fontSize: '13px', fontWeight: 750 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(ACCENT), fontSize: '13px', fontWeight: 750 }}>
             <Music2 size={17} strokeWidth={1.8} color={ACCENT} />
             Tone practice
           </div>

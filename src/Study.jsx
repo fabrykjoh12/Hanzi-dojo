@@ -10,7 +10,7 @@ import { schedule, previewLabels, isCardDue, endOfLocalDay } from './srs'
 import { todayStr } from './streak'
 import { evaluateAchievements } from './achievements'
 import { toast } from './toast'
-import { languageTheme } from './languageTheme'
+import { languageTheme, pinyinInk} from './languageTheme'
 import { vocabCacheKey } from './vocabCacheKey'
 import { checkTypedAnswer } from './typedAnswer'
 import { useIsMobile } from './useIsMobile'
@@ -1162,7 +1162,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           {exFuri.lead}
           <ruby>
             {exFuri.core}
-            <rt style={{ fontSize: '0.65em', fontWeight: 500, color: accentHex }}>{exFuri.coreReading}</rt>
+            <rt style={{ fontSize: '0.65em', fontWeight: 500, color: pinyinInk(accentHex) }}>{exFuri.coreReading}</rt>
           </ruby>
           {exFuri.trail}
         </span>
@@ -1350,7 +1350,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           charFont={charFont}
           wordLabel={langChars + ' flashcard — tap to reveal the answer'}
           reading={showReadingLine ? v.reading : null}
-          readingColor={accent}
+          readingColor={pinyinInk(accent)}
           meaning={cleanMeaning(v.meaning)}
           accentHex={accentHex}
           audioUrl={audioUrl}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel, metaLine} from './utils'
-import { languageTheme, availableLanguages } from './languageTheme'
+import { languageTheme, availableLanguages, pinyinInk, inkStrong} from './languageTheme'
 import { PageHeader } from './panels'
 import { isMastered } from './mastery'
 import { cleanMeaning } from './cleanMeaning'
@@ -380,7 +380,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px', marginBottom: '18px' }}>
-        <StatCard label="Words learned" value={loading ? '-' : stats.learned} unit={'of ' + stats.totalWords} icon={Layers} color={accentHex} bg={accentHex + '10'} />
+        <StatCard label="Words learned" value={loading ? '-' : stats.learned} unit={'of ' + stats.totalWords} icon={Layers} color={inkStrong(accentHex)} bg={accentHex + '10'} />
         <StatCard label="Words mastered" value={loading ? '-' : stats.masteredCount} unit={masteryPct + '%'} icon={Sparkles} color="#2F9E6D" bg="var(--success-bg)" />
       </div>
 
@@ -422,7 +422,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
               }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', minWidth: 0 }}>
                   <span style={{ fontSize: '20px', fontFamily, color: 'var(--text)', flexShrink: 0 }}>{l.vocabulary.word}</span>
-                  <span style={{ fontSize: '12px', color: accentHex, fontWeight: 600, flexShrink: 0 }}>{l.vocabulary.reading}</span>
+                  <span style={{ fontSize: '12px', color: pinyinInk(accentHex), fontWeight: 600, flexShrink: 0 }}>{l.vocabulary.reading}</span>
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cleanMeaning(l.vocabulary.meaning)}</span>
                 </div>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
@@ -481,7 +481,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
               spanning the row below. */}
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '12px' }}>
             {[
-              { label: 'Active days', value: activeDays, color: accentHex },
+              { label: 'Active days', value: activeDays, color: inkStrong(accentHex) },
               { label: 'Reviews', value: cardsThisMonth, color: '#3E63DD' },
               { label: 'Words mastered', value: stats.lifetimeMastered || 0, color: '#2F9E6D', wide: true },
             ].map(s => (
@@ -638,9 +638,9 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
                     padding: '7px 13px', borderRadius: '9px', cursor: 'pointer',
                     fontFamily: 'Inter, sans-serif', fontSize: '13px',
                     fontWeight: on ? 700 : 550,
-                    border: '1px solid ' + (on ? '#DC2626' : 'var(--border)'),
+                    border: '1px solid ' + (on ? 'var(--danger)' : 'var(--border)'),
                     background: on ? 'var(--danger-bg)' : 'var(--surface)',
-                    color: on ? '#DC2626' : 'var(--text-muted)',
+                    color: on ? 'var(--danger)' : 'var(--text-muted)',
                   }}
                 >
                   {languageTheme(t.language).languageName}
@@ -661,11 +661,11 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
             type="checkbox"
             checked={clearHistory}
             onChange={e => setClearHistory(e.target.checked)}
-            style={{ marginTop: '2px', accentColor: '#DC2626', cursor: 'pointer' }}
+            style={{ marginTop: '2px', accentColor: 'var(--danger)', cursor: 'pointer' }}
           />
           <span>
             Also clear my study history and streak.{' '}
-            <span style={{ color: '#DC2626', fontWeight: 650 }}>
+            <span style={{ color: 'var(--danger)', fontWeight: 650 }}>
               This one covers every language
             </span>{' '}
             — the calendar records days you studied, not which language you studied.
@@ -686,7 +686,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         )}
 
         {resetError && (
-          <div style={{ fontSize: '12px', color: '#DC2626', marginTop: '10px', lineHeight: 1.4 }}>
+          <div style={{ fontSize: '12px', color: 'var(--danger)', marginTop: '10px', lineHeight: 1.4 }}>
             {resetError}
           </div>
         )}
@@ -727,9 +727,9 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
                     padding: '7px 13px', borderRadius: '9px', cursor: confirmingRemove ? 'default' : 'pointer',
                     fontFamily: 'Inter, sans-serif', fontSize: '13px',
                     fontWeight: on ? 700 : 550,
-                    border: '1px solid ' + (on ? '#DC2626' : 'var(--border)'),
+                    border: '1px solid ' + (on ? 'var(--danger)' : 'var(--border)'),
                     background: on ? 'var(--danger-bg)' : 'var(--surface)',
-                    color: on ? '#DC2626' : 'var(--text-muted)',
+                    color: on ? 'var(--danger)' : 'var(--text-muted)',
                     opacity: confirmingRemove && !on ? 0.5 : 1,
                   }}
                 >
@@ -756,7 +756,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
           )}
 
           {removeError && (
-            <div style={{ fontSize: '12px', color: '#DC2626', marginTop: '10px', lineHeight: 1.4 }}>
+            <div style={{ fontSize: '12px', color: 'var(--danger)', marginTop: '10px', lineHeight: 1.4 }}>
               {removeError}
             </div>
           )}
@@ -774,7 +774,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
               Permanently deletes your account and everything in it — flashcards, review
               history, story progress, test results and settings, for every language —
-              and your login with it. <strong style={{ color: '#DC2626', fontWeight: 700 }}>This
+              and your login with it. <strong style={{ color: 'var(--danger)', fontWeight: 700 }}>This
               cannot be undone.</strong> For a fresh start without losing your account,
               use “Reset a language” above instead.
             </div>
@@ -793,7 +793,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         {deleteArmed && (
           <div style={{ marginTop: '14px' }}>
             <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px' }}>
-              Type <strong style={{ color: '#DC2626', fontWeight: 700 }}>{DELETE_CONFIRM_WORD}</strong> to
+              Type <strong style={{ color: 'var(--danger)', fontWeight: 700 }}>{DELETE_CONFIRM_WORD}</strong> to
               confirm you want your account gone for good.
             </label>
             <input
@@ -830,7 +830,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         )}
 
         {deleteError && (
-          <div style={{ fontSize: '12px', color: '#DC2626', marginTop: '10px', lineHeight: 1.4 }}>
+          <div style={{ fontSize: '12px', color: 'var(--danger)', marginTop: '10px', lineHeight: 1.4 }}>
             {deleteError}
           </div>
         )}
@@ -844,7 +844,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
           borderRadius: '16px',
           border: '1px solid var(--danger-border)',
           background: 'var(--danger-bg)',
-          color: '#DC2626',
+          color: 'var(--danger)',
           cursor: 'pointer',
           fontSize: '14px',
           fontWeight: 750,
@@ -856,7 +856,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
           gap: '8px',
         }}
       >
-        <LogOut size={18} strokeWidth={1.9} color="#DC2626" />
+        <LogOut size={18} strokeWidth={1.9} color='var(--danger)' />
         Sign out
       </button>
     </Shell>
@@ -1206,7 +1206,7 @@ function Badge({ ach, accentHex, Icon }) {
 }
 
 function SmallButton({ children, onClick, accentHex, filled, danger, disabled, icon: Icon }) {
-  const color = danger ? '#DC2626' : (accentHex || 'var(--text-muted)')
+  const color = danger ? 'var(--danger)' : (accentHex || 'var(--text-muted)')
   return (
     <button
       onClick={onClick}

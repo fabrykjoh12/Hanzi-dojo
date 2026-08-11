@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getTestStatus, getAttemptsToday, canStartTest } from './testLogic'
 import { getLevelLabel, getNextLevel, shuffle } from './utils'
-import { languageTheme, langAttr } from './languageTheme'
+import { languageTheme, langAttr, inkStrong} from './languageTheme'
 import { schedule } from './srs'
 import { TEST_UNLOCK_MASTERY_PCT } from './mastery'
 import { useIsMobile } from './useIsMobile'
@@ -443,7 +443,7 @@ export default function Test({ session, profile, track, onBack }) {
           <p style={bodyTextStyle}>Master {unlockPct}% of this level's words to unlock the test.</p>
           <div style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '6px' }}>
-              <div style={{ fontSize: '34px', fontWeight: 850, color: accentHex }}>
+              <div style={{ fontSize: '34px', fontWeight: 850, color: inkStrong(accentHex) }}>
                 {status.masteredCount} / {status.totalWords}
               </div>
               <InfoTip accentHex={accentHex} text="A word is mastered once the app predicts you'll still recall it about three weeks from now. It can't be rushed - mastery comes from reviewing correctly over time, across multiple days." />

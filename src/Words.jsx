@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { getLevelLabel, getSystemLabel, metaLine} from './utils'
-import { languageTheme } from './languageTheme'
+import { languageTheme, pinyinInk, inkStrong} from './languageTheme'
 import { PageHeader } from './panels'
 import { isLearned, isMastered } from './mastery'
 import { cleanMeaning } from './cleanMeaning'
@@ -20,7 +20,9 @@ function ttsLangFor(language) {
 // Filter chips + search let learners answer "which words do I actually know?"
 
 const STATUS = {
-  new: { label: 'New', color: '#71717A' },
+  // A hardcoded light-mode grey measured 3.22:1 on the dark pill. The token
+  // is #71717A in light (identical) and #9AA0A8 in dark.
+  new: { label: 'New', color: 'var(--text-muted)' },
   learning: { label: 'Learning', color: '#D97706' },
   learned: { label: 'Learned', color: '#3E63DD' },
   mastered: { label: 'Mastered', color: '#2F9E6D' },
@@ -162,7 +164,7 @@ export default function Words({ session, profile, track, onBack }) {
         {/* Status filters */}
         <div role="group" aria-label="Filter by status" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '18px' }}>
           {[
-            { key: 'all', label: 'All', color: accentHex },
+            { key: 'all', label: 'All', color: inkStrong(accentHex) },
             { key: 'new', ...STATUS.new },
             { key: 'learning', ...STATUS.learning },
             { key: 'learned', ...STATUS.learned },
@@ -220,7 +222,7 @@ export default function Words({ session, profile, track, onBack }) {
                   {isMobile ? (
                     <div style={{ minWidth: 0 }}>
                       <span style={{ fontSize: '19px', fontFamily: langFont, color: 'var(--text)', marginRight: '10px' }}>{v.word}</span>
-                      <span style={{ fontSize: '13px', color: accentHex, fontWeight: 600 }}>{v.reading}</span>
+                      <span style={{ fontSize: '13px', color: pinyinInk(accentHex), fontWeight: 600 }}>{v.reading}</span>
                       <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {cleanMeaning(v.meaning)}
                       </div>
@@ -229,7 +231,7 @@ export default function Words({ session, profile, track, onBack }) {
                     <>
                       <span style={{ fontSize: '20px', fontFamily: langFont, color: 'var(--text)' }}>{v.word}</span>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: '13px', color: accentHex, fontWeight: 600 }}>{v.reading}</div>
+                        <div style={{ fontSize: '13px', color: pinyinInk(accentHex), fontWeight: 600 }}>{v.reading}</div>
                         <div style={{ fontSize: '13px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {cleanMeaning(v.meaning)}
                         </div>

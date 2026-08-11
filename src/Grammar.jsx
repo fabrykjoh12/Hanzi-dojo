@@ -1,6 +1,6 @@
 import { useState, useEffect, useId, useMemo } from 'react'
 import { supabase } from './supabase'
-import { languageTheme } from './languageTheme'
+import { languageTheme, pinyinInk} from './languageTheme'
 import { grammarFor } from './grammarGuides'
 import { filterTopics } from './grammarSearch'
 import { hasDrills } from './grammarDrills'
@@ -301,14 +301,14 @@ function Example({ ex, language, font, accentHex }) {
       background: 'var(--surface-2)', border: '1px solid var(--border)',
     }}>
       {readingAbove && (
-        <div style={{ fontSize: '12px', color: accentHex, marginBottom: '2px', fontWeight: 600 }}>{ex.reading}</div>
+        <div style={{ fontSize: '12px', color: pinyinInk(accentHex), marginBottom: '2px', fontWeight: 600 }}>{ex.reading}</div>
       )}
       {hasSegs ? (
         <div style={{ fontSize: '20px', fontFamily: font, color: 'var(--text)', lineHeight: 1.9 }}>
           {ex.segs.map((seg, si) => seg[1] ? (
             <ruby key={si}>
               {seg[0]}
-              <rt style={{ fontSize: '12px', color: accentHex, fontWeight: 600 }}>{seg[1]}</rt>
+              <rt style={{ fontSize: '12px', color: pinyinInk(accentHex), fontWeight: 600 }}>{seg[1]}</rt>
             </ruby>
           ) : (
             <span key={si}>{seg[0]}</span>
@@ -318,7 +318,7 @@ function Example({ ex, language, font, accentHex }) {
         <div style={{ fontSize: '20px', fontFamily: font, color: 'var(--text)', lineHeight: 1.3 }}>{ex.target}</div>
       )}
       {readingBelow && (
-        <div style={{ fontSize: '13px', color: accentHex, marginTop: '4px', fontWeight: 600 }}>{ex.reading}</div>
+        <div style={{ fontSize: '13px', color: pinyinInk(accentHex), marginTop: '4px', fontWeight: 600 }}>{ex.reading}</div>
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginTop: '6px' }}>
         {/* The button is a full 44px thumb target; the negative margin pulls the
