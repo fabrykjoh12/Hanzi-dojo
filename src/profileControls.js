@@ -26,16 +26,38 @@ export function cardsPerDay(n) {
   return v + ' a day'
 }
 
+// What the reset row is called, and what it shows on the right.
+//
+// It used to read "Reset a language", with the language as the value beside it.
+// That is the wording of a product that offers several, and this one publicly
+// offers Chinese — so on the account every learner has, the label names the
+// thing it deletes and there is no value to repeat. Only an account with more
+// than one track (staff, in practice) needs the row to be generic, and then the
+// value says which track is selected.
+//
+// The label is composed here rather than in the screen so the delete-account
+// copy can point at it by the same name and the two can never drift.
+export function resetRow({ resetLanguageName = '', trackCount = 1 } = {}) {
+  const oneTrack = trackCount <= 1 && !!resetLanguageName
+  return {
+    key: 'reset',
+    label: oneTrack ? 'Reset ' + resetLanguageName + ' progress' : 'Reset progress',
+    value: oneTrack ? '' : resetLanguageName,
+    expands: true,
+  }
+}
+
 // removableCount: tracks for a language that is no longer offered, which the
 // learner may drop (see LanguageSwitcher). Zero for almost everyone, so the row
 // only exists when there is something to remove.
 export function controlGroups({
   dailyNewCards = 0,
   resetLanguageName = '',
+  trackCount = 1,
   removableCount = 0,
 } = {}) {
   const destructive = [
-    { key: 'reset', label: 'Reset a language', value: resetLanguageName, expands: true },
+    resetRow({ resetLanguageName, trackCount }),
   ]
   if (removableCount > 0) {
     destructive.push({

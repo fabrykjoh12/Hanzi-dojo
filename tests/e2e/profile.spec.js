@@ -108,23 +108,29 @@ test.describe('Profile — recent progress', () => {
   // the account streak. These pin the scope.
   test('reset names the language it clears and leaves the others alone', async ({ page }) => {
     await page.goto('/profile');
-    // Exact: the delete-account control also refers to "Reset a language"
-    // (pointing people at the non-destructive option), so a substring match now
-    // finds two nodes.
-    await expect(page.getByText('Reset a language', { exact: true })).toBeVisible();
-    await openControl(page, /Reset a language/);
-    await expect(page.getByText(/Clears flashcards, tests, story reads and unlocks for/i)).toBeVisible();
-    await expect(page.getByText(/Your other\s+languages are untouched/i)).toBeVisible();
+    // The label names the real consequence — "Reset a language" was the wording
+    // of a product that offers several. The delete-account control quotes this
+    // same label when it points at the non-destructive option, so a substring
+    // match finds two nodes and this one is exact.
+    await expect(page.getByText('Reset Chinese progress', { exact: true })).toBeVisible();
+    await expect(page.getByText(/reset a language/i)).toHaveCount(0);
+    await openControl(page, /Reset Chinese progress/);
+    await expect(page.getByText(/Clears your flashcards, level tests, story reads and story unlocks/i)).toBeVisible();
+    // One track, so the copy says where you restart instead of which of your
+    // languages survives.
+    await expect(page.getByText(/starts you again at\s+HSK 1/i)).toBeVisible();
+    await expect(page.getByText(/languages/i)).toHaveCount(0);
   });
 
   test('clearing study history is opt-in, and off by default', async ({ page }) => {
     await page.goto('/profile');
-    await openControl(page, /Reset a language/);
+    await openControl(page, /Reset Chinese progress/);
     const box = page.getByRole('checkbox', { name: /Also clear my study history/i });
     await expect(box).toBeVisible();
     await expect(box).not.toBeChecked();
-    // The account-wide reach is stated where the choice is made, not buried.
-    await expect(page.getByText(/This one covers every language/i)).toBeVisible();
+    // It says what the record is, where the choice is made, without inventing a
+    // multi-language caveat for an account that has one track.
+    await expect(page.getByText(/the record of which days you studied/i)).toBeVisible();
   });
 
   test('a plain reset does not ask the backend to clear account history', async ({ page }) => {
@@ -139,7 +145,7 @@ test.describe('Profile — recent progress', () => {
     });
 
     await page.goto('/profile');
-    await openControl(page, /Reset a language/);
+    await openControl(page, /Reset Chinese progress/);
     await page.getByRole('button', { name: /^Reset$/ }).click();
     await page.getByRole('button', { name: /Confirm reset/i }).click();
 
@@ -160,7 +166,7 @@ test.describe('Profile — recent progress', () => {
     });
 
     await page.goto('/profile');
-    await openControl(page, /Reset a language/);
+    await openControl(page, /Reset Chinese progress/);
     await page.getByRole('checkbox', { name: /Also clear my study history/i }).check();
     await page.getByRole('button', { name: /^Reset$/ }).click();
     await page.getByRole('button', { name: /Confirm reset/i }).click();
@@ -185,7 +191,9 @@ test.describe('Profile — recent progress', () => {
     });
 
     await page.goto('/profile');
-    await openControl(page, /Reset a language/);
+    // Two tracks, so the row cannot name one language: it goes generic and the
+    // value beside it says which track is selected. Only staff accounts see this.
+    await openControl(page, /^Reset progress/);
     const group = page.getByRole('radiogroup', { name: 'Language to reset' });
     await expect(group.getByRole('radio', { name: /Chinese/ })).toBeVisible();
     // An inactive track is still resettable — the old RPC required is_active.
@@ -193,6 +201,8 @@ test.describe('Profile — recent progress', () => {
     await expect(jp).toBeVisible();
     await jp.click();
     await expect(page.getByText(/unlocks for\s*Japanese/i)).toBeVisible();
+    // And there the multi-track wording is correct rather than generic.
+    await expect(page.getByText(/Your other\s+tracks are untouched/i)).toBeVisible();
   });
 
   test('shows the known-word map with reading reach', async ({ page }) => {
@@ -217,7 +227,7 @@ test.describe('Profile — recent progress', () => {
   // destructive action can never be left hidden behind a closed row.
   test('every control is a collapsed row until it is asked for', async ({ page }) => {
     await page.goto('/profile');
-    for (const name of [/Daily new cards/, /Reset a language/, /Delete account/]) {
+    for (const name of [/Daily new cards/, /Reset Chinese progress/, /Delete account/]) {
       await expect(page.getByRole('button', { name, expanded: false })).toBeVisible();
     }
     // Sign out acts rather than opens, so it is not a disclosure at all.
@@ -230,21 +240,21 @@ test.describe('Profile — recent progress', () => {
 
   test('opening one control closes the last', async ({ page }) => {
     await page.goto('/profile');
-    await openControl(page, /Reset a language/);
+    await openControl(page, /Reset Chinese progress/);
     await openControl(page, /Delete account/);
-    await expect(page.getByRole('button', { name: /Reset a language/, expanded: false })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Reset Chinese progress/, expanded: false })).toBeVisible();
     await expect(page.getByText(/Clears flashcards, tests, story reads/i)).toHaveCount(0);
   });
 
   test('closing a half-confirmed reset disarms it', async ({ page }) => {
     await page.goto('/profile');
-    await openControl(page, /Reset a language/);
+    await openControl(page, /Reset Chinese progress/);
     await page.getByRole('button', { name: /^Reset$/ }).click();
     await expect(page.getByRole('button', { name: /Confirm reset/i })).toBeVisible();
 
     // Collapse the row, reopen it: back to the first step, not one tap from a wipe.
-    await page.getByRole('button', { name: /Reset a language/, expanded: true }).click();
-    await openControl(page, /Reset a language/);
+    await page.getByRole('button', { name: /Reset Chinese progress/, expanded: true }).click();
+    await openControl(page, /Reset Chinese progress/);
     await expect(page.getByRole('button', { name: /Confirm reset/i })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /^Reset$/ })).toBeVisible();
   });

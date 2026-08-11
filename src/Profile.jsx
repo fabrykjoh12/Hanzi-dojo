@@ -7,7 +7,7 @@ import { ON_HERO, NUM } from './designTokens'
 import { isMastered, TEST_UNLOCK_MASTERY_PCT } from './mastery'
 import { cleanMeaning } from './cleanMeaning'
 import { profileProgress } from './profileProgress'
-import { controlGroups, CONTROL_ROW_MIN_HEIGHT } from './profileControls'
+import { controlGroups, resetRow, CONTROL_ROW_MIN_HEIGHT } from './profileControls'
 import { knownWordMap, readableSummary, rowA11yLabel } from './knownWordMap'
 import { useIsMobile } from './useIsMobile'
 import StuckWordCoach from './StuckWordCoach'
@@ -445,6 +445,20 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     ? Math.round((reviewStats.correct / reviewStats.total) * 100)
     : null
 
+  // The rows, and the reset row's own label — quoted verbatim by the
+  // delete-account copy below, so the two can never disagree about what the
+  // non-destructive option is called.
+  const controlRowGroups = controlGroups({
+    dailyNewCards: profile.daily_new_cards,
+    resetLanguageName: languageTheme(targetTrack.language).languageName,
+    trackCount: tracks.length,
+    removableCount: removableTracks.length,
+  })
+  const resetLabel = resetRow({
+    resetLanguageName: languageTheme(targetTrack.language).languageName,
+    trackCount: tracks.length,
+  }).label
+
   // Tapping a row opens its control; tapping it again, or opening another,
   // closes and DISARMS it — a half-confirmed reset must never survive out of
   // sight. Sign out is the one row that simply acts.
@@ -495,19 +509,35 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       </div>
     )
 
-    // Reset is scoped to ONE language. The account-wide part — the study
-    // history — is a separate opt-in, because daily_activity has no language
-    // column and so cannot be cleared for one track alone.
+    // Reset clears ONE track. The account-wide part — the study history — is a
+    // separate opt-in, because daily_activity has no language column and so
+    // cannot be cleared for one track alone.
+    //
+    // The copy comes in two versions, and the ordinary one never says
+    // "language": publicly the product is Chinese, so a learner is told exactly
+    // what disappears and where they restart. Only an account holding more than
+    // one track needs the multi-track wording, and it gets it.
     if (key === 'reset') return (
       <div>
         <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.45 }}>
-          Clears flashcards, tests, story reads and unlocks for{' '}
-          <strong style={{ color: 'var(--text)', fontWeight: 700 }}>
-            {languageTheme(targetTrack.language).languageName}
-          </strong>{' '}
-          and puts that track back to{' '}
-          {getLevelLabel(targetTrack.language, targetTrack.system, 1)}. Your other
-          languages are untouched.
+          {tracks.length > 1 ? (
+            <>
+              Clears flashcards, level tests, story reads and story unlocks for{' '}
+              <strong style={{ color: 'var(--text)', fontWeight: 700 }}>
+                {languageTheme(targetTrack.language).languageName}
+              </strong>{' '}
+              and puts that track back to{' '}
+              {getLevelLabel(targetTrack.language, targetTrack.system, 1)}. Your other
+              tracks are untouched.
+            </>
+          ) : (
+            <>
+              Clears your flashcards, level tests, story reads and story unlocks, and
+              starts you again at{' '}
+              {getLevelLabel(targetTrack.language, targetTrack.system, 1)}. Your account
+              and settings stay.
+            </>
+          )}
         </div>
 
         {/* Only a choice once there is something to choose between. */}
@@ -536,11 +566,21 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
             style={{ width: '18px', height: '18px', flexShrink: 0, accentColor: 'var(--danger)', cursor: 'pointer' }}
           />
           <span>
-            Also clear my study history.{' '}
-            <span style={{ color: 'var(--danger)', fontWeight: 650 }}>
-              This one covers every language
-            </span>{' '}
-            — the record is of days you studied, not which language you studied.
+            {tracks.length > 1 ? (
+              <>
+                Also clear my study history.{' '}
+                <span style={{ color: 'var(--danger)', fontWeight: 650 }}>
+                  This one covers every track
+                </span>{' '}
+                — the record is of days you studied, not what you studied.
+              </>
+            ) : (
+              <>
+                Also clear my{' '}
+                <span style={{ color: 'var(--danger)', fontWeight: 650 }}>study history</span>
+                {' '}— the record of which days you studied.
+              </>
+            )}
           </span>
         </label>
 
@@ -616,10 +656,10 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       <div>
         <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.45 }}>
           Permanently deletes your account and everything in it — flashcards, review
-          history, story progress, test results and settings, for every language —
-          and your login with it. <strong style={{ color: 'var(--danger)', fontWeight: 700 }}>This
+          history, story progress, test results and settings — and your login with
+          it. <strong style={{ color: 'var(--danger)', fontWeight: 700 }}>This
           cannot be undone.</strong> For a fresh start without losing your account,
-          use “Reset a language” instead.
+          use “{resetLabel}” instead.
         </div>
 
         {deleteArmed && (
@@ -833,16 +873,12 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       )}
 
       {/* The controls, as rows (P10-B4). These were four stacked panels — daily
-          goal, reset a language, remove a language, delete account — each with
+          goal, reset progress, remove a language, delete account — each with
           a heading, a paragraph and a button, plus a fifth standalone Sign out
           button: ~590px of permanent screen for four things a learner touches
           roughly once ever. Nothing was removed. Every option, warning and
           confirmation step is still here, one tap inside its own row. */}
-      {controlGroups({
-        dailyNewCards: profile.daily_new_cards,
-        resetLanguageName: languageTheme(targetTrack.language).languageName,
-        removableCount: removableTracks.length,
-      }).map(group => (
+      {controlRowGroups.map(group => (
         <Panel key={group.key} danger={group.tone === 'danger'}>
           <h2 style={{ margin: '0 0 2px' }}>
             <Eyebrow style={group.tone === 'danger' ? { color: 'var(--danger)' } : {}}>

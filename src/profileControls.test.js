@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { controlGroups, cardsPerDay, CONTROL_ROW_MIN_HEIGHT } from './profileControls'
+import { controlGroups, resetRow, cardsPerDay, CONTROL_ROW_MIN_HEIGHT } from './profileControls'
 
 const flat = (groups) => groups.flatMap(g => g.rows)
 const keys = (groups) => flat(groups).map(r => r.key)
@@ -32,13 +32,32 @@ describe('controlGroups', () => {
     expect(groups.filter(g => g.tone === 'danger')).toHaveLength(1)
   })
 
-  it('names the language the reset would clear, on the row itself', () => {
+  it('names what the reset actually clears, in the label', () => {
+    // "Reset a language" is the wording of a product that offers several. This
+    // one publicly offers Chinese, and the label has to describe the real
+    // consequence — so it names it, and the value beside it stops repeating it.
     const reset = flat(groups).find(r => r.key === 'reset')
-    expect(reset.value).toBe('Chinese')
+    expect(reset.label).toBe('Reset Chinese progress')
+    expect(reset.value).toBe('')
+    expect(reset.label).not.toMatch(/a language/i)
   })
 
   it('shows the goal without opening anything', () => {
     expect(flat(groups).find(r => r.key === 'goal').value).toBe('10 a day')
+  })
+
+  it('goes generic only for an account with more than one track', () => {
+    // Staff accounts hold a paused track or two; there the row cannot name one
+    // language, so it names none and the value says which is selected.
+    const many = resetRow({ resetLanguageName: 'Chinese', trackCount: 2 })
+    expect(many.label).toBe('Reset progress')
+    expect(many.value).toBe('Chinese')
+  })
+
+  it('never prints "undefined progress" when the language is unknown', () => {
+    expect(resetRow().label).toBe('Reset progress')
+    expect(resetRow({ trackCount: 1 }).label).toBe('Reset progress')
+    expect(resetRow({ resetLanguageName: '', trackCount: 1 }).value).toBe('')
   })
 
   it('marks Sign out as the one row that acts rather than expands', () => {
@@ -81,7 +100,7 @@ describe('controlGroups — called with nothing', () => {
   it('still returns a usable screen', () => {
     const groups = controlGroups()
     expect(keys(groups)).toEqual(['goal', 'signout', 'reset', 'delete'])
-    expect(flat(groups).find(r => r.key === 'reset').value).toBe('')
+    expect(flat(groups).find(r => r.key === 'reset').label).toBe('Reset progress')
   })
 })
 
