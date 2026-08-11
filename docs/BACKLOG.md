@@ -660,3 +660,27 @@ leaves behind, deliberately:
   and `withWeakWords(page, n)` (in `tests/fixtures/mockSupabase.js`) describes a
   learner who really has words slipping. Assume the same about any other mocked
   server-side filter.
+
+## Two things P10-C found (2026-08-11)
+
+- [x] **`homeStory.js` asked `stories` for `cover_url`, which does not exist —
+  FIXED in `5c69ea2`.** PostgREST answers an unknown column with a 400,
+  supabase-js reports it in `error` and leaves `data` null, and
+  `getDailyStoryCard`'s `stories.length === 0` guard returned null. So Home's
+  "Then read" hand-off **never rendered in production** for a learner without an
+  active series, from the day it was written. Verified against the live schema
+  (`42703`). `DAILY_STORY_COLUMNS` is exported and pinned against the real column
+  list in `src/homeStory.columns.test.js`; every other `stories` select in `src/`
+  was audited and this was the only phantom.
+
+  **The lesson is the test surface, not the typo.** The unit suite never touches
+  Supabase, and the e2e mock answers any `select` with its own rows whatever
+  columns were asked for — so a query naming a column that has never existed
+  passes every gate the repo has. This is the second such blind spot found in two
+  days (the first: the leech query's `.gte('lapses')`, which the mock also
+  ignores). Assume mocked server-side behaviour is *not* being tested.
+
+- [ ] **Stories' four filter chips are 38px tall**, below the 44px floor the rest
+  of the app now holds. Pre-existing, and left alone in C1 because making them 44
+  moves the shelf's first row. Worth doing with the next Stories change.
+
