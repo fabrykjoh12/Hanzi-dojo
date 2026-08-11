@@ -684,3 +684,27 @@ leaves behind, deliberately:
   of the app now holds. Pre-existing, and left alone in C1 because making them 44
   moves the shelf's first row. Worth doing with the next Stories change.
 
+
+## Speaking is missing from the store apps (recorded 2026-08-11)
+
+- [ ] **The Speaking drill does not exist on iOS or Android.**
+  `speechRecognitionSupported()` returns false whenever `isNativeApp()` is true,
+  because iOS's WKWebView and Android's WebView both expose
+  `webkitSpeechRecognition` and implement nothing behind it — a constructor-only
+  check made the drill *look* available and then fail on the first tap. So the
+  hub omits it rather than advertising a dead end, and **the store builds offer
+  seven drills where the web offers eight.**
+
+  Two consequences worth carrying:
+
+  - **Any local render over-states the app.** A sandbox Chromium supports the
+    API, so every screenshot of Practice taken here shows a row an iPhone does
+    not have. P11 measurements state which surface they describe.
+  - **A whole practice mode is web-only.** Speaking is the app's only production
+    drill (say it aloud, get it checked), and store users cannot reach it at all.
+
+  Fixing it needs a native speech plugin (`docs/PRE-RELEASE-CHECKLIST.md` §5) or
+  a server-side transcription path — a real piece of work, not a flag. **Not in
+  scope for the P11 Practice redesign**, which preserves the existing gating
+  exactly and is measured both ways. Recorded here so the gap is a known product
+  decision rather than an accident of a webview API.
