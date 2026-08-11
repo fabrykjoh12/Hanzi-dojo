@@ -1,12 +1,23 @@
 # P8 — Mobile bottom navigation: audit and three options
 
-**Status: Option A approved and implemented** (three commits, 2026-08-11).
-The audit below is unchanged from the state it described — written against
-`574501d`, TestFlight build 33 — and every number in it is read from the code or
-measured in a real render, not estimated. Options B and C were not implemented;
-B stays on the shelf as the next reversible experiment if device testing shows
-Cards still does not read as primary. What was actually built, and the seven
-questions the next build exists to answer, are in
+**Status: superseded by the device review.** Option A shipped first (three
+commits, 2026-08-11) and was then tested on an iPhone, where the bar still read
+as busy and generic. The approved direction is now closer to Option B: the bar
+is **Practice · Home · Cards · Stories · More** with Cards in the physical
+centre, no waiting count, no top marker, and a five-glyph icon family drawn for
+this app. What survives from Option A is the level test's move to Practice and
+the corrected 58px nav geometry.
+
+The audit below is left exactly as written — against `574501d`, TestFlight
+build 33 — because it is the record of what the bar was and why, and every
+number in it was read from the code or measured in a real render. Two of its
+judgements did not survive contact with a phone, and both are worth keeping
+visible: it ranked centring Cards second on the grounds that the loop order
+read left-to-right (it does not, once Cards is the thing you actually open the
+app for), and it treated the waiting count as the bar's missing information (on
+a device it made the bar read as a dashboard).
+
+What was built, and the questions the next build exists to answer, are in
 [`docs/MOBILE-DEVICE-QA.md`](MOBILE-DEVICE-QA.md) §B2.
 
 ---

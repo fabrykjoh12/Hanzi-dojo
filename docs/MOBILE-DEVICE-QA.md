@@ -50,26 +50,39 @@ Home → Cards → Stories → Practice → Home, several laps, briskly.
 **Record explicitly — the 150ms tab fade feels:** good / slightly slow /
 clearly slow. Do not change it before this is answered on a real device.
 
-### B2 · The bar itself (P8 Option A — the questions this build exists to answer)
+### B2 · The bar itself (P8 — the questions this build exists to answer)
 
-Answer all seven in words, not ticks. The whole point of Option A was to see
-whether Cards reads as the day's action *without* moving it or raising it; if
-it does not, Option B (Cards centred) is the next reversible experiment, and
-this is the evidence for that call.
+Answer in words, not ticks. The bar is now **Practice · Home · Cards · Stories ·
+More** with Cards in the physical centre, five icons drawn for this app, and
+nothing else on it — no count, no top indicator, no container, no raised button.
 
-1. [ ] Does **Cards** now read immediately as the main daily action?
-2. [ ] Is the waiting count **useful or distracting**? (It is deliberately plain
-       accent digits — no pill, no circle, no red.)
-3. [ ] Does the **selected tab read clearly in dark mode**? Measured, the active
-       and inactive glyphs differ by hue and not brightness (1.26:1), so the
-       marker and the heavier icon/label are doing the work — check they do.
-4. [ ] Does the **wider marker look intentional** rather than heavy?
-5. [ ] Does the bar **feel any taller**? It must not — 58px, unchanged from what
-       build 33 rendered.
-6. [ ] Does the **320px Study screen** feel marginally less cramped? (It gained
+**The one that decides the task:**
+
+1. [ ] Does having **Practice on the far-left edge** feel unnatural in real use?
+       The left column is where the eye starts a row, and it now holds the
+       quietest destination. If it feels wrong, say so and stop there — the
+       answer is *not* to slide Practice between Home and Cards, because that
+       breaks the contiguous Home → Cards → Stories loop the order exists for.
+       It reopens the information architecture instead.
+
+**The rest:**
+
+2. [ ] Does the eye naturally land on **Cards**, and does it still read as a tab
+       rather than a floating action button?
+3. [ ] Do **Home → Cards → Stories** read as the central learning loop?
+4. [ ] Do the five icons look like **one designed family**? Is the Cards glyph
+       recognisable as flashcards at 25px, and does Practice read as drills now
+       that the bullseye is gone?
+5. [ ] Is the **selected tab obvious without the underline**, in dark mode
+       especially? Measured, active and inactive differ by hue and almost not at
+       all by brightness (1.26:1 dark), so the outline→filled swap is carrying
+       it — check that it does.
+6. [ ] Does the bar **feel any taller**? It must not — 58px, unchanged.
+7. [ ] Does the **320px Study screen** feel marginally less cramped? (It gained
        4px it was never using.)
-7. [ ] Is the **level test discoverable from Practice**, and does its locked row
+8. [ ] Is the **level test discoverable from Practice**, and does its locked row
        explain what opens it?
+9. [ ] Does the whole bar look **less like a stock template** than build 33 did?
 
 ## C · Study
 
