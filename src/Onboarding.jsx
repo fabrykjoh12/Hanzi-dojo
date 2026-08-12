@@ -156,7 +156,7 @@ export default function Onboarding({ session, onComplete }) {
 
   const rowStyle = (selected) => ({
     display: 'flex', alignItems: 'center', gap: '14px', textAlign: 'left',
-    width: '100%', padding: '17px 18px', borderRadius: '16px',
+    width: '100%', padding: '17px 18px', borderRadius: '18px',
     border: '1.5px solid ' + (selected ? accentHex : 'var(--border)'),
     background: selected
       ? 'color-mix(in srgb, ' + accentHex + ' 9%, var(--surface))'
@@ -166,9 +166,9 @@ export default function Onboarding({ session, onComplete }) {
   })
 
   const primary = {
-    width: '100%', minHeight: '54px', borderRadius: '16px', border: 'none',
+    width: '100%', minHeight: '54px', borderRadius: '18px', border: 'none',
     background: accentHex, color: '#fff', marginTop: '24px',
-    fontSize: '16.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+    fontSize: '17px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
     cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1,
   }
 
@@ -248,7 +248,7 @@ export default function Onboarding({ session, onComplete }) {
                       {t.test && (
                         <span style={{
                           display: 'inline-flex', alignItems: 'center', gap: '3px',
-                          fontSize: '10px', fontWeight: 700, color: accentHex,
+                          fontSize: '10.5px', fontWeight: 700, color: accentHex,
                           background: 'color-mix(in srgb, ' + accentHex + ' 12%, var(--surface))',
                           borderRadius: '999px', padding: '2px 7px',
                         }}>
@@ -256,7 +256,7 @@ export default function Onboarding({ session, onComplete }) {
                         </span>
                       )}
                     </span>
-                    <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '3px', lineHeight: 1.4 }}>
+                    <span style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginTop: '3px', lineHeight: 1.4 }}>
                       {meta.blurb}
                     </span>
                   </span>
@@ -338,7 +338,7 @@ const shell = (isMobile) => ({
 
 const card = (isMobile) => ({
   position: 'relative', zIndex: 1, width: '100%', maxWidth: '440px',
-  background: 'var(--surface)', borderRadius: '20px',
-  boxShadow: '0 4px 40px rgba(0,0,0,0.10)',
+  background: 'var(--surface)', borderRadius: '18px',
+  boxShadow: 'var(--shadow-2)',
   padding: isMobile ? '26px 18px 22px' : '34px 34px 30px',
 })

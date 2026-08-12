@@ -39,7 +39,7 @@ function VideoCard({ video, accentHex, onPlay }) {
         onMouseLeave={function() { setHovered(false) }}
         style={{
           background: 'var(--surface)',
-          borderRadius: '16px',
+          borderRadius: '18px',
           border: '1px solid ' + (hovered ? accentHex + '55' : 'var(--border)'),
           boxShadow: hovered ? '0 8px 28px rgba(0,0,0,0.09)' : '0 1px 4px rgba(0,0,0,0.04)',
           transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
@@ -80,7 +80,7 @@ function VideoCard({ video, accentHex, onPlay }) {
 
         <div style={{ padding: '14px 16px 16px' }}>
           <div style={{
-            fontSize: '14px',
+            fontSize: '13.5px',
             fontWeight: 600,
             color: 'var(--text)',
             lineHeight: 1.45,
@@ -128,7 +128,7 @@ function PlayerPanel({ video, accentHex, onClose }) {
     <div ref={panelRef} tabIndex={-1} role="region" aria-label={'Now playing: ' + video.title} style={{
       background: 'var(--surface)', border: '1px solid ' + accentHex + '33',
       borderRadius: '18px', overflow: 'hidden', marginBottom: '24px',
-      boxShadow: '0 18px 48px rgba(24,24,27,0.10)',
+      boxShadow: 'var(--shadow-2)',
     }}>
       <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
         <iframe
@@ -141,7 +141,7 @@ function PlayerPanel({ video, accentHex, onClose }) {
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '13px 16px', flexWrap: 'wrap' }}>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>{video.title}</div>
+          <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text)' }}>{video.title}</div>
           {video.channel_name && (
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{video.channel_name}</div>
           )}
@@ -149,7 +149,7 @@ function PlayerPanel({ video, accentHex, onClose }) {
         <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexShrink: 0 }}>
           <a
             {...externalLinkProps(video.video_url)}
-            style={{ fontSize: '12.5px', fontWeight: 650, color: accentHex, textDecoration: 'none' }}
+            style={{ fontSize: '13px', fontWeight: 600, color: accentHex, textDecoration: 'none' }}
           >
             Open on YouTube ↗
           </a>
@@ -157,8 +157,8 @@ function PlayerPanel({ video, accentHex, onClose }) {
             onClick={onClose}
             style={{
               border: '1px solid var(--border)', background: 'var(--surface)',
-              color: 'var(--text-muted)', borderRadius: '10px', padding: '7px 12px',
-              fontSize: '12.5px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+              color: 'var(--text-muted)', borderRadius: '12px', padding: '7px 12px',
+              fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
             }}
           >
             Close
@@ -231,7 +231,7 @@ export default function YouTube({ profile, track, onBack }) {
             border: 'none',
             color: 'var(--text-muted)',
             cursor: 'pointer',
-            fontSize: '14px',
+            fontSize: '13.5px',
             // Bare text is a ~19px-tall target. The padding gives the thumb a
             // real one; the negative left margin keeps the label optically
             // aligned with the page's left edge.
@@ -250,7 +250,7 @@ export default function YouTube({ profile, track, onBack }) {
           <h1 style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>
             YouTube
           </h1>
-          <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+          <p style={{ fontSize: '13.5px', color: 'var(--text-muted)' }}>
             {'Curated videos for ' + metaLine(systemLabel, levelLabel)}
           </p>
         </div>
@@ -261,7 +261,7 @@ export default function YouTube({ profile, track, onBack }) {
             <div style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text)', marginBottom: '8px' }}>
               Couldn't load videos
             </div>
-            <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '20px' }}>
+            <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginBottom: '20px' }}>
               Check your connection and try again.
             </div>
             <button
@@ -269,7 +269,7 @@ export default function YouTube({ profile, track, onBack }) {
               style={{
                 border: 'none', background: accentHex, color: '#fff',
                 borderRadius: '12px', padding: '11px 22px',
-                fontSize: '14px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+                fontSize: '13.5px', fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
               }}
             >
               Retry
@@ -283,7 +283,7 @@ export default function YouTube({ profile, track, onBack }) {
             <div style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text)', marginBottom: '8px' }}>
               No videos yet
             </div>
-            <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+            <div style={{ fontSize: '13.5px', color: 'var(--text-muted)' }}>
               Videos for this level are coming soon.
             </div>
           </div>

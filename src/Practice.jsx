@@ -156,7 +156,7 @@ export default function Practice({ profile, track, counts, onNavigate }) {
           No heading. The hero asked "what should I practise?"; this is the rest
           of the answer, not a new topic. */}
       <section aria-label="Practice drills" style={{ marginBottom: SECTION_GAP }}>
-        <div style={{ ...flatPanel({ radius: 16 }), overflow: 'hidden' }}>
+        <div style={{ ...flatPanel(), overflow: 'hidden' }}>
           {plan.drills.map((item, i) => (
             <DrillRow
               key={item.key}
@@ -190,7 +190,7 @@ export default function Practice({ profile, track, counts, onNavigate }) {
         <h2 style={{ margin: '0 0 ' + LABEL_GAP, fontSize: '15px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
           Look things up
         </h2>
-        <div style={{ ...flatPanel({ radius: 16 }), overflow: 'hidden' }}>
+        <div style={{ ...flatPanel(), overflow: 'hidden' }}>
           {plan.tools.map((tool, i) => (
             <ToolRow
               key={tool.key}
@@ -245,10 +245,10 @@ function LevelTestRow({ entry, levelLabel, nextLevelLabel, accentHex, onClick })
             oversight rather than a system (P10-C1). */}
         <Icon size={19} strokeWidth={1.8} color={open ? ink(accentHex) : color} style={{ flexShrink: 0 }} />
         <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-          <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
+          <span style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text)' }}>
             {levelLabel} test
           </span>
-          <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.35 }}>
+          <span style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.35 }}>
             {open
               ? 'You’re ready. Pass it to open ' + nextLevelLabel + '.'
               : entry.totalWords > 0
@@ -275,7 +275,7 @@ function LevelTestRow({ entry, levelLabel, nextLevelLabel, accentHex, onClick })
               background: ink(accentHex),
             }} />
           </div>
-          <div style={{ ...NUM, fontSize: '11.5px', color: 'var(--text-faint)', marginTop: '7px' }}>
+          <div style={{ ...NUM, fontSize: '12px', color: 'var(--text-faint)', marginTop: '7px' }}>
             {entry.masteredCount} of {entry.totalWords} words mastered
           </div>
         </div>
@@ -322,11 +322,11 @@ function DrillRow({ item, accentHex, first, onClick }) {
       <Icon size={19} strokeWidth={1.8} color={ink(color)} style={{ flexShrink: 0 }} />
 
       <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-        <span style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text)' }}>
+        <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
           {item.title}
         </span>
         {item.hint && (
-          <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.35 }}>
+          <span style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.35 }}>
             {item.hint}
           </span>
         )}
@@ -336,7 +336,7 @@ function DrillRow({ item, accentHex, first, onClick }) {
           carry it: amber ink, tabular, right against the chevron. */}
       {item.badge != null && (
         <span aria-hidden style={{
-          ...NUM, fontSize: '14px', fontWeight: 750, color: ink(SIGNAL), flexShrink: 0,
+          ...NUM, fontSize: '13.5px', fontWeight: 700, color: ink(SIGNAL), flexShrink: 0,
         }}>
           {item.badge}
         </span>
@@ -379,7 +379,7 @@ function ToolRow({ tool, first, onClick }) {
           used to sit here went in P10-C1.) */}
       <Icon size={18} strokeWidth={1.8} color="var(--text-muted)" style={{ flexShrink: 0 }} />
       <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-        <span style={{ fontSize: '13.5px', fontWeight: 650, color: 'var(--text)' }}>{tool.title}</span>
+        <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text)' }}>{tool.title}</span>
         <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '1px', lineHeight: 1.35 }}>{tool.desc}</span>
       </span>
       <ChevronRight size={17} strokeWidth={2} color="var(--text-faint)" style={{ flexShrink: 0 }} />

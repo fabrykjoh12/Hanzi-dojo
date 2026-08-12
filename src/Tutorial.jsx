@@ -94,7 +94,7 @@ function Shell({ children, locked, height, onSkip }) {
             top: 'calc(6px + env(safe-area-inset-top, 0px))', right: '6px',
             minHeight: '44px', minWidth: '44px', padding: '0 14px',
             background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--text-muted)', fontSize: '13.5px', fontWeight: 650,
+            color: 'var(--text-muted)', fontSize: '13.5px', fontWeight: 600,
             fontFamily: 'Inter, sans-serif',
           }}
         >
@@ -121,9 +121,9 @@ function PrimaryAction({ label, onClick, accentHex }) {
     <button
       onClick={onClick}
       style={{
-        width: '100%', minHeight: '54px', borderRadius: '16px', border: 'none',
+        width: '100%', minHeight: '54px', borderRadius: '18px', border: 'none',
         background: accentHex, color: '#fff',
-        fontSize: '16.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+        fontSize: '17px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
         cursor: 'pointer', flexShrink: 0,
       }}
     >
@@ -301,12 +301,12 @@ export default function Tutorial({ onComplete, onSkip = null, resumable = true, 
           // under it.
           paddingRight: skip ? '56px' : 0,
         }}>
-          <span style={{ ...NUM, fontSize: '12.5px', fontWeight: 700, color: 'var(--text-faint)' }}>
+          <span style={{ ...NUM, fontSize: '13px', fontWeight: 700, color: 'var(--text-faint)' }}>
             {v.cardNumber} / {v.cardTotal}
           </span>
           {cardCoach && (
             <span style={{
-              fontSize: '13px', fontWeight: 650, color: ink(accentHex),
+              fontSize: '13px', fontWeight: 600, color: ink(accentHex),
               fontFamily: 'Inter, sans-serif', textAlign: 'right',
             }}>
               {cardCoach}
@@ -412,7 +412,7 @@ export default function Tutorial({ onComplete, onSkip = null, resumable = true, 
           <p style={{
             margin: '0 0 20px', padding: '12px 15px', borderRadius: '4px',
             background: 'var(--surface-2)', borderLeft: '3px solid var(--border)',
-            fontSize: '14px', fontStyle: 'italic', color: 'var(--text-muted)',
+            fontSize: '13.5px', fontStyle: 'italic', color: 'var(--text-muted)',
             lineHeight: 1.55, textAlign: 'left',
           }}>
             {v.lookup.setting}
@@ -507,8 +507,8 @@ export default function Tutorial({ onComplete, onSkip = null, resumable = true, 
           style={{
             textAlign: 'center', animation: rise,
             background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: '24px', padding: '40px 30px',
-            boxShadow: '0 22px 60px rgba(24,24,27,0.07)',
+            borderRadius: '26px', padding: '40px 30px',
+            boxShadow: 'var(--shadow-1)',
           }}
         >
           <div style={{
@@ -521,7 +521,7 @@ export default function Tutorial({ onComplete, onSkip = null, resumable = true, 
               ? <BookOpen size={28} strokeWidth={1.9} color={ink(accentHex)} />
               : <Check size={28} strokeWidth={1.9} color={ink(accentHex)} />}
           </div>
-          <h1 style={{ margin: '0 0 8px', fontSize: '26px', fontWeight: 750, color: 'var(--text)' }}>
+          <h1 style={{ margin: '0 0 8px', fontSize: '26px', fontWeight: 700, color: 'var(--text)' }}>
             {v.copy.title}
           </h1>
           {unlock ? (
@@ -532,7 +532,7 @@ export default function Tutorial({ onComplete, onSkip = null, resumable = true, 
             // The recap's tally, drawn as the real recap's stat tile — one
             // tile, because the tutorial has a today and honestly no tomorrow.
             <div style={{
-              margin: '18px 0 26px', padding: '14px 16px', borderRadius: '14px',
+              margin: '18px 0 26px', padding: '14px 16px', borderRadius: '12px',
               background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'left',
             }}>
               <div style={{
@@ -565,7 +565,7 @@ export default function Tutorial({ onComplete, onSkip = null, resumable = true, 
           <p style={{
             margin: '0 0 20px', padding: '12px 15px', borderRadius: '4px',
             background: 'var(--surface-2)', borderLeft: '3px solid var(--border)',
-            fontSize: '14px', fontStyle: 'italic', color: 'var(--text-muted)',
+            fontSize: '13.5px', fontStyle: 'italic', color: 'var(--text-muted)',
             lineHeight: 1.55, textAlign: 'left',
           }}>
             {v.scene.setting}
@@ -579,7 +579,7 @@ export default function Tutorial({ onComplete, onSkip = null, resumable = true, 
             {v.scene.lines.map(line => (
               <div key={line.id}>
                 <div style={{
-                  fontSize: '11.5px', fontWeight: 700, letterSpacing: '0.05em',
+                  fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em',
                   textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: '10px',
                 }}>
                   {line.speaker}

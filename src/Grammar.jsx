@@ -162,7 +162,7 @@ export default function Grammar({ session, profile, track, onBack }) {
           meta="Grammar guide"
           style={{ margin: '24px 0 8px' }}
         />
-        <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 0 22px' }}>
+        <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 0 22px' }}>
           {guide.intro}
         </p>
 
@@ -174,7 +174,7 @@ export default function Grammar({ session, profile, track, onBack }) {
             placeholder="Search topics"
             aria-label="Search grammar topics"
             style={{
-              width: '100%', boxSizing: 'border-box', height: '46px', padding: '0 16px 0 42px', borderRadius: '14px',
+              width: '100%', boxSizing: 'border-box', height: '46px', padding: '0 16px 0 42px', borderRadius: '12px',
               border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)',
               fontSize: '15px', fontFamily: 'Inter, sans-serif',
             }}
@@ -182,7 +182,7 @@ export default function Grammar({ session, profile, track, onBack }) {
         </div>
 
         {shownTopics.length === 0 ? (
-          <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px 20px', fontSize: '14px' }}>
+          <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px 20px', fontSize: '13.5px' }}>
             No topics match “{query.trim()}”.
           </div>
         ) : (
@@ -195,7 +195,7 @@ export default function Grammar({ session, profile, track, onBack }) {
               <div key={topic.id} style={{
                 background: 'var(--surface)', border: '1px solid ' + (expanded ? accentHex + '44' : 'var(--border)'),
                 borderRadius: '18px', overflow: 'hidden',
-                boxShadow: expanded ? '0 12px 30px rgba(24,24,27,0.07)' : '0 2px 10px rgba(24,24,27,0.04)',
+                boxShadow: expanded ? 'var(--shadow-2)' : 'var(--shadow-1)',
                 transition: 'border-color 160ms ease, box-shadow 160ms ease',
               }}>
                 <button
@@ -221,7 +221,7 @@ export default function Grammar({ session, profile, track, onBack }) {
                       : <BookMarked size={19} strokeWidth={1.9} color={accentHex} />}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '16px', fontWeight: 750, color: 'var(--text)' }}>{topic.title}</div>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)' }}>{topic.title}</div>
                     <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '3px', lineHeight: 1.4 }}>{topic.blurb}</div>
                   </div>
                   <ChevronRight
@@ -235,7 +235,7 @@ export default function Grammar({ session, profile, track, onBack }) {
                     {topic.pattern && (
                       <div style={{ paddingLeft: isMobile ? 0 : '54px' }}>
                         <span style={{
-                          display: 'inline-block', padding: '6px 12px', borderRadius: '10px',
+                          display: 'inline-block', padding: '6px 12px', borderRadius: '12px',
                           background: accentHex + '12', border: '1px solid ' + accentHex + '2e',
                           fontSize: '13.5px', fontWeight: 700, color: accentHex, fontFamily: font, letterSpacing: '0.01em',
                         }}>{topic.pattern}</span>
@@ -244,7 +244,7 @@ export default function Grammar({ session, profile, track, onBack }) {
 
                     {topic.points.map((p, pi) => (
                       <div key={pi} style={{ paddingLeft: isMobile ? 0 : '54px' }}>
-                        <div style={{ fontSize: '14px', color: 'var(--text)', lineHeight: 1.6 }}>{p.text}</div>
+                        <div style={{ fontSize: '13.5px', color: 'var(--text)', lineHeight: 1.6 }}>{p.text}</div>
                         {p.ex && (
                           <Example ex={p.ex} language={profile.active_language} font={font} accentHex={accentHex} />
                         )}
@@ -334,7 +334,7 @@ function Example({ ex, language, font, accentHex }) {
           }}
         >
           <span style={{
-            width: '28px', height: '28px', borderRadius: '9px',
+            width: '28px', height: '28px', borderRadius: '8px',
             border: '1px solid ' + accentHex + '2A', background: accentHex + '10',
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           }}>
@@ -356,7 +356,7 @@ function EnrollRow({ enrolled, onEnroll, accentHex, isMobile }) {
       {enrolled ? (
         <span style={{
           display: 'inline-flex', alignItems: 'center', gap: '8px',
-          padding: '9px 14px', borderRadius: '11px',
+          padding: '9px 14px', borderRadius: '12px',
           background: 'var(--success-bg)', border: '1px solid var(--success-border)',
           color: 'var(--success)', fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
         }}>
@@ -365,9 +365,9 @@ function EnrollRow({ enrolled, onEnroll, accentHex, isMobile }) {
       ) : (
         <button onClick={onEnroll} style={{
           display: 'inline-flex', alignItems: 'center', gap: '8px',
-          minHeight: TAP + 'px', padding: '0 16px', borderRadius: '11px', border: 'none',
+          minHeight: TAP + 'px', padding: '0 16px', borderRadius: '12px', border: 'none',
           background: accentHex, color: '#fff', cursor: 'pointer',
-          fontSize: '13px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+          fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
         }}>
           <Repeat2 size={16} strokeWidth={2} color="#fff" /> Practice this pattern
         </button>
@@ -400,12 +400,12 @@ function buildPuzzle(topic, language, seg) {
 
 function tryBtn(accent) {
   return {
-    minHeight: TAP + 'px', padding: '0 18px', borderRadius: '11px', border: 'none',
-    background: accent, color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+    minHeight: TAP + 'px', padding: '0 18px', borderRadius: '12px', border: 'none',
+    background: accent, color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
   }
 }
 const tryGhostBtn = {
-  minHeight: TAP + 'px', padding: '0 14px', borderRadius: '11px', border: '1px solid var(--border)',
+  minHeight: TAP + 'px', padding: '0 14px', borderRadius: '12px', border: '1px solid var(--border)',
   background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
 }
 
@@ -434,7 +434,7 @@ function TryIt({ topic, language, font, accentHex }) {
     <button key={id} disabled={solved}
       onClick={() => { if (solved) return; setResult(null); setPlaced(inBank ? [...placed, id] : placed.filter(x => x !== id)) }}
       style={{
-        padding: '8px 13px', borderRadius: '11px', cursor: solved ? 'default' : 'pointer',
+        padding: '8px 13px', borderRadius: '12px', cursor: solved ? 'default' : 'pointer',
         border: '1.5px solid ' + accentHex + (inBank ? '55' : '99'),
         background: accentHex + (inBank ? '10' : '1E'), color: 'var(--text)',
         fontFamily: font, fontSize: '17px', fontWeight: 600,
@@ -442,8 +442,8 @@ function TryIt({ topic, language, font, accentHex }) {
   )
 
   return (
-    <div style={{ marginTop: '14px', padding: '14px 16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-      <div style={{ fontSize: '12px', fontWeight: 850, letterSpacing: '0.4px', textTransform: 'uppercase', color: accentHex, marginBottom: '4px' }}>Try it</div>
+    <div style={{ marginTop: '14px', padding: '14px 16px', borderRadius: '12px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+      <div style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '0.4px', textTransform: 'uppercase', color: accentHex, marginBottom: '4px' }}>Try it</div>
       <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '10px', fontStyle: 'italic' }}>Build: “{puzzle.en}”</div>
       <div style={{ minHeight: '46px', display: 'flex', flexWrap: 'wrap', gap: '7px', alignItems: 'center', padding: '9px 11px', borderRadius: '12px', border: '1.5px dashed ' + (result === 'correct' ? '#2F9E6D' : result === 'wrong' ? '#DC2626' : 'var(--border)'), background: 'var(--surface)', marginBottom: '10px' }}>
         {placed.length === 0 && <span style={{ color: 'var(--text-faint)', fontSize: '13px' }}>Tap the words in order…</span>}
@@ -459,7 +459,7 @@ function TryIt({ topic, language, font, accentHex }) {
           <button onClick={check} disabled={placed.length === 0} style={{ ...tryBtn(accentHex), opacity: placed.length === 0 ? 0.5 : 1 }}>Check</button>
         )}
         {result && <button onClick={reset} style={tryGhostBtn}>Shuffle</button>}
-        {result === 'correct' && <span style={{ fontSize: '13px', fontWeight: 750, color: '#2F9E6D' }}>Nice — that’s the order!</span>}
+        {result === 'correct' && <span style={{ fontSize: '13px', fontWeight: 700, color: '#2F9E6D' }}>Nice — that’s the order!</span>}
         {result === 'wrong' && <span style={{ fontSize: '13px', fontWeight: 700, color: '#DC2626' }}>Not yet — try again.</span>}
       </div>
     </div>
@@ -485,7 +485,7 @@ function StoryLines({ topic, stories, font, accentHex, isMobile }) {
           {matches.map((m, mi) => (
             <div key={mi}>
               <div style={{ fontSize: '16px', fontFamily: font, color: 'var(--text)', lineHeight: 1.5 }}>{m.line}</div>
-              <div style={{ fontSize: '11.5px', color: 'var(--text-faint)', marginTop: '1px' }}>from “{m.title}”</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '1px' }}>from “{m.title}”</div>
             </div>
           ))}
         </div>
@@ -511,7 +511,7 @@ function SelfCheck({ topic, picked, done, onPick, font, accentHex, isMobile }) {
             const solved = chosen === c.correct
             return (
               <div key={qi}>
-                <div style={{ fontSize: '13.5px', fontWeight: 650, color: 'var(--text)', marginBottom: '8px', lineHeight: 1.5 }}>{c.q}</div>
+                <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text)', marginBottom: '8px', lineHeight: 1.5 }}>{c.q}</div>
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '7px' }}>
                   {c.options.map((opt, oi) => {
                     const isChosen = chosen === oi
@@ -523,7 +523,7 @@ function SelfCheck({ topic, picked, done, onPick, font, accentHex, isMobile }) {
                         onClick={() => onPick(qi, oi)}
                         style={{
                           textAlign: 'left', cursor: solved ? 'default' : 'pointer',
-                          minHeight: TAP + 'px', padding: '10px 12px', borderRadius: '10px',
+                          minHeight: TAP + 'px', padding: '10px 12px', borderRadius: '12px',
                           border: '1px solid ' + (isRight ? 'var(--success-border)' : isWrong ? 'var(--danger-border)' : 'var(--border)'),
                           background: isRight ? 'var(--success-bg)' : isWrong ? 'var(--danger-bg)' : 'var(--surface)',
                           color: isRight ? 'var(--success)' : isWrong ? 'var(--danger)' : 'var(--text)',
@@ -555,7 +555,7 @@ function Ghost({ onClick }) {
       display: 'inline-flex', alignItems: 'center', gap: '8px',
       minHeight: TAP + 'px', padding: '0 14px', borderRadius: '12px',
       border: '1px solid var(--border)', background: h ? 'var(--surface-2)' : 'var(--surface)',
-      color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+      color: 'var(--text-muted)', fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
     }}>
       <ArrowLeft size={17} strokeWidth={1.85} color="var(--text-muted)" /> Home
     </button>

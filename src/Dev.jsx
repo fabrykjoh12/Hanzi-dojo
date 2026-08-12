@@ -18,12 +18,12 @@ import {
 function Section({ icon: Icon, title, children, accent }) {
   return (
     <div style={{
-      background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px',
+      background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px',
       padding: '18px 20px', marginBottom: '14px',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
         <Icon size={16} strokeWidth={2} color={accent} />
-        <span style={{ fontSize: '13.5px', fontWeight: 750, color: 'var(--text)' }}>{title}</span>
+        <span style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text)' }}>{title}</span>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>{children}</div>
     </div>
@@ -46,10 +46,10 @@ function Action({ label, onRun, danger, confirm }) {
   const color = danger ? '#DC2626' : 'var(--text)'
   return (
     <button onClick={run} disabled={busy} style={{
-      padding: '9px 14px', borderRadius: '10px', cursor: busy ? 'wait' : 'pointer',
+      padding: '9px 14px', borderRadius: '12px', cursor: busy ? 'wait' : 'pointer',
       border: '1px solid ' + (danger ? '#DC262640' : 'var(--border)'),
       background: arming ? '#DC262615' : 'var(--surface)',
-      color, fontSize: '12.5px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+      color, fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
       opacity: busy ? 0.6 : 1,
     }}>
       {busy ? 'Working…' : (arming ? 'Tap again to confirm' : label)}
@@ -135,7 +135,7 @@ export default function Dev({ session, profile, track, onBack, onNavigate }) {
     <div style={{ maxWidth: '760px', margin: '0 auto', padding: '28px 18px 60px', fontFamily: 'Inter, sans-serif' }}>
       <button onClick={onBack} style={{
         display: 'inline-flex', alignItems: 'center', gap: '6px', marginBottom: '16px',
-        border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: '10px',
+        border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: '12px',
         padding: '8px 12px', fontSize: '13px', color: 'var(--text-muted)', cursor: 'pointer',
       }}>
         <ArrowLeft size={14} /> Home
@@ -243,7 +243,7 @@ export default function Dev({ session, profile, track, onBack, onNavigate }) {
         <ControlsGallery />
       </Section>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '11.5px', color: 'var(--text-faint)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: 'var(--text-faint)' }}>
         <RefreshCw size={12} /> After data changes, go Home — it reloads profile, track and counts.
         <Trash2 size={12} style={{ marginLeft: '8px' }} /> Red actions need a second tap.
       </div>

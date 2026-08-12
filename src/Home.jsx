@@ -188,11 +188,11 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
           display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px',
           background: `color-mix(in srgb, ${accentHex} 7%, var(--surface))`,
           border: '1px solid color-mix(in srgb, ' + accentHex + ' 26%, var(--border))',
-          borderLeft: `3px solid ${accentHex}`, borderRadius: '14px',
+          borderLeft: `3px solid ${accentHex}`, borderRadius: '12px',
           padding: '14px 16px', animationDelay: '40ms',
         }}>
           <Sunrise size={20} strokeWidth={1.9} color={accentInk} style={{ flexShrink: 0 }} />
-          <span style={{ fontSize: '13.5px', color: 'var(--text)', fontWeight: 550, lineHeight: 1.5 }}>
+          <span style={{ fontSize: '13.5px', color: 'var(--text)', fontWeight: 600, lineHeight: 1.5 }}>
             {gentleReturnMessage(gentleReady)}
           </span>
         </div>
@@ -208,7 +208,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
       {firstRunNudge && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '10px',
-          padding: '0 2px', fontSize: '13.5px', fontWeight: 750,
+          padding: '0 2px', fontSize: '13.5px', fontWeight: 700,
           color: accentInk, fontFamily: 'Inter, sans-serif',
         }}>
           <Sparkles size={16} strokeWidth={2} color={accentInk} style={{ flexShrink: 0 }} />
@@ -285,7 +285,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
           <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
             Your week
           </h2>
-          <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
+          <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
             {studiedDays === 0
               ? 'No sessions yet'
               : 'Studied ' + studiedDays + ' of the last ' + rhythmDays + ' days'}
@@ -314,7 +314,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
                   : 'none',
               }} />
               <span style={{
-                ...MICRO, fontSize: '9.5px',
+                ...MICRO, fontSize: '10.5px',
                 color: day.isToday ? 'var(--text)' : 'var(--text-faint)',
               }}>
                 {weekdayInitial(day.date)}
@@ -328,10 +328,10 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
             of numbers made Home read as a dashboard. ── */}
         <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
-            <span style={{ fontSize: '13.5px', fontWeight: 650, color: 'var(--text)' }}>
+            <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text)' }}>
               Toward {nextLevelLabel}
             </span>
-            <span style={{ ...NUM, fontSize: '12.5px', color: 'var(--text-muted)' }}>
+            <span style={{ ...NUM, fontSize: '13px', color: 'var(--text-muted)' }}>
               {learned} of {totalWords} words
             </span>
           </div>
@@ -416,7 +416,7 @@ function StoryHandoff({
         style={{ width: '56px', flexShrink: 0, aspectRatio: '2 / 3' }}
       />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
+        <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
           {label}
         </div>
         <div style={{
@@ -427,7 +427,7 @@ function StoryHandoff({
         </div>
         <div style={{
           display: 'flex', alignItems: 'center', gap: '5px',
-          fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '3px', minWidth: 0,
+          fontSize: '13px', color: 'var(--text-muted)', marginTop: '3px', minWidth: 0,
         }}>
           {MetaIcon && <MetaIcon size={13} strokeWidth={2.2} color={accentInk} style={{ flexShrink: 0 }} aria-hidden="true" />}
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta}</span>
@@ -509,7 +509,7 @@ function QueueBody({ counts, totalDue, goal, doneToday, isMobile, action, accent
           ].map(([label, value]) => (
             <span key={label} style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
               <span style={{ ...NUM, fontSize: '17px', fontWeight: 700, color: '#fff' }}>{value}</span>
-              <span style={{ ...MICRO, fontSize: '9.5px', color: 'rgba(255,255,255,0.55)' }}>{label}</span>
+              <span style={{ ...MICRO, fontSize: '10.5px', color: 'rgba(255,255,255,0.55)' }}>{label}</span>
             </span>
           ))}
         </div>

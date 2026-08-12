@@ -113,7 +113,7 @@ export default function Listen({ session, profile, track, onBack }) {
             width: '88px', height: '88px', borderRadius: '26px',
             background: 'var(--surface)', border: '1px solid var(--border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 16px 40px rgba(24,24,27,0.06)',
+            boxShadow: 'var(--shadow-1)',
           }}>
             <Headphones size={34} strokeWidth={1.75} color={accentHex} />
           </div>
@@ -129,12 +129,12 @@ export default function Listen({ session, profile, track, onBack }) {
         <div style={{ maxWidth: '520px', margin: '0 auto', minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{
             width: '100%', textAlign: 'center', background: 'var(--surface)',
-            border: '1px solid var(--border)', borderRadius: '24px', padding: '44px 36px',
-            boxShadow: '0 22px 60px rgba(24,24,27,0.07)',
+            border: '1px solid var(--border)', borderRadius: '26px', padding: '44px 36px',
+            boxShadow: 'var(--shadow-1)',
           }}>
             <Headphones size={30} strokeWidth={1.8} color={accentHex} style={{ marginBottom: '14px' }} />
-            <h1 style={{ fontSize: '22px', fontWeight: 750, color: 'var(--text)', marginBottom: '8px' }}>No listening words yet</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
+            <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>No listening words yet</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', lineHeight: 1.6, marginBottom: '24px' }}>
               This level needs at least a few words with audio before a listening quiz can run.
             </p>
             <PrimaryButton onClick={onBack} icon={ArrowLeft}>Done</PrimaryButton>
@@ -152,7 +152,7 @@ export default function Listen({ session, profile, track, onBack }) {
           <div style={{
             width: '100%', maxWidth: '520px', textAlign: 'center',
             background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: '24px', padding: '42px 36px', boxShadow: '0 22px 60px rgba(24,24,27,0.07)',
+            borderRadius: '26px', padding: '42px 36px', boxShadow: 'var(--shadow-1)',
           }}>
             <div style={{
               width: '58px', height: '58px', borderRadius: '18px', margin: '0 auto 18px',
@@ -161,12 +161,12 @@ export default function Listen({ session, profile, track, onBack }) {
             }}>
               <CheckCircle2 size={28} strokeWidth={1.9} color={accentHex} />
             </div>
-            <h1 style={{ fontSize: '26px', fontWeight: 750, marginBottom: '8px', color: 'var(--text)' }}>Listening complete</h1>
+            <h1 style={{ fontSize: '26px', fontWeight: 700, marginBottom: '8px', color: 'var(--text)' }}>Listening complete</h1>
             <p style={{ color: 'var(--text-muted)', marginBottom: '22px', fontSize: '15px' }}>
               You matched <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {questions.length} by ear.
             </p>
-            <div style={{ padding: '16px 10px', borderRadius: '14px', background: accentHex + '0D', border: '1px solid ' + accentHex + '22', marginBottom: '22px' }}>
-              <div style={{ fontSize: '26px', fontWeight: 760, color: inkStrong(accentHex), lineHeight: 1 }}>{pct}%</div>
+            <div style={{ padding: '16px 10px', borderRadius: '12px', background: accentHex + '0D', border: '1px solid ' + accentHex + '22', marginBottom: '22px' }}>
+              <div style={{ fontSize: '26px', fontWeight: 800, color: inkStrong(accentHex), lineHeight: 1 }}>{pct}%</div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -186,13 +186,13 @@ export default function Listen({ session, profile, track, onBack }) {
       <div style={{ maxWidth: '620px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <SecondaryButton onClick={onBack} icon={ArrowLeft}>Exit</SecondaryButton>
-          <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>
+          <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>
             {idx + 1} / {questions.length}
           </span>
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(accentHex), fontSize: '13px', fontWeight: 750 }}>
+          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(accentHex), fontSize: '13px', fontWeight: 700 }}>
             <Headphones size={17} strokeWidth={1.8} color={accentHex} aria-hidden="true" />
             Listening
           </h1>
@@ -253,7 +253,7 @@ export default function Listen({ session, profile, track, onBack }) {
                 aria-disabled={answered}
                 style={{
                   position: 'relative', minHeight: '76px', padding: '14px 16px',
-                  borderRadius: '16px', border: '1.5px solid ' + borderColor, background: bg,
+                  borderRadius: '18px', border: '1.5px solid ' + borderColor, background: bg,
                   cursor: answered ? 'default' : 'pointer', textAlign: 'center',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px',
                   transition: 'border-color 140ms ease, background 140ms ease',
@@ -284,7 +284,7 @@ export default function Listen({ session, profile, track, onBack }) {
             <div style={{ marginTop: '20px' }}>
               <span style={srOnly}>{picked === q.correct.id ? 'Correct.' : 'Incorrect.'}</span>
               <div lang={langAttr(track.language)} style={{
-                padding: '14px 18px', borderRadius: '14px', textAlign: 'center', marginBottom: '14px',
+                padding: '14px 18px', borderRadius: '12px', textAlign: 'center', marginBottom: '14px',
                 background: 'var(--surface-2)', border: '1px solid var(--border)',
               }}>
                 <span style={{ fontSize: '20px', fontFamily: langFont, color: 'var(--text)', fontWeight: 500 }}>{q.correct.word}</span>

@@ -298,23 +298,23 @@ export default function ChatMission({ mission, vocab, session, track, dayBuckets
                 const mine = m.from === 'me'
                 return (
                   <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', marginBottom: '14px' }}>
-                    {!mine && <div style={{ fontSize: '11.5px', color: '#6B6660', fontWeight: 700, margin: '0 0 4px 8px', fontFamily: font }}>{m.name}</div>}
+                    {!mine && <div style={{ fontSize: '12px', color: '#6B6660', fontWeight: 700, margin: '0 0 4px 8px', fontFamily: font }}>{m.name}</div>}
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', maxWidth: '86%', flexDirection: mine ? 'row-reverse' : 'row' }}>
                       <div style={{
                         background: mine ? skin.myBubble : skin.theirBubble,
                         color: mine ? skin.myText : '#1A1A1A',
                         border: mine ? 'none' : '1px solid rgba(0,0,0,0.06)',
                         borderRadius: '18px', padding: '10px 13px',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+                        boxShadow: 'none',
                         borderBottomRightRadius: mine ? '6px' : '18px',
                         borderBottomLeftRadius: mine ? '18px' : '6px',
                       }}>
                         {showPinyin && (
-                          <div style={{ fontSize: '11.5px', opacity: 0.72, marginBottom: '3px', lineHeight: 1.35 }}>{mission.pinyin[i]}</div>
+                          <div style={{ fontSize: '12px', opacity: 0.72, marginBottom: '3px', lineHeight: 1.35 }}>{mission.pinyin[i]}</div>
                         )}
                         <div style={{ fontSize: '19px' }}><Sentence text={m.text} /></div>
                         {showEnglish && (
-                          <div style={{ fontSize: '12.5px', opacity: 0.7, marginTop: '4px', fontStyle: 'italic', lineHeight: 1.4 }}>{mission.translations[i]}</div>
+                          <div style={{ fontSize: '13px', opacity: 0.7, marginTop: '4px', fontStyle: 'italic', lineHeight: 1.4 }}>{mission.translations[i]}</div>
                         )}
                       </div>
                       <button onClick={() => speakSentence(m.text)} aria-label="Play" style={{ ...ghost, padding: '5px' }}>
@@ -354,7 +354,7 @@ export default function ChatMission({ mission, vocab, session, track, dayBuckets
                           onClick={() => setAnswers(a => ({ ...a, [qi]: oi }))}
                           style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px',
-                            textAlign: 'left', padding: '13px 15px', borderRadius: '13px',
+                            textAlign: 'left', padding: '13px 15px', borderRadius: '12px',
                             border: '1.5px solid ' + bc, background: bgc, color: '#1A1A1A',
                             cursor: answered ? 'default' : 'pointer', fontSize: '17px', fontFamily: font,
                           }}>
@@ -397,7 +397,7 @@ export default function ChatMission({ mission, vocab, session, track, dayBuckets
                 return (
                   <>
                     {/* Built sentence tray */}
-                    <div style={{ minHeight: '52px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', padding: '10px 12px', borderRadius: '13px', border: '1.5px dashed rgba(0,0,0,0.09)', background: '#FFFFFF', marginBottom: '14px' }}>
+                    <div style={{ minHeight: '52px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', padding: '10px 12px', borderRadius: '12px', border: '1.5px dashed rgba(0,0,0,0.09)', background: '#FFFFFF', marginBottom: '14px' }}>
                       {built.length === 0 && <span style={{ color: '#A6A29B', fontSize: '13px' }}>Tap the words to build your reply…</span>}
                       {built.map((p, k) => (
                         <button key={k} disabled={tileChecked} onClick={() => setTilePicked(prev => prev.filter((_, idx) => idx !== k))}
@@ -412,7 +412,7 @@ export default function ChatMission({ mission, vocab, session, track, dayBuckets
                       ))}
                     </div>
                     {tileChecked && (
-                      <div style={{ fontSize: '14px', fontWeight: 700, color: correct ? '#2F9E6D' : '#DC2626', marginTop: '6px' }}>
+                      <div style={{ fontSize: '13.5px', fontWeight: 700, color: correct ? '#2F9E6D' : '#DC2626', marginTop: '6px' }}>
                         {correct ? '✓ Nice — that works!' : '✗ Not quite. A natural reply is: ' + answerStr}
                       </div>
                     )}
@@ -441,11 +441,11 @@ export default function ChatMission({ mission, vocab, session, track, dayBuckets
                       <button key={oi} disabled={answered}
                         onClick={() => { setReplyChoice(oi); setReplyCorrect(opt.correct); if (!opt.correct) markTargetsWeak() }}
                         style={{
-                          textAlign: 'left', padding: '14px 16px', borderRadius: '14px',
+                          textAlign: 'left', padding: '14px 16px', borderRadius: '12px',
                           border: '1.5px solid ' + bc, background: bgc, color: '#1A1A1A',
                           cursor: answered ? 'default' : 'pointer', fontFamily: font,
                         }}>
-                        <div style={{ fontSize: '18px' }}>{opt.text}</div>
+                        <div style={{ fontSize: '17px' }}>{opt.text}</div>
                         {showPinyin && opt.pinyin && <div style={{ fontSize: '12px', color: '#6B6660', marginTop: '3px' }}>{opt.pinyin}</div>}
                       </button>
                     )
@@ -469,7 +469,7 @@ export default function ChatMission({ mission, vocab, session, track, dayBuckets
               <Trophy size={28} strokeWidth={1.9} color={accent} />
             </div>
             <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#1A1A1A', margin: '0 0 6px' }}>Mission complete</h2>
-            <p style={{ color: '#6B6660', fontSize: '14px', margin: '0 0 22px' }}>You used today’s words in a real conversation.</p>
+            <p style={{ color: '#6B6660', fontSize: '13.5px', margin: '0 0 22px' }}>You used today’s words in a real conversation.</p>
 
             <ResultRow label="Comprehension" value={`${correctCount}/${questions.length}`} accent={accent} />
             <ResultRow label="Reply" value={replyCorrect ? 'Correct' : 'Keep practicing'} accent={accent} />
@@ -484,7 +484,7 @@ export default function ChatMission({ mission, vocab, session, track, dayBuckets
 
             {weakOut.length > 0 && (
               <ResultBlock title="Saved for review">
-                <div style={{ fontSize: '12.5px', color: '#6B6660', marginBottom: '8px' }}>Words you looked up are added to your deck so they come back in flashcards.</div>
+                <div style={{ fontSize: '13px', color: '#6B6660', marginBottom: '8px' }}>Words you looked up are added to your deck so they come back in flashcards.</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
                   {weakOut.map(w => <span key={w} style={pill('#DC2626', font)}>{w}</span>)}
                 </div>
@@ -507,7 +507,7 @@ export default function ChatMission({ mission, vocab, session, track, dayBuckets
         <div onClick={() => setSelected(null)} className="app-overlay-viewport" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 70, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.12)' }}>
           <div onClick={e => e.stopPropagation()} style={{
             width: '100%', maxWidth: '560px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.09)',
-            borderRadius: '20px 20px 0 0', boxShadow: '0 -10px 40px rgba(24,24,27,0.16)', padding: '16px 18px 26px',
+            borderRadius: '18px 18px 0 0', boxShadow: 'var(--shadow-sheet)', padding: '16px 18px 26px',
           }}>
             <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: '#D4D4D8', margin: '0 auto 14px' }} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
@@ -541,7 +541,7 @@ function Chip({ on, onClick, icon: Icon, label, accent }) {
       padding: '7px 12px', borderRadius: '999px', cursor: 'pointer',
       border: '1px solid ' + (on ? accent + '66' : 'rgba(0,0,0,0.09)'),
       background: on ? accent + '14' : '#FFFFFF', color: on ? accent : '#6B6660',
-      fontSize: '12.5px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+      fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
     }}>
       <Icon size={14} strokeWidth={2} /> {label}
     </button>
@@ -560,13 +560,13 @@ function BottomBar({ children }) {
 }
 
 function SectionTitle({ children }) {
-  return <div style={{ fontSize: '13px', fontWeight: 850, letterSpacing: '0.5px', textTransform: 'uppercase', color: '#6B6660', marginBottom: '16px' }}>{children}</div>
+  return <div style={{ fontSize: '13px', fontWeight: 800, letterSpacing: '0.5px', textTransform: 'uppercase', color: '#6B6660', marginBottom: '16px' }}>{children}</div>
 }
 
 function ResultRow({ label, value, accent }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '14px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.09)', marginBottom: '10px' }}>
-      <span style={{ fontSize: '14px', color: '#6B6660', fontWeight: 600 }}>{label}</span>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '12px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.09)', marginBottom: '10px' }}>
+      <span style={{ fontSize: '13.5px', color: '#6B6660', fontWeight: 600 }}>{label}</span>
       <span style={{ fontSize: '16px', color: accent, fontWeight: 800 }}>{value}</span>
     </div>
   )
@@ -574,7 +574,7 @@ function ResultRow({ label, value, accent }) {
 
 function ResultBlock({ title, children }) {
   return (
-    <div style={{ textAlign: 'left', marginTop: '18px', padding: '16px 18px', borderRadius: '16px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.09)' }}>
+    <div style={{ textAlign: 'left', marginTop: '18px', padding: '16px 18px', borderRadius: '18px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.09)' }}>
       <div style={{ fontSize: '13px', fontWeight: 800, color: '#1A1A1A', marginBottom: '10px' }}>{title}</div>
       {children}
     </div>
@@ -591,7 +591,7 @@ function pill(color, font) {
 
 function primary(accent) {
   return {
-    width: '100%', minHeight: '50px', borderRadius: '15px', border: 'none',
+    width: '100%', minHeight: '50px', borderRadius: '12px', border: 'none',
     background: accent, color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 800,
     fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
   }
@@ -599,9 +599,9 @@ function primary(accent) {
 
 function tileStyle(color, font) {
   return {
-    padding: '9px 14px', borderRadius: '11px', cursor: 'pointer',
+    padding: '9px 14px', borderRadius: '12px', cursor: 'pointer',
     border: '1.5px solid ' + color + '55', background: color + '12', color: '#1A1A1A',
-    fontSize: '18px', fontFamily: font, fontWeight: 600,
+    fontSize: '17px', fontFamily: font, fontWeight: 600,
   }
 }
 

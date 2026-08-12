@@ -5,7 +5,7 @@ import { holdLayout } from './controlTokens'
 
 // P14-0: vermilion, themed. See ui.jsx.
 const PRIMARY = 'var(--primary)'
-const startBtn = { marginTop: '24px', width: '100%', border: 'none', borderRadius: '16px', background: PRIMARY, color: '#fff', fontSize: '15.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px' }
+const startBtn = { marginTop: '24px', width: '100%', border: 'none', borderRadius: '18px', background: PRIMARY, color: '#fff', fontSize: '15px', fontWeight: 700, fontFamily: 'Inter, sans-serif', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px' }
 function pct(n, total) { return total ? Math.round((n / total) * 100) + '%' : '0%' }
 
 // An equally-weighted Paged | Scroll choice (replaces the old buried "read as
@@ -22,10 +22,10 @@ function ReadingStyleToggle({ mode, onPick, accent }) {
           return (
             <button key={o.key} onClick={() => onPick(o.key)} aria-pressed={on}
               style={{
-                flex: 1, border: 'none', cursor: 'pointer', borderRadius: '9px', padding: '10px',
-                fontSize: '13.5px', fontWeight: on ? 800 : 650, fontFamily: 'Inter, sans-serif',
+                flex: 1, border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '10px',
+                fontSize: '13.5px', fontWeight: on ? 800 : 600, fontFamily: 'Inter, sans-serif',
                 background: on ? 'var(--surface)' : 'transparent', color: on ? inkStrong(accent) : 'var(--text-muted)',
-                boxShadow: on ? '0 1px 6px rgba(24,24,27,0.10)' : 'none', transition: 'background 140ms ease',
+                boxShadow: on ? 'var(--shadow-1)' : 'none', transition: 'background 140ms ease',
               }}>
               {o.label}
             </button>

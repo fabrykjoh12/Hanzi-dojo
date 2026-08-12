@@ -44,7 +44,7 @@ function ChapterRow({ row, accentHex, fontFamily, showLockHint, onOpen }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'flex', alignItems: 'center', gap: '12px', width: '100%', textAlign: 'left',
-        minHeight: '56px', padding: '9px 12px', borderRadius: '13px',
+        minHeight: '56px', padding: '9px 12px', borderRadius: '12px',
         border: '1px solid ' + (current ? accentHex + '3D' : 'transparent'),
         background: current
           ? 'color-mix(in srgb, ' + accentHex + ' 7%, var(--surface))'
@@ -57,18 +57,18 @@ function ChapterRow({ row, accentHex, fontFamily, showLockHint, onOpen }) {
     >
       <span aria-hidden="true" style={{
         width: '26px', flexShrink: 0, textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-        fontSize: '13px', fontWeight: 750, color: current ? ink(accentHex) : 'var(--text-faint)',
+        fontSize: '13px', fontWeight: 700, color: current ? ink(accentHex) : 'var(--text-faint)',
       }}>
         {String(number).padStart(2, '0')}
       </span>
       <span style={{ flex: 1, minWidth: 0 }}>
         <span style={{
-          display: 'block', fontSize: '14.5px', fontWeight: current ? 800 : 700, color: 'var(--text)',
+          display: 'block', fontSize: '15px', fontWeight: current ? 800 : 700, color: 'var(--text)',
           fontFamily, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
           {nativeLabel ? nativeLabel + ' · ' + title : title}
         </span>
-        <span style={{ display: 'block', marginTop: '2px', fontSize: '11.5px', fontWeight: 650, color: current ? ink(accentHex) : 'var(--text-muted)' }}>
+        <span style={{ display: 'block', marginTop: '2px', fontSize: '12px', fontWeight: 600, color: current ? ink(accentHex) : 'var(--text-muted)' }}>
           {read
             ? 'Read'
             : current
@@ -149,7 +149,7 @@ export default function SeriesDetail({
           display: 'inline-flex', alignItems: 'center', gap: '8px',
           minHeight: '44px', padding: '0 14px', borderRadius: '12px', marginBottom: '20px',
           border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)',
-          fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+          fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
         }}>
           <ArrowLeft size={17} strokeWidth={1.85} color="var(--text-muted)" /> All stories
         </button>
@@ -159,12 +159,12 @@ export default function SeriesDetail({
             story={coverStory} path={coverStory && coverStory.image_path} accent={accentHex} radius={16}
             style={{
               width: posterWidth + 'px', aspectRatio: '2 / 3', flexShrink: 0,
-              border: '1px solid var(--border)', boxShadow: '0 14px 34px rgba(24,24,27,0.16)',
+              border: '1px solid var(--border)', boxShadow: 'var(--shadow-2)',
             }}
           />
           <div style={{ flex: 1, minWidth: 0, paddingTop: isMobile ? 0 : '6px' }}>
             <div style={{
-              fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase',
+              fontSize: '12px', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase',
               color: 'var(--text-muted)', marginBottom: '7px',
             }}>
               {metaLine}
@@ -176,7 +176,7 @@ export default function SeriesDetail({
               {unit.title}
             </h1>
             {description && !isMobile && (
-              <p style={{ margin: '11px 0 0', maxWidth: '58ch', fontSize: '14px', lineHeight: 1.6, color: 'var(--text-muted)' }}>
+              <p style={{ margin: '11px 0 0', maxWidth: '58ch', fontSize: '13.5px', lineHeight: 1.6, color: 'var(--text-muted)' }}>
                 {description}
               </p>
             )}
@@ -207,7 +207,7 @@ export default function SeriesDetail({
 
         {recognize.length > 0 && (
           <div style={{
-            marginTop: '20px', padding: '14px 16px', borderRadius: '16px',
+            marginTop: '20px', padding: '14px 16px', borderRadius: '18px',
             border: '1px solid ' + accentHex + '26',
             background: 'color-mix(in srgb, ' + accentHex + ' 6%, var(--surface))',
           }}>
@@ -225,7 +225,7 @@ export default function SeriesDetail({
                   padding: '5px 11px', borderRadius: '999px',
                   border: '1px solid var(--border)', background: 'var(--surface)',
                 }}>
-                  <span style={{ fontFamily, fontSize: '15px', fontWeight: 650, color: 'var(--text)' }}>{w.word}</span>
+                  <span style={{ fontFamily, fontSize: '15px', fontWeight: 600, color: 'var(--text)' }}>{w.word}</span>
                   {w.reading && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{w.reading}</span>}
                 </span>
               ))}
@@ -246,7 +246,7 @@ export default function SeriesDetail({
           <div style={{
             border: '1px solid var(--border)', borderRadius: '18px', background: 'var(--surface)',
             padding: '6px', display: 'flex', flexDirection: 'column', gap: '1px',
-            boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
+            boxShadow: 'var(--shadow-1)',
           }}>
             {rows.map((row, i) => (
               <ChapterRow
@@ -291,8 +291,8 @@ function SeriesActions({
         {cta && cta.kind === 'locked' ? (
           <button onClick={onStudy} className="hd-press" style={{
             display: 'inline-flex', alignItems: 'center', gap: '9px',
-            minHeight: '48px', padding: '0 20px', borderRadius: '14px', border: 'none',
-            background: accentHex, color: '#fff', fontSize: '14.5px', fontWeight: 800,
+            minHeight: '48px', padding: '0 20px', borderRadius: '12px', border: 'none',
+            background: accentHex, color: '#fff', fontSize: '15px', fontWeight: 800,
             fontFamily: 'Inter, sans-serif', cursor: 'pointer',
           }}>
             <Zap size={17} strokeWidth={2.2} color="#fff" />
@@ -306,8 +306,8 @@ function SeriesActions({
             className="hd-press"
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '9px',
-              minHeight: '48px', padding: '0 22px', borderRadius: '14px', border: 'none',
-              background: accentHex, color: '#fff', fontSize: '14.5px', fontWeight: 800,
+              minHeight: '48px', padding: '0 22px', borderRadius: '12px', border: 'none',
+              background: accentHex, color: '#fff', fontSize: '15px', fontWeight: 800,
               fontFamily: 'Inter, sans-serif', cursor: 'pointer',
               transform: ctaHovered ? 'translateY(-1px)' : 'translateY(0)',
               boxShadow: ctaHovered ? '0 12px 26px ' + accentHex + '3D' : '0 6px 16px ' + accentHex + '2A',
@@ -333,7 +333,7 @@ function SeriesActions({
             display: 'inline-flex', alignItems: 'center', gap: '6px',
             minHeight: '40px', padding: '0 14px', borderRadius: '999px', cursor: 'pointer',
             border: '1px solid var(--border)', background: 'var(--surface)',
-            fontSize: '12.5px', fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif',
+            fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif',
           }}>
             Make this my active series
           </button>
@@ -341,7 +341,7 @@ function SeriesActions({
       </div>
 
       {cta && cta.kind === 'locked' && (
-        <div style={{ marginTop: '9px', fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+        <div style={{ marginTop: '9px', fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
           Chapter {cta.chapterNumber} unlocks when you complete a flashcard session.
         </div>
       )}

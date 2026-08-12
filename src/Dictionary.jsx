@@ -320,7 +320,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
 
   const rowStyle = {
     display: 'flex', alignItems: 'center', gap: '14px', textAlign: 'left', width: '100%',
-    minHeight: TAP + 'px', padding: '13px 16px', borderRadius: '14px', cursor: 'pointer',
+    minHeight: TAP + 'px', padding: '13px 16px', borderRadius: '12px', cursor: 'pointer',
     background: 'var(--surface)', border: '1px solid var(--border)', fontFamily: 'Inter, sans-serif',
   }
 
@@ -330,7 +330,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
       <button key={v.id} onClick={() => openWord(v)} style={rowStyle}>
         <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', fontFamily: langFont + ', Inter, sans-serif', flexShrink: 0 }}>{v.word}</span>
         <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-          {v.reading && <span style={{ fontSize: '12.5px', color: accentInk, fontWeight: 600 }}>{v.reading}</span>}
+          {v.reading && <span style={{ fontSize: '13px', color: accentInk, fontWeight: 600 }}>{v.reading}</span>}
           <span style={{ fontSize: '13px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.meaning}</span>
         </span>
         <span style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--text-faint)', flexShrink: 0 }}>
@@ -344,7 +344,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
             display: 'inline-flex', alignItems: 'center', gap: '5px', flexShrink: 0,
             fontSize: '12px', fontWeight: 700, color: accentInk,
           }}>
-            <span aria-hidden="true" style={{ width: '7px', height: '7px', borderRadius: '50%', background: accentHex }} />
+            <span aria-hidden="true" style={{ width: '7px', height: '7px', borderRadius: '999px', background: accentHex }} />
             In deck
           </span>
         )}
@@ -356,7 +356,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
     <button key={e.id} onClick={() => openDict(e)} style={rowStyle}>
       <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', fontFamily: langFont + ', Inter, sans-serif', flexShrink: 0 }}>{e.simplified}</span>
       <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-        <span style={{ fontSize: '12.5px', color: accentInk, fontWeight: 600 }}>{e.pinyin}</span>
+        <span style={{ fontSize: '13px', color: accentInk, fontWeight: 600 }}>{e.pinyin}</span>
         <span style={{ fontSize: '13px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {Array.isArray(e.definitions) ? e.definitions.join('; ') : ''}
         </span>
@@ -375,7 +375,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
     <button key={r.id} onClick={() => openRecentDict(r)} style={rowStyle}>
       <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', fontFamily: langFont + ', Inter, sans-serif', flexShrink: 0 }}>{r.word}</span>
       <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-        {r.reading && <span style={{ fontSize: '12.5px', color: accentInk, fontWeight: 600 }}>{r.reading}</span>}
+        {r.reading && <span style={{ fontSize: '13px', color: accentInk, fontWeight: 600 }}>{r.reading}</span>}
         <span style={{ fontSize: '13px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.meaning}</span>
       </span>
     </button>
@@ -384,7 +384,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
   const renderRecentSection = (children, style) => (
     <section aria-label="Recent lookups" style={style}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '6px' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
           <Clock size={14} strokeWidth={2} color="var(--text-muted)" /> Recent
         </span>
         <button onClick={clearRecentLookups} style={linkBtn}>Clear</button>
@@ -396,7 +396,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
   const notice = (icon, text, action) => (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '38px 12px', textAlign: 'center' }}>
       {icon}
-      <span style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.5, maxWidth: '38ch' }}>{text}</span>
+      <span style={{ color: 'var(--text-muted)', fontSize: '13.5px', lineHeight: 1.5, maxWidth: '38ch' }}>{text}</span>
       {action}
     </div>
   )
@@ -416,7 +416,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
         meta="Dictionary"
         style={{ margin: '10px 0 8px' }}
       />
-      <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: '0 0 18px', lineHeight: 1.5 }}>
+      <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', margin: '0 0 18px', lineHeight: 1.5 }}>
         {/* The label is '' for a system we do not recognise, so it has to be
             able to drop out of the sentence rather than leave a double space. */}
         Search every {systemLabel ? systemLabel + ' ' : ''}word, hear it, and save it to your deck.
@@ -441,7 +441,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
           style={{
             width: '100%', boxSizing: 'border-box',
             padding: query ? '14px 46px 14px 42px' : '14px 16px 14px 42px',
-            borderRadius: '14px',
+            borderRadius: '12px',
             border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)',
             fontSize: '16px', fontFamily: 'Inter, sans-serif',
           }}
@@ -499,7 +499,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
           )}
 
           {view.mode === 'loading' && (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '14px' }}>Searching…</div>
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '13.5px' }}>Searching…</div>
           )}
 
           {view.mode === 'offline' && notice(
@@ -534,7 +534,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
                 <button
                   onClick={() => setExplicitRevealedFor(view.term)}
                   style={{
-                    minHeight: TAP + 'px', borderRadius: '14px', cursor: 'pointer',
+                    minHeight: TAP + 'px', borderRadius: '12px', cursor: 'pointer',
                     border: '1px dashed var(--border)', background: 'transparent',
                     color: 'var(--text-muted)', fontSize: '13px', fontWeight: 600,
                     fontFamily: 'Inter, sans-serif',
@@ -559,7 +559,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
                 style={{
                   minHeight: TAP + 'px', padding: '0 12px', borderRadius: '12px',
                   border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)',
-                  fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+                  fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
                 }}
               >
                 <option value="all">All levels</option>
@@ -593,7 +593,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '14px' }}>Loading…</div>
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '13.5px' }}>Loading…</div>
           ) : loadError ? (
             notice(
               <AlertCircle size={20} strokeWidth={1.8} color="var(--text-faint)" />,
@@ -605,7 +605,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
               {showRecent && renderRecentSection(recentRows.map(renderRow), { marginBottom: '22px' })}
 
               {rows.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '38px 0', color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.5 }}>
+                <div style={{ textAlign: 'center', padding: '38px 0', color: 'var(--text-muted)', fontSize: '13.5px', lineHeight: 1.5 }}>
                   <div>{term ? 'No words match “' + term + '”.' : dictionaryEmptyState(filter, false)}</div>
                   {/* A filter chip left on above a search is invisible once you
                       scroll; say so rather than letting the list look broken. */}
@@ -618,7 +618,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
               ) : (
                 <>
                   {showRecent && (
-                    <div style={{ fontSize: '12.5px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' }}>
                       All words
                     </div>
                   )}
@@ -626,7 +626,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
                     {rows.map(renderRow)}
                   </div>
                   {matches.length > MAX_ROWS && (
-                    <div style={{ textAlign: 'center', padding: '16px 0 0', color: 'var(--text-faint)', fontSize: '12.5px' }}>
+                    <div style={{ textAlign: 'center', padding: '16px 0 0', color: 'var(--text-faint)', fontSize: '13px' }}>
                       Showing {MAX_ROWS} of {matches.length} — keep typing to narrow it down.
                     </div>
                   )}
@@ -714,13 +714,13 @@ export default function Dictionary({ session, profile, track, onBack }) {
 const ghostBtn = {
   display: 'inline-flex', alignItems: 'center', gap: '6px', minHeight: TAP + 'px',
   background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
-  color: 'var(--text-muted)', fontSize: '14px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
+  color: 'var(--text-muted)', fontSize: '13.5px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
 }
 
 const linkBtn = {
   display: 'inline-flex', alignItems: 'center', minHeight: TAP + 'px',
   background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
-  color: 'var(--text-faint)', fontSize: '12.5px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+  color: 'var(--text-faint)', fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
 }
 
 function pillBtn(accentHex, accentInk) {

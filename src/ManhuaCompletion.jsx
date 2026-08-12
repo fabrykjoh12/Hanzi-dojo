@@ -23,7 +23,7 @@ function Seal({ accentHex, glyph, fontFamily }) {
   return (
     <div aria-hidden style={{
       width: '56px', height: '56px', flexShrink: 0,
-      borderRadius: '10px',
+      borderRadius: '12px',
       background: accentHex,
       color: '#fff',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -55,8 +55,8 @@ function WordChip({ vocab, userCards, accentHex, fontFamily, onSelectWord }) {
         background: PAPER.card, cursor: 'pointer',
       }}
     >
-      <span style={{ fontFamily, fontSize: '15.5px', fontWeight: 600, color: PAPER.ink }}>{vocab.word}</span>
-      {vocab.reading && <span style={{ fontSize: '11.5px', color: PAPER.muted }}>{vocab.reading}</span>}
+      <span style={{ fontFamily, fontSize: '15px', fontWeight: 600, color: PAPER.ink }}>{vocab.word}</span>
+      {vocab.reading && <span style={{ fontSize: '12px', color: PAPER.muted }}>{vocab.reading}</span>}
       <span aria-hidden style={{
         width: '6px', height: '6px', borderRadius: '999px', alignSelf: 'center',
         background: status === 'not_started' ? accentHex : PAPER.gold,
@@ -137,7 +137,7 @@ export default function ManhuaCompletion({
           style={{
             display: 'flex', alignItems: 'center', gap: '12px',
             marginTop: '18px', padding: '13px 14px',
-            border: '1px solid ' + accentHex + '55', borderRadius: '14px',
+            border: '1px solid ' + accentHex + '55', borderRadius: '12px',
             background: 'color-mix(in srgb, ' + accentHex + ' 7%, ' + PAPER.card + ')',
           }}
         >
@@ -146,7 +146,7 @@ export default function ManhuaCompletion({
             <div style={{ fontSize: TYPE.meta, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: PAPER.muted }}>
               Reader seal earned
             </div>
-            <div style={{ marginTop: '3px', fontFamily, fontSize: '19px', fontWeight: 750, color: PAPER.ink }}>
+            <div style={{ marginTop: '3px', fontFamily, fontSize: '19px', fontWeight: 700, color: PAPER.ink }}>
               {reward.label}
             </div>
           </div>
@@ -156,7 +156,7 @@ export default function ManhuaCompletion({
       {(hook || continues) && (
         <div style={{ marginTop: '18px', paddingTop: '15px', borderTop: '1px solid ' + PAPER.soft }}>
           {hook && (
-            <p style={{ margin: 0, fontSize: '14px', lineHeight: 1.65, color: PAPER.ink2 }}>{hook}</p>
+            <p style={{ margin: 0, fontSize: '13.5px', lineHeight: 1.65, color: PAPER.ink2 }}>{hook}</p>
           )}
 
           {/* Where the story goes next, and — the part that actually helps —
@@ -184,7 +184,7 @@ export default function ManhuaCompletion({
       {nextChapter && nextChapter.kind !== 'unlocked' && (
         <div style={{
           marginTop: '18px', padding: '13px 14px',
-          border: '1px solid ' + PAPER.hairline, borderRadius: '14px', background: PAPER.card,
+          border: '1px solid ' + PAPER.hairline, borderRadius: '12px', background: PAPER.card,
         }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: '7px',
@@ -194,7 +194,7 @@ export default function ManhuaCompletion({
             <Lock size={13} strokeWidth={2.2} aria-hidden="true" />
             {nextChapter.kind === 'series-complete' ? 'Series complete' : 'Next'}
           </div>
-          <div style={{ marginTop: '4px', fontFamily, fontSize: '17px', fontWeight: 750, color: PAPER.ink }}>
+          <div style={{ marginTop: '4px', fontFamily, fontSize: '17px', fontWeight: 700, color: PAPER.ink }}>
             {nextChapter.kind === 'series-complete'
               ? 'You read all ' + nextChapter.total + ' chapters.'
               : (nextChapter.nativeLabel ? nextChapter.nativeLabel + ' · ' : '') + nextChapter.title}
@@ -232,7 +232,7 @@ function CompletionButtons({ nextChapter, onNextChapter, onStudy, onBack, onPrac
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
               minHeight: TAP_TARGET + 'px', padding: '0 18px',
-              borderRadius: '14px', border: 'none', cursor: 'pointer',
+              borderRadius: '12px', border: 'none', cursor: 'pointer',
               background: accentHex, color: '#fff', fontSize: '15px', fontWeight: 700,
             }}
           >
@@ -246,7 +246,7 @@ function CompletionButtons({ nextChapter, onNextChapter, onStudy, onBack, onPrac
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
               minHeight: TAP_TARGET + 'px', padding: '0 18px',
-              borderRadius: '14px', border: 'none', cursor: 'pointer',
+              borderRadius: '12px', border: 'none', cursor: 'pointer',
               background: accentHex, color: '#fff', fontSize: '15px', fontWeight: 700,
             }}
           >
@@ -260,7 +260,7 @@ function CompletionButtons({ nextChapter, onNextChapter, onStudy, onBack, onPrac
           style={{
             display: 'inline-flex', alignItems: 'center', gap: '8px',
             minHeight: TAP_TARGET + 'px', padding: '0 18px',
-            borderRadius: '14px', cursor: 'pointer',
+            borderRadius: '12px', cursor: 'pointer',
             border: forward ? '1px solid ' + PAPER.hairline : 'none',
             background: forward ? PAPER.card : accentHex,
             color: forward ? PAPER.ink : '#fff',
@@ -277,9 +277,9 @@ function CompletionButtons({ nextChapter, onNextChapter, onStudy, onBack, onPrac
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
               minHeight: TAP_TARGET + 'px', padding: '0 18px',
-              borderRadius: '14px', cursor: 'pointer',
+              borderRadius: '12px', cursor: 'pointer',
               border: '1px solid ' + PAPER.hairline, background: PAPER.card,
-              color: PAPER.ink, fontSize: '15px', fontWeight: 650,
+              color: PAPER.ink, fontSize: '15px', fontWeight: 600,
             }}
           >
             <Sparkles size={17} strokeWidth={2} color={accentHex} />

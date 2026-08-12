@@ -99,7 +99,7 @@ export default function PacedReader(props) {
             return (
               <div key={i} ref={el => { beatEls.current[i] = el }} aria-hidden={i !== c.cur}
                 style={{ padding: '26px 0', transition: c.reduceMotion ? 'none' : 'opacity .45s ease, filter .45s ease', ...st }}>
-                {b.speaker && <div style={{ fontSize: '12.5px', fontWeight: 800, color: accent, marginBottom: '9px' }}>{b.speaker}</div>}
+                {b.speaker && <div style={{ fontSize: '13px', fontWeight: 800, color: accent, marginBottom: '9px' }}>{b.speaker}</div>}
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                   <div style={{ flex: 1, fontFamily: c.readingFontFamily, fontSize: '30px', lineHeight: reserve ? 2.05 : 1.62, fontWeight: 500, color: isDone ? DONE_GREEN : undefined }}>
                     {b.tokens.map((t, k) => {
@@ -208,7 +208,7 @@ export default function PacedReader(props) {
                   )}
                 </div>
                 {i === c.cur && b.english && c.revealedEnglish.has(i) && (
-                  <div style={{ fontSize: '14px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '12px' }}>{b.english}</div>
+                  <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '12px' }}>{b.english}</div>
                 )}
               </div>
             )
@@ -256,5 +256,5 @@ function readerShell(isMobile) {
     : { minHeight: '100vh' }
 }
 
-const navBtn = { width: '44px', height: '44px', borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }
+const navBtn = { width: '44px', height: '44px', borderRadius: '999px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }
 const srOnly = { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }

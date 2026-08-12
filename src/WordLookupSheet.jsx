@@ -29,7 +29,7 @@ const action = {
 function pill(color, tinted) {
   return {
     display: 'inline-flex', alignItems: 'center', gap: '6px',
-    fontSize: '11.5px', fontWeight: 700, borderRadius: '999px', padding: '4px 10px',
+    fontSize: '12px', fontWeight: 700, borderRadius: '999px', padding: '4px 10px',
     color, border: '1px solid ' + (tinted ? color + '40' : 'var(--border)'),
     background: tinted ? color + '12' : 'transparent',
     whiteSpace: 'nowrap',
@@ -135,7 +135,7 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
       maxHeight: place ? place.maxHeight + 'px' : '60dvh',
       overflowY: 'auto',
       background: 'var(--surface)', border: '1px solid var(--border)',
-      borderRadius: '16px', padding: '10px 14px 12px',
+      borderRadius: '18px', padding: '10px 14px 12px',
       boxShadow: 'var(--shadow-2)',
       zIndex: 201,
       animation: 'hd-pop-in 160ms ease',
@@ -150,11 +150,11 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
       // and the top edge reads from the shadow above it; that is what shipped
       // and P14-0 preserves it.)
       background: 'var(--surface)', border: '1px solid var(--border)', borderTop: '1px solid var(--inset-highlight)',
-      borderRadius: '22px 22px 0 0',
+      borderRadius: '18px 18px 0 0',
       // The extra bottom padding clears a phone's home indicator, so the last
       // line of a definition is never half-swallowed by the system bar.
       padding: '12px 20px calc(24px + env(safe-area-inset-bottom, 0px))',
-      boxShadow: '0 -14px 44px rgba(24,24,27,0.18)',
+      boxShadow: 'var(--shadow-sheet)',
       animation: 'hd-sheet-up 240ms cubic-bezier(0.22, 1, 0.36, 1)',
     }
 

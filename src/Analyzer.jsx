@@ -134,7 +134,7 @@ export default function Analyzer({ session, track, onBack }) {
         meta="Analyze text"
         style={{ margin: '18px 0 10px' }}
       />
-      <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: '0 0 22px', lineHeight: 1.5 }}>
+      <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', margin: '0 0 22px', lineHeight: 1.5 }}>
         Paste any {langName} text — a message, an article, song lyrics — and see how much you already know, plus the words to learn next.
       </p>
 
@@ -147,7 +147,7 @@ export default function Analyzer({ session, track, onBack }) {
         aria-label={`Paste ${langName} text to analyze`}
         rows={7}
         style={{
-          width: '100%', boxSizing: 'border-box', padding: '14px 16px', borderRadius: '14px',
+          width: '100%', boxSizing: 'border-box', padding: '14px 16px', borderRadius: '12px',
           border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)',
           fontSize: '16px', lineHeight: 1.7, fontFamily: font + ', Inter, sans-serif', resize: 'vertical',
         }}
@@ -157,10 +157,10 @@ export default function Analyzer({ session, track, onBack }) {
         onClick={analyze}
         disabled={loading || !text.trim()}
         style={{
-          marginTop: '14px', width: '100%', minHeight: '50px', borderRadius: '14px', border: 'none',
+          marginTop: '14px', width: '100%', minHeight: '50px', borderRadius: '12px', border: 'none',
           background: (loading || !text.trim()) ? 'var(--border)' : accent,
           color: (loading || !text.trim()) ? 'var(--text-muted)' : '#fff',
-          fontSize: '15px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+          fontSize: '15px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
           cursor: (loading || !text.trim()) ? 'not-allowed' : 'pointer',
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
         }}
@@ -172,14 +172,14 @@ export default function Analyzer({ session, track, onBack }) {
       {result && (
         <div style={{ marginTop: '22px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '22px' }}>
           {result.totalUnique === 0 ? (
-            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6 }}>
+            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '13.5px', lineHeight: 1.6 }}>
               No {langName} words recognized in that text. Make sure you pasted {langName} — this reads it against your {langName} deck.
             </p>
           ) : (
             <>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '14px' }}>
-                <span style={{ fontSize: '44px', fontWeight: 850, color: accent, lineHeight: 1 }}>{result.knownPct}%</span>
-                <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>of the words here, you already know</span>
+                <span style={{ fontSize: '44px', fontWeight: 800, color: accent, lineHeight: 1 }}>{result.knownPct}%</span>
+                <span style={{ fontSize: '13.5px', color: 'var(--text-muted)' }}>of the words here, you already know</span>
               </div>
 
               <div style={{ display: 'flex', height: '9px', borderRadius: '999px', overflow: 'hidden', background: 'var(--border)', marginBottom: '10px' }}>
@@ -187,7 +187,7 @@ export default function Analyzer({ session, track, onBack }) {
                 <div style={{ width: seg(result.learningCount) + '%', background: '#CA8A04' }} />
                 <div style={{ width: seg(result.newCount) + '%', background: accent + '66' }} />
               </div>
-              <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: result.newWords.length ? '18px' : 0 }}>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: result.newWords.length ? '18px' : 0 }}>
                 {result.knownCount} known · {result.learningCount} learning · {result.newCount} new
                 <span style={{ opacity: 0.7 }}> · {result.totalUnique} unique {langName} words</span>
               </div>
@@ -200,10 +200,10 @@ export default function Analyzer({ session, track, onBack }) {
 
               {result.newWords.length > 0 && (
                 <div>
-                  <div style={{ fontSize: '14px', fontWeight: 750, color: 'var(--text)', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>
                     Words to learn next ({result.newWords.length})
                   </div>
-                  <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>
                     In order of appearance. Tap any word to hear it and add it on its own.
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
@@ -218,7 +218,7 @@ export default function Analyzer({ session, track, onBack }) {
                       </button>
                     ))}
                     {result.newWords.length > 40 && (
-                      <span style={{ padding: '5px 10px', fontSize: '12.5px', color: 'var(--text-muted)' }}>+{result.newWords.length - 40} more</span>
+                      <span style={{ padding: '5px 10px', fontSize: '13px', color: 'var(--text-muted)' }}>+{result.newWords.length - 40} more</span>
                     )}
                   </div>
                   <button
@@ -226,9 +226,9 @@ export default function Analyzer({ session, track, onBack }) {
                     disabled={adding}
                     style={{
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                      minHeight: '46px', padding: '0 20px', borderRadius: '13px', border: 'none',
+                      minHeight: '46px', padding: '0 20px', borderRadius: '12px', border: 'none',
                       background: accent, color: '#fff', cursor: adding ? 'default' : 'pointer',
-                      fontSize: '14px', fontWeight: 750, fontFamily: 'Inter, sans-serif', opacity: adding ? 0.7 : 1,
+                      fontSize: '13.5px', fontWeight: 700, fontFamily: 'Inter, sans-serif', opacity: adding ? 0.7 : 1,
                     }}
                   >
                     <Bookmark size={17} strokeWidth={2} color="#fff" />
@@ -238,7 +238,7 @@ export default function Analyzer({ session, track, onBack }) {
               )}
 
               {result.newWords.length === 0 && result.newCount === 0 && (
-                <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
                   You already know or are learning every word here — nice.
                 </div>
               )}
@@ -250,8 +250,8 @@ export default function Analyzer({ session, track, onBack }) {
       {/* Read it — tap any word to look it up and add it, against your known deck. */}
       {result && result.totalUnique > 0 && parsedLines.length > 0 && (
         <div style={{ marginTop: '18px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '22px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 750, color: 'var(--text)', marginBottom: '4px' }}>Read it — tap any word</div>
-          <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+          <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>Read it — tap any word</div>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>
             New words are underlined. Tap any word to hear it, see the meaning, and add it to your deck.
           </div>
           {/* Tagged once on the reading block, not on every token span. */}

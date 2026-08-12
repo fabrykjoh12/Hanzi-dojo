@@ -36,15 +36,15 @@ export default function PasswordReset({ onDone }) {
     }}>
       <div style={{
         position: 'relative', zIndex: 1, width: '100%', maxWidth: '420px',
-        background: 'var(--surface)', borderRadius: '20px',
-        boxShadow: '0 4px 40px rgba(0,0,0,0.10)', padding: '36px 36px 30px',
+        background: 'var(--surface)', borderRadius: '18px',
+        boxShadow: 'var(--shadow-2)', padding: '36px 36px 30px',
       }}>
         <div style={{ textAlign: 'center', marginBottom: '10px' }}>
           <img src={logo} alt={BRAND_NAME} style={{ width: '48px', height: '48px', objectFit: 'contain', marginBottom: '4px' }} />
           <div style={heroWordmarkStyle('34px')}>{BRAND_NAME}</div>
         </div>
 
-        <h1 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text)', textAlign: 'center', marginBottom: '6px' }}>
+        <h1 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', textAlign: 'center', marginBottom: '6px' }}>
           Set a new password
         </h1>
         <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', marginBottom: '22px', lineHeight: 1.5 }}>
@@ -101,7 +101,7 @@ export default function PasswordReset({ onDone }) {
 
 const inputStyle = {
   padding: '12px 14px',
-  borderRadius: '10px',
+  borderRadius: '12px',
   border: '1px solid var(--border)',
   // 16px, never less: an iOS WKWebView zooms the whole page in when a focused
   // input's text is smaller, and the layout stays shifted afterwards.

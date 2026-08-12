@@ -52,7 +52,11 @@ export function HeroPanel({
       className={interactive ? 'hd-press' : undefined}
       style={{
         position: 'relative', overflow: 'hidden',
-        borderRadius: '22px',
+        // `hero` (26), not the nearest neighbour to the 22 this was. shape.js
+        // names 26 for "the hero panel, the study card, modal cards" — this is
+        // the object that name was written for, and it now matches the study
+        // card's corner exactly.
+        borderRadius: '26px',
         padding: padding || (compact ? '20px 22px' : '26px 28px'),
         background: heroGround(accentHex),
         boxShadow: heroShadow(accentHex, hovered && interactive),
@@ -91,7 +95,7 @@ export function HeroAction({ label, hovered, icon: Icon, accentHex }) {
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: '8px',
-      marginTop: '18px', padding: '10px 16px', borderRadius: '11px',
+      marginTop: '18px', padding: '10px 16px', borderRadius: '12px',
       background: hovered ? '#fff' : 'rgba(255,255,255,0.14)',
       border: '1px solid rgba(255,255,255,0.28)',
       color: hovered ? accentHex : '#fff',
@@ -135,7 +139,7 @@ export function Readout({ value, label, tone, first, compact = false }) {
       }}>
         {value}
       </div>
-      <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '6px', lineHeight: 1.35 }}>
+      <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px', lineHeight: 1.35 }}>
         {label}
       </div>
     </div>

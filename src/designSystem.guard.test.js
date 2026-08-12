@@ -96,10 +96,22 @@ describe('the sage brand identity is gone for good', () => {
   })
 })
 
-describe('--hairline is never used as a divider', () => {
-  // It is a WHITE inset top highlight with a name that reads like a separator.
-  // Used as a border it draws nothing visible on a light surface — the bug that
-  // shipped on Home in P10-C3 and had to be found by measuring pixels.
+describe('--hairline is gone, and stays gone', () => {
+  // The token whose VALUE was a white inset top highlight and whose NAME read
+  // like a separator. Used as a border it drew nothing visible on a light
+  // surface — a bug that shipped twice (Home in P10-C3, KnownWords found by this
+  // very suite in P14-0). P14-0 split it into --inset-highlight and --divider
+  // and kept --hairline as a deprecated alias; P14-2 deleted the alias.
+  //
+  // Both halves are asserted: the token is not declared, and nothing reads it.
+  // The border-specific check is kept because it names the actual failure mode,
+  // and because it is the one a future `--hairline: ...` would trip first.
+  it('is declared nowhere and read nowhere', () => {
+    for (const [f, src] of CODE) {
+      expect(src, f + ' still reads var(--hairline)').not.toContain('var(--hairline)')
+    }
+  })
+
   it('appears in no border declaration', () => {
     for (const [f, src] of CODE) {
       expect(src.replace(/\s+/g, ' '), f + ' uses --hairline as a border')
@@ -148,6 +160,31 @@ describe('every IconButton has an accessible name', () => {
       }
     }
     expect(missing, 'IconButton without a label: ' + missing.join(' | ')).toEqual([])
+  })
+})
+
+describe('one value, one definition (P14-2)', () => {
+  // The drift this phase exists to remove, in its purest form: designTokens.MICRO
+  // and TYPE.eyebrow were the same four declarations written out twice, in two
+  // files, by two phases. MICRO now derives from TYPE.eyebrow. This is what stops
+  // anyone re-typing it.
+  it('MICRO derives from TYPE.eyebrow rather than restating it', async () => {
+    const { MICRO } = await import('./designTokens')
+    const { TYPE } = await import('./typeScale')
+    for (const k of ['fontSize', 'fontWeight', 'letterSpacing', 'textTransform']) {
+      expect(MICRO[k], 'MICRO.' + k).toBe(TYPE.eyebrow[k])
+    }
+    // And deliberately NOT lineHeight: MICRO's call sites have always inherited
+    // theirs, and pulling 1.2 through would move seven labels for no reason.
+    expect(MICRO.lineHeight).toBe(undefined)
+  })
+
+  it('designTokens.js states no type values of its own', () => {
+    // Its remaining job is the hero ground, the hero shadow, the flat panel and
+    // the on-hero text colours. A fontSize typed here would be a fifth scale.
+    const src = CODE.get('designTokens.js')
+    expect(src).not.toMatch(/fontSize:\s*'/)
+    expect(src).not.toMatch(/fontWeight:\s*\d/)
   })
 })
 
@@ -255,8 +292,16 @@ describe('type and radius budgets', () => {
   // counts, which are the leading indicator).
   //
   // Both may only go down. P14-2 is what drives them.
-  const SIZE_BUDGET = 46
-  const RADIUS_BUDGET = 34
+  // P14-2 moved both DOWN: 46 → 34 sizes and 34 → 11 radii. The radius one is
+  // now backed by a hard allow-list below, which is the stronger check; the
+  // budget stays as the thing that notices a NEW value before anyone names it.
+  //
+  // 11 and not 10: the sweep initially snapped GradeRow's grade buttons from 16
+  // to 18, flashcard-contract.spec.js caught it, and 16 was put back — Study is
+  // the screen this phase was told to especially protect. The allow-list scopes
+  // that 16 to GradeRow.jsx alone.
+  const SIZE_BUDGET = 34
+  const RADIUS_BUDGET = 11
 
   it('does not add new font sizes', () => {
     const sizes = new Set()
@@ -281,6 +326,117 @@ describe('type and radius budgets', () => {
   })
 })
 
+describe('the four weights, enforced (P14-2)', () => {
+  // typeScale.js declares 400 body · 600 label · 700 title · 800 display. The app
+  // had TWELVE, including 550, 650, 750, 760, 780, 820 and 850 — and every one of
+  // those renders IDENTICALLY, because only Inter 300/400/500/600 are bundled
+  // (src/fonts.js) so anything >= 550 matches 600 and gets the same synthetic
+  // emboldening. Measured in a browser: 550 through 900 all render at 290.39px
+  // for the same string. Twelve declared weights, four rendered ones.
+  //
+  // So this is not a style preference. A 750 is a lie about what the screen
+  // shows, and it becomes a visible bug the day the variable face lands.
+  const ALLOWED = new Set(['400', '500', '600', '700', '800'])
+
+  it('declares no weight outside the scale', () => {
+    const bad = []
+    for (const [f, src] of CODE) {
+      for (const m of src.matchAll(/fontWeight:\s*(\d+)/g)) {
+        if (!ALLOWED.has(m[1])) bad.push(f + ' → ' + m[1])
+      }
+      // Ternaries too: `fontWeight: on ? 750 : 600`.
+      for (const m of src.matchAll(/fontWeight:\s*[^,;}\n]*?\?\s*(\d+)\s*:\s*(\d+)/g)) {
+        for (const w of [m[1], m[2]]) if (!ALLOWED.has(w)) bad.push(f + ' → ' + w + ' (ternary)')
+      }
+    }
+    expect([...new Set(bad)], 'off-scale font weight: ' + [...new Set(bad)].join(', ')).toEqual([])
+  })
+
+  it('keeps 500 only where it is content typography', () => {
+    // The one weight outside typeScale's four that survives P14-2, on purpose:
+    // it is a REAL loaded face (unlike 650/750/850), it renders distinctly, and
+    // most of its uses are the language itself — a 110px Cyrillic letter, a 22px
+    // word option in the reader's own face. Snapping those to 400 would be
+    // forcing content type into a UI role, which the phase forbids.
+    let n = 0
+    for (const [, src] of CODE) n += (src.match(/fontWeight:\s*500\b/g) || []).length
+    expect(n, '500 is documented at 24 sites; a new one needs a reason').toBeLessThanOrEqual(24)
+  })
+})
+
+describe('the radius scale, enforced (P14-2)', () => {
+  // Every single-value borderRadius in src/ is a scale value or one of five
+  // documented keeps. This is a hard allow-list, not a budget — the app went
+  // from 26 distinct radii to 13, and there is no longer any reason to type a 14.
+  //
+  // The keeps, each with its reason:
+  //   3 4 5 6   below the scale's floor. Progress bars, dots, tiny tints —
+  //             snapping a 3px bar to 8px would visibly change its shape.
+  //   34        Listen's 108x108 hero object (P14-1 recorded it as bespoke).
+  const SCALE = new Set(['8', '12', '18', '26', '999'])
+  const KEEP = new Set(['3', '4', '5', '6', '34', '16'])
+  // 16 has exactly ONE site: GradeRow's four grade buttons, pinned by
+  // flashcard-contract.spec.js on the screen the phase was told to especially
+  // protect. Anywhere else it is a regression, so it is scoped to that file.
+  const KEEP_16_ONLY_IN = 'GradeRow.jsx'
+
+  it('types no radius outside the scale or the documented keeps', () => {
+    const bad = []
+    for (const [f, src] of CODE) {
+      for (const m of src.matchAll(/borderRadius:\s*'([\d.]+)px'/g)) {
+        if (m[1] === '16' && f !== KEEP_16_ONLY_IN) { bad.push(f + ' → 16px (only ' + KEEP_16_ONLY_IN + ' may)'); continue }
+        if (!SCALE.has(m[1]) && !KEEP.has(m[1])) bad.push(f + ' → ' + m[1] + 'px')
+      }
+    }
+    expect([...new Set(bad)], 'off-scale radius: ' + [...new Set(bad)].join(', ')).toEqual([])
+  })
+
+  it('spells a circle one way', () => {
+    // `50%` and `999px` are identical on a square, and every circle in the app was
+    // square — but 999px stays a pill if the element ever grows, where 50% becomes
+    // an ellipse. Twelve sites, one spelling.
+    for (const [f, src] of CODE) {
+      expect(src, f + " still uses borderRadius: '50%'").not.toContain("borderRadius: '50%'")
+    }
+  })
+
+  it('hinges every bottom sheet on the same corner', () => {
+    // Five sheets, three different tops (18 / 20 / 22). Now one.
+    const tops = new Set()
+    for (const [, src] of CODE) {
+      for (const m of src.matchAll(/borderRadius:\s*'([\d]+px [\d]+px 0 0)'/g)) tops.add(m[1])
+    }
+    expect([...tops]).toEqual(['18px 18px 0 0'])
+  })
+})
+
+describe('elevation comes from tokens (P14-2)', () => {
+  // 44 distinct boxShadow declarations became 15, and 11 of those 15 are
+  // deliberate keeps. The point is not the count: a literal `rgba(24,24,27,0.06)`
+  // shadow is a near-black wash tuned for paper and INVISIBLE on the dark ground,
+  // so every one of them was a dark-mode defect. The tokens flip per theme.
+  const SHADOW_LITERAL_BUDGET = 11
+
+  it('has no more than ' + SHADOW_LITERAL_BUDGET + ' bespoke shadow declarations left', () => {
+    const bespoke = new Set()
+    for (const [, src] of CODE) {
+      for (const m of src.matchAll(/boxShadow:\s*'([^']*rgba?\([^']*)'/g)) bespoke.add(m[1])
+    }
+    expect(bespoke.size,
+      'a new hardcoded shadow appeared. Use ELEVATION from shape.js — a literal rgba shadow cannot theme. Found: '
+      + [...bespoke].join(' | ').slice(0, 400),
+    ).toBeLessThanOrEqual(SHADOW_LITERAL_BUDGET)
+  })
+
+  it('names the sheet cast rather than re-deriving it', () => {
+    // Five bottom sheets each hand-rolled an inverted shadow because both
+    // --shadow-1 and --shadow-2 cast downward. One token now.
+    let n = 0
+    for (const [, src] of CODE) n += (src.match(/var\(--shadow-sheet\)/g) || []).length
+    expect(n).toBeGreaterThanOrEqual(5)
+  })
+})
+
 describe('the CSS token layer', () => {
   const css = readFileSync(new URL('./index.css', SRC), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
 
@@ -289,10 +445,12 @@ describe('the CSS token layer', () => {
     expect((css.match(/--divider:/g) || []).length).toBe(2)
   })
 
-  it('keeps --hairline as a deprecated alias so 33 call sites still work', () => {
-    // Renaming the token AND its uses inside a foundation commit would be a
-    // 15-file diff. The alias is the seam; P14-2 removes it.
-    expect((css.match(/--hairline:/g) || []).length).toBe(2)
+  it('has retired --hairline entirely (P14-2)', () => {
+    // P14-1 kept it as a deprecated alias so existing call sites survived the
+    // foundation commit. By P14-2 there were two left, both the legitimate lit-
+    // edge use, and both now name --inset-highlight. The token is gone; this is
+    // what stops it coming back under its misleading name.
+    expect((css.match(/--hairline/g) || []).length).toBe(0)
   })
 
   it('defines every accent role in both themes', () => {

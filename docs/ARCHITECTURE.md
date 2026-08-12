@@ -644,12 +644,53 @@ NUMERIC is a MODIFIER (tabular-nums, no size) — a number is whatever size its 
 the study card (26) and its grade buttons (12). The census found 16 rendered
 radii; 3, 9, 10, 11, 13, 14, 15, 16, 20, 22 and 50 are dropped.
 
-**Elevation — three levels, and "flat" is one of them.** `flat` (`none`) ·
-`raised` (`--shadow-1`) · `floating` (`--shadow-2`). Naming "no shadow" makes it
+**Elevation — three heights plus one direction.** `flat` (`none`) ·
+`raised` (`--shadow-1`) · `floating` (`--shadow-2`) · `sheet` (`--shadow-sheet`).
+`sheet` is not a fourth height: it is `floating` cast **upward**, added in P14-2
+because a sheet rising from the bottom edge casts up and the other two cast down,
+so five bottom sheets had each hand-rolled their own inverted shadow. Naming "no shadow" makes it
 a decision somebody made rather than something nobody got round to. `SURFACE`
 composes the four grounds — `page`, `grouped`, `raised`, `floating` — and only
 the last two draw a border and a shadow, which is what makes the "one object per
 screen" promise mechanical rather than a matter of taste.
+
+### What P14-2 normalized
+
+| Census | Before | After |
+|--------|--------|-------|
+| font weights | 12 distinct / 629 uses | **5** / 626 |
+| font sizes | 42 / 928 | **34** / 925 |
+| border radii | 26 / 491 | **13** / 491 |
+| box shadows | 44 / 85 | **15** / 85 (11 of those are documented keeps) |
+| `letterSpacing` | 25 / 76 | 24 / 73 |
+
+Guard budgets moved with them: `SIZE_BUDGET` 46 → **34**, `RADIUS_BUDGET` 34 →
+**10**. The hex budgets are unchanged at 70/73 — P14-2 did not target colour.
+
+Three findings worth keeping, because they change how you read the numbers:
+
+1. **Nine of the twelve font weights could never render.** Only Inter
+   300/400/500/600 are bundled (`src/fonts.js` says so, and says why), so every
+   request ≥550 matches 600 and gets the same synthetic emboldening. Measured in
+   a browser: 550, 650, 700, 750, 760, 780, 800, 820, 850 and 900 all draw the
+   same string at **290.39px**. So normalizing 220 declarations across 54 files
+   was a **pixel-for-pixel no-op** — verified on 28 render states — and it makes
+   the source honest about what the screen already shows. It also makes the
+   eventual switch to the variable face predictable instead of a surprise.
+2. **40 of the 44 shadow declarations were a dark-mode defect.** A literal
+   `rgba(24,24,27,0.06)` is a near-black wash tuned for white paper; on the
+   `#100D0E` ground it is invisible. The tokens are two-layer and flip per theme,
+   so this is the phase's one deliberately *visible* change: cards that had no
+   shadow at all in dark mode now have one.
+3. **`designTokens.MICRO` and `TYPE.eyebrow` were the same four declarations
+   written twice.** MICRO now derives from TYPE.eyebrow (without `lineHeight`, so
+   its seven call sites do not move) and a spec pins the agreement.
+
+`flatPanel()` in `designTokens.js` **is** `SURFACE.raised` with a lit top edge on
+it, and it predates that name. Rather than add a second spelling, P14-2 pointed
+its radius at the scale (`radius = 'card'`, a NAME now, not a number) and dropped
+the per-caller overrides — its four callers passed 14, 16, 16 and 20 for one
+object class. Every flat panel in the app is now `card`.
 
 ### The shared controls (P14-1)
 

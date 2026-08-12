@@ -30,18 +30,18 @@ export default class ErrorBoundary extends Component {
         <div style={{
           maxWidth: '420px', width: '100%', textAlign: 'center',
           background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: '20px', padding: '36px 28px', boxShadow: '0 18px 48px rgba(24,24,27,0.10)',
+          borderRadius: '18px', padding: '36px 28px', boxShadow: 'var(--shadow-2)',
         }}>
           <div style={{ fontSize: '34px', color: 'var(--chinese-accent)', fontFamily: "'Noto Sans SC', sans-serif", marginBottom: '14px' }}>学</div>
           <h1 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)', margin: '0 0 8px' }}>Something went wrong</h1>
-          <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 0 22px' }}>
+          <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 0 22px' }}>
             The page hit an unexpected error. Reloading usually fixes it — your progress is saved.
           </p>
           <button
             onClick={() => window.location.reload()}
             style={{
-              minHeight: '48px', padding: '0 22px', borderRadius: '14px', border: 'none',
-              background: 'var(--primary)', color: '#fff', fontSize: '15px', fontWeight: 750,
+              minHeight: '48px', padding: '0 22px', borderRadius: '12px', border: 'none',
+              background: 'var(--primary)', color: '#fff', fontSize: '15px', fontWeight: 700,
               fontFamily: "'Inter', sans-serif", cursor: 'pointer',
             }}
           >

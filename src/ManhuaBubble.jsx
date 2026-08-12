@@ -371,7 +371,7 @@ export default function ManhuaBubble({
           fontFamily,
           fontSize: narration ? TYPE.hanziNarration : TYPE.hanzi,
           lineHeight: 1.85,
-          fontWeight: narration ? 500 : 550,
+          fontWeight: narration ? 500 : 600,
           color: PAPER.ink,
           opacity: narration ? 0.92 : 1,
           paddingRight: hasActions ? (stackedActions ? '52px' : '88px') : 0,

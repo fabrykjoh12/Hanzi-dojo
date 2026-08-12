@@ -83,7 +83,7 @@ export default function GrammarPractice({ session, profile, track, onBack }) {
     return (
       <div style={pageShell}>
         <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: '88px', height: '88px', borderRadius: '26px', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 16px 40px rgba(24,24,27,0.06)' }}>
+          <div style={{ width: '88px', height: '88px', borderRadius: '26px', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-1)' }}>
             <GraduationCap size={34} strokeWidth={1.75} color={accentHex} />
           </div>
         </div>
@@ -96,8 +96,8 @@ export default function GrammarPractice({ session, profile, track, onBack }) {
       <div style={pageShell}>
         <Centered>
           <GraduationCap size={30} strokeWidth={1.8} color={accentHex} style={{ marginBottom: '14px' }} />
-          <h1 style={{ fontSize: '22px', fontWeight: 750, color: 'var(--text)', marginBottom: '8px' }}>Nothing due right now</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Nothing due right now</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', lineHeight: 1.6, marginBottom: '24px' }}>
             Open the Grammar guide and tap <strong>Practice this pattern</strong> on a topic to add it to spaced review — it’ll come back here on a schedule.
           </p>
           <PrimaryButton onClick={onBack} icon={ArrowLeft}>Back</PrimaryButton>
@@ -114,12 +114,12 @@ export default function GrammarPractice({ session, profile, track, onBack }) {
           <div style={{ width: '58px', height: '58px', borderRadius: '18px', margin: '0 auto 18px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: accentHex + '10', border: '1px solid ' + accentHex + '18' }}>
             <CheckCircle2 size={28} strokeWidth={1.9} color={accentHex} />
           </div>
-          <h1 style={{ fontSize: '26px', fontWeight: 750, marginBottom: '8px', color: 'var(--text)' }}>Grammar review done</h1>
+          <h1 style={{ fontSize: '26px', fontWeight: 700, marginBottom: '8px', color: 'var(--text)' }}>Grammar review done</h1>
           <p style={{ color: 'var(--text-muted)', marginBottom: '22px', fontSize: '15px' }}>
             You got <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {queue.length} right. Each is scheduled to return right before you’d forget.
           </p>
-          <div style={{ padding: '16px 10px', borderRadius: '14px', background: accentHex + '0D', border: '1px solid ' + accentHex + '22', marginBottom: '22px' }}>
-            <div style={{ fontSize: '26px', fontWeight: 760, color: inkStrong(accentHex), lineHeight: 1 }}>{pct}%</div>
+          <div style={{ padding: '16px 10px', borderRadius: '12px', background: accentHex + '0D', border: '1px solid ' + accentHex + '22', marginBottom: '22px' }}>
+            <div style={{ fontSize: '26px', fontWeight: 800, color: inkStrong(accentHex), lineHeight: 1 }}>{pct}%</div>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
           </div>
           <PrimaryButton onClick={onBack} icon={ArrowLeft}>Exit</PrimaryButton>
@@ -137,11 +137,11 @@ export default function GrammarPractice({ session, profile, track, onBack }) {
       <div style={{ maxWidth: '620px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <SecondaryButton onClick={onBack} icon={ArrowLeft}>Exit</SecondaryButton>
-          <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{idx + 1} / {queue.length}</span>
+          <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>{idx + 1} / {queue.length}</span>
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(accentHex), fontSize: '13px', fontWeight: 750 }}>
+          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(accentHex), fontSize: '13px', fontWeight: 700 }}>
             <GraduationCap size={17} strokeWidth={1.8} color={accentHex} aria-hidden="true" /> Grammar review
           </h1>
           <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>
@@ -161,7 +161,7 @@ export default function GrammarPractice({ session, profile, track, onBack }) {
         </div>
 
         {/* Sentence with the grammar word blanked out */}
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px 22px', marginBottom: '12px', textAlign: 'center', boxShadow: '0 10px 30px rgba(24,24,27,0.05)' }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px 22px', marginBottom: '12px', textAlign: 'center', boxShadow: 'var(--shadow-1)' }}>
           <div lang={langAttr(track.language)} style={{ fontSize: isMobile ? '22px' : '26px', lineHeight: 1.7, fontFamily: langFont, color: 'var(--text)' }}>
             <span>{parts.before}</span>
             <span style={{
@@ -178,7 +178,7 @@ export default function GrammarPractice({ session, profile, track, onBack }) {
           )}
         </div>
         {item.en && (
-          <div style={{ textAlign: 'center', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '22px', fontStyle: 'italic' }}>
+          <div style={{ textAlign: 'center', fontSize: '13.5px', color: 'var(--text-muted)', marginBottom: '22px', fontStyle: 'italic' }}>
             {item.en}
           </div>
         )}
@@ -196,7 +196,7 @@ export default function GrammarPractice({ session, profile, track, onBack }) {
               // tick as the answer drops keyboard focus to <body>. `choose()`
               // already no-ops once answered.
               <button key={opt} onClick={() => choose(opt)} aria-disabled={answered} style={{
-                position: 'relative', minHeight: '60px', padding: '12px 14px', borderRadius: '14px',
+                position: 'relative', minHeight: '60px', padding: '12px 14px', borderRadius: '12px',
                 border: '1.5px solid ' + bc, background: bg, cursor: answered ? 'default' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'border-color 140ms ease, background 140ms ease',

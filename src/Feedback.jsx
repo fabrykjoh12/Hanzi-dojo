@@ -132,7 +132,7 @@ export default function Feedback({ session, profile, view }) {
           width: '50px', height: '50px', borderRadius: '999px',
           background: PRIMARY, border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 10px 26px rgba(24,24,27,0.22)',
+          boxShadow: 'var(--shadow-2)',
         }}
       >
         <MessageCircleHeart size={22} strokeWidth={1.9} color="#fff" />
@@ -174,12 +174,12 @@ export default function Feedback({ session, profile, view }) {
               style={{
                 width: '100%', maxWidth: '440px', maxHeight: '86%', overflowY: 'auto',
                 pointerEvents: 'auto',
-                background: 'var(--surface)', borderRadius: '22px',
-                boxShadow: '0 24px 70px rgba(0,0,0,0.28)', padding: '24px', outline: 'none',
+                background: 'var(--surface)', borderRadius: '18px',
+                boxShadow: 'var(--shadow-2)', padding: '24px', outline: 'none',
               }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                 <div>
-                  <div id="feedback-title" style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>Send feedback</div>
+                  <div id="feedback-title" style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text)' }}>Send feedback</div>
                   <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '3px', lineHeight: 1.5 }}>
                     Found a bug, or have an idea? We read every message.
                   </div>
@@ -212,7 +212,7 @@ export default function Feedback({ session, profile, view }) {
                           ? 'color-mix(in srgb, var(--primary) 8%, var(--surface-2))'
                           : 'var(--surface-2)',
                         color: active ? PRIMARY_PRESSED : 'var(--text-muted)',
-                        fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+                        fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
                       }}
                     >
                       <Icon size={16} strokeWidth={1.9} color={active ? PRIMARY_PRESSED : 'var(--text-muted)'} />
@@ -236,9 +236,9 @@ export default function Feedback({ session, profile, view }) {
                 rows={5}
                 style={{
                   width: '100%', marginTop: '14px', padding: '12px 14px',
-                  borderRadius: '14px', border: '1px solid var(--border)',
+                  borderRadius: '12px', border: '1px solid var(--border)',
                   background: 'var(--surface-2)', color: 'var(--text)',
-                  fontSize: '14px', fontFamily: 'Inter, sans-serif', lineHeight: 1.5,
+                  fontSize: '13.5px', fontFamily: 'Inter, sans-serif', lineHeight: 1.5,
                   resize: 'vertical', boxSizing: 'border-box',
                 }}
               />
@@ -252,17 +252,17 @@ export default function Feedback({ session, profile, view }) {
               )}
 
               {error && (
-                <div role="alert" style={{ fontSize: '12.5px', color: 'var(--danger)', marginTop: '8px' }}>{error}</div>
+                <div role="alert" style={{ fontSize: '13px', color: 'var(--danger)', marginTop: '8px' }}>{error}</div>
               )}
 
               <button
                 onClick={send}
                 disabled={!canSend}
                 style={{
-                  width: '100%', marginTop: '16px', minHeight: '48px', borderRadius: '14px', border: 'none',
+                  width: '100%', marginTop: '16px', minHeight: '48px', borderRadius: '12px', border: 'none',
                   background: canSend ? PRIMARY : 'var(--surface-2)',
                   color: canSend ? '#fff' : 'var(--text-faint)',
-                  fontSize: '14.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+                  fontSize: '15px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
                   cursor: canSend ? 'pointer' : 'default',
                 }}
               >

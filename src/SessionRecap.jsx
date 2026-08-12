@@ -26,9 +26,9 @@ function PrimaryButton({ onClick, children, icon: Icon }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-        width: '100%', minHeight: '54px', borderRadius: '16px', border: 'none',
+        width: '100%', minHeight: '54px', borderRadius: '18px', border: 'none',
         background: hovered ? PRIMARY_PRESSED : PRIMARY, color: '#fff',
-        fontSize: '15px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+        fontSize: '15px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
         cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease, box-shadow 160ms ease',
         transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
         // P14-0: the cast light matches the object casting it. These were the
@@ -82,9 +82,9 @@ function ChapterUnlockCard({ reward, accentHex, langFont, onRead }) {
         onMouseLeave={() => setHovered(false)}
         style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
-          width: '100%', minHeight: '48px', borderRadius: '14px', border: 'none',
+          width: '100%', minHeight: '48px', borderRadius: '12px', border: 'none',
           background: hovered ? accentHex : accentHex + 'E6', color: '#fff',
-          fontSize: '14.5px', fontWeight: 800, fontFamily: 'Inter, sans-serif',
+          fontSize: '15px', fontWeight: 800, fontFamily: 'Inter, sans-serif',
           cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease',
           transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
         }}
@@ -113,12 +113,12 @@ function StoryUnlockCard({ unlock, accentHex, langFont, firstRun, onRead }) {
         background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '18px',
         padding: '16px 18px', display: 'flex', alignItems: 'center', gap: '14px',
       }}>
-        <div style={{ width: '44px', height: '44px', borderRadius: '14px', flexShrink: 0, background: accentHex + '12', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0, background: accentHex + '12', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <BookOpen size={22} strokeWidth={1.9} color={accentHex} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text)' }}>Keep going</div>
-          <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '2px' }}>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '2px' }}>
             Learn {wordsToUnlock} more word{wordsToUnlock === 1 ? '' : 's'} to unlock{nextTierLabel ? ' ' + nextTierLabel : ' your next story'}.
           </div>
         </div>
@@ -134,7 +134,7 @@ function StoryUnlockCard({ unlock, accentHex, langFont, firstRun, onRead }) {
       padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-        <div style={{ width: '44px', height: '44px', borderRadius: '14px', flexShrink: 0, background: accentHex + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0, background: accentHex + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <BookOpen size={22} strokeWidth={1.9} color={accentHex} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -149,8 +149,8 @@ function StoryUnlockCard({ unlock, accentHex, langFont, firstRun, onRead }) {
           flexShrink: 0, textAlign: 'center', padding: '6px 12px', borderRadius: '12px',
           background: 'var(--surface)', border: '1px solid ' + accentHex + '2A',
         }}>
-          <div style={{ fontSize: '18px', fontWeight: 850, color: accentHex, lineHeight: 1 }}>{knownPct}%</div>
-          <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginTop: '2px' }}>known</div>
+          <div style={{ fontSize: '17px', fontWeight: 800, color: accentHex, lineHeight: 1 }}>{knownPct}%</div>
+          <div style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--text-muted)', marginTop: '2px' }}>known</div>
         </div>
       </div>
       <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
@@ -164,9 +164,9 @@ function StoryUnlockCard({ unlock, accentHex, langFont, firstRun, onRead }) {
         onMouseLeave={() => setHovered(false)}
         style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
-          width: '100%', minHeight: '48px', borderRadius: '14px', border: 'none',
+          width: '100%', minHeight: '48px', borderRadius: '12px', border: 'none',
           background: hovered ? accentHex : accentHex + 'E6', color: '#fff',
-          fontSize: '14.5px', fontWeight: 800, fontFamily: 'Inter, sans-serif',
+          fontSize: '15px', fontWeight: 800, fontFamily: 'Inter, sans-serif',
           cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease',
           transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
         }}
@@ -236,8 +236,8 @@ export default function SessionRecap({
       <div style={{
         width: '100%', maxWidth: '520px', textAlign: 'center',
         background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: '24px', padding: '40px 34px',
-        boxShadow: '0 22px 60px rgba(24,24,27,0.07)',
+        borderRadius: '26px', padding: '40px 34px',
+        boxShadow: 'var(--shadow-1)',
       }}>
         <div style={{
           width: '58px', height: '58px', borderRadius: '18px',
@@ -246,7 +246,7 @@ export default function SessionRecap({
         }}>
           <CheckCircle2 size={28} strokeWidth={1.9} color={accentHex} />
         </div>
-        <h1 style={{ fontSize: '26px', fontWeight: 750, marginBottom: '8px', color: 'var(--text)' }}>
+        <h1 style={{ fontSize: '26px', fontWeight: 700, marginBottom: '8px', color: 'var(--text)' }}>
           {firstDone ? 'Your first words, learned' : (didStudy ? 'Session complete' : 'All done for now')}
         </h1>
         <p style={{ color: 'var(--text-muted)', marginBottom: didStudy ? '26px' : '28px', fontSize: '15px', lineHeight: 1.6 }}>
@@ -263,14 +263,14 @@ export default function SessionRecap({
             what's waiting tomorrow. No XP, no accuracy — just the shape of it. */}
         {didStudy && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '24px' }}>
-            <div style={{ padding: '14px 16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'left' }}>
+            <div style={{ padding: '14px 16px', borderRadius: '12px', background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'left' }}>
               <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '4px' }}>Today</div>
               <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                 <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{s.graded}</strong> reviewed
                 {s.newLearned > 0 && <>, <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{s.newLearned}</strong> new</>}
               </div>
             </div>
-            <div style={{ padding: '14px 16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'left' }}>
+            <div style={{ padding: '14px 16px', borderRadius: '12px', background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'left' }}>
               <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '4px' }}>Tomorrow</div>
               <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                 <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{(forecast && forecast.reviews) || 0}</strong> due
@@ -292,7 +292,7 @@ export default function SessionRecap({
         {showNextStep && (
           <div style={{ marginBottom: '14px', textAlign: 'left' }}>
             <div style={{
-              fontSize: '11px', fontWeight: 850, letterSpacing: '0.5px', textTransform: 'uppercase',
+              fontSize: '11px', fontWeight: 800, letterSpacing: '0.5px', textTransform: 'uppercase',
               color: 'var(--text-muted)', marginBottom: '8px', paddingLeft: '2px',
             }}>
               Recommended next
@@ -307,12 +307,12 @@ export default function SessionRecap({
                 boxShadow: '0 10px 26px ' + accentHex + '33',
               }}
             >
-              <div style={{ width: '44px', height: '44px', borderRadius: '14px', flexShrink: 0, background: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0, background: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <nextStep.icon size={22} strokeWidth={2} color="#fff" />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '15.5px', fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nextStep.label}</div>
-                <div style={{ fontSize: '12.5px', opacity: 0.9, lineHeight: 1.4, marginTop: '2px' }}>{nextStep.sub}</div>
+                <div style={{ fontSize: '15px', fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nextStep.label}</div>
+                <div style={{ fontSize: '13px', opacity: 0.9, lineHeight: 1.4, marginTop: '2px' }}>{nextStep.sub}</div>
               </div>
               <ChevronRight size={22} color="#fff" style={{ flexShrink: 0, opacity: 0.9 }} />
             </button>
@@ -335,12 +335,12 @@ export default function SessionRecap({
             background: accentHex + '0D', border: '1px solid ' + accentHex + '2A', borderRadius: '18px',
             padding: '16px 18px', display: 'flex', alignItems: 'center', gap: '14px',
           }}>
-            <div style={{ width: '44px', height: '44px', borderRadius: '14px', flexShrink: 0, background: accentHex + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0, background: accentHex + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <MessageCircleMore size={22} strokeWidth={1.9} color={accentHex} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text)' }}>Use today’s words</div>
-              <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '2px' }}>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '2px' }}>
                 {mission.scenario.en} · ~{mission.estimatedTime} min
               </div>
             </div>
@@ -354,9 +354,9 @@ export default function SessionRecap({
             onClick={onBack}
             style={{
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              width: '100%', minHeight: '46px', borderRadius: '14px',
+              width: '100%', minHeight: '46px', borderRadius: '12px',
               background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)',
-              fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+              fontSize: '13.5px', fontWeight: 700, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
             }}
           >
             <ArrowLeft size={16} strokeWidth={2.1} color="var(--text-muted)" />

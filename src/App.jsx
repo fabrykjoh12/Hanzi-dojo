@@ -571,7 +571,7 @@ export default function App() {
             style={{
               padding: '11px 22px', borderRadius: '12px', border: 'none', cursor: 'pointer',
               background: 'var(--chinese-accent)', color: '#fff',
-              fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+              fontSize: '13.5px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
             }}
           >
             Retry

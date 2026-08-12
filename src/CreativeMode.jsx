@@ -87,13 +87,13 @@ function Btn({ label, icon: Icon, onClick, active, current, danger, armed, busy,
       aria-current={current ? 'true' : undefined}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: '6px',
-        padding: '8px 12px', borderRadius: '10px',
+        padding: '8px 12px', borderRadius: '12px',
         border: '1px solid ' + (armed ? WARN : 'var(--border)'),
         background: armed
           ? 'color-mix(in srgb, ' + WARN + ' 14%, var(--surface))'
           : (on ? 'var(--surface-2)' : 'var(--surface)'),
         color: armed ? WARN : tone,
-        fontSize: '12.5px', fontWeight: on ? 700 : 600,
+        fontSize: '13px', fontWeight: on ? 700 : 600,
         fontFamily: 'Inter, sans-serif',
         cursor: (busy || disabled) ? 'not-allowed' : 'pointer',
         opacity: (busy || disabled) ? 0.55 : 1,
@@ -249,7 +249,7 @@ export default function CreativeMode({ session, profile, track }) {
     <div style={{
       background: 'var(--surface)',
       border: '1px solid color-mix(in srgb, ' + WARN + ' 34%, var(--border))',
-      borderRadius: '14px', overflow: 'hidden',
+      borderRadius: '12px', overflow: 'hidden',
       marginTop: '10px',
     }}>
       <button
@@ -281,7 +281,7 @@ export default function CreativeMode({ session, profile, track }) {
         <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
             <AlertTriangle size={15} strokeWidth={2} color={WARN} style={{ marginTop: '2px', flexShrink: 0 }} />
-            <p style={{ margin: 0, fontSize: '12.5px', lineHeight: 1.6, color: 'var(--text-muted)' }}>
+            <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.6, color: 'var(--text-muted)' }}>
               Writes fake progress to <strong style={{ color: 'var(--text)' }}>your own account only</strong> ({session.user.email}) so
               the app can be tested without hand-written SQL. Nothing here reads or touches another user.
               After a change, go Home — that is what reloads the profile, track and counts.
@@ -325,7 +325,7 @@ export default function CreativeMode({ session, profile, track }) {
                 // when a focused input's text is smaller. Vertical padding drops
                 // to 6px so the taller text still lines up with the 12.5px Btns
                 // sharing this row.
-                width: '92px', padding: '6px 10px', borderRadius: '10px',
+                width: '92px', padding: '6px 10px', borderRadius: '12px',
                 border: '1px solid var(--border)', background: 'var(--surface-2)',
                 color: 'var(--text)', fontSize: '16px', fontFamily: 'Inter, sans-serif',
               }}
@@ -356,14 +356,14 @@ export default function CreativeMode({ session, profile, track }) {
               busy={busy === 'reset'} armed={armed === 'reset'}
               onClick={() => run('reset', 0, resetLanguage)}
             />
-            <span style={{ fontSize: '11.5px', color: 'var(--text-faint)' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-faint)' }}>
               Deletes cards, reviews, tests and unlocks for this language (the existing reset RPC).
             </span>
           </Field>
 
           {status && (
             <div style={{
-              fontSize: '12.5px', color: 'var(--text)', padding: '10px 12px', borderRadius: '10px',
+              fontSize: '13px', color: 'var(--text)', padding: '10px 12px', borderRadius: '12px',
               background: 'var(--surface-2)', border: '1px solid var(--border)',
             }}>
               {status}

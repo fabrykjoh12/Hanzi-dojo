@@ -53,7 +53,7 @@ function Card({ children }) {
   return (
     <div style={{
       background: 'var(--surface-glass)', border: '1px solid var(--border)',
-      borderRadius: '14px', padding: '18px 20px',
+      borderRadius: '12px', padding: '18px 20px',
     }}>{children}</div>
   )
 }
@@ -143,7 +143,7 @@ function RetentionPanel({ rows, todayISO }) {
           <Row key={r.day} cells={[r.day, r.size, cell(r.d1), cell(r.d7), cell(r.d30)]} td={td} />
         ))}
       </div>
-      <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '10px 0 0' }}>
+      <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '10px 0 0' }}>
         “—” means not enough days have elapsed for that cohort yet.
       </p>
     </div>
@@ -213,7 +213,7 @@ function StoriesPanel({ rows, language, onLanguage }) {
           )
         })}
       </div>
-      <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '10px 0 0' }}>
+      <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '10px 0 0' }}>
         A reader is one account (or one anonymous browser session). The rate is the share of readers who opened a story in
         this range and finished at least one — re-reads and repeat finishes don’t inflate it.
       </p>
@@ -240,21 +240,21 @@ function ClientErrorsPanel({ rows }) {
             <span style={{ fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums', minWidth: '3ch', textAlign: 'right' }}>
               {r.hits}×
             </span>
-            <span style={{ fontWeight: 650, color: 'var(--text)' }}>{r.error_name}</span>
+            <span style={{ fontWeight: 600, color: 'var(--text)' }}>{r.error_name}</span>
             <span style={{ color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '40ch' }}>
               {r.message}
             </span>
             <span style={{
-              color: 'var(--text-faint)', fontSize: '11.5px', fontWeight: 600,
+              color: 'var(--text-faint)', fontSize: '12px', fontWeight: 600,
               border: '1px solid var(--border)', borderRadius: '999px', padding: '1px 8px',
             }}>{r.route || '?'}</span>
-            <span style={{ color: 'var(--text-faint)', fontSize: '11.5px' }}>
+            <span style={{ color: 'var(--text-faint)', fontSize: '12px' }}>
               last {String(r.last_seen || '').slice(0, 10)}
             </span>
           </div>
         ))}
       </div>
-      <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '10px 0 0' }}>
+      <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '10px 0 0' }}>
         Includes staff sessions (a crash is a crash). Messages are truncated at 40 characters at the source; stacks and
         typed text are never collected.
       </p>
@@ -363,7 +363,7 @@ export default function Dashboard({ onBack, session, profile, track }) {
           <Card>
             <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', margin: '0 0 12px' }}>Activation stages</h2>
             <FunnelBars stages={data.funnel} />
-            <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '10px 0 0' }}>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '10px 0 0' }}>
               Pre-auth stages count browser sessions; signed-in stages count accounts. Each stage counts activity inside the
               range independently, so stages are not strictly nested — this is a set of stage counts, not a true funnel.
             </p>

@@ -57,7 +57,7 @@ function ShelfRow({ id, title, subtitle, isMobile, children, dataTour }) {
           <h2 id={id} style={{ margin: 0, color: 'var(--text)', fontSize: isMobile ? '17px' : '19px', fontWeight: 800, letterSpacing: '-0.02em' }}>
             {title}
           </h2>
-          {subtitle && <p style={{ margin: '3px 0 0', color: 'var(--text-muted)', fontSize: '12.5px', lineHeight: 1.45 }}>{subtitle}</p>}
+          {subtitle && <p style={{ margin: '3px 0 0', color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.45 }}>{subtitle}</p>}
         </div>
         {!isMobile && (
           <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
@@ -148,7 +148,7 @@ function EmptyPanel({ icon: Icon, title, text, actionIcon: ActionIcon, actionLab
     <div style={{
       textAlign: 'center', color: 'var(--text-muted)', padding: '54px 28px', fontSize: '15px',
       background: 'var(--surface)', border: '1px solid var(--border)',
-      borderRadius: '22px', boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
+      borderRadius: '18px', boxShadow: 'var(--shadow-1)',
     }}>
       <Icon size={30} strokeWidth={1.8} color="var(--text-faint)" />
       <div style={{ color: 'var(--text)', fontSize: '17px', fontWeight: 800, marginTop: '14px' }}>{title}</div>
@@ -159,7 +159,7 @@ function EmptyPanel({ icon: Icon, title, text, actionIcon: ActionIcon, actionLab
             display: 'inline-flex', alignItems: 'center', gap: '8px',
             minHeight: '44px', padding: '0 16px', borderRadius: '12px',
             border: '1px solid var(--border)', background: 'var(--surface)',
-            color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650,
+            color: 'var(--text-muted)', fontSize: '13px', fontWeight: 600,
             fontFamily: 'Inter, sans-serif', cursor: 'pointer',
           }}>
             <ActionIcon size={17} strokeWidth={1.85} color="var(--text-muted)" />
@@ -333,12 +333,12 @@ export default function Stories({ onNavigate, onOpenStory, onOpenSeries }) {
       <div style={pageShell()}>
         <div role="status" aria-label="Loading stories" style={{ maxWidth: '1360px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px' }}>
           <div style={{ width: '190px', height: '30px', borderRadius: '8px', background: 'var(--surface-2)', margin: '4px 0 20px' }} />
-          <div style={{ height: isMobile ? '280px' : '340px', borderRadius: '24px', background: accentHex + '18', border: '1px solid ' + accentHex + '24', marginBottom: '28px' }} />
+          <div style={{ height: isMobile ? '280px' : '340px', borderRadius: '26px', background: accentHex + '18', border: '1px solid ' + accentHex + '24', marginBottom: '28px' }} />
           <div style={{ width: '190px', height: '22px', borderRadius: '8px', background: 'var(--surface-2)', marginBottom: '14px' }} />
           <div style={{ display: 'flex', gap: '16px', overflow: 'hidden' }}>
             {[0, 1, 2, 3, 4, 5].map(i => (
               <div key={i} style={{ flex: isMobile ? '0 0 38vw' : '0 0 176px' }}>
-                <div style={{ aspectRatio: '2 / 3', borderRadius: '14px', background: 'var(--surface-2)' }} />
+                <div style={{ aspectRatio: '2 / 3', borderRadius: '12px', background: 'var(--surface-2)' }} />
                 <div style={{ width: '68%', height: '13px', borderRadius: '6px', background: 'var(--surface-2)', marginTop: '10px' }} />
               </div>
             ))}
@@ -513,7 +513,7 @@ export default function Stories({ onNavigate, onOpenStory, onOpenSeries }) {
         {/* Stories is a primary destination — no back button; the app nav is
             the way out. */}
         <header style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '14px', margin: '0 0 16px', flexWrap: 'wrap' }}>
-          <h1 style={{ margin: 0, color: 'var(--text)', fontSize: isMobile ? '26px' : '30px', fontWeight: 820, letterSpacing: '-0.035em' }}>
+          <h1 style={{ margin: 0, color: 'var(--text)', fontSize: isMobile ? '26px' : '30px', fontWeight: 800, letterSpacing: '-0.035em' }}>
             Stories
           </h1>
           <Eyebrow>{metaLine(getSystemLabel(track.system), getLevelLabel(track.language, track.system, track.current_level))}</Eyebrow>

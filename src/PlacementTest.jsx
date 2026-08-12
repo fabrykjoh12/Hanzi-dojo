@@ -79,7 +79,7 @@ export default function PlacementTest({
         <h1 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
           Not available yet
         </h1>
-        <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '24px', lineHeight: 1.6 }}>
+        <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginBottom: '24px', lineHeight: 1.6 }}>
           There isn’t enough content at {levelLabel} for a placement test yet. You can start at Beginner for now.
         </p>
         <button onClick={onCancel} style={primaryBtn(accentHex)}>Back to levels</button>
@@ -91,7 +91,7 @@ export default function PlacementTest({
     return (
       <div style={{ textAlign: 'center' }}>
         <div style={{
-          width: '56px', height: '56px', borderRadius: '50%', margin: '0 auto 16px',
+          width: '56px', height: '56px', borderRadius: '999px', margin: '0 auto 16px',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: passed ? '#2F9E6D18' : '#DC262618',
           border: '1px solid ' + (passed ? '#2F9E6D40' : '#DC262640'),
@@ -100,14 +100,14 @@ export default function PlacementTest({
             ? <ShieldCheck size={28} strokeWidth={2} color="#2F9E6D" />
             : <X size={28} strokeWidth={2.4} color="#DC2626" />}
         </div>
-        <h1 style={{ fontSize: '22px', fontWeight: 750, color: 'var(--text)', marginBottom: '6px', fontFamily: 'Inter, sans-serif' }}>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px', fontFamily: 'Inter, sans-serif' }}>
           {passed ? 'Level proven!' : 'Not quite'}
         </h1>
-        <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+        <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginBottom: '4px' }}>
           You got <strong style={{ color: 'var(--text)' }}>{correctCount} / {total}</strong> correct
           {passed ? '' : ` — you need ${passThreshold} to pass`}.
         </p>
-        <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '24px', lineHeight: 1.6 }}>
+        <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginBottom: '24px', lineHeight: 1.6 }}>
           {passed
             ? `We’ll start you at ${tierLabel} (${levelLabel}). Earlier levels are treated as known.`
             : `No problem — you can start at Beginner and unlock ${levelLabel} as you go.`}

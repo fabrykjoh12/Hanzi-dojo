@@ -187,10 +187,10 @@ export default function KnownWords({ session, profile, track, onBack }) {
     <div style={{ maxWidth: '760px', margin: '0 auto', padding: pad }}>
       <AppBar kind="back" onBack={onBack} sticky={false} />
 
-      <h1 style={{ fontSize: '24px', fontWeight: 750, color: 'var(--text)', margin: '10px 0 6px', fontFamily: 'Inter, sans-serif' }}>
+      <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text)', margin: '10px 0 6px', fontFamily: 'Inter, sans-serif' }}>
         Words you already know
       </h1>
-      <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '20px' }}>
+      <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '20px' }}>
         Learned some {theme.languageName} before you found us? Tell us which words, and we’ll add
         them to review a few each day so they stay sharp instead of quietly fading.
       </p>
@@ -204,10 +204,10 @@ export default function KnownWords({ session, profile, track, onBack }) {
             onClick={() => setMode(key)}
             aria-pressed={mode === key}
             style={{
-              flex: 1, padding: '10px', borderRadius: '10px', cursor: 'pointer',
+              flex: 1, padding: '10px', borderRadius: '12px', cursor: 'pointer',
               border: '2px solid ' + (mode === key ? accentHex : 'var(--border)'),
               background: mode === key ? accentHex + '12' : 'var(--surface)',
-              color: 'var(--text)', fontSize: '14px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
+              color: 'var(--text)', fontSize: '13.5px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
             }}
           >
             {label}
@@ -310,7 +310,7 @@ export default function KnownWords({ session, profile, track, onBack }) {
       {/* Pacing + confirm — shown once there is a claim */}
       {claimIds.length > 0 && (
         <div style={{ borderTop: '1px solid var(--border)', paddingTop: '18px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)', marginBottom: '10px' }}>
+          <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text)', marginBottom: '10px' }}>
             How fast should we check these {claimIds.length}?
           </div>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
@@ -319,12 +319,12 @@ export default function KnownWords({ session, profile, track, onBack }) {
                 key={p.key}
                 onClick={() => setPacing(p.key)}
                 style={{
-                  flex: 1, padding: '12px 8px', borderRadius: '10px', cursor: 'pointer',
+                  flex: 1, padding: '12px 8px', borderRadius: '12px', cursor: 'pointer',
                   border: '2px solid ' + (pacing === p.key ? accentHex : 'var(--border)'),
                   background: 'var(--surface)', color: 'var(--text)', fontFamily: 'Inter, sans-serif',
                 }}
               >
-                <div style={{ fontSize: '14px', fontWeight: 700 }}>{p.label}</div>
+                <div style={{ fontSize: '13.5px', fontWeight: 700 }}>{p.label}</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>
                   {p.perDay}/day · ~{estimateDays(claimIds.length, p.perDay)} days
                 </div>
@@ -356,9 +356,9 @@ function ReviewList({
   const allIds = review.orderedIds
 
   return (
-    <div style={{ marginTop: '16px', overflow: 'hidden', ...flatPanel({ radius: 14 }) }}>
+    <div style={{ marginTop: '16px', overflow: 'hidden', ...flatPanel() }}>
       <div style={{ padding: isMobile ? '12px 14px' : '14px 16px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
+        <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text)' }}>
           Check what you remember
         </div>
         <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55, margin: '5px 0 0' }}>
@@ -466,7 +466,7 @@ function ReviewList({
                           <span style={{ fontSize: '12px', color: 'var(--text-faint)' }}>{v.reading}</span>
                         </span>
                         <span style={{
-                          display: 'block', fontSize: '12.5px', marginTop: '1px',
+                          display: 'block', fontSize: '13px', marginTop: '1px',
                           color: on ? 'var(--text-muted)' : 'var(--text-faint)',
                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                         }}>
@@ -495,8 +495,8 @@ function primaryBtn(accentHex) {
 
 function secondaryBtn(accentHex) {
   return {
-    padding: '10px 16px', borderRadius: '10px', border: '1px solid ' + accentHex,
-    background: 'var(--surface)', color: inkStrong(accentHex), fontSize: '14px', fontWeight: 600,
+    padding: '10px 16px', borderRadius: '12px', border: '1px solid ' + accentHex,
+    background: 'var(--surface)', color: inkStrong(accentHex), fontSize: '13.5px', fontWeight: 600,
     fontFamily: 'Inter, sans-serif', cursor: 'pointer',
   }
 }
@@ -509,7 +509,7 @@ function linkBtn(accentHex) {
 }
 
 const errorBox = {
-  padding: '10px 12px', borderRadius: '10px', marginBottom: '12px',
+  padding: '10px 12px', borderRadius: '12px', marginBottom: '12px',
   background: 'var(--danger-bg, #DC26260D)', border: '1px solid var(--danger-border, #DC262633)',
   color: 'var(--danger, #DC2626)', fontSize: '13px',
 }

@@ -9,7 +9,7 @@ export default function NotFound({ onHome }) {
   return (
     <Centered>
       <div style={{
-        width: '56px', height: '56px', borderRadius: '16px', margin: '0 auto 20px',
+        width: '56px', height: '56px', borderRadius: '18px', margin: '0 auto 20px',
         background: 'var(--surface-2)', border: '1px solid var(--border)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
@@ -18,7 +18,7 @@ export default function NotFound({ onHome }) {
       <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text)', marginBottom: '10px', letterSpacing: '-0.01em' }}>
         This page wandered off
       </div>
-      <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 0 24px' }}>
+      <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 0 24px' }}>
         We couldn’t find that page. Your progress is safe — head back to your dojo
         and pick up today’s session.
       </p>

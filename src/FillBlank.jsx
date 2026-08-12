@@ -84,7 +84,7 @@ export default function FillBlank({ session, profile, track, onBack, pool = null
     return (
       <div style={pageShell}>
         <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: '88px', height: '88px', borderRadius: '26px', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 16px 40px rgba(24,24,27,0.06)' }}>
+          <div style={{ width: '88px', height: '88px', borderRadius: '26px', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-1)' }}>
             <AlignLeft size={34} strokeWidth={1.75} color={accentHex} />
           </div>
         </div>
@@ -97,8 +97,8 @@ export default function FillBlank({ session, profile, track, onBack, pool = null
       <div style={pageShell}>
         <Centered>
           <AlignLeft size={30} strokeWidth={1.8} color={accentHex} style={{ marginBottom: '14px' }} />
-          <h1 style={{ fontSize: '22px', fontWeight: 750, color: 'var(--text)', marginBottom: '8px' }}>No sentences here yet</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>No sentences here yet</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', lineHeight: 1.6, marginBottom: '24px' }}>
             This level needs a few example sentences before fill-in-the-blank can run.
           </p>
           <PrimaryButton onClick={onBack} icon={ArrowLeft}>Exit</PrimaryButton>
@@ -115,12 +115,12 @@ export default function FillBlank({ session, profile, track, onBack, pool = null
           <div style={{ width: '58px', height: '58px', borderRadius: '18px', margin: '0 auto 18px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: accentHex + '10', border: '1px solid ' + accentHex + '18' }}>
             <CheckCircle2 size={28} strokeWidth={1.9} color={accentHex} />
           </div>
-          <h1 style={{ fontSize: '26px', fontWeight: 750, marginBottom: '8px', color: 'var(--text)' }}>Sentences complete</h1>
+          <h1 style={{ fontSize: '26px', fontWeight: 700, marginBottom: '8px', color: 'var(--text)' }}>Sentences complete</h1>
           <p style={{ color: 'var(--text-muted)', marginBottom: '22px', fontSize: '15px' }}>
             You filled <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {questions.length} correctly.
           </p>
-          <div style={{ padding: '16px 10px', borderRadius: '14px', background: accentHex + '0D', border: '1px solid ' + accentHex + '22', marginBottom: '22px' }}>
-            <div style={{ fontSize: '26px', fontWeight: 760, color: inkStrong(accentHex), lineHeight: 1 }}>{pct}%</div>
+          <div style={{ padding: '16px 10px', borderRadius: '12px', background: accentHex + '0D', border: '1px solid ' + accentHex + '22', marginBottom: '22px' }}>
+            <div style={{ fontSize: '26px', fontWeight: 800, color: inkStrong(accentHex), lineHeight: 1 }}>{pct}%</div>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -139,11 +139,11 @@ export default function FillBlank({ session, profile, track, onBack, pool = null
       <div style={{ maxWidth: '620px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <SecondaryButton onClick={onBack} icon={ArrowLeft}>Exit</SecondaryButton>
-          <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{idx + 1} / {questions.length}</span>
+          <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>{idx + 1} / {questions.length}</span>
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(accentHex), fontSize: '13px', fontWeight: 750 }}>
+          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(accentHex), fontSize: '13px', fontWeight: 700 }}>
             <AlignLeft size={17} strokeWidth={1.8} color={accentHex} aria-hidden="true" /> Fill in the blank
           </h1>
           <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>{metaLine(systemLabel, levelLabel)}</div>
@@ -161,7 +161,7 @@ export default function FillBlank({ session, profile, track, onBack, pool = null
         </div>
 
         {/* Sentence with blank */}
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px 22px', marginBottom: '12px', textAlign: 'center', boxShadow: '0 10px 30px rgba(24,24,27,0.05)' }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px 22px', marginBottom: '12px', textAlign: 'center', boxShadow: 'var(--shadow-1)' }}>
           <div lang={langAttr(track.language)} style={{ fontSize: isMobile ? '22px' : '26px', lineHeight: 1.7, fontFamily: langFont, color: 'var(--text)' }}>
             {q.parts.map((part, i) => (
               <span key={i}>
@@ -180,7 +180,7 @@ export default function FillBlank({ session, profile, track, onBack, pool = null
           </div>
         </div>
         {q.vocab.example_translation && (
-          <div style={{ textAlign: 'center', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '22px', fontStyle: 'italic' }}>
+          <div style={{ textAlign: 'center', fontSize: '13.5px', color: 'var(--text-muted)', marginBottom: '22px', fontStyle: 'italic' }}>
             {q.vocab.example_translation}
           </div>
         )}
@@ -198,7 +198,7 @@ export default function FillBlank({ session, profile, track, onBack, pool = null
               // tick as the answer drops keyboard focus to <body>. `choose()`
               // already no-ops once answered.
               <button key={opt.id} onClick={() => choose(opt)} aria-disabled={answered} style={{
-                position: 'relative', minHeight: '64px', padding: '12px 14px', borderRadius: '14px',
+                position: 'relative', minHeight: '64px', padding: '12px 14px', borderRadius: '12px',
                 border: '1.5px solid ' + bc, background: bg, cursor: answered ? 'default' : 'pointer',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px',
                 transition: 'border-color 140ms ease, background 140ms ease',
@@ -220,7 +220,7 @@ export default function FillBlank({ session, profile, track, onBack, pool = null
           {answered && (
             <div style={{ marginTop: '20px' }}>
               <span style={srOnly}>{picked === q.vocab.id ? 'Correct.' : 'Incorrect.'}</span>
-              <div lang={langAttr(track.language)} style={{ padding: '14px 18px', borderRadius: '14px', textAlign: 'center', marginBottom: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+              <div lang={langAttr(track.language)} style={{ padding: '14px 18px', borderRadius: '12px', textAlign: 'center', marginBottom: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
                 <span style={{ fontSize: '20px', fontFamily: langFont, color: 'var(--text)' }}>{q.vocab.word}</span>
                 <span style={{ fontSize: '14px', color: pinyinInk(accentHex), marginLeft: '10px', fontWeight: 600 }}>{q.vocab.reading}</span>
                 <div lang={UI_LANG} style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px' }}>{cleanMeaning(q.vocab.meaning)}</div>

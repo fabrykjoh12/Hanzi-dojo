@@ -128,14 +128,14 @@ export default function Writer({ profile, track, onBack }) {
           <Ghost onClick={onBack} icon={ArrowLeft} label="Exit" />
           <div style={{
             marginTop: '18px', textAlign: 'center', background: 'var(--surface)',
-            border: '1px solid var(--border)', borderRadius: '24px', padding: '42px 30px',
-            boxShadow: '0 22px 60px rgba(24,24,27,0.07)',
+            border: '1px solid var(--border)', borderRadius: '26px', padding: '42px 30px',
+            boxShadow: 'var(--shadow-1)',
           }}>
             <Brush size={30} strokeWidth={1.8} color={accentHex} style={{ marginBottom: '14px' }} />
-            <h1 style={{ fontSize: '22px', fontWeight: 750, color: 'var(--text)', marginBottom: '8px' }}>
+            <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>
               Stroke order is for Chinese &amp; Japanese
             </h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6 }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', lineHeight: 1.6 }}>
               {theme.languageName} uses an alphabet, so there is no character stroke-order drill. Try the alphabet practice instead.
             </p>
           </div>
@@ -153,7 +153,7 @@ export default function Writer({ profile, track, onBack }) {
           <Ghost onClick={() => setSelected(null)} icon={ArrowLeft} label="All characters" />
           <div style={{
             marginTop: '16px', background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: '24px', padding: isMobile ? '22px 18px' : '30px', boxShadow: '0 22px 60px rgba(24,24,27,0.07)',
+            borderRadius: '26px', padding: isMobile ? '22px 18px' : '30px', boxShadow: 'var(--shadow-1)',
             display: 'flex', flexDirection: 'column', alignItems: 'center',
           }}>
             <div style={{
@@ -178,8 +178,8 @@ export default function Writer({ profile, track, onBack }) {
 
             {meta && (
               <div style={{ textAlign: 'center', marginTop: '14px' }}>
-                <div style={{ fontSize: '16px', color: pinyinInk(accentHex), fontWeight: 650 }}>{meta.reading}</div>
-                <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '2px' }}>{cleanMeaning(meta.meaning)}</div>
+                <div style={{ fontSize: '16px', color: pinyinInk(accentHex), fontWeight: 600 }}>{meta.reading}</div>
+                <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginTop: '2px' }}>{cleanMeaning(meta.meaning)}</div>
               </div>
             )}
 
@@ -200,10 +200,10 @@ export default function Writer({ profile, track, onBack }) {
       <div style={{ maxWidth: '760px', margin: '0 auto' }}>
         <Ghost onClick={onBack} icon={ArrowLeft} label="Exit" />
         <div style={{ textAlign: 'center', margin: '18px 0 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(accentHex), fontSize: '13px', fontWeight: 750 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(accentHex), fontSize: '13px', fontWeight: 700 }}>
             <Brush size={17} strokeWidth={1.8} color={accentHex} /> Stroke order
           </div>
-          <h1 style={{ fontSize: '28px', fontWeight: 780, color: 'var(--text)', marginTop: '8px' }}>Writing practice</h1>
+          <h1 style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text)', marginTop: '8px' }}>Writing practice</h1>
           <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '5px' }}>{metaLine(systemLabel, levelLabel, chars.length + ' ' + kindLabel)}</div>
         </div>
 
@@ -213,7 +213,7 @@ export default function Writer({ profile, track, onBack }) {
             <Brush size={32} strokeWidth={1.75} color={accentHex} aria-hidden="true" />
           </div>
         ) : chars.length === 0 ? (
-          <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', marginTop: '40px' }}>
+          <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13.5px', marginTop: '40px' }}>
             No {kindLabel} to practice at this level yet.
           </div>
         ) : (
@@ -221,7 +221,7 @@ export default function Writer({ profile, track, onBack }) {
           <div lang={langAttr(track.language)} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(' + (isMobile ? '58px' : '68px') + ', 1fr))', gap: '10px' }}>
             {chars.map(ch => (
               <button key={ch} onClick={() => setSelected(ch)} style={{
-                aspectRatio: '1', borderRadius: '14px', border: '1px solid var(--border)',
+                aspectRatio: '1', borderRadius: '12px', border: '1px solid var(--border)',
                 background: 'var(--surface)', cursor: 'pointer',
                 fontSize: isMobile ? '28px' : '34px', color: 'var(--text)', fontFamily: langFont,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -247,7 +247,7 @@ function Ghost({ onClick, icon: Icon, label }) {
       display: 'inline-flex', alignItems: 'center', gap: '8px',
       minHeight: '40px', padding: '0 14px', borderRadius: '12px',
       border: '1px solid var(--border)', background: h ? 'var(--surface-2)' : 'var(--surface)',
-      color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+      color: 'var(--text-muted)', fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
     }}>
       <Icon size={17} strokeWidth={1.85} color="var(--text-muted)" /> {label}
     </button>
@@ -263,7 +263,7 @@ function Action({ onClick, icon: Icon, label, primary }) {
       border: primary ? 'none' : '1px solid var(--border)',
       background: primary ? (h ? 'var(--primary-pressed)' : 'var(--primary)') : (h ? 'var(--surface-2)' : 'var(--surface)'),
       color: primary ? '#fff' : 'var(--text-muted)',
-      fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+      fontSize: '13.5px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
     }}>
       <Icon size={17} strokeWidth={2} color={primary ? '#fff' : 'var(--text-muted)'} /> {label}
     </button>

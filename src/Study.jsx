@@ -117,7 +117,7 @@ function IconButton({ icon: Icon, label, onClick, color, background, border }) {
         background: hovered ? 'var(--surface-2)' : (background || 'var(--surface)'),
         color: color || 'var(--text-muted)',
         height: '40px', padding: '0 14px', borderRadius: '12px',
-        fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+        fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
         cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease',
         transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
       }}
@@ -1013,7 +1013,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             width: '88px', height: '88px', borderRadius: '26px',
             background: 'var(--surface)', border: '1px solid var(--border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 16px 40px rgba(24,24,27,0.06)',
+            boxShadow: 'var(--shadow-1)',
           }}>
             <BookOpenCheck size={34} strokeWidth={1.75} color={accentHex} />
           </div>
@@ -1199,7 +1199,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         <div style={{
           width: '100%', maxWidth: '680px', margin: '0 auto', marginBottom: '18px', flexShrink: 0,
           background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: '#DC2626',
-          padding: '14px 18px', borderRadius: '16px', fontSize: '13px', lineHeight: 1.5,
+          padding: '14px 18px', borderRadius: '18px', fontSize: '13px', lineHeight: 1.5,
         }}>
           <strong>Card save failed</strong> - your progress is not being saved. Database error: {saveError}
           <br />Run the migration SQL in your Supabase SQL Editor, then refresh.
@@ -1258,10 +1258,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                   borderRadius: '999px', flexShrink: 0,
                   background: bandTone(accentHex, key),
                 }} />
-                <span style={{ ...NUM, fontSize: '12.5px', fontWeight: 700, color: 'var(--text)' }}>
+                <span style={{ ...NUM, fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
                   {mix.counts[key]}
                 </span>
-                <span style={{ ...MICRO, fontSize: '9.5px', color: 'var(--text-faint)' }}>
+                <span style={{ ...MICRO, fontSize: '10.5px', color: 'var(--text-faint)' }}>
                   {MIX_LABELS[key]}
                 </span>
               </span>
@@ -1361,7 +1361,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                           </div>
                         )}
                         {!isJapanese && v.example_reading && (
-                          <div style={{ fontSize: '13px', color: accentHex, marginTop: '7px', lineHeight: 1.45, fontWeight: 550 }}>
+                          <div style={{ fontSize: '13px', color: accentHex, marginTop: '7px', lineHeight: 1.45, fontWeight: 600 }}>
                             {v.example_reading}
                           </div>
                         )}
@@ -1403,10 +1403,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                 {isLeech && (
                   <div style={{
                     width: '100%', maxWidth: '430px', marginTop: '18px', padding: '14px 16px',
-                    borderRadius: '14px', background: '#FBF3EC', border: '1px solid #EEDCCB',
+                    borderRadius: '12px', background: '#FBF3EC', border: '1px solid #EEDCCB',
                     textAlign: 'left',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 750, color: '#8A5F1E' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 700, color: '#8A5F1E' }}>
                       <AlertTriangle size={15} strokeWidth={2} color="#8A5F1E" style={{ flexShrink: 0 }} />
                       This one keeps slipping — missed {card.lapses} times
                     </div>
@@ -1415,7 +1415,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                         {leechChars.map((p, i) => (
                           <span key={i} style={{
                             display: 'inline-flex', flexDirection: 'column', alignItems: 'center',
-                            padding: '5px 9px', borderRadius: '9px', background: 'var(--surface)',
+                            padding: '5px 9px', borderRadius: '8px', background: 'var(--surface)',
                             border: '1px solid #EEDCCB',
                           }}>
                             <span style={{ fontSize: '17px', fontFamily: charFont, color: 'var(--text)' }}>{p.char}</span>
@@ -1428,9 +1428,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                       <button
                         onClick={e => { e.stopPropagation(); findStoryForWord() }}
                         style={{
-                          padding: '7px 12px', borderRadius: '10px', cursor: 'pointer',
+                          padding: '7px 12px', borderRadius: '12px', cursor: 'pointer',
                           background: 'var(--surface)', border: '1px solid #EEDCCB',
-                          color: '#8A5F1E', fontSize: '12.5px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+                          color: '#8A5F1E', fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
                         }}
                       >
                         See it in a story
@@ -1438,9 +1438,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                       <button
                         onClick={e => { e.stopPropagation(); resetCard() }}
                         style={{
-                          padding: '7px 12px', borderRadius: '10px', cursor: 'pointer',
+                          padding: '7px 12px', borderRadius: '12px', cursor: 'pointer',
                           background: 'none', border: '1px solid #EEDCCB',
-                          color: '#8A5F1E', fontSize: '12.5px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+                          color: '#8A5F1E', fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
                         }}
                       >
                         Reset this card
@@ -1465,7 +1465,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                     aria-label={isJapanese ? 'Type the reading' : 'Type the pinyin'}
                     style={{
                       flex: 1, minWidth: 0, height: '54px', padding: '0 18px',
-                      borderRadius: '16px', border: '1px solid var(--border)',
+                      borderRadius: '18px', border: '1px solid var(--border)',
                       background: 'var(--surface)', color: 'var(--text)',
                       fontSize: '16px', fontFamily: 'Inter, sans-serif',
                     }}
@@ -1473,9 +1473,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                   <button
                     onClick={submitTyped}
                     style={{
-                      flexShrink: 0, minWidth: '120px', height: '54px', borderRadius: '16px',
+                      flexShrink: 0, minWidth: '120px', height: '54px', borderRadius: '18px',
                       border: 'none', background: PRIMARY, color: '#fff',
-                      fontSize: '15px', fontWeight: 750, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+                      fontSize: '15px', fontWeight: 700, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                     }}
                   >
@@ -1488,7 +1488,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                   style={{
                     marginTop: '12px', width: '100%', background: 'none', border: 'none',
                     color: 'var(--text-faint)', cursor: 'pointer', fontSize: '13px',
-                    fontWeight: 650, fontFamily: 'Inter, sans-serif',
+                    fontWeight: 600, fontFamily: 'Inter, sans-serif',
                   }}
                 >
                   Skip — reveal answer
@@ -1500,7 +1500,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               {typedResult && (
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  marginBottom: '12px', padding: '10px 16px', borderRadius: '14px',
+                  marginBottom: '12px', padding: '10px 16px', borderRadius: '12px',
                   background: typedResult === 'correct' ? 'var(--success-bg)' : 'var(--danger-bg)',
                   border: '1px solid ' + (typedResult === 'correct' ? 'var(--success-border)' : 'var(--danger-border)'),
                   color: typedResult === 'correct' ? '#2F9E6D' : '#DC2626',
@@ -1520,7 +1520,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             </div>
           )}
           {!isMobile && (
-            <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '12px', color: 'var(--text-faint)', fontWeight: 550 }}>
+            <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '12px', color: 'var(--text-faint)', fontWeight: 600 }}>
               {flipped
                 ? '1–4 to grade · Enter = ' + (suggestedGrade === 0 ? 'Again' : 'Good') + ' · R to replay'
                 : (isTyped ? 'Enter to check' : 'Space to reveal')}

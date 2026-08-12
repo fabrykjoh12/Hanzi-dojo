@@ -93,7 +93,7 @@ function KanaChart({ script }) {
             return (
               <button key={r + kana} onClick={() => speakKana(kana)} aria-label={'Play ' + r} style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
-                padding: '12px 4px', borderRadius: '13px', cursor: 'pointer',
+                padding: '12px 4px', borderRadius: '12px', cursor: 'pointer',
                 border: '1px solid var(--border)', background: 'var(--surface)',
               }}>
                 <span lang={KANA_LANG} style={{ fontFamily: "'Noto Sans JP'", fontSize: '24px', color: 'var(--text)', lineHeight: 1 }}>{kana}</span>
@@ -274,8 +274,8 @@ export default function Kana({ profile, onBack }) {
       <div style={pageShell}>
         <Centered>
           <Languages size={30} strokeWidth={1.8} color={ACCENT} style={{ marginBottom: '14px' }} />
-          <h1 style={{ fontSize: '22px', fontWeight: 750, color: 'var(--text)', marginBottom: '8px' }}>Kana practice is for Japanese</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Kana practice is for Japanese</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', lineHeight: 1.6, marginBottom: '24px' }}>
             Switch your active language to Japanese to drill hiragana and katakana.
           </p>
           <PrimaryButton onClick={onBack} icon={ArrowLeft}>Exit</PrimaryButton>
@@ -302,10 +302,10 @@ export default function Kana({ profile, onBack }) {
         <div style={{ maxWidth: '620px', margin: '0 auto', paddingTop: isMobile ? '8px' : '20px' }}>
           <SecondaryButton onClick={onBack} icon={ArrowLeft}>Exit</SecondaryButton>
           <div style={{ textAlign: 'center', margin: '22px 0 14px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: ACCENT, fontSize: '13px', fontWeight: 750 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: ACCENT, fontSize: '13px', fontWeight: 700 }}>
               <GraduationCap size={17} strokeWidth={1.8} color={ACCENT} /> Learn kana
             </div>
-            <h1 style={{ fontSize: '26px', fontWeight: 780, color: 'var(--text)', marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+            <h1 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text)', marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
               Lesson {learnLesson + 1} of {LESSONS.length}
               {doneLessons.has(LESSONS[learnLesson]) && (
                 <span aria-label="Lesson cleared" title="Lesson cleared" style={{ display: 'inline-flex', width: '24px', height: '24px', borderRadius: '999px', background: '#5C7155', alignItems: 'center', justifyContent: 'center' }}>
@@ -313,7 +313,7 @@ export default function Kana({ profile, onBack }) {
                 </span>
               )}
             </h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '6px' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', marginTop: '6px' }}>
               {doneLessons.size} of {LESSONS.length} lessons cleared · tap a kana to hear it, then quiz yourself.
             </p>
           </div>
@@ -326,7 +326,7 @@ export default function Kana({ profile, onBack }) {
               const initial = (rowByKey(key) || ROWS[0]).items[0][0]
               return (
                 <button key={key} onClick={() => setLearnLesson(i)} aria-label={'Lesson ' + (i + 1) + (cleared ? ' (cleared)' : '')} style={{
-                  width: '34px', height: '34px', borderRadius: '10px', cursor: 'pointer',
+                  width: '34px', height: '34px', borderRadius: '12px', cursor: 'pointer',
                   fontFamily: "'Noto Sans JP'", fontSize: '16px', lineHeight: 1,
                   border: '1.5px solid ' + (current ? ACCENT : cleared ? '#5C715544' : 'var(--border)'),
                   background: cleared ? '#5C715518' : current ? ACCENT + '12' : 'var(--surface)',
@@ -340,7 +340,7 @@ export default function Kana({ profile, onBack }) {
             {row.items.map(([h, k, r]) => (
               <button key={r} onClick={() => speakKana(h)} aria-label={'Play ' + r} style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px',
-                padding: '14px 4px', borderRadius: '14px', cursor: 'pointer',
+                padding: '14px 4px', borderRadius: '12px', cursor: 'pointer',
                 border: '1px solid ' + ACCENT + '22', background: ACCENT + '08',
               }}>
                 <span style={{ fontFamily: "'Noto Sans JP'", fontSize: '26px', color: 'var(--text)', lineHeight: 1 }}>{h}</span>
@@ -353,7 +353,7 @@ export default function Kana({ profile, onBack }) {
             <button disabled={atFirst} onClick={() => !atFirst && setLearnLesson(l => l - 1)} style={navBtn(atFirst)}>
               <ChevronLeft size={15} strokeWidth={2.2} /> Prev
             </button>
-            <span style={{ fontFamily: "'Noto Sans JP'", fontSize: '14px', color: 'var(--text-muted)', fontWeight: 600 }}>{row.label}</span>
+            <span style={{ fontFamily: "'Noto Sans JP'", fontSize: '13.5px', color: 'var(--text-muted)', fontWeight: 600 }}>{row.label}</span>
             <button disabled={atLast} onClick={() => !atLast && setLearnLesson(l => l + 1)} style={navBtn(atLast)}>
               Next <ChevronRight size={15} strokeWidth={2.2} />
             </button>
@@ -371,10 +371,10 @@ export default function Kana({ profile, onBack }) {
         <div style={{ maxWidth: '620px', margin: '0 auto', paddingTop: isMobile ? '8px' : '20px' }}>
           <SecondaryButton onClick={onBack} icon={ArrowLeft}>Exit</SecondaryButton>
           <div style={{ textAlign: 'center', margin: '22px 0 16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: ACCENT, fontSize: '13px', fontWeight: 750 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: ACCENT, fontSize: '13px', fontWeight: 700 }}>
               <Languages size={17} strokeWidth={1.8} color={ACCENT} /> Kana chart
             </div>
-            <h1 style={{ fontSize: '26px', fontWeight: 780, color: 'var(--text)', marginTop: '8px' }}>Tap a kana to hear it</h1>
+            <h1 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text)', marginTop: '8px' }}>Tap a kana to hear it</h1>
           </div>
           <ViewTabs view={view} setView={setView} accent={ACCENT} />
           <div role="group" aria-label="Script" style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
@@ -404,11 +404,11 @@ export default function Kana({ profile, onBack }) {
         <div style={{ maxWidth: '620px', margin: '0 auto', paddingTop: isMobile ? '8px' : '20px' }}>
           <SecondaryButton onClick={onBack} icon={ArrowLeft}>Exit</SecondaryButton>
           <div style={{ textAlign: 'center', margin: '22px 0 20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: ACCENT, fontSize: '13px', fontWeight: 750 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: ACCENT, fontSize: '13px', fontWeight: 700 }}>
               <Languages size={17} strokeWidth={1.8} color={ACCENT} /> Kana practice
             </div>
-            <h1 id="kana-rows-heading" style={{ fontSize: '26px', fontWeight: 780, color: 'var(--text)', marginTop: '8px' }}>Choose your rows</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '6px' }}>
+            <h1 id="kana-rows-heading" style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text)', marginTop: '8px' }}>Choose your rows</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', marginTop: '6px' }}>
               Pick the gojūon rows to drill. Rows you've missed this session are marked.
             </p>
           </div>
@@ -449,7 +449,7 @@ export default function Kana({ profile, onBack }) {
               const missed = row.items.some(([h, k]) => missCount('kana', h) > 0 || missCount('kana', k) > 0)
               return (
                 <button key={row.key} onClick={() => toggleRow(row.key)} aria-pressed={active} style={{
-                  position: 'relative', padding: '12px 6px', borderRadius: '13px', cursor: 'pointer',
+                  position: 'relative', padding: '12px 6px', borderRadius: '12px', cursor: 'pointer',
                   border: '1.5px solid ' + (active ? ACCENT : 'var(--border)'),
                   background: active ? ACCENT + '10' : 'var(--surface)',
                   fontFamily: "'Noto Sans JP'", fontSize: '16px',
@@ -459,7 +459,7 @@ export default function Kana({ profile, onBack }) {
                   {missed && (
                     <span title="Missed this session" style={{
                       position: 'absolute', top: '6px', right: '7px',
-                      width: '8px', height: '8px', borderRadius: '50%',
+                      width: '8px', height: '8px', borderRadius: '999px',
                       background: '#D97706',
                     }} />
                   )}
@@ -493,14 +493,14 @@ export default function Kana({ profile, onBack }) {
           <div style={{ width: '58px', height: '58px', borderRadius: '18px', margin: '0 auto 18px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: ACCENT + '10', border: '1px solid ' + ACCENT + '18' }}>
             <CheckCircle2 size={28} strokeWidth={1.9} color={ACCENT} />
           </div>
-          <h1 style={{ fontSize: '26px', fontWeight: 750, marginBottom: '8px', color: 'var(--text)' }}>
+          <h1 style={{ fontSize: '26px', fontWeight: 700, marginBottom: '8px', color: 'var(--text)' }}>
             {view === 'learn' && doneLessons.has(LESSONS[learnLesson]) ? 'Lesson cleared!' : 'Kana complete'}
           </h1>
           <p style={{ color: 'var(--text-muted)', marginBottom: '22px', fontSize: '15px' }}>
             You read <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {questions.length} correctly.
           </p>
-          <div style={{ padding: '16px 10px', borderRadius: '14px', background: ACCENT + '0D', border: '1px solid ' + ACCENT + '22', marginBottom: '22px' }}>
-            <div style={{ fontSize: '26px', fontWeight: 760, color: ACCENT, lineHeight: 1 }}>{pct}%</div>
+          <div style={{ padding: '16px 10px', borderRadius: '12px', background: ACCENT + '0D', border: '1px solid ' + ACCENT + '22', marginBottom: '22px' }}>
+            <div style={{ fontSize: '26px', fontWeight: 800, color: ACCENT, lineHeight: 1 }}>{pct}%</div>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -524,7 +524,7 @@ export default function Kana({ profile, onBack }) {
       <div style={{ maxWidth: '560px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <SecondaryButton onClick={() => setStarted(false)} icon={ArrowLeft}>{view === 'learn' ? 'Lessons' : 'Rows'}</SecondaryButton>
-          <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{idx + 1} / {questions.length}</span>
+          <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>{idx + 1} / {questions.length}</span>
         </div>
 
         <div
@@ -546,7 +546,7 @@ export default function Kana({ profile, onBack }) {
             {answered && (
               <div style={{
                 display: 'inline-flex', alignItems: 'center', gap: '7px', marginTop: '10px',
-                fontSize: '15px', fontWeight: 750,
+                fontSize: '15px', fontWeight: 700,
                 color: (picked === q.romaji || typedResult === 'correct') ? 'var(--success)' : '#DC2626',
               }}>
                 {/* The tick / cross is the visual answer; the word is for the
@@ -574,18 +574,18 @@ export default function Kana({ profile, onBack }) {
                 readOnly={answered}
                 style={{
                   flex: 1, minWidth: 0, height: '54px', padding: '0 18px',
-                  borderRadius: '16px',
+                  borderRadius: '18px',
                   border: '1.5px solid ' + (typedResult === 'correct' ? 'var(--success)' : typedResult === 'wrong' ? '#DC2626' : 'var(--border)'),
                   background: 'var(--surface)', color: 'var(--text)',
-                  fontSize: '18px', fontFamily: 'Inter, sans-serif',
+                  fontSize: '17px', fontFamily: 'Inter, sans-serif',
                 }}
               />
               <button
                 onClick={answered ? next : submitTyped}
                 style={{
-                  flexShrink: 0, minWidth: '110px', height: '54px', borderRadius: '16px',
+                  flexShrink: 0, minWidth: '110px', height: '54px', borderRadius: '18px',
                   border: 'none', background: 'var(--primary)', color: '#fff',
-                  fontSize: '15px', fontWeight: 750, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+                  fontSize: '15px', fontWeight: 700, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
                 }}
               >
                 {answered ? (idx + 1 >= questions.length ? 'Results' : 'Next') : 'Check'}
@@ -609,7 +609,7 @@ export default function Kana({ profile, onBack }) {
                   // same tick as the answer drops keyboard focus to <body>.
                   // `chooseOption()` already no-ops once answered.
                   <button key={opt} onClick={() => chooseOption(opt)} aria-disabled={answered} style={{
-                    minHeight: '62px', borderRadius: '15px', cursor: answered ? 'default' : 'pointer',
+                    minHeight: '62px', borderRadius: '12px', cursor: answered ? 'default' : 'pointer',
                     border: '1.5px solid ' + bc, background: bg,
                     fontSize: '20px', fontWeight: 700, color: 'var(--text)', fontFamily: 'Inter, sans-serif',
                     transition: 'border-color 140ms ease, background 140ms ease',
@@ -640,7 +640,7 @@ export default function Kana({ profile, onBack }) {
 const quickBtn = {
   padding: '7px 14px', borderRadius: '999px', cursor: 'pointer',
   border: '1px solid var(--border)', background: 'var(--surface)',
-  color: 'var(--text-muted)', fontSize: '12.5px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+  color: 'var(--text-muted)', fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
 }
 
 // Visually hidden, still read aloud — the house pattern (see Study.jsx).

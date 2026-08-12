@@ -59,10 +59,10 @@ export default function DictEntryView({ entry, accentHex, langFont, ttsLang, onO
     <div className="dict-entry" style={{ '--accent': accentHex }}>
       {/* hero */}
       <div style={{ textAlign: 'center', paddingBottom: '16px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ fontFamily: langFont + ', sans-serif', fontSize: '52px', fontWeight: 750, lineHeight: 1, letterSpacing: '4px' }}>
+        <div style={{ fontFamily: langFont + ', sans-serif', fontSize: '52px', fontWeight: 700, lineHeight: 1, letterSpacing: '4px' }}>
           {chars.map((c, i) => <span key={i} className={TONE_CLASS[c.tone]}>{c.char}</span>)}
         </div>
-        <div style={{ fontSize: '18px', fontWeight: 700, marginTop: '10px', color: 'var(--text)' }}>{entry.pinyin}</div>
+        <div style={{ fontSize: '17px', fontWeight: 700, marginTop: '10px', color: 'var(--text)' }}>{entry.pinyin}</div>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
           {entry.hsk_level != null && <span className="dict-pill dict-pill-accent">HSK {entry.hsk_level}</span>}
           {entry.traditional && entry.traditional !== entry.simplified && (
@@ -124,7 +124,7 @@ export default function DictEntryView({ entry, accentHex, langFont, ttsLang, onO
           <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
             {chars.map((c, i) => (
               <button key={i} className="dict-charcard" onClick={() => onOpenEntry && onOpenEntry(c.char)}>
-                <span className={TONE_CLASS[c.tone]} style={{ fontFamily: langFont + ', sans-serif', fontSize: '30px', fontWeight: 750 }}>{c.char}</span>
+                <span className={TONE_CLASS[c.tone]} style={{ fontFamily: langFont + ', sans-serif', fontSize: '30px', fontWeight: 700 }}>{c.char}</span>
               </button>
             ))}
           </div>
@@ -155,7 +155,7 @@ export default function DictEntryView({ entry, accentHex, langFont, ttsLang, onO
             {contains.map(w => (
               <button key={w.id} className="dict-chip" onClick={() => onOpenEntry && onOpenEntry(w.id)}>
                 <span style={{ fontFamily: langFont + ', sans-serif', fontWeight: 700 }}>{w.simplified}</span>
-                <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>{Array.isArray(w.definitions) ? w.definitions[0] : ''}</span>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{Array.isArray(w.definitions) ? w.definitions[0] : ''}</span>
               </button>
             ))}
           </div>

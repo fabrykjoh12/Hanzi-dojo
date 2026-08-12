@@ -36,6 +36,12 @@ function GradeButton({
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         gap: minHeight >= 68 ? '6px' : '3px',
         minHeight: minHeight + 'px', padding: minHeight >= 68 ? '12px 8px' : '8px 4px',
+        // 16, deliberately NOT normalized. P14-2 snapped it to `card` (18) and
+        // flashcard-contract.spec.js caught it: the grade row's geometry is
+        // pinned by contract, and Study is the one screen the phase was told to
+        // especially protect. Note also that shape.js's own comment claims these
+        // buttons are `control` (12) — they never were. Study's own phase gets to
+        // pick between 12 and 16; a sweep does not.
         borderRadius: '16px',
         border: (suggested ? '2px solid ' : '1.5px solid ') + border,
         background: activeBg,
@@ -45,7 +51,7 @@ function GradeButton({
         boxShadow: hovered ? 'var(--shadow-1)' : 'none',
       }}
     >
-      <span style={{ fontSize: labelSize + 'px', fontWeight: 750 }}>
+      <span style={{ fontSize: labelSize + 'px', fontWeight: 700 }}>
         {label}
       </span>
       {/* The schedule preview, or — in the onboarding tutorial's first row —
@@ -53,7 +59,7 @@ function GradeButton({
           neither: nothing is being scheduled there, and an empty line under
           four buttons reads as a rendering fault. */}
       {interval ? (
-        <span style={{ fontSize: intervalSize + 'px', fontWeight: 650, color: 'var(--text-muted)' }}>
+        <span style={{ fontSize: intervalSize + 'px', fontWeight: 600, color: 'var(--text-muted)' }}>
           {interval}
         </span>
       ) : null}

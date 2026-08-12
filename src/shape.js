@@ -45,6 +45,12 @@ export const ELEVATION = {
   flat: 'none',
   raised: 'var(--shadow-1)',
   floating: 'var(--shadow-2)',
+  // P14-2 added a fourth, because the app has five bottom sheets and none of the
+  // three fitted: a sheet rising from the bottom edge casts UPWARD, and both
+  // `raised` and `floating` cast down. It is not a new level of elevation — it is
+  // `floating`, pointing the other way — which is why it is named for the object
+  // rather than for a height.
+  sheet: 'var(--shadow-sheet)',
 }
 
 export const ELEVATION_NAMES = Object.keys(ELEVATION)

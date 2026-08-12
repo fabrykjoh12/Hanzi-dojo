@@ -49,7 +49,7 @@ export function sheetShellStyle() {
     width: '100%', maxWidth: SHEET_MAX_WIDTH + 'px', maxHeight: SHEET_MAX_HEIGHT,
     display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden',
     background: 'var(--surface)', border: '1px solid var(--border)',
-    borderRadius: '20px 20px 0 0', boxShadow: '0 -10px 40px rgba(0,0,0,0.18)',
+    borderRadius: '18px 18px 0 0', boxShadow: 'var(--shadow-sheet)',
   }
 }
 

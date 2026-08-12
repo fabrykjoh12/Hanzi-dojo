@@ -38,7 +38,7 @@ function CtaButton({ children, onClick, big }) {
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
         minHeight: big ? '54px' : '42px', padding: big ? '0 28px' : '0 18px',
-        borderRadius: '16px', border: 'none',
+        borderRadius: '18px', border: 'none',
         background: hovered ? PRIMARY_PRESSED : PRIMARY, color: '#fff',
         fontSize: big ? '16px' : '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
         cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease, box-shadow 160ms ease',
@@ -65,10 +65,10 @@ function GhostButton({ children, onClick }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-        minHeight: '42px', padding: '0 18px', borderRadius: '14px',
+        minHeight: '42px', padding: '0 18px', borderRadius: '12px',
         border: '1px solid var(--border)',
         background: hovered ? 'var(--surface-2)' : 'var(--surface)',
-        color: 'var(--text)', fontSize: '14px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
+        color: 'var(--text)', fontSize: '13.5px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
         cursor: 'pointer', transition: 'background 160ms ease',
       }}
     >
@@ -86,12 +86,12 @@ function StoryMock() {
   ]
   return (
     <div style={{
-      background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '22px',
-      padding: '24px', boxShadow: '0 24px 60px rgba(24,24,27,0.10)',
+      background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px',
+      padding: '24px', boxShadow: 'var(--shadow-1)',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <span style={{ fontSize: '13px', fontWeight: 750, color: 'var(--text)' }}>In the Park</span>
-        <span style={{ fontSize: '12px', fontWeight: 750, color: '#2F9E6D' }}>82% known</span>
+        <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>In the Park</span>
+        <span style={{ fontSize: '12px', fontWeight: 700, color: '#2F9E6D' }}>82% known</span>
       </div>
       <div style={{ height: '6px', borderRadius: '999px', overflow: 'hidden', display: 'flex', marginBottom: '16px', background: 'var(--border)' }}>
         <div style={{ width: '82%', background: '#2F9E6D' }} />
@@ -110,7 +110,7 @@ function StoryMock() {
         ))}
       </div>
       <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '12px', lineHeight: 1.5 }}>
-        Tap an <span style={{ color: '#B83A24', fontWeight: 650 }}>underlined word</span> to see it — one more tap adds it to your deck.
+        Tap an <span style={{ color: '#B83A24', fontWeight: 600 }}>underlined word</span> to see it — one more tap adds it to your deck.
       </div>
     </div>
   )
@@ -120,16 +120,16 @@ function MethodCard({ icon: Icon, title, children, accent }) {
   return (
     <div style={{
       background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px',
-      padding: '22px', boxShadow: '0 8px 26px rgba(24,24,27,0.05)', textAlign: 'left',
+      padding: '22px', boxShadow: 'var(--shadow-1)', textAlign: 'left',
     }}>
       <div style={{
-        width: '42px', height: '42px', borderRadius: '13px',
+        width: '42px', height: '42px', borderRadius: '12px',
         background: accent + '12', border: '1px solid ' + accent + '22',
         display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px',
       }}>
         <Icon size={21} strokeWidth={1.85} color={accent} />
       </div>
-      <div style={{ fontSize: '16px', fontWeight: 750, color: 'var(--text)', marginBottom: '7px' }}>{title}</div>
+      <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginBottom: '7px' }}>{title}</div>
       <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.6 }}>{children}</div>
     </div>
   )
@@ -304,7 +304,7 @@ export default function Landing({ authNotice = null }) {
             // alpha hex — an alpha hex stays light in dark mode (CLAUDE.md §5).
             background: 'color-mix(in srgb, var(--primary) 8%, var(--surface))',
             border: '1px solid color-mix(in srgb, var(--primary) 20%, var(--surface))',
-            color: PRIMARY_PRESSED, fontSize: '12.5px', fontWeight: 700, marginBottom: '22px',
+            color: PRIMARY_PRESSED, fontSize: '13px', fontWeight: 700, marginBottom: '22px',
           }}>
             Reading-first Chinese
           </div>
@@ -324,11 +324,11 @@ export default function Landing({ authNotice = null }) {
             <CtaButton big onClick={beginTraining}>Start your first story</CtaButton>
           </div>
           <div style={{ marginBottom: '14px' }}>
-            <a href="/how-much-can-you-read" style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '14px', textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+            <a href="/how-much-can-you-read" style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '13.5px', textDecoration: 'underline', textUnderlineOffset: '3px' }}>
               Or find out how much Chinese you can already read — free 3-minute test →
             </a>
           </div>
-          <div style={{ fontSize: '12.5px', color: 'var(--text-faint)', fontWeight: 600, marginBottom: isMobile ? '40px' : '56px' }}>
+          <div style={{ fontSize: '13px', color: 'var(--text-faint)', fontWeight: 600, marginBottom: isMobile ? '40px' : '56px' }}>
             Start free. No credit card. Learn your first words and unlock your first story in minutes.
           </div>
 
@@ -348,7 +348,7 @@ export default function Landing({ authNotice = null }) {
           <h2 style={{ fontSize: isMobile ? '24px' : '30px', fontWeight: 800, color: 'var(--text)', margin: '0 0 10px', letterSpacing: '-0.01em' }}>
             No shortcuts — that's the point.
           </h2>
-          <p style={{ fontSize: '14.5px', color: 'var(--text-muted)', maxWidth: '540px', margin: '0 auto', lineHeight: 1.6 }}>
+          <p style={{ fontSize: '15px', color: 'var(--text-muted)', maxWidth: '540px', margin: '0 auto', lineHeight: 1.6 }}>
             Most apps optimize for streaks. {BRAND_NAME} optimizes for memory.
           </p>
         </div>
@@ -374,11 +374,11 @@ export default function Landing({ authNotice = null }) {
 
         {/* Daily loop */}
         <div style={{
-          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px',
+          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px',
           padding: isMobile ? '22px 18px' : '28px 32px', marginBottom: isMobile ? '40px' : '64px',
-          boxShadow: '0 8px 26px rgba(24,24,27,0.05)', textAlign: 'center',
+          boxShadow: 'var(--shadow-1)', textAlign: 'center',
         }}>
-          <div style={{ fontSize: '14px', fontWeight: 750, color: 'var(--text)', marginBottom: '18px' }}>
+          <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text)', marginBottom: '18px' }}>
             Your daily loop — about 15 focused minutes
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '6px' : '14px', flexWrap: 'wrap' }}>
@@ -396,7 +396,7 @@ export default function Landing({ authNotice = null }) {
                   }}>
                     <step.icon size={20} strokeWidth={1.8} color={PRIMARY_PRESSED} />
                   </span>
-                  <span style={{ fontSize: '12px', fontWeight: 650, color: 'var(--text-muted)' }}>{step.label}</span>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)' }}>{step.label}</span>
                 </span>
                 {i < loop.length - 1 && <ArrowRight size={15} strokeWidth={2} color="var(--text-faint)" />}
               </span>
@@ -410,7 +410,7 @@ export default function Landing({ authNotice = null }) {
             Fifteen minutes a day. Real reading you can feel.
           </h2>
           <CtaButton big onClick={beginTraining}>Build my reading path</CtaButton>
-          <div style={{ fontSize: '12.5px', color: 'var(--text-faint)', fontWeight: 600, marginTop: '26px' }}>
+          <div style={{ fontSize: '13px', color: 'var(--text-faint)', fontWeight: 600, marginTop: '26px' }}>
             Start free · Core learning is free · No credit card required
           </div>
         </div>
@@ -431,9 +431,9 @@ export default function Landing({ authNotice = null }) {
                 {...externalLinkProps(DISCORD_INVITE_URL)}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '8px',
-                  minHeight: '42px', padding: '0 18px', borderRadius: '14px',
+                  minHeight: '42px', padding: '0 18px', borderRadius: '12px',
                   border: '1px solid var(--border)', background: 'var(--surface)',
-                  color: 'var(--text)', fontSize: '14px', fontWeight: 650,
+                  color: 'var(--text)', fontSize: '13.5px', fontWeight: 600,
                   fontFamily: 'Inter, sans-serif', textDecoration: 'none',
                 }}
               >

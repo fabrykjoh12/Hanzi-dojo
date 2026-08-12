@@ -9,7 +9,7 @@ export default function ComprehensionCheck({ questions, answers = {}, onAnswer }
   if (!questions || questions.length === 0) return null
   const { answered, correct } = scoreComprehension(questions, answers)
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '18px 20px', textAlign: 'left', width: '100%' }}>
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '18px 20px', textAlign: 'left', width: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '4px' }}>
         <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>Check your understanding</span>
         {answered > 0 && (
@@ -23,7 +23,7 @@ export default function ComprehensionCheck({ questions, answers = {}, onAnswer }
         const isAnswered = chosen !== undefined
         return (
           <div key={q.id} style={{ marginTop: qi === 0 ? '14px' : '18px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 650, color: 'var(--text)', marginBottom: '9px', lineHeight: 1.5 }}>
+            <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text)', marginBottom: '9px', lineHeight: 1.5 }}>
               {qi + 1}. {q.question}
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
@@ -43,9 +43,9 @@ export default function ComprehensionCheck({ questions, answers = {}, onAnswer }
                     aria-disabled={isAnswered}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px',
-                      textAlign: 'left', padding: '11px 14px', borderRadius: '11px',
+                      textAlign: 'left', padding: '11px 14px', borderRadius: '12px',
                       border: '1.5px solid ' + bc, background: bg, color: 'var(--text)',
-                      cursor: isAnswered ? 'default' : 'pointer', fontSize: '14px', fontFamily: 'Inter, sans-serif',
+                      cursor: isAnswered ? 'default' : 'pointer', fontSize: '13.5px', fontFamily: 'Inter, sans-serif',
                     }}
                   >
                     <span>{opt}</span>

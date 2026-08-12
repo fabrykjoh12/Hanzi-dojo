@@ -59,13 +59,13 @@ function ControlRow({ row, icon: Icon, accentHex, danger, first, open, onActivat
       >
         <Icon size={17} strokeWidth={1.85} color={danger ? 'var(--danger)' : accentHex} />
         <span style={{
-          flex: 1, minWidth: 0, fontSize: '14px', fontWeight: 700,
+          flex: 1, minWidth: 0, fontSize: '13.5px', fontWeight: 700,
           color: danger ? 'var(--danger)' : 'var(--text)',
         }}>
           {row.label}
         </span>
         {row.value && (
-          <span style={{ fontSize: '13px', fontWeight: 650, color: 'var(--text-muted)', flexShrink: 0, ...NUM }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0, ...NUM }}>
             {row.value}
           </span>
         )}
@@ -99,10 +99,10 @@ function TrackChip({ track, on, disabled, dim, onClick }) {
       disabled={disabled}
       onClick={onClick}
       style={{
-        minHeight: '44px', padding: '0 14px', borderRadius: '11px',
+        minHeight: '44px', padding: '0 14px', borderRadius: '12px',
         cursor: disabled ? 'default' : 'pointer',
         fontFamily: 'Inter, sans-serif', fontSize: '13px',
-        fontWeight: on ? 700 : 550,
+        fontWeight: on ? 700 : 600,
         border: '1px solid ' + (on ? 'var(--danger)' : 'var(--border)'),
         background: on ? 'var(--danger-bg)' : 'var(--surface)',
         color: on ? 'var(--danger)' : 'var(--text-muted)',
@@ -484,7 +484,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
               onClick={() => setNewGoal(opt.val)}
               aria-pressed={newGoal === opt.val}
               style={{
-                minHeight: '48px', padding: '12px 16px', borderRadius: '14px', textAlign: 'left',
+                minHeight: '48px', padding: '12px 16px', borderRadius: '12px', textAlign: 'left',
                 border: '1.5px solid ' + (newGoal === opt.val ? accentHex : 'var(--border)'),
                 background: newGoal === opt.val
                   ? 'color-mix(in srgb, ' + accentHex + ' 8%, var(--surface))'
@@ -493,7 +493,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
                 fontFamily: 'Inter, sans-serif',
               }}
             >
-              <span style={{ fontWeight: 750, fontSize: '14px', color: newGoal === opt.val ? ink(accentHex) : 'var(--text)' }}>
+              <span style={{ fontWeight: 700, fontSize: '13.5px', color: newGoal === opt.val ? ink(accentHex) : 'var(--text)' }}>
                 {opt.label}
               </span>
               <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{opt.desc}</span>
@@ -557,7 +557,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         <label style={{
           display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px',
           minHeight: '44px', cursor: 'pointer',
-          fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.45,
+          fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.45,
         }}>
           <input
             type="checkbox"
@@ -569,7 +569,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
             {tracks.length > 1 ? (
               <>
                 Also clear my study history.{' '}
-                <span style={{ color: 'var(--danger)', fontWeight: 650 }}>
+                <span style={{ color: 'var(--danger)', fontWeight: 600 }}>
                   This one covers every track
                 </span>{' '}
                 — the record is of days you studied, not what you studied.
@@ -577,7 +577,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
             ) : (
               <>
                 Also clear my{' '}
-                <span style={{ color: 'var(--danger)', fontWeight: 650 }}>study history</span>
+                <span style={{ color: 'var(--danger)', fontWeight: 600 }}>study history</span>
                 {' '}— the record of which days you studied.
               </>
             )}
@@ -664,7 +664,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
 
         {deleteArmed && (
           <div style={{ marginTop: '14px' }}>
-            <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px' }}>
+            <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>
               Type <strong style={{ color: 'var(--danger)', fontWeight: 700 }}>{DELETE_CONFIRM_WORD}</strong> to
               confirm you want your account gone for good.
             </label>
@@ -679,10 +679,10 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
               aria-label={'Type ' + DELETE_CONFIRM_WORD + ' to confirm account deletion'}
               style={{
                 width: '100%', maxWidth: '260px', boxSizing: 'border-box',
-                minHeight: '44px', padding: '10px 12px', borderRadius: '10px',
+                minHeight: '44px', padding: '10px 12px', borderRadius: '12px',
                 border: '1px solid var(--danger-border)',
                 background: 'var(--surface)', color: 'var(--text)',
-                fontSize: '14px', fontFamily: 'Inter, sans-serif',
+                fontSize: '13.5px', fontFamily: 'Inter, sans-serif',
               }}
             />
           </div>
@@ -739,7 +739,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
           <span style={{ fontSize: '40px', fontWeight: 800, color: '#fff', lineHeight: 1, ...NUM }}>
             {loading ? '—' : progress.learned.value}
           </span>
-          <span style={{ fontSize: '14px', color: ON_HERO.body, fontWeight: 700 }}>
+          <span style={{ fontSize: '13.5px', color: ON_HERO.body, fontWeight: 700 }}>
             {loading ? '' : 'of ' + progress.learned.of + ' words learned'}
           </span>
         </div>
@@ -755,10 +755,10 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
           style={{ marginTop: '20px' }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '12px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', color: '#fff', fontWeight: 650 }}>
+            <span style={{ fontSize: '13px', color: '#fff', fontWeight: 600 }}>
               {progress.mastered.label}
             </span>
-            <span style={{ fontSize: '13px', color: ON_HERO.body, fontWeight: 650, ...NUM }}>
+            <span style={{ fontSize: '13px', color: ON_HERO.body, fontWeight: 600, ...NUM }}>
               {progress.mastered.value} of {progress.mastered.of}
             </span>
           </div>
@@ -802,7 +802,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
           here would be a panel explaining that there is no panel. */}
       {!loading && leeches.length > 0 && (
         <Panel>
-          <h2 style={{ margin: '0 0 3px', display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
+          <h2 style={{ margin: '0 0 3px', display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13.5px', fontWeight: 800, color: 'var(--text)' }}>
             <AlertTriangle size={17} strokeWidth={1.95} color={STATUS_WARN} />
             Needs attention
           </h2>
@@ -837,7 +837,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
                 </span>
                 {/* The count is the reason the word is here, so it stays — as
                     text, not as a bordered pill repeated five times. */}
-                <span style={{ fontSize: '11.5px', fontWeight: 650, color: ink(STATUS_WARN), flexShrink: 0, ...NUM }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: ink(STATUS_WARN), flexShrink: 0, ...NUM }}>
                   {l.lapses}×
                 </span>
                 <Sparkles size={15} strokeWidth={2} color={accentHex} style={{ flexShrink: 0 }} />
@@ -853,7 +853,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
               width: '100%', minHeight: '46px', marginTop: '14px', borderRadius: '12px',
               border: '1px solid color-mix(in srgb, ' + accentHex + ' 28%, var(--surface))',
               background: 'color-mix(in srgb, ' + accentHex + ' 8%, var(--surface))',
-              color: ink(accentHex), fontSize: '14px', fontWeight: 700,
+              color: ink(accentHex), fontSize: '13.5px', fontWeight: 700,
               fontFamily: 'Inter, sans-serif', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
             }}>
@@ -914,7 +914,7 @@ export function KnownWordMap({ map, accentHex, language, system }) {
   ]
   return (
     <div>
-      <h2 style={{ margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
+      <h2 style={{ margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13.5px', fontWeight: 800, color: 'var(--text)' }}>
         <BookOpen size={17} strokeWidth={1.85} color={accentHex} />
         Known-word map
       </h2>
@@ -926,10 +926,10 @@ export function KnownWordMap({ map, accentHex, language, system }) {
         {map.levels.map(row => (
           <div key={row.level}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '10px', marginBottom: '6px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 650, color: 'var(--text)' }}>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
                 {getLevelLabel(language, system, row.level)}
               </span>
-              <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: 650, fontVariantNumeric: 'tabular-nums' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
                 {row.readable}/{row.total} readable
               </span>
             </div>
@@ -956,7 +956,7 @@ export function KnownWordMap({ map, accentHex, language, system }) {
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '16px' }}>
         {SEGMENTS.map(seg => (
-          <span key={seg.key} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: 650 }}>
+          <span key={seg.key} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
             <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: seg.color, flexShrink: 0 }} />
             {seg.label} ({map.totals[seg.key]})
           </span>
@@ -970,9 +970,9 @@ function Panel({ children, compact, danger }) {
   return (
     <div style={{
       background: 'var(--surface)',
-      borderRadius: '20px',
+      borderRadius: '18px',
       border: '1px solid ' + (danger ? 'var(--danger-border)' : 'var(--border)'),
-      boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
+      boxShadow: 'var(--shadow-1)',
       padding: compact ? '18px 22px' : '22px 24px',
       marginBottom: '14px',
     }}>
@@ -990,13 +990,13 @@ function SmallButton({ children, onClick, accentHex, filled, danger, disabled, i
       style={{
         minHeight: '44px',
         padding: '0 14px',
-        borderRadius: '10px',
+        borderRadius: '12px',
         border: '1px solid ' + (danger ? 'var(--danger-border)' : filled ? color : 'var(--border)'),
         background: filled ? color : (danger ? 'var(--danger-bg)' : 'var(--surface)'),
         color: filled ? 'var(--surface)' : color,
         cursor: disabled ? 'default' : 'pointer',
         fontSize: '13px',
-        fontWeight: 750,
+        fontWeight: 700,
         fontFamily: 'Inter, sans-serif',
         whiteSpace: 'nowrap',
         opacity: disabled ? 0.65 : 1,

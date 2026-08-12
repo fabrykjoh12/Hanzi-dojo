@@ -22,7 +22,7 @@ export default function SessionPaused({ variant = 'paused', studied, remaining, 
   const offering = variant === 'continue'
   return (
     <div style={{ maxWidth: '440px', margin: '0 auto', padding: '48px 16px 40px' }}>
-      <div style={{ ...flatPanel({ radius: 20, padding: '26px 22px' }), textAlign: 'center' }}>
+      <div style={{ ...flatPanel({ padding: '26px 22px' }), textAlign: 'center' }}>
         <span style={{ ...MICRO, color: 'var(--text-faint)' }}>
           {offering ? 'Unfinished session' : 'Session paused'}
         </span>
@@ -52,9 +52,9 @@ export default function SessionPaused({ variant = 'paused', studied, remaining, 
           style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
             width: '100%', minHeight: '52px', marginTop: '20px',
-            borderRadius: '15px', border: 'none', cursor: 'pointer',
+            borderRadius: '12px', border: 'none', cursor: 'pointer',
             background: accentHex, color: '#fff',
-            fontSize: '15px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+            fontSize: '15px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
           }}
         >
           <Play size={18} strokeWidth={2.2} color="#fff" />
@@ -67,9 +67,9 @@ export default function SessionPaused({ variant = 'paused', studied, remaining, 
           style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
             width: '100%', minHeight: '46px', marginTop: '10px',
-            borderRadius: '14px', border: '1px solid var(--border)', cursor: 'pointer',
+            borderRadius: '12px', border: '1px solid var(--border)', cursor: 'pointer',
             background: 'none', color: 'var(--text-muted)',
-            fontSize: '14px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+            fontSize: '13.5px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
           }}
         >
           <Flag size={16} strokeWidth={2} />

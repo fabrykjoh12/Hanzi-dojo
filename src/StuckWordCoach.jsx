@@ -74,11 +74,11 @@ export default function StuckWordCoach({ vocab, onClose }) {
     <div onClick={onClose} className="app-overlay-viewport" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.14)' }}>
       {/* A share of the overlay above (100dvh), not 88vh — vh is the large
           viewport, so the sheet's last rows would hide behind the toolbar. */}
-      <div onClick={e => e.stopPropagation()} className="hd-sheet-up" style={{ width: '100%', maxWidth: '560px', maxHeight: '88%', overflowY: 'auto', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px 20px 0 0', padding: '16px 18px 26px', boxShadow: '0 -10px 40px rgba(0,0,0,0.18)' }}>
+      <div onClick={e => e.stopPropagation()} className="hd-sheet-up" style={{ width: '100%', maxWidth: '560px', maxHeight: '88%', overflowY: 'auto', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px 18px 0 0', padding: '16px 18px 26px', boxShadow: 'var(--shadow-sheet)' }}>
         <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: 'var(--border)', margin: '0 auto 12px' }} />
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 800, color: accent }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '13px', fontWeight: 800, color: accent }}>
             <Sparkles size={15} strokeWidth={2} color={accent} /> A different angle
           </span>
           {/* P14-1: was 32x32 (20px glyph + 6px padding). holdLayout(32)

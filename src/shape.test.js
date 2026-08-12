@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
 import {
   RADIUS, RADIUS_NAMES, radius,
   ELEVATION, ELEVATION_NAMES,
@@ -51,18 +52,38 @@ describe('the radius scale', () => {
 })
 
 describe('elevation', () => {
-  it('is three levels, and "flat" is one of them', () => {
+  it('is three heights plus one direction, and "flat" is one of them', () => {
     // Naming "none" is the point: no shadow becomes a decision somebody made
     // rather than something nobody got round to.
-    expect(ELEVATION_NAMES).toEqual(['flat', 'raised', 'floating'])
+    //
+    // `sheet` is not a fourth height. It is `floating` cast UPWARD, for the five
+    // bottom sheets whose hand-rolled inverted shadows P14-2 replaced — every one
+    // of which was a hardcoded neutral rgba, invisible on the dark ground.
+    expect(ELEVATION_NAMES).toEqual(['flat', 'raised', 'floating', 'sheet'])
     expect(ELEVATION.flat).toBe('none')
   })
 
-  it('defers the real values to CSS, because they differ per theme', () => {
+  it('defers every real value to CSS, because they differ per theme', () => {
     // A dark surface needs far more shadow opacity to read at all. Hardcoding a
     // shadow in JS is how a card ends up invisible in one theme.
     expect(ELEVATION.raised).toBe('var(--shadow-1)')
     expect(ELEVATION.floating).toBe('var(--shadow-2)')
+    expect(ELEVATION.sheet).toBe('var(--shadow-sheet)')
+    for (const name of ELEVATION_NAMES) {
+      if (name === 'flat') continue
+      expect(ELEVATION[name], name).toMatch(/^var\(--shadow-[a-z0-9]+\)$/)
+    }
+  })
+
+  it('casts the sheet upward and the others downward', () => {
+    // The whole reason it exists — asserted against index.css so a future edit
+    // that "tidies" the negative offsets away fails here.
+    const css = readFileSync(new URL('./index.css', import.meta.url), 'utf8')
+    const sheet = css.match(/--shadow-sheet:\s*([^;]+);/)
+    expect(sheet, '--shadow-sheet is not declared').toBeTruthy()
+    expect(sheet[1]).toContain('0 -')
+    const one = css.match(/--shadow-1:\s*([^;]+);/)
+    expect(one[1]).not.toContain('0 -')
   })
 })
 

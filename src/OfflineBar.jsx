@@ -76,7 +76,7 @@ export default function OfflineBar({ session }) {
     background: online ? 'var(--surface)' : '#3A3733',
     color: online ? 'var(--text)' : '#F5F1EA',
     border: '1px solid ' + (online ? 'var(--border)' : 'rgba(0,0,0,0.2)'),
-    boxShadow: '0 10px 30px rgba(24,24,27,0.18)',
+    boxShadow: 'var(--shadow-2)',
     font: '600 12.5px Inter, sans-serif', lineHeight: 1.35, textAlign: 'left',
   }
 

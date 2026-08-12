@@ -61,7 +61,7 @@ export default function AppBar({ kind = 'back', title, meta, onBack, right, stic
         )}
         {title && (
           <h1 style={{
-            fontSize: '19px', fontWeight: 750, color: 'var(--text)', lineHeight: 1.2,
+            fontSize: '19px', fontWeight: 700, color: 'var(--text)', lineHeight: 1.2,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {title}

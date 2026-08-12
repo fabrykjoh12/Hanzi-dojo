@@ -89,8 +89,8 @@ export default function Cyrillic({ profile, onBack }) {
       <div style={pageShell}>
         <Centered>
           <Languages size={30} strokeWidth={1.8} color={ACCENT} style={{ marginBottom: '14px' }} />
-          <h1 style={{ fontSize: '22px', fontWeight: 750, color: 'var(--text)', marginBottom: '8px' }}>Alphabet practice is for Russian</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Alphabet practice is for Russian</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', lineHeight: 1.6, marginBottom: '24px' }}>
             Switch your active language to Russian to drill the Cyrillic alphabet.
           </p>
           <PrimaryButton onClick={onBack} icon={ArrowLeft}>Exit</PrimaryButton>
@@ -111,21 +111,21 @@ export default function Cyrillic({ profile, onBack }) {
         <div style={{ maxWidth: '560px', margin: '0 auto', paddingTop: isMobile ? '8px' : '20px' }}>
           <SecondaryButton onClick={onBack} icon={ArrowLeft}>Exit</SecondaryButton>
           <div style={{ textAlign: 'center', margin: '24px 0 28px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: ACCENT, fontSize: '13px', fontWeight: 750 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: ACCENT, fontSize: '13px', fontWeight: 700 }}>
               <Languages size={17} strokeWidth={1.8} color={ACCENT} /> Alphabet practice
             </div>
-            <h1 style={{ fontSize: '26px', fontWeight: 780, color: 'var(--text)', marginTop: '8px' }}>Which letters?</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '6px' }}>See a letter, choose its sound.</p>
+            <h1 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text)', marginTop: '8px' }}>Which letters?</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', marginTop: '6px' }}>See a letter, choose its sound.</p>
           </div>
           <div style={{ display: 'grid', gap: '12px' }}>
             {choices.map(c => (
               <button key={c.key} onClick={() => start(c.key)} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '20px 22px', borderRadius: '16px', border: '1px solid var(--border)',
+                padding: '20px 22px', borderRadius: '18px', border: '1px solid var(--border)',
                 background: 'var(--surface)', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                boxShadow: '0 6px 18px rgba(24,24,27,0.05)',
+                boxShadow: 'var(--shadow-1)',
               }}>
-                <span style={{ fontSize: '16px', fontWeight: 750, color: 'var(--text)' }}>{c.label}</span>
+                <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)' }}>{c.label}</span>
                 <span style={{ fontSize: '24px', color: ACCENT, fontFamily: 'Inter, sans-serif' }}>{c.sample}</span>
               </button>
             ))}
@@ -143,12 +143,12 @@ export default function Cyrillic({ profile, onBack }) {
           <div style={{ width: '58px', height: '58px', borderRadius: '18px', margin: '0 auto 18px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: ACCENT + '10', border: '1px solid ' + ACCENT + '18' }}>
             <CheckCircle2 size={28} strokeWidth={1.9} color={ACCENT} />
           </div>
-          <h1 style={{ fontSize: '26px', fontWeight: 750, marginBottom: '8px', color: 'var(--text)' }}>Alphabet complete</h1>
+          <h1 style={{ fontSize: '26px', fontWeight: 700, marginBottom: '8px', color: 'var(--text)' }}>Alphabet complete</h1>
           <p style={{ color: 'var(--text-muted)', marginBottom: '22px', fontSize: '15px' }}>
             You read <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {questions.length} correctly.
           </p>
-          <div style={{ padding: '16px 10px', borderRadius: '14px', background: ACCENT + '0D', border: '1px solid ' + ACCENT + '22', marginBottom: '22px' }}>
-            <div style={{ fontSize: '26px', fontWeight: 760, color: ACCENT, lineHeight: 1 }}>{pct}%</div>
+          <div style={{ padding: '16px 10px', borderRadius: '12px', background: ACCENT + '0D', border: '1px solid ' + ACCENT + '22', marginBottom: '22px' }}>
+            <div style={{ fontSize: '26px', fontWeight: 800, color: ACCENT, lineHeight: 1 }}>{pct}%</div>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -167,7 +167,7 @@ export default function Cyrillic({ profile, onBack }) {
       <div style={{ maxWidth: '560px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <SecondaryButton onClick={() => setGroup(null)} icon={ArrowLeft}>Exit</SecondaryButton>
-          <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{idx + 1} / {questions.length}</span>
+          <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>{idx + 1} / {questions.length}</span>
         </div>
 
         {/* The question view carries no visible title, but heading navigation
@@ -201,7 +201,7 @@ export default function Cyrillic({ profile, onBack }) {
               // tick as the answer drops keyboard focus to <body>. `choose()`
               // already no-ops once answered.
               <button key={opt} onClick={() => choose(opt)} aria-disabled={answered} style={{
-                position: 'relative', minHeight: '64px', padding: '14px', borderRadius: '14px',
+                position: 'relative', minHeight: '64px', padding: '14px', borderRadius: '12px',
                 border: '1.5px solid ' + bc, background: bg, cursor: answered ? 'default' : 'pointer',
                 fontSize: '20px', fontWeight: 600, color: 'var(--text)', fontFamily: 'Inter, sans-serif',
                 transition: 'border-color 140ms ease, background 140ms ease',

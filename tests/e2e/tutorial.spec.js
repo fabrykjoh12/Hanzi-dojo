@@ -245,12 +245,16 @@ test.describe('Teaching', () => {
   });
 
   test('draws the recap in the production recap’s clothes', async ({ page }) => {
-    // The card, the chip and the title type are SessionRecap.jsx's — 24px
-    // card, 58×58 chip at radius 18, 26px/750 title, and the Today stat tile —
-    // so the completion screen a learner meets after every REAL session is one
-    // they have already seen (P12-4). Numbers asserted against the production
-    // component's constants; if SessionRecap is redesigned, this fails and the
-    // tutorial follows it.
+    // The card, the chip and the title type are SessionRecap.jsx's — `hero`
+    // card (26), 58×58 chip at `card` (18), 26px/700 title, and the Today stat
+    // tile at `control` (12) — so the completion screen a learner meets after
+    // every REAL session is one they have already seen (P12-4). Numbers asserted
+    // against the production component's constants; if SessionRecap moves, this
+    // fails and the tutorial follows it.
+    //
+    // It did exactly that in P14-2, which is the spec working: normalization took
+    // the card 24 → 26, the title 750 → 700 and the tile 14 → 12 in BOTH files,
+    // so the coupling held and only these numbers were stale.
     await walkTo(page, 'recap');
     const shape = await page.evaluate(() => {
       const h1 = document.querySelector('h1');
@@ -270,13 +274,13 @@ test.describe('Teaching', () => {
         tileRadius: tile ? getComputedStyle(tile).borderTopLeftRadius : null,
       };
     });
-    expect(shape.cardRadius).toBe('24px');
+    expect(shape.cardRadius).toBe('26px');
     expect(shape.cardBorder).toBe('1px');
     expect(shape.chipW).toBe(58);
     expect(shape.chipRadius).toBe('18px');
     expect(shape.titleSize).toBe('26px');
-    expect(shape.titleWeight).toBe('750');
-    expect(shape.tileRadius).toBe('14px');
+    expect(shape.titleWeight).toBe('700');
+    expect(shape.tileRadius).toBe('12px');
     await expect(page.getByText('Today', { exact: true })).toBeVisible();
     await expect(page.getByText('3 words practiced')).toBeVisible();
   });

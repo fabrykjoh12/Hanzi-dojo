@@ -184,8 +184,8 @@ export default function Auth({ startTab = 'login', onBack = null, notice = null 
         width: '100%',
         maxWidth: '460px',
         background: 'var(--surface)',
-        borderRadius: '20px',
-        boxShadow: '0 4px 40px rgba(0,0,0,0.10)',
+        borderRadius: '18px',
+        boxShadow: 'var(--shadow-2)',
         // 40px of side padding leaves ~232px of content on a 360px phone; the
         // mobile branch gives the inputs and buttons room to breathe.
         padding: isMobile ? '28px 20px 24px' : '40px 40px 32px',
@@ -214,7 +214,7 @@ export default function Auth({ startTab = 'login', onBack = null, notice = null 
               border: 'none',
               borderBottom: !isSignup ? '2px solid #B83A24' : '2px solid transparent',
               cursor: 'pointer',
-              fontSize: '14px',
+              fontSize: '13.5px',
               fontWeight: isSignup ? 400 : 600,
               color: !isSignup ? 'var(--text)' : 'var(--text-muted)',
               fontFamily: 'Inter, sans-serif',
@@ -234,7 +234,7 @@ export default function Auth({ startTab = 'login', onBack = null, notice = null 
               border: 'none',
               borderBottom: isSignup ? '2px solid #B83A24' : '2px solid transparent',
               cursor: 'pointer',
-              fontSize: '14px',
+              fontSize: '13.5px',
               fontWeight: isSignup ? 600 : 400,
               color: isSignup ? 'var(--text)' : 'var(--text-muted)',
               fontFamily: 'Inter, sans-serif',
@@ -280,7 +280,7 @@ export default function Auth({ startTab = 'login', onBack = null, notice = null 
                   style={{
                     position: 'absolute', right: '4px', top: '50%', transform: 'translateY(-50%)',
                     width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'none', border: 'none', cursor: 'pointer', borderRadius: '10px',
+                    background: 'none', border: 'none', cursor: 'pointer', borderRadius: '12px',
                   }}
                 >
                   {showPassword
@@ -449,7 +449,7 @@ export default function Auth({ startTab = 'login', onBack = null, notice = null 
 
 const inputStyle = {
   padding: '12px 14px',
-  borderRadius: '10px',
+  borderRadius: '12px',
   border: '1px solid var(--border)',
   // 16px, never less: an iOS WKWebView zooms the whole page in when a focused
   // input's text is smaller, and the layout stays shifted afterwards.

@@ -177,7 +177,7 @@ export default function SentenceBuilder({ session, profile, track, onBack }) {
     return (
       <div style={pageShell}>
         <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: '88px', height: '88px', borderRadius: '26px', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 16px 40px rgba(24,24,27,0.06)' }}>
+          <div style={{ width: '88px', height: '88px', borderRadius: '26px', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-1)' }}>
             <Blocks size={34} strokeWidth={1.75} color={accentHex} />
           </div>
         </div>
@@ -190,8 +190,8 @@ export default function SentenceBuilder({ session, profile, track, onBack }) {
       <div style={pageShell}>
         <Centered>
           <Blocks size={30} strokeWidth={1.8} color={accentHex} style={{ marginBottom: '14px' }} />
-          <h1 style={{ fontSize: '22px', fontWeight: 750, color: 'var(--text)', marginBottom: '8px' }}>No sentences to build yet</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>No sentences to build yet</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', lineHeight: 1.6, marginBottom: '24px' }}>
             This level needs a few short example sentences before the builder can run.
           </p>
           <PrimaryButton onClick={onBack} icon={ArrowLeft}>Exit</PrimaryButton>
@@ -208,12 +208,12 @@ export default function SentenceBuilder({ session, profile, track, onBack }) {
           <div style={{ width: '58px', height: '58px', borderRadius: '18px', margin: '0 auto 18px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: accentHex + '10', border: '1px solid ' + accentHex + '18' }}>
             <CheckCircle2 size={28} strokeWidth={1.9} color={accentHex} />
           </div>
-          <h1 style={{ fontSize: '26px', fontWeight: 750, marginBottom: '8px', color: 'var(--text)' }}>Sentences built</h1>
+          <h1 style={{ fontSize: '26px', fontWeight: 700, marginBottom: '8px', color: 'var(--text)' }}>Sentences built</h1>
           <p style={{ color: 'var(--text-muted)', marginBottom: '22px', fontSize: '15px' }}>
             You ordered <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {questions.length} correctly.
           </p>
-          <div style={{ padding: '16px 10px', borderRadius: '14px', background: accentHex + '0D', border: '1px solid ' + accentHex + '22', marginBottom: '22px' }}>
-            <div style={{ fontSize: '26px', fontWeight: 760, color: inkStrong(accentHex), lineHeight: 1 }}>{pct}%</div>
+          <div style={{ padding: '16px 10px', borderRadius: '12px', background: accentHex + '0D', border: '1px solid ' + accentHex + '22', marginBottom: '22px' }}>
+            <div style={{ fontSize: '26px', fontWeight: 800, color: inkStrong(accentHex), lineHeight: 1 }}>{pct}%</div>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -234,11 +234,11 @@ export default function SentenceBuilder({ session, profile, track, onBack }) {
       <div style={{ maxWidth: '620px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <SecondaryButton onClick={onBack} icon={ArrowLeft}>Exit</SecondaryButton>
-          <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{idx + 1} / {questions.length}</span>
+          <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>{idx + 1} / {questions.length}</span>
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(accentHex), fontSize: '13px', fontWeight: 750 }}>
+          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(accentHex), fontSize: '13px', fontWeight: 700 }}>
             <Blocks size={17} strokeWidth={1.8} color={accentHex} aria-hidden="true" /> Build the sentence
           </h1>
           <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>{metaLine(systemLabel, levelLabel)}</div>
@@ -266,12 +266,12 @@ export default function SentenceBuilder({ session, profile, track, onBack }) {
             tagged once here rather than on every tile. */}
         <div lang={langAttr(track.language)} style={{
           minHeight: '70px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center',
-          padding: '16px', borderRadius: '16px', border: '1.5px solid ' + buildBorder,
+          padding: '16px', borderRadius: '18px', border: '1.5px solid ' + buildBorder,
           background: result === 'correct' ? 'var(--success-bg)' : result === 'wrong' ? 'var(--danger-bg)' : 'var(--surface)',
           marginBottom: '12px', transition: 'border-color 140ms ease, background 140ms ease',
         }}>
           {placed.length === 0 && (
-            <span lang={UI_LANG} style={{ color: 'var(--text-faint)', fontSize: '14px' }}>Tap the words below in order…</span>
+            <span lang={UI_LANG} style={{ color: 'var(--text-faint)', fontSize: '13.5px' }}>Tap the words below in order…</span>
           )}
           {placed.map(id => (
             <Tile key={id} text={q.tokens[id]} font={langFont} onClick={() => tapPlaced(id)} disabled={Boolean(result)} />
@@ -301,10 +301,10 @@ export default function SentenceBuilder({ session, profile, track, onBack }) {
             <div>
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                padding: '12px 16px', borderRadius: '14px', marginBottom: '14px',
+                padding: '12px 16px', borderRadius: '12px', marginBottom: '14px',
                 background: result === 'correct' ? 'var(--success-bg)' : 'var(--danger-bg)',
                 border: '1px solid ' + (result === 'correct' ? 'var(--success-border)' : 'var(--danger-border)'),
-                color: result === 'correct' ? '#2F9E6D' : '#DC2626', fontSize: '14px', fontWeight: 700,
+                color: result === 'correct' ? '#2F9E6D' : '#DC2626', fontSize: '13.5px', fontWeight: 700,
               }}>
                 {result === 'correct'
                   ? <><Check size={17} strokeWidth={2.4} color="#2F9E6D" aria-hidden="true" /> Correct!</>
@@ -333,7 +333,7 @@ function Tile({ text, font, accent, onClick, disabled }) {
       border: '1px solid ' + (accent ? 'var(--border)' : 'var(--border)'),
       background: accent ? 'var(--surface)' : 'var(--surface-2)',
       fontSize: '20px', fontFamily: font, color: 'var(--text)', lineHeight: 1.2,
-      boxShadow: accent ? '0 2px 8px rgba(24,24,27,0.06)' : 'none',
+      boxShadow: accent ? 'var(--shadow-1)' : 'none',
     }}>
       {text}
     </button>

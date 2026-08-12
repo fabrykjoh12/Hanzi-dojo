@@ -5,7 +5,7 @@ import { trapDialogFocus } from './dialogFocus'
 
 // P14-0: vermilion, themed. See ui.jsx.
 const PRIMARY = 'var(--primary)'
-const btn = { border: 'none', borderRadius: '16px', background: PRIMARY, color: '#fff', fontSize: '15.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', width: 'auto', padding: '12px 22px', marginTop: '14px' }
+const btn = { border: 'none', borderRadius: '18px', background: PRIMARY, color: '#fff', fontSize: '15px', fontWeight: 700, fontFamily: 'Inter, sans-serif', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', width: 'auto', padding: '12px 22px', marginTop: '14px' }
 
 // The end of a chapter must never be a dead end: it either hands the learner
 // the next chapter (unlocked), points them back at flashcards (locked — the
@@ -18,16 +18,16 @@ function NextChapterBlock({ next, accent, onNextChapter, onStudy }) {
   if (next.kind === 'series-complete') {
     return (
       <div style={{
-        width: '100%', marginTop: '18px', padding: '16px 18px', borderRadius: '16px',
+        width: '100%', marginTop: '18px', padding: '16px 18px', borderRadius: '18px',
         border: '1px solid ' + accent + '2A', background: accent + '0D', textAlign: 'left',
       }}>
         <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: accent }}>
           Series complete
         </div>
-        <div style={{ marginTop: '5px', fontSize: '14px', color: 'var(--text)', fontWeight: 700 }}>
+        <div style={{ marginTop: '5px', fontSize: '13.5px', color: 'var(--text)', fontWeight: 700 }}>
           {next.seriesTitle ? 'You finished ' + next.seriesTitle + '.' : 'You finished the story.'}
         </div>
-        <div style={{ marginTop: '3px', fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+        <div style={{ marginTop: '3px', fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
           All {next.total} chapters read. Choose your next story from the library.
         </div>
       </div>
@@ -39,7 +39,7 @@ function NextChapterBlock({ next, accent, onNextChapter, onStudy }) {
       <button
         onClick={onNextChapter}
         style={{
-          width: '100%', marginTop: '18px', padding: '15px 18px', borderRadius: '16px',
+          width: '100%', marginTop: '18px', padding: '15px 18px', borderRadius: '18px',
           border: 'none', background: accent, color: '#fff', cursor: 'pointer',
           display: 'flex', alignItems: 'center', gap: '13px', textAlign: 'left',
           fontFamily: 'Inter, sans-serif',
@@ -61,21 +61,21 @@ function NextChapterBlock({ next, accent, onNextChapter, onStudy }) {
   // Locked: the tease that sends the loop back into flashcards.
   return (
     <div style={{
-      width: '100%', marginTop: '18px', padding: '16px 18px', borderRadius: '16px',
+      width: '100%', marginTop: '18px', padding: '16px 18px', borderRadius: '18px',
       border: '1px solid var(--border)', background: 'var(--surface-2)', textAlign: 'left',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
         <Lock size={13} strokeWidth={2.2} aria-hidden="true" /> Next
       </div>
-      <div style={{ marginTop: '5px', fontSize: '14.5px', fontWeight: 750, color: 'var(--text)' }}>
+      <div style={{ marginTop: '5px', fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>
         {chapterName}
       </div>
-      <div style={{ marginTop: '3px', fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+      <div style={{ marginTop: '3px', fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
         Complete your next flashcard session to continue.
       </div>
       {onStudy && (
         <button onClick={onStudy} style={{
-          marginTop: '12px', minHeight: '44px', padding: '0 18px', borderRadius: '13px',
+          marginTop: '12px', minHeight: '44px', padding: '0 18px', borderRadius: '12px',
           border: 'none', background: accent, color: '#fff', cursor: 'pointer',
           fontSize: '13.5px', fontWeight: 800, fontFamily: 'Inter, sans-serif',
           display: 'inline-flex', alignItems: 'center', gap: '8px',

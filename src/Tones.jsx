@@ -185,10 +185,10 @@ export default function Tones({ session, profile, track, onBack }) {
     return (
       <div style={pageShell}>
         <div style={{ maxWidth: '520px', margin: '0 auto', minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: '100%', textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '44px 36px', boxShadow: '0 22px 60px rgba(24,24,27,0.07)' }}>
+          <div style={{ width: '100%', textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '26px', padding: '44px 36px', boxShadow: 'var(--shadow-1)' }}>
             <Music2 size={30} strokeWidth={1.8} color={ACCENT} style={{ marginBottom: '14px' }} />
-            <h1 style={{ fontSize: '22px', fontWeight: 750, color: 'var(--text)', marginBottom: '8px' }}>Tone practice is for Chinese</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
+            <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Tone practice is for Chinese</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', lineHeight: 1.6, marginBottom: '24px' }}>
               Switch your active language to Chinese to drill the four tones.
             </p>
             <PrimaryButton onClick={onBack} icon={ArrowLeft}>Exit</PrimaryButton>
@@ -202,7 +202,7 @@ export default function Tones({ session, profile, track, onBack }) {
     return (
       <div style={pageShell}>
         <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: '88px', height: '88px', borderRadius: '26px', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 16px 40px rgba(24,24,27,0.06)' }}>
+          <div style={{ width: '88px', height: '88px', borderRadius: '26px', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-1)' }}>
             <Music2 size={34} strokeWidth={1.75} color={ACCENT} />
           </div>
         </div>
@@ -217,10 +217,10 @@ export default function Tones({ session, profile, track, onBack }) {
     return (
       <div style={pageShell}>
         <div style={{ maxWidth: '520px', margin: '0 auto', minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: '100%', textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '44px 36px', boxShadow: '0 22px 60px rgba(24,24,27,0.07)' }}>
+          <div style={{ width: '100%', textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '26px', padding: '44px 36px', boxShadow: 'var(--shadow-1)' }}>
             <Music2 size={30} strokeWidth={1.8} color={ACCENT} style={{ marginBottom: '14px' }} />
-            <h1 style={{ fontSize: '22px', fontWeight: 750, color: 'var(--text)', marginBottom: '8px' }}>No tone-drill words here</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
+            <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>No tone-drill words here</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', lineHeight: 1.6, marginBottom: '24px' }}>
               This level has no suitable words to drill tones with yet.
             </p>
             <PrimaryButton onClick={onBack} icon={ArrowLeft}>Exit</PrimaryButton>
@@ -241,23 +241,23 @@ export default function Tones({ session, profile, track, onBack }) {
         <div style={{ maxWidth: '560px', margin: '0 auto', paddingTop: isMobile ? '8px' : '20px' }}>
           <SecondaryButton onClick={onBack} icon={ArrowLeft}>Exit</SecondaryButton>
           <div style={{ textAlign: 'center', margin: '24px 0 28px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(ACCENT), fontSize: '13px', fontWeight: 750 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(ACCENT), fontSize: '13px', fontWeight: 700 }}>
               <Music2 size={17} strokeWidth={1.8} color={ACCENT} /> Tone practice
             </div>
-            <h1 style={{ fontSize: '26px', fontWeight: 780, color: 'var(--text)', marginTop: '8px' }}>Which drill?</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '6px' }}>Hear a word, name its tone{canPairs ? 's' : ''}.</p>
+            <h1 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text)', marginTop: '8px' }}>Which drill?</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', marginTop: '6px' }}>Hear a word, name its tone{canPairs ? 's' : ''}.</p>
           </div>
           <div style={{ display: 'grid', gap: '12px' }}>
             {choices.map(c => (
               <button key={c.key} onClick={() => start(c.key)} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '20px 22px', borderRadius: '16px', border: '1px solid var(--border)',
+                padding: '20px 22px', borderRadius: '18px', border: '1px solid var(--border)',
                 background: 'var(--surface)', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                boxShadow: '0 6px 18px rgba(24,24,27,0.05)', textAlign: 'left', gap: '14px',
+                boxShadow: 'var(--shadow-1)', textAlign: 'left', gap: '14px',
               }}>
                 <span style={{ minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: '16px', fontWeight: 750, color: 'var(--text)' }}>{c.label}</span>
-                  <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '3px' }}>{c.desc}</span>
+                  <span style={{ display: 'block', fontSize: '16px', fontWeight: 700, color: 'var(--text)' }}>{c.label}</span>
+                  <span style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginTop: '3px' }}>{c.desc}</span>
                 </span>
                 <span style={{ fontSize: '24px', color: ACCENT, fontFamily: "'Noto Sans SC'", flexShrink: 0 }}>{c.sample}</span>
               </button>
@@ -273,16 +273,16 @@ export default function Tones({ session, profile, track, onBack }) {
     return (
       <div style={pageShell}>
         <div style={{ maxWidth: '760px', margin: '0 auto', minHeight: '78vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: '100%', maxWidth: '520px', textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '42px 36px', boxShadow: '0 22px 60px rgba(24,24,27,0.07)' }}>
+          <div style={{ width: '100%', maxWidth: '520px', textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '26px', padding: '42px 36px', boxShadow: 'var(--shadow-1)' }}>
             <div style={{ width: '58px', height: '58px', borderRadius: '18px', margin: '0 auto 18px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: ACCENT + '10', border: '1px solid ' + ACCENT + '18' }}>
               <CheckCircle2 size={28} strokeWidth={1.9} color={ACCENT} />
             </div>
-            <h1 style={{ fontSize: '26px', fontWeight: 750, marginBottom: '8px', color: 'var(--text)' }}>Tones complete</h1>
+            <h1 style={{ fontSize: '26px', fontWeight: 700, marginBottom: '8px', color: 'var(--text)' }}>Tones complete</h1>
             <p style={{ color: 'var(--text-muted)', marginBottom: '22px', fontSize: '15px' }}>
               You heard <strong style={{ color: 'var(--text)' }}>{correctCount}</strong> of {questions.length} tones correctly.
             </p>
-            <div style={{ padding: '16px 10px', borderRadius: '14px', background: ACCENT + '0D', border: '1px solid ' + ACCENT + '22', marginBottom: '22px' }}>
-              <div style={{ fontSize: '26px', fontWeight: 760, color: inkStrong(ACCENT), lineHeight: 1 }}>{pct}%</div>
+            <div style={{ padding: '16px 10px', borderRadius: '12px', background: ACCENT + '0D', border: '1px solid ' + ACCENT + '22', marginBottom: '22px' }}>
+              <div style={{ fontSize: '26px', fontWeight: 800, color: inkStrong(ACCENT), lineHeight: 1 }}>{pct}%</div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>Accuracy</div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -302,11 +302,11 @@ export default function Tones({ session, profile, track, onBack }) {
       <div style={{ maxWidth: '620px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <SecondaryButton onClick={onBack} icon={ArrowLeft}>Exit</SecondaryButton>
-          <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{idx + 1} / {questions.length}</span>
+          <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>{idx + 1} / {questions.length}</span>
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(ACCENT), fontSize: '13px', fontWeight: 750 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: inkStrong(ACCENT), fontSize: '13px', fontWeight: 700 }}>
             <Music2 size={17} strokeWidth={1.8} color={ACCENT} />
             Tone practice
           </div>
@@ -321,13 +321,13 @@ export default function Tones({ session, profile, track, onBack }) {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px' }}>
           <div style={{ fontSize: '92px', fontWeight: 400, color: 'var(--text)', fontFamily: "'Noto Sans SC'", lineHeight: 1.1 }}>{q.word}</div>
           {answered && (
-            <div style={{ fontSize: '20px', color: ACCENT, fontWeight: 650, marginTop: '6px' }}>{q.reading}</div>
+            <div style={{ fontSize: '20px', color: ACCENT, fontWeight: 600, marginTop: '6px' }}>{q.reading}</div>
           )}
           <button onClick={() => playAudio(q.audio_path)} aria-label="Replay audio" style={{
             marginTop: '14px', display: 'inline-flex', alignItems: 'center', gap: '8px',
             height: '42px', padding: '0 16px', borderRadius: '12px',
             border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)',
-            cursor: 'pointer', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+            cursor: 'pointer', fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
           }}>
             <Volume2 size={17} strokeWidth={1.9} color="var(--text-muted)" /> Replay
           </button>
@@ -347,7 +347,7 @@ export default function Tones({ session, profile, track, onBack }) {
               const parts = opt.split('·').map(Number)
               return (
                 <button key={opt} onClick={() => choose(opt)} disabled={answered} style={{
-                  position: 'relative', minHeight: '76px', padding: '10px 4px', borderRadius: '14px',
+                  position: 'relative', minHeight: '76px', padding: '10px 4px', borderRadius: '12px',
                   border: '1.5px solid ' + bc, background: bg, cursor: answered ? 'default' : 'pointer',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px',
                   transition: 'border-color 140ms ease, background 140ms ease',
@@ -372,7 +372,7 @@ export default function Tones({ session, profile, track, onBack }) {
             else if (answered && isPicked && !isCorrect) { bc = '#DC2626'; bg = 'var(--danger-bg)' }
             return (
               <button key={t.n} onClick={() => choose(String(t.n))} disabled={answered} style={{
-                position: 'relative', minHeight: '84px', padding: '10px 8px', borderRadius: '14px',
+                position: 'relative', minHeight: '84px', padding: '10px 8px', borderRadius: '12px',
                 gridColumn: isMobile && t.n === 5 ? '1 / -1' : 'auto',
                 border: '1.5px solid ' + bc, background: bg, cursor: answered ? 'default' : 'pointer',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px',
@@ -391,9 +391,9 @@ export default function Tones({ session, profile, track, onBack }) {
 
         {answered && (
           <div style={{ marginTop: '20px' }}>
-            <div style={{ padding: '14px 18px', borderRadius: '14px', textAlign: 'center', marginBottom: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+            <div style={{ padding: '14px 18px', borderRadius: '12px', textAlign: 'center', marginBottom: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
               <span style={{ fontSize: '22px', fontFamily: "'Noto Sans SC'", color: 'var(--text)' }}>{q.word}</span>
-              <span style={{ fontSize: '15px', color: ACCENT, marginLeft: '10px', fontWeight: 650 }}>{q.reading}</span>
+              <span style={{ fontSize: '15px', color: ACCENT, marginLeft: '10px', fontWeight: 600 }}>{q.reading}</span>
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px' }}>{cleanMeaning(q.meaning)}</div>
             </div>
             <PrimaryButton onClick={next} icon={Sparkles}>{idx + 1 >= questions.length ? 'See results' : 'Next'}</PrimaryButton>

@@ -74,7 +74,7 @@ export default function SceneReader(props) {
           {beat && beat.emoji && (
             <div aria-hidden="true" style={{ fontSize: '72px', lineHeight: 1, marginBottom: '26px' }}>{beat.emoji}</div>
           )}
-          {beat && beat.speaker && <div style={{ fontSize: '12.5px', fontWeight: 800, color: accent, marginBottom: '10px' }}>{beat.speaker}</div>}
+          {beat && beat.speaker && <div style={{ fontSize: '13px', fontWeight: 800, color: accent, marginBottom: '10px' }}>{beat.speaker}</div>}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '8px' }}>
             <div style={{ fontFamily: c.readingFontFamily, fontSize: '30px', lineHeight: reserve ? 2.05 : 1.6, fontWeight: 500, color: isDone ? DONE_GREEN : undefined }}>
               {beat && beat.tokens.map((t, k) => {
@@ -156,7 +156,7 @@ export default function SceneReader(props) {
             )}
           </div>
           {beat && story.english_content && c.revealedEnglish.has(c.cur) && (
-            <div style={{ fontSize: '14px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '16px' }}>{englishLineFor(story, c.cur)}</div>
+            <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '16px' }}>{englishLineFor(story, c.cur)}</div>
           )}
         </div>
       </div>
@@ -201,5 +201,5 @@ function readerShell(isMobile) {
     : { minHeight: '100vh' }
 }
 
-const navBtn = { width: '44px', height: '44px', borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }
+const navBtn = { width: '44px', height: '44px', borderRadius: '999px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }
 const srOnly = { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }

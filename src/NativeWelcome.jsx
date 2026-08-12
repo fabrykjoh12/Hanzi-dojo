@@ -56,14 +56,14 @@ export default function NativeWelcome({ onStart, onLogIn }) {
           <div style={heroWordmarkStyle('32px')}>{BRAND_NAME}</div>
           <p style={{
             margin: 0,
-            fontSize: '16px', fontWeight: 650, lineHeight: 1.4,
+            fontSize: '16px', fontWeight: 600, lineHeight: 1.4,
             color: 'var(--text)', fontFamily: 'Inter, sans-serif',
           }}>
             Your path to Chinese starts&nbsp;here.
           </p>
           <p style={{
             margin: 0, maxWidth: '300px',
-            fontSize: '14px', lineHeight: 1.55,
+            fontSize: '13.5px', lineHeight: 1.55,
             color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif',
           }}>
             Learn new words, discover them in stories, and remember them through&nbsp;practice.
@@ -85,7 +85,7 @@ export default function NativeWelcome({ onStart, onLogIn }) {
             width: '100%', minHeight: '54px', padding: '0 24px',
             borderRadius: '999px', border: 'none',
             background: 'var(--text)', color: 'var(--bg)',
-            fontSize: '16.5px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+            fontSize: '17px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
             letterSpacing: '0.01em',
             cursor: 'pointer',
             transition: 'opacity 120ms ease, transform 120ms ease',

@@ -57,7 +57,7 @@ export default function ManhuaHeader({ label, title, current, total, pct, onBack
           aria-label={'Panel ' + current + ' of ' + total}
           style={{
             flexShrink: 0, minWidth: '46px', textAlign: 'right',
-            fontSize: '14.5px', fontWeight: 650, color: PAPER.muted,
+            fontSize: '15px', fontWeight: 600, color: PAPER.muted,
             fontVariantNumeric: 'tabular-nums',
           }}
         >

@@ -96,7 +96,7 @@ function IconButton({ icon: Icon, label, onClick, danger, disabled }) {
         border: '1px solid ' + (danger ? 'var(--danger-border)' : 'var(--border)'),
         background: hovered && !disabled ? (danger ? 'var(--danger-bg)' : 'var(--surface-2)') : 'var(--surface)',
         color,
-        fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+        fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
         cursor: disabled ? 'default' : 'pointer',
         opacity: disabled ? 0.55 : 1,
         transition: 'background 160ms ease, transform 160ms ease',
@@ -119,12 +119,12 @@ function PrimaryButton({ onClick, children, accentHex, icon: Icon }) {
       style={{
         flex: 1,
         minHeight: '52px',
-        borderRadius: '16px',
+        borderRadius: '18px',
         border: 'none',
         background: hovered ? accentHex + 'E6' : accentHex,
         color: '#fff',
         fontSize: '15px',
-        fontWeight: 750,
+        fontWeight: 700,
         fontFamily: 'Inter, sans-serif',
         cursor: 'pointer',
         display: 'inline-flex',
@@ -152,7 +152,7 @@ function GhostButton({ onClick, children, icon: Icon }) {
       style={{
         flex: 1,
         minHeight: '52px',
-        borderRadius: '16px',
+        borderRadius: '18px',
         border: '1px solid var(--border)',
         background: hovered ? 'var(--surface-2)' : 'var(--surface)',
         color: 'var(--text-muted)',
@@ -185,10 +185,10 @@ function StatCard({ label, value, color }) {
       borderRadius: '18px',
       padding: isMobile ? '16px 8px' : '18px 20px',
       textAlign: 'center',
-      boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
+      boxShadow: 'var(--shadow-1)',
     }}>
-      <div style={{ fontSize: '28px', fontWeight: 850, color, lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '7px', fontWeight: 650 }}>{label}</div>
+      <div style={{ fontSize: '28px', fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '7px', fontWeight: 600 }}>{label}</div>
     </div>
   )
 }
@@ -405,7 +405,7 @@ export default function Test({ session, profile, track, onBack }) {
             width: '88px', height: '88px', borderRadius: '26px',
             background: 'var(--surface)', border: '1px solid var(--border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 16px 40px rgba(24,24,27,0.06)',
+            boxShadow: 'var(--shadow-1)',
           }}>
             <GraduationCap size={34} strokeWidth={1.75} color={accentHex} />
           </div>
@@ -443,7 +443,7 @@ export default function Test({ session, profile, track, onBack }) {
           <p style={bodyTextStyle}>Master {unlockPct}% of this level's words to unlock the test.</p>
           <div style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '6px' }}>
-              <div style={{ fontSize: '34px', fontWeight: 850, color: inkStrong(accentHex) }}>
+              <div style={{ fontSize: '34px', fontWeight: 800, color: inkStrong(accentHex) }}>
                 {status.masteredCount} / {status.totalWords}
               </div>
               <InfoTip accentHex={accentHex} text="A word is mastered once the app predicts you'll still recall it about three weeks from now. It can't be rushed - mastery comes from reviewing correctly over time, across multiple days." />
@@ -506,7 +506,7 @@ export default function Test({ session, profile, track, onBack }) {
         }}>
           <ShieldCheck size={21} strokeWidth={1.8} color={accentHex} style={{ flexShrink: 0, marginTop: '2px' }} />
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)', marginBottom: '5px' }}>Strict by design</div>
+            <div style={{ fontSize: '13.5px', fontWeight: 800, color: 'var(--text)', marginBottom: '5px' }}>Strict by design</div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55 }}>
               Wrong answers return to review through FSRS, so the test strengthens weak words instead of just blocking progress.
             </div>
@@ -593,7 +593,7 @@ export default function Test({ session, profile, track, onBack }) {
           padding: '38px 34px',
           textAlign: 'center',
           marginBottom: '18px',
-          boxShadow: '0 22px 64px rgba(24,24,27,0.07)',
+          boxShadow: 'var(--shadow-1)',
         }}>
           {/* The task line is the screen's heading while a question is up — the
               only other h1 lives in the intro / result states. */}
@@ -610,7 +610,7 @@ export default function Test({ session, profile, track, onBack }) {
             {q.prompt}
           </div>
           {isTargetPrompt && q.vocab.reading && (
-            <div style={{ fontSize: '16px', color: accentHex, marginTop: '10px', fontWeight: 650 }}>
+            <div style={{ fontSize: '16px', color: accentHex, marginTop: '10px', fontWeight: 600 }}>
               {q.vocab.reading}
             </div>
           )}
@@ -656,27 +656,27 @@ export default function Test({ session, profile, track, onBack }) {
                 lang={isTargetOption ? langAttr(track.language) : undefined}
                 style={{
                   padding: '17px 20px',
-                  borderRadius: '16px',
+                  borderRadius: '18px',
                   border: '1.5px solid ' + borderColor,
                   background: bgColor,
                   color: textColor,
                   fontSize: isTargetOption ? '23px' : '15px',
                   fontFamily: isTargetOption ? fontFamily : 'Inter, sans-serif',
-                  fontWeight: 750,
+                  fontWeight: 700,
                   cursor: hasAnswered ? 'default' : 'pointer',
                   textAlign: 'left',
                   transition: 'all 180ms ease',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  boxShadow: hasAnswered ? 'none' : '0 8px 22px rgba(24,24,27,0.045)',
+                  boxShadow: hasAnswered ? 'none' : 'var(--shadow-1)',
                 }}
               >
                 {q.optionReadings && q.optionReadings[option]
                   ? (
                     <span style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                       <span>{option}</span>
-                      <span style={{ fontSize: '12px', fontWeight: 550, color: hasAnswered ? textColor : 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: hasAnswered ? textColor : 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
                         {q.optionReadings[option]}
                       </span>
                     </span>
@@ -700,14 +700,14 @@ export default function Test({ session, profile, track, onBack }) {
             <div style={{
               marginTop: '18px',
               padding: '15px 18px',
-              borderRadius: '16px',
+              borderRadius: '18px',
               textAlign: 'center',
               background: selected === questions[index].correctAnswer ? 'var(--success-bg)' : 'var(--danger-bg)',
               border: '1px solid ' + (selected === questions[index].correctAnswer ? 'var(--success-border)' : 'var(--danger-border)'),
             }}>
               <span style={{
-                fontSize: '14px',
-                fontWeight: 750,
+                fontSize: '13.5px',
+                fontWeight: 700,
                 color: selected === questions[index].correctAnswer ? '#2F9E6D' : '#DC2626',
               }}>
                 {selected === questions[index].correctAnswer
@@ -775,7 +775,7 @@ function StateIcon({ icon: Icon, accentHex }) {
     <div style={{
       width: '68px',
       height: '68px',
-      borderRadius: '22px',
+      borderRadius: '18px',
       background: accentHex + '10',
       border: '1px solid ' + accentHex + '20',
       display: 'flex',
@@ -800,7 +800,7 @@ const centerPanelStyle = {
 const titleStyle = {
   color: 'var(--text)',
   fontSize: '26px',
-  fontWeight: 850,
+  fontWeight: 800,
   lineHeight: 1.15,
   margin: '18px 0 8px',
 }
@@ -816,9 +816,9 @@ const bodyTextStyle = {
 const cardStyle = {
   background: 'var(--surface)',
   border: '1px solid var(--border)',
-  borderRadius: '22px',
+  borderRadius: '18px',
   padding: '24px',
-  boxShadow: '0 10px 32px rgba(24,24,27,0.055)',
+  boxShadow: 'var(--shadow-1)',
 }
 
 // Visually hidden, still read aloud — the house pattern (see Study.jsx).

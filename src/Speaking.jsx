@@ -152,8 +152,8 @@ export default function Speaking({ session, profile, track, onBack }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
       <AppBar kind="close" onBack={onBack} sticky={false} />
       <div>
-        <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--text)' }}>Speaking</h1>
-        <div style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>{metaLine(systemLabel, levelLabel)}</div>
+        <h1 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: 'var(--text)' }}>Speaking</h1>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{metaLine(systemLabel, levelLabel)}</div>
       </div>
     </div>
   )
@@ -166,8 +166,8 @@ export default function Speaking({ session, profile, track, onBack }) {
         {header}
         <Centered>
           <MicOff size={30} strokeWidth={1.8} color={accentHex} style={{ marginBottom: '14px' }} />
-          <div style={{ fontSize: '17px', fontWeight: 750, color: 'var(--text)', marginBottom: '8px' }}>Speaking isn't supported here yet</div>
-          <div style={{ fontSize: '14px', color: 'var(--text-muted)', maxWidth: '340px', lineHeight: 1.6, marginBottom: '20px' }}>
+          <div style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Speaking isn't supported here yet</div>
+          <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', maxWidth: '340px', lineHeight: 1.6, marginBottom: '20px' }}>
             Speech recognition isn't available here. It works in Chrome on Android
             or on a desktop browser — everything else in the app is unaffected.
           </div>
@@ -241,10 +241,10 @@ export default function Speaking({ session, profile, track, onBack }) {
         </div>
         <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', marginBottom: '14px' }}>Say this aloud — {idx + 1} of {items.length}</div>
 
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '30px 20px', textAlign: 'center', marginBottom: '18px' }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '30px 20px', textAlign: 'center', marginBottom: '18px' }}>
           <div lang={langAttr(track.language)} style={{ fontSize: '44px', fontWeight: 800, color: 'var(--text)', fontFamily: langFont, lineHeight: 1.2 }}>{item.word}</div>
           {showReading && <div style={{ fontSize: '16px', color: pinyinInk(accentHex), fontWeight: 600, marginTop: '8px' }}>{item.reading}</div>}
-          <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '6px' }}>{cleanMeaning(item.meaning)}</div>
+          <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginTop: '6px' }}>{cleanMeaning(item.meaning)}</div>
           <button onClick={playTarget} aria-label="Hear it" style={{ marginTop: '16px', background: 'none', border: '1px solid var(--border)', borderRadius: '999px', padding: '8px 16px', cursor: 'pointer', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '13px', fontWeight: 600 }}>
             <Volume2 size={16} /> Hear it
           </button>
@@ -255,7 +255,7 @@ export default function Speaking({ session, profile, track, onBack }) {
             so it cannot be conditionally rendered alongside its content. */}
         <div role="status" aria-live="polite">
           {result === 'correct' && (
-            <div style={{ textAlign: 'center', color: 'var(--success)', fontWeight: 750, marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
+            <div style={{ textAlign: 'center', color: 'var(--success)', fontWeight: 700, marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
               <Check size={20} strokeWidth={2.6} aria-hidden="true" /> Nailed it{heard ? ` — heard "${heard}"` : ''}
             </div>
           )}
@@ -281,7 +281,7 @@ export default function Speaking({ session, profile, track, onBack }) {
             aria-disabled={listening || denied}
             aria-label={listening ? 'Listening' : 'Tap and speak'}
             style={{
-              width: '84px', height: '84px', borderRadius: '50%', cursor: listening || denied ? 'default' : 'pointer',
+              width: '84px', height: '84px', borderRadius: '999px', cursor: listening || denied ? 'default' : 'pointer',
               border: 'none', background: listening ? '#DC2626' : accentHex, color: '#fff',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: listening ? '0 0 0 8px ' + accentHex + '22' : '0 8px 24px ' + accentHex + '44',

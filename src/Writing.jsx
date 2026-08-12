@@ -95,7 +95,7 @@ function IconButton({ icon: Icon, label, onClick }) {
         border: '1px solid var(--border)',
         background: hovered ? 'var(--surface-2)' : 'var(--surface)',
         color: 'var(--text-muted)',
-        fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+        fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
         cursor: 'pointer',
         transition: 'background 160ms ease, transform 160ms ease',
         transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
@@ -118,12 +118,12 @@ function PrimaryButton({ onClick, children, accentHex, icon: Icon, disabled }) {
       style={{
         flex: 1,
         minHeight: '52px',
-        borderRadius: '16px',
+        borderRadius: '18px',
         border: 'none',
         background: disabled ? 'var(--text-faint)' : (hovered ? accentHex + 'E6' : accentHex),
         color: '#fff',
         fontSize: '15px',
-        fontWeight: 750,
+        fontWeight: 700,
         fontFamily: 'Inter, sans-serif',
         cursor: disabled ? 'default' : 'pointer',
         display: 'inline-flex',
@@ -151,7 +151,7 @@ function GhostButton({ onClick, children, icon: Icon }) {
       style={{
         flex: 1,
         minHeight: '52px',
-        borderRadius: '16px',
+        borderRadius: '18px',
         border: '1px solid var(--border)',
         background: hovered ? 'var(--surface-2)' : 'var(--surface)',
         color: 'var(--text-muted)',
@@ -195,11 +195,11 @@ function StatBox({ label, value, color, icon: Icon }) {
       border: '1px solid var(--border)',
       borderRadius: '18px',
       padding: '18px 20px',
-      boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
+      boxShadow: 'var(--shadow-1)',
     }}>
       {Icon && <Icon size={20} strokeWidth={1.8} color={color} />}
-      <div style={{ fontSize: '30px', fontWeight: 850, color, lineHeight: 1, marginTop: Icon ? '12px' : 0 }}>{value}</div>
-      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '7px', fontWeight: 650 }}>{label}</div>
+      <div style={{ fontSize: '30px', fontWeight: 800, color, lineHeight: 1, marginTop: Icon ? '12px' : 0 }}>{value}</div>
+      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '7px', fontWeight: 600 }}>{label}</div>
     </div>
   )
 }
@@ -215,13 +215,13 @@ function WordStatRow({ word, stat, accentHex, fontFamily }) {
       border: '1px solid var(--border)',
       borderRadius: '18px',
       padding: '16px 18px',
-      boxShadow: '0 8px 26px rgba(24,24,27,0.045)',
+      boxShadow: 'var(--shadow-1)',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
         <div style={{ minWidth: 0 }}>
           <div style={{
             fontSize: '25px',
-            fontWeight: 750,
+            fontWeight: 700,
             color: 'var(--text)',
             fontFamily,
             lineHeight: 1.2,
@@ -233,7 +233,7 @@ function WordStatRow({ word, stat, accentHex, fontFamily }) {
           </div>
         </div>
         <div style={{ textAlign: 'right', minWidth: '76px' }}>
-          <div style={{ fontSize: '13px', fontWeight: 850, color: level === MAX_LEVEL ? '#2F9E6D' : accentHex }}>
+          <div style={{ fontSize: '13px', fontWeight: 800, color: level === MAX_LEVEL ? '#2F9E6D' : accentHex }}>
             Lv {level}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
@@ -510,12 +510,12 @@ export default function Writing({ session, track, onBack }) {
       <Shell accentHex={accentHex} fontFamily={fontFamily}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
           <IconButton icon={ArrowLeft} label="Back" onClick={() => setPhase('start')} />
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{metaLine(systemLabel, levelLabel)}</div>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>{metaLine(systemLabel, levelLabel)}</div>
         </div>
 
         <div style={{ marginBottom: '24px' }}>
           <div style={{ color: accentHex, fontSize: '13px', fontWeight: 800, marginBottom: '10px' }}>Writing progress</div>
-          <h1 style={{ margin: 0, color: 'var(--text)', fontSize: '36px', fontWeight: 850, lineHeight: 1.1 }}>Writing stats</h1>
+          <h1 style={{ margin: 0, color: 'var(--text)', fontSize: '36px', fontWeight: 800, lineHeight: 1.1 }}>Writing stats</h1>
           <p style={{ margin: '10px 0 0', fontSize: '15px', color: 'var(--text-muted)' }}>
             {masteredCount}/{studiedWords.length} words at max writing level.
           </p>
@@ -629,7 +629,7 @@ export default function Writing({ session, track, onBack }) {
     <Shell accentHex={accentHex} fontFamily={fontFamily} narrow>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '22px' }}>
         <IconButton icon={ArrowLeft} label="Exit" onClick={() => setPhase('start')} />
-        <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>
           {index + 1}/{queue.length} · {levelLabel} · Lv {currentLevel}
         </div>
       </div>
@@ -653,7 +653,7 @@ export default function Writing({ session, track, onBack }) {
       <div style={{
         ...panelStyle,
         padding: '34px 30px',
-        boxShadow: '0 22px 64px rgba(24,24,27,0.07)',
+        boxShadow: 'var(--shadow-1)',
       }}>
         <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 800, marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
           Type the {targetLabel}
@@ -695,14 +695,14 @@ export default function Writing({ session, track, onBack }) {
           width: '100%',
           boxSizing: 'border-box',
           padding: '17px 19px',
-          borderRadius: '16px',
+          borderRadius: '18px',
           border: '1.5px solid ' + (result?.status === 'correct' ? '#2F9E6D' : result?.status === 'missed' ? '#DC2626' : 'var(--border)'),
           background: 'var(--surface)',
           fontSize: '20px',
           color: 'var(--text)',
           fontFamily: toEnglish ? 'Inter, sans-serif' : fontFamily,
           marginTop: '18px',
-          boxShadow: '0 8px 26px rgba(24,24,27,0.045)',
+          boxShadow: 'var(--shadow-1)',
         }}
       />
 
@@ -734,16 +734,16 @@ export default function Writing({ session, track, onBack }) {
             </div>
           )}
           {isJapanese && (
-            <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
+            <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
               {normalizeRomaji(toRomaji(current.reading || ''))}
             </div>
           )}
           {!isJapanese && (
-            <div style={{ fontSize: '18px', color: accentHex, marginTop: '8px', fontWeight: 700 }}>
+            <div style={{ fontSize: '17px', color: accentHex, marginTop: '8px', fontWeight: 700 }}>
               {current.reading}
             </div>
           )}
-          <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '6px' }}>
+          <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginTop: '6px' }}>
             {current.meaning}
           </div>
         </div>
@@ -756,7 +756,7 @@ export default function Writing({ session, track, onBack }) {
             <button
               onClick={reveal}
               style={{
-                flexShrink: 0, height: '52px', padding: '0 20px', borderRadius: '16px',
+                flexShrink: 0, height: '52px', padding: '0 20px', borderRadius: '18px',
                 border: '1px solid var(--border)', background: 'var(--surface)',
                 color: 'var(--text-muted)', fontSize: '15px', fontWeight: 700,
                 fontFamily: 'Inter, sans-serif', cursor: 'pointer',
@@ -774,7 +774,7 @@ export default function Writing({ session, track, onBack }) {
                 onClick={addToDueList}
                 disabled={addedToDue}
                 style={{
-                  flexShrink: 0, height: '52px', padding: '0 20px', borderRadius: '16px',
+                  flexShrink: 0, height: '52px', padding: '0 20px', borderRadius: '18px',
                   border: '1px solid ' + (addedToDue ? 'var(--success-border)' : 'var(--border)'),
                   background: addedToDue ? 'var(--success-bg)' : 'var(--surface)',
                   color: addedToDue ? '#2F9E6D' : 'var(--text-muted)',
@@ -800,7 +800,7 @@ function StateIcon({ icon: Icon, accentHex }) {
     <div style={{
       width: '68px',
       height: '68px',
-      borderRadius: '22px',
+      borderRadius: '18px',
       background: accentHex + '10',
       border: '1px solid ' + accentHex + '20',
       display: 'flex',
@@ -816,7 +816,7 @@ function StateIcon({ icon: Icon, accentHex }) {
 function ModeButton({ active, accentHex, title, detail, onClick }) {
   return (
     <button onClick={onClick} aria-pressed={active} style={modeButtonStyle(active, accentHex)}>
-      <div style={{ fontSize: '15px', fontWeight: 850 }}>{title}</div>
+      <div style={{ fontSize: '15px', fontWeight: 800 }}>{title}</div>
       <div style={{ fontSize: '11px', color: active ? inkStrong(accentHex) : 'var(--text-muted)', marginTop: '4px' }}>{detail}</div>
     </button>
   )
@@ -834,7 +834,7 @@ const centerPanelStyle = {
 const titleStyle = {
   color: 'var(--text)',
   fontSize: '26px',
-  fontWeight: 850,
+  fontWeight: 800,
   lineHeight: 1.15,
   margin: '18px 0 8px',
 }
@@ -850,10 +850,10 @@ const bodyTextStyle = {
 const panelStyle = {
   background: 'var(--surface)',
   border: '1px solid var(--border)',
-  borderRadius: '22px',
+  borderRadius: '18px',
   padding: '22px',
   marginBottom: '16px',
-  boxShadow: '0 10px 32px rgba(24,24,27,0.055)',
+  boxShadow: 'var(--shadow-1)',
 }
 
 const panelTitleStyle = {
@@ -865,28 +865,28 @@ const panelTitleStyle = {
 
 const sectionTitle = {
   fontSize: '15px',
-  fontWeight: 850,
+  fontWeight: 800,
   color: 'var(--text)',
   margin: '0 0 12px',
 }
 
 const choiceBox = (active, accent, disabled) => ({
   minHeight: '54px',
-  borderRadius: '14px',
+  borderRadius: '12px',
   border: '1.5px solid ' + (active ? accent : 'var(--border)'),
   background: active ? accent + '10' : 'var(--surface)',
   color: active ? inkStrong(accent) : 'var(--text)',
   opacity: disabled ? 0.4 : 1,
   cursor: disabled ? 'default' : 'pointer',
   fontSize: '15px',
-  fontWeight: 850,
+  fontWeight: 800,
   fontFamily: 'Inter, sans-serif',
 })
 
 const modeButtonStyle = (active, accent) => ({
   minHeight: '76px',
   padding: '14px 14px',
-  borderRadius: '14px',
+  borderRadius: '12px',
   border: '1.5px solid ' + (active ? accent : 'var(--border)'),
   background: active ? accent + '10' : 'var(--surface)',
   color: active ? inkStrong(accent) : 'var(--text)',

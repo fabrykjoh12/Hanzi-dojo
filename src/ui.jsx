@@ -19,7 +19,7 @@ const PRIMARY_DISABLED = 'var(--locked)'
 export function Centered({ children, wide }) {
   return (
     <div style={{ maxWidth: wide ? '760px' : '520px', margin: '0 auto', minHeight: '74vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: '100%', maxWidth: '520px', textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '42px 36px', boxShadow: '0 22px 60px rgba(24,24,27,0.07)' }}>
+      <div style={{ width: '100%', maxWidth: '520px', textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '26px', padding: '42px 36px', boxShadow: 'var(--shadow-1)' }}>
         {children}
       </div>
     </div>
@@ -37,9 +37,9 @@ export function PrimaryButton({ onClick, children, icon: Icon, disabled }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-        width: '100%', minHeight: '52px', borderRadius: '16px', border: 'none',
+        width: '100%', minHeight: '52px', borderRadius: '18px', border: 'none',
         background: disabled ? PRIMARY_DISABLED : (hovered ? PRIMARY_PRESSED : PRIMARY), color: '#fff',
-        fontSize: '15px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+        fontSize: '15px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
         cursor: disabled ? 'default' : 'pointer',
         transition: 'background 160ms ease, transform 160ms ease',
         transform: hovered && !disabled ? 'translateY(-1px)' : 'translateY(0)',
@@ -92,7 +92,7 @@ export function SecondaryButton({ onClick, children, icon: Icon }) {
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
         minHeight: '44px', padding: '0 16px', borderRadius: '12px',
         border: '1px solid var(--border)', background: hovered ? 'var(--surface-2)' : 'var(--surface)',
-        color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+        color: 'var(--text-muted)', fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
         cursor: 'pointer', transition: 'background 160ms ease',
       }}
     >

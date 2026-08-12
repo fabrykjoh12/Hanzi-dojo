@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { X, Play, Trash2, ChevronRight, Headphones, Mic, PenLine } from 'lucide-react'
 import { Button, IconButton, Row, Chip, Segmented } from './controls'
 import { rowDivider } from './controlTokens'
+import { TYPE } from './typeScale'
 
 // Every variant and state of the five P14-1 controls, on one screen.
 //
@@ -33,10 +34,7 @@ const DRILLS = [
 function Group({ title, children, stack }) {
   return (
     <div data-gallery-group={title} style={{ marginBottom: '22px' }}>
-      <div style={{
-        fontSize: '10.5px', fontWeight: 800, letterSpacing: '0.14em',
-        textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: '10px',
-      }}>
+      <div style={{ ...TYPE.eyebrow, color: 'var(--text-faint)', marginBottom: '10px' }}>
         {title}
       </div>
       <div style={{

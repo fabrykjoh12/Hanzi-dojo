@@ -88,8 +88,8 @@ export default function AudioButton({
     position: 'relative',
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
     height: height + 'px', padding: text ? '0 14px' : '0', width: text ? 'auto' : height + 'px',
-    borderRadius: '13px', fontFamily: 'Inter, sans-serif',
-    fontSize: size === 'sm' ? '12px' : '13px', fontWeight: 750,
+    borderRadius: '12px', fontFamily: 'Inter, sans-serif',
+    fontSize: size === 'sm' ? '12px' : '13px', fontWeight: 700,
   }
 
   if (unavailable || state === 'error') {
@@ -98,7 +98,7 @@ export default function AudioButton({
         style={{
           ...baseStyle,
           background: 'var(--surface-2)', border: '1px solid var(--border)',
-          color: 'var(--text-faint)', fontWeight: 650,
+          color: 'var(--text-faint)', fontWeight: 600,
         }}
         title={state === 'error' ? "This clip couldn't be played" : 'No audio for this yet'}
       >
@@ -124,7 +124,7 @@ export default function AudioButton({
         background: solid ? accentHex + '10' : 'var(--surface)',
         border: '1px solid ' + (solid ? accentHex + '2A' : 'var(--border)'),
         color: solid ? accentHex : 'var(--text-muted)',
-        boxShadow: '0 10px 24px rgba(24,24,27,0.07)',
+        boxShadow: 'var(--shadow-1)',
       }}
     >
       <Icon

@@ -10,14 +10,27 @@
 // Values only (no components), because a .jsx file may export nothing but
 // components in this repo — see react-refresh/only-export-components.
 
+import { TYPE } from './typeScale'
+import { radius as radiusValue } from './shape'
+
 // The small-caps eyebrow used for every secondary label in the app. One rule,
 // applied everywhere, is most of what makes a layout read as authored.
+//
+// P14-2: DERIVED from TYPE.eyebrow rather than restated, because two spellings
+// of one value is exactly the drift this phase exists to remove — and they had
+// already been written twice. `lineHeight` is deliberately NOT pulled through:
+// MICRO's seven call sites have always inherited theirs, and adding 1.2 would
+// move them a fraction of a pixel for no reason. Prefer TYPE.eyebrow in new code.
 export const MICRO = {
-  fontSize: '10.5px', fontWeight: 800, letterSpacing: '0.14em',
-  textTransform: 'uppercase',
+  fontSize: TYPE.eyebrow.fontSize,
+  fontWeight: TYPE.eyebrow.fontWeight,
+  letterSpacing: TYPE.eyebrow.letterSpacing,
+  textTransform: TYPE.eyebrow.textTransform,
 }
 
 // Digits that line up in columns must not shift width as they change.
+// Same story: NUMERIC in typeScale.js is the same idea with a weight attached,
+// so this stays the bare modifier the existing call sites expect.
 export const NUM = { fontVariantNumeric: 'tabular-nums' }
 
 // The deep ground a hero panel sits on: the language's own accent, darkened
@@ -37,14 +50,23 @@ export function heroShadow(accentHex, lifted = false) {
     : `0 10px 28px -18px color-mix(in srgb, ${accentHex} 60%, transparent)`
 }
 
-// A flat surface panel: themed background, hairline top edge, two-layer
-// shadow. Everything that is NOT the hero looks like this.
-export function flatPanel({ radius = 16, padding } = {}) {
+// A flat surface panel: themed background, a lit top edge, two-layer shadow.
+// Everything that is NOT the hero looks like this.
+//
+// This IS SURFACE.raised (shape.js) with a lit top edge on it, and it predates
+// that name — so rather than introduce a second spelling of the same object,
+// P14-2 pointed its radius at the scale. The default was 16 and the four callers
+// passed 14, 16, 16 and 20: four values for one object class, which is the drift
+// this phase removes. Every flat panel in the app is now `card`.
+//
+// `radius` stays a parameter because a caller genuinely might need a different
+// scale value — but it takes a NAME now, not a number, so a 15 cannot come back.
+export function flatPanel({ radius = 'card', padding } = {}) {
   return {
     background: 'var(--surface)',
     border: '1px solid var(--border)',
-    borderRadius: radius + 'px',
-    boxShadow: 'var(--shadow-1), inset 0 1px 0 var(--hairline)',
+    borderRadius: radiusValue(radius) || radiusValue('card'),
+    boxShadow: 'var(--shadow-1), inset 0 1px 0 var(--inset-highlight)',
     padding,
   }
 }

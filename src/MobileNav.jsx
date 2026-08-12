@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { languageTheme, ink } from './languageTheme'
 import { MOBILE_PRIMARY, moreItemsFor } from './navConfig'
+import { TYPE } from './typeScale'
 import { MoreIcon } from './NavIcons'
 import { MOBILE_NAV_SPACE } from './navMetrics'
 import { NAV_COLUMN, navIconPx, iconRowStyle, cardsShellStyle } from './navEmphasis'
@@ -152,7 +153,7 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
             background: 'var(--surface)',
             borderTopLeftRadius: '22px', borderTopRightRadius: '22px',
             borderTop: '1px solid var(--border)',
-            boxShadow: '0 -12px 40px -12px rgba(0,0,0,0.35), inset 0 1px 0 var(--hairline)',
+            boxShadow: 'var(--shadow-sheet), inset 0 1px 0 var(--inset-highlight)',
             padding: '8px 14px calc(16px + env(safe-area-inset-bottom))',
             animation: 'hd-sheet-up 280ms cubic-bezier(0.22, 1, 0.36, 1) both',
           }}>
@@ -162,10 +163,7 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
               background: 'var(--border)', margin: '6px auto 4px',
             }} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 6px 8px' }}>
-              <span style={{
-                fontSize: '10.5px', fontWeight: 800, letterSpacing: '0.14em',
-                textTransform: 'uppercase', color: 'var(--text-faint)',
-              }}>
+              <span style={{ ...TYPE.eyebrow, color: 'var(--text-faint)' }}>
                 More
               </span>
               {/* 44x44 thumb target. The negative margin cancels the growth back
@@ -203,7 +201,7 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
                     display: 'flex', alignItems: 'center', gap: '14px',
                     padding: '13px 14px', borderRadius: '12px',
                     color: danger ? 'var(--danger)' : (active ? tintInk : 'var(--text)'),
-                    fontSize: '15px', fontWeight: active ? 650 : 500, textAlign: 'left',
+                    fontSize: '15px', fontWeight: active ? 600 : 500, textAlign: 'left',
                     animationDelay: `${40 + i * 22}ms`,
                   }}
                 >

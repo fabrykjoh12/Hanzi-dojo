@@ -110,9 +110,9 @@ export default function Flashcard({
                 title="This word's audio file couldn't be loaded"
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '7px',
-                  height: '40px', padding: '0 14px', borderRadius: '13px',
+                  height: '40px', padding: '0 14px', borderRadius: '12px',
                   background: 'var(--surface-2)', border: '1px solid var(--border)',
-                  color: 'var(--text-faint)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+                  color: 'var(--text-faint)', fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
                 }}
               >
                 <VolumeX size={18} strokeWidth={2} />
@@ -123,10 +123,10 @@ export default function Flashcard({
                 onClick={e => { e.stopPropagation(); onReplay() }}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '7px',
-                  height: '40px', padding: '0 14px', borderRadius: '13px',
+                  height: '40px', padding: '0 14px', borderRadius: '12px',
                   background: accentHex + '10', border: '1px solid ' + accentHex + '2A', cursor: 'pointer',
-                  color: inkStrong(accentHex), fontSize: '13px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
-                  boxShadow: '0 10px 24px rgba(24,24,27,0.07)',
+                  color: inkStrong(accentHex), fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+                  boxShadow: 'var(--shadow-1)',
                 }}
                 title="Replay audio"
                 aria-label="Replay audio"
@@ -143,11 +143,11 @@ export default function Flashcard({
             <button
               onClick={e => { e.stopPropagation(); onCycleSpeed() }}
               style={{
-                width: '48px', height: '40px', borderRadius: '13px',
+                width: '48px', height: '40px', borderRadius: '12px',
                 background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer',
                 color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, fontFamily: 'Inter, sans-serif',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 10px 24px rgba(24,24,27,0.07)',
+                boxShadow: 'var(--shadow-1)',
               }}
               title={'Playback speed: ' + audioSpeed + '×'}
               // The label states the CURRENT rate and what tapping does,
@@ -160,7 +160,7 @@ export default function Flashcard({
             </div>
             {audioHint && (
               <span style={{
-                fontSize: '11.5px', fontWeight: 650, color: 'var(--text-faint)',
+                fontSize: '12px', fontWeight: 600, color: 'var(--text-faint)',
                 fontFamily: 'Inter, sans-serif',
               }}>
                 {audioHint}
@@ -189,7 +189,7 @@ export default function Flashcard({
             {ruby.lead}
             <ruby>
               {ruby.core}
-              <rt style={{ fontSize: '18px', color: 'var(--text-muted)' }}>{ruby.coreReading}</rt>
+              <rt style={{ fontSize: '17px', color: 'var(--text-muted)' }}>{ruby.coreReading}</rt>
             </ruby>
             {ruby.trail}
           </div>
@@ -206,11 +206,11 @@ export default function Flashcard({
         {flipped && (
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             {reading && (
-              <div style={{ fontSize: '21px', color: readingColor, marginTop: '18px', fontWeight: 650 }}>
+              <div style={{ fontSize: '21px', color: readingColor, marginTop: '18px', fontWeight: 600 }}>
                 {reading}
               </div>
             )}
-            <div style={{ fontSize: layout.meaningSize + 'px', color: 'var(--text-muted)', marginTop: '10px', lineHeight: 1.45, fontWeight: 550 }}>
+            <div style={{ fontSize: layout.meaningSize + 'px', color: 'var(--text-muted)', marginTop: '10px', lineHeight: 1.45, fontWeight: 600 }}>
               {meaning}
             </div>
             {children}
@@ -227,7 +227,7 @@ export default function Flashcard({
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           borderTop: '1px solid var(--surface-2)', paddingTop: layout.footerPadTop + 'px',
         }}>
-          <span style={{ fontSize: '12px', color: 'var(--text-faint)', fontWeight: 650 }}>
+          <span style={{ fontSize: '12px', color: 'var(--text-faint)', fontWeight: 600 }}>
             {footerHint}
           </span>
         </div>

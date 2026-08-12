@@ -10,6 +10,68 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+## P14-2 — what normalization deliberately did NOT touch (2026-08-12)
+
+The censuses after P14-2: **weights 12 → 5** (628 uses), **sizes 42 → 34** (925),
+**radii 26 → 13** (491), **shadows 44 → 15** (85). What is left is left on
+purpose, and each has a reason a per-screen phase has to weigh.
+
+**Typography — the 18–25px band has no scale step.** The scale jumps 17 → 26, and
+the app has 18/19/20/21/22/24/25 across ~67 uses (section headings, drill titles,
+recap numbers). Snapping them means a 3–5px move on a heading, or the scale needs
+a step at ~20. That is a design decision, not a sweep.
+
+**`fontSize: 16px` carries THREE unrelated meanings** and cannot be snapped as one
+value:
+1. `CONTENT_TYPE.pinyin` is 16/600 — Speaking, Writer, WordLookupSheet, ChatMission.
+2. **iOS input zoom.** A focused input below 16px makes WKWebView zoom the whole
+   page. `Auth.jsx:454` and `Words.jsx:157` both carry the comment. Six inputs
+   depend on it. **Never lower these.**
+3. Card titles at 16/700 — the only ones that could move, to 15 or 17.
+
+**`fontSize: 11px` splits two ways** (30 uses): uppercase eyebrow variants whose
+*tracking* would have to move with the size, and plain small meta that wants
+`caption` (12).
+
+**The eyebrow is 40 sites and 25 distinct recipes** — sizes 10.5–15, weights
+700/800, tracking in em AND px (0.03–0.14em, 0.3–0.8px). All of them are plainly
+`TYPE.eyebrow` semantically. They were NOT snapped because size and tracking move
+together: a 12px/0.3px label becoming 10.5px/0.14em gains ~1.2px of tracking per
+character, so a 12-character label grows ~14px wider — which overflows a `nowrap`
+row. This is the single biggest remaining type win and it needs per-row width
+checks, not a regex.
+
+**`fontWeight: 500` stays** (24 uses). Unlike 650/750/850 it is a real loaded face
+that renders distinctly, and most of its uses are content: a 110px Cyrillic
+letter, a 22px word option in the reader's own face.
+
+**Radii kept, with reasons:** `3/4/5/6px` (35 uses) are below the scale's floor —
+progress bars, dots, tiny tints, and a 3px bar snapped to 8px visibly changes
+shape. `34px` is Listen's 108px hero object. `StoryCover`'s `radius = 14` default
+is **Stories poster geometry**, explicitly protected. `manhuaTokens` keeps
+`PANEL_RADIUS 3 / NARRATION_RADIUS 2 / CARD_RADIUS 22` — a printed comic is not
+drawn to a UI scale. `MobileNav`'s `'0 3px 3px 0'` is the active edge bar, and
+`navEmphasis.CARDS_SHELL.radius` is nav geometry with a test on it.
+
+**Shadows kept (11 of 15):** the selected-word ring (`0 0 0 1px`), the
+not-started underline drawn as an inset (`inset 0 -2px 0`), the speaking-line
+ring, Speaking's listening ring, TourOverlay's `0 0 0 200vmax` scrim, the
+accent-tinted CTA glows (Listen, SessionRecap, SeriesDetail, Test), the two 22px
+toggle knobs, StoryPoster's badge-over-artwork, and Sidebar's deliberately
+fixed-dark tooltip. None of them is elevation.
+
+**Accent-tinted shadows still use alpha-hex** (`accentHex + '1A'`, `+ '33'`,
+`+ '3D'`), which does not theme. Converting them to `color-mix` is the same fix
+P14-0 applied to Landing's pill — worth doing, but it is a colour change on a CTA
+glow, so it belongs with the screen that owns the CTA.
+
+**56 hand-rolled `--surface` + `--border` surfaces across 33 files** vs 4
+`flatPanel()` callers. `flatPanel()` IS `SURFACE.raised` plus a lit top edge, and
+P14-2 pointed its radius at the scale — but converting the other 56 would ADD that
+lit edge to surfaces that do not have one, which is a visible change on 33 files
+and edges into container work. Left for the per-screen phases; the count is the
+tracker.
+
 ## P14-1 — what the shared controls CANNOT absorb (2026-08-12)
 
 The five primitives exist (`controls.jsx`). Before P14-2 tries to migrate a

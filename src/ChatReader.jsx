@@ -102,8 +102,8 @@ export default function ChatReader(props) {
           it (readerShell), and on desktop it is always zero. Adding it a second
           time is what pushed this bar off the bottom of the screen. */}
       <div style={{ flexShrink: 0, borderTop: '1px solid rgba(0,0,0,0.08)', background: skin.bg, padding: '12px 18px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-        <button onClick={c.togglePlay} aria-label={c.playing ? 'Pause' : 'Play'} style={{ width: '48px', height: '48px', borderRadius: '50%', border: 'none', background: accent, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{c.playing ? <Pause size={20} color="#fff" /> : <Play size={20} color="#fff" />}</button>
-        <span style={{ fontSize: '12.5px', color: '#555' }}>{c.cur >= c.total - 1 ? 'Tap ✓ to finish' : 'Tap ✓ to continue'}</span>
+        <button onClick={c.togglePlay} aria-label={c.playing ? 'Pause' : 'Play'} style={{ width: '48px', height: '48px', borderRadius: '999px', border: 'none', background: accent, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{c.playing ? <Pause size={20} color="#fff" /> : <Play size={20} color="#fff" />}</button>
+        <span style={{ fontSize: '13px', color: '#555' }}>{c.cur >= c.total - 1 ? 'Tap ✓ to finish' : 'Tap ✓ to continue'}</span>
       </div>
 
       <WordLookupSheet selected={c.selected} anchor={c.selected ? c.selected.anchorEl : null} theme={c.theme} accent={accent} userCards={userCards} language={track.language} onAddToDeck={c.addToDeck} onSpeak={c.speakWord} onClose={() => c.setSelected(null)} onAddDictToDeck={c.addDictToDeck} dictSaved={c.dictSaved} dictSaving={c.dictSaving} />

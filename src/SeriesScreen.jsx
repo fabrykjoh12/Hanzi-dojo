@@ -40,7 +40,7 @@ export default function SeriesScreen({ seriesKey, onBack, onOpenChapter, onNavig
       <div style={pageShell()}>
         <div role="status" aria-label="Loading series" style={{ maxWidth: '980px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px' }}>
           <div style={{ width: '190px', height: '30px', borderRadius: '8px', background: 'var(--surface-2)', margin: '4px 0 20px' }} />
-          <div style={{ height: isMobile ? '220px' : '260px', borderRadius: '24px', background: 'var(--surface-2)' }} />
+          <div style={{ height: isMobile ? '220px' : '260px', borderRadius: '26px', background: 'var(--surface-2)' }} />
         </div>
       </div>
     )
@@ -59,9 +59,9 @@ export default function SeriesScreen({ seriesKey, onBack, onOpenChapter, onNavig
             onClick={onBack}
             className="hd-press"
             style={{
-              minHeight: '46px', padding: '0 20px', borderRadius: '14px',
+              minHeight: '46px', padding: '0 20px', borderRadius: '12px',
               border: '1px solid var(--border)', background: 'none', cursor: 'pointer',
-              color: 'var(--text)', fontSize: '14px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+              color: 'var(--text)', fontSize: '13.5px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
             }}
           >
             Back to the library

@@ -176,6 +176,12 @@ body {
      reads as a floating rectangle. */
   --shadow-1: 0 1px 2px rgba(25, 21, 19, 0.04), 0 6px 18px -12px rgba(25, 21, 19, 0.16);
   --shadow-2: 0 2px 4px rgba(25, 21, 19, 0.05), 0 18px 40px -20px rgba(25, 21, 19, 0.22);
+  /* A sheet rising from the bottom edge casts UPWARD. --shadow-1 and --shadow-2
+     both cast down, so the five bottom sheets in the app were each hand-rolling
+     their own inverted shadow — and every one of them was a hardcoded neutral
+     rgba, which is a near-black wash tuned for paper and invisible on the dark
+     ground. One token, both themes (P14-2). */
+  --shadow-sheet: 0 -2px 4px rgba(25, 21, 19, 0.04), 0 -14px 44px -12px rgba(25, 21, 19, 0.20);
   /* Two DIFFERENT things, named separately as of P14-0.
 
      --inset-highlight is a lit top edge, drawn inside a surface as
@@ -187,11 +193,12 @@ body {
      so that "separate these" and "light this edge" are different words at the
      call site.
 
-     --hairline remains as a deprecated alias of --inset-highlight so the 33
-     existing call sites keep working; they migrate in the P14-2 sweep. */
+     P14-1 shipped a deprecated `--hairline` alias so the existing call sites
+     kept working. P14-2 retired it: there were two left, both of them the
+     legitimate lit-edge use, and both now say --inset-highlight. The alias is
+     gone, and a guard spec keeps it gone. */
   --inset-highlight: rgba(255, 255, 255, 0.75);
   --divider: #E7E1D9;
-  --hairline: rgba(255, 255, 255, 0.75);
 
   /* Adaptive ink. The accent hexes are tuned for white paper and go muddy on a
      dark surface, so `ink()` in languageTheme.js mixes them toward these two
@@ -466,12 +473,12 @@ body {
   --text-faint: #948D85;
   --reader-watermark: rgba(255, 255, 255, 0.05);
   /* On dark surfaces a cast shadow does nothing; depth comes from the lit top
-     edge instead, so the shadows soften and the hairline stays a whisper. */
+     edge instead, so the shadows soften and that edge stays a whisper. */
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.30), 0 6px 18px -12px rgba(0, 0, 0, 0.55);
   --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.36), 0 18px 40px -20px rgba(0, 0, 0, 0.65);
+  --shadow-sheet: 0 -2px 6px rgba(0, 0, 0, 0.34), 0 -14px 44px -12px rgba(0, 0, 0, 0.62);
   --inset-highlight: rgba(255, 255, 255, 0.045);
   --divider: #352B2F;
-  --hairline: rgba(255, 255, 255, 0.045);
   --ink-lift: #FFFFFF;
   --ink-lift-pct: 30%;
   /* 30% is tuned for a drawn mark and lands small accent TEXT at 2.8-3.3:1.

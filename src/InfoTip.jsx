@@ -66,7 +66,7 @@ export default function InfoTip({ accentHex, text }) {
         onClick={handleOpen}
         style={{
           width: '18px', height: '18px',
-          borderRadius: '50%',
+          borderRadius: '999px',
           border: '1.5px solid ' + (accentHex || 'var(--text-muted)') + '66',
           background: pos ? (accentHex || 'var(--text-muted)') + '18' : 'transparent',
           color: accentHex ? inkStrong(accentHex) : 'var(--text-muted)',
@@ -98,9 +98,9 @@ export default function InfoTip({ accentHex, text }) {
             width: '290px',
             background: 'var(--surface)',
             border: '1px solid var(--border)',
-            borderRadius: '16px',
+            borderRadius: '18px',
             padding: '16px 18px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            boxShadow: 'var(--shadow-2)',
             zIndex: 9999,
             textAlign: 'left',
             outline: 'none',

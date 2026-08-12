@@ -122,7 +122,7 @@ export default function Words({ session, profile, track, onBack }) {
             width: '88px', height: '88px', borderRadius: '26px',
             background: 'var(--surface)', border: '1px solid var(--border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 16px 40px rgba(24,24,27,0.06)',
+            boxShadow: 'var(--shadow-1)',
           }}>
             <BookA size={34} strokeWidth={1.75} color={accentHex} />
           </div>
@@ -152,7 +152,7 @@ export default function Words({ session, profile, track, onBack }) {
             aria-label="Search words"
             style={{
               width: '100%', height: '46px', padding: '0 16px 0 42px',
-              borderRadius: '14px', border: '1px solid var(--border)',
+              borderRadius: '12px', border: '1px solid var(--border)',
               background: 'var(--surface)', color: 'var(--text)',
               // 16px, never less: an iOS WKWebView zooms the whole page in when
               // a focused input's text is smaller, and the layout stays shifted.
@@ -203,7 +203,7 @@ export default function Words({ session, profile, track, onBack }) {
         ) : (
           <div style={{
             background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: '18px', overflow: 'hidden', boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
+            borderRadius: '18px', overflow: 'hidden', boxShadow: 'var(--shadow-1)',
           }}>
             {rows.map((v, i) => {
               const st = STATUS[v.status]
@@ -223,7 +223,7 @@ export default function Words({ session, profile, track, onBack }) {
                     <div style={{ minWidth: 0 }}>
                       <span style={{ fontSize: '19px', fontFamily: langFont, color: 'var(--text)', marginRight: '10px' }}>{v.word}</span>
                       <span style={{ fontSize: '13px', color: pinyinInk(accentHex), fontWeight: 600 }}>{v.reading}</span>
-                      <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {cleanMeaning(v.meaning)}
                       </div>
                     </div>
@@ -239,7 +239,7 @@ export default function Words({ session, profile, track, onBack }) {
                     </>
                   )}
                   <span style={{
-                    fontSize: '11.5px', fontWeight: 750, color: st.color,
+                    fontSize: '12px', fontWeight: 700, color: st.color,
                     background: st.color + '14', border: '1px solid ' + st.color + '2E',
                     padding: '4px 10px', borderRadius: '999px', whiteSpace: 'nowrap',
                   }}>

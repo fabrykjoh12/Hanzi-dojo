@@ -172,7 +172,7 @@ export function ReadingSettings({ mode, setMode, language, accent, onOpenChange,
               aria-pressed={on}
               style={{
                 flex: '1 1 auto', minWidth: '68px', minHeight: '44px', fontSize: '12px', fontWeight: 700, padding: '8px 10px',
-                borderRadius: '10px', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                borderRadius: '12px', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                 border: '1px solid ' + (on ? accent + '73' : 'var(--border)'),
                 background: on ? accent + '14' : 'var(--surface)',
                 color: on ? accent : 'var(--text-muted)',
@@ -181,7 +181,7 @@ export function ReadingSettings({ mode, setMode, language, accent, onOpenChange,
           )
         })}
       </div>
-      <div style={{ fontSize: '11.5px', color: 'var(--text-faint)', marginTop: '8px', lineHeight: 1.45 }}>
+      <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '8px', lineHeight: 1.45 }}>
         {MODE_HINTS[mode] || ''}
       </div>
       {setFont && (
@@ -197,7 +197,7 @@ export function ReadingSettings({ mode, setMode, language, accent, onOpenChange,
                   aria-pressed={on}
                   style={{
                     flex: '1 1 auto', minWidth: '68px', minHeight: '44px', fontSize: '12px', fontWeight: 700, padding: '8px 10px',
-                    borderRadius: '10px', cursor: 'pointer',
+                    borderRadius: '12px', cursor: 'pointer',
                     // Each option is set in its own face, so the shapes are
                     // visible before the choice is made.
                     fontFamily: opt.stack,
@@ -214,7 +214,7 @@ export function ReadingSettings({ mode, setMode, language, accent, onOpenChange,
               )
             })}
           </div>
-          <div style={{ fontSize: '11.5px', color: 'var(--text-faint)', marginTop: '8px', lineHeight: 1.45 }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '8px', lineHeight: 1.45 }}>
             {readingFontHint(language, font)}
           </div>
         </div>
@@ -232,7 +232,7 @@ export function ReadingSettings({ mode, setMode, language, accent, onOpenChange,
                   aria-pressed={on}
                   style={{
                     flex: '1 1 auto', minHeight: '44px', fontSize: '12px', fontWeight: 700, padding: '8px 10px',
-                    borderRadius: '10px', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                    borderRadius: '12px', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                     border: '1px solid ' + (on ? accent + '73' : 'var(--border)'),
                     background: on ? accent + '14' : 'var(--surface)',
                     color: on ? accent : 'var(--text-muted)',
@@ -281,8 +281,8 @@ export function ReadingSettings({ mode, setMode, language, accent, onOpenChange,
 const popoverStyle = {
   position: 'absolute', bottom: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)',
   width: '288px', maxWidth: 'calc(100vw - 32px)', zIndex: 60,
-  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px',
-  padding: '14px', boxShadow: '0 10px 30px rgba(0,0,0,0.16)', textAlign: 'left',
+  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px',
+  padding: '14px', boxShadow: 'var(--shadow-2)', textAlign: 'left',
   animation: 'hd-pop-in 160ms ease-out', outline: 'none',
 }
 
@@ -296,7 +296,7 @@ const sheetStyle = {
   position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 210,
   background: 'var(--surface)', borderTop: '1px solid var(--border)',
   borderRadius: '18px 18px 0 0', padding: '16px 18px calc(20px + env(safe-area-inset-bottom))',
-  boxShadow: '0 -8px 30px rgba(0,0,0,0.18)', textAlign: 'left',
+  boxShadow: 'var(--shadow-sheet)', textAlign: 'left',
   animation: 'hd-sheet-up 200ms ease-out', outline: 'none',
 }
 

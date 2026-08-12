@@ -265,12 +265,33 @@ a one-off:
 |--------|------|
 | `src/palette.js` | The accent roles and their dark-mode lifts, plus which roles may fill a button |
 | `src/typeScale.js` | 9 UI type roles + 4 content roles, 4 weights, 8 sizes. `NUMERIC` is a modifier, not a role |
-| `src/shape.js` | `RADIUS` (sm 8 · control 12 · card 18 · hero 26 · pill), `ELEVATION` (flat/raised/floating), `SURFACE` (page/grouped/raised/floating) |
+| `src/shape.js` | `RADIUS` (sm 8 · control 12 · card 18 · hero 26 · pill), `ELEVATION` (flat/raised/floating/**sheet**), `SURFACE` (page/grouped/raised/floating) |
 | `src/index.css` | Every **neutral**, in both themes. Neutrals stay in CSS so a theme switch is a repaint, not a re-render |
 
 `src/designSystem.guard.test.js` holds the line: bans on values that must never
 return, and *budgets* — the count of one-off hexes, sizes and radii that exist
 today, which may only go **down**. Raising one needs a reason in the commit.
+
+**Since P14-2, three of those are hard allow-lists, not budgets:**
+
+- **Five font weights, and no others**: 400 · 500 · 600 · 700 · 800. The app had
+  twelve. Only Inter 300/400/500/600 are bundled (`src/fonts.js`), so **anything
+  ≥550 matches 600 and renders identically** — measured in-browser, 550 through
+  900 all draw the same string at the same width. A `750` is not a style, it is a
+  lie about what the screen shows. (500 survives at 24 content-typography sites.)
+- **Five radii, and six documented keeps**: 8 · 12 · 18 · 26 · 999, plus 3/4/5/6
+  (below the scale's floor — progress bars and dots), 34 (Listen's hero object)
+  and 16 **scoped to `GradeRow.jsx` alone** (pinned by
+  `flashcard-contract.spec.js`; Study is protected, so the sweep put it back).
+  A circle is `999px`, never `50%`. Every bottom sheet hinges on `18px 18px 0 0`.
+  `StoryCover`'s `radius = 14` default is Stories poster geometry and stays.
+- **`--hairline` no longer exists.** P14-0 split it into `--divider` and
+  `--inset-highlight` and kept an alias; P14-2 deleted the alias.
+
+**Do not hardcode a shadow.** A literal `rgba(24,24,27,0.06)` is a near-black wash
+tuned for paper and *invisible* on the dark ground — that was true of 40 of the
+app's 44 shadow declarations. Use `ELEVATION`. A bottom sheet uses
+`ELEVATION.sheet`, which casts upward; `raised` and `floating` both cast down.
 
 **And five shared controls sit on top of them** (P14-1). A new screen composes
 these; it does not hand-roll a button. `src/controls.jsx` exports `Button`,

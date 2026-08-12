@@ -75,13 +75,13 @@ function NavItem({ item, isActive, collapsed, accentInk, badge, onClick }) {
         fontFamily: 'Inter, sans-serif',
         padding: collapsed ? '0' : '0 10px',
         justifyContent: collapsed ? 'center' : 'flex-start',
-        borderRadius: '10px', cursor: 'pointer',
+        borderRadius: '12px', cursor: 'pointer',
         // Hover is the only fill. Active is carried by the edge bar and the
         // colour of the type, so the two states never stack.
         background: hovered && !isActive ? 'var(--surface-2)' : 'transparent',
         color,
-        fontWeight: isActive ? 650 : 500,
-        fontSize: '14px', userSelect: 'none',
+        fontWeight: isActive ? 600 : 500,
+        fontSize: '13.5px', userSelect: 'none',
         transition: 'color 160ms ease, background 160ms ease',
       }}
     >
@@ -92,7 +92,7 @@ function NavItem({ item, isActive, collapsed, accentInk, badge, onClick }) {
         {badge && collapsed && (
           <span aria-hidden style={{
             position: 'absolute', top: '-3px', right: '-4px',
-            width: '7px', height: '7px', borderRadius: '50%',
+            width: '7px', height: '7px', borderRadius: '999px',
             background: accentInk, border: '1.5px solid var(--surface)',
           }} />
         )}
@@ -122,7 +122,7 @@ function Tip({ children }) {
       position: 'absolute', left: 'calc(100% + 12px)', top: '50%',
       transform: 'translateY(-50%)',
       background: '#27272A', color: '#fff',
-      fontSize: '12px', fontWeight: 550,
+      fontSize: '12px', fontWeight: 600,
       padding: '6px 10px', borderRadius: '8px',
       whiteSpace: 'nowrap', pointerEvents: 'none',
       boxShadow: '0 8px 24px -8px rgba(0,0,0,0.5)',
@@ -309,7 +309,7 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
         <span aria-hidden style={{
           width: '34px', height: '34px', flexShrink: 0,
           display: 'grid', placeItems: 'center',
-          borderRadius: '9px',
+          borderRadius: '8px',
           background: accentHex,
           color: '#fff',
           fontFamily: lang.font,
@@ -326,14 +326,14 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
         {!collapsed && (
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{
-              display: 'block', fontSize: '13.5px', fontWeight: 650,
+              display: 'block', fontSize: '13.5px', fontWeight: 600,
               color: sealHovered ? accentInk : 'var(--text)',
               transition: 'color 160ms ease',
             }}>
               {lang.languageName}
             </span>
             {levelLabel && (
-              <span style={{ display: 'block', fontSize: '11.5px', color: 'var(--text-faint)', marginTop: '1px' }}>
+              <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-faint)', marginTop: '1px' }}>
                 {levelLabel}
               </span>
             )}
@@ -427,23 +427,23 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
           display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
           padding: collapsed ? '6px 0' : '7px 8px',
           justifyContent: collapsed ? 'center' : 'flex-start',
-          border: 'none', borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
+          border: 'none', borderRadius: '12px', cursor: 'pointer', textAlign: 'left',
           fontFamily: 'Inter, sans-serif',
           background: accountHovered || view === 'profile' ? 'var(--surface-2)' : 'transparent',
           transition: 'background 160ms ease',
         }}
       >
         <span aria-hidden style={{
-          width: '26px', height: '26px', borderRadius: '50%', flexShrink: 0,
+          width: '26px', height: '26px', borderRadius: '999px', flexShrink: 0,
           display: 'grid', placeItems: 'center',
           border: '1px solid var(--border)',
-          color: 'var(--text-muted)', fontSize: '11.5px', fontWeight: 700,
+          color: 'var(--text-muted)', fontSize: '12px', fontWeight: 700,
         }}>
           {initial}
         </span>
         {!collapsed && (
           <span style={{
-            flex: 1, minWidth: 0, fontSize: '13px', fontWeight: 550,
+            flex: 1, minWidth: 0, fontSize: '13px', fontWeight: 600,
             color: view === 'profile' ? 'var(--text)' : 'var(--text-muted)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>

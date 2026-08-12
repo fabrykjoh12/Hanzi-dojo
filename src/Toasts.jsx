@@ -50,25 +50,25 @@ export default function Toasts() {
             style={{
               display: 'flex', gap: '12px', alignItems: 'flex-start',
               background: 'var(--surface)', border: '1px solid ' + accent + '44',
-              borderRadius: '16px', padding: '13px 16px',
-              boxShadow: '0 16px 40px rgba(24,24,27,0.16)',
+              borderRadius: '18px', padding: '13px 16px',
+              boxShadow: 'var(--shadow-2)',
               animation: 'hd-toast-in 240ms ease',
               pointerEvents: 'auto',
             }}
           >
             <span style={{
-              width: '34px', height: '34px', borderRadius: '11px', flexShrink: 0,
+              width: '34px', height: '34px', borderRadius: '12px', flexShrink: 0,
               background: accent + '14', border: '1px solid ' + accent + '26',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <Icon size={17} strokeWidth={1.9} color={accent} />
             </span>
             <span style={{ minWidth: 0 }}>
-              <span style={{ display: 'block', fontSize: '13.5px', fontWeight: 750, color: 'var(--text)' }}>
+              <span style={{ display: 'block', fontSize: '13.5px', fontWeight: 700, color: 'var(--text)' }}>
                 {t.title}
               </span>
               {t.body && (
-                <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.45 }}>
+                <span style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.45 }}>
                   {t.body}
                 </span>
               )}

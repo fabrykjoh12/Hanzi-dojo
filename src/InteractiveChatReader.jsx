@@ -139,20 +139,20 @@ export default function InteractiveChatReader(props) {
                 const isWrong = wrongPick === opt.text
                 return (
                   <button key={oi} onClick={() => pick(opt)}
-                    style={{ textAlign: 'left', border: '1px solid ' + (isWrong ? '#DC2626' : 'rgba(0,0,0,0.12)'), background: isWrong ? '#FEECEC' : '#fff', opacity: isWrong ? 0.6 : 1, borderRadius: '14px', padding: '10px 14px', cursor: 'pointer', fontFamily: c.readingFontFamily, animation: (isWrong && !c.reduceMotion) ? 'hdShake 0.3s' : 'none' }}>
+                    style={{ textAlign: 'left', border: '1px solid ' + (isWrong ? '#DC2626' : 'rgba(0,0,0,0.12)'), background: isWrong ? '#FEECEC' : '#fff', opacity: isWrong ? 0.6 : 1, borderRadius: '12px', padding: '10px 14px', cursor: 'pointer', fontFamily: c.readingFontFamily, animation: (isWrong && !c.reduceMotion) ? 'hdShake 0.3s' : 'none' }}>
                     <div style={{ fontSize: '17px', color: '#111' }}>{opt.text}</div>
                     {/* A candidate reply has no per-word learning status yet, so
                         it keeps a whole-line reading — hidden only when the
                         learner has turned readings off entirely. */}
-                    {c.readingMode !== 'hidden' && opt.pinyin && <div style={{ fontSize: '11.5px', color: '#888', marginTop: '2px' }}>{opt.pinyin}</div>}
+                    {c.readingMode !== 'hidden' && opt.pinyin && <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{opt.pinyin}</div>}
                   </button>
                 )
               })}
             </div>
-            {wrongPick && <div style={{ fontSize: '12.5px', color: '#DC2626', textAlign: 'center', marginTop: '8px' }}>Not quite — try another reply.</div>}
+            {wrongPick && <div style={{ fontSize: '13px', color: '#DC2626', textAlign: 'center', marginTop: '8px' }}>Not quite — try another reply.</div>}
           </div>
         ) : (
-          <div style={{ textAlign: 'center', fontSize: '12.5px', color: '#555' }}>{c.cur >= c.total - 1 ? 'Tap ✓ to finish' : 'Tap ✓ to continue'}</div>
+          <div style={{ textAlign: 'center', fontSize: '13px', color: '#555' }}>{c.cur >= c.total - 1 ? 'Tap ✓ to finish' : 'Tap ✓ to continue'}</div>
         )}
       </div>
 

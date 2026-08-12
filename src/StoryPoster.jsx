@@ -110,7 +110,7 @@ export default function StoryPoster({
         {locked && <PosterLock />}
       </StoryCover>
       <div title={title} style={{
-        marginTop: '9px', fontSize: '14px', fontWeight: 750, fontFamily, color: 'var(--text)',
+        marginTop: '9px', fontSize: '13.5px', fontWeight: 700, fontFamily, color: 'var(--text)',
         lineHeight: 1.32, display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2,
         overflow: 'hidden', width: '100%',
       }}>
@@ -120,7 +120,7 @@ export default function StoryPoster({
           is not the usual prose, length, read state. The reading share lives on
           the artwork above, so the caption area stays two lines everywhere. */}
       <div style={{
-        marginTop: '3px', fontSize: '11.5px', fontWeight: 650, width: '100%',
+        marginTop: '3px', fontSize: '12px', fontWeight: 600, width: '100%',
         color: locked ? 'var(--text-muted)' : done ? 'var(--success)' : 'var(--text-muted)',
         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
       }}>

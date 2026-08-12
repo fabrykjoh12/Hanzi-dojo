@@ -25,11 +25,11 @@ function H2({ children }) {
 }
 
 function P({ children }) {
-  return <p style={{ fontSize: '14.5px', lineHeight: 1.7, color: 'var(--text)', margin: '0 0 12px' }}>{children}</p>
+  return <p style={{ fontSize: '15px', lineHeight: 1.7, color: 'var(--text)', margin: '0 0 12px' }}>{children}</p>
 }
 
 function Li({ children }) {
-  return <li style={{ fontSize: '14.5px', lineHeight: 1.7, color: 'var(--text)', marginBottom: '6px' }}>{children}</li>
+  return <li style={{ fontSize: '15px', lineHeight: 1.7, color: 'var(--text)', marginBottom: '6px' }}>{children}</li>
 }
 
 function A({ href, children, external }) {
@@ -327,7 +327,7 @@ export default function TrustPages({ page, onBack }) {
           onClick={onBack}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'none',
-            border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '14px',
+            border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '13.5px',
             fontWeight: 600, padding: '6px 0', fontFamily: 'Inter, sans-serif',
           }}
         >
@@ -336,7 +336,7 @@ export default function TrustPages({ page, onBack }) {
         <h1 style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text)', margin: '18px 0 6px' }}>
           {PAGE_TITLES[page] || 'Support'}
         </h1>
-        <p style={{ fontSize: '12.5px', color: 'var(--text-faint)', margin: '0 0 22px' }}>
+        <p style={{ fontSize: '13px', color: 'var(--text-faint)', margin: '0 0 22px' }}>
           Last updated 1 August 2026
         </p>
         <Body />

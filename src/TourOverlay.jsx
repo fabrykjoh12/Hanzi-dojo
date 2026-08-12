@@ -165,14 +165,14 @@ export default function TourOverlay({ steps, accentHex, onClose }) {
           bottom: pos.bottom != null ? pos.bottom + 'px' : 'auto',
           maxHeight: pos.maxHeight + 'px', overflowY: 'auto',
           background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: '16px', boxShadow: 'var(--shadow-2)',
+          borderRadius: '18px', boxShadow: 'var(--shadow-2)',
           padding: '16px 18px 10px', fontFamily: 'Inter, sans-serif',
           animation: reduced ? 'none' : 'hd-fade-in 200ms ease both',
         }}
       >
         <span style={SR_ONLY}>Step {index + 1} of {available.length}</span>
 
-        <div id={titleId} style={{ fontSize: '15px', fontWeight: 750, color: 'var(--text)', lineHeight: 1.35 }}>
+        <div id={titleId} style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', lineHeight: 1.35 }}>
           {step.title}
         </div>
         <div id={bodyId} style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55, marginTop: '6px' }}>
@@ -186,7 +186,7 @@ export default function TourOverlay({ steps, accentHex, onClose }) {
               <span
                 key={s.id}
                 style={{
-                  width: '6px', height: '6px', borderRadius: '50%',
+                  width: '6px', height: '6px', borderRadius: '999px',
                   background: i === index ? accentInk : 'var(--border)',
                 }}
               />
@@ -199,7 +199,7 @@ export default function TourOverlay({ steps, accentHex, onClose }) {
             style={{
               marginLeft: 'auto', minHeight: '44px', padding: '0 10px',
               background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650,
+              color: 'var(--text-muted)', fontSize: '13px', fontWeight: 600,
               fontFamily: 'Inter, sans-serif',
             }}
           >

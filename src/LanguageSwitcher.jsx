@@ -50,7 +50,7 @@ function IconButton({ icon: Icon, label, onClick }) {
         border: '1px solid var(--border)',
         background: hovered ? 'var(--surface-2)' : 'var(--surface)',
         color: 'var(--text-muted)',
-        fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+        fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
         cursor: 'pointer',
         transition: 'background 160ms ease, transform 160ms ease',
         transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
@@ -72,9 +72,9 @@ function LanguageCard({ lang, track, prog, levelProgress, isActive, saving, onCl
       onMouseLeave={() => setHovered(false)}
       style={{
         background: 'var(--surface)',
-        borderRadius: '22px',
+        borderRadius: '18px',
         border: '1.5px solid ' + (isActive ? lang.accent : hovered ? lang.accent + '55' : 'var(--border)'),
-        boxShadow: hovered && !isActive ? '0 16px 36px rgba(24,24,27,0.09)' : '0 8px 26px rgba(24,24,27,0.05)',
+        boxShadow: hovered && !isActive ? 'var(--shadow-2)' : 'var(--shadow-1)',
         transform: hovered && !isActive ? 'translateY(-2px)' : 'translateY(0)',
         transition: 'all 180ms ease',
         cursor: isActive ? 'default' : 'pointer',
@@ -93,7 +93,7 @@ function LanguageCard({ lang, track, prog, levelProgress, isActive, saving, onCl
             {lang.flag}
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: '19px', fontWeight: 850, color: 'var(--text)' }}>{lang.name}</div>
+            <div style={{ fontSize: '19px', fontWeight: 800, color: 'var(--text)' }}>{lang.name}</div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 600 }}>
               {metaLine(lang.systemLabel, lang.levelLabel(track.current_level))}
             </div>
@@ -112,7 +112,7 @@ function LanguageCard({ lang, track, prog, levelProgress, isActive, saving, onCl
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '9px' }}>
             <span style={{ color: 'var(--text-muted)' }}>Words mastered</span>
-            <span style={{ fontWeight: 750, color: 'var(--text)' }}>{prog.masteredCount} / {prog.totalWords}</span>
+            <span style={{ fontWeight: 700, color: 'var(--text)' }}>{prog.masteredCount} / {prog.totalWords}</span>
           </div>
           <div style={{ height: '7px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden' }}>
             <div style={{
@@ -149,7 +149,7 @@ function LanguageCard({ lang, track, prog, levelProgress, isActive, saving, onCl
                   style={{
                     minHeight: '60px',
                     padding: '8px 6px',
-                    borderRadius: '13px',
+                    borderRadius: '12px',
                     border: '1.5px solid ' + (current ? lang.accent : 'var(--border)'),
                     background: current ? lang.accent + '10' : 'var(--surface)',
                     color: current ? inkStrong(lang.accent) : (hasContent ? 'var(--text)' : 'var(--text-faint)'),
@@ -184,9 +184,9 @@ function NotStartedCard({ lang, onStart }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         background: 'var(--surface)',
-        borderRadius: '22px',
+        borderRadius: '18px',
         border: '1.5px dashed ' + (hovered ? lang.accent + '66' : 'var(--border)'),
-        boxShadow: hovered ? '0 16px 36px rgba(24,24,27,0.08)' : '0 8px 26px rgba(24,24,27,0.05)',
+        boxShadow: hovered ? 'var(--shadow-2)' : 'var(--shadow-1)',
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
         transition: 'all 180ms ease',
         cursor: 'pointer',
@@ -208,7 +208,7 @@ function NotStartedCard({ lang, onStart }) {
           {lang.flag}
         </div>
         <div>
-          <div style={{ fontSize: '19px', fontWeight: 850, color: 'var(--text)' }}>{lang.name}</div>
+          <div style={{ fontSize: '19px', fontWeight: 800, color: 'var(--text)' }}>{lang.name}</div>
           <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>Not started yet</div>
         </div>
       </div>
@@ -439,7 +439,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
             width: '88px', height: '88px', borderRadius: '26px',
             background: 'var(--surface)', border: '1px solid var(--border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 16px 40px rgba(24,24,27,0.06)',
+            boxShadow: 'var(--shadow-1)',
           }}>
             <Globe2 size={34} strokeWidth={1.75} color={activeLang.accent} />
           </div>
@@ -455,17 +455,17 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
         <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ textAlign: 'center', maxWidth: '380px' }}>
             <div style={{
-              width: '72px', height: '72px', borderRadius: '24px',
+              width: '72px', height: '72px', borderRadius: '26px',
               background: 'var(--surface)', border: '1px solid var(--border)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto 18px', boxShadow: '0 16px 40px rgba(24,24,27,0.06)',
+              margin: '0 auto 18px', boxShadow: 'var(--shadow-1)',
             }}>
               <Globe2 size={30} strokeWidth={1.75} color={activeLang.accent} />
             </div>
-            <div style={{ fontSize: '19px', fontWeight: 850, color: 'var(--text)' }}>
+            <div style={{ fontSize: '19px', fontWeight: 800, color: 'var(--text)' }}>
               Couldn't load your languages
             </div>
-            <p style={{ margin: '10px 0 20px', fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+            <p style={{ margin: '10px 0 20px', fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
               Check your connection and try again — nothing has changed.
             </p>
             <IconButton icon={RefreshCw} label="Try again" onClick={loadTracks} />
@@ -483,7 +483,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
 
         <div style={{ margin: '32px 0 28px', textAlign: 'center' }}>
           <div style={{
-            width: '72px', height: '72px', borderRadius: '24px',
+            width: '72px', height: '72px', borderRadius: '26px',
             background: lang.accent + '10',
             border: '1px solid ' + lang.accent + '20',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -492,10 +492,10 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
           }}>
             {lang.flag}
           </div>
-          <div style={{ color: inkStrong(lang.accent), fontSize: '13px', fontWeight: 850, marginBottom: '8px' }}>
+          <div style={{ color: inkStrong(lang.accent), fontSize: '13px', fontWeight: 800, marginBottom: '8px' }}>
             {lang.nativeName}
           </div>
-          <h1 style={{ margin: 0, color: 'var(--text)', fontSize: '34px', fontWeight: 850, lineHeight: 1.1 }}>
+          <h1 style={{ margin: 0, color: 'var(--text)', fontSize: '34px', fontWeight: 800, lineHeight: 1.1 }}>
             Start {lang.name}
           </h1>
           <p style={{ margin: '12px auto 0', color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.6, maxWidth: '520px' }}>
@@ -513,7 +513,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
                 disabled={!seeded}
                 style={{
                   minHeight: '68px',
-                  borderRadius: '16px',
+                  borderRadius: '18px',
                   border: '1.5px solid ' + (selectedLevel === lvl ? lang.accent : 'var(--border)'),
                   background: selectedLevel === lvl ? lang.accent + '10' : 'var(--surface)',
                   color: selectedLevel === lvl ? inkStrong(lang.accent) : (seeded ? 'var(--text)' : 'var(--text-faint)'),
@@ -523,7 +523,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
                   opacity: seeded ? 1 : 0.6,
                   transition: 'all 180ms ease',
                   fontFamily: 'Inter, sans-serif',
-                  boxShadow: '0 8px 22px rgba(24,24,27,0.04)',
+                  boxShadow: 'var(--shadow-1)',
                 }}
               >
                 {lang.levelLabel(lvl)}
@@ -543,7 +543,7 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
           style={{
             width: '100%',
             minHeight: '52px',
-            borderRadius: '16px',
+            borderRadius: '18px',
             border: 'none',
             background: lang.accent,
             color: '#fff',
@@ -576,11 +576,11 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
       <AppBar kind="back" onBack={onBack} sticky={false} />
 
       <div style={{ margin: '32px 0 26px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '13px', fontWeight: 850, marginBottom: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '13px', fontWeight: 800, marginBottom: '10px' }}>
           <Globe2 size={17} strokeWidth={1.85} color={activeLang.accent} />
           Language tracks
         </div>
-        <h1 style={{ margin: 0, color: 'var(--text)', fontSize: '38px', fontWeight: 850, lineHeight: 1.1 }}>
+        <h1 style={{ margin: 0, color: 'var(--text)', fontSize: '38px', fontWeight: 800, lineHeight: 1.1 }}>
           Your languages
         </h1>
         <p style={{ margin: '12px 0 0', fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
@@ -640,7 +640,7 @@ function pillStyle(color, background, border) {
     borderRadius: '999px',
     padding: '6px 11px',
     fontSize: '12px',
-    fontWeight: 850,
+    fontWeight: 800,
     whiteSpace: 'nowrap',
   }
 }

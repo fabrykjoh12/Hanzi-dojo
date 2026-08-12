@@ -114,7 +114,7 @@ export default function PublicStory({ storyId }) {
 
         {/* Level pick */}
         <div style={{ marginBottom: '24px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '10px' }}>How much {theme.languageName} do you know?</div>
+          <div style={{ fontSize: '13.5px', fontWeight: 600, marginBottom: '10px' }}>How much {theme.languageName} do you know?</div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {LEVEL_CHOICES.map(c => {
               const on = choice === c.key
@@ -136,21 +136,21 @@ export default function PublicStory({ storyId }) {
             <div style={{ textAlign: 'center', marginBottom: '16px' }}>
               <div style={{ color: 'var(--text-muted)', fontWeight: 600 }}>You'd understand</div>
               <div style={{ color: accent, fontWeight: 800, fontSize: '64px', lineHeight: 1.1 }}>~{readability.knownPct}%</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>{readability.knownCount} known · {readability.learningCount} learning · {readability.newCount} new</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '13.5px' }}>{readability.knownCount} known · {readability.learningCount} learning · {readability.newCount} new</div>
             </div>
 
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '18px', marginBottom: '18px', fontFamily: theme.font + ', Inter, sans-serif', fontSize: '20px', lineHeight: 2 }}>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '18px', marginBottom: '18px', fontFamily: theme.font + ', Inter, sans-serif', fontSize: '20px', lineHeight: 2 }}>
               {lines.map((line, i) => (
                 <TeaserLine key={i} line={line} vocabMap={vocabMap} language={story.language} knownCards={knownCards} accent={accent} names={teaserNames} />
               ))}
-              <div style={{ color: 'var(--text-faint)', fontSize: '14px', fontStyle: 'italic', marginTop: '8px' }}>…</div>
+              <div style={{ color: 'var(--text-faint)', fontSize: '13.5px', fontStyle: 'italic', marginTop: '8px' }}>…</div>
             </div>
 
             <button onClick={goSignup} style={ctaStyle(accent)}>Sign up free to read the rest</button>
             <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', marginTop: '10px' }}>Free forever. Start learning these words.</div>
           </div>
         ) : (
-          <div style={{ color: 'var(--text-faint)', fontSize: '14px' }}>Pick a level to see how much you can read.</div>
+          <div style={{ color: 'var(--text-faint)', fontSize: '13.5px' }}>Pick a level to see how much you can read.</div>
         )}
       </div>
     </div>

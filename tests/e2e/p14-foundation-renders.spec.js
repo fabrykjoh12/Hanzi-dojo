@@ -60,11 +60,25 @@ const SCREENS = [
       await p.waitForTimeout(500);
     },
   },
+  // P14-2 widened the set: normalization touches every screen, so the check has
+  // to cover more than the six P14-0 needed.
+  { id: 'settings', go: async (p) => { await p.goto('/settings'); await p.waitForTimeout(800); } },
+  { id: 'words', go: async (p) => { await p.goto('/words'); await p.waitForTimeout(900); } },
+  { id: 'known', go: async (p) => { await p.goto('/known'); await p.waitForTimeout(900); } },
+  { id: 'languages', go: async (p) => { await p.goto('/languages'); await p.waitForTimeout(800); } },
+  { id: 'grammar', go: async (p) => { await p.goto('/grammar'); await p.waitForTimeout(800); } },
+  { id: 'dictionary', go: async (p) => { await p.goto('/dictionary'); await p.waitForTimeout(800); } },
+  { id: 'weak', go: async (p) => { await p.goto('/weak'); await p.waitForTimeout(1000); } },
+  { id: 'test', go: async (p) => { await p.goto('/test'); await p.waitForTimeout(1000); } },
 ];
 
-// The few numbers that would move if a composition had changed underneath the
-// tokens: how many drawn boxes there are, what the page ground is, and the
-// distinct type sizes and radii actually rendered.
+// What would move if a composition had changed underneath the tokens.
+//
+// P14-0 only needed box/size/radius COUNTS, because it changed colours. P14-2
+// changes type, so it needs the things type actually breaks: how many LINES a
+// text node wraps to, whether anything is CLIPPED by its own box, and where each
+// labelled element SITS on the page. A count-only check would happily pass while
+// a card grew 14px and pushed everything below it down.
 async function measure(page) {
   return page.evaluate(() => {
     const main = document.querySelector('#main-content') || document.body;
@@ -74,14 +88,45 @@ async function measure(page) {
     });
     const sizes = new Set();
     const radii = new Set();
+    const shadows = new Set();
     let boxes = 0;
+    // Leaf text nodes only — a wrapper's line count is the sum of its children's
+    // and tells you nothing.
+    const texts = [];
+    let clipped = 0;
+    const clippedSamples = [];
     for (const el of els) {
       const cs = getComputedStyle(el);
-      if ((el.textContent || '').trim()) sizes.add(cs.fontSize);
-      const r = parseFloat(cs.borderTopLeftRadius) || 0;
-      const drawn = r > 2
+      const r = el.getBoundingClientRect();
+      const txt = (el.textContent || '').trim();
+      const leaf = txt && !Array.from(el.children).some((c) => (c.textContent || '').trim());
+      if (txt) sizes.add(cs.fontSize);
+      if (cs.boxShadow !== 'none') shadows.add(cs.boxShadow);
+      const rad = parseFloat(cs.borderTopLeftRadius) || 0;
+      const drawn = rad > 2
         && (cs.backgroundColor !== 'rgba(0, 0, 0, 0)' || cs.borderTopWidth !== '0px' || cs.boxShadow !== 'none');
       if (drawn) { boxes += 1; radii.add(cs.borderTopLeftRadius); }
+      if (leaf) {
+        const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.2;
+        texts.push({
+          t: txt.slice(0, 28),
+          // Rounded to the nearest line — the question is "did this wrap", not
+          // "is it a fraction of a pixel taller".
+          lines: Math.max(1, Math.round(r.height / lh)),
+          y: Math.round(r.y),
+          h: Math.round(r.height),
+          size: cs.fontSize,
+          weight: cs.fontWeight,
+        });
+      }
+      // Text that does not fit the box it is in. `scrollHeight > clientHeight`
+      // with hidden overflow is the definition of a clipped label.
+      if (txt && (cs.overflow === 'hidden' || cs.overflowY === 'hidden')
+        && el.scrollHeight > el.clientHeight + 1 && el.clientHeight > 0
+        && cs.webkitLineClamp === 'none' && cs.textOverflow !== 'ellipsis') {
+        clipped += 1;
+        if (clippedSamples.length < 6) clippedSamples.push(txt.slice(0, 30) + ' (' + el.clientHeight + '<' + el.scrollHeight + ')');
+      }
     }
     return {
       ground: getComputedStyle(document.body).backgroundColor,
@@ -89,6 +134,15 @@ async function measure(page) {
       drawnBoxes: boxes,
       typeSizes: [...sizes].sort((a, b) => parseFloat(a) - parseFloat(b)),
       radii: [...radii].sort((a, b) => parseFloat(a) - parseFloat(b)),
+      shadowCount: shadows.size,
+      // The VALUES, not just how many: P14-2 replaced one-off shadows with tokens,
+      // which often keeps the count identical while changing every pixel of the
+      // cast. A count-only record would have reported that as 'no change'.
+      shadowValues: [...shadows].sort(),
+      contentHeight: Math.round(main.getBoundingClientRect().height),
+      texts,
+      clipped,
+      clippedSamples,
       scrollWidth: document.documentElement.scrollWidth,
     };
   });

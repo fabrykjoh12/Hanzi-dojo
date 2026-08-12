@@ -106,7 +106,7 @@ export default function Settings({ session, profile, onUpdate, onBack }) {
   // The inline error line for a control whose save failed — same treatment as
   // the reminder error below.
   const prefErrorLine = (key) => prefError === key ? (
-    <div style={{ fontSize: '12.5px', color: 'var(--danger)', marginTop: '10px', lineHeight: 1.5 }}>
+    <div style={{ fontSize: '13px', color: 'var(--danger)', marginTop: '10px', lineHeight: 1.5 }}>
       That change didn't save — check your connection and try again.
     </div>
   ) : null
@@ -155,7 +155,7 @@ export default function Settings({ session, profile, onUpdate, onBack }) {
       <div style={{ maxWidth: '760px', margin: '0 auto', padding: isMobile ? '32px 16px 56px' : '52px 32px 72px', position: 'relative', zIndex: 1 }}>
         {onBack && <AppBar kind="back" onBack={onBack} sticky={false} />}
         <PageHeader title="Settings" meta="Preferences" style={{ marginTop: onBack ? '18px' : 0 }} />
-        <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 0 22px', maxWidth: '560px' }}>
+        <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 0 22px', maxWidth: '560px' }}>
           Tune how studying feels. Daily goal and reset controls live in Profile.
         </p>
 
@@ -263,9 +263,9 @@ export default function Settings({ session, profile, onUpdate, onBack }) {
                   disabled={reminderBusy}
                   aria-label="Daily reminder time"
                   style={{
-                    minHeight: '44px', padding: '0 10px', borderRadius: '10px',
+                    minHeight: '44px', padding: '0 10px', borderRadius: '12px',
                     border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text)',
-                    fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+                    fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
                   }}
                 >
                   {HOUR_OPTIONS.map(h => (
@@ -275,7 +275,7 @@ export default function Settings({ session, profile, onUpdate, onBack }) {
               )}
             </div>
             {reminderError && (
-              <div style={{ fontSize: '12.5px', color: 'var(--danger)', marginTop: '10px', lineHeight: 1.5 }}>{reminderError}</div>
+              <div style={{ fontSize: '13px', color: 'var(--danger)', marginTop: '10px', lineHeight: 1.5 }}>{reminderError}</div>
             )}
           </Card>
 
@@ -299,7 +299,7 @@ export default function Settings({ session, profile, onUpdate, onBack }) {
                   display: 'inline-flex', alignItems: 'center', gap: '8px',
                   height: '40px', padding: '0 16px', borderRadius: '12px',
                   border: '1px solid ' + accentHex + '40', background: accentHex + '10',
-                  color: accentHex, fontSize: '13px', fontWeight: 750,
+                  color: accentHex, fontSize: '13px', fontWeight: 700,
                   fontFamily: 'Inter, sans-serif', textDecoration: 'none',
                 }}
               >
@@ -454,7 +454,7 @@ function Card({ icon: Icon, title, text, accentHex, children }) {
   const L = settingsCardLayout(width)
   return (
     <div style={{
-      background: 'var(--surface)', borderRadius: '20px',
+      background: 'var(--surface)', borderRadius: '18px',
       border: '1px solid var(--border)', boxShadow: 'var(--shadow-1)',
       padding: L.padding,
       display: 'flex', flexDirection: L.stacked ? 'column' : 'row',
@@ -471,7 +471,7 @@ function Card({ icon: Icon, title, text, accentHex, children }) {
         gap: L.stacked ? '12px' : 0, minWidth: 0,
       }}>
         <div style={{
-          width: L.iconBox + 'px', height: L.iconBox + 'px', borderRadius: '15px',
+          width: L.iconBox + 'px', height: L.iconBox + 'px', borderRadius: '12px',
           background: accentHex + '10', border: '1px solid ' + accentHex + '18',
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>
@@ -480,14 +480,14 @@ function Card({ icon: Icon, title, text, accentHex, children }) {
         {/* Stacked, the title rides beside the icon: it keeps the row's identity
             without spending a whole line on a 38px square. */}
         {L.stacked && (
-          <div style={{ fontSize: '15px', fontWeight: 850, color: 'var(--text)', minWidth: 0 }}>
+          <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text)', minWidth: 0 }}>
             {title}
           </div>
         )}
       </div>
       <div style={{ flex: L.stacked ? 'none' : 1, minWidth: 0 }}>
         {!L.stacked && (
-          <div style={{ fontSize: '15px', fontWeight: 850, color: 'var(--text)', marginBottom: '5px' }}>
+          <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text)', marginBottom: '5px' }}>
             {title}
           </div>
         )}
@@ -530,12 +530,12 @@ function Segmented({ value, onChange, options, accentHex, label }) {
               // 44px in both layouts. It was 38 — under the floor — on the
               // controls a learner touches most often in Settings.
               minHeight: S.minHeight + 'px',
-              padding: S.optionPadding, borderRadius: '9px', cursor: 'pointer',
+              padding: S.optionPadding, borderRadius: '8px', cursor: 'pointer',
               border: '1px solid ' + (active ? accentHex + '40' : 'transparent'),
               background: active ? 'var(--surface)' : 'transparent',
               color: active ? 'var(--text)' : 'var(--text-muted)',
               fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
-              boxShadow: active ? '0 1px 4px rgba(24,24,27,0.08)' : 'none',
+              boxShadow: active ? 'var(--shadow-1)' : 'none',
               minWidth: 0, whiteSpace: 'nowrap',
             }}
           >
@@ -567,7 +567,7 @@ function PresetChoice({ legend, name, value, onChange, options, accentHex }) {
             key={opt.key}
             style={{
               display: 'flex', alignItems: 'flex-start', gap: '11px',
-              padding: '12px 14px', borderRadius: '13px', cursor: 'pointer',
+              padding: '12px 14px', borderRadius: '12px', cursor: 'pointer',
               border: '1px solid ' + (active ? accentHex + '55' : 'var(--border)'),
               background: active ? accentHex + '0D' : 'var(--surface-2)',
             }}
@@ -581,10 +581,10 @@ function PresetChoice({ legend, name, value, onChange, options, accentHex }) {
               style={{ marginTop: '3px', accentColor: accentHex, width: '16px', height: '16px', flexShrink: 0, cursor: 'pointer' }}
             />
             <span style={{ minWidth: 0 }}>
-              <span style={{ display: 'block', fontSize: '13.5px', fontWeight: 750, color: 'var(--text)' }}>
+              <span style={{ display: 'block', fontSize: '13.5px', fontWeight: 700, color: 'var(--text)' }}>
                 {opt.label}
               </span>
-              <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.55, marginTop: '2px' }}>
+              <span style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55, marginTop: '2px' }}>
                 {opt.blurb}
               </span>
             </span>
@@ -612,7 +612,7 @@ function Toggle({ checked, onChange, accentHex, disabled, label }) {
     >
       <span style={{
         position: 'absolute', top: '2px', left: checked ? '24px' : '2px',
-        width: '22px', height: '22px', borderRadius: '50%', background: '#fff',
+        width: '22px', height: '22px', borderRadius: '999px', background: '#fff',
         boxShadow: '0 1px 3px rgba(0,0,0,0.25)', transition: 'left 160ms ease',
       }} />
     </button>
