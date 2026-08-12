@@ -44,6 +44,15 @@ later phase inherits.
   content — but a landscape-specific tray height was not considered and probably
   should be if landscape ever stops being portrait-locked (it is locked today,
   CLAUDE.md §1).
+- **The tray's columns are subpixel-unequal, by construction.** `viewport − 2×12 −
+  2` is not divisible by five at most phone widths, so a flex remainder exists and
+  each engine distributes it its own way. Measured: identical fractional widths on
+  the sandbox's Chromium at 320/360/375/390/412/430, two values differing in the
+  second decimal on the CI runner. The specs now assert a ≤0.5px spread. If a future
+  phase wants exactly equal columns it has to stop using `flex: 1` — a grid with
+  `repeat(5, 1fr)` has the same remainder — which means integral insets per width,
+  i.e. a media query, which is not worth it for a fraction of a pixel.
+
 - **`visual.spec.js` did not notice the tray, and that is a comparator finding.**
   The CI baseline job ran on the P14-4 commit and committed nothing: all five
   baselines matched. `stories-shelf-mobile` is 390×844 and DOES contain the bar, so
