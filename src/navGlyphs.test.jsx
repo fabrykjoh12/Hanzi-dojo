@@ -194,8 +194,10 @@ describe('the sizes the bar can ask for', () => {
   })
 
   it('accepts a fractional size without rounding it', () => {
-    // 23.5 is a real value on the bar (Practice), and the tray hands it straight
-    // to the glyph.
+    // The bar's own ramp is whole pixels (navEmphasis.js — a half-pixel glyph
+    // cannot centre symmetrically in the icon row), but the components must not
+    // quietly round a size they are handed: a gallery, a story unlock or a future
+    // tray may well want 23.5.
     expect(svgOf(<PracticeGlyph size={23.5} active />).getAttribute('width')).toBe('23.5')
     expect(svgOf(<CardsGlyph size={26} active />).getAttribute('width')).toBe('26')
   })

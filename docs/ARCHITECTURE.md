@@ -880,13 +880,19 @@ the hierarchy comes from the size the tray asks for. `NAV_GLYPH_PX` in
 |-----|---------------|---------|----------|
 | Cards | 26 | 203 | 100% |
 | Stories | 24 | 168 | 83% |
-| Practice | 23.5 | 165 | 81% |
+| Practice | 23 | 158 | 78% |
 | Home | 23 | 149 | 73% |
 | More | 22 | 140 | 69% |
 
-1.45× top to bottom. The 81–83% is the one number here with evidence rather than
-taste behind it: it is where P8 left Practice relative to Cards on the bar that
-passed device QA. The bar's own ramp is steeper — 27.5 down to 20 is 1.89× in area
+1.45× top to bottom, and **every size is a whole pixel**. Practice was 23.5 for one
+commit and CI caught what the local browser did not: a glyph with an odd half-pixel
+cannot be centred symmetrically in a 34px row, so its box snaps to one side of the
+device-pixel grid and its centre line drifts an eighth of a pixel off the other
+four. Invisible, and still wrong — "every icon on one centre line" has held since P8
+and should not need a tolerance to keep holding.
+
+The 83% is the one number here with evidence rather than taste behind it: it is where
+P8 left Practice relative to Cards on the bar that passed device QA. The bar's own ramp is steeper — 27.5 down to 20 is 1.89× in area
 before a single glyph is drawn — and puts Stories at 62% of Cards even with the
 drawings balanced. Emphasis on the bar is also carried by the Cards container, the
 centre column and the bold label, so the glyph sizes do not have to do all of it.
@@ -928,6 +934,16 @@ neighbours were rendered: `hero` (26) on a 60px tray is 43% of its height, the s
 ends go almost semicircular, and it reads as a pill someone stopped rounding.
 `card` (18) is 30%, it is what every card in the app uses, and it is what the More
 sheet hinges on — so the sheet rises out of the tray in the same shape.
+
+**Column widths are equal to within half a pixel, not identical.** The old bar
+spanned the viewport and divided by five exactly (390/5 = 78). The tray's content box
+is 364 and 364/5 is 72.8, so a flex remainder exists — and Chromium distributes it
+differently on different builds: five identical fractional widths on one browser, two
+values differing in the second decimal on another. No inset removes it at every phone
+width (i ≡ 4 mod 5 works at 320/390/430 and fails at 412/414), so `nav-tray.spec.js`
+and `nav-bar.spec.js` assert the contract — no column more than 0.5px wider than
+another — rather than an engine's rounding. CI found this; the sandbox browser did
+not.
 
 **Why the float floor is 6 and not 8.** `studyLayout`'s `COMPACT_MIN` is 600. A
 667px phone — iPhone SE 2/3, iPhone 8 — has 601px left at a 66px reservation and

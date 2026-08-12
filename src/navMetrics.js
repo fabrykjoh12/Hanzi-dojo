@@ -29,9 +29,17 @@
 export const MOBILE_NAV_HEIGHT = 60
 
 // Inset from each screen edge. 12 measured best of 10/12/14 across 320/390/430:
-// at 10 the tray reads as a slab with the corners rounded rather than as a
-// detached object, and at 14 the 320px tab column drops to 56px, which is close
-// enough to the 44px floor to be worth not spending.
+// at 10 the tray reads as a slab with the corners rounded rather than as a detached
+// object, and 14 spends four more pixels of the narrowest row than the float needs.
+// At 12 the 320px phone's tab column measures 58.8px against a 44px floor.
+//
+// It also makes the column width fractional — 320 − 24 − 2 borders = 294, and
+// 294/5 = 58.8 — which the old full-width bar never had to deal with (390/5 = 78).
+// Chromium hands the remainder out differently on different builds: identical
+// fractional widths locally, two values that differ in the second decimal on the CI
+// runner. No inset fixes that for every phone width (i ≡ 4 mod 5 works at
+// 320/390/430 and fails at 412/414), so the specs assert the CONTRACT — no column
+// more than half a pixel wider than another — rather than an engine's rounding.
 export const NAV_TRAY_INSET = 12
 
 // The MINIMUM float above the bottom edge. On any phone with a home-indicator

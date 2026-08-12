@@ -49,11 +49,19 @@ const BORDER = 2
 // the ramp no longer has to correct for the drawings and can be what a row of five
 // objects actually wants.
 //
-// Measured at these sizes the bar reads Cards 203 · Stories 168 · Practice 165 ·
-// Home 149 · More 140 px². Cards is clearly first; Stories and Practice sit at
-// 81–83% of it, which is where P8 left Practice relative to Cards on the bar that
-// passed device QA; Home and More are quieter. 1.45× top to bottom, where the old
-// ramp applied to the new drawings would have been 1.96×.
+// Measured at these sizes the bar reads Cards 203 · Stories 168 · Practice 158 ·
+// Home 149 · More 140 px². Cards is clearly first; Stories sits at 83% of it,
+// which is where P8 left Practice relative to Cards on the bar that passed device
+// QA; Practice and Home are quieter, More quietest. 1.45× top to bottom, where the
+// old ramp applied to the new drawings would have been 1.96×.
+//
+// **Every size is a WHOLE NUMBER, and that is a constraint rather than a
+// coincidence.** Practice was 23.5 for one commit and CI caught what the local
+// browser did not: a glyph with an odd half-pixel cannot be centred symmetrically
+// in a 34px row — the box snaps to one side of the device-pixel grid — so its
+// centre line drifts an eighth of a pixel off the four others'. Nothing a person
+// can see, and still wrong: "every icon on one centre line" is an assertion the bar
+// has held since P8, and it should not need a tolerance to keep holding. 23.
 //
 // Emphasis is not carried by size alone and never was: CARDS_SHELL, the centre
 // column and the label's weight are all still doing their share, which is what
@@ -61,7 +69,7 @@ const BORDER = 2
 export const NAV_ICON_PX = {
   study: 26,
   stories: 24,
-  practice: 23.5,
+  practice: 23,
   home: 23,
   more: 22,
 }

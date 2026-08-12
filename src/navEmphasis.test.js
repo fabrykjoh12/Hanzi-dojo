@@ -140,10 +140,10 @@ describe('the icon hierarchy', () => {
     const area = n => n * n
     const spread = area(Math.max(...sizes)) / area(Math.min(...sizes))
     expect(spread).toBeLessThan(1.6)
-    // Ordered: Cards, then the pair, then Home, then More.
+    // Ordered: Cards, then Stories, then the Practice/Home pair, then More.
     expect(NAV_ICON_PX.study).toBeGreaterThan(NAV_ICON_PX.stories)
     expect(NAV_ICON_PX.stories).toBeGreaterThan(NAV_ICON_PX.practice)
-    expect(NAV_ICON_PX.practice).toBeGreaterThan(NAV_ICON_PX.home)
+    expect(NAV_ICON_PX.practice).toBeGreaterThanOrEqual(NAV_ICON_PX.home)
     expect(NAV_ICON_PX.home).toBeGreaterThan(NAV_ICON_PX.more)
     // And no glyph is drawn bigger than the row it sits in.
     for (const key of Object.keys(NAV_ICON_PX)) {
@@ -151,9 +151,22 @@ describe('the icon hierarchy', () => {
     }
   })
 
+  it('is whole pixels, so every glyph centres on the same line', () => {
+    // Practice was 23.5 for one commit and CI caught what the local browser did
+    // not: an odd half-pixel cannot be centred symmetrically in a 34px row, so the
+    // box snaps to one side of the device-pixel grid and that glyph's centre drifts
+    // an eighth of a pixel off the other four. Invisible, and still wrong — "every
+    // icon on one centre line" has been true since P8 and should not need a
+    // tolerance to stay true.
+    for (const [key, px] of Object.entries(NAV_ICON_PX)) {
+      expect(Number.isInteger(px), key + ' is ' + px).toBe(true)
+    }
+  })
+
   it('falls back to the reference size for an unknown tab', () => {
     expect(navIconPx('nope')).toBe(NAV_ICON_PX.home)
     expect(navIconPx('study')).toBe(26)
+    expect(navIconPx('practice')).toBe(23)
   })
 })
 

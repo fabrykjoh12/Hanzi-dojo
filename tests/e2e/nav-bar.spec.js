@@ -365,9 +365,18 @@ test.describe('Cards carries weight without taking space', () => {
     const bar = await barState(page);
 
     // Equal columns: a bigger glyph must not buy a bigger hitbox.
-    expect(new Set(bar.tabs.map((t) => t.w)).size).toBe(1);
+    //
+    // A spread rather than one identical value since P14-4: the bar used to span the
+    // viewport and divide by five exactly (390/5 = 78), and the tray's inset content
+    // box does not (364/5 = 72.8), so a flex remainder exists and Chromium
+    // distributes it differently on different builds. Half a pixel is tighter than
+    // any inequality that could matter to a thumb.
+    const widths = bar.tabs.map((t) => t.w);
+    expect(Math.max(...widths) - Math.min(...widths),
+      JSON.stringify(widths)).toBeLessThanOrEqual(0.5);
     // Every icon centred on the same line, whatever its size — the larger Cards
-    // glyph grows about a shared centre rather than pushing its label down.
+    // glyph grows about a shared centre rather than pushing its label down. This one
+    // IS exact, because every glyph size is a whole number (navEmphasis.js).
     const resting = bar.tabs.filter((t) => t.current !== 'page').map((t) => t.iconCentre);
     expect(new Set(resting).size).toBe(1);
   });

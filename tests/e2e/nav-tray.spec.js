@@ -162,10 +162,25 @@ for (const phone of PHONES) {
         expect(t.w, t.name + ' width').toBeGreaterThanOrEqual(44);
         expect(t.h, t.name + ' height').toBeGreaterThanOrEqual(44);
       }
-      // Equal columns: a bigger glyph must not buy a bigger hitbox, and the
-      // glyphs are five different sizes now.
-      expect(new Set(tabs.map(t => t.w)).size).toBe(1);
-      expect(new Set(tabs.map(t => t.glyph)).size).toBe(5);
+      // Equal columns: a bigger glyph must not buy a bigger hitbox.
+      //
+      // Asserted as a SPREAD, not as one identical value, and CI is why. The old
+      // full-width bar divided 390 by five and got 78 exactly; the tray's content
+      // box is 364 and 364/5 is 72.8, so there is a remainder for the flex row to
+      // hand out. Chromium hands it out differently on different builds — five
+      // identical fractional widths on the sandbox's browser, two values differing
+      // in the second decimal on the CI runner — and no inset makes the width
+      // divisible by five at every phone width. Half a pixel is far tighter than
+      // any real inequality and far looser than an engine's rounding.
+      const widths = tabs.map(t => t.w);
+      expect(Math.max(...widths) - Math.min(...widths),
+        'column widths: ' + JSON.stringify(widths)).toBeLessThanOrEqual(0.5);
+      // Cards is the biggest glyph and More the smallest, and every size is a whole
+      // pixel — a half-pixel glyph cannot centre symmetrically in the row.
+      const glyphs = tabs.map(t => t.glyph);
+      expect(Math.max(...glyphs)).toBe(NAV_ICON_PX.study);
+      expect(Math.min(...glyphs)).toBe(NAV_ICON_PX.more);
+      for (const g of glyphs) expect(Number.isInteger(g), 'glyph ' + g).toBe(true);
       // The tab is the target, never the glyph — every glyph is smaller than the
       // 44px floor and none of them is the thing being tapped.
       for (const t of tabs) expect(t.glyph, t.name + ' glyph').toBeLessThan(44);

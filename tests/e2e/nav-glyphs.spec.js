@@ -344,8 +344,12 @@ test.describe('the family is the bar, and Profile is not on it', () => {
     expect(shape.labels, 'Profile must not become a tab').not.toContain('Profile');
     // One viewBox for the whole row, which is what makes it a family.
     expect(shape.viewBoxes).toEqual(['0 0 32 32']);
-    // …and five different sizes, which is what makes it a hierarchy.
-    expect(new Set(shape.sizes).size).toBe(5);
+    // …drawn at more than one size, which is what makes it a hierarchy. Not five
+    // distinct sizes: Practice and Home share 23 since the ramp went to whole
+    // pixels, and how many distinct values it happens to contain is navEmphasis's
+    // business, not the bar's.
+    expect(new Set(shape.sizes).size).toBeGreaterThan(1);
+    expect(Math.max(...shape.sizes.map(Number))).toBe(Number(shape.sizes[2]));
   });
 
   test('still reaches Profile through the More sheet', async ({ page }) => {
