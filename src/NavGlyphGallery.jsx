@@ -1,5 +1,5 @@
-import { NAV_GLYPHS, IDENTITY_GLYPHS, GLYPH_SIZES, navGlyphPx } from './navGlyphFamily'
-import { NAV_ICON_PX, CARDS_SHELL, NAV_COLUMN, cardsShellStyle } from './navEmphasis'
+import { NAV_GLYPHS, IDENTITY_GLYPHS, GLYPH_SIZES } from './navGlyphFamily'
+import { navIconPx, CARDS_SHELL, NAV_COLUMN, cardsShellStyle, navTrayStyle } from './navEmphasis'
 import { TYPE } from './typeScale'
 import { RADIUS } from './shape'
 
@@ -18,10 +18,9 @@ import { RADIUS } from './shape'
 //
 // Two things it deliberately is NOT:
 //
-//   · It is not a new bottom bar. MobileNav.jsx, NavIcons.jsx, navConfig.js and
-//     navEmphasis.js are untouched by P14-3; the bar still ships the flat family.
-//     The strips below borrow navEmphasis.js's real numbers so the comparison is
-//     honest, but they are swatches, not a tray — no routing, no safe area.
+//   · It is not the bar. P14-4 shipped the family, so the strips below use
+//     navTrayStyle() and NAV_ICON_PX — the real chrome and the real sizes — but
+//     they are swatches: no routing, no safe area, no More sheet.
 //   · It is not theme-switchable in place. Every neutral in this app is declared
 //     on `:root[data-theme]`, so a dark island inside a light page would mean
 //     re-declaring the tokens by hand — i.e. hardcoded hexes. Light and dark are
@@ -96,17 +95,20 @@ function Grid({ set, label, size, sizeFor }) {
 // `sizes` is either the family's own recommended ramp (NAV_GLYPH_PX) or the bar's
 // current one (NAV_ICON_PX), so the two can be compared directly rather than
 // argued about.
-function NavStrip({ active, sizes, label, id }) {
+function NavStrip({ active, label, id }) {
+  // The real tray's chrome, not an approximation of it: navTrayStyle() is what
+  // MobileNav renders, with only `position` unpinned so the swatch sits in the
+  // page. If the tray changes, this changes with it.
+  const tray = navTrayStyle()
   return (
     <div style={{ marginBottom: '18px' }}>
       <Caption>{label} · {active ? 'all selected' : 'all resting'}</Caption>
       <div
         data-nav-strip={id + '-' + (active ? 'active' : 'resting')}
         style={{
-          display: 'flex', justifyContent: 'space-around', alignItems: 'center',
-          height: '58px', padding: '0 6px',
-          borderRadius: RADIUS.card + 'px',
-          background: 'var(--surface)', border: '1px solid var(--border)',
+          ...tray,
+          position: 'static', left: 'auto', right: 'auto', bottom: 'auto', zIndex: 'auto',
+          justifyContent: 'space-around', alignItems: 'center',
         }}
       >
         {NAV_GLYPHS.map((g) => {
@@ -121,7 +123,7 @@ function NavStrip({ active, sizes, label, id }) {
                   height: CARDS_SHELL.height + 'px', display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
                 }}>
-                <g.Glyph size={sizes(g)} active={active} color={MUTED} />
+                <g.Glyph size={navIconPx(g.key)} active={active} color={MUTED} />
               </div>
               <span style={{
                 // The bar's own label metrics (MobileNav.jsx / NAV_COLUMN), so
@@ -138,21 +140,19 @@ function NavStrip({ active, sizes, label, id }) {
   )
 }
 
-const RECOMMENDED = g => navGlyphPx(g.key)
-const BAR_TODAY = g => NAV_ICON_PX[g.key] || NAV_ICON_PX.home
+const AT_NAV_SIZE = g => navIconPx(g.key)
 
 export default function NavGlyphGallery() {
   return (
     <div data-nav-glyph-gallery="" style={{ width: '100%', paddingBottom: '4px' }}>
       <div data-glyph-section="production">
-        <NavStrip active sizes={RECOMMENDED} id="rec" label="production nav · the family's own ramp" />
-        <NavStrip active={false} sizes={RECOMMENDED} id="rec" label="production nav · the family's own ramp" />
-        {/* The bar's own ramp, unchanged and shown for comparison: 27.5 down to
-            20, which is 1.89x in area before a single glyph is drawn. */}
-        <NavStrip active sizes={BAR_TODAY} id="bar" label="production nav · the bar's ramp today" />
+        {/* The shipping tray, in both selection states. Since P14-4 these are the
+            bar's own numbers rather than a proposal about them. */}
+        <NavStrip active id="rec" label="the tray, selected" />
+        <NavStrip active={false} id="rec" label="the tray, resting" />
         <Grid set={NAV_GLYPHS} label="20px" size={20} />
         <Grid set={NAV_GLYPHS} label="24px" size={24} />
-        <Grid set={NAV_GLYPHS} label="intended navigation size" sizeFor={RECOMMENDED} />
+        <Grid set={NAV_GLYPHS} label="intended navigation size" sizeFor={AT_NAV_SIZE} />
         {GLYPH_SIZES.filter(s => s !== 20 && s !== 24).map(size => (
           <Grid key={size} set={NAV_GLYPHS} label={size + 'px'} size={size} />
         ))}

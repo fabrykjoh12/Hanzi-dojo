@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import {
-  PRIMARY_NAV, NAV_GROUPS, MOBILE_PRIMARY, MOBILE_MORE, ADMIN_NAV,
+  PRIMARY_NAV, NAV_GROUPS, MOBILE_PRIMARY, MOBILE_MORE_TAB, MOBILE_MORE, ADMIN_NAV,
   ACCOUNT_MORE_ADMIN, moreItemsFor,
 } from './navConfig'
 import { TABS, VIEW_CLASS, initialNavState, androidBack } from './navStack'
+import { NAV_GLYPHS } from './navGlyphFamily'
 
 // Dojo HQ is internal tooling — workspaces, invite codes, member management.
 // It shipped inside PRIMARY_NAV, which put it in front of every learner. These
@@ -81,6 +82,22 @@ describe('the mobile bar', () => {
       expect(item.label.length, item.key).toBeGreaterThan(3)
       expect(item.label, item.key).not.toContain('.')
     }
+  })
+
+  it('takes its icons FROM the glyph family rather than retyping them', () => {
+    // P14-4 derives this array from navGlyphFamily.NAV_GLYPHS instead of listing
+    // it, so the bar cannot end up with a different set, a different order or a
+    // different icon from the family the glyphs were designed as. The five-entry
+    // family minus More IS the four primary tabs, and More is the fifth — which
+    // MobileNav renders as the sheet opener, not as a destination.
+    const family = NAV_GLYPHS.filter(g => g.key !== 'more')
+    expect(MOBILE_PRIMARY.map(i => i.key)).toEqual(family.map(g => g.key))
+    expect(MOBILE_PRIMARY.map(i => i.icon)).toEqual(family.map(g => g.Glyph))
+    expect(MOBILE_MORE_TAB.key).toBe('more')
+    expect(MOBILE_MORE_TAB.label).toBe('More')
+    expect(MOBILE_PRIMARY.map(i => i.key)).not.toContain('more')
+    // And nothing on the bar is Profile, which is not a tab.
+    expect([...MOBILE_PRIMARY.map(i => i.key), MOBILE_MORE_TAB.key]).not.toContain('profile')
   })
 })
 

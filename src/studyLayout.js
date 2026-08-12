@@ -13,12 +13,18 @@
 //
 // All of it is plain arithmetic so it can be tested without a browser.
 
-// Height of the fixed bottom navigation, which App.jsx already reserves as
-// `main`'s bottom padding. The study shell must subtract the same amount or the
-// page ends up exactly one nav-bar taller than the viewport — so it takes the
-// number from navMetrics.js rather than keeping a second copy, which is the
-// mistake that put 4.25px of dead space under every screen.
-import { MOBILE_NAV_HEIGHT } from './navMetrics'
+// What the bottom navigation claims, which App.jsx already reserves as `main`'s
+// bottom padding. The study shell must subtract the same amount or the page ends
+// up exactly one nav-bar taller than the viewport — so it takes the number from
+// navMetrics.js rather than keeping a second copy, which is the mistake that put
+// 4.25px of dead space under every screen.
+//
+// P14-4: the RESERVE, not the tray's own height. The tray floats clear of the
+// bottom edge now, so the space a screen has to keep free is the tray plus its
+// float — 66px, against the 58px flush bar. That is 8px off the flashcard on a
+// phone with no home-indicator inset, and the float floor was chosen at 6 rather
+// than 8 precisely so no current device changes density band (see navMetrics.js).
+import { MOBILE_NAV_RESERVE } from './navMetrics'
 
 // Never render a grade button smaller than a comfortable thumb.
 export const MIN_TAP_TARGET = 44
@@ -119,12 +125,12 @@ export const DENSITIES = ['desktop', 'roomy', 'compact', 'tight']
 // bar, normally. The onboarding tutorial runs outside the app shell and has no
 // tab bar, so it passes 0 and gets the whole screen; everything else takes the
 // default and behaves exactly as it always has.
-export function availableHeight(viewportHeight, reserved = MOBILE_NAV_HEIGHT) {
+export function availableHeight(viewportHeight, reserved = MOBILE_NAV_RESERVE) {
   return Math.max(0, (viewportHeight || 0) - reserved)
 }
 
 // Pick the density band for a viewport.
-export function studyDensity(isMobile, viewportHeight, reserved = MOBILE_NAV_HEIGHT) {
+export function studyDensity(isMobile, viewportHeight, reserved = MOBILE_NAV_RESERVE) {
   if (!isMobile) return 'desktop'
   const available = availableHeight(viewportHeight, reserved)
   if (available >= ROOMY_MIN) return 'roomy'
@@ -139,7 +145,7 @@ export function studyDensity(isMobile, viewportHeight, reserved = MOBILE_NAV_HEI
 // Missing the top inset made the locked shell taller than the screen by
 // exactly the notch (~59px on an iPhone 14) — a scroll to reach the grade
 // buttons on every card, invisible to the Chromium e2e where insets are 0.
-export function shellHeightCss(reserved = MOBILE_NAV_HEIGHT) {
+export function shellHeightCss(reserved = MOBILE_NAV_RESERVE) {
   return 'calc(100dvh - ' + reserved + 'px' +
     ' - env(safe-area-inset-bottom) - env(safe-area-inset-top))'
 }
@@ -157,7 +163,7 @@ export const MOBILE_SHELL_HEIGHT = shellHeightCss()
  * @param {number}  opts.reservedBottom  what is already claimed below the card
  *                                  (the tab bar, by default; 0 outside the shell)
  */
-export function studyLayout({ isMobile, viewportHeight, banners, reservedBottom = MOBILE_NAV_HEIGHT } = {}) {
+export function studyLayout({ isMobile, viewportHeight, banners, reservedBottom = MOBILE_NAV_RESERVE } = {}) {
   const density = studyDensity(isMobile, viewportHeight, reservedBottom)
   const preset = PRESETS[density]
   const bannerCount = banners || 0

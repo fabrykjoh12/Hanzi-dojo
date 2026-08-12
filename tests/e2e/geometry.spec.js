@@ -1,7 +1,7 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 // The bar's height, from the module that declares it — not a literal that can
 // fall out of step with the bar again (navMetrics.js).
-import { MOBILE_NAV_HEIGHT } from '../../src/navMetrics.js';
+import { MOBILE_NAV_HEIGHT, MOBILE_NAV_RESERVE, NAV_TRAY_FLOAT } from '../../src/navMetrics.js';
 
 // Where destinations actually LAND, measured — not whether their elements exist.
 //
@@ -42,6 +42,9 @@ const DESTINATIONS = [
 ];
 
 const NAV_HEIGHT = MOBILE_NAV_HEIGHT;
+// P14-4: the bar is a floating tray, so "how tall is it" and "how much does a
+// screen reserve" are two numbers now — the tray plus the float it sits on.
+const NAV_RESERVE = MOBILE_NAV_RESERVE;
 
 async function geometry(page) {
   return page.evaluate(() => {
@@ -102,16 +105,19 @@ for (const phone of PHONES) {
         // 5. The tab bar is either there and paid for, or gone and its space
         //    reclaimed. Never reserved-but-absent, never present-but-overlapping.
         expect(g.barPresent).toBe(dest.bar);
-        expect(g.padBottom).toBe(dest.bar ? NAV_HEIGHT : 0);
+        expect(g.padBottom).toBe(dest.bar ? NAV_RESERVE : 0);
         if (dest.bar) {
-          // Pinned to the bottom edge, and EXACTLY as tall as the space
-          // reserved for it. This used to allow ±8px, which is precisely why a
-          // 4.25px drift between the bar (57.75px, emergent from its padding
-          // and label) and the reservation (a flat 62px) lived here unseen for
-          // as long as it did. The bar declares its height now (navMetrics.js),
-          // so there is no reason for any slack at all.
+          // EXACTLY as tall as it declares, and its top exactly one reservation
+          // up from the bottom edge. This used to allow ±8px, which is precisely
+          // why a 4.25px drift between the bar (57.75px, emergent from its
+          // padding and label) and the reservation (a flat 62px) lived here
+          // unseen for as long as it did. Both numbers are declared now
+          // (navMetrics.js), so there is no reason for any slack at all — and
+          // since P14-4 the tray no longer touches the bottom edge, which is the
+          // one thing the old form of this assertion asserted by accident.
           expect(g.barHeight).toBe(NAV_HEIGHT);
-          expect(g.barTop).toBe(g.viewportH - NAV_HEIGHT);
+          expect(g.barTop).toBe(g.viewportH - NAV_RESERVE);
+          expect(g.viewportH - (g.barTop + NAV_HEIGHT)).toBe(NAV_TRAY_FLOAT);
         }
 
         // Deliberately NOT asserted: a document-height ceiling. Several
@@ -144,7 +150,7 @@ test.describe('the Stories stack, measured', () => {
     expect(g.overlayTop).toBe(0);
     g.paneHeights.forEach((h) => expect(h).toBe(0));
     expect(g.barPresent).toBe(true);
-    expect(g.padBottom).toBe(NAV_HEIGHT);
+    expect(g.padBottom).toBe(NAV_RESERVE);
     expect(g.overflowX).toBe(0);
 
     await page.getByRole('button', { name: /Chapter 1 · 月下的朋友/ }).click();
@@ -176,7 +182,7 @@ test.describe('the native shell on a wide viewport', () => {
       await page.waitForTimeout(900);
       const g = await geometry(page);
       expect(g.barPresent).toBe(true);          // bottom bar, not the sidebar
-      expect(g.padBottom).toBe(NAV_HEIGHT);
+      expect(g.padBottom).toBe(NAV_RESERVE);
       expect(g.overflowX).toBe(0);
       g.paneHeights.forEach((h) => expect(h).toBe(0));
     }

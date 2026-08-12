@@ -63,26 +63,16 @@ describe('the family', () => {
     expect(ALL_GLYPHS.map(g => g.Glyph).sort(byName)).toEqual(named.sort(byName))
   })
 
-  it('recommends a size for every tab, gentler than the bar’s own ramp', () => {
-    // The family's hierarchy lives entirely in this table, because the drawings are
-    // all one weight now. It is a RECOMMENDATION — navEmphasis.js is untouched.
+  it('has a nav size for every tab and none for Profile', () => {
+    // The ramp lived in navGlyphFamily as a recommendation for one commit; P14-4
+    // adopted it, so navEmphasis.NAV_ICON_PX is the single copy and this module
+    // re-exports it. Profile is not a tab, so it has no nav size.
     for (const key of NAV_KEYS) {
-      expect(NAV_GLYPH_PX[key], key + ' has no recommended size').toBeGreaterThan(0)
+      expect(NAV_GLYPH_PX[key], key + ' has no nav size').toBeGreaterThan(0)
       expect(navGlyphPx(key)).toBe(NAV_GLYPH_PX[key])
     }
     expect(NAV_GLYPH_PX.profile).toBeUndefined()
-    // Cards biggest, More smallest, and every step in between ordered.
-    const ramp = NAV_KEYS.map(k => NAV_GLYPH_PX[k])
-    expect(Math.max(...ramp)).toBe(NAV_GLYPH_PX.study)
-    expect(Math.min(...ramp)).toBe(NAV_GLYPH_PX.more)
-    // Area, not diameter, is what the eye adds up — and the spread has to stay
-    // well inside 2x, which is the defect this amendment exists to fix. The bar's
-    // own ramp is 27.5/20, i.e. 1.89x before anything is drawn.
-    const area = n => n * n
-    const spread = area(Math.max(...ramp)) / area(Math.min(...ramp))
-    expect(spread).toBeLessThan(1.6)
-    const barSpread = area(NAV_ICON_PX.study) / area(NAV_ICON_PX.more)
-    expect(spread, 'the family ramp must be gentler than the bar’s').toBeLessThan(barSpread)
+    expect(NAV_GLYPH_PX).toBe(NAV_ICON_PX)
   })
 
   it('draws every glyph in both states at every size', () => {
@@ -204,14 +194,14 @@ describe('the sizes the bar can ask for', () => {
   })
 
   it('accepts a fractional size without rounding it', () => {
-    // 27.5 is a real value on the bar today, and 23.5 is one in the family's own
-    // recommended ramp.
-    expect(svgOf(<CardsGlyph size={27.5} active />).getAttribute('width')).toBe('27.5')
+    // 23.5 is a real value on the bar (Practice), and the tray hands it straight
+    // to the glyph.
     expect(svgOf(<PracticeGlyph size={23.5} active />).getAttribute('width')).toBe('23.5')
+    expect(svgOf(<CardsGlyph size={26} active />).getAttribute('width')).toBe('26')
   })
 
-  it('brackets both ramps', () => {
-    const wanted = [...Object.values(NAV_GLYPH_PX), ...Object.values(NAV_ICON_PX)]
+  it('brackets the ramp the bar actually uses', () => {
+    const wanted = Object.values(NAV_ICON_PX)
     expect(Math.min(...GLYPH_SIZES)).toBeLessThanOrEqual(Math.min(...wanted))
     expect(Math.max(...GLYPH_SIZES)).toBeGreaterThanOrEqual(Math.max(...wanted))
   })

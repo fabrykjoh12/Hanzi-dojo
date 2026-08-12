@@ -1,8 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { MOBILE_NAV_HEIGHT } from './navMetrics'
+import {
+  MOBILE_NAV_HEIGHT, MOBILE_NAV_RESERVE, MOBILE_NAV_SPACE,
+  NAV_TRAY_INSET, NAV_TRAY_FLOAT, NAV_TRAY_BOTTOM, NAV_TRAY_RADIUS_NAME,
+} from './navMetrics'
+import { RADIUS, ELEVATION } from './shape'
 import {
   NAV_ICON_PX, CARDS_SHELL, NAV_COLUMN,
-  navIconPx, navColumnHeight, navColumnFits, iconRowStyle, cardsShellStyle,
+  navIconPx, navColumnHeight, navColumnFits, iconRowStyle, cardsShellStyle, navTrayStyle,
 } from './navEmphasis'
 
 // The bar's hierarchy is arithmetic, so it can be asserted. What these specs are
@@ -10,18 +14,21 @@ import {
 // `studyLayout` cannot give the card, and a container is exactly the kind of
 // change that grows a bar by four pixels and nobody notices for a build.
 
-describe('the column fits inside the bar', () => {
-  it('costs less than the bar minus its own border', () => {
-    // 3.5 + 34 + 2 + 13 + 3.5 = 56, inside 58 − 1.
-    expect(navColumnHeight()).toBe(56)
+describe('the column fits inside the tray', () => {
+  it('costs less than the tray minus its own borders', () => {
+    // 4 + 34 + 2 + 13 + 4 = 57, inside 60 − 2. The tray has a border on both
+    // edges now, not just the top, so the budget lost a pixel as the tray gained
+    // two.
+    expect(navColumnHeight()).toBe(57)
     expect(navColumnFits()).toBe(true)
-    expect(navColumnHeight()).toBeLessThanOrEqual(MOBILE_NAV_HEIGHT - 1)
+    expect(navColumnHeight()).toBeLessThanOrEqual(MOBILE_NAV_HEIGHT - 2)
   })
 
-  it('does not change the bar height to make room for the container', () => {
-    // The number the whole P8 geometry pass settled. If a redesign needs it to
-    // move, that is a decision, not a side effect.
-    expect(MOBILE_NAV_HEIGHT).toBe(58)
+  it('declares the tray height, and it is a decision rather than a side effect', () => {
+    // P8 settled 58 for a flush bar; P14-4 makes it a floating tray at 60, the
+    // bottom of the 60–64 the brief asked for. Every pixel here comes off the
+    // flashcard, which is why it is not 64.
+    expect(MOBILE_NAV_HEIGHT).toBe(60)
   })
 
   it('leaves the label a real line box', () => {
@@ -67,16 +74,24 @@ describe('the Cards container', () => {
     expect(on.height).toBe(rest.height)
   })
 
-  it('lands the resting container at roughly half the step it used to make', () => {
-    // It was a flat --surface-2 for one build and read as a second selected
-    // tab. Mixing with `transparent` mixes the ALPHA, so this is 55% of the
-    // composite delta against the bar's ground — in both themes, from one
-    // number, with no second colour to keep in step.
+  it('lands the resting container at the step device QA approved', () => {
+    // It was a flat --surface-2 for one build and read as a second selected tab.
+    // Mixing with `transparent` mixes the ALPHA, so this is a fraction of the
+    // composite delta against the tray's ground — in both themes, from one number,
+    // with no second colour to keep in step.
+    //
+    // 30% and not the original 55%: the 55% was calibrated against the old
+    // translucent bar and composited to 5.5/255. On the opaque tray the same
+    // declaration lands at 10.5, so the percentage moved to keep the RENDERED
+    // value where the device review left it. nav-bar.spec.js measures the
+    // composite and caps it at 9, which is what caught this.
     const rest = cardsShellStyle({ active: false, accentHex: '#B83A24' })
-    expect(rest.background).toBe('color-mix(in srgb, var(--surface-2) 55%, transparent)')
+    expect(rest.background).toBe('color-mix(in srgb, var(--surface-2) 30%, transparent)')
     const pct = Number(/ (\d+)%/.exec(rest.background)[1])
-    expect(pct).toBeGreaterThanOrEqual(50) // 50% quieter is the far end of the ask
-    expect(pct).toBeLessThanOrEqual(60) // …and it still has to be visible at all
+    // 30% of the #FFFFFF→#F5F1EC step is 5.7/255; the band is what keeps it
+    // present at all (>3) and quieter than the ~13 that failed on a device (<8).
+    expect(pct * 19 / 100).toBeGreaterThan(3)
+    expect(pct * 19 / 100).toBeLessThan(8)
   })
 
   it('keeps the two states unmistakable — hue, strength and edge all differ', () => {
@@ -116,28 +131,98 @@ describe('the icon hierarchy', () => {
     expect(NAV_ICON_PX.more).toBe(Math.min(...sizes))
   })
 
-  it('puts Cards in the 27–28px band the brief asked for, and the peers at 20–22', () => {
-    expect(NAV_ICON_PX.study).toBeGreaterThanOrEqual(27)
-    expect(NAV_ICON_PX.study).toBeLessThanOrEqual(28)
-    for (const key of ['practice', 'home', 'stories', 'more']) {
-      expect(NAV_ICON_PX[key], key).toBeGreaterThanOrEqual(20)
-      expect(NAV_ICON_PX[key], key).toBeLessThanOrEqual(22)
+  it('is a gentle ramp, because the glyphs are now all one weight', () => {
+    // The flat family needed 27.5 against 20–22 — a 1.89x area ratio — to make
+    // Cards win, because its Practice grid out-inked its Cards glyph. The
+    // dimensional family is drawn to one weight, so the ramp only has to express
+    // hierarchy and not correct for the drawings.
+    const sizes = Object.values(NAV_ICON_PX)
+    const area = n => n * n
+    const spread = area(Math.max(...sizes)) / area(Math.min(...sizes))
+    expect(spread).toBeLessThan(1.6)
+    // Ordered: Cards, then the pair, then Home, then More.
+    expect(NAV_ICON_PX.study).toBeGreaterThan(NAV_ICON_PX.stories)
+    expect(NAV_ICON_PX.stories).toBeGreaterThan(NAV_ICON_PX.practice)
+    expect(NAV_ICON_PX.practice).toBeGreaterThan(NAV_ICON_PX.home)
+    expect(NAV_ICON_PX.home).toBeGreaterThan(NAV_ICON_PX.more)
+    // And no glyph is drawn bigger than the row it sits in.
+    for (const key of Object.keys(NAV_ICON_PX)) {
+      expect(NAV_ICON_PX[key], key).toBeLessThanOrEqual(NAV_COLUMN.iconRow)
     }
-  })
-
-  it('holds Home and Stories at the same reference weight', () => {
-    expect(NAV_ICON_PX.home).toBe(NAV_ICON_PX.stories)
-  })
-
-  it('keeps Practice below the reference pair', () => {
-    // Optical size, not CSS size: Practice is four forms, so it also draws with
-    // a lighter stroke and smaller tiles (NavIcons.jsx). This assertion is only
-    // the half of it that is a number here.
-    expect(NAV_ICON_PX.practice).toBeLessThan(NAV_ICON_PX.home)
   })
 
   it('falls back to the reference size for an unknown tab', () => {
     expect(navIconPx('nope')).toBe(NAV_ICON_PX.home)
-    expect(navIconPx('study')).toBe(27.5)
+    expect(navIconPx('study')).toBe(26)
+  })
+})
+
+describe('the tray', () => {
+  it('is inset from both edges and floats clear of the bottom', () => {
+    const t = navTrayStyle()
+    expect(t.position).toBe('fixed')
+    expect(t.left).toBe(NAV_TRAY_INSET + 'px')
+    expect(t.right).toBe(t.left)
+    expect(NAV_TRAY_INSET).toBeGreaterThanOrEqual(10)
+    expect(NAV_TRAY_INSET).toBeLessThanOrEqual(14)
+    // The safe-area decision: the tray's bottom edge lands on the safe-area
+    // boundary, with a float floor for devices that have no inset. `max`, never
+    // a sum — a sum lifts the tray 40px on a modern iPhone.
+    expect(t.bottom).toBe(NAV_TRAY_BOTTOM)
+    expect(t.bottom).toBe('max(' + NAV_TRAY_FLOAT + 'px, env(safe-area-inset-bottom))')
+    expect(t.bottom).not.toContain('+')
+  })
+
+  it('is rounded on all four corners, from the scale', () => {
+    const t = navTrayStyle()
+    // One radius, so all four corners are the same — the old bar had none.
+    expect(t.borderRadius).toBe(RADIUS[NAV_TRAY_RADIUS_NAME] + 'px')
+    expect(Object.keys(RADIUS)).toContain(NAV_TRAY_RADIUS_NAME)
+    // Not a pill: half the tray's height would make it one.
+    expect(RADIUS[NAV_TRAY_RADIUS_NAME]).toBeLessThan(MOBILE_NAV_HEIGHT / 2)
+    expect(RADIUS[NAV_TRAY_RADIUS_NAME]).toBeGreaterThanOrEqual(16)
+  })
+
+  it('is solid, not glass, and carries no blur', () => {
+    const t = navTrayStyle()
+    expect(t.background).toBe('var(--surface)')
+    expect(t.backdropFilter).toBeUndefined()
+    expect(JSON.stringify(t)).not.toContain('glass')
+    expect(JSON.stringify(t)).not.toContain('blur')
+  })
+
+  it('has an edge, a modest elevation and a lit top, all from tokens', () => {
+    const t = navTrayStyle()
+    expect(t.border).toBe('1px solid var(--border)')
+    // `floating`, not `sheet`: there is page ground under the tray for it to cast
+    // onto now, and `sheet` points the other way.
+    expect(t.boxShadow).toContain(ELEVATION.floating)
+    expect(t.boxShadow).not.toContain(ELEVATION.sheet)
+    // The dark-mode answer: a black shadow on a near-black page does nothing, so
+    // the top edge catches light instead.
+    expect(t.boxShadow).toContain('inset 0 1px 0 var(--inset-highlight)')
+    // No hardcoded rgba anywhere in it (CLAUDE.md §5) — it has to theme.
+    expect(t.boxShadow).not.toMatch(/rgba?\(/)
+  })
+
+  it('never lets a tab paint over its corners', () => {
+    expect(navTrayStyle().overflow).toBe('hidden')
+  })
+
+  it('claims the tray plus its float, and says so in one place', () => {
+    expect(MOBILE_NAV_RESERVE).toBe(MOBILE_NAV_HEIGHT + NAV_TRAY_FLOAT)
+    expect(MOBILE_NAV_SPACE).toBe('calc(' + MOBILE_NAV_HEIGHT + 'px + ' + NAV_TRAY_BOTTOM + ')')
+    // The reservation is what keeps a 667px phone in studyLayout's `compact`
+    // band: 667 − 66 = 601 against a COMPACT_MIN of 600. At a float of 8 it
+    // would be 599 and Study would visibly change density.
+    expect(667 - MOBILE_NAV_RESERVE).toBeGreaterThanOrEqual(600)
+  })
+
+  it('leaves every tab a real target at the narrowest phone', () => {
+    // Five equal columns inside the tray's content box.
+    const column = (320 - 2 * NAV_TRAY_INSET - 2) / 5
+    expect(column).toBeGreaterThanOrEqual(44)
+    // And the tab is as tall as the tray minus its borders.
+    expect(MOBILE_NAV_HEIGHT - 2).toBeGreaterThanOrEqual(44)
   })
 })

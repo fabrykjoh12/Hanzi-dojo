@@ -2,7 +2,7 @@ import {
   Home, Layers, BookOpen, Target, ClipboardCheck,
   User, Settings, Globe, LogOut, BarChart3, PanelsTopLeft,
 } from 'lucide-react'
-import { PracticeIcon, HomeIcon, CardsIcon, StoriesIcon } from './NavIcons'
+import { NAV_GLYPHS } from './navGlyphFamily'
 
 // Single source of truth for navigation, consumed by both Sidebar (desktop) and
 // MobileNav (mobile) so the two can't drift. Individual study/practice modes are
@@ -60,16 +60,26 @@ export const NAV_GROUPS = [
 // still the tab Back climbs to — that lives in navStack.js (`initialNavState`,
 // `androidBack`) and does not follow this array.
 //
-// The icons are the bar's own family (NavIcons.jsx) rather than lucide: two of
-// the five had to be drawn by hand — no library has a flashcard, and Practice
-// reads as drills rather than a bullseye — and mixing two drawing systems on
-// one row of five is where mismatched weight shows.
-export const MOBILE_PRIMARY = [
-  { key: 'home', label: 'Home', icon: HomeIcon },
-  { key: 'stories', label: 'Stories', icon: StoriesIcon },
-  { key: 'study', label: 'Cards', icon: CardsIcon },
-  { key: 'practice', label: 'Practice', icon: PracticeIcon },
-]
+// The icons are the bar's own family rather than lucide: no library has a
+// flashcard, Practice reads as drills rather than a bullseye, and mixing two
+// drawing systems on one row of five is where mismatched weight shows.
+//
+// **P14-4 switched the family** from the flat outline/filled set (NavIcons.jsx,
+// P8) to the dimensional one (navGlyphs.jsx, P14-3). The list itself — which tabs,
+// in which order, keyed how — is unchanged and is not P14-4's to change; the
+// order argument and its device test are recorded above and still stand.
+//
+// The array is DERIVED from navGlyphFamily.NAV_GLYPHS rather than retyped, so the
+// bar cannot end up with a different set or a different order from the family the
+// glyphs were designed as. Note the tail: NAV_GLYPHS' fifth entry is More, which
+// the bar renders itself as the sheet opener rather than as a destination, so it
+// is dropped here and picked up in MobileNav.
+export const MOBILE_PRIMARY = NAV_GLYPHS
+  .filter(g => g.key !== 'more')
+  .map(g => ({ key: g.key, label: g.label, icon: g.Glyph }))
+
+// The sheet opener. Same family, same table, not a destination.
+export const MOBILE_MORE_TAB = NAV_GLYPHS.find(g => g.key === 'more')
 
 // What is left is the account drawer. The level test used to head this list,
 // which put the gate on progression between Profile and Log out — and nothing

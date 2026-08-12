@@ -808,7 +808,7 @@ Semantic tokens in index.css drive light/dark via `:root` and `:root[data-theme=
 
 **lucide-react icons:** All functional UI icons. Content emoji (🇨🇳 🇯🇵 flags) are fine as content. Never use emoji as icons.
 
-### The dimensional icon family (P14-3) — drawn, not shipped
+### The dimensional icon family (P14-3) — shipped on the tray in P14-4
 
 `src/navGlyphs.jsx` holds six custom glyphs; `src/navGlyphFamily.js` splits them
 into the set that is navigation and the set that is not:
@@ -825,11 +825,15 @@ arrays are what stop it happening by accident: a tray that maps over `NAV_GLYPHS
 cannot pick Profile up, and both `navGlyphs.test.jsx` and `nav-glyphs.spec.js`
 assert it (the spec also opens the real More sheet and finds Profile in it).
 
-**None of it is on the bar yet.** `MobileNav.jsx`, `NavIcons.jsx`, `navConfig.js`
-and `navEmphasis.js` are untouched; the family is evaluated in `/dev`
-(`NavGlyphGallery.jsx`) and P14-4 is where the tray and its icons change together.
+**P14-4 put it on the bar.** `navConfig.MOBILE_PRIMARY` is now DERIVED from
+`NAV_GLYPHS` rather than retyped, so the bar cannot end up with a different set or
+order from the family the glyphs were designed as, and `MOBILE_MORE_TAB` is the
+fifth entry the bar renders as the sheet opener. `NavIcons.jsx` — the flat P8
+family — is still in the tree and still used by the desktop rail's `MoreIcon`
+path; nothing imports its four tab glyphs any more.
 `src/navGlyphs.test.jsx` (16 unit contracts) and `tests/e2e/nav-glyphs.spec.js`
-(34 browser assertions across two themes and 320/390/430) hold what exists.
+(34 browser assertions across two themes and 320/390/430) hold what the family is;
+`tests/e2e/nav-tray.spec.js` holds what the tray is.
 
 The seven rules the family is built on are written at the top of `navGlyphs.jsx`,
 and the four that a new identity icon must copy:
@@ -886,6 +890,93 @@ drawings balanced. Emphasis on the bar is also carried by the Cards container, t
 centre column and the bold label, so the glyph sizes do not have to do all of it.
 
 Both strips are in the gallery side by side, which is the only way to judge it.
+
+### The bottom navigation tray (P14-4)
+
+The bar was a full-width `--surface-glass` slab with `backdrop-filter: blur(14px)`,
+flush to the bottom edge, one border along its top. It is now an inset floating
+tray. **Only the chrome changed** — same five tabs, same order, same keys, same
+routing, same More sheet, same Android Back, same tab persistence, same deep links.
+
+| | value | lives in |
+|---|---|---|
+| Tray height | **60px** | `MOBILE_NAV_HEIGHT` |
+| Horizontal inset | **12px** each side | `NAV_TRAY_INSET` |
+| Corner radius | **18px**, all four | `NAV_TRAY_RADIUS_NAME` → `RADIUS.card` |
+| Bottom offset | `max(6px, env(safe-area-inset-bottom))` | `NAV_TRAY_FLOAT`, `NAV_TRAY_BOTTOM` |
+| Reservation | **66px** (numeric) / `calc(60px + max(…))` (CSS) | `MOBILE_NAV_RESERVE`, `MOBILE_NAV_SPACE` |
+| Surface | `--surface`, opaque | `navTrayStyle()` |
+| Edge | `1px solid var(--border)` all round | `navTrayStyle()` |
+| Elevation | `ELEVATION.floating` + `inset 0 1px 0 var(--inset-highlight)` | `navTrayStyle()` |
+
+`navTrayStyle()` in `navEmphasis.js` is the whole of the tray's chrome as a pure
+function, so a unit test reads it without a browser and the `/dev` gallery draws
+the same object the bar does.
+
+**Height and reservation are two numbers now, and that is the point.** A flush bar
+occupies exactly its own height; a floating one claims its height plus the float it
+sits on. `MOBILE_NAV_HEIGHT` is the object, `MOBILE_NAV_RESERVE` is the claim, and
+everything that reserves the navigation reads `MOBILE_NAV_SPACE` — `main`'s bottom
+padding, the immersive reader's bottom offset, the feedback button's offset,
+`studyLayout`'s shell height. There is no per-screen padding anywhere.
+
+**Why 18 and not the 20–24 the brief asked for.** `RADIUS` is 8 / 12 / 18 / 26 /
+999 and adding a sixth value is a design-system decision, not a tray decision. Both
+neighbours were rendered: `hero` (26) on a 60px tray is 43% of its height, the short
+ends go almost semicircular, and it reads as a pill someone stopped rounding.
+`card` (18) is 30%, it is what every card in the app uses, and it is what the More
+sheet hinges on — so the sheet rises out of the tray in the same shape.
+
+**Why the float floor is 6 and not 8.** `studyLayout`'s `COMPACT_MIN` is 600. A
+667px phone — iPhone SE 2/3, iPhone 8 — has 601px left at a 66px reservation and
+599px at 68. Two more pixels of float would have moved that whole class of device
+from `compact` to `tight`, which is a visible Study change. The tray's float is
+sized by the flashcard, not by taste.
+
+**Safe area: outside the tray, not part of it.** `bottom` is `max(float, inset)`,
+never a sum, so the tray's bottom edge lands ON the safe-area boundary — where iOS
+says interactive content should stop — and the home-indicator strip below stays page
+ground. A sum would lift the tray 40px on a modern iPhone and cost every screen
+another 6px for nothing.
+
+**The bottom support region.** A floating tray means a scrolling screen sends its
+content *through* the strip below it — measured on Practice at 430×932, a row of
+links showed under the tray as a 7px sliver of moving text. `Background.jsx` now
+draws a `BottomSupport` layer at z-index 29 (under the tray's 30, over every
+screen's 1) whose height is `NAV_TRAY_BOTTOM`. It is painted with the page's own
+ground **including the background image**: a plain `--bg` fill would cut the image
+off with a static seam, and in light mode that wash is at 0.4 opacity, well past the
+point where a hard edge in it reads as a fault. The copy is anchored to the
+container's bottom at a full viewport height so it lands on the same pixels as the
+fixed copy behind the page, and `overflow: hidden` crops it. It renders only when
+the tray does.
+
+**Selection changed shape, not strength.** The flat family signalled it with
+outline → filled, i.e. two different drawings. The dimensional family draws ONE
+silhouette and lights it, so selection is now flat → dimensional: the resting glyph
+paints its silhouette once in `--text-muted`, the selected one clips three planes of
+the brand to the same silhouette. Three signals, only one of which is hue — tone
+structure, label weight (500 → 700), and for Cards the container. `nav-bar.spec.js`
+counts tones rather than fills as a result.
+
+**Cards emphasis, on a solid tray.** `CARDS_SHELL` is unchanged (42×34, r12, inside
+the tray). Two things moved:
+
+- The **resting** container's declaration went from 55% to **30%** of the
+  `--surface-2`-into-transparent mix. Not a weakening: 55% was calibrated against
+  the translucent bar and composited to 5.5/255, and on the opaque tray the same
+  declaration lands at 10.5 — 80% of the way to the ~13 that read as "a second
+  selected tab" on a device. The percentage moved so the rendered value would not.
+  `nav-bar.spec.js` measures the composite and caps it at 9, which is what caught it.
+- The **selected** container gained `inset 0 1px 0 var(--inset-highlight)` — a lit
+  top edge, so the container agrees with the glyph inside it about where the light
+  comes from. It is the only thing P14-4 added to Cards.
+
+**What P14-4 did not do:** no motion beyond the existing 180ms colour/background
+transitions (P14-13 owns motion and haptics), no page content changed on any screen,
+`NavIcons.jsx` left in place, and the More sheet untouched — including its own 22px
+top radius, which does not match the tray's 18 and is a P14-5 tidy rather than a
+behaviour change.
 
 ## Content pipeline — the generate-*.mjs scripts
 

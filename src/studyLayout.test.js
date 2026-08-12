@@ -4,12 +4,17 @@ import {
   MIN_TAP_TARGET, DESKTOP_CARD_MIN_HEIGHT,
   MOBILE_SHELL_HEIGHT, DENSITIES,
 } from './studyLayout'
-// The bar's height belongs to the bar, not to the flashcard's geometry — the
-// study screen is one of its consumers, which is the whole point of the module.
-import { MOBILE_NAV_HEIGHT } from './navMetrics'
+// The bar's geometry belongs to the bar, not to the flashcard's — the study
+// screen is one of its consumers, which is the whole point of the module.
+//
+// The RESERVE, not the tray's own height: since P14-4 the tray floats clear of
+// the bottom edge, so what a screen has to keep free is the tray plus its float.
+import { MOBILE_NAV_RESERVE } from './navMetrics'
 
 const PHONES = [
   { name: 'iPhone 14', height: 844, density: 'roomy' },
+  // 667 − 66 = 601, one pixel the right side of COMPACT_MIN. This row is why the
+  // tray's float floor is 6px and not 8 (navMetrics.js).
   { name: 'iPhone SE 3', height: 667, density: 'compact' },
   { name: 'short Android', height: 640, density: 'tight' },
   { name: 'landscape phone', height: 390, density: 'tight' },
@@ -17,7 +22,7 @@ const PHONES = [
 
 describe('availableHeight', () => {
   it('subtracts the fixed bottom nav', () => {
-    expect(availableHeight(844)).toBe(844 - MOBILE_NAV_HEIGHT)
+    expect(availableHeight(844)).toBe(844 - MOBILE_NAV_RESERVE)
   })
 
   it('never goes negative', () => {
@@ -84,7 +89,7 @@ describe('studyLayout — mobile locks the screen to one viewport', () => {
     it(p.name + ': the shell is height-locked to the dynamic viewport', () => {
       expect(l.fixed).toBe(true)
       expect(l.shellHeight).toBe(MOBILE_SHELL_HEIGHT)
-      expect(l.available).toBe(p.height - MOBILE_NAV_HEIGHT)
+      expect(l.available).toBe(p.height - MOBILE_NAV_RESERVE)
     })
 
     it(p.name + ': the card is the only element that gives up space', () => {
@@ -102,8 +107,8 @@ describe('studyLayout — mobile locks the screen to one viewport', () => {
     expect(MOBILE_SHELL_HEIGHT.indexOf('100vh')).toBe(-1)
   })
 
-  it('subtracts exactly the nav height App.jsx reserves', () => {
-    expect(MOBILE_SHELL_HEIGHT.indexOf(MOBILE_NAV_HEIGHT + 'px')).toBeGreaterThan(-1)
+  it('subtracts exactly the nav space App.jsx reserves', () => {
+    expect(MOBILE_SHELL_HEIGHT.indexOf(MOBILE_NAV_RESERVE + 'px')).toBeGreaterThan(-1)
     expect(MOBILE_SHELL_HEIGHT.indexOf('env(safe-area-inset-bottom)')).toBeGreaterThan(-1)
     // The top inset too: App.jsx pads main with env(safe-area-inset-top) on
     // mobile, so a shell that ignores it overflows by the notch on a real

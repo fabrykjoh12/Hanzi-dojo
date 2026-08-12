@@ -1,42 +1,54 @@
 import { useState, useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { languageTheme, ink } from './languageTheme'
-import { MOBILE_PRIMARY, moreItemsFor } from './navConfig'
+import { MOBILE_PRIMARY, MOBILE_MORE_TAB, moreItemsFor } from './navConfig'
 import { TYPE } from './typeScale'
-import { MoreIcon } from './NavIcons'
-import { MOBILE_NAV_SPACE } from './navMetrics'
-import { NAV_COLUMN, navIconPx, iconRowStyle, cardsShellStyle } from './navEmphasis'
+import { NAV_COLUMN, navIconPx, iconRowStyle, cardsShellStyle, navTrayStyle } from './navEmphasis'
 import { trapDialogFocus } from './dialogFocus'
 import { pushSheet } from './sheetStack'
 import { tapFeedback } from './haptics'
 
 const MUTED = 'var(--text-muted)'
-// More is utility navigation and is meant to be the quietest thing here.
-const FAINT = 'var(--text-faint)'
 
-// Icon sizes, the Cards container and the column's height budget all live in
-// navEmphasis.js, with the ink measurements that chose them. Nothing about the
-// bar's hierarchy is a literal in this file any more.
+// Icon sizes, the Cards container, the tray's chrome and the column's height
+// budget all live in navEmphasis.js / navMetrics.js, with the measurements that
+// chose them. Nothing about the bar's geometry or hierarchy is a literal here.
+//
+// P14-4 dropped one thing from this file: More's glyph used to be drawn a step
+// fainter than the other four (`--text-faint` rather than `--text-muted`). That
+// existed because the flat MoreIcon was three tiny dots that still out-shouted its
+// neighbours at 20px. The dimensional family is drawn to one weight and More is
+// already the smallest of the five at 22px, so the extra colour step was quieting
+// something twice — and it made More the one tab whose resting state did not match
+// the others, which is the opposite of a family.
 
 // Primary tabs live directly in the bottom bar; the rest go behind the "More"
 // sheet. Study/practice modes are reached through the Practice tab.
 const PRIMARY = MOBILE_PRIMARY
 
-// One tab. Selection is carried by the glyph's own shape — outline becomes
-// filled — then by colour, then by the label's weight. Three signals, of which
-// only one is colour; the accent line that used to ride the bar's top edge is
-// gone, and with it the last thing on here that was decoration rather than
-// information.
+// One tab. Selection is carried by the glyph going from FLAT to DIMENSIONAL —
+// then by colour, then by the label's weight. Three signals, of which only one is
+// colour; the accent line that used to ride the bar's top edge is gone, and with it
+// the last thing on here that was decoration rather than information.
+//
+// P14-4 changed the shape of that first signal but not its job. The flat family
+// (NavIcons.jsx) swapped outline for filled: two different drawings. The
+// dimensional family (navGlyphs.jsx) draws ONE silhouette and lights it, so the
+// resting glyph paints that silhouette once in `--text-muted` and the selected one
+// clips three planes of the brand to the same shape. Still a change in the mark
+// rather than only in its hue — which is the property that matters — and
+// nav-bar.spec.js counts tones now instead of fills.
 //
 // `shell` is the fourth signal, and it belongs to exactly one tab: Cards gets a
-// rounded container behind its glyph. It is inside the bar, not floating over
-// it — no notch, no circle, no raised button, and the bar's height is untouched
-// (navEmphasis.js owns that budget and a test holds it).
+// rounded container behind its glyph. It is inside the tray, not floating over
+// it — no notch, no circle, no raised button, it does not break the tray's
+// silhouette, and the tray's height is untouched by it (navEmphasis.js owns that
+// budget and a test holds it).
 function Tab({
   icon: Icon, label, active, accentHex, shellAccent, onClick,
-  expanded, hasPopup, size, quiet, emphasis, shell,
+  expanded, hasPopup, size, emphasis, shell,
 }) {
-  const tone = active ? accentHex : (quiet ? FAINT : MUTED)
+  const tone = active ? accentHex : MUTED
   return (
     <button
       onClick={onClick}
@@ -220,18 +232,15 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
         </>
       )}
 
-      {/* Fixed bottom navigation bar */}
-      <nav aria-label="Primary" data-tour="nav" style={{
-        position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 30,
-        display: 'flex', alignItems: 'stretch',
-        background: 'var(--surface-glass)', backdropFilter: 'blur(14px)',
-        borderTop: '1px solid var(--border)',
-        // Declared, not emergent. The bar used to be however tall its padding,
-        // icon and label happened to add up to, while App.jsx reserved a
-        // different number it had been told once — see navMetrics.js.
-        boxSizing: 'border-box', height: MOBILE_NAV_SPACE,
-        paddingBottom: 'env(safe-area-inset-bottom)',
-      }}>
+      {/* The floating tray. Every number in its chrome — the inset, the radius, the
+          height, the surface, the elevation — is navTrayStyle() in navEmphasis.js,
+          so a unit test can read them and the /dev gallery draws the same object.
+
+          What changed in P14-4 and what did not: the tray is inset, rounded on all
+          four corners, solid instead of `--surface-glass` + `blur(14px)`, and it
+          floats clear of the bottom edge. The five tabs, their order, their keys,
+          their routing, the More sheet and Android Back are all untouched. */}
+      <nav aria-label="Primary" data-tour="nav" style={navTrayStyle()}>
         {PRIMARY.map(item => (
           <Tab key={item.key} icon={item.icon} label={item.label} accentHex={accentInk}
             // The glyph is a drawn mark, so it takes the ink-lifted accent; the
@@ -242,8 +251,9 @@ export default function MobileNav({ view, onNavigate, onLogout, isAdmin, languag
             size={navIconPx(item.key)}
             emphasis={item.key === 'study'} shell={item.key === 'study'} />
         ))}
-        <Tab icon={MoreIcon} label="More" accentHex={accentInk} active={moreActive} quiet
-          size={navIconPx('more')}
+        <Tab icon={MOBILE_MORE_TAB.Glyph} label={MOBILE_MORE_TAB.label}
+          accentHex={accentInk} active={moreActive}
+          size={navIconPx(MOBILE_MORE_TAB.key)}
           expanded={moreOpen} hasPopup="dialog" onClick={() => setMoreOpen(o => !o)} />
       </nav>
     </>

@@ -1,5 +1,5 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
-import { MOBILE_NAV_HEIGHT } from '../../src/navMetrics.js';
+import { MOBILE_NAV_HEIGHT, MOBILE_NAV_RESERVE } from '../../src/navMetrics.js';
 
 // The bottom bar's contract.
 //
@@ -62,16 +62,24 @@ async function barState(page) {
           labelSize: ls.fontSize,
           labelWeight: Number(ls.fontWeight),
           labelColor: ls.color,
-          // Outline vs filled: the glyph's own shape carries the selection,
-          // which is the signal that does not depend on seeing colour.
+          // How many BRAND TONES the glyph paints, which is what selection is
+          // since P14-4.
           //
-          // Anything inside a <mask> is skipped. The Cards glyph occludes its
-          // back card with one, and a mask's black and white are geometry, not
-          // paint — counting them made the RESTING Cards tab look filled and
-          // failed the assertion that selection is a shape.
-          filledParts: Array.from(svg.querySelectorAll('*'))
+          // It used to be outline-vs-filled, because the flat family (NavIcons.jsx)
+          // drew two different shapes for the two states. The dimensional family
+          // draws ONE shape and lights it: resting paints the silhouette once in
+          // --text-muted, selected clips three planes of the brand to the same
+          // silhouette. So the non-colour signal moved from "different outline" to
+          // "three tones of visibly different luminance", and this is the count of
+          // them.
+          //
+          // Anything inside a <mask> is skipped: a mask's black and white are
+          // geometry, not paint.
+          tonedParts: Array.from(svg.querySelectorAll('*'))
             .filter((n) => !n.closest('mask'))
-            .filter((n) => (n.getAttribute('fill') || 'none') !== 'none').length,
+            .map((n) => n.getAttribute('fill'))
+            .filter((f) => f && (f.indexOf('var(--primary') === 0 || f.indexOf('var(--plum') === 0))
+            .length,
         };
       }),
     };
@@ -183,12 +191,12 @@ for (const theme of ['light', 'dark']) {
       const active = bar.tabs.find((t) => t.current === 'page');
       expect(active.name).toBe('Stories');
 
-      // Shape first. The active and inactive glyphs differ by hue and barely at
-      // all by brightness (measured at 1.18:1 light / 1.26:1 dark), so if the
-      // outline→filled swap ever goes away, selection goes with it.
-      expect(active.filledParts).toBeGreaterThan(0);
-      for (const t of bar.tabs.filter((x) => x.current !== 'page' && x.name !== 'More')) {
-        expect(t.filledParts, t.name).toBe(0);
+      // Tone first. The active and inactive glyphs differ by hue and barely at
+      // all by average brightness, so if the flat→dimensional swap ever goes
+      // away, selection goes with it. Three planes minimum: lit, front, shaded.
+      expect(active.tonedParts).toBeGreaterThanOrEqual(3);
+      for (const t of bar.tabs.filter((x) => x.current !== 'page')) {
+        expect(t.tonedParts, t.name).toBe(0);
       }
       // Then weight, then colour.
       expect(active.labelWeight).toBeGreaterThan(600);
@@ -205,7 +213,7 @@ for (const theme of ['light', 'dark']) {
       const bar = await barState(page);
       const active = bar.tabs.find((t) => t.current === 'page');
       expect(active.name).toBe('Stories');
-      expect(active.filledParts).toBeGreaterThan(0);
+      expect(active.tonedParts).toBeGreaterThanOrEqual(3);
       expect(active.labelWeight).toBeGreaterThan(600);
     });
   });
@@ -228,12 +236,13 @@ test.describe('Cards carries weight without taking space', () => {
     expect(others.length).toBeGreaterThan(1);
 
     expect(cards.icon).toBeGreaterThan(others[0].icon);
-    // The step was ≤4px while Cards was carried by size alone. It is 27.5
-    // against 21–22 now, because size alone lost: measured as ink coverage the
-    // 22px Practice grid out-drew the 25px Cards glyph, 158px² to 147. The
-    // emphasis is deliberate and it is bounded — navEmphasis.test.js pins the
-    // band, and the ceiling here is what stops it becoming a badge.
-    expect(cards.icon - others[0].icon).toBeLessThanOrEqual(7);
+    // The step went 27.5-against-21 in P8 and 26-against-22-to-24 in P14-4, and
+    // the reason it could come down is that the drawings changed. The flat family
+    // needed the steep ramp because its Practice grid out-inked its Cards glyph
+    // (158px² to 147); the dimensional family is drawn to one weight, so the ramp
+    // only has to express hierarchy. The ceiling here is what stops it becoming a
+    // badge again — navEmphasis.test.js pins the whole ramp.
+    expect(cards.icon - others[0].icon).toBeLessThanOrEqual(4);
     // One step of label weight, same face and same size as every other tab.
     for (const t of others) expect(t.labelWeight, t.name).toBe(500);
     expect(cards.labelSize).toBe(others[0].labelSize);
@@ -243,7 +252,7 @@ test.describe('Cards carries weight without taking space', () => {
     // when the tab actually is the one you are on.
     expect(cards.current).toBe(null);
     expect(cards.labelColor).toBe(others[0].labelColor);
-    expect(cards.filledParts).toBe(0);
+    expect(cards.tonedParts).toBe(0);
   });
 
   test('has a container, and it is inside the bar rather than over it', async ({ page }) => {
@@ -281,6 +290,8 @@ test.describe('Cards carries weight without taking space', () => {
     // A rounded rectangle, not a circle: a FAB is the thing this is not.
     expect(shell.radius).toBeLessThan(shell.h / 2);
     expect(shell.insetTop).toBeGreaterThan(2);
+    // Inside the tray's rounded box, not breaking its silhouette.
+    expect(shell.insetTop).toBeLessThan(12);
     expect(shell.clearsBottom).toBe(true);
     expect(shell.painted).not.toBe('rgba(0, 0, 0, 0)');
     for (const bg of shell.others) expect(bg).toBe('rgba(0, 0, 0, 0)');
@@ -379,10 +390,11 @@ for (const phone of PHONES) {
         };
       });
 
-      // The height the P8 geometry pass settled; a larger centre glyph does not
-      // get to move it, least of all on the phone where Study is tightest.
+      // The tray declares its own height, and the shell reserves the tray plus
+      // its float — two numbers because the tray floats now, both from
+      // navMetrics.js so they cannot drift.
       expect(bar.height).toBe(MOBILE_NAV_HEIGHT);
-      expect(extra.pad).toBe(MOBILE_NAV_HEIGHT);
+      expect(extra.pad).toBe(MOBILE_NAV_RESERVE);
       expect(extra.overflowX).toBe(0);
 
       expect(bar.tabs).toHaveLength(5);
@@ -411,7 +423,7 @@ for (const phone of PHONES) {
         } : null;
       });
       expect(shell).not.toBe(null);
-      expect(shell.h).toBe(shell.viewportH - MOBILE_NAV_HEIGHT);
+      expect(shell.h).toBe(shell.viewportH - MOBILE_NAV_RESERVE);
     });
   });
 }

@@ -41,33 +41,13 @@ export const ALL_GLYPHS = [...NAV_GLYPHS, ...IDENTITY_GLYPHS]
 // 20 is the smallest anything on the bar has ever been (More, NAV_ICON_PX.more).
 export const GLYPH_SIZES = [20, 24, 28, 32]
 
-// ── The ramp this family wants ──────────────────────────────────────────────
-// A RECOMMENDATION, not the bar. `NAV_ICON_PX` in navEmphasis.js is what MobileNav
-// actually uses and P14-3 does not touch it; adopting these is P14-4's call.
+// ── The ramp ────────────────────────────────────────────────────────────────
+// It lived here as a recommendation for one commit. **P14-4 adopted it**, so it
+// now lives where the bar's numbers live — `NAV_ICON_PX` in navEmphasis.js — and
+// this module re-exports it rather than keeping a second copy that could drift.
 //
-// The glyphs themselves are all one weight now (136–145 px² of ink at 22px), so
-// every bit of the bar's visual hierarchy comes from this table. Measured, it lands
-// at Cards 203 · Stories 168 · Practice 165 · Home 149 · More 140 px² — Cards
-// clearly first, Stories and Practice at 81–83% of it, Home and More quieter, and
-// a 1.45x spread top to bottom.
-//
-// 81–83% is not a coincidence: it is where P8 left Practice relative to Cards on
-// the bar that passed device QA, which makes it the one number in this table with
-// evidence behind it rather than taste.
-//
-// The bar's own ramp is steeper — 27.5 down to 20, a 1.89x area ratio all by
-// itself — which put Stories at 62% of Cards even after the drawings were
-// balanced. Emphasis on the bar is also carried by the Cards container, the centre
-// column and the bold label (navEmphasis.js), so the glyph sizes do not have to do
-// all of it, and when they try, the row stops looking like one set of objects.
-export const NAV_GLYPH_PX = {
-  study: 26,
-  stories: 24,
-  practice: 23.5,
-  home: 23,
-  more: 22,
-}
-
-export function navGlyphPx(key) {
-  return NAV_GLYPH_PX[key] || NAV_GLYPH_PX.home
-}
+// Cards 26 · Stories 24 · Practice 23.5 · Home 23 · More 22, which measures
+// Cards 203 · Stories 168 · Practice 165 · Home 149 · More 140 px² of ink: Cards
+// clearly first, Stories and Practice at 81–83% of it (P8's device-approved
+// relationship), 1.45x top to bottom.
+export { NAV_ICON_PX as NAV_GLYPH_PX, navIconPx as navGlyphPx } from './navEmphasis'

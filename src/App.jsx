@@ -916,7 +916,10 @@ export default function App() {
         position: 'relative',
         background: 'var(--bg)',
       }}>
-        <Background language={profile.active_language} />
+        {/* `bottomSupport` paints the page ground in the strip below the floating
+            tray, so content scrolling past the fold never shows underneath it.
+            Same condition as the tray itself. */}
+        <Background language={profile.active_language} bottomSupport={isMobile && showTabBar} />
         {!isMobile && (
           <div style={{ position: 'relative', zIndex: 10 }}>
             <Sidebar

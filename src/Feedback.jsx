@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import { toast } from './toast'
 import { useIsMobile } from './useIsMobile'
 import { anySheetOpen, subscribeSheets } from './sheetStack'
-import { MOBILE_NAV_HEIGHT } from './navMetrics'
+import { MOBILE_NAV_HEIGHT, NAV_TRAY_BOTTOM } from './navMetrics'
 import { feedbackStoryContext } from './feedbackContext'
 import { BUILD_SHA } from './version'
 import { MessageCircleHeart, X, Bug, Lightbulb, MessageSquare } from 'lucide-react'
@@ -127,7 +127,11 @@ export default function Feedback({ session, profile, view }) {
           position: 'fixed', zIndex: 45,
           right: isMobile ? '16px' : '24px',
           bottom: isMobile
-            ? 'calc(' + (MOBILE_NAV_HEIGHT + FAB_GAP_ABOVE_NAV) + 'px + env(safe-area-inset-bottom))'
+            // P14-4: the tray floats, so the button clears the tray's height AND
+            // the tray's own bottom offset — `NAV_TRAY_BOTTOM`, not a bare
+            // safe-area inset, or the button sits inside the tray on a phone with
+            // no home indicator.
+            ? 'calc(' + (MOBILE_NAV_HEIGHT + FAB_GAP_ABOVE_NAV) + 'px + ' + NAV_TRAY_BOTTOM + ')'
             : '24px',
           width: '50px', height: '50px', borderRadius: '999px',
           background: PRIMARY, border: 'none', cursor: 'pointer',

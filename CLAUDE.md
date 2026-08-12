@@ -355,6 +355,16 @@ Hardcoded neutral hexes are a bug.
   about — on a ground darkened from the *language accent*. Everything else is a
   flat `Panel`. Atmosphere stays under ~12% opacity and is **drawn** (`inkWash.js`),
   never photographic.
+- **The bottom navigation is a floating tray, and it costs two numbers** (P14-4).
+  `MOBILE_NAV_HEIGHT` (60) is the object; `MOBILE_NAV_RESERVE` (66) is what a screen
+  must keep clear — the tray plus its float. Anything reserving the bar reads
+  `MOBILE_NAV_SPACE` from `navMetrics.js`; **never add per-screen bottom padding.**
+  Its chrome is `navTrayStyle()` in `navEmphasis.js`, its icons are `navGlyphs.jsx`
+  through `navConfig.MOBILE_PRIMARY`, and the strip below it is painted by
+  `Background.jsx`'s `BottomSupport` — the page's own ground, image included, or
+  content scrolls visibly under the tray. **Changing the tray's height changes the
+  flashcard**: the float floor is 6px because 8px moves a 667px phone out of
+  `studyLayout`'s `compact` band.
 - **Flex scroll rule:** any `flex: 1` scroll area inside a `position: fixed` or
   fixed-height flex column needs `min-height: 0`, or it grows to fit its content
   and the overflow gets clipped.
