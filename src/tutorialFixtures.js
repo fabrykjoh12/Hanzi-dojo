@@ -84,6 +84,20 @@ export const TUTORIAL_SCENE = {
   ],
 }
 
+// The schedule preview under the four grades, on cards 2 and 3 (P12-3).
+//
+// Card 1 teaches what the grades MEAN; from card 2 the row shows what a grade
+// DOES, in the exact slot the real study screen uses — which is what makes
+// "your grade decides when you see it again" demonstrated rather than
+// asserted. Fixture values, deliberately: the real preview call is
+// non-deterministic (the scheduler fuzzes the longer intervals so reviews
+// spread out), and a tutorial must render the same on every device. The first
+// three ARE the production values for a brand-new card, byte for byte, and the
+// fourth sits inside the production fuzz band — a test pins both claims
+// against the live preview, so a scheduler tuning change fails loudly here
+// instead of quietly letting the tutorial lie.
+export const TUTORIAL_INTERVALS = ['1 min', '6 min', '10 min', '7 days']
+
 // Every line the tutorial says. Short enough to read at a glance, because a
 // learner who is being taught by doing is not reading.
 export const TUTORIAL_COPY = {

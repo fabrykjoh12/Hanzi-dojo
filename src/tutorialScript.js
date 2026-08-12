@@ -29,7 +29,7 @@
 import { isGradeKey } from './grades'
 import { cardMarker } from './cardMarker'
 import { gradePrompt } from './gradePrompt'
-import { TUTORIAL_CARDS, TUTORIAL_SCENE, TUTORIAL_COPY } from './tutorialFixtures'
+import { TUTORIAL_CARDS, TUTORIAL_SCENE, TUTORIAL_COPY, TUTORIAL_INTERVALS } from './tutorialFixtures'
 
 export const CARD_COUNT = TUTORIAL_CARDS.length
 
@@ -226,6 +226,9 @@ export function view(state) {
     // The one-word meanings, on the first revealed card only. Repeating them on
     // card 2 would be the app explaining a control the learner has used.
     glosses: null,
+    // The schedule preview, on the LATER revealed cards only — what a grade
+    // does, once what it means has been taught. Same slot the real row uses.
+    intervals: null,
     // The scene, when this state shows it, and whether the learned words are
     // marked and translated — false before the cards, true after.
     scene: null,
@@ -245,6 +248,7 @@ export function view(state) {
       replayed: state.replayed,
       showGrades: state.revealed,
       glosses: state.revealed && first ? gradePrompt(cardMarker(TUTORIAL_CARDS[state.cardIndex]).key).glosses : null,
+      intervals: state.revealed && !first ? TUTORIAL_INTERVALS : null,
       // The pronunciation pointer is spent once used: it says "this can be
       // tapped", and once it has been, it is noise.
       coach: (state.revealed ? coaching.back : coaching.front)

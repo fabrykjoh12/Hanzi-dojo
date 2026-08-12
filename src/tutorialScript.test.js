@@ -6,7 +6,8 @@ import {
   actionsFor, view, advance, retreat, defaultWalkthrough, runTutorial,
   serializeTutorial, resumeTutorialState, goalsThrough,
 } from './tutorialScript'
-import { TUTORIAL_CARDS, TUTORIAL_SCENE } from './tutorialFixtures'
+import { TUTORIAL_CARDS, TUTORIAL_SCENE, TUTORIAL_INTERVALS } from './tutorialFixtures'
+import { previewLabels } from './srs'
 import { gradeGlosses } from './gradePrompt'
 import { GRADES, GRADE_KEYS } from './grades'
 
@@ -291,6 +292,44 @@ describe('coaching decreases', () => {
   it('gives one gloss per real grade, in the real order', () => {
     expect(gradeGlosses('new')).toHaveLength(GRADES.length)
     expect(GRADES.map(g => g.label)).toEqual(['Again', 'Hard', 'Good', 'Easy'])
+  })
+
+  it('shows the schedule preview on cards 2 and 3 — and never on card 1', () => {
+    // Card 1 carries the MEANINGS; the intervals arrive one card later, in the
+    // same slot, so what a grade does is demonstrated right after what it says
+    // has been taught (P12-3). Both at once would be two explanations of one
+    // row of buttons.
+    const views = walk(defaultWalkthrough()).map(view)
+    for (const v of views.filter(x => x.phase === PHASES.CARD)) {
+      if (!v.revealed) { expect(v.intervals).toBe(null); continue }
+      if (v.cardIndex === 0) {
+        expect(v.glosses).not.toBe(null)
+        expect(v.intervals).toBe(null)
+      } else {
+        expect(v.glosses).toBe(null)
+        expect(v.intervals).toBe(TUTORIAL_INTERVALS)
+      }
+    }
+  })
+
+  it('previews the intervals the real scheduler would actually give', () => {
+    // The fixture exists because the live preview is non-deterministic (fuzz
+    // on the longer intervals) and a tutorial must render the same on every
+    // device — but fixture must never mean fiction. The learning steps are the
+    // production values byte for byte, and the Easy preview sits inside the
+    // production fuzz band. A scheduler tuning change fails HERE, loudly,
+    // instead of quietly letting the tutorial lie about the schedule.
+    const real = previewLabels(TUTORIAL_CARDS[0])
+    expect(TUTORIAL_INTERVALS[0]).toBe(real[0])
+    expect(TUTORIAL_INTERVALS[1]).toBe(real[1])
+    expect(TUTORIAL_INTERVALS[2]).toBe(real[2])
+    expect(TUTORIAL_INTERVALS[3]).toMatch(/^\d+ days$/)
+    expect(real[3]).toMatch(/^\d+ days$/)
+    const shown = parseInt(TUTORIAL_INTERVALS[3], 10)
+    // Sample the fuzz band rather than trusting one roll of it.
+    const band = new Set()
+    for (let i = 0; i < 40; i += 1) band.add(parseInt(previewLabels(TUTORIAL_CARDS[0])[3], 10))
+    expect([...band].some(d => Math.abs(d - shown) <= 1)).toBe(true)
   })
 
   it('only says what a grade does after the learner has pressed one', () => {

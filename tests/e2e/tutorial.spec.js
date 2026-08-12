@@ -223,6 +223,29 @@ test.describe('Teaching', () => {
     }
   });
 
+  test('demonstrates the schedule on cards 2 and 3 — meanings first, intervals after', async ({ page }) => {
+    // Card 1 back: the meanings, and no schedule — two explanations of one
+    // row of buttons would bury both.
+    await walkTo(page, 'card1');
+    await card(page).click();
+    await expect(page.getByText('New to me', { exact: true })).toBeVisible();
+    await expect(page.getByText('10 min', { exact: true })).toHaveCount(0);
+    await grade(page, 'Good').click();
+
+    // Card 2 back: "your grade decides when you see it again", DEMONSTRATED —
+    // the real row's schedule preview, in its own slot (P12-3).
+    await card(page).click();
+    for (const label of ['1 min', '6 min', '10 min', '7 days']) {
+      await expect(page.getByText(label, { exact: true })).toBeVisible();
+    }
+    await expect(page.getByText('New to me', { exact: true })).toHaveCount(0);
+    await grade(page, 'Good').click();
+
+    // Card 3 back: still there — it is the product now, not a lesson.
+    await card(page).click();
+    await expect(page.getByText('7 days', { exact: true })).toBeVisible();
+  });
+
   test('coaches card 1, hints at card 2, and leaves card 3 alone', async ({ page }) => {
     await walkTo(page, 'card1');
     await expect(page.getByText('Tap to reveal')).toBeVisible();

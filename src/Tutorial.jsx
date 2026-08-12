@@ -330,8 +330,12 @@ export default function Tutorial({ onComplete, onSkip = null, resumable = true, 
                   {gradesCoach}
                 </div>
               )}
+              {/* Card 1: what the grades MEAN. Cards 2–3: what a grade DOES —
+                  the schedule preview, in the same slot the real row uses, so
+                  "your grade decides when you see it again" is demonstrated
+                  on the very next card rather than asserted (P12-3). */}
               <GradeRow
-                labels={v.glosses || ['', '', '', '']}
+                labels={v.glosses || v.intervals || ['', '', '', '']}
                 onGrade={(_grade, key) => { tapFeedback(); send(ACTIONS.GRADE, key) }}
                 suggested={null}
                 layout={layout}
