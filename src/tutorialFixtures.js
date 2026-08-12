@@ -124,11 +124,13 @@ export const TUTORIAL_COPY = {
     line: 'You probably can’t read this yet. It takes three words.',
     cta: 'Learn them',
   },
+  // The recap's tally line is derived from the card count where it renders
+  // ("3 words practiced" — the runner owns the number so it can never drift
+  // from CARD_COUNT). "practiced", never "learned": nothing here entered a
+  // schedule; the three words are met again, properly, in the learner's real
+  // first session.
   recap: {
     title: 'Session complete',
-    // "practiced", never "learned": nothing here entered a schedule. The three
-    // words are met again, properly, in the learner's real first session.
-    line: '3 words practiced',
     cta: 'Continue',
   },
   unlock: {

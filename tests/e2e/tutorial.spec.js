@@ -223,6 +223,43 @@ test.describe('Teaching', () => {
     }
   });
 
+  test('draws the recap in the production recap’s clothes', async ({ page }) => {
+    // The card, the chip and the title type are SessionRecap.jsx's — 24px
+    // card, 58×58 chip at radius 18, 26px/750 title, and the Today stat tile —
+    // so the completion screen a learner meets after every REAL session is one
+    // they have already seen (P12-4). Numbers asserted against the production
+    // component's constants; if SessionRecap is redesigned, this fails and the
+    // tutorial follows it.
+    await walkTo(page, 'recap');
+    const shape = await page.evaluate(() => {
+      const h1 = document.querySelector('h1');
+      const card = h1.parentElement;
+      const chip = card.firstElementChild;
+      const tile = Array.from(card.querySelectorAll('div'))
+        .find(d => (d.textContent || '').trim().startsWith('Today'));
+      const cs = getComputedStyle(card);
+      const chipR = chip.getBoundingClientRect();
+      return {
+        cardRadius: cs.borderTopLeftRadius,
+        cardBorder: getComputedStyle(card).borderTopWidth,
+        chipW: Math.round(chipR.width),
+        chipRadius: getComputedStyle(chip).borderTopLeftRadius,
+        titleSize: getComputedStyle(h1).fontSize,
+        titleWeight: getComputedStyle(h1).fontWeight,
+        tileRadius: tile ? getComputedStyle(tile).borderTopLeftRadius : null,
+      };
+    });
+    expect(shape.cardRadius).toBe('24px');
+    expect(shape.cardBorder).toBe('1px');
+    expect(shape.chipW).toBe(58);
+    expect(shape.chipRadius).toBe('18px');
+    expect(shape.titleSize).toBe('26px');
+    expect(shape.titleWeight).toBe('750');
+    expect(shape.tileRadius).toBe('14px');
+    await expect(page.getByText('Today', { exact: true })).toBeVisible();
+    await expect(page.getByText('3 words practiced')).toBeVisible();
+  });
+
   test('demonstrates the schedule on cards 2 and 3 — meanings first, intervals after', async ({ page }) => {
     // Card 1 back: the meanings, and no schedule — two explanations of one
     // row of buttons would bury both.

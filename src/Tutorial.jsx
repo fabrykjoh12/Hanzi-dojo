@@ -370,30 +370,63 @@ export default function Tutorial({ onComplete, onSkip = null, resumable = true, 
     )
   }
 
+  // ── Recap and unlock — the production recap's visual system (P12-4) ──────
+  // The card, the chip, the title type and the stat tile are SessionRecap's,
+  // to the pixel where the design system allows, so the completion screen a
+  // learner meets after every real session is one they have already seen.
+  // Deliberately NOT the component itself: SessionRecap's next step navigates
+  // to the story shelf and its forecast tile promises a tomorrow — both lies
+  // inside a sandboxed tutorial. The two divergences from its literal styles
+  // are house rules: tints are color-mix into the surface (SessionRecap's
+  // alpha-hex tints predate that rule), and the icon ink lifts in dark mode.
   if (v.phase === 'recap' || v.phase === 'unlock') {
     const unlock = v.phase === 'unlock'
     return (
       <Shell onSkip={skip}>
-        <div style={{ textAlign: 'center', animation: rise }} key={v.id}>
+        <div
+          key={v.id}
+          style={{
+            textAlign: 'center', animation: rise,
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: '24px', padding: '40px 30px',
+            boxShadow: '0 22px 60px rgba(24,24,27,0.07)',
+          }}
+        >
           <div style={{
-            width: '64px', height: '64px', borderRadius: '20px', margin: '0 auto 20px',
+            width: '58px', height: '58px', borderRadius: '18px', margin: '0 auto 18px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'color-mix(in srgb, ' + accentHex + ' 11%, var(--surface))',
-            border: '1px solid color-mix(in srgb, ' + accentHex + ' 26%, var(--border))',
+            background: 'color-mix(in srgb, ' + accentHex + ' 8%, var(--surface))',
+            border: '1px solid color-mix(in srgb, ' + accentHex + ' 12%, var(--surface))',
           }}>
             {unlock
-              ? <BookOpen size={28} strokeWidth={1.8} color={ink(accentHex)} />
-              : <Check size={30} strokeWidth={2.2} color={ink(accentHex)} />}
+              ? <BookOpen size={28} strokeWidth={1.9} color={ink(accentHex)} />
+              : <Check size={28} strokeWidth={1.9} color={ink(accentHex)} />}
           </div>
-          <h1 style={{
-            margin: '0 0 8px', fontSize: '24px', fontWeight: 800,
-            color: 'var(--text)', letterSpacing: '-0.01em',
-          }}>
+          <h1 style={{ margin: '0 0 8px', fontSize: '26px', fontWeight: 750, color: 'var(--text)' }}>
             {v.copy.title}
           </h1>
-          <p style={{ margin: '0 0 32px', fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.55 }}>
-            {v.copy.line}
-          </p>
+          {unlock ? (
+            <p style={{ margin: '0 0 26px', fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              {v.copy.line}
+            </p>
+          ) : (
+            // The recap's tally, drawn as the real recap's stat tile — one
+            // tile, because the tutorial has a today and honestly no tomorrow.
+            <div style={{
+              margin: '18px 0 26px', padding: '14px 16px', borderRadius: '14px',
+              background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'left',
+            }}>
+              <div style={{
+                fontSize: '11px', fontWeight: 700, color: 'var(--text-faint)',
+                textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '4px',
+              }}>
+                Today
+              </div>
+              <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{v.cardTotal}</strong> words practiced
+              </div>
+            </div>
+          )}
           <PrimaryAction label={v.copy.cta} onClick={advanceOnce} accentHex={accentHex} />
         </div>
       </Shell>
