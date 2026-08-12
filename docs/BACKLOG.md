@@ -10,6 +10,53 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+## P14-3 — the icon family, and what it did NOT do (2026-08-12)
+
+Five dimensional glyphs exist (`src/navGlyphs.jsx`), visible only in `/dev`. The
+rules and the rejected concepts are documented in the file itself; this is the
+list of things a later phase has to pick up.
+
+**P14-4 owns the handover.** `MobileNav.jsx`, `NavIcons.jsx`, `navConfig.js` and
+`navEmphasis.js` are untouched by P14-3 — deliberately, since the tray and its
+icons have to change in one commit or the bar ships half a redesign. Three things
+have to be decided there, not before:
+
+- **The fifth tab.** The bar's five tabs are Home · Stories · Cards · Practice ·
+  **More**, and the family's fifth glyph is **Profile**. Profile currently lives
+  inside the More sheet. Swapping More for Profile is a navigation-architecture
+  change (where do Settings, the level test, Words, Dictionary go?), which is why
+  the family was drawn for the destination and not for the sheet. `MoreIcon` has
+  no dimensional twin and does not need one until that is settled.
+- **Optical sizes.** `NAV_ICON_PX` was measured against the FLAT family's ink
+  (P8). The new family's ink at the same sizes is Cards 234 · Stories 141 ·
+  Practice 122 · Profile 105 · Home 102 px², so the existing sizes still put Cards
+  66% ahead of the next loudest — but the numbers should be re-derived rather than
+  inherited on faith.
+- **Where the accent goes.** Only Stories carries one (a plum ribbon). Practice's
+  `--blue` was drawn and removed: a small inset inside a tile reads as an
+  unread-notification badge at 20px, and a whole tile in blue makes Practice look
+  like a different app's icon. If Practice is to have an accent it belongs in the
+  tray, not in the glyph.
+
+**Not drawn, on purpose (the brief's "keep the scope narrow"):** Listening,
+Writing, Grammar, Weak Words, Level Test; reward and story-unlock artwork; the app
+icon; any animation or haptic on selection.
+
+**Only Inter 300/400/500/600 are bundled** (`src/fonts.js`), which P14-2 measured:
+every requested weight ≥550 matches 600 and renders identically, 550 through 900
+drawing the same string at the same width. The five-weight allow-list is therefore
+honest about what the screen shows, but **700 and 800 are synthetic emboldening of
+600**, not real cuts — a display title at 800 is the browser smearing a semibold.
+Adding Inter 700 (and possibly 800) as bundled weights is a real visual-quality
+win for `TYPE.display` / `TYPE.titleScreen` / the eyebrow, and it is a **font-asset
+change**: bytes in the bundle, a `src/fonts.js` edit, and a re-measure of the
+weight allow-list. Not a P14-3 change; do not touch the assets to "fix" a weight.
+
+**`tutorialScript.test.js:402` is flaky.** It samples 40 rolls of `previewLabels`
+and asserts one lands within ±1 day of the pinned interval — FSRS fuzz is random,
+so it can miss. Seen once in five full-suite runs during P14-3 (green the other
+four); unrelated to any P14 change. Fix by seeding the fuzz or widening the band.
+
 ## P14-2 — what normalization deliberately did NOT touch (2026-08-12)
 
 The censuses after P14-2: **weights 12 → 5** (628 uses), **sizes 42 → 34** (925),
