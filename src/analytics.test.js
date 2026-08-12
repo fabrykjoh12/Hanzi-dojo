@@ -135,6 +135,14 @@ it('defines the public-story funnel events', () => {
   expect(EVENTS.PUBLIC_STORY_SIGNUP_CLICKED).toBe('public_story_signup_clicked')
 })
 
+it('names the tutorial-skip event — a decision with an address', () => {
+  // Fired from the Skip tap with { state_id }, so the funnel can say WHERE
+  // learners choose to leave — before the cards, at grading, or after the
+  // payoff. Asserted as a string because the analysis queries are written
+  // against it, and only on a real first run (a replay reports nothing).
+  expect(EVENTS.TUTORIAL_SKIPPED).toBe('tutorial_skipped')
+})
+
 it('names the practice-drill event, and keys it on a drill', () => {
   // Fired on the tap that enters a drill, never on the drill screen's mount —
   // <Activity> re-runs effects on every tab show, so mount would over-count

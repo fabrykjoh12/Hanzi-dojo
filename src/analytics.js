@@ -31,6 +31,10 @@ export const EVENTS = {
   TUTORIAL_SESSION_COMPLETE: 'tutorial_session_complete',
   TUTORIAL_STORY_REACHED: 'tutorial_story_reached',
   TUTORIAL_COMPLETED: 'tutorial_completed',
+  // Where the learner chose to leave — `state_id` carries the state the Skip
+  // was pressed from, which is the datum the six milestones above cannot give:
+  // an abandonment is a device closing, a skip is a decision with an address.
+  TUTORIAL_SKIPPED: 'tutorial_skipped',
   PRELOGIN_SIGNUP_STARTED: 'prelogin_signup_started',
   SIGNUP_STARTED: 'signup_started',
   SIGNUP_COMPLETED: 'signup_completed',

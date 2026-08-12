@@ -316,14 +316,26 @@ test.describe('Teaching', () => {
     expect(marks).toBe(0);
   });
 
-  test('offers exactly one action on every non-card state', async ({ page }) => {
+  test('offers exactly one PRIMARY action on every non-card state — plus the quiet Skip', async ({ page }) => {
     for (const stop of ['welcome', 'scene-before', 'recap', 'unlock', 'scene-after']) {
       await walkTo(page, stop);
-      const count = await page.evaluate(() =>
+      const found = await page.evaluate(() =>
         Array.from(document.querySelectorAll('button'))
-          .filter(b => b.getBoundingClientRect().height >= 44).length);
-      expect(count, stop).toBe(1);
+          .filter(b => b.getBoundingClientRect().height >= 44)
+          .map(b => (b.textContent || '').trim()));
+      // One primary decision per screen; Skip is the one standing exception,
+      // present everywhere (P12-2), drawn as quiet text but a full target.
+      expect(found.filter(t => t !== 'Skip'), stop).toHaveLength(1);
+      expect(found, stop).toContain('Skip');
     }
+  });
+
+  test('Skip is one tap away on the cards too', async ({ page }) => {
+    await walkTo(page, 'card2');
+    const skip = page.getByRole('button', { name: 'Skip' });
+    await expect(skip).toBeVisible();
+    const box = await skip.boundingBox();
+    expect(box.height).toBeGreaterThanOrEqual(44);
   });
 
   test('writes nothing — no card, no review, no profile', async ({ page }) => {

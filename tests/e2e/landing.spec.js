@@ -113,6 +113,51 @@ for (const phone of PHONES) {
   });
 }
 
+test.describe('Skipping the introduction (P12-2)', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('lands on the SIGNUP hand-off, reports where, and never returns to marketing', async ({ page }) => {
+    // Capture the analytics writes so the skip's address can be asserted.
+    const events = [];
+    await page.route('**/rest/v1/analytics_events**', async (route) => {
+      if (route.request().method() === 'POST') {
+        const body = route.request().postDataJSON();
+        for (const row of Array.isArray(body) ? body : [body]) events.push(row);
+        return route.fulfill({ status: 201, headers: { 'access-control-allow-origin': '*' }, body: '' });
+      }
+      return route.fallback();
+    });
+
+    await page.goto('/');
+    await page.getByRole('button', { name: /Start your first story/i }).click();
+    await page.getByRole('button', { name: 'Start' }).click();
+    await page.getByRole('button', { name: 'Learn them' }).click();
+    // One card in — mid-flow, the worst place an exit could misbehave.
+    await page.getByRole('button', { name: /flashcard — tap to reveal/i }).click();
+    await page.getByRole('button', { name: /^Good/ }).click();
+
+    await page.getByRole('button', { name: 'Skip' }).click();
+
+    // The same hand-off finishing produces: the signup form, not the pitch.
+    await expect(page.getByLabel('Email')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sign up' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByText(/Unlock stories you can actually read/i)).toHaveCount(0);
+
+    // The decision has an address.
+    await page.waitForTimeout(400);
+    const skipped = events.filter(e => e.name === 'tutorial_skipped');
+    expect(skipped).toHaveLength(1);
+    expect(skipped[0].props.state_id).toBe('card-2-front');
+
+    // …and the teaching is recorded as handled: no data was created, but the
+    // introduction does not replay on the next launch.
+    expect(await page.evaluate(() => localStorage.getItem('hd:tutorial-done'))).toBe('1');
+    await page.reload();
+    await expect(page.getByLabel('Email')).toBeVisible();
+    await expect(page.getByText('Learn Chinese through words and stories.')).toHaveCount(0);
+  });
+});
+
 test.describe('Returning visitors', () => {
   test('Log in goes straight to the form — no tutorial, and the LOGIN tab', async ({ page }) => {
     await page.goto('/');

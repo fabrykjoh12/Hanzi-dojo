@@ -227,6 +227,17 @@ export default function Landing({ authNotice = null }) {
     openAuth('tutorial', 'signup')
   }
 
+  // Skipping is the same hand-off as finishing: the teaching is recorded as
+  // handled (no replay on the next launch, no Home coach marks re-teaching a
+  // screen they declined a tour of), and the learner lands on the signup form
+  // — never back on the marketing page they already walked past. The tutorial
+  // itself reports WHERE the skip happened (tutorial_skipped, state_id).
+  const skipTutorial = () => {
+    markTutorialDone()
+    track(EVENTS.PRELOGIN_SIGNUP_STARTED, { language: 'chinese' })
+    openAuth('tutorial', 'signup')
+  }
+
   // The store apps open here instead of the marketing page.
   if (mode === 'welcome') {
     return (
@@ -238,7 +249,7 @@ export default function Landing({ authNotice = null }) {
   }
 
   if (mode === 'tutorial') {
-    return <Tutorial onComplete={finishTutorial} backRef={tutorialBackRef} />
+    return <Tutorial onComplete={finishTutorial} onSkip={skipTutorial} backRef={tutorialBackRef} />
   }
 
   if (mode === 'auth') {

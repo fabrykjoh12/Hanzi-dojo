@@ -71,15 +71,35 @@ const FUNNEL = {
   account: EVENTS.TUTORIAL_COMPLETED,
 }
 
-function Shell({ children, locked, height }) {
+function Shell({ children, locked, height, onSkip }) {
   return (
     <div style={{
       minHeight: '100dvh',
       background: 'var(--bg)',
+      position: 'relative',
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       // Outside <main>, so both insets are this screen's own problem.
       padding: 'calc(16px + env(safe-area-inset-top, 0px)) 16px calc(20px + env(safe-area-inset-bottom, 0px))',
     }}>
+      {/* Quiet, always in the same corner, on every state (P12-2). A learner
+          who wants out is not made to hunt for the door — but it whispers,
+          because the tutorial's whole bet is that the next ninety seconds are
+          worth having. A full tap target even though it draws as small text. */}
+      {onSkip && (
+        <button
+          onClick={onSkip}
+          style={{
+            position: 'absolute', zIndex: 2,
+            top: 'calc(6px + env(safe-area-inset-top, 0px))', right: '6px',
+            minHeight: '44px', minWidth: '44px', padding: '0 14px',
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: 'var(--text-muted)', fontSize: '13.5px', fontWeight: 650,
+            fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          Skip
+        </button>
+      )}
       <div style={{
         width: '100%', maxWidth: MAX_WIDTH + 'px',
         flex: 1, minHeight: 0,
@@ -151,7 +171,7 @@ function StoryLine({ text, known, accentHex, font }) {
   )
 }
 
-export default function Tutorial({ onComplete, resumable = true, finishLabel = null, backRef = null }) {
+export default function Tutorial({ onComplete, onSkip = null, resumable = true, finishLabel = null, backRef = null }) {
   const [state, setState] = useState(() => {
     if (!resumable) return initialTutorialState()
     const saved = readTutorialProgress()
@@ -228,6 +248,17 @@ export default function Tutorial({ onComplete, resumable = true, finishLabel = n
   const send = (action, payload) => setState(s => advance(s, action, payload))
   const advanceOnce = () => { tapFeedback(); send(ACTIONS.CONTINUE) }
 
+  // Skip (P12-2): a decision with an address. Which state it was pressed from
+  // is the datum the milestone funnel cannot give — an abandonment is a device
+  // closing, a skip is a choice — so it is reported here, where the state id
+  // is known, and only on a real first run (a replay reports nothing, exactly
+  // like the funnel). What skipping MEANS — mark the teaching handled, land on
+  // the signup hand-off — is the caller's, same as finishing.
+  const skip = onSkip ? () => {
+    if (resumable) track(EVENTS.TUTORIAL_SKIPPED, { state_id: v.id })
+    onSkip()
+  } : null
+
   const coachAt = (anchor) => {
     const found = v.coach.find(c => c.anchor === anchor)
     return found ? found.text : null
@@ -239,10 +270,13 @@ export default function Tutorial({ onComplete, resumable = true, finishLabel = n
     const cardCoach = coachAt('card')
     const gradesCoach = coachAt('grades')
     return (
-      <Shell locked={layout.fixed} height={layout.shellHeight}>
+      <Shell locked={layout.fixed} height={layout.shellHeight} onSkip={skip}>
         <div style={{
           flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           gap: '12px', marginBottom: layout.headerGap + 'px', minHeight: '24px',
+          // Room for the Skip in the corner, so the coach line never sits
+          // under it.
+          paddingRight: skip ? '56px' : 0,
         }}>
           <span style={{ ...NUM, fontSize: '12.5px', fontWeight: 700, color: 'var(--text-faint)' }}>
             {v.cardNumber} / {v.cardTotal}
@@ -317,7 +351,7 @@ export default function Tutorial({ onComplete, resumable = true, finishLabel = n
 
   if (v.phase === 'welcome') {
     return (
-      <Shell>
+      <Shell onSkip={skip}>
         <div style={{ textAlign: 'center', animation: rise }}>
           <div style={{ ...heroWordmarkStyle('34px'), marginBottom: '18px' }}>{BRAND_NAME}</div>
           <h1 style={{
@@ -335,7 +369,7 @@ export default function Tutorial({ onComplete, resumable = true, finishLabel = n
   if (v.phase === 'recap' || v.phase === 'unlock') {
     const unlock = v.phase === 'unlock'
     return (
-      <Shell>
+      <Shell onSkip={skip}>
         <div style={{ textAlign: 'center', animation: rise }} key={v.id}>
           <div style={{
             width: '64px', height: '64px', borderRadius: '20px', margin: '0 auto 20px',
@@ -370,7 +404,7 @@ export default function Tutorial({ onComplete, resumable = true, finishLabel = n
   // that the text visibly did not change; only the learner did.
   if (v.phase === 'scene-before' || v.phase === 'scene-after') {
     return (
-      <Shell>
+      <Shell onSkip={skip}>
         <div style={{ width: '100%', animation: rise }} key={v.id}>
           <p style={{
             margin: '0 0 20px', padding: '12px 15px', borderRadius: '4px',

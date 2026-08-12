@@ -8,6 +8,7 @@ import {
   storyPath, isResetPasswordPath, isTutorialPath,
 } from './routes'
 import { authNoticeFromSearch } from './nativeAuth'
+import { markTutorialDone } from './prelogin'
 import { startSession, endSession, setAnalyticsContext } from './analytics'
 import { isBootstrapFailure } from './supabaseErrors'
 import { ensureLanguageFont } from './fontLoader'
@@ -502,6 +503,14 @@ export default function App() {
           resumable={!session}
           finishLabel={session ? 'Done' : null}
           onComplete={() => routerNavigate('/', { replace: true })}
+          // Skipping signed out is the same decision it is on the landing
+          // flow: the teaching is handled, and `/` then resolves to the
+          // signup form (landingEntry + authEntryTab), never back to the
+          // marketing page. A signed-in replay just returns to the app.
+          onSkip={() => {
+            if (!session) markTutorialDone()
+            routerNavigate('/', { replace: true })
+          }}
         />
       </Suspense>
     )
