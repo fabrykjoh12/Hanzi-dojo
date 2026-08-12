@@ -1,9 +1,10 @@
 import { ArrowLeft, Play } from 'lucide-react'
 import { inkStrong } from './languageTheme'
+import { IconButton } from './controls'
+import { holdLayout } from './controlTokens'
 
 // P14-0: vermilion, themed. See ui.jsx.
 const PRIMARY = 'var(--primary)'
-const ghost = { background: 'none', border: 'none', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center' }
 const startBtn = { marginTop: '24px', width: '100%', border: 'none', borderRadius: '16px', background: PRIMARY, color: '#fff', fontSize: '15.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px' }
 function pct(n, total) { return total ? Math.round((n / total) * 100) + '%' : '0%' }
 
@@ -44,7 +45,10 @@ export default function ReaderLaunch({ story, isRead, levelLabel, accent, theme,
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', alignItems: 'center', padding: '16px' }}>
-        <button onClick={onBack} aria-label="Back to library" style={ghost}><ArrowLeft size={18} color="var(--text-muted)" /></button>
+        {/* P14-1: was 30x30 (18px glyph + 6px padding). holdLayout(30) hands
+            back 7px per side, so this occupies the same 30x30 of layout with a
+            44x44 target — same picture, reachable thumb. */}
+        <IconButton label="Back to library" icon={ArrowLeft} iconSize={18} tone="var(--text-muted)" onClick={onBack} style={holdLayout(30)} />
       </div>
       <div style={{ flex: 1, maxWidth: '640px', width: '100%', margin: '0 auto', padding: '8px 24px 40px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: accent, marginBottom: '8px' }}>{levelLabel}</div>

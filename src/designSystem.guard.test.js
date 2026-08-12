@@ -31,6 +31,12 @@ const TOKEN_MODULES = new Set([
   'manhuaTokens.js',   // the manhua reader's own palette
 ])
 
+// The P14-1 control layer. Not a colour module — it names roles and holds no
+// values of its own — but listed so the intent is written down: these are the
+// files a screen should import a control FROM, and controlTokens.test.js already
+// asserts that they carry no hex at all.
+const CONTROL_MODULES = new Set(['controls.jsx', 'controlTokens.js'])
+
 const files = readdirSync(SRC)
   .filter(f => f.endsWith('.jsx') || f.endsWith('.js'))
   .filter(f => !f.includes('.test.'))
@@ -99,6 +105,49 @@ describe('--hairline is never used as a divider', () => {
       expect(src.replace(/\s+/g, ' '), f + ' uses --hairline as a border')
         .not.toMatch(/border[A-Za-z]*\s*:\s*[^;,}]*var\(--hairline\)/)
     }
+  })
+})
+
+describe('the control layer holds no values of its own', () => {
+  it('carries no six-digit hex, so every colour themes', () => {
+    for (const f of CONTROL_MODULES) {
+      expect(CODE.get(f), f + ' has a hardcoded hex').not.toMatch(/#[0-9A-Fa-f]{6}\b/)
+    }
+  })
+
+  it('reaches only for the P14-0 token modules and React', () => {
+    const allowed = new Set(['react', './shape', './typeScale', './controlTokens'])
+    for (const f of CONTROL_MODULES) {
+      for (const m of read(f).matchAll(/from '([^']+)'/g)) {
+        expect(allowed.has(m[1]), f + ' imports ' + m[1]).toBe(true)
+      }
+    }
+  })
+})
+
+describe('every IconButton has an accessible name', () => {
+  // The one rule a component cannot enforce on itself. `label` is required by
+  // documentation and by every spec in controls.test.jsx, but a caller that
+  // simply omits it still renders — an icon-only control that a screen reader
+  // announces as "button" and nothing else. The census found existing ones; this
+  // is what stops the new component growing its own.
+  // Covers BOTH components of that name: controls.jsx's and
+  // ReadingScaffold.jsx's (which the reader stack has used since P9 and which
+  // already got this right). Either way the rule is the same.
+  it('passes a label at every call site', () => {
+    const missing = []
+    for (const [f, src] of CODE) {
+      // Arrows are neutralised BEFORE matching rather than allowed as an
+      // alternation: `(?:[^>]|=>)*?` looks like it handles `(e) => {…}` and does
+      // not, because the engine consumes the `=` with `[^>]` and then stops at
+      // the `>`. Two earlier versions of this spec reported a correctly-labelled
+      // button as missing for exactly that reason.
+      const flat = src.replace(/=>/g, '=»')
+      for (const m of flat.matchAll(/<IconButton\b([^>]*?)\/?>/g)) {
+        if (!/\blabel\s*=/.test(m[1])) missing.push(f + ' → ' + m[1].slice(0, 60).replace(/\s+/g, ' '))
+      }
+    }
+    expect(missing, 'IconButton without a label: ' + missing.join(' | ')).toEqual([])
   })
 })
 
@@ -249,6 +298,15 @@ describe('the CSS token layer', () => {
   it('defines every accent role in both themes', () => {
     for (const t of ['primary', 'primary-bright', 'primary-pressed', 'primary-soft',
       'burgundy', 'gold', 'gold-bright', 'plum', 'blue', 'coral', 'locked']) {
+      expect((css.match(new RegExp('--' + t + ':', 'g')) || []).length, '--' + t).toBe(2)
+    }
+  })
+
+  it('defines the fill roles in both themes (P14-1)', () => {
+    // A colour that CARRIES white text and a colour that IS text are different
+    // jobs. Conflating them was a real AA failure: white on the dark-mode
+    // --primary (#E4573A) is 3.67:1, on the app's most important control.
+    for (const t of ['primary-fill', 'danger-fill', 'danger-pressed']) {
       expect((css.match(new RegExp('--' + t + ':', 'g')) || []).length, '--' + t).toBe(2)
     }
   })

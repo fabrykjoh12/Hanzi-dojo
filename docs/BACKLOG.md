@@ -10,6 +10,85 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+## P14-1 — what the shared controls CANNOT absorb (2026-08-12)
+
+The five primitives exist (`controls.jsx`). Before P14-2 tries to migrate a
+screen onto them, read this: it is the census's verdict on which existing
+controls a small, stable API genuinely cannot hold. Each entry is a real
+measured reason, not a hedge.
+
+**Never — these should stay bespoke.** Absorbing any of them means re-exposing
+the exact properties the token layer exists to own (size, radius, tint strength,
+shadow, transform), at which point it stops being a component.
+
+- **`Listen.jsx:219`** — 108×108, radius 34, accent tint + accent glow, 44px
+  glyph. That is the drill's hero *object*, not chrome.
+- **`Speaking.jsx:282`** — an 84px circle whose background flips accent →
+  `#DC2626` and whose shadow flips from a cast to an 8px ring to mean
+  "listening". The behaviour *is* the component.
+- **`Flashcard.jsx:143`** — 48×40, and its content is the text `1.5×`. Wider than
+  tall on purpose, so the three possible rate strings cannot reflow the audio row.
+  An icon-only button cannot hold a numeric label.
+- **`InfoTip.jsx:64`** — 18×18 with a `?` glyph, inline inside body copy. Growing
+  it to 44 changes text line-height wherever it appears. Wants the
+  `holdLayout()` treatment, not a component.
+- **`Settings.jsx:452`** — not a row, a card that *reflows*: `settingsLayout.js`
+  recomposes it at 480px and the control sits BELOW the description, never
+  trailing. `Row` has one horizontal axis.
+- **`Words.jsx:211`** — `display: grid` with a 110px desktop gutter so every
+  headword's right edge aligns down the column, and two entirely different child
+  trees for mobile vs desktop. A flex `Row` cannot produce that alignment.
+- **`GradeRow.jsx`** — four device-dependent minHeights driven by
+  `studyLayout.js`, on a frozen screen.
+- **`MobileNav.jsx:174/195`** — frozen, and it needs an absolutely-positioned 3px
+  active edge bar plus a per-item staggered `animationDelay`. Its column height
+  must also sum to `MOBILE_NAV_HEIGHT` (58), which `navEmphasis.test.js` asserts.
+- **`Sidebar.jsx:63`** — the 44px height is load-bearing, not a minimum:
+  `EdgeBar` positions the sliding marker from `ROW_HEIGHT + ROW_GAP`.
+- **`panels.jsx:90` `HeroAction`** — a `<span>` inside a `role="button"` panel.
+  Making it a real `<button>` would nest one interactive element inside another.
+  Home's most prominent CTA; frozen either way.
+
+**Wants a sixth primitive later, not a prop on an existing one.**
+
+- **A "card row"** — the app's most common list shape is *not* a divided row, it
+  is a bordered radius-13/14/16/18/22 card per row with a gap between (13 call
+  sites: Dictionary, Onboarding, Tones, Profile, Settings, Grammar,
+  LanguageSwitcher, SessionRecap, FinishOverlay, SeriesDetail). Selection paints
+  border + tint + sometimes a weight change. `Row` is the *grouped* model; this
+  is the *object* model, and it deserves its own name.
+- **A `Toggle`/switch** — `Settings.jsx:600` is 50×28 with `aria-pressed` where
+  `role="switch"` + `aria-checked` belongs, and `StoryReaderImmersive.jsx:1767`
+  has a second one. Two call sites, one wrong role, no shared component.
+
+**Migrating these WOULD change something — deliberate, deferred to P14-2.**
+
+- The house CTA is **radius 16 / weight 750**; `Button` is `RADIUS.control` (12)
+  and `WEIGHT.label` (600). Every full-width CTA therefore changes shape and
+  weight when migrated. That is the systematisation, and it is a visual change —
+  so it belongs to a phase allowed to make one, on a screen at a time.
+- **Five independent "primary + ghost" pairs** shadow `ui.jsx`: `SessionRecap`
+  (54px), `Test` (52px + `flex:1`), `Landing`, `Writer`. Plus two byte-identical
+  CTA style functions in `PublicStory.jsx:160` and `HowMuchCanYouRead.jsx:210`.
+- **Most CTAs fill with `accentHex`, not `var(--primary)`** — the same value for
+  Chinese today, different concepts per CLAUDE.md §5. `Button` standardises on
+  the brand fill and takes no accent prop, so this is a decision each migration
+  has to make explicitly.
+- **Three files hardcode `#B83A24`** (`Auth.jsx:215/:235/:321`,
+  `PasswordReset.jsx:84`), so those buttons never get dark mode's lift.
+- **Alpha-hex tints that stay light in dark mode**, widespread on buttons:
+  `accentHex+'10'/'2A'/'E6'` in Flashcard, AudioButton, Settings, SessionRecap,
+  Test, StoryReaderImmersive, Words.
+
+**Accessibility gaps the primitives close by default, once adopted:**
+`<div onClick>` rows with no role or tabIndex (`LanguageSwitcher.jsx:69` and
+others) become real buttons; unlabelled icon-only buttons become impossible
+(`label` is required and guarded); 15 one-of-N controls with no `aria-checked`,
+no roving tabindex and no arrow keys get all three; `GradeRow`'s four buttons
+have no aria at all; `KnownWords.jsx:320` has neither `aria-pressed` nor a radio
+role; `Onboarding` mixes `role="radio"` (line 219) and `aria-pressed` (236) for
+two adjacent groups.
+
 ## P14-0 left these for the sweep (2026-08-12)
 
 The foundation commit built the systems and adopted them where adoption could

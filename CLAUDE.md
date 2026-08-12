@@ -272,6 +272,32 @@ a one-off:
 return, and *budgets* — the count of one-off hexes, sizes and radii that exist
 today, which may only go **down**. Raising one needs a reason in the commit.
 
+**And five shared controls sit on top of them** (P14-1). A new screen composes
+these; it does not hand-roll a button. `src/controls.jsx` exports `Button`,
+`IconButton`, `Row`, `Chip` and `Segmented`; `src/controlTokens.js` is the pure
+half (every variant, state and geometry as a tested function, no React).
+
+- **44px is the floor.** `TAP_MIN`. Everything except `Chip` clears it —
+  Chip is 34 because Stories' filters are 34 and Stories is frozen.
+- **To fix a small target without moving anything, use `holdLayout(oldSize)`.**
+  It returns the negative margin that keeps the layout box the size it was while
+  the hit area grows outward. That is how a 28px close button becomes a 44px
+  target with an identical render.
+- **`IconButton` requires `label`.** It becomes the accessible name, and a guard
+  spec fails the build if any call site omits it.
+- **`Segmented` is a `radiogroup`**, with `aria-checked`, a roving tabindex and
+  arrow/Home/End keys. The app's existing one-of-N controls are runs of
+  `aria-pressed` buttons, which announce N independent switches instead of one
+  choice — don't copy that pattern into anything new.
+- **`Row` draws its divider ABOVE, via `rowDivider(index)`** — no list length
+  needed. `--divider`, never `--hairline`.
+- **A fill and an ink are different roles.** `--primary-fill` / `--danger-fill`
+  are what a button is filled WITH; `--primary` / `--danger` are what text and
+  marks are drawn IN. They agree in light and diverge in dark, because a colour
+  tuned to read *on* the ground is too light to carry white *on top of it*.
+- **Press feedback is the existing `.hd-press` class**, and focus is the global
+  `:focus-visible` rule. A control adds neither of its own.
+
 **Use semantic tokens for every neutral colour**, or it won't theme:
 `--bg`, `--surface`, `--surface-2`, `--surface-3`, `--surface-glass`, `--border`,
 `--border-strong`, `--text`, `--text-secondary`, `--text-muted`, `--text-faint`,

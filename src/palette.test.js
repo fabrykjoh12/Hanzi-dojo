@@ -68,29 +68,45 @@ describe('the grounds', () => {
   })
 })
 
-// ── The text ramp: monotonic, and every step readable ───────────────────────
+// ── The text ramp: monotonic, and every step readable ON EVERY GROUND ───────
 describe('the text ramp', () => {
   const NAMES = ['text', 'text-secondary', 'text-muted', 'text-faint']
+  // A ramp is only as good as its WORST ground. The first version of these specs
+  // measured against --bg alone and passed; the contrast-legibility e2e then
+  // found --text-faint at 4.36:1 on --surface-2 and 3.88:1 on --surface-3, which
+  // is where eyebrows and the recap's Today/Tomorrow actually sit. Panels are
+  // where the faint tokens live, so panels are what has to be measured.
+  const GROUNDS = ['bg', 'surface', 'surface-2', 'surface-3']
 
-  for (const [label, dark, bg] of [['light', false, () => LIGHT_BG], ['dark', true, () => DARK_BG]]) {
-    it('is monotonic in ' + label + ' — faint really is the faintest', () => {
-      // The bug this replaces: --text-faint (#6B6B72, 5.06:1) was DARKER than
-      // --text-muted (#71717A, 4.62:1) in light, and the same inversion existed
-      // in dark. The token named "faint" carried MORE emphasis than the one
-      // named "muted", so the name lied and anyone reaching for de-emphasis got
-      // the opposite.
-      const ratios = NAMES.map(n => contrast(cssVar(n, dark), bg()))
-      for (let i = 1; i < ratios.length; i += 1) {
-        expect(ratios[i], NAMES[i] + ' vs ' + NAMES[i - 1]).toBeLessThan(ratios[i - 1])
-      }
-    })
+  for (const [label, dark] of [['light', false], ['dark', true]]) {
+    for (const ground of GROUNDS) {
+      it('is monotonic in ' + label + ' on --' + ground + ' — faint really is the faintest', () => {
+        // The bug this replaces: --text-faint (#6B6B72, 5.06:1) was DARKER than
+        // --text-muted (#71717A, 4.62:1) in light, and the same inversion
+        // existed in dark. The token named "faint" carried MORE emphasis than
+        // the one named "muted", so the name lied and anyone reaching for
+        // de-emphasis got the opposite.
+        //
+        // Checked per-ground rather than once, because the fix for the AA
+        // failure above was to lift the two lowest steps — and lifting only
+        // `faint` would have made it overtake `muted` and re-invert the ramp.
+        const g = cssVar(ground, dark)
+        const ratios = NAMES.map(n => contrast(cssVar(n, dark), g))
+        for (let i = 1; i < ratios.length; i += 1) {
+          expect(ratios[i], NAMES[i] + ' (' + ratios[i].toFixed(2) + ') vs ' + NAMES[i - 1] + ' (' + ratios[i - 1].toFixed(2) + ')')
+            .toBeLessThan(ratios[i - 1])
+        }
+      })
 
-    it('passes AA at every step in ' + label + ' — all four are used on real text', () => {
-      for (const n of NAMES) {
-        const c = contrast(cssVar(n, dark), bg())
-        expect(c, n + ' = ' + cssVar(n, dark) + ' → ' + c.toFixed(2) + ':1').toBeGreaterThanOrEqual(4.5)
-      }
-    })
+      it('passes AA at every step in ' + label + ' on --' + ground, () => {
+        const g = cssVar(ground, dark)
+        for (const n of NAMES) {
+          const c = contrast(cssVar(n, dark), g)
+          expect(c, n + ' = ' + cssVar(n, dark) + ' on --' + ground + ' → ' + c.toFixed(2) + ':1')
+            .toBeGreaterThanOrEqual(4.5)
+        }
+      })
+    }
   }
 })
 

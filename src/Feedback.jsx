@@ -9,6 +9,8 @@ import { BUILD_SHA } from './version'
 import { MessageCircleHeart, X, Bug, Lightbulb, MessageSquare } from 'lucide-react'
 import { trapDialogFocus } from './dialogFocus'
 import { VERMILION } from './palette'
+import { IconButton } from './controls'
+import { holdLayout } from './controlTokens'
 
 // A small always-available way for users to send bug reports and ideas
 // straight into the database, no email/GitHub account required. Floating
@@ -182,13 +184,11 @@ export default function Feedback({ session, profile, view }) {
                     Found a bug, or have an idea? We read every message.
                   </div>
                 </div>
-                <button
-                  onClick={close}
-                  aria-label="Close"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', flexShrink: 0 }}
-                >
-                  <X size={20} strokeWidth={1.9} color="var(--text-muted)" />
-                </button>
+                {/* P14-1: was a 28x28 target (20px glyph + 4px padding). The
+                    shared control is 44x44 and holdLayout(28) gives back the
+                    8px per side, so the layout box, the glyph position and
+                    every pixel are unchanged — only the hit area grew. */}
+                <IconButton label="Close" icon={X} iconSize={20} tone="var(--text-muted)" onClick={close} style={holdLayout(28)} />
               </div>
 
               <div role="group" aria-label="Feedback category" style={{ display: 'flex', gap: '8px', marginTop: '18px', flexWrap: 'wrap' }}>

@@ -9,6 +9,8 @@ import { flashcardAudio, loadTtsAudio } from './ttsAudio'
 import { getDictEntryByWord } from './dictSearch'
 import AudioButton from './AudioButton'
 import { X, Sparkles } from 'lucide-react'
+import { IconButton } from './controls'
+import { holdLayout } from './controlTokens'
 
 // Stuck-word coach: a calm bottom-sheet that meets a word that keeps slipping
 // from a fresh angle — slow audio, the word inside a real sentence, and (for
@@ -79,9 +81,10 @@ export default function StuckWordCoach({ vocab, onClose }) {
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 800, color: accent }}>
             <Sparkles size={15} strokeWidth={2} color={accent} /> A different angle
           </span>
-          <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', display: 'flex' }}>
-            <X size={20} color="var(--text-muted)" />
-          </button>
+          {/* P14-1: was 32x32 (20px glyph + 6px padding). holdLayout(32)
+              returns the 6px per side, so the header row keeps its height and
+              the glyph its position while the target reaches 44x44. */}
+          <IconButton label="Close" icon={X} iconSize={20} tone="var(--text-muted)" onClick={onClose} style={holdLayout(32)} />
         </div>
 
         {/* 1. Anchor — the word, reading, meaning, slow audio */}

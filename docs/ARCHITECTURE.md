@@ -583,8 +583,8 @@ Border     --border  #E7E1D9     —              #352B2F     —
            --border-strong #D2C9BE —            #473A3F     —
 Text       --text    #191513     17.11:1        #F2EDE9     16.64:1
            --text-secondary #4A443D  9.06:1     #BBB2AB      9.27:1
-           --text-muted #635C54     6.21:1      #938A82      5.71:1
-           --text-faint #767068     4.62:1      #847B73      4.66:1
+           --text-muted #635C54     6.21:1      #A49C94      7.15:1
+           --text-faint #6C655D     5.42:1      #948D85      5.90:1
 
 Brand      --primary        #B83A24  5.40:1     #E4573A      5.27:1
            --primary-bright #D84B32             #F06A4C
@@ -651,6 +651,65 @@ composes the four grounds — `page`, `grouped`, `raised`, `floating` — and on
 the last two draw a border and a shadow, which is what makes the "one object per
 screen" promise mechanical rather than a matter of taste.
 
+### The shared controls (P14-1)
+
+`src/controls.jsx` + `src/controlTokens.js`. Five components, and the split is
+the repo's standing habit (§3): the pure module holds every variant, state and
+geometry as a tested function; the `.jsx` adds hover state, the element choice
+and the accessibility contract, and nothing else.
+
+| Component | API | Element |
+|-----------|-----|---------|
+| `Button` | `variant` (primary/secondary/ghost/destructive) · `size` (md 44 / lg 52) · `icon` · `full` · `disabled` · `loading` + `loadingLabel` · `keepFocus` · `type` · `ariaLabel` · `style` | `<button type="button">` |
+| `IconButton` | `label` **(required)** · `icon` or `children` · `iconSize` · `variant` (ghost/solid) · `round` · `tone` · `pressed` · `disabled` · `style` | `<button>` 44×44 |
+| `Row` | `title` · `supporting` · `leading` · `trailing` · `onClick` · `disabled` · `divider` · `ariaLabel` · `dataTour` · `style` | `<button>` when tappable, `<div>` when not |
+| `Chip` | `children` · `onClick` · `selected` · `disabled` · `icon` · `style` | `<span>` when passive, `<button aria-pressed>` when selectable |
+| `Segmented` | `label` **(required)** · `options[{value,label,icon}]` · `value` · `onChange` · `disabled` · `style` | `<div role="radiogroup">` + `<button role="radio">` |
+
+**Five things this layer decides, each for a measured reason:**
+
+1. **44px is the floor** (`TAP_MIN`). The census found ~half the app's controls
+   below it, and the worst were the ones a thumb reaches for most — a 28px
+   dialog close, a 30px story back, a ~26px reader Back. Only `Chip` is exempt
+   (34px), because Stories' filters are 34 and Stories' composition is frozen;
+   `CHIP_HEIGHT` is named so the phase that owns Stories can raise it in one edit.
+2. **`holdLayout(oldSize)`** returns the negative margin that grows a hit area
+   *outward* while the layout box stays exactly the size it was. `AppBar` (-10px),
+   `MobileNav` (-8px) and `Grammar` (-8px) each worked this out by hand; this is
+   the arithmetic they were doing, tested. It is what let three migrations fix
+   their targets with a byte-identical render.
+3. **Fill roles are not ink roles.** `--primary-fill` / `--danger-fill` /
+   `--danger-pressed` were added in P14-1 because white on the dark-mode
+   `--primary` (#E4573A) measures **3.67:1** — an AA failure on the app's most
+   important control. `--primary-fill` steps down to #CB4126: white on it is
+   4.86:1 and it still separates from the ground at 3.98:1. In light the two
+   agree, which is why the bug was invisible until dark mode.
+4. **One disabled treatment**: the accent drops, the ground flattens to
+   `--surface-3` (a ghost stays transparent), the label takes `--text-muted`.
+   `ui.jsx` filled a disabled primary with `--locked` and kept the label white —
+   2.52:1. WCAG exempts disabled controls from contrast, so that was legal and
+   still unreadable.
+5. **`Segmented` is a real `radiogroup`** — `aria-checked`, a roving tabindex,
+   arrows + Home/End. The census found 15 one-of-N controls in the app built as
+   runs of `aria-pressed` buttons with *no* `aria-checked`, *no* roving tabindex
+   and *no* arrow keys anywhere: `aria-pressed` says "this one is on" without
+   saying "and the others are off", so a screen reader announces four independent
+   switches instead of one choice.
+
+**`Row`'s divider goes ABOVE**, via `rowDivider(index)` — which needs only the
+index, not the list length. The census found five different conventions in the
+app for one line between two rows: `borderTop` suppressed on the first row
+(Practice, Words, Profile), `borderBottom` on *every* row including the last
+(KnownWords — so the final line doubles up with the container's rounded edge), a
+wrapper div carrying the border instead of the row (Profile's `ControlRow`), a
+1px flex `gap` standing in for a line (SeriesDetail), and `:last-child` in CSS on
+a list styled entirely inline, so it never applied at all.
+
+**`ControlsGallery.jsx`** renders every variant and state of all five, behind
+`/dev` (email-gated, unlinked). It exists because a unit test can assert what a
+control *declares* and jsdom never lays anything out — so it is the surface
+`tests/e2e/p14-controls.spec.js` measures, in both themes.
+
 **CSS variables** (defined in index.css):
 `--chinese-accent: #B83A24`, `--chinese-accent-dark: #922E1C`, `--japanese-accent: #2E3A6E`, `--japanese-accent-dark: #1E2750`, `--russian-accent: #2563C9`, `--russian-accent-dark: #1D4EA0`
 
@@ -658,7 +717,10 @@ screen" promise mechanical rather than a matter of taste.
 Semantic tokens in index.css drive light/dark via `:root` and `:root[data-theme="dark"]`:
 `--bg`, `--surface`, `--surface-2`, `--surface-3`, `--surface-glass`, `--border`, `--border-strong`, `--text`, `--text-secondary`, `--text-muted`, `--text-faint`, `--divider`, `--inset-highlight`, `--reader-watermark`.
 - **New code MUST use these tokens** (e.g. `background: 'var(--surface)'`, `color: 'var(--text)'`) instead of hardcoded neutral hexes, or it won't theme.
-- **The ramp is ordered:** `--text` → `--text-secondary` → `--text-muted` → `--text-faint`, most to least emphasis, every step ≥4.5:1. Before P14-0 it was not: `--text-faint` (#6B6B72, 5.06:1) carried MORE contrast than `--text-muted` (#71717A, 4.62:1), so the token named "faint" was the more emphatic of the two and anyone reaching for de-emphasis got the opposite. A spec pins the ordering now.
+- **The ramp is ordered, and measured against EVERY ground it lands on:** `--text` → `--text-secondary` → `--text-muted` → `--text-faint`, most to least emphasis, every step ≥4.5:1 on `--bg`, `--surface`, `--surface-2` AND `--surface-3`, in both themes. Two separate bugs sit behind that sentence.
+  - Before P14-0 the ramp was *inverted*: `--text-faint` (#6B6B72, 5.06:1) carried MORE contrast than `--text-muted` (#71717A, 4.62:1), so the token named "faint" was the more emphatic of the two and anyone reaching for de-emphasis got the opposite.
+  - P14-0's replacement was measured against `--bg` **only**, and the faint tokens live on *panels* — eyebrows on Profile and Languages, the recap's Today/Tomorrow. `contrast-legibility.spec.js` caught it after the fact: 4.35:1 on `--surface`, 3.98:1 on `--surface-2`, 3.88:1 on `--surface-3`. P14-1 lifted the two lowest steps in dark (#938A82→#A49C94, #847B73→#948D85) and darkened `--text-faint` in light (#767068→#6C655D). Lifting only `faint` would have made it overtake `muted` and re-invert the ramp, so the two move together.
+  - `palette.test.js` now asserts monotonicity AND AA for all four tokens across all four grounds in both themes — 16 combinations, not 2.
 - Accent colors (chinese/japanese), status colors (success/warn/error), and **white text on accent buttons** (`color: '#fff'`) stay hardcoded — they read on both themes.
 - Fixed dark popovers/tooltips (e.g. Sidebar collapsed tooltip) use a literal dark (`#27272A`), not `var(--text)`, so they don't invert.
 - **Tints must mix into the themed surface**, not float on it: use

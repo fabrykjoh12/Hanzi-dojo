@@ -82,18 +82,26 @@ describe('contentFitsBalloon', () => {
     // Heights: one bare line (~46px) up to a five-row pinyin speech with the
     // English revealed (~260px) — and past it, because a longer episode line
     // with readings on can exceed that.
+    //
+    // Collected, then asserted ONCE. The grid is 101 widths x 148 heights x 3
+    // kinds x 5 seeds = 224,220 cases, and an expect() per case spent ~4.3s
+    // building assertion objects — against a 5s default timeout, which made this
+    // spec flake the moment anything else was added to the suite. The coverage is
+    // identical, it runs in a fraction of the time, and a failure now names every
+    // box that broke instead of only the first.
+    const failures = []
     for (const kind of ['speech', 'thought', 'reply']) {
       for (let w = 120; w <= 520; w += 4) {
         for (let h = 46; h <= 340; h += 2) {
           for (const seed of [0, 1, 7, 13, 25]) {
-            expect(
-              contentFitsBalloon(w, h, kind, seed),
-              kind + ' ' + w + '×' + h + ' seed ' + seed,
-            ).toBe(true)
+            if (contentFitsBalloon(w, h, kind, seed) !== true) {
+              failures.push(kind + ' ' + w + '×' + h + ' seed ' + seed)
+            }
           }
         }
       }
     }
+    expect(failures.slice(0, 20), failures.length + ' boxes do not fit').toEqual([])
   })
 
   it('holds at the smallest box the geometry will draw', () => {

@@ -5,8 +5,9 @@ import { getLevels, getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { buildLabel } from './version'
 import { toast } from './toast'
+import ControlsGallery from './ControlsGallery'
 import {
-  ArrowLeft, FlaskConical, Gauge, BookOpen, Trash2, Zap, RefreshCw, ShieldCheck,
+  ArrowLeft, FlaskConical, Gauge, BookOpen, Trash2, Zap, RefreshCw, ShieldCheck, Palette,
 } from 'lucide-react'
 
 // Developer page (/dev) — self-service testing tools. Everything here runs as
@@ -232,6 +233,14 @@ export default function Dev({ session, profile, track, onBack, onNavigate }) {
           window.location.reload()
         }} />
         <Action label="Refresh counts" onRun={async () => { await loadCounts(); toast({ kind: 'info', title: 'Counts refreshed' }) }} />
+      </Section>
+
+      {/* P14-1's five shared controls, every variant and state on one screen.
+          Here rather than anywhere user-facing because it is a reference, not a
+          feature — and because a unit test can only assert what a control
+          DECLARES, so this is the surface the Playwright spec measures. */}
+      <Section icon={Palette} title="Controls — P14-1 shared primitives" accent={accent}>
+        <ControlsGallery />
       </Section>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '11.5px', color: 'var(--text-faint)' }}>
