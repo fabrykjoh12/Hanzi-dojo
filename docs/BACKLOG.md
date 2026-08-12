@@ -10,6 +10,39 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+## P14-5 — Home restyled; what it left (2026-08-12)
+
+- **Three heroes were drawn and two were rejected on rendered evidence.** A
+  burgundy-ground variant (vermilion appearing only as light) was handsome and
+  demoted the brand — the ground stopped being #B83A24, which CLAUDE.md §1 makes the
+  anchor. A two-plane "folded" variant put the count on a lit upper face and the CTA
+  on a shaded lower one; the structure was the most meaningful of the three and it
+  cost 28px of height for a lower face that ended up mostly empty. Both are worth
+  re-reading if Home ever gets taller: the fold in particular would suit a hero that
+  has more than one thing to say.
+- **A brush-stroke object (一) was drawn and is not shipped.** `heroObjects.jsx`
+  documents where it went. The deck's own 撇 is already the hero's ink element, and a
+  second mark on the one object the screen is about is decoration. It comes back the
+  day a heading wants an atmospheric mark — which the P14-5 brief invited and Home
+  did not need.
+- **`material="wash"` is still the default on `HeroPanel`.** Stories, Practice and
+  Profile are frozen and keep the ink ridgelines plus a watermark character. Whichever
+  phase unfreezes them should flip the default and delete the prop, not add a third
+  material.
+- **The supporting surface is at its limit.** It holds three rows and two hairlines,
+  which is what P10 approved. Home's next addition — if there ever is one — does not
+  fit there without either a fourth row (making it a list) or a second surface (making
+  it a dashboard). That is a product decision, not a visual one.
+- **`p14-home.spec.js` is a harness, not a contract.** Gated on `P14_HOME` so CI never
+  runs it; it writes the render matrix and a measurement dump (page height in
+  viewports, every drawn box, every leaf text's size/weight, every target under 44px).
+  Use it for the next screen rather than writing a second one.
+- **My own box-counter conflates marks with containers.** It reported "13 → 23 drawn
+  boxes" on Home, which sounds like ten new cards and is ten goal pips, ten progress
+  segments and seven week dots — all 4–10px marks. The containers are unchanged: one
+  hero, one supporting surface, one CTA, one cover. Worth teaching it the difference
+  before quoting it again.
+
 ## P14-4 — the tray shipped; what it left (2026-08-12)
 
 The bottom bar is an inset floating tray with the dimensional family on it. Numbers,
