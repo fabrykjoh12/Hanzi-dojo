@@ -319,28 +319,33 @@ for (const theme of ['light', 'dark']) {
 // The amendment's first finding: the production bar stays Home · Stories · Cards ·
 // Practice · More, and Profile stays where it is. This is the assertion that says
 // so — it fails the moment a later phase swaps More out without meaning to.
-test.describe('P14-3 leaves the shipping bar alone', () => {
+test.describe('the family is the bar, and Profile is not on it', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test('still five tabs, same labels, same height, same flat glyphs', async ({ page }) => {
+  test('puts all five glyphs on the bar and no sixth', async ({ page }) => {
+    // P14-3 asserted the opposite of this: that the bar still carried the FLAT
+    // family, on a 24x24 viewBox, in a 58px slab. P14-4 shipped the family, so
+    // the claim inverts — every tab is a 32x32 dimensional glyph now — and what
+    // survives unchanged is the part that was never P14-3's or P14-4's to change:
+    // five tabs, those five labels, and no Profile among them. The tray's own
+    // geometry is nav-tray.spec.js's.
     await page.goto('/');
     await page.getByText('Today', { exact: true }).waitFor();
     const bar = page.locator('nav').filter({ has: page.getByRole('button', { name: 'Cards' }) }).first();
     const shape = await bar.evaluate((el) => {
-      const r = el.getBoundingClientRect();
       const tabs = [...el.querySelectorAll('button')];
       return {
-        height: Math.round(r.height),
         labels: tabs.map(t => (t.textContent || '').trim()),
-        // The bar's own glyphs are NavIcons.jsx's 24x24 family. A 32x32 viewBox
-        // down here would mean the new family had leaked onto the bar.
         viewBoxes: [...new Set(tabs.map(t => t.querySelector('svg')?.getAttribute('viewBox')))],
+        sizes: tabs.map(t => t.querySelector('svg')?.getAttribute('width')),
       };
     });
     expect(shape.labels).toEqual(['Home', 'Stories', 'Cards', 'Practice', 'More']);
     expect(shape.labels, 'Profile must not become a tab').not.toContain('Profile');
-    expect(shape.height).toBe(58);
-    expect(shape.viewBoxes).toEqual(['0 0 24 24']);
+    // One viewBox for the whole row, which is what makes it a family.
+    expect(shape.viewBoxes).toEqual(['0 0 32 32']);
+    // …and five different sizes, which is what makes it a hierarchy.
+    expect(new Set(shape.sizes).size).toBe(5);
   });
 
   test('still reaches Profile through the More sheet', async ({ page }) => {

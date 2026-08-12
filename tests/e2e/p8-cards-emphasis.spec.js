@@ -1,4 +1,8 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
+// The bar's height was a literal 58 in three places here, which is the mistake
+// navMetrics.js exists to prevent: P14-4 made the bar a 60px floating tray and
+// these were the last three copies of the old number in the suite.
+import { MOBILE_NAV_HEIGHT } from '../../src/navMetrics.js';
 
 // TEMPORARY prototype spec — P8, the Cards-emphasis pass.
 //
@@ -158,7 +162,7 @@ test.describe('P8 Cards emphasis — renders and measurements', () => {
     const mass = await opticalMass(page);
     console.log('GEO home-dark-390 ' + JSON.stringify(geo));
     console.log('MASS home-dark-390 ' + JSON.stringify(mass));
-    expect(geo.bar.height).toBe(58);
+    expect(geo.bar.height).toBe(MOBILE_NAV_HEIGHT);
   });
 
   test('Cards active, dark, 390', async ({ page }) => {
@@ -232,7 +236,7 @@ test.describe('P8 Cards emphasis — the largest phone', () => {
     await shots(page, 'cards-dark-430');
     const geo = await barGeometry(page);
     console.log('GEO cards-dark-430 ' + JSON.stringify(geo));
-    expect(geo.bar.height).toBe(58);
+    expect(geo.bar.height).toBe(MOBILE_NAV_HEIGHT);
   });
 });
 
@@ -249,7 +253,7 @@ test.describe('P8 Cards emphasis — the tightest phone', () => {
     const geo = await barGeometry(page);
     console.log('GEO cards-dark-320 ' + JSON.stringify(geo));
     // The whole point: the container is INSIDE the bar, not floating over it.
-    expect(geo.bar.height).toBe(58);
+    expect(geo.bar.height).toBe(MOBILE_NAV_HEIGHT);
     expect(geo.shell.insetTop).toBeGreaterThan(0);
     expect(geo.shell.insetBottom).toBeGreaterThan(0);
   });

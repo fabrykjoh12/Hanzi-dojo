@@ -1,5 +1,5 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
-import { MOBILE_NAV_HEIGHT } from '../../src/navMetrics.js';
+import { MOBILE_NAV_HEIGHT, MOBILE_NAV_RESERVE } from '../../src/navMetrics.js';
 
 // P10-A2 and A3: the global feedback button.
 //
@@ -100,10 +100,15 @@ for (const phone of PHONES) {
         };
       });
 
-      // 58 + 14 = 72: the offset is the bar's declared height plus one gap, and
-      // if the bar's height ever changes again this follows it.
+      // The offset is the navigation's declared geometry plus one gap, and it
+      // follows the navigation rather than restating it.
+      //
+      // P14-4 made that two numbers: the tray is `MOBILE_NAV_HEIGHT` tall and
+      // floats on `NAV_TRAY_BOTTOM`, so what the button has to clear is the
+      // RESERVE. The gap above the tray is unchanged at 14 — which is the whole
+      // point of deriving it, since nothing in Feedback.jsx was tuned by hand.
       expect(geo.navHeight).toBe(MOBILE_NAV_HEIGHT);
-      expect(geo.fabBottomFromViewport).toBe(MOBILE_NAV_HEIGHT + 14);
+      expect(geo.fabBottomFromViewport).toBe(MOBILE_NAV_RESERVE + 14);
       expect(geo.gap).toBe(14);
       expect(geo.inside).toBe(true);
       // A 50px control is under the 44px floor in neither dimension.

@@ -829,8 +829,10 @@ assert it (the spec also opens the real More sheet and finds Profile in it).
 `NAV_GLYPHS` rather than retyped, so the bar cannot end up with a different set or
 order from the family the glyphs were designed as, and `MOBILE_MORE_TAB` is the
 fifth entry the bar renders as the sheet opener. `NavIcons.jsx` — the flat P8
-family — is still in the tree and still used by the desktop rail's `MoreIcon`
-path; nothing imports its four tab glyphs any more.
+family — has no importer left at all and is kept deliberately: it is the family that
+passed two device reviews, and deleting it before the tray has been on a physical
+phone would throw away the only thing to fall back to. `docs/BACKLOG.md` carries the
+delete.
 `src/navGlyphs.test.jsx` (16 unit contracts) and `tests/e2e/nav-glyphs.spec.js`
 (34 browser assertions across two themes and 320/390/430) hold what the family is;
 `tests/e2e/nav-tray.spec.js` holds what the tray is.

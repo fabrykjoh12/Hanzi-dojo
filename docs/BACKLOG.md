@@ -44,6 +44,18 @@ later phase inherits.
   content — but a landscape-specific tray height was not considered and probably
   should be if landscape ever stops being portrait-locked (it is locked today,
   CLAUDE.md §1).
+- **`visual.spec.js` did not notice the tray, and that is a comparator finding.**
+  The CI baseline job ran on the P14-4 commit and committed nothing: all five
+  baselines matched. `stories-shelf-mobile` is 390×844 and DOES contain the bar, so
+  the reason it passed is Playwright's default per-pixel `threshold` (a normalized
+  colour distance of 0.2) — the old translucent bar composited to about #FFFFFE and
+  the new tray/page-ground pair is #FFFFFF on #FAF8F5, a per-channel step of 5–9,
+  which the comparator treats as identical. Only the icons and labels moved enough
+  to count, and that is well under the 2% `maxDiffPixelRatio`. Nothing in the repo
+  is stale — but **visual.spec.js is not evidence that the shell looks right**, and a
+  future phase that expects it to catch a surface change should tighten `threshold`
+  for the mobile shots rather than assume silence means no change.
+
 - **Study leaves the navigation's reservation blank while the bar is hidden.**
   Measured at 390×844 with a card on screen: the tray is hidden (the NAV-MODEL
   §8.2 exception), `main`'s padding is 0, and the card shell is still
