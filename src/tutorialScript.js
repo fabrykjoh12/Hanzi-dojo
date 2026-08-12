@@ -29,7 +29,7 @@
 import { isGradeKey } from './grades'
 import { cardMarker } from './cardMarker'
 import { gradePrompt } from './gradePrompt'
-import { TUTORIAL_CARDS, TUTORIAL_SCENE, TUTORIAL_COPY, TUTORIAL_INTERVALS } from './tutorialFixtures'
+import { TUTORIAL_CARDS, TUTORIAL_SCENE, TUTORIAL_COPY, TUTORIAL_INTERVALS, TUTORIAL_LOOKUP } from './tutorialFixtures'
 
 export const CARD_COUNT = TUTORIAL_CARDS.length
 
@@ -43,8 +43,15 @@ export const CARD_COUNT = TUTORIAL_CARDS.length
 // experienced, not described — which is why there is no closing "here is the
 // loop" slide: by that point the learner has performed it.
 //
-// Twelve states in all: welcome, the scene unreadable, three cards front and
-// back, recap, unlock, the same scene readable, and the account handoff.
+// The reading lesson (P12-6) closes it: one more line with one word the
+// tutorial did NOT teach, and the way forward is tapping it — the machine
+// itself refuses to continue until the word has been looked up once, because
+// "you don't have to know every word before reading" is the second promise
+// and it is taught by doing, like everything else here.
+//
+// Fourteen states in all: welcome, the scene unreadable, three cards front and
+// back, recap, unlock, the same scene readable, the tap-word beat before and
+// after its one tap, and the account handoff.
 export const PHASES = {
   WELCOME: 'welcome',
   SCENE_BEFORE: 'scene-before',
@@ -52,18 +59,20 @@ export const PHASES = {
   RECAP: 'recap',
   UNLOCK: 'unlock',
   SCENE_AFTER: 'scene-after',
+  TAP_WORD: 'tap-word',
   ACCOUNT: 'account',
 }
 
 // ── Actions ──────────────────────────────────────────────────────────────────
-// Four, and only four. `continue` is every linear advance (the welcome's Start,
-// both scene renderings, the recap, the unlock); the other three belong to a
-// card.
+// Five. `continue` is every linear advance (the welcome's Start, both scene
+// renderings, the recap, the unlock); reveal/replay/grade belong to a card;
+// `lookup` is the reading lesson's one tap.
 export const ACTIONS = {
   CONTINUE: 'continue',
   REVEAL: 'reveal',
   REPLAY: 'replay',
   GRADE: 'grade',
+  LOOKUP: 'lookup',
 }
 
 // ── Teaching goals ───────────────────────────────────────────────────────────
@@ -84,6 +93,7 @@ export const TEACHING_GOALS = [
   'storyUnlock',       // what finishing a session opens
   'wordsInContext',    // the words, alive, in Chinese
   'scenePayoff',       // the same scene, now readable — the whole thesis
+  'tapUnknownWord',    // an unknown word is one tap away — reading needs no permission
 ]
 
 const GRADE_GOALS = ['againMeaning', 'hardMeaning', 'goodMeaning', 'easyMeaning']
@@ -125,6 +135,9 @@ export function initialTutorialState() {
     // Whether the learner has used Replay on the card in front of them. Resets
     // per card: it drives one piece of coaching, not a score.
     replayed: false,
+    // Whether the reading lesson's word has been looked up. This is the gate:
+    // TAP_WORD offers no way forward until it is true.
+    looked: false,
     // Which grade was pressed for each card, in order, BY KEY ('again' …
     // 'easy' — grades.js). Tutorial-local: never written anywhere, never a
     // review. Keys rather than the scheduler's numbers so that reordering the
@@ -140,6 +153,9 @@ export function stateId(state) {
   if (state.phase === PHASES.CARD) {
     return 'card-' + (state.cardIndex + 1) + (state.revealed ? '-back' : '-front')
   }
+  if (state.phase === PHASES.TAP_WORD) {
+    return state.looked ? 'tap-word-looked' : 'tap-word'
+  }
   return state.phase
 }
 
@@ -154,7 +170,8 @@ export function position(state) {
     case PHASES.RECAP: return 2 + CARD_COUNT * 2
     case PHASES.UNLOCK: return 3 + CARD_COUNT * 2
     case PHASES.SCENE_AFTER: return 4 + CARD_COUNT * 2
-    case PHASES.ACCOUNT: return 5 + CARD_COUNT * 2
+    case PHASES.TAP_WORD: return 5 + CARD_COUNT * 2 + (state.looked ? 1 : 0)
+    case PHASES.ACCOUNT: return 7 + CARD_COUNT * 2
     default: return -1
   }
 }
@@ -171,6 +188,12 @@ export function actionsFor(state) {
     if (!state.revealed) return [ACTIONS.REVEAL]
     // Replay is offered on every card, coached on the first. It is not a step.
     return [ACTIONS.REPLAY, ACTIONS.GRADE]
+  }
+  if (state.phase === PHASES.TAP_WORD) {
+    // The gate. Until the word has been looked up once there is no Continue —
+    // the tap IS the lesson, and Skip remains the only other door. Re-tapping
+    // afterwards is allowed (it reopens the answer) but is not progress.
+    return state.looked ? [ACTIONS.LOOKUP, ACTIONS.CONTINUE] : [ACTIONS.LOOKUP]
   }
   if (state.phase === PHASES.ACCOUNT) return []
   return [ACTIONS.CONTINUE]
@@ -193,6 +216,9 @@ function teachesAt(state) {
   if (state.phase === PHASES.RECAP) return ['sessionCompletion']
   if (state.phase === PHASES.UNLOCK) return ['storyUnlock']
   if (state.phase === PHASES.SCENE_AFTER) return ['wordsInContext', 'scenePayoff']
+  // Taught by the tap itself, not by the state appearing: the goal lands when
+  // the learner has actually opened the word once.
+  if (state.phase === PHASES.TAP_WORD && state.looked) return ['tapUnknownWord']
   return []
 }
 
@@ -233,6 +259,10 @@ export function view(state) {
     // marked and translated — false before the cards, true after.
     scene: null,
     marked: false,
+    // The reading lesson, when this state is it: the extra line, its one
+    // unfamiliar word, and whether it has been looked up yet.
+    lookup: null,
+    looked: false,
     copy: null,
   }
 
@@ -269,6 +299,9 @@ export function view(state) {
   if (state.phase === PHASES.SCENE_AFTER) {
     return { ...base, copy: TUTORIAL_COPY.sceneAfter, scene: TUTORIAL_SCENE, marked: true }
   }
+  if (state.phase === PHASES.TAP_WORD) {
+    return { ...base, copy: TUTORIAL_COPY.lookup, lookup: TUTORIAL_LOOKUP, looked: state.looked }
+  }
   return base
 }
 
@@ -289,6 +322,12 @@ export function advance(state, action, payload) {
     // one line of coaching, and changes nothing else — hearing a word is not
     // revealing it and is certainly not grading it.
     return state.replayed ? state : { ...state, replayed: true }
+  }
+
+  if (action === ACTIONS.LOOKUP) {
+    // The first tap is the lesson (and the key that unlocks Continue); any
+    // further tap just reopens the answer and is not progress.
+    return state.looked ? state : withGoals({ ...state, looked: true })
   }
 
   if (action === ACTIONS.GRADE) {
@@ -317,7 +356,8 @@ export function advance(state, action, payload) {
   }
   if (state.phase === PHASES.RECAP) return withGoals({ ...state, phase: PHASES.UNLOCK })
   if (state.phase === PHASES.UNLOCK) return withGoals({ ...state, phase: PHASES.SCENE_AFTER })
-  if (state.phase === PHASES.SCENE_AFTER) return withGoals({ ...state, phase: PHASES.ACCOUNT })
+  if (state.phase === PHASES.SCENE_AFTER) return withGoals({ ...state, phase: PHASES.TAP_WORD })
+  if (state.phase === PHASES.TAP_WORD) return withGoals({ ...state, phase: PHASES.ACCOUNT })
   return state
 }
 
@@ -360,6 +400,13 @@ export function retreat(state) {
   }
   if (state.phase === PHASES.UNLOCK) return { ...state, phase: PHASES.RECAP }
   if (state.phase === PHASES.SCENE_AFTER) return { ...state, phase: PHASES.UNLOCK }
+  if (state.phase === PHASES.TAP_WORD) {
+    // Symmetric with a card's reveal: first un-look, then leave. `looked`
+    // resets so walking forward again re-arms the gate — the lesson is the
+    // tap, and Back past it un-teaches nothing but re-asks the question.
+    if (state.looked) return { ...state, looked: false }
+    return { ...state, phase: PHASES.SCENE_AFTER }
+  }
   // ACCOUNT: complete. The runner has already handed over; there is nothing
   // here to step back into.
   return null
@@ -375,8 +422,11 @@ export function defaultWalkthrough(grade = 'good') {
     steps.push({ action: ACTIONS.REVEAL })
     steps.push({ action: ACTIONS.GRADE, payload: grade })
   }
-  // recap → unlock → the scene, readable → account
+  // recap → unlock → the scene, readable
   for (let i = 0; i < 3; i += 1) steps.push({ action: ACTIONS.CONTINUE })
+  // the reading lesson: tap the word, then the account
+  steps.push({ action: ACTIONS.LOOKUP })
+  steps.push({ action: ACTIONS.CONTINUE })
   return steps
 }
 
@@ -439,6 +489,9 @@ export function resumeTutorialState(saved) {
     cardIndex,
     revealed: saved.revealed,
     replayed: false,
+    // Never persisted: a resumed reading lesson re-arms its gate, so the tap
+    // is performed on THIS run — cheap, and the lesson is the tap.
+    looked: false,
     grades: [],
     goalsSeen: [],
   }

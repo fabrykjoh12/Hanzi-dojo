@@ -62,6 +62,18 @@ async function walkTo(page, stop) {
   if (stop === 'unlock') return;
   await page.getByRole('button', { name: 'Read it' }).click();
   await expect(page.getByText(/this time you can read it/)).toBeVisible();
+  if (stop === 'scene-after') return;
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByText(/See a word you don’t know/)).toBeVisible();
+}
+
+// The reading lesson's one tap: open the word, read the answer, close it.
+async function lookupWord(page) {
+  await page.getByRole('button', { name: /下雨 — tap to look it up/ }).click();
+  const sheet = page.getByRole('dialog', { name: '下雨' });
+  await expect(sheet).toBeVisible();
+  await sheet.getByRole('button', { name: 'Close' }).click();
+  await expect(sheet).toHaveCount(0);
 }
 
 async function geometry(page) {
@@ -123,6 +135,15 @@ for (const phone of PHONES) {
 
       // No fourth telling of the loop — the learner just performed it.
       await expect(page.getByText('Review', { exact: true })).toHaveCount(0);
+      await page.getByRole('button', { name: 'Continue' }).click();
+
+      // The reading lesson: one more line, one unknown word, untranslated —
+      // and no way forward until it has been tapped (P12-6).
+      await expect(page.getByText(/See a word you don’t know/)).toBeVisible();
+      await expect(page.getByText('to rain')).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Create account' })).toHaveCount(0);
+      await lookupWord(page);
+      await expect(page.getByRole('button', { name: 'Create account' })).toBeVisible();
 
       // The handoff: the tutorial says it is finished and the caller decides.
       await page.getByRole('button', { name: 'Create account' }).click();
@@ -187,7 +208,7 @@ for (const phone of PHONES) {
     });
 
     test('every state keeps its primary action on screen, and never scrolls sideways', async ({ page }) => {
-      for (const stop of ['welcome', 'scene-before', 'card1', 'card2', 'card3', 'recap', 'unlock', 'scene-after']) {
+      for (const stop of ['welcome', 'scene-before', 'card1', 'card2', 'card3', 'recap', 'unlock', 'scene-after', 'tap-word']) {
         await walkTo(page, stop);
         const g = await geometry(page);
         expect(g.overflowX, stop).toBe(0);
@@ -283,6 +304,46 @@ test.describe('Teaching', () => {
     await expect(page.getByText('7 days', { exact: true })).toBeVisible();
   });
 
+  test('the reading lesson gates on the tap — and the answer is the real reader\'s (P12-6)', async ({ page }) => {
+    await walkTo(page, 'tap-word');
+
+    // No way forward, and no spoiler: the word is on the page untranslated.
+    await expect(page.getByRole('button', { name: 'Create account' })).toHaveCount(0);
+    await expect(page.getByText('to rain')).toHaveCount(0);
+    await expect(page.getByText(/See a word you don’t know\? Tap it\./)).toBeVisible();
+
+    // The tap. What opens is WordLookupSheet — the production component — with
+    // exactly what the real reader would show for this word.
+    await page.getByRole('button', { name: /下雨 — tap to look it up/ }).click();
+    const sheet = page.getByRole('dialog', { name: '下雨' });
+    await expect(sheet).toBeVisible();
+    await expect(sheet.getByText('xià yǔ')).toBeVisible();
+    await expect(sheet.getByText('to rain')).toBeVisible();
+    await expect(sheet.getByText('HSK 1')).toBeVisible();
+    await expect(sheet.getByRole('button', { name: 'Play audio' })).toBeVisible();
+    // No deck to add to before an account exists — the bookmark is not drawn.
+    await expect(sheet.getByRole('button', { name: /deck/i })).toHaveCount(0);
+
+    // Dismiss → the coaching is spent and the way forward appears.
+    await sheet.getByRole('button', { name: 'Close' }).click();
+    await expect(sheet).toHaveCount(0);
+    await expect(page.getByText(/See a word you don’t know/)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Create account' })).toBeVisible();
+
+    // Re-tapping still answers — it is not progress, but it is never refused.
+    await page.getByRole('button', { name: /下雨 — tap to look it up/ }).click();
+    await expect(page.getByRole('dialog', { name: '下雨' })).toBeVisible();
+  });
+
+  test('Skip is the only way past the reading lesson without tapping', async ({ page }) => {
+    await walkTo(page, 'tap-word');
+    await expect(page.getByRole('button', { name: 'Create account' })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Skip' }).click();
+    // The /tutorial route's skip returns to `/`; signed out with the teaching
+    // recorded, that resolves to the signup form.
+    await expect(page.getByLabel('Email')).toBeVisible();
+  });
+
   test('coaches card 1, hints at card 2, and leaves card 3 alone', async ({ page }) => {
     await walkTo(page, 'card1');
     await expect(page.getByText('Tap to reveal')).toBeVisible();
@@ -344,7 +405,8 @@ test.describe('Teaching', () => {
   });
 
   test('finishes without ever hearing a word', async ({ page }) => {
-    await walkTo(page, 'scene-after');
+    await walkTo(page, 'tap-word');
+    await lookupWord(page);
     await expect(page.getByRole('button', { name: 'Create account' })).toBeVisible();
   });
 
@@ -377,7 +439,7 @@ test.describe('Teaching', () => {
   });
 
   test('offers exactly one PRIMARY action on every non-card state — plus the quiet Skip', async ({ page }) => {
-    for (const stop of ['welcome', 'scene-before', 'recap', 'unlock', 'scene-after']) {
+    for (const stop of ['welcome', 'scene-before', 'recap', 'unlock', 'scene-after', 'tap-word']) {
       await walkTo(page, stop);
       const found = await page.evaluate(() =>
         Array.from(document.querySelectorAll('button'))
@@ -420,6 +482,10 @@ test.describe('Teaching', () => {
     await doCard(page, 'Easy');
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByRole('button', { name: 'Read it' }).click();
+    await page.getByRole('button', { name: 'Continue' }).click();
+    // The reading lesson's lookup is fed by the fixture — opening it must not
+    // reach the dictionary, and closing it writes nothing either.
+    await lookupWord(page);
     expect(writes).toEqual([]);
   });
 });
@@ -492,7 +558,8 @@ test.describe('Tutorial with reduced motion', () => {
   test.use({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
 
   test('still walks the whole way through', async ({ page }) => {
-    await walkTo(page, 'scene-after');
+    await walkTo(page, 'tap-word');
+    await lookupWord(page);
     await page.getByRole('button', { name: 'Create account' }).click();
     await expect(page).toHaveURL(/\/$/);
   });

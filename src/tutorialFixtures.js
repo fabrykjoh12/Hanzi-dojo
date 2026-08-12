@@ -84,6 +84,35 @@ export const TUTORIAL_SCENE = {
   ],
 }
 
+// The reading lesson (P12-6): one more line, one unfamiliar word.
+//
+// The scene's payoff worked because the learner could read ALL of it. This
+// beat teaches the other promise — you don't have to know every word before
+// reading, because inside a story an unknown word is one tap away. So the line
+// contains exactly ONE word the tutorial did not teach, deliberately left
+// untranslated on the page; tapping it opens the real reader's own lookup, fed
+// by this fixture.
+//
+// `word` is a real vocabulary row, shaped like one — verified against the live
+// table on 2026-08-12 — because it feeds the production lookup component, and
+// the level chip, reading and meaning it shows must be exactly what the real
+// reader would show for this word. The clip is the public bucket, so the
+// sheet's play button works signed out.
+export const TUTORIAL_LOOKUP = {
+  setting: 'One more line — Mei looks outside.',
+  line: '下雨。',
+  word: {
+    id: 'c537208f-0687-40f9-b6a9-493a77acc5d9',
+    word: '下雨',
+    reading: 'xià yǔ',
+    meaning: 'to rain',
+    level: 1,
+    language: 'chinese',
+    system: 'hsk_3',
+    audioPath: 'chinese/hsk_3/level_1/227_xia_yu.mp3',
+  },
+}
+
 // The schedule preview under the four grades, on cards 2 and 3 (P12-3).
 //
 // Card 1 teaches what the grades MEAN; from card 2 the row shows what a grade
@@ -143,6 +172,13 @@ export const TUTORIAL_COPY = {
   // summary this replaces was the app explaining what the learner just did.
   sceneAfter: {
     line: 'The same scene — this time you can read it.',
+    cta: 'Continue',
+  },
+  // The reading lesson. One coach line, spent once the word has been tapped —
+  // no dictionary tour, no feature list. The account ask moves here, because
+  // this is now the last thing the tutorial has to say.
+  lookup: {
+    coach: 'See a word you don’t know? Tap it.',
     cta: 'Create account',
   },
 }

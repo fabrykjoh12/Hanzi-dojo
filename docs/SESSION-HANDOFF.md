@@ -375,6 +375,14 @@ Supabase scheduling, or the production reader in pre-login.
 - **P12-4** (`30b88ee`): recap/unlock in `SessionRecap`'s visual system, without
   the component — its interface is untouched and the sandbox import graph is
   unchanged.
+- **P12-6**: the reading lesson. One more line after the payoff (`下雨。`) with
+  one word the tutorial never taught, drawn like a new word in the real reader,
+  and the **production `WordLookupSheet`** as the answer. The gate lives in
+  `actionsFor(TAP_WORD)` — no Continue until the word has been opened once, so
+  the UI never has to enforce it and Skip stays the only other door. The single
+  production change: `onAddToDeck` is optional now, so a caller with no deck
+  draws no bookmark (all eight readers pass it; production untouched).
+  **14 states, 13 taps.**
 
 **The onboarding TestFlight build is NOT cut** — the owner reviews the 17-point
 walkthrough report first, per instruction.

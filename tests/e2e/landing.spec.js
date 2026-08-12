@@ -82,6 +82,13 @@ for (const phone of PHONES) {
       await page.getByRole('button', { name: 'Read it' }).click();
       await expect(page.getByText('你好！')).toBeVisible();
       await expect(page.getByText(/this time you can read it/)).toBeVisible();
+      await page.getByRole('button', { name: 'Continue' }).click();
+
+      // The reading lesson: tapping the one unknown word is the only way on.
+      await expect(page.getByRole('button', { name: 'Create account' })).toHaveCount(0);
+      await page.getByRole('button', { name: /下雨 — tap to look it up/ }).click();
+      await expect(page.getByRole('dialog', { name: '下雨' })).toBeVisible();
+      await page.getByRole('dialog', { name: '下雨' }).getByRole('button', { name: 'Close' }).click();
       await page.getByRole('button', { name: 'Create account' }).click();
       await expect(page.getByLabel('Email')).toBeVisible();
 

@@ -7,6 +7,7 @@ import {
 import { readTutorialProgress, saveTutorialPosition } from './prelogin'
 import Flashcard from './Flashcard'
 import GradeRow from './GradeRow'
+import WordLookupSheet from './WordLookupSheet'
 import { cardMarker } from './cardMarker'
 import { gradePromptText } from './gradePrompt'
 import { studyLayout } from './studyLayout'
@@ -187,11 +188,21 @@ export default function Tutorial({ onComplete, onSkip = null, resumable = true, 
   // state is read through a ref (mirrored after each commit, never during
   // render) so the answer is synchronous; the handle itself goes through
   // useImperativeHandle, which also clears it on unmount.
+  // The reading lesson's sheet (P12-6): whether the production lookup is open,
+  // and the tapped word element it anchors to. Declared up here because the
+  // hardware-back handle below also closes it.
+  const [lookupOpen, setLookupOpen] = useState(false)
+  const [lookupAnchor, setLookupAnchor] = useState(null)
+
   const stateRef = useRef(state)
   useEffect(() => { stateRef.current = state })
   useImperativeHandle(backRef, () => () => {
     const prev = retreat(stateRef.current)
     if (prev === null) return false
+    // Back also dismisses the reading lesson's open sheet — stepping the state
+    // while an answer floats over it would leave the sheet pointing at a
+    // screen that moved on.
+    setLookupOpen(false)
     setState(prev)
     return true
   }, [])
@@ -212,10 +223,22 @@ export default function Tutorial({ onComplete, onSkip = null, resumable = true, 
   const layout = studyLayout({ isMobile, viewportHeight, banners: 0, reservedBottom: RESERVED_BOTTOM })
   const audio = useTutorialAudio(v.card ? v.card.audioPath : null)
 
+  // The reading lesson's word (P12-6). Its own small audio hook — same public
+  // bucket, same rules — so the lookup's play button speaks signed out; and
+  // the tapped element, kept so the production sheet can anchor its popover
+  // over the word exactly as the real reader does.
+  const lookupAudio = useTutorialAudio(v.lookup ? v.lookup.word.audioPath : null)
+
   // Rule 2 of the audio boundary: changing state silences whatever was playing.
   // Keyed on the state id, so it covers card → card as well as card → recap.
   const stop = audio.stop
   useEffect(() => { return () => stop() }, [v.id, stop])
+
+  // A closed lookup is a silent one. (Leaving the reading lesson unmounts the
+  // sheet with its branch; hardware Back also closes it explicitly below, so a
+  // retreat-and-return can never find it already open.)
+  const stopLookup = lookupAudio.stop
+  useEffect(() => { if (!lookupOpen) stopLookup() }, [lookupOpen, stopLookup])
 
   // The two moments that are worth feeling. Ordinary taps get their own tap
   // feedback where they happen, exactly as they do in a real session.
@@ -370,6 +393,102 @@ export default function Tutorial({ onComplete, onSkip = null, resumable = true, 
     )
   }
 
+  // ── The reading lesson (P12-6) ────────────────────────────────────────────
+  // One more line, one word the tutorial did not teach, deliberately
+  // untranslated on the page. The word is drawn the way the real reader draws
+  // a new word — underlined, faintly tinted, obviously *part of the text*
+  // rather than a button — and tapping it opens the REAL lookup
+  // (WordLookupSheet), fed by the fixture row, anchored over the word exactly
+  // as in a story. The machine refuses Continue until the word has been
+  // looked up once (tutorialScript.actionsFor), so this screen never has to.
+  if (v.phase === 'tap-word') {
+    const w = v.lookup.word
+    const at = v.lookup.line.indexOf(w.word)
+    const before = at > 0 ? v.lookup.line.slice(0, at) : ''
+    const after = v.lookup.line.slice(at + w.word.length)
+    return (
+      <Shell onSkip={skip}>
+        <div style={{ width: '100%', animation: rise }} key="tap-word">
+          <p style={{
+            margin: '0 0 20px', padding: '12px 15px', borderRadius: '4px',
+            background: 'var(--surface-2)', borderLeft: '3px solid var(--border)',
+            fontSize: '14px', fontStyle: 'italic', color: 'var(--text-muted)',
+            lineHeight: 1.55, textAlign: 'left',
+          }}>
+            {v.lookup.setting}
+          </p>
+          <div style={{
+            padding: '20px 18px', borderRadius: '18px',
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            boxShadow: 'var(--shadow-1)', textAlign: 'left',
+          }}>
+            <span lang="zh-Hans" style={{ fontFamily: charFont, fontSize: '30px', lineHeight: 1.5, color: 'var(--text)' }}>
+              {before}
+              <button
+                onClick={(e) => {
+                  tapFeedback()
+                  setLookupAnchor(e.currentTarget)
+                  setLookupOpen(true)
+                  send(ACTIONS.LOOKUP)
+                }}
+                lang="zh-Hans"
+                aria-label={w.word + ' — tap to look it up'}
+                // Drawn the way the real reader draws a new word: underlined,
+                // faintly tinted, part of the sentence. NOT a chip — a rounded
+                // filled box at this size reads as a button, and the lesson is
+                // that words in text are tappable. The 30px character with its
+                // line-height already clears 44px, so the target is honest
+                // without a visible box making it so.
+                style={{
+                  background: 'color-mix(in srgb, ' + accentHex + ' 7%, var(--surface))',
+                  border: 'none', borderBottom: '2px solid ' + accentHex + 'AA',
+                  borderRadius: '3px', padding: '3px 2px',
+                  fontFamily: charFont, fontSize: '30px', lineHeight: 1.4,
+                  color: 'var(--text)', cursor: 'pointer',
+                }}
+              >
+                {w.word}
+              </button>
+              {after}
+            </span>
+          </div>
+          {!v.looked && (
+            <p style={{
+              margin: '20px 0 0', textAlign: 'center', fontSize: '15px',
+              fontWeight: 700, color: ink(accentHex), lineHeight: 1.5,
+            }}>
+              {v.copy.coach}
+            </p>
+          )}
+          {/* The way forward arrives when the answer is DISMISSED, not the
+              instant the word is tapped — a CTA appearing under an open sheet
+              competes with the thing the learner just asked for. */}
+          {v.looked && !lookupOpen && (
+            <div style={{ marginTop: '28px' }}>
+              <PrimaryAction
+                label={finishLabel || v.copy.cta}
+                onClick={advanceOnce}
+                accentHex={accentHex}
+              />
+            </div>
+          )}
+        </div>
+        {lookupOpen && (
+          <WordLookupSheet
+            selected={{ word: w.word, vocab: w, tokenId: 'tutorial-lookup', sentence: v.lookup.line }}
+            anchor={lookupAnchor}
+            theme={{ font: charFont }}
+            accent={accentHex}
+            userCards={null}
+            language="chinese"
+            onSpeak={() => lookupAudio.play()}
+            onClose={() => setLookupOpen(false)}
+          />
+        )}
+      </Shell>
+    )
+  }
+
   // ── Recap and unlock — the production recap's visual system (P12-4) ──────
   // The card, the chip, the title type and the stat tile are SessionRecap's,
   // to the pixel where the design system allows, so the completion screen a
@@ -487,11 +606,9 @@ export default function Tutorial({ onComplete, onSkip = null, resumable = true, 
             {v.copy.line}
           </p>
           <div style={{ marginTop: '28px' }}>
-            <PrimaryAction
-              label={v.marked ? (finishLabel || v.copy.cta) : v.copy.cta}
-              onClick={advanceOnce}
-              accentHex={accentHex}
-            />
+            {/* Plain cta both times — the finishLabel belongs to the LAST
+                state, which is the reading lesson now, not this one. */}
+            <PrimaryAction label={v.copy.cta} onClick={advanceOnce} accentHex={accentHex} />
           </div>
         </div>
       </Shell>

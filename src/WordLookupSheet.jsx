@@ -71,7 +71,13 @@ function pill(color, tinted) {
 // word the reference dictionary resolved gets the same bookmark a vocabulary
 // word has, so "tap a word, keep a word" holds here too. Leave them out (the
 // analyzer, the dictionary screen) and the action simply isn't drawn.
-export default function WordLookupSheet({ selected, theme, accent, userCards, language, onAddToDeck, onSpeak, onClose, onAddDictToDeck = null, dictSaved = null, dictSaving = false, anchor = null }) {
+//
+// `onAddToDeck` follows the same rule since P12-6: every reader supplies it, so
+// nothing changes there — but a caller with no deck to add to (the onboarding
+// tutorial, which runs before an account exists) leaves it out and the
+// bookmark simply isn't drawn, instead of rendering a button that could only
+// dead-end.
+export default function WordLookupSheet({ selected, theme, accent, userCards, language, onAddToDeck = null, onSpeak, onClose, onAddDictToDeck = null, dictSaved = null, dictSaving = false, anchor = null }) {
   const lang = language || (selected && selected.vocab && selected.vocab.language) || null
   const grammar = selected && !selected.vocab && !selected.name ? glossaryLookup(lang, selected.word) : null
   const { entry: dictEntry, loading: dictLoading } = useDictEntry(dictWordFor(selected, lang, grammar))
@@ -191,7 +197,7 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
-            {vocab && (
+            {vocab && onAddToDeck && (
               <button onClick={() => onAddToDeck(vocab)} aria-label={inDeck ? 'In your deck' : 'Add to deck'} title={inDeck ? 'In your deck' : 'Add to deck'} style={action}>
                 <Bookmark size={20} color={inDeck ? accent : 'var(--text-muted)'} fill={inDeck ? accent : 'none'} />
               </button>

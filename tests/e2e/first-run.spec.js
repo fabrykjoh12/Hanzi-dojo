@@ -80,6 +80,12 @@ async function walkTutorial(page, { replay = false } = {}) {
   await expect(page.getByText('谢谢。再见！')).toBeVisible();
   await expect(page.getByText('Hello!', { exact: true })).toBeVisible();
   await expect(page.getByText(/this time you can read it/)).toBeVisible();
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  // The reading lesson: one unknown word, and the tap is the way forward.
+  await page.getByRole('button', { name: /下雨 — tap to look it up/ }).click();
+  await expect(page.getByRole('dialog', { name: '下雨' })).toBeVisible();
+  await page.getByRole('dialog', { name: '下雨' }).getByRole('button', { name: 'Close' }).click();
   await expect(page.getByRole('button', { name: replay ? 'Done' : 'Create account' })).toBeVisible();
 }
 

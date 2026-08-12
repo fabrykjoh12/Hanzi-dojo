@@ -6,7 +6,7 @@ import {
   actionsFor, view, advance, retreat, defaultWalkthrough, runTutorial,
   serializeTutorial, resumeTutorialState, goalsThrough,
 } from './tutorialScript'
-import { TUTORIAL_CARDS, TUTORIAL_SCENE, TUTORIAL_INTERVALS } from './tutorialFixtures'
+import { TUTORIAL_CARDS, TUTORIAL_SCENE, TUTORIAL_INTERVALS, TUTORIAL_LOOKUP } from './tutorialFixtures'
 import { previewLabels } from './srs'
 import { gradeGlosses } from './gradePrompt'
 import { GRADES, GRADE_KEYS } from './grades'
@@ -32,14 +32,15 @@ describe('the shape of the journey', () => {
     expect(isComplete(s)).toBe(false)
   })
 
-  it('is welcome → the scene → three cards → recap → unlock → the same scene → account', () => {
+  it('is welcome → scene → three cards → recap → unlock → the same scene → tap a word → account', () => {
     const ids = walk(defaultWalkthrough()).map(stateId)
     expect(ids).toEqual([
       'welcome', 'scene-before',
       'card-1-front', 'card-1-back',
       'card-2-front', 'card-2-back',
       'card-3-front', 'card-3-back',
-      'recap', 'unlock', 'scene-after', 'account',
+      'recap', 'unlock', 'scene-after',
+      'tap-word', 'tap-word-looked', 'account',
     ])
   })
 
@@ -56,10 +57,10 @@ describe('the shape of the journey', () => {
   })
 
   it('is roughly a dozen taps — the whole point of it', () => {
-    // Start, the unreadable scene, reveal+grade three times, then three to walk
-    // the payoff. If this number grows, the tutorial has stopped being a
-    // hundred seconds.
-    expect(defaultWalkthrough().length).toBe(11)
+    // Start, the unreadable scene, reveal+grade three times, three to walk the
+    // payoff, one tap on the unknown word, and the account. If this number
+    // grows, the tutorial has stopped being about a hundred seconds.
+    expect(defaultWalkthrough().length).toBe(13)
   })
 })
 
@@ -171,6 +172,75 @@ describe('retreat', () => {
       expect(forward.length, stateId(back) + ' offers nothing').toBeGreaterThan(0)
     }
     expect(isComplete(s)).toBe(true)
+  })
+})
+
+// ── The reading lesson's gate (P12-6) ────────────────────────────────────────
+// "See a word you don't know? Tap it" is taught the way everything here is
+// taught: by making the tap the only way forward. The machine itself refuses
+// Continue until the word has been looked up once — the UI never has to.
+
+describe('the reading lesson', () => {
+  const toTapWord = () => {
+    const states = runTutorial(defaultWalkthrough().slice(0, -2))
+    return states[states.length - 1]
+  }
+
+  it('sits between the readable scene and the account', () => {
+    const ids = walk(defaultWalkthrough()).map(stateId)
+    expect(ids.indexOf('scene-after')).toBeLessThan(ids.indexOf('tap-word'))
+    expect(ids.indexOf('tap-word-looked')).toBeLessThan(ids.indexOf('account'))
+  })
+
+  it('refuses to continue until the word has been looked up — identity, nothing happened', () => {
+    const s = toTapWord()
+    expect(stateId(s)).toBe('tap-word')
+    expect(actionsFor(s)).toEqual([ACTIONS.LOOKUP])
+    expect(advance(s, ACTIONS.CONTINUE)).toBe(s)
+  })
+
+  it('one tap opens the way forward, and teaches the goal', () => {
+    const looked = advance(toTapWord(), ACTIONS.LOOKUP)
+    expect(stateId(looked)).toBe('tap-word-looked')
+    expect(actionsFor(looked)).toContain(ACTIONS.CONTINUE)
+    expect(looked.goalsSeen).toContain('tapUnknownWord')
+    expect(advance(looked, ACTIONS.CONTINUE).phase).toBe(PHASES.ACCOUNT)
+  })
+
+  it('re-tapping is allowed and is not progress', () => {
+    const looked = advance(toTapWord(), ACTIONS.LOOKUP)
+    expect(advance(looked, ACTIONS.LOOKUP)).toBe(looked)
+  })
+
+  it('shows exactly one unfamiliar word, and it is not one the tutorial taught', () => {
+    const taught = TUTORIAL_CARDS.map(c => c.word)
+    expect(taught).not.toContain(TUTORIAL_LOOKUP.word.word)
+    // The line contains the word, and stripped of it is pure punctuation — so
+    // there is exactly one thing to wonder about, by construction.
+    expect(TUTORIAL_LOOKUP.line).toContain(TUTORIAL_LOOKUP.word.word)
+    expect(TUTORIAL_LOOKUP.line.split(TUTORIAL_LOOKUP.word.word).join('')).toMatch(/^[！。？，、\s]*$/)
+  })
+
+  it('feeds the production lookup a real vocabulary row', () => {
+    // The word detail the learner sees here must be exactly what the real
+    // reader would show for this word, so the fixture is shaped like the live
+    // row it was copied from (verified 2026-08-12).
+    const w = TUTORIAL_LOOKUP.word
+    expect(w.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
+    expect(w.language).toBe('chinese')
+    expect(w.system).toBe('hsk_3')
+    expect(w.level).toBe(1)
+    expect(w.reading.length).toBeGreaterThan(0)
+    expect(w.meaning.length).toBeGreaterThan(0)
+    expect(w.audioPath).toMatch(/^chinese\/hsk_3\/level_1\/.+\.mp3$/)
+  })
+
+  it('retreat un-looks first, then leaves — and the gate re-arms', () => {
+    const looked = advance(toTapWord(), ACTIONS.LOOKUP)
+    const unlooked = retreat(looked)
+    expect(stateId(unlooked)).toBe('tap-word')
+    expect(actionsFor(unlooked)).toEqual([ACTIONS.LOOKUP])
+    expect(retreat(unlooked).phase).toBe(PHASES.SCENE_AFTER)
   })
 })
 
@@ -492,7 +562,7 @@ describe('determinism and serialisability', () => {
     // The shape the persistence layer stores. Anything added here is something
     // a killed app has to restore correctly, so the list is deliberately short.
     expect(Object.keys(initialTutorialState()).sort()).toEqual(
-      ['cardIndex', 'goalsSeen', 'grades', 'phase', 'replayed', 'revealed']
+      ['cardIndex', 'goalsSeen', 'grades', 'looked', 'phase', 'replayed', 'revealed']
     )
   })
 
@@ -523,11 +593,24 @@ describe('resuming after the app was closed', () => {
   it('comes back to exactly the state it left', () => {
     for (const s of walk(defaultWalkthrough())) {
       if (isComplete(s)) continue
+      // The one deliberate exception: `looked` is never persisted, so the
+      // reading lesson resumes with its gate re-armed — see its own spec.
+      if (s.looked) continue
       const back = resumeTutorialState(JSON.parse(JSON.stringify(serializeTutorial(s))))
       expect(stateId(back)).toBe(stateId(s))
       expect(actionsFor(back)).toEqual(actionsFor(s))
       expect(back.goalsSeen).toEqual(s.goalsSeen)
     }
+  })
+
+  it('re-arms the reading lesson\'s gate on resume — the tap happens on THIS run', () => {
+    const states = walk(defaultWalkthrough())
+    const looked = states.find(x => stateId(x) === 'tap-word-looked')
+    const back = resumeTutorialState(JSON.parse(JSON.stringify(serializeTutorial(looked))))
+    expect(stateId(back)).toBe('tap-word')
+    expect(back.looked).toBe(false)
+    expect(actionsFor(back)).toEqual([ACTIONS.LOOKUP])
+    expect(back.goalsSeen).not.toContain('tapUnknownWord')
   })
 
   it('finishes from wherever it was picked up', () => {

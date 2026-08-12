@@ -641,3 +641,57 @@ the `storyUnlock` teaching goal ("finishing a session opens the next chapter" �
 the rule itself), and the recap→unlock→read sequence mirrors what a real
 session produces. Deleting it was considered and rejected as beyond the
 approved scope.
+
+---
+
+## 13 · P12-6 — the reading lesson (2026-08-12)
+
+The scene payoff taught one promise: *your flashcards make stories readable.*
+It could not teach the second, and the second is the one that removes the fear
+of starting: **you don't have to know every word before you read, because
+inside a story an unknown word is one tap away.**
+
+So one more line follows the payoff — and only after it, so the payoff scene
+stays a scene the learner can read *completely*:
+
+> *One more line — Mei looks outside.*
+> **下雨。**
+> See a word you don't know? Tap it.
+
+`下雨` is drawn the way the real reader draws a new word: underlined, faintly
+tinted, part of the sentence — not a chip, because a filled rounded box at 30px
+reads as a button and the lesson is that *words in text* are tappable. Its type
+already clears 44px, so the target is honest without a visible box making it so.
+The word is **not** translated on the page.
+
+**The gate is in the state machine, not the UI.** `actionsFor(TAP_WORD)` returns
+`[LOOKUP]` until the word has been opened once, and only then adds `CONTINUE`.
+There is no Continue to hide, no button to disable, and no way to reach the
+account by tapping past it — Skip remains the only other door, which is exactly
+the escape the design already has. Re-tapping reopens the answer and is
+explicitly not progress. `retreat()` un-looks first and then leaves, so Back
+re-arms the question; `looked` is never persisted, so a resumed tutorial
+performs the tap on the run it is on.
+
+**The answer is the production component.** `WordLookupSheet` — the same one the
+paced, chat, scene, manhua and immersive readers use — anchored over the word as
+a popover, showing hanzi, `xià yǔ`, the `HSK 1` chip, "to rain", "From this
+line" with the word lit inside it, and a play button fed by the public bucket
+clip. Nothing was rebuilt and nothing was widened for the tutorial: the only
+change to the component is that **`onAddToDeck` is now optional**, so a caller
+with no deck (a pre-login tutorial) draws no bookmark instead of a button that
+could only dead-end. All eight production callers pass it, so production is
+untouched. `dictWordFor` returns null for a word with a vocabulary row, so the
+sheet never reaches the dictionary here — and the e2e that proves the tutorial
+writes nothing now walks through the lookup to keep it that way.
+
+The account ask moved to this state; `scene-after` continues instead. No extra
+slide, no dictionary tour, no saving, no flashcard creation, no second tap.
+
+**Shape now:** 14 states (`tap-word` counts its before and after), **13 taps**.
+Measured at 320/390/430 × light/dark, in all three of its conditions (gated,
+sheet open, dismissed): zero overflow on both axes, zero sub-44px targets.
+
+| commit | what |
+|--------|------|
+| *(P12-6)* | the reading lesson: one line, one unknown word, the production lookup, gated on the tap |
