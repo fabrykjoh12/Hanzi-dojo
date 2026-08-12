@@ -1,109 +1,283 @@
 # P13 — Visual direction audit and design system
 
-**Status: audit and direction only. No CSS, no tokens, no components implemented.**
-Written against `claude/hanzi-dojo-continuation-e3vnbg` @ `3dfd036` (the state that
-passed P12 device QA).
+**Status: audit and direction only, revision 2. No CSS, no tokens, no
+components implemented.** Written against
+`claude/hanzi-dojo-continuation-e3vnbg` @ `6e41202`.
 
-Every number in §2 was **measured**, not eyeballed: a DOM census ran over eleven
-real screens at 390×844 and counted computed type styles, radii, shadows,
-painted surfaces and SVGs. Where I could not measure something, this document
-says so rather than guessing.
+**Revision 2 (2026-08-12)** — the five HelloChinese screenshots arrived, so §1
+is now an analysis of what is actually on screen rather than of my recollection.
+And the brand direction is corrected: **Hanzi Dojo stays vermilion-led.** The
+jade-primary proposal in revision 1 is withdrawn. What survives from revision 1
+unchanged is the measured census (§2) and the structural findings, which are
+approved: 60 type styles, 16 radii, 13 shadow declarations, 94 hardcoded hexes,
+77 lucide icons against 5 custom, the `--text-faint` inversion, the misleading
+`--hairline`, and the shared-component direction.
+
+Every number in §2 was **measured**: a DOM census over eleven real screens at
+390×844, counting computed type styles, radii, shadows, painted surfaces and
+SVGs. Where something could not be measured, this document says so.
 
 ---
 
-## 0 · Three honesty notes, before anything else
+## 0 · Two honesty notes
 
-**1. The HelloChinese screenshots did not arrive.** Your message describes five
-screenshots (Learn, Practice, Stories, Lessons, Profile); no images came through
-with it. §1 is therefore written from my own knowledge of HelloChinese as a
-shipped product, and it is pitched at the level of *principle* — which is what
-you asked it to be used for. **It is not an analysis of your screenshots, and I
-have not seen them.** §1 ends with the specific questions the screenshots would
-settle; re-send them and I will correct that section against what is actually on
-screen. Nothing in §3–§14 depends on it: those rest on the measured audit of our
-own app.
-
-**2. Our Stories renders show the fallback, not production.** The e2e fixture
+**1. Our Stories renders show the fallback, not production.** The e2e fixture
 sets `image_path: null` on every story, so the shelf in my captures is
-`StoryCover`'s designed gradient placeholder. In the live database **204 of 204
-published Chinese stories have cover art**. I verified the real art separately
-(`public/story-covers/generated/`) and it is good — see §2.4. This is the same
-class of blindness that hid the `cover_url` bug in P12: the mock answers any
-select with its own rows.
+`StoryCover`'s gradient placeholder. In the live database **204 of 204 published
+Chinese stories have cover art**, and I verified the real art separately
+(`public/story-covers/generated/`). This matters most in §13, where the Stories
+plan depends on art that exists.
 
-**3. Dark mode is audited from tokens, not from a fresh render sweep.** My dark
-harness set `data-theme` before the app read the profile's own theme, so the app
-overrode it and the "dark" captures came back light. Dark-mode findings below are
-read from `src/index.css`'s dark block and from the genuinely-dark captures made
-during P11/P12 (Practice, tutorial). A full dark sweep is worth doing before
-P14 implementation starts.
+**2. Dark mode is audited from tokens, not from a render sweep.** My dark harness
+set `data-theme` before the app read the profile's own theme, so the app
+overrode it and the "dark" captures came back light. Dark findings below are read
+from `src/index.css` and from the genuinely-dark captures made during P11/P12.
+**A full dark sweep is a prerequisite for P14-0**, because §5 makes dark
+mode carry real design weight rather than being an inversion.
 
 ---
 
-## 1 · HelloChinese's visual system, at the level of principle
+## 1 · HelloChinese, from the screenshots
 
-*(Written from knowledge of the app, NOT from your screenshots — see §0.1.)*
+Five screens: Learn, Practice, Immerse (lessons), Stories, Me. All captured in
+dark mode, which is itself informative — the app is clearly *designed* dark, not
+merely inverted.
 
-**What makes it feel polished is not decoration. It is that every surface has a
-job, and the app never uses two devices to do one job.** Four principles carry
-most of it:
+### 1.0 What is true across all five screens
 
-**1.1 One loud thing per screen, and it is always the action.** The primary
-action is the largest, most saturated, most dimensional object in view, and
-nothing else on the screen competes for that register. Secondary things are
-smaller, flatter and quieter *by system*, not by accident.
+These are the transferable principles, and they are more useful than any single
+screen:
 
-**1.2 Colour is functional, and it is allowed to be strong.** A saturated green
-means *go / progress / correct*. Gold means *reward*. Grey means *locked*. The
-palette is small and each colour is spent on one meaning, so a green button reads
-as an instruction rather than as branding. Locked/inactive states are genuinely
-desaturated, not just lower-opacity versions of the active state — which is why
-"available" and "not yet" are legible at a glance.
+**A. Dark means near-black, and accents get *more* saturated, not less.** The
+grounds are near-black (the Learn screen's is warm, with a plum cast; the others
+are close to neutral `#0B0B0C`). Against that, accents run at full chroma —
+magenta, gold, mint, purple. Nothing is greyed out to be polite. This is the
+opposite of our dark mode, which lowers everything toward `#0F1115` greys.
 
-**1.3 The icons are objects, not glyphs.** This is the single biggest gap
-between that app and ours. Its icons read as small dimensional *things* — a
-couple of tones, a soft top-light, a subtle bottom shadow, a simple silhouette
-that survives at 24px. They are drawn for the product; they are not a general-
-purpose line set. Because the icons carry personality, the surfaces underneath
-them can stay calm. **Ours is the inverse: generic line icons, so the surfaces
-have to work harder, and that is what makes a screen full of cards feel
-generated.**
+**B. Surfaces are flat and uniform; icons carry all the colour and dimension.**
+Every row on Practice is the same dark rounded rectangle. What distinguishes
+"EarBuds" from "Native speaker videos" is a dimensional orange headphone versus a
+dimensional purple video tile. **This is the single most important observation in
+the whole audit**: it is why the app can have dozens of rounded surfaces and not
+feel like "cards everywhere", and it is exactly inverted in our app, where the
+surfaces do the work and 77 identical line glyphs sit on them.
 
-**1.4 Rounded surfaces everywhere, yet no "cards everywhere" feeling.** The
-resolution is that its rounded surfaces are almost always *one tappable object*
-— a lesson node, a unit, a story, a button. Rounded boxes are not used to group
-unrelated readouts; grouping is done with spacing, a heading and a divider. So
-the eye reads "here are twelve things I can tap", not "here are twelve panels".
-That is the same rule P10 arrived at independently in our own app, and it is
-worth stating as the shared principle it is: **a bounded surface is a promise
-that the whole thing is one object.**
+**C. Section titles are large, heavy, white — and carry a faint coloured glow.**
+"Specialized Courses", "Drills", "Your collections", "Statistics", "Skill
+medals", "Continue reading", "Start here" are all ~22–24px, weight ~800, pure
+white, with a small soft coloured halo at the left edge of the first glyph. It
+gives a heading presence and hierarchy **without wrapping the section in a
+container**. This is a real technique and we should take a restrained version.
 
-**Bottom navigation:** a compact bar, inset from the screen edges, high corner
-radius, solid (not glassy), sitting on its own shadow so it reads as floating
-above the page rather than welded to the bottom edge. Active tab = filled
-dimensional icon + brand colour + label; inactive = flat monochrome + muted
-label. Labels always present.
+**D. Locked and empty states are desaturated versions of the same shape.** The
+future path nodes are grey spheres with the same gloss and the same glyph as the
+active one. The unearned skill medals are grey silhouettes of medals. The empty
+collections keep their icon but their *label* goes grey. State is legible without
+reading a word, and it never changes the shape.
 
-**Progress and gamification:** a vertical path of nodes is the spine of the
-learn screen — current node emphasised and dimensional, completed nodes filled,
-future nodes flat and grey. It works because progress has a *place*, an obvious
-"you are here", and one visible next step. The mechanics (currencies, streak
-pressure) are not what we want; the visual principles are: **one unmistakable
-next action, state legible without reading, progress that occupies real estate
-proportional to its importance.**
+**E. Gold means reward, everywhere, without exception.** Coins, the premium
+banner, the `0/5` lesson-progress pill, the lesson chevron button, the crown on a
+locked drill, the `1 TOP` ribbon. One colour, one meaning, used often enough to
+be a language.
 
-**Illustration:** warm, character-led, consistent palette, used at real size —
-not as a small decorative afterthought. Personality comes from artwork, which
-frees the UI chrome to be restrained.
+**F. Exactly one loud object per screen.** The magenta path node. The two bright
+course cards. The photographic hero. The green series panel. The gold premium
+banner. Everything else on each screen is dark and quiet by comparison.
 
-### What the screenshots would settle
+**G. Each destination owns a hue, and the nav's active state adopts it.** Learn is
+purple, Practice gold, Stories blue, Immerse magenta, Me green. **This is the one
+cross-cutting system I recommend we do NOT adopt wholesale** — see §1.6.
 
-Re-send them and I will pin down: exact bar height and horizontal inset; whether
-the bar is solid or translucent; the corner radius family; the exact greens
-(primary / pressed / soft); how many type sizes appear on one screen; how locked
-nodes are desaturated (opacity vs. grey fill); whether icon shadows are cast on
-the surface or baked into the glyph; and how much is above the fold on the Learn
-screen.
+---
+
+### 1.1 Learn / progression
+
+**What is on screen.** A top utility row of dark pills (level book, iridescent
+crown, gem counter `0`, coin counter `100`). A cartoon grandpa mascot. A plum
+banner reading "Making new friends!" in bright magenta bold, with a small `1`
+tab hanging beneath it like a bookmark. Then the path: one **active node** — a
+saturated magenta sphere with a specular highlight arc top-left, a graduation-cap
+glyph, sitting inside a concentric plum ring — and below it three **inactive
+nodes**, identical in construction but grey. A thin dark curve connects them.
+
+**Borrow:**
+- **The active node's construction.** It is a sphere: base colour, a darker
+  bottom-right, a bright specular arc top-left, and a ring around it that reads
+  as a socket. That is four tones doing an enormous amount of work at ~90px, and
+  the same construction reads fine at 32px. It is the model for our dimensional
+  icon language (§10).
+- **The concentric ring as "you are here."** The active node is not just
+  brighter, it is *seated in something*. Cheap, and unmistakable.
+- **The glow.** The active node has a soft magenta bloom on the ground around it.
+  Used once per screen this is not decoration, it is a pointer.
+- **Grey-of-the-same-shape for not-yet.** See 1.0-D.
+- **Dark-mode contrast discipline.** Magenta on near-black is roughly 5:1; the
+  grey nodes sit at roughly 2:1 against the ground and are *supposed* to.
+
+**Do not copy:**
+- **The mascot.** No character, no guide, no face. This is the single clearest
+  line between "energetic and adult" and "childish", and our copy voice (calm,
+  observational, no guilt) would fight a cartoon narrator.
+- **The lesson path itself.** Nodes, a spine, a linear unlock order — that is a
+  *product* structure and we do not have it. Our progression is FSRS stability
+  and a level test. **PRODUCT CHANGE, out of scope.**
+- **Coins, gems, the crown economy, the `0/1` bag.** Currencies. CLAUDE.md §1
+  removed streaks and XP on purpose.
+- **The magenta.** Their hue.
+- **The bookmark-tab banner.** A nice detail, but it is a lesson-title device for
+  a structure we do not have.
+
+---
+
+### 1.2 Practice
+
+**What is on screen.** Three sections. "Specialized Courses" — two saturated
+cards, magenta "Pronunciation" and green "Chinese Characters", each carrying a
+large translucent character watermark (`ā`, `文`) and a soft organic blob shape.
+"Drills" — dark uniform rows, each led by a dimensional coloured icon (orange
+headphones, purple video tile), white label, gold crown on the premium one.
+"Your collections" — same rows, gold star and green bell icons, but the labels
+("Starred", "Words") are **grey** because the collections are empty, with a right-
+aligned `0`.
+
+**Borrow:**
+- **Uniform rows + dimensional icons.** Our Practice already has exactly this
+  structure (P11: one panel, rows, an icon, a title, an optional count). Swapping
+  32 lucide strokes for dimensional icons would transform the screen without
+  moving one row. **This is the highest-leverage single change in the app.**
+- **The large translucent character watermark** inside a coloured card. We already
+  do this on the Home hero (田 at 9% white) — but at 9% it is invisible. Theirs is
+  at roughly 25–30% of the card colour and it *reads*. Ours should be stronger.
+- **Empty state = grey label, icon retained, count shown.** Better than hiding the
+  row or showing prose.
+- **Two-tone icon construction.** The headphones are one orange plus one darker
+  orange, and that is all. Not a 3D render.
+
+**Do not copy:**
+- **The two saturated course cards as a pattern.** Two big bright blocks side by
+  side is a *catalogue* device. Our Practice hero already picks one
+  recommendation, which is a better answer for us and device-approved.
+- **The crown / premium gating.** We are free.
+- **Their green.**
+- **Their exact card compositions** — the blob shapes are a house mannerism.
+
+---
+
+### 1.3 Immerse / lessons
+
+**What is on screen.** A text tab row (Lessons · Starred · Review) with a short
+green underline under the active tab. Two dark filter chips with small colourful
+dimensional icons. "Free lessons" with a green `MORE ›`. Lesson cards: a
+**photograph** occupying the top ~55%, then a dark body with a white title, a gold
+`0/5` pill and a gold circular chevron. Then a large photographic hero with big
+white text over it. A purple promo banner overlays the bottom.
+
+**Borrow:**
+- **Imagery at real scale.** The photo is not a thumbnail; it is most of the card.
+  We have 204 real painterly covers and we currently show them at 56px on Home and
+  crop them 16:9→2:3 on the shelf. **This screen is the argument for giving our art
+  room.**
+- **The gold progress pill on the card.** Small, unmissable, one colour, states
+  progress without a bar.
+- **One circular affordance per card.** The gold chevron says "this is the tap"
+  without a full-width button.
+- **Text tabs with a short coloured underline** — cheaper and cleaner than our
+  auth screen's full-width underlined tabs.
+
+**Do not copy:**
+- **Photography.** Stock photos of KFC and coffee cups are a content strategy, and
+  ours is better: consistent commissioned illustration in one style. Photography
+  would destroy that coherence.
+- **The overlaying purple promo banner.** It covers content and it is an upsell.
+- **`0/5` as a mechanic** — that is lesson-completion counting, which we do not have.
+
+---
+
+### 1.4 Stories
+
+**What is on screen.** Home / My Space text tabs, a search icon, a Filter chip.
+"Continue reading" — a horizontal row with a small square cover, a title, a green
+dot + `HSK1` chip, and a blue layered badge on the thumbnail corner. "Start here" —
+a **large dark-green panel** holding a whole series: big white title "Mysterious
+School", an `HSK1` chip, a purple-and-gold `1 TOP` ribbon, a school-building
+silhouette as the panel's own atmosphere, and inside it a horizontal row of
+**portrait season covers** — bold two-colour posters (red/black, gold/black,
+purple/black) with vertical Chinese titles.
+
+**Borrow — this is the most valuable screenshot of the five:**
+- **A tinted panel with its own atmosphere as the grouping device.** The series
+  gets a dark-green ground and a building silhouette, so it reads as *a world*
+  rather than as a section of a list. That is how to differentiate our four shelf
+  sections without four more grey cards. It is also exactly what our existing
+  `inkWash.js` machinery was built for.
+- **Bold, high-contrast, limited-palette cover art, portrait-native.** Two colours
+  and a silhouette. It reads at thumbnail size, it reads in a row, and each series
+  owns a colour. Our art is more detailed and more beautiful, and it is 16:9 — so
+  the *presentation* question (§11) is real, but the principle to take is: **a
+  series should own a colour, and covers should be composed for the slot they
+  live in.**
+- **A per-series accent.** Season 1 red, Season 2 gold, Season 3 purple. Colour
+  used as identity, not decoration.
+- **The status chip** (green dot + `HSK1`) is small, quiet and consistent.
+
+**Do not copy:**
+- **The `1 TOP` ribbon.** Ranking/leaderboard signalling.
+- **Their cover style.** Ours is a genuine differentiator; do not trade painterly
+  illustration for graphic posters.
+- **My Space / search / filter chrome** — more surface than our shelf needs, and
+  the one-page shelf is device-approved.
+
+---
+
+### 1.5 Me / Profile
+
+**What is on screen.** Bell and gear line icons top-right. A **blue gradient
+header panel** with a mountain silhouette, a mint avatar with an Apple badge, the
+name, a chevron, and three small stats with dimensional icons (calendar 519,
+flower 4, lightning 151). A **gold "Upgrade to Premium" banner** with a black
+crown, black text, a notched arrow right edge and a gold circular chevron.
+"Statistics" — four dark bordered tiles in 2×2, each a big bold white numeral
+(`496 XP`, `1.5 hours`) over a grey label. "Skill medals" with `VIEW ALL ›` and
+grey silhouette placeholders.
+
+**Borrow:**
+- **The header panel as one dimensional object with illustration.** Gradient +
+  silhouette + avatar + name, all in one bounded thing. Our Profile hero is a
+  flat maroon rectangle; this is what it could be.
+- **Big numerals over small grey labels.** Their stat tiles put the number first
+  at ~26px/800 and the label at ~12px muted. Ours does this on the hero (`5 of 44
+  words learned`) and should do it consistently.
+- **Locked achievements as grey silhouettes of the real thing.** Legible, honest,
+  and it does not use a padlock.
+- **Line icons for utility chrome.** Their bell and gear are plain white line
+  icons — dimensional treatment is spent on *identity*, not on settings. This is
+  the evidence for our three-tier icon strategy (§10).
+
+**Do not copy:**
+- **XP, total time, skill medals, the premium banner.** Metrics-as-score and an
+  upsell. Our Profile deliberately answers one question.
+- **The 2×2 stat grid.** Four bordered boxes is the "dashboard" register the
+  Profile redesign (P10-B) specifically removed.
+- **Their blue.**
+
+---
+
+### 1.6 The one system I recommend against adopting
+
+**Per-tab nav hues.** Their active nav colour changes with the destination —
+purple, gold, blue, magenta, green. It is striking, and it works for them because
+their five destinations are five different *products*.
+
+For us it would cost the thing we are trying to build. Hanzi Dojo's identity is
+vermilion; if the nav's active colour changes on every tab, the brand colour
+stops being a constant and the app reads as five apps. **Recommendation: the nav's
+active state is always vermilion.** Section accents (plum for Stories, blue for
+Practice — §6) live in heading atmosphere and icon faces, *inside* the screen,
+where they say "you are in the story world" without displacing the brand.
+
+This is a genuine judgement call, and it is the one place I am arguing against
+something the screenshots do well. If you want per-tab hues, that is a defensible
+choice — but it should be made deliberately, not inherited.
 
 ---
 
@@ -113,7 +287,7 @@ screen.
 
 | | today | comment |
 |---|---|---|
-| Distinct **type styles** (size+weight+tracking+transform) across 11 screens | **60** | proposed system: 12 roles (§5) |
+| Distinct **type styles** (size+weight+tracking+transform) across 11 screens | **60** | proposed system: 12 roles (§7) |
 | Distinct **font sizes** | **26** (9.5 → 112px) | 9.5/10.5/11/11.5/12/12.5/13/13.5/14/14.5/15/16/16.5/17/18/19/20/21/22/24/26/30/34/40/76/112 |
 | Distinct **font weights** | **10** | 400, 500, 550, 600, 650, 700, 750, 800, 820, 850 |
 | Distinct **radii** on painted surfaces | **16** | 3, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 26, 50, 999 |
@@ -141,7 +315,7 @@ page height in viewports.
 
 **Read the Study row.** Five type styles, four radii, five surfaces, two icons —
 and it is the best-looking screen in the app. That is not a coincidence, and it
-is the argument for the whole of §5–§7.
+is the argument for the whole of §7–§9.
 
 ### 2.2 Three token defects worth fixing in P14-0
 
@@ -297,128 +471,216 @@ impression.
 
 ---
 
-## 3 · Hanzi Dojo's own visual identity
+---
 
-**The concept: ink, jade and paper — a training hall, not a game show.**
+## 3 · Hanzi Dojo's visual identity
 
-Chinese learning has two visual traditions worth borrowing from and one to
-avoid. Borrow: **ink on paper** (brush, stroke, the physicality of writing) and
-**jade** (深 depth, cool green, something valuable that takes work to get). Avoid:
-the cartoon-mascot register, which is what makes the category feel like it is for
-children.
+**Vermilion ink × warm paper × dimensional learning objects.**
 
-Five words, in priority order: **tactile, confident, warm, dimensional, adult.**
+The redesign is the same Hanzi Dojo, more polished — not a rebrand. `#B83A24` (or
+a refinement within a few percent of it) stays the brand anchor: it is in the app
+icon, the wordmark, the hero, the card status band, and `languageTheme.js`'s
+Chinese accent. Revision 1's jade proposal is **withdrawn**.
 
-What that means concretely, as rules:
+Personality, in priority order: **tactile · energetic · confident · dimensional ·
+polished · coherent · adult.**
 
-1. **Ink is the content; jade is the interface.** Chinese characters, story art
-   and brush marks are warm and ink-like. Buttons, progress, nav and success are
-   jade. The learner should be able to tell "this is the language" from "this is
-   the app" without reading.
-2. **Dimension comes from objects, not from surfaces.** Icons, the app icon and
-   celebration marks get real dimensional treatment (2–4 tones, one light
-   source). Panels stay flat. This is the inverse of the current app and it is
-   what fixes "grey cards everywhere" without deleting any cards.
-3. **Paper, not glass.** Grounds are warm off-white and deep ink; no
-   glassmorphism beyond the one nav treatment we choose; no blurred translucency
-   as decoration.
-4. **One light source, top-left, always.** Every dimensional element is lit the
-   same way. This is the cheapest possible way to make a set of assets look like
-   a set.
-5. **Colour means something or it is not there.** No decorative gradients. The
-   hero's ground and the story art are the only places large colour fields live.
+The five rules:
 
-**The vermilion question, stated plainly.** `#B83A24` is currently the *Chinese
-language accent* in `languageTheme.js`, and it is load-bearing in code
-(`accentHex`, `heroGround`, `ink()`, the card status band). Making jade the
-primary brand colour is therefore an architectural decision, not a palette
-swap. My recommendation: **keep both, with separated jobs** — jade becomes the
-interactive/brand colour, vermilion stays the Chinese-content colour (the
-wordmark, the app icon, hanzi marks, the story accent, the card status band).
-That preserves the ensō heritage and the per-language architecture, gives the app
-the jade identity you want, and — usefully — jade and vermilion are a genuinely
-Chinese pairing rather than an arbitrary one. It also means §4's `primary` is a
-*new* token rather than a redefinition of `--chinese-accent`, which is far safer.
+**1. Vermilion is the brand and the interface.** Primary actions, active
+navigation, important progress and Chinese-learning emphasis are all vermilion.
+There is no second "interactive" colour competing with it. The supporting hues
+(gold, plum, blue, coral) have narrow, named jobs and never take a primary action.
+
+**2. Dimension comes primarily from objects. Important surfaces may also use
+controlled gradients, glow, highlights and shadows when they reinforce
+hierarchy.** *(Revised from revision 1's stricter rule.)* Dimensional treatment is
+earned by: the Home hero · the active nav item · a selected learning state · a
+progress or reward object · session completion · a story unlock · the app icon.
+Ordinary grouping surfaces stay flat. The test: **does the dimension say something
+about state, material or importance?** If it is there to look nice, it is
+decoration and it comes out.
+
+**3. Gradients are allowed where they carry material, lighting or state.**
+Permitted: the Home hero's ground, the active nav icon's face, the app icon,
+reward and mastery objects, a selected learning object, story unlock,
+celebration. Banned: decorative gradients on ordinary panels, and anything that
+reads as a generic purple-blue AI gradient. A gradient that could be a flat fill
+without losing meaning should be a flat fill.
+
+**4. Paper and lacquer, not glass.** Light grounds are warm paper; dark grounds
+are a warm near-black with a red cast — the inside of a lacquer box, not a grey
+dashboard. Blur/translucency survives in at most one place (see §11) and is never
+decoration.
+
+**5. One light source, top-left, always.** Every dimensional element — icons,
+nodes, the app icon, reward marks — is lit identically. This is the cheapest way
+to make a set of assets look like one set, and it is what the HelloChinese nodes
+and icons do consistently.
+
+**Colour hierarchy, stated once so it survives the whole of P14:**
+
+> Vermilion is the brand. Gold is the reward. Plum is the story. Blue is the
+> practice. Coral is the energy. Everything else is paper and ink.
 
 ---
 
 ## 4 · Colour system
 
-Jade with a blue lean, deliberately away from both HelloChinese's grass green and
-Duolingo's `#58CC02`. All values are candidates for a device round, not final.
+Three candidate palettes, built from your starting values. All three read as a
+red brand; they differ in how much chroma the *rest* of the app carries.
 
-### Light mode
+### 4.1 The shared vermilion family (identical in all three)
 
-| role | hex | use |
+| role | light | dark | job |
+|---|---|---|---|
+| `primary` | **`#B83A24`** | **`#E4573A`** | brand, primary actions, active nav, key progress |
+| `primary-bright` | `#D84B32` | `#F06A4C` | hover/emphasis, gradient top stop, icon top facet |
+| `primary-pressed` | `#8F2D1D` | `#C0432C` | pressed |
+| `primary-soft` | `#F7E8E3` | `rgba(228,87,58,0.15)` | selected ground, tint base |
+| `burgundy` | `#5E2430` | `#3A1620` | deep ground, hero shadow, dark-mode surfaces |
+| `coral` | `#E8664A` | `#FF7F63` | secondary energy, dimensional icon faces |
+
+Dark-mode vermilion is **lifted and more saturated** (`#E4573A`), not darkened —
+`#B83A24` on a near-black ground measures about 3.1:1 and fails AA for text;
+`#E4573A` reaches roughly 5.4:1. This is what `ink()` already does today, and it
+is why the red will look *richer* in dark mode rather than muddier.
+
+### 4.2 Supporting hues (identical in all three)
+
+| role | light | dark | job — and only this job |
+|---|---|---|---|
+| `gold` | `#C08A2E` | `#E3B24E` | reward, mastery, level unlock, celebration |
+| `gold-bright` | `#D6A13A` | `#F5C868` | gold gradient top stop, reward highlight |
+| `plum` | `#7651A8` | `#A585D8` | Stories: heading atmosphere, series accents, story icons |
+| `blue` | `#4777B8` | `#6D9BE8` | Practice, Listening, utility learning |
+| `success` | `#2F9E6D` | `#34D399` | correct, mastered (keep — 72 uses today) |
+| `warning` | `#D97706` | `#F0A93B` | weak-word counts, attention |
+| `error` | `#DC2626` | `#F87171` | destructive, failed (keep) |
+| `locked` | `#A8A29E` | `#4A524E` | desaturated, not low-opacity |
+
+Two deliberate constraints. **Plum never takes a primary action** — a Stories CTA
+is still vermilion; plum is atmosphere and identity only, which is what stops the
+Stories tab turning purple. **Blue is Practice's accent, not its buttons** —
+same reasoning.
+
+### 4.3 The three palettes differ only in neutrals and chroma budget
+
+**Palette A — "Paper"** (closest to today; most conservative)
+
+| | light | dark |
 |---|---|---|
-| `primary` | **`#0E7A63`** | primary buttons, nav active, progress fill, focus |
-| `primary-pressed` | `#0A6252` | pressed/held |
-| `primary-soft` | `#E4F2ED` | selected chip ground, soft fill, tint base |
-| `primary-ink` | `#0B5F4E` | jade used as text on light |
-| `secondary` | `#1F2A37` | high-contrast neutral button (the "premium pill") |
-| `content-ink` (vermilion) | `#B83A24` | wordmark, hanzi marks, card status band |
-| `story` | `#8A4B2A` | Stories accent — warm brown-red, distinct from content-ink |
-| `practice` | `#2E5AA8` | Practice accent — cool blue, distinct from primary jade |
-| `success` | `#2F9E6D` | keep (already 72 uses) |
-| `warning` | `#D97706` | keep |
-| `weak` / `error` | `#DC2626` | keep |
-| `reward` / gold | **`#C08A2E`** | level unlock, mastery, story unlock |
-| `locked` | `#A8A29E` | genuinely desaturated, not low-opacity |
+| `bg` | `#FAF8F5` | `#141011` |
+| `surface` | `#FFFFFF` | `#1E1819` |
+| `surface-2` | `#F4F0EB` | `#282021` |
+| `border` | `#E6E0D8` | `#332A2B` |
+| `text` | `#1A1614` | `#EFEAE6` |
+| `text-secondary` | `#5E574F` | `#B6ADA6` |
+| `text-muted` | `#867E74` | `#8E857E` |
+| `text-faint` | `#ABA39A` | `#6B635E` |
 
-Neutrals (warm, paper-leaning — keeps the ink metaphor):
+Chroma budget: low. Supporting hues appear only as small marks and icon faces; no
+tinted section grounds. *Pros:* least risk, most obviously "still Hanzi Dojo".
+*Cons:* closest to the current app, so it delivers the least of the energy you
+asked for.
 
-| | hex |
-|---|---|
-| `bg` | `#FAF9F6` |
-| `surface` | `#FFFFFF` |
-| `surface-2` | `#F3F1ED` |
-| `surface-3` | `#E9E6E0` |
-| `border` | `#E3DFD8` |
-| `border-strong` | `#CFC9C0` |
-| `text` | `#1A1815` |
-| `text-secondary` | `#5C574F` |
-| `text-muted` | `#847D73` |
-| `text-faint` | `#A8A29A` |
+**Palette B — "Lacquer" ← recommended**
 
-Note the neutral scale is **warmer** than today's `#FAFAF8`/`#E7E5E4` (which are
-near-neutral greys) and, critically, `text-faint` is now genuinely lighter than
-`text-muted` — fixing §2.2.1.
+| | light | dark |
+|---|---|---|
+| `bg` | `#FAF8F5` | **`#100D0E`** |
+| `surface` | `#FFFFFF` | `#1A1517` |
+| `surface-2` | `#F5F1EC` | `#241D20` |
+| `surface-3` | `#EBE4DB` | `#2E2529` |
+| `border` | `#E7E1D9` | `#352B2F` |
+| `border-strong` | `#D2C9BE` | `#473A3F` |
+| `text` | `#191513` | `#F2EDE9` |
+| `text-secondary` | `#5C554D` | `#BBB2AB` |
+| `text-muted` | `#847C72` | `#928982` |
+| `text-faint` | `#A9A198` | `#6E655F` |
 
-### Dark mode
+Chroma budget: medium-high. Dark ground is a **warm burgundy-black** (`#100D0E` —
+red-leaning, not neutral, not blue), surfaces carry a red cast as they lift, and
+section atmospheres are permitted (§6). Accents run at full chroma against it.
+*Pros:* this is the palette that delivers HelloChinese's energy on our own hue;
+the dark mode genuinely looks richer than the light mode, which is the stated
+goal. *Cons:* the warm dark ground is a real change and needs a device round
+before anything is built on it.
 
-Not an inversion. Deeper ground, *more* saturated accents, and the same
-hierarchy.
+**Palette C — "Cinnabar"** (most restrained/premium)
 
-| role | hex |
-|---|---|
-| `bg` | **`#0C0F0E`** (near-black with a green cast, not blue) |
-| `surface` | `#161A19` |
-| `surface-2` | `#1F2422` |
-| `surface-3` | `#2A302D` |
-| `border` | `#2E3533` |
-| `border-strong` | `#3E4642` |
-| `text` | `#ECEAE6` |
-| `text-secondary` | `#B4AFA6` |
-| `text-muted` | `#8E887E` |
-| `text-faint` | `#6E6862` |
-| `primary` | **`#2CC49A`** (lifted and more saturated) |
-| `primary-pressed` | `#23A481` |
-| `primary-soft` | `rgba(44,196,154,0.14)` |
-| `content-ink` | `#E2684F` (vermilion lifted — this is what `ink()` already does) |
-| `story` | `#C8825C` |
-| `practice` | `#6D9BE8` |
-| `success` | `#34D399` (keep) |
-| `warning` | `#F0A93B` |
-| `weak` / `error` | `#F87171` (keep) |
-| `reward` | `#E3B24E` |
-| `locked` | `#4A524E` |
+Same neutrals as B, but the chroma budget is cut to vermilion + gold + burgundy
+only. Plum and blue drop out entirely; Stories and Practice differentiate by
+atmosphere *density* rather than hue. *Pros:* the most adult and the most
+obviously authored; hardest to make look generic. *Cons:* Stories and Practice
+lose their identity colours, and the app risks reading monochrome-red — which on a
+long shelf becomes fatiguing.
 
-**VISUAL ONLY.** The existing `ink()` / `pinyinInk()` / `color-mix` machinery
-already solves accent-on-dark correctly; the new palette plugs into it.
+**Recommendation: Palette B.** It keeps the red unmistakably in charge, gives
+Stories and Practice a quiet identity, and its dark mode is the one that answers
+"very dark ground, strong saturated accents". Note the fix to §2.2 defect 1 carries in
+all three: `text-faint` is now genuinely lighter than `text-muted` in both
+themes.
+
+### 4.4 What replaces sage
+
+Sage `#6E8466` is hardcoded in 11 files as the colour of primary buttons (§2.2 defect 2).
+Every one of those becomes **`primary`** — vermilion. There is no sage in any
+palette above, and no jade. `StoryCover`'s `accent || '#6E8466'` default becomes
+the language accent.
 
 ---
 
-## 5 · Typography system
+## 5 · Dark mode direction
+
+Dark mode is a designed surface, not an inversion. Four rules:
+
+1. **The ground is warm and very dark.** `#100D0E` — a red-leaning near-black.
+   Today's `#0F1115` is blue-leaning grey, which is what makes the current dark
+   mode feel like a generic dashboard.
+2. **Accents lift and gain chroma.** Vermilion `#B83A24` → `#E4573A`. Gold
+   `#C08A2E` → `#E3B24E`. Plum `#7651A8` → `#A585D8`. Blue `#4777B8` → `#6D9BE8`.
+   Nothing desaturates on the way into dark. The existing `ink()` /
+   `pinyinInk()` / `--ink-lift-pct` machinery already implements exactly this
+   and needs new values, not new logic.
+3. **Surfaces lift with a red cast.** `#1A1517` → `#241D20` → `#2E2529`. A
+   neutral-grey lift on a warm ground reads as dirty; a warm lift reads as
+   lacquer.
+4. **Type is warm off-white** (`#F2EDE9`), never pure white — pure white on
+   near-black at body size is where eye strain in dark mode comes from.
+
+**Explicitly not:** grey-on-grey; a mechanical inversion; a red that loses
+saturation. The brand must look *richer* in dark mode than in light.
+
+**Prerequisite:** the dark render sweep (§0 note 2). Every value above is a candidate
+until it has been seen on a device.
+
+---
+
+## 6 · Section atmosphere — hierarchy without another container
+
+The screenshots' coloured glow behind section headings (§1.0-C) is worth a
+restrained version, because it solves a problem we have: our shelf has four
+sections differentiated only by a 17px heading.
+
+**The treatment.** A very soft radial wash behind the heading region — the
+section's hue at **6–10% against the page ground**, roughly 240×120px, fading to
+nothing, drawn with the existing `inkWash.js`. No border, no fill, no container.
+The heading itself goes up to `title-section` weight 700 at 17–19px.
+
+**Where it is allowed:** Stories sections (plum), Practice's *Look things up*
+(blue), Session Complete's celebration (gold). **That is the whole list for P14.**
+
+**Rules:** at most **one** atmospheric wash visible at a time per screen; it never
+appears behind body text; it is not a substitute for spacing; and if it can be
+removed without the hierarchy collapsing, it should be. This is the same "one lit
+thing per screen" discipline P10 established, extended one notch.
+
+**Do not** apply it to every section — that is how a technique becomes a texture.
+
+---
+
+## 7 · Typography system
 
 **Today: 60 distinct styles, 26 sizes, 10 weights. Proposed: 12 roles, 9 sizes,
 4 weights.**
@@ -453,7 +715,7 @@ scale lives in prose.
 
 ---
 
-## 6 · Shape, surface and elevation
+## 8 · Shape, surface and elevation
 
 ### Radius — 4 values plus pill (today: 16)
 
@@ -486,17 +748,17 @@ Otherwise use spacing, a heading and a hairline.* Two shadows total; 13 today.
 
 ---
 
-## 7 · Buttons and controls
+## 9 · Buttons and controls
 
 | control | height | radius | type | rest | pressed | disabled | dark |
 |---|---|---|---|---|---|---|---|
-| **primary** | 52 | `r-ctl` | `label` 15/700 | `primary` fill, white text, `shadow-1` | `primary-pressed`, scale .985, shadow removed | `surface-3` bg, `text-faint`, no shadow | `primary` (lifted), text `#0C0F0E` |
+| **primary** | 52 | `r-ctl` | `label` 15/700 | `primary` fill, cream text, `shadow-1` | `primary-pressed`, scale .985, shadow removed | `surface-3` bg, `text-faint`, no shadow | `primary` (lifted), text `#100D0E` |
 | **secondary** | 52 | `r-ctl` | 15/600 | `surface` + `border-strong` | `surface-2` | as above | `surface-2` + `border-strong` |
-| **ghost** | 44 | `r-ctl` | 14/600 | transparent, `primary-ink` text | `primary-soft` ground | `text-faint` | `primary` text |
+| **ghost** | 44 | `r-ctl` | 14/600 | transparent, `primary` text | `primary-soft` ground | `text-faint` | `primary` text |
 | **destructive** | 52 | `r-ctl` | 15/700 | transparent, `error` text, `error` border | `error` at 8% ground | — | `error` lifted |
 | **icon button** | 44×44 | `r-pill` | — | `text-muted` glyph | `surface-2` ground | 40% opacity | same |
 | **chip (selectable)** | 36 | `r-pill` | 13/600 | `surface` + `border` | — | — | `surface-2` + `border` |
-| chip **selected** | 36 | `r-pill` | 13/700 | `primary-soft` + `primary` border, `primary-ink` text | — | — | `primary-soft` + `primary` |
+| chip **selected** | 36 | `r-pill` | 13/700 | `primary-soft` + `primary` border, `primary` text | — | — | `primary-soft` + `primary` |
 | **segmented** | 40 | `r-ctl` (track `r-ctl`, thumb `r-sm`) | 13/600 | track `surface-2`, thumb `surface` + `shadow-1` | — | — | track `surface-2`, thumb `surface-3` |
 | **list row** | 54 min | 0 (inside a `grouped`/`raised` container) | title `title-card`, sub `caption` | `borderTop: 1px border` except first | `surface-2` | `text-faint` | same |
 
@@ -506,326 +768,328 @@ the primary action — which the app already satisfies everywhere measured.
 **COMPONENT REFACTOR** — these want to be real components (`Button`,
 `Chip`, `Row`), which the repo currently does not have; today each screen
 re-declares them inline. This is the single highest-leverage refactor in P14 and
-it is what makes screens 5–10 cheap.
+it is what makes screens 5–10 cheap. All five ship in **P14-1**, before any
+screen work, and `Button` replaces every sage CTA in the same commit.
 
 ---
 
-## 8 · Custom icon art direction
+## 10 · Icon strategy — three tiers
 
-**The most important section, because it is the biggest gap (§1.3) and the
-cheapest identity win: 77 generic line icons today, 5 custom.**
+The gap is real (77 lucide against 5 custom) and §1.0-B is the reason it matters.
+But replacing all 77 is the wrong target, and the screenshots agree: their own
+bell and gear are plain white line icons. **Dimensional treatment is spent on
+identity, not on chrome.**
 
-### The art direction
+### Tier 1 — identity icons: custom dimensional artwork (14)
 
-- **Silhouette first.** Each icon must be recognisable as a solid black shape at
-  24px before any tone is added. If it needs three tones to be legible, the
-  silhouette is wrong.
-- **2–4 tones per icon**, no more: a base, a shadow (base darkened ~18%), a
-  highlight (base lightened ~22%), and optionally one accent. Flat fills, no
-  gradients except a single subtle top-to-bottom on the base where it reads as
-  a curved surface.
-- **One light source, top-left, always.** Highlight on the top-left facet,
-  shadow on the bottom-right, and a soft contact shadow under the object only
-  where the object sits on something.
-- **Slight isometric tilt** for objects with volume (cards, books, boxes) —
-  around 10–15°, never a full isometric grid. Flat-on for symbols (tones,
-  strokes).
-- **Rounded geometry**, 1.8–2.5px corner radii at 24px, matching `NavIcons.jsx`'s
-  existing family rules — that file is already the style guide for this.
-- **No photorealism, no bevels, no glass, no long shadows.** "Clean mobile-game
-  object", as you put it: think a well-made board-game piece, not a 3D render.
-- **Two states**: `inactive` (single tone, `text-muted`) and `active` (full
-  dimensional treatment). This matters — a dimensional icon in every row would
-  be visual noise; dimension marks *the current thing*.
-- **Designed at 32px, verified at 24px and 20px.** Anything that dies at 20px
-  gets simplified, not shrunk.
+These are the icons a learner would recognise out of context. Home · Cards ·
+Stories · Practice · Profile · Weak words · Listening · Writing · Grammar ·
+Tones · Stroke order · Level test · Story unlock · Session complete / reward.
 
-### Concepts
+**Art direction:**
+- **Silhouette first.** Recognisable as one solid shape at 24px before any tone
+  is added. If three tones are needed for legibility, the silhouette is wrong.
+- **2–4 tones**: a base, a shadow (base darkened ~18%), a highlight (base
+  lightened ~22%), optionally one accent. The HelloChinese headphones are two
+  tones; the path node is four. That is the range.
+- **One light source, top-left.** Highlight on the top-left facet, shadow
+  bottom-right, and — like their path node — a small specular arc where the form
+  is curved.
+- **Subtle depth, slightly tactile.** A soft contact shadow only where the object
+  sits on something. No photorealism, no bevels, no glass, no generic 3D render.
+- **Rounded geometry**, 1.8–2.5px corner radii at 24px, following
+  `NavIcons.jsx`'s existing family rules — that file is already the style guide.
+- **Two states:** `inactive` single-tone `text-muted`; `active` full dimensional.
+  Dimension marks *the current thing*; a dimensional icon in every row is noise.
+- **Designed at 32px, verified at 24 and 20.** What dies at 20px gets simplified,
+  not shrunk.
+- **Colour comes from the palette's named jobs**: Cards/Home vermilion, Stories
+  plum, Practice/Listening blue, reward/unlock gold, weak words warning.
+
+**Concepts** (art direction only; no assets, and the symbol choices are not final):
 
 | icon | concept |
 |---|---|
-| **Home** | A tiled roof over an open doorway — a dojo gate, not a house. Reads Chinese-architectural at 24px; roof is the silhouette. |
-| **Cards** | Two stacked cards, slight tilt, front card carrying a single brush stroke. Already the right idea in `NavIcons`; give it a face and a tone. |
-| **Stories** | An open book whose right page carries a small painted scene (two colour fields, no detail). Distinguishes "story" from "reference". |
-| **Practice** | Three小 stacked blocks / a rack of drill tiles — the P8 decision (a grid, not a bullseye) with volume. |
-| **Profile** | A seal stamp (印章) — a rounded rectangular block with a carved face. Far more distinctive than a person glyph, and deeply Chinese. |
-| **Listening** | A bell with one sound arc, not a speaker cone. Warmer, and it avoids the "mute" ambiguity. |
-| **Writing** | A brush held at an angle over a paper edge, with one wet stroke below it. |
-| **Grammar** | Two joined blocks with a connector — structure, literally. Avoid the "book" metaphor (that is Stories). |
-| **Tones** | Four brush marks in the four tone contours (ˉ ˊ ˇ ˋ), the third one emphasised. Instantly Chinese; no other app owns this. |
-| **Stroke order** | A single 一→十 form with a numbered ghost stroke and a small arrow. |
-| **Weak words** | A card with a chipped/cracked corner and a small amber mark. Not a warning triangle — the object itself shows wear. |
-| **Level test** | A sealed scroll with a gold band. The band is the reward colour; a broken band = passed. |
-| **Streak** | *We do not have streaks and are not adding them.* Use for **"days studied"** only: a row of small filled tiles. **PRODUCT CHANGE if it becomes a streak — out of scope.** |
-| **Progress** | A jade ring with a notched arc, not a percentage donut. |
-| **Story unlock** | A padlock whose body is a book spine, opening — plus one gold spark. Locked = single desaturated tone. |
+| Home | A tiled roof over an open doorway — a dojo gate, not a house. Roof is the silhouette. |
+| Cards | Two stacked cards, slight tilt, front card carrying one brush stroke. Extends the existing `NavIcons` idea with a face and tones. |
+| Stories | An open book whose right page holds a tiny painted scene — two colour fields, no detail. |
+| Practice | A rack of drill tiles (the P8 decision: a grid, not a bullseye) with volume. |
+| Profile | A seal stamp (印章) — a rounded block with a carved face. Far more distinctive than a person glyph. |
+| Listening | A bell with one sound arc, not a speaker cone — avoids the mute ambiguity. |
+| Writing | A brush at an angle over a paper edge, one wet stroke below. |
+| Grammar | Two joined blocks with a connector — structure, literally. Not a book (that is Stories). |
+| Tones | Four brush marks in the four tone contours, the third emphasised. Instantly Chinese; nobody else owns this. |
+| Stroke order | A 一→十 form with one ghost stroke and a small arrow. |
+| Weak words | A card with a worn corner and a small amber mark. The object shows wear; not a warning triangle. |
+| Level test | A sealed scroll with a gold band. Broken band = passed. |
+| Story unlock | A padlock whose body is a book spine, opening, plus one gold spark. |
+| Session complete | A stacked-cards form with a gold ring closing around it. The one celebration mark. |
 
-Format: **SVG, hand-authored, one file per icon** in a new `src/icons/`
-directory, following `NavIcons.jsx`'s conventions (24×24 viewBox, optical
-centring, `currentColor` for the single-tone state, explicit tones for active).
-**COMPONENT REFACTOR** to introduce; **VISUAL ONLY** per swap.
+### Tier 2 — functional UI icons: clean line icons
 
-**Do not generate assets yet** — noted. The Higgsfield pipeline is a poor fit
-for 24px UI icons anyway; these should be drawn as SVG paths, not generated as
-raster art.
+Back, close, search, settings, chevrons, more, play/pause, plus/minus, check.
+These stay **line icons at one consistent weight**. A learner needs to understand
+these instantly; they do not need to remember them. Either keep lucide here or
+draw a small matched line family later — not a P14 decision.
+
+### Tier 3 — minor utilities: keep lucide
+
+Everything else (~50 glyphs): admin screens, dev tooling, one-off affordances,
+DojoHQ. No custom art, no migration. If a Tier 3 icon later turns out to carry
+identity, it gets promoted to Tier 1 deliberately.
+
+**The rule:** *custom icons where people remember the icon; functional icons where
+people just need to understand the control.*
+
+**Format:** hand-authored SVG, one file per icon, in a new `src/icons/`, following
+`NavIcons.jsx`'s conventions (24×24 viewBox, optical centring, `currentColor` for
+single-tone, explicit tones for active). **COMPONENT REFACTOR** to introduce;
+**VISUAL ONLY** per swap. Ship in complete families per surface — all five nav
+glyphs, then all Practice glyphs — never one at a time.
+
+The Higgsfield pipeline is the wrong tool here: these are 24px vector UI marks,
+not raster illustration.
 
 ---
 
-## 9 · App icon direction
+## 11 · Bottom navigation — three concepts
+
+The screenshots settle the direction: **every one of the five uses an inset,
+rounded, near-solid tray with labels always visible** — never a full-bleed glass
+bar. Their tray sits ~10px in from each edge, has a ~22–26px radius, uses a
+surface a step lighter than the page, and carries only modest elevation.
+
+Today ours is the opposite: 58px + safe-area, full-bleed, radius 0,
+`--surface-glass` + `blur(14px)`, 1px hairline top. **Destinations and navigation
+architecture do not change in any concept** — `navConfig.js`, `navStack.js`,
+`TabHost.jsx`, per-tab stacks, Android Back and scroll restoration are all
+untouched. **VISUAL ONLY.**
+
+**Concept A — floating tray, five equals.**
+Height 60 (safe-area below the tray, not inside it). Inset 12px. Radius 24. Solid
+`surface`, no blur, `shadow-2`, 1px `border` in dark. All five destinations
+structurally identical. Active: dimensional vermilion icon + vermilion label
+(13/700) + a soft vermilion bloom on the tray behind the icon. Inactive:
+single-tone `text-muted` glyph + `text-faint` label.
+*Pros:* cleanest, most systematic, closest to the screenshots' actual geometry.
+*Cons:* loses the P8 device-approved emphasis on Cards.
+
+**Concept B — subtle inset tray.**
+Height 58. Inset 8px. Radius 18. `surface` at 96% with a 1px border, minimal
+shadow. Active: filled vermilion icon + vermilion label. No bloom, no
+dimensional treatment.
+*Pros:* most native-feeling, lowest risk, smallest change. *Cons:* it is close
+enough to today's bar that it delivers little of the polish; the icons would be
+doing all the work alone.
+
+**Concept C — Hanzi Dojo tray, Cards slightly favoured. ← recommended.**
+Height 62 (safe-area below). Inset 10px. Radius 22. Solid `surface`, `shadow-2`,
+1px `border` in both themes so the tray reads as an object resting on the page.
+Four tabs at even weight. **Cards keeps a quiet advantage:** the existing 42×34
+shell stays, restyled as a soft vermilion `primary-soft` rounded rectangle that
+fills with a vermilion gradient (`primary-bright` → `primary`) plus one 1px inner
+top highlight when active — *and nothing else*. **No mechanical key**: no deep
+bevel, no travel, no double shadow, no hardware metaphor. Cards' icon runs one
+step larger (27.5px, as today). Active tab: dimensional icon + vermilion label +
+a very soft bloom. Inactive: single-tone glyph + `text-faint` label. Labels always
+on, all five.
+*Why this one:* it takes the screenshots' tray geometry, keeps the P8
+device-approved decision that Cards is the primary destination and expresses it
+*visually* rather than structurally, and it is the treatment the new dimensional
+icons will look best in. It is also the smallest change that gives the bar an
+identity.
+*Risk:* an inset tray leaves a strip of page visible below it, and that strip must
+look intentional on every screen — which means the page ground has to be
+deliberate at the very bottom. Worth checking at 320px, where 2×10px of inset is
+real width.
+
+*(Revision note: revision 1's Concept C described Cards as a "pressable key" with
+a top facet. That is dialled back per instruction — favoured, not hardware.)*
+
+---
+
+## 12 · App icon direction
 
 ### Current state, audited
 
 `ios/App/App/Assets.xcassets/AppIcon.appiconset/` contains **one image**
-(`AppIcon-512@2x.png`, 1024²) and its `Contents.json` declares **no
-`appearances` entries** — so there is no dark variant and no tinted variant.
-The mark is a vermilion brush ensō on a `#FAFAF8` near-white ground.
+(`AppIcon-512@2x.png`, 1024²) and its `Contents.json` declares **no `appearances`
+entries** — so dark and tinted are derived by iOS rather than authored. The mark
+is a vermilion brush ensō on a `#FAFAF8` near-white ground.
 
-**Why it looks flatter and weaker than its neighbours:**
-1. **It is genuinely flat** — one vermilion, no gradient, no inner shadow, no
-   highlight, no dimensional construction of any kind. Every iOS icon beside it
-   on a home screen has at least a soft gradient and an implied light source.
+**Why it reads flatter and weaker than its neighbours:**
+1. **It is genuinely flat** — one vermilion, no gradient, no highlight, no
+   shadow, no dimensional construction. Every icon beside it on a home screen has
+   at least an implied light source.
 2. **The ground is near-white**, so on most wallpapers it reads as a bright empty
    square with a small mark in it, rather than as an object.
-3. **It is a ring, and rings lose their content at small sizes.** The interior is
-   ~45% of the tile and it is empty. At 40px the brush texture — fine bristle
-   streaks, the small speckles at 10–11 o'clock — is entirely gone, and what is
-   left is "an orange-red circle".
-4. **There is nothing Chinese about it.** The ensō (円相) is *Japanese Zen*
-   iconography. For a product that is exclusively HSK Chinese and has frozen its
-   Japanese track, the brand mark is borrowed from the wrong tradition. This is
-   worth saying out loud even though it is uncomfortable, because it is the
-   strongest argument for direction B or C.
+3. **It is a thin ring, and rings lose their content at size.** The interior is
+   ~45% of the tile and empty. At 40px the brush texture — the bristle streaks,
+   the speckles at 10–11 o'clock — is entirely gone, and what remains is "an
+   orange-red circle".
+4. **No authored dark appearance.** With a light ground, iOS's derivation either
+   keeps the bright square (jarring on a dark home screen) or treats it in a way
+   nobody chose. Tinted is worse: tinting maps luminance to a monochrome ramp,
+   and a thin vermilion ring on near-white becomes a faint outline on grey.
 
-**Why dark mode changes its appearance:** because no dark appearance is
-declared, iOS derives one. With a light ground it will either keep the bright
-square (jarring on a dark home screen) or auto-treat it in a way nobody chose.
-The tinted appearance is worse: tinting maps luminance to a monochrome ramp, and
-a thin vermilion ring on near-white becomes a faint outline on grey.
+### Requirements for the new icon (direction, not a symbol)
 
-**What must stay recognisable:** the circular gesture and the vermilion. Those
-two together are the equity; the brush texture is not (it is invisible at size).
+The symbol decision is deferred to a separate icon-concept phase — `学`, an ensō,
+a seal, a dojo gate and anything else stay on the table. What is decided now:
 
-### Three directions
+- **Vermilion/red remains dominant.** The red equity is not traded away.
+- **Strong silhouette** — one shape, readable at 40px.
+- **More filled visual mass than the current ring.** The interior earns its space.
+- **Dimensional depth** with **top-left lighting** and a **restrained**
+  highlight/shadow — one specular pass, one contact shadow. Not a 3D render.
+- **No detail that dies at 40px.** Brush texture, fine streaks and speckles are
+  out at icon scale.
+- **Supporting colours:** burgundy (`#5E2430`) for depth, cream (`#FAF8F5`) for
+  the counter-form, gold (`#C08A2E`) for one small accent, possibly a small plum
+  note. **Never rainbow** — three colours plus the ground is the ceiling.
+- **The ground is dark and warm** (`#100D0E`–`#1A1517`), not near-white. The
+  ground is most of what makes an icon read as an object.
 
-**A — refined ensō.** Keep the ring. Rebuild it as a dimensional object: a
-thicker brushed ring with a real inner and outer edge, a top-left highlight along
-the stroke, a soft contact shadow inside the ring's lower-right, on a warm
-ink-dark ground (`#16100E`) rather than white. Texture simplified so it survives
-at 40px.
-*Silhouette:* ring. *Colours:* vermilion `#B83A24` → `#E2684F` highlight on dark
-ground. *Pros:* zero brand risk, cheapest, fixes flatness and dark mode. *Risks:*
-still a ring (weak at small size), still not Chinese, still generic-adjacent —
-"red circle" is a crowded space.
+One observation to carry into the concept phase, offered as an input rather than
+an argument for any particular mark: the ensō (円相) is **Japanese Zen**
+iconography, and the product is exclusively HSK Chinese with the Japanese track
+frozen. That is worth weighing when the symbol is chosen — but the circular
+gesture and the vermilion are genuine equity, and a concept that keeps both while
+adding Chinese specificity is entirely possible.
 
-**B — dojo/hanzi mark. ← recommended.** A single bold hanzi form inside the
-circular gesture: **学** (to learn) or **口** (mouth/enclosure, and the radical
-that reads as a gate). The ring becomes a brushed enclosure around the character
-rather than the subject itself.
-*Silhouette:* filled circle with a carved character. *Colours:* vermilion
-character on jade-dark ground, or jade character on ink ground — a chance to
-introduce the new palette at the front door. *Dimensional treatment:* the
-character is a raised brushed form with a top-left highlight and a cast shadow on
-the ground; the ground carries a very subtle radial. *Pros:* unmistakably
-Chinese-learning; fills the tile at every size; carries both brand colours;
-survives tinting (strong luminance separation). *Risks:* a hanzi in an app icon
-is a category convention, so it needs a distinctive letterform and enclosure to
-stand out; also non-Chinese-readers cannot decode it (acceptable — they are not
-the audience).
-
-**C — abstract brand mark.** A jade seal-stamp block (印章) with a carved
-negative-space form that reads as both a brush stroke and a "D"/dojo gate.
-*Silhouette:* rounded square block. *Colours:* jade `#0E7A63` body, `#2CC49A`
-top facet, vermilion carved face. *Pros:* strongest App Store recognisability,
-fully ownable, most dimensional, best at 40px. *Risks:* discards the existing
-ensō equity entirely; more design iterations to get right; risks reading as a
-generic app tile if the carve is not distinctive.
-
-### The four iOS 18 appearances — plan all of them explicitly
+### The four iOS appearances — all authored, none derived
 
 | appearance | plan |
 |---|---|
-| **Default** | Full colour on a warm ink-dark ground. Dark ground, not white — it is the ground that makes an icon read as an object. |
-| **Dark** | Same mark, ground deepened to `#0C0F0E`, accents lifted (~+12% luminance) so the mark holds against a dark wallpaper. Authored, never derived. |
-| **Tinted** | Authored greyscale with deliberate luminance separation: mark at ~85% white, ground transparent-to-dark. iOS applies the user's tint to *our* ramp, so the ramp must be designed. |
-| **Clear** (visionOS/iOS 18 "clear") | Silhouette-only version — a single flat form, no interior detail, no texture. This is the one that proves the silhouette rule from §8. |
+| **Default** | Full colour, dimensional, on a warm dark ground. |
+| **Dark** | The same red brand, presented darker — ground deepened toward `#0C0A0B`, vermilion **lifted** to `#E4573A` so the mark holds against a dark wallpaper. **Dark does NOT mean "make the logo black."** |
+| **Tinted** | Authored greyscale with deliberate luminance separation — mark ~85% white, ground dark. iOS applies the user's tint to *our* ramp, so the ramp must be designed. |
+| **Clear** | Silhouette only: one flat form, no interior detail, no texture. This is the icon that proves the silhouette rule in §10. |
 
-Also required for a store release: the Play Store adaptive icon needs a separate
-foreground/background pair (the current `maskable-512.png` is a single flattened
-image and will be cropped by any mask shape).
+Also needed for the store release: Play's adaptive icon requires a separate
+foreground/background pair. The current `maskable-512.png` is a single flattened
+image and will be cropped by any mask shape.
 
-**DO NOT IMPLEMENT YET** — noted.
-
----
-
-## 10 · Bottom navigation — three concepts
-
-Same five destinations, same architecture (`navConfig.js`, `navStack.js`,
-`MobileNav.jsx`). Nothing about routing, tab state or Back changes. **VISUAL
-ONLY** for all three.
-
-**A — floating pill bar (HelloChinese-adjacent).**
-Height 60 (+ safe-area below the bar, not inside it). Horizontal inset 12px.
-Radius `r-hero` 26 all four corners. Solid `surface`, no blur, `shadow-2`.
-Active: dimensional icon + `primary` label 10.5/800. Inactive: single-tone
-`text-muted` glyph + `text-faint` label. Cards keeps its shell, restyled as a
-jade `primary-soft` rounded square that fills with `primary` when active.
-Light/dark: solid surface both; dark gets `border` at 1px to separate from `bg`.
-*Custom icons:* ideal — the floating bar gives each glyph its own quiet ground.
-
-**B — native iOS-style bar.**
-Height 56 + safe-area, full-bleed, radius 0, `surface-glass` + blur, 1px hairline
-top. Essentially today's bar with the new icons and type. Active: filled glyph +
-`primary`. Inactive: outline + `text-muted`.
-*Pros:* most familiar, zero risk, cheapest. *Cons:* it is the current bar, and
-"looks like every other app" is the problem we are solving.
-
-**C — inset tray with a raised Cards key. ← recommended.**
-Height 62 + safe-area. Inset 10px. Radius 22 (`r-card`+4). Solid `surface`,
-`shadow-2`, and a 1px `border` in both themes so the tray reads as a physical
-object on the page. Four tabs at even weight; **Cards sits in a jade key** — a
-44×36 `r-ctl` block with a real top facet (`primary` → `primary-pressed`
-vertical) and a 1px inner top highlight, so it reads as a *pressable key* rather
-than a tinted rectangle. Active tab: dimensional icon, `primary` label. Inactive:
-single-tone glyph, `text-faint` label. Labels always on.
-*Why this one:* it is the smallest change that gives the bar an identity, it
-keeps the P8 device-approved decision that Cards is the primary destination and
-strengthens it *visually* rather than structurally, and it is the treatment
-custom dimensional icons look best in. It also avoids the full-bleed-glass idiom
-without going as far as A's fully-floating pill, which on a 320px screen costs
-real width.
-*Risk:* an inset tray leaves a strip of page visible below it; that strip must
-not look like a bug. Requires the page background to be intentional at the very
-bottom of every screen.
+**Parallel task, blocking nothing. Do not implement yet.**
 
 ---
 
-## 11 · Screen transformation plan
+## 13 · Screen transformation plan
+
+Re-evaluated against the vermilion-led system. Structure is frozen everywhere
+noted; these are presentation changes.
 
 | screen | before | after |
 |---|---|---|
-| **Home** | Functional, correct hierarchy, flat maroon hero, translucent CTA, seven empty grey week pills, 4px progress bar, sage FAB. | Jade primary action as a solid dimensional key; hero ground given real depth and a drawn ink-wash; week rendered as small ink tiles that read as marks-on-paper; progress as a segmented jade track with the level as a destination; story hand-off shows real cover art at a size worth looking at; FAB adopts the palette. |
-| **Study** | The best screen. 5 type styles, functional colour. | Token adoption only — radii, grade palette, type roles. No composition change. Frozen behaviour. |
-| **Session Complete** | Correct structure, three stacked greys, nested tint-on-accent CTA, no celebration. | One dimensional celebration mark (jade + gold), tally as typography on the page rather than boxes-in-a-box, single jade primary action, gold used once for the unlock. |
-| **Stories** | Real art cropped 16:9→2:3, 36 surfaces, four alike sections, icon-on-wash fallback. | Art presented at its native composition and at a size that reads; sections differentiated by ground and rhythm, not just headings; designed fallback covers; `% known` kept exactly as approved. |
-| **Reader** | Good typography, generic chrome. | Paper ground, ink chrome, custom back/settings glyphs, jade progress. Mechanics untouched. |
-| **Practice** | Structure approved and frozen; 32 lucide strokes. | Same rows, custom dimensional drill icons, jade counts, quieter tool family. Nothing moves. |
-| **Profile** | Three identical white cards; chart-like known-word map; destructive card loudest. | Grouped rows on the page instead of stacked cards; the known-word map redrawn as one deliberate ink-and-jade readout; destructive de-emphasised to a quiet row with the confirmation carrying the weight. |
-| **Onboarding** | Frozen, device-approved, already near the target type scale. | Token/type/icon inheritance only. No composition change. |
-| **Auth** | Photographic wash + plain white card + underlined tabs. | Ink ground, one raised card, segmented control instead of underlined tabs, jade primary, provider rows as proper secondary buttons. |
+| **Home** | Correct hierarchy, fits 1.00 vp. Hero is a flat maroon rectangle (88%→70% gradient over 200px ≈ 7% luminance change, so it reads flat); primary CTA is a *translucent white* pill — the least saturated thing inside its own panel; 田 watermark invisible at 9%; story cover at 56px showing a lucide glyph; `Your week` is seven empty grey pills; progress is a 4px bar; a sage FAB unrelated to anything. | **Structure kept.** Hero gets real depth: a vermilion gradient (`primary-bright`→`primary`) with a burgundy-shadowed lower edge and the 田 watermark raised to a strength that actually reads. The CTA becomes a **solid cream-on-vermilion** or high-contrast pill so the primary action is the most confident object on the screen. Week days become small ink tiles that look like marks on paper, with studied days in vermilion. Progress becomes a taller segmented track with the level as a destination. Story hand-off shows **real cover art at 2–3× today's size**. FAB adopts `primary`. |
+| **Study** | The visual benchmark: 5 type styles, 4 radii, 5 surfaces, 2 icons, colour strictly functional. | **Composition frozen.** Token adoption only: radii to the new scale, grade palette refined within its existing four-colour logic, shared typography, and *extremely* restrained dimensional polish (at most a single soft inner highlight on the card edge). No new objects. `Study.jsx` is not reopened. |
+| **Session Complete** | Correct structure. Three greys stacked (tile inside card inside page); the "Recommended next" CTA is a vermilion block with a translucent white icon tile nested inside it — the exact pattern P10 removed elsewhere; no celebration element at all. | One of the app's two celebration moments. A **dimensional reward object** (Tier 1 `session complete` mark) in **vermilion + gold**, one gold atmospheric wash behind it, the tally as typography on the card rather than boxes-in-boxes, and **one** obvious next action. Gold appears here and means exactly what it means everywhere else. |
+| **Stories** | Real painterly art — the app's strongest identity asset — cropped 16:9→2:3 (~55% of width discarded). 36 painted surfaces, 2.88 vp, four sections separated only by a 17px heading. Fallback is a lucide glyph on a wash. | **Structure kept, and the art becomes the personality.** Each shelf section gets a **restrained plum atmospheric wash** behind its heading (§6) instead of another container. Covers get room. **Red stays the brand**: CTAs, `% known`, active states are vermilion; plum is atmosphere and per-series accent only. Designed fallback covers replace the icon-on-wash. `% known` on the artwork stays exactly as device-approved. |
+| **Reader** | Good typography; generic chrome (lucide back arrow, gear, grey progress). | Paper ground, ink chrome, Tier 2 line icons at one weight, vermilion progress. Mechanics — segmentation, tap-to-look-up, audio, settings — untouched. |
+| **Practice** | P11 structure device-approved and frozen. **33 SVGs, 32 lucide strokes** — the screen where generic iconography is most visible. | **Nothing moves.** Custom Tier 1 drill icons do the work, with **selective blue** on the *Look things up* family (heading atmosphere + muted icon faces) so the two row families separate by more than weight. Counts stay typography, in `warning`. |
+| **Profile** | P10-B structure approved. Three near-identical white cards; the known-word map is thin bars plus a four-item legend and reads like a debug readout; the destructive card is outlined red and is the most distinctive panel on the screen. | **Structure kept, not a dashboard.** The hero becomes one dimensional object (vermilion gradient + a drawn atmospheric mark, in the register of the screenshots' header panel). The known-word map becomes one deliberate ink-and-vermilion readout with the legend integrated. Destructive de-emphasised to a quiet row; the confirmation carries the weight. No new metrics, no stat grid. |
+| **Onboarding** | Frozen, device-approved. Already near the target type scale (4 styles on the welcome, 12 on a card). | **Inherits only.** Tokens, type, Tier 1/2 icons. No composition change. Verified after the sweep, not redesigned. |
+| **Auth** | A photographic wash at 22–35% behind a plain white card; two underlined text tabs; a `#B83A24` submit; provider rows as bordered white boxes. | **Red-led front door.** Warm ground (paper in light, lacquer in dark), one raised card, a **segmented control** instead of underlined tabs, vermilion primary, provider rows as proper secondary buttons, and one **dimensional brand asset** — the new app-icon mark at real size — instead of a flat logo on a photo. |
+| **Loading / empty / error** | The weakest category and the least reviewed. Loading is an 88px white box with a lucide glyph; bootstrap failure is a 32px 学 and a button; empty states are prose. | Cheap once the system exists: the brand mark at rest for loading, Tier 1 objects for empty states, and warm grounds throughout. This is where a first-time user on a slow connection forms an impression. |
 
 ---
 
-## 12 · Implementation order
+## 14 · Revised P14 implementation sequence
 
-Your order is close. Two changes, both dependency-driven:
+Per instruction, with the device gate moved earlier — judge the new language on a
+phone after navigation, before it goes app-wide.
 
-1. **P14-0 — token layer** (`colors`, `radius`, `elevation`, `type`). Fix the
-   three defects in §2.2 here. Nothing visual ships yet.
-2. **P14-1 — control components** (`Button`, `Chip`, `Row`, `Segmented`,
-   `IconButton`). **Moved ahead of navigation.** The repo has no button
-   component; every screen re-declares one inline. Nav, Home, Study and every
-   screen after them all consume these, so building them second makes steps 3–10
-   dramatically cheaper — and building them later means restyling the same
-   buttons twice.
-3. **P14-2 — global typography and surface sweep.** Mechanical, wide, low risk,
-   and it is what makes the app feel coherent before any screen is redesigned.
-4. **P14-3 — custom icon system.** **Moved ahead of the bottom bar.** The bar's
-   whole visual identity depends on the icons; restyling the bar first means
-   choosing its treatment against placeholder glyphs and then re-tuning it.
-5. **P14-4 — bottom navigation** (concept C).
-6. **P14-5 — Home.**
-7. **P14-6 — Study** (token adoption only).
-8. **P14-7 — Session Complete** (grouped with Study; it is the same flow).
-9. **P14-8 — Stories** + the cover-art aspect decision.
-10. **P14-9 — Practice** (icons + colour only).
-11. **P14-10 — Profile.**
-12. **P14-11 — Auth**; onboarding inherits and is verified, not redesigned.
-13. **P14-12 — loading / empty / error states.** Cheap once the system exists,
-    and currently the weakest category in the app.
-14. **P14-13 — motion and haptics.** Last, as you had it.
-15. **App icon** runs in parallel from the start — it needs the most iteration
-    and blocks nothing.
+| step | scope | notes |
+|---|---|---|
+| **P14-0** | **Tokens** — colour (Palette B), typography, radii, elevation | Fix the `--text-faint` inversion; rename `--hairline` to what it is (an inset top highlight); **replace sage primary buttons with vermilion `primary`** — not jade. Prerequisite: the dark render sweep (§0 note 2). No visual change ships alone. |
+| **P14-1** | **Shared controls** — `Button`, `IconButton`, `Row`, `Chip`, `Segmented` | No screen redesign. The repo has no button component today; every screen re-declares one inline, which is why this must precede everything that consumes it. |
+| **P14-2** | **Typography / radius / elevation normalisation** | Mechanical sweep across all screens. **Device QA after this.** Expect it to touch frozen screens — see §16 risk 1. |
+| **P14-3** | **First custom icon family: the five navigation icons only** | Home, Cards, Stories, Practice, More. Get five right before drawing fifteen. |
+| **P14-4** | **Bottom navigation** (Concept C) | **Then cut TestFlight.** This is the gate: the new visual language gets judged on a real phone before it is applied everywhere. |
+| **P14-5+** | Only after nav device QA: Home → Study token adoption → Session Complete → Stories → Practice → Profile → Auth → loading/empty/error → onboarding inheritance → motion/haptics | Practice needs its Tier 1 drill icons drawn, which can run during P14-5/6. |
+| **parallel** | **App icon** | Concept phase first (3–5 concepts), then the four authored appearances. Blocks nothing. |
 
-**One sequencing warning:** the visual baselines in
-`tests/e2e/visual.spec.js-snapshots` will go stale at steps 3, 4, 5, 8 and 10.
-Each of those needs a `visual-baseline.yml` dispatch after it lands
-(`docs/RELEASE-CHECKLIST.md` §1), and the baselines are CI-owned — never
-regenerate them locally.
+**Baseline warning:** the committed screenshots in
+`tests/e2e/visual.spec.js-snapshots` go stale at P14-2, P14-4, and each of Home /
+Stories / Profile. Every one needs a `visual-baseline.yml` dispatch after it lands
+(`docs/RELEASE-CHECKLIST.md` §1); baselines are CI-owned and must never be
+regenerated locally.
 
 ---
 
-## 13 · Product vs. visual, marked
+## 15 · Product vs. visual, marked
 
-**VISUAL ONLY** — palette, type scale, radii, elevation, icon swaps, nav
-treatment, app icon, hero depth, week tiles, progress rendering, reader chrome,
-auth composition, loading/empty/error art.
+**VISUAL ONLY** — the palette, dark-mode grounds, type scale, radii, elevation,
+section atmosphere, Tier 1/2 icon swaps, nav tray treatment, app icon, hero depth,
+week tiles, progress rendering, reader chrome, auth composition,
+loading/empty/error art.
 
-**COMPONENT REFACTOR** — the token modules, `type.js`, the control components,
-`src/icons/`, extracting inline button styles. Behaviour-preserving; each needs
-its own spec.
+**COMPONENT REFACTOR** — the token modules, `type.js`, the five shared controls,
+`src/icons/`, extracting inline button styles. Behaviour-preserving; each ships
+with its own spec.
 
-**PRODUCT CHANGE — backlog, not P13/P14:**
-- A HelloChinese-style lesson path / node progression (explicitly out of scope,
-  as you said).
-- Streaks, currencies, XP, rewards-as-mechanics. Note: CLAUDE.md §1 removed
-  streaks and XP *on purpose*; a "streak" icon in §8 exists only as a
-  days-studied readout.
-- The story cover **aspect** decision. Re-cropping or re-generating 204 covers,
-  or changing the poster aspect, changes what the shelf *is*. It needs its own
-  decision and possibly a content run.
+**PRODUCT CHANGE — backlog, explicitly not P13/P14:**
+- A lesson path / node progression (§1.1). Ours is FSRS stability plus a level test.
+- Currencies, XP, streaks, coins, gems, crowns, a reward economy.
+- Mascots or a character guide.
+- New tabs, new destinations, new Story structure, new Practice structure.
+- Premium gating, leaderboards, rankings.
+- **The story-cover aspect decision.** Re-cropping or re-generating 204 covers, or
+  changing the poster aspect, changes what the shelf *is*. Its own decision, and
+  possibly a content run.
 - Making the known-word map a real chart with more data.
-- Anything that adds a screen, a tab, or a new number to a screen.
 
 ---
 
-## 14 · Risks
+## 16 · Risks
 
-1. **Jade vs. vermilion is an identity decision, not a palette task.** §3
-   recommends keeping both with separated jobs. If instead jade *replaces*
-   vermilion, `languageTheme.js`, `heroGround`, `ink()`, the card status band and
-   the app icon all change meaning at once, and the per-language architecture
-   (CLAUDE.md §1) needs rethinking. Decide this before P14-0.
-2. **A token sweep touches every screen, including four frozen ones.** Home,
-   Stories, Practice, Profile and onboarding are device-approved. A token change
-   *will* alter them. The freeze has to be read as "no composition changes",
-   with a device pass after the sweep — otherwise P14-2 is untestable.
-3. **Custom icons are a real design workload** — 15+ glyphs, two states, three
-   sizes, drawn as SVG. Underestimating this is the most likely way P14 stalls
-   half-migrated, which would look worse than either the before or the after.
-   Ship them in complete families per surface (all five nav glyphs, then all
-   Practice glyphs), never one at a time.
-4. **Warming the neutrals changes every screen's ground.** `#FAF9F6` vs today's
-   `#FAFAF8` is small on paper and total in effect. Worth a device round on its
-   own before anything is built on top of it.
-5. **Dark mode is currently unaudited by render** (§0.3). Do the sweep before
-   designing the dark palette's finer points.
-6. **The 13 stale-baseline moments** in §12 — each is a place where a red
-   Playwright run means nothing and a real regression could hide.
-7. **Scope creep from "polish" into "features"** is the risk this document's §13
-   exists to prevent. Re-read it at the start of every P14 commit.
+1. **A token sweep touches every frozen screen.** Home, Stories, Practice,
+   Profile and onboarding are all device-approved. P14-0/2 *will* change how they
+   look. The freeze has to be read as "no composition changes", with a device pass
+   after P14-2 — otherwise the sweep is untestable and the freeze is unenforceable.
+2. **The warm dark ground is the biggest single visual change in the plan.**
+   `#100D0E` versus today's `#0F1115` is small on paper and total in effect, and
+   dark mode has not been swept (§0 note 2). It deserves its own device round before
+   anything is built on top of it.
+3. **Tier 1 is still 14 custom icons, two states each, verified at three sizes.**
+   That is the most likely place P14 stalls half-migrated, which looks worse than
+   either the before or the after. The P14-3 "five nav icons first" gate exists
+   precisely to find out how long one family actually takes.
+4. **Dimension is the rule most likely to be over-applied.** "Important surfaces
+   may also use gradients and glow" is a licence, and licences spread. The §3-2
+   test — *does the dimension say something about state, material or
+   importance?* — has to be applied at review time, every time.
+5. **Section atmosphere can become texture.** One wash per screen, three approved
+   locations (§6). If it appears on every heading it stops being hierarchy.
+6. **Plum and blue could drift into taking actions.** The moment a Stories button
+   is plum, the brand stops being red. Worth an explicit lint-level convention:
+   only `primary` may be a button fill.
+7. **Stale baselines** at five points in §14 — each a place where a red Playwright
+   run means nothing and a real regression could hide.
+8. **Scope creep from "polish" into "features"** — what §15 exists to prevent.
+   Re-read it at the start of every P14 commit.
 
 ---
 
-## 15 · What must explicitly NOT change
+## 17 · What must explicitly NOT change
 
 - **Navigation architecture** — `navStack.js`, `navLedger.js`, `TabHost.jsx`,
-  per-tab stacks, deep-link seeding, Android Back, scroll restoration. Visual
-  only, on the bar itself.
-- **Onboarding** — the P12 flow, all 14 states, the sandbox, the gate, Skip, the
-  funnel events. Inherits tokens; composition frozen.
+  per-tab stacks, deep-link seeding, Android Back, scroll restoration. Visual only,
+  on the tray itself. Destinations unchanged.
+- **Onboarding** — the P12 flow, all fourteen states, the sandbox, the reading-
+  lesson gate, Skip, the funnel events. Inherits tokens; composition frozen.
 - **Study behaviour** — the queue, FSRS, grading, undo, the session mix, the
-  first-run cap. `Study.jsx` is not reopened.
-- **Home structure** — the hero + one supporting surface composition (P10-C3,
-  device-approved). Its *treatment* changes; its *structure* does not.
-- **Stories structure** — the one-page shelf, its sections, series units, the
-  `% known` on artwork.
-- **Practice structure** — the P11 hero + drill list + level-test row + tools,
-  the uneven hints, counts as typography.
-- **Profile structure** — the single progress panel, the weak-word list, the
-  control rows.
-- **The frozen non-Chinese tracks** — untouched, as always.
-- **Every rule in CLAUDE.md §5–§7** — semantic tokens for neutrals, `color-mix`
-  tints, `ink()` for accent-as-text, one lit panel per screen, no Tailwind
-  classes, no TypeScript, and the Supabase safety rules.
-- **No streaks, no XP, no guilt.** The visual language gets more energetic; the
-  product's promise does not change.
+  first-run cap. `Study.jsx` is not reopened; its composition is the benchmark.
+- **Home structure** — hero plus one supporting surface (P10-C3, device-approved).
+  Treatment changes; structure does not.
+- **Stories structure** — the one-page shelf, its sections, series units, and
+  `% known` on the artwork.
+- **Practice structure** — the P11 hero, drill list, quiet level-test row, tools;
+  the uneven hints; counts as typography.
+- **Profile structure** — one progress panel, the weak-word list, the control rows.
+- **The frozen non-Chinese tracks** — untouched.
+- **CLAUDE.md §5–§7** — semantic tokens for neutrals, `color-mix` tints, `ink()`
+  for accent-as-text, one lit panel per screen, inline style objects, no Tailwind
+  utilities, no TypeScript, and every Supabase safety rule.
+- **No streaks, no XP, no currencies, no guilt.** The visual language gets more
+  energetic; the product's promise does not change.
