@@ -61,9 +61,11 @@ for (const phone of PHONES) {
       await assertNoOldWizard(page);
       await page.getByRole('button', { name: /Start your first story/i }).click();
 
-      // ── The tutorial: three cards on the real flashcard.
+      // ── The tutorial: the scene it cannot yet read, then three real cards.
       await expect(page.getByText('Learn Chinese through words and stories.')).toBeVisible();
       await page.getByRole('button', { name: 'Start' }).click();
+      await expect(page.getByText(/can’t read this yet/)).toBeVisible();
+      await page.getByRole('button', { name: 'Learn them' }).click();
 
       for (const word of ['你好', '谢谢', '再见']) {
         await expect(page.getByText(word, { exact: true }).first()).toBeVisible();
@@ -72,17 +74,14 @@ for (const phone of PHONES) {
       }
       await assertNoOldWizard(page);
 
-      // ── The payoff.
+      // ── The payoff: the same scene, readable — then the account, with no
+      // loop-summary slide between them.
       await expect(page.getByText('Session complete')).toBeVisible();
       await page.getByRole('button', { name: 'Continue' }).click();
       await expect(page.getByText('Story unlocked')).toBeVisible();
       await page.getByRole('button', { name: 'Read it' }).click();
       await expect(page.getByText('你好！')).toBeVisible();
-      await page.getByRole('button', { name: 'Continue' }).click();
-      await page.getByRole('button', { name: 'Continue' }).click();
-
-      // ── The loop, then the account. No bridge screen between them.
-      await expect(page.getByText('Learn', { exact: true })).toBeVisible();
+      await expect(page.getByText(/this time you can read it/)).toBeVisible();
       await page.getByRole('button', { name: 'Create account' }).click();
       await expect(page.getByLabel('Email')).toBeVisible();
 
@@ -102,6 +101,7 @@ for (const phone of PHONES) {
       await page.goto('/');
       await page.getByRole('button', { name: /Start your first story/i }).click();
       await page.getByRole('button', { name: 'Start' }).click();
+      await page.getByRole('button', { name: 'Learn them' }).click();
       for (let i = 0; i < 3; i += 1) {
         const overflow = await page.evaluate(() =>
           document.documentElement.scrollWidth - document.documentElement.clientWidth);

@@ -49,17 +49,24 @@ export const TUTORIAL_CARDS = [
   },
 ]
 
-// The payoff.
+// The scene — the frame around the whole tutorial (P12-1, Concept B).
 //
-// Two panels, and between them all three words the learner just met — so the
-// moment is "I know these" rather than "here is another explanation". `known`
-// names the tokens to mark; the runner marks them, the script decides nothing
-// about how. Deliberately not a story from the library and deliberately not run
-// through the reader: this is two lines of Chinese, and building it out of the
-// real story engine would make a 90-second tutorial depend on the shelf.
-export const TUTORIAL_STORY = {
+// Shown TWICE, from this one object: once before the cards, unreadable, and
+// once after them, readable. One source, two renderings, so the before and the
+// after can never drift apart — the payoff only lands if the learner can see
+// it is the exact same Chinese.
+//
+// The two lines are, between them, nothing but the three words the learner is
+// about to meet (plus punctuation) — which is what makes "this time you can
+// read it" literally true rather than a marketing claim. `known` names the
+// tokens the after-rendering marks; the runner marks them, this file decides
+// nothing about how. Deliberately not a story from the library and
+// deliberately not run through the reader: this is two lines of Chinese, and
+// building it out of the real story engine would make a 100-second tutorial
+// depend on the shelf.
+export const TUTORIAL_SCENE = {
   setting: 'Mei pushes open the door of a small tea shop.',
-  panels: [
+  lines: [
     {
       id: 'greeting',
       speaker: 'The shopkeeper',
@@ -96,6 +103,13 @@ export const TUTORIAL_COPY = {
     // understood once you have actually pressed one of them.
     scheduled: 'Your grade decides when you see it again.',
   },
+  // Before the cards: the learner registers "I can't quite read this", and
+  // nothing else. No pinyin, no translation, no grammar, no product pitch —
+  // any of those would spend the payoff before it is earned.
+  sceneBefore: {
+    line: 'You probably can’t read this yet. It takes three words.',
+    cta: 'Learn them',
+  },
   recap: {
     title: 'Session complete',
     // "practiced", never "learned": nothing here entered a schedule. The three
@@ -108,12 +122,11 @@ export const TUTORIAL_COPY = {
     line: 'Finishing a session opens the next chapter.',
     cta: 'Read it',
   },
-  story: {
-    line: 'You just read the words you learned.',
-    cta: 'Continue',
-  },
-  loop: {
-    steps: ['Learn', 'Review', 'Unlock', 'Read'],
+  // After the cards: the same scene, readable. The line states the fact and
+  // stops — the scene itself is the argument, and the old four-word loop
+  // summary this replaces was the app explaining what the learner just did.
+  sceneAfter: {
+    line: 'The same scene — this time you can read it.',
     cta: 'Create account',
   },
 }

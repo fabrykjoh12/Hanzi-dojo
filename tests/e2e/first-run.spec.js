@@ -37,10 +37,17 @@ const startBtn = (page) => page.getByRole('button', { name: 'Start' });
 const cardEl = (page) => page.getByRole('button', { name: /flashcard — tap to reveal/i });
 const gradeBtn = (page, name = 'Good') => page.getByRole('button', { name: new RegExp('^' + name) });
 
-// Welcome → three cards → recap → unlock → two panels → the loop.
+// Welcome → the scene, unreadable → three cards → recap → unlock → the same
+// scene, readable.
 async function walkTutorial(page, { replay = false } = {}) {
   await expect(page.getByText('Learn Chinese through words and stories.')).toBeVisible();
   await startBtn(page).click();
+
+  // The scene it cannot yet read — no translations here.
+  await expect(page.getByText('你好！')).toBeVisible();
+  await expect(page.getByText(/can’t read this yet/)).toBeVisible();
+  await expect(page.getByText('Hello!', { exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Learn them' }).click();
 
   // Card 1 is the taught one: reveal, hear it, and what the grades mean.
   await cardEl(page).click();
@@ -67,12 +74,12 @@ async function walkTutorial(page, { replay = false } = {}) {
 
   await expect(page.getByText('Story unlocked')).toBeVisible();
   await page.getByRole('button', { name: 'Read it' }).click();
-  await expect(page.getByText('你好！')).toBeVisible();
-  await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.getByText('谢谢。再见！')).toBeVisible();
-  await page.getByRole('button', { name: 'Continue' }).click();
 
-  await expect(page.getByText('Learn', { exact: true })).toBeVisible();
+  // The same scene, readable now — translations in, learned words marked.
+  await expect(page.getByText('你好！')).toBeVisible();
+  await expect(page.getByText('谢谢。再见！')).toBeVisible();
+  await expect(page.getByText('Hello!', { exact: true })).toBeVisible();
+  await expect(page.getByText(/this time you can read it/)).toBeVisible();
   await expect(page.getByRole('button', { name: replay ? 'Done' : 'Create account' })).toBeVisible();
 }
 
@@ -127,6 +134,7 @@ anonTest.describe('Being interrupted', () => {
   anonTest('killed mid-tutorial, it comes back to the same card', async ({ page }) => {
     await page.goto('/tutorial');
     await startBtn(page).click();
+    await page.getByRole('button', { name: 'Learn them' }).click();
     await cardEl(page).click();
     await gradeBtn(page).click();
     await expect(page.getByText('谢谢', { exact: true }).first()).toBeVisible();

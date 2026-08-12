@@ -5,7 +5,6 @@ import {
   serializeTutorial, resumeTutorialState,
 } from './tutorialScript'
 import { readTutorialProgress, saveTutorialPosition } from './prelogin'
-import { TUTORIAL_STORY } from './tutorialFixtures'
 import Flashcard from './Flashcard'
 import GradeRow from './GradeRow'
 import { cardMarker } from './cardMarker'
@@ -66,7 +65,9 @@ const FUNNEL = {
   'card-1-back': EVENTS.TUTORIAL_FIRST_REVEAL,
   'card-2-front': EVENTS.TUTORIAL_FIRST_GRADE,
   recap: EVENTS.TUTORIAL_SESSION_COMPLETE,
-  'story-1': EVENTS.TUTORIAL_STORY_REACHED,
+  // The payoff rendering of the scene — the same milestone the two-panel
+  // story used to mark, so the funnel stays comparable across the change.
+  'scene-after': EVENTS.TUTORIAL_STORY_REACHED,
   account: EVENTS.TUTORIAL_COMPLETED,
 }
 
@@ -361,70 +362,66 @@ export default function Tutorial({ onComplete, resumable = true, finishLabel = n
     )
   }
 
-  if (v.phase === 'story') {
-    const panel = v.panel
-    const isLast = v.id === 'story-' + TUTORIAL_STORY.panels.length
+  // ── The scene, twice ────────────────────────────────────────────────────
+  // The same fixture both times (TUTORIAL_SCENE — one source, two renderings).
+  // Before: bare Chinese, no marks, no translations — the learner registers
+  // "I can't quite read this" and nothing more. After: the learned words
+  // marked, the translations shown, and the fact stated once. The payoff is
+  // that the text visibly did not change; only the learner did.
+  if (v.phase === 'scene-before' || v.phase === 'scene-after') {
     return (
       <Shell>
         <div style={{ width: '100%', animation: rise }} key={v.id}>
-          {v.setting && (
-            <p style={{
-              margin: '0 0 20px', padding: '12px 15px', borderRadius: '4px',
-              background: 'var(--surface-2)', borderLeft: '3px solid var(--border)',
-              fontSize: '14px', fontStyle: 'italic', color: 'var(--text-muted)',
-              lineHeight: 1.55, textAlign: 'left',
-            }}>
-              {v.setting}
-            </p>
-          )}
+          <p style={{
+            margin: '0 0 20px', padding: '12px 15px', borderRadius: '4px',
+            background: 'var(--surface-2)', borderLeft: '3px solid var(--border)',
+            fontSize: '14px', fontStyle: 'italic', color: 'var(--text-muted)',
+            lineHeight: 1.55, textAlign: 'left',
+          }}>
+            {v.scene.setting}
+          </p>
           <div style={{
             padding: '20px 18px', borderRadius: '18px',
             background: 'var(--surface)', border: '1px solid var(--border)',
             boxShadow: 'var(--shadow-1)', textAlign: 'left',
+            display: 'flex', flexDirection: 'column', gap: '18px',
           }}>
-            <div style={{
-              fontSize: '11.5px', fontWeight: 700, letterSpacing: '0.05em',
-              textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: '10px',
-            }}>
-              {panel.speaker}
-            </div>
-            <StoryLine text={panel.text} known={panel.known} accentHex={accentHex} font={charFont} />
-            <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginTop: '12px', lineHeight: 1.5 }}>
-              {panel.translation}
-            </div>
-          </div>
-          {isLast && (
-            <p style={{
-              margin: '20px 0 0', textAlign: 'center', fontSize: '15px',
-              fontWeight: 700, color: ink(accentHex), lineHeight: 1.5,
-            }}>
-              {v.copy.line}
-            </p>
-          )}
-          <div style={{ marginTop: '28px' }}>
-            <PrimaryAction label={v.copy.cta} onClick={advanceOnce} accentHex={accentHex} />
-          </div>
-        </div>
-      </Shell>
-    )
-  }
-
-  if (v.phase === 'loop') {
-    return (
-      <Shell>
-        <div style={{ width: '100%', textAlign: 'center', animation: rise }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '34px' }}>
-            {v.copy.steps.map((step, i) => (
-              <div key={step} style={{
-                fontSize: '26px', fontWeight: 800, letterSpacing: '-0.01em',
-                color: i === v.copy.steps.length - 1 ? ink(accentHex) : 'var(--text)',
-                lineHeight: 1.45,
-              }}>
-                {step}
+            {v.scene.lines.map(line => (
+              <div key={line.id}>
+                <div style={{
+                  fontSize: '11.5px', fontWeight: 700, letterSpacing: '0.05em',
+                  textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: '10px',
+                }}>
+                  {line.speaker}
+                </div>
+                <StoryLine
+                  text={line.text}
+                  known={v.marked ? line.known : []}
+                  accentHex={accentHex}
+                  font={charFont}
+                />
+                {v.marked && (
+                  <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginTop: '10px', lineHeight: 1.5 }}>
+                    {line.translation}
+                  </div>
+                )}
               </div>
             ))}
           </div>
-          <PrimaryAction label={finishLabel || v.copy.cta} onClick={advanceOnce} accentHex={accentHex} />
+          <p style={{
+            margin: '20px 0 0', textAlign: 'center', fontSize: '15px',
+            fontWeight: 700, lineHeight: 1.5,
+            color: v.marked ? ink(accentHex) : 'var(--text-muted)',
+          }}>
+            {v.copy.line}
+          </p>
+          <div style={{ marginTop: '28px' }}>
+            <PrimaryAction
+              label={v.marked ? (finishLabel || v.copy.cta) : v.copy.cta}
+              onClick={advanceOnce}
+              accentHex={accentHex}
+            />
+          </div>
         </div>
       </Shell>
     )

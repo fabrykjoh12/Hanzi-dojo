@@ -1,9 +1,10 @@
 // The onboarding tutorial, as a state machine.
 //
-// Concept A, approved 2026-08-10: a learner does a three-card session on
-// fixture words, watches it complete, watches a story open, reads two lines of
-// Chinese made of the words they just learned, sees the loop named, and then is
-// asked for an account. Ninety seconds, and every part of it is the real
+// Concept A (2026-08-10) framed by Concept B (P12-1, 2026-08-12): the learner
+// first sees two lines of Chinese they cannot read, does a three-card session
+// on the real card, watches it complete, watches a story open, and then reads
+// the exact same two lines — marked, translated, and now theirs. Then the
+// account ask. About a hundred seconds, and every part of it is the real
 // product's own components — see Flashcard.jsx and GradeRow.jsx.
 //
 // **Sandboxed, structurally.** This module imports two things: its own
@@ -28,32 +29,36 @@
 import { isGradeKey } from './grades'
 import { cardMarker } from './cardMarker'
 import { gradePrompt } from './gradePrompt'
-import { TUTORIAL_CARDS, TUTORIAL_STORY, TUTORIAL_COPY } from './tutorialFixtures'
+import { TUTORIAL_CARDS, TUTORIAL_SCENE, TUTORIAL_COPY } from './tutorialFixtures'
 
 export const CARD_COUNT = TUTORIAL_CARDS.length
-export const STORY_PANEL_COUNT = TUTORIAL_STORY.panels.length
 
 // ── Phases ───────────────────────────────────────────────────────────────────
 // The learner journey, named after what the learner is doing — never step1,
-// step2. A card phase carries which card and whether it is revealed; the story
-// phase carries which panel.
+// step2. A card phase carries which card and whether it is revealed.
 //
-// Thirteen states in all: welcome, three cards front and back, recap, unlock,
-// two story panels, the loop, and the account handoff.
+// The scene is the frame (P12-1, Concept B): the learner sees the tea-shop
+// exchange they cannot yet read, learns the three words on the real card, and
+// then sees the exact same exchange again, readable. The payoff is
+// experienced, not described — which is why there is no closing "here is the
+// loop" slide: by that point the learner has performed it.
+//
+// Twelve states in all: welcome, the scene unreadable, three cards front and
+// back, recap, unlock, the same scene readable, and the account handoff.
 export const PHASES = {
   WELCOME: 'welcome',
+  SCENE_BEFORE: 'scene-before',
   CARD: 'card',
   RECAP: 'recap',
   UNLOCK: 'unlock',
-  STORY: 'story',
-  LOOP: 'loop',
+  SCENE_AFTER: 'scene-after',
   ACCOUNT: 'account',
 }
 
 // ── Actions ──────────────────────────────────────────────────────────────────
 // Four, and only four. `continue` is every linear advance (the welcome's Start,
-// the recap, the unlock, a story panel, the loop's Create account); the other
-// three belong to a card.
+// both scene renderings, the recap, the unlock); the other three belong to a
+// card.
 export const ACTIONS = {
   CONTINUE: 'continue',
   REVEAL: 'reveal',
@@ -67,6 +72,7 @@ export const ACTIONS = {
 // deleting the grade explanation — which is the gap the audit found, and the
 // single most important thing here.
 export const TEACHING_GOALS = [
+  'sceneUnreadable',   // where you're going — Chinese you can't read yet
   'reveal',            // a card turns over when you tap it
   'pronunciation',     // the word can be heard, on demand
   'grading',           // the four buttons are how you answer
@@ -77,7 +83,7 @@ export const TEACHING_GOALS = [
   'sessionCompletion', // a session ends, and ending it means something
   'storyUnlock',       // what finishing a session opens
   'wordsInContext',    // the words, alive, in Chinese
-  'productLoop',       // learn → review → unlock → read
+  'scenePayoff',       // the same scene, now readable — the whole thesis
 ]
 
 const GRADE_GOALS = ['againMeaning', 'hardMeaning', 'goodMeaning', 'easyMeaning']
@@ -119,7 +125,6 @@ export function initialTutorialState() {
     // Whether the learner has used Replay on the card in front of them. Resets
     // per card: it drives one piece of coaching, not a score.
     replayed: false,
-    storyPanel: 0,
     // Which grade was pressed for each card, in order, BY KEY ('again' …
     // 'easy' — grades.js). Tutorial-local: never written anywhere, never a
     // review. Keys rather than the scheduler's numbers so that reordering the
@@ -135,7 +140,6 @@ export function stateId(state) {
   if (state.phase === PHASES.CARD) {
     return 'card-' + (state.cardIndex + 1) + (state.revealed ? '-back' : '-front')
   }
-  if (state.phase === PHASES.STORY) return 'story-' + (state.storyPanel + 1)
   return state.phase
 }
 
@@ -145,12 +149,12 @@ export function stateId(state) {
 export function position(state) {
   switch (state.phase) {
     case PHASES.WELCOME: return 0
-    case PHASES.CARD: return 1 + state.cardIndex * 2 + (state.revealed ? 1 : 0)
-    case PHASES.RECAP: return 1 + CARD_COUNT * 2
-    case PHASES.UNLOCK: return 2 + CARD_COUNT * 2
-    case PHASES.STORY: return 3 + CARD_COUNT * 2 + state.storyPanel
-    case PHASES.LOOP: return 3 + CARD_COUNT * 2 + STORY_PANEL_COUNT
-    case PHASES.ACCOUNT: return 4 + CARD_COUNT * 2 + STORY_PANEL_COUNT
+    case PHASES.SCENE_BEFORE: return 1
+    case PHASES.CARD: return 2 + state.cardIndex * 2 + (state.revealed ? 1 : 0)
+    case PHASES.RECAP: return 2 + CARD_COUNT * 2
+    case PHASES.UNLOCK: return 3 + CARD_COUNT * 2
+    case PHASES.SCENE_AFTER: return 4 + CARD_COUNT * 2
+    case PHASES.ACCOUNT: return 5 + CARD_COUNT * 2
     default: return -1
   }
 }
@@ -185,10 +189,10 @@ function teachesAt(state) {
     if (state.cardIndex === 0) return ['pronunciation', 'grading', ...GRADE_GOALS]
     return []
   }
+  if (state.phase === PHASES.SCENE_BEFORE) return ['sceneUnreadable']
   if (state.phase === PHASES.RECAP) return ['sessionCompletion']
   if (state.phase === PHASES.UNLOCK) return ['storyUnlock']
-  if (state.phase === PHASES.STORY) return ['wordsInContext']
-  if (state.phase === PHASES.LOOP) return ['productLoop']
+  if (state.phase === PHASES.SCENE_AFTER) return ['wordsInContext', 'scenePayoff']
   return []
 }
 
@@ -222,8 +226,10 @@ export function view(state) {
     // The one-word meanings, on the first revealed card only. Repeating them on
     // card 2 would be the app explaining a control the learner has used.
     glosses: null,
-    panel: null,
-    setting: null,
+    // The scene, when this state shows it, and whether the learned words are
+    // marked and translated — false before the cards, true after.
+    scene: null,
+    marked: false,
     copy: null,
   }
 
@@ -247,21 +253,18 @@ export function view(state) {
   }
 
   if (state.phase === PHASES.WELCOME) return { ...base, copy: TUTORIAL_COPY.welcome }
+  if (state.phase === PHASES.SCENE_BEFORE) {
+    return { ...base, copy: TUTORIAL_COPY.sceneBefore, scene: TUTORIAL_SCENE, marked: false }
+  }
   if (state.phase === PHASES.RECAP) {
     return { ...base, copy: TUTORIAL_COPY.recap, feedback: 'success' }
   }
   if (state.phase === PHASES.UNLOCK) {
     return { ...base, copy: TUTORIAL_COPY.unlock, feedback: 'success' }
   }
-  if (state.phase === PHASES.STORY) {
-    return {
-      ...base,
-      copy: TUTORIAL_COPY.story,
-      panel: TUTORIAL_STORY.panels[state.storyPanel],
-      setting: state.storyPanel === 0 ? TUTORIAL_STORY.setting : null,
-    }
+  if (state.phase === PHASES.SCENE_AFTER) {
+    return { ...base, copy: TUTORIAL_COPY.sceneAfter, scene: TUTORIAL_SCENE, marked: true }
   }
-  if (state.phase === PHASES.LOOP) return { ...base, copy: TUTORIAL_COPY.loop }
   return base
 }
 
@@ -303,18 +306,14 @@ export function advance(state, action, payload) {
 
   // CONTINUE — the linear tail.
   if (state.phase === PHASES.WELCOME) {
+    return withGoals({ ...state, phase: PHASES.SCENE_BEFORE })
+  }
+  if (state.phase === PHASES.SCENE_BEFORE) {
     return withGoals({ ...state, phase: PHASES.CARD, cardIndex: 0, revealed: false, replayed: false })
   }
   if (state.phase === PHASES.RECAP) return withGoals({ ...state, phase: PHASES.UNLOCK })
-  if (state.phase === PHASES.UNLOCK) {
-    return withGoals({ ...state, phase: PHASES.STORY, storyPanel: 0 })
-  }
-  if (state.phase === PHASES.STORY) {
-    const next = state.storyPanel + 1
-    if (next < STORY_PANEL_COUNT) return withGoals({ ...state, storyPanel: next })
-    return withGoals({ ...state, phase: PHASES.LOOP })
-  }
-  if (state.phase === PHASES.LOOP) return withGoals({ ...state, phase: PHASES.ACCOUNT })
+  if (state.phase === PHASES.UNLOCK) return withGoals({ ...state, phase: PHASES.SCENE_AFTER })
+  if (state.phase === PHASES.SCENE_AFTER) return withGoals({ ...state, phase: PHASES.ACCOUNT })
   return state
 }
 
@@ -338,9 +337,10 @@ export function advance(state, action, payload) {
 //              grade explanation does not entitle anyone to a second showing.
 export function retreat(state) {
   if (state.phase === PHASES.WELCOME) return null
+  if (state.phase === PHASES.SCENE_BEFORE) return { ...state, phase: PHASES.WELCOME }
   if (state.phase === PHASES.CARD) {
     if (state.revealed) return { ...state, revealed: false, replayed: false }
-    if (state.cardIndex === 0) return { ...state, phase: PHASES.WELCOME, replayed: false }
+    if (state.cardIndex === 0) return { ...state, phase: PHASES.SCENE_BEFORE, replayed: false }
     return {
       ...state,
       cardIndex: state.cardIndex - 1, revealed: true, replayed: false,
@@ -355,11 +355,7 @@ export function retreat(state) {
     }
   }
   if (state.phase === PHASES.UNLOCK) return { ...state, phase: PHASES.RECAP }
-  if (state.phase === PHASES.STORY) {
-    if (state.storyPanel === 0) return { ...state, phase: PHASES.UNLOCK, storyPanel: 0 }
-    return { ...state, storyPanel: state.storyPanel - 1 }
-  }
-  if (state.phase === PHASES.LOOP) return { ...state, phase: PHASES.STORY, storyPanel: STORY_PANEL_COUNT - 1 }
+  if (state.phase === PHASES.SCENE_AFTER) return { ...state, phase: PHASES.UNLOCK }
   // ACCOUNT: complete. The runner has already handed over; there is nothing
   // here to step back into.
   return null
@@ -369,14 +365,14 @@ export function retreat(state) {
 // Exported because both the tests and (later) the e2e spec want one canonical
 // path, and two hand-written copies of it would drift.
 export function defaultWalkthrough(grade = 'good') {
-  const steps = [{ action: ACTIONS.CONTINUE }]
+  // welcome → the scene, unreadable
+  const steps = [{ action: ACTIONS.CONTINUE }, { action: ACTIONS.CONTINUE }]
   for (let i = 0; i < CARD_COUNT; i += 1) {
     steps.push({ action: ACTIONS.REVEAL })
     steps.push({ action: ACTIONS.GRADE, payload: grade })
   }
-  // recap → unlock → each story panel → loop → account
-  const tail = 2 + STORY_PANEL_COUNT + 1
-  for (let i = 0; i < tail; i += 1) steps.push({ action: ACTIONS.CONTINUE })
+  // recap → unlock → the scene, readable → account
+  for (let i = 0; i < 3; i += 1) steps.push({ action: ACTIONS.CONTINUE })
   return steps
 }
 
@@ -385,7 +381,7 @@ export function defaultWalkthrough(grade = 'good') {
 // account to remember them by. What gets written to the device is a POSITION,
 // and it is deliberately the smallest thing that can be one.
 //
-// Four values, and every one of them is the position. Nothing else is stored:
+// Three values, and every one of them is the position. Nothing else is stored:
 //
 //   goalsSeen  the set of goals every state up to here declared — a function of
 //              the position. Storing it would keep an answer we can always
@@ -415,7 +411,6 @@ export function serializeTutorial(state) {
     phase: state.phase,
     cardIndex: state.cardIndex,
     revealed: state.revealed,
-    storyPanel: state.storyPanel,
   }
 }
 
@@ -426,11 +421,13 @@ export function serializeTutorial(state) {
 export function resumeTutorialState(saved) {
   if (!saved || typeof saved !== 'object') return null
   const phases = Object.values(PHASES)
+  // A phase this build does not have — including 'story' and 'loop' from the
+  // pre-P12 shape — restarts from the beginning rather than resuming half-way
+  // into a tutorial that no longer exists. Extra stored fields (the old
+  // storyPanel) are simply ignored.
   if (phases.indexOf(saved.phase) === -1) return null
   const cardIndex = saved.cardIndex
-  const storyPanel = saved.storyPanel
   if (!Number.isInteger(cardIndex) || cardIndex < 0 || cardIndex >= CARD_COUNT) return null
-  if (!Number.isInteger(storyPanel) || storyPanel < 0 || storyPanel >= STORY_PANEL_COUNT) return null
   if (typeof saved.revealed !== 'boolean') return null
 
   const state = {
@@ -438,7 +435,6 @@ export function resumeTutorialState(saved) {
     cardIndex,
     revealed: saved.revealed,
     replayed: false,
-    storyPanel,
     grades: [],
     goalsSeen: [],
   }

@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
-  PHASES, ACTIONS, TEACHING_GOALS, CARD_COUNT, STORY_PANEL_COUNT,
+  PHASES, ACTIONS, TEACHING_GOALS, CARD_COUNT,
   initialTutorialState, stateId, position, isComplete,
   actionsFor, view, advance, retreat, defaultWalkthrough, runTutorial,
   serializeTutorial, resumeTutorialState, goalsThrough,
 } from './tutorialScript'
-import { TUTORIAL_CARDS, TUTORIAL_STORY } from './tutorialFixtures'
+import { TUTORIAL_CARDS, TUTORIAL_SCENE } from './tutorialFixtures'
 import { gradeGlosses } from './gradePrompt'
 import { GRADES, GRADE_KEYS } from './grades'
 
@@ -19,6 +19,9 @@ import { GRADES, GRADE_KEYS } from './grades'
 
 const walk = (steps) => runTutorial(steps)
 const last = (states) => states[states.length - 1]
+// Two continues now stand between the welcome and the first card: the scene,
+// unreadable, sits in between (P12-1).
+const toFirstCard = () => advance(advance(initialTutorialState(), ACTIONS.CONTINUE), ACTIONS.CONTINUE)
 
 describe('the shape of the journey', () => {
   it('starts at the welcome, with one thing to do', () => {
@@ -28,14 +31,14 @@ describe('the shape of the journey', () => {
     expect(isComplete(s)).toBe(false)
   })
 
-  it('is welcome → three cards → recap → unlock → story → loop → account', () => {
+  it('is welcome → the scene → three cards → recap → unlock → the same scene → account', () => {
     const ids = walk(defaultWalkthrough()).map(stateId)
     expect(ids).toEqual([
-      'welcome',
+      'welcome', 'scene-before',
       'card-1-front', 'card-1-back',
       'card-2-front', 'card-2-back',
       'card-3-front', 'card-3-back',
-      'recap', 'unlock', 'story-1', 'story-2', 'loop', 'account',
+      'recap', 'unlock', 'scene-after', 'account',
     ])
   })
 
@@ -52,10 +55,10 @@ describe('the shape of the journey', () => {
   })
 
   it('is roughly a dozen taps — the whole point of it', () => {
-    // Nine before the account ask: Start, then reveal+grade three times, then
-    // four to walk the payoff. If this number grows, the tutorial has stopped
-    // being 90 seconds.
-    expect(defaultWalkthrough().length).toBe(12)
+    // Start, the unreadable scene, reveal+grade three times, then three to walk
+    // the payoff. If this number grows, the tutorial has stopped being a
+    // hundred seconds.
+    expect(defaultWalkthrough().length).toBe(11)
   })
 })
 
@@ -75,8 +78,7 @@ describe('no loops', () => {
   })
 
   it('cannot be trapped by replaying forever', () => {
-    let s = initialTutorialState()
-    s = advance(s, ACTIONS.CONTINUE)
+    let s = toFirstCard()
     s = advance(s, ACTIONS.REVEAL)
     const before = position(s)
     for (let i = 0; i < 50; i += 1) s = advance(s, ACTIONS.REPLAY)
@@ -125,8 +127,7 @@ describe('retreat', () => {
   })
 
   it('un-reveals a revealed card rather than skipping it', () => {
-    let s = initialTutorialState()
-    s = advance(s, ACTIONS.CONTINUE)
+    let s = toFirstCard()
     s = advance(s, ACTIONS.REVEAL)
     const back = retreat(s)
     expect(stateId(back)).toBe('card-1-front')
@@ -134,8 +135,7 @@ describe('retreat', () => {
   })
 
   it('un-records a grade when stepping back across it, so re-grading cannot double-count', () => {
-    let s = initialTutorialState()
-    s = advance(s, ACTIONS.CONTINUE)
+    let s = toFirstCard()
     s = advance(s, ACTIONS.REVEAL)
     s = advance(s, ACTIONS.GRADE, 'good')
     expect(s.grades).toEqual(['good'])
@@ -148,8 +148,7 @@ describe('retreat', () => {
   })
 
   it('keeps goalsSeen — teaching that happened, happened', () => {
-    let s = initialTutorialState()
-    s = advance(s, ACTIONS.CONTINUE)
+    let s = toFirstCard()
     s = advance(s, ACTIONS.REVEAL)
     const taught = s.goalsSeen
     expect(taught.length).toBeGreaterThan(0)
@@ -176,7 +175,7 @@ describe('retreat', () => {
 
 describe('legal actions', () => {
   it('refuses to grade a card that has not been revealed', () => {
-    let s = advance(initialTutorialState(), ACTIONS.CONTINUE)
+    let s = toFirstCard()
     expect(stateId(s)).toBe('card-1-front')
     expect(actionsFor(s)).toEqual([ACTIONS.REVEAL])
     // Identity, not a copy: nothing happened at all.
@@ -184,18 +183,18 @@ describe('legal actions', () => {
   })
 
   it('refuses Replay before the answer is on screen', () => {
-    const s = advance(initialTutorialState(), ACTIONS.CONTINUE)
+    const s = toFirstCard()
     expect(advance(s, ACTIONS.REPLAY)).toBe(s)
   })
 
   it('refuses to reveal a card twice', () => {
-    let s = advance(initialTutorialState(), ACTIONS.CONTINUE)
+    let s = toFirstCard()
     s = advance(s, ACTIONS.REVEAL)
     expect(advance(s, ACTIONS.REVEAL)).toBe(s)
   })
 
   it('refuses a grade that is not one of the four', () => {
-    let s = advance(initialTutorialState(), ACTIONS.CONTINUE)
+    let s = toFirstCard()
     s = advance(s, ACTIONS.REVEAL)
     // Including the scheduler's own numbers: this contract is keys, and a 2
     // that used to mean Good must not be accepted as one.
@@ -244,7 +243,7 @@ describe('the three cards', () => {
   })
 
   it('cannot reach the recap before all three are graded', () => {
-    let s = advance(initialTutorialState(), ACTIONS.CONTINUE)
+    let s = toFirstCard()
     for (let i = 0; i < CARD_COUNT; i += 1) {
       expect(s.phase).toBe(PHASES.CARD)
       s = advance(s, ACTIONS.REVEAL)
@@ -306,10 +305,7 @@ describe('coaching decreases', () => {
 })
 
 describe('pronunciation is offered, never required', () => {
-  const firstBack = () => {
-    let s = advance(initialTutorialState(), ACTIONS.CONTINUE)
-    return advance(s, ACTIONS.REVEAL)
-  }
+  const firstBack = () => advance(toFirstCard(), ACTIONS.REVEAL)
 
   it('points at Replay on the first revealed card', () => {
     const v = view(firstBack())
@@ -347,19 +343,36 @@ describe('pronunciation is offered, never required', () => {
   })
 
   it('forgets it between cards — it is a hint, not a score', () => {
-    let s = advance(advance(initialTutorialState(), ACTIONS.CONTINUE), ACTIONS.REVEAL)
+    let s = advance(toFirstCard(), ACTIONS.REVEAL)
     s = advance(s, ACTIONS.REPLAY)
     s = advance(s, ACTIONS.GRADE, 'good')
     expect(s.replayed).toBe(false)
   })
 })
 
-describe('the payoff', () => {
-  it('opens the story only after the session is finished', () => {
+describe('the payoff — the scene, twice (P12-1)', () => {
+  it('shows the scene unreadable before a single card, and readable only after the unlock', () => {
     const ids = walk(defaultWalkthrough()).map(stateId)
+    expect(ids.indexOf('scene-before')).toBeLessThan(ids.indexOf('card-1-front'))
     expect(ids.indexOf('recap')).toBeLessThan(ids.indexOf('unlock'))
-    expect(ids.indexOf('unlock')).toBeLessThan(ids.indexOf('story-1'))
-    expect(ids.indexOf('story-2')).toBeLessThan(ids.indexOf('loop'))
+    expect(ids.indexOf('unlock')).toBeLessThan(ids.indexOf('scene-after'))
+  })
+
+  it('renders the EXACT same scene both times — one fixture, two views', () => {
+    const views = walk(defaultWalkthrough()).map(view)
+    const before = views.find(v => v.id === 'scene-before')
+    const after = views.find(v => v.id === 'scene-after')
+    // Identity, not equality: there is one TUTORIAL_SCENE and both states hold
+    // it. Two hand-maintained copies of the Chinese would drift, and the
+    // payoff only lands if the text visibly did not change.
+    expect(before.scene).toBe(TUTORIAL_SCENE)
+    expect(after.scene).toBe(before.scene)
+  })
+
+  it('marks nothing before the cards, and the learned words after', () => {
+    const views = walk(defaultWalkthrough()).map(view)
+    expect(views.find(v => v.id === 'scene-before').marked).toBe(false)
+    expect(views.find(v => v.id === 'scene-after').marked).toBe(true)
   })
 
   it('marks the two moments that are worth feeling', () => {
@@ -368,29 +381,27 @@ describe('the payoff', () => {
     expect(felt.every(v => v.feedback === 'success')).toBe(true)
   })
 
-  it('shows the words they just learned, in Chinese', () => {
+  it('is made of the words the tutorial teaches — nothing else', () => {
     const learned = TUTORIAL_CARDS.map(c => c.word)
-    const marked = TUTORIAL_STORY.panels.flatMap(p => p.known)
+    const marked = TUTORIAL_SCENE.lines.flatMap(l => l.known)
     // Every emphasised token is a word the tutorial actually taught…
     for (const word of marked) expect(learned).toContain(word)
     // …and the scene really does use them, not just claim to.
     for (const word of marked) {
-      const panel = TUTORIAL_STORY.panels.find(p => p.known.includes(word))
-      expect(panel.text).toContain(word)
+      const line = TUTORIAL_SCENE.lines.find(l => l.known.includes(word))
+      expect(line.text).toContain(word)
     }
-    // At least two of the three, per the approved concept.
-    expect(new Set(marked).size).toBeGreaterThanOrEqual(2)
+    // ALL three: "this time you can read it" has to be literally true, so the
+    // scene's Chinese, stripped of the taught words, must be pure punctuation.
+    expect(new Set(marked).size).toBe(TUTORIAL_CARDS.length)
+    let rest = TUTORIAL_SCENE.lines.map(l => l.text).join('')
+    for (const word of learned) rest = rest.split(word).join('')
+    expect(rest).toMatch(/^[！。？，、\s]*$/)
   })
 
-  it('sets the scene once, on the first panel only', () => {
-    const panels = walk(defaultWalkthrough()).map(view).filter(v => v.phase === PHASES.STORY)
-    expect(panels).toHaveLength(STORY_PANEL_COUNT)
-    expect(panels[0].setting).toBeTruthy()
-    expect(panels.slice(1).every(p => p.setting === null)).toBe(true)
-  })
-
-  it('stays two panels — this is a moment, not a chapter', () => {
-    expect(STORY_PANEL_COUNT).toBe(2)
+  it('stays two lines — this is a moment, not a chapter', () => {
+    expect(TUTORIAL_SCENE.lines).toHaveLength(2)
+    expect(TUTORIAL_SCENE.setting.length).toBeGreaterThan(0)
   })
 })
 
@@ -439,10 +450,10 @@ describe('determinism and serialisability', () => {
   })
 
   it('carries only what a resume would need', () => {
-    // The shape Commit 5 will persist. Anything added here is something a
-    // killed app has to restore correctly, so the list is deliberately short.
+    // The shape the persistence layer stores. Anything added here is something
+    // a killed app has to restore correctly, so the list is deliberately short.
     expect(Object.keys(initialTutorialState()).sort()).toEqual(
-      ['cardIndex', 'goalsSeen', 'grades', 'phase', 'replayed', 'revealed', 'storyPanel']
+      ['cardIndex', 'goalsSeen', 'grades', 'phase', 'replayed', 'revealed']
     )
   })
 
@@ -464,7 +475,7 @@ describe('resuming after the app was closed', () => {
     // never happened.
     const s = walk(defaultWalkthrough())[5]
     expect(Object.keys(serializeTutorial(s)).sort())
-      .toEqual(['cardIndex', 'phase', 'revealed', 'storyPanel'])
+      .toEqual(['cardIndex', 'phase', 'revealed'])
     expect(serializeTutorial(s).goalsSeen).toBe(undefined)
     // Which buttons were pressed is a record of a run, not a place in one.
     expect(serializeTutorial(s).grades).toBe(undefined)
@@ -496,7 +507,7 @@ describe('resuming after the app was closed', () => {
   })
 
   it('forgets whether Replay was tapped — a hint, not a position', () => {
-    let s = advance(advance(initialTutorialState(), ACTIONS.CONTINUE), ACTIONS.REVEAL)
+    let s = advance(toFirstCard(), ACTIONS.REVEAL)
     s = advance(s, ACTIONS.REPLAY)
     expect(s.replayed).toBe(true)
     expect(serializeTutorial(s).replayed).toBe(undefined)
@@ -506,14 +517,23 @@ describe('resuming after the app was closed', () => {
   it('starts over rather than trusting something it does not recognise', () => {
     for (const junk of [
       null, undefined, 'card-2', 42, [],
-      { phase: 'nonsense', cardIndex: 0, revealed: false, storyPanel: 0, grades: [] },
-      { phase: 'card', cardIndex: 9, revealed: false, storyPanel: 0, grades: [] },
-      { phase: 'card', cardIndex: -1, revealed: false, storyPanel: 0, grades: [] },
-      { phase: 'card', cardIndex: 0, revealed: 'yes', storyPanel: 0, grades: [] },
-      { phase: 'card', cardIndex: 0, revealed: false, storyPanel: 7 },
+      { phase: 'nonsense', cardIndex: 0, revealed: false, grades: [] },
+      { phase: 'card', cardIndex: 9, revealed: false, grades: [] },
+      { phase: 'card', cardIndex: -1, revealed: false, grades: [] },
+      { phase: 'card', cardIndex: 0, revealed: 'yes', grades: [] },
+      // The pre-P12 shape's phases: a saved position from an older build in a
+      // state this build no longer has restarts rather than resuming half-way
+      // into a tutorial that no longer exists.
+      { phase: 'story', cardIndex: 0, revealed: false, storyPanel: 0 },
+      { phase: 'loop', cardIndex: 2, revealed: false, storyPanel: 1 },
     ]) {
       expect(resumeTutorialState(junk)).toBe(null)
     }
+  })
+
+  it('still resumes an old build\'s CARD position — the extra field is ignored', () => {
+    const back = resumeTutorialState({ phase: 'card', cardIndex: 1, revealed: true, storyPanel: 0 })
+    expect(stateId(back)).toBe('card-2-back')
   })
 
   it('recomputes the goals rather than believing a stored list', () => {

@@ -46,6 +46,9 @@ async function walkTo(page, stop) {
   await open(page);
   if (stop === 'welcome') return;
   await startBtn(page).click();
+  await expect(page.getByText(/can’t read this yet/)).toBeVisible();
+  if (stop === 'scene-before') return;
+  await page.getByRole('button', { name: 'Learn them' }).click();
   if (stop === 'card1') return;
   await doCard(page);
   if (stop === 'card2') return;
@@ -58,11 +61,7 @@ async function walkTo(page, stop) {
   await expect(page.getByText('Story unlocked')).toBeVisible();
   if (stop === 'unlock') return;
   await page.getByRole('button', { name: 'Read it' }).click();
-  if (stop === 'story1') return;
-  await page.getByRole('button', { name: 'Continue' }).click();
-  if (stop === 'story2') return;
-  await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.getByText('Learn', { exact: true })).toBeVisible();
+  await expect(page.getByText(/this time you can read it/)).toBeVisible();
 }
 
 async function geometry(page) {
@@ -89,10 +88,19 @@ for (const phone of PHONES) {
   test.describe('The tutorial on ' + phone.name, () => {
     test.use({ viewport: { width: phone.width, height: phone.height } });
 
-    test('walks welcome → three cards → recap → unlock → story → loop → account', async ({ page }) => {
+    test('walks welcome → scene → three cards → recap → unlock → the same scene → account', async ({ page }) => {
       await open(page);
       await expect(page.getByText('Learn Chinese through words and stories.')).toBeVisible();
       await startBtn(page).click();
+
+      // The scene, unreadable: the whole exchange is on screen, in Chinese,
+      // with no translations to spend the payoff early.
+      await expect(page.getByText('你好！')).toBeVisible();
+      await expect(page.getByText('谢谢。再见！')).toBeVisible();
+      await expect(page.getByText(/can’t read this yet/)).toBeVisible();
+      await expect(page.getByText('Hello!', { exact: true })).toHaveCount(0);
+      await expect(page.getByText('Thank you. Goodbye!', { exact: true })).toHaveCount(0);
+      await page.getByRole('button', { name: 'Learn them' }).click();
 
       for (const word of WORDS) {
         await expect(page.getByText(word, { exact: true }).first()).toBeVisible();
@@ -106,14 +114,16 @@ for (const phone of PHONES) {
       await expect(page.getByText('Story unlocked')).toBeVisible();
       await page.getByRole('button', { name: 'Read it' }).click();
 
+      // The SAME scene, readable: same Chinese, now with the translations.
       await expect(page.getByText('你好！')).toBeVisible();
-      await page.getByRole('button', { name: 'Continue' }).click();
       await expect(page.getByText('谢谢。再见！')).toBeVisible();
-      await page.getByRole('button', { name: 'Continue' }).click();
+      await expect(page.getByText('Hello!', { exact: true })).toBeVisible();
+      await expect(page.getByText('Thank you. Goodbye!', { exact: true })).toBeVisible();
+      await expect(page.getByText(/this time you can read it/)).toBeVisible();
 
-      for (const step of ['Learn', 'Review', 'Unlock', 'Read']) {
-        await expect(page.getByText(step, { exact: true })).toBeVisible();
-      }
+      // No fourth telling of the loop — the learner just performed it.
+      await expect(page.getByText('Review', { exact: true })).toHaveCount(0);
+
       // The handoff: the tutorial says it is finished and the caller decides.
       await page.getByRole('button', { name: 'Create account' }).click();
       await expect(page).toHaveURL(/\/$/);
@@ -177,7 +187,7 @@ for (const phone of PHONES) {
     });
 
     test('every state keeps its primary action on screen, and never scrolls sideways', async ({ page }) => {
-      for (const stop of ['welcome', 'card1', 'card2', 'card3', 'recap', 'unlock', 'story1', 'story2', 'loop']) {
+      for (const stop of ['welcome', 'scene-before', 'card1', 'card2', 'card3', 'recap', 'unlock', 'scene-after']) {
         await walkTo(page, stop);
         const g = await geometry(page);
         expect(g.overflowX, stop).toBe(0);
@@ -274,32 +284,40 @@ test.describe('Teaching', () => {
   });
 
   test('finishes without ever hearing a word', async ({ page }) => {
-    await walkTo(page, 'loop');
+    await walkTo(page, 'scene-after');
     await expect(page.getByRole('button', { name: 'Create account' })).toBeVisible();
   });
 
   test('accepts any grade, not just Good', async ({ page }) => {
     await open(page);
     await startBtn(page).click();
+    await page.getByRole('button', { name: 'Learn them' }).click();
     await doCard(page, 'Again');
     await doCard(page, 'Hard');
     await doCard(page, 'Easy');
     await expect(page.getByText('Session complete')).toBeVisible();
   });
 
-  test('marks the learned words in the story without relying on colour', async ({ page }) => {
-    await walkTo(page, 'story1');
+  test('marks the learned words in the scene without relying on colour', async ({ page }) => {
+    await walkTo(page, 'scene-after');
     const marks = await page.evaluate(() =>
       Array.from(document.querySelectorAll('mark')).map(m => ({
         text: m.textContent,
         underline: getComputedStyle(m).borderBottomWidth,
       })));
-    expect(marks.map(m => m.text)).toContain('你好');
+    // All three learned words are emphasised, semantically, across the scene.
+    for (const word of WORDS) expect(marks.map(m => m.text)).toContain(word);
     for (const m of marks) expect(parseFloat(m.underline)).toBeGreaterThan(0);
   });
 
+  test('marks nothing in the scene BEFORE the words are learned', async ({ page }) => {
+    await walkTo(page, 'scene-before');
+    const marks = await page.evaluate(() => document.querySelectorAll('mark').length);
+    expect(marks).toBe(0);
+  });
+
   test('offers exactly one action on every non-card state', async ({ page }) => {
-    for (const stop of ['welcome', 'recap', 'unlock', 'story1', 'story2', 'loop']) {
+    for (const stop of ['welcome', 'scene-before', 'recap', 'unlock', 'scene-after']) {
       await walkTo(page, stop);
       const count = await page.evaluate(() =>
         Array.from(document.querySelectorAll('button'))
@@ -324,6 +342,7 @@ test.describe('Teaching', () => {
     });
     await open(page);
     await startBtn(page).click();
+    await page.getByRole('button', { name: 'Learn them' }).click();
     await doCard(page, 'Again');
     await doCard(page, 'Good');
     await doCard(page, 'Easy');
@@ -343,6 +362,7 @@ test.describe('Picking it back up', () => {
     await page.goto('/tutorial');
     await expect(startBtn(page)).toBeVisible();
     await startBtn(page).click();
+    await page.getByRole('button', { name: 'Learn them' }).click();
     await doCard(page);                       // card 1 graded
     await card(page).click();                 // card 2 revealed
     await expect(page.getByText('谢谢', { exact: true }).first()).toBeVisible();
@@ -400,7 +420,7 @@ test.describe('Tutorial with reduced motion', () => {
   test.use({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
 
   test('still walks the whole way through', async ({ page }) => {
-    await walkTo(page, 'loop');
+    await walkTo(page, 'scene-after');
     await page.getByRole('button', { name: 'Create account' }).click();
     await expect(page).toHaveURL(/\/$/);
   });
