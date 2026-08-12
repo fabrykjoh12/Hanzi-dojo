@@ -810,13 +810,26 @@ Semantic tokens in index.css drive light/dark via `:root` and `:root[data-theme=
 
 ### The dimensional icon family (P14-3) — drawn, not shipped
 
-`src/navGlyphs.jsx` holds five custom glyphs — Home, Stories, Cards, Practice,
-Profile — and `src/navGlyphFamily.js` holds them in bar order. **They are not on
-the bar.** `MobileNav.jsx` and `NavIcons.jsx` are untouched; the family is
-evaluated in `/dev` (`NavGlyphGallery.jsx`) and P14-4 is where the tray and its
-icons change together. `src/navGlyphs.test.jsx` (13 unit contracts) and
-`tests/e2e/nav-glyphs.spec.js` (33 browser assertions across two themes and
-320/390/430) hold what exists.
+`src/navGlyphs.jsx` holds six custom glyphs; `src/navGlyphFamily.js` splits them
+into the set that is navigation and the set that is not:
+
+| Set | Glyphs | Where it goes |
+|-----|--------|---------------|
+| `NAV_GLYPHS` | Home · Stories · **Cards** · Practice · More | the production bar, in shipping order, Cards centred |
+| `IDENTITY_GLYPHS` | Profile | the Profile screen's own header / avatar. **Not a tab** |
+
+**Profile is deliberately not on the bar.** Swapping it for More would remove the
+sheet that Settings, the level test, Words, Dictionary and Profile itself are
+reached through — a navigation-architecture change, not a visual one. The two
+arrays are what stop it happening by accident: a tray that maps over `NAV_GLYPHS`
+cannot pick Profile up, and both `navGlyphs.test.jsx` and `nav-glyphs.spec.js`
+assert it (the spec also opens the real More sheet and finds Profile in it).
+
+**None of it is on the bar yet.** `MobileNav.jsx`, `NavIcons.jsx`, `navConfig.js`
+and `navEmphasis.js` are untouched; the family is evaluated in `/dev`
+(`NavGlyphGallery.jsx`) and P14-4 is where the tray and its icons change together.
+`src/navGlyphs.test.jsx` (16 unit contracts) and `tests/e2e/nav-glyphs.spec.js`
+(34 browser assertions across two themes and 320/390/430) hold what exists.
 
 The seven rules the family is built on are written at the top of `navGlyphs.jsx`,
 and the four that a new identity icon must copy:
@@ -837,17 +850,42 @@ and the four that a new identity icon must copy:
 Two numbers govern the drawing. **32×32 viewBox, content inside 3–29** — one box
 for the family, so optical size is a property of the drawing rather than of the
 `size` prop. And **nothing below ~1.4 units survives**: at 20px one unit is 0.63
-device pixels, and three of the five glyphs lost a detail to that in the first
-round (Profile's 0.8-unit rim, Stories' 1.6-unit spine, Practice's blue inset).
+device pixels, and four details have died to it — Profile's 0.8-unit rim, Stories'
+1.6-unit spine, Practice's blue inset, and More's three-dot concept entirely.
+
+#### Optical weight: the drawings are one scale, the ramp is the hierarchy
 
 **Ink coverage** is how the family is balanced, the same measurement that set
-`NAV_ICON_PX` in P8 — rasterise the resting silhouette, sum the alpha. At the
-sizes the bar would hand them: Cards 234 · Stories 141 · Practice 122 · Profile
-105 · Home 102 px². Cards is 66% ahead of the next, where the bar that shipped in
-P8 had Practice at 81% of Cards — and the loudest thing on it.
+`NAV_ICON_PX` in P8 — rasterise the resting silhouette, sum the alpha.
 
+The first family drew each glyph to whatever looked right alone, which measured
+Cards 150 · Stories 141 · Practice 134 · Profile 105 · Home 102 px² at a common
+22px. Multiplied by the bar's own size ramp that compounded into a **2.3× spread**
+between heaviest and lightest tab — which does not read as hierarchy, it reads as
+one icon having been designed at a different scale.
 
----
+So the drawings are now all one weight — **136–145 px² at 22px, a 1.07× spread**
+(Home grew 33%, Profile 37%, Practice 8%; Cards came down 3%) — and every bit of
+the hierarchy comes from the size the tray asks for. `NAV_GLYPH_PX` in
+`navGlyphFamily.js` is the ramp the family wants, and it is a **recommendation**;
+`navEmphasis.js` is untouched and the bar still uses its own numbers.
+
+| Tab | Recommended px | Ink px² | vs Cards |
+|-----|---------------|---------|----------|
+| Cards | 26 | 203 | 100% |
+| Stories | 24 | 168 | 83% |
+| Practice | 23.5 | 165 | 81% |
+| Home | 23 | 149 | 73% |
+| More | 22 | 140 | 69% |
+
+1.45× top to bottom. The 81–83% is the one number here with evidence rather than
+taste behind it: it is where P8 left Practice relative to Cards on the bar that
+passed device QA. The bar's own ramp is steeper — 27.5 down to 20 is 1.89× in area
+before a single glyph is drawn — and puts Stories at 62% of Cards even with the
+drawings balanced. Emphasis on the bar is also carried by the Cards container, the
+centre column and the bold label, so the glyph sizes do not have to do all of it.
+
+Both strips are in the gallery side by side, which is the only way to judge it.
 
 ## Content pipeline — the generate-*.mjs scripts
 

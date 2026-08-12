@@ -10,28 +10,37 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
-## P14-3 — the icon family, and what it did NOT do (2026-08-12)
+## P14-3 — the icon family, and what it did NOT do (2026-08-12, amended)
 
-Five dimensional glyphs exist (`src/navGlyphs.jsx`), visible only in `/dev`. The
-rules and the rejected concepts are documented in the file itself; this is the
+Six dimensional glyphs exist (`src/navGlyphs.jsx`), visible only in `/dev`. The
+rules and every rejected concept are documented in the file itself; this is the
 list of things a later phase has to pick up.
+
+**The navigation architecture is settled and is NOT P14-4's to change.** The bar is
+Home · Stories · **Cards** · Practice · **More**, Cards centred, and Profile is
+reached through the More sheet exactly as it is today. `navGlyphFamily.js` keeps
+`NAV_GLYPHS` (the five) apart from `IDENTITY_GLYPHS` (Profile) so a tray cannot
+install Profile as a tab by accident, and two specs assert it — including one that
+opens the real More sheet and finds Profile in it. If Profile is ever promoted to a
+tab that is a product decision with its own phase, and it starts by answering
+"where do Settings, the level test, Words and Dictionary go".
 
 **P14-4 owns the handover.** `MobileNav.jsx`, `NavIcons.jsx`, `navConfig.js` and
 `navEmphasis.js` are untouched by P14-3 — deliberately, since the tray and its
-icons have to change in one commit or the bar ships half a redesign. Three things
+icons have to change in one commit or the bar ships half a redesign. Two things
 have to be decided there, not before:
 
-- **The fifth tab.** The bar's five tabs are Home · Stories · Cards · Practice ·
-  **More**, and the family's fifth glyph is **Profile**. Profile currently lives
-  inside the More sheet. Swapping More for Profile is a navigation-architecture
-  change (where do Settings, the level test, Words, Dictionary go?), which is why
-  the family was drawn for the destination and not for the sheet. `MoreIcon` has
-  no dimensional twin and does not need one until that is settled.
-- **Optical sizes.** `NAV_ICON_PX` was measured against the FLAT family's ink
-  (P8). The new family's ink at the same sizes is Cards 234 · Stories 141 ·
-  Practice 122 · Profile 105 · Home 102 px², so the existing sizes still put Cards
-  66% ahead of the next loudest — but the numbers should be re-derived rather than
-  inherited on faith.
+- **Whether to adopt `NAV_GLYPH_PX`.** The glyph drawings are now all one weight
+  (136–145 px² of ink at 22px), so the bar's whole visual hierarchy comes from the
+  size table. `NAV_GLYPH_PX` in `navGlyphFamily.js` is the ramp the family wants —
+  Cards 26 · Stories 24 · Practice 23.5 · Home 23 · More 22, which measures Cards
+  203 · Stories 168 · Practice 165 · Home 149 · More 140 px², a 1.45× spread with
+  Stories and Practice at 81–83% of Cards (P8's device-approved relationship).
+  `NAV_ICON_PX` in `navEmphasis.js` is what the bar uses and is steeper: 27.5 down
+  to 20 is 1.89× in area on its own, and lands Stories at 62% of Cards. Adopting
+  the gentler ramp means editing `navEmphasis.js`, whose `navColumnHeight()` test
+  pins the column sum to `MOBILE_NAV_HEIGHT` — 26 still fits the 34px icon row, but
+  check the test rather than assuming.
 - **Where the accent goes.** Only Stories carries one (a plum ribbon). Practice's
   `--blue` was drawn and removed: a small inset inside a tile reads as an
   unread-notification badge at 20px, and a whole tile in blue makes Practice look
@@ -56,6 +65,16 @@ weight allow-list. Not a P14-3 change; do not touch the assets to "fix" a weight
 and asserts one lands within ±1 day of the pinned interval — FSRS fuzz is random,
 so it can miss. Seen once in five full-suite runs during P14-3 (green the other
 four); unrelated to any P14 change. Fix by seeding the fuzz or widening the band.
+
+**The More glyph is close to a hamburger, and that was the choice.** Three raised
+slabs beat three raised lacquer dots and a three-dot plaque, both measured: the
+dots ink **56 px² against the family's ~140** and their facets come out half a
+device pixel, so they render flat while everything around them is dimensional
+(dots are small — that is structural, not tuning); the plaque reads as a CHAT
+bubble with a typing indicator at every size. If a later phase wants something more
+Hanzi-Dojo-specific for More, the constraint to beat is 140 px² of ink in a ~19×21
+silhouette with details no finer than 1.4 units — which is why the obvious answers
+lose.
 
 ## P14-2 — what normalization deliberately did NOT touch (2026-08-12)
 

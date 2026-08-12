@@ -24,7 +24,15 @@ import { authedTest as test, expect, PROFILE } from '../fixtures/mockSupabase.js
 
 const OUT = process.env.P14_OUT || '/tmp/p14-glyphs';
 const BOX = 32;
-const KEYS = ['home', 'stories', 'study', 'practice', 'profile'];
+// The production bar, in shipping order — Cards is `study` and it is centred.
+const NAV_KEYS = ['home', 'stories', 'study', 'practice', 'more'];
+// Drawn to the same rules, deliberately not a tab.
+const IDENTITY_KEYS = ['profile'];
+const ALL_KEYS = [...NAV_KEYS, ...IDENTITY_KEYS];
+// The family's own recommended ramp (navGlyphFamily.js NAV_GLYPH_PX), duplicated
+// here so the spec can assert the ink it produces without importing app code into
+// a Playwright process.
+const RAMP = { study: 26, stories: 24, practice: 23.5, home: 23, more: 22 };
 
 async function setTheme(page, theme) {
   await page.route('**/mock.supabase.co/rest/v1/profiles**', async (route) => {
@@ -58,14 +66,22 @@ for (const theme of ['light', 'dark']) {
       });
 
       test('draws all five in both states at every size', async ({ page }) => {
-        for (const size of [20, 24, 28, 32]) {
+        // Scoped by GRID rather than by size: the "intended navigation size" grid
+        // hands every glyph a different number, so selecting on size alone would
+        // sweep cells out of three different grids and count them together.
+        for (const grid of ['20px', '24px', '28px', '32px', 'intended navigation size']) {
           for (const state of ['active', 'inactive']) {
             const cells = page.locator(
-              '[data-glyph-size="' + size + '"][data-glyph-state="' + state + '"]',
+              '[data-glyph-grid="' + grid + '"] [data-glyph-state="' + state + '"]',
             );
-            await expect(cells).toHaveCount(5);
+            await expect(cells, grid + ' / ' + state).toHaveCount(5);
           }
         }
+        // And Profile is present but kept out of every production grid.
+        await expect(page.locator('[data-glyph-section="identity"] [data-glyph="profile"]'))
+          .toHaveCount(6);
+        await expect(page.locator('[data-glyph-section="production"] [data-glyph="profile"]'))
+          .toHaveCount(0);
         // And every one of them actually drew something.
         const empty = await page.evaluate(() => {
           const bad = [];
@@ -159,13 +175,13 @@ for (const theme of ['light', 'dark']) {
             out[key] = { differing, inked, pct: Math.round((differing / inked) * 1000) / 10 };
           }
           return out;
-        }, KEYS);
+        }, ALL_KEYS);
         // What this catches, verified by breaking it: a facet that fails to cover
         // part of the silhouette (23.6% on Practice with one tile dropped) and a
         // mask applied to one state only (33.2% on Home). What it deliberately
         // cannot catch is a facet drawn too BIG — the clip path eats the overshoot,
         // which is the construction working rather than the test being weak.
-        for (const key of KEYS) {
+        for (const key of ALL_KEYS) {
           expect(diffs[key].inked, key + ' drew nothing').toBeGreaterThan(200);
           expect(diffs[key].pct, key + ' silhouette differs by ' + diffs[key].pct + '%')
             .toBeLessThan(0.2);
@@ -243,17 +259,54 @@ for (const theme of ['light', 'dark']) {
           }
         }
         return out;
-      }, KEYS);
+      }, ALL_KEYS);
 
+      // What the family looks like at the size each tab is actually drawn: the
+      // number that matters, since ink scales with the square of the size.
+      const atRamp = {};
+      for (const key of NAV_KEYS) {
+        atRamp[key] = Math.round(ink[key + '@22'] * (RAMP[key] / 22) ** 2);
+      }
       fs.mkdirSync(OUT, { recursive: true });
-      fs.writeFileSync(OUT + '/ink.' + theme + '.json', JSON.stringify(ink, null, 1));
+      fs.writeFileSync(
+        OUT + '/ink.' + theme + '.json',
+        JSON.stringify({ perGlyph: ink, atRecommendedRamp: atRamp, ramp: RAMP }, null, 1),
+      );
 
-      // Every glyph drew ink, and no glyph is more than ~1.9x the lightest — a
-      // family, not one object and four marks. Loose on purpose: this is a
-      // guard against a glyph collapsing or ballooning, not a design rule.
-      const at22 = KEYS.map(k => ink[k + '@22']);
-      for (const [i, n] of at22.entries()) expect(n, KEYS[i] + ' ink').toBeGreaterThan(40);
-      expect(Math.max(...at22) / Math.min(...at22)).toBeLessThan(1.9);
+      // ── One scale ──────────────────────────────────────────────────────────
+      // The drawings themselves are all one weight, which is the thing the first
+      // family got wrong: at 22px it measured 102 to 150, and multiplying that by
+      // the bar's own 27.5/20 ramp compounded into a 2.3x spread that read as one
+      // icon having been designed at a different scale. Every glyph now sits
+      // inside 15% of every other.
+      const at22 = ALL_KEYS.map(k => ink[k + '@22']);
+      for (const [i, n] of at22.entries()) expect(n, ALL_KEYS[i] + ' ink').toBeGreaterThan(40);
+      expect(
+        Math.max(...at22) / Math.min(...at22),
+        'the drawings are no longer one scale: ' + JSON.stringify(at22),
+      ).toBeLessThan(1.15);
+
+      // ── And the hierarchy comes from the ramp ───────────────────────────────
+      const ranked = NAV_KEYS.slice().sort((a, b) => atRamp[b] - atRamp[a]);
+      // Cards first, More last, Stories and Practice above Home.
+      expect(ranked[0], 'Cards is not the heaviest tab').toBe('study');
+      expect(ranked[4], 'More is not the lightest tab').toBe('more');
+      expect(atRamp.stories).toBeGreaterThan(atRamp.home);
+      expect(atRamp.practice).toBeGreaterThan(atRamp.home);
+      // Cards stays clearly primary — but nothing like twice anything else, which
+      // is the defect this amendment fixes. P8's device-approved bar had Practice
+      // at ~81% of Cards; Stories and Practice land in that region here.
+      const rel = k => atRamp[k] / atRamp.study;
+      expect(rel('stories'), 'Stories ' + Math.round(rel('stories') * 100) + '% of Cards')
+        .toBeGreaterThan(0.72);
+      expect(rel('stories')).toBeLessThan(0.92);
+      expect(rel('practice')).toBeGreaterThan(0.7);
+      expect(rel('more'), 'More ' + Math.round(rel('more') * 100) + '% of Cards')
+        .toBeGreaterThan(0.55);
+      expect(
+        Math.max(...NAV_KEYS.map(k => atRamp[k])) / Math.min(...NAV_KEYS.map(k => atRamp[k])),
+        'visual mass spread across the bar: ' + JSON.stringify(atRamp),
+      ).toBeLessThan(1.6);
 
       await page.locator('[data-nav-glyph-gallery]')
         .screenshot({ path: OUT + '/family.' + theme + '.png' });
@@ -263,6 +316,9 @@ for (const theme of ['light', 'dark']) {
 }
 
 // ── The bar P14-3 is not allowed to touch ──────────────────────────────────
+// The amendment's first finding: the production bar stays Home · Stories · Cards ·
+// Practice · More, and Profile stays where it is. This is the assertion that says
+// so — it fails the moment a later phase swaps More out without meaning to.
 test.describe('P14-3 leaves the shipping bar alone', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
@@ -282,7 +338,18 @@ test.describe('P14-3 leaves the shipping bar alone', () => {
       };
     });
     expect(shape.labels).toEqual(['Home', 'Stories', 'Cards', 'Practice', 'More']);
+    expect(shape.labels, 'Profile must not become a tab').not.toContain('Profile');
     expect(shape.height).toBe(58);
     expect(shape.viewBoxes).toEqual(['0 0 24 24']);
+  });
+
+  test('still reaches Profile through the More sheet', async ({ page }) => {
+    // The routing half of the same promise. If Profile ever moves onto the bar it
+    // has to leave here, and that is a navigation decision, not a visual one.
+    await page.goto('/');
+    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'More' }).click();
+    const sheet = page.getByRole('dialog');
+    await expect(sheet.getByRole('button', { name: /Profile/ })).toBeVisible();
   });
 });

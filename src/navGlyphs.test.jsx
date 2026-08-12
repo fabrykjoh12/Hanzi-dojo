@@ -5,12 +5,18 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { describe, it, expect } from 'vitest'
 import { render } from '@testing-library/react'
-import { NAV_GLYPHS, GLYPH_SIZES } from './navGlyphFamily'
-import { HomeGlyph, StoriesGlyph, CardsGlyph, PracticeGlyph, ProfileGlyph } from './navGlyphs'
+import {
+  NAV_GLYPHS, IDENTITY_GLYPHS, ALL_GLYPHS, GLYPH_SIZES, NAV_GLYPH_PX, navGlyphPx,
+} from './navGlyphFamily'
+import {
+  HomeGlyph, StoriesGlyph, CardsGlyph, PracticeGlyph, MoreGlyph, ProfileGlyph,
+} from './navGlyphs'
+import { NAV_ICON_PX } from './navEmphasis'
 
 // What the P14-3 family DECLARES. jsdom has no layout and no SVG geometry engine,
-// so everything here is a statement about the markup: five glyphs, one viewBox,
-// two states, no raster, no colour that is not a token, nothing focusable.
+// so everything here is a statement about the markup: six glyphs across two sets,
+// one viewBox, two states, no raster, no colour that is not a token, nothing
+// focusable.
 //
 // The geometry claims — nothing escapes the viewBox, active and inactive share a
 // bounding box, the family's ink is balanced — need `getBBox()` and a canvas, and
@@ -20,7 +26,9 @@ import { HomeGlyph, StoriesGlyph, CardsGlyph, PracticeGlyph, ProfileGlyph } from
 // jsdom, where `import.meta.url` is an http:// URL and `new URL(…)` hands
 // readFileSync something it refuses. Vitest's cwd is the repo root.
 const SRC = fs.readFileSync(path.resolve('src/navGlyphs.jsx'), 'utf8')
-const KEYS = ['home', 'stories', 'study', 'practice', 'profile']
+// The production bar, in shipping order. Cards is `study` and it is CENTRED — this
+// list is the bar, not a proposal about it.
+const NAV_KEYS = ['home', 'stories', 'study', 'practice', 'more']
 
 function svgOf(ui) {
   const { container } = render(ui)
@@ -30,22 +38,55 @@ function svgOf(ui) {
 }
 
 describe('the family', () => {
-  it('has one glyph per destination, in bar order', () => {
-    expect(NAV_GLYPHS.map(g => g.key)).toEqual(KEYS)
+  it('covers the production bar, in shipping order', () => {
+    expect(NAV_GLYPHS.map(g => g.key)).toEqual(NAV_KEYS)
     // `study`, not `cards` — the key is the app's view key (navConfig.js), and a
     // rename here would silently unhook the tab it belongs to.
     expect(NAV_GLYPHS.every(g => typeof g.Glyph === 'function')).toBe(true)
     expect(NAV_GLYPHS.every(g => typeof g.label === 'string' && g.label.length > 0)).toBe(true)
+    expect(NAV_GLYPHS.map(g => g.label)).toEqual(['Home', 'Stories', 'Cards', 'Practice', 'More'])
   })
 
-  it('exports exactly the five components the family lists', () => {
-    const named = [HomeGlyph, StoriesGlyph, CardsGlyph, PracticeGlyph, ProfileGlyph]
-    expect(NAV_GLYPHS.map(g => g.Glyph).sort((a, b) => a.name.localeCompare(b.name)))
-      .toEqual(named.sort((a, b) => a.name.localeCompare(b.name)))
+  it('keeps Profile OUT of the navigation set', () => {
+    // The whole point of the split. Profile is reached the way it is reached today;
+    // installing it as a tab would mean removing More, which is a navigation
+    // change. A tray mapping over NAV_GLYPHS must not be able to pick it up.
+    expect(NAV_GLYPHS.map(g => g.key)).not.toContain('profile')
+    expect(IDENTITY_GLYPHS.map(g => g.key)).toEqual(['profile'])
+    expect(NAV_GLYPHS.some(g => g.Glyph === ProfileGlyph)).toBe(false)
+    expect(ALL_GLYPHS).toHaveLength(6)
+  })
+
+  it('exports exactly the six components the two sets list', () => {
+    const named = [HomeGlyph, StoriesGlyph, CardsGlyph, PracticeGlyph, MoreGlyph, ProfileGlyph]
+    const byName = (a, b) => a.name.localeCompare(b.name)
+    expect(ALL_GLYPHS.map(g => g.Glyph).sort(byName)).toEqual(named.sort(byName))
+  })
+
+  it('recommends a size for every tab, gentler than the bar’s own ramp', () => {
+    // The family's hierarchy lives entirely in this table, because the drawings are
+    // all one weight now. It is a RECOMMENDATION — navEmphasis.js is untouched.
+    for (const key of NAV_KEYS) {
+      expect(NAV_GLYPH_PX[key], key + ' has no recommended size').toBeGreaterThan(0)
+      expect(navGlyphPx(key)).toBe(NAV_GLYPH_PX[key])
+    }
+    expect(NAV_GLYPH_PX.profile).toBeUndefined()
+    // Cards biggest, More smallest, and every step in between ordered.
+    const ramp = NAV_KEYS.map(k => NAV_GLYPH_PX[k])
+    expect(Math.max(...ramp)).toBe(NAV_GLYPH_PX.study)
+    expect(Math.min(...ramp)).toBe(NAV_GLYPH_PX.more)
+    // Area, not diameter, is what the eye adds up — and the spread has to stay
+    // well inside 2x, which is the defect this amendment exists to fix. The bar's
+    // own ramp is 27.5/20, i.e. 1.89x before anything is drawn.
+    const area = n => n * n
+    const spread = area(Math.max(...ramp)) / area(Math.min(...ramp))
+    expect(spread).toBeLessThan(1.6)
+    const barSpread = area(NAV_ICON_PX.study) / area(NAV_ICON_PX.more)
+    expect(spread, 'the family ramp must be gentler than the bar’s').toBeLessThan(barSpread)
   })
 
   it('draws every glyph in both states at every size', () => {
-    for (const { key, Glyph } of NAV_GLYPHS) {
+    for (const { key, Glyph } of ALL_GLYPHS) {
       for (const size of GLYPH_SIZES) {
         for (const active of [false, true]) {
           const svg = svgOf(<Glyph size={size} active={active} />)
@@ -60,7 +101,7 @@ describe('the family', () => {
 
   it('shares one viewBox across the family, both states and every size', () => {
     const seen = new Set()
-    for (const { Glyph } of NAV_GLYPHS) {
+    for (const { Glyph } of ALL_GLYPHS) {
       for (const size of GLYPH_SIZES) {
         for (const active of [false, true]) {
           seen.add(svgOf(<Glyph size={size} active={active} />).getAttribute('viewBox'))
@@ -73,7 +114,7 @@ describe('the family', () => {
   })
 
   it('renders a different treatment when selected, from the same silhouette', () => {
-    for (const { key, Glyph } of NAV_GLYPHS) {
+    for (const { key, Glyph } of ALL_GLYPHS) {
       const off = svgOf(<Glyph active={false} />).innerHTML
       const on = svgOf(<Glyph active />).innerHTML
       expect(off, key + ' looks identical selected').not.toBe(on)
@@ -83,7 +124,7 @@ describe('the family', () => {
   })
 
   it('keeps the resting glyph in whatever colour it is handed', () => {
-    for (const { key, Glyph } of NAV_GLYPHS) {
+    for (const { key, Glyph } of ALL_GLYPHS) {
       const svg = svgOf(<Glyph active={false} color="var(--text-muted)" />)
       expect(svg.innerHTML, key).toContain('var(--text-muted)')
       // And the default is inheritable, so a bar can colour a whole column.
@@ -97,7 +138,7 @@ describe('accessibility', () => {
     // The navigation's label is the accessible name (navConfig.js). A glyph with
     // its own title would read the destination twice, and a focusable <svg> is an
     // extra tab stop between every pair of tabs.
-    for (const { key, Glyph } of NAV_GLYPHS) {
+    for (const { key, Glyph } of ALL_GLYPHS) {
       for (const active of [false, true]) {
         const svg = svgOf(<Glyph active={active} />)
         expect(svg.getAttribute('aria-hidden'), key).toBe('true')
@@ -163,8 +204,15 @@ describe('the sizes the bar can ask for', () => {
   })
 
   it('accepts a fractional size without rounding it', () => {
-    // 27.5 is a real value on the bar today.
-    const svg = svgOf(<CardsGlyph size={27.5} active />)
-    expect(svg.getAttribute('width')).toBe('27.5')
+    // 27.5 is a real value on the bar today, and 23.5 is one in the family's own
+    // recommended ramp.
+    expect(svgOf(<CardsGlyph size={27.5} active />).getAttribute('width')).toBe('27.5')
+    expect(svgOf(<PracticeGlyph size={23.5} active />).getAttribute('width')).toBe('23.5')
+  })
+
+  it('brackets both ramps', () => {
+    const wanted = [...Object.values(NAV_GLYPH_PX), ...Object.values(NAV_ICON_PX)]
+    expect(Math.min(...GLYPH_SIZES)).toBeLessThanOrEqual(Math.min(...wanted))
+    expect(Math.max(...GLYPH_SIZES)).toBeGreaterThanOrEqual(Math.max(...wanted))
   })
 })

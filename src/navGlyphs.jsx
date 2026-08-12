@@ -2,9 +2,15 @@ import { useId } from 'react'
 
 // Hanzi Dojo's dimensional icon family — P14-3.
 //
-// Five glyphs for the five main destinations, and they are the REFERENCE FAMILY:
-// every future custom identity icon copies these rules rather than inventing its
-// own. So the rules are written down here, not inferred from the drawings.
+// Six glyphs, and they are the REFERENCE FAMILY: every future custom identity icon
+// copies these rules rather than inventing its own. So the rules are written down
+// here, not inferred from the drawings.
+//
+// FIVE of them are the production navigation — Home · Stories · Cards · Practice ·
+// More, which is the bar exactly as it ships. The sixth, Profile, is an identity
+// icon for the place Profile already lives; it is NOT a sixth tab and swapping it
+// for More would be a navigation change, which this phase is not. navGlyphFamily.js
+// keeps the two sets apart so nothing can quietly install Profile on the bar.
 //
 // This file does NOT replace NavIcons.jsx. That is the flat outline/filled family
 // the bottom bar ships today, tuned by ink measurement in P8, and P14-3 is
@@ -48,9 +54,23 @@ import { useId } from 'react'
 // version that reads. (Profile is the exception, and only because concentric
 // circles ARE an erosion — see there.)
 //
-// Sizes: NAV_ICON_PX in navEmphasis.js is the bar's own scale (Cards 27.5, Home
-// and Stories 22, Practice 21). These take a plain `size` — the tray decides,
-// not the glyph.
+// ── Optical size, and why the drawings are all the same weight ───────────────
+// Round two drew each glyph to whatever size looked right on its own, and measured
+// as ink it came out Cards 150 · Stories 141 · Practice 134 · Profile 105 · Home
+// 102 px² at a common 22px. Multiplied by the bar's own size ramp (NAV_ICON_PX:
+// Cards 27.5, Home and Stories 22, Practice 21, More 20) that compounded into a
+// 2.3x spread between the heaviest and lightest tab — which does not read as
+// hierarchy, it reads as one icon having been designed at a different scale.
+//
+// So round three balances the DRAWINGS to one weight — 136–145 px² at 22px, a 1.07x
+// spread — and leaves the hierarchy entirely to the size the tray asks for. Home
+// grew 33% and Profile 37%; Cards came down 3% and Practice went up 8%. That is
+// also the only division of labour that survives someone changing the ramp later:
+// a glyph that carries its own emphasis is wrong at every other size.
+//
+// `NAV_GLYPH_PX` in navGlyphFamily.js is the ramp this family wants. It is a
+// RECOMMENDATION — navEmphasis.js is untouched and the bar still uses its own
+// numbers. These components take a plain `size`; the tray decides, not the glyph.
 
 // ── The palette, as three planes ────────────────────────────────────────────
 // Named for the light, not for the colour, so a facet's tone is a statement
@@ -135,11 +155,19 @@ function Glyph({ size, active, color, shapes, facets, cuts }) {
 // a circus tent rather than a roof — and deleted an under-eave shadow band that
 // was drawn at 0.55 opacity. It read as a seam across the wall, and a magic
 // opacity is not a tone in a three-tone system anyway.
-const HOME_ROOF = 'M3.0 15.8C5.4 15.4 7.0 14.2 7.9 12.6L10.6 8.6H21.4L24.1 12.6C25.0 14.2 26.6 15.4 29.0 15.8Z'
-const HOME_BODY = { x: 7.6, y: 15.8, width: 16.8, height: 11.2, rx: 1.6 }
+//
+// Round three GREW it, by 40%. Measured, the first family had Home at 102 px² of
+// ink against Cards' 150 at the same size — it was not a quieter icon, it was a
+// smaller one, and the difference showed as "drawn at a different scale" rather
+// than as hierarchy. Home was the family's flattest silhouette (26 × 18.4 in a
+// 26 × 26 box), so the growth went into HEIGHT: a deeper roof and a taller wall,
+// which is also the change that reads LESS like a shrine, since a shrine is a big
+// roof on a low base.
+const HOME_ROOF = 'M3.0 14.8C5.4 14.4 7.0 13.1 7.9 11.4L10.7 6.0H21.3L24.1 11.4C25.0 13.1 26.6 14.4 29.0 14.8Z'
+const HOME_BODY = { x: 6.8, y: 14.8, width: 18.4, height: 13.6, rx: 1.6 }
 // The doorway. Its top is round so the cut reads as an opening rather than a
 // notch, and it runs to the floor — a gap in the base is what says "walk in".
-const HOME_DOOR = 'M12.4 27V20.6a3.6 3.6 0 0 1 7.2 0V27Z'
+const HOME_DOOR = 'M12.1 28.4V20.8a3.9 3.9 0 0 1 7.8 0V28.4Z'
 
 function homeShapes() {
   return (
@@ -162,12 +190,12 @@ export function HomeGlyph({ size = 24, active = false, color = 'currentColor' })
               and the right slope steps down one tone, which is what stops the
               roof reading as a flat chevron. */}
           <path d={HOME_ROOF} fill={LIT} />
-          <path d="M16 8.6H21.4L24.1 12.6C25.0 14.2 26.6 15.4 29.0 15.8H16Z" fill={FACE} />
+          <path d="M16 6.0H21.3L24.1 11.4C25.0 13.1 26.6 14.4 29.0 14.8H16Z" fill={FACE} />
           {/* The body: front wall, its lit left flank, its right return in shade.
               Same L of light as the front flashcard, for the same reason. */}
           <rect {...HOME_BODY} fill={FACE} />
-          <rect x="7.6" y="15.8" width="2.0" height="11.2" fill={LIT} />
-          <rect x="20.0" y="15.8" width="4.4" height="11.2" fill={SHADE} />
+          <rect x="6.8" y="14.8" width="2.2" height="13.6" fill={LIT} />
+          <rect x="20.6" y="14.8" width="4.6" height="13.6" fill={SHADE} />
         </>
       )}
     />
@@ -224,14 +252,14 @@ export function HomeGlyph({ size = 24, active = false, color = 'currentColor' })
 // of ink at 22px against Home's 102, and the bar draws it at 27.5 rather than 22,
 // which puts it at 234 against Stories' 141 — the widest margin the tab has ever
 // had (P8's fixed bar had Practice at 81% of Cards).
-const CARDS_FRONT = { x: 5.3, y: 10.4, width: 15.4, height: 16.8, rx: 2.8 }
+const CARDS_FRONT = { x: 5.5, y: 10.7, width: 15, height: 16.2, rx: 2.8 }
 const CARDS_GAP = 1.2
 // Smaller than the front card, and that is what separates a DECK from the
 // copy/duplicate icon: copy is always two rectangles of equal size, square to
 // each other. A smaller card sitting up and to the right reads as one seen a
 // little further away — the same trick the shipped flat icon uses (NavIcons.jsx),
 // which device QA has already passed once.
-const CARDS_BACK = { x: 13.7, y: 5.2, width: 13, height: 14.4, rx: 2.4 }
+const CARDS_BACK = { x: 13.8, y: 5.6, width: 12.8, height: 14, rx: 2.4 }
 
 function cardsShapes() {
   return (
@@ -264,7 +292,7 @@ export function CardsGlyph({ size = 24, active = false, color = 'currentColor' }
               shade, which is what gives the card a thickness. */}
           <rect x={CARDS_FRONT.x} y={CARDS_FRONT.y} width={CARDS_FRONT.width} height="2.6" rx="1.3" fill={LIT} />
           <rect x={CARDS_FRONT.x} y={CARDS_FRONT.y} width="2.4" height={CARDS_FRONT.height} rx="1.2" fill={LIT} />
-          <rect x="17.1" y={CARDS_FRONT.y} width="3.6" height={CARDS_FRONT.height} fill={SHADE} />
+          <rect x="17.1" y={CARDS_FRONT.y} width="3.4" height={CARDS_FRONT.height} fill={SHADE} />
         </>
       )}
     />
@@ -348,8 +376,8 @@ export function StoriesGlyph({ size = 24, active = false, color = 'currentColor'
 // makes Practice look like a different app's icon on the same bar — the exact
 // fragmentation the brief warns about. So Practice is vermilion only, and its
 // accent is deferred to whatever P14-4 does with the tray itself.
-const TILE = 8.6
-const TILE_GAP = 1.6
+const TILE = 8.9
+const TILE_GAP = 1.5
 const TILE_A = 16 - TILE_GAP / 2 - TILE
 const TILE_B = 16 + TILE_GAP / 2
 // 2 rather than 2.4: the rounder corners read as app tiles on a home screen. A
@@ -406,7 +434,13 @@ export function PracticeGlyph({ size = 24, active = false, color = 'currentColor
 // stamp with a raised edge rather than a flat circle. Round one had exactly this
 // idea with radii 0.8 units apart, which at 20px is half a device pixel — the
 // facets were in the DOM and invisible on screen. They are 1.8 apart now.
-const SEAL = { cx: 16, cy: 16, r: 11 }
+//
+// Round three scaled the whole glyph up by 1.15 about its centre — r 11 → 12.6 —
+// for the family-balance reason rather than a drawing one: at 105 px² of ink it
+// was 30% lighter than everything except Home, which reads as a smaller icon
+// rather than a quieter one. Every number below is the round-two drawing times
+// 1.1455, so the proportions are untouched.
+const SEAL = { cx: 16, cy: 16, r: 12.6 }
 
 export function ProfileGlyph({ size = 24, active = false, color = 'currentColor' }) {
   return (
@@ -417,15 +451,15 @@ export function ProfileGlyph({ size = 24, active = false, color = 'currentColor'
         // Head and shoulders, drawn as one solid stamp rather than an outline —
         // a chop is ink, and an outlined figure inside a disc reads as a button.
         <>
-          <circle cx="16" cy="12.6" r="3.5" />
+          <circle cx="16" cy="12.1" r="4" />
           {/* The shoulders' bottom edge is an ARC CONCENTRIC with the disc, not a
               flat line. Round two ended them flat and 2.4 units short of the rim,
               which leaves a crescent — thick under the chin, nothing at the sides
               — and a crescent inside a circle is a mouth. Round three ran them
               past the rim instead, and the disc lost its whole bottom and became a
-              map pin. An arc at r 8.8 leaves an even 2.2-unit ring all the way
+              map pin. A concentric arc leaves an even 2.5-unit ring all the way
               round, which is what reads as a stamp with a figure inked into it. */}
-          <path d="M9.05 21.4C9.05 18.3 12 16.3 16 16.3S22.95 18.3 22.95 21.4A8.8 8.8 0 0 1 9.05 21.4Z" />
+          <path d="M8.04 22.19C8.04 18.63 11.42 16.34 16 16.34S23.96 18.63 23.96 22.19A10.08 10.08 0 0 1 8.04 22.19Z" />
         </>
       )}
       facets={(
@@ -434,8 +468,76 @@ export function ProfileGlyph({ size = 24, active = false, color = 'currentColor'
               copies give clean facets, because shrinking a circle IS eroding it.
               Rim in shade, the same rim lifted up-left, then the face. */}
           <circle cx={SEAL.cx} cy={SEAL.cy} r={SEAL.r} fill={SHADE} />
-          <circle cx="15.0" cy="15.0" r={SEAL.r} fill={LIT} />
-          <circle cx="16.4" cy="16.4" r="9.2" fill={FACE} />
+          <circle cx="14.85" cy="14.85" r={SEAL.r} fill={LIT} />
+          <circle cx="16.46" cy="16.46" r="10.54" fill={FACE} />
+        </>
+      )}
+    />
+  )
+}
+
+// ── More ────────────────────────────────────────────────────────────────────
+// Three raised slabs. The More tab opens a sheet of extra destinations, so the
+// glyph is a menu object — and it is a menu of THINGS, with tops the light catches
+// and undersides it does not, rather than three lines ruled on paper.
+//
+// Three candidates were drawn and measured side by side, because "unmistakably
+// More" and "belongs to this family" pull in opposite directions here:
+//
+//   · **Three raised lacquer dots**, the canonical overflow mark, and the one the
+//     brief names first. It loses on mass, measured not argued: three discs that
+//     fit inside 26 units with visible gaps are r 3.6, which inks **56 px² at
+//     22px against the family's ~140** — two and a half times lighter than
+//     anything else, a thin horizontal line of marks next to five solid objects.
+//     And a 3.6-unit disc cannot carry a rim: its facets come out ~0.7 units, half
+//     a device pixel at 22px, so the dots render FLAT while the rest of the family
+//     is dimensional. Both failures are structural, not tuning — dots are small.
+//   · **Three dots cut out of a raised plaque**, which fixes the mass (128 px²)
+//     and is dimensional in exactly the family's vocabulary. Rejected on
+//     recognition: a wide rounded lozenge with three dots inside it is the
+//     universal CHAT / typing-indicator glyph, and it read as a message bubble
+//     immediately, at every size. Recognisable as the wrong thing is worse than
+//     unfamiliar.
+//   · **Three raised slabs** — 140 px², a 19 × 21 silhouette that matches the
+//     family, and bars deep enough (5.4 units) to hold a lit top edge and a
+//     shaded underside at 20px. This one.
+//
+// It is close to a hamburger, and that is the point rather than a compromise: the
+// tab is labelled More and it opens a list. Recognition beat invention here, which
+// is what the brief asked for. Nothing person-shaped goes anywhere near it —
+// Profile is a different icon for a different place.
+const MORE_BAR = { x: 6.5, width: 19, height: 5.4, rx: 2.2 }
+const MORE_Y = [5.9, 13.7, 21.5]
+// The lit top and the shaded underside. 1.7 and 1.4 rather than something tidier
+// like 1.5 each: the top edge of a raised object catches more light than its
+// underside loses, and at 20px 1.7 units is 1.06 device pixels — the floor.
+const MORE_LIT = 1.7
+const MORE_SHADE = 1.4
+
+function moreShapes() {
+  return MORE_Y.map(y => <rect key={y} {...MORE_BAR} y={y} />)
+}
+
+export function MoreGlyph({ size = 24, active = false, color = 'currentColor' }) {
+  return (
+    <Glyph
+      size={size} active={active} color={color}
+      shapes={moreShapes()}
+      facets={(
+        <>
+          {MORE_Y.map(y => <rect key={y} {...MORE_BAR} y={y} fill={FACE} />)}
+          {MORE_Y.map(y => (
+            <rect
+              key={'l' + y} x={MORE_BAR.x} y={y} width={MORE_BAR.width}
+              height={MORE_LIT} rx={MORE_LIT / 2} fill={LIT}
+            />
+          ))}
+          {MORE_Y.map(y => (
+            <rect
+              key={'s' + y} x={MORE_BAR.x} y={y + MORE_BAR.height - MORE_SHADE}
+              width={MORE_BAR.width} height={MORE_SHADE} rx={MORE_SHADE / 2} fill={SHADE}
+            />
+          ))}
         </>
       )}
     />
