@@ -41,7 +41,7 @@ export default class ErrorBoundary extends Component {
             onClick={() => window.location.reload()}
             style={{
               minHeight: '48px', padding: '0 22px', borderRadius: '14px', border: 'none',
-              background: '#6E8466', color: '#fff', fontSize: '15px', fontWeight: 750,
+              background: 'var(--primary)', color: '#fff', fontSize: '15px', fontWeight: 750,
               fontFamily: "'Inter', sans-serif", cursor: 'pointer',
             }}
           >

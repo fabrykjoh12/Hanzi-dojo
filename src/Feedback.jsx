@@ -8,6 +8,7 @@ import { feedbackStoryContext } from './feedbackContext'
 import { BUILD_SHA } from './version'
 import { MessageCircleHeart, X, Bug, Lightbulb, MessageSquare } from 'lucide-react'
 import { trapDialogFocus } from './dialogFocus'
+import { VERMILION } from './palette'
 
 // A small always-available way for users to send bug reports and ideas
 // straight into the database, no email/GitHub account required. Floating
@@ -20,8 +21,9 @@ const CATEGORIES = [
   { key: 'other', label: 'Something else', icon: MessageSquare },
 ]
 
-const SAGE = '#6E8466'
-const SAGE_DARK = '#5C7155'
+// P14-0: vermilion, themed. See ui.jsx.
+const PRIMARY = 'var(--primary)'
+const PRIMARY_PRESSED = 'var(--primary-pressed)'
 
 // How far the floating button sits above the bottom edge, on a phone.
 //
@@ -102,7 +104,11 @@ export default function Feedback({ session, profile, view }) {
     close()
     toast({
       kind: 'seal',
-      accent: SAGE,
+      // A LITERAL hex, not `var(--primary)`: Toasts.jsx builds its tint and
+      // border by concatenating an alpha suffix onto this value, and
+      // `var(--primary)44` is invalid CSS. The token module is still the source
+      // of the number — this is the one place it has to arrive as a string.
+      accent: VERMILION.base,
       title: 'Thanks for the feedback!',
       body: 'We read every submission.',
     })
@@ -122,7 +128,7 @@ export default function Feedback({ session, profile, view }) {
             ? 'calc(' + (MOBILE_NAV_HEIGHT + FAB_GAP_ABOVE_NAV) + 'px + env(safe-area-inset-bottom))'
             : '24px',
           width: '50px', height: '50px', borderRadius: '999px',
-          background: SAGE, border: 'none', cursor: 'pointer',
+          background: PRIMARY, border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 10px 26px rgba(24,24,27,0.22)',
         }}
@@ -197,13 +203,19 @@ export default function Feedback({ session, profile, view }) {
                       style={{
                         display: 'inline-flex', alignItems: 'center', gap: '7px',
                         padding: '9px 13px', borderRadius: '12px', cursor: 'pointer',
-                        border: '1px solid ' + (active ? SAGE : 'var(--border)'),
-                        background: active ? SAGE + '14' : 'var(--surface-2)',
-                        color: active ? SAGE_DARK : 'var(--text-muted)',
+                        border: '1px solid ' + (active ? PRIMARY : 'var(--border)'),
+                        // `var(--primary) + '14'` is not a colour — an alpha-hex
+                        // suffix only concatenates onto a literal hex, and a
+                        // `var()` string plus two characters is invalid CSS that
+                        // silently paints nothing. The tint has to mix.
+                        background: active
+                          ? 'color-mix(in srgb, var(--primary) 8%, var(--surface-2))'
+                          : 'var(--surface-2)',
+                        color: active ? PRIMARY_PRESSED : 'var(--text-muted)',
                         fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
                       }}
                     >
-                      <Icon size={16} strokeWidth={1.9} color={active ? SAGE_DARK : 'var(--text-muted)'} />
+                      <Icon size={16} strokeWidth={1.9} color={active ? PRIMARY_PRESSED : 'var(--text-muted)'} />
                       {c.label}
                     </button>
                   )
@@ -248,7 +260,7 @@ export default function Feedback({ session, profile, view }) {
                 disabled={!canSend}
                 style={{
                   width: '100%', marginTop: '16px', minHeight: '48px', borderRadius: '14px', border: 'none',
-                  background: canSend ? SAGE : 'var(--surface-2)',
+                  background: canSend ? PRIMARY : 'var(--surface-2)',
                   color: canSend ? '#fff' : 'var(--text-faint)',
                   fontSize: '14.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
                   cursor: canSend ? 'pointer' : 'default',

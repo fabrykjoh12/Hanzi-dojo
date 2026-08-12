@@ -103,25 +103,68 @@ body {
   --russian-accent: #2563C9;
   --russian-accent-dark: #1D4EA0;
 
-  /* Semantic theme tokens — light (default) */
-  --bg: #FAFAF8;
+  /* ── Semantic accent roles (P14-0) ──────────────────────────────────────
+     The JS side of these lives in palette.js, which is the source of truth —
+     these exist for the CSS that cannot reach it. Each supporting hue has ONE
+     job. Only --primary may fill a button; plum and blue are atmosphere and
+     marks, never actions. See docs/P13-VISUAL-DIRECTION-AUDIT.md §4. */
+  --primary: #B83A24;
+  --primary-bright: #D84B32;
+  --primary-pressed: #8F2D1D;
+  --primary-soft: #F7E8E3;
+  --burgundy: #5E2430;
+  --gold: #C08A2E;          /* reward, mastery, unlock, celebration — only */
+  --gold-bright: #D6A13A;
+  --plum: #7651A8;          /* Stories accent — never an action */
+  --blue: #4777B8;          /* Practice / Listening accent — never an action */
+  --coral: #E8664A;         /* secondary energetic highlight */
+  --locked: #A8A29E;        /* desaturated, not a low-opacity accent */
+
+  /* Semantic theme tokens — light (default)
+     The "Lacquer" neutrals: warm paper rather than the near-neutral greys this
+     replaced (#FAFAF8/#E7E5E4). The ink metaphor only holds if the paper is
+     actually warm. */
+  --bg: #FAF8F5;
   --surface: #FFFFFF;
-  --surface-2: #F4F4F5;
-  --surface-glass: rgba(255, 255, 255, 0.85);
-  --border: #E7E5E4;
-  --text: #18181B;
-  --text-muted: #71717A;
-  --text-faint: #6B6B72;
-  --reader-watermark: rgba(24, 24, 27, 0.04);
+  --surface-2: #F5F1EC;
+  --surface-3: #EBE4DB;
+  --surface-glass: rgba(255, 248, 245, 0.85);
+  --border: #E7E1D9;
+  --border-strong: #D2C9BE;
+  /* The text ramp is monotonic and every step passes AA on --bg. It did not
+     before: --text-faint (#6B6B72, 5.06:1) was DARKER than --text-muted
+     (#71717A, 4.62:1), so the token named "faint" carried more emphasis than
+     the one named "muted" — the name lied, in both themes. Measured now:
+     17.11 / 9.06 / 6.21 / 4.62. */
+  --text: #191513;
+  --text-secondary: #4A443D;
+  --text-muted: #635C54;
+  --text-faint: #767068;
+  --reader-watermark: rgba(25, 21, 19, 0.04);
   --bg-image-opacity: 0.4;
   /* What the above drops to while a lit hero panel is on screen. */
   --bg-image-opacity-lit: 0.24;
 
   /* Elevation + edge light. Two layers (a tight contact shadow and a wide,
      soft cast) read as a card resting on paper; a single blurred box-shadow
-     reads as a floating rectangle. `--hairline` is the lit top edge. */
-  --shadow-1: 0 1px 2px rgba(24, 24, 27, 0.04), 0 6px 18px -12px rgba(24, 24, 27, 0.16);
-  --shadow-2: 0 2px 4px rgba(24, 24, 27, 0.05), 0 18px 40px -20px rgba(24, 24, 27, 0.22);
+     reads as a floating rectangle. */
+  --shadow-1: 0 1px 2px rgba(25, 21, 19, 0.04), 0 6px 18px -12px rgba(25, 21, 19, 0.16);
+  --shadow-2: 0 2px 4px rgba(25, 21, 19, 0.05), 0 18px 40px -20px rgba(25, 21, 19, 0.22);
+  /* Two DIFFERENT things, named separately as of P14-0.
+
+     --inset-highlight is a lit top edge, drawn inside a surface as
+     `inset 0 1px 0`. It is white. It is NOT a divider, and using it as one
+     draws nothing visible on a light surface — which is exactly the bug P10-C3
+     shipped and had to fix on Home.
+
+     --divider is the line between two things. It is --border's value, aliased
+     so that "separate these" and "light this edge" are different words at the
+     call site.
+
+     --hairline remains as a deprecated alias of --inset-highlight so the 33
+     existing call sites keep working; they migrate in the P14-2 sweep. */
+  --inset-highlight: rgba(255, 255, 255, 0.75);
+  --divider: #E7E1D9;
   --hairline: rgba(255, 255, 255, 0.75);
 
   /* Adaptive ink. The accent hexes are tuned for white paper and go muddy on a
@@ -328,19 +371,49 @@ body {
 }
 
 :root[data-theme="dark"] {
-  --bg: #0F1115;
-  --surface: #1A1D24;
-  --surface-2: #23272F;
-  --surface-glass: rgba(26, 29, 36, 0.82);
-  --border: #2B2F38;
-  --text: #E8E8EA;
-  --text-muted: #9AA0A8;
-  --text-faint: #8C929C;
+  /* ── Semantic accent roles, dark (P14-0) ────────────────────────────────
+     LIFTED, not darkened. #B83A24 on this ground measures 3.1:1 — it fails AA
+     for text and reads muddy as a fill; #E4573A reaches 5.27:1. Every
+     supporting hue lifts the same way, so the brand looks RICHER in dark mode
+     rather than washed out. Measured in palette.test.js. */
+  --primary: #E4573A;
+  --primary-bright: #F06A4C;
+  --primary-pressed: #C0432C;
+  --primary-soft: rgba(228, 87, 58, 0.15);
+  --burgundy: #3A1620;
+  --gold: #E3B24E;
+  --gold-bright: #F5C868;
+  --plum: #A585D8;
+  --blue: #6D9BE8;
+  --coral: #FF7F63;
+  --locked: #4A524E;
+
+  /* The "Lacquer" ground: a warm burgundy-black, not the blue-leaning grey
+     (#0F1115) this replaces. Surfaces lift with a red cast — a neutral-grey
+     lift on a warm ground reads as dirty. Type is warm off-white, never pure
+     white: #FFFFFF on near-black at body size is where dark-mode eye strain
+     comes from. */
+  --bg: #100D0E;
+  --surface: #1A1517;
+  --surface-2: #241D20;
+  --surface-3: #2E2529;
+  --surface-glass: rgba(26, 21, 23, 0.82);
+  --border: #352B2F;
+  --border-strong: #473A3F;
+  /* Monotonic and AA on --bg: 16.64 / 9.27 / 5.71 / 4.66. The old ramp had the
+     same inversion as light — faint (#8C929C) was darker than muted
+     (#9AA0A8). */
+  --text: #F2EDE9;
+  --text-secondary: #BBB2AB;
+  --text-muted: #938A82;
+  --text-faint: #847B73;
   --reader-watermark: rgba(255, 255, 255, 0.05);
   /* On dark surfaces a cast shadow does nothing; depth comes from the lit top
      edge instead, so the shadows soften and the hairline stays a whisper. */
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.30), 0 6px 18px -12px rgba(0, 0, 0, 0.55);
   --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.36), 0 18px 40px -20px rgba(0, 0, 0, 0.65);
+  --inset-highlight: rgba(255, 255, 255, 0.045);
+  --divider: #352B2F;
   --hairline: rgba(255, 255, 255, 0.045);
   --ink-lift: #FFFFFF;
   --ink-lift-pct: 30%;

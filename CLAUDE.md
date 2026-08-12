@@ -257,14 +257,48 @@ reset goes through the `reset_current_language_progress` RPC. Full schema in
 
 ## 5. Design system (essentials — full palette in `docs/ARCHITECTURE.md`)
 
+**Four modules are the system** (P14-0). Reach for a name in them before you
+type a value; if the value you want isn't there, that is a design decision, not
+a one-off:
+
+| Module | Owns |
+|--------|------|
+| `src/palette.js` | The accent roles and their dark-mode lifts, plus which roles may fill a button |
+| `src/typeScale.js` | 9 UI type roles + 4 content roles, 4 weights, 8 sizes. `NUMERIC` is a modifier, not a role |
+| `src/shape.js` | `RADIUS` (sm 8 · control 12 · card 18 · hero 26 · pill), `ELEVATION` (flat/raised/floating), `SURFACE` (page/grouped/raised/floating) |
+| `src/index.css` | Every **neutral**, in both themes. Neutrals stay in CSS so a theme switch is a repaint, not a re-render |
+
+`src/designSystem.guard.test.js` holds the line: bans on values that must never
+return, and *budgets* — the count of one-off hexes, sizes and radii that exist
+today, which may only go **down**. Raising one needs a reason in the commit.
+
 **Use semantic tokens for every neutral colour**, or it won't theme:
-`--bg`, `--surface`, `--surface-2`, `--surface-glass`, `--border`, `--text`,
-`--text-muted`, `--text-faint`, `--shadow-1`, `--shadow-2`, `--hairline`.
+`--bg`, `--surface`, `--surface-2`, `--surface-3`, `--surface-glass`, `--border`,
+`--border-strong`, `--text`, `--text-secondary`, `--text-muted`, `--text-faint`,
+`--shadow-1`, `--shadow-2`, `--divider`, `--inset-highlight`.
 Hardcoded neutral hexes are a bug.
 
+- **The text ramp is ordered and every step passes AA:** `--text` → `--text-secondary`
+  → `--text-muted` → `--text-faint`, most to least emphasis, ≥4.5:1 on `--bg` in
+  both themes. Adding a fifth grey between two of them is not de-emphasis, it is
+  a maintenance problem — pick one of the four.
+- **`--divider` draws a line. `--inset-highlight` lights a top edge.** They used
+  to be one token called `--hairline`, whose *value* is a white inset highlight
+  and whose *name* reads like a separator — so used as a border it drew literally
+  nothing on a light surface. That bug shipped twice. `--hairline` survives as a
+  deprecated alias for the remaining call sites; never write it in new code, and
+  never put it in a `border`.
+- **Vermilion `#B83A24` is the brand — and only the brand acts.** `--primary`
+  fills every affirmative button in the app. `--gold` means a reward or an unlock
+  and nothing else; `--plum` is Stories' atmosphere, `--blue` is Practice's,
+  `--coral` is secondary energy. **None of those four may fill a button** —
+  `canFillButton()` in `palette.js` is the rule, and a spec enforces it. The
+  moment a Stories CTA is plum, the brand stops being the brand.
 - **Accents stay hardcoded** — Chinese `#B83A24`, Japanese `#2E3A6E`, Russian
   `#2563C9` — as do status colours and white-on-accent text. Derive them from
-  `languageTheme()`, never a ternary on the language.
+  `languageTheme()`, never a ternary on the language. `--primary` and Chinese's
+  `accentHex` share a value on purpose and mean different things: one is the
+  brand's interactive colour, the other is this language's identity.
 - **Accent as ink:** wrap an accent in `ink(hex)` (`languageTheme.js`) wherever
   it is *text or a drawn mark* — it lifts toward white in dark mode. Keep the raw
   hex for tints and borders that already mix into a surface.

@@ -434,7 +434,11 @@ function ReviewList({
                       style={{
                         display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
                         padding: '9px 14px', textAlign: 'left', cursor: 'pointer',
-                        border: 'none', borderBottom: '1px solid var(--hairline)',
+                        // `--divider`, not `--hairline`: the hairline token is a
+                        // white inset highlight, so as a bottom border it drew
+                        // nothing at all on either of these two surfaces. Same
+                        // bug Home shipped in P10-C3; found by the P14-0 guard.
+                        border: 'none', borderBottom: '1px solid var(--divider)',
                         // Ticked is the resting state, so it stays plain; an
                         // unticked word recedes instead of the list shouting.
                         background: on ? 'var(--surface)' : 'var(--surface-2)',

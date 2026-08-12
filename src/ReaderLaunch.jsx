@@ -1,9 +1,10 @@
 import { ArrowLeft, Play } from 'lucide-react'
 import { inkStrong } from './languageTheme'
 
-const SAGE = '#6E8466'
+// P14-0: vermilion, themed. See ui.jsx.
+const PRIMARY = 'var(--primary)'
 const ghost = { background: 'none', border: 'none', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center' }
-const startBtn = { marginTop: '24px', width: '100%', border: 'none', borderRadius: '16px', background: SAGE, color: '#fff', fontSize: '15.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px' }
+const startBtn = { marginTop: '24px', width: '100%', border: 'none', borderRadius: '16px', background: PRIMARY, color: '#fff', fontSize: '15.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px' }
 function pct(n, total) { return total ? Math.round((n / total) * 100) + '%' : '0%' }
 
 // An equally-weighted Paged | Scroll choice (replaces the old buried "read as

@@ -144,7 +144,12 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
       // A share of the `app-overlay-viewport` wrapper below (100dvh) — a vh
       // height would be measured against the larger, partly hidden viewport.
       width: '100%', maxWidth: '560px', maxHeight: '80%', overflowY: 'auto',
-      background: 'var(--surface)', border: '1px solid var(--border)', borderTop: '1px solid var(--hairline)',
+      // `--inset-highlight`, not `--hairline`: this IS the lit top edge of a
+      // sheet rising into view — the one thing that token was always for. Same
+      // rendering, explicit intent. (In light mode it draws nothing over white
+      // and the top edge reads from the shadow above it; that is what shipped
+      // and P14-0 preserves it.)
+      background: 'var(--surface)', border: '1px solid var(--border)', borderTop: '1px solid var(--inset-highlight)',
       borderRadius: '22px 22px 0 0',
       // The extra bottom padding clears a phone's home indicator, so the last
       // line of a definition is never half-swallowed by the system bar.

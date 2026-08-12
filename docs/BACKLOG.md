@@ -10,6 +10,47 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+## P14-0 left these for the sweep (2026-08-12)
+
+The foundation commit built the systems and adopted them where adoption could
+not change visual meaning. Everything below is deliberately still on the old
+values — **P14-2 is the phase that migrates them**, screen by screen, with the
+render harness (`tests/e2e/p14-foundation-renders.spec.js`, `P14_SHOTS=1`) as
+the before/after check.
+
+The budgets in `src/designSystem.guard.test.js` are the tracker. Each is the
+count measured at P14-0 and **may only go down**; raising one needs a reason in
+the commit message.
+
+| Budget | At P14-0 | What it counts |
+|--------|----------|----------------|
+| `HEX_BUDGET` | 70 | Distinct hardcoded hexes outside the token modules |
+| `NEUTRAL_BUDGET` | 73 | Occurrences of a hex whose channels sit within 12 — a value that **cannot theme** |
+| `SIZE_BUDGET` | 46 | Distinct `fontSize: 'Npx'` literals |
+| `RADIUS_BUDGET` | 34 | Distinct `borderRadius: 'Npx'` literals |
+
+Specific items, and why each one was left alone rather than swept:
+
+- **`--hairline` survives as a deprecated alias**, with ~33 call sites still on
+  it. Renaming the token *and* its uses inside a foundation commit would have
+  been a 15-file behavioural diff. The alias is the seam. P14-2 removes it, and
+  the guard already forbids using it in a `border`.
+- **Neutrals that legitimately stay hardcoded** and should never be "fixed":
+  `supabase.js` (the "site can't start" card renders before any CSS exists),
+  `main.jsx` (the `theme-color` meta tag is a browser API, not UI),
+  `shareCard.js` (canvas drawing for a share image), `NavIcons.jsx`
+  (`#FFFFFF`/`#000000` inside SVG masks are not colours, they are mask values),
+  `splashIntro.js` (paints before the app mounts).
+- **Drill, story-tone, grade and manhua palettes** are their own token modules
+  (`gradePalette.js`, `cardMarker.js`, `manhuaTokens.js`) and are excluded from
+  the hex budget by design. They are *content* colour, not UI colour.
+- **`Kana.jsx` keeps `#5C7155`** for its "lesson cleared" tick. That is a success
+  colour on a frozen-track screen; remapping it would change visual meaning for
+  no benefit. Recorded as the one documented sage exception in the guard.
+- **`SURFACE`, `ELEVATION` and `TYPE` have no consumers yet.** They are defined
+  and specified but nothing imports them — that is what P14-1/P14-2 do. Do not
+  "clean up" the unused exports.
+
 ## Onboarding — three verified defects (found 2026-08-11, P12 audit)
 
 **All three FIXED in P12-0 (2026-08-12), shipped in TestFlight build 41.**

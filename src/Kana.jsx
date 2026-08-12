@@ -584,7 +584,7 @@ export default function Kana({ profile, onBack }) {
                 onClick={answered ? next : submitTyped}
                 style={{
                   flexShrink: 0, minWidth: '110px', height: '54px', borderRadius: '16px',
-                  border: 'none', background: '#6E8466', color: '#fff',
+                  border: 'none', background: 'var(--primary)', color: '#fff',
                   fontSize: '15px', fontWeight: 750, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
                 }}
               >

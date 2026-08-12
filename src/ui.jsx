@@ -6,9 +6,14 @@ import { useState, useEffect } from 'react'
 // SecondaryButton definitions), so a polish fix cost six edits and the
 // variants had already started to drift. One definition, one place to fix.
 
-const SAGE = '#6E8466'
-const SAGE_DARK = '#5C7155'
-const SAGE_DISABLED = '#A8B5A1'
+// P14-0: the primary action is the brand, and the brand is vermilion. These
+// were an undeclared fourth brand colour (sage #6E8466), hardcoded here and in
+// ten other files, so the app's most important CTAs were sage while its
+// identity accent was vermilion. `var()` rather than a hex so they theme —
+// dark mode lifts the red instead of keeping a colour tuned for white paper.
+const PRIMARY = 'var(--primary)'
+const PRIMARY_PRESSED = 'var(--primary-pressed)'
+const PRIMARY_DISABLED = 'var(--locked)'
 
 // Centered card panel for empty states and recaps.
 export function Centered({ children, wide }) {
@@ -33,7 +38,7 @@ export function PrimaryButton({ onClick, children, icon: Icon, disabled }) {
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
         width: '100%', minHeight: '52px', borderRadius: '16px', border: 'none',
-        background: disabled ? SAGE_DISABLED : (hovered ? SAGE_DARK : SAGE), color: '#fff',
+        background: disabled ? PRIMARY_DISABLED : (hovered ? PRIMARY_PRESSED : PRIMARY), color: '#fff',
         fontSize: '15px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
         cursor: disabled ? 'default' : 'pointer',
         transition: 'background 160ms ease, transform 160ms ease',

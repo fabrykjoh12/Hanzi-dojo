@@ -5,7 +5,9 @@ import StoryFormatIcon from './StoryFormatIcon'
 // A soft, on-brand gradient standing in for a missing illustration — never the
 // browser's broken-image glyph.
 function fallbackBackground(accent) {
-  const a = accent || '#6E8466'
+  // P14-0: the brand, not the old sage. Callers pass the language accent;
+  // this is only the default when one is missing.
+  const a = accent || '#B83A24'
   return 'linear-gradient(135deg, ' + a + '26 0%, ' + a + '0D 55%, var(--surface-2) 100%)'
 }
 

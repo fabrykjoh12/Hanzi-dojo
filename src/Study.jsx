@@ -48,7 +48,9 @@ import {
   Sparkles, BookOpenCheck, X,
 } from 'lucide-react'
 
-const SAGE = '#6E8466'
+// P14-0: vermilion, themed. See ui.jsx. Colour only — Study's composition is
+// frozen (docs/P13 §17).
+const PRIMARY = 'var(--primary)'
 // Grade → feedback color (Again / Hard / Good / Easy) — the post-grade flash
 // ring only, kept vivid so the ring reads clearly against the card.
 const GRADE_COLORS = ['#DC2626', '#D97706', '#3E63DD', '#2F9E6D']
@@ -1472,7 +1474,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                     onClick={submitTyped}
                     style={{
                       flexShrink: 0, minWidth: '120px', height: '54px', borderRadius: '16px',
-                      border: 'none', background: SAGE, color: '#fff',
+                      border: 'none', background: PRIMARY, color: '#fff',
                       fontSize: '15px', fontWeight: 750, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                     }}

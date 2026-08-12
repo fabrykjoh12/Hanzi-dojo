@@ -11,8 +11,9 @@ import {
 // purely presentational: Study still owns all state (recap tally, forecast,
 // story unlock, chat mission) and side effects, and passes them + callbacks in.
 
-const SAGE = '#6E8466'
-const SAGE_DARK = '#5C7155'
+// P14-0: vermilion, themed. See ui.jsx for why sage is gone.
+const PRIMARY = 'var(--primary)'
+const PRIMARY_PRESSED = 'var(--primary-pressed)'
 
 // Full-width sage call-to-action (kept identical to Study's own PrimaryButton so
 // the "Back home" button looks and behaves exactly as before).
@@ -26,11 +27,15 @@ function PrimaryButton({ onClick, children, icon: Icon }) {
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
         width: '100%', minHeight: '54px', borderRadius: '16px', border: 'none',
-        background: hovered ? SAGE_DARK : SAGE, color: '#fff',
+        background: hovered ? PRIMARY_PRESSED : PRIMARY, color: '#fff',
         fontSize: '15px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
         cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease, box-shadow 160ms ease',
         transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
-        boxShadow: hovered ? '0 12px 28px rgba(110,132,102,0.28)' : '0 6px 18px rgba(110,132,102,0.18)',
+        // P14-0: the cast light matches the object casting it. These were the
+        // sage rgb (110,132,102) and stayed sage after the fill went vermilion.
+        boxShadow: hovered
+          ? '0 12px 28px color-mix(in srgb, var(--primary) 28%, transparent)'
+          : '0 6px 18px color-mix(in srgb, var(--primary) 18%, transparent)',
       }}
     >
       <Icon size={18} strokeWidth={2.1} color="#fff" />

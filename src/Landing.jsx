@@ -21,8 +21,9 @@ import {
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
 import { externalLinkProps } from './externalLink'
 
-const SAGE = '#6E8466'
-const SAGE_DARK = '#5C7155'
+// P14-0: vermilion, themed. See ui.jsx.
+const PRIMARY = 'var(--primary)'
+const PRIMARY_PRESSED = 'var(--primary-pressed)'
 
 
 // ── Small pieces ────────────────────────────────────────────────────────────
@@ -38,11 +39,15 @@ function CtaButton({ children, onClick, big }) {
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
         minHeight: big ? '54px' : '42px', padding: big ? '0 28px' : '0 18px',
         borderRadius: '16px', border: 'none',
-        background: hovered ? SAGE_DARK : SAGE, color: '#fff',
+        background: hovered ? PRIMARY_PRESSED : PRIMARY, color: '#fff',
         fontSize: big ? '16px' : '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
         cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease, box-shadow 160ms ease',
         transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
-        boxShadow: hovered ? '0 12px 28px rgba(110,132,102,0.30)' : '0 6px 18px rgba(110,132,102,0.20)',
+        // P14-0: sage rgb (110,132,102) → the brand, so the cast light matches
+        // the object casting it.
+        boxShadow: hovered
+          ? '0 12px 28px color-mix(in srgb, var(--primary) 30%, transparent)'
+          : '0 6px 18px color-mix(in srgb, var(--primary) 20%, transparent)',
       }}
     >
       {children}
@@ -295,8 +300,11 @@ export default function Landing({ authNotice = null }) {
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '7px',
             padding: '6px 14px', borderRadius: '999px',
-            background: '#6E846614', border: '1px solid #6E846630',
-            color: SAGE_DARK, fontSize: '12.5px', fontWeight: 700, marginBottom: '22px',
+            // P14-0: a tint has to mix INTO the surface, never sit on it as an
+            // alpha hex — an alpha hex stays light in dark mode (CLAUDE.md §5).
+            background: 'color-mix(in srgb, var(--primary) 8%, var(--surface))',
+            border: '1px solid color-mix(in srgb, var(--primary) 20%, var(--surface))',
+            color: PRIMARY_PRESSED, fontSize: '12.5px', fontWeight: 700, marginBottom: '22px',
           }}>
             Reading-first Chinese
           </div>
@@ -379,10 +387,14 @@ export default function Landing({ authNotice = null }) {
                 <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '8px', minWidth: isMobile ? '56px' : '72px' }}>
                   <span style={{
                     width: '42px', height: '42px', borderRadius: '12px',
-                    background: SAGE + '14', border: '1px solid ' + SAGE + '2A',
+                    // Mixed, not alpha-suffixed: `var(--primary) + '14'` is
+                    // invalid CSS and paints nothing (an alpha hex only
+                    // concatenates onto a literal hex).
+                    background: 'color-mix(in srgb, var(--primary) 8%, var(--surface))',
+                    border: '1px solid color-mix(in srgb, var(--primary) 16%, var(--surface))',
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <step.icon size={20} strokeWidth={1.8} color={SAGE_DARK} />
+                    <step.icon size={20} strokeWidth={1.8} color={PRIMARY_PRESSED} />
                   </span>
                   <span style={{ fontSize: '12px', fontWeight: 650, color: 'var(--text-muted)' }}>{step.label}</span>
                 </span>
@@ -425,7 +437,7 @@ export default function Landing({ authNotice = null }) {
                   fontFamily: 'Inter, sans-serif', textDecoration: 'none',
                 }}
               >
-                <MessagesSquare size={16} strokeWidth={2} color={SAGE_DARK} />
+                <MessagesSquare size={16} strokeWidth={2} color={PRIMARY_PRESSED} />
                 Join our Discord
               </a>
             </>

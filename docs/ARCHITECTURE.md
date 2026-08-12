@@ -553,40 +553,113 @@ Uses **ts-fsrs v5**. Configuration: `request_retention: 0.9`, `enable_fuzz: true
 
 ## Design system
 
-**Color palette:**
+### The four modules (P14-0)
+
+The system is deliberately split by *what changes together*, and one of the four
+is CSS rather than JS on purpose.
+
+| Module | Owns | Why here |
+|--------|------|----------|
+| `src/palette.js` | Accent roles + their dark lifts; `role(name, dark)`; `canFillButton()` | Accents need to be *strings in JS* — they get fed to `color-mix()` templates, to `ink()`, and to `heroGround()`. A CSS variable cannot be an argument. |
+| `src/typeScale.js` | `TYPE` (9 UI roles), `CONTENT_TYPE` (4), `WEIGHT` (4), `NUMERIC`, `UI_SIZES` | Type is composed into inline style objects, which is the house styling model (CLAUDE.md §6.3). |
+| `src/shape.js` | `RADIUS`, `ELEVATION`, `SURFACE`, `radius()`, `surface()` | Same. `ELEVATION` deliberately defers to `var(--shadow-*)` because a dark surface needs far more shadow opacity to read at all. |
+| `src/index.css` | Every **neutral**, both themes | A neutral must switch on `data-theme` without React re-rendering. Putting the ramp in JS would mean every themed component re-renders on a theme flip. |
+
+`src/designSystem.guard.test.js` is the ratchet: hard **bans** for values that
+must never return, and **budgets** — the count of one-off hexes / sizes / radii
+that existed at P14-0, which may only go down.
+
+**Colour palette — "Lacquer" (P14-0).** Warm paper and vermilion ink in light; a
+warm near-black with lifted accents in dark. Contrast is measured, not guessed:
+the whole text ramp passes AA on `--bg` in both themes (`src/palette.test.js`).
+
 ```
-Background:       #FAFAF8
-Cards:            #FFFFFF
-Border:           #E7E5E4
-Primary text:     #18181B
-Muted text:       #71717A
-Chinese accent:   #B83A24   (vermillion)
-Japanese accent:  #2E3A6E   (indigo)
-Russian accent:   #2563C9   (royal blue)
-Success:          #2F9E6D
-Warning:          #D97706
-Error:            #DC2626
-Sage (CTA button):      #6E8466
-Sage dark (CTA hover):  #5C7155
-Sage ink (Home "Due"):  #4F6047
-Amber ink (Home "Learning"): #C2803B
+                     LIGHT       AA on --bg     DARK        AA on --bg
+Ground     --bg      #FAF8F5     —              #100D0E     —
+Surface    --surface #FFFFFF     —              #1A1517     —
+           --surface-2 #F5F1EC   —              #241D20     —
+           --surface-3 #EBE4DB   —              #2E2529     —
+Border     --border  #E7E1D9     —              #352B2F     —
+           --border-strong #D2C9BE —            #473A3F     —
+Text       --text    #191513     17.11:1        #F2EDE9     16.64:1
+           --text-secondary #4A443D  9.06:1     #BBB2AB      9.27:1
+           --text-muted #635C54     6.21:1      #938A82      5.71:1
+           --text-faint #767068     4.62:1      #847B73      4.66:1
+
+Brand      --primary        #B83A24  5.40:1     #E4573A      5.27:1
+           --primary-bright #D84B32             #F06A4C
+           --primary-pressed #8F2D1D            #C0432C
+           --primary-soft   #F7E8E3             rgba(228,87,58,0.15)
+           --burgundy       #5E2430             #3A1620
+Reward     --gold           #C08A2E  2.86:1 ⚠   #E3B24E      —
+           --gold-bright    #D6A13A             #F5C868
+Stories    --plum           #7651A8  5.13:1     #A585D8
+Practice   --blue           #4777B8  3.99:1     #6D9BE8
+Secondary  --coral          #E8664A             #FF7F63
+Locked     --locked         #A8A29E             #4A524E
+Status     success  #2F9E6D · warning #D97706 · error #DC2626 (light)
+           success  #34D399 · warning #F0A93B · error #F87171 (dark)
+
+Language identity (unchanged, `languageTheme.js`):
+  Chinese #B83A24 · Japanese #2E3A6E · Russian #2563C9
 ```
 
-**Nav active state is the LANGUAGE ACCENT, not sage** (changed in the Home/nav
-polish pass). Sidebar + MobileNav take a `language` prop from `App.jsx` and
-derive the accent from `languageTheme()`, so the whole shell shifts colour with
-the active track. A single sliding ink bar marks the active row (Sidebar rows
-are a fixed `ROW_HEIGHT`/`ROW_GAP` so the bar positions from an index — no
-measurement). The retired flat sage pill (`#E7EDE4`/`#4F6047`) is gone.
+⚠ **Gold is 2.86:1 on the light ground — it is an OBJECT colour, never small
+text.** Fills, rings and marks only. `--blue`, `--success` and `--warning` clear
+3:1 but not 4.5:1, so they are large-text-or-larger in light mode. A spec records
+each of these so nobody rediscovers it by shipping a gold caption.
+
+**Only the brand acts.** `--primary` (and `--error`, for destructive) may fill a
+button; `canFillButton()` in `palette.js` is the rule and a spec enforces it.
+Gold, plum, blue and coral are atmosphere and icon faces. Before P14-0 the app's
+most important CTAs were a **sage green `#6E8466`** that appears in no design
+document — an undeclared fourth brand colour, copied screen to screen into
+eleven files while the identity accent was vermilion. It is gone, and banned.
+
+**Nav active state is the LANGUAGE ACCENT.** Sidebar + MobileNav take a
+`language` prop from `App.jsx` and derive the accent from `languageTheme()`, so
+the whole shell shifts colour with the active track. A single sliding ink bar
+marks the active row (Sidebar rows are a fixed `ROW_HEIGHT`/`ROW_GAP` so the bar
+positions from an index — no measurement).
+
+**Typography (P14-0) — 9 UI roles, 4 weights, 8 sizes.** Replaces a measured 60
+distinct rendered type styles. Weights are 400 body · 600 label · 700 title ·
+800 display, and nothing in between (the census found 550, 650, 750, 820, 850 —
+none of which is a visible difference).
+
+```
+display        40 / 800 / 1.05 / -0.02em      titleScreen    26 / 800 / 1.2
+titleSection   17 / 700 / 1.3                titleCard      15 / 700 / 1.35
+body         15 / 400 / 1.55                 bodySecondary  13.5 / 400 / 1.5
+label        13 / 600 / 1.35                 caption        12 / 400 / 1.4
+eyebrow      10.5 / 800 / 0.14em / uppercase (unchanged — this is designTokens.MICRO)
+
+CONTENT_TYPE (the language itself, not the UI):
+  hanziDisplay 76 · hanziInline 30 · pinyin 16/600 · definition 15
+NUMERIC is a MODIFIER (tabular-nums, no size) — a number is whatever size its context is.
+```
+
+**Radius (P14-0) — five names.** `sm 8` · `control 12` · `card 18` · `hero 26` ·
+`pill 999`. Built outward from the one relationship the app already had right:
+the study card (26) and its grade buttons (12). The census found 16 rendered
+radii; 3, 9, 10, 11, 13, 14, 15, 16, 20, 22 and 50 are dropped.
+
+**Elevation — three levels, and "flat" is one of them.** `flat` (`none`) ·
+`raised` (`--shadow-1`) · `floating` (`--shadow-2`). Naming "no shadow" makes it
+a decision somebody made rather than something nobody got round to. `SURFACE`
+composes the four grounds — `page`, `grouped`, `raised`, `floating` — and only
+the last two draw a border and a shadow, which is what makes the "one object per
+screen" promise mechanical rather than a matter of taste.
 
 **CSS variables** (defined in index.css):
 `--chinese-accent: #B83A24`, `--chinese-accent-dark: #922E1C`, `--japanese-accent: #2E3A6E`, `--japanese-accent-dark: #1E2750`, `--russian-accent: #2563C9`, `--russian-accent-dark: #1D4EA0`
 
 **Theming (light/dark) — use these tokens for all neutral colors:**
 Semantic tokens in index.css drive light/dark via `:root` and `:root[data-theme="dark"]`:
-`--bg`, `--surface`, `--surface-2`, `--surface-glass`, `--border`, `--text`, `--text-muted`, `--text-faint`, `--reader-watermark`.
+`--bg`, `--surface`, `--surface-2`, `--surface-3`, `--surface-glass`, `--border`, `--border-strong`, `--text`, `--text-secondary`, `--text-muted`, `--text-faint`, `--divider`, `--inset-highlight`, `--reader-watermark`.
 - **New code MUST use these tokens** (e.g. `background: 'var(--surface)'`, `color: 'var(--text)'`) instead of hardcoded neutral hexes, or it won't theme.
-- Accent colors (chinese/japanese), status colors (success/warn/error), sage nav colors, and **white text on accent buttons** (`color: '#fff'`) stay hardcoded — they read on both themes.
+- **The ramp is ordered:** `--text` → `--text-secondary` → `--text-muted` → `--text-faint`, most to least emphasis, every step ≥4.5:1. Before P14-0 it was not: `--text-faint` (#6B6B72, 5.06:1) carried MORE contrast than `--text-muted` (#71717A, 4.62:1), so the token named "faint" was the more emphatic of the two and anyone reaching for de-emphasis got the opposite. A spec pins the ordering now.
+- Accent colors (chinese/japanese), status colors (success/warn/error), and **white text on accent buttons** (`color: '#fff'`) stay hardcoded — they read on both themes.
 - Fixed dark popovers/tooltips (e.g. Sidebar collapsed tooltip) use a literal dark (`#27272A`), not `var(--text)`, so they don't invert.
 - **Tints must mix into the themed surface**, not float on it: use
   `color-mix(in srgb, <accent> 11%, var(--surface))` rather than an `<accent>+'14'`
@@ -598,9 +671,18 @@ Semantic tokens in index.css drive light/dark via `:root` and `:root[data-theme=
   light, a 30% lift toward white in dark. Use it wherever an accent is TEXT or a
   drawn mark; keep the raw hex for tints/borders that already mix into a surface.
 - **Elevation tokens** — `--shadow-1` (resting) / `--shadow-2` (hover) are
-  two-layer (tight contact + wide cast) and flip to near-black on dark;
-  `--hairline` is the lit top edge, applied as `inset 0 1px 0 var(--hairline)`.
-  Prefer these over one-off `box-shadow` values.
+  two-layer (tight contact + wide cast) and flip to near-black on dark. Prefer
+  these over one-off `box-shadow` values; `ELEVATION` in `shape.js` names them.
+- **`--divider` vs `--inset-highlight`** (split in P14-0). They were one token,
+  `--hairline`, whose *value* is a white inset highlight (`rgba(255,255,255,0.75)`)
+  and whose *name* reads like a separator. Used as a border it therefore drew
+  **nothing at all** on a light surface — a bug that shipped on Home (fixed in
+  P10-C3 by measuring pixels) and again in `KnownWords.jsx` (found by the P14-0
+  guard test). Now: `--inset-highlight` lights a top edge
+  (`inset 0 1px 0 var(--inset-highlight)`, or a literal `borderTop` on a rising
+  sheet), `--divider` draws a line. `--hairline` remains as a deprecated alias so
+  the ~33 existing call sites keep working; P14-2 removes it. **Never put
+  `--hairline` in a `border` — a spec fails the build if you do.**
 
 **Fonts:** Inter (UI), Noto Sans SC (Chinese), Noto Sans JP (Japanese) — loaded from Google Fonts in index.css. **Russian uses Inter**, which already ships full Cyrillic coverage, so no extra web font is needed.
 
@@ -619,7 +701,7 @@ Semantic tokens in index.css drive light/dark via `:root` and `:root[data-theme=
 
 **Sidebar:** Semi-transparent frosted glass `rgba(255,255,255,0.85)` + `backdropFilter: blur(6px)`. Expanded 232px, collapsed 64px. Collapse state is session-only (useState — not persisted).
 
-**Navigation active state:** Sage green pill background (`#E7EDE4`) and text (`#4F6047`) — neutral, not accent-colored. Icons at 19px, strokeWidth 1.85.
+**Navigation active state:** the **language accent** — a sliding ink bar, not a pill. The retired flat sage pill (`#E7EDE4` bg / `#4F6047` text) is gone, and sage is banned outright (P14-0). Icons at 19px, strokeWidth 1.85.
 
 **lucide-react icons:** All functional UI icons. Content emoji (🇨🇳 🇯🇵 flags) are fine as content. Never use emoji as icons.
 
@@ -882,12 +964,12 @@ src/LanguageSwitcher.jsx
 
 src/Sidebar.jsx
   Persistent left navigation. Collapses to 64px icon-only rail with hover tooltips.
-  Expanded at 232px. Active state: sage green pill (#E7EDE4 bg, #4F6047 text).
+  Expanded at 232px. Active state: a sliding ink bar in the language accent.
   Semi-transparent frosted glass (rgba(255,255,255,0.85) + blur).
 
 src/MobileNav.jsx
   Fixed bottom navigation bar shown below 768px (instead of Sidebar). 5 primary
-  tabs (Home, Cards, Stories, Writing, More); "More" opens a bottom sheet with
+  tabs (Home, Stories, Cards, Practice, More); "More" opens a bottom sheet with
   Test, YouTube, Profile, Language, Settings, Log out. Respects iOS safe-area inset.
 
 src/useIsMobile.js

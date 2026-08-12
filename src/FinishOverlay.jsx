@@ -3,8 +3,9 @@ import { Check, ChevronRight, Lock, Zap } from 'lucide-react'
 import ComprehensionCheck from './ComprehensionCheck'
 import { trapDialogFocus } from './dialogFocus'
 
-const SAGE = '#6E8466'
-const btn = { border: 'none', borderRadius: '16px', background: SAGE, color: '#fff', fontSize: '15.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', width: 'auto', padding: '12px 22px', marginTop: '14px' }
+// P14-0: vermilion, themed. See ui.jsx.
+const PRIMARY = 'var(--primary)'
+const btn = { border: 'none', borderRadius: '16px', background: PRIMARY, color: '#fff', fontSize: '15.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', width: 'auto', padding: '12px 22px', marginTop: '14px' }
 
 // The end of a chapter must never be a dead end: it either hands the learner
 // the next chapter (unlocked), points them back at flashcards (locked — the

@@ -261,7 +261,7 @@ function Action({ onClick, icon: Icon, label, primary }) {
       display: 'inline-flex', alignItems: 'center', gap: '8px',
       minHeight: '44px', padding: '0 18px', borderRadius: '12px', cursor: 'pointer',
       border: primary ? 'none' : '1px solid var(--border)',
-      background: primary ? (h ? '#5C7155' : '#6E8466') : (h ? 'var(--surface-2)' : 'var(--surface)'),
+      background: primary ? (h ? 'var(--primary-pressed)' : 'var(--primary)') : (h ? 'var(--surface-2)' : 'var(--surface)'),
       color: primary ? '#fff' : 'var(--text-muted)',
       fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
     }}>
