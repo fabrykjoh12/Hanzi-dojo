@@ -6,8 +6,9 @@ import { languageTheme } from './languageTheme'
 import { buildLabel } from './version'
 import { toast } from './toast'
 import ControlsGallery from './ControlsGallery'
+import NavGlyphGallery from './NavGlyphGallery'
 import {
-  ArrowLeft, FlaskConical, Gauge, BookOpen, Trash2, Zap, RefreshCw, ShieldCheck, Palette,
+  ArrowLeft, FlaskConical, Gauge, BookOpen, Trash2, Zap, RefreshCw, ShieldCheck, Palette, Compass,
 } from 'lucide-react'
 
 // Developer page (/dev) — self-service testing tools. Everything here runs as
@@ -241,6 +242,14 @@ export default function Dev({ session, profile, track, onBack, onNavigate }) {
           DECLARES, so this is the surface the Playwright spec measures. */}
       <Section icon={Palette} title="Controls — P14-1 shared primitives" accent={accent}>
         <ControlsGallery />
+      </Section>
+
+      {/* P14-3's five dimensional glyphs. Here for the same reason as the
+          controls above: the family question — silhouette clash, one icon
+          out-inking the rest — is only answerable with all five on one screen,
+          at every size, in both themes. The shipping bar is unchanged. */}
+      <Section icon={Compass} title="Navigation icons — P14-3 dimensional family" accent={accent}>
+        <NavGlyphGallery />
       </Section>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: 'var(--text-faint)' }}>

@@ -808,6 +808,44 @@ Semantic tokens in index.css drive light/dark via `:root` and `:root[data-theme=
 
 **lucide-react icons:** All functional UI icons. Content emoji (🇨🇳 🇯🇵 flags) are fine as content. Never use emoji as icons.
 
+### The dimensional icon family (P14-3) — drawn, not shipped
+
+`src/navGlyphs.jsx` holds five custom glyphs — Home, Stories, Cards, Practice,
+Profile — and `src/navGlyphFamily.js` holds them in bar order. **They are not on
+the bar.** `MobileNav.jsx` and `NavIcons.jsx` are untouched; the family is
+evaluated in `/dev` (`NavGlyphGallery.jsx`) and P14-4 is where the tray and its
+icons change together. `src/navGlyphs.test.jsx` (13 unit contracts) and
+`tests/e2e/nav-glyphs.spec.js` (33 browser assertions across two themes and
+320/390/430) hold what exists.
+
+The seven rules the family is built on are written at the top of `navGlyphs.jsx`,
+and the four that a new identity icon must copy:
+
+- **One light source, upper left.** Every lit plane faces up-and-left, every
+  shaded plane down-and-right. No glyph gets its own lighting.
+- **Three brand tones and at most one accent**, and they are tokens, not values:
+  `--primary-bright` (lit) / `--primary-fill` (front) / `--primary-pressed`
+  (shade). There is not one hardcoded colour in the file, and a unit test says so.
+- **The silhouette is the icon.** `shapes` is the single source: the resting state
+  paints it flat in one colour, the selected state clips `facets` to it. `active`
+  is the only branch in the file. The e2e spec rasterises both states and compares
+  alpha, so a facet that stops covering the silhouette fails the build.
+- **Cuts are holes.** A doorway, a seal's figure, a spine: subtracted through a
+  mask so the page shows through. A pale shape on top is a fourth tone that has to
+  be re-picked per theme; a hole is correct in both by construction.
+
+Two numbers govern the drawing. **32×32 viewBox, content inside 3–29** — one box
+for the family, so optical size is a property of the drawing rather than of the
+`size` prop. And **nothing below ~1.4 units survives**: at 20px one unit is 0.63
+device pixels, and three of the five glyphs lost a detail to that in the first
+round (Profile's 0.8-unit rim, Stories' 1.6-unit spine, Practice's blue inset).
+
+**Ink coverage** is how the family is balanced, the same measurement that set
+`NAV_ICON_PX` in P8 — rasterise the resting silhouette, sum the alpha. At the
+sizes the bar would hand them: Cards 234 · Stories 141 · Practice 122 · Profile
+105 · Home 102 px². Cards is 66% ahead of the next, where the bar that shipped in
+P8 had Practice at 81% of Cards — and the loudest thing on it.
+
 
 ---
 
