@@ -10,6 +10,55 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+## P14-4 — the tray shipped; what it left (2026-08-12)
+
+The bottom bar is an inset floating tray with the dimensional family on it. Numbers,
+reasoning and the surface treatment are in `docs/ARCHITECTURE.md`; this is what a
+later phase inherits.
+
+- **`NavIcons.jsx` is nearly dead.** Nothing imports `HomeIcon`, `StoriesIcon`,
+  `CardsIcon` or `PracticeIcon` any more — `navConfig.MOBILE_PRIMARY` derives from
+  `navGlyphFamily.NAV_GLYPHS`. `MoreIcon` also has no reader now. The file is left in
+  place on purpose: it is the flat family that passed two device reviews, and
+  deleting it before the tray has been on a physical phone would throw away the only
+  thing to fall back to. **Delete it once P14-4 passes device QA**, along with
+  `navEmphasis`'s references to it in comments.
+- **The More sheet's top radius is 22px, the tray's is 18.** The sheet rises out of
+  the tray and should hinge on the same corner. Not changed in P14-4 because the
+  brief froze More-sheet behaviour and CLAUDE.md §5 claims every sheet is already
+  `18px 18px 0 0` — which is true of the other four. One-line tidy, needs a look at
+  `designSystem.guard.test.js`'s sheet-radius check first.
+- **Motion is the minimum.** The tray transitions colour, background and box-shadow
+  at 180ms and nothing else; there is no selection animation, no icon movement, no
+  haptic beyond the existing `tapFeedback()` on a tab change. **P14-13 owns motion
+  and haptics** and should decide whether the dimensional glyph earns a transition
+  between its flat and lit states (it cannot cross-fade two SVG trees for free).
+- **`.hd-tab-icon` is now unused CSS.** `index.css` still carries
+  `.hd-tab-icon { transition: transform 220ms … }` and
+  `.hd-tab.is-active .hd-tab-icon { transform: translateY(-1px) }`, but no element
+  has the class — MobileNav never applied it. Left alone in P14-4 (it changes nothing
+  either way); it belongs to whatever P14-13 decides about selection motion.
+- **The tray does not adapt to a very short landscape phone.** At 390×390 the
+  reservation is still 66px of a 390px viewport. Nothing breaks — the nav-tray spec
+  covers 320/390/430 portrait and `geometry.spec.js` covers the landscape case for
+  content — but a landscape-specific tray height was not considered and probably
+  should be if landscape ever stops being portrait-locked (it is locked today,
+  CLAUDE.md §1).
+- **Study leaves the navigation's reservation blank while the bar is hidden.**
+  Measured at 390×844 with a card on screen: the tray is hidden (the NAV-MODEL
+  §8.2 exception), `main`'s padding is 0, and the card shell is still
+  `100dvh − reserve` = 778px — so 66px of the viewport is empty below the grade
+  band, and the document does not scroll. Pre-existing (58px before P14-4, which
+  widened it by 8), and the fix belongs to a Study phase, not a tray one:
+  `studyLayout` already takes `reservedBottom`, and Study already knows whether it
+  is immersive, so it is a one-line change — but it makes the flashcard 66px
+  taller, which is a large visible Study change and needs its own device round.
+
+- **`--surface-glass` has two consumers left**, both non-mobile: `Sidebar.jsx`
+  (the desktop rail) and `Dashboard.jsx` (the admin analytics header). The tray was
+  its third and the only one a learner on a phone ever saw. Whether frosted glass
+  survives on desktop is a P14-x question, not a dangling reference.
+
 ## P14-3 — the icon family, and what it did NOT do (2026-08-12, amended)
 
 Six dimensional glyphs exist (`src/navGlyphs.jsx`), visible only in `/dev`. The
