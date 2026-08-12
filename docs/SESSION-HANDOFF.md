@@ -360,16 +360,24 @@ after the value moment; Concept C is not built; the B→C gradient stops at real
 interval previews and a production-shaped recap — never the real queue,
 Supabase scheduling, or the production reader in pre-login.
 
-- **P12-0 — the three defects — is FIXED** and cut as TestFlight build 41:
-  `authEntryTab` (the signup/login tab is an explicit decision, never inferred),
-  the durable `hd:tutorial-done` teaching record with old-key migration (the
-  Home tour suppression works now), and hardware Back walking the pre-login
-  flow (`preloginBackAction` + `tutorialScript.retreat`).
-- **Next: P12-1..5** — scene-before/scene-after from ONE `TUTORIAL_SCENE`
-  fixture (delete the `loop` slide), Skip with `tutorial_skipped {state_id}`,
-  real interval previews on cards 2–3 (card 1 keeps the grade meanings), recap
-  alignment without weakening `SessionRecap`'s interface, docs. **Stop for the
-  owner's 17-point walkthrough report before cutting the onboarding build.**
+**All of P12-0 … P12-5 is implemented** — §12 of the audit doc records it.
+
+- **P12-0** (`56402c4`, shipped alone as **TestFlight build 41**): `authEntryTab`
+  (the signup/login tab is an explicit decision, never inferred), the durable
+  `hd:tutorial-done` teaching record with old-key migration (the Home tour
+  suppression works now), and hardware Back walking the pre-login flow
+  (`preloginBackAction` + `tutorialScript.retreat`).
+- **P12-1** (`a336ab8`): the story frame — scene-before / scene-after from ONE
+  `TUTORIAL_SCENE` fixture, loop slide deleted. 12 states, 11 taps.
+- **P12-2** (`617c55e`): Skip on every state; `tutorial_skipped { state_id }`.
+- **P12-3** (`9170d81`): schedule previews on cards 2–3, fixture-pinned against
+  the production preview; card 1 keeps the grade meanings.
+- **P12-4** (`30b88ee`): recap/unlock in `SessionRecap`'s visual system, without
+  the component — its interface is untouched and the sandbox import graph is
+  unchanged.
+
+**The onboarding TestFlight build is NOT cut** — the owner reviews the 17-point
+walkthrough report first, per instruction.
 
 Not to be resumed without the owner's word: the global token cleanup, and any
 further Home/Stories/Profile/Practice iteration.

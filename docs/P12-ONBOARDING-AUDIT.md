@@ -1,7 +1,9 @@
 # P12 — the first-time-user journey: audit, three concepts, recommendation
 
-**Status: audit only. Nothing here is implemented.** Written against
-`claude/hanzi-dojo-continuation-e3vnbg` @ `f9baf7f` (TestFlight build 40).
+**Status: implemented — §12 records what shipped.** The audit itself (§0–§11)
+was written against `claude/hanzi-dojo-continuation-e3vnbg` @ `f9baf7f`
+(TestFlight build 40) and describes THAT build; §1's state tables and §3's
+defects are history now, kept because the fixes are only legible next to them.
 
 This supersedes [`ONBOARDING-AUDIT.md`](ONBOARDING-AUDIT.md) as the *current*
 picture. That document is the P9 rebuild's reasoning and is still worth reading
@@ -596,3 +598,46 @@ Home, Stories, Practice, Profile, Study, navigation, global tokens. The web
 marketing page's feature cards and loop diagram stay (CLAUDE.md §1 keeps the web
 as the public surface). `PlacementTest`, the tier rows, and the prior-knowledge
 seed are untouched. The Stories coach-mark tour keeps its two marks.
+
+---
+
+## 12 · What shipped (P12-0 … P12-4, 2026-08-12)
+
+All approved work is implemented. Fixed product decisions honoured throughout:
+account stays after the value moment; Concept C was not built; the B→C gradient
+stopped at interval previews and a production-shaped recap.
+
+| commit | what |
+|--------|------|
+| `56402c4` | **P12-0** — the three §3 defects. Shipped alone as **TestFlight build 41** |
+| `a336ab8` | **P12-1** — the story frame: scene-before / scene-after from one `TUTORIAL_SCENE`; the loop slide deleted |
+| `617c55e` | **P12-2** — Skip on every state; `tutorial_skipped { state_id }` |
+| `9170d81` | **P12-3** — schedule previews on cards 2–3, fixture-pinned against the production preview |
+| `30b88ee` | **P12-4** — recap/unlock in `SessionRecap`'s visual system, without the component |
+
+**The walk now** (12 states, 11 taps): welcome → scene-before (the exchange,
+Chinese only — "You probably can't read this yet. It takes three words.") →
+card 1 front/back (grade meanings) → card 2 front/back (schedule previews) →
+card 3 front/back (bare product) → recap (production-shaped, Today tile) →
+unlock → scene-after (same fixture, marked + translated — "The same scene —
+this time you can read it." → Create account) → account.
+
+Guarantees, each pinned by a spec: the two scene states hold the **same
+object**; the scene's Chinese minus the three taught words is pure punctuation
+(so the payoff claim is literally true); the loop slide never returns; a
+pre-P12 saved position in a `story`/`loop` phase restarts while an old CARD
+position still resumes; `retreat()` walks the new shape; the sandbox import
+graph is unchanged (only tests reach the scheduler); the fixture intervals
+match the production preview byte-for-byte on the learning steps and sit inside
+the fuzz band on Easy.
+
+Measured at 320/390/430, light and dark: every state fits its viewport — zero
+overflow on both axes everywhere. The only sub-44px targets anywhere are the
+real card's own Replay/speed controls, identical to production Study
+(pre-existing; not introduced here). Skip is a 44px target on every state.
+
+Deliberately kept: the `unlock` beat between recap and scene-after. It carries
+the `storyUnlock` teaching goal ("finishing a session opens the next chapter" —
+the rule itself), and the recap→unlock→read sequence mirrors what a real
+session produces. Deleting it was considered and rejected as beyond the
+approved scope.
