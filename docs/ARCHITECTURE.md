@@ -899,6 +899,74 @@ centre column and the bold label, so the glyph sizes do not have to do all of it
 
 Both strips are in the gallery side by side, which is the only way to judge it.
 
+### Home's visual redesign (P14-5)
+
+Structure frozen, material rebuilt. P10's information architecture is untouched —
+one lit hero, one supporting surface with three rows, the same data and the same
+cache behaviour — and nothing was added: no XP, no streak, no currency, no lesson
+path, no fourth panel.
+
+**The hero is a material now, not a gradient.** `heroGround()` builds three stops
+instead of two: a bright end, a long middle where the accent actually IS the accent,
+and a shaded far end. Two stops is a wash from A to B with no material in between.
+`HeroPanel` adds a pool of light anchored outside the top-left corner, which is the
+same light source the navigation glyphs use.
+
+| | before | after |
+|---|---|---|
+| CTA | `rgba(255,255,255,0.14)` pill, 42px, solid only on hover | opaque paper, accent ink, 44px, `RADIUS.control` |
+| Object | 112px 汉 at 9% white | `DeckObject` — three fanned cards with lit and shaded faces |
+| Atmosphere | three seeded ink ridgelines at 9% | one lit facet; the page's own background is the atmosphere |
+| Goal | "Daily goal: 3 of 10 new cards" | one pip per card, filled as they are done |
+| Count | 40px/700 (a coincidence) | `TYPE.display` 40px/800 (a name) |
+
+**The theme split is real.** All three hero candidates rendered *identically* in
+light and dark, which the brief rules out. `--hero-lift` / `--hero-lift-pct` /
+`--hero-depth` fix it: the language accent is mixed toward a warm saturated
+orange-red by 0% in light (so light mode is byte-identical to what shipped) and 38%
+in dark, which lands #B83A24 at **#D3583A** — the brief's "#E4573A family". It is
+deliberately NOT `ink()`: that mixes toward white, and #B83A24 lifted 30% toward
+white is #CD7566, a dusty pink. `--hero-depth` is warmer and lighter in dark too,
+because darkening a panel toward #17110E on a #100D0E page makes its bottom edge
+merge with the page it is supposed to float on.
+
+**`material` is a migration seam.** Four screens share `HeroPanel` and three of them
+— Stories, Practice, Profile — are frozen, so `wash` (ink ridgelines + watermark) is
+the unchanged default and Home opts into `facet`. When a later phase moves those
+screens the default flips and the prop goes away.
+
+**The identity objects live in `heroObjects.jsx`**, drawn to the navigation family's
+rules with two deliberate differences: they are made of PAPER (`ON_HERO.plane*`)
+because a vermilion object on a vermilion ground is a rumour, and they are authored
+at 128 units rather than 32, so a card can have a real edge and a stroke can taper.
+The deck's shaded right return is not decoration — three white-alpha planes on a red
+plate read as frosted glass, and a face darker than its ground is what says "solid".
+
+**The other four rows, all same-information:**
+
+- **Story hand-off** — cover 56 → 72px with a shadow (artwork is a physical object,
+  and `data-story-cover` now says so to the spec that bans nested cards), the label
+  becomes an accent eyebrow, the title steps up to `titleCard`, and `knownPct` gets a
+  bar instead of only living inside a sentence.
+- **The week** — seven 30px full-width pills became seven 10px dots: an ink mark for
+  a day that happened, a faint ring for one that did not, a filled ring on today. A
+  third of the ink for a yes-or-no per day. No connecting line and no counter, because
+  a chain is a thing to protect.
+- **Toward the next level** — a 6px continuous rail became ten 8px segments. At 5 of
+  44 words the rail was 36px of red on a 324px line: accurate and unreadable as "a
+  tenth of the way". Ten segments make the fraction countable. No gold: this is the
+  road, not the arrival, and gold means "unlocked".
+- **Typography** — **11 rendered type styles → 5**, every one a named `TYPE` role
+  (`eyebrow`, `caption`, `titleCard`, the `PageHeader`'s 19px, `display`).
+
+**The feedback control** moved to `--primary-fill` (white on dark `--primary` is
+3.67:1, an AA failure P14-1 had already documented), 50 → 44px so it stops competing
+with Home's one action, and gained the lit top edge every other floating object has.
+
+**Geometry:** 390 and 430 are still exactly 1.00 viewport. 320 went 1.33 → 1.37
+(753 → 779px) — the hero grew 22px for the goal marks and the session estimate on its
+own line. No horizontal overflow, no target under 44px, tray clearance unchanged.
+
 ### The bottom navigation tray (P14-4)
 
 The bar was a full-width `--surface-glass` slab with `backdrop-filter: blur(14px)`,

@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react'
 // file. Linux (production) is case-sensitive and was never affected.
 import InkWash from './InkWash.jsx'
 import { heroGround, heroShadow, flatPanel, ON_HERO, MICRO } from './designTokens'
+import { TYPE } from './typeScale'
+import { RADIUS } from './shape'
 
 // ── The app's two panel types ────────────────────────────────────────────
 // A screen gets ONE HeroPanel — the thing it is actually about, on a deep
@@ -20,10 +22,22 @@ let litCount = 0
 // The lit block. Optional watermark character, contained ink-wash, and an
 // accent-tinted shadow. Tappable when `onClick` is given; children may be a
 // function receiving { hovered } so a CTA inside shares the panel's hover.
+// `material` is P14-5's opt-in, and it is opt-in on purpose.
+//
+// Four screens share this panel and three of them — Stories, Practice, Profile —
+// are frozen. Changing the default would have restyled all three as a side effect
+// of redesigning Home, which is exactly what "P14-5 is Home only" rules out. So
+// `wash` is what they keep (seeded ink ridgelines plus a watermark character,
+// unchanged to the byte) and `facet` is the new material: a lit corner, no
+// ridgelines, and a dimensional object instead of the watermark.
+//
+// When a later phase moves those screens over, the default flips and this prop
+// goes away. It is a migration seam, not a feature.
 export function HeroPanel({
-  accentHex, seed = 'a', watermark, watermarkFont,
+  accentHex, seed = 'a', watermark, watermarkFont, object, material = 'wash',
   onClick, children, padding, compact = false, style = {}, dataTour,
 }) {
+  const facet = material === 'facet'
   const [hovered, setHovered] = useState(false)
   const interactive = typeof onClick === 'function'
 
@@ -68,9 +82,38 @@ export function HeroPanel({
       data-tour={dataTour}
     >
       {/* Rule 1: the atmosphere lives here and nowhere else on the screen. */}
-      <InkWash seed={seed} opacity={0.09} />
+      {!facet && <InkWash seed={seed} opacity={0.09} />}
 
-      {watermark && (
+      {/* The lit facet (P14-5). A soft pool of light anchored OUTSIDE the top-left
+          corner, so the panel reads as one flat plane facing a source rather than a
+          rectangle filled with a gradient. It replaces the ink ridgelines: three
+          seeded ridges at 9% white were atmosphere for its own sake, and on a phone
+          they read as banding across the one object the screen is about. Atmosphere
+          still exists — it is the page's background image, which this panel already
+          steps down. */}
+      {facet && (
+        <div aria-hidden style={{
+          position: 'absolute', top: '-42%', left: '-18%', width: '88%', height: '124%',
+          background: 'radial-gradient(closest-side, ' + ON_HERO.facet + ', transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+      )}
+
+      {/* The dimensional identity object, cropped by the panel's own corner so it
+          reads as sitting ON the plate rather than pasted into it (heroObjects.jsx).
+          It takes the place of the old watermark character, which was a 112px glyph
+          at 9% white — neither type nor illustration. */}
+      {object && (
+        <div aria-hidden style={{
+          position: 'absolute', right: compact ? '-14px' : '-6px',
+          bottom: compact ? '-18px' : '-12px', pointerEvents: 'none',
+        }}>
+          {object}
+        </div>
+      )}
+
+      {/* Kept for the screens that still pass one. Home no longer does. */}
+      {watermark && !object && (
         <span aria-hidden style={{
           position: 'absolute', right: compact ? '4px' : '10px',
           bottom: compact ? '-26px' : '-34px',
@@ -89,18 +132,36 @@ export function HeroPanel({
   )
 }
 
-// The call-to-action that sits inside a HeroPanel. Inverts to solid white on
-// hover so the lit block has one unmistakable next step.
+// The call-to-action that sits inside a HeroPanel.
+//
+// **It is opaque paper now (P14-5), not a translucent pill.** It was
+// `rgba(255,255,255,0.14)` behind a 28% white border, inverting to solid white
+// only on hover — which meant that on a phone, where there is no hover, the one
+// action on Home was permanently in its weak state: a 14%-white ghost on a red
+// ground. Measured in the hero lab, it was the single weakest element on the
+// screen. Opaque white with the accent as its ink is the strongest button
+// available on this ground, it needs no interaction to read, and it is the same
+// shape as the shared `Button` (44px tall, `RADIUS.control`) rather than a
+// bespoke 42px pill.
+//
+// Not the shared `Button` itself: that control's variants are all built to sit on
+// a THEMED surface — `--primary-fill`, `--surface`, `--border` — and none of them
+// is "paper on the brand". Inverting a Button onto an accent ground would mean a
+// sixth variant that exists for one call site. The geometry is borrowed; the
+// palette is the hero's.
+//
+// `hovered` now only moves the arrow, which is a desktop nicety rather than the
+// difference between legible and not.
 export function HeroAction({ label, hovered, icon: Icon, accentHex }) {
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: '8px',
-      marginTop: '18px', padding: '10px 16px', borderRadius: '12px',
-      background: hovered ? '#fff' : 'rgba(255,255,255,0.14)',
-      border: '1px solid rgba(255,255,255,0.28)',
-      color: hovered ? accentHex : '#fff',
-      fontSize: '13.5px', fontWeight: 700,
-      transition: 'background 180ms ease, color 180ms ease',
+      marginTop: '16px', height: '44px', padding: '0 18px',
+      borderRadius: RADIUS.control + 'px',
+      background: '#fff', color: accentHex,
+      ...TYPE.label, fontWeight: 700,
+      // A hairline of contact shadow: the button sits ON the plate.
+      boxShadow: '0 1px 0 rgba(23,17,14,0.10)',
     }}>
       {label}
       {Icon && (

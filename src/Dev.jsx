@@ -252,6 +252,7 @@ export default function Dev({ session, profile, track, onBack, onNavigate }) {
         <NavGlyphGallery />
       </Section>
 
+
       <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: 'var(--text-faint)' }}>
         <RefreshCw size={12} /> After data changes, go Home — it reloads profile, track and counts.
         <Trash2 size={12} style={{ marginLeft: '8px' }} /> Red actions need a second tap.

@@ -4,6 +4,8 @@ import { toast } from './toast'
 import { useIsMobile } from './useIsMobile'
 import { anySheetOpen, subscribeSheets } from './sheetStack'
 import { MOBILE_NAV_HEIGHT, NAV_TRAY_BOTTOM } from './navMetrics'
+import { TAP_MIN } from './controlTokens'
+import { ELEVATION } from './shape'
 import { feedbackStoryContext } from './feedbackContext'
 import { BUILD_SHA } from './version'
 import { MessageCircleHeart, X, Bug, Lightbulb, MessageSquare } from 'lucide-react'
@@ -24,7 +26,14 @@ const CATEGORIES = [
 ]
 
 // P14-0: vermilion, themed. See ui.jsx.
-const PRIMARY = 'var(--primary)'
+// `--primary-fill`, not `--primary` (P14-5).
+//
+// The two tokens agree in light and diverge in dark, because a colour tuned to read
+// AS text on the page is too light to carry white ON TOP of it — measured in P14-1,
+// white on dark `--primary` is 3.67:1, an AA failure. This button is white-on-red,
+// i.e. a fill, and it had the wrong one of the pair. The brief calls it "a random
+// sage-green object": the sage went in P14-0, but the fill role never followed.
+const PRIMARY = 'var(--primary-fill)'
 const PRIMARY_PRESSED = 'var(--primary-pressed)'
 
 // How far the floating button sits above the bottom edge, on a phone.
@@ -133,13 +142,19 @@ export default function Feedback({ session, profile, view }) {
             // no home indicator.
             ? 'calc(' + (MOBILE_NAV_HEIGHT + FAB_GAP_ABOVE_NAV) + 'px + ' + NAV_TRAY_BOTTOM + ')'
             : '24px',
-          width: '50px', height: '50px', borderRadius: '999px',
+          // 50 → 44: the shared control floor (controlTokens.TAP_MIN), which is
+          // also six pixels less of a competing object beside Home's one action.
+          // It stays comfortably tappable — 44 is the floor Apple and the
+          // accessibility standards both ask for, and the brief asks that this not
+          // compete with the primary action.
+          width: TAP_MIN + 'px', height: TAP_MIN + 'px', borderRadius: '999px',
           background: PRIMARY, border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: 'var(--shadow-2)',
+          // A lit top edge, like every other lifted object in the app since P14-4.
+          boxShadow: ELEVATION.floating + ', inset 0 1px 0 var(--inset-highlight)',
         }}
       >
-        <MessageCircleHeart size={22} strokeWidth={1.9} color="#fff" />
+        <MessageCircleHeart size={20} strokeWidth={2} color="#fff" />
       </button>
       )}
 

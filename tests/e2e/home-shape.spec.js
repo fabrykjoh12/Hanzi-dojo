@@ -55,11 +55,28 @@ const SURFACES = () => {
     row: row ? read(row) : null,
     week: week ? read(week) : null,
     // A card inside the card. None may exist.
+    //
+    // ARTWORK IS NOT A CARD, and since P14-5 the distinction matters: the story
+    // cover is 72px of real 2:3 poster with a rounded corner and a shadow, because
+    // a cover is a physical object and the brief asks for the artwork to carry some
+    // of the screen's dimensionality. It is not a container — it holds an image and
+    // no text — so an element whose subtree has an <img> and no words is excluded.
+    //
+    // That keeps the rule sharp rather than loosening it: a bordered box with rows
+    // of text inside the supporting surface still fails, which is the thing P10
+    // actually banned.
     nestedPanels: inside.filter((el) => {
       const cs = getComputedStyle(el);
       const b = el.getBoundingClientRect();
-      return (parseFloat(cs.borderTopLeftRadius) || 0) >= 12 && b.width > 60 && b.height > 40
+      const isPanel = (parseFloat(cs.borderTopLeftRadius) || 0) >= 12
+        && b.width > 60 && b.height > 40
         && ((parseFloat(cs.borderTopWidth) || 0) > 0 || cs.boxShadow !== 'none');
+      if (!isPanel) return false;
+      // `data-story-cover` is declared by StoryCover.jsx. Inferring artwork from
+      // the subtree ("has an <img>, has no text") looked cleverer and was wrong:
+      // with no artwork to load the component renders a drawn SVG placeholder, so
+      // the check passed in production and failed in the mocked suite.
+      return !el.hasAttribute('data-story-cover');
     }).map((el) => (el.textContent || '').trim().slice(0, 24)),
     // Everything pressable inside the supporting surface.
     pressable: inside.filter((el) => el.classList.contains('hd-press')
@@ -189,11 +206,14 @@ test.describe('Home — the supporting surface', () => {
     expect(drawn.border).toBe(0);
     expect(drawn.bg).toMatch(/rgba\(0, 0, 0, 0\)|transparent/);
 
-    // The artwork is the anchor: a 2:3 cover, 52–60px wide.
+    // The artwork is the anchor, and P14-5 gave it room: 56 → 72px, which is the
+    // difference between a list-row thumbnail and a book on a shelf. The band is
+    // still a band — a cover that grows past ~80 starts competing with the hero,
+    // and one under ~60 is back to being a favicon.
     const cover = row.locator('div').first();
     const c = await cover.boundingBox();
-    expect(c.width).toBeGreaterThanOrEqual(52);
-    expect(c.width).toBeLessThanOrEqual(60);
+    expect(c.width).toBeGreaterThanOrEqual(64);
+    expect(c.width).toBeLessThanOrEqual(80);
     expect(Math.abs(c.height / c.width - 1.5)).toBeLessThan(0.12);
 
     await row.click();

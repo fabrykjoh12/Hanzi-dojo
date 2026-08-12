@@ -4,11 +4,11 @@ import { getLevelLabel } from './utils'
 import { languageTheme, ink } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
-import { firstContentChar } from './homeStory'
 import { fetchHandoff, trackSignature } from './homeData'
 import { query, subscribe } from './dataCache'
 import { HOME_HANDOFF } from './cacheEvents'
 import { HeroPanel, HeroAction, Panel, PageHeader } from './panels'
+import { RADIUS, ELEVATION } from './shape'
 import { rhythmSummary, weekdayInitial } from './studyRhythm'
 import { forecastSummary } from './reviewForecast'
 import { sessionEstimateLabel } from './sessionEstimate'
@@ -16,7 +16,9 @@ import { maybeStartTour, markTourSeen } from './tour'
 import { isTutorialDone } from './prelogin'
 import { firstSessionPending } from './homeData'
 import TourOverlay from './TourOverlay'
-import { MICRO, NUM } from './designTokens'
+import { MICRO, NUM, ON_HERO } from './designTokens'
+import { TYPE } from './typeScale'
+import { DeckObject } from './heroObjects'
 import StoryCover from './StoryCover'
 
 // ── Home ──────────────────────────────────────────────────────────────────
@@ -46,7 +48,6 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
   const accentInk = ink(accentHex)
   const langFont = theme.font
 
-  const langChar = firstContentChar(theme.nativeName) || theme.nativeName.slice(0, 1)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
   const nextLevelLabel = getLevelLabel(profile.active_language, track.system, track.current_level + 1)
 
@@ -170,6 +171,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         label: 'Then read',
         title: daily.sentence,
         meta: daily.story.title + ' · you know ' + daily.knownPct + '% of it',
+        knownPct: daily.knownPct,
         onOpen: () => onNavigate('stories'),
       }
       : null
@@ -192,7 +194,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
           padding: '14px 16px', animationDelay: '40ms',
         }}>
           <Sunrise size={20} strokeWidth={1.9} color={accentInk} style={{ flexShrink: 0 }} />
-          <span style={{ fontSize: '13.5px', color: 'var(--text)', fontWeight: 600, lineHeight: 1.5 }}>
+          <span style={{ ...TYPE.bodySecondary, color: 'var(--text)', fontWeight: 600 }}>
             {gentleReturnMessage(gentleReady)}
           </span>
         </div>
@@ -208,7 +210,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
       {firstRunNudge && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '10px',
-          padding: '0 2px', fontSize: '13.5px', fontWeight: 700,
+          padding: '0 2px', ...TYPE.bodySecondary, fontWeight: 700,
           color: accentInk, fontFamily: 'Inter, sans-serif',
         }}>
           <Sparkles size={16} strokeWidth={2} color={accentInk} style={{ flexShrink: 0 }} />
@@ -219,9 +221,8 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
       {/* ── The one lit block: today's cards ── */}
       <HeroPanel
         accentHex={accentHex}
-        seed={profile.active_language}
-        watermark={langChar}
-        watermarkFont={langFont}
+        material="facet"
+        object={<DeckObject size={isMobile ? 132 : 152} />}
         compact={isMobile}
         onClick={() => onNavigate(action.go)}
         style={{ marginBottom: '14px' }}
@@ -281,41 +282,56 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
             ? { marginTop: '15px', paddingTop: '15px', borderTop: '1px solid var(--border)' }
             : undefined}
         >
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
-          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '12px' }}>
+          <h2 style={{ margin: 0, ...TYPE.titleCard, color: 'var(--text)' }}>
             Your week
           </h2>
-          <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+          <span style={{ ...TYPE.caption, color: 'var(--text-muted)' }}>
             {studiedDays === 0
               ? 'No sessions yet'
               : 'Studied ' + studiedDays + ' of the last ' + rhythmDays + ' days'}
           </span>
         </div>
 
+        {/* Seven marks, not seven pills.
+            
+            They were 30px-tall full-width rounded rectangles, which is four fifths
+            of the height of the story cover next to them for information that is a
+            yes or a no per day — the P14-5 brief's "seven generic grey pills",
+            exactly. A day is now a 10px dot: an ink mark when it happened, a faint
+            ring when it did not, and a filled ring on today until it is earned.
+            
+            The same information, a third of the ink, and it stops competing with
+            the row above it. Deliberately NOT a streak: the marks have no
+            connecting line and no counter, because a chain is a thing to protect
+            and this is a record of what happened. */}
         <div
           role="img"
           aria-label={'Studied ' + studiedDays + ' of the last ' + rhythmDays + ' days'}
           style={{ display: 'flex', gap: '6px' }}
         >
           {rhythm.map(day => (
-            <div key={day.date} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+            <div key={day.date} style={{
+              flex: 1, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', gap: '7px',
+            }}>
               <span style={{
-                width: '100%', height: '30px', borderRadius: '8px',
-                // Mixed against the TEXT, not against a panel colour: these
-                // marks sit on the page now, and `--surface-2` is 6/255 from it
+                width: '10px', height: '10px', borderRadius: '999px',
+                // Mixed against the TEXT, not against a panel colour: these marks
+                // sit on the page now, and `--surface-2` is 6/255 from it
                 // (P10-C2). One recipe, correct in both themes by construction.
                 background: day.studied
                   ? accentInk
-                  : 'color-mix(in srgb, var(--text) 10%, transparent)',
-                // Today is outlined rather than filled until it's earned — the
-                // ring is an invitation, the fill is the record.
+                  : 'color-mix(in srgb, var(--text) 9%, transparent)',
+                // Today is ringed rather than filled until it is earned — the ring
+                // is an invitation, the fill is the record.
                 boxShadow: day.isToday && !day.studied
-                  ? 'inset 0 0 0 2px ' + `color-mix(in srgb, ${accentHex} 45%, transparent)`
+                  ? 'inset 0 0 0 2px ' + `color-mix(in srgb, ${accentHex} 55%, transparent)`
                   : 'none',
               }} />
               <span style={{
-                ...MICRO, fontSize: '10.5px',
-                color: day.isToday ? 'var(--text)' : 'var(--text-faint)',
+                ...MICRO,
+                color: day.isToday ? 'var(--text-secondary)' : 'var(--text-faint)',
               }}>
                 {weekdayInitial(day.date)}
               </span>
@@ -328,32 +344,25 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
             of numbers made Home read as a dashboard. ── */}
         <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
-            <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text)' }}>
+            <span style={{ ...TYPE.titleCard, color: 'var(--text)' }}>
               Toward {nextLevelLabel}
             </span>
-            <span style={{ ...NUM, fontSize: '13px', color: 'var(--text-muted)' }}>
+            <span style={{ ...NUM, ...TYPE.caption, color: 'var(--text-muted)' }}>
               {learned} of {totalWords} words
             </span>
           </div>
 
-          <div
-            role="img"
-            aria-label={learned + ' of ' + totalWords + ' words learned toward ' + nextLevelLabel + ' — ' + pct + '%'}
-            style={{
-              height: '6px', borderRadius: '999px', overflow: 'hidden',
-              background: 'color-mix(in srgb, var(--text) 10%, transparent)',
-            }}
-          >
-            <div style={{
-              width: pct + '%', height: '100%', borderRadius: '999px',
-              background: accentInk, transition: 'width 600ms cubic-bezier(0.22,1,0.36,1)',
-            }} />
-          </div>
+          <LevelProgress
+            pct={pct}
+            accentInk={accentInk}
+            label={learned + ' of ' + totalWords + ' words learned toward '
+              + nextLevelLabel + ' — ' + pct + '%'}
+          />
 
           {/* One quiet line for what's ahead — this was two lines in two
               different panels saying nearly the same thing. Left-aligned: a
               centred caption is what a widget does. */}
-          <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '10px' }}>
+          <div style={{ ...TYPE.caption, color: 'var(--text-faint)', marginTop: '10px' }}>
             {counts.dueTomorrow > 0
               ? 'About ' + counts.dueTomorrow + ' waiting tomorrow'
               : 'Nothing due tomorrow — a free day'}
@@ -377,6 +386,57 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
   )
 }
 
+// Progress toward the next level, as segments rather than a hairline.
+//
+// It was a 6px continuous rail, and at HSK 2 → HSK 3 with 5 of 44 words that is
+// 36 pixels of red on a 324px line: technically accurate and impossible to read
+// as "a tenth of the way". Ten segments make the same fraction countable — the
+// eye reads "one of ten" without reading a number — and 8px of height lets the
+// unfinished part be a warm neutral rather than a grey scratch.
+//
+// Ten and not one-per-word: a level is 44 words at HSK 2 and 300 at HSK 6, so
+// per-word segments would be a barcode at the top of the curriculum. Ten is a
+// tenth, which is the granularity the sentence beside it already uses.
+//
+// **No gold.** The brief allows it for a genuine milestone and this is not one —
+// it is the road, not the arrival. Gold means "unlocked" in this app and the level
+// test is what unlocks (`--gold`, CLAUDE.md §5).
+const PROGRESS_SEGMENTS = 10
+
+function LevelProgress({ pct, accentInk, label }) {
+  // How many segments are fully earned, and how much of the next one is.
+  const exact = (Math.max(0, Math.min(100, pct)) / 100) * PROGRESS_SEGMENTS
+  const full = Math.floor(exact)
+  const partial = exact - full
+  return (
+    <div role="img" aria-label={label} style={{ display: 'flex', gap: '4px' }}>
+      {Array.from({ length: PROGRESS_SEGMENTS }, (_, i) => {
+        // The partial segment is filled proportionally rather than rounded, so a
+        // learner who has done four words of forty-four sees something.
+        const fill = i < full ? 1 : (i === full ? partial : 0)
+        return (
+          <span key={i} style={{
+            flex: 1, height: '8px', borderRadius: '3px', overflow: 'hidden',
+            background: 'color-mix(in srgb, var(--text) 9%, transparent)',
+          }}>
+            {fill > 0 && (
+              <span style={{
+                display: 'block', height: '100%',
+                // A hair of width even at 1%, or the first word of a level looks
+                // like no words at all.
+                width: Math.max(14, Math.round(fill * 100)) + '%',
+                background: accentInk,
+                borderRadius: '3px',
+                transition: 'width 600ms cubic-bezier(0.22,1,0.36,1)',
+              }} />
+            )}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
 // The story hand-off — the first row of the supporting surface.
 //
 // It has been three shapes now. A bordered `Panel` wrapped around a row that was
@@ -392,7 +452,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
 // whose content is its label.
 function StoryHandoff({
   coverPath, coverStory, label, title, titleFont, meta, metaIcon: MetaIcon,
-  accentInk, accentHex, onOpen, dataTour,
+  knownPct, accentInk, accentHex, onOpen, dataTour,
 }) {
   return (
     <div
@@ -407,31 +467,62 @@ function StoryHandoff({
         minHeight: '44px', cursor: 'pointer',
       }}
     >
+      {/* The artwork is the anchor, and P14-5 gave it room: 56px → 72px, which is
+          the difference between a list-row thumbnail and a book on a shelf. It is
+          the story's real 2:3 cover — content, not a drawn box — and it gets the
+          only shadow in this panel, because a cover is a physical object and the
+          rows around it are not. */}
       <StoryCover
         story={coverStory}
         path={coverPath}
         accent={accentHex}
-        radius={8}
+        radius={RADIUS.control}
         loading="eager"
-        style={{ width: '56px', flexShrink: 0, aspectRatio: '2 / 3' }}
+        style={{
+          width: '72px', flexShrink: 0, aspectRatio: '2 / 3',
+          boxShadow: ELEVATION.raised,
+        }}
       />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
+        <div style={{ ...TYPE.eyebrow, color: accentInk, marginBottom: '5px' }}>
           {label}
         </div>
+        {/* The title steps up to titleCard weight — this is the row's subject, and
+            at 15px/600 beside a 13px/700 label it was losing to its own kicker. */}
         <div style={{
-          fontFamily: titleFont, fontSize: '15px', fontWeight: 600, color: 'var(--text)',
+          fontFamily: titleFont, ...TYPE.titleCard, color: 'var(--text)',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>
           {title}
         </div>
         <div style={{
           display: 'flex', alignItems: 'center', gap: '5px',
-          fontSize: '13px', color: 'var(--text-muted)', marginTop: '3px', minWidth: 0,
+          ...TYPE.caption, color: 'var(--text-muted)', marginTop: '4px', minWidth: 0,
         }}>
           {MetaIcon && <MetaIcon size={13} strokeWidth={2.2} color={accentInk} style={{ flexShrink: 0 }} aria-hidden="true" />}
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta}</span>
         </div>
+        {/* Readiness, as a mark. `knownPct` was already in the meta line as
+            "you know 83% of it" and nowhere as a thing you can see at a glance —
+            which is what the brief means by progress/readiness information. Only
+            for the daily pick: a reward chapter is unlocked or it is not, and a
+            percentage there would be answering a question nobody asked. */}
+        {typeof knownPct === 'number' && (
+          <div
+            role="img"
+            aria-label={'You know about ' + knownPct + '% of the words in this story'}
+            style={{
+              marginTop: '7px', height: '4px', borderRadius: '999px', maxWidth: '132px',
+              background: 'color-mix(in srgb, var(--text) 10%, transparent)',
+              overflow: 'hidden',
+            }}
+          >
+            <span style={{
+              display: 'block', width: Math.max(4, Math.min(100, knownPct)) + '%',
+              height: '100%', borderRadius: '999px', background: accentInk,
+            }} />
+          </div>
+        )}
       </div>
       <ChevronRight size={19} strokeWidth={2.1} color="var(--text-faint)" style={{ flexShrink: 0 }} />
     </div>
@@ -450,19 +541,18 @@ function QueueBody({ counts, totalDue, goal, doneToday, isMobile, action, accent
   // the usual button is the honest retry.
   if (failed) {
     return (
-      <div>
-        <span style={{ ...MICRO, color: 'rgba(255,255,255,0.62)' }}>
+      <div style={{ maxWidth: isMobile ? '70%' : '76%' }}>
+        <span style={{ ...MICRO, color: ON_HERO.eyebrow }}>
           Today's cards
         </span>
 
         <div style={{
-          fontSize: isMobile ? '20px' : '24px', fontWeight: 700, color: '#fff',
-          lineHeight: 1.3, margin: '12px 0 6px',
+          ...TYPE.titleSection, color: '#fff', margin: '10px 0 0',
         }}>
           Couldn't load today's queue
         </div>
 
-        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45, marginTop: '12px' }}>
+        <div style={{ ...TYPE.bodySecondary, color: ON_HERO.body, marginTop: '10px' }}>
           Check your connection — starting a session loads it fresh.
         </div>
 
@@ -472,30 +562,41 @@ function QueueBody({ counts, totalDue, goal, doneToday, isMobile, action, accent
   }
 
   return (
-    <div>
-      <span style={{ ...MICRO, color: 'rgba(255,255,255,0.62)' }}>
+    // The text column stops short of the identity object so the two never
+    // overlap. 68% on a phone is measured, not chosen: the deck is 132px of a
+    // 358px panel and it is cropped by the corner, so its visible mass starts
+    // around 74%.
+    <div style={{ maxWidth: isMobile ? '70%' : '76%' }}>
+      <span style={{ ...MICRO, color: ON_HERO.eyebrow }}>
         {clear ? 'Queue clear' : 'Ready to review'}
       </span>
 
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', margin: '10px 0 6px' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', margin: '8px 0 0' }}>
         <span style={{
-          ...NUM, color: '#fff', lineHeight: 0.95,
-          // A phone screen holds four blocks; a 52px numeral made this one
-          // read as the whole page. The number only needs to win the panel.
-          fontSize: isMobile ? '40px' : '64px', fontWeight: 700, letterSpacing: '-0.04em',
+          // TYPE.display, which is the role written for exactly this: "the one
+          // number a screen is about — Home's card count". It was 40px/700 by
+          // coincidence and is 40px/800 by name now, so the numeral got heavier
+          // without inventing a size — 44 was tried and the design-system guard
+          // was right to refuse it.
+          ...TYPE.display, ...NUM, fontWeight: TYPE.display.fontWeight,
+          color: '#fff', fontSize: isMobile ? TYPE.display.fontSize : '64px',
         }}>
           {clear ? '\u2713' : totalDue}
         </span>
-        <span style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: 600, color: 'rgba(255,255,255,0.86)' }}>
+        <span style={{ ...TYPE.titleCard, color: 'rgba(255,255,255,0.9)' }}>
           {clear ? 'all caught up' : 'card' + (totalDue === 1 ? '' : 's') + ' waiting'}
-          {/* Session length from the ACTUAL queue (see sessionEstimate.js). */}
-          {!clear && sessionEstimateLabel(counts) && (
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
-              {' · ' + sessionEstimateLabel(counts)}
-            </span>
-          )}
         </span>
       </div>
+
+      {/* Session length from the ACTUAL queue (see sessionEstimate.js). Its own
+          line now rather than trailing the unit inside a nested span: at 320 that
+          span wrapped mid-phrase, and it is a different kind of fact from the
+          count anyway. */}
+      {!clear && sessionEstimateLabel(counts) && (
+        <div style={{ ...TYPE.caption, color: ON_HERO.eyebrow, marginTop: '5px' }}>
+          {sessionEstimateLabel(counts)}
+        </div>
+      )}
 
       {/* The queue's breakdown — desktop only. On a phone these three numbers
           appear the moment Study opens, one tap away; here they were three
@@ -508,22 +609,73 @@ function QueueBody({ counts, totalDue, goal, doneToday, isMobile, action, accent
             ['Due', counts.dueCount],
           ].map(([label, value]) => (
             <span key={label} style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-              <span style={{ ...NUM, fontSize: '17px', fontWeight: 700, color: '#fff' }}>{value}</span>
-              <span style={{ ...MICRO, fontSize: '10.5px', color: 'rgba(255,255,255,0.55)' }}>{label}</span>
+              <span style={{ ...NUM, ...TYPE.titleSection, color: '#fff' }}>{value}</span>
+              <span style={{ ...MICRO, color: ON_HERO.eyebrow }}>{label}</span>
             </span>
           ))}
         </div>
       )}
 
-      <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45, marginTop: '12px' }}>
-        {goalComplete
-          ? 'Daily goal complete — nice work.'
-          : goal > 0
-            ? 'Daily goal: ' + doneToday + ' of ' + goal + ' new cards'
-            : 'No daily goal set.'}
-      </div>
+      <GoalMarks done={doneToday} goal={goal} complete={goalComplete} />
 
       <HeroAction label={action.label} hovered={hovered} icon={ArrowRight} accentHex={accentHex} />
+    </div>
+  )
+}
+
+// The daily goal, as marks rather than as a sentence.
+//
+// "Daily goal: 0 of 10 new cards" is a sentence about a number that could be a
+// mark, and it was the only progress on the hero — the P14-5 brief's "visible
+// progress" is exactly this. One pip per card, filled as they are done.
+//
+// **Pips only up to PIP_MAX**, then a rail. The goal is `profile.daily_new_cards`
+// and nothing stops it being 30; thirty marks across 70% of a 320px panel is
+// 3px each, which is noise, not progress. The rail says the same thing at any
+// goal and the pips say it better at a real one.
+const PIP_MAX = 12
+
+function GoalMarks({ done, goal, complete }) {
+  if (!goal) {
+    return (
+      <div style={{ ...TYPE.caption, color: ON_HERO.eyebrow, marginTop: '14px' }}>
+        No daily goal set
+      </div>
+    )
+  }
+  const shown = Math.min(done, goal)
+  const label = complete ? 'Daily goal complete' : shown + ' of ' + goal + ' new'
+  return (
+    <div
+      role="img"
+      aria-label={complete ? 'Daily goal complete' : shown + ' of ' + goal + ' new cards done today'}
+      style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '14px' }}
+    >
+      {goal <= PIP_MAX ? (
+        <span style={{ display: 'flex', gap: '3px', flex: 1, minWidth: 0 }}>
+          {Array.from({ length: goal }, (_, i) => (
+            <span key={i} style={{
+              flex: 1, height: '4px', borderRadius: '999px',
+              // `plane1` (17%) and not `plane2` (10%) for the empty pips: at 10%
+              // the unfilled track read as a dashed grey line rather than as ten
+              // waiting marks, in both themes. A track has to look like a track
+              // before a fill can mean anything.
+              background: i < shown ? '#fff' : ON_HERO.plane1,
+            }} />
+          ))}
+        </span>
+      ) : (
+        <span style={{
+          flex: 1, height: '4px', borderRadius: '999px', overflow: 'hidden',
+          background: ON_HERO.plane1,
+        }}>
+          <span style={{
+            display: 'block', width: Math.round((shown / goal) * 100) + '%',
+            height: '100%', borderRadius: '999px', background: '#fff',
+          }} />
+        </span>
+      )}
+      <span style={{ ...TYPE.caption, color: ON_HERO.eyebrow, flexShrink: 0 }}>{label}</span>
     </div>
   )
 }

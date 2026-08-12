@@ -30,7 +30,16 @@ export default function StoryCover({ story, path, accent, alt = '', radius = 14,
   if (prevSrc.current !== src) { prevSrc.current = src; if (failed) setFailed(false) }
   const showImg = Boolean(src) && !failed
   return (
-    <div style={{
+    // `data-story-cover` marks this as ARTWORK rather than as a container.
+    //
+    // It matters to one spec and the distinction is real: home-shape.spec.js bans
+    // "a card inside the card" by looking for a rounded, bordered or shadowed box
+    // inside the supporting surface, and since P14-5 the cover is exactly that
+    // shape — 72px of 2:3 poster with a radius and a shadow, because a cover is a
+    // physical object. It is not a panel: it holds an image and no text. Inferring
+    // that from the subtree failed the moment the fallback placeholder (an SVG, not
+    // an <img>) rendered, so it is declared here instead of guessed there.
+    <div data-story-cover="" style={{
       position: 'relative', overflow: 'hidden', borderRadius: radius,
       background: fallbackBackground(accent), border: '1px solid var(--border)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
