@@ -930,10 +930,22 @@ white is #CD7566, a dusty pink. `--hero-depth` is warmer and lighter in dark too
 because darkening a panel toward #17110E on a #100D0E page makes its bottom edge
 merge with the page it is supposed to float on.
 
-**`material` is a migration seam.** Four screens share `HeroPanel` and three of them
-— Stories, Practice, Profile — are frozen, so `wash` (ink ridgelines + watermark) is
-the unchanged default and Home opts into `facet`. When a later phase moves those
-screens the default flips and the prop goes away.
+**`material` is a migration seam, and it covers FOUR things, not one.** Four screens
+share `HeroPanel` and three of them — Stories, Practice, Profile — are frozen, so
+`wash` is the unchanged default and Home opts into `facet`. The seam runs through
+`heroGround()` (two-stop 160deg + `#17110E` vs the three-stop per-theme ground),
+`heroShadow()` (inset lit edge or not), the atmosphere (ink ridgelines + watermark vs
+lit facet + object) and `HeroAction` (`glass`, the translucent hover-inverting pill,
+vs `paper`, opaque at 44px). An unknown material falls back to the frozen default on
+purpose: a typo must not restyle a frozen screen. `src/heroMaterial.test.jsx` pins
+every one of those.
+
+P14-5 first shipped with the seam applied to the atmosphere only, so the ground, the
+edge and the CTA changed on all four screens. CI caught it as an 8,168-pixel diff on
+the `stories-shelf-mobile` baseline; the desktop shot passed because the tolerance is
+a *ratio* and the same absolute change is 0.008 of a 1280×800 canvas. When a later
+phase moves those screens over, flip the defaults and delete the `wash`/`glass`
+branches rather than adding a third material.
 
 **The identity objects live in `heroObjects.jsx`**, drawn to the navigation family's
 rules with two deliberate differences: they are made of PAPER (`ON_HERO.plane*`)
