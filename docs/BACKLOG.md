@@ -10,6 +10,34 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+## P14-5C — Home shipped as a guide; what it left (2026-08-13)
+
+- **Two of P14-5B's three data gaps are closed.** `counts.studiedToday` and
+  `hasReadToday(story_reads)` both landed as additive derivations from rows already
+  fetched. The third is not closable without a new system: **there is still no
+  per-day practice record**, so step 3 completes on "nothing needs attention" and
+  never on "you did it". Anyone tempted to fix that should add a real table, not
+  read `analytics_events`.
+- **A reward chapter still has no `% known`.** Computing it means a second vocab +
+  cards pass on Home's critical path; the step shows the chapter label instead. If
+  it ever matters, do it inside `getSessionRewardTeaser` where the cards are
+  already in hand.
+- **The Cards identity object is unfinished business.** `DeckObject` has no call
+  site: at Home sizes it read as a stack of notes, and with a brush mark on it as
+  the compose glyph — the third time that misread has appeared in P14. It stays in
+  `heroObjects.jsx` as the starting point for a proper Cards asset, designed on its
+  own rather than squeezed into a layout.
+- **`HeroPanel`'s `facet` material now has no call site either.** Home was its only
+  user. The seam and its tests stay (`heroMaterial.test.jsx`) because Stories,
+  Practice and Profile are still on `wash` and something has to keep them there;
+  whichever phase unfreezes them decides whether `facet` is what they get.
+- **The level foot reserves 58px on the right for the feedback control.** The FAB
+  floats over the bottom-right corner, and a red rail vanishing under a red circle
+  reads as a rendering fault. If the FAB ever moves, that padding goes.
+- **Deleted with the migration:** `HomeConcepts.jsx`, `homeConceptFixtures.js`,
+  `p14-home-concepts.spec.js` and `p14-home.spec.js` (its successor is
+  `home-guide.spec.js`, which renders the same matrix while asserting the states).
+
 ## P14-5B — the Home guide: three data gaps and a lab (2026-08-13)
 
 Full picture in [`P14-5B-HOME-GUIDE-AUDIT.md`](P14-5B-HOME-GUIDE-AUDIT.md). What a
