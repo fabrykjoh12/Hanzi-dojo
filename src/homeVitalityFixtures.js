@@ -84,3 +84,10 @@ export const VITALITY_STATES = [
 ]
 
 export const VITALITY_WIDTHS = [320, 390, 430]
+
+// The approved vertical rhythm (P14-5D round 3, V2 — meaningful previews).
+// Here rather than in HomeVitality.jsx because react-refresh limits a .jsx file
+// to component exports, and the Visual Style lab needs this config too.
+export const HOME_RHYTHM = {
+  gap: 26, padY: 10, connector: 1, distribute: true, preview: true,
+}

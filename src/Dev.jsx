@@ -8,6 +8,7 @@ import { toast } from './toast'
 import ControlsGallery from './ControlsGallery'
 import NavGlyphGallery from './NavGlyphGallery'
 import HomeVitalityLab from './HomeVitality'
+import VisualStyleLab from './VisualStyle'
 import {
   ArrowLeft, FlaskConical, Gauge, BookOpen, Trash2, Zap, RefreshCw, ShieldCheck, Palette, Compass,
   Flame,
@@ -261,6 +262,13 @@ export default function Dev({ session, profile, track, onBack, onNavigate }) {
           else still. Deleted when a treatment is migrated into Home. */}
       <Section icon={Flame} title="Home vitality — P14-5D treatments" accent={accent}>
         <HomeVitalityLab />
+      </Section>
+
+      {/* The whole-app style sprint: action model, typeface, shape scale and the
+          primary control, each on its own axis over the frozen V2 composition.
+          Deleted when the direction is decided. */}
+      <Section icon={Palette} title="Visual Style V2 — the language sprint" accent={accent}>
+        <VisualStyleLab />
       </Section>
 
 

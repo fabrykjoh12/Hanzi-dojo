@@ -9,7 +9,7 @@ import {
   PACKET_DIRECTIONS, PACKET_NOTES, PACKET_MARKS, PACKET_PLACEMENTS, PLACEMENT_NOTES,
 } from './redPacketFamily'
 import { OPEN_PHASES, storyboardFrames } from './redPacketOpen'
-import { VITALITY_STATES, VITALITY_WIDTHS } from './homeVitalityFixtures'
+import { VITALITY_STATES, VITALITY_WIDTHS, HOME_RHYTHM } from './homeVitalityFixtures'
 import bgChinese from './assets/bg-chinese.webp'
 
 // ── P14-5D: Home's vertical rhythm, in the settled visual language ──────────
@@ -163,7 +163,25 @@ function CardsStep({ step, ctx }) {
       size={ctx.placement === 'beside' ? 118 : 132}
     />
   )
-  const action = step.cta ? <Button variant="lacquer" size="lg">{step.cta}</Button> : null
+  const action = step.cta ? (
+    <Button
+      variant="lacquer" size="lg"
+      style={ctx.shape ? { borderRadius: ctx.shape.control + 'px' } : undefined}
+    >
+      {step.cta}
+    </Button>
+  ) : null
+
+  // The Visual Style lab's question: the packet AS the action, not an object
+  // beside a button. It supplies the renderer so this file does not import it.
+  if (ctx.placement === 'fused' && ctx.renderAction) {
+    return (
+      <>
+        <div style={{ marginTop: '9px' }}><CountBlock step={step} /></div>
+        <div style={{ marginTop: '16px' }}>{ctx.renderAction(step)}</div>
+      </>
+    )
+  }
 
   if (ctx.placement === 'below') {
     // The object and the action on one line, sharing a baseline: the packet is
@@ -224,7 +242,8 @@ function ActiveStep({ step, ctx }) {
           {isStory && (
             <div data-story-cover="" style={{
               position: 'relative', marginTop: '13px', width: '100%', aspectRatio: '16 / 9',
-              borderRadius: RADIUS.card + 'px', overflow: 'hidden', boxShadow: ELEVATION.raised,
+              borderRadius: (ctx.shape ? ctx.shape.card : RADIUS.card) + 'px',
+              overflow: 'hidden', boxShadow: ELEVATION.raised,
               background: 'var(--surface-2)',
             }}>
               <img src={step.story.coverUrl} alt="" style={{
@@ -311,7 +330,9 @@ function QuietStep({ step, guide, ctx, v, last }) {
         {preview && showArt && (
           <span data-story-cover="" style={{
             display: 'block', marginTop: '9px', width: '62%', maxWidth: '208px',
-            aspectRatio: '16 / 9', borderRadius: RADIUS.control + 'px', overflow: 'hidden',
+            aspectRatio: '16 / 9',
+            borderRadius: (ctx.shape ? ctx.shape.control : RADIUS.control) + 'px',
+            overflow: 'hidden',
             position: 'relative', background: 'var(--surface-2)', opacity: 0.93,
           }}>
             <img src={art.coverUrl} alt="" style={{
@@ -332,7 +353,8 @@ function QuietStep({ step, guide, ctx, v, last }) {
       {!preview && art && (
         <span data-story-cover="" style={{
           width: '96px', flexShrink: 0, aspectRatio: '16 / 9', display: 'block',
-          borderRadius: RADIUS.control + 'px', overflow: 'hidden', opacity: done ? 0.5 : 1,
+          borderRadius: (ctx.shape ? ctx.shape.control : RADIUS.control) + 'px',
+          overflow: 'hidden', opacity: done ? 0.5 : 1,
           position: 'relative', background: 'var(--surface-2)',
         }}>
           <img src={art.coverUrl} alt="" style={{
@@ -379,7 +401,7 @@ function LevelFoot({ ctx }) {
   )
 }
 
-function Variant({ guide, v, ctx }) {
+export function Variant({ guide, v, ctx }) {
   const active = guide.steps.find(s => s.status === STATUS.active || s.status === STATUS.unknown) || null
   const others = guide.steps.filter(s => s !== active)
   return (
@@ -419,15 +441,13 @@ function Variant({ guide, v, ctx }) {
 }
 
 // ── The composition, settled ──────────────────────────────────────────────
-// V2 — meaningful previews, approved. Held completely still by P14-5E; the only
-// thing that varies below is which packet stands on the Cards step.
-const V2 = {
-  gap: 26, padY: 10, connector: 1, distribute: true, preview: true,
-}
+// V2 — meaningful previews, approved. Its numbers live in homeVitalityFixtures
+// as HOME_RHYTHM so the Visual Style lab renders the identical rhythm.
+const V2 = HOME_RHYTHM
 
 const FOLD = 780
 
-function Frame({ width, concept, stateKey, children }) {
+export function Frame({ width, concept, stateKey, children }) {
   return (
     <div
       data-vitality-frame={concept} data-vitality-state={stateKey} data-frame-width={String(width)}
