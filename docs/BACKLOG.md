@@ -132,81 +132,84 @@ the fix, when it comes, is the Practice step's own dimensional object.
 
 ## P14-5E — the red packet (2026-08-13)
 
-`src/RedPacket.jsx` (the drawing), `src/redPacketFamily.js` (the concept list,
-outside the `.jsx` for the react-refresh rule), `src/redPacketOpen.js` (the
-opening, as a tested pure function). V2's composition is held completely still;
-the only thing that changes is the object on the Cards step.
+`src/RedPacket.jsx` (the drawing), `src/redPacketFamily.js` (directions, marks
+and placements — outside the `.jsx` for the react-refresh rule),
+`src/redPacketOpen.js` (the gesture, as a tested pure function). V2's composition
+is held still; what changes is the object on the Cards step and where it sits.
 
-### Round 1 was rejected, and the diagnosis was right
+### Rounds 1 and 2 were rejected, and the second diagnosis was the useful one
 
-Good idea, bad craft — "AI slop". Five faults, each with a fix, and every one of
-them is craft rather than concept:
+Round 1: over-rounded, bowed fold, no rim, three fanned cards, a Zen ensō on a
+Chinese object. All fixed, and the result was still rejected — correctly — as an
+enlarged flat UI icon.
 
-1. **Over-rounded.** A 2.6-unit corner on a 33-wide packet is an 8% radius:
-   moulded plastic. It is 1.4 now, and nothing in the object is rounder than 1.6.
-2. **The flap bowed.** A curved fold is the most blob-making line available, and
-   with a gold hairline along it, it read as a ribbon draped over the front.
-   Every fold is straight now, and no gold follows one.
-3. **No rim, and no print.** An illustrated object reads as premium because its
-   lit edge is a hard highlight rather than the top of a gradient, and because it
-   carries the details a manufactured thing would have. There is a 0.6-unit rim
-   light on the top and left edges, stroked with a fading gradient so it dies out
-   down the side instead of stopping — a highlight that ends at a point mid-edge
-   is a scratch, which is what the first attempt drew. And a **debossed border**
-   2.4 in from the edge, drawn as a groove (dark line, lit line under it). Those
-   two changes do most of the work.
-4. **Three fanned cards.** Three of anything, fanned, is a card game. Two,
-   barely turned and staggered in depth, is a deck someone put in an envelope.
-5. **The ensō.** A brushed circle is Zen — Japanese-coded — on an object that is
-   specifically Chinese.
+**The root cause was applying the navigation family's constraints to a hero.**
+Those rules (flat planes, no cavity, no perspective, silhouette above all) exist
+so a drawing survives at 20px. At 118px they produce exactly what the review saw:
+front-on, symmetrical, one red slab, beige tabs behind it.
 
-Proportion went 0.71 → **0.577**, which is a real 红包's.
+### Round 3 — a miniature illustration, not a big glyph
 
-### The seal, in two steps
+It keeps the family's palette, its single top-left light and its shape
+philosophy, and adds the thing the family deliberately does without: space.
 
-**Filled, then relief.** The first drafts filled the square with gold and knocked
-the character out. At 16px a solid gold chip is the loudest thing on the screen,
-which is the opposite of a subtle seal, and the knocked-out character came out a
-mush. In relief the mark is a line drawing, and a line drawing stays sharp small.
+- **Turned ~6°.** `SLOPE` is the one number the whole drawing is built from —
+  every horizontal edge in the object, cards included, drops by it. Verticals stay
+  vertical, which is what a Y-rotation does.
+- **Three planes.** The front face, a side plane turned away from the light, and
+  the up-facing lip of the front wall.
+- **A real cavity**, filled with a red deeper than any plane (`--lacquer-depth`,
+  the P14-5D token, so it darkens correctly per theme), with the front wall
+  casting a hard shadow down into it.
+- **The lip occludes the cards.** That single overlap does more for "the cards
+  are inside" than any amount of shading.
+- **Two shadows** that agree about the light: a tight contact shadow beneath, and
+  a longer soft one thrown down-right.
+- **Two real flashcards**, 你好 and 谢谢, unequal in width, height, lean and
+  paper.
 
-**日, then 文.** 日 is literally a rectangle inside a rectangle, so inside a
-square seal it drew three nested boxes and read as a digital 8. 文 — writing — is
-four strokes in a cross, cannot be confused with its own frame, and is the better
-word for this product anyway. The foil is `--gold` knocked 14% toward
-`--primary-pressed`: full-strength gold on vermilion reads as game treasure.
+Four faults this round found by rendering, each recorded in the file:
 
-### The three directions, and the winner
+1. **A 5.2-unit resting cavity drew a black bar** across the top of the object. A
+   packet at rest is nearly shut: 1.8 units for D1, 4.4 for D2.
+2. **The card clip was cut level** while the object is turned, so the cards were
+   trimmed along a line the packet does not have.
+3. **The clip started at y=0**, so a card on its way out had its top sheared off
+   mid-gesture. It opens 44 units above the box now.
+4. **Cards running edge to edge draw a lid**, not cards in a mouth. They are
+   inset, and overlap by a third rather than a half — at a half, the back card's
+   word was drawn underneath the front one.
 
-- **A · Premium lacquer envelope** — flap folded over the front, straight fold,
-  hard shadow beneath it, seal below.
-- **B · Minimal stamped packet** — one uninterrupted plane; the seal does all the
-  work. The most restrained and the least informative.
-- **C · Cards-peeking packet** — no front flap; two staggered cards standing in
-  the mouth, seal on the body.
+### The choice
 
-**C is the final object.** It is the only one that says *your cards are inside
-here* without a caption, which is the first evaluation criterion; A and B are a
-red envelope, and a red envelope on a learning app's Home screen is a decoration.
-C also keeps the brand mark, so nothing is traded away for the clarity. It draws
-no box (it is an SVG), it does not compete with the Story preview — it sits under
-the `1 · CARDS` eyebrow with the headline and the button, and the preview carries
-no CTA — and the Cards day's largest empty run is 76px, unchanged from before the
-object existed.
+**Direction D2 — open card packet — with the foil mark, placed `below`.**
 
-### The opening
+- **D2 over D1.** D1 (closed, card tops just clearing the lip) is a handsome red
+  object that does not say *cards*. At Home size it is a rectangle with a light
+  bar on top. D2 says it without a caption, which is the first criterion.
+- **Foil over deboss or none.** A blind deboss is nearly invisible at 118px —
+  correct behaviour for a blind deboss, and it means D1/deboss loses its brand
+  mark at the only size that matters. The foil 文 reads as a small warm mark.
+- **`below` over `beside` and `anchor`.** `beside` is the approved arrangement
+  and it is precisely the "decorative object next to an unrelated rectangle" the
+  brief names — the packet is small, top-right, and sits over the background
+  image. `below` puts the object and the action on one line at a shared baseline:
+  the packet is the thing, the button is how you open it. `anchor` is genuinely
+  interesting — the packet starting the rail — but it indents the "136" off the
+  left margin, which costs the screen its anchor.
 
-640ms, four overlapping beats (`OPEN_PHASES`): lift 0–180, packet opens 90–400,
-fan 260–560, hand off 480–640. Every beat starts before the one before it ends,
-because four played strictly in sequence is what makes 640ms feel like two
-seconds. Reduced motion is a different thing rather than a fast version: 120ms,
-cross-fade, no rotation, no travel. 12 tests, including monotonicity and a
-no-overshoot sweep.
+### The gesture, retimed to the brief
 
-Two mechanical faults the storyboard caught: `rotateX` without `perspective` is
-an orthographic squash — the flap appeared to shrink upward rather than swing
-away — and the fan's opacity ramp, applied to a construction whose cards already
-stand in the mouth at rest, made them blink out on the gesture's first frame. C
-has no flap to open, so that beat tips the mouth toward the viewer instead.
+650ms, five overlapping beats: press 0–120, cavity opens 120–280, cards rise
+230–430, fan 350–520, hand off 520–650. The first beat is a PRESS — the object
+compresses and recovers inside 120ms, the same physical idea as the lacquer
+button — and only then leaves the page. Reduced motion is 120ms, cross-fade, no
+travel. 16 tests, including monotonicity, a no-overshoot sweep, and one that
+fails if the cards start rising before the cavity is open.
+
+`storyboardFrames()` includes the middle of the press as well as every boundary:
+a storyboard of boundaries alone shows the compression at zero both times and
+reads as though it never happens.
 
 ## Recorded for P14-6 — not part of the Home phase
 
