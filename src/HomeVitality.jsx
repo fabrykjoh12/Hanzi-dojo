@@ -191,7 +191,7 @@ function ActiveStep({ step, ctx }) {
         )}
         {isCards && (
           <span style={{ margin: '0 2px -4px 0', flexShrink: 0 }}>
-            <RedPacket concept={ctx.packet} size={116} />
+            <RedPacket concept={ctx.packet} size={118} />
           </span>
         )}
       </div>
@@ -418,7 +418,7 @@ function PacketPlate({ concept, ctx }) {
           {PACKET_NOTES[concept]}
         </div>
         <div style={{ ...TYPE.caption, color: 'var(--text-faint)', marginTop: '8px' }}>
-          Home draws it at 116px tall — the left one. {ctx.accentHex}
+          Home draws it at 118px tall — the left one. {ctx.accentHex}
         </div>
       </div>
     </div>
@@ -442,7 +442,7 @@ function Storyboard({ concept }) {
             border: '1px solid var(--border)',
           }}>
             <div style={{ height: '148px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-              <RedPacket concept={concept} size={116} phase={ms} />
+              <RedPacket concept={concept} size={118} phase={ms} />
             </div>
             <div style={{ ...TYPE.eyebrow, color: 'var(--text)', marginTop: '10px' }}>{ms}ms</div>
             <div style={{ ...TYPE.caption, color: 'var(--text-faint)', marginTop: '2px', minHeight: '30px' }}>
@@ -480,7 +480,7 @@ export default function HomeVitalityLab() {
           Tap → lift → flap → fan → Study. Reduced motion is a 120ms cross-fade with
           no rotation and no travel.
         </div>
-        <Storyboard concept="B" />
+        <Storyboard concept="C" />
       </div>
 
       {VITALITY_STATES.map(state => {

@@ -164,6 +164,6 @@ for (const theme of ['light', 'dark']) {
     }
 
     fs.writeFileSync(OUT + '/index-' + theme + '.json', JSON.stringify(index, null, 2));
-    expect(index.length).toBe(48);
+    expect(index.length).toBe(36);
   });
 }

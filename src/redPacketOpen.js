@@ -31,7 +31,7 @@ export const REDUCED_MS = 120
 // visible at a glance rather than buried in four separate delays.
 export const OPEN_PHASES = [
   { key: 'lift', label: 'Packet lifts', start: 0, end: 180 },
-  { key: 'flap', label: 'Flap opens', start: 90, end: 400 },
+  { key: 'flap', label: 'Packet opens', start: 90, end: 400 },
   { key: 'fan', label: 'Cards fan up', start: 260, end: 560 },
   { key: 'handoff', label: 'Hands off to Study', start: 480, end: 640 },
 ]
