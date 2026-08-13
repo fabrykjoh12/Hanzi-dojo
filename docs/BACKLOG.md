@@ -82,10 +82,52 @@ navigation family the learner has already been taught. The ink connector loses
 the completed day (rail + three ticks + chop reads as a checklist), and the
 page-scale wash is visible but does not carry a screen on its own.
 
-**Not fixed, and the honest limit of this lab:** roughly a third of the screen
-below the CTA is empty on a Cards day, in all three. The approved layout permits
-it and none of the six allowed levers closes it. If the screen still reads low
-on a device, that is a layout question, not a material one.
+**Left open by round 2:** roughly a third of the screen below the CTA is empty on
+a Cards day. None of the six material levers closes it.
+
+### Round 3 — vertical rhythm, measured
+
+The visual language is fixed (Concept B, approved as `d46b690`), and the lab now
+varies only how the sequence occupies the page. It carries a labelled **control**
+(`B0`, the approved build's own rhythm) and the harness measures the complaint as
+a number: `largestGap`, the tallest run of nothing between two pieces of content.
+
+Largest gap in px, at 390 — light and dark identical:
+
+| | cards | story | practice | complete |
+|---|---|---|---|---|
+| **B0** control | 208 | 51 | 208 | 227 |
+| V1 distributed | 115 | 48 | 115 | 94 |
+| V2 previews | **84** | **48** | 122 | 99 |
+| V3 journey | 165 | 61 | 165 | 158 |
+
+**Chosen: V2.** It more than halves the gap the device complained about, and it
+is the only one that fills the space with the *reason Cards comes first* — the
+16:9 artwork of the chapter today's session unlocks, at 62% width, no overlay and
+no metadata pill. V1 solves the geometry with air alone; V3 barely moves it. V2
+also draws **fewer** boxes than the others on the Practice and complete days (2
+and 3 against 3 and 4), because a finished chapter drops its thumbnail rather
+than repeating it at half opacity.
+
+Three things the renders themselves settled:
+
+- **The connector is drawn per step, not once down the column.** A single rail in
+  a distributed column runs past the last mark and hangs into the space below it,
+  which reads as a line that has broken rather than a journey that has arrived.
+- **A travelled segment is at 50% ink.** At full strength the stretch above a
+  finished step was the loudest mark on the screen.
+- **A quiet identity object must be passed a colour.** The glyphs draw in
+  `currentColor`, so an inactive one inherits body text and lands on the warm page
+  as a black blob. `var(--text-faint)`.
+
+`upcomingLabel(steps, key)` in `homeGuide.js` (4 tests) supplies "Next after
+cards" / "After your story" — the sequence the screen is already showing, said in
+words for a step that has no number of its own. A blocked step keeps
+`unlockHint` instead, which names the mechanic and is both truer and more useful.
+
+**Still open, and not solved by any variant:** the Practice day keeps a ~120px
+gap, because its active step has no metric and no artwork — one short line and a
+button. That is the emptiest state left.
 
 ## P14-5C — Home shipped as a guide; what it left (2026-08-13)
 
