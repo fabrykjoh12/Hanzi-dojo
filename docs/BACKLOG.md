@@ -10,6 +10,35 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+## P14-5B — the Home guide: three data gaps and a lab (2026-08-13)
+
+Full picture in [`P14-5B-HOME-GUIDE-AUDIT.md`](P14-5B-HOME-GUIDE-AUDIT.md). What a
+migration will want, and what it must not fake:
+
+- **Two additive reads, no new tables, both from rows already fetched.** (1)
+  `homeCounts` reads today's `daily_activity` row and keeps only the *dates* for
+  `rhythm7`; keeping `studied_cards` for today turns "You're caught up" into "22
+  cards practiced". (2) `story_reads.read_at` is fetched and only the IDs are used;
+  a date compare gives "story read today", which is what lets step 2 tick. Until
+  they land, `buildGuide` degrades to a quieter true line.
+- **There is no practice-completion signal, and none should be invented.** No
+  per-day practice table exists; `writing_stats.last_practiced_at` covers the
+  Writing drill only, and `analytics_events` is a write-only measurement surface
+  (staff excluded, best-effort inserts) that must never become product state. So
+  Practice completes on *nothing needs attention* — a true statement about
+  `weakCount` and `grammarDueCount`.
+- **There is no resumable card session.** Study builds its queue fresh on every
+  entry. Nothing on Home may offer to "continue where you left off".
+- **A reward chapter has no `% known`.** Only the daily-story path runs
+  `calculateStoryReadability`. Computing it for a chapter means another vocab +
+  cards pass; until someone decides that is worth it, the step omits the fact.
+- **Story artwork is 16:9 (1344×756) and the app crops it to squares.** Home's
+  72px near-square and Stories' 2:3 posters both throw away most of a painted
+  scene. Home is fixed by P14-5B; the shelf is frozen and still wrong.
+- **`HomeConcepts.jsx` + `homeConceptFixtures.js` + `p14-home-concepts.spec.js`
+  are deleted at migration**, and the winning concept's objects move into
+  `heroObjects.jsx`. The spec is gated on `P14_CONCEPTS` so CI never runs it.
+
 ## P14-5 — Home restyled; what it left (2026-08-12)
 
 - **Three heroes were drawn and two were rejected on rendered evidence.** A
