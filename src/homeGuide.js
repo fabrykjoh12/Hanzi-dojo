@@ -31,6 +31,7 @@
 // sequence, and it never blocks the learner from reaching a later step.
 
 import { sessionEstimateMinutes } from './sessionEstimate'
+import { availabilityBreakdown } from './studyAvailability'
 
 export const GUIDE_STEPS = ['cards', 'story', 'practice']
 
@@ -63,7 +64,11 @@ function cardsStep(counts, studiedToday) {
   const newCount = counts.newCount || 0
   const learnCount = counts.learnCount || 0
   const dueCount = counts.dueCount || 0
-  const waiting = newCount + learnCount + dueCount
+  // `totalReady` is studyAvailability's number — the session the Cards tab will
+  // actually serve. The sum is the fallback for a caller that predates it.
+  const waiting = counts.totalReady != null
+    ? counts.totalReady
+    : newCount + learnCount + dueCount
   if (waiting === 0) {
     return {
       key: 'cards', number: 1, resolved: 'done', status: STATUS.done,
@@ -75,24 +80,27 @@ function cardsStep(counts, studiedToday) {
       facts: [], minutes: null, cta: null, view: 'study',
     }
   }
-  // The headline is reviews when there are reviews, because that is the work
-  // that decays; new words are the supporting fact.
-  const reviews = dueCount + learnCount
-  const headline = reviews > 0
-    ? plural(reviews, 'review') + ' ' + (reviews === 1 ? 'is' : 'are') + ' ready'
-    : plural(newCount, 'new word') + ' ' + (newCount === 1 ? 'is' : 'are') + ' waiting'
-  const facts = []
-  if (reviews > 0 && newCount > 0) facts.push(plural(newCount, 'new word'))
+  // ONE number, and it is the whole session — then what it is made of.
+  //
+  // It used to headline the reviews alone ("74 reviews are ready") while the
+  // session served reviews AND new (136). Two true statements about different
+  // things, on two screens, with no way for a learner to reconcile them. The
+  // count is now `totalReady` and the breakdown sits under it, composed by the
+  // same module that counted (availabilityBreakdown).
+  const headline = plural(waiting, 'card') + ' ready'
+  const facts = availabilityBreakdown({
+    reviewsDue: dueCount, learningDue: learnCount, newAvailable: newCount,
+  })
+  // A capped welcome-back says so, because the rest are genuinely still there.
+  const capped = Boolean(counts.cappedByReturn)
   return {
     key: 'cards', number: 1, resolved: 'pending', status: STATUS.active,
-    title: 'Cards', detail: headline, facts,
+    title: 'Cards', detail: headline, facts, capped,
     // The same fact split into a number and its noun, for a composition that
     // wants to set the count in display type. Offered as data rather than left
     // to a screen to parse back out of `detail` — a regex over your own copy is
     // how a design becomes impossible to translate.
-    metric: reviews > 0
-      ? { value: reviews, label: reviews === 1 ? 'review ready' : 'reviews ready' }
-      : { value: newCount, label: newCount === 1 ? 'new word waiting' : 'new words waiting' },
+    metric: { value: waiting, label: waiting === 1 ? 'card ready' : 'cards ready' },
     minutes: sessionEstimateMinutes({ newCount, learnCount, dueCount }) || null,
     cta: 'Start cards', view: 'study',
   }

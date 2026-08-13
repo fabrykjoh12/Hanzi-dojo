@@ -20,8 +20,9 @@ import { qualifiesForReward } from './storyReward'
 import { claimSessionReward } from './storyRewardData'
 import { tiersFor, learnedByLevel, readingGateCount } from './storyTiers'
 import { buildStudyQueue, reinsertSoon, queueSeed } from './studyQueue'
+import { studyAvailability } from './studyAvailability'
 import { isFirstRunSession, firstRunNewTarget } from './firstRun'
-import { isReturningFromBreak, gentleReviewTarget } from './gentleReturn'
+import { isReturningFromBreak } from './gentleReturn'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
 import SessionRecap from './SessionRecap'
 import ChatMission from './ChatMission'
@@ -382,28 +383,19 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       return
     }
 
-    const dueLearning = levelCards
-      .filter(c => (c.state === 'learning' || c.state === 'relearning') && isCardDue(c, now))
-    // Day-based: every review scheduled for today is served from the 00:00
-    // rollover, so a morning session isn't missing reviews that were last done
-    // in the afternoon (matches how the new-card allotment refreshes at midnight).
-    let dueReview = levelCards
-      .filter(c => c.state === 'review' && isCardDue(c, now))
-
-    // Gentle return: after a multi-day break the overdue backlog can be huge.
-    // Cap it to a calm handful — oldest-due first (deterministic, and clears the
-    // most-overdue cards first) — so coming back isn't a 300-card wall. Deferred
-    // cards stay due and simply resurface next session; FSRS reschedules from the
-    // actual review time, so nothing is lost. Only in normal review mode.
+    // What is ready, from the SAME derivation Home counts with
+    // (studyAvailability.js). Day-based availability, every card on the track,
+    // and the gentle-return cap — one module, so the number a learner reads on
+    // Home is the session they get here. Before P14-5D these were two copies of
+    // the rules that had drifted apart by 62 cards on a real device.
     const returning = mode === 'review' && isReturningFromBreak(profile)
-    if (returning) {
-      const cap = gentleReviewTarget({ returning, dueReviewCount: dueReview.length })
-      if (cap < dueReview.length) {
-        dueReview = [...dueReview]
-          .sort((a, b) => new Date(a.due_at) - new Date(b.due_at))
-          .slice(0, cap)
-      }
-    }
+    const available = studyAvailability({
+      cards: levelCards,
+      returning,
+      now,
+    })
+    const dueLearning = available.learning
+    const dueReview = available.reviews
 
     // First-run detection: a brand-new learner (no cards ANYWHERE on the
     // account) gets a gentle, capped first session. The account-wide count is

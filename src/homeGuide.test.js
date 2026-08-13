@@ -105,25 +105,27 @@ describe('what it refuses to claim', () => {
 })
 
 describe('the words on the screen', () => {
-  it('headlines reviews when reviews exist and keeps new words as the supporting fact', () => {
+  it('leads with the WHOLE session and breaks it down underneath (P14-5D)', () => {
+    // The device bug: Home headlined the reviews (74) while the Cards tab served
+    // reviews plus new (136). One number now, and it is the session.
     const g = buildGuide({ counts: QUEUE, story: STORY, practice: PRACTICE })
-    expect(g.steps[0].detail).toBe('17 reviews are ready')
-    expect(g.steps[0].facts).toEqual(['5 new words'])
+    expect(g.steps[0].detail).toBe('22 cards ready')
+    expect(g.steps[0].facts).toEqual(['17 reviews', '5 new'])
   })
 
-  it('headlines new words when that is all there is', () => {
-    const g = buildGuide({ counts: { ...LOADED, newCount: 1, learnCount: 0, dueCount: 0 } })
-    expect(g.steps[0].detail).toBe('1 new word is waiting')
-    expect(g.steps[0].facts).toEqual([])
+  it('prefers studyAvailability\'s own total when it is present', () => {
+    // `totalReady` comes from the shared derivation and can differ from the naive
+    // sum — the gentle-return cap is the case that matters.
+    const g = buildGuide({ counts: { ...QUEUE, totalReady: 20, cappedByReturn: true } })
+    expect(g.steps[0].metric).toEqual({ value: 20, label: 'cards ready' })
+    expect(g.steps[0].capped).toBe(true)
   })
 
-  it('offers the same fact as a number and a noun, so nothing has to parse the copy', () => {
-    expect(buildGuide({ counts: QUEUE }).steps[0].metric).toEqual({ value: 17, label: 'reviews ready' })
-    expect(buildGuide({ counts: { ...LOADED, dueCount: 1 } }).steps[0].metric)
-      .toEqual({ value: 1, label: 'review ready' })
-    expect(buildGuide({ counts: { ...LOADED, newCount: 3 } }).steps[0].metric)
-      .toEqual({ value: 3, label: 'new words waiting' })
-    // Not on a step with nothing to count.
+  it('says "card" in the singular, and counts nothing when nothing is ready', () => {
+    expect(buildGuide({ counts: { ...LOADED, newCount: 1, learnCount: 0, dueCount: 0 } }).steps[0].metric)
+      .toEqual({ value: 1, label: 'card ready' })
+    expect(buildGuide({ counts: { ...LOADED, newCount: 1, learnCount: 0, dueCount: 0 } }).steps[0].facts)
+      .toEqual(['1 new'])
     expect(buildGuide({ counts: CLEAR }).steps[0].metric).toBeUndefined()
   })
 

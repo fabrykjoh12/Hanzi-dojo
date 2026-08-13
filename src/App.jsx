@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
 import ErrorBoundary from './ErrorBoundary'
 import { getHomeCounts } from './homeCounts'
+import { isReturningFromBreak } from './gentleReturn'
 import {
   viewToPath, isKnownView, readStoryId, isAssessmentPath, trustPageKey,
   storyPath, isResetPasswordPath, isTutorialPath,
@@ -321,7 +322,7 @@ export default function App() {
     setCacheScope({ userId, language: finalProf.active_language })
 
     if (finalTrack) {
-      const c = await getHomeCounts(userId, finalTrack, finalProf.daily_new_cards)
+      const c = await getHomeCounts(userId, finalTrack, finalProf.daily_new_cards, { returning: isReturningFromBreak(finalProf) })
       setCounts({ ...c, loaded: true })
       writeCache(HOME_COUNTS, c)
     }
@@ -426,7 +427,7 @@ export default function App() {
   const refreshCounts = async () => {
     if (!session || !profile || !track) return
     try {
-      const c = await getHomeCounts(session.user.id, track, profile.daily_new_cards)
+      const c = await getHomeCounts(session.user.id, track, profile.daily_new_cards, { returning: isReturningFromBreak(profile) })
       setCounts({ ...c, loaded: true })
       writeCache(HOME_COUNTS, c)
     } catch {

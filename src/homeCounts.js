@@ -3,11 +3,16 @@ import { getTrackCards } from './data'
 import { countMastery } from './mastery'
 import { studyFloorLevel } from './levelScope'
 import { isCardDue, endOfLocalDay } from './srs'
+import { studyAvailability } from './studyAvailability'
 import { reviewForecast } from './reviewForecast'
 import { studyRhythm, dateKey } from './studyRhythm'
 import { countDueGrammar } from './grammarReview'
 
-export async function getHomeCounts(userId, track, dailyNewCards) {
+// `returning` is the gentle-return flag (gentleReturn.js). It is an INPUT rather
+// than something this module derives, because it comes from the profile and the
+// profile is the caller's — but it must be passed, or Home advertises a backlog
+// the session will cap. That divergence is exactly what P14-5D was opened for.
+export async function getHomeCounts(userId, track, dailyNewCards, { returning = false } = {}) {
   const now = new Date()
 
   // Three independent fetches, so they cost ONE round trip instead of three.
@@ -64,18 +69,29 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   const remainingNew = Math.max(0, dailyNewCards - introducedToday)
 
   const startedVocabIds = new Set((cards || []).map(c => c.vocab_id))
-  const newCount = Math.min(
-    (vocab || []).filter(v => !startedVocabIds.has(v.id)).length,
-    remainingNew
-  )
+  const unstartedInWindow = (vocab || []).filter(v => !startedVocabIds.has(v.id)).length
 
+  // ── The one derivation (studyAvailability.js) ────────────────────────────
+  //
+  // Every card on the TRACK, not just the ones inside the level window: a word
+  // saved from the dictionary or from a story above the current level is a card
+  // the learner owns, and the session serves it. Filtering those out here is what
+  // made Home say 74 while the Cards tab served 136.
+  const availability = studyAvailability({
+    cards: cards || [],
+    windowVocabIds: vocabIds,
+    unstartedInWindow,
+    dailyNewCards,
+    introducedToday,
+    returning,
+    now,
+  })
+  const { reviewsDue: dueCount, learningDue: learnCount, newAvailable: newCount } = availability.counts
+
+  // Mastery, weak words and the level readout stay WINDOW-scoped on purpose:
+  // they answer "how far through this level am I", which is a question about the
+  // curriculum, not about the queue.
   const levelCards = (cards || []).filter(c => vocabIds.has(c.vocab_id))
-  const learnCount = levelCards
-    .filter(c => (c.state === 'learning' || c.state === 'relearning') && isCardDue(c, now)).length
-  // Review cards are due for the whole day, so all of today's reviews are
-  // available from the 00:00 rollover (matching how new cards refresh).
-  const dueCount = levelCards
-    .filter(c => c.state === 'review' && isCardDue(c, now)).length
   const easyCount = levelCards.filter(c => c.is_easy).length
   const totalWords = vocabIds.size
 
@@ -134,6 +150,12 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
     newCount, learnCount, dueCount, easyCount, totalWords,
     learnedCount, masteredCount, masteredPct,
     newDoneToday, dueTomorrow, weakCount, forecast7, rhythm7, studiedToday,
+    // The whole session, as one number, plus what the cap is holding back and
+    // when the next review lands. `totalReady` is what a screen should lead with.
+    totalReady: availability.counts.totalReady,
+    reviewsDeferred: availability.counts.reviewsDeferred,
+    cappedByReturn: availability.counts.cappedByReturn,
+    nextReviewAt: availability.counts.nextReviewAt,
     lifetimeLearned, lifetimeMastered, grammarDueCount,
     failed,
   }

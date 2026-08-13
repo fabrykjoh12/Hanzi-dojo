@@ -10,6 +10,45 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+## P14-5D — one availability derivation; what the audit found (2026-08-13)
+
+The device report — Home "74 reviews ready", Cards tab 136 — was **three
+divergences, not one bug**, and no single file was wrong on its own terms:
+
+1. **Scope.** `homeCounts` filtered cards to the level window and counted only
+   those. Study includes every card on the track (`includeUnleveled: true`, plus a
+   second fetch that re-merges any card whose vocabulary the window query missed),
+   because a word saved from the dictionary or from a story above your level is a
+   card you chose to own. Every such card was invisible to Home.
+2. **Composition.** Home headlined reviews + learning; the session serves reviews
+   + learning + new.
+3. **The gentle-return cap.** `GENTLE_REVIEW_CAP = 20` caps the overdue backlog
+   after a 3-day break (`gentleReturn.js`). Study applied it; Home did not — so
+   Home advertised work the session would refuse to serve. **This is almost
+   certainly the "20 cards" the Cards tab showed before the reinstall**: not a
+   cache at all, but a capped welcome-back session.
+
+`studyAvailability.js` is now the single derivation, and it returns the card ROWS
+as well as the counts so Study builds its queue from the objects Home counted.
+
+**On the reinstall specifically:** nothing in the app persists a card count across
+launches. `dataCache` is in-memory only (it dies with the process), the profile is
+never cached locally, and `getTrackCards`'s IndexedDB copy is read **only when the
+query errors** — so a reinstall cannot change a number that a relaunch would not.
+What *does* change is `profile.last_studied_on`: study once and the cap lifts,
+which flips 20 → the full backlog with no reinstall involved. The one genuinely
+cache-shaped hazard left is that error fallback: offline, `getTrackCards` serves
+the last good deck with no indication, so a stale small deck is possible until the
+network returns. Logged, not fixed — fixing it means a visible offline state, which
+is its own piece of work.
+
+**Invalidation, traced and confirmed correct:** `card:graded` and
+`session:completed` invalidate `HOME_COUNTS`; so do `level:unlocked`,
+`profile:updated` (the daily goal is an input) and `words:changed`. On top of that
+`countsExpired` re-fetches after 10 minutes OR across local midnight, and
+`useAppResume` re-runs it on foreground. `tests/e2e/home-cards-agree.spec.js`
+covers cold launch, warm tab return, reload and grading.
+
 ## P14-5C — Home shipped as a guide; what it left (2026-08-13)
 
 - **Two of P14-5B's three data gaps are closed.** `counts.studiedToday` and
