@@ -899,7 +899,72 @@ centre column and the bold label, so the glyph sizes do not have to do all of it
 
 Both strips are in the gallery side by side, which is the only way to judge it.
 
-### Home's visual redesign (P14-5)
+### Home is a guide, not a dashboard (P14-5C)
+
+**Home answers one question: what should I do now?** The answer is a sequence —
+**Cards → Story → Practice** — and the whole composition is the rule that
+**exactly one step is loud at a time**. The current step owns the largest type on
+the screen, the only button, and (when it is the story) the artwork; the other two
+stay visible as numbered lines so the order reads in under a second.
+
+P14-5's redesign below is the material this is drawn with; its *structure* is gone.
+Device QA on build 43 called it "messy, over-designed, faintly generated, not
+useful enough", and the diagnosis held up: a lit hero that was always Cards, a
+seven-dot week, a ten-segment level rail, a goal-pip row and a 72px cover — all
+informative, and not one of them changed what the learner should do next. The full
+audit, including three rendered compositions and their scores, is
+[`P14-5B-HOME-GUIDE-AUDIT.md`](P14-5B-HOME-GUIDE-AUDIT.md).
+
+**The decisions are not in `Home.jsx`.** `homeGuide.js` is pure and tested (18
+specs): which step is active, what each may say, when the day is finished, and —
+just as important — what it must refuse to claim.
+
+| Step | Loud when | Quiet form | Complete when |
+|---|---|---|---|
+| 1 Cards | anything is due, learning or new | `✓ Cards · 18 practiced today` | the queue is empty |
+| 2 Story | the queue is clear | title + its real artwork, 96px | a story was read **today** |
+| 3 Practice | the story has been read | the recommendation's name | nothing needs attention |
+
+**What Home is not allowed to say**, each because the app genuinely cannot know it:
+
+- **"Continue where you left off."** There is no resumable Study session; the queue
+  is rebuilt on every entry.
+- **"% known" on a reward chapter.** Only `getDailyStoryCard` runs
+  `calculateStoryReadability`. The fact is dropped, never estimated — and a **0%**
+  is dropped too, because the daily pick is chosen from stories the learner can
+  read, so a zero means the readability pass found no overlap.
+- **"Practice done."** No per-day practice record exists anywhere in the schema.
+  Practice completes on *nothing needs attention* — a true statement about
+  `weakCount` and `grammarDueCount` — or not at all.
+- **"Training complete" on a day nothing happened.** Two headlines: *Training
+  complete* with what was done, or *Nothing waiting today · You're caught up*.
+
+**Two additive derivations** feed it, both from rows already fetched, neither a new
+system: `daily_activity.studied_cards` for today (`homeCounts` kept only the dates,
+for `rhythm7`) and `hasReadToday(reads)` over `story_reads.read_at` (both story
+paths fetch the rows; only the ids were used).
+
+**The artwork is the one rich object.** Production covers are 1344×756 — a painted
+16:9 scene — and Home cropped them into a 72px near-square. The active story step
+now shows the cover at its real ratio, full content width, `RADIUS.card`, one
+shadow, no overlay; the upcoming step carries the same picture at 96px.
+
+**`inkWarm()` was added for this screen** (`languageTheme.js`, tokens in
+`index.css`). Home leads with accent marks on the page ground — the step eyebrow at
+10.5px, the secondary action, the ticks, the level rail — and the two existing
+lifts both mix toward WHITE: `ink` (30%) fails AA in dark, and `inkStrong` (40%)
+clears AA by turning #B83A24 into #D5877A, salmon. The warm lift mixes toward
+`--ink-warm` (#FF8A5C) at 50% instead: **#DC6240, 5.4:1 on `--bg`**, still the
+brand's red. Measured in `palette.test.js`.
+
+**Geometry.** The page is a column with `min-height: calc(100dvh - safe-area -
+MOBILE_NAV_SPACE)` and the level line at `margin-top: auto`, so context sits at the
+foot of the screen instead of trailing the guide 250px above the fold. `100%` there
+does nothing — `main` is a flex item with an auto height — which cost one render
+round to discover. The story step scrolls past one viewport by design (P14-5C §13:
+stop targeting exactly 1.00).
+
+### Home's visual redesign (P14-5) — the material, kept
 
 Structure frozen, material rebuilt. P10's information architecture is untouched —
 one lit hero, one supporting surface with three rows, the same data and the same

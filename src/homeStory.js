@@ -14,6 +14,7 @@ import { getTrackCards } from './data'
 import { pickDailyStory } from './dailyStory'
 import { tiersFor } from './storyTiers'
 import { calculateStoryReadability } from './storyReading'
+import { hasReadToday } from './storyReward'
 import { todayStr } from './streak'
 
 // The hero needs a single readable line, not the whole story. The first
@@ -75,7 +76,11 @@ export async function getDailyStoryCard(userId, track, learnedCount, dateStr = t
         .eq('language', track.language).eq('system', track.system)
         .lte('level', track.current_level).eq('is_published', true),
       supabase
-        .from('story_reads').select('story_id').eq('user_id', userId),
+        // `read_at` as well as the id: the ids pick the story (an unread one),
+        // and the timestamps answer a different question — did the learner read
+        // ANYTHING today, which is what Home's guide ticks step 2 on. Same row,
+        // same query, one more column.
+        .from('story_reads').select('story_id, read_at').eq('user_id', userId),
       supabase
         .from('vocabulary').select('id, word, reading, meaning, level')
         .eq('language', track.language).eq('system', track.system)
@@ -107,6 +112,7 @@ export async function getDailyStoryCard(userId, track, learnedCount, dateStr = t
 
     return {
       story,
+      readToday: hasReadToday(readsRes.data || []),
       // The artwork Home anchors the hand-off on (P10-C2). Null is fine —
       // StoryCover falls back to its own accent wash.
       coverPath: story.image_path || null,

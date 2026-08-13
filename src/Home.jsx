@@ -1,70 +1,70 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, BookOpenCheck, ChevronRight, Lock, Sparkles, Sunrise } from 'lucide-react'
+import { ArrowRight, Sunrise } from 'lucide-react'
 import { getLevelLabel } from './utils'
-import { languageTheme, ink } from './languageTheme'
+import { languageTheme, inkWarm } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
 import { fetchHandoff, trackSignature } from './homeData'
 import { query, subscribe } from './dataCache'
 import { HOME_HANDOFF } from './cacheEvents'
-import { HeroPanel, HeroAction, Panel, PageHeader } from './panels'
 import { RADIUS, ELEVATION } from './shape'
-import { rhythmSummary, weekdayInitial } from './studyRhythm'
-import { forecastSummary } from './reviewForecast'
-import { sessionEstimateLabel } from './sessionEstimate'
+import { MOBILE_NAV_SPACE } from './navMetrics'
 import { maybeStartTour, markTourSeen } from './tour'
 import { isTutorialDone } from './prelogin'
-import { firstSessionPending } from './homeData'
 import TourOverlay from './TourOverlay'
-import { MICRO, NUM, ON_HERO } from './designTokens'
 import { TYPE } from './typeScale'
-import { DeckObject } from './heroObjects'
+import { Button } from './controls'
+import { CompletionSeal } from './heroObjects'
+import { buildGuide, guideContextLine, STATUS } from './homeGuide'
+import { buildPracticePlan } from './practicePlan'
 import StoryCover from './StoryCover'
 
-// ── Home ──────────────────────────────────────────────────────────────────
-// The one lit block is TODAY'S FLASHCARDS, end to end: how many cards are
-// waiting, the New/Learning/Due breakdown, the daily goal, and the button that
-// starts the session. Everything about the queue lives in the block that is
-// about the queue.
+// ── Home — the guide through one day's training (P14-5C) ───────────────────
 //
-// The story you have unlocked is a quiet flat hand-off underneath — the next
-// step in the daily loop (cards, then read), deliberately not styled as a
-// button so it cannot compete with the hero. Home surfaces ONE action: it is a
-// coach, not a menu. The story itself gets the hero treatment on Stories.
+// Home answers ONE question: *what should I do now?* The answer is a sequence —
+// **Cards → Story → Practice** — and the screen's whole design is the rule that
+// **exactly one step is loud at a time**. The current step gets the largest type
+// on the screen, one action, and (when it is the story) the artwork. The other two
+// stay visible as numbered lines so the order reads in under a second, and they
+// stay quiet so they cannot compete.
 //
-// One lit panel, everything else flat. See designTokens.js for the rules.
-
-const WEEKDAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+// It is deliberately NOT a dashboard. What P14-5 had here — a lit hero that was
+// always Cards, a seven-dot week, a ten-segment level rail, a daily-goal pip row
+// and a 72px cover — is gone: informative, and not one of them changed what the
+// learner should do next. The audit is docs/P14-5B-HOME-GUIDE-AUDIT.md and the
+// device verdict it came from was "messy, over-designed, not useful enough".
+//
+// Three rules worth keeping in mind before editing this file:
+//
+//   1. **The decisions are not here.** `homeGuide.js` decides which step is
+//      active, what each may say, and when the day is done — pure and tested. This
+//      file lays that out and nothing more. A new behaviour belongs there.
+//   2. **Nothing on this screen may claim what the app cannot know.** No "resume
+//      your session" (no such state exists), no % known on a reward chapter (only
+//      the daily-story path computes readability), no Practice tick for opening a
+//      drill (there is no per-day practice record). The guide enforces it; do not
+//      route around it.
+//   3. **No bounded surface, no illustration, no widget goes in without earning
+//      it.** The artwork is content. Everything else is type on the page ground.
+//      An empty area is allowed to stay empty (P14-5B §12).
 
 export default function Home({ profile, track, counts, session, onNavigate }) {
   const isMobile = useIsMobile()
   const [daily, setDaily] = useState(undefined) // undefined = loading, null = none
   // Today's story reward: the chapter this session unlocks (or just unlocked).
-  // Null when no series is going — the daily-story hand-off shows instead.
+  // Null when no series is going — the daily-story pick stands in.
   const [rewardTeaser, setRewardTeaser] = useState(null)
+  const [readToday, setReadToday] = useState(false)
 
   const theme = languageTheme(profile.active_language)
   const accentHex = theme.accentHex
-  const accentInk = ink(accentHex)
+  const accentInk = inkWarm(accentHex)
   const langFont = theme.font
 
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
-  const nextLevelLabel = getLevelLabel(profile.active_language, track.system, track.current_level + 1)
 
-  const totalDue = counts.newCount + counts.learnCount + counts.dueCount
   const learned = counts.learnedCount || 0
   const totalWords = counts.totalWords || 0
-  const pct = totalWords > 0 ? Math.min(100, Math.round((learned / totalWords) * 100)) : 0
-
-  // Daily new-card goal, shown inside the queue block it belongs to.
-  const goal = profile.daily_new_cards || 0
-  const doneToday = counts.newDoneToday || 0
-
-  // The week behind (which days had a session) and the load ahead. Both were
-  // already computed by homeCounts; they were simply not being rendered.
-  const rhythm = counts.rhythm7 || []
-  const { studiedDays, days: rhythmDays } = rhythmSummary(rhythm)
-  const { total: forecastTotal, perDay } = forecastSummary(counts.forecast7 || [])
 
   const countsLoaded = Boolean(counts.loaded)
   const gentleReady = Math.min(counts.dueCount || 0, GENTLE_REVIEW_CAP)
@@ -84,7 +84,6 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
   const [cacheTick, setCacheTick] = useState(0)
   useEffect(() => subscribe(HOME_HANDOFF, () => setCacheTick(t => t + 1)), [])
 
-  /* eslint-disable react-hooks/set-state-in-effect */
   // The hand-off is fetched once and again only when something changed it.
   //
   // This effect re-runs on every tab show — <Activity> re-runs effects by
@@ -100,15 +99,16 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
     let alive = true
     if (!userId || !track || !countsLoaded) return undefined
     const res = query(HOME_HANDOFF, () => fetchHandoff(userId, track, learned))
-    if (res.value) {
-      setRewardTeaser(res.value.reward || null)
-      setDaily(res.value.daily === undefined ? null : res.value.daily)
+    const apply = (value) => {
+      setRewardTeaser(value.reward || null)
+      setDaily(value.daily === undefined ? null : value.daily)
+      setReadToday(Boolean(value.readToday))
     }
+    if (res.value) apply(res.value)
     if (res.promise) {
       res.promise.then((settled) => {
         if (!alive || !settled || !settled.ok) return
-        setRewardTeaser(settled.value.reward || null)
-        setDaily(settled.value.daily === undefined ? null : settled.value.daily)
+        apply(settled.value)
       })
     }
     return () => { alive = false }
@@ -116,18 +116,12 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
     // its value-equal stand-in, and the identity is the bug this replaced.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, trackKey, learned, countsLoaded, cacheTick])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   // First-run tour: once per device for a new account, on the first Home render.
   // All the rules live in tour.js; the short delay lets the screen settle — and
   // the story hand-off arrive — before anything gets pointed at.
   //
   // Suppressed for anyone who has just been through the onboarding tutorial.
-  // They have done a session, watched it complete, watched a story open and
-  // read it; being handed four coach marks on arrival would be a second
-  // tutorial immediately after the first one, which is exactly the problem the
-  // rebuild set out to remove. What the tour still teaches that the tutorial
-  // does not is under review — see docs/ONBOARDING-AUDIT.md.
   const [tourSteps, setTourSteps] = useState(null)
   const profileCreatedAt = profile.created_at
   useEffect(() => {
@@ -139,59 +133,134 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
     return () => { alive = false; clearTimeout(timer) }
   }, [profileCreatedAt])
 
-  // Nothing has been studied on this track yet — see homeData.firstSessionPending.
-  const firstRunNudge = firstSessionPending(counts)
-
-  // One action. Cards while there are cards; once the queue is clear the next
-  // step in the daily loop is reading, so the button hands over to Stories.
-  // When the counts failed to load, the zeros are meaningless — keep the button
-  // on Study, which loads its own queue and so doubles as the retry.
-  const action = counts.failed || totalDue > 0
-    ? { label: 'Start reviewing', go: 'study' }
-    : { label: 'Read a story', go: 'stories' }
-
-  // The hand-off, derived once — Home shows the session's reward when a series
-  // is going, otherwise today's story pick, never both (homeData.js). Both are
-  // the same row in the same place; only the words and the destination differ.
-  const handoff = rewardTeaser
+  // ── The guide's inputs ──────────────────────────────────────────────────
+  //
+  // Home's job here is translation, not decision: the two story shapes it can
+  // receive become one shape the guide understands, and the Practice pick is the
+  // existing tested one. Every field that cannot be known honestly is left out
+  // rather than filled in — see the null `knownPct` below.
+  const story = rewardTeaser
     ? {
+      kind: 'chapter',
+      // The series is the thing with a name a learner recognises; the chapter
+      // number is the position in it.
+      title: rewardTeaser.seriesTitle,
+      chapterLabel: rewardTeaser.chapter.nativeLabel
+        || 'Chapter ' + rewardTeaser.chapter.number,
+      // The chapter's own level, not the learner's — a series can sit below it.
+      levelLabel: rewardTeaser.level != null
+        ? getLevelLabel(profile.active_language, track.system, rewardTeaser.level)
+        : null,
+      // A reward chapter carries NO readability: only getDailyStoryCard runs
+      // calculateStoryReadability. Omitted, never guessed (P14-5B §2).
+      knownPct: null,
       coverPath: rewardTeaser.coverPath,
       coverStory: rewardTeaser.chapter,
-      label: rewardTeaser.state === 'unlocked-today' ? 'Read it now' : 'Next chapter',
-      title: rewardTeaser.seriesTitle,
-      meta: (rewardTeaser.chapter.nativeLabel || 'Chapter ' + rewardTeaser.chapter.number) + ' · '
-        + (rewardTeaser.state === 'unlocked-today' ? 'unlocked' : 'unlocks after today’s session'),
-      metaIcon: rewardTeaser.state === 'unlocked-today' ? BookOpenCheck : Lock,
-      onOpen: () => onNavigate('stories', rewardTeaser.state === 'unlocked-today' ? { storyId: rewardTeaser.storyId } : undefined),
+      // 'locked' means today's session has not unlocked it yet. That is the real
+      // mechanic, and the guide states it instead of hiding the step.
+      locked: rewardTeaser.state === 'locked' || rewardTeaser.state === 'banked',
+      storyId: rewardTeaser.storyId || null,
     }
     : daily
       ? {
+        kind: 'daily',
+        title: daily.story.title,
+        chapterLabel: null,
+        levelLabel: getLevelLabel(profile.active_language, track.system, daily.story.level),
+        // A zero is dropped rather than printed: the daily pick is chosen from
+        // stories the learner CAN read, so "0% known" means the readability pass
+        // found no overlap — a statement about the data, not about them, and one
+        // that reads as a bug on the screen.
+        knownPct: daily.knownPct || null,
         coverPath: daily.coverPath,
         coverStory: daily.story,
-        label: 'Then read',
-        title: daily.sentence,
-        meta: daily.story.title + ' · you know ' + daily.knownPct + '% of it',
-        knownPct: daily.knownPct,
-        onOpen: () => onNavigate('stories'),
+        locked: false,
+        storyId: daily.story.id,
       }
       : null
 
-  const today = new Date()
+  // The Practice recommendation is `buildPracticePlan().primary` — weak words,
+  // then grammar due, then Listening. Two counts and a fallback: not a
+  // personalisation engine, and nothing here says it is.
+  const practice = buildPracticePlan({
+    script: theme.script,
+    cjk: theme.cjk,
+    weakCount: counts.weakCount || 0,
+    grammarDueCount: counts.grammarDueCount || 0,
+  }).primary
+
+  const guide = buildGuide({
+    counts,
+    story,
+    practice,
+    studiedToday: counts.studiedToday || 0,
+    storyReadToday: readToday,
+  })
+
+  const active = guide.steps.find(s => s.status === STATUS.active || s.status === STATUS.unknown) || null
+  const others = guide.steps.filter(s => s !== active)
+
+  const go = (step) => {
+    if (!step) return
+    if (step.key === 'story') {
+      onNavigate('stories', step.story && step.story.storyId ? { storyId: step.story.storyId } : undefined)
+      return
+    }
+    onNavigate(step.view)
+  }
+
+  const ctx = { accentHex, accentInk, langFont, isMobile }
 
   return (
-    <div style={{ maxWidth: '720px', margin: '0 auto', padding: isMobile ? '24px 16px 40px' : '44px 32px 60px' }}>
+    <div style={{
+      maxWidth: '720px', margin: '0 auto',
+      padding: isMobile ? '22px 16px 40px' : '40px 32px 60px',
+      // A column at least one screen tall, so the level context sits at the FOOT
+      // of the page rather than trailing the guide 250px above the fold. Content
+      // longer than a screen simply pushes past it and scrolls, which is what the
+      // story step does (P14-5C §13: stop targeting exactly 1.00 viewport).
+      //
+      // `100dvh` minus the shell's own reservations, not `100%`: `main` is a flex
+      // item with an auto height, so a percentage min-height there resolves
+      // against nothing and silently does nothing (measured — the first attempt
+      // rendered identically). `dvh` for the same reason studyLayout uses it —
+      // mobile browser chrome makes `vh` overshoot the visible viewport.
+      minHeight: isMobile
+        ? 'calc(100dvh - env(safe-area-inset-top, 0px) - ' + MOBILE_NAV_SPACE + ')'
+        : 'auto',
+      display: 'flex', flexDirection: 'column', boxSizing: 'border-box',
+    }}>
 
-      {/* ── Where you are, and when ── */}
-      <PageHeader title="Today" meta={`${levelLabel} · ${WEEKDAY[today.getDay()]}`} />
+      {/* ── Where you are in the day ──
+          The screen's heading is a line, not a billboard: "Today's training" on
+          the left, your place in the sequence on the right. P14-5's PageHeader
+          spent the top of the screen on the word "Today" and the weekday, which
+          is a greeting, not information. */}
+      <div style={{
+        display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+        gap: '10px', marginBottom: '4px',
+      }}>
+        <h1 style={{ margin: 0, ...TYPE.eyebrow, color: 'var(--text-faint)' }}>
+          Today&rsquo;s training
+        </h1>
+        {/* Nothing here once the day is done: the completion headline says the
+            same words two lines below, and printing a label twice is the kind of
+            duplication the audit was written to stop. */}
+        {!guide.complete && (
+          <span style={{ ...TYPE.caption, color: 'var(--text-faint)' }}>
+            {guideContextLine(guide)}
+          </span>
+        )}
+      </div>
 
       {/* ── Welcome back after a break ── */}
       {gentleActive && (
         <div role="status" aria-live="polite" style={{
-          display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px',
+          display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px',
           background: `color-mix(in srgb, ${accentHex} 7%, var(--surface))`,
           border: '1px solid color-mix(in srgb, ' + accentHex + ' 26%, var(--border))',
-          borderLeft: `3px solid ${accentHex}`, borderRadius: '12px',
-          padding: '14px 16px', animationDelay: '40ms',
+          borderLeft: `3px solid ${accentHex}`, borderRadius: RADIUS.control + 'px',
+          padding: '14px 16px',
         }}>
           <Sunrise size={20} strokeWidth={1.9} color={accentInk} style={{ flexShrink: 0 }} />
           <span style={{ ...TYPE.bodySecondary, color: 'var(--text)', fontWeight: 600 }}>
@@ -200,177 +269,20 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         </div>
       )}
 
-      {/* ── The learner's very first arrival ──
-          One line, in flow, above the panel it is about. Not a modal, not an
-          overlay, nothing to dismiss: the tutorial already taught what a card
-          is, so all this does is point at the thing to tap. It is derived from
-          the account having no cards at all, so it disappears by itself the
-          moment the first one is graded — there is no flag to clear and none
-          to go stale on an established account. */}
-      {firstRunNudge && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '10px',
-          padding: '0 2px', ...TYPE.bodySecondary, fontWeight: 700,
-          color: accentInk, fontFamily: 'Inter, sans-serif',
-        }}>
-          <Sparkles size={16} strokeWidth={2} color={accentInk} style={{ flexShrink: 0 }} />
-          Your first session is ready
-        </div>
-      )}
+      {/* ── The one loud thing ── */}
+      {guide.complete
+        ? <TrainingComplete guide={guide} ctx={ctx} onExplore={() => onNavigate('practice')} />
+        : <ActiveStep step={active} ctx={ctx} onGo={() => go(active)} />}
 
-      {/* ── The one lit block: today's cards ── */}
-      <HeroPanel
-        accentHex={accentHex}
-        material="facet"
-        object={<DeckObject size={isMobile ? 132 : 152} />}
-        compact={isMobile}
-        onClick={() => onNavigate(action.go)}
-        style={{ marginBottom: '14px' }}
-        dataTour="home-queue"
-      >
-        {({ hovered }) => (
-          <QueueBody
-            counts={counts}
-            totalDue={totalDue}
-            goal={goal}
-            doneToday={doneToday}
-            isMobile={isMobile}
-            action={action}
-            accentHex={accentHex}
-            hovered={hovered}
-          />
-        )}
-      </HeroPanel>
+      {/* ── The rest of the sequence, quiet and in order ── */}
+      <div style={{ marginTop: '26px', borderTop: '1px solid var(--divider)' }}>
+        {others.map(step => (
+          <QuietStep key={step.key} step={step} ctx={ctx} onGo={() => go(step)} />
+        ))}
+      </div>
 
-      {/* ── The one quiet surface: everything AROUND today's learning ──
-          What comes after the session, the week behind, the road ahead. One flat
-          panel, three rows, two hairlines — deliberately not a rival to the lit
-          block above it, and with no card inside it.
-
-          Build 38 gave each of these its own open section on the page, and on a
-          real iPhone that read as unfinished: headings floating away from their
-          data, hairlines making empty bands, the lower half disconnected from the
-          hero. Two surfaces with clearly different jobs is the shape that works —
-          lit accent means act now, flat surface means context (P10-C3). */}
-      <Panel
-        padding={isMobile ? '15px 16px 16px' : '17px 20px 18px'}
-        style={{ marginBottom: '14px', animationDelay: '80ms' }}
-      >
-        {handoff && (
-          <StoryHandoff
-            dataTour="home-then-read"
-            accentInk={accentInk}
-            accentHex={accentHex}
-            titleFont={langFont}
-            {...handoff}
-          />
-        )}
-
-        {/* ── Your week: the rhythm behind you and the load ahead. This is the
-            return hook — "25 waiting tomorrow" is a reason to come back that
-            doesn't depend on guilt. Observational copy only: the app's stated
-            stance is no streak pressure, so there is no counter to protect and
-            nothing to "keep". ── */}
-        <div
-          data-tour="home-week"
-          // `--border`, not `--hairline`: the hairline token is a WHITE inset
-          // top-edge highlight (rgba(255,255,255,0.75) in light), so as a divider
-          // on a white surface it is invisible — which is exactly how it rendered
-          // for one build. `--border` is the app's separator, the same one
-          // Profile's control rows use.
-          style={handoff
-            ? { marginTop: '15px', paddingTop: '15px', borderTop: '1px solid var(--border)' }
-            : undefined}
-        >
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '12px' }}>
-          <h2 style={{ margin: 0, ...TYPE.titleCard, color: 'var(--text)' }}>
-            Your week
-          </h2>
-          <span style={{ ...TYPE.caption, color: 'var(--text-muted)' }}>
-            {studiedDays === 0
-              ? 'No sessions yet'
-              : 'Studied ' + studiedDays + ' of the last ' + rhythmDays + ' days'}
-          </span>
-        </div>
-
-        {/* Seven marks, not seven pills.
-            
-            They were 30px-tall full-width rounded rectangles, which is four fifths
-            of the height of the story cover next to them for information that is a
-            yes or a no per day — the P14-5 brief's "seven generic grey pills",
-            exactly. A day is now a 10px dot: an ink mark when it happened, a faint
-            ring when it did not, and a filled ring on today until it is earned.
-            
-            The same information, a third of the ink, and it stops competing with
-            the row above it. Deliberately NOT a streak: the marks have no
-            connecting line and no counter, because a chain is a thing to protect
-            and this is a record of what happened. */}
-        <div
-          role="img"
-          aria-label={'Studied ' + studiedDays + ' of the last ' + rhythmDays + ' days'}
-          style={{ display: 'flex', gap: '6px' }}
-        >
-          {rhythm.map(day => (
-            <div key={day.date} style={{
-              flex: 1, display: 'flex', flexDirection: 'column',
-              alignItems: 'center', gap: '7px',
-            }}>
-              <span style={{
-                width: '10px', height: '10px', borderRadius: '999px',
-                // Mixed against the TEXT, not against a panel colour: these marks
-                // sit on the page now, and `--surface-2` is 6/255 from it
-                // (P10-C2). One recipe, correct in both themes by construction.
-                background: day.studied
-                  ? accentInk
-                  : 'color-mix(in srgb, var(--text) 9%, transparent)',
-                // Today is ringed rather than filled until it is earned — the ring
-                // is an invitation, the fill is the record.
-                boxShadow: day.isToday && !day.studied
-                  ? 'inset 0 0 0 2px ' + `color-mix(in srgb, ${accentHex} 55%, transparent)`
-                  : 'none',
-              }} />
-              <span style={{
-                ...MICRO,
-                color: day.isToday ? 'var(--text-secondary)' : 'var(--text-faint)',
-              }}>
-                {weekdayInitial(day.date)}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* ── Toward the next level, in the same surface. The week behind you
-            and the road ahead are one story, and on a phone two separate panels
-            of numbers made Home read as a dashboard. ── */}
-        <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
-            <span style={{ ...TYPE.titleCard, color: 'var(--text)' }}>
-              Toward {nextLevelLabel}
-            </span>
-            <span style={{ ...NUM, ...TYPE.caption, color: 'var(--text-muted)' }}>
-              {learned} of {totalWords} words
-            </span>
-          </div>
-
-          <LevelProgress
-            pct={pct}
-            accentInk={accentInk}
-            label={learned + ' of ' + totalWords + ' words learned toward '
-              + nextLevelLabel + ' — ' + pct + '%'}
-          />
-
-          {/* One quiet line for what's ahead — this was two lines in two
-              different panels saying nearly the same thing. Left-aligned: a
-              centred caption is what a widget does. */}
-          <div style={{ ...TYPE.caption, color: 'var(--text-faint)', marginTop: '10px' }}>
-            {counts.dueTomorrow > 0
-              ? 'About ' + counts.dueTomorrow + ' waiting tomorrow'
-              : 'Nothing due tomorrow — a free day'}
-            {forecastTotal > 0 && ' · ~' + perDay + '/day this week'}
-          </div>
-        </div>
-        </div>
-      </Panel>
+      {/* ── Context, at the foot of the page where context belongs ── */}
+      <LevelFoot levelLabel={levelLabel} learned={learned} totalWords={totalWords} ctx={ctx} />
 
       {tourSteps && (
         <TourOverlay
@@ -386,296 +298,262 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
   )
 }
 
-// Progress toward the next level, as segments rather than a hairline.
+// ── The active step ───────────────────────────────────────────────────────
 //
-// It was a 6px continuous rail, and at HSK 2 → HSK 3 with 5 of 44 words that is
-// 36 pixels of red on a 324px line: technically accurate and impossible to read
-// as "a tenth of the way". Ten segments make the same fraction countable — the
-// eye reads "one of ten" without reading a number — and 8px of height lets the
-// unfinished part be a warm neutral rather than a grey scratch.
+// One eyebrow that numbers it, the largest type on the screen, at most one line
+// of supporting fact, and one button. When the step is the story, the artwork
+// comes first and carries the screen.
 //
-// Ten and not one-per-word: a level is 44 words at HSK 2 and 300 at HSK 6, so
-// per-word segments would be a barcode at the top of the curriculum. Ten is a
-// tenth, which is the granularity the sentence beside it already uses.
-//
-// **No gold.** The brief allows it for a genuine milestone and this is not one —
-// it is the road, not the arrival. Gold means "unlocked" in this app and the level
-// test is what unlocks (`--gold`, CLAUDE.md §5).
-const PROGRESS_SEGMENTS = 10
-
-function LevelProgress({ pct, accentInk, label }) {
-  // How many segments are fully earned, and how much of the next one is.
-  const exact = (Math.max(0, Math.min(100, pct)) / 100) * PROGRESS_SEGMENTS
-  const full = Math.floor(exact)
-  const partial = exact - full
+// There is no bounded surface here on purpose: the step IS the page. A card
+// around it would make Home a dashboard with one card in it, which is the shape
+// device QA rejected.
+function ActiveStep({ step, ctx, onGo }) {
+  if (!step) return null
+  const { accentHex, langFont, isMobile } = ctx
+  const isStory = step.key === 'story' && step.story
   return (
-    <div role="img" aria-label={label} style={{ display: 'flex', gap: '4px' }}>
-      {Array.from({ length: PROGRESS_SEGMENTS }, (_, i) => {
-        // The partial segment is filled proportionally rather than rounded, so a
-        // learner who has done four words of forty-four sees something.
-        const fill = i < full ? 1 : (i === full ? partial : 0)
-        return (
-          <span key={i} style={{
-            flex: 1, height: '8px', borderRadius: '3px', overflow: 'hidden',
-            background: 'color-mix(in srgb, var(--text) 9%, transparent)',
+    <div data-tour="home-queue" data-guide-active={step.key} style={{ marginTop: '22px' }}>
+      <StepEyebrow step={step} accentHex={accentHex} />
+
+      {/* The artwork, at the ratio it was painted at.
+          Production covers are 1344×756 — a 16:9 scene with the characters
+          centred — and Home used to crop them into a 72px near-square, which
+          threw away the picture and all of its composition. Rounded and inset to
+          the page margin rather than bled to the screen edge, so it reads as an
+          object on the page like everything else since P14-4. */}
+      {isStory && (
+        <div style={{ marginTop: '13px' }}>
+          <StoryCover
+            story={step.story.coverStory}
+            path={step.story.coverPath}
+            accent={accentHex}
+            radius={RADIUS.card}
+            loading="eager"
+            style={{ width: '100%', aspectRatio: '16 / 9', boxShadow: ELEVATION.raised }}
+          />
+        </div>
+      )}
+
+      <div style={{ marginTop: isStory ? '15px' : '9px' }}>
+        {/* A count belongs in `display` — the role written for "the one number a
+            screen is about" — with its noun under it. A sentence at that size
+            wraps to three lines on a phone and stops being a statement. */}
+        {step.metric ? (
+          <>
+            <div style={{
+              ...TYPE.display, fontVariantNumeric: 'tabular-nums', color: 'var(--text)',
+              fontSize: isMobile ? TYPE.display.fontSize : '40px',
+            }}>
+              {step.metric.value}
+            </div>
+            <div style={{ ...TYPE.titleSection, color: 'var(--text)', marginTop: '2px' }}>
+              {step.metric.label}
+            </div>
+          </>
+        ) : (
+          <div style={{
+            ...TYPE.titleScreen, color: 'var(--text)',
+            fontFamily: isStory ? langFont : undefined,
           }}>
-            {fill > 0 && (
-              <span style={{
-                display: 'block', height: '100%',
-                // A hair of width even at 1%, or the first word of a level looks
-                // like no words at all.
-                width: Math.max(14, Math.round(fill * 100)) + '%',
-                background: accentInk,
-                borderRadius: '3px',
-                transition: 'width 600ms cubic-bezier(0.22,1,0.36,1)',
-              }} />
-            )}
-          </span>
-        )
-      })}
-    </div>
-  )
-}
+            {step.detail}
+          </div>
+        )}
 
-// The story hand-off — the first row of the supporting surface.
-//
-// It has been three shapes now. A bordered `Panel` wrapped around a row that was
-// already the tap target; then a bare row on the open page, which read as
-// unfinished on a phone; now a row INSIDE the one quiet surface, which is what it
-// always was semantically. No rectangle of its own — the surface is the boundary,
-// the hairline below is the separator.
-//
-// The cover is the anchor: the story's real 2:3 artwork, 56px wide, which is
-// content rather than another drawn box. The label ("Then read", "Read it now")
-// is the row's first line rather than a heading above it, because a heading over
-// a single control is a taxonomy for one thing — and because the row is a button,
-// whose content is its label.
-function StoryHandoff({
-  coverPath, coverStory, label, title, titleFont, meta, metaIcon: MetaIcon,
-  knownPct, accentInk, accentHex, onOpen, dataTour,
-}) {
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onOpen}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() } }}
-      className="hd-press"
-      data-tour={dataTour}
-      style={{
-        display: 'flex', alignItems: 'center', gap: '13px',
-        minHeight: '44px', cursor: 'pointer',
-      }}
-    >
-      {/* The artwork is the anchor, and P14-5 gave it room: 56px → 72px, which is
-          the difference between a list-row thumbnail and a book on a shelf. It is
-          the story's real 2:3 cover — content, not a drawn box — and it gets the
-          only shadow in this panel, because a cover is a physical object and the
-          rows around it are not. */}
-      <StoryCover
-        story={coverStory}
-        path={coverPath}
-        accent={accentHex}
-        radius={RADIUS.control}
-        loading="eager"
-        style={{
-          width: '72px', flexShrink: 0, aspectRatio: '2 / 3',
-          boxShadow: ELEVATION.raised,
-        }}
-      />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ ...TYPE.eyebrow, color: accentInk, marginBottom: '5px' }}>
-          {label}
-        </div>
-        {/* The title steps up to titleCard weight — this is the row's subject, and
-            at 15px/600 beside a 13px/700 label it was losing to its own kicker. */}
-        <div style={{
-          fontFamily: titleFont, ...TYPE.titleCard, color: 'var(--text)',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>
-          {title}
-        </div>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '5px',
-          ...TYPE.caption, color: 'var(--text-muted)', marginTop: '4px', minWidth: 0,
-        }}>
-          {MetaIcon && <MetaIcon size={13} strokeWidth={2.2} color={accentInk} style={{ flexShrink: 0 }} aria-hidden="true" />}
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta}</span>
-        </div>
-        {/* Readiness, as a mark. `knownPct` was already in the meta line as
-            "you know 83% of it" and nowhere as a thing you can see at a glance —
-            which is what the brief means by progress/readiness information. Only
-            for the daily pick: a reward chapter is unlocked or it is not, and a
-            percentage there would be answering a question nobody asked. */}
-        {typeof knownPct === 'number' && (
-          <div
-            role="img"
-            aria-label={'You know about ' + knownPct + '% of the words in this story'}
-            style={{
-              marginTop: '7px', height: '4px', borderRadius: '999px', maxWidth: '132px',
-              background: 'color-mix(in srgb, var(--text) 10%, transparent)',
-              overflow: 'hidden',
-            }}
-          >
-            <span style={{
-              display: 'block', width: Math.max(4, Math.min(100, knownPct)) + '%',
-              height: '100%', borderRadius: '999px', background: accentInk,
-            }} />
+        {step.facts.length > 0 && (
+          <div style={{ ...TYPE.caption, color: 'var(--text-muted)', marginTop: '7px' }}>
+            {step.facts.join(' · ')}
           </div>
         )}
       </div>
-      <ChevronRight size={19} strokeWidth={2.1} color="var(--text-faint)" style={{ flexShrink: 0 }} />
+
+      {step.cta && (
+        <div style={{ marginTop: '20px' }}>
+          <Button size="lg" onClick={onGo} icon={ArrowRight}>{step.cta}</Button>
+        </div>
+      )}
     </div>
   )
 }
 
-// The hero's contents: the whole block is about today's flashcards — how many
-// are waiting, how the day's goal is going, and the one button that starts it.
-function QueueBody({ counts, totalDue, goal, doneToday, isMobile, action, accentHex, hovered }) {
-  const failed = Boolean(counts.failed)
-  const clear = !failed && totalDue === 0
-  const goalComplete = goal > 0 && doneToday >= goal
-
-  // The counts never arrived, so every number here is a meaningless zero. Say
-  // so plainly instead of showing the ✓ — Study loads its own queue fresh, so
-  // the usual button is the honest retry.
-  if (failed) {
-    return (
-      <div style={{ maxWidth: isMobile ? '70%' : '76%' }}>
-        <span style={{ ...MICRO, color: ON_HERO.eyebrow }}>
-          Today's cards
-        </span>
-
-        <div style={{
-          ...TYPE.titleSection, color: '#fff', margin: '10px 0 0',
-        }}>
-          Couldn't load today's queue
-        </div>
-
-        <div style={{ ...TYPE.bodySecondary, color: ON_HERO.body, marginTop: '10px' }}>
-          Check your connection — starting a session loads it fresh.
-        </div>
-
-        <HeroAction label={action.label} hovered={hovered} icon={ArrowRight} accentHex={accentHex} material="paper" />
-      </div>
-    )
-  }
-
+// "1 · CARDS". `inkWarm`, not `ink`: at 10.5px the 30%-lift accent fails AA on
+// the dark ground, and the 40%-toward-white lift that fixes AA turns the brand
+// red to salmon. The warm lift keeps the hue and clears the bar (languageTheme.js).
+// It is also the ONE accent mark up here — the quiet steps below are grey on
+// purpose, so only the current step is energised.
+function StepEyebrow({ step, accentHex }) {
   return (
-    // The text column stops short of the identity object so the two never
-    // overlap. 68% on a phone is measured, not chosen: the deck is 132px of a
-    // 358px panel and it is cropped by the corner, so its visible mass starts
-    // around 74%.
-    <div style={{ maxWidth: isMobile ? '70%' : '76%' }}>
-      <span style={{ ...MICRO, color: ON_HERO.eyebrow }}>
-        {clear ? 'Queue clear' : 'Ready to review'}
+    <span style={{ ...TYPE.eyebrow, color: inkWarm(accentHex) }}>
+      {step.number} · {step.title}
+    </span>
+  )
+}
+
+// ── A step that is not the current one ────────────────────────────────────
+//
+// The same component for "done" and "still ahead", because they are the same
+// object at two moments — the mark carries the difference, not a second layout.
+// The number IS the mark until the step is behind you: a dot cannot say "second",
+// and second is the thing this screen exists to communicate.
+//
+// The story step brings its real artwork along, small. "Show what comes after it"
+// is the point of the sequence, and a chapter you can see is a different promise
+// from a chapter you are told about.
+function QuietStep({ step, ctx, onGo }) {
+  const { accentHex, accentInk, langFont } = ctx
+  const done = step.status === STATUS.done
+  const off = step.status === STATUS.unavailable
+  const art = step.key === 'story' && step.story ? step.story : null
+  const reachable = !done && !off
+  const detail = [step.detail, step.unlockHint].filter(Boolean).join(' · ')
+
+  const body = (
+    <>
+      <span style={{ display: 'flex', width: '18px', justifyContent: 'center', flexShrink: 0 }}>
+        {done ? (
+          <svg width="14" height="14" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M1.6 6.2 4.6 9.4l6-7.4" stroke={accentInk} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ) : (
+          <span style={{
+            ...TYPE.titleSection, fontVariantNumeric: 'tabular-nums',
+            color: off ? 'var(--text-faint)' : 'var(--text-muted)',
+          }}>
+            {step.number}
+          </span>
+        )}
       </span>
 
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', margin: '8px 0 0' }}>
+      <span style={{ minWidth: 0, flex: 1 }}>
         <span style={{
-          // TYPE.display, which is the role written for exactly this: "the one
-          // number a screen is about — Home's card count". It was 40px/700 by
-          // coincidence and is 40px/800 by name now, so the numeral got heavier
-          // without inventing a size — 44 was tried and the design-system guard
-          // was right to refuse it.
-          ...TYPE.display, ...NUM, fontWeight: TYPE.display.fontWeight,
-          color: '#fff', fontSize: isMobile ? TYPE.display.fontSize : '64px',
+          ...TYPE.titleCard, display: 'block',
+          color: done ? 'var(--text-muted)' : 'var(--text)',
         }}>
-          {clear ? '\u2713' : totalDue}
+          {step.title}
         </span>
-        <span style={{ ...TYPE.titleCard, color: 'rgba(255,255,255,0.9)' }}>
-          {clear ? 'all caught up' : 'card' + (totalDue === 1 ? '' : 's') + ' waiting'}
-        </span>
-      </div>
+        {detail && (
+          <span style={{
+            ...TYPE.caption, color: 'var(--text-faint)', display: 'block', marginTop: '2px',
+            fontFamily: art ? langFont : undefined,
+          }}>
+            {detail}
+          </span>
+        )}
+      </span>
 
-      {/* Session length from the ACTUAL queue (see sessionEstimate.js). Its own
-          line now rather than trailing the unit inside a nested span: at 320 that
-          span wrapped mid-phrase, and it is a different kind of fact from the
-          count anyway. */}
-      {!clear && sessionEstimateLabel(counts) && (
-        <div style={{ ...TYPE.caption, color: ON_HERO.eyebrow, marginTop: '5px' }}>
-          {sessionEstimateLabel(counts)}
-        </div>
+      {art && (
+        <StoryCover
+          story={art.coverStory}
+          path={art.coverPath}
+          accent={accentHex}
+          radius={RADIUS.control}
+          style={{ width: '96px', flexShrink: 0, aspectRatio: '16 / 9', opacity: done ? 0.5 : 1 }}
+        />
       )}
+    </>
+  )
 
-      {/* The queue's breakdown — desktop only. On a phone these three numbers
-          appear the moment Study opens, one tap away; here they were three
-          more numerals on a screen already full of them. */}
-      {!clear && !isMobile && (
-        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '12px' }}>
-          {[
-            ['New', counts.newCount],
-            ['Learning', counts.learnCount],
-            ['Due', counts.dueCount],
-          ].map(([label, value]) => (
-            <span key={label} style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-              <span style={{ ...NUM, ...TYPE.titleSection, color: '#fff' }}>{value}</span>
-              <span style={{ ...MICRO, color: ON_HERO.eyebrow }}>{label}</span>
-            </span>
-          ))}
-        </div>
-      )}
+  const style = {
+    display: 'flex', alignItems: 'center', gap: '14px',
+    // 44px of target even on the shortest row (TAP_MIN, P14-1).
+    minHeight: '44px', padding: '17px 0',
+    width: '100%', textAlign: 'left',
+  }
 
-      <GoalMarks done={doneToday} goal={goal} complete={goalComplete} />
-
-      <HeroAction label={action.label} hovered={hovered} icon={ArrowRight} accentHex={accentHex} material="paper" />
+  // A step you can still act on is a control; one that is done or has nothing
+  // behind it is a statement, and a statement must not look tappable.
+  if (!reachable) {
+    return <div data-guide-step={step.key} style={style}>{body}</div>
+  }
+  return (
+    <div
+      role="button" tabIndex={0} onClick={onGo}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onGo() } }}
+      className="hd-press"
+      data-guide-step={step.key}
+      data-tour={step.key === 'story' ? 'home-then-read' : undefined}
+      style={{ ...style, cursor: 'pointer' }}
+    >
+      {body}
     </div>
   )
 }
 
-// The daily goal, as marks rather than as a sentence.
+// ── The finished day ──────────────────────────────────────────────────────
 //
-// "Daily goal: 0 of 10 new cards" is a sentence about a number that could be a
-// mark, and it was the only progress on the hero — the P14-5 brief's "visible
-// progress" is exactly this. One pip per card, filled as they are done.
+// Restrained on purpose, and it has two versions because there are two different
+// days (homeGuide.completionSummary): work happened, or nothing was waiting. Only
+// the first is an achievement, so only the first gets the seal — congratulating
+// someone for opening the app is the fake reward this product refuses.
 //
-// **Pips only up to PIP_MAX**, then a rail. The goal is `profile.daily_new_cards`
-// and nothing stops it being 30; thirty marks across 70% of a 320px panel is
-// 3px each, which is noise, not progress. The rail says the same thing at any
-// goal and the pips say it better at a real one.
-const PIP_MAX = 12
-
-function GoalMarks({ done, goal, complete }) {
-  if (!goal) {
-    return (
-      <div style={{ ...TYPE.caption, color: ON_HERO.eyebrow, marginTop: '14px' }}>
-        No daily goal set
-      </div>
-    )
-  }
-  const shown = Math.min(done, goal)
-  const label = complete ? 'Daily goal complete' : shown + ' of ' + goal + ' new'
+// No XP, no coins, no streak, no confetti. One line, one summary, one small
+// object, and a secondary way to keep going for anyone who wants it.
+function TrainingComplete({ guide, ctx, onExplore }) {
+  const { accentHex } = ctx
+  const earned = guide.summary.earned
   return (
-    <div
-      role="img"
-      aria-label={complete ? 'Daily goal complete' : shown + ' of ' + goal + ' new cards done today'}
-      style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '14px' }}
-    >
-      {goal <= PIP_MAX ? (
-        <span style={{ display: 'flex', gap: '3px', flex: 1, minWidth: 0 }}>
-          {Array.from({ length: goal }, (_, i) => (
-            <span key={i} style={{
-              flex: 1, height: '4px', borderRadius: '999px',
-              // `plane1` (17%) and not `plane2` (10%) for the empty pips: at 10%
-              // the unfilled track read as a dashed grey line rather than as ten
-              // waiting marks, in both themes. A track has to look like a track
-              // before a fill can mean anything.
-              background: i < shown ? '#fff' : ON_HERO.plane1,
-            }} />
-          ))}
-        </span>
-      ) : (
-        <span style={{
-          flex: 1, height: '4px', borderRadius: '999px', overflow: 'hidden',
-          background: ON_HERO.plane1,
-        }}>
-          <span style={{
-            display: 'block', width: Math.round((shown / goal) * 100) + '%',
-            height: '100%', borderRadius: '999px', background: '#fff',
-          }} />
-        </span>
-      )}
-      <span style={{ ...TYPE.caption, color: ON_HERO.eyebrow, flexShrink: 0 }}>{label}</span>
+    <div data-tour="home-queue" data-guide-active="complete" style={{ marginTop: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ ...TYPE.titleScreen, color: 'var(--text)' }}>{guide.summary.headline}</div>
+          {guide.summary.parts.length > 0 && (
+            <div style={{ ...TYPE.caption, color: 'var(--text-muted)', marginTop: '8px' }}>
+              {guide.summary.parts.join(' · ')}
+            </div>
+          )}
+        </div>
+        {earned && <CompletionSeal size={68} accentHex={accentHex} />}
+      </div>
+
+      <button
+        type="button" onClick={onExplore} className="hd-press"
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: '6px',
+          marginTop: '18px', minHeight: '44px', padding: '0 2px',
+          background: 'none', border: 'none', cursor: 'pointer',
+          ...TYPE.label, color: inkWarm(accentHex),
+        }}
+      >
+        Keep going — Practice
+        <ArrowRight size={15} strokeWidth={2.4} />
+      </button>
+    </div>
+  )
+}
+
+// ── The foot of the page ──────────────────────────────────────────────────
+//
+// HSK progress, demoted to what it is: context. One line of type and one
+// hairline rail — not the ten-segment module P14-5 built, which competed with the
+// action above it for a number that changes a few times a week. The detailed
+// history lives on Profile, which is where someone goes to look at it.
+function LevelFoot({ levelLabel, learned, totalWords, ctx }) {
+  const pct = totalWords > 0 ? Math.min(100, (learned / totalWords) * 100) : 0
+  return (
+    // `marginTop: auto` — the foot of the column, not 30px under whatever came
+    // last. Everything above it keeps its own rhythm; this is what turns the
+    // space between the sequence and the level line into a deliberate gap.
+    // `paddingRight` on a phone: the feedback control floats over the
+    // bottom-right corner (Feedback.jsx), and now that the level line is pinned
+    // to the foot, the rail ran underneath it — a red line disappearing into a
+    // red circle reads as a rendering fault. The rail stops short of it instead.
+    <div style={{ marginTop: 'auto', paddingTop: '30px', paddingRight: ctx.isMobile ? '58px' : 0 }}>
+      <div
+        role="img"
+        aria-label={levelLabel + ' — ' + learned + ' of ' + totalWords + ' words learned'}
+        style={{ ...TYPE.caption, color: 'var(--text-muted)' }}
+      >
+        {levelLabel} · {learned} / {totalWords} words
+      </div>
+      <div data-level-rail="" style={{
+        marginTop: '7px', height: '3px', borderRadius: RADIUS.pill,
+        background: 'color-mix(in srgb, var(--text) 8%, transparent)', overflow: 'hidden',
+      }}>
+        <div style={{
+          width: pct + '%', height: '100%', borderRadius: RADIUS.pill,
+          background: ctx.accentInk,
+          transition: 'width 600ms cubic-bezier(0.22,1,0.36,1)',
+        }} />
+      </div>
     </div>
   )
 }

@@ -9,7 +9,7 @@
 import { supabase } from './supabase'
 import { todayStr } from './streak'
 import { isMissingRpc, enqueueStoryClaim } from './syncQueue'
-import { buildSeriesUnits, resolveActiveSeries, rewardStateFor } from './storyReward'
+import { buildSeriesUnits, resolveActiveSeries, rewardStateFor, hasReadToday } from './storyReward'
 import { nextRewardChapter, chapterInfo } from './storyChapters'
 
 // The reward context for one track: series units (from published stories the
@@ -48,7 +48,15 @@ export async function fetchRewardContext(userId, track) {
 
     const units = buildSeriesUnits(stories)
     const activeUnit = resolveActiveSeries({ units, activeSeriesKey, recentReads: reads })
-    return { stories, units, activeUnit, activeSeriesKey, reads, readIds, unlockIds, claim, today }
+    return {
+      stories, units, activeUnit, activeSeriesKey, reads, readIds, unlockIds, claim, today,
+      // Did the learner read anything TODAY? Derived from `read_at` on rows that
+      // are already fetched — no new table, no new tracking. It is what lets
+      // Home's guide tick step 2 instead of guessing, and it is deliberately "a
+      // story", not "this story": the honest question is whether today's reading
+      // happened, and a learner who read a different chapter did read.
+      readToday: hasReadToday(reads),
+    }
   } catch {
     return null
   }
@@ -139,6 +147,10 @@ export async function getSessionRewardTeaser(userId, track) {
       state: state.state,
       seriesTitle: ctx.activeUnit.title,
       chapter: chapterInfo(state.chapter, idx),
+      // The chapter's OWN level, so Home can label it honestly rather than
+      // borrowing the learner's current level (a series can sit below it).
+      level: state.chapter.level,
+      readToday: ctx.readToday,
       // The artwork Home anchors the hand-off on (P10-C2). A chapter without its
       // own illustration borrows the series' first, the same fallback the shelf
       // uses; null is fine — StoryCover has its own accent wash.
@@ -153,6 +165,8 @@ export async function getSessionRewardTeaser(userId, track) {
       storyId: story.id,
       seriesTitle: unit ? unit.title : story.title,
       chapter: chapterInfo(story, unit ? unit.parts.findIndex(p => p.id === story.id) : 0),
+      level: story.level,
+      readToday: ctx.readToday,
       coverPath: coverPathFor(story, unit),
     } : null
   }

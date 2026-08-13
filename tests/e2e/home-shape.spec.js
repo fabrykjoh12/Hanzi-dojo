@@ -1,17 +1,19 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
+import { HomePage } from '../pages/HomePage.js';
 
-// P10-C3 — Home's composition, as a contract.
+// P14-5C — Home's composition, as a contract.
 //
-// Three shapes have been on a phone now. Three equal rounded cards read as a
-// generated dashboard. One card plus open sections (build 38) read as
-// unfinished: headings floating away from their data, hairlines making empty
-// bands, the lower half disconnected. What ships is **two surfaces with clearly
-// different jobs** — a lit accent block that means *act now*, and one flat
-// surface that means *the context around it*.
+// The shape has been through four rounds now. Three equal rounded cards read as a
+// generated dashboard (P10). One lit card plus open sections read as unfinished
+// (build 38). One lit card plus one flat surface was correct and still read, on a
+// real phone, as "messy, over-designed, not useful enough" (build 43).
 //
-// So these specs assert ROLES, not counts. Surface counts were the diagnostic
-// that found the problem; they are not the product goal, and a screen with two
-// excellent surfaces beats one surface with poor structure.
+// What ships is a GUIDE: type on the page ground, one loud step, two quiet
+// numbered ones, and the story artwork as the only rich object. So the contract
+// this file holds is mostly a contract about what must NOT be here — because
+// every previous round failed by adding, not by subtracting.
+//
+// The state-by-state behaviour is home-guide.spec.js; this is the drawing.
 
 const PHONES = [
   { name: '320', width: 320, height: 568 },
@@ -19,246 +21,149 @@ const PHONES = [
   { name: '430', width: 430, height: 932 },
 ];
 
-// The secondary surface: the nearest ancestor of the story row that draws itself
-// as a panel. Found by walking up rather than by test id, so the assertion holds
-// whatever the markup is called.
-const SURFACES = () => {
+// Everything on the page that DRAWS ITSELF AS A BOX: a border, a radius with a
+// background, or a shadow. Artwork is excluded by name — a story cover is a
+// rounded, shadowed rectangle and it is content, not a container (the same
+// distinction P14-5 had to teach this suite, via `data-story-cover`).
+const BOXES = () => {
   const root = document.querySelector('#main-content') || document.body;
-  const hero = document.querySelector('[data-tour="home-queue"]');
-  const row = document.querySelector('[data-tour="home-then-read"]');
-  const week = document.querySelector('[data-tour="home-week"]');
-  let panel = row || week;
-  while (panel && panel !== root) {
-    const cs = getComputedStyle(panel);
-    if ((parseFloat(cs.borderTopWidth) || 0) > 0 && (parseFloat(cs.borderTopLeftRadius) || 0) >= 6) break;
-    panel = panel.parentElement;
-  }
-  const read = (el) => {
-    if (!el || el === root) return null;
+  const out = [];
+  for (const el of root.querySelectorAll('*')) {
+    if (el.closest('[data-story-cover]')) continue;
+    if (el.closest('[data-tour-overlay]')) continue;
     const cs = getComputedStyle(el);
-    const b = el.getBoundingClientRect();
-    return {
-      h: Math.round(b.height),
-      w: Math.round(b.width),
-      top: Math.round(b.top + window.scrollY),
-      gradient: cs.backgroundImage !== 'none',
-      bg: cs.backgroundColor,
-      color: cs.color,
-      radius: parseFloat(cs.borderTopLeftRadius) || 0,
-      shadow: cs.boxShadow,
-    };
-  };
-  const inside = panel && panel !== root ? Array.from(panel.querySelectorAll('*')) : [];
-  return {
-    hero: read(hero),
-    panel: read(panel),
-    row: row ? read(row) : null,
-    week: week ? read(week) : null,
-    // A card inside the card. None may exist.
-    //
-    // ARTWORK IS NOT A CARD, and since P14-5 the distinction matters: the story
-    // cover is 72px of real 2:3 poster with a rounded corner and a shadow, because
-    // a cover is a physical object and the brief asks for the artwork to carry some
-    // of the screen's dimensionality. It is not a container — it holds an image and
-    // no text — so an element whose subtree has an <img> and no words is excluded.
-    //
-    // That keeps the rule sharp rather than loosening it: a bordered box with rows
-    // of text inside the supporting surface still fails, which is the thing P10
-    // actually banned.
-    nestedPanels: inside.filter((el) => {
-      const cs = getComputedStyle(el);
-      const b = el.getBoundingClientRect();
-      const isPanel = (parseFloat(cs.borderTopLeftRadius) || 0) >= 12
-        && b.width > 60 && b.height > 40
-        && ((parseFloat(cs.borderTopWidth) || 0) > 0 || cs.boxShadow !== 'none');
-      if (!isPanel) return false;
-      // `data-story-cover` is declared by StoryCover.jsx. Inferring artwork from
-      // the subtree ("has an <img>, has no text") looked cleverer and was wrong:
-      // with no artwork to load the component renders a drawn SVG placeholder, so
-      // the check passed in production and failed in the mocked suite.
-      return !el.hasAttribute('data-story-cover');
-    }).map((el) => (el.textContent || '').trim().slice(0, 24)),
-    // Everything pressable inside the supporting surface.
-    pressable: inside.filter((el) => el.classList.contains('hd-press')
-      || el.tagName === 'BUTTON' || el.tagName === 'A' || el.getAttribute('role') === 'button')
-      .map((el) => ({
-        tag: el.tagName.toLowerCase(),
-        press: el.classList.contains('hd-press'),
-        txt: ((el.textContent || '').trim() || el.getAttribute('aria-label') || '?').slice(0, 22),
-      })),
-    docH: document.documentElement.scrollHeight,
-    maxRight: Math.round(Math.max(...Array.from(root.querySelectorAll('*'))
-      .map((el) => el.getBoundingClientRect().right))),
-    vw: window.innerWidth,
-    headings: Array.from(root.querySelectorAll('h1,h2,h3')).map((h) => h.tagName + ':' + h.textContent.trim()),
-    text: (root.textContent || '').replace(/\s+/g, ' '),
-  };
+    const r = el.getBoundingClientRect();
+    if (r.width < 40 || r.height < 24) continue;
+    // A RULE is not a box. One hairline along the top (the editorial divider
+    // above the sequence) is a drawn line; a container is bordered on at least
+    // two sides. Counting a single edge made the guide's own divider read as a
+    // panel, which is precisely the distinction this file exists to police.
+    const edges = ['Top', 'Right', 'Bottom', 'Left']
+      .filter(side => (parseFloat(cs['border' + side + 'Width']) || 0) > 0
+        && cs['border' + side + 'Style'] !== 'none').length;
+    const bordered = edges >= 2;
+    const radius = parseFloat(cs.borderTopLeftRadius) || 0;
+    const filled = cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent';
+    const shadowed = cs.boxShadow !== 'none';
+    if (!(bordered || shadowed || (radius >= 8 && filled))) continue;
+    out.push({
+      tag: el.tagName.toLowerCase(),
+      role: el.getAttribute('role') || '',
+      text: (el.textContent || '').trim().slice(0, 40),
+      w: Math.round(r.width),
+      h: Math.round(r.height),
+      radius,
+      bordered,
+      shadowed,
+    });
+  }
+  return out;
 };
 
 for (const phone of PHONES) {
-  test.describe('Home at ' + phone.name, () => {
-    test.use({ viewport: { width: phone.width, height: phone.height } });
-
-    test('is two surfaces, and only the hero is lit', async ({ page }) => {
-      await page.goto('/');
-      await page.waitForTimeout(1500);
-      const s = await page.evaluate(SURFACES);
-
-      // The hero: accent gradient ground, white text, its own tinted shadow.
-      expect(s.hero).not.toBeNull();
-      expect(s.hero.gradient).toBe(true);
-      expect(s.hero.color).toBe('rgb(255, 255, 255)');
-
-      // The supporting surface: flat, no gradient, no accent wash, text colour
-      // from the theme rather than white-on-accent.
-      expect(s.panel).not.toBeNull();
-      expect(s.panel.gradient).toBe(false);
-      expect(s.panel.color).not.toBe('rgb(255, 255, 255)');
-      expect(s.panel.radius).toBeGreaterThanOrEqual(12);
-
-      // The hero comes first and is the heavier object per pixel of content;
-      // the panel is taller only because it holds three sections.
-      expect(s.hero.top).toBeLessThan(s.panel.top);
+  test.describe('Home composition · ' + phone.name, () => {
+    let home;
+    test.beforeEach(async ({ page }) => {
+      await page.setViewportSize({ width: phone.width, height: phone.height });
+      home = new HomePage(page);
+      await home.goto();
+      await expect(home.primaryAction).toBeVisible();
     });
 
-    test('has no card inside the card', async ({ page }) => {
-      await page.goto('/');
-      await page.waitForTimeout(1500);
-      const s = await page.evaluate(SURFACES);
-      expect(s.nestedPanels, JSON.stringify(s.nestedPanels)).toEqual([]);
+    test('draws no panel around the guide — the page IS the layout', async ({ page }) => {
+      const boxes = await page.evaluate(BOXES);
+      // The button is a box and should be. Nothing else may be, unless the
+      // returning-from-a-break notice happens to be showing.
+      const unexpected = boxes.filter(b => b.tag !== 'button' && !/reviews are ready|welcome back/i.test(b.text));
+      expect(unexpected, 'a container came back onto Home: ' + JSON.stringify(unexpected)).toEqual([]);
     });
 
-    test('keeps every section, and none of them float', async ({ page }) => {
-      await page.goto('/');
-      await page.waitForTimeout(1500);
-      const s = await page.evaluate(SURFACES);
-      expect(s.headings[0]).toBe('H1:Today');
-      expect(s.headings).toContain('H2:Your week');
-      // No ALL-CAPS section taxonomy outside the lit panel.
-      expect(s.text).not.toMatch(/THEN READ|YOUR WEEK|TODAY.S STORY REWARD/);
-      // Every number the old three panels carried.
-      expect(s.text).toMatch(/Toward HSK 3/);
-      expect(s.text).toMatch(/(waiting tomorrow|Nothing due tomorrow)/);
-      expect(s.text).toMatch(/(No sessions yet|Studied \d+ of the last \d+ days)/);
-      // The week and the progress live inside the surface, not on the page.
-      expect(s.week.top).toBeGreaterThan(s.panel.top);
-      expect(s.week.top + s.week.h).toBeLessThanOrEqual(s.panel.top + s.panel.h);
+    test('has one action, and the quiet steps are not competing buttons', async ({ page }) => {
+      const buttons = await page.locator('#main-content button').count();
+      // One: the active step's CTA. The quiet steps are role="button" rows, which
+      // are reachable but drawn as text.
+      expect(buttons).toBe(1);
+      const rows = await page.locator('[data-guide-step]').evaluateAll((els) => els.map((el) => {
+        const cs = getComputedStyle(el);
+        return {
+          bg: cs.backgroundColor,
+          border: parseFloat(cs.borderTopWidth) || 0,
+          shadow: cs.boxShadow,
+        };
+      }));
+      for (const r of rows) {
+        expect(r.border).toBe(0);
+        expect(r.shadow).toBe('none');
+        expect(['rgba(0, 0, 0, 0)', 'transparent']).toContain(r.bg);
+      }
     });
 
-    test('fits a phone, and stays inside it', async ({ page }) => {
-      await page.goto('/');
-      await page.waitForTimeout(1500);
-      const s = await page.evaluate(SURFACES);
-      expect(s.maxRight).toBeLessThanOrEqual(s.vw);
-      // 390 and up hold Home in one screen; 320 legitimately scrolls.
-      expect(s.docH / phone.height).toBeLessThan(phone.width < 390 ? 1.45 : 1.05);
+    test('the active step owns the largest type on the screen', async ({ page }) => {
+      const sizes = await page.evaluate(() => {
+        const px = (el) => parseFloat(getComputedStyle(el).fontSize) || 0;
+        const leaves = [...document.querySelectorAll('#main-content *')]
+          .filter(el => el.children.length === 0 && (el.textContent || '').trim());
+        const active = document.querySelector('[data-guide-active]');
+        const inActive = leaves.filter(el => active && active.contains(el));
+        const outside = leaves.filter(el => !active || !active.contains(el));
+        return {
+          biggestActive: Math.max(0, ...inActive.map(px)),
+          biggestOutside: Math.max(0, ...outside.map(px)),
+        };
+      });
+      expect(sizes.biggestActive).toBeGreaterThan(sizes.biggestOutside);
+    });
+
+    test('nothing tappable is under the 44px floor', async ({ page }) => {
+      const small = await page.evaluate(() => {
+        const out = [];
+        for (const el of document.querySelectorAll('#main-content button, #main-content [role="button"]')) {
+          const r = el.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0 && r.height < 44) out.push((el.textContent || '').trim().slice(0, 24));
+        }
+        return out;
+      });
+      expect(small).toEqual([]);
+    });
+
+    test('scrolls vertically only, and clears the floating tray', async ({ page }) => {
+      const m = await page.evaluate(() => {
+        const doc = document.documentElement;
+        const main = document.querySelector('#main-content') || document.body;
+        const tray = document.querySelector('nav[aria-label="Primary"]');
+        return {
+          overflowX: Math.max(0, doc.scrollWidth - doc.clientWidth),
+          padBottom: parseFloat(getComputedStyle(main).paddingBottom) || 0,
+          hasTray: Boolean(tray),
+        };
+      });
+      expect(m.overflowX).toBe(0);
+      if (m.hasTray) expect(m.padBottom).toBeGreaterThanOrEqual(60);
     });
   });
 }
 
-test.describe('Home — the supporting surface', () => {
-  test.use({ viewport: { width: 390, height: 844 } });
+test.describe('Home composition · what was removed', () => {
+  test('the level context is one quiet line at the foot, not a module', async ({ page }) => {
+    const home = new HomePage(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await home.goto();
 
-  test('gives the press interaction to the story row and nothing else', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForTimeout(1500);
-    const s = await page.evaluate(SURFACES);
-
-    // Exactly one interactive thing in the whole surface: the hand-off.
-    expect(s.pressable.length, JSON.stringify(s.pressable)).toBe(1);
-    expect(s.pressable[0].press).toBe(true);
-    expect(s.pressable[0].txt).toMatch(/Then read|Read it now|Next chapter/);
-
-    // The week strip and the progress bar are readouts, not controls.
-    const strip = page.getByRole('img', { name: /Studied \d+ of the last \d+ days/ });
-    const bar = page.getByRole('img', { name: /words learned toward/ });
-    await expect(strip).toBeVisible();
-    await expect(bar).toBeVisible();
-    for (const passive of [strip, bar]) {
-      expect(await passive.getAttribute('tabindex')).toBeNull();
-      await expect(passive.locator('button, a, [role="button"]')).toHaveCount(0);
-    }
-  });
-
-  test('the story row is a row, not a card, and opens Stories', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForTimeout(1500);
-
-    const row = page.getByRole('button', { name: /you know \d+% of it/ });
-    await expect(row).toBeVisible();
-
-    const box = await row.boundingBox();
-    expect(box.height).toBeGreaterThanOrEqual(44);
-    await expect(row).toHaveClass(/hd-press/);
-
-    // No surface of its own — the panel around it is the boundary.
-    const drawn = await row.evaluate((el) => {
-      const cs = getComputedStyle(el);
+    const foot = await page.evaluate(() => {
+      const label = [...document.querySelectorAll('#main-content [role="img"]')]
+        .find(el => /\d+ \/ \d+ words/.test(el.textContent || ''));
+      const rail = document.querySelector('[data-level-rail]');
+      if (!label || !rail) return null;
       return {
-        radius: parseFloat(cs.borderTopLeftRadius) || 0,
-        bg: cs.backgroundColor,
-        shadow: cs.boxShadow,
-        border: parseFloat(cs.borderTopWidth) || 0,
+        size: parseFloat(getComputedStyle(label).fontSize),
+        railHeight: Math.round(rail.getBoundingClientRect().height),
+        // One rail, not the ten segments P14-5 built.
+        pieces: rail.children.length,
       };
     });
-    expect(drawn.radius).toBe(0);
-    expect(drawn.shadow).toBe('none');
-    expect(drawn.border).toBe(0);
-    expect(drawn.bg).toMatch(/rgba\(0, 0, 0, 0\)|transparent/);
-
-    // The artwork is the anchor, and P14-5 gave it room: 56 → 72px, which is the
-    // difference between a list-row thumbnail and a book on a shelf. The band is
-    // still a band — a cover that grows past ~80 starts competing with the hero,
-    // and one under ~60 is back to being a favicon.
-    const cover = row.locator('div').first();
-    const c = await cover.boundingBox();
-    expect(c.width).toBeGreaterThanOrEqual(64);
-    expect(c.width).toBeLessThanOrEqual(80);
-    expect(Math.abs(c.height / c.width - 1.5)).toBeLessThan(0.12);
-
-    await row.click();
-    await expect.poll(() => new URL(page.url()).pathname).toBe('/stories');
-  });
-
-  test('reaches Stories from the keyboard too', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForTimeout(1500);
-    const row = page.getByRole('button', { name: /you know \d+% of it/ });
-    await row.focus();
-    await page.keyboard.press('Enter');
-    await expect.poll(() => new URL(page.url()).pathname).toBe('/stories');
-  });
-
-  test('separates its three rows with hairlines that can actually be seen', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForTimeout(1500);
-    // `--hairline` is a WHITE inset top-edge highlight — rgba(255,255,255,0.75)
-    // in light — so as a divider on a white surface it is invisible, which is
-    // exactly how it shipped for one build. Dividers use `--border`, and this
-    // asserts they contrast with the surface they sit on.
-    const seen = await page.evaluate(() => {
-      const px = (c) => {
-        const n = (c.match(/[-\d.]+/g) || []).map(Number);
-        const k = c.indexOf('color(') === 0 ? 255 : 1;
-        return [n[0] * k, n[1] * k, n[2] * k, n.length > 3 ? n[3] : 1];
-      };
-      const surface = px(getComputedStyle(document.documentElement).getPropertyValue('--surface').trim()
-        .replace(/^#(..)(..)(..)$/, (m, r, g, b) => 'rgb(' + parseInt(r, 16) + ',' + parseInt(g, 16) + ',' + parseInt(b, 16) + ')'));
-      const row = document.querySelector('[data-tour="home-then-read"]');
-      let panel = row;
-      while (panel) { const cs = getComputedStyle(panel); if ((parseFloat(cs.borderTopWidth) || 0) > 0 && (parseFloat(cs.borderTopLeftRadius) || 0) >= 6) break; panel = panel.parentElement; }
-      return Array.from(panel.querySelectorAll('div'))
-        .filter((el) => (parseFloat(getComputedStyle(el).borderTopWidth) || 0) > 0)
-        .map((el) => {
-          const c = px(getComputedStyle(el).borderTopColor);
-          const delta = Math.max(...[0, 1, 2].map((i) => Math.abs(c[i] - surface[i])));
-          return { alpha: c[3], delta: Math.round(delta) };
-        });
-    });
-    expect(seen.length).toBeGreaterThanOrEqual(2);
-    for (const d of seen) {
-      expect(d.alpha).toBeGreaterThan(0.3);
-      expect(d.delta).toBeGreaterThanOrEqual(10);   // a line you can see
-    }
+    expect(foot).not.toBeNull();
+    expect(foot.size).toBeLessThanOrEqual(12);
+    expect(foot.railHeight).toBeLessThanOrEqual(4);
+    expect(foot.pieces).toBe(1);
   });
 });

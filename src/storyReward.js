@@ -118,3 +118,34 @@ export function recentWordsInStory({ storyWords, recentVocabIds, max = 5 }) {
   }
   return out
 }
+
+// Did the learner read a story TODAY?
+//
+// P14-5C needs this so Home's guide can tick step 2 instead of guessing, and it
+// is deliberately an additive derivation: `story_reads` rows with their `read_at`
+// are already fetched by both of Home's story paths, so this costs no query and
+// invents no tracking system.
+//
+// "A story", not "this story", on purpose — the question the guide asks is
+// whether today's reading happened, and a learner who read a different chapter
+// has read. Rows without a usable timestamp are ignored rather than assumed
+// (`read_at` was added after the table, so old rows can be null).
+export function hasReadToday(reads, now = new Date()) {
+  const key = localDayKey(now)
+  return (reads || []).some((r) => {
+    const at = r && r.read_at
+    if (!at) return false
+    const d = new Date(at)
+    return !Number.isNaN(d.getTime()) && localDayKey(d) === key
+  })
+}
+
+// Local YYYY-MM-DD. Local rather than UTC because the whole app's day boundary
+// is local midnight — that is when new cards and due reviews roll over (srs.js),
+// and a reading day that ends at 01:00 UTC would be a different day from the
+// session that unlocked it.
+function localDayKey(d) {
+  return d.getFullYear() + '-'
+    + String(d.getMonth() + 1).padStart(2, '0') + '-'
+    + String(d.getDate()).padStart(2, '0')
+}

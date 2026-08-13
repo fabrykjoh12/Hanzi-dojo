@@ -184,3 +184,20 @@ export function pinyinInk(hex) {
 export function inkStrong(hex) {
   return `color-mix(in srgb, ${hex}, var(--ink-lift) var(--ink-strong-pct))`
 }
+
+// An accent mark that has to stay SATURATED in dark mode (P14-5C).
+//
+// `ink` and `inkStrong` both mix toward WHITE, which is the correct move for
+// legibility and the wrong one for a red: measured, #B83A24 lifted 40% toward
+// white is #D5877A — salmon — and the P14-5C brief rules out exactly that
+// ("avoid brown/muddy red, dusty pink"). Mixing toward the warm lift instead
+// keeps the hue and adds the light: #DC6240 at 50%, which is the brand's own
+// dark vermilion and still measures 5.4:1 on `--bg` and 5.05:1 on `--surface`.
+//
+// Use it for the accent marks a screen leads with — Home's step eyebrow, its
+// secondary action, its ticks and its progress rail. Prefer `inkStrong` for
+// accent text inside a dense surface, where more lift reads better, and `ink`
+// for a drawn mark that carries no text.
+export function inkWarm(hex) {
+  return `color-mix(in srgb, ${hex}, var(--ink-warm) var(--ink-warm-pct))`
+}

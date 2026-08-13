@@ -102,9 +102,17 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   const forecast7 = reviewForecast(levelCards, now, 7)
 
   // Study rhythm (last 7 days), from the activity rows fetched above.
-  const studiedDates = ((actsResult && actsResult.data) || [])
-    .filter(a => a.studied_cards > 0).map(a => a.activity_date)
+  const activity = (actsResult && actsResult.data) || []
+  const studiedDates = activity.filter(a => a.studied_cards > 0).map(a => a.activity_date)
   const rhythm7 = studyRhythm(studiedDates, now, 7)
+
+  // Cards graded TODAY. The row is already in hand — the rhythm above throws
+  // away everything but the dates — and it is the difference between Home's
+  // completed Cards step saying "18 practiced today" and saying "You're caught
+  // up". No extra query, no new column, and 0 is a real answer (a queue that was
+  // already clear when the day started), so callers must not treat it as absent.
+  const todayRow = activity.find(a => a.activity_date === dateKey(now))
+  const studiedToday = (todayRow && todayRow.studied_cards) || 0
 
   // Weak words: cards the user has lapsed on at least twice and that aren't yet
   // mastered — the cleanup-drill pool.
@@ -125,7 +133,7 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
     cardCount: cards.length,
     newCount, learnCount, dueCount, easyCount, totalWords,
     learnedCount, masteredCount, masteredPct,
-    newDoneToday, dueTomorrow, weakCount, forecast7, rhythm7,
+    newDoneToday, dueTomorrow, weakCount, forecast7, rhythm7, studiedToday,
     lifetimeLearned, lifetimeMastered, grammarDueCount,
     failed,
   }

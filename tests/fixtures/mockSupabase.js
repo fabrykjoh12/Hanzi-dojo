@@ -131,7 +131,7 @@ export const INKBOUND_HSK3_STORY_ID = 'st-inkbound-hsk3-ep03';
 export const TRAIN_STORY_ID = 'st-train-hsk2-ep01';
 export const UPSTAIRS_STORY_ID = 'st-upstairs-hsk3-ep01';
 
-const STORIES = [{
+export const STORIES = [{
   id: 'st1', language: 'chinese', system: 'hsk', level: 2, tier: 1, story_number: 1,
   title: '公园里的下午', is_published: true, presentation: 'paced', has_audio: false,
   image_path: null, english_content: 'An afternoon at the park.',

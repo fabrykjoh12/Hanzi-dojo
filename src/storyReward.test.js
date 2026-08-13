@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   qualifiesForReward, buildSeriesUnits, resolveActiveSeries, rewardStateFor,
-  recentWordsInStory,
-} from './storyReward'
+  recentWordsInStory, hasReadToday } from './storyReward'
 
 const story = (id, title, level = 1, extra = {}) => ({
   id, title, level, presentation: 'paced', content: '今天很好。', ...extra,
@@ -131,5 +130,31 @@ describe('recentWordsInStory', () => {
   })
   it('empty when nothing recent appears', () => {
     expect(recentWordsInStory({ storyWords: [w('v1', 'a')], recentVocabIds: [] })).toEqual([])
+  })
+})
+
+describe('hasReadToday — the additive derivation P14-5C needed', () => {
+  const NOW = new Date('2026-08-13T09:30:00')
+  const at = (iso) => ({ story_id: 's', read_at: iso })
+
+  it('is true when any row was read on the same LOCAL day', () => {
+    expect(hasReadToday([at('2026-08-13T00:05:00')], NOW)).toBe(true)
+    expect(hasReadToday([at('2026-08-12T23:59:00'), at('2026-08-13T08:00:00')], NOW)).toBe(true)
+  })
+
+  it('is false for yesterday, for an empty list, and for nothing at all', () => {
+    expect(hasReadToday([at('2026-08-12T22:00:00')], NOW)).toBe(false)
+    expect(hasReadToday([], NOW)).toBe(false)
+    expect(hasReadToday(null, NOW)).toBe(false)
+    expect(hasReadToday(undefined, NOW)).toBe(false)
+  })
+
+  it('ignores rows with no usable timestamp rather than assuming either way', () => {
+    // `read_at` was added after the table, so old rows can be null — and a null
+    // must not read as "today" (a false tick) or crash the guide.
+    expect(hasReadToday([{ story_id: 's' }], NOW)).toBe(false)
+    expect(hasReadToday([at(null)], NOW)).toBe(false)
+    expect(hasReadToday([at('not a date')], NOW)).toBe(false)
+    expect(hasReadToday([null, undefined, at('2026-08-13T10:00:00')], NOW)).toBe(true)
   })
 })

@@ -59,12 +59,15 @@ export function countsExpired(fetchedAt, now = Date.now()) {
 // stops paying four wasted requests including a full-text story fetch, on every
 // single visit to Home. The cache means either price is paid once per change,
 // not once per glance.
+// `readToday` is lifted to the top of the result because it is a fact about the
+// DAY, not about whichever story path answered — Home's guide asks "has today's
+// reading happened", and both paths can answer it from rows they already fetch.
 export async function fetchHandoff(userId, track, learnedCount) {
-  if (!userId || !track) return { reward: null, daily: null }
+  if (!userId || !track) return { reward: null, daily: null, readToday: false }
   const reward = await getSessionRewardTeaser(userId, track)
-  if (reward) return { reward, daily: null }
+  if (reward) return { reward, daily: null, readToday: Boolean(reward.readToday) }
   const daily = await getDailyStoryCard(userId, track, learnedCount)
-  return { reward: null, daily }
+  return { reward: null, daily, readToday: Boolean(daily && daily.readToday) }
 }
 
 // Home's effect must not re-run because `track` arrived as a new object with

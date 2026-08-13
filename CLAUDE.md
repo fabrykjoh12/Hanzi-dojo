@@ -37,7 +37,7 @@ still get full detail — they are read once, on purpose.
 | [`docs/P11-PRACTICE-AUDIT.md`](docs/P11-PRACTICE-AUDIT.md) | The Practice hub: every action classified, what the database says learners actually use, and three layouts with one recommended | Redesigning Practice |
 | [`docs/P12-ONBOARDING-AUDIT.md`](docs/P12-ONBOARDING-AUDIT.md) | **The current first-run picture.** Every state a new learner sees, three verified defects, the duplication census, three concepts and the recommendation | Touching first-run, `Tutorial.jsx`, `Onboarding.jsx`, `Auth.jsx` or the tour |
 | [`docs/P13-VISUAL-DIRECTION-AUDIT.md`](docs/P13-VISUAL-DIRECTION-AUDIT.md) | **The visual system.** Measured census of what exists (60 type styles, 16 radii, 94 hexes), the proposed palette/type/radius/control systems, icon and app-icon art direction, bottom-nav concepts, and the rollout order | Any styling, token, icon or app-icon work |
-| [`docs/P14-5B-HOME-GUIDE-AUDIT.md`](docs/P14-5B-HOME-GUIDE-AUDIT.md) | **Home as a guided daily flow.** What the app genuinely knows about a learner's day (and the three things it does not), the Cards → Story → Practice rules, three rendered compositions with scores, and the recommendation | Touching Home, or anything that claims to know what the learner should do next |
+| [`docs/P14-5B-HOME-GUIDE-AUDIT.md`](docs/P14-5B-HOME-GUIDE-AUDIT.md) | **Home as a guided daily flow — the audit behind the shipped screen.** What the app genuinely knows about a learner's day (and the three things it does not), the Cards → Story → Practice rules, three rendered compositions with scores, and the recommendation | Touching Home, or anything that claims to know what the learner should do next |
 | [`docs/P10-CONTAINER-AUDIT.md`](docs/P10-CONTAINER-AUDIT.md) | The container census: every drawn box on Home/Profile/Practice/Stories/Study, classified, with the Home before→after | Adding or removing a panel, card or tile |
 | [`docs/P8-NAV-AUDIT.md`](docs/P8-NAV-AUDIT.md) | The bottom bar: what it was, the three options, and why the shipped one won | Touching `MobileNav.jsx`, `navConfig.js` or `NavIcons.jsx` |
 | [`docs/STORY-BIBLE.md`](docs/STORY-BIBLE.md) | The story universe: world rules, cast, how a season is made. Machine half: `data/story-canon.chinese.json` | Writing or reviewing stories |
@@ -347,9 +347,15 @@ Hardcoded neutral hexes are a bug.
   `languageTheme()`, never a ternary on the language. `--primary` and Chinese's
   `accentHex` share a value on purpose and mean different things: one is the
   brand's interactive colour, the other is this language's identity.
-- **Accent as ink:** wrap an accent in `ink(hex)` (`languageTheme.js`) wherever
-  it is *text or a drawn mark* — it lifts toward white in dark mode. Keep the raw
-  hex for tints and borders that already mix into a surface.
+- **Accent as ink — three lifts, and they are not interchangeable**
+  (`languageTheme.js`). `ink(hex)` (30% toward white) for a drawn mark;
+  `inkStrong(hex)` (40%) for small accent text inside a panel, where AA needs the
+  extra lift; **`inkWarm(hex)` (50% toward `--ink-warm`) for an accent mark a screen
+  LEADS with** — Home's step eyebrow, its secondary action, its ticks, its rail. The
+  first two mix toward WHITE, which is right for legibility and wrong for a red:
+  #B83A24 lifted 40% toward white is #D5877A, salmon. The warm lift keeps the hue
+  and still measures 5.4:1 on `--bg`. Keep the raw hex for tints and borders that
+  already mix into a surface.
 - **Tints must mix into the surface:** `color-mix(in srgb, <accent> 11%, var(--surface))`,
   never an `<accent>+'14'` alpha hex (that stays light in dark mode).
 - **One lit panel per screen.** Exactly one `HeroPanel` — the thing the screen is

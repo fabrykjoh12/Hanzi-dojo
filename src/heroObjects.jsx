@@ -61,6 +61,13 @@ const CARDS = [
   { x: 16, y: 40, w: 60, h: 76, r: 11, face: 'plane1', lit: 'planeLit', shade: 8 },
 ]
 
+// ⚠️ NO CALL SITE since P14-5C, deliberately. Home's guide does not draw a Cards
+// illustration: at Home sizes this deck kept reading as a stack of notes or — with
+// a brush mark on it — as the compose/edit glyph, which is the third time that
+// misread has appeared in P14. The brief's own instruction was to omit it rather
+// than force it, and "professional typography + the story artwork + the numbered
+// sequence" is what shipped. Kept as the starting point for the stronger Cards
+// identity asset that gets designed on its own.
 export function DeckObject({ size = 128 }) {
   return (
     <Svg size={size}>
@@ -97,3 +104,36 @@ export function DeckObject({ size = 128 }) {
 // the hero's ink element, and a second mark on the one object the screen is about
 // is the decoration the brief rules out. See docs/BACKLOG.md if a heading ever
 // wants one.
+
+// ── The completion seal ───────────────────────────────────────────────────
+//
+// The one object P14-5C puts on Home, and it appears in exactly one situation:
+// the day's training is finished AND something was actually done. A caught-up
+// learner who did nothing gets no seal — gold means a reward or an unlock in this
+// app (palette.js) and opening the app is neither.
+//
+// A chop rather than a tick in a circle: a seal is what marks a finished piece of
+// work in the tradition the product's identity comes from, and it lets the one
+// legitimate use of gold be a thin rule inside the brand red rather than a second
+// coloured object competing with it.
+//
+// Drawn in the LANGUAGE accent, passed in — never a hardcoded red (CLAUDE.md §1).
+export function CompletionSeal({ size = 68, accentHex }) {
+  const lit = 'color-mix(in srgb, ' + accentHex + ' 62%, var(--surface))'
+  return (
+    <svg
+      width={size} height={size} viewBox="0 0 128 128" fill="none" aria-hidden="true"
+      focusable="false" data-completion-seal=""
+      style={{ display: 'block', flexShrink: 0, pointerEvents: 'none' }}
+    >
+      <rect x="18" y="18" width="92" height="92" rx="18" fill={accentHex} />
+      {/* The lit top-left face — the same light source as the navigation family. */}
+      <path
+        d="M18 36C18 26 26 18 36 18H92C102 18 110 26 110 36V44C110 30 98 22 84 22H36C26 22 18 28 18 36Z"
+        fill={lit} opacity="0.7"
+      />
+      <rect x="26" y="26" width="76" height="76" rx="12" fill="none" stroke="var(--gold)" strokeWidth="2" opacity="0.85" />
+      <path d="M46 66 58 78 84 50" stroke="#fff" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </svg>
+  )
+}

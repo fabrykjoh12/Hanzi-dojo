@@ -94,7 +94,7 @@ describe('fetchHandoff', () => {
 
   it('fetches nothing at all without a user or a track', async () => {
     const res = await fetchHandoff(null, TRACK, 0)
-    expect(res).toEqual({ reward: null, daily: null })
+    expect(res).toEqual({ reward: null, daily: null, readToday: false })
     expect(getSessionRewardTeaser).not.toHaveBeenCalled()
     expect(getDailyStoryCard).not.toHaveBeenCalled()
   })

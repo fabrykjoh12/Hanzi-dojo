@@ -34,7 +34,7 @@ test.describe('Home data lifecycle', () => {
     const net = recorder(page);
     const home = new HomePage(page);
     await home.goto();
-    await expect(home.heroAction).toBeVisible();
+    await expect(home.primaryAction).toBeVisible();
     await page.waitForTimeout(1200);
 
     for (let i = 0; i < 2; i += 1) {
@@ -49,8 +49,8 @@ test.describe('Home data lifecycle', () => {
     }
 
     // And the screen still has its data: no blank, no skeleton, no reload feel.
-    await expect(home.heroAction).toBeVisible();
-    await expect(home.storyHandoff).toBeVisible();
+    await expect(home.primaryAction).toBeVisible();
+    await expect(home.storyStep).toBeVisible();
   });
 
   test('grading a card refreshes the counts, and only the counts', async ({ page }) => {

@@ -224,3 +224,49 @@ describe('role scope', () => {
     }
   })
 })
+
+// ── The warm accent lift (P14-5C) ──────────────────────────────────────────
+describe('inkWarm — an accent that stays red in the dark', () => {
+  // Home leads with accent marks on the page ground: the step eyebrow at 10.5px,
+  // the secondary action, the ticks, the level rail. `ink` (30% toward white)
+  // fails AA there, and `inkStrong` (40% toward white) clears AA by turning the
+  // brand red into salmon — which the P14-5C brief rules out by name. The warm
+  // lift has to do both: keep the hue, clear the bar.
+  const CHINESE = '#B83A24'
+
+  function mix(a, b, pct) {
+    const p = pct / 100;
+    const ch = (h, i) => parseInt(h.replace('#', '').slice(i * 2, i * 2 + 2), 16)
+    const out = [0, 1, 2].map(i => Math.round(ch(a, i) + (ch(b, i) - ch(a, i)) * p))
+    return '#' + out.map(v => v.toString(16).padStart(2, '0')).join('')
+  }
+
+  it('is a no-op in light mode — the light theme must not move', () => {
+    expect(cssVar('ink-warm-pct', false)).toBe('0%')
+  })
+
+  it('clears AA for small text on every dark ground it is used on', () => {
+    const pct = parseFloat(cssVar('ink-warm-pct', true))
+    // `--ink-warm` is declared once, in the light block, and cascades into dark
+    // — only the percentage is themed. Reading it from the dark scope returns
+    // null, which is how this test first failed.
+    const lifted = mix(CHINESE, cssVar('ink-warm', false), pct)
+    for (const ground of ['bg', 'surface']) {
+      const ratio = contrast(lifted, cssVar(ground, true))
+      expect(ratio, 'inkWarm on --' + ground + ' is ' + ratio.toFixed(2)).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
+  it('stays a RED — the failure mode it exists to prevent is pink', () => {
+    const warm = mix(CHINESE, cssVar('ink-warm', false), parseFloat(cssVar('ink-warm-pct', true)))
+    const white = mix(CHINESE, '#FFFFFF', parseFloat(cssVar('ink-strong-pct', true)))
+    const sat = (hex) => {
+      const [r, g, b] = [0, 1, 2].map(i => parseInt(hex.replace('#', '').slice(i * 2, i * 2 + 2), 16))
+      const max = Math.max(r, g, b); const min = Math.min(r, g, b)
+      return max === 0 ? 0 : (max - min) / max
+    }
+    // Both are legible; only one of them is still the brand's colour.
+    expect(sat(warm)).toBeGreaterThan(sat(white))
+    expect(sat(warm)).toBeGreaterThan(0.55)
+  })
+})

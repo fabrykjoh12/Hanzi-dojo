@@ -7,9 +7,8 @@ import { buildLabel } from './version'
 import { toast } from './toast'
 import ControlsGallery from './ControlsGallery'
 import NavGlyphGallery from './NavGlyphGallery'
-import HomeConceptLab from './HomeConcepts'
 import {
-  ArrowLeft, FlaskConical, Gauge, BookOpen, Trash2, Zap, RefreshCw, ShieldCheck, Palette, Compass, LayoutTemplate,
+  ArrowLeft, FlaskConical, Gauge, BookOpen, Trash2, Zap, RefreshCw, ShieldCheck, Palette, Compass,
 } from 'lucide-react'
 
 // Developer page (/dev) — self-service testing tools. Everything here runs as
@@ -251,14 +250,6 @@ export default function Dev({ session, profile, track, onBack, onNavigate }) {
           at every size, in both themes. The shipping bar is unchanged. */}
       <Section icon={Compass} title="Navigation icons — P14-3 dimensional family" accent={accent}>
         <NavGlyphGallery />
-      </Section>
-
-      {/* P14-5B's three Home compositions, in every learner state, at all three
-          phone widths. Here because the question "is this composition any good"
-          is only answerable side by side — and because device QA said the P14-5
-          dashboard was not. Deleted when one of them is migrated into Home. */}
-      <Section icon={LayoutTemplate} title="Home concepts — P14-5B guided daily flow" accent={accent}>
-        <HomeConceptLab />
       </Section>
 
 

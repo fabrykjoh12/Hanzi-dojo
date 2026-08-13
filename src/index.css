@@ -232,6 +232,13 @@ body {
      languageTheme.js for why they are separate from `--ink-lift-pct`. */
   --pinyin-lift-pct: 0%;
   --ink-strong-pct: 0%;
+  /* An accent mark that must stay SATURATED on the dark ground (P14-5C). The
+     two lifts above mix toward WHITE, which is right for legibility and wrong
+     for a red: #B83A24 lifted 40% toward white measures 7.8:1 and looks like
+     salmon. Mixing toward the warm lift instead lands it at #DC6240 — the
+     brand's own dark vermilion, still 5.4:1 on --bg. No-op in light. */
+  --ink-warm: #FF8A5C;
+  --ink-warm-pct: 0%;
 
   /* Watermark strength for the sidebar's language character. The accents are
      saturated reds/blues tuned for white paper, so the same alpha that reads as
@@ -517,6 +524,7 @@ body {
      themes, in tests/e2e/contrast-legibility.spec.js. */
   --pinyin-lift-pct: 38%;
   --ink-strong-pct: 40%;
+  --ink-warm-pct: 50%;
   --watermark-pct: 8%;
   /* The card's status band, reported from a device as the last light-mode
      treatment surviving inside the dark card: a full-width cream bar across
