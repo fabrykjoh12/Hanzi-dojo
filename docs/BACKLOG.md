@@ -127,7 +127,77 @@ words for a step that has no number of its own. A blocked step keeps
 
 **Still open, and not solved by any variant:** the Practice day keeps a ~120px
 gap, because its active step has no metric and no artwork — one short line and a
-button. That is the emptiest state left.
+button. That is the emptiest state left. **Do not invent a metric to fill it** —
+the fix, when it comes, is the Practice step's own dimensional object.
+
+## P14-5E — the red packet (2026-08-13)
+
+`src/RedPacket.jsx` (the drawing), `src/redPacketFamily.js` (the concept list,
+outside the `.jsx` for the react-refresh rule), `src/redPacketOpen.js` (the
+opening, as a tested pure function). V2's composition is held completely still;
+the only thing that varies is the object on the Cards step.
+
+The packet follows the P14-3 icon family's written art direction — one light
+source upper left, the three brand tones plus at most one accent, silhouette
+first, no hardcoded colour — and breaks exactly one of its rules on purpose. The
+family bans gradients because "a gradient at 20px is mud"; this is drawn at
+116px, where a gradient is the difference between paper and lacquer, and it is
+the same material the P14-5D button is made of.
+
+Four concepts. **Recommended: D** — B's cards standing in the mouth plus C's
+ensō on the body. B is the only one that says *your cards are in here*; C is the
+only one that carries the product's own mark; neither costs what the other needs,
+so D was drawn rather than argued about. A is the most premium in isolation and
+its foil seal is ~11px at Home's size, which is a dot.
+
+Four drafts, and each was thrown out by its own render:
+
+- **44 × 62 with a 4.2 corner drew a soap bar.** A packet is narrow: 38 × 62 at
+  a 2.6 corner is folded paper, not moulded plastic.
+- **The flap's 6-unit bow, with a gold hairline along it, read as a RIBBON.**
+  It dips 2 now and no gold follows it; the flap separates from the body by the
+  shadow it casts, not by a line.
+- **Three cards side by side are paper TABS.** Overlapping them by half shows
+  three leading edges, which is what a deck looks like from the front.
+- **A 0.62-radian gap made the ensō a letter C.** 0.3, and it is the app icon's
+  mark again.
+
+Two mechanical faults the storyboard caught: `rotateX` without `perspective` is
+an orthographic squash — the flap appeared to shrink upward rather than swing
+away — and the fan's opacity ramp, applied to a concept whose cards are already
+standing at rest, made them blink out on the gesture's first frame.
+
+**The opening is 640ms, four overlapping beats** (`OPEN_PHASES`): lift 0–180,
+flap 90–400, fan 260–560, hand off 480–640. Every beat starts before the one
+before it ends, because four played strictly in sequence is what makes 640ms feel
+like two seconds. Reduced motion is a different thing rather than a fast version:
+a 120ms cross-fade, no rotation, no travel. 12 tests, including monotonicity and
+the no-overshoot rule.
+
+The object costs no drawn box (it is an SVG), and the Cards day's largest gap
+went 84 → 76px.
+
+## Recorded for P14-6 — not part of the Home phase
+
+**Session Complete should show real vocabulary progress.** After a Cards session:
+"You're X words closer to HSK N", with a rail animating from the pre-session
+count to the post-session count — e.g. `284 / 600 words known` — then handing off
+to *Step 2 · Story*, which is the same sequence Home teaches.
+
+The hard requirement: **"known" must be a documented mastery threshold, never
+"the word exists in the deck".** `docs/METRICS.md` already defines *Learned* as
+`cards.learned = true` or FSRS state `review`/`relearning`, and *Mastered* as
+stability ≥ 21 days. Pick one, name it on screen, and take the pre-session number
+before the session mutates it — a rail that animates from a number nobody
+recorded is a rail that animates from a guess.
+
+**Onboarding, whenever it reopens.** The supplied SuperChinese screenshots are an
+explicit quality reference for conversational guidance, visual answer options,
+reacting to what the learner answers, teaching during onboarding, visual
+progress, visual goal/level selection and "help me find my level". Reference for
+the INTERACTION only — not their mascot, orange palette, artwork or layouts. No
+onboarding changes now; `docs/P12-ONBOARDING-AUDIT.md` remains the current
+picture.
 
 ## P14-5C — Home shipped as a guide; what it left (2026-08-13)
 
