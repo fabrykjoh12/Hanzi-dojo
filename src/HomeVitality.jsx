@@ -4,6 +4,9 @@ import { languageTheme, inkWarm } from './languageTheme'
 import { Button } from './controls'
 import { buildGuide, guideContextLine, upcomingLabel, STATUS } from './homeGuide'
 import { NAV_GLYPHS } from './navGlyphFamily'
+import RedPacket from './RedPacket'
+import { PACKET_CONCEPTS, PACKET_NOTES } from './redPacketFamily'
+import { OPEN_PHASES, storyboardFrames, packetFrame } from './redPacketOpen'
 import { VITALITY_STATES, VITALITY_WIDTHS } from './homeVitalityFixtures'
 import bgChinese from './assets/bg-chinese.webp'
 
@@ -131,7 +134,10 @@ const GLYPH = Object.fromEntries(NAV_GLYPHS.map(g => [g.key === 'study' ? 'cards
 function ActiveStep({ step, ctx }) {
   const { accentHex, langFont } = ctx
   const isStory = step.key === 'story' && step.story
-  const Glyph = isStory ? null : GLYPH[step.key]
+  // Cards gets the packet; the story's own artwork is already its object; and
+  // Practice keeps the navigation glyph, which P14-5E does not reopen.
+  const isCards = step.key === 'cards'
+  const Glyph = isStory || isCards ? null : GLYPH[step.key]
   return (
     <div style={{ marginTop: '22px' }} data-vitality-active={step.key}>
       <span style={{ ...TYPE.eyebrow, color: inkWarm(accentHex) }}>
@@ -181,6 +187,11 @@ function ActiveStep({ step, ctx }) {
         {Glyph && (
           <span style={{ margin: '0 -4px -6px 0', flexShrink: 0 }}>
             <Glyph size={108} active />
+          </span>
+        )}
+        {isCards && (
+          <span style={{ margin: '0 2px -4px 0', flexShrink: 0 }}>
+            <RedPacket concept={ctx.packet} size={116} />
           </span>
         )}
       </div>
@@ -347,41 +358,19 @@ function Variant({ guide, v, ctx }) {
   )
 }
 
-// ── The three rhythms ─────────────────────────────────────────────────────
-const VARIANTS = {
-  // The control: the approved build's own rhythm, so "does it still feel empty"
-  // has a before as well as an after. Not a candidate.
-  B0: {
-    title: 'B0 — approved build (control)',
-    note: 'Concept B exactly as reviewed. The steps stack under the button and the page ends.',
-    gap: 26, padY: 17, connector: 0, distribute: false, preview: false,
-  },
-  V1: {
-    title: 'V1 — distributed',
-    note: 'Same content, spread across the height the page actually has.',
-    gap: 26, padY: 17, connector: 1, distribute: true, preview: false,
-  },
-  // Distribution turned out to be orthogonal to content and plainly good, so V2
-  // keeps it and adds the one thing V1 does not have. The question this variant
-  // actually asks is therefore narrow: does the preview earn its space?
-  V2: {
-    title: 'V2 — meaningful previews',
-    note: 'The quiet steps earn their space: the chapter you unlock, the drill that is waiting.',
-    gap: 26, padY: 10, connector: 1, distribute: true, preview: true,
-  },
-  V3: {
-    title: 'V3 — stronger journey',
-    note: 'Minimal content, wider steps, a line with enough presence to travel the page.',
-    gap: 30, padY: 30, connector: 2, distribute: false, preview: false,
-  },
+// ── The composition, settled ──────────────────────────────────────────────
+// V2 — meaningful previews, approved. Held completely still by P14-5E; the only
+// thing that varies below is which packet stands on the Cards step.
+const V2 = {
+  gap: 26, padY: 10, connector: 1, distribute: true, preview: true,
 }
 
 const FOLD = 780
 
-function Frame({ width, variant, stateKey, children }) {
+function Frame({ width, concept, stateKey, children }) {
   return (
     <div
-      data-vitality-frame={variant} data-vitality-state={stateKey} data-frame-width={String(width)}
+      data-vitality-frame={concept} data-vitality-state={stateKey} data-frame-width={String(width)}
       style={{
         position: 'relative', width: width + 'px', flexShrink: 0, minHeight: FOLD + 'px',
         borderRadius: RADIUS.card + 'px', overflow: 'hidden',
@@ -410,14 +399,88 @@ function Frame({ width, variant, stateKey, children }) {
   )
 }
 
+// ── The packet on its own, and the packet opening ─────────────────────────
+
+// Each concept at the size Home actually draws it, plus a 2x study, so a detail
+// that only survives at 2x can be identified as a detail that will not ship.
+function PacketPlate({ concept, ctx }) {
+  return (
+    <div data-packet-plate={concept} style={{
+      display: 'flex', alignItems: 'flex-end', gap: '26px', padding: '18px 20px',
+      borderRadius: RADIUS.card + 'px', background: 'var(--surface)',
+      border: '1px solid var(--border)',
+    }}>
+      <RedPacket concept={concept} size={116} />
+      <RedPacket concept={concept} size={232} />
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ ...TYPE.titleCard, color: 'var(--text)' }}>{concept}</div>
+        <div style={{ ...TYPE.caption, color: 'var(--text-muted)', marginTop: '4px' }}>
+          {PACKET_NOTES[concept]}
+        </div>
+        <div style={{ ...TYPE.caption, color: 'var(--text-faint)', marginTop: '8px' }}>
+          Home draws it at 116px tall — the left one. {ctx.accentHex}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// The storyboard: one still per phase boundary, so the gesture can be reviewed
+// as drawing rather than as prose. The numbers come from redPacketOpen.js, which
+// is the same module a production implementation would drive the frames from.
+function Storyboard({ concept }) {
+  const stops = storyboardFrames()
+  return (
+    <div data-storyboard={concept} style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+      {stops.map(ms => {
+        const frame = packetFrame(ms)
+        const beat = OPEN_PHASES.filter(p => ms >= p.start && ms <= p.end).map(p => p.label).join(' + ')
+        return (
+          <div key={ms} data-storyboard-frame={String(ms)} style={{
+            width: '132px', padding: '14px 10px 10px', textAlign: 'center',
+            borderRadius: RADIUS.control + 'px', background: 'var(--surface)',
+            border: '1px solid var(--border)',
+          }}>
+            <div style={{ height: '148px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+              <RedPacket concept={concept} size={116} phase={ms} />
+            </div>
+            <div style={{ ...TYPE.eyebrow, color: 'var(--text)', marginTop: '10px' }}>{ms}ms</div>
+            <div style={{ ...TYPE.caption, color: 'var(--text-faint)', marginTop: '2px', minHeight: '30px' }}>
+              {beat || 'Session'}
+            </div>
+            <div style={{ ...TYPE.caption, color: 'var(--text-faint)' }}>
+              {Math.round(frame.flapAngle)}°
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function HomeVitalityLab() {
-  const ctx = { accentHex: CHINESE.accentHex, langFont: CHINESE.font }
+  const base = { accentHex: CHINESE.accentHex, langFont: CHINESE.font }
   return (
     <div style={{ display: 'grid', gap: '30px', width: '100%' }}>
       <div style={{ ...TYPE.bodySecondary, color: 'var(--text-muted)' }}>
-        One visual language — lacquer CTA, identity object, 成 chop — and three
-        answers to the only question left: how the sequence should occupy the page
-        when the lower third of a Cards day is otherwise empty.
+        V2 — meaningful previews, exactly as approved. The only thing that varies
+        is the object standing on the Cards step: three red-packet concepts, drawn
+        to the icon family&rsquo;s rules at hero scale.
+      </div>
+
+      <div style={{ display: 'grid', gap: '14px', minWidth: 0 }}>
+        {PACKET_CONCEPTS.map(concept => <PacketPlate key={concept} concept={concept} ctx={base} />)}
+      </div>
+
+      <div style={{ minWidth: 0 }}>
+        <div style={{ ...TYPE.titleSection, color: 'var(--text)', marginBottom: '4px' }}>
+          Opening — 640ms, four overlapping beats
+        </div>
+        <div style={{ ...TYPE.caption, color: 'var(--text-muted)', marginBottom: '12px' }}>
+          Tap → lift → flap → fan → Study. Reduced motion is a 120ms cross-fade with
+          no rotation and no travel.
+        </div>
+        <Storyboard concept="B" />
       </div>
 
       {VITALITY_STATES.map(state => {
@@ -430,14 +493,14 @@ export default function HomeVitalityLab() {
           <div key={state.key} style={{ minWidth: 0 }}>
             <div style={{ ...TYPE.titleSection, color: 'var(--text)', marginBottom: '12px' }}>{state.label}</div>
             <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '8px', minWidth: 0 }}>
-              {Object.keys(VARIANTS).map(key => (
+              {PACKET_CONCEPTS.map(concept => (
                 VITALITY_WIDTHS.map(width => (
-                  <div key={key + width}>
+                  <div key={concept + width}>
                     <div style={{ ...TYPE.eyebrow, color: 'var(--text-faint)', marginBottom: '8px' }}>
-                      {VARIANTS[key].title} · {width}
+                      Packet {concept} · {width}
                     </div>
-                    <Frame width={width} variant={key} stateKey={state.key}>
-                      <Variant guide={guide} v={VARIANTS[key]} ctx={ctx} />
+                    <Frame width={width} concept={concept} stateKey={state.key}>
+                      <Variant guide={guide} v={V2} ctx={{ ...base, packet: concept }} />
                     </Frame>
                   </div>
                 ))

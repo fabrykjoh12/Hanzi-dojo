@@ -149,6 +149,20 @@ for (const theme of ['light', 'dark']) {
       await frame.screenshot({ path: OUT + '/' + name });
       index.push({ ...meta, theme, file: name });
     }
+    // The object on its own — at the size Home draws it and at 2x — and the
+    // opening storyboard. A hero object cannot be judged only inside a
+    // composition: half its job is to survive being looked at closely.
+    for (const plate of await page.locator('[data-packet-plate]').all()) {
+      const id = await plate.getAttribute('data-packet-plate');
+      await plate.scrollIntoViewIfNeeded();
+      await plate.screenshot({ path: OUT + '/packet-' + id + '-' + theme + '.png' });
+    }
+    const board = page.locator('[data-storyboard]').first();
+    if (await board.count()) {
+      await board.scrollIntoViewIfNeeded();
+      await board.screenshot({ path: OUT + '/storyboard-' + theme + '.png' });
+    }
+
     fs.writeFileSync(OUT + '/index-' + theme + '.json', JSON.stringify(index, null, 2));
     expect(index.length).toBe(48);
   });
