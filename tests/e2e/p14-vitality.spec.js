@@ -157,13 +157,13 @@ for (const theme of ['light', 'dark']) {
       await plate.scrollIntoViewIfNeeded();
       await plate.screenshot({ path: OUT + '/packet-' + id + '-' + theme + '.png' });
     }
-    const board = page.locator('[data-storyboard]').first();
-    if (await board.count()) {
+    for (const board of await page.locator('[data-storyboard]').all()) {
+      const id = await board.getAttribute('data-storyboard');
       await board.scrollIntoViewIfNeeded();
-      await board.screenshot({ path: OUT + '/storyboard-' + theme + '.png' });
+      await board.screenshot({ path: OUT + '/storyboard-' + id + '-' + theme + '.png' });
     }
 
     fs.writeFileSync(OUT + '/index-' + theme + '.json', JSON.stringify(index, null, 2));
-    expect(index.length).toBe(36);
+    expect(index.length).toBe(72);
   });
 }

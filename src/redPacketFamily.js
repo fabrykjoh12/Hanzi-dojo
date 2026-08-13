@@ -1,17 +1,30 @@
-// The red packet's concept list, outside RedPacket.jsx for the same reason
+// The red packet's directions, outside RedPacket.jsx for the same reason
 // navGlyphFamily.js sits outside navGlyphs.jsx: a `.jsx` file may only export
 // components (react-refresh, CLAUDE.md §3).
 //
-// Round 2. Three directions, one shared object: the same silhouette, the same
-// two planes, the same rim light, the same foil seal. What differs is the
-// CONSTRUCTION — whether the packet is folded shut, printed flat, or open with
-// the day's cards standing in it — so a comparison is a comparison of the idea
-// rather than of three different drawings.
+// Round 3. Two directions rather than five alternatives, because the review's
+// note was that the object needed depth, not more options. Both are the same
+// 2.5D construction — the turn, the side plane, the cavity, the occluding lip —
+// and they differ in how much of the day's cards the resting object shows, and
+// therefore in what the packet is FOR on the screen.
 
-export const PACKET_CONCEPTS = ['A', 'B', 'C']
+export const PACKET_DIRECTIONS = ['D1', 'D2']
 
 export const PACKET_NOTES = {
-  A: 'Premium lacquer envelope — flap folded over the front, straight fold, seal below it.',
-  B: 'Minimal stamped packet — one uninterrupted plane, the seal doing all the work.',
-  C: 'Cards-peeking packet — no front flap; two staggered cards standing in the mouth.',
+  D1: 'Premium lacquer packet — closed, material-led. Card tops just clear the lip; the mark is a blind deboss.',
+  D2: 'Open card packet — built around the gesture. Two cards stand well proud with their words showing; a small foil mark.',
+}
+
+// The three mark treatments the brief asks to see, as an axis of its own so the
+// choice is not entangled with the choice of direction.
+export const PACKET_MARKS = ['deboss', 'foil', 'none']
+
+// Where the packet sits in the Cards step. The question is whether the object
+// and the action read as one thing or as a decoration next to a button.
+export const PACKET_PLACEMENTS = ['beside', 'below', 'anchor']
+
+export const PLACEMENT_NOTES = {
+  beside: 'Beside the count — the approved composition, packet top-right.',
+  below: 'Beneath the count — packet and action on one line, as a single unit.',
+  anchor: 'Anchoring the guide — the packet starts the Cards → Story → Practice rail.',
 }

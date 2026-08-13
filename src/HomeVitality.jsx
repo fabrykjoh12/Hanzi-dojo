@@ -5,8 +5,10 @@ import { Button } from './controls'
 import { buildGuide, guideContextLine, upcomingLabel, STATUS } from './homeGuide'
 import { NAV_GLYPHS } from './navGlyphFamily'
 import RedPacket from './RedPacket'
-import { PACKET_CONCEPTS, PACKET_NOTES } from './redPacketFamily'
-import { OPEN_PHASES, storyboardFrames, packetFrame } from './redPacketOpen'
+import {
+  PACKET_DIRECTIONS, PACKET_NOTES, PACKET_MARKS, PACKET_PLACEMENTS, PLACEMENT_NOTES,
+} from './redPacketFamily'
+import { OPEN_PHASES, storyboardFrames } from './redPacketOpen'
 import { VITALITY_STATES, VITALITY_WIDTHS } from './homeVitalityFixtures'
 import bgChinese from './assets/bg-chinese.webp'
 
@@ -127,16 +129,89 @@ function Rail({ weight, accentHex, done, last, markY }) {
   )
 }
 
-// ── The active step — identical in all three variants ─────────────────────
+// ── The active step ───────────────────────────────────────────────────────
 
 const GLYPH = Object.fromEntries(NAV_GLYPHS.map(g => [g.key === 'study' ? 'cards' : g.key, g.Glyph]))
+
+// The count and its breakdown, so the three placements can arrange the same
+// three things — count, object, action — without any of them re-typing the copy.
+function CountBlock({ step }) {
+  return (
+    <div style={{ minWidth: 0, flex: 1 }}>
+      <div style={{ ...TYPE.display, fontVariantNumeric: 'tabular-nums', color: 'var(--text)' }}>
+        {step.metric.value}
+      </div>
+      <div style={{ ...TYPE.titleSection, color: 'var(--text)', marginTop: '2px' }}>
+        {step.metric.label}
+      </div>
+      {step.facts.length > 0 && (
+        <div style={{ ...TYPE.caption, color: 'var(--text-muted)', marginTop: '7px' }}>
+          {step.facts.join(' · ')}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// The Cards step, in whichever of the three arrangements is being tested. The
+// question all three ask is the same one: do the packet and the action read as
+// ONE thing, or as a decorative object next to an unrelated rectangle?
+function CardsStep({ step, ctx }) {
+  const packet = (
+    <RedPacket
+      direction={ctx.direction} mark={ctx.mark} font={ctx.langFont}
+      size={ctx.placement === 'beside' ? 118 : 132}
+    />
+  )
+  const action = step.cta ? <Button variant="lacquer" size="lg">{step.cta}</Button> : null
+
+  if (ctx.placement === 'below') {
+    // The object and the action on one line, sharing a baseline: the packet is
+    // the thing, the button is how you open it, and nothing sits between them.
+    return (
+      <>
+        <div style={{ marginTop: '9px' }}><CountBlock step={step} /></div>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '18px', marginTop: '18px' }}>
+          {packet}
+          <div style={{ paddingBottom: '10px' }}>{action}</div>
+        </div>
+      </>
+    )
+  }
+
+  if (ctx.placement === 'anchor') {
+    // The packet at the head of the sequence, in the column the step marks run
+    // down, so the guide appears to descend out of it.
+    return (
+      <>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginTop: '10px' }}>
+          {packet}
+          <div style={{ minWidth: 0, flex: 1, paddingTop: '6px' }}>
+            <CountBlock step={step} />
+            {action && <div style={{ marginTop: '16px' }}>{action}</div>}
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', marginTop: '9px' }}>
+        <CountBlock step={step} />
+        <span style={{ margin: '0 0 -4px 0', flexShrink: 0 }}>{packet}</span>
+      </div>
+      {action && <div style={{ marginTop: '20px' }}>{action}</div>}
+    </>
+  )
+}
 
 function ActiveStep({ step, ctx }) {
   const { accentHex, langFont } = ctx
   const isStory = step.key === 'story' && step.story
   // Cards gets the packet; the story's own artwork is already its object; and
   // Practice keeps the navigation glyph, which P14-5E does not reopen.
-  const isCards = step.key === 'cards'
+  const isCards = step.key === 'cards' && step.metric
   const Glyph = isStory || isCards ? null : GLYPH[step.key]
   return (
     <div style={{ marginTop: '22px' }} data-vitality-active={step.key}>
@@ -144,62 +219,47 @@ function ActiveStep({ step, ctx }) {
         {step.number} · {step.title}
       </span>
 
-      {isStory && (
-        <div data-story-cover="" style={{
-          position: 'relative', marginTop: '13px', width: '100%', aspectRatio: '16 / 9',
-          borderRadius: RADIUS.card + 'px', overflow: 'hidden', boxShadow: ELEVATION.raised,
-          background: 'var(--surface-2)',
-        }}>
-          <img src={step.story.coverUrl} alt="" style={{
-            position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
-          }} />
-        </div>
-      )}
-
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', marginTop: isStory ? '15px' : '9px' }}>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          {step.metric ? (
-            <>
-              <div style={{ ...TYPE.display, fontVariantNumeric: 'tabular-nums', color: 'var(--text)' }}>
-                {step.metric.value}
-              </div>
-              <div style={{ ...TYPE.titleSection, color: 'var(--text)', marginTop: '2px' }}>
-                {step.metric.label}
-              </div>
-            </>
-          ) : (
-            <div style={{
-              ...TYPE.titleScreen, color: 'var(--text)',
-              fontFamily: isStory ? langFont : undefined,
+      {isCards ? <CardsStep step={step} ctx={ctx} /> : (
+        <>
+          {isStory && (
+            <div data-story-cover="" style={{
+              position: 'relative', marginTop: '13px', width: '100%', aspectRatio: '16 / 9',
+              borderRadius: RADIUS.card + 'px', overflow: 'hidden', boxShadow: ELEVATION.raised,
+              background: 'var(--surface-2)',
             }}>
-              {step.detail}
+              <img src={step.story.coverUrl} alt="" style={{
+                position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
+              }} />
             </div>
           )}
-          {step.facts.length > 0 && (
-            <div style={{ ...TYPE.caption, color: 'var(--text-muted)', marginTop: '7px' }}>
-              {step.facts.join(' · ')}
-            </div>
-          )}
-        </div>
-        {/* The identity object the navigation family already taught, at a size
-            where it is an object and not an icon. Never beside the story —
-            there the artwork already is the object. */}
-        {Glyph && (
-          <span style={{ margin: '0 -4px -6px 0', flexShrink: 0 }}>
-            <Glyph size={108} active />
-          </span>
-        )}
-        {isCards && (
-          <span style={{ margin: '0 2px -4px 0', flexShrink: 0 }}>
-            <RedPacket concept={ctx.packet} size={118} />
-          </span>
-        )}
-      </div>
 
-      {step.cta && (
-        <div style={{ marginTop: '20px' }}>
-          <Button variant="lacquer" size="lg">{step.cta}</Button>
-        </div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', marginTop: isStory ? '15px' : '9px' }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{
+                ...TYPE.titleScreen, color: 'var(--text)',
+                fontFamily: isStory ? langFont : undefined,
+              }}>
+                {step.detail}
+              </div>
+              {step.facts.length > 0 && (
+                <div style={{ ...TYPE.caption, color: 'var(--text-muted)', marginTop: '7px' }}>
+                  {step.facts.join(' · ')}
+                </div>
+              )}
+            </div>
+            {Glyph && (
+              <span style={{ margin: '0 -4px -6px 0', flexShrink: 0 }}>
+                <Glyph size={108} active />
+              </span>
+            )}
+          </div>
+
+          {step.cta && (
+            <div style={{ marginTop: '20px' }}>
+              <Button variant="lacquer" size="lg">{step.cta}</Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
@@ -401,24 +461,34 @@ function Frame({ width, concept, stateKey, children }) {
 
 // ── The packet on its own, and the packet opening ─────────────────────────
 
-// Each concept at the size Home actually draws it, plus a 2x study, so a detail
-// that only survives at 2x can be identified as a detail that will not ship.
-function PacketPlate({ concept, ctx }) {
+// Each direction at the size Home actually draws it and at 2x, so a detail that
+// only survives at 2x can be identified as a detail that will not ship — plus
+// the three mark treatments side by side at 1x, which is the only size the
+// choice between them can honestly be made at.
+function PacketPlate({ direction, ctx }) {
   return (
-    <div data-packet-plate={concept} style={{
-      display: 'flex', alignItems: 'flex-end', gap: '26px', padding: '18px 20px',
+    // Wraps, and every child may shrink. /dev is measured at 390 by
+    // p14-controls.spec.js, and a plate holding a 236px study plus three 118px
+    // marks is 750px of content that would widen the page rather than fold.
+    <div data-packet-plate={direction} style={{
+      display: 'flex', alignItems: 'flex-end', gap: '24px', padding: '18px 20px',
       borderRadius: RADIUS.card + 'px', background: 'var(--surface)',
-      border: '1px solid var(--border)',
+      border: '1px solid var(--border)', flexWrap: 'wrap', minWidth: 0,
     }}>
-      <RedPacket concept={concept} size={116} />
-      <RedPacket concept={concept} size={232} />
-      <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ ...TYPE.titleCard, color: 'var(--text)' }}>{concept}</div>
+      <RedPacket direction={direction} size={118} font={ctx.langFont} />
+      <RedPacket direction={direction} size={236} font={ctx.langFont} />
+      <div style={{ minWidth: '200px', flex: 1 }}>
+        <div style={{ ...TYPE.titleCard, color: 'var(--text)' }}>{direction}</div>
         <div style={{ ...TYPE.caption, color: 'var(--text-muted)', marginTop: '4px' }}>
-          {PACKET_NOTES[concept]}
+          {PACKET_NOTES[direction]}
         </div>
-        <div style={{ ...TYPE.caption, color: 'var(--text-faint)', marginTop: '8px' }}>
-          Home draws it at 118px tall — the left one. {ctx.accentHex}
+        <div style={{ display: 'flex', gap: '14px', marginTop: '14px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          {PACKET_MARKS.map(mark => (
+            <div key={mark} style={{ textAlign: 'center' }}>
+              <RedPacket direction={direction} mark={mark} size={118} font={ctx.langFont} />
+              <div style={{ ...TYPE.caption, color: 'var(--text-faint)', marginTop: '6px' }}>{mark}</div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -428,28 +498,24 @@ function PacketPlate({ concept, ctx }) {
 // The storyboard: one still per phase boundary, so the gesture can be reviewed
 // as drawing rather than as prose. The numbers come from redPacketOpen.js, which
 // is the same module a production implementation would drive the frames from.
-function Storyboard({ concept }) {
+function Storyboard({ direction, ctx }) {
   const stops = storyboardFrames()
   return (
-    <div data-storyboard={concept} style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+    <div data-storyboard={direction} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
       {stops.map(ms => {
-        const frame = packetFrame(ms)
         const beat = OPEN_PHASES.filter(p => ms >= p.start && ms <= p.end).map(p => p.label).join(' + ')
         return (
           <div key={ms} data-storyboard-frame={String(ms)} style={{
-            width: '132px', padding: '14px 10px 10px', textAlign: 'center',
+            width: '124px', padding: '14px 10px 10px', textAlign: 'center',
             borderRadius: RADIUS.control + 'px', background: 'var(--surface)',
             border: '1px solid var(--border)',
           }}>
-            <div style={{ height: '148px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-              <RedPacket concept={concept} size={118} phase={ms} />
+            <div style={{ height: '156px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+              <RedPacket direction={direction} size={118} phase={ms} font={ctx.langFont} />
             </div>
             <div style={{ ...TYPE.eyebrow, color: 'var(--text)', marginTop: '10px' }}>{ms}ms</div>
             <div style={{ ...TYPE.caption, color: 'var(--text-faint)', marginTop: '2px', minHeight: '30px' }}>
               {beat || 'Session'}
-            </div>
-            <div style={{ ...TYPE.caption, color: 'var(--text-faint)' }}>
-              {Math.round(frame.flapAngle)}°
             </div>
           </div>
         )
@@ -458,49 +524,73 @@ function Storyboard({ concept }) {
   )
 }
 
+// The six frames the composition question needs: two directions in each of the
+// three placements. The packet only appears on a Cards day, so the other three
+// states render identically across all six — kept anyway, because a placement
+// that breaks a different state would otherwise go unseen.
+const FRAME_VARIANTS = []
+for (const direction of PACKET_DIRECTIONS) {
+  for (const placement of PACKET_PLACEMENTS) {
+    FRAME_VARIANTS.push({ key: direction + '-' + placement, direction, placement })
+  }
+}
+
 export default function HomeVitalityLab() {
   const base = { accentHex: CHINESE.accentHex, langFont: CHINESE.font }
   return (
     <div style={{ display: 'grid', gap: '30px', width: '100%' }}>
       <div style={{ ...TYPE.bodySecondary, color: 'var(--text-muted)' }}>
-        V2 — meaningful previews, exactly as approved. The only thing that varies
-        is the object standing on the Cards step: three red-packet concepts, drawn
-        to the icon family&rsquo;s rules at hero scale.
+        V2 — meaningful previews, exactly as approved. What varies is the object on
+        the Cards step: two 2.5D packet directions, three mark treatments, and three
+        ways of arranging the count, the object and the action.
       </div>
 
       <div style={{ display: 'grid', gap: '14px', minWidth: 0 }}>
-        {PACKET_CONCEPTS.map(concept => <PacketPlate key={concept} concept={concept} ctx={base} />)}
+        {PACKET_DIRECTIONS.map(direction => (
+          <PacketPlate key={direction} direction={direction} ctx={base} />
+        ))}
       </div>
 
-      <div style={{ minWidth: 0 }}>
-        <div style={{ ...TYPE.titleSection, color: 'var(--text)', marginBottom: '4px' }}>
-          Opening — 640ms, four overlapping beats
+      {PACKET_DIRECTIONS.map(direction => (
+        <div key={direction} style={{ minWidth: 0 }}>
+          <div style={{ ...TYPE.titleSection, color: 'var(--text)', marginBottom: '4px' }}>
+            {direction} opening — 650ms, five overlapping beats
+          </div>
+          <div style={{ ...TYPE.caption, color: 'var(--text-muted)', marginBottom: '12px' }}>
+            Press → the cavity opens → the cards rise on staggered timing → they fan →
+            Study. Reduced motion is a 120ms cross-fade with no travel.
+          </div>
+          <Storyboard direction={direction} ctx={base} />
         </div>
-        <div style={{ ...TYPE.caption, color: 'var(--text-muted)', marginBottom: '12px' }}>
-          Tap → lift → flap → fan → Study. Reduced motion is a 120ms cross-fade with
-          no rotation and no travel.
-        </div>
-        <Storyboard concept="C" />
-      </div>
+      ))}
 
       {VITALITY_STATES.map(state => {
         const guide = buildGuide(state.input)
         return (
           // `minWidth: 0` on both the grid item and the scroller: a grid/flex
-          // child defaults to `min-width: auto`, so nine 430px frames would
+          // child defaults to `min-width: auto`, so eighteen 430px frames would
           // widen /dev itself rather than scroll inside it — and /dev is
           // measured at 390 by p14-controls.spec.js.
           <div key={state.key} style={{ minWidth: 0 }}>
             <div style={{ ...TYPE.titleSection, color: 'var(--text)', marginBottom: '12px' }}>{state.label}</div>
             <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '8px', minWidth: 0 }}>
-              {PACKET_CONCEPTS.map(concept => (
+              {FRAME_VARIANTS.map(v => (
                 VITALITY_WIDTHS.map(width => (
-                  <div key={concept + width}>
+                  <div key={v.key + width}>
                     <div style={{ ...TYPE.eyebrow, color: 'var(--text-faint)', marginBottom: '8px' }}>
-                      Packet {concept} · {width}
+                      {v.direction} · {v.placement} · {width}
                     </div>
-                    <Frame width={width} concept={concept} stateKey={state.key}>
-                      <Variant guide={guide} v={V2} ctx={{ ...base, packet: concept }} />
+                    <div style={{
+                      ...TYPE.caption, color: 'var(--text-faint)', marginBottom: '6px',
+                      maxWidth: width + 'px',
+                    }}>
+                      {PLACEMENT_NOTES[v.placement]}
+                    </div>
+                    <Frame width={width} concept={v.key} stateKey={state.key}>
+                      <Variant
+                        guide={guide} v={V2}
+                        ctx={{ ...base, direction: v.direction, placement: v.placement }}
+                      />
                     </Frame>
                   </div>
                 ))
