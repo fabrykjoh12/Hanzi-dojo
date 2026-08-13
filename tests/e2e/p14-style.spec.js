@@ -77,13 +77,20 @@ for (const theme of ['light', 'dark']) {
       await plate.scrollIntoViewIfNeeded();
       await plate.screenshot({ path: OUT + '/plate-' + id + '-' + theme + '.png' });
     }
-    // 4 control states + 4 states x 3 widths of the candidate.
-    expect(total).toBe(16);
+    // 2 target + 3 comparison + 6 remaining candidate frames.
+    expect(total).toBe(11);
 
-    // The candidate's primary is a real, tactile control: >=44px, and pressing
-    // it compresses the material — the same claim the P14-5D plate proved, now
-    // on the candidate's own geometry.
-    const cta = page.getByRole('button', { name: 'Start cards →' }).first();
+    // Both primary treatments clear the tap floor at device size. The hero
+    // action's press is the app's own .hd-press :active rule, which a
+    // dispatched pointerdown cannot trigger — the lacquer press is the one
+    // captured, on the page-level control.
+    const hero = page.getByRole('button', { name: 'Start cards', exact: true }).first();
+    await hero.scrollIntoViewIfNeeded();
+    const heroBox = await hero.boundingBox();
+    expect(heroBox.height).toBeGreaterThanOrEqual(44);
+    await hero.screenshot({ path: OUT + '/cta-hero-' + theme + '.png' });
+
+    const cta = page.getByRole('button', { name: 'Continue story →' }).first();
     await cta.scrollIntoViewIfNeeded();
     const box = await cta.boundingBox();
     expect(box.height).toBeGreaterThanOrEqual(44);

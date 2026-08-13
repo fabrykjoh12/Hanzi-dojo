@@ -183,7 +183,10 @@ function ActiveStep({ step, ctx }) {
         {step.number} · {step.title}
       </span>
 
-      {isCards ? <CardsStep step={step} ctx={ctx} /> : (
+      {/* The style lab's hero treatment, when one is supplied: the Cards step
+          as the screen's one lit panel. The eyebrow above stays either way —
+          the sequence thread is not the panel's to absorb. */}
+      {isCards && ctx.renderCards ? ctx.renderCards(step) : isCards ? <CardsStep step={step} ctx={ctx} /> : (
         <>
           {isStory && (
             <div data-story-cover="" style={{
@@ -285,7 +288,9 @@ function QuietStep({ step, guide, ctx, v, last }) {
             what it is and why it is not open yet. */}
         {preview && showArt && (
           <span data-story-cover="" style={{
-            display: 'block', marginTop: '9px', width: '62%', maxWidth: '208px',
+            display: 'block', marginTop: '9px',
+            width: ctx.previewWide ? '78%' : '62%',
+            maxWidth: ctx.previewWide ? '262px' : '208px',
             aspectRatio: '16 / 9',
             borderRadius: (ctx.shape ? ctx.shape.control : RADIUS.control) + 'px',
             overflow: 'hidden',

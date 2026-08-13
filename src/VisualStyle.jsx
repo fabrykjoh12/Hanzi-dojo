@@ -1,44 +1,44 @@
 import { TYPE } from './typeScale'
 import { RADIUS } from './shape'
 import { languageTheme, pinyinInk } from './languageTheme'
+import { heroGround, heroShadow, ON_HERO } from './designTokens'
 import { Button } from './controls'
 import { buildGuide } from './homeGuide'
 import { Frame, Variant } from './HomeVitality'
-import { VITALITY_STATES, VITALITY_WIDTHS, HOME_RHYTHM } from './homeVitalityFixtures'
+import { VITALITY_STATES, HOME_RHYTHM } from './homeVitalityFixtures'
 import { STYLE_FONTS, STYLE_SHAPES, SPECIMEN_ROLES } from './visualStyleAxes'
 
-// ── Visual Style V2 — the final Home candidate ──────────────────────────────
+// ── Visual Style V2, round 2 — life and cleanliness at once ─────────────────
 //
 // DEV-ONLY. Mounted on /dev, deleted when the direction ships or dies.
 //
-// Device review settled the sprint's open questions, and two of its answers
-// overrode the lab's own recommendation — recorded here because a lab that only
-// ever confirms itself is not measuring anything:
+// The restrained candidate (557467e) was judged cleaner than production and too
+// far toward restraint. The new target is two reference mockups' PRINCIPLES —
+// roughly 70% of one, 30% of the other, and none of their literal content:
 //
-//   · **The packet is parked.** Not migrated, not replaced by another
-//     decorative object. The concept survives (RedPacket.jsx, redPacketOpen.js,
-//     both still tested) for a later, genuinely authored asset; the Cards step
-//     works with typography and the control alone.
-//   · **The Welcome Back banner goes.** It repeats the Cards information and
-//     puts a large bordered surface above the actual task. The gentle-return
-//     CAP is untouched — studyAvailability still applies it, the guide still
-//     carries `capped` — only the banner dies; if the cap needs words, they are
-//     a quiet fact line inside the Cards step, not a surface.
+//   from #2 — Cards as a strong focal point, tactile material, a dimensional
+//   flashcard object, richer red, an integrated CTA;
+//   from #3 — editorial hierarchy, few containers, whitespace, the story
+//   artwork carrying Step 2, quiet HSK progress.
 //
-// What remains is ONE candidate, compared against the shipped Build 44 Home:
-// no packet, no banner, Mona Sans, the tighter shape language, the lacquer
-// primary with its arrow in the label. Energy comes from typography, the real
-// story artwork, active-state colour and the tactile control — not from an
-// illustration.
+// The synthesis this lab draws: **the Cards step becomes the screen's ONE lit
+// panel** — which is not a new idea, it is the app's own design language
+// (CLAUDE.md §5: one HeroPanel per screen) coming back to Home with everything
+// P14-5's hero lab learned. Ground and shadow come from designTokens'
+// facet material; the flashcard stack is heroObjects' paper-plane ramp with the
+// one fix its own post-mortem asked for — real vocabulary on the front card, so
+// it cannot read as a stack of notes; and the CTA is paper ON the red, with the
+// arrow in a chip, so the action belongs to the panel instead of floating below
+// it. Everything else on the page stays #3-quiet.
 
 const CHINESE = languageTheme('chinese')
 const FONT = Object.fromEntries(STYLE_FONTS.map(f => [f.key, f]))
 const SHAPE = Object.fromEntries(STYLE_SHAPES.map(s => [s.key, s]))
 const TIGHT = SHAPE.tight
 
-// Mona Sans only — the sprint's typography comparison is decided this far:
-// Onest lost on maturity, and the native benchmark can only be judged on a
-// device. The file stays under public/dev-fonts/ with its OFL license.
+// Mona Sans, loaded only when this lab renders. OFL, committed with its license
+// under public/dev-fonts/. Inter renders the benchmark frame — the brief is
+// explicit that Mona is not final just because it won the last lab.
 function FontFaces() {
   return (
     <style>{`
@@ -51,10 +51,143 @@ function FontFaces() {
   )
 }
 
-// The candidate's primary action: the lacquer material, the tighter radius, and
-// the arrow INSIDE the label — one piece of typography, not a button plus an
-// icon slot. The copy is an axis of its own (see CopyPlate).
-function CandidateAction({ copy }) {
+// ── The flashcard stack ───────────────────────────────────────────────────
+//
+// heroObjects' DeckObject, with the fix its own retirement note asked for. That
+// deck read as "a stack of notes" or the compose glyph three times in P14 — an
+// abstract paper rectangle IS a note. What a note does not have is vocabulary:
+// the front card carries 你好 and its pinyin, which is the one mark that makes
+// a flashcard unmistakable. The paper-plane ramp, the L of light and the shaded
+// return are the family's rules, unchanged; the packet lab's lesson adds the
+// slight, unequal rotations — three cards at 0° are a printer tray.
+function FlashcardStack({ size = 122, langFont }) {
+  const cards = [
+    { x: 46, y: 10, w: 50, h: 64, r: 7, face: ON_HERO.plane3, lit: null, shade: 5, tilt: 4 },
+    { x: 32, y: 22, w: 54, h: 70, r: 7.5, face: ON_HERO.plane2, lit: ON_HERO.plane1, shade: 6, tilt: -3 },
+    { x: 14, y: 36, w: 60, h: 76, r: 8, face: ON_HERO.plane1, lit: ON_HERO.planeLit, shade: 7, tilt: -8 },
+  ]
+  return (
+    <svg
+      width={size} height={size} viewBox="0 0 128 128" fill="none"
+      aria-hidden="true" focusable="false" style={{ display: 'block', flexShrink: 0 }}
+    >
+      {cards.map(c => (
+        <g key={c.x} transform={'rotate(' + c.tilt + ' ' + (c.x + c.w / 2) + ' ' + (c.y + c.h / 2) + ')'}>
+          <rect x={c.x} y={c.y} width={c.w} height={c.h} rx={c.r} fill={c.face} />
+          <rect
+            x={c.x + c.w - c.shade} y={c.y} width={c.shade} height={c.h}
+            rx={c.shade / 2} fill={ON_HERO.planeShade}
+          />
+          {c.lit && (
+            <>
+              <rect x={c.x} y={c.y} width={c.w} height="3" rx="1.5" fill={c.lit} />
+              <rect x={c.x} y={c.y} width="2.8" height={c.h} rx="1.4" fill={c.lit} />
+            </>
+          )}
+        </g>
+      ))}
+      {/* The front card's face: the word, then its sound. White at two strengths
+          — ink on paper-on-red, not a second colour. */}
+      <g transform="rotate(-8 44 74)">
+        <text
+          x="42" y="72" textAnchor="middle" fontFamily={langFont}
+          fontSize="21" fontWeight="600" fill="#fff"
+        >
+          你好
+        </text>
+        <text
+          x="42" y="88" textAnchor="middle"
+          fontSize="9.5" fontWeight="500" fill={ON_HERO.body}
+        >
+          nǐ hǎo
+        </text>
+      </g>
+    </svg>
+  )
+}
+
+// ── The integrated primary action, on the hero ────────────────────────────
+//
+// Paper on the red — a vermilion button on a vermilion panel is a rumour — with
+// the directional control IN the button: a small brand-red chip carrying the
+// arrow. 50px tall, the tighter radius, a shallow shadow onto the panel, and a
+// darker lower edge so the paper has thickness. Presses via the app's own
+// .hd-press (1px travel).
+function HeroAction({ copy }) {
+  return (
+    <button
+      type="button" className="hd-press"
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+        width: '100%', height: '50px', padding: '0 7px 0 18px', marginTop: '18px',
+        border: 'none', borderRadius: TIGHT.control + 'px', cursor: 'pointer',
+        background: 'color-mix(in srgb, #fff 93%, var(--gold))',
+        boxShadow: '0 1px 2px ' + ON_HERO.planeShade + ', 0 5px 14px -8px ' + ON_HERO.planeShade
+          + ', inset 0 -1px 0 ' + ON_HERO.planeShade + ', inset 0 1px 0 #fff',
+        color: 'var(--primary-pressed)',
+        ...TYPE.label, fontSize: '16px',
+      }}
+    >
+      {copy}
+      <span aria-hidden="true" style={{
+        width: '36px', height: '36px', borderRadius: RADIUS.pill, flexShrink: 0,
+        display: 'grid', placeItems: 'center',
+        background: 'var(--primary-fill)', color: '#fff', fontSize: '17px',
+      }}>
+        →
+      </span>
+    </button>
+  )
+}
+
+// ── The Cards hero ────────────────────────────────────────────────────────
+//
+// The one lit panel, on the app's own facet material. The count and its
+// breakdown in white, the stack as the object, the action on the panel. The
+// step eyebrow stays OUTSIDE on the page — the sequence belongs to the page,
+// the task belongs to the panel.
+function HeroCards({ step, ctx }) {
+  return (
+    <div
+      data-hero-cards=""
+      style={{
+        position: 'relative', marginTop: '14px', padding: '20px 18px 18px',
+        borderRadius: RADIUS.card + 'px', overflow: 'hidden',
+        background: heroGround(ctx.accentHex, 'facet'),
+        boxShadow: heroShadow(ctx.accentHex, false, 'facet'),
+        color: '#fff',
+      }}
+    >
+      {/* The facet: the pool of light the panel faces, anchored outside the
+          top-left corner — P14-5's finding, not a gradient fill. */}
+      <span aria-hidden style={{
+        position: 'absolute', left: '-30%', top: '-55%', width: '90%', height: '120%',
+        pointerEvents: 'none',
+        background: 'radial-gradient(closest-side, ' + ON_HERO.facet + ' 0%, transparent 100%)',
+      }} />
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ ...TYPE.display, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+            {step.metric.value}
+          </div>
+          <div style={{ ...TYPE.titleSection, marginTop: '4px' }}>{step.metric.label}</div>
+          {step.facts.length > 0 && (
+            <div style={{ ...TYPE.caption, color: ON_HERO.body, marginTop: '8px' }}>
+              {step.facts.join(' · ')}
+            </div>
+          )}
+        </div>
+        <FlashcardStack size={118} langFont={ctx.langFont} />
+      </div>
+      <HeroAction copy={step.cta} />
+    </div>
+  )
+}
+
+// The page-level action for Story and Practice: the lacquer material with the
+// arrow in the label. Quieter than the hero's by construction — it sits on
+// paper, not on the brand.
+function PageAction({ copy }) {
   return (
     <Button variant="lacquer" size="lg" style={{ borderRadius: TIGHT.control + 'px' }}>
       {copy + ' →'}
@@ -62,19 +195,28 @@ function CandidateAction({ copy }) {
   )
 }
 
-const CANDIDATE_CTX = {
+// ── The three compositions under comparison ───────────────────────────────
+
+const NEW_CTX = {
   accentHex: CHINESE.accentHex,
   langFont: CHINESE.font,
   shape: { control: TIGHT.control, card: TIGHT.card },
-  // Every active step's own words, through one treatment — Start cards →,
-  // Continue story →, Practise these →.
-  renderAction: (step) => <CandidateAction copy={step.cta} />,
+  previewWide: true,
+  renderCards: (step) => <HeroCards step={step} ctx={{ accentHex: CHINESE.accentHex, langFont: CHINESE.font }} />,
+  renderAction: (step) => <PageAction copy={step.cta} />,
 }
 
-// Build 44's Home, as the comparison stand-in: the P14-5C rhythm (steps stacked
-// under the active one, no distribution, no previews), Inter, current shapes,
-// the flat primary. Rendered by the same components so the comparison is
-// composition and language, not two codebases.
+// 557467e — the restrained candidate, kept in the lab as what "too far toward
+// restraint" looked like.
+const PREV_CTX = {
+  accentHex: CHINESE.accentHex,
+  langFont: CHINESE.font,
+  shape: { control: TIGHT.control, card: TIGHT.card },
+  renderAction: (step) => <PageAction copy={step.cta} />,
+}
+
+// Build 44 — the shipped Home: P14-5C rhythm, Inter, current shapes, flat
+// primary. Rendered by the same components so the diff is language, not code.
 const BASELINE_RHYTHM = { gap: 26, padY: 17, connector: 0, distribute: false, preview: false }
 const BASELINE_CTX = {
   accentHex: CHINESE.accentHex,
@@ -82,7 +224,7 @@ const BASELINE_CTX = {
   renderAction: (step) => <Button variant="primary" size="lg">{step.cta}</Button>,
 }
 
-function StyleFrame({ id, width, stateKey, font, rhythm, ctx, note }) {
+function StyleFrame({ id, width, stateKey, font, rhythm, ctx }) {
   const state = VITALITY_STATES.find(s => s.key === stateKey)
   const guide = buildGuide(state.input)
   return (
@@ -90,11 +232,6 @@ function StyleFrame({ id, width, stateKey, font, rhythm, ctx, note }) {
       <div style={{ ...TYPE.eyebrow, color: 'var(--text-faint)', marginBottom: '6px' }}>
         {id} · {stateKey} · {width}
       </div>
-      {note && (
-        <div style={{ ...TYPE.caption, color: 'var(--text-faint)', marginBottom: '6px', maxWidth: width + 'px' }}>
-          {note}
-        </div>
-      )}
       <div data-style-frame={id + '-' + stateKey} data-frame-width={String(width)} style={{ fontFamily: font.stack, width: width + 'px' }}>
         <Frame width={width} concept={id} stateKey={stateKey}>
           <Variant guide={guide} v={rhythm} ctx={ctx} />
@@ -104,7 +241,7 @@ function StyleFrame({ id, width, stateKey, font, rhythm, ctx, note }) {
   )
 }
 
-function Row({ title, blurb, children }) {
+function LabRow({ title, blurb, children }) {
   return (
     <div style={{ minWidth: 0 }}>
       <div style={{ ...TYPE.titleSection, color: 'var(--text)', marginBottom: '4px' }}>{title}</div>
@@ -119,28 +256,35 @@ function Row({ title, blurb, children }) {
   )
 }
 
-// The CTA copy question, decided where it can be seen: the two candidates on
-// the real control, at real size, with the pick and the reason beside them.
-function CopyPlate() {
+// The primary-action language on its own, at device size: the hero action with
+// its chip, the two copy candidates, and the page-level lacquer beside them.
+function ActionPlate() {
   return (
-    <div data-style-plate="cta-copy" style={{
+    <div data-style-plate="actions" style={{
       padding: '16px 18px', borderRadius: RADIUS.card + 'px',
       background: 'var(--surface)', border: '1px solid var(--border)', minWidth: 0,
+      fontFamily: FONT.mona.stack,
     }}>
-      <div style={{ ...TYPE.titleCard, color: 'var(--text)' }}>The action&rsquo;s words</div>
+      <div style={{ ...TYPE.titleCard, color: 'var(--text)' }}>The primary action, at device size</div>
       <div style={{ ...TYPE.caption, color: 'var(--text-muted)', marginTop: '3px', marginBottom: '14px' }}>
-        Picked: <strong>Start cards →</strong>. &ldquo;Start&rdquo; is an unambiguous verb and
-        answers the headline (&ldquo;136 cards ready&rdquo; → start them); &ldquo;Study cards&rdquo;
-        reads noun-first — the label of a place, not an action — and collides with the
-        Cards tab already being the place.
+        On the hero: paper with the arrow chip. On the page: lacquer with the arrow in
+        the label. Copy picked: <strong>Start cards</strong> — a verb that answers
+        &ldquo;136 cards ready&rdquo;; &ldquo;Study cards&rdquo; names a place, and the
+        Cards tab already is one.
       </div>
-      <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap', fontFamily: FONT.mona.stack }}>
-        <CandidateAction copy="Start cards" />
-        <CandidateAction copy="Study cards" />
+      <div style={{
+        display: 'grid', gap: '12px', maxWidth: '354px', padding: '16px',
+        borderRadius: RADIUS.card + 'px', background: heroGround(CHINESE.accentHex, 'facet'),
+      }}>
+        <HeroAction copy="Start cards" />
+        <HeroAction copy="Study cards" />
+      </div>
+      <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap', marginTop: '14px' }}>
+        <PageAction copy="Continue story" />
         <Button variant="primary" size="lg">Start cards</Button>
       </div>
       <div style={{ ...TYPE.caption, color: 'var(--text-faint)', marginTop: '10px' }}>
-        Left: the two copy candidates on the candidate control. Right: Build 44&rsquo;s flat primary, for the material comparison.
+        Below: the page-level lacquer, and Build 44&rsquo;s flat primary for comparison.
       </div>
     </div>
   )
@@ -192,38 +336,42 @@ export default function VisualStyleLab() {
     <div style={{ display: 'grid', gap: '34px', width: '100%' }}>
       <FontFaces />
       <div style={{ ...TYPE.bodySecondary, color: 'var(--text-muted)' }}>
-        The final Home candidate: no packet, no Welcome Back banner, Mona Sans,
-        tighter shapes, the lacquer primary with its arrow in the label. Compared
-        against the shipped Build 44 composition, rendered by the same components.
+        Round 2: the life of reference #2, the cleanliness of #3. Cards becomes the
+        screen&rsquo;s one lit panel — the app&rsquo;s own hero material, the flashcard
+        stack with real vocabulary on it, the action on the panel — and every other
+        step stays editorial and quiet.
       </div>
 
-      <Row
-        title="Build 44 — the shipped Home, as the control"
-        blurb="P14-5C rhythm, Inter, current shapes, flat primary. What the candidate has to beat."
+      <LabRow
+        title="The target — 390, both key states"
+        blurb="Cards as the hero; the story artwork carrying Step 2. Judge these two first."
       >
-        {VITALITY_STATES.map(state => (
-          <StyleFrame
-            key={state.key} id="build44" width={390} stateKey={state.key}
-            font={FONT.inter} rhythm={BASELINE_RHYTHM} ctx={BASELINE_CTX}
-          />
-        ))}
-      </Row>
+        <StyleFrame id="new" width={390} stateKey="cards" font={FONT.mona} rhythm={HOME_RHYTHM} ctx={NEW_CTX} />
+        <StyleFrame id="new" width={390} stateKey="story" font={FONT.mona} rhythm={HOME_RHYTHM} ctx={NEW_CTX} />
+      </LabRow>
 
-      <Row
-        title="The candidate — every state, every width"
-        blurb="V2 rhythm · typography-led Cards step · Mona Sans · controls 10 / cards 16 · Start cards →"
+      <LabRow
+        title="What it must beat"
+        blurb="Build 44 (shipped) · 557467e (too restrained) · the same new candidate in Inter, because Mona is not final by default."
       >
-        {VITALITY_STATES.map(state => (
-          VITALITY_WIDTHS.map(width => (
-            <StyleFrame
-              key={state.key + width} id="candidate" width={width} stateKey={state.key}
-              font={FONT.mona} rhythm={HOME_RHYTHM} ctx={CANDIDATE_CTX}
-            />
-          ))
-        ))}
-      </Row>
+        <StyleFrame id="build44" width={390} stateKey="cards" font={FONT.inter} rhythm={BASELINE_RHYTHM} ctx={BASELINE_CTX} />
+        <StyleFrame id="prev" width={390} stateKey="cards" font={FONT.mona} rhythm={HOME_RHYTHM} ctx={PREV_CTX} />
+        <StyleFrame id="newInter" width={390} stateKey="cards" font={FONT.inter} rhythm={HOME_RHYTHM} ctx={NEW_CTX} />
+      </LabRow>
 
-      <CopyPlate />
+      <LabRow
+        title="The candidate, everywhere else"
+        blurb="Widths and the remaining states — rendered because the 390 pair passed."
+      >
+        <StyleFrame id="new" width={320} stateKey="cards" font={FONT.mona} rhythm={HOME_RHYTHM} ctx={NEW_CTX} />
+        <StyleFrame id="new" width={320} stateKey="story" font={FONT.mona} rhythm={HOME_RHYTHM} ctx={NEW_CTX} />
+        <StyleFrame id="new" width={430} stateKey="cards" font={FONT.mona} rhythm={HOME_RHYTHM} ctx={NEW_CTX} />
+        <StyleFrame id="new" width={430} stateKey="story" font={FONT.mona} rhythm={HOME_RHYTHM} ctx={NEW_CTX} />
+        <StyleFrame id="new" width={390} stateKey="practice" font={FONT.mona} rhythm={HOME_RHYTHM} ctx={NEW_CTX} />
+        <StyleFrame id="new" width={390} stateKey="complete" font={FONT.mona} rhythm={HOME_RHYTHM} ctx={NEW_CTX} />
+      </LabRow>
+
+      <ActionPlate />
       <TypePlate />
     </div>
   )
