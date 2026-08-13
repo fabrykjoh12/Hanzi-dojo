@@ -130,6 +130,105 @@ gap, because its active step has no metric and no artwork — one short line and
 button. That is the emptiest state left. **Do not invent a metric to fill it** —
 the fix, when it comes, is the Practice step's own dimensional object.
 
+## Visual Style V2 — the language sprint (2026-08-13)
+
+The finding: the Home composition is becoming good, and the app's visual
+language still reads as generic. `src/VisualStyle.jsx` (+ `visualStyleAxes.js`,
+rendered by `P14_STYLE=1 npx playwright test p14-style`) holds the approved V2
+composition still and varies the language around it, one axis per row, plus the
+one proposed combination as a unit. Production is untouched.
+
+**The governing rule, adopted as of this sprint: quiet interface, expressive
+meaningful objects.** The packet, the story artwork, the chop and the rail carry
+the identity; every surface around them gets calmer, not more styled. This will
+eventually govern Home, Session Complete, Stories, Practice, Profile and
+onboarding — none of which are restyled now.
+
+### The scores (8 criteria, /10 each)
+
+| Combination | prof. | dist. | read. | matur. | energy | calm | not-AI | w/ art | Σ |
+|---|---|---|---|---|---|---|---|---|---|
+| Baseline (Inter · button · current) | 7 | 4 | 8 | 7 | 6 | 8 | 5 | 8 | **53** |
+| Packet-as-action (Inter · current) | 7 | 7 | 8 | 7 | 7 | 9 | 7 | 8 | **60** |
+| **Proposal: packet · Mona Sans · tight** | 8 | 8 | 8 | 8 | 7 | 9 | 8 | 8 | **64** |
+| Packet · Onest · tight | 7 | 8 | 8 | 6 | 7 | 9 | 7 | 8 | **60** |
+
+The native benchmark is deliberately unscored: this harness renders Linux's
+fontconfig default, not SF Pro, so its frames say what the option *is*, not what
+it looks like. Judge it on a phone or not at all.
+
+### The recommendation, as one unit
+
+**Packet as the action · Mona Sans · tighter shapes · lacquer primary.**
+
+- **Packet as the action** is the single biggest de-generifier: the big rounded
+  CTA — the most generic object on the screen — is gone, and the packet finally
+  has a job. It is one `<button>` (≥44px, enforced by the harness) whose label
+  and accessible name are the same words; the count stays outside it, because
+  information is not a control. The harness's first run caught the visible label
+  saying "Open cards" while aria-label said "Start cards" — a label-in-name
+  failure fixed before it could ship anywhere.
+- **Mona Sans** (variable, OFL-1.1, ~40KB woff2) is authored without being cute:
+  the display number and headings gain real character, body text stays sober.
+  **One caveat for device QA:** with `tabular-nums`, Mona's `1` is airy — "136"
+  sets slightly loose. If adopted, consider proportional figures for the display
+  role only. **Onest** is friendlier and loses on maturity: at weight 800 the
+  display numerals lean toy-ish.
+- **Tighter shapes** (controls 12→10, cards 18→16, hero and pill untouched) are
+  cheap and subtly crisper. NOTE: the guard's radius allow-list rightly failed a
+  typed `'10px'` in the lab — the proposed value lives as named data in
+  `visualStyleAxes.js`, and ADOPTING it means changing `RADIUS` and the guard's
+  allow-list in one owned commit, exactly as the guard intends.
+- **The primary control:** the brief's future-primary spec (50–54px, 10–12
+  radius, vermilion face, top highlight, darker bottom edge, contact shadow,
+  press movement, depth reduced on press) is the P14-5D lacquer button, already
+  in the shared control layer. Nothing new to build; the flat `primary` retires
+  from hero positions when migration comes. Secondary actions stay quiet — flat
+  surface, or text and an arrow.
+
+Both candidate fonts are committed under `public/dev-fonts/` with their OFL
+licenses beside them, loaded only by the lab's own `@font-face` on `/dev`.
+Hanzi and pinyin are not an axis: every candidate keeps `languageTheme`'s
+Chinese stack, and the lab carries a specimen proving it.
+
+### The three signature motifs, as a system
+
+A vocabulary, not decoration — never all three at full volume on one screen:
+
+1. **Physical learning objects.** The packet, the flashcards, the story artwork,
+   the navigation family — one expressive object per screen, and it is the loud
+   thing. A screen with no natural object stays quiet rather than inventing one
+   (this is why the Practice day keeps its whitespace).
+2. **Seal / stamp completion.** The 成 chop for an earned day; ticks for steps;
+   gold only at genuine milestones. Never a checkbox.
+3. **Ink / progress.** The per-step rail: vermilion where the day has been (at
+   50% ink — a trace, not a progress bar), warm neutral ahead. Drawn per step so
+   it ends where the last mark is.
+
+### Packet implementation strategy (investigated, not implemented)
+
+Three ways to author the final packet, all driving frames from `packetFrame()` —
+the animation contract is layer-agnostic, so the choice never touches timing:
+
+- **Pure procedural SVG (current).** One tested source, theme-correct by
+  construction (every colour is a token, the cavity darkens with dark mode),
+  diffable, ~10KB, no pipeline. Ceiling: every nuance of craft is code, and
+  painterly texture is effectively impossible. Three review rounds measured that
+  ceiling precisely.
+- **Layered authored SVG (recommended next).** Three files a designer actually
+  draws — packet back/interior · two cards · packet front/lip — composed by the
+  same component, same transforms, occlusion preserved by layer order. Vector,
+  deterministic, still light. Cost: an asset step, and theming needs care
+  (authored fills don't read CSS vars; either post-process to `var()` or ship a
+  dark variant of each layer).
+- **Layered raster/WebP.** Unlimited painterly quality; but two themes × two
+  densities × three layers, real bytes, soft edges at arbitrary scale, and tints
+  can't follow tokens. Only worth it if a painted direction wins later.
+
+Verdict: keep procedural until a designer pass exists; the component's layer
+order (cards between cavity and front wall) is already the layered structure, so
+swapping in authored layers is a drawing task, not a refactor.
+
 ## P14-5E — the red packet (2026-08-13)
 
 `src/RedPacket.jsx` (the drawing), `src/redPacketFamily.js` (directions, marks
