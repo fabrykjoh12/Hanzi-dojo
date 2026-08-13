@@ -78,7 +78,7 @@ for (const theme of ['light', 'dark']) {
 
     test('every Button clears the tap floor at its declared height', async ({ page }) => {
       const gallery = page.locator('[data-controls-gallery]');
-      for (const name of ['Primary', 'Secondary', 'Ghost', 'Destructive']) {
+      for (const name of ['Primary', 'Secondary', 'Ghost', 'Destructive', 'Lacquer']) {
         const b = await boxes(gallery.locator('[data-gallery-group="Button · variants"]')
           .getByRole('button', { name, exact: true }));
         expect(b.hit.h, name + ' is ' + b.hit.h + 'px tall').toBeGreaterThanOrEqual(TAP_MIN);

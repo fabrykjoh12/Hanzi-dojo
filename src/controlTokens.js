@@ -64,6 +64,50 @@ const VARIANTS = {
     ink: '#fff',
     border: 'none',
   },
+  // ── lacquer (P14-5D) ──────────────────────────────────────────────────
+  // `primary` made of material instead of paint. Same role, same token, same
+  // geometry — the difference is that light falls on it: the top edge mixes
+  // toward `--lacquer-lift`, the bottom toward `--lacquer-depth`, a hairline
+  // sits under the lower edge, and pressing it compresses the object and takes
+  // the shadow away.
+  //
+  // It is a VARIANT rather than a component because nothing else about it
+  // differs — height, radius, type and the 44px floor are the button's. Device
+  // QA said the primary actions felt boring; this is the answer, and it is meant
+  // to become one of the recognisable pieces of the design language.
+  //
+  // Not glossy: one highlight, no second specular band, no glow. The gradient
+  // spans about a quarter of a step of lightness — enough to read as a surface
+  // catching light, far short of a Web-2.0 button.
+  lacquer: {
+    fill: 'var(--primary-fill)',
+    active: 'var(--primary-pressed)',
+    ink: '#fff',
+    border: 'none',
+    material: true,
+  },
+}
+
+// The lacquer surface, as one place. `pressed` is what the control looks like
+// under a finger: the plate sinks, the cast shadow goes, and the lit top edge
+// with it — which is what "compresses" means when nothing may move layout.
+export function lacquerSurface({ pressed = false, base = 'var(--primary-fill)' } = {}) {
+  const lift = 'color-mix(in srgb, ' + base + ', var(--lacquer-lift) var(--lacquer-lift-pct))'
+  const depth = 'color-mix(in srgb, ' + base + ', var(--lacquer-depth) var(--lacquer-depth-pct))'
+  if (pressed) {
+    return {
+      backgroundImage: 'linear-gradient(180deg, ' + depth + ' 0%, ' + base + ' 100%)',
+      boxShadow: 'inset 0 1px 2px var(--lacquer-edge)',
+      transform: 'translateY(1px)',
+    }
+  }
+  return {
+    // Three stops, not two: a lit top, a long true-colour middle where the brand
+    // IS the brand, and a turned-away bottom. Two stops is a wash.
+    backgroundImage: 'linear-gradient(180deg, ' + lift + ' 0%, ' + base + ' 58%, ' + depth + ' 100%)',
+    boxShadow: 'var(--shadow-1), inset 0 1px 0 var(--inset-highlight), inset 0 -1px 0 var(--lacquer-edge)',
+    transform: 'none',
+  }
 }
 
 export const BUTTON_VARIANTS = Object.keys(VARIANTS)
@@ -126,7 +170,10 @@ export function buttonStyle(variant = 'primary', options = {}) {
     border: v.border,
     color: v.ink,
     cursor: 'pointer',
-    ...(hovered && !off ? { background: v.active } : null),
+    // A material control paints itself; `pressed` is passed by the renderer,
+    // which is the only thing that can know a finger is down.
+    ...(v.material && !off ? lacquerSurface({ pressed: options.pressed, base: v.fill }) : null),
+    ...(hovered && !off && !v.material ? { background: v.active } : null),
     ...(off ? disabledOver(variant) : null),
   }
 }

@@ -49,6 +49,44 @@ is its own piece of work.
 `useAppResume` re-runs it on foreground. `tests/e2e/home-cards-agree.spec.js`
 covers cold launch, warm tab return, reload and grading.
 
+### Finding 2 — the vitality lab, and what two rounds settled
+
+`src/HomeVitality.jsx` + `src/homeVitalityFixtures.js` (dev-only, on `/dev`),
+rendered by `P14_VITALITY=1 npx playwright test p14-vitality` — 36 frames per
+theme plus the button at rest and pressed. Production Home is untouched.
+
+Round 1 varied all six levers at once and three came back answered, so round 2
+made them common and varied one thing each:
+
+- **The lacquer button wins on sight.** Zoomed 4×, the material CTA has a lit top
+  edge, a body and a turned-away lower edge; the flat fill of the identical
+  colour is a sticker. `lacquerSurface()` in `controlTokens.js`, `lacquer`
+  variant, pressed state wired through `controls.jsx`, six unit tests.
+- **A boxed numeral is a form field.** 26px hairline box + numeral, with a rule
+  through the column, read as a wizard. Bare numeral ahead, bare vermilion tick
+  behind. (This is what production already does — round 1 tried to improve it
+  and made it worse.)
+- **The completion mark was a checkbox** — a rounded square with a tick, the most
+  generic mark in software. It is now a **chop**: the lacquer plate with 成
+  reversed out, pressed 3° off square, once per earned day.
+
+Measured, at 390 light, lab chrome excluded: all three treatments draw **3**
+boxes in an active state and **4** when complete, with 2 distinct shadows. None
+of the three levers adds a surface — the identity object is an SVG, the connector
+is a path, the atmosphere is a gradient. So the choice is not a clutter trade-off.
+
+**Recommended: B — material + the identity object at 108px, no connector, no
+wash.** The Cards day is the flat one because it is the only step with no
+artwork; the object is the image it lacks, it costs no container, and it is the
+navigation family the learner has already been taught. The ink connector loses
+the completed day (rail + three ticks + chop reads as a checklist), and the
+page-scale wash is visible but does not carry a screen on its own.
+
+**Not fixed, and the honest limit of this lab:** roughly a third of the screen
+below the CTA is empty on a Cards day, in all three. The approved layout permits
+it and none of the six allowed levers closes it. If the screen still reads low
+on a device, that is a layout question, not a material one.
+
 ## P14-5C — Home shipped as a guide; what it left (2026-08-13)
 
 - **Two of P14-5B's three data gaps are closed.** `counts.studiedToday` and

@@ -2,7 +2,7 @@ import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { countMastery } from './mastery'
 import { studyFloorLevel } from './levelScope'
-import { isCardDue, endOfLocalDay } from './srs'
+import { endOfLocalDay } from './srs'
 import { studyAvailability } from './studyAvailability'
 import { reviewForecast } from './reviewForecast'
 import { studyRhythm, dateKey } from './studyRhythm'
@@ -66,7 +66,6 @@ export async function getHomeCounts(userId, track, dailyNewCards, { returning = 
   const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0)
   const introducedToday = (cards || [])
     .filter(c => new Date(c.created_at) >= startOfToday && vocabIds.has(c.vocab_id)).length
-  const remainingNew = Math.max(0, dailyNewCards - introducedToday)
 
   const startedVocabIds = new Set((cards || []).map(c => c.vocab_id))
   const unstartedInWindow = (vocab || []).filter(v => !startedVocabIds.has(v.id)).length

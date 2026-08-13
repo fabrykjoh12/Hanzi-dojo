@@ -240,6 +240,19 @@ body {
   --ink-warm: #FF8A5C;
   --ink-warm-pct: 0%;
 
+  /* ── The lacquer control (P14-5D) ──────────────────────────────────────
+     A primary button made of MATERIAL rather than a flat fill: light catches
+     its top edge, the bottom edge turns away, and pressing it compresses the
+     whole thing. Three values, so the recipe in controlTokens.js can stay free
+     of colour — `--lacquer-lift` is what the top mixes toward, `--lacquer-depth`
+     what the bottom mixes toward, and `--lacquer-edge` the hairline under it.
+     Device QA on build 44: "the buttons feel boring". */
+  --lacquer-lift: #FFFFFF;
+  --lacquer-lift-pct: 13%;
+  --lacquer-depth: #4A1206;
+  --lacquer-depth-pct: 12%;
+  --lacquer-edge: rgba(74, 18, 6, 0.34);
+
   /* Watermark strength for the sidebar's language character. The accents are
      saturated reds/blues tuned for white paper, so the same alpha that reads as
      a whisper on a dark rail reads as a pink stain on a light one. Two values,
@@ -525,6 +538,16 @@ body {
   --pinyin-lift-pct: 38%;
   --ink-strong-pct: 40%;
   --ink-warm-pct: 50%;
+  /* Dark mode lifts the whole control (the fill is already a step down from
+     --primary so white can sit on it), so the material needs LESS added light
+     and a deeper bottom to keep the same read on a near-black ground. */
+  --lacquer-lift: #FFFFFF;
+  --lacquer-lift-pct: 16%;
+  /* Deeper than paper's: on a near-black ground the bottom edge has to turn
+     further away before it reads as turning away at all. */
+  --lacquer-depth: #2A0A03;
+  --lacquer-depth-pct: 18%;
+  --lacquer-edge: rgba(0, 0, 0, 0.42);
   --watermark-pct: 8%;
   /* The card's status band, reported from a device as the last light-mode
      treatment surviving inside the dark card: a full-width cream bar across

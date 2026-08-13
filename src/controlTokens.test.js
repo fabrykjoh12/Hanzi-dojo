@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
   TAP_MIN, BUTTON_HEIGHT, BUTTON_SIZES, BUTTON_VARIANTS,
-  buttonStyle, buttonInk,
+  buttonStyle, buttonInk, lacquerSurface,
   ICON_BUTTON_VARIANTS, iconButtonStyle, iconInk,
   rowStyle, rowDivider, ROW_TITLE, ROW_SUPPORTING, holdLayout,
   CHIP_HEIGHT, CHIP_STATE_NAMES, chipStyle, chipState,
@@ -19,7 +19,7 @@ import { TYPE, UI_SIZES } from './typeScale'
 // milliseconds. The DOM half — roles, labels, what happens when you click a
 // disabled thing — is controls.test.jsx.
 
-const ALL_VARIANTS = ['primary', 'secondary', 'ghost', 'destructive']
+const ALL_VARIANTS = ['primary', 'secondary', 'ghost', 'destructive', 'lacquer']
 
 describe('the tap-target floor', () => {
   it('is 44, and it is not a suggestion', () => {
@@ -496,5 +496,58 @@ describe('the controls name roles, never values', () => {
     const imports = [...readFileSync(new URL('./controlTokens.js', import.meta.url), 'utf8')
       .matchAll(/from '([^']+)'/g)].map(m => m[1]).sort()
     expect(imports).toEqual(['./shape', './typeScale'])
+  })
+})
+
+// ── The lacquer material (P14-5D) ───────────────────────────────────────────
+describe('lacquer — a primary button made of material', () => {
+  it('is the primary role, not a new colour', () => {
+    // Same token as `primary`: this is a MATERIAL change, and the brand still
+    // decides what colour an action is (palette.js canFillButton).
+    const s = buttonStyle('lacquer')
+    expect(s.background).toBe('var(--primary-fill)')
+    expect(s.color).toBe('#fff')
+  })
+
+  it('keeps the button\'s geometry — a variant may not invent its own', () => {
+    const lacquer = buttonStyle('lacquer', { size: 'lg' })
+    const primary = buttonStyle('primary', { size: 'lg' })
+    expect(lacquer.minHeight).toBe(primary.minHeight)
+    expect(lacquer.borderRadius).toBe(primary.borderRadius)
+    expect(lacquer.fontSize).toBe(primary.fontSize)
+    expect(parseFloat(lacquer.minHeight)).toBeGreaterThanOrEqual(TAP_MIN)
+  })
+
+  it('paints light on the top edge and turns the bottom away', () => {
+    const s = buttonStyle('lacquer')
+    expect(s.backgroundImage).toContain('linear-gradient(180deg')
+    expect(s.backgroundImage).toContain('var(--lacquer-lift)')
+    expect(s.backgroundImage).toContain('var(--lacquer-depth)')
+    expect(s.boxShadow).toContain('inset 0 1px 0 var(--inset-highlight)')
+    expect(s.boxShadow).toContain('inset 0 -1px 0 var(--lacquer-edge)')
+  })
+
+  it('compresses under a finger and gives up its shadow', () => {
+    const rest = buttonStyle('lacquer')
+    const down = buttonStyle('lacquer', { pressed: true })
+    expect(rest.transform).toBe('none')
+    expect(down.transform).toBe('translateY(1px)')
+    // The cast shadow goes; what is left is the inset that says "sunk".
+    expect(down.boxShadow).not.toContain('var(--shadow-1)')
+    expect(down.boxShadow).toContain('inset')
+  })
+
+  it('is not glossy — one highlight, and a gradient that spans one step', () => {
+    // The failure mode is a Web-2.0 button: two specular bands, or a gradient so
+    // wide the fill stops being the brand colour. Three stops, one lift, one depth.
+    const s = lacquerSurface()
+    expect((s.backgroundImage.match(/color-mix/g) || []).length).toBe(2)
+    expect(s.backgroundImage).toContain('58%')
+  })
+
+  it('drops its material entirely when disabled', () => {
+    const off = buttonStyle('lacquer', { disabled: true })
+    expect(off.backgroundImage).toBeUndefined()
+    expect(off.cursor).not.toBe('pointer')
   })
 })

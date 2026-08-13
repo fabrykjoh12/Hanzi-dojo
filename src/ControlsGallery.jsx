@@ -60,6 +60,10 @@ export default function ControlsGallery() {
         <Button variant="secondary" onClick={() => setTaps(t => t + 1)}>Secondary</Button>
         <Button variant="ghost" onClick={() => setTaps(t => t + 1)}>Ghost</Button>
         <Button variant="destructive" icon={Trash2} onClick={() => setTaps(t => t + 1)}>Destructive</Button>
+        {/* P14-5D: `primary`'s role and token, made of material. Here so the
+            difference is visible side by side with the flat fill — press it and
+            the object compresses and drops its shadow. */}
+        <Button variant="lacquer" onClick={() => setTaps(t => t + 1)}>Lacquer</Button>
       </Group>
 
       <Group title="Button · sizes and icons">

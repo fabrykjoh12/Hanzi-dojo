@@ -55,6 +55,10 @@ export function Button({
   keepFocus = false, type = 'button', ariaLabel, style = {},
 }) {
   const [hovered, setHovered] = useState(false)
+  // Only the `lacquer` variant reads this — a material control compresses under
+  // a finger, and nothing but the renderer knows the finger is there. Cleared on
+  // leave as well as up, or a drag off the button leaves it stuck pressed.
+  const [pressed, setPressed] = useState(false)
   const off = disabled || loading
   const ink = buttonInk(variant, { disabled, loading })
   return (
@@ -66,9 +70,12 @@ export function Button({
       aria-busy={loading ? true : undefined}
       aria-label={ariaLabel}
       onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseLeave={() => { setHovered(false); setPressed(false) }}
+      onPointerDown={() => setPressed(true)}
+      onPointerUp={() => setPressed(false)}
+      onPointerCancel={() => setPressed(false)}
       className="hd-press"
-      style={{ ...buttonStyle(variant, { size, disabled, loading, hovered, full }), ...style }}
+      style={{ ...buttonStyle(variant, { size, disabled, loading, hovered, pressed, full }), ...style }}
     >
       {Icon && <Icon size={size === 'lg' ? 18 : 16} strokeWidth={2.1} color={ink} aria-hidden="true" />}
       {loading && loadingLabel ? loadingLabel : children}

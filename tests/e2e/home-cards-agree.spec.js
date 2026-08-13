@@ -38,7 +38,7 @@ function deck({ due = 6, outsideWindow = 2, unstarted = 3, dailyNew = 20 } = {})
     audio_path: null,
   }));
 
-  const card = (vocab, i) => ({
+  const card = (vocab) => ({
     id: 'c' + vocab.id, user_id: PROFILE.id, vocab_id: vocab.id,
     state: 'review', due_at: overdue, created_at: past, last_review: past,
     is_easy: false, learned: true, stability: 30, difficulty: 5,
@@ -56,7 +56,7 @@ function deck({ due = 6, outsideWindow = 2, unstarted = 3, dailyNew = 20 } = {})
       word: '外' + i, reading: 'wai', meaning: 'outside word',
       language: 'chinese', system: 'hsk_3', is_active: true, audio_path: null,
     };
-    cards.push(card(vocab, i));
+    cards.push(card(vocab));
   }
 
   return { windowVocab, cards, expected: due + outsideWindow + Math.min(unstarted, dailyNew) };
