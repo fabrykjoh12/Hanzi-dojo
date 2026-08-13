@@ -556,7 +556,7 @@ function QueueBody({ counts, totalDue, goal, doneToday, isMobile, action, accent
           Check your connection — starting a session loads it fresh.
         </div>
 
-        <HeroAction label={action.label} hovered={hovered} icon={ArrowRight} accentHex={accentHex} />
+        <HeroAction label={action.label} hovered={hovered} icon={ArrowRight} accentHex={accentHex} material="paper" />
       </div>
     )
   }
@@ -618,7 +618,7 @@ function QueueBody({ counts, totalDue, goal, doneToday, isMobile, action, accent
 
       <GoalMarks done={doneToday} goal={goal} complete={goalComplete} />
 
-      <HeroAction label={action.label} hovered={hovered} icon={ArrowRight} accentHex={accentHex} />
+      <HeroAction label={action.label} hovered={hovered} icon={ArrowRight} accentHex={accentHex} material="paper" />
     </div>
   )
 }

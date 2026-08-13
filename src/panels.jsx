@@ -72,8 +72,8 @@ export function HeroPanel({
         // card's corner exactly.
         borderRadius: '26px',
         padding: padding || (compact ? '20px 22px' : '26px 28px'),
-        background: heroGround(accentHex),
-        boxShadow: heroShadow(accentHex, hovered && interactive),
+        background: heroGround(accentHex, material),
+        boxShadow: heroShadow(accentHex, hovered && interactive, material),
         cursor: interactive ? 'pointer' : 'default',
         color: '#fff',
         ...style,
@@ -134,7 +134,7 @@ export function HeroPanel({
 
 // The call-to-action that sits inside a HeroPanel.
 //
-// **It is opaque paper now (P14-5), not a translucent pill.** It was
+// **On Home it is opaque paper (P14-5), not a translucent pill.** It was
 // `rgba(255,255,255,0.14)` behind a 28% white border, inverting to solid white
 // only on hover — which meant that on a phone, where there is no hover, the one
 // action on Home was permanently in its weak state: a 14%-white ghost on a red
@@ -150,11 +150,15 @@ export function HeroPanel({
 // sixth variant that exists for one call site. The geometry is borrowed; the
 // palette is the hero's.
 //
-// `hovered` now only moves the arrow, which is a desktop nicety rather than the
-// difference between legible and not.
-export function HeroAction({ label, hovered, icon: Icon, accentHex }) {
+// `material` is HeroPanel's migration seam again, and Stories and Practice are
+// still on `glass`. The hover-only flaw above is just as true there, and it is
+// still not this phase's to fix: P14-5 is Home. **The two materials must not
+// drift into two components** — when those screens move, delete the glass branch
+// rather than adding a third.
+export function HeroAction({ label, hovered, icon: Icon, accentHex, material = 'glass' }) {
+  const paper = material === 'paper'
   return (
-    <span style={{
+    <span style={paper ? {
       display: 'inline-flex', alignItems: 'center', gap: '8px',
       marginTop: '16px', height: '44px', padding: '0 18px',
       borderRadius: RADIUS.control + 'px',
@@ -162,6 +166,14 @@ export function HeroAction({ label, hovered, icon: Icon, accentHex }) {
       ...TYPE.label, fontWeight: 700,
       // A hairline of contact shadow: the button sits ON the plate.
       boxShadow: '0 1px 0 rgba(23,17,14,0.10)',
+    } : {
+      display: 'inline-flex', alignItems: 'center', gap: '8px',
+      marginTop: '18px', padding: '10px 16px', borderRadius: '12px',
+      background: hovered ? '#fff' : 'rgba(255,255,255,0.14)',
+      border: '1px solid rgba(255,255,255,0.28)',
+      color: hovered ? accentHex : '#fff',
+      fontSize: '13.5px', fontWeight: 700,
+      transition: 'background 180ms ease, color 180ms ease',
     }}>
       {label}
       {Icon && (

@@ -90,11 +90,25 @@ export const ON_HERO = {
 // gradient: a flat plane catching light has a bright end, a long true-colour
 // middle where the accent actually IS the accent, and a shaded far end. Two stops
 // is a wash from A to B with no material in between.
+//
+// ⚠️ `material` is the same migration seam `HeroPanel` carries, for the same
+// reason, and it is why these functions take it at all. FOUR screens draw a hero
+// — Home, Stories, Practice, Profile — and three of them are frozen. P14-5 first
+// shipped the new ground unconditionally, which restyled all four; CI caught it
+// as an 8,168-pixel diff on the `stories-shelf-mobile` baseline, and the baseline
+// was right. `wash` is therefore the pre-P14-5 ground, byte-identical, and
+// `facet` is Home's. When a later phase moves those screens over, the default
+// flips and the parameter goes away.
 export function heroHue(accentHex) {
   return `color-mix(in srgb, ${accentHex}, var(--hero-lift) var(--hero-lift-pct))`
 }
 
-export function heroGround(accentHex) {
+export function heroGround(accentHex, material = 'wash') {
+  if (material !== 'facet') {
+    return `linear-gradient(160deg,
+    color-mix(in srgb, ${accentHex} 88%, #17110E) 0%,
+    color-mix(in srgb, ${accentHex} 70%, #17110E) 100%)`
+  }
   const hue = heroHue(accentHex)
   return `linear-gradient(158deg,
     color-mix(in srgb, ${hue} 94%, var(--hero-depth)) 0%,
@@ -104,11 +118,13 @@ export function heroGround(accentHex) {
 
 // Elevation for a hero panel — tinted by the accent so the cast light matches
 // the object casting it, rather than a generic grey drop shadow.
-export function heroShadow(accentHex, lifted = false) {
-  // Plus a lit top edge, the same hairline the floating navigation tray wears and
-  // for the same reason: the top of a lifted object catches the light. On the
-  // hero it is stronger than on the tray because this ground is far darker.
-  const edge = ', inset 0 1px 0 ' + ON_HERO.litEdge
+export function heroShadow(accentHex, lifted = false, material = 'wash') {
+  // A `facet` hero also gets a lit top edge, the same hairline the floating
+  // navigation tray wears and for the same reason: the top of a lifted object
+  // catches the light. On the hero it is stronger than on the tray because this
+  // ground is far darker. Same seam as above — a frozen screen's shadow is
+  // unchanged.
+  const edge = material === 'facet' ? ', inset 0 1px 0 ' + ON_HERO.litEdge : ''
   return (lifted
     ? `0 18px 40px -18px color-mix(in srgb, ${accentHex} 70%, transparent)`
     : `0 10px 28px -18px color-mix(in srgb, ${accentHex} 60%, transparent)`) + edge
