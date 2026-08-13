@@ -281,7 +281,10 @@ test.describe('Teaching', () => {
     expect(shape.titleSize).toBe('26px');
     expect(shape.titleWeight).toBe('700');
     expect(shape.tileRadius).toBe('12px');
-    await expect(page.getByRole('heading', { name: /Today.s training/ })).toBeVisible();
+    // The recap's own "Today" stat tile — NOT Home's heading. A blanket rename of
+    // the Home locator swept this up once; it is the tutorial's recap, and the
+    // learner is not even signed in here.
+    await expect(page.getByText('Today', { exact: true })).toBeVisible();
     await expect(page.getByText('3 words practiced')).toBeVisible();
   });
 
