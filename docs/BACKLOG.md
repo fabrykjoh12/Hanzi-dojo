@@ -29,6 +29,23 @@ long-lived engineering backlog; the board holds short-lived execution state.
   Profile are frozen and keep the ink ridgelines plus a watermark character. Whichever
   phase unfreezes them should flip the default and delete the prop, not add a third
   material.
+- **The seam was half-applied on the first pass, and the visual baseline is what
+  caught it.** `heroGround()`, `heroShadow()` and `HeroAction` were changed
+  unconditionally, so Stories, Practice and Profile *did* get Home's new ground, lit
+  edge and opaque CTA — while the commit claimed they were byte-identical. CI failed
+  `visual: stories shelf › mobile` on 8,168 pixels, three attempts, same count.
+  Lessons worth keeping: (1) a shared helper is part of the seam, not outside it —
+  grep the call sites, don't reason from the component you edited; (2) the mobile
+  baseline is ~3× stricter than the desktop one for the same absolute change, because
+  `maxDiffPixelRatio` scales with canvas area, so a desktop pass proves nothing about
+  its mobile twin; (3) a red baseline's *usual* correct outcome is a code fix, not a
+  regenerated baseline. `src/heroMaterial.test.jsx` now fails in 40ms instead.
+- **Home cannot be pixel-diffed locally.** Two renders of identical code differ by
+  ~69,000 px at 390×844, because the story hand-off arrives async and shifts the
+  layout under it (Stories, by contrast, is stable at 0). This is why
+  `visual.spec.js` deliberately captures no Home shot, and why Home changes have to
+  be verified at the style level — `heroMaterial.test.jsx`, `home-shape.spec.js`,
+  `p14-home.spec.js`'s measurement dump — rather than by screenshot comparison.
 - **The supporting surface is at its limit.** It holds three rows and two hairlines,
   which is what P10 approved. Home's next addition — if there ever is one — does not
   fit there without either a fourth row (making it a list) or a second surface (making
