@@ -230,6 +230,31 @@ export function completionSummary(steps, studiedToday, storyReadToday) {
   return { parts: ["You're caught up"], headline: 'Nothing waiting today', earned: false }
 }
 
+// Where a still-ahead step sits relative to the one you are on — "Next after
+// cards", "After your story".
+//
+// This is not new information; it is the sequence the screen is already showing,
+// said in words for a step that has no number of its own to report. It lives
+// here rather than in a component for the usual reason: it is a rule about the
+// order of the guide, and a rule belongs where the guide is decided.
+//
+// A step that is genuinely BLOCKED says so instead — `unlockHint` names the
+// mechanic ("Finish cards to unlock"), which is both truer and more useful than
+// its position in a queue.
+const STEP_NOUN = { cards: 'cards', story: 'the story', practice: 'practice' }
+
+export function upcomingLabel(steps, key) {
+  if (!Array.isArray(steps)) return null
+  const index = steps.findIndex(s => s.key === key)
+  const step = index >= 0 ? steps[index] : null
+  if (!step || step.status !== STATUS.upcoming) return null
+  const activeIndex = steps.findIndex(s => s.status === STATUS.active || s.status === STATUS.unknown)
+  if (activeIndex < 0 || activeIndex > index) return null
+  if (index - activeIndex === 1) return 'Next after ' + (STEP_NOUN[steps[activeIndex].key] || 'that')
+  const previous = steps[index - 1]
+  return 'After your ' + (previous ? previous.title.toLowerCase() : 'last step')
+}
+
 // The top context line, e.g. "Step 1 of 3 · about 12 min". Kept here so every
 // concept spells it the same way, and so "about" (not "~") is one decision.
 export function guideContextLine(guide) {

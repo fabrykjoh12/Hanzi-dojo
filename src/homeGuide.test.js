@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildGuide, guideContextLine, STATUS } from './homeGuide'
+import { buildGuide, guideContextLine, upcomingLabel, STATUS } from './homeGuide'
 
 // The guide's whole contract is "exactly one thing is loud, and every word of it
 // is true". These tests are mostly about the second half — the places where the
@@ -101,6 +101,38 @@ describe('what it refuses to claim', () => {
     expect(buildGuide({ counts: CLEAR, studiedToday: 22 }).steps[0].detail).toBe('22 cards practiced')
     expect(buildGuide({ counts: CLEAR, studiedToday: 0 }).steps[0].detail).toBe("You're caught up")
     expect(buildGuide({ counts: CLEAR, studiedToday: 1 }).steps[0].detail).toBe('1 card practiced')
+  })
+})
+
+describe('where a step that is still ahead sits', () => {
+  it('names the step it follows, one and two places out', () => {
+    const g = buildGuide({ counts: QUEUE, story: STORY, practice: PRACTICE })
+    expect(upcomingLabel(g.steps, 'story')).toBe('Next after cards')
+    expect(upcomingLabel(g.steps, 'practice')).toBe('After your story')
+  })
+
+  it('re-points as the day moves', () => {
+    const g = buildGuide({ counts: CLEAR, story: STORY, practice: PRACTICE })
+    expect(upcomingLabel(g.steps, 'practice')).toBe('Next after the story')
+  })
+
+  it('says nothing for a step that is active, finished or blocked', () => {
+    const g = buildGuide({ counts: QUEUE, story: { ...STORY, locked: true }, practice: PRACTICE })
+    expect(upcomingLabel(g.steps, 'cards')).toBeNull()
+    // Blocked, not queued: `unlockHint` already names the mechanic, and two
+    // sentences about the same step is how a quiet row becomes a card.
+    expect(g.steps[1].status).toBe(STATUS.unavailable)
+    expect(upcomingLabel(g.steps, 'story')).toBeNull()
+    const done = buildGuide({ counts: CLEAR, story: STORY, practice: PRACTICE, storyReadToday: true })
+    expect(upcomingLabel(done.steps, 'cards')).toBeNull()
+  })
+
+  it('never points backwards, and survives nonsense', () => {
+    const g = buildGuide({ counts: CLEAR, story: STORY, practice: PRACTICE, storyReadToday: true })
+    // Practice is the active step here; nothing is ahead of it.
+    expect(upcomingLabel(g.steps, 'practice')).toBeNull()
+    expect(upcomingLabel(null, 'story')).toBeNull()
+    expect(upcomingLabel(g.steps, 'nope')).toBeNull()
   })
 })
 

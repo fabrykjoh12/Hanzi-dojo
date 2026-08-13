@@ -3,17 +3,19 @@ import { authedTest as test, expect, PROFILE } from '../fixtures/mockSupabase.js
 
 // P14-5D Finding 2 — the vitality lab's render harness.
 //
-// The layout is settled and identical across all three treatments, so a
-// screenshot is the only instrument that can answer the actual question: which
-// one of marker / object / material / connector makes the current step feel
-// alive without making the page louder.
+// The visual language is settled and identical across every frame, so a
+// screenshot is the only instrument that can answer the question actually left:
+// how the Cards → Story → Practice sequence should occupy the page. It carries a
+// labelled CONTROL (the approved build's own rhythm) so "does it still feel
+// empty" has a before as well as an after — and it measures that feeling as a
+// number, `largestGap`, rather than leaving it to taste.
 //
 // Gated on P14_VITALITY so CI never runs it — a design instrument, not a
 // contract:
 //
 //   P14_VITALITY=1 P14_OUT=/some/dir npx playwright test p14-vitality
 //
-// It shoots each frame ELEMENT, not the page: the lab holds 36 phone-height
+// It shoots each frame ELEMENT, not the page: the lab holds 48 phone-height
 // compositions at once.
 
 const RUN = Boolean(process.env.P14_VITALITY);
@@ -105,10 +107,37 @@ for (const theme of ['light', 'dark']) {
             || cs.borderTopWidth !== '0px' || cs.boxShadow !== 'none';
           if (rad > 2 && drawn) { boxes += 1; radii.add(cs.borderTopLeftRadius); }
         }
+        // "Does the page still feel empty?" made into a number: the tallest run
+        // of nothing between two pieces of content. A composition that ends
+        // early shows up here as one big gap, which no amount of taste-based
+        // argument can talk away.
+        const marks = [];
+        for (const node of el.querySelectorAll('*')) {
+          const r = node.getBoundingClientRect();
+          if (r.width < 4 || r.height < 4 || r.height > 300) continue;
+          // Decoration is not content: the page's own background image spans the
+          // whole frame, and the connector spans the whole sequence — count
+          // either and every gap closes to zero.
+          if (node.closest('[aria-hidden="true"]') || node.classList.contains('hd-bg')) continue;
+          const own = (node.textContent || '').trim();
+          const textLeaf = own && !Array.from(node.children).some(c => (c.textContent || '').trim());
+          const art = node.hasAttribute('data-story-cover');
+          const object = node.tagName === 'svg' && r.width >= 15;
+          if (textLeaf || art || object || node.tagName === 'BUTTON') marks.push([r.top, r.bottom]);
+        }
+        marks.sort((a, b) => a[0] - b[0]);
+        let gap = 0;
+        let reach = -Infinity;
+        for (const [t, b] of marks) {
+          if (reach > -Infinity && t - reach > gap) gap = t - reach;
+          if (b > reach) reach = b;
+        }
+
         return {
           treatment: el.getAttribute('data-vitality-frame'),
           state: el.getAttribute('data-vitality-state'),
           width: el.getAttribute('data-frame-width'),
+          largestGap: Math.round(gap),
           // Minus the frame itself and its faux nav tray, which are lab chrome.
           drawnBoxes: boxes - 2,
           radii: [...radii].sort((a, b) => parseFloat(a) - parseFloat(b)),
@@ -121,6 +150,6 @@ for (const theme of ['light', 'dark']) {
       index.push({ ...meta, theme, file: name });
     }
     fs.writeFileSync(OUT + '/index-' + theme + '.json', JSON.stringify(index, null, 2));
-    expect(index.length).toBe(36);
+    expect(index.length).toBe(48);
   });
 }
