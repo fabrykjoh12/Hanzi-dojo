@@ -130,6 +130,54 @@ gap, because its active step has no metric and no artwork — one short line and
 button. That is the emptiest state left. **Do not invent a metric to fill it** —
 the fix, when it comes, is the Practice step's own dimensional object.
 
+## Visual Style V2, round 2 — life and cleanliness at once (2026-08-13)
+
+Device review judged the restrained candidate (`557467e`) cleaner than
+production **and too far toward restraint**. Two reference mockups set the new
+target — ~70% of one (Cards as a strong focal point, tactile material, a
+dimensional flashcard object, richer red, an integrated CTA) and ~30% of the
+other (editorial hierarchy, few containers, the artwork carrying Step 2) —
+principles extracted, no literal content, no generated assets, no navigation.
+
+### The synthesis: the Cards step is the screen's one lit panel
+
+Not a new idea — it is the app's own design language (CLAUDE.md §5: one
+HeroPanel per screen) coming back to Home with everything P14-5's hero lab
+already learned:
+
+- **Ground and shadow are `designTokens`' facet material** (`heroGround`,
+  `heroShadow`, the corner-anchored light pool) — the richer red is the app's
+  own, not a new gradient, and it lifts correctly in dark mode.
+- **The flashcard stack is `heroObjects`' paper-plane ramp with the fix its own
+  retirement note asked for.** The P14-5C deck read as "a stack of notes" or
+  the compose glyph three times; an abstract paper rectangle IS a note. The
+  front card now carries 你好 and its pinyin — the one mark that makes a
+  flashcard unmistakable — plus the packet lab's unequal tilts.
+- **The CTA is paper ON the red** (a vermilion button on a vermilion panel is a
+  rumour): 50px, radius 10, the arrow in a brand-red chip, a darker lower edge,
+  shallow shadow onto the panel, `.hd-press` travel. On the page (Story and
+  Practice active), the primary stays the lacquer with the arrow in the label.
+- **Everything below the panel stays #3-quiet**: wider 16:9 story preview
+  (78%, up from 62%), the per-step rail, the one-line HSK foot. Cards-active
+  draws two surfaces total — the hero and the artwork.
+- The subtle ink atmosphere already exists: `bg-chinese.webp` at
+  `--bg-image-opacity` is the mountain wash, visible in every frame.
+
+The lab (`/dev`, `P14_STYLE=1 npx playwright test p14-style`) renders the
+target pair first (390 cards + story, both themes), then the comparison strip —
+Build 44, `557467e`, and the same candidate in Inter, because Mona is not final
+by default — then the remaining widths and states, which were rendered because
+the 390 pair passed. Both primaries are tap-floor-checked at device size.
+
+**Strict self-judgment:** cards-active now has the life the review asked for —
+one strong object, material, an integrated action — and story-active keeps the
+artwork as the screen's richest thing. The known open question is the same one:
+Mona's airy tabular "1", still a device call. Migration notes from the previous
+section stand, plus: shipping the hero panel means a `HeroPanel`-based Home
+Cards step (the mechanism exists; `material="facet"` is already the shipped
+seam) and a new on-hero button variant in `controlTokens` (paper face, chip
+arrow) added with tests in the migration commit.
+
 ## Visual Style V2 — the final candidate (2026-08-13)
 
 Device review settled the sprint and **overrode the lab in two places** — the
