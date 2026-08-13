@@ -1,15 +1,9 @@
 import { TYPE } from './typeScale'
 import { RADIUS, ELEVATION } from './shape'
-import { languageTheme, inkWarm } from './languageTheme'
+import { inkWarm } from './languageTheme'
 import { Button } from './controls'
-import { buildGuide, guideContextLine, upcomingLabel, STATUS } from './homeGuide'
+import { guideContextLine, upcomingLabel, STATUS } from './homeGuide'
 import { NAV_GLYPHS } from './navGlyphFamily'
-import RedPacket from './RedPacket'
-import {
-  PACKET_DIRECTIONS, PACKET_NOTES, PACKET_MARKS, PACKET_PLACEMENTS, PLACEMENT_NOTES,
-} from './redPacketFamily'
-import { OPEN_PHASES, storyboardFrames } from './redPacketOpen'
-import { VITALITY_STATES, VITALITY_WIDTHS, HOME_RHYTHM } from './homeVitalityFixtures'
 import bgChinese from './assets/bg-chinese.webp'
 
 // ── P14-5D: Home's vertical rhythm, in the settled visual language ──────────
@@ -46,8 +40,6 @@ import bgChinese from './assets/bg-chinese.webp'
 //
 // The rule that outranks all of it: nothing may be added because a gap exists.
 // Every extra mark has to say Cards first → Story next → Practice after.
-
-const CHINESE = languageTheme('chinese')
 
 function tint(accentHex, pct, base = 'var(--surface)') {
   return 'color-mix(in srgb, ' + accentHex + ' ' + pct + '%, ' + base + ')'
@@ -153,73 +145,27 @@ function CountBlock({ step }) {
   )
 }
 
-// The Cards step, in whichever of the three arrangements is being tested. The
-// question all three ask is the same one: do the packet and the action read as
-// ONE thing, or as a decorative object next to an unrelated rectangle?
+// The Cards step, without a hero object. P14-5E's packet is PARKED (device
+// review, 2026-08-13): the concept survives in RedPacket.jsx / redPacketOpen.js
+// for a later, properly authored asset, and nothing decorative replaces it —
+// the typography and the control carry the hierarchy.
 function CardsStep({ step, ctx }) {
-  const packet = (
-    <RedPacket
-      direction={ctx.direction} mark={ctx.mark} font={ctx.langFont}
-      size={ctx.placement === 'beside' ? 118 : 132}
-    />
-  )
   const action = step.cta ? (
-    <Button
-      variant="lacquer" size="lg"
-      style={ctx.shape ? { borderRadius: ctx.shape.control + 'px' } : undefined}
-    >
-      {step.cta}
-    </Button>
+    ctx.renderAction
+      ? ctx.renderAction(step)
+      : (
+        <Button
+          variant="lacquer" size="lg"
+          style={ctx.shape ? { borderRadius: ctx.shape.control + 'px' } : undefined}
+        >
+          {step.cta}
+        </Button>
+      )
   ) : null
-
-  // The Visual Style lab's question: the packet AS the action, not an object
-  // beside a button. It supplies the renderer so this file does not import it.
-  if (ctx.placement === 'fused' && ctx.renderAction) {
-    return (
-      <>
-        <div style={{ marginTop: '9px' }}><CountBlock step={step} /></div>
-        <div style={{ marginTop: '16px' }}>{ctx.renderAction(step)}</div>
-      </>
-    )
-  }
-
-  if (ctx.placement === 'below') {
-    // The object and the action on one line, sharing a baseline: the packet is
-    // the thing, the button is how you open it, and nothing sits between them.
-    return (
-      <>
-        <div style={{ marginTop: '9px' }}><CountBlock step={step} /></div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '18px', marginTop: '18px' }}>
-          {packet}
-          <div style={{ paddingBottom: '10px' }}>{action}</div>
-        </div>
-      </>
-    )
-  }
-
-  if (ctx.placement === 'anchor') {
-    // The packet at the head of the sequence, in the column the step marks run
-    // down, so the guide appears to descend out of it.
-    return (
-      <>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginTop: '10px' }}>
-          {packet}
-          <div style={{ minWidth: 0, flex: 1, paddingTop: '6px' }}>
-            <CountBlock step={step} />
-            {action && <div style={{ marginTop: '16px' }}>{action}</div>}
-          </div>
-        </div>
-      </>
-    )
-  }
-
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', marginTop: '9px' }}>
-        <CountBlock step={step} />
-        <span style={{ margin: '0 0 -4px 0', flexShrink: 0 }}>{packet}</span>
-      </div>
-      {action && <div style={{ marginTop: '20px' }}>{action}</div>}
+      <div style={{ marginTop: '9px' }}><CountBlock step={step} /></div>
+      {action && <div style={{ marginTop: '18px' }}>{action}</div>}
     </>
   )
 }
@@ -227,8 +173,8 @@ function CardsStep({ step, ctx }) {
 function ActiveStep({ step, ctx }) {
   const { accentHex, langFont } = ctx
   const isStory = step.key === 'story' && step.story
-  // Cards gets the packet; the story's own artwork is already its object; and
-  // Practice keeps the navigation glyph, which P14-5E does not reopen.
+  // Cards is typography and the control; the story's own artwork is its object;
+  // Practice keeps the navigation glyph.
   const isCards = step.key === 'cards' && step.metric
   const Glyph = isStory || isCards ? null : GLYPH[step.key]
   return (
@@ -275,7 +221,17 @@ function ActiveStep({ step, ctx }) {
 
           {step.cta && (
             <div style={{ marginTop: '20px' }}>
-              <Button variant="lacquer" size="lg">{step.cta}</Button>
+              {/* The same action treatment on every active step — a candidate
+                  that restyles Cards' control and leaves Story's on the old
+                  geometry is two languages on one screen. */}
+              {ctx.renderAction ? ctx.renderAction(step) : (
+                <Button
+                  variant="lacquer" size="lg"
+                  style={ctx.shape ? { borderRadius: ctx.shape.control + 'px' } : undefined}
+                >
+                  {step.cta}
+                </Button>
+              )}
             </div>
           )}
         </>
@@ -440,11 +396,6 @@ export function Variant({ guide, v, ctx }) {
   )
 }
 
-// ── The composition, settled ──────────────────────────────────────────────
-// V2 — meaningful previews, approved. Its numbers live in homeVitalityFixtures
-// as HOME_RHYTHM so the Visual Style lab renders the identical rhythm.
-const V2 = HOME_RHYTHM
-
 const FOLD = 780
 
 export function Frame({ width, concept, stateKey, children }) {
@@ -479,146 +430,8 @@ export function Frame({ width, concept, stateKey, children }) {
   )
 }
 
-// ── The packet on its own, and the packet opening ─────────────────────────
-
-// Each direction at the size Home actually draws it and at 2x, so a detail that
-// only survives at 2x can be identified as a detail that will not ship — plus
-// the three mark treatments side by side at 1x, which is the only size the
-// choice between them can honestly be made at.
-function PacketPlate({ direction, ctx }) {
-  return (
-    // Wraps, and every child may shrink. /dev is measured at 390 by
-    // p14-controls.spec.js, and a plate holding a 236px study plus three 118px
-    // marks is 750px of content that would widen the page rather than fold.
-    <div data-packet-plate={direction} style={{
-      display: 'flex', alignItems: 'flex-end', gap: '24px', padding: '18px 20px',
-      borderRadius: RADIUS.card + 'px', background: 'var(--surface)',
-      border: '1px solid var(--border)', flexWrap: 'wrap', minWidth: 0,
-    }}>
-      <RedPacket direction={direction} size={118} font={ctx.langFont} />
-      <RedPacket direction={direction} size={236} font={ctx.langFont} />
-      <div style={{ minWidth: '200px', flex: 1 }}>
-        <div style={{ ...TYPE.titleCard, color: 'var(--text)' }}>{direction}</div>
-        <div style={{ ...TYPE.caption, color: 'var(--text-muted)', marginTop: '4px' }}>
-          {PACKET_NOTES[direction]}
-        </div>
-        <div style={{ display: 'flex', gap: '14px', marginTop: '14px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          {PACKET_MARKS.map(mark => (
-            <div key={mark} style={{ textAlign: 'center' }}>
-              <RedPacket direction={direction} mark={mark} size={118} font={ctx.langFont} />
-              <div style={{ ...TYPE.caption, color: 'var(--text-faint)', marginTop: '6px' }}>{mark}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// The storyboard: one still per phase boundary, so the gesture can be reviewed
-// as drawing rather than as prose. The numbers come from redPacketOpen.js, which
-// is the same module a production implementation would drive the frames from.
-function Storyboard({ direction, ctx }) {
-  const stops = storyboardFrames()
-  return (
-    <div data-storyboard={direction} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-      {stops.map(ms => {
-        const beat = OPEN_PHASES.filter(p => ms >= p.start && ms <= p.end).map(p => p.label).join(' + ')
-        return (
-          <div key={ms} data-storyboard-frame={String(ms)} style={{
-            width: '124px', padding: '14px 10px 10px', textAlign: 'center',
-            borderRadius: RADIUS.control + 'px', background: 'var(--surface)',
-            border: '1px solid var(--border)',
-          }}>
-            <div style={{ height: '156px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-              <RedPacket direction={direction} size={118} phase={ms} font={ctx.langFont} />
-            </div>
-            <div style={{ ...TYPE.eyebrow, color: 'var(--text)', marginTop: '10px' }}>{ms}ms</div>
-            <div style={{ ...TYPE.caption, color: 'var(--text-faint)', marginTop: '2px', minHeight: '30px' }}>
-              {beat || 'Session'}
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-// The six frames the composition question needs: two directions in each of the
-// three placements. The packet only appears on a Cards day, so the other three
-// states render identically across all six — kept anyway, because a placement
-// that breaks a different state would otherwise go unseen.
-const FRAME_VARIANTS = []
-for (const direction of PACKET_DIRECTIONS) {
-  for (const placement of PACKET_PLACEMENTS) {
-    FRAME_VARIANTS.push({ key: direction + '-' + placement, direction, placement })
-  }
-}
-
-export default function HomeVitalityLab() {
-  const base = { accentHex: CHINESE.accentHex, langFont: CHINESE.font }
-  return (
-    <div style={{ display: 'grid', gap: '30px', width: '100%' }}>
-      <div style={{ ...TYPE.bodySecondary, color: 'var(--text-muted)' }}>
-        V2 — meaningful previews, exactly as approved. What varies is the object on
-        the Cards step: two 2.5D packet directions, three mark treatments, and three
-        ways of arranging the count, the object and the action.
-      </div>
-
-      <div style={{ display: 'grid', gap: '14px', minWidth: 0 }}>
-        {PACKET_DIRECTIONS.map(direction => (
-          <PacketPlate key={direction} direction={direction} ctx={base} />
-        ))}
-      </div>
-
-      {PACKET_DIRECTIONS.map(direction => (
-        <div key={direction} style={{ minWidth: 0 }}>
-          <div style={{ ...TYPE.titleSection, color: 'var(--text)', marginBottom: '4px' }}>
-            {direction} opening — 650ms, five overlapping beats
-          </div>
-          <div style={{ ...TYPE.caption, color: 'var(--text-muted)', marginBottom: '12px' }}>
-            Press → the cavity opens → the cards rise on staggered timing → they fan →
-            Study. Reduced motion is a 120ms cross-fade with no travel.
-          </div>
-          <Storyboard direction={direction} ctx={base} />
-        </div>
-      ))}
-
-      {VITALITY_STATES.map(state => {
-        const guide = buildGuide(state.input)
-        return (
-          // `minWidth: 0` on both the grid item and the scroller: a grid/flex
-          // child defaults to `min-width: auto`, so eighteen 430px frames would
-          // widen /dev itself rather than scroll inside it — and /dev is
-          // measured at 390 by p14-controls.spec.js.
-          <div key={state.key} style={{ minWidth: 0 }}>
-            <div style={{ ...TYPE.titleSection, color: 'var(--text)', marginBottom: '12px' }}>{state.label}</div>
-            <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '8px', minWidth: 0 }}>
-              {FRAME_VARIANTS.map(v => (
-                VITALITY_WIDTHS.map(width => (
-                  <div key={v.key + width}>
-                    <div style={{ ...TYPE.eyebrow, color: 'var(--text-faint)', marginBottom: '8px' }}>
-                      {v.direction} · {v.placement} · {width}
-                    </div>
-                    <div style={{
-                      ...TYPE.caption, color: 'var(--text-faint)', marginBottom: '6px',
-                      maxWidth: width + 'px',
-                    }}>
-                      {PLACEMENT_NOTES[v.placement]}
-                    </div>
-                    <Frame width={width} concept={v.key} stateKey={state.key}>
-                      <Variant
-                        guide={guide} v={V2}
-                        ctx={{ ...base, direction: v.direction, placement: v.placement }}
-                      />
-                    </Frame>
-                  </div>
-                ))
-              ))}
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
+// The P14-5D/5E exploration lab that used to render here — treatments,
+// packet plates, storyboards, placements — is retired: every question it was
+// built to answer has an approved answer, and the packet itself is parked as a
+// future authored-asset experiment (see BACKLOG). Frame and Variant remain
+// exported above; the Visual Style lab is what renders them now.

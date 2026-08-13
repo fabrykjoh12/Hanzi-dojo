@@ -1,15 +1,15 @@
 import fs from 'node:fs';
 import { authedTest as test, expect, PROFILE } from '../fixtures/mockSupabase.js';
 
-// Visual Style V2 — the render harness for the language sprint.
+// Visual Style V2 — the render harness for the final Home candidate.
 //
 // Gated on P14_STYLE so CI never runs it — a design instrument, not a contract:
 //
 //   P14_STYLE=1 P14_OUT=/some/dir npx playwright test p14-style
 //
 // It shoots the style lab's frames ([data-style-frame]) and plates
-// ([data-style-plate]) — deliberately NOT [data-vitality-frame], so the two
-// labs' harnesses never collect each other's output.
+// ([data-style-plate]): the shipped Build 44 composition as the control, the
+// candidate at every width and state, and the copy/type plates.
 
 const RUN = Boolean(process.env.P14_STYLE);
 const OUT = process.env.P14_OUT || '/tmp/p14-style';
@@ -50,11 +50,9 @@ for (const theme of ['light', 'dark']) {
     // typography comparison becomes four screenshots of Inter.
     await page.evaluate(async () => {
       await document.fonts.load("600 17px 'Mona Sans Lab'");
-      await document.fonts.load("600 17px 'Onest Lab'");
       await document.fonts.ready;
     });
     expect(await page.evaluate(() => document.fonts.check("600 17px 'Mona Sans Lab'"))).toBe(true);
-    expect(await page.evaluate(() => document.fonts.check("600 17px 'Onest Lab'"))).toBe(true);
     await page.waitForFunction(() => {
       const imgs = [...document.querySelectorAll('[data-style-frame] [data-story-cover] img')];
       return imgs.length > 0 && imgs.every(i => i.complete && i.naturalWidth > 0);
@@ -79,14 +77,20 @@ for (const theme of ['light', 'dark']) {
       await plate.scrollIntoViewIfNeeded();
       await plate.screenshot({ path: OUT + '/plate-' + id + '-' + theme + '.png' });
     }
-    expect(total).toBeGreaterThanOrEqual(13);
+    // 4 control states + 4 states x 3 widths of the candidate.
+    expect(total).toBe(16);
 
-    // The packet-as-action claim is accessibility, not just art direction: one
-    // ≥44px control whose name says what it does.
-    const action = page.getByRole('button', { name: /Open cards — 136 ready/ }).first();
-    await action.scrollIntoViewIfNeeded();
-    const box = await action.boundingBox();
+    // The candidate's primary is a real, tactile control: >=44px, and pressing
+    // it compresses the material — the same claim the P14-5D plate proved, now
+    // on the candidate's own geometry.
+    const cta = page.getByRole('button', { name: 'Start cards →' }).first();
+    await cta.scrollIntoViewIfNeeded();
+    const box = await cta.boundingBox();
     expect(box.height).toBeGreaterThanOrEqual(44);
-    expect(box.width).toBeGreaterThanOrEqual(44);
+    await cta.screenshot({ path: OUT + '/cta-rest-' + theme + '.png' });
+    await cta.dispatchEvent('pointerdown');
+    await page.waitForTimeout(120);
+    await cta.screenshot({ path: OUT + '/cta-pressed-' + theme + '.png' });
+    expect(await cta.evaluate(el => getComputedStyle(el).transform)).not.toBe('none');
   });
 }

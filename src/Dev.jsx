@@ -7,7 +7,6 @@ import { buildLabel } from './version'
 import { toast } from './toast'
 import ControlsGallery from './ControlsGallery'
 import NavGlyphGallery from './NavGlyphGallery'
-import HomeVitalityLab from './HomeVitality'
 import VisualStyleLab from './VisualStyle'
 import {
   ArrowLeft, FlaskConical, Gauge, BookOpen, Trash2, Zap, RefreshCw, ShieldCheck, Palette, Compass,
@@ -255,19 +254,9 @@ export default function Dev({ session, profile, track, onBack, onNavigate }) {
         <NavGlyphGallery />
       </Section>
 
-      {/* P14-5D Finding 2: one approved layout, three vitality treatments. Device
-          QA called the shipped guide flat and low-energy, so this varies only the
-          six things that could carry energy — marker, identity object, CTA
-          material, connector, atmosphere, completion mark — and holds everything
-          else still. Deleted when a treatment is migrated into Home. */}
-      <Section icon={Flame} title="Home vitality — P14-5D treatments" accent={accent}>
-        <HomeVitalityLab />
-      </Section>
-
-      {/* The whole-app style sprint: action model, typeface, shape scale and the
-          primary control, each on its own axis over the frozen V2 composition.
-          Deleted when the direction is decided. */}
-      <Section icon={Palette} title="Visual Style V2 — the language sprint" accent={accent}>
+      {/* The final Home candidate against the shipped Build 44, plus the copy
+          and type plates the decision needs. Deleted when the direction ships. */}
+      <Section icon={Flame} title="Visual Style V2 — final Home candidate" accent={accent}>
         <VisualStyleLab />
       </Section>
 
