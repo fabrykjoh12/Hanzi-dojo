@@ -130,6 +130,57 @@ gap, because its active step has no metric and no artwork — one short line and
 button. That is the emptiest state left. **Do not invent a metric to fill it** —
 the fix, when it comes, is the Practice step's own dimensional object.
 
+## Visual Style V2 — the final candidate (2026-08-13)
+
+Device review settled the sprint and **overrode the lab in two places** — the
+lab's own scores said packet-as-action; the device said the packet is not yet an
+asset worth shipping. Both overrides are recorded in `VisualStyle.jsx`, because a
+lab that only ever confirms itself is not measuring anything.
+
+### The red packet is parked — a future visual experiment, not a v1 requirement
+
+Not migrated, and **not replaced by another decorative object**: the Cards step
+carries its hierarchy with typography and the control alone. The concept
+survives whole — `RedPacket.jsx` (the 2.5D drawing), `redPacketOpen.js` (the
+650ms gesture, 16 tests, still passing), the strategy analysis above — waiting
+for a phase with a genuinely authored illustration/animation asset. The layered
+authored-SVG route above is the plan of record when that day comes.
+
+### The Welcome Back banner is condemned
+
+`Home.jsx`'s `gentleActive` banner ("Welcome back — N words ready…") repeats the
+Cards information and puts a large bordered surface above the actual task. When
+Home migrates, the banner goes; **the cap stays exactly as it is** —
+`studyAvailability` still applies `gentleReviewTarget`, the guide still carries
+`capped` — and if the cap needs words they become a quiet fact line inside the
+Cards step, not a surface. `gentleReturn.js`'s message helper becomes unused at
+that point; leave it until the migration commit.
+
+### The candidate, and what shipping it means
+
+`/dev` → "Visual Style V2 — final Home candidate", rendered by
+`P14_STYLE=1 npx playwright test p14-style`: Build 44's composition as the
+control (4 states at 390) against the candidate (4 states × 320/390/430), both
+themes, rendered by the same components so the diff is language, not code.
+
+The candidate = V2 rhythm · typography-led Cards step · **Mona Sans** ·
+**controls 10 / cards 16** · **lacquer primary with the arrow in the label**
+("Start cards →" — copy decided on the rendered plate: "Start" is a verb that
+answers the headline; "Study cards" reads noun-first and collides with the
+Cards tab being a place). One action treatment on every active step — Start
+cards →, Continue story →, Practise these →.
+
+Migration, when approved, is deliberate per axis:
+
+1. **Rhythm + banner**: Home.jsx adopts the V2 layout, drops the banner.
+2. **Font**: bundle Mona Sans variable (OFL, ~40KB, file already in repo),
+   swap `fonts.js`; check the tabular-1 airiness on device first — the type
+   plate renders both figure treatments of "136".
+3. **Shapes**: change `RADIUS.control` 12→10 and `RADIUS.card` 18→16 plus the
+   guard's allow-list in ONE commit with the reason; sweep is mechanical.
+4. **Primary**: promote `lacquer` to the hero default; flat `primary` remains
+   for non-hero surfaces until P14-6 decides otherwise.
+
 ## Visual Style V2 — the language sprint (2026-08-13)
 
 The finding: the Home composition is becoming good, and the app's visual
