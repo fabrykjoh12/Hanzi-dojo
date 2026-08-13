@@ -260,7 +260,7 @@ test.describe('P14-1 migration · Feedback close', () => {
 
   test('is a 44x44 target inside a 28x28 footprint', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     await page.getByRole('button', { name: 'Send feedback' }).click();
     const close = page.getByRole('dialog', { name: /Send feedback/ }).getByRole('button', { name: 'Close' });
     const b = await boxes(close);
@@ -281,7 +281,7 @@ test.describe('P14-1 migration · Feedback close', () => {
     // The point of a migration is that behaviour is unchanged, so assert the
     // behaviour and not only the box.
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     await page.getByRole('button', { name: 'Send feedback' }).click();
     const dialog = page.getByRole('dialog', { name: /Send feedback/ });
     await expect(dialog).toBeVisible();

@@ -281,7 +281,7 @@ test.describe('Teaching', () => {
     expect(shape.titleSize).toBe('26px');
     expect(shape.titleWeight).toBe('700');
     expect(shape.tileRadius).toBe('12px');
-    await expect(page.getByText('Today', { exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Today.s training/ })).toBeVisible();
     await expect(page.getByText('3 words practiced')).toBeVisible();
   });
 

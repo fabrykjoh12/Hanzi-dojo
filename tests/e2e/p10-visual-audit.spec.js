@@ -33,7 +33,7 @@ const PHONES = [
 // dashboard, dev) are deliberately out of scope, as are the two frozen tracks'
 // script drills.
 const SCREENS = [
-  { id: 'home', go: async (p) => { await p.goto('/'); await p.getByText('Today', { exact: true }).waitFor(); } },
+  { id: 'home', go: async (p) => { await p.goto('/'); await p.getByRole('heading', { name: /Today.s training/ }).waitFor(); } },
   { id: 'stories', go: async (p) => { await p.goto('/stories'); await p.waitForTimeout(900); } },
   { id: 'practice', go: async (p) => { await p.goto('/practice'); await p.waitForTimeout(700); } },
   { id: 'profile', go: async (p) => { await p.goto('/profile'); await p.waitForTimeout(800); } },
@@ -127,7 +127,7 @@ const SCREENS = [
     root: '[role="dialog"][aria-label="More menu"]',
     go: async (p) => {
       await p.goto('/');
-      await p.getByText('Today', { exact: true }).waitFor();
+      await p.getByRole('heading', { name: /Today.s training/ }).waitFor();
       await p.getByRole('button', { name: 'More' }).click();
       await p.waitForTimeout(500);
     },

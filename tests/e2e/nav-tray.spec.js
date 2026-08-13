@@ -100,7 +100,7 @@ for (const phone of PHONES) {
 
     test('is inset from both edges, not spanning them', async ({ page }) => {
       await page.goto('/');
-      await page.getByText('Today', { exact: true }).waitFor();
+      await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
       const t = await trayGeometry(page);
 
       expect(t.left).toBe(NAV_TRAY_INSET);
@@ -114,7 +114,7 @@ for (const phone of PHONES) {
 
     test('floats clear of the bottom edge', async ({ page }) => {
       await page.goto('/');
-      await page.getByText('Today', { exact: true }).waitFor();
+      await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
       const t = await trayGeometry(page);
 
       // Chromium reports env(safe-area-inset-bottom) as 0, so this measures the
@@ -129,7 +129,7 @@ for (const phone of PHONES) {
 
     test('is rounded on all four corners', async ({ page }) => {
       await page.goto('/');
-      await page.getByText('Today', { exact: true }).waitFor();
+      await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
       const t = await trayGeometry(page);
 
       expect(new Set(t.radii).size).toBe(1);
@@ -143,7 +143,7 @@ for (const phone of PHONES) {
 
     test('gives every tab a full-size target', async ({ page }) => {
       await page.goto('/');
-      await page.getByText('Today', { exact: true }).waitFor();
+      await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
       const tabs = await page.evaluate(() => Array.from(
         document.querySelectorAll('nav[aria-label="Primary"] button'),
       ).map((b) => {
@@ -188,7 +188,7 @@ for (const phone of PHONES) {
 
     test('reserves itself once, at the shell, and nothing hides behind it', async ({ page }) => {
       await page.goto('/');
-      await page.getByText('Today', { exact: true }).waitFor();
+      await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
       const t = await trayGeometry(page);
       // One reservation, the tray plus its float, on `main` — not per screen.
       expect(t.padBottom).toBe(MOBILE_NAV_RESERVE);
@@ -237,7 +237,7 @@ for (const theme of ['light', 'dark']) {
       await setTheme(page, theme);
       await page.emulateMedia({ colorScheme: theme });
       await page.goto('/');
-      await page.getByText('Today', { exact: true }).waitFor();
+      await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
       expect(await page.evaluate(() => document.documentElement.getAttribute('data-theme')))
         .toBe(theme);
       const t = await trayGeometry(page);
@@ -254,7 +254,7 @@ for (const theme of ['light', 'dark']) {
       await setTheme(page, theme);
       await page.emulateMedia({ colorScheme: theme });
       await page.goto('/');
-      await page.getByText('Today', { exact: true }).waitFor();
+      await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
 
       // Sampled as pixels rather than trusted as token names: the tray's own
       // fill, the page ground just below it, and the border between them.
@@ -339,7 +339,7 @@ for (const theme of ['light', 'dark']) {
       await setTheme(page, theme);
       await page.emulateMedia({ colorScheme: theme });
       await page.goto('/');
-      await page.getByText('Today', { exact: true }).waitFor();
+      await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
       const inks = await page.evaluate(() => Array.from(
         document.querySelectorAll('nav[aria-label="Primary"] button'),
       ).filter(b => b.getAttribute('aria-current') !== 'page')
@@ -361,7 +361,7 @@ test.describe('Cards emphasis, on a solid tray', () => {
 
   test('is the largest glyph, in the centre column, without a bigger target', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     const c = await page.evaluate(() => {
       const nav = document.querySelector('nav[aria-label="Primary"]');
       const tabs = Array.from(nav.querySelectorAll('button'));
@@ -416,7 +416,7 @@ test.describe('Cards emphasis, on a solid tray', () => {
     });
 
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     const rest = await read();
     await page.goto('/study');
     await page.locator('nav[aria-label="Primary"]').waitFor();
@@ -520,7 +520,7 @@ test.describe('the navigation model is untouched', () => {
 
   test('More still opens a sheet with Profile in it', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     await page.getByRole('button', { name: 'More' }).click();
     const sheet = page.getByRole('dialog', { name: 'More menu' });
     await expect(sheet).toBeVisible();
@@ -535,14 +535,14 @@ test.describe('the navigation model is untouched', () => {
 
   test('a tab still routes to its own tab', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     await page.getByRole('button', { name: 'Practice', exact: true }).click();
     await expect(page).toHaveURL(/\/practice$/);
   });
 
   test('the tray still gets out of the way for a flashcard', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     await page.getByRole('button', { name: 'Cards', exact: true }).click();
     await expect(page.locator('nav[aria-label="Primary"]')).toHaveCount(0);
   });

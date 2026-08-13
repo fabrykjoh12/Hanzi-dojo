@@ -25,7 +25,7 @@ test.describe('the feedback button and a modal sheet', () => {
 
   test('is gone while the More sheet is open, and back when it closes', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     await expect(page.locator(FAB)).toBeVisible();
 
     await page.getByRole('button', { name: 'More' }).click();
@@ -41,7 +41,7 @@ test.describe('the feedback button and a modal sheet', () => {
 
   test('nothing paints above the sheet, whatever its z-index', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     await page.getByRole('button', { name: 'More' }).click();
     await page.getByRole('dialog', { name: 'More menu' }).waitFor();
     await page.waitForTimeout(400);
@@ -73,7 +73,7 @@ test.describe('the feedback button and a modal sheet', () => {
   test('the button still opens its own dialog', async ({ page }) => {
     // The fix must not have cost the feature.
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     await page.locator(FAB).click();
     await expect(page.getByRole('dialog')).toBeVisible();
   });
@@ -85,7 +85,7 @@ for (const phone of PHONES) {
 
     test('sits clear of the tab bar, derived from the one nav height', async ({ page }) => {
       await page.goto('/');
-      await page.getByText('Today', { exact: true }).waitFor();
+      await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
       const geo = await page.evaluate(() => {
         const fab = document.querySelector('button[aria-label="Send feedback"]');
         const nav = document.querySelector('nav[aria-label="Primary"]');

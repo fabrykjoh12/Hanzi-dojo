@@ -91,7 +91,7 @@ test.describe('the order', () => {
 
   test('is Home · Stories · Cards · Practice · More, left to right', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     const bar = await barState(page);
 
     expect(bar.tabs.map((t) => t.name)).toEqual(ORDER);
@@ -102,7 +102,7 @@ test.describe('the order', () => {
 
   test('puts Cards in the physical centre column', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     const bar = await barState(page);
 
     expect(bar.tabs.findIndex((t) => t.name === 'Cards')).toBe(2);
@@ -122,7 +122,7 @@ test.describe('the order', () => {
     // neighbours', so "the column is centred" is not by itself the claim being
     // made about the bar.
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     const off = await page.evaluate(() => {
       const svg = Array.from(document.querySelectorAll('nav[aria-label="Primary"] button'))
         .find((b) => b.textContent.trim() === 'Cards').querySelector('svg');
@@ -136,7 +136,7 @@ test.describe('the order', () => {
     // Position is presentation. The launch tab, the tab a bare "/" resolves to
     // and the tab Back climbs to all still live in navStack.js.
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     expect(new URL(page.url()).pathname).toBe('/');
     const bar = await barState(page);
     expect(bar.tabs.find((t) => t.current === 'page').name).toBe('Home');
@@ -148,7 +148,7 @@ test.describe('what the bar no longer carries', () => {
 
   test('shows no count, on any tab', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     const bar = await barState(page);
     // The bar is a set of destinations, not a dashboard — Home already says how
     // many cards are waiting, and better.
@@ -162,7 +162,7 @@ test.describe('what the bar no longer carries', () => {
     // number from the product".
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     const rail = await page.evaluate(() => Array.from(
       document.querySelectorAll('nav[aria-label="Main"] button'))
       .map((b) => b.getAttribute('aria-label'))
@@ -172,7 +172,7 @@ test.describe('what the bar no longer carries', () => {
 
   test('draws no rule along its top edge', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     const bar = await barState(page);
     // The sliding accent marker is gone. Selection is the glyph now.
     expect(bar.floaters).toBe(0);
@@ -224,7 +224,7 @@ test.describe('Cards carries weight without taking space', () => {
 
   test('is drawn larger than its neighbours, and no heavier at rest than that', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     const bar = await barState(page);
     const cards = bar.tabs.find((t) => t.name === 'Cards');
     // RESTING peers only. This used to read `others[0]`, which was fine while
@@ -257,7 +257,7 @@ test.describe('Cards carries weight without taking space', () => {
 
   test('has a container, and it is inside the bar rather than over it', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     const shell = await page.evaluate(() => {
       const nav = document.querySelector('nav[aria-label="Primary"]');
       const nr = nav.getBoundingClientRect();
@@ -332,7 +332,7 @@ test.describe('Cards carries weight without taking space', () => {
       });
 
       await page.goto('/');
-      await page.getByText('Today', { exact: true }).waitFor();
+      await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
       await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme);
       await page.waitForTimeout(300);
       const rest = await read();
@@ -361,7 +361,7 @@ test.describe('Cards carries weight without taking space', () => {
 
   test('shares its column width and its baseline with the rest', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     const bar = await barState(page);
 
     // Equal columns: a bigger glyph must not buy a bigger hitbox.
@@ -388,7 +388,7 @@ for (const phone of PHONES) {
 
     test('is exactly as tall as the space reserved for it, with five real targets', async ({ page }) => {
       await page.goto('/');
-      await page.getByText('Today', { exact: true }).waitFor();
+      await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
       const bar = await barState(page);
       const extra = await page.evaluate(() => {
         const de = document.documentElement;
@@ -442,7 +442,7 @@ test.describe('everything underneath is unchanged', () => {
 
   test('More still opens, traps focus, closes and gives focus back', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     const more = page.getByRole('button', { name: 'More' });
     expect(await more.getAttribute('aria-expanded')).toBe('false');
 
@@ -458,7 +458,7 @@ test.describe('everything underneath is unchanged', () => {
 
   test('a tab still goes to its own tab, whatever column it now sits in', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     // Practice has now been column 4, column 1 and column 4 again, and has
     // owned /practice throughout. That is the point of the assertion.
     await page.getByRole('button', { name: 'Practice', exact: true }).click();
@@ -469,7 +469,7 @@ test.describe('everything underneath is unchanged', () => {
 
   test('tapping Cards still starts the session, and the bar still gets out of the way', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     await page.getByRole('button', { name: 'Cards', exact: true }).click();
     await expect(page.locator('nav[aria-label="Primary"]')).toHaveCount(0);
   });

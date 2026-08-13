@@ -155,7 +155,7 @@ test.describe('P8 Cards emphasis — renders and measurements', () => {
 
   test('Home active, dark, 390', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     await theme(page, 'dark');
     await shots(page, 'home-dark-390');
     const geo = await barGeometry(page);
@@ -199,7 +199,7 @@ test.describe('P8 Cards emphasis — renders and measurements', () => {
 
   test('Home active, light, 390', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     await theme(page, 'light');
     await shots(page, 'home-light-390');
   });
@@ -215,7 +215,7 @@ test.describe('P8 Cards emphasis — renders and measurements', () => {
 
   test('More open, dark, 390 — the sheet still belongs to the far-right column', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     await theme(page, 'dark');
     await page.getByRole('button', { name: 'More' }).click();
     await page.getByRole('dialog', { name: 'More menu' }).waitFor();
@@ -260,7 +260,7 @@ test.describe('P8 Cards emphasis — the tightest phone', () => {
 
   test('Home active, dark, 320', async ({ page }) => {
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     await theme(page, 'dark');
     await shots(page, 'home-dark-320');
   });

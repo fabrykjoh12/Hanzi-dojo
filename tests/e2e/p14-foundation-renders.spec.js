@@ -46,7 +46,7 @@ async function setTheme(page, theme) {
 }
 
 const SCREENS = [
-  { id: 'home', go: async (p) => { await p.goto('/'); await p.getByText('Today', { exact: true }).waitFor(); await p.waitForTimeout(500); } },
+  { id: 'home', go: async (p) => { await p.goto('/'); await p.getByRole('heading', { name: /Today.s training/ }).waitFor(); await p.waitForTimeout(500); } },
   { id: 'stories', go: async (p) => { await p.goto('/stories'); await p.waitForTimeout(1100); } },
   { id: 'practice', go: async (p) => { await p.goto('/practice'); await p.waitForTimeout(800); } },
   { id: 'profile', go: async (p) => { await p.goto('/profile'); await p.waitForTimeout(1000); } },

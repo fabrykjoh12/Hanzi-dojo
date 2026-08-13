@@ -330,7 +330,7 @@ test.describe('the family is the bar, and Profile is not on it', () => {
     // five tabs, those five labels, and no Profile among them. The tray's own
     // geometry is nav-tray.spec.js's.
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     const bar = page.locator('nav').filter({ has: page.getByRole('button', { name: 'Cards' }) }).first();
     const shape = await bar.evaluate((el) => {
       const tabs = [...el.querySelectorAll('button')];
@@ -356,7 +356,7 @@ test.describe('the family is the bar, and Profile is not on it', () => {
     // The routing half of the same promise. If Profile ever moves onto the bar it
     // has to leave here, and that is a navigation decision, not a visual one.
     await page.goto('/');
-    await page.getByText('Today', { exact: true }).waitFor();
+    await page.getByRole('heading', { name: /Today.s training/ }).waitFor();
     await page.getByRole('button', { name: 'More' }).click();
     const sheet = page.getByRole('dialog');
     await expect(sheet.getByRole('button', { name: /Profile/ })).toBeVisible();
