@@ -305,8 +305,21 @@ function LabRow({ title, blurb, children }) {
       {blurb && <div style={{ ...TYPE.caption, color: 'var(--text-muted)', marginBottom: '12px' }}>{blurb}</div>}
       {/* Wrapping, not a horizontal scroller: an element inside an overflow-x
           container can be screenshotted mid-scroll, which pastes the neighbour
-          into its frame. */}
-      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', minWidth: 0 }}>
+          into its frame. The style spec shoots at 1700px, where every row fits
+          on one line and nothing ever scrolls.
+          `overflowX: 'auto'` is the floor under that, and it is not decoration:
+          a frame is a FIXED 320/390/430 device width, so on a phone-width /dev
+          a 430 frame cannot wrap small enough to fit and would widen the
+          document itself — which is what `/dev`'s overflow contracts (the P14-1
+          controls gallery, the P14-3 glyph gallery) measure. Scrolling inside
+          this row keeps the lab honest without the page ever scrolling
+          sideways. `overflowY: 'hidden'` only stops the paired-axis `auto` the
+          spec would otherwise compute; the row's height is auto, so it clips
+          nothing. */}
+      <div style={{
+        display: 'flex', gap: '20px', flexWrap: 'wrap', minWidth: 0,
+        overflowX: 'auto', overflowY: 'hidden',
+      }}>
         {children}
       </div>
     </div>
@@ -386,14 +399,14 @@ function TypePlate() {
         airy — both figure treatments of the count are below, tabular then proportional.
       </div>
       {SPECIMEN_ROLES.map(({ role, sample }) => (
-        <div key={role} style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '8px' }}>
+        <div key={role} style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '12px', marginTop: '8px' }}>
           <span style={{ ...TYPE.caption, color: 'var(--text-faint)', width: '92px', flexShrink: 0, fontFamily: "'Inter', sans-serif" }}>
             {role}
           </span>
           <span style={{ ...TYPE[role], color: 'var(--text)', minWidth: 0 }}>{sample}</span>
         </div>
       ))}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '12px', marginTop: '8px' }}>
         <span style={{ ...TYPE.caption, color: 'var(--text-faint)', width: '92px', flexShrink: 0, fontFamily: "'Inter', sans-serif" }}>
           figures
         </span>
@@ -401,7 +414,7 @@ function TypePlate() {
         <span style={{ ...TYPE.display, color: 'var(--text)' }}>136</span>
         <span style={{ ...TYPE.caption, color: 'var(--text-faint)' }}>tabular · proportional</span>
       </div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '10px' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '12px', marginTop: '10px' }}>
         <span style={{ ...TYPE.caption, color: 'var(--text-faint)', width: '92px', flexShrink: 0, fontFamily: "'Inter', sans-serif" }}>
           hanzi
         </span>
