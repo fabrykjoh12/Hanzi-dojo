@@ -130,6 +130,65 @@ gap, because its active step has no metric and no artwork — one short line and
 button. That is the emptiest state left. **Do not invent a metric to fill it** —
 the fix, when it comes, is the Practice step's own dimensional object.
 
+## P14-5F — the Home migration (2026-08-13)
+
+`3dfe664`'s candidate is production Home. The move was mechanical: the lab was
+the specification, and nothing was reinterpreted on the way in.
+
+**What moved.** `src/homeHero.jsx` (the drawing) + `src/homeHeroTokens.js` (the
+values, 16 tests) carry the Cards hero; Home adopts the distributed rhythm, the
+wider still-ahead story preview, the per-step rail, the tighter radii and Mona
+Sans. The Welcome Back banner is gone.
+
+**Two scoping decisions, both deliberate, both because item 8 says this
+migration changes Home only:**
+
+- **Mona Sans is scoped to Home's root**, not applied globally. `'Inter'` is
+  named explicitly at ~298 sites across the app; a global swap would either
+  require rewriting all of them (changing every frozen screen) or would be
+  silently overridden. Home names the stack; the app-wide rollout is its own
+  phase. `HOME_FONT_STACK` puts Inter second so a Cyrillic string — Mona has no
+  Cyrillic subset — lands on the app's own face, not a system default.
+- **The tighter radii live in `HOME_RADIUS`, not `RADIUS`.** `shape.test.js`
+  pins the scale's five names; promoting 10/16 means re-radiusing every screen
+  in one owned sweep. Named, documented and tested where they are used until
+  then — and `homeHeroTokens.test.js` asserts `RADIUS` still reads 12/18, so
+  the day someone does promote them, the spec is the reminder that every screen
+  moves too.
+
+**The font, verified end to end.** `monaSans.css` declares it under the family
+name the app uses with `font-display: block` — the package ships `swap`, which
+paints the fallback first and re-lays the text out, the FOUT this was told to
+avoid. Three subsets (latin, latin-ext for pinyin's tone marks, vietnamese);
+no CJK coverage, so hanzi structurally cannot land on it and keep
+`languageTheme().font`. The three fingerprinted woff2s are in `dist/client` and
+in `ios/App/App/public`. The render matrix asserts `document.fonts.check` and
+that the active step's computed family contains Mona — a silent fallback would
+have made every typography judgement here meaningless.
+
+**Frozen screens, measured rather than asserted.** `p14-foundation-renders` was
+run on the pre-migration tree and again after, and the two JSON measurement sets
+compared: **24 of 26 screens byte-identical** across boxes, type sizes, radii,
+shadow values, content height, every text node's size/weight/line-count, and
+clipping. Home changed as intended. `study-revealed` differed by one string —
+an FSRS interval preview, "90 days" → "88 days" — and running it twice on the
+SAME tree moves it again (88→93, 94→88): `enable_fuzz` makes that number
+non-deterministic. Structure identical across all runs. No leak.
+
+**The count fix is intact.** `studyAvailability` is untouched and
+`home-cards-agree.spec.js` still passes on all four cases. The gentle-return cap
+still applies — App.jsx passes `returning` to `getHomeCounts` exactly as before;
+only the banner that narrated it is gone.
+
+**Left standing on purpose:** the `/dev` Visual Style lab, until physical-device
+QA passes — if the device rejects something, the side-by-side is the tool. Its
+duplicate font copy under `public/dev-fonts/` IS deleted: it was ~40 KB of dead
+weight inside the store app, and the lab now names the bundled family.
+
+**One thing to watch on device:** `HERO_GRAIN_OPACITY` (0.04). If the panel's
+grain reads as noise at 3× density, that constant comes DOWN — never up. Its
+test pins a ceiling so nobody raises it.
+
 ## Visual Style V2, round 3 — the refinement pass (2026-08-13)
 
 `d9725a3` was directionally approved; this pass refines only the four things the
