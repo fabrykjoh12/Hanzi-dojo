@@ -1,13 +1,16 @@
 import { useId } from 'react'
 import { TYPE } from './typeScale'
-import { RADIUS } from './shape'
-import { languageTheme, pinyinInk } from './languageTheme'
+import { RADIUS, ELEVATION } from './shape'
+import { languageTheme, pinyinInk, inkWarm } from './languageTheme'
 import { heroGround, heroShadow, ON_HERO } from './designTokens'
 import { Button } from './controls'
-import { buildGuide } from './homeGuide'
+import { buildGuide, guideContextLine, upcomingLabel, STATUS } from './homeGuide'
 import { Frame, Variant } from './HomeVitality'
 import { VITALITY_STATES, HOME_RHYTHM } from './homeVitalityFixtures'
 import { STYLE_FONTS, STYLE_SHAPES, SPECIMEN_ROLES } from './visualStyleAxes'
+import { NAV_GLYPHS } from './navGlyphFamily'
+
+const PRACTICE_GLYPH = (NAV_GLYPHS.find(g => g.key === 'practice') || {}).Glyph || null
 
 // ── Visual Style V2, round 2 — life and cleanliness at once ─────────────────
 //
@@ -138,7 +141,7 @@ function FlashcardStack({ size = 122, langFont }) {
 // shadow onto the panel, and a press that travels 1px while the depth comes out
 // of the shadow (the .vs-cta rules in this lab's stylesheet — :active cannot be
 // an inline style).
-function HeroAction({ copy }) {
+function HeroAction({ copy, height = 50, arrow = 46, top = 18 }) {
   const rest = '0 1px 2px ' + ON_HERO.planeShade + ', 0 5px 14px -8px ' + ON_HERO.planeShade
     + ', inset 0 -1px 0 ' + ON_HERO.planeShade + ', inset 0 1px 0 #fff'
   const pressed = '0 1px 2px ' + ON_HERO.planeShade
@@ -148,7 +151,7 @@ function HeroAction({ copy }) {
       type="button" className="vs-cta"
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
-        width: '100%', height: '50px', padding: '4px 4px 4px 18px', marginTop: '18px',
+        width: '100%', height: height + 'px', padding: '4px 4px 4px 18px', marginTop: top + 'px',
         border: 'none', borderRadius: TIGHT.control + 'px', cursor: 'pointer',
         background: 'color-mix(in srgb, #fff 93%, var(--gold))',
         '--vs-cta-rest': rest,
@@ -160,7 +163,7 @@ function HeroAction({ copy }) {
     >
       {copy}
       <span aria-hidden="true" style={{
-        alignSelf: 'stretch', width: '46px', flexShrink: 0,
+        alignSelf: 'stretch', width: arrow + 'px', flexShrink: 0,
         borderRadius: (TIGHT.control - 4) + 'px',
         display: 'grid', placeItems: 'center',
         background: 'var(--primary-fill)', color: '#fff', fontSize: '17px',
@@ -178,14 +181,15 @@ function HeroAction({ copy }) {
 // breakdown in white, the stack as the object, the action on the panel. The
 // step eyebrow stays OUTSIDE on the page — the sequence belongs to the page,
 // the task belongs to the panel.
-function HeroCards({ step, ctx }) {
+function HeroCards({ step, ctx, tight }) {
   const grainId = useId().replace(/[^a-zA-Z0-9]/g, '')
   ctx = { ...ctx, grainId }
   return (
     <div
       data-hero-cards=""
       style={{
-        position: 'relative', marginTop: '14px', padding: '20px 18px 18px',
+        position: 'relative', marginTop: tight ? '10px' : '14px',
+        padding: tight ? '16px 16px 14px' : '20px 18px 18px',
         borderRadius: RADIUS.card + 'px', overflow: 'hidden',
         background: heroGround(ctx.accentHex, 'facet'),
         boxShadow: heroShadow(ctx.accentHex, false, 'facet'),
@@ -234,9 +238,163 @@ function HeroCards({ step, ctx }) {
             </div>
           )}
         </div>
-        <FlashcardStack size={118} langFont={ctx.langFont} />
+        <FlashcardStack size={tight ? 98 : 118} langFont={ctx.langFont} />
       </div>
-      <HeroAction copy={step.cta} />
+      {tight
+        ? <HeroAction copy={step.cta} height={46} arrow={42} top={12} />
+        : <HeroAction copy={step.cta} />}
+    </div>
+  )
+}
+
+// ── P14-5G — the Build 45 recomposition ───────────────────────────────────
+//
+// Physical-device QA failed Build 45's Home: the step rail runs through the 2
+// and 3 numerals, the hero eats half the screen, the Feedback FAB crowds the
+// HSK line, and the 0.4-opacity wash competes with Story and Practice. This
+// candidate is a CLEANUP of the approved composition, not a new concept:
+//
+//   · No connector anywhere — the sequence is 1 / 2 / 3 plus hierarchy.
+//   · The hero keeps everything and loses ~17% of its height (tight geometry).
+//   · Story is number + title + status + FULL-WIDTH artwork; the painting is
+//     the richness, nothing else is added.
+//   · Practice is one compact row, its nav glyph quiet at the far right.
+//   · The foot spans the page — the FAB's 58px notch is gone because the
+//     recommendation is to move Feedback off Home entirely (More/Profile).
+//   · The frame draws the wash at roughly a third strength, masked toward the
+//     page's top and bottom edges (Frame's `wash="reduced"`).
+function RecompNumeral({ n, off }) {
+  return (
+    <span style={{ width: '20px', flexShrink: 0, display: 'flex', justifyContent: 'flex-start' }}>
+      <span style={{
+        ...TYPE.titleSection, fontVariantNumeric: 'tabular-nums',
+        color: off ? 'var(--text-faint)' : 'var(--text-muted)',
+      }}>
+        {n}
+      </span>
+    </span>
+  )
+}
+
+function RecompStory({ step, ctx }) {
+  const detail = [step.detail, step.unlockHint].filter(Boolean).join(' · ')
+  return (
+    <div style={{ marginTop: '28px' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+        <RecompNumeral n={step.number} off={step.status === STATUS.unavailable} />
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ ...TYPE.titleCard, color: 'var(--text)' }}>{step.title}</div>
+          {detail && (
+            <div style={{
+              ...TYPE.caption, color: 'var(--text-faint)', marginTop: '2px',
+              fontFamily: ctx.langFont,
+            }}>
+              {detail}
+            </div>
+          )}
+        </div>
+      </div>
+      {step.story && (
+        <div data-story-cover="" style={{
+          position: 'relative', marginTop: '11px', width: '100%', aspectRatio: '16 / 9',
+          borderRadius: TIGHT.card + 'px', overflow: 'hidden',
+          boxShadow: ELEVATION.raised, background: 'var(--surface-2)',
+        }}>
+          <img src={step.story.coverUrl} alt="" style={{
+            position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
+          }} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RecompPractice({ step, guide }) {
+  const Glyph = PRACTICE_GLYPH
+  const detail = [step.detail, step.unlockHint || upcomingLabel(guide.steps, step.key)]
+    .filter(Boolean).join(' · ')
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '24px', minHeight: '44px' }}>
+      <RecompNumeral n={step.number} off={step.status === STATUS.unavailable} />
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ ...TYPE.titleCard, color: 'var(--text)' }}>{step.title}</div>
+        {detail && (
+          <div style={{ ...TYPE.caption, color: 'var(--text-faint)', marginTop: '2px' }}>{detail}</div>
+        )}
+      </div>
+      {Glyph && <span style={{ flexShrink: 0 }}><Glyph size={40} color="var(--text-faint)" /></span>}
+    </div>
+  )
+}
+
+// The foot, full width: no 58px notch, because Feedback leaves Home. The
+// paddingBottom is the breathing room the QA asked for between the rail and
+// the floating tray.
+function RecompFoot() {
+  return (
+    <div style={{ marginTop: 'auto', paddingTop: '28px', paddingBottom: '6px' }}>
+      <div style={{ ...TYPE.caption, color: 'var(--text-muted)' }}>HSK 1 · 128 / 200 words</div>
+      <div style={{
+        marginTop: '7px', height: '3px', borderRadius: RADIUS.pill,
+        background: 'color-mix(in srgb, var(--text) 8%, transparent)', overflow: 'hidden',
+      }}>
+        <div style={{ width: '64%', height: '100%', borderRadius: RADIUS.pill, background: inkWarm(CHINESE.accentHex) }} />
+      </div>
+    </div>
+  )
+}
+
+function RecompVariant({ guide, ctx }) {
+  const active = guide.steps.find(s => s.status === STATUS.active || s.status === STATUS.unknown) || null
+  const others = guide.steps.filter(s => s !== active)
+  const story = others.find(s => s.key === 'story')
+  const practice = others.find(s => s.key === 'practice')
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '10px' }}>
+        <span style={{ ...TYPE.eyebrow, color: 'var(--text-faint)' }}>Today&rsquo;s training</span>
+        {!guide.complete && (
+          <span style={{ ...TYPE.caption, color: 'var(--text-faint)' }}>{guideContextLine(guide)}</span>
+        )}
+      </div>
+
+      {/* The recomposition is drawn for the state QA judged — a Cards day.
+          The guard keeps a different fixture from crashing the lab, not from
+          rendering well; the other states are not this candidate's question. */}
+      {active && active.key === 'cards' && active.metric && (
+        <div style={{ marginTop: '22px' }} data-vitality-active={active.key}>
+          <span style={{ ...TYPE.eyebrow, color: inkWarm(ctx.accentHex) }}>
+            {active.number} · {active.title}
+          </span>
+          <HeroCards step={active} ctx={ctx} tight />
+        </div>
+      )}
+
+      {story && <RecompStory step={story} ctx={ctx} />}
+      {practice && <RecompPractice step={practice} guide={guide} />}
+
+      <RecompFoot />
+    </div>
+  )
+}
+
+function RecompFrame({ width, stateKey = 'cards' }) {
+  const state = VITALITY_STATES.find(s => s.key === stateKey)
+  const guide = buildGuide(state.input)
+  const ctx = { accentHex: CHINESE.accentHex, langFont: CHINESE.font }
+  return (
+    <div style={{ minWidth: 0 }}>
+      <div style={{ ...TYPE.eyebrow, color: 'var(--text-faint)', marginBottom: '6px' }}>
+        recomp · {stateKey} · {width}
+      </div>
+      <div
+        data-style-frame={'recomp-' + stateKey} data-frame-width={String(width)}
+        style={{ fontFamily: FONT.mona.stack, width: width + 'px' }}
+      >
+        <Frame width={width} concept="recomp" stateKey={stateKey} wash="reduced">
+          <RecompVariant guide={guide} ctx={ctx} />
+        </Frame>
+      </div>
     </div>
   )
 }
@@ -436,6 +594,15 @@ export default function VisualStyleLab() {
         stack with real vocabulary on it, the action on the panel — and every other
         step stays editorial and quiet.
       </div>
+
+      <LabRow
+        title="P14-5G — the Build 45 recomposition"
+        blurb="No connector, hero −17%, full-width story artwork, Practice one row, foot full width (Feedback moves off Home), wash reduced and pushed to the edges. Judge this against the Build 45 device screenshot."
+      >
+        <RecompFrame width={390} />
+        <RecompFrame width={320} />
+        <RecompFrame width={430} />
+      </LabRow>
 
       <LabRow
         title="The target — 390, both key states"

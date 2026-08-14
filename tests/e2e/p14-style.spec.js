@@ -77,8 +77,9 @@ for (const theme of ['light', 'dark']) {
       await plate.scrollIntoViewIfNeeded();
       await plate.screenshot({ path: OUT + '/plate-' + id + '-' + theme + '.png' });
     }
-    // 2 target + 3 comparison + 6 remaining candidate frames.
-    expect(total).toBe(11);
+    // 3 P14-5G recomposition + 2 target + 3 comparison + 6 remaining candidate
+    // frames.
+    expect(total).toBe(14);
 
     // Both primary treatments clear the tap floor at device size. The hero
     // action's press is the app's own .hd-press :active rule, which a

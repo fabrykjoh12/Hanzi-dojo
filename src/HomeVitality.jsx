@@ -403,7 +403,22 @@ export function Variant({ guide, v, ctx }) {
 
 const FOLD = 780
 
-export function Frame({ width, concept, stateKey, children }) {
+// P14-5G's background question: Build 45's wash (0.4 in light mode) sits at
+// full strength behind Story and Practice and competes with real content. The
+// reduced treatment cuts the overall strength to about a third AND masks the
+// middle band of the page — the wash survives at the top and bottom edges,
+// where nothing is being read, and nearly vanishes where the content is.
+const WASH_EDGE_MASK = 'linear-gradient(180deg,'
+  + ' rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 18%,'
+  + ' rgba(0,0,0,0.1) 42%, rgba(0,0,0,0.1) 72%, rgba(0,0,0,0.65) 100%)'
+
+export function Frame({ width, concept, stateKey, wash, children }) {
+  const washStyle = wash === 'reduced'
+    ? {
+      opacity: 'calc(var(--bg-image-opacity) * 0.35)',
+      WebkitMaskImage: WASH_EDGE_MASK, maskImage: WASH_EDGE_MASK,
+    }
+    : { opacity: 'var(--bg-image-opacity)' }
   return (
     <div
       data-vitality-frame={concept} data-vitality-state={stateKey} data-frame-width={String(width)}
@@ -415,7 +430,7 @@ export function Frame({ width, concept, stateKey, children }) {
     >
       <img src={bgChinese} alt="" aria-hidden="true" className="hd-bg" style={{
         position: 'absolute', inset: 0, width: '100%', height: '100%',
-        opacity: 'var(--bg-image-opacity)', pointerEvents: 'none',
+        pointerEvents: 'none', ...washStyle,
       }} />
       <div style={{
         position: 'relative', padding: '22px 16px 40px', minHeight: (FOLD - 66) + 'px',
