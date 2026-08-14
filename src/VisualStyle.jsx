@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { TYPE } from './typeScale'
 import { RADIUS } from './shape'
 import { languageTheme, pinyinInk } from './languageTheme'
@@ -47,57 +48,85 @@ function FontFaces() {
         src: url('/dev-fonts/mona-sans-var.woff2') format('woff2-variations');
         font-weight: 200 900; font-style: normal; font-display: block;
       }
+      /* The hero CTA's press: 1px of travel and the depth coming OUT of the
+         shadow — a pressed object sits closer to what it casts on. Values are
+         custom properties set on the control itself, from tokens. */
+      .vs-cta { box-shadow: var(--vs-cta-rest); }
+      .vs-cta:active { box-shadow: var(--vs-cta-pressed); transform: translateY(1px); }
     `}</style>
   )
 }
 
 // ── The flashcard stack ───────────────────────────────────────────────────
 //
-// heroObjects' DeckObject, with the fix its own retirement note asked for. That
-// deck read as "a stack of notes" or the compose glyph three times in P14 — an
-// abstract paper rectangle IS a note. What a note does not have is vocabulary:
-// the front card carries 你好 and its pinyin, which is the one mark that makes
-// a flashcard unmistakable. The paper-plane ramp, the L of light and the shaded
-// return are the family's rules, unchanged; the packet lab's lesson adds the
-// slight, unequal rotations — three cards at 0° are a printer tray.
+// Refinement pass (round 3). The round-2 stack was three translucent planes —
+// heroObjects' ramp applied literally — and the review asked for real paper.
+// The fix is a hierarchy of MATERIAL, not more detail:
+//
+//   · The FRONT card is solid, warm off-white paper, and its word is printed in
+//     the brand's own dark-red ink — which is what an actual flashcard looks
+//     like, and instantly separates it from the ghost planes behind it.
+//   · The two behind stay translucent paper-on-red (the hero ramp), each with a
+//     hairline edge so they read as sheets rather than as glow.
+//   · The front card CASTS onto the stack: one soft dark pass under it, which
+//     is the card-to-card shadow the review named.
+//   · Unequal tilts (4 / -3 / -8) and unequal sizes, as before. No new marks.
 function FlashcardStack({ size = 122, langFont }) {
-  const cards = [
-    { x: 46, y: 10, w: 50, h: 64, r: 7, face: ON_HERO.plane3, lit: null, shade: 5, tilt: 4 },
-    { x: 32, y: 22, w: 54, h: 70, r: 7.5, face: ON_HERO.plane2, lit: ON_HERO.plane1, shade: 6, tilt: -3 },
-    { x: 14, y: 36, w: 60, h: 76, r: 8, face: ON_HERO.plane1, lit: ON_HERO.planeLit, shade: 7, tilt: -8 },
+  const raw = useId().replace(/[^a-zA-Z0-9]/g, '')
+  const blurId = 'vs-b-' + raw
+  const ghosts = [
+    { x: 47, y: 10, w: 50, h: 64, r: 6, face: ON_HERO.plane3, lit: null, tilt: 4 },
+    { x: 33, y: 22, w: 54, h: 70, r: 6.5, face: ON_HERO.plane2, lit: ON_HERO.plane1, tilt: -3 },
   ]
+  const front = { x: 14, y: 36, w: 60, h: 76, r: 7, tilt: -8 }
+  const paper = 'color-mix(in srgb, #fff 94%, var(--gold))'
+  const paperEdge = 'color-mix(in srgb, #fff 68%, var(--primary-pressed))'
+  const ink = 'var(--primary-pressed)'
+  const inkSoft = 'color-mix(in srgb, var(--primary-pressed) 60%, #fff)'
   return (
     <svg
       width={size} height={size} viewBox="0 0 128 128" fill="none"
       aria-hidden="true" focusable="false" style={{ display: 'block', flexShrink: 0 }}
     >
-      {cards.map(c => (
+      <defs>
+        <filter id={blurId} x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2.6" />
+        </filter>
+      </defs>
+      {ghosts.map(c => (
         <g key={c.x} transform={'rotate(' + c.tilt + ' ' + (c.x + c.w / 2) + ' ' + (c.y + c.h / 2) + ')'}>
           <rect x={c.x} y={c.y} width={c.w} height={c.h} rx={c.r} fill={c.face} />
+          {/* A sheet has an edge; glow does not. */}
           <rect
-            x={c.x + c.w - c.shade} y={c.y} width={c.shade} height={c.h}
-            rx={c.shade / 2} fill={ON_HERO.planeShade}
+            x={c.x} y={c.y} width={c.w} height={c.h} rx={c.r}
+            fill="none" stroke={ON_HERO.planeShade} strokeWidth="0.8"
           />
-          {c.lit && (
-            <>
-              <rect x={c.x} y={c.y} width={c.w} height="3" rx="1.5" fill={c.lit} />
-              <rect x={c.x} y={c.y} width="2.8" height={c.h} rx="1.4" fill={c.lit} />
-            </>
-          )}
+          {c.lit && <rect x={c.x} y={c.y} width={c.w} height="2.6" rx="1.3" fill={c.lit} />}
         </g>
       ))}
-      {/* The front card's face: the word, then its sound. White at two strengths
-          — ink on paper-on-red, not a second colour. */}
-      <g transform="rotate(-8 44 74)">
+      {/* What the front card casts on the sheets behind it. */}
+      <g transform={'rotate(' + front.tilt + ' ' + (front.x + front.w / 2) + ' ' + (front.y + front.h / 2) + ')'}>
+        <rect
+          x={front.x + 4} y={front.y + 5} width={front.w} height={front.h} rx={front.r}
+          fill={ON_HERO.planeShade} filter={'url(#' + blurId + ')'}
+        />
+        {/* The front card: solid paper, a lit top edge, a hairline. */}
+        <rect x={front.x} y={front.y} width={front.w} height={front.h} rx={front.r} fill={paper} />
+        <rect
+          x={front.x} y={front.y} width={front.w} height={front.h} rx={front.r}
+          fill="none" stroke={paperEdge} strokeWidth="0.7"
+        />
+        <rect x={front.x + 1} y={front.y + 1} width={front.w - 2} height="2.4" rx="1.2" fill="#fff" />
+        {/* The word in the brand's ink, its sound beneath — a flashcard, not a note. */}
         <text
-          x="42" y="72" textAnchor="middle" fontFamily={langFont}
-          fontSize="21" fontWeight="600" fill="#fff"
+          x={front.x + front.w / 2} y={front.y + 37} textAnchor="middle" fontFamily={langFont}
+          fontSize="20" fontWeight="600" fill={ink}
         >
           你好
         </text>
         <text
-          x="42" y="88" textAnchor="middle"
-          fontSize="9.5" fontWeight="500" fill={ON_HERO.body}
+          x={front.x + front.w / 2} y={front.y + 53} textAnchor="middle"
+          fontSize="9" fontWeight="500" fill={inkSoft}
         >
           nǐ hǎo
         </text>
@@ -108,31 +137,40 @@ function FlashcardStack({ size = 122, langFont }) {
 
 // ── The integrated primary action, on the hero ────────────────────────────
 //
-// Paper on the red — a vermilion button on a vermilion panel is a rumour — with
-// the directional control IN the button: a small brand-red chip carrying the
-// arrow. 50px tall, the tighter radius, a shallow shadow onto the panel, and a
-// darker lower edge so the paper has thickness. Presses via the app's own
-// .hd-press (1px travel).
+// Paper on the red, with the direction built INTO the control: the right end of
+// the button is a brand-red zone, inset like a keycap and sharing the button's
+// own radius — round 2's floating circular chip read as a second button pasted
+// inside the first. 50px, radius 10, a restrained top highlight, a shallow
+// shadow onto the panel, and a press that travels 1px while the depth comes out
+// of the shadow (the .vs-cta rules in this lab's stylesheet — :active cannot be
+// an inline style).
 function HeroAction({ copy }) {
+  const rest = '0 1px 2px ' + ON_HERO.planeShade + ', 0 5px 14px -8px ' + ON_HERO.planeShade
+    + ', inset 0 -1px 0 ' + ON_HERO.planeShade + ', inset 0 1px 0 #fff'
+  const pressed = '0 1px 2px ' + ON_HERO.planeShade
+    + ', inset 0 -1px 0 ' + ON_HERO.planeShade + ', inset 0 1px 0 #fff'
   return (
     <button
-      type="button" className="hd-press"
+      type="button" className="vs-cta"
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
-        width: '100%', height: '50px', padding: '0 7px 0 18px', marginTop: '18px',
+        width: '100%', height: '50px', padding: '4px 4px 4px 18px', marginTop: '18px',
         border: 'none', borderRadius: TIGHT.control + 'px', cursor: 'pointer',
         background: 'color-mix(in srgb, #fff 93%, var(--gold))',
-        boxShadow: '0 1px 2px ' + ON_HERO.planeShade + ', 0 5px 14px -8px ' + ON_HERO.planeShade
-          + ', inset 0 -1px 0 ' + ON_HERO.planeShade + ', inset 0 1px 0 #fff',
+        '--vs-cta-rest': rest,
+        '--vs-cta-pressed': pressed,
         color: 'var(--primary-pressed)',
         ...TYPE.label, fontSize: '16px',
+        transition: 'transform 150ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 150ms ease',
       }}
     >
       {copy}
       <span aria-hidden="true" style={{
-        width: '36px', height: '36px', borderRadius: RADIUS.pill, flexShrink: 0,
+        alignSelf: 'stretch', width: '46px', flexShrink: 0,
+        borderRadius: (TIGHT.control - 4) + 'px',
         display: 'grid', placeItems: 'center',
         background: 'var(--primary-fill)', color: '#fff', fontSize: '17px',
+        boxShadow: 'inset 0 1px 0 ' + ON_HERO.litEdge,
       }}>
         →
       </span>
@@ -147,6 +185,8 @@ function HeroAction({ copy }) {
 // step eyebrow stays OUTSIDE on the page — the sequence belongs to the page,
 // the task belongs to the panel.
 function HeroCards({ step, ctx }) {
+  const grainId = useId().replace(/[^a-zA-Z0-9]/g, '')
+  ctx = { ...ctx, grainId }
   return (
     <div
       data-hero-cards=""
@@ -159,15 +199,38 @@ function HeroCards({ step, ctx }) {
       }}
     >
       {/* The facet: the pool of light the panel faces, anchored outside the
-          top-left corner — P14-5's finding, not a gradient fill. */}
+          top-left corner — P14-5's finding, not a gradient fill. Two radii of
+          the same token: a wide wash and a tighter core, which strengthens the
+          corner without inventing a brighter value. */}
       <span aria-hidden style={{
         position: 'absolute', left: '-30%', top: '-55%', width: '90%', height: '120%',
         pointerEvents: 'none',
-        background: 'radial-gradient(closest-side, ' + ON_HERO.facet + ' 0%, transparent 100%)',
+        background: 'radial-gradient(closest-side, ' + ON_HERO.facet + ' 0%, transparent 100%),'
+          + 'radial-gradient(46% 52% at 14% 4%, ' + ON_HERO.facet + ' 0%, transparent 78%)',
       }} />
+      {/* The plane turning away: the lower-right corner steps into shade, the
+          same one token the objects use. */}
+      <span aria-hidden style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: 'radial-gradient(85% 75% at 100% 105%, ' + ON_HERO.planeShade + ' 0%, transparent 62%)',
+      }} />
+      {/* Material information, barely: fractal grain at 4%. At this opacity it
+          is felt as paper rather than seen as noise. */}
+      <svg aria-hidden="true" style={{
+        position: 'absolute', inset: 0, width: '100%', height: '100%',
+        opacity: 0.04, pointerEvents: 'none',
+      }}>
+        <filter id={'vs-g-' + ctx.grainId}>
+          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" />
+        </filter>
+        <rect width="100%" height="100%" filter={'url(#vs-g-' + ctx.grainId + ')'} />
+      </svg>
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ ...TYPE.display, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+          {/* Proportional figures, deliberately: tabular set Mona's "1" airy, and
+              a hero count is a piece of display type, not a column that needs to
+              align. Tabular stays where columns genuinely do (step numerals). */}
+          <div style={{ ...TYPE.display, lineHeight: 1 }}>
             {step.metric.value}
           </div>
           <div style={{ ...TYPE.titleSection, marginTop: '4px' }}>{step.metric.label}</div>
@@ -290,6 +353,31 @@ function ActionPlate() {
   )
 }
 
+// The flashcard object at the size Home draws it and at 2x, on its own ground —
+// an object designed for the red cannot be judged on white.
+function StackPlate() {
+  return (
+    <div data-style-plate="stack" style={{
+      padding: '16px 18px', borderRadius: RADIUS.card + 'px',
+      background: 'var(--surface)', border: '1px solid var(--border)', minWidth: 0,
+    }}>
+      <div style={{ ...TYPE.titleCard, color: 'var(--text)' }}>The flashcard object</div>
+      <div style={{ ...TYPE.caption, color: 'var(--text-muted)', marginTop: '3px', marginBottom: '13px' }}>
+        1x (as Home draws it) and 2x. Solid paper front card with the word in the
+        brand&rsquo;s ink; translucent sheets behind; one cast shadow between them.
+      </div>
+      <div style={{
+        display: 'flex', gap: '26px', alignItems: 'flex-end', flexWrap: 'wrap',
+        padding: '18px', borderRadius: RADIUS.card + 'px',
+        background: heroGround(CHINESE.accentHex, 'facet'),
+      }}>
+        <FlashcardStack size={118} langFont={CHINESE.font} />
+        <FlashcardStack size={236} langFont={CHINESE.font} />
+      </div>
+    </div>
+  )
+}
+
 // The six roles the typography decision hangs on, in the candidate face, at 1x.
 function TypePlate() {
   return (
@@ -372,6 +460,7 @@ export default function VisualStyleLab() {
       </LabRow>
 
       <ActionPlate />
+      <StackPlate />
       <TypePlate />
     </div>
   )

@@ -88,7 +88,19 @@ for (const theme of ['light', 'dark']) {
     await hero.scrollIntoViewIfNeeded();
     const heroBox = await hero.boundingBox();
     expect(heroBox.height).toBeGreaterThanOrEqual(44);
-    await hero.screenshot({ path: OUT + '/cta-hero-' + theme + '.png' });
+    await hero.screenshot({ path: OUT + '/cta-hero-rest-' + theme + '.png' });
+    // A REAL press — :active only fires for an actual pointer, not a dispatched
+    // event — and the claim is specific: the depth comes out of the shadow.
+    const restShadow = await hero.evaluate(el => getComputedStyle(el).boxShadow);
+    await hero.hover();
+    await page.mouse.down();
+    await page.waitForTimeout(180);
+    await hero.screenshot({ path: OUT + '/cta-hero-pressed-' + theme + '.png' });
+    const pressedShadow = await hero.evaluate(el => getComputedStyle(el).boxShadow);
+    const pressedTransform = await hero.evaluate(el => getComputedStyle(el).transform);
+    await page.mouse.up();
+    expect(pressedShadow).not.toBe(restShadow);
+    expect(pressedTransform).not.toBe('none');
 
     const cta = page.getByRole('button', { name: 'Continue story →' }).first();
     await cta.scrollIntoViewIfNeeded();

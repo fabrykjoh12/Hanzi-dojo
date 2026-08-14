@@ -130,6 +130,35 @@ gap, because its active step has no metric and no artwork — one short line and
 button. That is the emptiest state left. **Do not invent a metric to fill it** —
 the fix, when it comes, is the Practice step's own dimensional object.
 
+## Visual Style V2, round 3 — the refinement pass (2026-08-13)
+
+`d9725a3` was directionally approved; this pass refines only the four things the
+review named, and adds nothing.
+
+- **The panel material.** The corner light is strengthened by stacking the SAME
+  `ON_HERO.facet` token at two radii (no brighter value invented); the
+  lower-right steps into `planeShade`; and a 4% fractal grain gives the field
+  material without being seen as noise. Still one calm red field.
+- **The flashcard object.** The round-2 stack was three translucent planes —
+  the hero ramp applied literally — and the fix is a hierarchy of MATERIAL, not
+  detail: the front card is now solid warm paper with 你好 printed in the
+  brand's dark-red ink (what a real flashcard looks like), the two behind stay
+  translucent sheets with hairline edges so they read as paper rather than
+  glow, and the front card casts one soft shadow onto them.
+- **The CTA.** The round-2 circular arrow chip read as a second button pasted
+  inside the first. The direction is now a full-height brand-red zone inset
+  like a keycap, sharing the button's own radius. 50px, radius 10, top
+  highlight, shallow shadow — and the press is real: 1px of travel with the
+  depth coming OUT of the shadow, via the lab stylesheet's `:active` rule
+  (token-built custom properties, no literals). The harness now presses it with
+  an actual pointer and asserts the computed shadow changes.
+- **Typography, decided.** Mona Sans, with **proportional figures on the hero
+  count** — tabular set Mona's "1" airy, and a hero count is display type, not
+  a column. Tabular stays where columns genuinely align (step numerals).
+  Verdict against the Inter frame: Mona's headings and count are noticeably
+  more authored at 390; Inter is cleaner and more anonymous. Mona ships,
+  pending the device look.
+
 ## Visual Style V2, round 2 — life and cleanliness at once (2026-08-13)
 
 Device review judged the restrained candidate (`557467e`) cleaner than
