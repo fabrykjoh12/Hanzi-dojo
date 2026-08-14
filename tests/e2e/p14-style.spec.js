@@ -49,10 +49,10 @@ for (const theme of ['light', 'dark']) {
     // frame shot before they arrive silently renders the fallback, and the
     // typography comparison becomes four screenshots of Inter.
     await page.evaluate(async () => {
-      await document.fonts.load("600 17px 'Mona Sans Lab'");
+      await document.fonts.load("600 17px 'Mona Sans'");
       await document.fonts.ready;
     });
-    expect(await page.evaluate(() => document.fonts.check("600 17px 'Mona Sans Lab'"))).toBe(true);
+    expect(await page.evaluate(() => document.fonts.check("600 17px 'Mona Sans'"))).toBe(true);
     await page.waitForFunction(() => {
       const imgs = [...document.querySelectorAll('[data-style-frame] [data-story-cover] img')];
       return imgs.length > 0 && imgs.every(i => i.complete && i.naturalWidth > 0);

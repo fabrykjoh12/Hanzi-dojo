@@ -5,10 +5,11 @@
 
 // ── Typography ────────────────────────────────────────────────────────────
 //
-// The two candidate files are variable-weight woff2s committed under
-// public/dev-fonts/ with their licenses beside them — both OFL-1.1, so bundling
-// is clean if one wins. They are loaded by a @font-face the LAB injects; nothing
-// outside /dev references them.
+// Mona Sans WON and is now bundled for production (fonts.js → monaSans.css), so
+// the lab names the real family rather than shipping a second copy of the file
+// in public/ — that copy was ~40 KB of dead weight inside the store app.
+// Onest was the losing candidate; its row stays as the record of what was
+// compared, and it now renders in the fallback face.
 //
 // One honesty note that outranks the rendering: the "native" benchmark in this
 // harness draws Linux's fontconfig default (Liberation Sans), NOT the SF Pro an
@@ -31,13 +32,13 @@ export const STYLE_FONTS = [
   },
   {
     key: 'mona', label: 'B — Mona Sans',
-    stack: "'Mona Sans Lab', 'Inter', system-ui, sans-serif",
+    stack: "'Mona Sans', 'Inter', system-ui, sans-serif",
     note: 'Authored but grown-up: wider apertures, a little more ink personality than Inter.',
   },
   {
     key: 'onest', label: 'C — Onest',
-    stack: "'Onest Lab', 'Inter', system-ui, sans-serif",
-    note: 'Rounder terminals, friendlier learning-product character. The risk is cuteness.',
+    stack: "'Inter', system-ui, sans-serif",
+    note: 'Rejected on maturity — no longer bundled, so this row now renders in the fallback.',
   },
 ]
 

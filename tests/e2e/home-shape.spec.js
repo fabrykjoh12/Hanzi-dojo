@@ -70,12 +70,31 @@ for (const phone of PHONES) {
       await expect(home.primaryAction).toBeVisible();
     });
 
-    test('draws no panel around the guide — the page IS the layout', async ({ page }) => {
+    // P14-5F REVERSED half of this rule, deliberately and with a rendered
+    // comparison behind it (docs/BACKLOG.md): the Cards step is the screen's ONE
+    // lit panel again. The rule that survives — and that this now guards — is
+    // the one that actually mattered: **exactly one drawn surface, and it is the
+    // Cards hero.** A second panel is what turns Home back into a dashboard, and
+    // it is the thing three device reviews rejected.
+    test('draws exactly one panel — the Cards hero — and nothing else', async ({ page }) => {
       const boxes = await page.evaluate(BOXES);
-      // The button is a box and should be. Nothing else may be, unless the
-      // returning-from-a-break notice happens to be showing.
-      const unexpected = boxes.filter(b => b.tag !== 'button' && !/reviews are ready|welcome back/i.test(b.text));
-      expect(unexpected, 'a container came back onto Home: ' + JSON.stringify(unexpected)).toEqual([]);
+      const hero = await page.locator('[data-hero-cards]').count();
+      // Buttons are boxes and should be. Everything else that draws a surface
+      // must be inside the hero, or be the hero.
+      const unexpected = [];
+      for (const b of boxes) {
+        if (b.tag === 'button') continue;
+        const owned = await page.evaluate((text) => {
+          const el = [...document.querySelectorAll('#main-content *')]
+            .find(n => (n.textContent || '').trim().slice(0, 40) === text);
+          return Boolean(el && (el.hasAttribute('data-hero-cards') || el.closest('[data-hero-cards]')));
+        }, b.text);
+        if (!owned) unexpected.push(b);
+      }
+      expect(unexpected, 'a second container came back onto Home: ' + JSON.stringify(unexpected)).toEqual([]);
+      // And on a Cards day the hero is genuinely there — a passing test because
+      // nothing draws at all would be worthless.
+      expect(hero).toBe(1);
     });
 
     test('has one action, and the quiet steps are not competing buttons', async ({ page }) => {

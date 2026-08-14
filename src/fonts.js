@@ -39,6 +39,14 @@
 // weight and the bundle is a third of the size. The browser only ever decodes
 // the subsets a screen actually contains.
 //
+// **Mona Sans, VARIABLE, latin + latin-ext + vietnamese (P14-5F).** Home's UI
+// face, ~100 KB across three subsets. Approved after a rendered comparison
+// against Inter at real phone width: its display numerals and headings read
+// authored where Inter reads anonymous. It is SCOPED TO HOME — Home's root
+// names the stack — because this migration was told to change Home only; the
+// app-wide rollout is its own phase, and until then Inter remains the face
+// every other screen names explicitly (~298 sites).
+//
 // Noto Sans JP is deliberately NOT here: it is loaded on demand by
 // fontLoader.js for the paused Japanese track, so nobody downloads a second CJK
 // family for a language they will never open.
@@ -60,6 +68,10 @@ import '@fontsource/inter/cyrillic-600.css'
 import '@fontsource/poppins/latin-500.css'
 import '@fontsource/poppins/latin-600.css'
 import '@fontsource/poppins/latin-700.css'
+
+// Mona Sans — Home's UI face. One variable file per subset; see monaSans.css
+// for why this is not the package's own stylesheet (family name, font-display).
+import './monaSans.css'
 
 // Noto Sans SC — the product. One variable face, every weight.
 //

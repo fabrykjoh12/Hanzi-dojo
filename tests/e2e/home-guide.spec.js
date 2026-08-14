@@ -248,34 +248,85 @@ test.describe('Home guide states', () => {
 });
 
 // ── The render matrix ─────────────────────────────────────────────────────
-// Geometry that has to hold in every state, at every phone width, in both
-// themes: nothing overflows sideways, nothing tappable is under 44px, and the
-// page clears the floating tray.
+//
+// The release gate for P14-5F: every state, every phone width, both themes.
+// Geometry that has to hold everywhere — nothing overflows sideways, nothing is
+// clipped by its own box, nothing tappable is under 44px, the page clears the
+// floating tray — plus the two things this migration introduced and must prove:
+// the hero CTA's size, and that Mona Sans actually rendered rather than silently
+// falling back to Inter.
 for (const theme of ['light', 'dark']) {
   for (const width of WIDTHS) {
-    test('geometry holds — ' + theme + ' · ' + width, async ({ page }) => {
-      await setTheme(page, theme);
-      await page.setViewportSize({ width, height: 844 });
-      const home = new HomePage(page);
-      await home.goto();
-      await expect(home.primaryAction).toBeVisible();
+    for (const state of ['cards', 'story', 'practice', 'complete']) {
+      test('geometry holds — ' + state + ' · ' + theme + ' · ' + width, async ({ page }) => {
+        await setTheme(page, theme);
+        await page.setViewportSize({ width, height: 844 });
+        await STATES[state](page);
+        if (state === 'cards') await serveArtwork(page);
+        const home = new HomePage(page);
+        await home.goto();
+        await expect(page.locator('[data-guide-active]')).toBeVisible();
+        await page.evaluate(() => document.fonts.ready);
 
-      const measured = await page.evaluate(() => {
-        const doc = document.documentElement;
-        const small = [];
-        for (const el of document.querySelectorAll('main button, main [role="button"]')) {
-          const r = el.getBoundingClientRect();
-          if (r.width > 0 && r.height > 0 && r.height < 44) small.push(el.textContent.trim().slice(0, 30));
+        const measured = await page.evaluate(() => {
+          const doc = document.documentElement;
+          const small = [];
+          for (const el of document.querySelectorAll('main button, main [role="button"]')) {
+            const r = el.getBoundingClientRect();
+            if (r.width > 0 && r.height > 0 && r.height < 44) small.push(el.textContent.trim().slice(0, 30));
+          }
+          // Text that does not fit the box it is in — the clipping check.
+          const clipped = [];
+          for (const el of document.querySelectorAll('#main-content *')) {
+            const cs = getComputedStyle(el);
+            const txt = (el.textContent || '').trim();
+            if (!txt || el.children.length) continue;
+            if ((cs.overflow === 'hidden' || cs.overflowY === 'hidden')
+              && el.scrollHeight > el.clientHeight + 1 && el.clientHeight > 0
+              && cs.webkitLineClamp === 'none' && cs.textOverflow !== 'ellipsis') {
+              clipped.push(txt.slice(0, 30));
+            }
+          }
+          const hero = document.querySelector('[data-hero-cards]');
+          const cta = hero && hero.querySelector('button');
+          const foot = document.querySelector('[data-level-rail]');
+          const main = document.querySelector('#main-content') || document.body;
+          return {
+            overflowX: Math.max(0, doc.scrollWidth - doc.clientWidth),
+            height: doc.scrollHeight,
+            small,
+            clipped,
+            heroCta: cta ? Math.round(cta.getBoundingClientRect().height) : null,
+            // How far the foot of the page sits above the bottom of the layout —
+            // the tray's reserve is applied by the shell, so a negative number
+            // here would mean Home is writing underneath it.
+            footBottom: foot ? Math.round(main.getBoundingClientRect().bottom - foot.getBoundingClientRect().bottom) : null,
+            // The face that actually rendered, measured on the element whose
+            // typography was judged — the active step itself, not the app shell
+            // around it. Mona is scoped to Home's own root, so `#main-content`
+            // is legitimately still Inter and asserting on it proves nothing.
+            monaLoaded: document.fonts.check("600 17px 'Mona Sans'"),
+            stepFont: (() => {
+              const el = document.querySelector('[data-guide-active]');
+              return el ? getComputedStyle(el).fontFamily : null;
+            })(),
+          };
+        });
+
+        expect(measured.overflowX).toBe(0);
+        expect(measured.small).toEqual([]);
+        expect(measured.clipped).toEqual([]);
+        expect(measured.footBottom === null || measured.footBottom >= 0).toBe(true);
+        // Mona is bundled and `font-display: block`, so by the time fonts.ready
+        // resolves it is either there or it never was.
+        expect(measured.monaLoaded, 'Mona Sans did not render — Home fell back').toBe(true);
+        expect(measured.stepFont, 'the active step did not inherit Home\'s stack').toContain('Mona Sans');
+        if (state === 'cards') {
+          expect(measured.heroCta, 'the hero CTA is missing on a Cards day').not.toBeNull();
+          expect(measured.heroCta).toBeGreaterThanOrEqual(44);
         }
-        return {
-          overflowX: Math.max(0, doc.scrollWidth - doc.clientWidth),
-          height: doc.scrollHeight,
-          small,
-        };
+        await shoot(page, 'matrix-' + state + '-' + theme + '-' + width);
       });
-      expect(measured.overflowX).toBe(0);
-      expect(measured.small).toEqual([]);
-      await shoot(page, 'matrix-' + theme + '-' + width);
-    });
+    }
   }
 }

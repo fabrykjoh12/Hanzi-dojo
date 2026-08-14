@@ -37,20 +37,14 @@ const FONT = Object.fromEntries(STYLE_FONTS.map(f => [f.key, f]))
 const SHAPE = Object.fromEntries(STYLE_SHAPES.map(s => [s.key, s]))
 const TIGHT = SHAPE.tight
 
-// Mona Sans, loaded only when this lab renders. OFL, committed with its license
-// under public/dev-fonts/. Inter renders the benchmark frame — the brief is
-// explicit that Mona is not final just because it won the last lab.
+// The candidate face is BUNDLED now (fonts.js). The lab only needs its own
+// press rule; the @font-face it used to inject is gone with public/dev-fonts.
 function FontFaces() {
   return (
     <style>{`
-      @font-face {
-        font-family: 'Mona Sans Lab';
-        src: url('/dev-fonts/mona-sans-var.woff2') format('woff2-variations');
-        font-weight: 200 900; font-style: normal; font-display: block;
-      }
       /* The hero CTA's press: 1px of travel and the depth coming OUT of the
-         shadow — a pressed object sits closer to what it casts on. Values are
-         custom properties set on the control itself, from tokens. */
+         shadow. Production's equivalent is the .hd-cta rule in index.css.
+         (No backticks in here — this is inside a template literal.) */
       .vs-cta { box-shadow: var(--vs-cta-rest); }
       .vs-cta:active { box-shadow: var(--vs-cta-pressed); transform: translateY(1px); }
     `}</style>

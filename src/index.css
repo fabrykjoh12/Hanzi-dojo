@@ -363,6 +363,19 @@ body {
   transform: translateY(1px) scale(0.994);
 }
 
+/* Home's hero CTA (P14-5F). `.hd-press` moves an object; this also takes its
+   DEPTH away — a control held down settles into the shadow it was casting. The
+   two shadows are custom properties set on the button from homeHeroTokens'
+   `heroCtaShadow`, so this rule carries no values of its own. */
+.hd-cta {
+  box-shadow: var(--hd-cta-rest);
+  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 150ms ease;
+}
+.hd-cta:active {
+  box-shadow: var(--hd-cta-pressed);
+  transform: translateY(1px);
+}
+
 /* Nav rows: the icon leans toward the label on hover. */
 .hd-nav-item svg { transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1); }
 .hd-nav-item:hover svg { transform: translateX(2px); }

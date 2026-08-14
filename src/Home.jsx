@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, Sunrise } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { getLevelLabel } from './utils'
 import { languageTheme, inkWarm } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
-import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
 import { fetchHandoff, trackSignature } from './homeData'
 import { query, subscribe } from './dataCache'
 import { HOME_HANDOFF } from './cacheEvents'
@@ -15,9 +14,11 @@ import TourOverlay from './TourOverlay'
 import { TYPE } from './typeScale'
 import { Button } from './controls'
 import { CompletionSeal } from './heroObjects'
-import { buildGuide, guideContextLine, STATUS } from './homeGuide'
+import { buildGuide, guideContextLine, upcomingLabel, STATUS } from './homeGuide'
 import { buildPracticePlan } from './practicePlan'
 import StoryCover from './StoryCover'
+import { HeroCards } from './homeHero'
+import { HOME_FONT_STACK, HOME_RADIUS } from './homeHeroTokens'
 
 // ── Home — the guide through one day's training (P14-5C) ───────────────────
 //
@@ -47,6 +48,28 @@ import StoryCover from './StoryCover'
 //   3. **No bounded surface, no illustration, no widget goes in without earning
 //      it.** The artwork is content. Everything else is type on the page ground.
 //      An empty area is allowed to stay empty (P14-5B §12).
+//
+// ── P14-5F: what the Visual Style sprint changed here ──────────────────────
+//
+// The composition above survives. Four things moved, each approved from a
+// rendered side-by-side against this file's own output (docs/BACKLOG.md):
+//
+//   · **Cards is the screen's one LIT PANEL** (`homeHero.jsx`) — the app's own
+//     hero material, a flashcard object with a real word on it, and the action
+//     ON the panel. Rule 3 is intact: it earned it, and it is the only one.
+//     Story and Practice stay type on the page, which is what makes the
+//     contrast mean anything.
+//   · **The three steps DISTRIBUTE** down the usable height instead of stacking
+//     under the active one, and a still-ahead step carries a little real content
+//     (the chapter's artwork, where it sits in the sequence). Measured: the
+//     tallest run of empty space on a Cards day went 208px → 76px.
+//   · **Mona Sans**, scoped to this screen's root, with PROPORTIONAL figures on
+//     the hero count.
+//   · **The Welcome Back banner is gone.** It repeated the Cards count and put a
+//     bordered surface above the actual task. The gentle-return CAP is
+//     untouched — App.jsx still passes `returning` to getHomeCounts, and
+//     studyAvailability still applies it — so the count stays honest and the
+//     rule stays internal, which is where a scheduling rule belongs.
 
 export default function Home({ profile, track, counts, session, onNavigate }) {
   const isMobile = useIsMobile()
@@ -67,8 +90,6 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
   const totalWords = counts.totalWords || 0
 
   const countsLoaded = Boolean(counts.loaded)
-  const gentleReady = Math.min(counts.dueCount || 0, GENTLE_REVIEW_CAP)
-  const gentleActive = isReturningFromBreak(profile) && (counts.dueCount || 0) > GENTLE_REVIEW_CAP
 
   const userId = session?.user?.id
   // The signature, not the object: `loadProfile` hands down a freshly-fetched
@@ -209,12 +230,21 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
     onNavigate(step.view)
   }
 
-  const ctx = { accentHex, accentInk, langFont, isMobile }
+  const ctx = {
+    accentHex, accentInk, langFont, isMobile,
+    // The flashcard illustration's word, from the language's own config — never
+    // hardcoded, so a frozen track's Home does not print hanzi.
+    sampleWord: theme.sampleWord, sampleReading: theme.sampleReading,
+  }
 
   return (
     <div style={{
       maxWidth: '720px', margin: '0 auto',
       padding: isMobile ? '22px 16px 40px' : '40px 32px 60px',
+      // Mona Sans, on THIS screen only (homeHeroTokens.js). The app-wide
+      // typography rollout is its own phase; every other screen names 'Inter'
+      // explicitly and is untouched by this.
+      fontFamily: HOME_FONT_STACK,
       // A column at least one screen tall, so the level context sits at the FOOT
       // of the page rather than trailing the guide 250px above the fold. Content
       // longer than a screen simply pushes past it and scrolls, which is what the
@@ -253,31 +283,25 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         )}
       </div>
 
-      {/* ── Welcome back after a break ── */}
-      {gentleActive && (
-        <div role="status" aria-live="polite" style={{
-          display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px',
-          background: `color-mix(in srgb, ${accentHex} 7%, var(--surface))`,
-          border: '1px solid color-mix(in srgb, ' + accentHex + ' 26%, var(--border))',
-          borderLeft: `3px solid ${accentHex}`, borderRadius: RADIUS.control + 'px',
-          padding: '14px 16px',
-        }}>
-          <Sunrise size={20} strokeWidth={1.9} color={accentInk} style={{ flexShrink: 0 }} />
-          <span style={{ ...TYPE.bodySecondary, color: 'var(--text)', fontWeight: 600 }}>
-            {gentleReturnMessage(gentleReady)}
-          </span>
-        </div>
-      )}
-
       {/* ── The one loud thing ── */}
       {guide.complete
         ? <TrainingComplete guide={guide} ctx={ctx} onExplore={() => onNavigate('practice')} />
         : <ActiveStep step={active} ctx={ctx} onGo={() => go(active)} />}
 
-      {/* ── The rest of the sequence, quiet and in order ── */}
-      <div style={{ marginTop: '26px', borderTop: '1px solid var(--divider)' }}>
-        {others.map(step => (
-          <QuietStep key={step.key} step={step} ctx={ctx} onGo={() => go(step)} />
+      {/* ── The rest of the sequence, quiet and in order ──
+          `flex: 1` with the rows sharing the height: the steps spread down the
+          page instead of stacking under the active one and leaving the bottom
+          third of a Cards day empty. Measured before and after — 208px of dead
+          run became 76px. */}
+      <div style={{
+        marginTop: '26px', borderTop: '1px solid var(--divider)',
+        flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
+      }}>
+        {others.map((step, i) => (
+          <QuietStep
+            key={step.key} step={step} guide={guide} ctx={ctx} onGo={() => go(step)}
+            last={i === others.length - 1} complete={guide.complete}
+          />
         ))}
       </div>
 
@@ -311,9 +335,16 @@ function ActiveStep({ step, ctx, onGo }) {
   if (!step) return null
   const { accentHex, langFont, isMobile } = ctx
   const isStory = step.key === 'story' && step.story
+  // Cards, when it has a count to show, is the lit panel. `step.metric` is the
+  // guard: an unknown count (counts failed or not yet loaded) has no number to
+  // set in display type, so it falls through to the plain layout below rather
+  // than drawing an empty hero.
+  const isHero = step.key === 'cards' && step.metric
   return (
     <div data-tour="home-queue" data-guide-active={step.key} style={{ marginTop: '22px' }}>
       <StepEyebrow step={step} accentHex={accentHex} />
+
+      {isHero && <HeroCards step={step} ctx={ctx} onGo={onGo} />}
 
       {/* The artwork, at the ratio it was painted at.
           Production covers are 1344×756 — a 16:9 scene with the characters
@@ -327,14 +358,14 @@ function ActiveStep({ step, ctx, onGo }) {
             story={step.story.coverStory}
             path={step.story.coverPath}
             accent={accentHex}
-            radius={RADIUS.card}
+            radius={HOME_RADIUS.card}
             loading="eager"
             style={{ width: '100%', aspectRatio: '16 / 9', boxShadow: ELEVATION.raised }}
           />
         </div>
       )}
 
-      <div style={{ marginTop: isStory ? '15px' : '9px' }}>
+      {!isHero && <div style={{ marginTop: isStory ? '15px' : '9px' }}>
         {/* A count belongs in `display` — the role written for "the one number a
             screen is about" — with its noun under it. A sentence at that size
             wraps to three lines on a phone and stops being a statement. */}
@@ -364,11 +395,20 @@ function ActiveStep({ step, ctx, onGo }) {
             {step.facts.join(' · ')}
           </div>
         )}
-      </div>
+      </div>}
 
-      {step.cta && (
+      {/* One action treatment for every active step that is not the hero: the
+          lacquer material at the tighter control radius, arrow in the label. A
+          candidate that restyled Cards' control and left Story's on the old
+          geometry would be two languages on one screen. */}
+      {!isHero && step.cta && (
         <div style={{ marginTop: '20px' }}>
-          <Button size="lg" onClick={onGo} icon={ArrowRight}>{step.cta}</Button>
+          <Button
+            variant="lacquer" size="lg" onClick={onGo}
+            style={{ borderRadius: HOME_RADIUS.control + 'px' }}
+          >
+            {step.cta} &rarr;
+          </Button>
         </div>
       )}
     </div>
@@ -398,13 +438,21 @@ function StepEyebrow({ step, accentHex }) {
 // The story step brings its real artwork along, small. "Show what comes after it"
 // is the point of the sequence, and a chapter you can see is a different promise
 // from a chapter you are told about.
-function QuietStep({ step, ctx, onGo }) {
+function QuietStep({ step, guide, ctx, onGo, last, complete }) {
   const { accentHex, accentInk, langFont } = ctx
   const done = step.status === STATUS.done
   const off = step.status === STATUS.unavailable
   const art = step.key === 'story' && step.story ? step.story : null
   const reachable = !done && !off
-  const detail = [step.detail, step.unlockHint].filter(Boolean).join(' · ')
+  // Where a still-ahead step sits in the day, from the guide — "Next after
+  // cards", "After your story". A BLOCKED step keeps its unlock hint instead:
+  // naming the mechanic is truer and more useful than naming a queue position.
+  const detail = [step.detail, step.unlockHint || upcomingLabel(guide.steps, step.key)]
+    .filter(Boolean).join(' · ')
+  // The artwork gets real width on a step that is still ahead — it is the reason
+  // Cards comes first, and a 96px thumbnail cannot make that case. A step that
+  // is behind you drops it: a finished chapter does not need its picture again.
+  const preview = art && !done
 
   const body = (
     <>
@@ -438,31 +486,43 @@ function QuietStep({ step, ctx, onGo }) {
             {detail}
           </span>
         )}
+        {preview && (
+          <StoryCover
+            story={art.coverStory}
+            path={art.coverPath}
+            accent={accentHex}
+            radius={HOME_RADIUS.control}
+            style={{
+              display: 'block', marginTop: '9px', width: '78%', maxWidth: '262px',
+              aspectRatio: '16 / 9', opacity: 0.93,
+            }}
+          />
+        )}
       </span>
-
-      {art && (
-        <StoryCover
-          story={art.coverStory}
-          path={art.coverPath}
-          accent={accentHex}
-          radius={RADIUS.control}
-          style={{ width: '96px', flexShrink: 0, aspectRatio: '16 / 9', opacity: done ? 0.5 : 1 }}
-        />
-      )}
     </>
   )
 
   const style = {
-    display: 'flex', alignItems: 'center', gap: '14px',
+    display: 'flex', gap: '14px', position: 'relative',
+    // Top-aligned when the row carries artwork: a numeral centred against a 16:9
+    // still floats in the middle of the picture instead of marking where the
+    // step begins.
+    alignItems: preview ? 'flex-start' : 'center',
     // 44px of target even on the shortest row (TAP_MIN, P14-1).
-    minHeight: '44px', padding: '17px 0',
+    minHeight: '44px', padding: '10px 0',
     width: '100%', textAlign: 'left',
+    // Share the height the sequence has, so the steps distribute.
+    flex: 1,
   }
+
+  const rail = (
+    <StepRail done={done} last={last} complete={complete} accentInk={accentInk} top={preview} />
+  )
 
   // A step you can still act on is a control; one that is done or has nothing
   // behind it is a statement, and a statement must not look tappable.
   if (!reachable) {
-    return <div data-guide-step={step.key} style={style}>{body}</div>
+    return <div data-guide-step={step.key} style={style}>{rail}{body}</div>
   }
   return (
     <div
@@ -473,8 +533,34 @@ function QuietStep({ step, ctx, onGo }) {
       data-tour={step.key === 'story' ? 'home-then-read' : undefined}
       style={{ ...style, cursor: 'pointer' }}
     >
-      {body}
+      {rail}{body}
     </div>
+  )
+}
+
+// The line down the left of the sequence: warm vermilion where the day has
+// already been, the divider grey for what is still ahead.
+//
+// Drawn PER STEP rather than once down the column, for a reason that only showed
+// up on screen: a single rail in a column whose rows distribute runs past the
+// last mark and hangs into the space below it, which reads as a line that has
+// broken rather than a journey that has arrived. A segment belonging to a step
+// ends where that step's mark is.
+//
+// Absent on a finished day — a full-length rail plus three ticks plus the seal
+// is a checklist, which is the one thing this screen is not.
+function StepRail({ done, last, complete, accentInk, top }) {
+  if (complete) return null
+  return (
+    <span aria-hidden style={{
+      position: 'absolute', left: '8.5px', top: 0,
+      bottom: last ? 'auto' : 0,
+      height: last ? (top ? '23px' : '50%') : undefined,
+      width: '1px', borderRadius: RADIUS.pill,
+      background: done ? accentInk : 'var(--divider)',
+      // A travelled segment is a trace, not a progress bar.
+      opacity: done ? 0.5 : 1,
+    }} />
   )
 }
 
