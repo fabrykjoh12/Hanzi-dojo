@@ -10,6 +10,75 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+## ⛔ Build 45 FAILED physical-device Home QA (2026-08-14)
+
+**TestFlight build 45** — marketing version 1.0, IPA built from `66885da`,
+which carries the P14-5F Home migration (`c54b3ef`) — was installed on a real
+phone and **rejected**. Home as shipped in that build is not approved and is
+not to be treated as a finished screen.
+
+The verdict was explicitly *not* a spacing nit. Five findings, all from the
+device, in the reviewer's own terms:
+
+1. **The vertical guide line intersected the step numbers.** `StepRail` in
+   `Home.jsx` draws a 1px connector down the left of the quiet steps at
+   `left: 8.5px`; the numerals sit in an 18px-wide column starting at 0. On the
+   device the line runs straight through the **2** and the **3**. The
+   instruction is to remove the connector entirely rather than route around the
+   numerals — no line may run between steps at all.
+2. **The Cards hero carried excessive visual mass.** It consumed roughly half
+   the screen. It must stay the loudest element while giving back ~15–20% of
+   that mass — tighter vertical padding, better alignment between count,
+   illustration and CTA, less empty red field, a slightly shorter CTA.
+3. **The Feedback FAB crowded HSK progress.** `Feedback.jsx`'s fixed
+   bottom-right control competes with the level line and the floating nav tray;
+   `LevelFoot`'s 58px `paddingRight` notch is the workaround admitting it. It
+   must either leave Home for More/Profile, or drop materially in prominence
+   with a dedicated clear zone. It may not overlap or crowd HSK progress.
+4. **The background wash competed with content.** `--bg-image-opacity: 0.4` in
+   light mode puts the bamboo/mountain artwork at full strength behind Story
+   and Practice. It must come down substantially and sit at very low opacity,
+   preferably toward the page edges only, leaving the main content region clean.
+5. **Overall, Home still failed the professional-quality visual gate.** Even
+   with the four specific defects set aside, the composition as a whole did not
+   read as production quality on a real device. That is the finding that
+   matters most: this was a whole-screen rejection, not a list of four patches.
+
+**Nothing was reverted.** Production Home is still the P14-5F composition on
+`main`'s line of descent; the rejection is a design verdict, not a regression,
+and the code is left exactly where the device found it so the next pass has the
+real thing to work against.
+
+### `98da46d` is a DEV-ONLY candidate and is NOT approved for production
+
+The corrective recomposition (below) lives in the `/dev` Visual Style lab —
+`VisualStyle.jsx`'s `Recomp*` components and the `wash` prop on
+`HomeVitality.jsx`'s `Frame`. **It has not been reviewed, not been approved,
+and must not be migrated.** It exists as a rendered starting point, and its
+choices are proposals:
+
+- no connector anywhere — the sequence is `1 / 2 / 3` plus hierarchy;
+- the hero keeps count, breakdown, flashcard object and integrated CTA, and
+  loses ~18% of its height (padding 20/18/18 → 16/16/14, stack 118 → 98, CTA
+  50 → 46 which still clears the 44px floor, top margin 18 → 12): measured
+  ~225px → ~184px at 390;
+- Story is number + title + status + full-width 16:9 artwork, nothing added;
+- Practice is one compact row with the nav glyph quiet at the far right;
+- the foot spans the full page width, on the **recommendation** that Feedback
+  moves off Home — which is a proposal, not a decision;
+- the wash renders at ~⅓ strength and is masked away from the middle band of
+  the page.
+
+Rendered at 390 light, 390 dark and 320/430 light. Two limits worth knowing
+before trusting those renders: the lab frame is a fixed 780px tall, so
+foot-to-tray clearance at 430 is understated relative to a real device; and
+the recomposition is drawn for the **Cards-active** state only — story-active,
+practice-active and complete were not recomposed.
+
+**The next Home design pass is being handed to another agent.** This section
+plus the P14-5F section below are the handoff: what shipped, why the device
+rejected it, and what has and has not been tried since.
+
 ## P14-5D — one availability derivation; what the audit found (2026-08-13)
 
 The device report — Home "74 reviews ready", Cards tab 136 — was **three
@@ -132,6 +201,12 @@ the fix, when it comes, is the Practice step's own dimensional object.
 
 ## P14-5F — the Home migration (2026-08-13)
 
+> **Superseded as a verdict, 2026-08-14.** This migration shipped as TestFlight
+> build 45 and **failed physical-device QA** — see the Build 45 section at the
+> top of this file for the five findings. Everything below is still an accurate
+> record of what moved and how it was verified; it is no longer a statement
+> that the result was good.
+
 `3dfe664`'s candidate is production Home. The move was mechanical: the lab was
 the specification, and nothing was reinterpreted on the way in.
 
@@ -184,10 +259,15 @@ only the banner that narrated it is gone.
 QA passes — if the device rejects something, the side-by-side is the tool. Its
 duplicate font copy under `public/dev-fonts/` IS deleted: it was ~40 KB of dead
 weight inside the store app, and the lab now names the bundled family.
+*(The device did reject it, and the lab was exactly the tool — the Build 45
+comparison and the `98da46d` recomposition were both rendered in it. It stays
+mounted for the next design pass.)*
 
 **One thing to watch on device:** `HERO_GRAIN_OPACITY` (0.04). If the panel's
 grain reads as noise at 3× density, that constant comes DOWN — never up. Its
-test pins a ceiling so nobody raises it.
+test pins a ceiling so nobody raises it. *(Build 45's device pass did not
+report the grain. It is not among the five findings; treat it as still open
+rather than as cleared.)*
 
 ## Visual Style V2, round 3 — the refinement pass (2026-08-13)
 
