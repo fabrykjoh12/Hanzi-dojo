@@ -21,7 +21,6 @@ before adding to this list — it drifts):
 | `VITE_SUPABASE_URL` | **yes** | "Site can't start" card, app never mounts |
 | `VITE_SUPABASE_ANON_KEY` | **yes** | same |
 | `VITE_VAPID_PUBLIC_KEY` | no | push reminders can't subscribe |
-| `VITE_DEV_EMAILS` | no | dev-only tooling stays hidden |
 | `VITE_BUILD_SHA` / `VITE_BUILD_TIME` | no | derived in `vite.config.js` from the CI commit — never set by hand |
 
 `VITE_GOOGLE_TTS_KEY` is **not** read by the app; it belongs to the content

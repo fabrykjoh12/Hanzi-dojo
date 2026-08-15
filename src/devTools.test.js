@@ -1,18 +1,23 @@
 import { describe, it, expect } from 'vitest'
-import { isDevUser, devEmailList, masteredCardRow, learningCardRow, chunk } from './devTools'
+import { isDevAllowed, masteredCardRow, learningCardRow, chunk } from './devTools'
 
-describe('devEmailList / isDevUser', () => {
-  it('parses, trims and lowercases the allowlist', () => {
-    expect(devEmailList(' A@x.com, b@Y.com ')).toEqual(['a@x.com', 'b@y.com'])
+describe('isDevAllowed', () => {
+  it('allows an admin profile', () => {
+    expect(isDevAllowed({ is_admin: true })).toBe(true)
   })
-  it('matches emails case/whitespace-insensitively', () => {
-    expect(isDevUser(' A@X.com ', 'a@x.com')).toBe(true)
-    expect(isDevUser('stranger@x.com', 'a@x.com')).toBe(false)
-    expect(isDevUser(null, 'a@x.com')).toBe(false)
+  it('refuses a non-admin profile', () => {
+    expect(isDevAllowed({ is_admin: false })).toBe(false)
+    expect(isDevAllowed({})).toBe(false)
   })
-  it('defaults to the repo developer', () => {
-    expect(isDevUser('fabrykjoh@gmail.com')).toBe(true)
-    expect(isDevUser('someone-else@gmail.com')).toBe(false)
+  it('refuses a missing profile', () => {
+    expect(isDevAllowed(null)).toBe(false)
+    expect(isDevAllowed(undefined)).toBe(false)
+  })
+  // The gate used to be an email allowlist whose default was a personal
+  // address; Vite inlined it into the public bundle. Nothing here may reference
+  // an email at all — that is the regression this file guards.
+  it('does not consider the account email', () => {
+    expect(isDevAllowed({ is_admin: false, email: 'anything@example.com' })).toBe(false)
   })
 })
 
