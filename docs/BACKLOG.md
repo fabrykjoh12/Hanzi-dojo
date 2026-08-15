@@ -10,6 +10,30 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+### Playwright in a remote sandbox is slower than the 30s default allows
+
+A remote Claude session runs the e2e suite against a cold Vite dev server on a
+shared container. Individual navigations that take ~1s on the GitHub runner take
+10–15s here, so any spec doing several `page.goto`s inside one test blows the
+30s default timeout and fails as a *timeout*, not an assertion — which reads
+exactly like a product regression and is not one.
+
+Observed 2026-08-15 on the release-integration branch: `home-v3-geometry.spec.js`
+(three navigations per test) failed 6/6, and `home.spec.js`'s back-navigation
+test failed 3/3, at the default timeout. Both passed **7/7 and 8/8** with
+`--timeout=180000`, and both were green on GitHub CI for the same commit.
+
+- **Do not raise the timeout in `playwright.config.js`.** CI passes at 30s;
+  raising it globally would hide a real slowdown from the runner that matters.
+  Pass `--timeout` on the command line in a sandbox instead.
+- **`visual.spec.js` cannot pass here at all.** Its baselines are captured on
+  the CI runner image (see the config comment); sandbox font rasterisation
+  differs by ~5% of pixels against a 2% threshold. Two specs — `landing mobile`
+  and `trust pages privacy desktop` — fail locally by design. CI is the only
+  authority for those.
+- Before calling a local e2e failure a regression, re-run it with a raised
+  timeout and check the same test on GitHub CI.
+
 ### An art-fetch commit lands without CI (know it before you merge)
 
 `manhua-art-fetch` commits the panels it downloads back to the branch, using the
