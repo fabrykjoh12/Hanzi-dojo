@@ -300,14 +300,22 @@ Research only; nothing was fixed. The five confirmed blockers:
   (69 kB), with the `127.0.0.1:43127` bridge string inside. Access is
   server-enforced, so this is dead weight and an Apple 2.3.1(a) talking point,
   not a leak. **Fix needs `App.jsx` — do it after Codex merges.**
-- [ ] 🟠 **`build:public` — the bundle both stores ship — is never run in CI.**
+- [x] 🟠 **`build:public` — the bundle both stores ship — is never run in CI.**
+  FIXED 2026-08-15 — `ci.yml` builds it on every PR, plus a personal-identifier
+  assertion over `dist/`. Original finding:
   `ci.yml:53-54` runs `npm run build`, the *Sites* variant (emits `hq.html`).
   A store-only regression passes every PR check. Not a blocker (the native
   workflows do build it before upload) but cheap and high-value to close.
 - [ ] 🔴 **No App Review demo account exists.** `docs/STORE-LISTING.md:133-136`
   holds a placeholder; Apple 2.1(a) makes a non-working login an automatic
   rejection. Needs a real seeded account, password entered in the console only.
-- [ ] 🔴 **Content licensing is unproven.** No LICENSE/NOTICE anywhere. Commercial-use
+- [ ] 🔴 **Content licensing is unproven.** *Partly closed 2026-08-15:* `LICENSE`
+  (all-rights-reserved, flagged for owner confirmation), `NOTICE.md` and
+  `docs/CONTENT-LICENSING.md` now exist; `/terms` no longer overclaims and
+  CC-CEDICT's ShareAlike terms are properly disclosed; `public/icons.svg` is
+  deleted; and new generated imagery must record its prompt and date
+  (`artProvenance.mjs`). **What still blocks is owner-only:** the icon master's
+  origin and the Azure Speech tier. Original finding: No LICENSE/NOTICE anywhere. Commercial-use
   rights for the Higgsfield/`nano_banana_pro` art (127 committed panels + covers),
   Azure Neural TTS audio, and LLM-generated story text are not recorded. Generation
   prompts are not archived either — `data/manhua/*.art.json` hold only `{file,url}`
@@ -324,7 +332,10 @@ Research only; nothing was fixed. The five confirmed blockers:
   Also new: the 16 `upstairs/hsk3/ep01` panels have **no manifest at all**, and
   `public/icons.svg` ships four companies' brand marks while being referenced by
   zero app code.
-- [ ] 🔴 **A personal email ships in the production bundle** — `src/devTools.js:11`
+- [x] 🔴 **A personal email ships in the production bundle** — FIXED 2026-08-15.
+  The allowlist mechanism is gone; `/dev` gates on `profile.is_admin` inside
+  `Dev.jsx`, and CI now builds `build:public` and fails if the address returns.
+  Original finding: `src/devTools.js:11`
   `DEFAULT_DEV_EMAILS = 'fabrykjoh@gmail.com'`, confirmed present in
   the emitted `dist/client/assets/devTools-*.js`. Because `VITE_DEV_EMAILS` was
   unset at build time, Vite inlined the literal as the *only* surviving value.
