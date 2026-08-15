@@ -9,6 +9,7 @@ test.describe('How much can you read? assessment', () => {
     await expect(page.getByRole('heading', { name: /How much Chinese can you read/i })).toBeVisible();
     await expect(page.getByText(/untimed/i)).toBeVisible();
     await page.getByRole('button', { name: /Start the reading test/i }).click();
+    await expect(page.getByText(/Question 1 of \d+/i)).toBeVisible();
 
     // Answer every question by clicking the first option, until the result shows.
     // (12 questions for the fixture vocab; loop defensively up to 20.)
@@ -19,7 +20,12 @@ test.describe('How much can you read? assessment', () => {
       if (await progress.isVisible().catch(() => false)) {
         // Click the first answer option (buttons after the progress/prompt).
         const options = page.locator('button');
+        const before = await progress.textContent();
         await options.nth(await firstOptionIndex(page)).click();
+        await expect.poll(async () => {
+          if (await page.getByText(/of everyday Chinese/i).isVisible().catch(() => false)) return 'done';
+          return progress.textContent();
+        }).not.toBe(before);
       } else {
         break;
       }

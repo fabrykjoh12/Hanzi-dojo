@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 // Guards a macOS-only failure that every Linux check misses.
 //
@@ -24,7 +25,7 @@ import { join } from 'node:path'
 // Writing the extension (./FillBlank.jsx) or naming the pair distinctly
 // (tasteSteps.js beside CharacterTaste.jsx) both fix it.
 
-const SRC = new URL('.', import.meta.url).pathname
+const SRC = fileURLToPath(new URL('.', import.meta.url))
 const SELF = 'moduleNames.test.js'
 
 const sources = readdirSync(SRC).filter(f => /\.(js|jsx)$/.test(f))
