@@ -62,9 +62,14 @@ fails if a personal identifier appears in it.
 > 66,390 characters, ≈ USD 1.06. Independently reconciled against the live
 > database: 8,814/8,814 at config v2 with `tier=S0` provenance, zero stale, zero
 > rows pointing at a missing object, orphans untouched (7,416), Google audio
-> untouched (6,580). The 8,814 superseded F0 objects are **retained** pending
-> listening QA; cleanup is a separate gate. The blocker is closed on the
-> engineering side — what remains is one portal screenshot and a listening pass.
+> untouched (6,580). The 8,814 superseded F0 objects are **retained**; cleanup is
+> a separate gate and has not been approved, so the rollback path stays intact.
+>
+> **Listening QA ✅ signed off by the owner, 2026-08-15** — they listened to the
+> regenerated production audio and confirmed it sounds correct. The blocker is
+> now closed on both the engineering and the QA side. What remains is one Azure
+> portal screenshot showing the Speech resource on S0, which is evidence for the
+> licensing record rather than a release gate.
 >
 > **Azure tier answered, 2026-08-15.** The Speech resource was on **F0** and has
 > been moved to **S0**. Moving tier licenses future synthesis, not past output,

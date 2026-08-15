@@ -271,10 +271,16 @@ Cleanup is a separate approval gate and has **not** been performed.
 
 ---
 
-## Listening QA — for the owner, not claimable here
+## Listening QA — ✅ SIGNED OFF BY THE OWNER, 2026-08-15
 
-This sandbox still cannot reach `bvqvturqupbggxaeihvi.supabase.co` (egress
-proxy), so **no clip has been played and listening QA is NOT signed off.**
+**The owner listened to the regenerated production audio and confirmed it sounds
+correct.** This gate is closed.
+
+It was never claimable from here: this sandbox cannot reach
+`bvqvturqupbggxaeihvi.supabase.co` (egress proxy), so no agent has played a
+clip. The sign-off is the owner's, recorded here as their statement — the paths
+below are what was offered for that pass and are kept as the record of what was
+sampled.
 
 Prefix every path with:
 `https://bvqvturqupbggxaeihvi.supabase.co/storage/v1/object/public/audio/`

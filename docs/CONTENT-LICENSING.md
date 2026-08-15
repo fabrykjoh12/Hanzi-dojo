@@ -80,8 +80,12 @@ and `synthesis_config_version = 2`, so the licensed generation is evidenced per
 row rather than asserted. Full report and reconciliation:
 [`TTS-RELICENSE-DRY-RUN.md`](TTS-RELICENSE-DRY-RUN.md).
 
-The superseded F0 objects were deliberately **retained** (8,814 files, 111.8 MB)
-until listening QA signs off; cleanup is a separate approval.
+**Listening QA is signed off** — the owner listened to the regenerated
+production audio on 2026-08-15 and confirmed it sounds correct.
+
+The superseded F0 objects are still deliberately **retained** (8,814 files,
+111.8 MB). Listening QA passing does not delete them: cleanup is its own
+approval gate and has not been given, so the rollback path stays intact.
 
 **What is still owed here: a screenshot of the Azure portal showing the Speech
 resource on S0.** The rows prove what the pipeline was told; the screenshot
