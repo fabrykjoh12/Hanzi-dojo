@@ -1,0 +1,98 @@
+# Attribution notice
+
+Hanzi Dojo is built on other people's work. This file lists the third-party
+components and datasets that carry attribution or notice obligations, what each
+obligation is, and where it is satisfied.
+
+Everything here remains under **its own license**, not the repository's
+[`LICENSE`](LICENSE). Where the two disagree about third-party material, the
+third-party license governs.
+
+Content **generated** for this project (illustrations, synthesised speech, story
+drafts) is a separate question with separate terms — see
+[`docs/CONTENT-LICENSING.md`](docs/CONTENT-LICENSING.md).
+
+---
+
+## Datasets
+
+| Component | License | Obligation | Where it is satisfied |
+|---|---|---|---|
+| **[CC-CEDICT](https://cc-cedict.org/)** — Chinese-English dictionary entries | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | Credit, link the license, **state that changes were made**, and license adaptations of the dataset under the same terms | `/terms` and `/methodology` in the app (`src/TrustPages.jsx`), and the section below |
+| **[Tatoeba](https://tatoeba.org/)** — example sentences | [CC BY 2.0 FR](https://creativecommons.org/licenses/by/2.0/fr/deed.en) | Credit + license link | `/terms` and `/methodology` |
+| **[complete-hsk-vocabulary](https://github.com/drkameleon/complete-hsk-vocabulary)** — the HSK 3.0 level lists in `data/hsk*.json` | MIT | Retain the copyright and permission notice | This file |
+| **[hanzi-writer-data](https://github.com/chanind/hanzi-writer-data)** — stroke-order data, fetched at runtime from jsDelivr (`src/strokeData.js:19`) | MIT for the packaging; the underlying character data comes from [Make Me a Hanzi](https://github.com/skishore/makemeahanzi), derived from Arphic's fonts under the **Arphic Public License** | Retain both notices; the Arphic PL requires its own notice to travel with the data | This file |
+
+### CC-CEDICT — what we changed
+
+CC BY-SA requires more than a credit: it requires saying what was adapted, and
+licensing the adaptation the same way.
+
+We adapt CC-CEDICT rather than serving it verbatim. Specifically: pinyin
+readings are corrected where the raw data gave a rare reading instead of the
+everyday one, `u:` is normalised to `ü`, tone sandhi is applied, definitions are
+trimmed to what a learner needs, and entries are ordered into per-level study
+sets.
+
+**The adapted dictionary data is available under CC BY-SA 4.0.** That obligation
+attaches to the dictionary data itself. It does **not** place the Hanzi Dojo
+application, its stories, or its artwork under CC BY-SA — those are not
+adaptations of CC-CEDICT.
+
+---
+
+## Software
+
+Full dependency licenses are resolvable from `package-lock.json`. Listed here
+are the ones whose code or notices reach the shipped app.
+
+| Component | License |
+|---|---|
+| [React](https://react.dev/) / React DOM | MIT |
+| [Vite](https://vite.dev/) | MIT |
+| [@supabase/supabase-js](https://github.com/supabase/supabase-js) | MIT |
+| [ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs) — FSRS v5 scheduling | MIT |
+| [hanzi-writer](https://hanziwriter.org/) — stroke-order animation | MIT |
+| [wanakana](https://wanakana.com/) — kana/romaji conversion | MIT |
+| [lucide-react](https://lucide.dev/) — every icon in the UI | **ISC** — requires the copyright and permission notice be retained |
+
+**lucide** — ISC License, Copyright (c) 2020, Lucide Contributors. Lucide is a
+fork of [Feather](https://feathericons.com/) (MIT, Copyright (c) 2013-2023 Cole
+Bemis). Permission to use, copy, modify and distribute is granted provided the
+copyright notice and permission notice appear in all copies.
+
+---
+
+## Fonts
+
+**No font binary is redistributed by this project.** All four are loaded from
+Google Fonts at runtime (`index.html`, `src/fontLoader.js`), so the OFL's
+redistribution conditions are not triggered. They are listed because they are
+part of what users see.
+
+| Font | License |
+|---|---|
+| [Noto Sans SC](https://fonts.google.com/noto/specimen/Noto+Sans+SC) | [SIL Open Font License 1.1](https://openfontlicense.org/) |
+| [Noto Sans JP](https://fonts.google.com/noto/specimen/Noto+Sans+JP) | SIL Open Font License 1.1 |
+| [Inter](https://rsms.me/inter/) | SIL Open Font License 1.1 |
+| [Poppins](https://fonts.google.com/specimen/Poppins) | SIL Open Font License 1.1 |
+
+The reading-font stacks in `src/readingFonts.js` name system fonts only
+(Songti SC, SimSun, Kaiti SC, Hiragino Mincho, Georgia). Nothing is loaded or
+redistributed for those.
+
+---
+
+## Not yet resolved
+
+Listed openly rather than left out. Detail and evidence in
+[`docs/CONTENT-PROVENANCE-AUDIT.md`](docs/CONTENT-PROVENANCE-AUDIT.md).
+
+- **The icon master** `src/assets/86055582-d1d3-4cb7-a460-6c907025fe15.png`, from
+  which every shipped app icon derives, has no traceable origin. If it turns out
+  to carry a third-party license, that license belongs in this file.
+- **Several bundled images** — `src/assets/Hanzi-logo.png` and the `bg-chinese`,
+  `bg-japanese`, `bg-login` backgrounds — have no recorded origin.
+- **Commercial-use terms for the generators** used to produce artwork, audio and
+  story text are recorded in `docs/CONTENT-LICENSING.md`, with the open questions
+  marked there.

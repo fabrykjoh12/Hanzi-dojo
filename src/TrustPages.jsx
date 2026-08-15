@@ -193,12 +193,24 @@ function Terms() {
 
       <H2>Content and licenses</H2>
       <ul style={{ paddingLeft: '20px', margin: '0 0 12px' }}>
-        <Li>Stories, artwork, and app design are © {BRAND_NAME}. They are for your personal
-          learning use, not for republication.</Li>
+        <Li>The {BRAND_NAME} app — its software, interface and design — is our own work and
+          isn’t licensed for reuse. The stories and illustrations we publish are ours to
+          publish, and are provided for your personal learning use, not for republication.
+          Some of the artwork was produced with AI image tools; where the law of your country
+          doesn’t recognise copyright in machine-generated images, we make no claim it
+          doesn’t give us.</Li>
+        <Li>Third-party material we build on stays under its own license — see{' '}
+          <A external href="https://github.com/fabrykjoh12/Hanzi-dojo/blob/main/NOTICE.md">our
+          attribution notice</A> for the full list.</Li>
         <Li>Dictionary definitions incorporate <A external href="https://cc-cedict.org/">CC-CEDICT</A>,
-          used under CC BY-SA 4.0.</Li>
+          used under <A external href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</A>.
+          We have changed it: entries are corrected and curated for learners — pinyin readings
+          fixed, definitions trimmed, and a per-level study order applied. That adapted
+          dictionary data is itself available under CC BY-SA 4.0. This applies to the
+          dictionary data only; it does not place the {BRAND_NAME} app, its stories or its
+          artwork under that license.</Li>
         <Li>Some example sentences come from <A external href="https://tatoeba.org/">Tatoeba</A>,
-          used under CC-BY 2.0 FR.</Li>
+          used under <A external href="https://creativecommons.org/licenses/by/2.0/fr/deed.en">CC BY 2.0 FR</A>.</Li>
         <Li>Your learning data is yours. We use it to run the product (scheduling, progress,
           recommendations), not to sell.</Li>
       </ul>
@@ -303,7 +315,12 @@ function Methodology() {
         most useful words come earliest. Our per-level word lists are curated study sets and
         do not yet mirror the official per-level word counts one-to-one; a precise published
         mapping to the official standard is planned, and this page will state it when it ships.
-        Dictionary data incorporates CC-CEDICT; some example sentences come from Tatoeba.
+        Dictionary data incorporates <A external href="https://cc-cedict.org/">CC-CEDICT</A>,
+        used under <A external href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</A>
+        and adapted by us — readings corrected, definitions trimmed for learners, study order
+        applied — with the adapted data available under the same license. Some example
+        sentences come from <A external href="https://tatoeba.org/">Tatoeba</A>, under{' '}
+        <A external href="https://creativecommons.org/licenses/by/2.0/fr/deed.en">CC BY 2.0 FR</A>.
       </P>
 
       <H2>Audio</H2>
