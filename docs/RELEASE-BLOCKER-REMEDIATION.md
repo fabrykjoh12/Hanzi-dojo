@@ -23,7 +23,8 @@ Evidence for blocker 1 lives in its own document —
 > | **CC-CEDICT ShareAlike** | ✅ Shipped — deed linked, changes stated, scope limited to the dataset |
 > | **1e · Per-image provenance** | ✅ Shipped — `artProvenance.mjs`; new images refuse to fetch without a prompt + date. Nothing backfilled |
 > | **4 · Play deletion URL** | ⏸ Copy drafted below, **not shipped** — needs the backup-retention window |
-> | **1a icon · 1c Azure · 2 demo account** | ⏸ Owner-blocked, untouched |
+> | **1a · Icon master provenance** | ✅ **Closed 2026-08-15** — owner statement: generated through ChatGPT / OpenAI ImageGen. Not stock, not a third-party logo. No icon pixel changed |
+> | **1c Azure · 2 demo account** | ⏸ Owner-blocked, untouched |
 > | **3b · DojoHQ in the bundle** | ⏸ Deferred — needs `App.jsx`, which Codex holds |
 
 > **Codex baseline used for every collision call:** `origin/codex/home-v3-final-craft`,
@@ -48,9 +49,9 @@ What did not come back clean is the foundation of the brand itself.
 
 | # | Sub-blocker | Why it blocks | Can a document fix it? |
 |---|---|---|---|
-| 1a | **The icon master has no traceable origin** — `src/assets/86055582-…png`, UUID name, zero PNG metadata chunks, added in the squashed initial commit. Every shipped iOS/Android/web icon is a pixel-derivative: the approved V2 mark is a *cleaned raster* of it, not a redraw (`P14-APP-ICON-V2-BRUSH.md:20-23`) | The store listing's primary asset rests on rights nobody can evidence | **No** — worst case it needs a redraw |
-| 1b | **`/terms` publicly asserts © over that artwork** — `src/TrustPages.jsx:196` | A public ownership claim with no rights record behind it | **Yes** — one copy edit |
-| 1c | **Azure TTS grants commercial use on paid tiers only** — ~10,522 shipped clips; the resource tier is not in the repo | If the Speech resource is F0, every clip is unlicensed for commercial use | **No** — worst case regenerate on S0 |
+| 1a | ~~The icon master has no traceable origin~~ | **✅ CLOSED 2026-08-15.** Owner statement: `src/assets/86055582-…png` was generated for the owner through **ChatGPT / OpenAI ImageGen** — not bought from a stock marketplace, not taken from a third-party logo. The whole derivation chain (original raster → V2 cleanup → E2 material → the shipped icon family) inherits that. **No redraw. No icon pixel changed.** Caveats recorded in `CONTENT-LICENSING.md`: the original prompt may be unrecoverable, AI output is not guaranteed unique, and this is not a copyright guarantee in every jurisdiction | Recorded |
+| 1b | ~~`/terms` publicly asserts © over that artwork~~ | **✅ FIXED 2026-08-15** — the clause now asserts only what is owned and acknowledges the AI-generated artwork directly | Shipped |
+| 1c | **Azure TTS grants commercial use on paid tiers only** — ~10,522 shipped clips; the resource tier is not in the repo | If the Speech resource is F0, every clip is unlicensed for commercial use | **No** — worst case regenerate on S0. **The only remaining piece of blocker 1** |
 
 Everything else in §7 of the audit (prompt archive, unmanifested `upstairs`
 panels, CC-CEDICT ShareAlike, HSK glosses, `hanzi-writer-data`, `lucide`, fonts,
@@ -83,10 +84,9 @@ by **zero** app code).
 
 ### What only the owner can resolve
 
-- The acquisition record for `86055582-…png` — marketplace, licence tier, order
-  ID, date — **or** confirmation it was self-made/commissioned, **or** the
-  decision to redraw. Note the V3 vector is measured from the same raster, so it
-  is not a clean-room escape.
+- ~~The acquisition record for `86055582-…png`~~ — **answered 2026-08-15:**
+  generated for the owner through ChatGPT / OpenAI ImageGen. Optional follow-up:
+  export the generating conversation as a dated PDF.
 - The **Azure Speech resource tier** (S0 vs F0), with a screenshot.
 - Archived PDFs of Higgsfield's terms as they stood on the generation dates
   (`higgsfield.ai` is egress-blocked from this sandbox).
@@ -316,7 +316,7 @@ it from the project rather than the pricing page.
 
 | BLOCKER | ROOT CAUSE | EXACT FIX | FILES / SYSTEMS AFFECTED | COLLISION RISK WITH CODEX | ESTIMATED COMPLEXITY | VERIFICATION | CAN DO BEFORE CODEX FINISHES? |
 |---|---|---|---|---|---|---|---|
-| **1a · Icon master provenance** | A metadata-stripped, UUID-named PNG entered the repo in a squashed initial commit; every shipped icon derives from it | Owner produces the acquisition record → document it. If none exists: redraw the mark from a clean source and re-run `tools/generate-app-icons.mjs` | `docs/CONTENT-LICENSING.md`; worst case `src/assets/86055582-…png` + every generated icon (3 iOS, 30 Android, 6 web) | **None** (assets + docs; Codex touches neither) | **S** to document · **XL** if a redraw is needed | Acquisition record archived; or `node tools/verify-app-icons.mjs` green on the new master (11 checks) | ✅ Yes — but the *answer* is owner-blocked |
+| ~~**1a · Icon master provenance**~~ | ✅ **CLOSED** — the owner has stated it was generated for them through ChatGPT / OpenAI ImageGen. The XL redraw branch is dead | Recorded in `CONTENT-LICENSING.md` and `CONTENT-PROVENANCE-AUDIT.md` §1 | Docs only — **no icon pixel changed** | None | **XS**, done | Owner statement on file; optional upgrade is exporting the ChatGPT conversation as a dated PDF | Done |
 | **1b · `© BRAND_NAME` artwork claim** | Terms assert ownership over artwork with no rights record | Soften the claim at `src/TrustPages.jsx:196` to what is actually owned | `src/TrustPages.jsx` (copy only) | **None** | **XS** | `npm run lint && npm test && npm run build`; read `/terms` in the browser | ✅ Yes |
 | **1c · Azure TTS tier** | Commercial rights for prebuilt neural voices are paid-tier-only; the tier is not in the repo | Owner confirms the Speech resource is **S0**; archive a screenshot. If **F0**: regenerate ~10,522 clips on a paid resource | Azure portal; `docs/CONTENT-LICENSING.md`; worst case the `audio` bucket + `generate-audio.mjs` via the Actions workflow | **None** | **XS** to confirm · **L** if regeneration is needed | Portal screenshot in the licensing doc | ✅ Yes — owner action, no code |
 | **1d · No LICENSE / NOTICE / attribution** | Zero of 1,179 tracked files match any licence/notice pattern; `package.json` has no `license` key | Add `LICENSE`, `NOTICE.md`, `docs/CONTENT-LICENSING.md`; add the CC-CEDICT deed link + "changes made" line to `/terms`; delete `public/icons.svg` | `LICENSE`, `NOTICE.md`, `docs/CONTENT-LICENSING.md`, `package.json`, `src/TrustPages.jsx`, `public/icons.svg` (delete) | **None** | **M** | Lint/test/build; `grep -r icons.svg src/ public/` → zero refs before deleting; the four artifacts exist | ✅ Yes |
@@ -339,8 +339,9 @@ and none of it is parallelisable later:
 
 1. **Azure tier check** (1c). One portal glance. If it comes back F0, a
    ~10,500-clip regeneration lands on the critical path and everything reorders.
-2. **Icon-master provenance** (1a). Same reasoning: if the answer is "no record",
-   a redraw is the single longest task in this document and needs to start now.
+   **This is now the single longest-lead risk in the project.**
+2. ~~Icon-master provenance~~ — **closed 2026-08-15.** It was the other candidate
+   for longest task; it is not one any more.
 3. **Create and seed the demo account** (2). Owner time only; unblocks submission
    and needs the SMTP path exercised at least once.
 4. **Supabase backup-retention window** — one number, and blocker 4's copy cannot
@@ -377,3 +378,84 @@ resource is paid.
 
 *Planning document. No product code, asset, configuration or store submission was
 changed by this task.*
+
+
+---
+
+## Owner checklist — the three things left
+
+Everything Claude can do without Codex is done. These three are the whole
+remaining critical path, and none of them is a code task.
+
+### A · Azure Speech tier — **the long pole**
+
+**Question:** is the Azure Speech resource that generated the shipped audio on
+**F0 (free)** or **S0 (paid)**?
+
+**Where:** Azure portal → the Speech resource → Overview / Pricing tier.
+
+**Why it matters:** Microsoft grants commercial usage rights for prebuilt neural
+voices to **paid tiers only**. ~10,522 clips depend on the answer.
+
+- **S0** → archive a screenshot in `docs/CONTENT-LICENSING.md`, done.
+- **F0** → every clip must be regenerated on a paid resource before release, and
+  that becomes the longest task in the project.
+
+**Nothing is regenerated until the answer is known.**
+
+### B · App Review demo account
+
+**What Apple and Google both need:** working credentials, because the app is a
+hard auth gate and a reviewer who cannot sign in is an automatic rejection
+(Apple 2.1(a); Play → App content → App access).
+
+1. A **real mailbox** you control for the reviewer address. `playreview@hanzi-dojo.com`
+   in `STORE-LISTING.md` is a placeholder — nothing proves it exists.
+2. A **Supabase auth user that is already email-confirmed.** Self-signup needs an
+   email round-trip and the Brevo SMTP path is still untested live, so a reviewer
+   must never have to confirm anything. (Dashboard → Authentication → Add user →
+   auto-confirm, or confirm through the real mailbox.)
+3. A **password**, stored in App Store Connect and Play Console only — never in
+   this repository.
+4. **Seeded progress** — enough to demonstrate Cards → Story → Practice: some due
+   flashcards, at least one unlocked story, a level in progress. The safest way is
+   to sign in as that account and use the app for ~10 minutes; real grading goes
+   through the normal SRS flow and cannot violate the `is_easy` / `ease_factor`
+   rules the way a hand-written INSERT could.
+5. The **same credentials** later entered in both consoles.
+
+**No fictional credentials were created, and none should be.**
+
+### C · Supabase backup-retention window
+
+**Question:** how long does this production project retain backups containing
+deleted rows?
+
+**Where:** Supabase dashboard → Database → Backups (it differs by plan tier, so
+read the project, not the pricing page).
+
+**Why it matters:** Play requires the public deletion page to state which data is
+deleted, which is kept, and any retention period. The copy is written and waiting
+in §4 above with `[CONFIRM SUPABASE BACKUP RETENTION WINDOW]` as the only gap.
+It ships to `/support` — and the Play Console answer changes to
+`https://hanzi-dojo.com/support` — at the same moment, not before.
+
+**Do not guess a duration.**
+
+---
+
+## Not a blocker — one product decision to make deliberately
+
+**The repository is public** (`github.com/fabrykjoh12/Hanzi-dojo`, verified
+`visibility: public`), and the `LICENSE` added on 2026-08-15 is intentionally
+proprietary / all-rights-reserved.
+
+Those two facts are compatible — source-visible but not open source is a normal
+position — but they should be a **choice**, not a default. The question is:
+
+> *Do we intentionally want Hanzi Dojo's source publicly visible while remaining
+> proprietary?*
+
+Either answer is fine. **No action, and no licence change, without the owner
+saying so** — in particular, do not switch to MIT, Apache, GPL or anything else
+on anyone's initiative.

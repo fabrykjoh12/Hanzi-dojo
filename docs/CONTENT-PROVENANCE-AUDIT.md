@@ -4,7 +4,8 @@
 release blocker #1 in [`PRE-RELEASE-READINESS-AUDIT.md`](PRE-RELEASE-READINESS-AUDIT.md).
 Every claim carries a path or file:line. Where the repository cannot answer a
 question, this document says **"cannot determine from repo"** — that phrase is the
-single most important output here, and it appears 15 times.
+single most important output here. Two of the fifteen entries have since been
+closed — see the list at the end.
 
 > ✅ proven safe · 🟡 probably safe, evidence missing · 🟠 needs terms/provenance documented · 🔴 cannot ship until resolved
 
@@ -21,61 +22,78 @@ provides no per-asset provenance** for anything predating 2026-07.
 
 | Status | Count | Items |
 |---|---|---|
-| 🔴 Cannot ship until resolved | **3** | Icon master lineage · the `© BRAND_NAME` artwork claim · Azure TTS commercial tier |
+| 🔴 Cannot ship until resolved | **1** | Azure TTS commercial tier |
+| ✅ Resolved since first publication | 2 | Icon master lineage (owner statement, §1) · the `© BRAND_NAME` artwork claim (`/terms` narrowed, §9) |
 | 🟠 Needs terms/provenance documented | 7 | Higgsfield art terms · LLM story text · missing manifests · CC-CEDICT ShareAlike · HSK glosses · hanzi-writer-data · third-party brand marks |
 | 🟡 Probably safe, evidence missing | 4 | Fonts · lucide · Tatoeba · unused stock scaffold files |
 | ✅ Proven safe | 2 | CC-CEDICT/Tatoeba *are* attributed · HSK source dataset is MIT |
 
-**The three that genuinely block:**
+**What genuinely blocks, as of 2026-08-15:**
 
-1. **Every shipped app icon derives from a file of unknown origin.** `src/assets/86055582-d1d3-4cb7-a460-6c907025fe15.png` — a UUID-named PNG with **no metadata whatsoever** (verified: no `tEXt`, `iTXt`, `zTXt`, `eXIf` chunks; 1254×1254, colortype 2). The repo describes it as "stock" five times but names no source, marketplace, licence, order number or author.
-2. **The published Terms claim ownership that is not evidenced.** `src/TrustPages.jsx:196` states *"Stories, artwork, and app design are © {BRAND_NAME}"* — a public legal claim covering artwork whose rights are unrecorded, including artwork derived from (1).
-3. **Azure grants commercial rights for prebuilt neural voices on paid tiers only.** If the Speech resource is free-tier (F0), the ~10,500 shipped audio clips are unlicensed for commercial use. Tier is an Azure portal setting — **cannot determine from repo**.
+1. **Azure grants commercial rights for prebuilt neural voices on paid tiers only.** If the Speech resource is free-tier (F0), the ~10,500 shipped audio clips are unlicensed for commercial use. Tier is an Azure portal setting — **cannot determine from repo**. Owner action.
+
+**Closed since this document was first written:**
+
+- **The icon master's origin.** Was 🔴 "unknown". The owner has confirmed it was generated for them through **ChatGPT / OpenAI ImageGen** — not bought from a stock marketplace, not taken from a third-party logo. §1 rewritten; nothing needs redrawing.
+- **The unevidenced ownership claim on `/terms`.** Narrowed in code to what is actually owned, with AI-generated artwork acknowledged explicitly. §9 updated.
 
 ---
 
-## 1 · The icon master — 🔴
+## 1 · The icon master — ✅ RESOLVED 2026-08-15
+
+**Closed by an owner-supplied provenance statement.** This section previously
+read 🔴 "origin genuinely unknown". It is no longer unknown.
 
 | Question | Answer |
 |---|---|
-| Where it came from | **Cannot determine from repo.** No metadata chunks, UUID filename, added in the squashed initial commit |
-| Commercial use permitted? | **Unknown** |
-| Attribution required? | **Unknown** |
-| Modification permitted? | **Unknown** — and it *has* been heavily modified |
-| Output/ownership terms | **Unknown** |
-| Provenance documented? | **No** |
-| Prompt/source evidence? | **None** |
-| Shipped publicly? | **The file itself is not bundled — but every shipped icon is a pixel-derivative of it** |
+| Where it came from | **Generated for the Hanzi Dojo owner through ChatGPT / OpenAI ImageGen**, in the owner's own session |
+| Acquired from a stock marketplace? | **No** |
+| Copied from a third-party logo? | **No** |
+| Commercial use permitted? | **Yes.** OpenAI's terms assign ownership of generated output to the user who created it |
+| Attribution required? | No |
+| Modification permitted? | Yes — and it has been heavily modified (V2 cleanup → E2 material) |
+| Prompt/source evidence? | **The original conversation and prompt may not be recoverable** — see below |
+| Evidence level | **Owner-supplied provenance statement**, not an archived artifact |
 
-**Why this is load-bearing.** The approved V2 mark is a *cleaned raster of this file*,
-not a redraw. `docs/P14-APP-ICON-V2-BRUSH.md:20-23`: *"V1–V3 are not redrawings.
-They are image-processing passes over the actual production mark
-(`src/assets/86055582-…png`, keyed exactly as the production generator keys it),
-so the gesture is the original's own by construction."* V3 was the vector
-reconstruction; **V2 — the approved one — is the cleaned raster.**
+**The derivation chain, unchanged and still accurate:**
 
-Everything downstream inherits the lineage:
-`docs/icon-v2/brush/masters/mask-V2.png` → `tools/generate-app-icons.mjs` →
-`public/icon-192.png`, `icon-512.png`, `maskable-512.png`, `monochrome-512.png`,
-`apple-touch-icon.png`, `public/favicon.svg`, all 30 `android/.../mipmap-*`
-files, all 3 `ios/.../AppIcon.appiconset` files, and `assets/icon-*.png`.
+```
+original generated raster  src/assets/86055582-…png
+  → V2 cleanup / refinement  docs/icon-v2/brush/masters/mask-V2.png
+  → E2 shallow-inlay material  tools/generate-app-icons.mjs
+  → the shipped icon family  3 iOS · 30 Android · 6 web
+```
 
-**What the objective evidence supports.** The file is a flattened RGB composite
-in which transparency was faked by a checkerboard pattern that the generator
-chroma-keys out (`tools/generate-app-icons.mjs`, `tools/icon-v2-brush.mjs:42`).
-A baked checkerboard plus a UUID filename plus zero metadata is *characteristic
-of a watermark-free preview download from a stock-image marketplace* — but that
-is an inference, not a sourced fact, and the "stock" wording in
-`docs/P14-APP-ICON-V2-AUDIT.md:33,609` was this project's own earlier
-characterisation rather than a record of purchase. **Treat the origin as
-genuinely unknown in both directions.**
+`docs/P14-APP-ICON-V2-BRUSH.md:20-23` records that V1–V3 are image-processing
+passes over the original rather than redrawings, so the gesture is the
+original's own by construction — which is exactly why the origin mattered. It
+now traces to a generation the owner commissioned, so the whole chain inherits
+that, including the V3 vector reconstruction (which measures the same raster).
 
-**Resolution needs one of:** the owner producing the acquisition record
-(marketplace, licence tier, order ID, date); or confirmation it was
-commissioned/self-made; or — if neither exists — regenerating the mark from a
-provenance-clean source. Note the V3 polar reconstruction in
-`docs/icon-v2/brush/masters/mark-V3.svg` is *also* derived from the same raster
-(it measures that image's geometry), so it is **not** a clean-room escape hatch.
+**What this evidence does and does not establish.** Recorded plainly, because
+overstating it would be the same mistake in the opposite direction:
+
+- **The exact original prompt may be unavailable.** If the ChatGPT conversation
+  cannot be recovered, there is no archived prompt for this asset, and none
+  should be reconstructed after the fact.
+- **AI output is not guaranteed unique.** A model can produce closely similar
+  images for different users; a generated mark is not a uniqueness guarantee the
+  way a commissioned hand-drawn one would be.
+- **This is not a guarantee of copyright eligibility in every jurisdiction.**
+  Several do not recognise copyright in purely machine-generated images. The
+  narrowed `/terms` wording (§9) already accounts for that.
+- **But there is no evidence, and no longer any reason to suspect, that the mark
+  was bought from a stock marketplace or copied from a third-party logo.** The
+  earlier "stock" characterisation in `docs/P14-APP-ICON-V2-AUDIT.md:33,609` was
+  this project's own guess, and the baked-checkerboard inference drawn from it
+  was wrong.
+
+**Practical consequence:** nothing needs redrawing. V2/E2 stands as approved and
+no icon pixel changes.
+
+**Worth doing if it is cheap:** if the ChatGPT conversation is still in the
+owner's history, export it — a dated screenshot or PDF turns "owner statement"
+into an archived record, and costs one minute. Not required; not a blocker.
 
 ---
 
@@ -216,11 +234,11 @@ licensing — every cold start sends the user's IP to Google (already disclosed 
 
 | Asset | Shipped? | Finding |
 |---|---|---|
-| `lucide-react` (66 import sites) | **Yes**, tree-shaken into JS | ISC upstream; **no licence text in repo** — ISC requires the notice be retained |
-| **`public/icons.svg`** | **Yes** — in `dist/client/`, publicly fetchable | 🟠 Contains **Bluesky, X, GitHub and Discord brand marks** (trademarks, not just copyright). **Referenced by zero app code** — dead but deployed. Origin cannot be determined from repo |
+| `lucide-react` (66 import sites) | **Yes**, tree-shaken into JS | ✅ ISC notice now retained in full in `NOTICE.md` |
+| ~~`public/icons.svg`~~ | **No — deleted 2026-08-15** | ✅ Contained **Bluesky, X, GitHub and Discord brand marks** (trademarks, not just copyright) and shipped in every public build while being referenced by zero app code. Re-proved unreferenced, removed, verified absent from `dist/client` |
 | `src/assets/react.svg` | No (unbundled) | Stock Vite scaffold; React logo is a Meta trademark. Unused — safe to delete |
 | `src/assets/logo.svg`, `hero.png` | No | Unreferenced; origin cannot be determined from repo |
-| `public/favicon.svg` + 5 PNG icons | **Yes** | All derive from §1 — inherit its status |
+| `public/favicon.svg` + 5 PNG icons | **Yes** | ✅ All derive from §1, which is now resolved — they inherit its (clean) status |
 | `android/.../drawable/ic_launcher_background.xml`, `drawable-v24/ic_launcher_foreground.xml` | In repo, inert | Android Studio template leftovers (teal grid, **stock green Android robot**). Already flagged for deletion in the icon audit |
 | `src/assets/Hanzi-logo.png` | **Yes** — bundled, on 8 screens | 🟠 Origin **cannot be determined from repo**; `docs/BACKLOG.md:271-273` says it is "the same ensō" as the icon, i.e. likely the same lineage as §1 |
 | `src/assets/bg-*.webp` (4) | **Yes** — bundled | 🟠 Only `bg-russian` is documented (Higgsfield, `TASKS.md:56`, `docs/CHANGELOG.md:412`, **no model named**). `bg-chinese`, `bg-japanese`, `bg-login` — origin **cannot be determined from repo**. The four `.png` originals (~4.5 MB) are unreferenced dead weight |
@@ -243,23 +261,24 @@ share-alike obligation attaches to the *dictionary dataset as redistributed*, no
 to the app's code — but it does need stating.
 Source: [CC BY-SA 4.0 deed](https://creativecommons.org/licenses/by-sa/4.0/deed.en)
 
-## 9 · The ownership claim — 🔴
+## 9 · The ownership claim — ✅ FIXED 2026-08-15
 
-`src/TrustPages.jsx:196-197`, live on `/terms` today:
+`src/TrustPages.jsx:196-197` used to say, live on `/terms`:
 
 > *"Stories, artwork, and app design are © {BRAND_NAME}. They are for your
 > personal learning use, not for republication."*
 
-This is a **public legal claim of copyright ownership over artwork**, asserted
+That was a **public legal claim of copyright ownership over artwork**, asserted
 with no underlying rights record for: the icon master (§1), `Hanzi-logo.png`,
 three of four backgrounds, 267 story covers, 127 manhua panels, and the
 third-party brand marks in `public/icons.svg`.
 
-For AI-generated output the claim is also *legally delicate* independent of
-provenance — several jurisdictions do not recognise copyright in
-purely machine-generated images. **This should be reviewed by whoever signs off
-the Terms**, and is the cheapest of the three blockers to de-risk: softening the
-wording costs one copy edit.
+**Rewritten.** The clause now asserts the software, interface and design as the
+project's own work, says the published stories and illustrations are ours to
+publish, and concedes directly that some artwork was produced with AI image
+tools and that no claim is made to copyright a jurisdiction does not grant in
+machine-generated images. `public/icons.svg` was deleted outright. Protection
+against copying survives; the unsupportable blanket claim does not.
 
 ---
 
@@ -320,11 +339,11 @@ work already done.
 
 ## Every "cannot determine from repo", in one list
 
-1. Origin of `src/assets/86055582-…png` — **every shipped icon derives from it**
-2. Origin of `src/assets/Hanzi-logo.png` — bundled, on 8 screens
+1. ~~Origin of `src/assets/86055582-…png`~~ — **CLOSED 2026-08-15.** Owner statement: generated through ChatGPT / OpenAI ImageGen (§1). The original prompt may not be recoverable, which is a documentation gap, not an open question about the source.
+2. Origin of `src/assets/Hanzi-logo.png` — bundled, on 8 screens. `docs/BACKLOG.md:271-273` calls it "the same ensō", so it most likely shares §1's origin, but that has not been stated by the owner and is not assumed here
 3. Origin of `bg-chinese`, `bg-japanese`, `bg-login` — bundled and shipped
 4. Origin of `src/assets/hero.png`, `logo.svg`
-5. Origin of `public/icons.svg` (contains four companies' brand marks), shipped
+5. ~~Origin of `public/icons.svg`~~ — **MOOT 2026-08-15.** Deleted; it was referenced by zero app code
 6. Origin of the 8 orphaned `data/covers/jlpt*/*.png`
 7. Which model produced the **267 story covers**
 8. How the 3 `public/story-covers/generated/*.webp` were made

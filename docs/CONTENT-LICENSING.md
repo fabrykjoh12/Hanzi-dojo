@@ -19,6 +19,7 @@ Evidence behind every row: [`CONTENT-PROVENANCE-AUDIT.md`](CONTENT-PROVENANCE-AU
 
 | Generator | Used for | Commercial use | Ownership of output | Evidence to archive | Status |
 |---|---|---|---|---|---|
+| **OpenAI / ChatGPT ImageGen** | The original Hanzi Dojo brush mark — `src/assets/86055582-…png`, from which the whole shipped icon family derives | **Permitted.** OpenAI's terms assign ownership of generated output to the user who created it | Owner | The generating conversation, if still recoverable — see the note below | 🟠 |
 | **Higgsfield** (model `nano_banana_pro`) | 127 manhua panels (`public/stories/**`), 267 story covers, `bg-russian` | **Permitted.** Higgsfield's published terms state it does not claim ownership of Inputs or Outputs, does not restrict commercial use, and that rights in Outputs may be transferred or sublicensed | Creator retains | **A dated PDF of the Terms of Use as they stood on the generation dates**, plus the account/plan the work was generated under | 🟠 |
 | **Microsoft Azure Neural TTS** (`zh-CN-Xiaoxiao*`, `zh-CN-Yunxi`, casting pools) | ~10,522 audio clips — words, examples, story lines | **Paid tiers only.** Microsoft grants commercial usage rights for prebuilt neural voices to paid-tier customers; the free F0 tier is not licensed for commercial use | n/a | **A screenshot of the Speech resource's pricing tier**, showing S0 rather than F0 | 🔴 |
 | **Google Cloud TTS** (`cmn-CN-Chirp3-HD-*`, `cmn-CN-Wavenet-A`) | Legacy clips still served (`docs/TTS.md:245`) | Standard Google Cloud terms | n/a | Terms citation for the generation period | 🟠 |
@@ -27,6 +28,33 @@ Evidence behind every row: [`CONTENT-PROVENANCE-AUDIT.md`](CONTENT-PROVENANCE-AU
 | **Anthropic** (`claude-sonnet-5`) | Story text, premium tier (`llm.mjs:73-107`) | Standard terms | Customer | Terms citation | 🟠 |
 
 ---
+
+### The icon mark — origin recorded 2026-08-15
+
+**Owner-supplied statement:** the original brush/ensō mark was generated
+specifically for the owner through **ChatGPT / OpenAI ImageGen**. It was **not**
+downloaded from a stock marketplace and **not** taken from a third-party logo.
+
+Derivation, unchanged: original generated raster → V2 cleanup/refinement → E2
+icon material → the iOS, Android and web icon family.
+
+What that statement establishes, and what it does not:
+
+- ✅ The source is known, and commercial use and modification are permitted.
+- ✅ There is no evidence the mark was bought from a marketplace or copied from
+  anyone's logo — the earlier "stock" characterisation in the icon audit was this
+  project's own guess and was wrong.
+- ⚠️ **The exact original prompt may be unavailable.** If the conversation cannot
+  be recovered, this asset simply has no archived prompt. Do not reconstruct one.
+- ⚠️ **AI output is not guaranteed unique** — a model can produce a closely
+  similar image for someone else.
+- ⚠️ **This is not a guarantee of copyright eligibility in every jurisdiction.**
+  Several do not recognise copyright in purely machine-generated images; the
+  narrowed `/terms` wording already says so.
+
+**Evidence level: owner statement, not an archived artifact.** If the ChatGPT
+conversation is still in the owner's history, exporting a dated PDF upgrades this
+row from 🟠 to ✅ in about a minute. Not required, and not a blocker.
 
 ## The blocking question
 
@@ -113,5 +141,6 @@ a warning, never an error — the gap is real and is not going to be papered ove
 5. **Which of the 176 stories in `data/authored-stories.json` are human-written
    versus assistant-drafted** is not recorded per story. Relevant only if a
    jurisdiction's rules on AI-assisted text bear on the ownership claim.
-6. **The icon master's origin** — tracked in the provenance audit, not here,
-   because it is a licensing question rather than a generation one.
+6. ~~The icon master's origin~~ — **closed 2026-08-15**, see above. The one
+   remaining sub-question is whether the generating ChatGPT conversation can be
+   exported as a dated record. Optional.

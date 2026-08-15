@@ -20,8 +20,8 @@ than guessing.
 
 | | Count |
 |---|---|
-| 🔴 **Confirmed release blockers** | **4** |
-| 🟠 Important gaps | 16 |
+| 🔴 **Confirmed release blockers** | **3** — all owner-dependent, none is a code task |
+| 🟠 Important gaps | 12 |
 | 🟡 Verification-only (owner/console/device) | 19 |
 | ⚪ / safe for v1.1 | 8 |
 
@@ -39,18 +39,39 @@ third-party analytics, no ads SDK, no advertising ID, and the paused language
 tracks cannot leak. What is missing is **paperwork and pipeline coverage**, not
 working software.
 
-### The four blockers, in dependency order
+### The blockers
 
-1. **Content licensing is unproven** — no LICENSE/NOTICE; commercial-use rights for AI art, TTS audio and LLM story text are not evidenced anywhere. Longest lead time, owner-dependent.
+**Remaining — 3, every one an owner action:**
+
+1. **The Azure Speech resource tier is unknown.** Commercial rights for prebuilt neural voices are paid-tier-only; ~10,522 shipped clips depend on whether the resource is S0 or F0. Longest lead time if the answer is F0.
 2. **No App Review demo account exists** — Apple 2.1(a); a reviewer who cannot sign in is an automatic rejection.
-3. **A personal email address ships in the production bundle.**
-4. **Play's required web-accessible account-deletion URL is not established.**
+3. **Play's required web-accessible account-deletion URL is not established.** The copy is written and waiting on one fact: the Supabase backup-retention window.
 
-Plus one blocker-adjacent pipeline gap that is cheap to close and prevents a
-whole class of silent failure: **`build:public` — the bundle both stores ship —
-is never run in CI.**
+**Closed:**
 
-> **Implementation pass, 2026-08-15 — two of the four blockers are closed.**
+- ~~Content licensing is unproven~~ — `LICENSE`, `NOTICE.md` and `docs/CONTENT-LICENSING.md` now exist; `/terms` no longer overclaims; CC-CEDICT's ShareAlike terms are disclosed properly; new imagery records its prompt and date. The **icon master's origin is established** (ChatGPT / OpenAI ImageGen, owner statement). Only the Azure tier survives, as blocker 1 above.
+- ~~A personal email address ships in the production bundle~~ — removed; `/dev` gates on `profile.is_admin`, and CI fails if it returns.
+
+~~Plus one blocker-adjacent pipeline gap: `build:public` is never run in CI.~~
+**Closed 2026-08-15** — `ci.yml` now builds the store bundle on every PR and
+fails if a personal identifier appears in it.
+
+> **Icon provenance closed, 2026-08-15 (owner statement).** The icon master
+> `src/assets/86055582-…png` is no longer of unknown origin: the owner has
+> confirmed it was **generated for them through ChatGPT / OpenAI ImageGen** — not
+> bought from a stock marketplace, not taken from a third-party logo. The whole
+> derivation chain (original raster → V2 cleanup → E2 material → the shipped icon
+> family) inherits that, so **no icon is redrawn and no pixel changes**. Recorded
+> with its caveats — the original prompt may be unrecoverable, AI output is not
+> guaranteed unique, and this is not a copyright guarantee in every jurisdiction —
+> in `CONTENT-LICENSING.md` and `CONTENT-PROVENANCE-AUDIT.md` §1.
+>
+> **Blocker count is now 3**, down from 4: content licensing survives only as the
+> Azure Speech tier question; the App Review demo account and the Play deletion
+> URL are unchanged. All three are owner actions — the checklist is at the end of
+> [`RELEASE-BLOCKER-REMEDIATION.md`](RELEASE-BLOCKER-REMEDIATION.md).
+>
+> **Implementation pass, 2026-08-15 — two of the original four blockers are closed.**
 > Blocker 3 (personal email in the store bundle) is fixed: the email allowlist is
 > gone and `/dev` gates on `profile.is_admin`, with a CI assertion so it cannot
 > return. Blocker 1's *documentable* half is fixed: `LICENSE`, `NOTICE.md` and
@@ -363,9 +384,9 @@ it corrects two rows this table previously got optimistic about.
 
 | Item | Status | Evidence | Action |
 |---|---|---|---|
-| **No LICENSE / NOTICE / third-party-terms file anywhere** | 🔴 | `git ls-files \| grep -iE "licen\|notice\|copying\|attrib\|third.?party\|credits\|copyright"` over all **1,179 tracked files → zero matches**; `package.json` has no `license` key | Establish the licensing basis for everything shipped (below) |
-| **Every shipped app icon derives from a file of unknown origin** | 🔴 | `src/assets/86055582-d1d3-4cb7-a460-6c907025fe15.png` — UUID filename, **no PNG metadata chunks at all** (verified: no `tEXt`/`iTXt`/`zTXt`/`eXIf`; 1254×1254, colortype 2), added in the squashed initial commit. The approved V2 mark is a *cleaned raster of it*, not a redraw (`P14-APP-ICON-V2-BRUSH.md:20-23`), so `mask-V2.png` → every iOS/Android/web icon inherits the lineage. The V3 vector is measured from the same raster, so it is **not** a clean-room escape | Owner produces the acquisition record, or confirms it was self-made/commissioned, or the mark is regenerated from a provenance-clean source |
-| **`/terms` publicly claims © over artwork with no rights record** | 🔴 | `src/TrustPages.jsx:196` — *"Stories, artwork, and app design are © {BRAND_NAME}"*, covering the icon master, `Hanzi-logo.png`, 3 of 4 backgrounds, 267 covers, 127 panels and the third-party brand marks in `public/icons.svg` | Soften the wording to what is actually owned. Cheapest of the three to de-risk — one copy edit |
+| ~~No LICENSE / NOTICE / third-party-terms file anywhere~~ | ✅ **Fixed 2026-08-15** — `LICENSE`, `NOTICE.md`, `docs/CONTENT-LICENSING.md`. Original finding: | `git ls-files \| grep -iE "licen\|notice\|copying\|attrib\|third.?party\|credits\|copyright"` over all **1,179 tracked files → zero matches**; `package.json` has no `license` key | Establish the licensing basis for everything shipped (below) |
+| ~~Every shipped app icon derives from a file of unknown origin~~ | ✅ **Closed 2026-08-15** — owner statement: generated through ChatGPT / OpenAI ImageGen; not stock, not a third-party logo. Original finding kept for the record: | `src/assets/86055582-d1d3-4cb7-a460-6c907025fe15.png` — UUID filename, **no PNG metadata chunks at all** (verified: no `tEXt`/`iTXt`/`zTXt`/`eXIf`; 1254×1254, colortype 2), added in the squashed initial commit. The approved V2 mark is a *cleaned raster of it*, not a redraw (`P14-APP-ICON-V2-BRUSH.md:20-23`), so `mask-V2.png` → every iOS/Android/web icon inherits the lineage. The V3 vector is measured from the same raster, so it is **not** a clean-room escape | Owner produces the acquisition record, or confirms it was self-made/commissioned, or the mark is regenerated from a provenance-clean source |
+| ~~`/terms` publicly claims © over artwork with no rights record~~ | ✅ **Fixed 2026-08-15** — narrowed to what is owned, AI artwork acknowledged. Original finding: | `src/TrustPages.jsx:196` — *"Stories, artwork, and app design are © {BRAND_NAME}"*, covering the icon master, `Hanzi-logo.png`, 3 of 4 backgrounds, 267 covers, 127 panels and the third-party brand marks in `public/icons.svg` | Soften the wording to what is actually owned. Cheapest of the three to de-risk — one copy edit |
 | **Azure TTS commercial rights are paid-tier-only** | 🔴 | ~**10,522 clips** (`CHANGELOG.md:89`) from `zh-CN-Xiaoxiao*` / `zh-CN-Yunxi` (`src/tts/providers/azure.js:27-29`). Microsoft grants commercial use of prebuilt neural voices to paid tiers; **F0 is not licensed for it**. `.env.example` records only key + region — **tier cannot be determined from repo** | Owner confirms the Speech resource is **S0, not F0**, and archives a screenshot. If F0: every clip must be regenerated on a paid resource |
 | AI story artwork — commercial-use rights | 🟠 *(was 🔴)* | 127 committed panels + 267 covers via **Higgsfield MCP** (`nano_banana_pro` at 2k, `data/manhua/*.art.json:3`). Higgsfield's published terms are **favourable**: it claims no ownership of Outputs, does not restrict commercial use, and permits sublicensing | Downgraded on the terms themselves. Residual: `nano_banana_pro` is Google's model *via* Higgsfield, and Higgsfield grants rights but does **not indemnify**. Owner archives a dated PDF of the terms |
 | **Generation prompts are not archived** | 🟠 | Manifests hold exactly `{file,url}`; `grep -rn '"prompt"' data/` → **0** across all 9 | No per-image proof the "no resemblance to any franchise" constraint was applied. Extend `.art.json` with `prompt` + `generated` going forward |
@@ -582,6 +603,7 @@ Ordered by dependency and severity.
 
 | Item | Why it can wait |
 |---|---|
+| **Public repository + proprietary LICENSE** | Not a blocker at all — a **product decision**. The repo is public (`visibility: public`) and the LICENSE added 2026-08-15 is all-rights-reserved. Those are compatible, but the combination should be chosen, not inherited: *do we intentionally want the source publicly visible while remaining proprietary?* No licence change without the owner saying so — in particular, never switch to MIT/Apache/GPL on anyone's initiative |
 | **Apple Sign-In plugin has no Capacitor-8 major** | Capacitor's CLI patches the manifest on every sync and three TestFlight builds prove it archives (§5 B1). Genuine debt — revisit if upstream publishes 8.x or if the device test fails |
 | Native Speaking support | Feature gap, not a compliance issue; the drill is correctly hidden on iOS and no mic permission is requested |
 | Universal links / App Links | Custom scheme covers OAuth today; deep links are an enhancement, and this is documented as a deliberate later step |
