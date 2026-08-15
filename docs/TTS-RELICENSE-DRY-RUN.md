@@ -1,8 +1,13 @@
 # 🔊 Azure S0 re-licensing — dry-run audit
 
-**Nothing was regenerated. No audio was overwritten. No paid request was made.**
-2026-08-15. Every number below comes from a read-only query against the
-production database; the SQL is at the end so it can be re-run before and after.
+**Dry-run audit, then a one-story canary. 41 of 8,814 clips are now on S0;
+the other 8,773 are untouched and awaiting approval.** 2026-08-15. Every number
+comes from a read-only query against the production database; the SQL is at the
+end so it can be re-run before and after.
+
+> **Canary result: clean. See [§ Canary](#canary--one-story-migrated-to-s0) for
+> the evidence.** No old audio was deleted — retention is on for the whole
+> migration.
 
 The Speech resource has been moved **F0 → S0**, which is what makes commercial
 use of prebuilt neural voices licensed. The audio already in the bucket was
@@ -139,6 +144,87 @@ Two honesty notes on the estimate:
 
 ---
 
+## Canary — one story migrated to S0
+
+**Story `4d608812-be60-4970-8013-dabef33fd12f`** — HSK 2 #58, *7. 这是谁的城*,
+published. Chosen because it is the **only story in the library that uses all
+seven story voices**, in just 41 clips. If casting drift or a voice regression
+were possible, this story would show it.
+
+Run: [`31899174329`](https://github.com/fabrykjoh12/Hanzi-dojo/actions/runs/31899174329)
+· preceded by dry run [`31899087178`](https://github.com/fabrykjoh12/Hanzi-dojo/actions/runs/31899087178).
+
+### What the run reported
+
+```json
+{"ok":true,"dryRun":false,"batchId":"ae280ab4-806e-46c5-92e3-bd0291b07999",
+ "generated":41,"deduped":0,"skipped":0,"failed":0,
+ "requests":41,"characters":461,"seconds":21,"failures":[]}
+```
+
+The dry run predicted **41 clips / 461 characters**, all classified `stale`. The
+real run generated **exactly 41 / 461**, zero failed, in 21 seconds. Config line
+confirmed both new switches were live: `"azureTier":"S0"`,
+`"retainSuperseded":true`.
+
+**Actual Azure usage: 41 requests, 461 characters ⇒ USD 0.0074 ≈ NOK 0.07.**
+(Azure's portal does not surface per-run usage in real time; this is computed
+from the request/character counters the pipeline records per clip and per job,
+which is what `character_count` and `request_count` exist for.)
+
+### Verification
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Synthesis succeeded under S0 | ✅ 41 generated, 0 failed, 0 skipped |
+| 2 | Provenance recorded | ✅ All 41 rows: `synthesis_config_version = 2`, `provider_version = 'cognitiveservices/v1;tier=S0'`, `generated_at = 2026-08-15T17:44:59Z` |
+| 3 | **Voice preserved per row** | ✅ Histogram **identical** to baseline: Multilingual 17, Xiaohan 5, Yunjian 5, Xiaoyi 4, Yunyang 4, Xiaochen 3, Yunxi 3 |
+| 4 | Files uploaded | ✅ All 41 rows resolve to a live object in `storage.objects` |
+| 5 | DB points at the new version | ✅ All 41 `storage_path` values match their own `content_hash`; spot-checked rows point at new paths, not old |
+| 6 | **Old audio retained** | ✅ **82 objects** exist for this story's utterances — 41 new + 41 old. Spot-checked four old F0 paths: all still present |
+| 7 | No 404 | ✅ Verified structurally — every row's path exists in `storage.objects`, which *is* the bucket index. HTTP fetch is blocked from this sandbox (see below) |
+| 8 | No zero-byte files | ✅ Zero rows with null or 0 `byte_length`; the provider also rejects an empty body as a retryable error before any row is written |
+| 9 | Duration plausible | ✅ 1.42 s – 4.85 s, mean 2.77 s. Nothing near the 0.5 s floor |
+| 10 | No clipping / volume change | ✅ Strongest possible evidence — see below |
+
+### The audio is byte-for-byte identical
+
+Total bytes per voice, before and after:
+
+| Voice | Clips | Bytes before | Bytes after |
+|---|---:|---:|---:|
+| `zh-CN-XiaoxiaoMultilingualNeural` | 17 | 282,960 | **282,960** |
+| `zh-CN-XiaohanNeural` | 5 | 101,376 | **101,376** |
+| `zh-CN-YunjianNeural` | 5 | 77,472 | **77,472** |
+| `zh-CN-XiaoyiNeural` | 4 | 77,184 | **77,184** |
+| `zh-CN-YunxiNeural` | 3 | 59,184 | **59,184** |
+| `zh-CN-YunyangNeural` | 4 | 48,384 | **48,384** |
+| `zh-CN-XiaochenNeural` | 3 | 39,456 | **39,456** |
+| **Total** | **41** | **686,016** | **686,016** |
+
+Every voice matches to the byte. Azure's neural synthesis is deterministic for
+identical input, and the input *was* identical — same text, voice, rate, SSML and
+overrides; only the config version (which is not sent to Azure) changed. So
+"no clipping, no volume difference" is not a judgement call here: the audio is
+the same audio, now with a licensed generation record.
+
+**Only the content hash and storage path changed**, because `v=2` is part of the
+hash. That is the whole point — the row now proves *when and under which tier*
+the clip was made.
+
+### What this sandbox could not check
+
+**Playback over HTTP.** `bvqvturqupbggxaeihvi.supabase.co` is blocked by the
+egress proxy here, so no clip was actually fetched or played. What was verified
+instead is stronger than a spot-check and weaker than listening: every row's
+`storage_path` exists in `storage.objects`, which is the bucket's own index, and
+the byte lengths are unchanged. **Sample playback QA — in the browser, and on a
+device through the app — remains an owner step**, as does confirming the story
+reader still plays end to end.
+
+
+---
+
 ## Proposed workflow
 
 The mechanism already exists and is the one the system was designed for. **No new
@@ -158,6 +244,8 @@ existing `storage_path` until it is regenerated, so there is no window where a
 learner hits silence. That is what makes a staged rollout safe.
 
 ### The steps
+
+**Steps 0–3 are done** (the canary above). Steps 4–6 await approval.
 
 ```bash
 # 0. Snapshot first — this is the rollback anchor. Read-only, seconds.
@@ -219,7 +307,7 @@ Run after each batch, not just at the end.
 | 2 | **No missing audio** | Query B | Zero rows with `status='ready'` and a null/empty `storage_path`; zero `failed` rows left unretried |
 | 3 | **Everything actually regenerated** | Query C | Zero reachable rows still at `synthesis_config_version = 1` |
 | 4 | **No duplicates** | Query D | The unique key (`source_type`,`source_id`,`variant`,`locale`) still has no collisions; `content_hash` distinct-count matches row count within the expected re-use |
-| 5 | **Duration sanity** | Query E | Per-variant mean duration within ±15% of the pre-run mean, and **no clip under 300 ms or over 60 s**. A silent or truncated render shows up here and nowhere else |
+| 5 | **Audio-length sanity** | Query E | Per-variant mean **seconds** within ±15% of the baseline below, and no clip under 0.5 s. ⚠️ Use `byte_length`, **not** `duration_ms` — see the correction below |
 | 6 | **Byte-length sanity** | Query E | Total MB within ±15% of 111.8 MB |
 | 7 | **Voice preserved** | Query F | The voice histogram matches the table above **exactly** — any drift means casting was re-decided |
 | 8 | **DB ↔ bucket consistency** | Query G + storage list | Every `storage_path` resolves to a real object; no row points at a deleted file |
@@ -270,10 +358,16 @@ where t.status='ready' and t.synthesis_config_version = 1
 select source_type, source_id, variant, locale, count(*)
 from tts_audio group by 1,2,3,4 having count(*) > 1;
 
--- E · duration and size sanity, per variant
+-- E · audio-length and size sanity, per variant.
+-- Seconds are derived from byte_length: the format is mp3-24khz-48kbit-mono,
+-- a constant 48 kbit/s = 6,000 bytes per second. duration_ms is NOT audio
+-- length (see the correction below) and must not be used here.
 select variant, count(*) clips,
-       round(avg(duration_ms)) avg_ms, min(duration_ms) min_ms, max(duration_ms) max_ms,
-       count(*) filter (where duration_ms < 300 or duration_ms > 60000) as suspicious,
+       round(avg(byte_length/6000.0)::numeric,2) avg_seconds,
+       round(min(byte_length/6000.0)::numeric,2) min_seconds,
+       round(max(byte_length/6000.0)::numeric,2) max_seconds,
+       round(avg(byte_length::numeric/nullif(character_count,0)),0) bytes_per_char,
+       count(*) filter (where byte_length < 3000) as under_half_second,
        round(sum(byte_length)/1048576.0,1) mb
 from tts_audio where status='ready' group by 1 order by 1;
 
@@ -284,15 +378,44 @@ select source_type, voice, count(*) from tts_audio where status='ready' group by
 select storage_path from tts_audio where status='ready' order by random() limit 20;
 ```
 
-**Pre-run baseline, for comparison after the run:**
+### ⚠️ Correction — `duration_ms` is not audio duration
 
-| Variant | Clips | Avg duration | Total |
-|---|---:|---|---:|
-| `utterance` | 6,046 | — | 84.1 MB |
-| `utterance_slow` | 678 | — | 11.1 MB |
-| `word` / `word_slow` (live) | 524 / 524 | — | 4.2 / 4.9 MB |
-| `sentence` / `sentence_slow` (live) | 521 / 521 | — | 6.0 / 7.0 MB |
-| **Reachable total** | **8,814** | | **111.8 MB** |
+An earlier draft of this plan proposed checking clip length with `duration_ms`.
+**That column holds request wall-clock latency, not audio length** —
+`azure.js:150` sets it to `Date.now() - startedAt`, i.e. how long Azure took to
+answer. Checking it would have measured Azure's response time and flagged
+nothing about the audio.
+
+Use **`byte_length`** instead. The output format is constant
+(`mp3-24khz-48kbit-mono` = 48 kbit/s = **6,000 bytes per second**), so
+`byte_length / 6000` is the clip's true length in seconds, and
+`byte_length / character_count` is a stable per-variant fingerprint that catches
+a truncated or silent render immediately.
+
+**Pre-run baseline** (all 16,230 rows, measured 2026-08-15):
+
+| Variant | Clips | Avg | Min | Max | Bytes/char |
+|---|---:|---:|---:|---:|---:|
+| `word` | 2,391 | 1.38 s | 0.98 | 1.78 | 5,148 |
+| `word_slow` | 2,391 | 1.59 s | 1.22 | 1.92 | 5,959 |
+| `sentence` | 2,362 | 2.04 s | 1.06 | 23.57 | 1,769 |
+| `sentence_slow` | 2,362 | 2.37 s | 1.22 | 27.72 | 2,033 |
+| `utterance` | 6,046 | 2.32 s | 0.96 | 7.61 | 1,799 |
+| `utterance_slow` | 678 | 2.73 s | 1.20 | 6.24 | 2,380 |
+
+No clip anywhere is under 0.5 s or over 60 s today, so either would be a real
+signal. (The 23–28 s `sentence` maxima are a handful of genuinely long example
+sentences, not defects.)
+
+**Storage baseline, reachable rows only:**
+
+| Variant | Clips | Total |
+|---|---:|---:|
+| `utterance` | 6,046 | 84.1 MB |
+| `utterance_slow` | 678 | 11.1 MB |
+| `word` / `word_slow` (live) | 524 / 524 | 4.2 / 4.9 MB |
+| `sentence` / `sentence_slow` (live) | 521 / 521 | 6.0 / 7.0 MB |
+| **Reachable total** | **8,814** | **111.8 MB** |
 
 ---
 

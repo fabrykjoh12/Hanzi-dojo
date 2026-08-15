@@ -1,27 +1,39 @@
 {
-  "_comment": "Dry-run manifest for the Azure S0 re-licensing regeneration. Produced 2026-08-15 from read-only queries against the production database. NOTHING HAS BEEN REGENERATED. See docs/TTS-RELICENSE-DRY-RUN.md.",
+  "_comment": "Manifest for the Azure S0 re-licensing regeneration. Produced 2026-08-15 from read-only queries against production. The CANARY (one story, 41 clips) has been migrated; the remaining 8,773 clips await approval. See docs/TTS-RELICENSE-DRY-RUN.md.",
   "_scope_rule": "Scope is defined by rule, not by a list of 8,814 rows, because that is what the generator actually consumes: tts-generate.mjs enumerates live source rows (vocabulary, story_utterances) and derives clips from them. Orphaned tts_audio rows are unreachable from a source and therefore cannot be selected at all. The counts below are the expected result of that enumeration and are the verification target.",
   "audited_at": "2026-08-15",
   "database": "bvqvturqupbggxaeihvi",
   "tier_at_generation": "F0 (free) — not licensed for commercial use",
   "tier_for_regeneration": "S0 (Standard, pay-as-you-go)",
-
   "current_state": {
     "tts_audio_rows_total": 16230,
     "tts_audio_rows_ready": 16230,
-    "provider_breakdown": { "azure": 16230, "google": 0 },
+    "provider_breakdown": {
+      "azure": 16230,
+      "google": 0
+    },
     "note": "Every row in tts_audio is Azure. Legacy Google audio never had rows here — it is referenced only by vocabulary.audio_path."
   },
-
   "in_scope": {
     "clips": 8814,
     "characters": 66390,
     "storage_mb": 111.8,
-    "story_utterances": { "clips": 6724, "characters": 57222, "utterance": 6046, "utterance_slow": 678 },
-    "vocabulary": { "words": 524, "clips": 2090, "characters": 9168,
-                    "word": 524, "word_slow": 524, "sentence": 521, "sentence_slow": 521 }
+    "story_utterances": {
+      "clips": 6724,
+      "characters": 57222,
+      "utterance": 6046,
+      "utterance_slow": 678
+    },
+    "vocabulary": {
+      "words": 524,
+      "clips": 2090,
+      "characters": 9168,
+      "word": 524,
+      "word_slow": 524,
+      "sentence": 521,
+      "sentence_slow": 521
+    }
   },
-
   "out_of_scope_orphans": {
     "clips": 7416,
     "characters": 34414,
@@ -29,17 +41,21 @@
     "reason": "These rows point at vocabulary ids that no longer exist. On 2026-07-28 a bulk re-import created 4,495 new Chinese vocabulary rows with new UUIDs; clips generated against the old ids were left behind. They are unreachable by the app AND unreachable by the generator. Regenerating them would spend money on audio nobody can play.",
     "recommended_action": "Delete after the regeneration passes QA — frees 79.1 MB of 190.9 MB in the audio bucket. Not part of this run."
   },
-
   "out_of_scope_google_legacy": {
     "vocabulary_rows_served_by_google_only": 6058,
-    "breakdown": { "chinese_hsk_3": 4473, "japanese_jlpt": 1438, "russian": 147 },
+    "breakdown": {
+      "chinese_hsk_3": 4473,
+      "japanese_jlpt": 1438,
+      "russian": 147
+    },
     "reason": "Explicitly excluded by the owner: the Google clips are a separate licensing question and are not part of the Azure fix.",
     "note": "Flagged only so the number is not mistaken for an omission: 4,473 active Chinese words currently have NO Azure audio at all. Voicing them is new content generation, not re-licensing."
   },
-
   "voice_mapping_to_preserve": {
     "_rule": "Voice assignment is data, not a constant, so a re-render preserves it automatically: story utterances carry their own story_utterances.voice, and vocabulary uses DEFAULT_VOICES.flashcard. No casting decision is re-made.",
-    "vocabulary": { "zh-CN-XiaoxiaoNeural": 2090 },
+    "vocabulary": {
+      "zh-CN-XiaoxiaoNeural": 2090
+    },
     "story_utterance": {
       "zh-CN-XiaoxiaoMultilingualNeural": 3069,
       "zh-CN-YunxiNeural": 1367,
@@ -49,12 +65,15 @@
       "zh-CN-XiaochenNeural": 12,
       "zh-CN-YunyangNeural": 91
     },
-    "speaking_rates": { "1.00": 10799, "0.85": 3040, "0.80": 2391 },
+    "speaking_rates": {
+      "1.00": 10799,
+      "0.85": 3040,
+      "0.80": 2391
+    },
     "output_format": "mp3-24khz-48kbit-mono",
     "hd_voices_used": 0,
     "billing_note": "All voices are prebuilt neural (not HD, not custom), so every character bills at the standard neural rate."
   },
-
   "cost_estimate": {
     "unit_price_usd_per_1m_chars": 16.0,
     "source": "Azure AI Speech, Standard S0, prebuilt neural voices (checked 2026-08-15)",
@@ -68,7 +87,6 @@
     "headroom": "~190x the in-scope cost",
     "sufficient": true
   },
-
   "expected_after_run": {
     "tts_audio_ready_rows": 16230,
     "rows_with_new_content_hash": 8814,
@@ -77,6 +95,43 @@
     "storage_paths_change": true,
     "storage_path_note": "Paths are content-addressed, so every regenerated clip lands at a NEW object key and the row is repointed. Nothing is overwritten in place."
   },
-
-  "reproduce_this_manifest": "See docs/TTS-RELICENSE-DRY-RUN.md § 'Reproducing the audit' — the exact SQL is recorded there so the numbers can be re-derived before and after the run."
+  "reproduce_this_manifest": "See docs/TTS-RELICENSE-DRY-RUN.md § 'Reproducing the audit' — the exact SQL is recorded there so the numbers can be re-derived before and after the run.",
+  "canary": {
+    "status": "complete",
+    "story_id": "4d608812-be60-4970-8013-dabef33fd12f",
+    "story": "HSK 2 #58 · 7. 这是谁的城 (published)",
+    "why_this_story": "The only story in the library using all seven story voices — 41 clips covering every casting path.",
+    "run": "https://github.com/fabrykjoh12/Hanzi-dojo/actions/runs/31899174329",
+    "batch_id": "ae280ab4-806e-46c5-92e3-bd0291b07999",
+    "generated": 41,
+    "failed": 0,
+    "skipped": 0,
+    "deduped": 0,
+    "requests": 41,
+    "characters": 461,
+    "seconds": 21,
+    "cost_usd": 0.0074,
+    "provider_version_written": "cognitiveservices/v1;tier=S0",
+    "synthesis_config_version": 2,
+    "old_objects_retained": 41,
+    "objects_now_present_for_story": 82,
+    "audio_bytes_before": 686016,
+    "audio_bytes_after": 686016,
+    "audio_identical": true,
+    "voice_histogram_unchanged": true,
+    "not_verified_here": "HTTP playback — the Supabase storage host is blocked by this sandbox's egress proxy. Structural DB/bucket consistency was verified via storage.objects instead. Listening QA is an owner step."
+  },
+  "remaining_after_canary": {
+    "clips": 8773,
+    "characters": 65929,
+    "estimated_usd": 1.05,
+    "order": [
+      "flashcards (524 words, 2,090 clips)",
+      "stories HSK1",
+      "stories HSK2",
+      "stories HSK3+",
+      "remaining active Azure content"
+    ],
+    "status": "awaiting approval"
+  }
 }
