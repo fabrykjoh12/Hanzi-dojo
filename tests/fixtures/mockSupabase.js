@@ -147,6 +147,28 @@ const STORIES = [{
   image_path: null, english_content: 'An old friend.',
   content: ['今天我看朋友。', '朋友很好。'].join('\n'),
 }, {
+  // A three-chapter derived series (leading title numbers) exercising the
+  // series detail page + chapter unlock rules: chapter 1 free, 2–3 behind
+  // flashcard sessions. Tier 9 is deliberately OUTSIDE the tier table: the
+  // shelf treats an unknown tier as unlocked, while the daily featured pick
+  // (unlockedStories) skips it — so adding these rows cannot shift which
+  // story is "Featured for you" on any given date, which several older specs
+  // implicitly depend on.
+  id: 'ml1', language: 'chinese', system: 'hsk', level: 1, tier: 9, story_number: 10,
+  title: '1. 月下的朋友', is_published: true, presentation: 'paced', has_audio: false,
+  image_path: null, english_summary: 'A friend under the moon.',
+  content: ['今天我看朋友。', '朋友很好。'].join('\n'),
+}, {
+  id: 'ml2', language: 'chinese', system: 'hsk', level: 1, tier: 9, story_number: 11,
+  title: '2. 学校的晚上', is_published: true, presentation: 'paced', has_audio: false,
+  image_path: null, english_summary: 'An evening at school.',
+  content: ['我来学校了。', '学校很大。'].join('\n'),
+}, {
+  id: 'ml3', language: 'chinese', system: 'hsk', level: 1, tier: 9, story_number: 12,
+  title: '3. 新的名字', is_published: true, presentation: 'paced', has_audio: false,
+  image_path: null, english_summary: 'A new name.',
+  content: ['我叫什么名字？', '这是新的名字。'].join('\n'),
+}, {
   // The manhua episode, carrying the SAME content and panel layout as the
   // authored source (data/manhua/inkbound-hsk1-ep01.json). Duplicated rather than
   // imported because the fixture has to be a plain literal the route mock can

@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
-  authRedirectTo, isAuthCallbackUrl, signInWithProvider, completeNativeAuth,
-  NATIVE_AUTH_REDIRECT,
+  authRedirectTo, isAuthCallbackUrl, isPasswordResetUrl, isAuthDeepLink,
+  signInWithProvider, completeNativeAuth, authNoticeFor, authNoticeFromSearch,
+  authCodeFromUrl, authLinkError, authParamsFromUrl, authLandingPath,
+  signInWithAppleNative, randomNonce, NATIVE_AUTH_REDIRECT, NATIVE_RESET_REDIRECT,
+  APP_BUNDLE_ID,
 } from './nativeAuth'
 
 afterEach(() => {
@@ -17,6 +20,106 @@ describe('authRedirectTo', () => {
   it('sends the web back to its own origin', () => {
     expect(authRedirectTo({ native: false, origin: 'https://hanzi-dojo.com/' }))
       .toBe('https://hanzi-dojo.com/')
+  })
+
+  // The bug this whole path exists to prevent: a password-reset email sent
+  // from the app used window.location.origin, which inside the WebView is
+  // `capacitor://localhost`. Supabase rejects a redirect it has never been
+  // told about, burns the one-time token, and drops the learner on the public
+  // website with no session and no way to set a password.
+  it('never sends an emailed app link to a capacitor:// origin', () => {
+    const reset = authRedirectTo({ native: true, kind: 'recovery' })
+    expect(reset).toBe(NATIVE_RESET_REDIRECT)
+    expect(reset).toBe('com.hanzidojo.app://password-reset')
+    expect(reset).not.toContain('localhost')
+  })
+
+  it('keeps recovery on its own path, so the app can tell it from a sign-in', () => {
+    expect(authRedirectTo({ native: true, kind: 'recovery' }))
+      .not.toBe(authRedirectTo({ native: true, kind: 'oauth' }))
+  })
+
+  it('leaves the web unchanged for recovery — the SPA reads the tokens itself', () => {
+    expect(authRedirectTo({ native: false, origin: 'https://hanzi-dojo.com/', kind: 'recovery' }))
+      .toBe('https://hanzi-dojo.com/')
+  })
+})
+
+describe('isPasswordResetUrl', () => {
+  it('recognises the recovery email returning to the app', () => {
+    expect(isPasswordResetUrl('com.hanzidojo.app://password-reset?code=abc')).toBe(true)
+  })
+
+  it('is not confused by the ordinary sign-in callback', () => {
+    expect(isPasswordResetUrl('com.hanzidojo.app://auth-callback?code=abc')).toBe(false)
+    expect(isAuthCallbackUrl('com.hanzidojo.app://password-reset?code=abc')).toBe(false)
+  })
+
+  it('isAuthDeepLink covers both, and nothing else', () => {
+    expect(isAuthDeepLink('com.hanzidojo.app://password-reset?code=a')).toBe(true)
+    expect(isAuthDeepLink('com.hanzidojo.app://auth-callback?code=a')).toBe(true)
+    expect(isAuthDeepLink('com.hanzidojo.app://read/abc')).toBe(false)
+  })
+})
+
+describe('reading a returning link', () => {
+  it('pulls the code out of the query', () => {
+    expect(authCodeFromUrl('com.hanzidojo.app://password-reset?code=abc123')).toBe('abc123')
+    expect(authCodeFromUrl('com.hanzidojo.app://auth-callback/?code=a-b_c&x=1')).toBe('a-b_c')
+  })
+
+  it('is null when there is no code to exchange', () => {
+    expect(authCodeFromUrl('com.hanzidojo.app://password-reset')).toBe(null)
+    expect(authCodeFromUrl('com.hanzidojo.app://password-reset?error=access_denied')).toBe(null)
+    expect(authCodeFromUrl(undefined)).toBe(null)
+  })
+
+  it('reads an error GoTrue put in the query or the fragment', () => {
+    expect(authLinkError('com.hanzidojo.app://password-reset?error_description=Email+link+is+invalid'))
+      .toBe('Email link is invalid')
+    expect(authLinkError('com.hanzidojo.app://password-reset#error=access_denied'))
+      .toBe('access_denied')
+    expect(authLinkError('com.hanzidojo.app://password-reset?code=fine')).toBe(null)
+  })
+
+  it('decodes values and keeps the first of a repeated key', () => {
+    const p = authParamsFromUrl('x://y?a=one%20two&a=three&b=')
+    expect(p.a).toBe('one two')
+    expect(p.b).toBe('')
+  })
+})
+
+describe('authLandingPath', () => {
+  it('a recovery that worked goes to the password screen', () => {
+    expect(authLandingPath({ error: null, recovery: true })).toBe('/reset-password')
+  })
+  it('a sign-in that worked goes home', () => {
+    expect(authLandingPath({ error: null, recovery: false })).toBe('/')
+  })
+  it('a failure carries its reason, so the screen can explain itself', () => {
+    expect(authLandingPath({ error: new Error('x'), recovery: true })).toBe('/?auth=reset-failed')
+    expect(authLandingPath({ error: new Error('x'), recovery: false })).toBe('/?auth=failed')
+  })
+})
+
+describe('authNoticeFor', () => {
+  it('explains a reset link that cannot complete, and says what to do', () => {
+    const notice = authNoticeFor('reset-failed')
+    expect(notice).toMatch(/device you requested them from/i)
+    expect(notice).toMatch(/request a new one/i)
+  })
+
+  it('has nothing to say about a normal load', () => {
+    expect(authNoticeFor('')).toBe(null)
+    expect(authNoticeFor(undefined)).toBe(null)
+    expect(authNoticeFor('something-else')).toBe(null)
+  })
+
+  it('reads the reason out of the query string', () => {
+    expect(authNoticeFromSearch('?auth=reset-failed')).toMatch(/reset link/i)
+    expect(authNoticeFromSearch('?foo=1&auth=failed')).toMatch(/sign-in link/i)
+    expect(authNoticeFromSearch('?foo=1')).toBe(null)
+    expect(authNoticeFromSearch('')).toBe(null)
   })
 })
 
@@ -79,15 +182,49 @@ describe('signInWithProvider', () => {
 })
 
 describe('completeNativeAuth', () => {
-  it('exchanges the one-time code for a session', async () => {
+  // The whole point. `exchangeCodeForSession` POSTs its argument as
+  // `auth_code`, so passing the deep-link URL (as this used to) fails every
+  // exchange server-side — the app then showed the login screen where the
+  // reset form belonged. It must receive the bare code.
+  it('exchanges the CODE — not the URL it arrived in', async () => {
     const exchangeCodeForSession = vi.fn(() => Promise.resolve({ error: null }))
     const { error, handled } = await completeNativeAuth(
       'com.hanzidojo.app://auth-callback?code=abc',
       { supabase: { auth: { exchangeCodeForSession } } }
     )
-    expect(exchangeCodeForSession).toHaveBeenCalledWith('com.hanzidojo.app://auth-callback?code=abc')
+    expect(exchangeCodeForSession).toHaveBeenCalledWith('abc')
     expect(handled).toBe(true)
     expect(error).toBe(null)
+  })
+
+  it('finds the code whatever else rides along in the URL', async () => {
+    const exchangeCodeForSession = vi.fn(() => Promise.resolve({ error: null }))
+    await completeNativeAuth(
+      'com.hanzidojo.app://password-reset/?foo=1&code=xyz-123&type=recovery',
+      { supabase: { auth: { exchangeCodeForSession } } }
+    )
+    expect(exchangeCodeForSession).toHaveBeenCalledWith('xyz-123')
+  })
+
+  it('refuses to exchange a link that carries no code', async () => {
+    const exchangeCodeForSession = vi.fn()
+    const { error, handled } = await completeNativeAuth('com.hanzidojo.app://password-reset', {
+      supabase: { auth: { exchangeCodeForSession } },
+    })
+    expect(handled).toBe(true)
+    expect(error).toBeTruthy()
+    expect(exchangeCodeForSession).not.toHaveBeenCalled()
+  })
+
+  it('reports GoTrue refusing the link, without a pointless round trip', async () => {
+    const exchangeCodeForSession = vi.fn()
+    const { error } = await completeNativeAuth(
+      'com.hanzidojo.app://password-reset?error=access_denied&error_code=otp_expired'
+        + '&error_description=Email+link+is+invalid+or+has+expired',
+      { supabase: { auth: { exchangeCodeForSession } } }
+    )
+    expect(exchangeCodeForSession).not.toHaveBeenCalled()
+    expect(String(error.message)).toMatch(/invalid or has expired/i)
   })
 
   it('ignores a deep link that is not a sign-in', async () => {
@@ -99,11 +236,112 @@ describe('completeNativeAuth', () => {
     expect(exchangeCodeForSession).not.toHaveBeenCalled()
   })
 
+  it('flags a recovery link, so the caller lands on the password screen', async () => {
+    const exchangeCodeForSession = vi.fn(() => Promise.resolve({ error: null }))
+    const { handled, recovery, error } = await completeNativeAuth(
+      'com.hanzidojo.app://password-reset?code=abc',
+      { supabase: { auth: { exchangeCodeForSession } } }
+    )
+    expect(handled).toBe(true)
+    expect(recovery).toBe(true)
+    expect(error).toBe(null)
+  })
+
+  it('still reports recovery when the exchange fails, so the message fits', async () => {
+    const { recovery, error } = await completeNativeAuth('com.hanzidojo.app://password-reset?code=bad', {
+      supabase: { auth: { exchangeCodeForSession: () => Promise.reject(new Error('expired')) } },
+    })
+    expect(recovery).toBe(true)
+    expect(error).toBeTruthy()
+  })
+
+  it('surfaces a rejected exchange as an error, not a silent success', async () => {
+    const { error } = await completeNativeAuth('com.hanzidojo.app://password-reset?code=stale', {
+      supabase: { auth: { exchangeCodeForSession: () => Promise.resolve({ error: new Error('invalid request') }) } },
+    })
+    expect(error).toBeTruthy()
+  })
+
+  it('an ordinary sign-in is not a recovery', async () => {
+    const { recovery } = await completeNativeAuth('com.hanzidojo.app://auth-callback?code=abc', {
+      supabase: { auth: { exchangeCodeForSession: () => Promise.resolve({ error: null }) } },
+    })
+    expect(recovery).toBe(false)
+  })
+
   it('reports a failed exchange instead of throwing into the shell', async () => {
     const { error, handled } = await completeNativeAuth('com.hanzidojo.app://auth-callback?code=bad', {
       supabase: { auth: { exchangeCodeForSession: () => Promise.reject(new Error('expired')) } },
     })
     expect(handled).toBe(true)
     expect(error).toBeTruthy()
+  })
+})
+
+describe('signInWithAppleNative', () => {
+  it('sends Apple the HASHED nonce and Supabase the RAW one', async () => {
+    // Getting this backwards is the classic Sign-in-with-Apple bug: Apple
+    // embeds the hash in the token, and Supabase re-hashes what we give it
+    // to compare. Swap them and every sign-in fails verification.
+    const authorize = vi.fn(() => Promise.resolve({ response: { identityToken: 'id-token' } }))
+    const signInWithIdToken = vi.fn(() => Promise.resolve({ error: null }))
+    const raw = 'abc123'
+    // sha256("abc123")
+    const expectedHash = '6ca13d52ca70c883e0f0bb101e425a89e8624de51db2d2392593af6a84118090'
+
+    const { error } = await signInWithAppleNative({
+      authorize,
+      rawNonce: raw,
+      supabase: { auth: { signInWithIdToken } },
+      subtle: globalThis.crypto.subtle,
+    })
+
+    expect(error).toBe(null)
+    expect(authorize.mock.calls[0][0].nonce).toBe(expectedHash)
+    expect(signInWithIdToken.mock.calls[0][0]).toEqual({
+      provider: 'apple', token: 'id-token', nonce: raw,
+    })
+  })
+
+  it('asks Apple for the app itself, since a native token is minted for the bundle ID', async () => {
+    const authorize = vi.fn(() => Promise.resolve({ response: { identityToken: 't' } }))
+    await signInWithAppleNative({
+      authorize,
+      rawNonce: 'n',
+      supabase: { auth: { signInWithIdToken: () => Promise.resolve({ error: null }) } },
+      subtle: globalThis.crypto.subtle,
+    })
+    expect(authorize.mock.calls[0][0].clientId).toBe(APP_BUNDLE_ID)
+  })
+
+  it('treats a cancelled sheet as a non-event, not an error to shout about', async () => {
+    const { error, cancelled } = await signInWithAppleNative({
+      authorize: () => Promise.reject(new Error('The operation was cancelled')),
+      rawNonce: 'n',
+      supabase: { auth: {} },
+      subtle: globalThis.crypto.subtle,
+    })
+    expect(error).toBe(null)
+    expect(cancelled).toBe(true)
+  })
+
+  it('reports a missing identity token rather than calling Supabase with nothing', async () => {
+    const signInWithIdToken = vi.fn()
+    const { error } = await signInWithAppleNative({
+      authorize: () => Promise.resolve({ response: {} }),
+      rawNonce: 'n',
+      supabase: { auth: { signInWithIdToken } },
+      subtle: globalThis.crypto.subtle,
+    })
+    expect(error).toBeTruthy()
+    expect(signInWithIdToken).not.toHaveBeenCalled()
+  })
+})
+
+describe('randomNonce', () => {
+  it('is hex and long enough to be unguessable', () => {
+    const n = randomNonce()
+    expect(n).toMatch(/^[0-9a-f]{64}$/)
+    expect(randomNonce()).not.toBe(n)
   })
 })

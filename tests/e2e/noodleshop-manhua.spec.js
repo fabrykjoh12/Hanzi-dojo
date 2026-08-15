@@ -17,14 +17,15 @@ test.describe('《一块钱》 vertical slice', () => {
 
   test('appears as a complete standalone work beside, not inside, series', async ({ page }) => {
     await page.goto('/stories');
-    // The streaming shelf keeps this as one visual card; unlike a series it
-    // has no separate chapter-list action.
+    // One poster, no chapter framing — a standalone opens straight into the
+    // reader. (.first(): a manhua poster sits on its level rail AND the
+    // Manhua rail.)
     const card = page.getByTestId('story-shelf-rail')
-      .getByRole('button', { name: new RegExp(`${STORY}.*HSK 1.*Manhua`) });
+      .getByRole('button', { name: new RegExp(`${STORY}.*HSK 1.*Manhua`) }).first();
     await expect(card).toBeVisible();
-    await expect(page.getByRole('button', { name: /All chapters of/ }).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: `All chapters of ${STORY}` })).toHaveCount(0);
     await expect(card.getByText('第一话', { exact: true })).toHaveCount(0);
+    await card.click();
+    await expect(page.getByRole('heading', { name: 'Chapters' })).toHaveCount(0);
   });
 
   test('runs linearly through captions, resume, comprehension, reward, and read state', async ({ page }) => {
@@ -85,7 +86,7 @@ test.describe('《一块钱》 vertical slice', () => {
 
     await completion.getByRole('button', { name: /Back to stories/ }).click();
     const card = page.getByTestId('story-shelf-rail')
-      .getByRole('button', { name: new RegExp(`${STORY}.*Read`) });
+      .getByRole('button', { name: new RegExp(`${STORY}.*Read`) }).first();
     await expect(card).toBeVisible();
   });
 });

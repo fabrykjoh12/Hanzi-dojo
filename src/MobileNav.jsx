@@ -77,7 +77,7 @@ export default function MobileNav({ view, onNavigate, language }) {
   const activeKey = mobileNavRoot(view)
   const accent = languageTheme(language).accentHex
   return (
-    <nav aria-label="Primary" className="hd-mobile-nav-motion" style={{ position: 'fixed', left: '12px', right: '12px', bottom: 'max(6px, env(safe-area-inset-bottom))', zIndex: 30, height: '76px', maxWidth: '366px', margin: '0 auto', fontFamily: UI_FONT }}>
+    <nav aria-label="Primary" data-tour="nav" className="hd-mobile-nav-motion" style={{ position: 'fixed', left: '12px', right: '12px', bottom: 'max(6px, env(safe-area-inset-bottom))', zIndex: 30, height: '76px', maxWidth: '366px', margin: '0 auto', fontFamily: UI_FONT }}>
       <Tray />
       <div style={{ position: 'relative', height: '100%', display: 'grid', gridTemplateColumns: '1fr 94px 1fr' }}>
         <SideTab item={MOBILE_PRIMARY[0]} active={activeKey === 'stories'} accent={accent} motionMs={motionMs} onNavigate={onNavigate} />

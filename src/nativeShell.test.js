@@ -1,5 +1,8 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { isNativeApp, routeFromDeepLink, backAction, APP_URL_SCHEME } from './nativeShell'
+import {
+  isNativeApp, routeFromDeepLink, backAction, APP_URL_SCHEME,
+  consumeLaunchUrl, resetLaunchUrlConsumed,
+} from './nativeShell'
 
 // The suite runs in the node environment (vitest.config.js), so `window` is
 // faked on globalThis exactly where nativeShell.js looks for it.
@@ -76,6 +79,28 @@ describe('routeFromDeepLink', () => {
     expect(routeFromDeepLink('')).toBe(null)
     expect(routeFromDeepLink(undefined)).toBe(null)
     expect(routeFromDeepLink(42)).toBe(null)
+  })
+})
+
+describe('consumeLaunchUrl', () => {
+  // The regression this exists for: `App.getLaunchUrl()` returns the launching
+  // URL for the whole app run, and react-router recreates `navigate` on every
+  // navigation — so an effect keyed on it re-read that URL on every tab tap,
+  // re-spent its one-time auth code, failed, and threw the learner back to
+  // Home. Only a fresh launch (no URL) appeared to "fix" it.
+  it('hands back the launch URL exactly once per app run', () => {
+    resetLaunchUrlConsumed()
+    expect(consumeLaunchUrl('com.hanzidojo.app://password-reset?code=abc'))
+      .toBe('com.hanzidojo.app://password-reset?code=abc')
+    expect(consumeLaunchUrl('com.hanzidojo.app://password-reset?code=abc')).toBe(null)
+    expect(consumeLaunchUrl('com.hanzidojo.app://read/other')).toBe(null)
+  })
+
+  it('an ordinary launch (no URL) still burns the one shot', () => {
+    resetLaunchUrlConsumed()
+    expect(consumeLaunchUrl(undefined)).toBe(null)
+    // Nothing may sneak in later claiming to be the launch URL.
+    expect(consumeLaunchUrl('com.hanzidojo.app://password-reset?code=abc')).toBe(null)
   })
 })
 

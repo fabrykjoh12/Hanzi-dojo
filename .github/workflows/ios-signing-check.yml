@@ -1,0 +1,31 @@
+name: iOS signing check
+
+# Read-only diagnostic. Asks App Store Connect what signing assets the team
+# actually has — certificates, devices, bundle IDs, profiles — and whether the
+# API key is allowed to create them.
+#
+# It exists because the TestFlight build kept failing on provisioning and the
+# error messages describe the symptom, not the cause. This turns the guessing
+# into facts. It creates nothing and changes nothing.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Ask App Store Connect
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        run: node .github/scripts/asc-signing-check.mjs

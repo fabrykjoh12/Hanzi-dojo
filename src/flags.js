@@ -1,20 +1,18 @@
 // Lightweight, code-level feature flags. Flip a value to false to disable a
 // feature fast without touching its call sites.
 export const FLAGS = {
-  // The pre-signup "read a Chinese sentence" wow moment (SentenceTaste between
-  // the reason step and signup). Default on.
+  // The pre-signup first encounter (flashcard → tea-shop story → questions →
+  // assembled path). Off sends "Begin training" straight to signup. Default on.
   WOW_ONBOARDING: true,
 
-  // "Continue with Apple" on the sign-in screen.
+  // "Continue with Apple" — rendered ONLY inside the native app (Auth.jsx
+  // gates on isNativeApp()), because it uses Apple's native sheet rather
+  // than the web OAuth flow. That choice is what removes the client secret
+  // Apple expires every six months; see nativeAuth.js.
   //
-  // OFF until the Apple provider is enabled in Supabase (Authentication →
-  // Providers → Apple, using the Services ID / Team ID / Key ID / .p8 from
-  // the Apple Developer portal). The client code is complete and shipped —
-  // but a button that answers "Unsupported provider" is worse than no
-  // button, and merging to main deploys to real learners immediately.
-  //
-  // FLIP TO true the moment that provider is saved: no code change is
-  // needed, and it is required on iOS before submission (App Store
-  // guideline 4.8, because we offer Google).
-  APPLE_SIGN_IN: false,
+  // Safe to leave on: the web never renders this button, so a
+  // misconfigured provider cannot reach a browser learner. It needs
+  // Supabase → Providers → Apple enabled with the BUNDLE ID
+  // (com.hanzidojo.app) in Client IDs — no secret required.
+  APPLE_SIGN_IN: true,
 }

@@ -37,7 +37,12 @@ function explicitSeries(stories) {
     let group = byName.get(name)
     if (!group) {
       group = {
-        key: 'series:' + name,
+        // Level-qualified: a serial that continues at a higher level ("The
+        // Inkbound" HSK 1 → HSK 3) is one unit PER level on the shelf, and two
+        // units must never share a key — the key is the series route and the
+        // track's active_series pointer. Callers pass level-scoped lists, so
+        // the first part's level names the group's level.
+        key: 'series:' + name + '@' + (story.level == null ? '' : story.level),
         title: name,
         parts: [],
         numbered: true,

@@ -7,6 +7,8 @@ import { sessionEstimateLabel } from './sessionEstimate'
 import { stripLeadingNumber } from './storyArcs'
 import { useIsMobile } from './useIsMobile'
 import { getLevelLabel } from './utils'
+import { maybeStartTour, markTourSeen } from './tour'
+import TourOverlay from './TourOverlay'
 
 const UI_FONT = "'Mona Sans', 'Inter', sans-serif"
 const HANZI_FONT = "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif"
@@ -47,7 +49,7 @@ function CardsHero({ counts, accent, onNavigate, stage }) {
   const detail = queue.failed ? 'Start a session to retry' : queue.clear ? 'Nothing due right now' : queue.reviewCount + ' reviews · ' + queue.newCount + ' new'
 
   return (
-    <section aria-label="Cards" className="hd-home-stage" style={{ height: cardsActive ? '234px' : '226px', marginTop: '12px', position: 'relative', overflow: 'hidden', borderRadius: '14px', color: '#FFF9F0', background: 'radial-gradient(circle at 94% 94%, rgba(68,11,9,0.34) 0%, rgba(83,15,11,0.1) 35%, transparent 59%), linear-gradient(150deg, ' + accent + ' 0%, #92261A 62%, #701A13 100%)', boxShadow: '0 12px 25px -20px rgba(76,17,12,0.9), inset 0 1px 0 rgba(255,235,220,0.15)', transition: 'height ' + HOME_MOTION.stage + 'ms ' + EASE }}>
+    <section aria-label="Cards" data-tour="home-queue" className="hd-home-stage" style={{ height: cardsActive ? '234px' : '226px', marginTop: '12px', position: 'relative', overflow: 'hidden', borderRadius: '14px', color: '#FFF9F0', background: 'radial-gradient(circle at 94% 94%, rgba(68,11,9,0.34) 0%, rgba(83,15,11,0.1) 35%, transparent 59%), linear-gradient(150deg, ' + accent + ' 0%, #92261A 62%, #701A13 100%)', boxShadow: '0 12px 25px -20px rgba(76,17,12,0.9), inset 0 1px 0 rgba(255,235,220,0.15)', transition: 'height ' + HOME_MOTION.stage + 'ms ' + EASE }}>
       <LacquerLandscape />
       <div style={{ position: 'relative', height: '162px', padding: '16px 17px 0' }}>
         <p style={{ margin: 0, fontSize: '17px', lineHeight: 1, fontWeight: 770, letterSpacing: '-0.01em' }}>Cards</p>
@@ -79,7 +81,7 @@ function StoryStep({ daily, stage, onNavigate }) {
   const status = stage === 'cards' ? 'Finish cards to unlock' : daily === undefined ? 'Finding today’s story' : stage === 'story' ? 'Ready to read' : stage === 'caught-up' ? 'Caught up' : 'Story complete'
   const title = story ? stripLeadingNumber(story.title) : daily === undefined ? 'Loading today’s story…' : 'Open the story shelf'
   return (
-    <section aria-label="Next story" style={{ marginTop: '17px' }}>
+    <section aria-label="Next story" data-tour="home-then-read" style={{ marginTop: '17px' }}>
       <p style={{ margin: 0, fontSize: '14px', lineHeight: 1, fontWeight: 770, letterSpacing: '-0.01em' }}>2 · Story</p>
       <div style={{ marginTop: '6px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '16px' }}>
         <h2 lang={story ? 'zh-Hans' : undefined} style={{ margin: 0, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: story ? HANZI_FONT : UI_FONT, fontSize: story ? '22px' : '17px', lineHeight: 1.1, fontWeight: 600, letterSpacing: '-0.02em' }}>{title}</h2>
@@ -129,6 +131,7 @@ export function HomeView({ profile, track, counts, daily, onNavigate }) {
 
 export default function Home({ profile, track, counts, session, onNavigate }) {
   const [daily, setDaily] = useState(undefined)
+  const [tourSteps, setTourSteps] = useState(null)
   const userId = session?.user?.id
   const learned = counts.learnedCount || 0
   useEffect(() => {
@@ -137,5 +140,27 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
     getDailyStoryCard(userId, track, learned).then(result => { if (alive) setDaily(result) }).catch(() => { if (alive) setDaily(null) })
     return () => { alive = false }
   }, [userId, track, learned])
-  return <HomeView profile={profile} track={track} counts={counts} daily={daily} onNavigate={onNavigate} />
+  useEffect(() => {
+    let alive = true
+    const timer = setTimeout(() => {
+      maybeStartTour({ screen: 'home', profileCreatedAt: profile.created_at })
+        .then(steps => { if (alive && steps) setTourSteps(steps) })
+    }, 600)
+    return () => { alive = false; clearTimeout(timer) }
+  }, [profile.created_at])
+  return (
+    <>
+      <HomeView profile={profile} track={track} counts={counts} daily={daily} onNavigate={onNavigate} />
+      {tourSteps && (
+        <TourOverlay
+          steps={tourSteps}
+          accentHex={languageTheme(profile.active_language).accentHex}
+          onClose={(outcome) => {
+            setTourSteps(null)
+            if (outcome) markTourSeen('home', outcome)
+          }}
+        />
+      )}
+    </>
+  )
 }

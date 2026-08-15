@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   pathToView, viewToPath, isKnownView, KNOWN_VIEWS, readStoryId, isAssessmentPath,
   trustPageKey, TRUST_PAGES, storyRoute, storyPath, seriesPath, legacyRedirectPath,
+  isResetPasswordPath, RESET_PASSWORD_PATH,
 } from './routes'
 
 describe('pathToView', () => {
@@ -119,6 +120,16 @@ describe('trustPageKey', () => {
       expect(trustPageKey('/' + page + '/')).toBe(page)
     }
   })
+  it('accepts them however they were typed, and returns the canonical key', () => {
+    // These URLs get typed by hand into the Apple and Google console forms,
+    // and both stores fetch the privacy URL and reject the listing when it
+    // does not load. A capitalised "/Privacy" 404ing is an expensive way to
+    // be strict about case.
+    expect(trustPageKey('/Privacy')).toBe('privacy')
+    expect(trustPageKey('/PRIVACY/')).toBe('privacy')
+    expect(trustPageKey('/Terms')).toBe('terms')
+    expect(trustPageKey('/Methodology')).toBe('methodology')
+  })
   it('rejects other paths', () => {
     expect(trustPageKey('/')).toBe(null)
     expect(trustPageKey('/stories')).toBe(null)
@@ -129,6 +140,24 @@ describe('trustPageKey', () => {
     for (const page of TRUST_PAGES) {
       expect(isKnownView(page)).toBe(false)
     }
+  })
+})
+
+describe('isResetPasswordPath', () => {
+  it('recognizes the recovery landing route the app deep-links to', () => {
+    expect(isResetPasswordPath(RESET_PASSWORD_PATH)).toBe(true)
+    expect(isResetPasswordPath('/reset-password')).toBe(true)
+    expect(isResetPasswordPath('/reset-password/')).toBe(true)
+  })
+  it('rejects everything else', () => {
+    expect(isResetPasswordPath('/')).toBe(false)
+    expect(isResetPasswordPath('/settings')).toBe(false)
+    expect(isResetPasswordPath('/reset-password/extra')).toBe(false)
+  })
+  // App intercepts it before the view switch; leaving it out of KNOWN_VIEWS
+  // keeps it off every nav surface.
+  it('is not a nav view', () => {
+    expect(isKnownView('reset-password')).toBe(false)
   })
 })
 

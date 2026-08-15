@@ -27,6 +27,7 @@ Two rules this copy follows, and any edit should keep:
 | Category | Education (secondary: Reference) |
 | Price | Free, no in-app purchases, no ads |
 | Support URL | `https://hanzi-dojo.com/support` |
+| Support email | `support@hanzi-dojo.com` — Play requires a contact email on the listing; App Store review may email it too. Same address the trust pages show. |
 | Privacy policy URL | `https://hanzi-dojo.com/privacy` |
 | Marketing URL | `https://hanzi-dojo.com` |
 
@@ -130,8 +131,9 @@ background with the wordmark — no screenshot collage, no marketing gradient.
 ## App Review notes (paste into App Store Connect → Notes for Review)
 
 > **Demo account**
-> Email: `<owner: create a dedicated review account and put it here>`
-> Password: `<…>`
+> Email: `playreview@hanzi-dojo.com`
+> Password: `<owner: the password you set at signup — paste it in the console,
+> never commit it here>`
 >
 > The account is pre-seeded so nothing needs to be studied before the app is
 > usable: it already has vocabulary in review, unlocked stories, and a level in

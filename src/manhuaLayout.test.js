@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   buildEpisode, normalizeRatio, panelArtSrc, visibleBubbles, isGate, revealLimit,
   panelBeats, readBeats, episodeProgress, isEpisodeComplete, bubbleLayout,
-  panelAtReadingLine, estimateBubbleHeight, DEFAULT_RATIO, READING_LINE, MAX_OVERLAY_WIDTH,
+  panelAtReadingLine, estimateBubbleHeight, gutterBalloonWidth,
+  DEFAULT_RATIO, READING_LINE, MAX_OVERLAY_WIDTH,
 } from './manhuaLayout'
 
 // A three-panel episode with a choice in the middle, which is the shape every
@@ -377,6 +378,63 @@ describe('bubbleLayout', () => {
     expect(out.mode).toBe('overlay')
     expect(out.width).toBeGreaterThanOrEqual(34)
     expect(out.width).toBeLessThanOrEqual(MAX_OVERLAY_WIDTH)
+  })
+})
+
+describe('gutterBalloonWidth', () => {
+  // A 390px phone: the reading column minus its 12px paddings and the
+  // caption rail's 2px margins.
+  const PHONE_RAIL = 390 - 28
+
+  it('keeps a six-character line on ONE row with pinyin over every word', () => {
+    // 你想吃什么？ — the reported case. A brand-new learner has no cards, so
+    // every token carries a reading; the old blind 62% cap left ~132px of text
+    // after the action rail and the balloon padding, which wrapped this into
+    // two orphaned rows inside a balloon spanning most of the screen.
+    const out = gutterBalloonWidth(6, { railWidth: PHONE_RAIL, withReadings: true })
+    expect(out.lines).toBe(1)
+    expect(out.pct).toBeGreaterThan(62)
+    expect(out.pct).toBeLessThanOrEqual(96)
+  })
+
+  it('gives a longer line balanced rows rather than one word per line', () => {
+    const out = gutterBalloonWidth(14, { railWidth: PHONE_RAIL, withReadings: true })
+    expect(out.lines).toBeLessThanOrEqual(2)
+  })
+
+  it('asks for more room when the pinyin is on', () => {
+    const bare = gutterBalloonWidth(8, { railWidth: PHONE_RAIL, withReadings: false })
+    const scaffolded = gutterBalloonWidth(8, { railWidth: PHONE_RAIL, withReadings: true })
+    expect(scaffolded.pct).toBeGreaterThan(bare.pct)
+  })
+
+  it('never asks for more rail than exists', () => {
+    for (const rail of [292, 362, 492]) {
+      for (let chars = 1; chars <= 40; chars += 1) {
+        const out = gutterBalloonWidth(chars, { railWidth: rail, withReadings: true })
+        expect(out.pct).toBeLessThanOrEqual(96)
+        expect(out.pct).toBeGreaterThanOrEqual(34)
+        expect(out.lines).toBeGreaterThanOrEqual(1)
+      }
+    }
+  })
+
+  it('grows with the copy, and never needs more rows on a wider rail', () => {
+    const short = gutterBalloonWidth(4, { railWidth: PHONE_RAIL })
+    const long = gutterBalloonWidth(30, { railWidth: PHONE_RAIL })
+    expect(short.pct).toBeLessThan(long.pct)
+    // A wider column may well take a LARGER share — one row of ten characters
+    // is the point, not a narrow balloon — but it must never wrap more.
+    for (let chars = 1; chars <= 40; chars += 1) {
+      expect(gutterBalloonWidth(chars, { railWidth: 492 }).lines)
+        .toBeLessThanOrEqual(gutterBalloonWidth(chars, { railWidth: PHONE_RAIL }).lines)
+    }
+  })
+
+  it('survives being asked with nothing', () => {
+    const out = gutterBalloonWidth(0, {})
+    expect(out.pct).toBeGreaterThanOrEqual(34)
+    expect(out.lines).toBe(1)
   })
 })
 

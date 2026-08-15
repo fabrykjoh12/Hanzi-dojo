@@ -1,6 +1,8 @@
+import { useLayoutEffect, useRef, useState } from 'react'
 import { wordStatus, isPlaceWord, isWordlikeToken } from './storyReading'
 import { TokenBody, RevealEnglishButton } from './ReadingScaffold'
 import { PAPER, NARRATION_RADIUS, TYPE, TAP_TARGET } from './manhuaTokens'
+import { balloonPath, balloonPadding } from './manhuaBalloon'
 import { Volume2 } from 'lucide-react'
 
 // A line of the story, drawn as interface over or directly below the artwork.
@@ -56,9 +58,6 @@ function chromeFor(kind, accentHex) {
   }
 }
 
-const SPEECH_PATH = 'M49 2C77 1 94 11 98 38C102 67 90 91 63 97C35 103 9 94 3 68C-3 41 7 15 31 5C37 3 43 2 49 2Z'
-const THOUGHT_PATH = 'M15 18C7 18 3 28 8 36C1 42 3 54 11 59C5 67 9 78 19 80C20 90 32 95 41 90C49 99 62 97 68 90C78 96 90 89 89 79C98 76 101 64 94 57C101 49 97 38 89 35C93 24 82 16 74 19C69 8 55 5 47 12C38 3 25 7 22 16C20 17 17 17 15 18Z'
-
 function SpeechTail({ tail }) {
   if (!tail) return null
   const bottom = tail.indexOf('bottom') === 0
@@ -110,28 +109,35 @@ function ThoughtTrail({ side }) {
   )
 }
 
-function BalloonShell({ kind, tail, side, overlay }) {
+// The silhouette used to be a fixed near-circle stretched over the box with
+// preserveAspectRatio="none". An ellipse's edge pulls in steeply near its top
+// and bottom, so as soon as pinyin scaffolding made a balloon tall, the text
+// rectangle's first line began OUTSIDE the drawn curve. The path is now
+// generated from the box's real pixel size (manhuaBalloon.js): corner curves
+// are capped in pixels and every wobble bulges outward, so the padded text
+// always sits inside the ink — at any content height.
+function BalloonShell({ kind, tail, side, overlay, box, seed }) {
   if (kind === 'narration') return null
   const thought = kind === 'thought'
   return (
     <>
       {thought && overlay ? <ThoughtTrail side={side} /> : <SpeechTail tail={tail} />}
-      <svg
-        aria-hidden
-        data-manhua-balloon-shape={thought ? 'thought' : 'speech'}
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        style={{ position: 'absolute', inset: '-2px', width: 'calc(100% + 4px)', height: 'calc(100% + 4px)', zIndex: 0, pointerEvents: 'none', overflow: 'visible' }}
-      >
-        <path
-          d={thought ? THOUGHT_PATH : SPEECH_PATH}
-          fill={PAPER.bubble}
-          stroke={thought ? PAPER.ink2 : PAPER.frame}
-          strokeWidth="2"
-          vectorEffect="non-scaling-stroke"
-          strokeLinejoin="round"
-        />
-      </svg>
+      {box && (
+        <svg
+          aria-hidden
+          data-manhua-balloon-shape={thought ? 'thought' : 'speech'}
+          viewBox={'0 0 ' + box.w + ' ' + box.h}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 0, pointerEvents: 'none', overflow: 'visible' }}
+        >
+          <path
+            d={balloonPath(box.w, box.h, thought ? 'thought' : 'speech', seed)}
+            fill={PAPER.bubble}
+            stroke={thought ? PAPER.ink2 : PAPER.frame}
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )}
     </>
   )
 }
@@ -210,9 +216,31 @@ export default function ManhuaBubble({
   english = '', revealed = false, onToggleEnglish,
   layout = { mode: 'below' }, reduceMotion = false, style = {},
 }) {
-  if (!beat) return null
   const overlay = layout.mode === 'overlay'
   const narration = kind === 'narration'
+
+  // The balloon's drawn silhouette needs the box's real pixel size (see
+  // BalloonShell). offsetWidth/offsetHeight, not getBoundingClientRect: the
+  // entry animation scales the box, and the path must fit the layout size.
+  const shellRef = useRef(null)
+  const [box, setBox] = useState(null)
+  useLayoutEffect(() => {
+    if (narration) return undefined
+    const el = shellRef.current
+    if (!el) return undefined
+    const measure = () => {
+      const w = el.offsetWidth
+      const h = el.offsetHeight
+      setBox(prev => (prev && prev.w === w && prev.h === h ? prev : { w, h }))
+    }
+    measure()
+    if (typeof ResizeObserver === 'undefined') return undefined
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [narration])
+
+  if (!beat) return null
   const hasActions = Boolean(onPlayLine) || Boolean(onToggleEnglish && english)
   const stackedActions = hasActions && !narration
   // A narration line is a caption plate. Spoken dialogue that has to leave the
@@ -243,12 +271,15 @@ export default function ManhuaBubble({
         : (bubbleSide === 'left' ? 'flex-start' : (bubbleSide === 'center' ? 'center' : 'flex-end')),
       marginTop: caption ? 0 : '10px',
     }
+  // Balloon paddings come from manhuaBalloon.js — they are the values the
+  // silhouette's corner cap is solved against, not free styling.
   const padding = caption
     ? (narration ? '10px 9px 8px' : '11px 9px 9px')
-    : (narration ? '10px 14px' : (kind === 'thought' ? '15px 22px 17px' : '13px 20px 15px'))
+    : (narration ? '10px 14px' : balloonPadding(kind))
 
   return (
     <div
+      ref={shellRef}
       data-manhua-bubble="true"
       data-manhua-bubble-kind={kind}
       tabIndex={0}
@@ -271,7 +302,7 @@ export default function ManhuaBubble({
         ...style,
       }}
     >
-      <BalloonShell kind={kind} tail={tail} side={side} overlay={overlay} />
+      <BalloonShell kind={kind} tail={tail} side={side} overlay={overlay} box={box} seed={beatIndex} />
 
       {/* Who is talking. A printed label is the exception, not the rule — in a
           manhua panel the drawing says who is speaking, and a name plate over

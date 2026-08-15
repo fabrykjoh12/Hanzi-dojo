@@ -56,6 +56,15 @@ export function mapAuthError(message) {
   if (l.indexOf('email not confirmed') !== -1) {
     return 'This account’s email isn’t confirmed yet — check your inbox for the confirmation link.'
   }
+  // The mail provider rejected us — a broken SMTP credential, a suspended
+  // sending account. Supabase surfaces this as "Error sending confirmation
+  // email" (or recovery / magic link) and the whole signup rolls back, so no
+  // account is created and retrying achieves nothing. Say it is our fault and
+  // point at the door that still works, rather than leaving someone poking a
+  // button that cannot succeed.
+  if (l.indexOf('error sending') !== -1) {
+    return 'We couldn’t send that email — this is a problem on our side, not yours. Try “Continue with Google”, or come back shortly.'
+  }
   if (l.indexOf('rate limit') !== -1 || l.indexOf('too many requests') !== -1) {
     return 'Too many attempts — wait a minute, then try again.'
   }

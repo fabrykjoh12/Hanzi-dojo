@@ -46,6 +46,19 @@ export function isKnownView(view) {
   return KNOWN_VIEWS.indexOf(view) !== -1
 }
 
+// Where a password-recovery link lands. Kept here (not inlined) because two
+// unrelated places must agree on it: the native deep-link bridge navigates
+// here after exchanging the recovery code, and App renders the set-a-password
+// screen for it. It is deliberately NOT in KNOWN_VIEWS — it is a transient
+// state with no nav entry, and App intercepts it before the view switch.
+export const RESET_PASSWORD_PATH = '/reset-password'
+
+export function isResetPasswordPath(pathname) {
+  let p = pathname || '/'
+  if (p.startsWith('/')) p = p.slice(1)
+  return p.replace(/\/$/, '') === 'reset-password'
+}
+
 // Recognize the public story route (/read/<id>), which works signed-out.
 // Returns the story id, or null for any other path. Kept here (not in App)
 // so it's covered by the same route-mapping tests.
@@ -95,9 +108,15 @@ export function isAssessmentPath(pathname) {
 // registering. Returns the page key, or null for any other path.
 export const TRUST_PAGES = ['privacy', 'terms', 'support', 'methodology']
 
+// Case-insensitive on purpose. These four URLs are the ones typed by hand
+// rather than clicked: into the Apple and Google console forms, into emails,
+// onto paper. Apple and Google both fetch the privacy URL and reject a
+// listing when it does not load, so "/Privacy" quietly 404ing because someone
+// capitalised it is a genuinely expensive way to be strict. The app's own
+// links all use the canonical lowercase form.
 export function trustPageKey(pathname) {
   let p = pathname || '/'
   if (p.startsWith('/')) p = p.slice(1)
-  const seg = p.replace(/\/$/, '')
+  const seg = p.replace(/\/$/, '').toLowerCase()
   return TRUST_PAGES.indexOf(seg) !== -1 ? seg : null
 }

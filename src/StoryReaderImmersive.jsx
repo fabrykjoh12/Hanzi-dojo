@@ -241,7 +241,7 @@ function Token({ token, isSelected, furiganaMode, reserveRuby, isJapanese, lens,
   )
 }
 
-export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, track, onBack, onHome, nextStory, nextTierUnlock = null, onNextStory, isRead, onMarkRead, todayWords = [], firstMission = false, onPickReaderMode }) {
+export default function StoryReaderImmersive({ story, vocabMap, userCards, setUserCards, session, track, onBack, onHome, nextStory, nextChapter = null, onStudy = null, nextTierUnlock = null, onNextStory, isRead, onMarkRead, todayWords = [], firstMission = false, onPickReaderMode }) {
   const [selected, setSelected] = useState(null)
   // Reference-dictionary lookup for a tapped word that isn't in the level's
   // vocabulary and isn't a grammar fragment. Results live in DICT_CACHE; this
@@ -1183,10 +1183,13 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               <Share2 size={17} strokeWidth={2.1} color={accent} />
               {sharing ? 'Preparing card…' : `Share that you can read ${knownPct}%`}
             </button>
-            {!nextStory && nextTierUnlock && (
+            {nextChapter && nextChapter.kind !== 'unlocked' && (
+              <NextChapterCard next={nextChapter} accent={accent} langFont={font} onStudy={onStudy} />
+            )}
+            {!nextStory && !nextChapter && nextTierUnlock && (
               <NextTierUnlockCard unlock={nextTierUnlock} accent={accent} langFont={font} onKeepLearning={onHome} />
             )}
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: nextTierUnlock && !nextStory ? '14px' : 0 }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: (nextTierUnlock && !nextStory) || (nextChapter && nextChapter.kind !== 'unlocked') ? '14px' : 0 }}>
               {nextStory && (
                 <button onClick={onNextStory} style={{
                   flex: '1 1 200px', minHeight: '48px', borderRadius: '14px', border: 'none',
@@ -1194,7 +1197,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                   fontSize: '14px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                 }}>
-                  Read next story <ChevronRight size={18} strokeWidth={2.2} color="#fff" />
+                  {nextChapter && nextChapter.kind === 'unlocked' ? 'Read next chapter' : 'Read next story'} <ChevronRight size={18} strokeWidth={2.2} color="#fff" />
                 </button>
               )}
               {onHome && (
@@ -1223,13 +1226,18 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: TEXT,
               }}>
                 <span>
-                  <span style={{ display: 'block', fontSize: '12px', color: MUTED, fontWeight: 600, marginBottom: '3px' }}>Next story</span>
+                  <span style={{ display: 'block', fontSize: '12px', color: MUTED, fontWeight: 600, marginBottom: '3px' }}>
+                    {nextChapter && nextChapter.kind === 'unlocked' ? 'Next chapter' : 'Next story'}
+                  </span>
                   <span style={{ fontSize: '17px', fontWeight: 700, fontFamily: font }}>{nextStory.title}</span>
                 </span>
                 <ChevronRight size={22} color={accent} />
               </button>
             )}
-            {!nextStory && nextTierUnlock && (
+            {nextChapter && nextChapter.kind === 'locked' && (
+              <NextChapterCard next={nextChapter} accent={accent} langFont={font} onStudy={onStudy} />
+            )}
+            {!nextStory && !nextChapter && nextTierUnlock && (
               <NextTierUnlockCard unlock={nextTierUnlock} accent={accent} langFont={font} onKeepLearning={onHome} />
             )}
           </>
@@ -1505,6 +1513,73 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
 // the dead end into a concrete "learn N more to unlock the next set" nudge that
 // points back at studying (where the words come from). Rendered only when there's
 // no next story left in this tier and a locked tier with stories is waiting.
+// The chapter-loop tease: the next chapter is written, named, and waiting —
+// behind today's flashcard session (locked) — or the series just ended
+// (series-complete). Mirrors NextTierUnlockCard's calm shape.
+function NextChapterCard({ next, accent, langFont, onStudy }) {
+  const [hovered, setHovered] = useState(false)
+  if (next.kind === 'series-complete') {
+    return (
+      <div style={{
+        marginTop: '14px', background: accent + '0D', border: '1px solid ' + accent + '2A',
+        borderRadius: '18px', padding: '18px 20px',
+      }}>
+        <div style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '0.3px', textTransform: 'uppercase', color: accent }}>
+          Series complete
+        </div>
+        <div style={{ fontSize: '15px', fontWeight: 750, color: 'var(--text)', marginTop: '3px', lineHeight: 1.45 }}>
+          {next.seriesTitle ? <>You finished <span style={{ fontFamily: langFont }}>“{next.seriesTitle}”</span> — all {next.total} chapters.</> : 'You finished the story.'}
+        </div>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>
+          Choose your next story from the library.
+        </div>
+      </div>
+    )
+  }
+  const chapterName = (next.nativeLabel ? next.nativeLabel + ' · ' : 'Chapter ' + next.number + ' · ') + next.title
+  return (
+    <div style={{
+      marginTop: '14px', background: accent + '0D', border: '1px solid ' + accent + '2A',
+      borderRadius: '18px', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '14px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ width: '44px', height: '44px', borderRadius: '14px', flexShrink: 0, background: accent + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Lock size={21} strokeWidth={1.9} color={accent} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '0.3px', textTransform: 'uppercase', color: accent }}>
+            Next chapter
+          </div>
+          <div style={{ fontSize: '15px', fontWeight: 750, color: 'var(--text)', marginTop: '3px', lineHeight: 1.45, fontFamily: langFont }}>
+            {chapterName}
+          </div>
+          <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '3px' }}>
+            Complete your next flashcard session to continue.
+          </div>
+        </div>
+      </div>
+      {onStudy && (
+        <button
+          onClick={onStudy}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
+            width: '100%', minHeight: '48px', borderRadius: '14px', border: 'none',
+            background: hovered ? accent : accent + 'E6', color: '#fff',
+            fontSize: '14.5px', fontWeight: 800, fontFamily: 'Inter, sans-serif',
+            cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease',
+            transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
+          }}
+        >
+          Review flashcards
+          <ChevronRight size={18} strokeWidth={2.2} color="#fff" />
+        </button>
+      )}
+    </div>
+  )
+}
+
 function NextTierUnlockCard({ unlock, accent, langFont, onKeepLearning }) {
   const [hovered, setHovered] = useState(false)
   const { remaining, label } = unlock

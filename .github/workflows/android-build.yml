@@ -1,0 +1,126 @@
+name: Android build → AAB
+
+# Builds the Android app. With the signing secrets in place it produces the
+# signed .aab that Google Play accepts; without them it falls back to a debug
+# .apk, so the build itself can be verified before anyone has made a keystore.
+#
+# Optional repository secrets (all four, or none):
+#   ANDROID_KEYSTORE_BASE64    the upload keystore, base64-encoded
+#   ANDROID_KEYSTORE_PASSWORD  its store password
+#   ANDROID_KEY_ALIAS          the key alias inside it
+#   ANDROID_KEY_PASSWORD       that key's password
+#
+# ⚠️ The upload keystore is unrecoverable. Lose it and the Play listing can
+# only be recovered by asking Google to reset the upload key — keep an offline
+# backup somewhere that is not this repository. Generate it locally with:
+#
+#   keytool -genkeypair -v -keystore upload.jks -alias upload \
+#     -keyalg RSA -keysize 2048 -validity 10000
+#
+# then `base64 -w0 upload.jks` and paste the result into the secret. Never
+# commit the file and never paste the keystore into a chat or an email.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: android-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The web build the app actually ships. NOT `npm run build` — that one
+      # emits the internal HQ page (see vite.config.js).
+      - name: Build the web app
+        run: npm run build:public
+
+      - name: Sync into the Android project
+        run: npx cap sync android
+
+      # android/app/build.gradle reads android/keystore.properties and signs
+      # the release build only when it exists, so writing it here is the whole
+      # of the signing setup.
+      - name: Install the upload keystore
+        id: keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] \
+             || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "No signing secrets — building a debug APK instead of a release bundle."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > android/upload.jks
+          cat > android/keystore.properties <<PROPS
+          storeFile=upload.jks
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          PROPS
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
+      # The run number is monotonic and never reused, which is exactly what
+      # Play requires of versionCode. versionName (1.0) is the release process's
+      # to decide.
+      - name: Build the release bundle
+        if: steps.keystore.outputs.signed == 'true'
+        run: |
+          cd android
+          ./gradlew --no-daemon bundleRelease -PversionCode=${{ github.run_number }}
+
+      - name: Build a debug APK
+        if: steps.keystore.outputs.signed != 'true'
+        run: |
+          cd android
+          ./gradlew --no-daemon assembleDebug -PversionCode=${{ github.run_number }}
+
+      - name: Keep the build
+        uses: actions/upload-artifact@v4
+        with:
+          name: hanzi-dojo-android-${{ github.run_number }}
+          path: |
+            android/app/build/outputs/bundle/release/*.aab
+            android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      # The keystore would be discarded with the runner anyway; removing it
+      # explicitly means a later step added to this job can never read it.
+      - name: Remove the keystore
+        if: always()
+        run: rm -f android/upload.jks android/keystore.properties
+
+      - name: What happens next
+        run: |
+          if [ "${{ steps.keystore.outputs.signed }}" = "true" ]; then
+            echo "Signed .aab is in this run's artifacts."
+            echo "Upload it at Play Console → Testing → Internal testing → Create new release."
+          else
+            echo "Debug .apk only — it proves the Android build works but Play will not accept it."
+            echo "Add the four ANDROID_* secrets (see the comment at the top of this workflow)"
+            echo "and re-run to get a signed bundle."
+          fi

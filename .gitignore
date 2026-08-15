@@ -51,3 +51,11 @@ playwright-report/
 
 # Scratch output of tools/manhua-contact-sheet.mjs — regenerate it, do not commit it.
 tools/.contact-sheets/
+
+# Private keys. The Apple Sign-in signing key (.p8) is a plain-text PEM file,
+# so it is easy to save into the repo folder while wiring auth up and commit it
+# without noticing. Anyone holding it can mint Apple sign-ins for this app.
+*.p8
+*.pem
+AuthKey*.txt
+store-screenshots/

@@ -2,56 +2,53 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { fetchPagedSafe } from './supabasePaging'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
-import { cacheSet, cacheGet } from './offline'
+import { cacheSet, cacheGet, prefsGet, prefsMerge } from './offline'
 import { toast } from './toast'
 import { languageTheme } from './languageTheme'
 import { HeroPanel, HeroAction, Eyebrow } from './panels'
-import { heroSentence } from './homeStory'
 import { tiersFor, learnedByLevel, readingGateCount, nextLockedTier } from './storyTiers'
 import { isLearned } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import { todayStr } from './streak'
 import { pickDailyStory } from './dailyStory'
 import { formatLabel } from './storyFormat'
-import { seriesHasMore, standaloneStoryDetails } from './storyShelf'
 import { buildFlatShelf, buildNextLevelSection } from './storyShelfFlat'
 import { calculateStoryReadability } from './storyReading'
 import { stripSceneEmoji } from './sceneReading'
+import { chapterInfo, nextChapterInfo, readingMinutes, seedUnlockIds } from './storyChapters'
+import { buildSeriesUnits, resolveActiveSeries, rewardStateFor } from './storyReward'
+import { claimStoryReward } from './storyRewardData'
 import StoryReader from './StoryReader'
 import StoryCover from './StoryCover'
-import StoryFormatIcon from './StoryFormatIcon'
+import StoryPoster from './StoryPoster'
+import SeriesDetail from './SeriesDetail'
+import TourOverlay from './TourOverlay'
+import { maybeStartTour, markTourSeen } from './tour'
 import {
-  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, ChevronLeft, ChevronRight, Clock, CloudOff, Layers, Library, Lock, RefreshCw,
+  ArrowRight, BookOpen, CheckCircle2, ChevronLeft, ChevronRight, CloudOff, Library, RefreshCw, Zap,
 } from 'lucide-react'
 
-// Story tier definitions live in ./storyTiers (shared with the post-study
-// recap's story matcher). Tiers are keyed by (language, level) — see tiersFor.
+// The Stories library. Content is organized as SERIES → CHAPTER → READER:
+// vertical posters on horizontal rails (continue reading, the current level's
+// picks, earlier levels, manhua, practice, the next level's teaser), a hero
+// that carries the day's story reward, and a series detail page for choosing
+// chapters. Chapter unlocking (one per completed flashcard session) is decided
+// in storyChapters.js / storyReward.js — this file only renders it.
 
-// ─── CONSTANTS ─────────────────────────────────────────────────────────────
+// ─── CONSTANTS / SMALL HELPERS ─────────────────────────────────────────────
 
 function getLanguageDetails(profile, track) {
   const language = track.language || profile.active_language
   const t = languageTheme(language)
-  return {
-    isJapanese: language === 'japanese',
-    accentHex: t.accentHex,
-    languageName: t.languageName,
-    nativeName: t.nativeName,
-    fontFamily: t.font,
-  }
+  return { accentHex: t.accentHex, languageName: t.languageName, fontFamily: t.font }
 }
-
-
-// ─── STYLE HELPERS ─────────────────────────────────────────────────────────
 
 function pageShell() {
   return { minHeight: '100vh', position: 'relative', overflow: 'hidden' }
 }
 
-// The selected "category" is a tier *at a level* — the shelf is cumulative, so
-// tier 1 of HSK 1 and tier 1 of HSK 2 are different shelves. Returns a COPY of
-// the shared tier object (tiersFor memoizes and returns shared instances, so it
-// must never be mutated) tagged with the level it belongs to.
+// The selected "category" is a tier *at a level* — see storyTiers. Returns a
+// COPY of the shared tier object tagged with the level it belongs to.
 function categoryForStory(story, track) {
   if (!story) return null
   const level = story.level == null ? track.current_level : story.level
@@ -59,217 +56,21 @@ function categoryForStory(story, track) {
   return tier ? { ...tier, level } : null
 }
 
-// ─── SHARED COMPONENTS ─────────────────────────────────────────────────────
-
-function IconButton({ icon: Icon, label, onClick }) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-        minHeight: '44px', padding: '0 14px', borderRadius: '12px',
-        border: '1px solid var(--border)',
-        background: hovered ? 'var(--surface-2)' : 'var(--surface)',
-        color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650,
-        fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-        transition: 'background 160ms ease, transform 160ms ease',
-        transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
-      }}
-    >
-      <Icon size={17} strokeWidth={1.85} color="var(--text-muted)" />
-      {label}
-    </button>
-  )
+function isManhuaUnit(unit) {
+  return (unit.parts || []).some(p => p && p.presentation === 'manhua')
 }
 
-const metaTag = {
-  display: 'inline-flex', alignItems: 'center', gap: '3px',
-  fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)',
-  background: 'var(--surface-2)', border: '1px solid var(--border)',
-  borderRadius: '999px', padding: '3px 8px', lineHeight: 1, whiteSpace: 'nowrap',
-}
+// ─── SHELF ROWS ────────────────────────────────────────────────────────────
 
-// Small neutral metadata pill used in the card footer.
-// The "% known" chip on a card's cover — the one number the flat shelf sorts
-// by, so it's shown where the sort is felt. Dot color tracks readability.
-function KnownPctChip({ pct }) {
-  if (pct == null) return null
-  const dot = pct >= 95 ? '#2F9E6D' : pct >= 85 ? '#7BA05B' : '#CA8A04'
-  return (
-    <div style={{
-      position: 'absolute', bottom: '8px', left: '8px', display: 'flex', alignItems: 'center', gap: '5px',
-      fontSize: '10.5px', fontWeight: 800, color: '#fff',
-      background: 'rgba(24,24,27,0.62)', borderRadius: '999px', padding: '4px 9px', zIndex: 1,
-    }}>
-      <span aria-hidden="true" style={{ width: '7px', height: '7px', borderRadius: '50%', background: dot }} />
-      {pct}% known
-    </div>
-  )
-}
-
-// The calm lock over a cover: dim + a small centered lock. The card stays
-// visible (never hidden) — the footer says what it takes to open it.
-function CoverLock() {
-  return (
-    <div style={{
-      position: 'absolute', inset: 0, zIndex: 1, background: 'rgba(250,250,248,0.55)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <div style={{
-        width: '38px', height: '38px', borderRadius: '12px', background: 'var(--surface)',
-        border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: '0 4px 14px rgba(24,24,27,0.12)',
-      }}>
-        <Lock size={18} strokeWidth={2} color="var(--text-muted)" />
-      </div>
-    </div>
-  )
-}
-
-// ─── NORMALIZED STORY CARD ─────────────────────────────────────────────────
-
-// One template for every story. The chapter page keeps the fuller card; the
-// library passes `shelf` for a visual-first cover, title, and one quiet detail
-// line so scanning never turns into reading a dashboard.
-function StoryCard({ story, read, accentHex, fontFamily, levelLabel, practice, onClick, knownPct = null, locked = false, lockLabel = null, shelf = false }) {
-  const [hovered, setHovered] = useState(false)
-  const standalone = standaloneStoryDetails(story)
-  const lift = hovered && !locked
-  return (
-    <button
-      // `aria-disabled`, not `disabled`: a locked card still has something to
-      // say — WHY it's locked and what opens it — and a real `disabled` takes
-      // the card out of the tab order, so that label can never be reached.
-      // The no-op onClick keeps it inert.
-      onClick={locked ? () => {} : onClick}
-      aria-disabled={locked}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      aria-label={shelf ? [story.title, levelLabel, practice ? 'Practice' : formatLabel(story), locked ? lockLabel : read ? 'Read' : null].filter(Boolean).join(' · ') : undefined}
-      // A locked card never gave under the finger (a real `disabled` gets no
-      // :active) and shouldn't start now — it can't be opened.
-      className={locked ? undefined : 'hd-press'}
-      style={{
-        display: 'flex', flexDirection: 'column', textAlign: 'left', width: '100%', padding: 0,
-        border: shelf ? 'none' : '1px solid ' + (lift ? accentHex + '55' : 'var(--border)'),
-        borderRadius: '16px', overflow: shelf ? 'visible' : 'hidden', cursor: locked ? 'default' : 'pointer',
-        background: shelf ? 'transparent' : practice ? accentHex + '0A' : 'var(--surface)',
-        boxShadow: shelf ? 'none' : lift ? '0 16px 34px rgba(24,24,27,0.10)' : '0 6px 20px rgba(24,24,27,0.05)',
-        transform: lift ? 'translateY(-2px)' : 'translateY(0)',
-        transition: 'all 170ms ease', fontFamily: 'Inter, sans-serif',
-        opacity: locked ? 0.78 : 1,
-      }}
-    >
-      <StoryCover
-        story={story} path={story.image_path} accent={accentHex} radius={shelf ? 16 : 0}
-        style={{
-          width: '100%', aspectRatio: '16 / 9',
-          border: shelf ? '1px solid ' + (lift ? accentHex + '66' : 'var(--border)') : '1px solid var(--border)',
-          boxShadow: shelf ? (lift ? '0 16px 32px rgba(24,24,27,0.16)' : '0 5px 16px rgba(24,24,27,0.08)') : undefined,
-          transition: shelf ? 'border-color 170ms ease, box-shadow 170ms ease' : undefined,
-        }}
-      >
-        {read && (
-          <div style={{
-            position: 'absolute', top: '8px', right: '8px', width: '22px', height: '22px',
-            borderRadius: '999px', background: 'var(--success)', display: 'flex',
-            alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.3)', zIndex: 1,
-          }}>
-            <CheckCircle2 size={14} strokeWidth={2.4} color="#fff" />
-          </div>
-        )}
-        {practice && (
-          <div style={{
-            position: 'absolute', top: '8px', left: '8px', fontSize: '10.5px', fontWeight: 800,
-            color: '#fff', background: 'rgba(24,24,27,0.55)', borderRadius: '999px', padding: '3px 8px', zIndex: 1,
-          }}>Practice</div>
-        )}
-        {standalone && !shelf && (
-          <div style={{
-            position: 'absolute', top: '8px', left: '8px', display: 'flex', alignItems: 'center', gap: '5px',
-            fontSize: '10.5px', fontWeight: 800, color: '#fff',
-            background: 'rgba(24,24,27,0.62)', borderRadius: '999px', padding: '4px 9px', zIndex: 1,
-          }}>
-            <BookOpen size={12} strokeWidth={2.2} color="#fff" aria-hidden="true" />
-            Complete story
-          </div>
-        )}
-        {!locked && <KnownPctChip pct={knownPct} />}
-        {locked && <CoverLock />}
-      </StoryCover>
-      <div style={{ padding: shelf ? '10px 2px 2px' : '12px 14px 13px', display: 'flex', flexDirection: 'column', gap: shelf ? '4px' : '5px', flex: 1, width: '100%', minWidth: 0 }}>
-        {/* Two lines, not one + ellipsis: `title` never fires on touch, so a
-            clipped title was unreadable in the app. The reserved height keeps
-            the shelf rows aligned whether a title takes one line or two. */}
-        <div title={story.title} style={{
-          fontSize: '16px', fontWeight: 750, fontFamily, color: 'var(--text)', lineHeight: 1.3,
-          display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2,
-          overflow: 'hidden', minHeight: '2.6em',
-        }}>
-          {story.title}
-        </div>
-        {!shelf && <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.4 }}>
-          {story.english_summary || '—'}
-        </div>}
-        {/* No aria-label on the row below: a plain div isn't a widget, so the
-            label was ignored — and it sits inside the card's button anyway,
-            whose accessible name already reads the visible "N chapters"/"N min". */}
-        {!shelf && standalone && (standalone.chapters || standalone.minutes) && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minHeight: '18px', color: 'var(--text-muted)', fontSize: '11.5px', fontWeight: 700 }}>
-            {standalone.chapters && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                <Layers size={13} strokeWidth={2} aria-hidden="true" />
-                {standalone.chapters} chapters
-              </span>
-            )}
-            {standalone.minutes && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                <Clock size={13} strokeWidth={2} aria-hidden="true" />
-                {standalone.minutes} min
-              </span>
-            )}
-          </div>
-        )}
-        {shelf ? (
-          <div style={{ fontSize: '12px', fontWeight: 650, color: locked ? 'var(--text-muted)' : read ? 'var(--success)' : 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {locked ? (lockLabel || 'Locked') : [levelLabel, practice ? 'Practice' : formatLabel(story), standalone?.minutes ? standalone.minutes + ' min' : null].filter(Boolean).join(' · ')}
-            {read && !locked ? ' · Read' : ''}
-          </div>
-        ) : <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '3px', flexWrap: 'nowrap' }}>
-          <span style={metaTag}>{levelLabel}</span>
-          <span style={metaTag}><StoryFormatIcon story={story} size={13} /> {formatLabel(story)}</span>
-          <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 700, color: locked ? 'var(--text-muted)' : read ? 'var(--success)' : 'var(--text-faint)', whiteSpace: 'nowrap' }}>
-            {locked ? (lockLabel || 'Locked') : read ? 'Read' : 'New'}
-          </span>
-        </div>}
-      </div>
-    </button>
-  )
-}
-
-// ─── FILTER ROW ────────────────────────────────────────────────────────────
-
-// ─── ARC + PRACTICE SECTIONS ───────────────────────────────────────────────
-
-function CardGrid({ children, isMobile }) {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(210px, 1fr))', gap: '16px' }}>
-      {children}
-    </div>
-  )
-}
-
-function shelfItemStyle(isMobile) {
+// Poster rail item width: ~2.4 posters visible on a phone, fixed on desktop.
+function posterItemStyle(isMobile) {
   return {
-    flex: isMobile ? '0 0 min(78vw, 320px)' : '0 0 276px',
+    flex: isMobile ? '0 0 clamp(128px, 38vw, 168px)' : '0 0 176px',
     scrollSnapAlign: 'start', minWidth: 0,
   }
 }
 
-function ShelfRow({ id, title, subtitle, isMobile, children }) {
+function ShelfRow({ id, title, subtitle, isMobile, children, dataTour }) {
   const railRef = useRef(null)
   const scroll = (direction) => {
     const rail = railRef.current
@@ -278,13 +79,13 @@ function ShelfRow({ id, title, subtitle, isMobile, children }) {
     rail.scrollBy({ left: direction * Math.max(rail.clientWidth * 0.78, 280), behavior: reduced ? 'auto' : 'smooth' })
   }
   return (
-    <section aria-labelledby={id} className="hd-rise" style={{ minWidth: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: '16px', marginBottom: '12px' }}>
+    <section aria-labelledby={id} data-tour={dataTour} className="hd-rise" style={{ minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: '16px', marginBottom: '10px' }}>
         <div style={{ minWidth: 0 }}>
-          <h2 id={id} style={{ margin: 0, color: 'var(--text)', fontSize: isMobile ? '18px' : '20px', fontWeight: 800, letterSpacing: '-0.02em' }}>
+          <h2 id={id} style={{ margin: 0, color: 'var(--text)', fontSize: isMobile ? '17px' : '19px', fontWeight: 800, letterSpacing: '-0.02em' }}>
             {title}
           </h2>
-          {subtitle && <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '12.5px', lineHeight: 1.45 }}>{subtitle}</p>}
+          {subtitle && <p style={{ margin: '3px 0 0', color: 'var(--text-muted)', fontSize: '12.5px', lineHeight: 1.45 }}>{subtitle}</p>}
         </div>
         {!isMobile && (
           <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
@@ -302,9 +103,9 @@ function ShelfRow({ id, title, subtitle, isMobile, children }) {
         data-testid="story-shelf-rail"
         data-shelf={id}
         style={{
-          display: 'flex', gap: isMobile ? '14px' : '18px', overflowX: 'auto', overflowY: 'visible',
+          display: 'flex', gap: isMobile ? '12px' : '16px', overflowX: 'auto', overflowY: 'visible',
           overscrollBehaviorInline: 'contain', scrollSnapType: 'x proximity', scrollbarWidth: 'thin',
-          padding: '4px 3px 18px', margin: '0 -3px', minWidth: 0,
+          padding: '4px 3px 16px', margin: '0 -3px', minWidth: 0,
         }}
       >
         {children}
@@ -318,181 +119,42 @@ const railArrowStyle = {
   background: 'var(--surface)', color: 'var(--text-muted)', display: 'grid', placeItems: 'center', cursor: 'pointer',
 }
 
-// Tapping the card RESUMES the series (opens the next unread chapter). The
-// chapter-count chip on the cover is a real secondary button that opens the
-// chapter list — it's a sibling of the main button (buttons can't nest).
-function SeriesCard({ arc, readIds, accentHex, fontFamily, isMobile, onOpen, onOpenChapters, knownPct = null, locked = false, lockLabel = null, shelf = false }) {
-  const [hovered, setHovered] = useState(false)
-  const readCount = arc.parts.filter(p => readIds.has(p.id)).length
-  const total = arc.parts.length
-  const done = readCount === total
-  const ongoing = seriesHasMore(arc)
-  // Open on the cover of where you actually are, not always chapter one.
-  const coverStory = arc.parts.find(p => !readIds.has(p.id)) || arc.parts[0]
-  const lift = hovered && !locked
+// ─── FILTER CHIPS ──────────────────────────────────────────────────────────
+
+function FilterChips({ options, value, onChange, accentHex }) {
   return (
-    <div style={{ position: 'relative', paddingRight: shelf ? 0 : '7px', paddingBottom: shelf ? 0 : '7px' }}>
-      {/* Stacked edges — decorative, so hidden from the accessibility tree. */}
-      {!shelf && <div aria-hidden="true" style={{
-        position: 'absolute', top: '7px', left: '7px', right: 0, bottom: 0,
-        borderRadius: '16px', background: 'var(--surface)',
-        border: '1px solid var(--border)', opacity: 0.55,
-      }} />}
-      {!shelf && <div aria-hidden="true" style={{
-        position: 'absolute', top: '4px', left: '4px', right: '3px', bottom: '3px',
-        borderRadius: '16px', background: 'var(--surface)',
-        border: '1px solid var(--border)', opacity: 0.8,
-      }} />}
-      <button
-        // Same as StoryCard: locked stays focusable (aria-disabled) so the
-        // reason it's locked is reachable, with a no-op click to keep it inert.
-        onClick={locked ? () => {} : onOpen}
-        aria-disabled={locked}
-        aria-label={locked
-          ? [arc.title, lockLabel || 'Locked'].join(' — ')
-          : arc.title + ' — continue reading'}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        className={locked ? undefined : 'hd-press'}
-        style={{
-          position: 'relative', display: 'flex', flexDirection: 'column', textAlign: 'left',
-          width: '100%', padding: 0, cursor: locked ? 'default' : 'pointer',
-          border: shelf ? 'none' : '1px solid ' + (lift ? accentHex + '55' : 'var(--border)'),
-          borderRadius: '16px', overflow: shelf ? 'visible' : 'hidden', background: shelf ? 'transparent' : 'var(--surface)',
-          boxShadow: shelf ? 'none' : lift ? '0 16px 34px rgba(24,24,27,0.10)' : '0 6px 20px rgba(24,24,27,0.05)',
-          transform: lift ? 'translateY(-2px)' : 'translateY(0)',
-          transition: 'all 170ms ease', fontFamily: 'Inter, sans-serif',
-          opacity: locked ? 0.78 : 1,
-        }}
-      >
-        <StoryCover
-          story={coverStory} path={coverStory && coverStory.image_path} accent={accentHex} radius={shelf ? 16 : 0}
-          style={{
-            width: '100%', aspectRatio: '16 / 9',
-            border: shelf ? '1px solid ' + (lift ? accentHex + '66' : 'var(--border)') : '1px solid var(--border)',
-            boxShadow: shelf ? (lift ? '0 16px 32px rgba(24,24,27,0.16)' : '0 5px 16px rgba(24,24,27,0.08)') : undefined,
-            transition: shelf ? 'border-color 170ms ease, box-shadow 170ms ease' : undefined,
-          }}
-        >
-          {done && (
-            <div style={{
-              position: 'absolute', top: '8px', right: '8px', width: '22px', height: '22px',
-              borderRadius: '999px', background: 'var(--success)', display: 'flex',
-              alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.3)', zIndex: 1,
-            }}>
-              <CheckCircle2 size={14} strokeWidth={2.4} color="#fff" />
-            </div>
-          )}
-          {!locked && <KnownPctChip pct={knownPct} />}
-          {locked && <CoverLock />}
-        </StoryCover>
-        <div style={{ padding: shelf ? '10px 2px 2px' : '12px 14px 13px', display: 'flex', flexDirection: 'column', gap: shelf ? '5px' : '7px', flex: 1, width: '100%', minWidth: 0 }}>
-          <div title={arc.title} style={{
-            fontSize: isMobile ? '15px' : '16px', fontWeight: 750, fontFamily, color: 'var(--text)', lineHeight: 1.3,
-            display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2,
-            overflow: 'hidden', minHeight: '2.6em',
-          }}>
-            {arc.title}
-          </div>
-          {locked
-            ? <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-muted)' }}>{lockLabel || 'Locked'}</div>
-            : <SeriesProgress readCount={readCount} total={total} accentHex={accentHex} ongoing={ongoing} />}
-        </div>
-      </button>
-      {/* Secondary action: the chapter list. Sits over the cover's top-left. */}
-      {onOpenChapters && !locked && (
-        <button
-          onClick={onOpenChapters}
-          aria-label={'All chapters of ' + arc.title}
-          style={{
-            position: 'absolute', top: '8px', left: '8px', zIndex: 2,
-            display: 'flex', alignItems: 'center', gap: '5px',
-            fontSize: '10.5px', fontWeight: 800, color: '#fff',
-            background: 'rgba(24,24,27,0.55)', border: 'none', borderRadius: '999px',
-            minHeight: '44px', padding: '5px 10px', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-          }}
-        >
-          <Layers size={12} strokeWidth={2.2} color="#fff" />
-          {total} chapter{total === 1 ? '' : 's'} ›
-        </button>
-      )}
-      {locked && (
-        <div aria-hidden="true" style={{
-          position: 'absolute', top: '8px', left: '8px', zIndex: 2,
-          display: 'flex', alignItems: 'center', gap: '5px',
-          fontSize: '10.5px', fontWeight: 800, color: '#fff',
-          background: 'rgba(24,24,27,0.55)', borderRadius: '999px', padding: '5px 10px',
-        }}>
-          <Layers size={12} strokeWidth={2.2} color="#fff" />
-          {total} chapter{total === 1 ? '' : 's'}
-        </div>
-      )}
+    <div role="group" aria-label="Filter stories" style={{
+      display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none',
+      padding: '2px 3px 12px', margin: '0 -3px',
+    }}>
+      {options.map(opt => {
+        const active = opt.value === value
+        return (
+          <button
+            key={opt.value}
+            onClick={() => onChange(opt.value)}
+            aria-pressed={active}
+            className="hd-press"
+            style={{
+              flexShrink: 0, minHeight: '38px', padding: '0 15px', borderRadius: '999px',
+              border: '1px solid ' + (active ? 'transparent' : 'var(--border)'),
+              background: active ? accentHex : 'var(--surface)',
+              color: active ? '#fff' : 'var(--text-muted)',
+              fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+              transition: 'background 140ms ease, color 140ms ease',
+            }}
+          >
+            {opt.label}
+          </button>
+        )
+      })}
     </div>
   )
 }
 
-// Shared by the series card and the series page so the two never disagree about
-// how far along you are.
-function SeriesProgress({ readCount, total, accentHex, ongoing = false }) {
-  const pct = total > 0 ? Math.round((readCount / total) * 100) : 0
-  const done = readCount === total && total > 0
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-      <div style={{ height: '4px', borderRadius: '999px', background: 'var(--surface-2)', overflow: 'hidden' }}>
-        <div style={{
-          width: pct + '%', height: '100%', borderRadius: '999px',
-          background: done ? 'var(--success)' : accentHex, transition: 'width 220ms ease',
-        }} />
-      </div>
-      <div style={{ fontSize: '11.5px', fontWeight: 700, color: done ? 'var(--success)' : 'var(--text-muted)' }}>
-        {readCount === 0
-          ? 'Not started'
-          : done ? (ongoing ? 'All available read' : 'Series complete') : readCount + ' of ' + total + ' read'}
-      </div>
-    </div>
-  )
-}
+// ─── EMPTY STATE ───────────────────────────────────────────────────────────
 
-// The series page: every chapter of one arc, in reading order.
-function SeriesPage({ arc, readIds, accentHex, fontFamily, levelLabelFor, isMobile, onOpen, onBack }) {
-  const readCount = arc.parts.filter(p => readIds.has(p.id)).length
-  const ongoing = seriesHasMore(arc)
-  return (
-    <div>
-      <button onClick={onBack} style={{
-        display: 'inline-flex', alignItems: 'center', gap: '8px',
-        minHeight: '44px', padding: '0 14px', borderRadius: '12px', marginBottom: '18px',
-        border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)',
-        fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-      }}>
-        <ArrowLeft size={17} strokeWidth={1.85} color="var(--text-muted)" /> All stories
-      </button>
-
-      <div style={{ marginBottom: '20px' }}>
-        <h1 style={{
-          margin: '0 0 10px', fontSize: isMobile ? '22px' : '26px', fontWeight: 800,
-          color: 'var(--text)', fontFamily, lineHeight: 1.2,
-        }}>
-          {arc.title}
-        </h1>
-        <div style={{ maxWidth: '280px' }}>
-          <SeriesProgress readCount={readCount} total={arc.parts.length} accentHex={accentHex} ongoing={ongoing} />
-        </div>
-      </div>
-
-      <CardGrid isMobile={isMobile}>
-        {arc.parts.map(story => (
-          <StoryCard key={story.id} story={story} read={readIds.has(story.id)} accentHex={accentHex}
-            fontFamily={fontFamily} levelLabel={levelLabelFor(story)} onClick={() => onOpen(story)} />
-        ))}
-      </CardGrid>
-    </div>
-  )
-}
-
-// Practice scenarios (chat / scene / reply) live in their own section with a
-// tinted card, so they never look like broken story cards inside an arc.
-function EmptyPanel({ icon: Icon, title, text, actionIcon, actionLabel, onAction }) {
+function EmptyPanel({ icon: Icon, title, text, actionIcon: ActionIcon, actionLabel, onAction }) {
   return (
     <div style={{
       textAlign: 'center', color: 'var(--text-muted)', padding: '54px 28px', fontSize: '15px',
@@ -504,10 +166,84 @@ function EmptyPanel({ icon: Icon, title, text, actionIcon, actionLabel, onAction
       <div style={{ marginTop: '6px', lineHeight: 1.6 }}>{text}</div>
       {actionLabel && (
         <div style={{ marginTop: '18px', display: 'flex', justifyContent: 'center' }}>
-          <IconButton icon={actionIcon} label={actionLabel} onClick={onAction} />
+          <button onClick={onAction} className="hd-press" style={{
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            minHeight: '44px', padding: '0 16px', borderRadius: '12px',
+            border: '1px solid var(--border)', background: 'var(--surface)',
+            color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650,
+            fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+          }}>
+            <ActionIcon size={17} strokeWidth={1.85} color="var(--text-muted)" />
+            {actionLabel}
+          </button>
         </div>
       )}
     </div>
+  )
+}
+
+// ─── THE HERO ──────────────────────────────────────────────────────────────
+
+// One lit panel, carrying the day's most useful next step: the story reward
+// when the learner has a series going (locked → "start flashcards", unlocked →
+// "read now", everything open → "continue"), and a featured pick otherwise.
+function StoriesHero({ hero, accentHex, fontFamily, isMobile, levelLabelOf }) {
+  const coverStory = hero.cover
+  return (
+    <HeroPanel
+      accentHex={accentHex}
+      seed={hero.seed}
+      padding="0"
+      compact={isMobile}
+      onClick={hero.onAction}
+      style={{ margin: '0 0 26px', minHeight: isMobile ? '280px' : '340px' }}
+      dataTour="stories-hero"
+    >
+      {({ hovered }) => (
+        <div style={{ position: 'relative', minHeight: isMobile ? '280px' : '340px', display: 'flex', alignItems: 'end' }}>
+          <StoryCover
+            story={coverStory} path={coverStory && coverStory.image_path} accent={accentHex} radius={0} loading="eager"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+          />
+          <div aria-hidden="true" style={{
+            position: 'absolute', inset: 0,
+            background: isMobile
+              ? 'linear-gradient(0deg, rgba(13,13,15,0.94) 0%, rgba(13,13,15,0.58) 58%, rgba(13,13,15,0.16) 100%)'
+              : 'linear-gradient(90deg, rgba(13,13,15,0.94) 0%, rgba(13,13,15,0.70) 42%, rgba(13,13,15,0.14) 76%)',
+          }} />
+          <div style={{ position: 'relative', zIndex: 1, padding: isMobile ? '22px 20px' : '34px 38px', maxWidth: isMobile ? '100%' : '620px' }}>
+            <Eyebrow onHero>{hero.eyebrow}</Eyebrow>
+            {hero.kicker && (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: '7px', marginTop: '12px',
+                fontSize: '12px', fontWeight: 800, letterSpacing: '0.04em',
+                color: '#fff', background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.22)',
+                borderRadius: '999px', padding: '6px 12px',
+              }}>
+                {hero.kickerIcon}
+                {hero.kicker}
+              </div>
+            )}
+            <div style={{
+              fontFamily: fontFamily + ', Inter, sans-serif', color: '#fff',
+              fontSize: isMobile ? '26px' : '36px', fontWeight: 700, lineHeight: 1.18,
+              letterSpacing: '-0.02em', margin: '10px 0 8px',
+            }}>
+              {hero.title}
+            </div>
+            {hero.subtitle && (
+              <div style={{ fontSize: isMobile ? '13px' : '14px', color: 'rgba(255,255,255,0.82)', lineHeight: 1.55, maxWidth: '52ch' }}>
+                {hero.subtitle}
+              </div>
+            )}
+            <div style={{ marginTop: '10px', color: 'rgba(255,255,255,0.64)', fontSize: '12px', fontWeight: 700 }}>
+              {hero.metaStory ? levelLabelOf(hero.metaStory) + ' · ' + formatLabel(hero.metaStory) : hero.meta}
+            </div>
+            <HeroAction label={hero.actionLabel} hovered={hovered} icon={hero.actionIcon || ArrowRight} accentHex={accentHex} />
+          </div>
+        </div>
+      )}
+    </HeroPanel>
   )
 }
 
@@ -519,49 +255,39 @@ export default function Stories({
   routeStoryId = null, routeSeriesKey = null, onStoryRoute, onSeriesRoute, onBrowseRoute,
 }) {
   const [view, setView] = useState('browse')
-  // The next level's stories (light rows, no content) — the locked "road
-  // ahead" section at the end of the shelf.
   const [nextLevelStories, setNextLevelStories] = useState([])
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [selectedStory, setSelectedStory] = useState(null)
   // The open series, and whether the reader was entered from inside one — so
-  // Back out of a chapter returns to its series rather than dumping you on the
-  // shelf with the series closed again.
+  // Back out of a chapter returns to its series rather than the shelf.
   const [selectedArc, setSelectedArc] = useState(null)
   const [readerFromSeries, setReaderFromSeries] = useState(false)
   const [stories, setStories] = useState([])
-  // Story ids the user has finished (story_reads) — drives read checkmarks,
-  // per-tier progress, and the once-only finish XP.
   const [readIds, setReadIds] = useState(new Set())
+  const [reads, setReads] = useState([])
+  // Chapters unlocked by flashcard sessions (story_unlocks) + today's claim.
+  const [unlockIds, setUnlockIds] = useState(new Set())
+  const [claim, setClaim] = useState(null)
+  const [activeSeriesKey, setActiveSeriesKey] = useState(null)
+  // Vocab ids reviewed in the last few days — the "words you'll recognize" pool.
+  const [recentVocabIds, setRecentVocabIds] = useState([])
   const [learnedCount, setLearnedCount] = useState(0)
   const [vocabMap, setVocabMap] = useState({})
   const [userCards, setUserCards] = useState({})
   const [loading, setLoading] = useState(true)
-  // The stories fetch failed AND no cached snapshot could stand in (a new
-  // device offline, a server error). Distinguished from a genuinely empty
-  // library so the shelf can say "couldn't load" instead of "no stories yet".
   const [loadFailed, setLoadFailed] = useState(false)
-  // Which unknown /story/:id has already been announced — so a stale deep link
-  // toasts once, not on every effect pass.
+  const [filter, setFilter] = useState('all')
   const missingStoryNotified = useRef(null)
+  const redeemAttempted = useRef(false)
   const isMobile = useIsMobile()
 
-  const languageDetails = getLanguageDetails(profile, track)
-  const { accentHex, fontFamily } = languageDetails
-  // Today's studied words (from the post-study deep-link), highlighted in the
-  // reader. Captured into state so it survives App clearing the pending value.
+  const { accentHex, fontFamily } = getLanguageDetails(profile, track)
   const [todayWords, setTodayWords] = useState([])
   const [firstMission, setFirstMission] = useState(false)
-  // Learned words per level — the cumulative shelf gates each level's stories on
-  // that level's own progress, not the current level's.
   const [learnedPerLevel, setLearnedPerLevel] = useState({})
 
-  // Tiers for a story's own level (falls back to the current level for a story
-  // row with no level, e.g. an old cached snapshot).
   const levelOf = (lvl) => (lvl == null ? track.current_level : lvl)
   const tiersAt = (lvl) => tiersFor(track.language, levelOf(lvl))
-  // Learned words counting toward that level's gates. A level the learner has
-  // already passed counts as complete — see readingGateCount.
   const learnedAt = (lvl) => readingGateCount({
     level: levelOf(lvl),
     currentLevel: track.current_level,
@@ -569,15 +295,12 @@ export default function Stories({
     tiers: tiersAt(lvl),
   })
   const CATEGORIES = tiersAt(track.current_level)
-  // Stories on one shelf = one tier at one level.
   const storiesIn = (cat) => (cat
     ? stories.filter(s => s.tier === cat.tier && levelOf(s.level) === cat.level)
     : [])
 
-  // The flat shelf, in one memo (before any early return — hooks rule) with a
-  // per-story "% known" cache local to the computation: only NEXT chapters are
-  // computed (≤ one per unit), and everything that can move the numbers is a
-  // dependency. Helpers are re-derived inside so the memo has no unstable deps.
+  // The flat shelf (level sections of units), same machinery as before the
+  // poster redesign — tier gates and % known sorting are unchanged.
   const { sections, aheadSection } = useMemo(() => {
     const tiersAtL = (lvl) => tiersFor(track.language, lvl == null ? track.current_level : lvl)
     const learnedAtL = (lvl) => readingGateCount({
@@ -607,36 +330,40 @@ export default function Stories({
     }
   }, [stories, nextLevelStories, vocabMap, userCards, readIds, learnedPerLevel, track.language, track.current_level])
 
+  // Series units for the reward loop (cross-section, reward rules only —
+  // independent of tier gating so the pointer never dangles).
+  const rewardUnits = useMemo(() => buildSeriesUnits(stories), [stories])
+  const activeUnit = useMemo(
+    () => resolveActiveSeries({ units: rewardUnits, activeSeriesKey, recentReads: reads }),
+    [rewardUnits, activeSeriesKey, reads]
+  )
+  const rewardState = useMemo(
+    () => rewardStateFor({ unit: activeUnit, readIds, unlockIds, claim }),
+    [activeUnit, readIds, unlockIds, claim]
+  )
+
   async function loadData() {
     setLoading(true)
     setLoadFailed(false)
 
-    // Everything the stories screen needs is fetched, then mirrored into
-    // IndexedDB so the whole library (list + text + read markers) opens offline.
-    // If the network is down, the last good snapshot is served instead.
-    const snapKey = 'storiesdata:' + track.language + ':' + track.system + ':' + track.current_level
+    // Everything the stories screen needs, mirrored into IndexedDB so the
+    // library opens offline. Key bumped when the payload shape grew unlocks.
+    const snapKey = 'storiesdata2:' + track.language + ':' + track.system + ':' + track.current_level
     let vocabData = null, cardsData = null, storiesData = null, readsData = null, nextData = null
+    let unlocksData = null, claimData = null, activeSeriesData = null, recentData = null
     let fetchFailed = false
     try {
-      // Load all levels so every word in a story is clickable, not just current
-      // level — and PAGE it. Unpaged this stopped at PostgREST's 1000-row cap,
-      // so on a track with more vocabulary than that the words past the cap were
-      // invisible to the reader: untappable in a story, and uncounted in the
-      // story's "% known", which silently understated how much a learner could
-      // read.
+      // All levels so every word in a story is clickable — and PAGED past
+      // PostgREST's 1000-row cap (see supabasePaging).
       vocabData = await fetchPagedSafe(() => supabase
         .from('vocabulary').select('*')
         .eq('language', track.language).eq('system', track.system).eq('is_active', true)
         .order('id', { ascending: true }))
-      // A committed learner's card count passes 1000 too.
       cardsData = await fetchPagedSafe(() => supabase
         .from('cards').select('vocab_id, is_easy, state, learned, due_at')
         .eq('user_id', session.user.id)
         .order('vocab_id', { ascending: true }))
-      // Reading is CUMULATIVE, the way review already is: every level the
-      // learner has reached, not just the current one. Advancing a level adds to
-      // the shelf instead of emptying it — and a level whose own stories don't
-      // exist yet still has a full shelf underneath it.
+      // Reading is CUMULATIVE: every level the learner has reached.
       const sres = await supabase
         .from('stories').select('*')
         .eq('language', track.language).eq('system', track.system)
@@ -645,10 +372,9 @@ export default function Stories({
         .order('tier', { ascending: true }).order('story_number', { ascending: true })
       storiesData = sres.data
       const rres = await supabase
-        .from('story_reads').select('story_id').eq('user_id', session.user.id)
+        .from('story_reads').select('story_id, read_at').eq('user_id', session.user.id)
       readsData = rres.data
-      // The next level's stories, WITHOUT content (they're locked — no reader,
-      // no % known) — the shelf's "road ahead" teaser section.
+      // The next level's stories, WITHOUT content — the "road ahead" teaser.
       const nres = await supabase
         .from('stories')
         .select('id, title, level, tier, story_number, presentation, panels, image_path, english_summary')
@@ -656,10 +382,33 @@ export default function Stories({
         .eq('level', track.current_level + 1).eq('is_published', true)
         .order('tier', { ascending: true }).order('story_number', { ascending: true })
       nextData = nres.data
+      // Chapter unlocks + today's reward claim + the active-series pointer.
+      // Each is best-effort: before the migration lands these come back as
+      // errors and the shelf simply behaves as if nothing is unlocked yet.
+      const [ures, cres, tres, rvres] = await Promise.all([
+        supabase.from('story_unlocks').select('story_id').eq('user_id', session.user.id),
+        supabase.from('story_reward_claims').select('claim_date, story_id')
+          .eq('user_id', session.user.id).eq('language', track.language)
+          .eq('system', track.system).eq('claim_date', todayStr()).maybeSingle(),
+        supabase.from('language_tracks').select('active_series')
+          .eq('user_id', session.user.id).eq('language', track.language)
+          .eq('system', track.system).maybeSingle(),
+        supabase.from('review_logs').select('vocab_id')
+          .eq('user_id', session.user.id)
+          .gte('reviewed_at', new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString())
+          .limit(400),
+      ])
+      unlocksData = ures.error ? null : (ures.data || [])
+      claimData = cres.error ? null : (cres.data || null)
+      activeSeriesData = tres.error ? null : ((tres.data && tres.data.active_series) || null)
+      recentData = rvres.error ? null : (rvres.data || [])
     } catch { fetchFailed = true /* offline — fall back to the cached snapshot below */ }
 
     if (storiesData && storiesData.length) {
-      cacheSet(snapKey, { vocabData, cardsData, storiesData, readsData, nextData })
+      cacheSet(snapKey, {
+        vocabData, cardsData, storiesData, readsData, nextData,
+        unlocksData, claimData, activeSeriesData, recentData,
+      })
     } else {
       const snap = await cacheGet(snapKey)
       if (snap) {
@@ -668,11 +417,11 @@ export default function Stories({
         storiesData = snap.storiesData
         readsData = readsData || snap.readsData
         nextData = nextData || snap.nextData
+        unlocksData = unlocksData || snap.unlocksData
+        claimData = claimData || snap.claimData
+        activeSeriesData = activeSeriesData || snap.activeSeriesData
+        recentData = recentData || snap.recentData
       } else if (fetchFailed || storiesData == null) {
-        // No snapshot to fall back on, and the fetch either threw or came back
-        // with no rows at all (a Supabase error result is null, an empty
-        // library is []). "No stories yet" would be a false statement about
-        // the library — surface a retry instead.
         setLoadFailed(true)
       }
     }
@@ -685,8 +434,6 @@ export default function Stories({
     ;(cardsData || []).forEach(c => { cardsMap[c.vocab_id] = c })
     setUserCards(cardsMap)
 
-    // Per-level learned counts drive each level's own tier gates; the headline
-    // progress bar still tracks the current level.
     const perLevel = learnedByLevel(vocabData || [], cardsData || [])
     setLearnedPerLevel(perLevel)
     const currentLevelIds = new Set(
@@ -697,15 +444,44 @@ export default function Stories({
 
     setStories(storiesData || [])
     setNextLevelStories(nextData || [])
-    setReadIds(new Set((readsData || []).map(r => r.story_id)))
+    const readRows = readsData || []
+    const readSet = new Set(readRows.map(r => r.story_id))
+    setReads(readRows)
+    setReadIds(readSet)
+    let unlockSet = new Set((unlocksData || []).map(u => u.story_id))
+    // A cached snapshot can hand back YESTERDAY'S claim — a claim only means
+    // anything on the local day it was made.
+    setClaim(claimData && claimData.claim_date === todayStr() ? claimData : null)
+    setActiveSeriesKey(activeSeriesData || null)
+    setRecentVocabIds((recentData || []).map(r => r.vocab_id))
 
-    // Deep-link from the post-study recap ("Read unlocked story"): open the
-    // recommended story straight into the reader instead of the category list.
+    // Grandfathering: a learner with reads but NO unlock rows was reading
+    // before the chapter system existed. Seed what they could already reach
+    // (their read chapters' series, one past the furthest read) once.
+    if (unlockSet.size === 0 && readSet.size > 0 && (unlocksData !== null)) {
+      const seedFlagKey = 'storyUnlocks:seeded:' + track.language + ':' + track.system
+      const seeded = await prefsGet(seedFlagKey)
+      if (!seeded) {
+        const seedIds = seedUnlockIds(buildSeriesUnits(storiesData || []), readSet)
+        if (seedIds.length > 0) {
+          try {
+            const rows = seedIds.map(id => ({ user_id: session.user.id, story_id: id, source: 'seed' }))
+            const { error } = await supabase.from('story_unlocks')
+              .upsert(rows, { onConflict: 'user_id,story_id', ignoreDuplicates: true })
+            if (!error) unlockSet = new Set([...unlockSet, ...seedIds])
+          } catch { /* seeding retries next load */ }
+        }
+        prefsMerge(seedFlagKey, { done: true })
+      }
+    }
+    setUnlockIds(unlockSet)
+
+    // Deep-link from the post-study recap ("Read now"): open the story
+    // straight into the reader instead of the shelf.
     if (initialStoryId) {
       const target = (storiesData || []).find(s => s.id === initialStoryId)
       if (target) {
-        const cat = categoryForStory(target, track)
-        setSelectedCategory(cat)
+        setSelectedCategory(categoryForStory(target, track))
         setSelectedStory(target)
         setView('reader')
         if (initialStoryWords && initialStoryWords.length) setTodayWords(initialStoryWords)
@@ -723,6 +499,25 @@ export default function Stories({
     return () => clearTimeout(timer)
   }, [])
 
+  // A banked claim (session completed with nothing to unlock at the time)
+  // redeems itself the moment an active series with a locked chapter exists —
+  // "you already did today's flashcards" should never expire while the day
+  // lasts. One attempt per mount; the RPC is idempotent anyway.
+  useEffect(() => {
+    if (loading || redeemAttempted.current) return
+    if (rewardState.state !== 'banked' || !rewardState.chapter) return
+    redeemAttempted.current = true
+    const chapter = rewardState.chapter
+    claimStoryReward({ userId: session.user.id, track, storyId: chapter.id }).then(res => {
+      if (res && res.redeemed && res.story_id === chapter.id) {
+        setUnlockIds(prev => { const nx = new Set(prev); nx.add(chapter.id); return nx })
+        setClaim({ claim_date: todayStr(), story_id: chapter.id })
+        const info = chapterInfo(chapter, (activeUnit ? activeUnit.parts.indexOf(chapter) : 0))
+        toast({ title: 'Chapter unlocked — ' + (info.nativeLabel || 'Chapter ' + info.number), accent: accentHex })
+      }
+    })
+  }, [loading, rewardState, session.user.id, track, activeUnit, accentHex])
+
   useEffect(() => {
     if (loading) return
     if (routeKind === 'browse') {
@@ -735,10 +530,6 @@ export default function Stories({
     if (routeKind === 'story' && routeStoryId) {
       const target = stories.find(s => s.id === routeStoryId)
       if (!target) {
-        // Loading finished and the id matches nothing — a stale or mistyped
-        // link. Say so briefly and settle the URL back on the shelf instead of
-        // leaving it claiming a story that isn't rendered. Skipped while the
-        // load itself failed: a retry may still find the story.
         if (!loadFailed && missingStoryNotified.current !== routeStoryId) {
           missingStoryNotified.current = routeStoryId
           toast({ title: "That story isn't available", accent: accentHex })
@@ -763,18 +554,92 @@ export default function Stories({
   }, [loading, loadFailed, routeKind, routeStoryId, routeSeriesKey, stories, sections, selectedStory?.id, selectedArc?.key, view, track, accentHex, onBrowseRoute])
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  // First-visit tour of the library — browse view only, never over the reader
+  // or a series page, and only once (rules in tour.js). The delay lets the
+  // shelf paint before anything is pointed at.
+  const [tourSteps, setTourSteps] = useState(null)
+  const profileCreatedAt = profile.created_at
+  useEffect(() => {
+    if (loading || view !== 'browse') return undefined
+    let alive = true
+    const timer = setTimeout(() => {
+      maybeStartTour({ screen: 'stories', profileCreatedAt })
+        .then(steps => { if (alive && steps) setTourSteps(steps) })
+    }, 600)
+    return () => { alive = false; clearTimeout(timer) }
+  }, [loading, view, profileCreatedAt])
+
+  // ── Shared actions ───────────────────────────────────────────────────────
+
+  const levelLabelFor = (story) => getLevelLabel(track.language, track.system, story.level == null ? track.current_level : story.level)
+
+  const openStory = (story, fromSeries = false) => {
+    setSelectedCategory(categoryForStory(story, track))
+    setSelectedStory(story)
+    setReaderFromSeries(fromSeries)
+    setView('reader')
+    if (onStoryRoute) onStoryRoute(story.id)
+  }
+
+  const openSeries = (arc) => {
+    setSelectedArc(arc)
+    setView('series')
+    if (onSeriesRoute) onSeriesRoute(arc.key)
+  }
+
+  // A unit opens as a series page when it has chapters to choose between, and
+  // straight into the reader when it is a single story (no pointless stop).
+  const openUnit = (unit) => {
+    if (unit.parts.length > 1) openSeries(unit)
+    else openStory(unit.parts[0])
+  }
+
+  const setActiveSeries = async (key) => {
+    setActiveSeriesKey(key)
+    try {
+      await supabase.from('language_tracks')
+        .update({ active_series: key })
+        .eq('user_id', session.user.id)
+        .eq('language', track.language)
+        .eq('system', track.system)
+    } catch { /* the fallback (most recent read) keeps rewards flowing */ }
+  }
+
+  // Finishing a chapter: record it locally, adopt its series as active when
+  // none is chosen yet, and let a banked claim redeem against what's next.
+  const handleMarkRead = (id) => {
+    setReadIds(prev => { const nx = new Set(prev); nx.add(id); return nx })
+    setReads(prev => [...prev, { story_id: id, read_at: new Date().toISOString() }])
+    const unit = rewardUnits.find(u => u.parts.some(p => p.id === id))
+    if (unit && !activeSeriesKey) setActiveSeries(unit.key)
+    if (unit && claim && !claim.story_id) {
+      const idx = unit.parts.findIndex(p => p.id === id)
+      const next = unit.parts[idx + 1]
+      if (next && !readIds.has(next.id) && !unlockIds.has(next.id)) {
+        claimStoryReward({ userId: session.user.id, track, storyId: next.id }).then(res => {
+          if (res && res.redeemed && res.story_id === next.id) {
+            setUnlockIds(prev => { const nx = new Set(prev); nx.add(next.id); return nx })
+            setClaim({ claim_date: todayStr(), story_id: next.id })
+          }
+        })
+      }
+    }
+  }
+
+  // ── Loading skeleton ─────────────────────────────────────────────────────
+
   if (loading) {
     return (
       <div style={pageShell()}>
         <div role="status" aria-label="Loading stories" style={{ maxWidth: '1360px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px' }}>
-          <div style={{ width: '82px', height: '44px', borderRadius: '12px', background: 'var(--surface-2)', marginBottom: '22px' }} />
-          <div style={{ height: isMobile ? '300px' : '360px', borderRadius: '24px', background: accentHex + '18', border: '1px solid ' + accentHex + '24', marginBottom: '34px' }} />
-          <div style={{ width: '190px', height: '24px', borderRadius: '8px', background: 'var(--surface-2)', marginBottom: '14px' }} />
+          <div style={{ width: '190px', height: '30px', borderRadius: '8px', background: 'var(--surface-2)', margin: '4px 0 20px' }} />
+          <div style={{ height: isMobile ? '280px' : '340px', borderRadius: '24px', background: accentHex + '18', border: '1px solid ' + accentHex + '24', marginBottom: '28px' }} />
+          <div style={{ width: '190px', height: '22px', borderRadius: '8px', background: 'var(--surface-2)', marginBottom: '14px' }} />
           <div style={{ display: 'flex', gap: '16px', overflow: 'hidden' }}>
-            {[0, 1, 2, 3].map(i => (
-              <div key={i} style={{ flex: isMobile ? '0 0 76vw' : '0 0 276px' }}>
-                <div style={{ aspectRatio: '16 / 9', borderRadius: '16px', background: 'var(--surface-2)' }} />
-                <div style={{ width: '68%', height: '14px', borderRadius: '6px', background: 'var(--surface-2)', marginTop: '11px' }} />
+            {[0, 1, 2, 3, 4, 5].map(i => (
+              <div key={i} style={{ flex: isMobile ? '0 0 38vw' : '0 0 176px' }}>
+                <div style={{ aspectRatio: '2 / 3', borderRadius: '14px', background: 'var(--surface-2)' }} />
+                <div style={{ width: '68%', height: '13px', borderRadius: '6px', background: 'var(--surface-2)', marginTop: '10px' }} />
               </div>
             ))}
           </div>
@@ -783,27 +648,40 @@ export default function Stories({
     )
   }
 
-  // ── Reader view ────────────────────────────────────────────────────────
-  if (view === 'reader' && selectedStory && selectedCategory) {
-    // "Next story" stays inside the same shelf: same tier AND same level.
+  // ── Reader view ──────────────────────────────────────────────────────────
+
+  // The reader opens on the story alone — selectedCategory only enriches the
+  // "next" logic, so a story whose tier isn't in the tier table (bad data)
+  // still reads instead of silently bouncing back to the shelf.
+  if (view === 'reader' && selectedStory) {
+    // Chapter-aware "next": inside a series the next chapter (open or locked)
+    // drives the finish state; outside one the old same-shelf next remains.
+    const readerUnit = rewardUnits.find(u => u.parts.some(p => p.id === selectedStory.id)) || null
+    const chapterNext = readerUnit
+      ? nextChapterInfo({ parts: readerUnit.parts, storyId: selectedStory.id, readIds, unlockIds })
+      : null
+
     const catStories = storiesIn(selectedCategory)
     const currentIdx = catStories.findIndex(s => s.id === selectedStory.id)
-    const nextStory = currentIdx >= 0 && currentIdx < catStories.length - 1
+    const shelfNext = currentIdx >= 0 && currentIdx < catStories.length - 1
       ? catStories[currentIdx + 1] : null
-    // When there's no next story left to read in this tier, point the reader at
-    // the next locked tier so finishing ends in "learn N more to unlock…" rather
-    // than a dead end. Only tiers of THIS story's level that actually have
-    // stories are offered, gated by that level's own thresholds.
-    const shelfLevel = selectedCategory.level
+    const nextStory = readerUnit
+      ? (chapterNext && chapterNext.kind === 'unlocked' ? chapterNext.story : null)
+      : shelfNext
+
+    const shelfLevel = selectedCategory ? selectedCategory.level : levelOf(selectedStory.level)
     const tiersWithStories = new Set(
       stories.filter(s => levelOf(s.level) === shelfLevel).map(s => s.tier)
     )
-    const nextTierUnlock = nextStory
+    const nextTierUnlock = nextStory || readerUnit
       ? null
       : nextLockedTier(tiersAt(shelfLevel), learnedAt(shelfLevel), tiersWithStories)
 
     return (
       <StoryReader
+        // Keyed by story so moving to the next chapter remounts the reader
+        // cleanly — every reader engine starts the new chapter from its top.
+        key={selectedStory.id}
         story={selectedStory}
         vocabMap={vocabMap}
         userCards={userCards}
@@ -822,49 +700,52 @@ export default function Stories({
         }}
         onHome={onBack}
         onPractice={onNavigate ? (words) => onNavigate('fillblank', { practiceWords: words }) : null}
+        onStudy={onNavigate ? () => onNavigate('study') : null}
         todayWords={todayWords}
         firstMission={firstMission}
         nextStory={nextStory}
+        nextChapter={chapterNext && readerUnit ? { ...chapterNext, seriesTitle: readerUnit.title } : null}
         nextTierUnlock={nextTierUnlock}
         onNextStory={() => {
+          if (!nextStory) return
           setSelectedStory(nextStory)
-          if (nextStory && onStoryRoute) onStoryRoute(nextStory.id)
+          if (onStoryRoute) onStoryRoute(nextStory.id)
         }}
         isRead={readIds.has(selectedStory.id)}
-        onMarkRead={(id) => setReadIds(prev => { const nx = new Set(prev); nx.add(id); return nx })}
+        onMarkRead={handleMarkRead}
       />
     )
   }
 
-  // ── Browse view (feature + horizontal shelves) ─────────────────────────
+  // ── Series detail view ───────────────────────────────────────────────────
 
-  // Open a story straight into the reader, carrying its shelf (tier + level) so
-  // next-story and the tier-unlock nudge keep working.
-  const openStory = (story, fromSeries = false) => {
-    setSelectedCategory(categoryForStory(story, track))
-    setSelectedStory(story)
-    setReaderFromSeries(fromSeries)
-    setView('reader')
-    if (onStoryRoute) onStoryRoute(story.id)
-  }
-
-  const levelLabelFor = (story) => getLevelLabel(track.language, track.system, story.level == null ? track.current_level : story.level)
-  const daily = pickDailyStory({ stories, categories: CATEGORIES, learnedCount, readIds, dateStr: todayStr(), tiersFor: tiersAt, learnedFor: learnedAt })
-
-
-  // ── Series view: one arc's chapters ────────────────────────────────────
   if (view === 'series' && selectedArc) {
+    const arcHasLockedChapters = selectedArc.parts.length > 1
+    const rewardKeyOf = (arc) => {
+      const match = rewardUnits.find(u => u.parts.some(p => arc.parts.some(ap => ap.id === p.id)))
+      return match ? match.key : arc.key
+    }
+    const arcRewardKey = rewardKeyOf(selectedArc)
     return (
       <div style={pageShell()}>
-        <div style={{ maxWidth: isMobile ? '860px' : '1040px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px', position: 'relative', zIndex: 1 }}>
-          <SeriesPage
-            arc={selectedArc}
+        <div style={{ maxWidth: isMobile ? '860px' : '980px', margin: '0 auto', padding: isMobile ? '24px 16px 56px' : '38px 32px 72px', position: 'relative', zIndex: 1 }}>
+          <SeriesDetail
+            unit={selectedArc}
             readIds={readIds}
+            unlockIds={unlockIds}
             accentHex={accentHex}
             fontFamily={fontFamily}
-            levelLabelFor={levelLabelFor}
+            levelLabel={levelLabelFor(selectedArc.parts[0])}
             isMobile={isMobile}
-            onOpen={(story) => openStory(story, true)}
+            vocabMap={vocabMap}
+            userCards={userCards}
+            recentVocabIds={recentVocabIds}
+            language={track.language}
+            isActiveSeries={activeUnit ? activeUnit.key === arcRewardKey : false}
+            canMakeActive={arcHasLockedChapters && (!activeUnit || activeUnit.key !== arcRewardKey)}
+            onMakeActive={() => setActiveSeries(arcRewardKey)}
+            onOpenChapter={(story) => openStory(story, true)}
+            onStudy={onNavigate ? () => onNavigate('study') : null}
             onBack={() => {
               setView('browse')
               setSelectedArc(null)
@@ -876,105 +757,178 @@ export default function Stories({
     )
   }
 
-  const openSeries = (arc) => {
-    setSelectedArc(arc)
-    setView('series')
-    if (onSeriesRoute) onSeriesRoute(arc.key)
+  // ── Browse view ──────────────────────────────────────────────────────────
+
+  const daily = pickDailyStory({ stories, categories: CATEGORIES, learnedCount, readIds, dateStr: todayStr(), tiersFor: tiersAt, learnedFor: learnedAt })
+
+  // The hero: today's story reward when a series is going, a featured pick
+  // otherwise. Always exactly one lit panel.
+  const buildHero = () => {
+    const unitOfStory = (story) => rewardUnits.find(u => u.parts.some(p => p.id === story.id)) || null
+    if (rewardState.state === 'locked' || rewardState.state === 'banked') {
+      const chapter = rewardState.chapter
+      const info = chapterInfo(chapter, activeUnit.parts.indexOf(chapter))
+      return {
+        seed: track.language + '-reward',
+        eyebrow: 'Today’s story reward',
+        kicker: 'Complete your flashcards to unlock',
+        kickerIcon: <Zap size={13} strokeWidth={2.3} color="#fff" aria-hidden="true" />,
+        title: activeUnit.title,
+        subtitle: (info.nativeLabel ? info.nativeLabel + ' · ' : 'Chapter ' + info.number + ' · ') + info.title,
+        metaStory: chapter,
+        cover: chapter.image_path ? chapter : activeUnit.parts[0],
+        actionLabel: 'Start flashcards',
+        actionIcon: Zap,
+        onAction: onNavigate ? () => onNavigate('study') : undefined,
+      }
+    }
+    if (rewardState.state === 'unlocked-today') {
+      const story = stories.find(s => s.id === rewardState.storyId)
+      if (story && !readIds.has(story.id)) {
+        const unit = unitOfStory(story)
+        const info = chapterInfo(story, unit ? unit.parts.findIndex(p => p.id === story.id) : 0)
+        return {
+          seed: track.language + '-reward',
+          eyebrow: 'Today’s story reward',
+          kicker: 'Chapter unlocked',
+          kickerIcon: <CheckCircle2 size={13} strokeWidth={2.4} color="#fff" aria-hidden="true" />,
+          title: unit ? unit.title : story.title,
+          subtitle: unit ? (info.nativeLabel ? info.nativeLabel + ' · ' : 'Chapter ' + info.number + ' · ') + info.title : story.english_summary,
+          metaStory: story,
+          cover: story.image_path ? story : (unit ? unit.parts[0] : story),
+          actionLabel: 'Read now',
+          actionIcon: BookOpen,
+          onAction: () => openStory(story),
+        }
+      }
+    }
+    if (rewardState.state === 'all-unlocked' && activeUnit) {
+      const chapter = rewardState.chapter
+      const info = chapterInfo(chapter, activeUnit.parts.indexOf(chapter))
+      const readCount = activeUnit.parts.filter(p => readIds.has(p.id)).length
+      return {
+        seed: track.language + '-continue',
+        eyebrow: 'Continue reading',
+        kicker: null,
+        title: activeUnit.title,
+        subtitle: (info.nativeLabel ? info.nativeLabel + ' · ' : 'Chapter ' + info.number + ' · ') + info.title,
+        meta: readCount + ' of ' + activeUnit.parts.length + ' chapters read',
+        cover: chapter.image_path ? chapter : activeUnit.parts[0],
+        actionLabel: 'Continue reading',
+        actionIcon: BookOpen,
+        onAction: () => openStory(chapter),
+      }
+    }
+    if (!daily) return null
+    const unit = unitOfStory(daily)
+    return {
+      seed: track.language + '-stories',
+      eyebrow: rewardState.state === 'series-complete' ? 'Choose your next story' : 'Featured for you',
+      kicker: rewardState.state === 'series-complete' ? 'Series complete — pick what’s next' : null,
+      title: unit && unit.parts.length > 1 ? unit.title : daily.title,
+      subtitle: daily.english_summary || null,
+      metaStory: daily,
+      cover: daily,
+      actionLabel: readIds.has(daily.id) ? 'Read again' : 'Start reading',
+      onAction: () => (unit && unit.parts.length > 1 ? openSeries(sectionsUnitFor(unit) || unit) : openStory(daily)),
+    }
   }
+
+  // Prefer the tier-aware shelf unit (it carries lock state) when opening a
+  // series from the hero; the reward unit is a plain fallback.
+  const sectionsUnitFor = (rewardUnit) => sections
+    .flatMap(s => s.units)
+    .find(u => u.kind === 'series' && u.parts.some(p => rewardUnit.parts.some(rp => rp.id === p.id))) || null
+
+  const hero = buildHero()
+
+  // Filters: All · one chip per level with content · Manhua (when present).
+  const levelChips = sections.map(sec => ({
+    value: 'level:' + sec.level,
+    label: getLevelLabel(track.language, track.system, sec.level),
+  }))
+  const hasManhua = sections.some(sec => sec.units.some(isManhuaUnit))
+  const filterOptions = [
+    { value: 'all', label: 'All' },
+    ...levelChips,
+    ...(hasManhua ? [{ value: 'manhua', label: 'Manhua' }] : []),
+  ]
 
   const primarySection = sections.find(sec => sec.isCurrent) || sections[0] || null
   const continueUnits = sections.flatMap(sec => sec.units.map(unit => ({ unit, section: sec })))
     .filter(({ unit }) => !unit.locked && unit.readCount > 0 && !unit.allRead)
-  const continueKeys = new Set(continueUnits.map(({ unit }) => unit.key))
-  const primaryUnits = primarySection
-    ? primarySection.units.filter(unit => !continueKeys.has(unit.key)).map(unit => ({ unit, section: primarySection }))
-    : []
-  const moreUnits = sections
-    .filter(sec => sec !== primarySection)
-    .flatMap(sec => sec.units.map(unit => ({ unit, section: sec })))
+  const manhuaUnits = sections.flatMap(sec => sec.units.filter(isManhuaUnit).map(unit => ({ unit, section: sec })))
   const practiceStories = sections.flatMap(sec => sec.practice.map(story => ({ story, section: sec })))
   const upcomingUnits = aheadSection ? aheadSection.units.map(unit => ({ unit, section: aheadSection })) : []
 
-  const renderUnit = ({ unit, section }) => {
+  const posterFor = ({ unit, section }) => {
     const lockLabel = section.levelLocked
-      ? 'Next level'
+      ? 'Unlocks at ' + getLevelLabel(track.language, track.system, section.level)
       : unit.locked ? 'Learn ' + unit.remaining + ' more word' + (unit.remaining === 1 ? '' : 's') : null
+    const series = unit.parts.length > 1
+    const first = unit.parts[0]
+    const minutes = !series ? readingMinutes(first) : null
+    const metaLine = series
+      ? [levelLabelFor(first), unit.total + ' chapters'].join(' · ')
+      : [levelLabelFor(first), formatLabel(first), minutes ? minutes + ' min' : null].filter(Boolean).join(' · ')
+        + (unit.readCount > 0 ? ' · Read' : '')
     return (
-      <div key={section.level + '-' + unit.key} style={shelfItemStyle(isMobile)}>
-        {unit.kind === 'series' ? (
-          <SeriesCard
-            arc={unit} readIds={readIds} accentHex={accentHex}
-            fontFamily={fontFamily} isMobile={isMobile} shelf
-            knownPct={unit.knownPct} locked={unit.locked} lockLabel={lockLabel}
-            onOpen={() => { setSelectedArc(unit); openStory(unit.next, true) }}
-            onOpenChapters={() => openSeries(unit)}
-          />
-        ) : (
-          <StoryCard
-            story={unit.parts[0]} read={readIds.has(unit.parts[0].id)} shelf
-            accentHex={accentHex} fontFamily={fontFamily}
-            levelLabel={levelLabelFor(unit.parts[0])}
-            knownPct={unit.knownPct} locked={unit.locked} lockLabel={lockLabel}
-            onClick={() => openStory(unit.parts[0])}
-          />
-        )}
+      <div key={section.level + '-' + unit.key} style={posterItemStyle(isMobile)}>
+        <StoryPoster
+          story={first}
+          title={unit.title}
+          metaLine={metaLine}
+          accentHex={accentHex}
+          fontFamily={fontFamily}
+          read={!series && unit.readCount > 0}
+          locked={unit.locked}
+          lockLabel={lockLabel}
+          manhua={isManhuaUnit(unit)}
+          knownPct={unit.knownPct}
+          progress={series ? { readCount: unit.readCount, total: unit.total } : null}
+          onClick={() => openUnit(unit)}
+        />
       </div>
     )
   }
 
+  const sectionRow = (sec) => {
+    const units = sec.units.map(unit => ({ unit, section: sec }))
+    if (units.length === 0) return null
+    const isCurrent = sec.isCurrent
+    return (
+      <ShelfRow
+        key={'level-' + sec.level}
+        id={isCurrent ? 'top-picks' : 'level-' + sec.level}
+        dataTour={isCurrent ? 'stories-shelf' : undefined}
+        title={isCurrent ? 'Top picks for you' : getLevelLabel(track.language, track.system, sec.level)}
+        subtitle={isCurrent
+          ? getLevelLabel(track.language, track.system, sec.level) + ' · easiest to read first'
+          : 'From a level you’ve already passed.'}
+        isMobile={isMobile}
+      >
+        {units.map(posterFor)}
+      </ShelfRow>
+    )
+  }
+
+  const showAll = filter === 'all'
+  const filteredLevel = filter.startsWith('level:') ? Number(filter.slice(6)) : null
+
   return (
     <div style={pageShell()}>
-      <div style={{ maxWidth: '1360px', margin: '0 auto', padding: isMobile ? '24px 16px 64px' : '38px 32px 80px', position: 'relative', zIndex: 1 }}>
-        <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
-
-        <header style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '14px', margin: '22px 0 14px', flexWrap: 'wrap' }}>
+      <div style={{ maxWidth: '1360px', margin: '0 auto', padding: isMobile ? '20px 16px 64px' : '34px 32px 80px', position: 'relative', zIndex: 1 }}>
+        {/* Stories is a primary destination — no back button; the app nav is
+            the way out. */}
+        <header style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '14px', margin: '0 0 16px', flexWrap: 'wrap' }}>
           <h1 style={{ margin: 0, color: 'var(--text)', fontSize: isMobile ? '26px' : '30px', fontWeight: 820, letterSpacing: '-0.035em' }}>
             Stories
           </h1>
           <Eyebrow>{getSystemLabel(track.system)} · {getLevelLabel(track.language, track.system, track.current_level)}</Eyebrow>
         </header>
 
-        {daily ? (
-          <HeroPanel
-            accentHex={accentHex}
-            seed={track.language + '-stories'}
-            padding="0"
-            compact={isMobile}
-            onClick={() => openStory(daily)}
-            style={{ margin: '0 0 34px', minHeight: isMobile ? '300px' : '360px' }}
-          >
-            {({ hovered }) => (
-              <div style={{ position: 'relative', minHeight: isMobile ? '300px' : '360px', display: 'flex', alignItems: 'end' }}>
-                <StoryCover
-                  story={daily} path={daily.image_path} accent={accentHex} radius={0} loading="eager"
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
-                />
-                <div aria-hidden="true" style={{
-                  position: 'absolute', inset: 0,
-                  background: isMobile
-                    ? 'linear-gradient(0deg, rgba(13,13,15,0.94) 0%, rgba(13,13,15,0.58) 58%, rgba(13,13,15,0.16) 100%)'
-                    : 'linear-gradient(90deg, rgba(13,13,15,0.94) 0%, rgba(13,13,15,0.70) 42%, rgba(13,13,15,0.14) 76%)',
-                }} />
-                <div style={{ position: 'relative', zIndex: 1, padding: isMobile ? '24px 22px' : '36px 40px', maxWidth: isMobile ? '100%' : '600px' }}>
-                  <Eyebrow onHero>Featured for you</Eyebrow>
-                  <div style={{
-                    fontFamily: fontFamily + ', Inter, sans-serif', color: '#fff',
-                    fontSize: isMobile ? '28px' : '38px', fontWeight: 700, lineHeight: 1.18,
-                    letterSpacing: '-0.02em', margin: '10px 0 10px',
-                  }}>
-                    {daily.title}
-                  </div>
-                  <div style={{ fontSize: isMobile ? '13px' : '14px', color: 'rgba(255,255,255,0.80)', lineHeight: 1.55, maxWidth: '52ch' }}>
-                    {daily.english_summary || heroSentence(daily.content)}
-                  </div>
-                  <div style={{ marginTop: '10px', color: 'rgba(255,255,255,0.64)', fontSize: '12px', fontWeight: 700 }}>
-                    {getLevelLabel(track.language, track.system, daily.level == null ? track.current_level : daily.level)} · {formatLabel(daily)}
-                  </div>
-                  <HeroAction label={readIds.has(daily.id) ? 'Read again' : 'Start reading'} hovered={hovered} icon={ArrowRight} accentHex={accentHex} />
-                </div>
-              </div>
-            )}
-          </HeroPanel>
+        {hero ? (
+          <StoriesHero hero={hero} accentHex={accentHex} fontFamily={fontFamily} isMobile={isMobile} levelLabelOf={levelLabelFor} />
         ) : loadFailed ? (
           <EmptyPanel
             icon={CloudOff} title="Couldn't load stories"
@@ -986,55 +940,71 @@ export default function Stories({
         )}
 
         {(sections.length > 0 || aheadSection) && (
-          <div style={{ display: 'grid', gap: isMobile ? '28px' : '34px' }}>
-            {continueUnits.length > 0 && (
-              <ShelfRow id="continue-reading" title="Continue reading" subtitle="Pick up where you left off." isMobile={isMobile}>
-                {continueUnits.map(renderUnit)}
-              </ShelfRow>
+          <>
+            {filterOptions.length > 2 && (
+              <FilterChips options={filterOptions} value={filter} onChange={setFilter} accentHex={accentHex} />
             )}
 
-            {primarySection && (
-              <ShelfRow
-                id="top-picks"
-                title="Top picks for you"
-                subtitle={getLevelLabel(track.language, track.system, primarySection.level) + ' · easiest to read first'}
-                isMobile={isMobile}
-              >
-                {(primaryUnits.length ? primaryUnits : primarySection.units.map(unit => ({ unit, section: primarySection }))).map(renderUnit)}
-              </ShelfRow>
-            )}
+            <div style={{ display: 'grid', gap: isMobile ? '26px' : '32px' }}>
+              {showAll && continueUnits.length > 0 && (
+                <ShelfRow id="continue-reading" title="Continue reading" subtitle="Pick up where you left off." isMobile={isMobile}>
+                  {continueUnits.map(posterFor)}
+                </ShelfRow>
+              )}
 
-            {moreUnits.length > 0 && (
-              <ShelfRow id="more-stories" title="More stories you can read" subtitle="From levels you’ve already reached." isMobile={isMobile}>
-                {moreUnits.map(renderUnit)}
-              </ShelfRow>
-            )}
+              {showAll && primarySection && sectionRow(primarySection)}
+              {showAll && sections.filter(sec => sec !== primarySection).map(sectionRow)}
+              {!showAll && filteredLevel != null && sections.filter(sec => sec.level === filteredLevel).map(sectionRow)}
 
-            {practiceStories.length > 0 && (
-              <ShelfRow id="practice-stories" title="Practice through stories" subtitle="Short chats, scenes, and reply-alongs." isMobile={isMobile}>
-                {practiceStories.map(({ story, section }) => (
-                  <div key={section.level + '-' + story.id} style={shelfItemStyle(isMobile)}>
-                    <StoryCard
-                      story={story} read={readIds.has(story.id)} shelf practice
-                      accentHex={accentHex} fontFamily={fontFamily}
-                      levelLabel={levelLabelFor(story)} onClick={() => openStory(story)}
-                    />
-                  </div>
-                ))}
-              </ShelfRow>
-            )}
+              {(showAll || filter === 'manhua') && manhuaUnits.length > 0 && (
+                <ShelfRow id="manhua" title="Manhua" subtitle="Illustrated episodes — read the panels, tap the bubbles." isMobile={isMobile}>
+                  {manhuaUnits.map(posterFor)}
+                </ShelfRow>
+              )}
 
-            {upcomingUnits.length > 0 && (
-              <ShelfRow
-                id="coming-up"
-                title={'Coming up in ' + getLevelLabel(track.language, track.system, aheadSection.level)}
-                subtitle={'Unlocks when you pass the ' + getLevelLabel(track.language, track.system, track.current_level) + ' test.'}
-                isMobile={isMobile}
-              >
-                {upcomingUnits.map(renderUnit)}
-              </ShelfRow>
-            )}
-          </div>
+              {showAll && practiceStories.length > 0 && (
+                <ShelfRow id="practice-stories" title="Practice through stories" subtitle="Short chats, scenes, and reply-alongs." isMobile={isMobile}>
+                  {practiceStories.map(({ story, section }) => (
+                    <div key={section.level + '-' + story.id} style={posterItemStyle(isMobile)}>
+                      <StoryPoster
+                        story={story}
+                        title={story.title}
+                        metaLine={[levelLabelFor(story), 'Practice'].join(' · ') + (readIds.has(story.id) ? ' · Read' : '')}
+                        accentHex={accentHex}
+                        fontFamily={fontFamily}
+                        practice
+                        read={readIds.has(story.id)}
+                        onClick={() => openStory(story)}
+                      />
+                    </div>
+                  ))}
+                </ShelfRow>
+              )}
+
+              {showAll && upcomingUnits.length > 0 && (
+                <ShelfRow
+                  id="coming-up"
+                  title={'Coming up in ' + getLevelLabel(track.language, track.system, aheadSection.level)}
+                  subtitle={'Unlocks when you pass the ' + getLevelLabel(track.language, track.system, track.current_level) + ' test.'}
+                  isMobile={isMobile}
+                  dataTour="stories-ahead"
+                >
+                  {upcomingUnits.map(posterFor)}
+                </ShelfRow>
+              )}
+            </div>
+          </>
+        )}
+
+        {tourSteps && (
+          <TourOverlay
+            steps={tourSteps}
+            accentHex={accentHex}
+            onClose={(outcome) => {
+              setTourSteps(null)
+              if (outcome) markTourSeen('stories', outcome)
+            }}
+          />
         )}
       </div>
     </div>
