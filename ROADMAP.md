@@ -13,6 +13,7 @@ so the community always sees the latest. Keep it current — move things to
 
 ## 🚧 Now — in progress
 
+- [ ] **A new app icon.** The brush-circle mark has been professionally refined — same logo, cleaner at small sizes — and now sits on a deep vermilion lacquer field. It gets proper dark-mode and tinted-mode versions on iOS (no more system-generated guesswork) and themed-icon support on Android. Lands with the next app release.
 - [ ] **Home + navigation v3 production migration** — the approved Cards → Story → Practice Home and Stories — Home — Practice navigation are locked. Production now preserves old Cards/More deep links, derives every daily stage from real learning state, and is in the final 320/390/430 light/dark, native-history, full-suite, CI and release gate before physical-device QA.
 
 **Just shipped**

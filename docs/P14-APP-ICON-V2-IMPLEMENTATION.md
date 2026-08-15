@@ -1,8 +1,11 @@
 # P14 · App Icon V2 — implementation plan
 
-**Plan only — nothing here has been executed.** It becomes actionable the
-moment the E1-vs-E2 device gate closes
-([`P14-APP-ICON-V2-DEVICE-GATE.md`](P14-APP-ICON-V2-DEVICE-GATE.md)). The
+**Status 2026-08-15: E2 approved — §§1–4 EXECUTED on the icon branch**
+(generator rewritten, iOS three-appearance catalog, Android layers +
+monochrome, web/favicon unified; regression gate `tools/verify-app-icons.mjs`
+passing). Still open: §5 Icon Composer (needs a Mac), §6 propagation (splash +
+`Hanzi-logo.png`, blocked on Home V3), §7 device verification. Original plan
+below, kept as written. The
 locked inputs: the **V2 brush mark** (`docs/icon-v2/brush/masters/mask-V2.png`
 + its small-size solidified twin), the lacquer palette anchored on `#B83A24`,
 and the material recipe of the winning finalist.
