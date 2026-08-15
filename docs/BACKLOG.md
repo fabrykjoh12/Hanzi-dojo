@@ -273,23 +273,33 @@ Still open:
   the in-app logo and the app icon would show different marks until it follows.
   Asset swap only — no code change in those files.
 
-## Pre-release readiness audit (2026-08-15) — 5 blockers
+## Pre-release readiness audit (2026-08-15) — 4 blockers
 
 Full evidence table: [`docs/PRE-RELEASE-READINESS-AUDIT.md`](PRE-RELEASE-READINESS-AUDIT.md).
 Research only; nothing was fixed. The five confirmed blockers:
 
-- [ ] 🔴 **iOS cannot be built.** `ios/App/CapApp-SPM/Package.swift:14` pins
-  `capacitor-swift-pm` `exact: "8.5.0"`; `@capacitor-community/apple-sign-in`'s
-  own `Package.swift:12` declares `from: "7.0.0"` = `>=7.0.0 <8.0.0`. No version
-  satisfies both, so SPM resolution fails before compilation. Latest published
-  plugin is 7.1.0 — **no Capacitor 8 release exists**, so upgrading can't fix it,
-  and the plugin can't be dropped either (guideline 4.8 requires an Apple login
-  because Google Sign-In is offered). npm's peer range hides this: `>=7.0.0` is
-  satisfied by 8.5.0, so `npm ls` looks clean. Options: patch the plugin's
-  Package.swift, vendor it, upstream a Cap-8 release, or pin core back to 7.x.
-- [ ] 🔴 **`build:public` — the bundle both stores ship — is never run in CI.**
-  `ci.yml:53-54` runs `npm run build`, which is the *Sites* variant (emits
-  `hq.html`). A store-only regression passes every PR check.
+- [x] ~~🔴 iOS cannot be built (Apple Sign-In SPM conflict)~~ — **RETRACTED
+  2026-08-15, this was wrong.** It read the plugin's *upstream* manifest instead
+  of what `cap sync ios` produces. Capacitor **8.4.1** shipped `fix(cli): patch
+  Capacitor SPM dependency version in plugins` (#8492, `28bb2c6`); this project
+  runs CLI **8.5.0**, and `node_modules/@capacitor/cli/dist/ios/update.js:49-63`
+  rewrites the plugin's `from: "7.0.0"` → `from: "8.0.0"` on every sync, which
+  `exact: "8.5.0"` then satisfies. `ios-testflight.yml` runs `npm ci` (:90) →
+  `cap sync ios` (:126) → `xcodebuild archive` (:238), so the patch lands before
+  Xcode resolves. Builds 43/44/45 prove it. This sandbox is Linux and has never
+  run `cap sync`, so `node_modules` still holds the pristine manifest — reading
+  it directly is **not** the build path. Now tracked as 🟠 REAL RISK: the CLI
+  forces the version but warns *"built for Capacitor 7, it might cause issues"*,
+  and the Apple sign-in **runtime** flow is still device-unverified. One
+  successful TestFlight sign-in drops it to tech debt. **Do not downgrade
+  Capacitor, vendor the plugin, or hand-patch Package.swift.**
+- [ ] 🟠 **`build:public` — the bundle both stores ship — is never run in CI.**
+  `ci.yml:53-54` runs `npm run build`, the *Sites* variant (emits `hq.html`).
+  A store-only regression passes every PR check. Not a blocker (the native
+  workflows do build it before upload) but cheap and high-value to close.
+- [ ] 🔴 **No App Review demo account exists.** `docs/STORE-LISTING.md:133-136`
+  holds a placeholder; Apple 2.1(a) makes a non-working login an automatic
+  rejection. Needs a real seeded account, password entered in the console only.
 - [ ] 🔴 **Content licensing is unproven.** No LICENSE/NOTICE anywhere. Commercial-use
   rights for the Higgsfield/`nano_banana_pro` art (127 committed panels + covers),
   Azure Neural TTS audio, and LLM-generated story text are not recorded. Generation
