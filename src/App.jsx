@@ -55,7 +55,13 @@ const Profile = lazy(() => import('./Profile'))
 const YouTube = lazy(() => import('./YouTube'))
 const LanguageSwitcher = lazy(() => import('./LanguageSwitcher'))
 const Settings = lazy(() => import('./Settings'))
-const DojoHQ = lazy(() => import('./DojoHQ'))
+// Dojo HQ is internal tooling and must not exist at all in the public/store
+// bundle — it carries the localhost Claude bridge and the workspace admin UI.
+// `__DOJO_INTERNAL_BUILD__` is replaced by Vite with a literal (false for
+// `build:public`), so the dynamic import is dead code there and Rollup never
+// emits the chunk. Kept out of the route table below the same way.
+// tools/verify-public-bundle.mjs is the gate that keeps it out.
+const DojoHQ = __DOJO_INTERNAL_BUILD__ ? lazy(() => import('./DojoHQ')) : null
 // Public story page: only reached via a shared /read/:id link, so code-split it
 // out of the first-paint bundle (it pulls in storyReading.js).
 const PublicStory = lazy(() => import('./PublicStory'))
@@ -689,7 +695,9 @@ export default function App() {
     // Dojo HQ is internal tooling, not a learner surface. Gated the same way
     // as the admin dashboard: a non-admin who types /hq gets a 404, because
     // hiding a menu entry is not access control.
-    content = profile.is_admin
+    // In the public build DojoHQ is null (the module isn't in the bundle), so
+    // /hq is a 404 for everyone there, admin included.
+    content = (profile.is_admin && DojoHQ)
       ? <DojoHQ session={session} profile={profile} />
       : <NotFound onHome={() => navigate('home')} />
   } else if (view === 'dev') {
