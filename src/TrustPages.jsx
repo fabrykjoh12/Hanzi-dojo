@@ -199,9 +199,10 @@ function Terms() {
           Some of the artwork was produced with AI image tools; where the law of your country
           doesn’t recognise copyright in machine-generated images, we make no claim it
           doesn’t give us.</Li>
-        <Li>Third-party material we build on stays under its own license — see{' '}
-          <A external href="https://github.com/fabrykjoh12/Hanzi-dojo/blob/main/NOTICE.md">our
-          attribution notice</A> for the full list.</Li>
+        <Li>Third-party material we build on stays under its own license — the dictionary and
+          example sentences below, plus the HSK word lists, the stroke-order data used for
+          character animations, the icon set, and the fonts. Each is credited with its license
+          in the attribution notice published alongside the app’s source.</Li>
         <Li>Dictionary definitions incorporate <A external href="https://cc-cedict.org/">CC-CEDICT</A>,
           used under <A external href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</A>.
           We have changed it: entries are corrected and curated for learners — pinyin readings
@@ -316,7 +317,7 @@ function Methodology() {
         do not yet mirror the official per-level word counts one-to-one; a precise published
         mapping to the official standard is planned, and this page will state it when it ships.
         Dictionary data incorporates <A external href="https://cc-cedict.org/">CC-CEDICT</A>,
-        used under <A external href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</A>
+        used under <A external href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</A>{' '}
         and adapted by us — readings corrected, definitions trimmed for learners, study order
         applied — with the adapted data available under the same license. Some example
         sentences come from <A external href="https://tatoeba.org/">Tatoeba</A>, under{' '}

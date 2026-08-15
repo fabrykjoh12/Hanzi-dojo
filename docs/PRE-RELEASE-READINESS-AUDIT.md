@@ -50,6 +50,18 @@ Plus one blocker-adjacent pipeline gap that is cheap to close and prevents a
 whole class of silent failure: **`build:public` — the bundle both stores ship —
 is never run in CI.**
 
+> **Implementation pass, 2026-08-15 — two of the four blockers are closed.**
+> Blocker 3 (personal email in the store bundle) is fixed: the email allowlist is
+> gone and `/dev` gates on `profile.is_admin`, with a CI assertion so it cannot
+> return. Blocker 1's *documentable* half is fixed: `LICENSE`, `NOTICE.md` and
+> `docs/CONTENT-LICENSING.md` now exist, `/terms` no longer overclaims, CC-CEDICT's
+> ShareAlike terms are properly disclosed, `public/icons.svg` (four companies'
+> brand marks) is deleted, and new generated imagery records its prompt and date.
+> **Still blocking, all owner-dependent:** the icon master's provenance, the Azure
+> Speech tier, the App Review demo account, and the Supabase backup-retention
+> window that blocker 4's copy needs. Status table in
+> [`RELEASE-BLOCKER-REMEDIATION.md`](RELEASE-BLOCKER-REMEDIATION.md).
+>
 > **Updated 2026-08-15 (remediation pass).** Blocker #1 was taken apart in
 > [`CONTENT-PROVENANCE-AUDIT.md`](CONTENT-PROVENANCE-AUDIT.md) and got *worse*,
 > not better: it is not one gap but three hard sub-blockers (the icon master's
@@ -396,8 +408,8 @@ that could require re-drawing a shipped asset rather than writing a document.
 | **No secrets committed** | ✅ | `git grep "eyJhbGciOi"`, `sk-…`, `AIza…` → **zero hits**. `service_role` never in `src/` or any `VITE_` var, guarded by a build-failing test (`src/tts/serverOnly.test.js:111`) |
 | `.gitignore` covers `.env`, `.env.script`, keystores, `.p8`/`.pem` | ✅ | `.gitignore:14-22,55-60` |
 | Committed env files are placeholders only | ✅ | `.env.test`, `.env.e2e`, `.env.example` — all fake values |
-| **Personal email in the production bundle** | 🔴 | `src/devTools.js:11` `DEFAULT_DEV_EMAILS = 'fabrykjoh@gmail.com'` — **confirmed present in the emitted `dist/client/assets/devTools-*.js`** (2,958 B). Because `VITE_DEV_EMAILS` was unset at build time, Vite's static `import.meta.env` replacement collapsed the fallback and the literal is the *only* surviving value. It is the only personal address in the whole build; the only other email is `support@hanzi-dojo.com`. No source maps are emitted. **Public-but-unprofessional, not a security exposure** — the gate is client-side, and every `/dev` action runs as the signed-in user under RLS |
-| **`/dev` reachable by any signed-in user** | 🟠 | `src/App.jsx:690-701` renders `<Dev>` unconditionally; only `Dev.jsx:60` gates by email. Contrast `/hq` and `/dashboard`, which 404 for non-admins (`:687-689`, `:703-705`) |
+| **Personal email in the production bundle** | ✅ **Fixed 2026-08-15** | `src/devTools.js:11` `DEFAULT_DEV_EMAILS = 'fabrykjoh@gmail.com'` — **confirmed present in the emitted `dist/client/assets/devTools-*.js`** (2,958 B). Because `VITE_DEV_EMAILS` was unset at build time, Vite's static `import.meta.env` replacement collapsed the fallback and the literal is the *only* surviving value. It is the only personal address in the whole build; the only other email is `support@hanzi-dojo.com`. No source maps are emitted. **Public-but-unprofessional, not a security exposure** — the gate is client-side, and every `/dev` action runs as the signed-in user under RLS |
+| **`/dev` reachable by any signed-in user** | ✅ **Fixed 2026-08-15** | `Dev.jsx` now gates on `profile.is_admin` — the same server-backed flag as `/hq` and `/dashboard`, and one a user cannot self-assign (`guard_is_admin_flag`). `App.jsx` was deliberately not touched (Codex holds it), so the route still renders the component; the component refuses |
 | Admin surfaces server-enforced | ✅ | All six `admin_*` RPCs call `assert_admin()` — **verified live**: `assert_admin()` raises `'not authorized'` unless `auth.uid()` is an admin profile. Privilege escalation blocked by trigger (`20260716120000_guard_is_admin_flag.sql:18-34`) |
 | `admin_*` RPCs executable by `anon` role | 🟡 | Live Supabase advisor. **Not a leak** (guard verified above), but revoke `EXECUTE` from `anon` as defence-in-depth | 
 | `hq.html` excluded from store build | ✅ | `vite.config.js:60-61` — `SITES_BUILD` branch; `cap:sync` uses `build:public` |

@@ -9,6 +9,23 @@ executable plan: exact fix, exact files, collision risk against Codex's
 Evidence for blocker 1 lives in its own document —
 [`CONTENT-PROVENANCE-AUDIT.md`](CONTENT-PROVENANCE-AUDIT.md).
 
+> ## Implementation status — 2026-08-15
+>
+> The Codex-safe half of this plan is **done**, on branch
+> `claude/hanzi-dojo-icon-audit-iv0a1m`:
+>
+> | Item | State |
+> |---|---|
+> | **3 · Personal email in the bundle** | ✅ Shipped — allowlist deleted, `/dev` gates on `profile.is_admin`, `grep -R fabrykjoh dist/` is clean |
+> | **5 · `build:public` in CI** | ✅ Shipped — plus a grep assertion so the email cannot return |
+> | **1d · LICENSE / NOTICE / licensing record** | ✅ Shipped — `LICENSE`, `NOTICE.md`, `docs/CONTENT-LICENSING.md`; `public/icons.svg` deleted |
+> | **1b · The `©` claim on `/terms`** | ✅ Shipped — narrowed to what is actually owned |
+> | **CC-CEDICT ShareAlike** | ✅ Shipped — deed linked, changes stated, scope limited to the dataset |
+> | **1e · Per-image provenance** | ✅ Shipped — `artProvenance.mjs`; new images refuse to fetch without a prompt + date. Nothing backfilled |
+> | **4 · Play deletion URL** | ⏸ Copy drafted below, **not shipped** — needs the backup-retention window |
+> | **1a icon · 1c Azure · 2 demo account** | ⏸ Owner-blocked, untouched |
+> | **3b · DojoHQ in the bundle** | ⏸ Deferred — needs `App.jsx`, which Codex holds |
+
 > **Codex baseline used for every collision call:** `origin/codex/home-v3-final-craft`,
 > 32 files / +1460 −613. It touches `App.jsx`, `Home.jsx`, `MobileNav.jsx`,
 > `Profile.jsx`, `navConfig.js`, **`routes.js`**, `routes.test.js`,
@@ -257,6 +274,41 @@ which both still print `/profile`.
 Supabase's own backups retain deleted rows. The RPC deletes immediately and
 `auth.users` cascades, but point-in-time backups are a project setting — the
 owner must confirm the window before the sentence can be written accurately.
+
+### Draft copy — NOT shipped, blocked on one number
+
+Written out so the only missing piece is visible. **This has deliberately not
+been added to `TrustPages.jsx`**: publishing a retention claim we cannot
+substantiate would be worse than publishing nothing, and vague wording ("for a
+short period") is the kind of thing Play's reviewers read as evasion. It ships
+when the owner replaces the bracket — and the Play Console answer changes to
+`https://hanzi-dojo.com/support` **at the same time**, not before.
+
+> **What deleting your account removes**
+>
+> Deleting your account removes it immediately and permanently. That includes
+> your profile, every flashcard and its review history, your daily activity and
+> streak-free progress records, level unlocks and test attempts, story reads and
+> unlocked stories, writing and grammar practice records, your language tracks,
+> and your sign-in identity itself — so the same email can register again from
+> scratch. Anything cached on your device is cleared at the same time.
+>
+> **What is kept**
+>
+> Nothing that identifies you. Aggregate, anonymous counts already recorded — how
+> many people reviewed a card on a given day, for example — remain, because they
+> contain no link back to any account.
+>
+> **Backups**
+>
+> Our database provider keeps encrypted backups for
+> **[CONFIRM SUPABASE BACKUP RETENTION WINDOW]**, after which deleted data is
+> gone from those too. Backups are never used to restore an individual deleted
+> account.
+
+Two things to check when filling this in: the retention window is a Supabase
+project setting (Database → Backups), and it differs between plan tiers, so read
+it from the project rather than the pricing page.
 
 ---
 
