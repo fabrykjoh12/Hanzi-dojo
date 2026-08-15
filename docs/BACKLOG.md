@@ -273,6 +273,50 @@ Still open:
   the in-app logo and the app icon would show different marks until it follows.
   Asset swap only — no code change in those files.
 
+## Pre-release readiness audit (2026-08-15) — 5 blockers
+
+Full evidence table: [`docs/PRE-RELEASE-READINESS-AUDIT.md`](PRE-RELEASE-READINESS-AUDIT.md).
+Research only; nothing was fixed. The five confirmed blockers:
+
+- [ ] 🔴 **iOS cannot be built.** `ios/App/CapApp-SPM/Package.swift:14` pins
+  `capacitor-swift-pm` `exact: "8.5.0"`; `@capacitor-community/apple-sign-in`'s
+  own `Package.swift:12` declares `from: "7.0.0"` = `>=7.0.0 <8.0.0`. No version
+  satisfies both, so SPM resolution fails before compilation. Latest published
+  plugin is 7.1.0 — **no Capacitor 8 release exists**, so upgrading can't fix it,
+  and the plugin can't be dropped either (guideline 4.8 requires an Apple login
+  because Google Sign-In is offered). npm's peer range hides this: `>=7.0.0` is
+  satisfied by 8.5.0, so `npm ls` looks clean. Options: patch the plugin's
+  Package.swift, vendor it, upstream a Cap-8 release, or pin core back to 7.x.
+- [ ] 🔴 **`build:public` — the bundle both stores ship — is never run in CI.**
+  `ci.yml:53-54` runs `npm run build`, which is the *Sites* variant (emits
+  `hq.html`). A store-only regression passes every PR check.
+- [ ] 🔴 **Content licensing is unproven.** No LICENSE/NOTICE anywhere. Commercial-use
+  rights for the Higgsfield/`nano_banana_pro` art (127 committed panels + covers),
+  Azure Neural TTS audio, and LLM-generated story text are not recorded. Generation
+  prompts are not archived either — `data/manhua/*.art.json` hold only `{file,url}`
+  plus a prose `_style_comment`, so there is no per-image evidence the
+  STORY-BIBLE "no resemblance to any franchise" constraint was applied.
+- [ ] 🔴 **A personal email ships in the production bundle** — `src/devTools.js:11`
+  `DEFAULT_DEV_EMAILS = 'fabrykjoh@gmail.com'`, confirmed present in
+  `dist/client/assets/devTools-DxUibobf.js`. Set `VITE_DEV_EMAILS` for store builds.
+  Related: `/dev` renders for **any** signed-in user (`src/App.jsx:690-701`) and is
+  gated only inside the component, unlike `/hq` and `/dashboard` which 404.
+- [ ] 🔴 **Play's web-accessible deletion URL.** Play requires an in-app path *and*
+  a URL reachable without the app. `docs/STORE-LISTING.md:191` answers
+  `/profile`, which sits behind the `!session` gate (`src/App.jsx:375-380`).
+  `/support` is public and already describes the process — likely the cheap fix.
+
+Notable non-blockers worth queuing: `public/sw.js:177-178` references
+`pwa-192.png`, which **does not exist** (App Icon V2 rename missed it — broken
+push icon); `syncQueue.js:6-7` only enqueues when `navigator.onLine === false`,
+so writes failing while nominally online are dropped; no timeout/backoff on any
+Supabase call; Grammar screens degrade to *empty* rather than an error state.
+
+Verified clean: no committed secrets, no third-party analytics/ads/crash SDK, no
+advertising ID, no monetization of any kind, paused JP/RU tracks cannot leak
+(both `PUBLIC_LANGUAGES` and `ADMIN_LANGUAGES` are Chinese-only), and all six
+`admin_*` RPCs genuinely guard with `assert_admin()` (verified live).
+
 ## Deploy steps (apply before the feature works)
 - [x] **Public story links — APPLIED (verified in prod 2026-08-07: `public_story` function exists).** Original entry: apply migration `supabase/migrations/20260716000000_add_public_story.sql` in the Supabase SQL editor. It adds the anon-callable `security-definer` RPC `public_story(uuid)` (returns one published story + its language's active vocab capped to the story's level). Until applied, `/read/:id` shows the "story not found" state (a `console.error` fires so it's diagnosable). Smoke-test: `POST $VITE_SUPABASE_URL/rest/v1/rpc/public_story` with the anon key and a published story UUID → JSON with `title` + `vocab_pool`; an unpublished id → `null`.
 
