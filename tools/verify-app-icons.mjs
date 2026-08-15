@@ -123,6 +123,35 @@ for (const [f, nm] of [['AppIcon-512@2x.png', 'light'], ['AppIcon-Dark.png', 'da
   check('monochrome is flat single-colour + alpha', bad === 0, bad + ' off-colour pixels')
 }
 {
+  // FULL-BLEED. The artwork must reach all four edges: iOS owns the corner mask,
+  // and a baked plate or inset field would show as a visible border once the OS
+  // rounds the corners. Verified two ways per asset — every corner pixel is live
+  // artwork, and the outer 2px band carries the field's own gradient rather than
+  // one flat chrome colour. (Checked 2026-08-15 after the V-01 review sheet's
+  // cream/black plates were mistaken for baked-in background; they are sheet
+  // chrome only. See docs/icon-v2/impl/V-03/V-04.)
+  for (const [f, nm] of [['AppIcon-512@2x.png', 'light'], ['AppIcon-Dark.png', 'dark'], ['AppIcon-Tinted.png', 'tinted']]) {
+    const { data, info } = await sharp(IOS + f).raw().toBuffer({ resolveWithObject: true })
+    const { width: W, height: H, channels: Cn } = info
+    const at = (x, y) => { const i = (y * W + x) * Cn; return [data[i], data[i + 1], data[i + 2]] }
+    const corners = [at(0, 0), at(W - 1, 0), at(0, H - 1), at(W - 1, H - 1)]
+    // A plate would be near-white (cream) or near-black; live artwork is neither.
+    const plateLike = corners.filter((c) => {
+      const mx = Math.max(...c), mn = Math.min(...c)
+      return (mn > 225 && mx - mn < 14) || (mx < 26)
+    }).length
+    let bmin = 255, bmax = 0
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (x >= 2 && y >= 2 && x < W - 2 && y < H - 2) continue
+      const v = at(x, y)[0]
+      if (v < bmin) bmin = v
+      if (v > bmax) bmax = v
+    }
+    check(`ios ${nm}: full-bleed, no baked plate`, plateLike === 0 && bmax - bmin > 15,
+      `corners ${corners.map((c) => '#' + c.map((v) => v.toString(16).padStart(2, '0')).join('')).join(' ')}, border R range ${bmin}-${bmax}`)
+  }
+}
+{
   const j = JSON.parse((await import('node:fs')).readFileSync(IOS + 'Contents.json', 'utf8'))
   const vals = j.images.map((i) => (i.appearances || [{ value: 'any' }])[0].value).sort().join(',')
   check('Contents.json declares any+dark+tinted', vals === 'any,dark,tinted', vals)
@@ -131,12 +160,16 @@ for (const [f, nm] of [['AppIcon-512@2x.png', 'light'], ['AppIcon-Dark.png', 'da
 // ── V-01: iOS production assets at 180/120/60/40 ───────────────────────────
 console.log('sheets')
 {
-  const files = [['AppIcon-512@2x.png', 'Light (Any)', '#EDEBE6', '#3A3A42'], ['AppIcon-Dark.png', 'Dark', '#101014', '#C8C8D0'], ['AppIcon-Tinted.png', 'Tinted (grey asset)', '#101014', '#C8C8D0']]
+  // Plates are NEUTRAL GREY on purpose. Earlier versions used cream and
+  // near-black, which read as though an outer background were baked into the
+  // asset — it is not (see the full-bleed check above, and V-03/V-04). Grey
+  // cannot be mistaken for either the ivory mark or a dark plate.
+  const files = [['AppIcon-512@2x.png', 'Light (Any)', '#9AA0A6', '#1A1A1E'], ['AppIcon-Dark.png', 'Dark', '#9AA0A6', '#1A1A1E'], ['AppIcon-Tinted.png', 'Tinted (grey asset)', '#9AA0A6', '#1A1A1E']]
   const sizes = [180, 120, 60, 40]
   const rowH = 260, w = 1560, h = 150 + 3 * rowH + 40
   const els = [
     label(0.5 * w, 60, 'PRODUCTION iOS assets — rendered from the shipped PNGs, true size', 34, '#1A1A1E', 'middle', 700),
-    label(0.5 * w, 98, 'plus the 40px render at 6× for raster inspection', 22, '#8A8A93'),
+    label(0.5 * w, 98, 'plus the 40px render at 6× — grey plates are sheet chrome; the assets are full-bleed', 22, '#8A8A93'),
   ]
   const colX = [150, 410, 610, 760, 910]
   sizes.forEach((s, i) => els.push(label(colX[i] + 90, 138, s + 'px', 22, '#8A8A93')))
