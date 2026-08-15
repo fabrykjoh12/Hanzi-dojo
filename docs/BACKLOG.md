@@ -10,6 +10,30 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+### Playwright in a remote sandbox is slower than the 30s default allows
+
+A remote Claude session runs the e2e suite against a cold Vite dev server on a
+shared container. Individual navigations that take ~1s on the GitHub runner take
+10–15s here, so any spec doing several `page.goto`s inside one test blows the
+30s default timeout and fails as a *timeout*, not an assertion — which reads
+exactly like a product regression and is not one.
+
+Observed 2026-08-15 on the release-integration branch: `home-v3-geometry.spec.js`
+(three navigations per test) failed 6/6, and `home.spec.js`'s back-navigation
+test failed 3/3, at the default timeout. Both passed **7/7 and 8/8** with
+`--timeout=180000`, and both were green on GitHub CI for the same commit.
+
+- **Do not raise the timeout in `playwright.config.js`.** CI passes at 30s;
+  raising it globally would hide a real slowdown from the runner that matters.
+  Pass `--timeout` on the command line in a sandbox instead.
+- **`visual.spec.js` cannot pass here at all.** Its baselines are captured on
+  the CI runner image (see the config comment); sandbox font rasterisation
+  differs by ~5% of pixels against a 2% threshold. Two specs — `landing mobile`
+  and `trust pages privacy desktop` — fail locally by design. CI is the only
+  authority for those.
+- Before calling a local e2e failure a regression, re-run it with a raised
+  timeout and check the same test on GitHub CI.
+
 ### An art-fetch commit lands without CI (know it before you merge)
 
 `manhua-art-fetch` commits the panels it downloads back to the branch, using the
@@ -48,21 +72,6 @@ Check the content type, not the status.
 ## Database
 - [x] **`20260730090000_manhua_presentation_rename.sql` — APPLIED (verified 2026-08-03: constraint is the final `('paced','chat','scene','manhua')` form, 8 rows on `manhua`, 0 on `manga`).** The `presentationOf` alias in `src/readerMode.js` and the `LEGACY_PROGRESS_PREFIX` fallback in `src/manhuaProgress.js` are now deletable per the plan below — though the IndexedDB fallback is cheap insurance for devices that saved positions under the old key and is fine to keep a while longer. Original entry: Retags the fourth presentation `'manga'` → `'manhua'` (Chinese word for the form; the Japanese one was a slip). Idempotent: it widens `stories_presentation_check` to accept both spellings, UPDATEs the one row, then narrows the constraint to `'manhua'` alone. **Order does not matter** — `presentationOf` in `src/readerMode.js` aliases the old tag to the new one, so the app deploy and this migration can land in either order without the live episode dropping to a plain paced story in between. Once it is applied everywhere, that alias and the `LEGACY_PROGRESS_PREFIX` fallback in `src/manhuaProgress.js` (which reads reading positions saved under the old `manga:` IndexedDB key) can both be deleted.
 - [x] **APPLIED 2026-07-28 — `20260728210000_fix_language_reset_missing_writing_stats.sql`.** "Reset HSK 3.0 progress" failed outright with `relation "public.writing_stats" does not exist`, so a language's progress could not be cleared. Root cause was the §10 classic: `20260605224500_add_writing_stats.sql` sat in the repo unapplied while the reset RPC that deletes from that table was applied. It cost more than the reset — `src/Writing.jsx` reads and upserts `writing_stats` on every writing answer, so writing practice was discarding its results. The fix creates the table idempotently AND guards the RPC's delete with `to_regclass`, so a missing optional table can never abort a reset again. Applied through the dashboard SQL editor (the sandbox's MCP write gate was unreachable that session). **Worth a check when convenient:** reset a language from Profile and confirm it completes, and that a writing answer now persists across a reload.
-
-- [ ] 🟡 **Data defect: the vocabulary row `白` (bái) has `level = null`.**
-  `id 77d6738b-e7f8-4608-aad0-f16404bfb291`, language `chinese`, system `hsk_3`,
-  `is_active = true` — with **no `audio_path`, no Azure `tts_audio` row, and no
-  `example_sentence`.** It is the only Chinese vocabulary row in the database
-  with no playable audio of any kind.
-  Surfaced 2026-08-15 while scoping the Azure S0 re-licensing migration, and
-  **deliberately kept out of it** — that migration re-renders existing audio
-  under a paid tier; this row has none to re-render, so voicing it would be new
-  content generation smuggled into a licensing fix.
-  A null level is the more interesting half: level gates study sets, so the row
-  is effectively unreachable by any learner. Decide whether it should carry a
-  level (and then get audio + an example sentence) or be deactivated
-  (`is_active = false` — never deleted, §7.1). **Do not repair as part of any
-  audio run.**
 
 ## Auth / email / hosting
 - [ ] **Custom SMTP — LIVE TEST PENDING.** Configured 2026-07-18: Brevo is the sending provider; `hanzi-dojo.com` shows **Authenticated** in Brevo (DKIM `brevo1/brevo2._domainkey`, `brevo-code` TXT, DMARC `p=none` — all added in Cloudflare DNS, the authoritative nameserver; Vercel only hosts). Supabase custom SMTP wired to `smtp-relay.brevo.com:587`, sender `no-reply@hanzi-dojo.com`. **Still to verify:** send a real magic-link/sign-up to an external inbox and confirm it (a) arrives (not spam) and (b) shows From `no-reply@hanzi-dojo.com`. Brevo "Branding" (the `em`/`img.em`/`r.em` CNAMEs) shows *Not branded* — optional, tracking-link cosmetics only, doesn't block sending.
