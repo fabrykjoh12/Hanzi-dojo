@@ -20,24 +20,35 @@ than guessing.
 
 | | Count |
 |---|---|
-| 🔴 **Confirmed release blockers** | **5** |
-| 🟠 Important gaps | 11 |
+| 🔴 **Confirmed release blockers** | **4** |
+| 🟠 Important gaps | 12 |
 | 🟡 Verification-only (owner/console/device) | 19 |
 | ⚪ / safe for v1.1 | 8 |
 
-**The one-sentence summary:** the *product* is in good shape — deletion is
-genuinely self-serve, there is no monetization, no third-party analytics, no ads
-SDK, no advertising ID, and the paused language tracks cannot leak — but **the
-iOS app cannot currently be built**, and content-licensing provenance is
-unproven. Neither is a design problem; both are concrete and fixable.
+> **Corrected 2026-08-15.** A first pass classified the Sign in with Apple plugin
+> as a fifth, top-priority blocker ("iOS cannot be built"). **That was wrong** —
+> it read the plugin's *upstream* manifest instead of what `cap sync ios`
+> actually produces. Capacitor's CLI patches it automatically. Builds 43, 44 and
+> 45 archived and uploaded successfully, which is stronger evidence than a static
+> version reading. Full correction in §5; it is now **🟠 REAL RISK**, not a
+> blocker, and the count is 5 → 4.
 
-### The five blockers, in dependency order
+**The one-sentence summary:** the *product* is in good shape — iOS builds and
+ships today, deletion is genuinely self-serve, there is no monetization, no
+third-party analytics, no ads SDK, no advertising ID, and the paused language
+tracks cannot leak. What is missing is **paperwork and pipeline coverage**, not
+working software.
 
-1. **iOS Swift Package resolution fails** — Sign in with Apple plugin pins Capacitor 7, app pins 8.5.0 exactly. No build → no TestFlight → no submission.
-2. **`build:public` (the bundle both stores ship) is never run in CI.**
-3. **Content licensing is unproven** — no LICENSE/NOTICE; commercial-use rights for AI art, TTS audio and LLM story text are not evidenced anywhere.
-4. **A personal email address ships in the production bundle.**
-5. **Play's required web-accessible account-deletion URL is not established.**
+### The four blockers, in dependency order
+
+1. **Content licensing is unproven** — no LICENSE/NOTICE; commercial-use rights for AI art, TTS audio and LLM story text are not evidenced anywhere. Longest lead time, owner-dependent.
+2. **No App Review demo account exists** — Apple 2.1(a); a reviewer who cannot sign in is an automatic rejection.
+3. **A personal email address ships in the production bundle.**
+4. **Play's required web-accessible account-deletion URL is not established.**
+
+Plus one blocker-adjacent pipeline gap that is cheap to close and prevents a
+whole class of silent failure: **`build:public` — the bundle both stores ship —
+is never run in CI.**
 
 ---
 
@@ -78,11 +89,11 @@ Sources: [Apple App Review Guidelines](https://developer.apple.com/app-store/rev
 | App Store icon (1024) | ✅ | `ios/.../AppIcon-512@2x.png`, verified 1024², no alpha, full-bleed by `tools/verify-app-icons.mjs` (11 checks) | — | — |
 | Localization | ⚪ | English only; no i18n framework in `src/` | Correct scope for v1.0 | v1.1 |
 | Version / build info | 🟡 | `MARKETING_VERSION = 1.0`, `CURRENT_PROJECT_VERSION = 1` (`project.pbxproj:308,301`); Android `versionName "1.0"`, versionCode from CI run number (`build.gradle:22-23`) | Confirm 1.0/build 1 is the intended first submission | Owner · submission |
-| Build selection | 🔴 | Blocked — see §5 blocker B1; no build can be produced | Fix SPM conflict first | Claude · **v1.0** |
+| Build selection | ✅ | Builds 43/44/45 archived, exported and uploaded to TestFlight via `ios-testflight.yml` | Select the build in the console at submission | Owner · submission |
 | Export compliance | ✅ | `ITSAppUsesNonExemptEncryption=false` pre-answered with rationale, `ios/App/App/Info.plist:80-86` | — | — |
 | App Review contact info | 🟡 | Not in repo (console-only) | Owner enters name/phone/email | Owner · submission |
 | Review notes | ✅ | Drafted `STORE-LISTING.md:131-170` — covers demo account, deletion path, Apple sign-in, speech, content, third-party data | Update the deletion path if §4 changes | Owner · submission |
-| Demo account | 🟠 | Placeholder only: `playreview@hanzi-dojo.com` with password deliberately not committed (`STORE-LISTING.md:133-136`) | **Create the account, seed it with due cards + unlocked stories + a level in progress**, put the password in the console only. Apple 2.1(a) requires a working login | Owner · **v1.0** |
+| Demo account | 🔴 | Placeholder only: `playreview@hanzi-dojo.com` with password deliberately not committed (`STORE-LISTING.md:133-136`) | **Create the account, seed it with due cards + unlocked stories + a level in progress**, put the password in the console only. Apple 2.1(a) requires a working login | Owner · **v1.0** |
 
 ---
 
@@ -186,33 +197,101 @@ the cheapest correct fix may be to answer Play with `/support` instead of
 | Demo account for review | 🟠 | Placeholder only — see §1 |
 | Leaked-password protection | 🟡 | **Disabled** — live Supabase advisor `auth_leaked_password_protection`. One dashboard toggle | Owner |
 
-### 🔴 B1 — Sign in with Apple plugin blocks the iOS build
+### 🟠 B1 — Sign in with Apple runs on a CLI-patched plugin manifest
 
-**This is the top blocker and it is not "technical debt" — the iOS app cannot be built today.**
+**Corrected classification: 🟠 REAL RISK. Not a blocker.** An earlier pass called
+this "iOS cannot be built". That was wrong, and the correction matters, so the
+reasoning is recorded in full.
+
+**What the earlier pass got wrong.** It read the plugin's *upstream, as-published*
+manifest and stopped there:
 
 ```
+node_modules/@capacitor-community/apple-sign-in/Package.swift:13
+  .package(url: ".../capacitor-swift-pm.git", from: "7.0.0")   // = >=7.0.0 <8.0.0
+
 ios/App/CapApp-SPM/Package.swift:14
   .package(url: ".../capacitor-swift-pm.git", exact: "8.5.0")
-
-node_modules/@capacitor-community/apple-sign-in/Package.swift:12
-  .package(url: ".../capacitor-swift-pm.git", from: "7.0.0")
 ```
 
-In Swift Package Manager, `from: "7.0.0"` means **`>=7.0.0 <8.0.0`**. The app
-requires **exactly 8.5.0**. No version satisfies both, so **SPM dependency
-resolution fails before any compilation** — `cap sync ios` / Xcode will error at
-package resolution.
+Those two are genuinely unsatisfiable *as written*. The error was assuming Xcode
+ever sees them as written. **It does not** — `cap sync ios` rewrites the plugin
+manifest first.
 
-- Latest published plugin version is **7.1.0** (`npm view` — dist-tags `latest: 7.1.0`). **There is no Capacitor 8 release**, so this cannot be fixed by upgrading.
-- It cannot be dropped either: guideline 4.8 requires an Apple-equivalent login because Google Sign-In is offered.
-- The npm peer range (`@capacitor/core: >=7.0.0`) *is* satisfied by 8.5.0, which is why `npm ls` looks clean — the conflict is SPM-only and invisible to Node tooling.
+**What actually happens.** Capacitor 8.4.1 shipped
+[`fix(cli): patch Capacitor SPM dependency version in plugins` (#8492, `28bb2c6`)](https://github.com/ionic-team/capacitor/commit/28bb2c687069dfdd6aa7abc866004a1c6388d103),
+released [2026-06-19](https://github.com/ionic-team/capacitor/blob/main/CHANGELOG.md).
+This project runs **CLI 8.5.0**, so it contains the fix. The logic, verified in
+the installed copy at `node_modules/@capacitor/cli/dist/ios/update.js:49-63`:
 
-**Classification: 🔴 submission blocker (build-time), not runtime risk, not debt.**
-Options to evaluate (do **not** implement now): patch the vendored plugin's
-`Package.swift` to widen to `from: "7.0.0"` with an upper bound of 9 via
-`patch-package`; vendor the plugin into the repo; contribute an upstream Cap-8
-release; or pin Capacitor core back to 7.x. **Cannot be verified either way in
-this sandbox — there is no macOS/Xcode here.**
+```js
+const packageSwiftPath = join(plugin.rootPath, 'Package.swift');
+let content = await readFile(packageSwiftPath, { encoding: 'utf-8' });
+const regex = new RegExp('url:\\s*"https://github.com/ionic-team/capacitor-swift-pm\\.git",\\s*from:\\s*"([^"]+)"');
+const version = content.match(regex)?.[1];
+const majorCapVersion = major(iosPlatformVersion);
+if (version && major(version) != majorCapVersion) {
+  const forceVersion = preCapVersion ? iosPlatformVersion : `${majorCapVersion}.0.0`;
+  content = setAllStringIn(content, 'url: ".../capacitor-swift-pm.git",', ')', ` from: "${forceVersion}"`);
+  await writeFile(packageSwiftPath, content);
+  logger.warn(`${plugin.id} is built for Capacitor ${major(version)}, it might cause issues`);
+}
+```
+
+Traced against this project:
+
+| Step | Value |
+|---|---|
+| `version` (matched from the plugin manifest) | `7.0.0` |
+| `iosPlatformVersion` (`@capacitor/ios`) | `8.5.0` |
+| `major(7.0.0) != major(8.5.0)` | **true → patch applies** |
+| `forceVersion` | `8.0.0` |
+| Plugin manifest **after** `cap sync` | `from: "8.0.0"` = `>=8.0.0 <9.0.0` |
+| App pin `exact: "8.5.0"` | ✅ **satisfied — resolution succeeds** |
+
+It applies to **local/community plugins specifically**: the loop runs over
+`checkPluginsForPackageSwift(...)`, i.e. every installed plugin of type
+`PluginType.Core` that has a `Package.swift` on disk —
+`@capacitor-community/apple-sign-in` qualifies (`Package.swift` verified present
+at `node_modules/@capacitor-community/apple-sign-in/Package.swift`).
+
+**Why Build 45 succeeds — the exact reason.** `ios-testflight.yml` runs
+`npm ci` (:90) → **`npx cap sync ios` (:126)** → `xcodebuild archive` (:238).
+The patch is applied at step 2, *before* Xcode ever resolves packages.
+`node_modules` is not committed and `Package.resolved` is not tracked, so the
+sequence re-runs cleanly on every CI job: npm installs the pristine `from: "7.0.0"`,
+`cap sync` rewrites it to `from: "8.0.0"`, Xcode resolves 8.5.0, archive succeeds.
+
+**Why this sandbox saw the unpatched state.** `cap sync ios` has never been run
+here (Linux, no Xcode), so `node_modules` still holds the pristine published
+manifest — which is exactly what the earlier pass read. Confirmed: the working
+copy still shows `from: "7.0.0"` today. **A static read of `node_modules` is not
+the build path.**
+
+**The residual risk that is real.** The CLI forces the *version constraint*; it
+does not verify *Swift API compatibility*, and it says so — it emits
+`"@capacitor-community/apple-sign-in is built for Capacitor 7, it might cause issues"`
+on every sync. Three successful archives prove it **compiles and links**. They do
+not prove the sign-in flow works at runtime, and
+`docs/PRE-RELEASE-CHECKLIST.md` §0b independently records Sign in with Apple as
+*"code done 2026-08-07 … unverified until someone signs in on a real device."*
+
+That combination — build verified, runtime not — is precisely 🟠 REAL RISK.
+It would drop to 🟡 TECH DEBT the moment one successful Apple sign-in is
+completed on a TestFlight build.
+
+| Question | Answer |
+|---|---|
+| Can the current production build path resolve and archive? | **Yes** — proven by Builds 43, 44, 45 |
+| Does Capacitor's 8.4.1+ patch apply here? | **Yes** — CLI 8.5.0 ≥ 8.4.1; plugin has a `Package.swift`; major mismatch 7 ≠ 8 triggers it |
+| Is upstream Capacitor-8 support released? | **No** — `npm view` shows `latest: 7.1.0`; there is no 8.x plugin release |
+| Classification | **🟠 REAL RISK** — needs one targeted device verification of the Apple sign-in flow, nothing more |
+| Action before next TestFlight | **None required.** The build path is unchanged and working |
+
+**Do not "fix" this.** Downgrading Capacitor, vendoring the plugin, or hand-patching
+`Package.swift` would each *replace* a working official mechanism with a bespoke
+one. The correct action is a single device test of the sign-in flow, tracked as
+v1.1 debt until the plugin publishes an 8.x major.
 
 ### Draft App Review notes (information only — no fictional credentials)
 
@@ -388,7 +467,7 @@ device pass: Dynamic Type on the Study screen, and Reduce Motion against Home V3
 | `npm run lint` | ✅ | ✅ | `ci.yml:45-46` |
 | `npm test` (vitest, 3301 tests / 144 files) | ✅ | ✅ | `ci.yml:48-49` |
 | `npm run build` (**Sites** variant) | ✅ | ✅ | `ci.yml:53-54` |
-| **`npm run build:public`** (the store bundle) | 🔴 **NO** | 🔴 **NO** | Only in `android-build.yml:54`, `ios-testflight.yml:116` — both `workflow_dispatch` |
+| **`npm run build:public`** (the store bundle) | 🟠 **NO** | 🟠 **NO** | Only in `android-build.yml:54`, `ios-testflight.yml:116` — both `workflow_dispatch` |
 | Playwright e2e (27 specs) | ✅ | ✅ | `e2e.yml:26` |
 | iOS native build | ❌ | ❌ | `ios-testflight.yml` — dispatch only |
 | Android native build | ❌ | ❌ | `android-build.yml` — dispatch only |
@@ -396,6 +475,11 @@ device pass: Dynamic Type on the Study screen, and Reduce Motion against Home V3
 **The gap that matters:** `npm run build` takes the `SITES_BUILD` branch (emits
 `hq.html`); `build:public` takes the other. **A regression that only affects the
 store bundle passes every PR check.** Add `build:public` to `ci.yml`.
+
+Scored 🟠 rather than 🔴 deliberately: the store bundle *is* built before every
+upload (by `android-build.yml` / `ios-testflight.yml`), so this cannot block a
+submission — it can only let a store-only regression reach that build unnoticed.
+Cheap to close, high value, not a blocker.
 
 Other pipeline findings:
 - Node version drift: **22** in `ci.yml`/native builds, **20** in `e2e.yml`/`visual-baseline.yml`.
@@ -412,7 +496,8 @@ Other pipeline findings:
 4.  npm run build:public         # THE STORE BUNDLE — add to CI
 5.  node tools/verify-app-icons.mjs   # 11 icon checks
 6.  npx playwright test          # full e2e, not a subset
-7.  npx cap sync ios             # ← currently FAILS (blocker B1)
+7.  npx cap sync ios             # patches the plugin manifest; expect the
+                                 #   "built for Capacitor 7" warning (§5 B1)
 8.  npx cap sync android + bundleRelease
 9.  Authoritative CI green on the merge commit (check the SHA, not the badge)
 10. iPhone physical device pass  — 4 appearance modes, Settings › Apps dark,
@@ -432,16 +517,16 @@ Other pipeline findings:
 
 Ordered by dependency and severity.
 
-| # | Item | Why it's first | Owner |
+| # | Item | Why it's this early | Owner |
 |---|---|---|---|
-| **1** | **Resolve the Apple Sign-In / Capacitor 8 SPM conflict** | Nothing else on iOS can proceed — no build, no TestFlight, no submission. And SwA can't be dropped (4.8) | Claude (after Codex) |
-| **2** | **Establish content licensing + provenance** | Submission warrants you own or are licensed for all content. Needs Higgsfield/`nano_banana_pro`, Azure TTS and LLM-text terms recorded, plus a LICENSE/NOTICE | Owner + Claude |
-| **3** | **Create and seed the App Review demo account** | Apple 2.1(a) — a reviewer who can't sign in is an automatic rejection | Owner |
-| **4** | **Owner-review and finalise `/privacy` and `/terms`** | Both are self-declared drafts with a visible beta note; 5.1.1(i) requires accuracy. Also add Discord to the sub-processor list | Owner |
-| **5** | **Fix the Play web deletion URL answer** | Play requires a web-accessible URL; `/profile` is behind auth. `/support` may already satisfy it — decide, don't code yet | Owner + Claude |
-| **6** | **Remove the personal email from the production bundle** | `fabrykjoh@gmail.com` is in `dist/`. Set `VITE_DEV_EMAILS` for store builds, and gate `/dev` on `is_admin` like `/hq` | Claude |
-| **7** | **Add `build:public` to CI** | The bundle the stores ship is currently never verified by any PR check | Claude |
-| **8** | **Fix `sw.js` → `pwa-192.png`** | Broken push-notification icon; a leftover from the App Icon V2 rename | Claude |
+| **1** | **Establish content licensing + provenance** | Longest lead time and entirely owner-dependent. Submission warrants you own or are licensed for all content: needs Higgsfield/`nano_banana_pro`, Azure TTS and LLM-text terms recorded, plus a LICENSE/NOTICE | Owner + Claude |
+| **2** | **Create and seed the App Review demo account** | Apple 2.1(a) — a reviewer who can't sign in is an automatic rejection | Owner |
+| **3** | **Owner-review and finalise `/privacy` and `/terms`** | Both carry a visible beta note and self-declare as drafts; 5.1.1(i) requires accuracy. Also add Discord to the sub-processor list | Owner |
+| **4** | **Decide the Play web deletion URL** | Play requires a URL reachable without the app; `/profile` is behind auth. `/support` is public and already describes the process — likely just a form answer, not code | Owner + Claude |
+| **5** | **Remove the personal email from the production bundle** | `fabrykjoh@gmail.com` is in `dist/`. Set `VITE_DEV_EMAILS` for store builds, and gate `/dev` on `is_admin` like `/hq` | Claude |
+| **6** | **Add `build:public` to CI** | The bundle the stores ship is currently never verified by any PR check — cheap fix, prevents a whole class of silent failure | Claude |
+| **7** | **Fix `sw.js` → `pwa-192.png`** | Broken push-notification icon; a leftover from the App Icon V2 rename | Claude |
+| **8** | **Verify Apple Sign-In on a real device** | Build is proven (§5 B1); the *runtime* flow is not. One TestFlight sign-in closes it and drops the plugin to tech debt | Owner |
 | **9** | **Recapture store screenshots on Home V3** | Blocked on Codex; guideline 2.3.3 forbids login/splash shots | Claude + Owner |
 | **10** | **Physical-device passes (iPhone + Android)** | Only place the icon appearances, mic-prompt question, Dynamic Type and themed icons can actually be settled | Owner |
 
@@ -451,6 +536,7 @@ Ordered by dependency and severity.
 
 | Item | Why it can wait |
 |---|---|
+| **Apple Sign-In plugin has no Capacitor-8 major** | Capacitor's CLI patches the manifest on every sync and three TestFlight builds prove it archives (§5 B1). Genuine debt — revisit if upstream publishes 8.x or if the device test fails |
 | Native Speaking support | Feature gap, not a compliance issue; the drill is correctly hidden on iOS and no mic permission is requested |
 | Universal links / App Links | Custom scheme covers OAuth today; deep links are an enhancement, and this is documented as a deliberate later step |
 | Practice refinements driven by telemetry | Needs post-launch data by definition |
@@ -468,7 +554,7 @@ Ordered by dependency and severity.
 
 Honest limits, so nothing here reads as more settled than it is:
 
-- **Anything requiring macOS/Xcode.** The SPM conflict is proven statically; whether the plugin *also* has Swift API breakage against Capacitor 8 is unknown until it builds.
+- **Anything requiring macOS/Xcode.** This sandbox is Linux, so `cap sync ios` has never run here and `node_modules` holds pristine, unpatched plugin manifests. Reading them directly is *not* the build path — that mistake produced the retracted B1 blocker. Any future iOS claim must be traced through `cap sync` output or CI logs, never through `node_modules` alone.
 - **Whether WKWebView actually prompts for the microphone.** `speechSupport.js:24` gates on native, but `Info.plist` has no usage string. Device test only.
 - **Console state.** Whether App Store Connect / Play Console accounts exist, and what is already entered in them, is not knowable from the repo.
 - **Live database contents.** Only schema/advisors were queried read-only; no user data was read.
