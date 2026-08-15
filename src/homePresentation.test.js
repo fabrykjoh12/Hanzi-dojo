@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { HOME_MOTION, homeDailyStage, homeProgressPct, homeQueueSummary, storyReadStateForDate } from './homePresentation'
+import { homeDailyStage, homeProgressPct, homeQueueSummary, storyReadStateForDate } from './homePresentation'
 
 describe('Home presentation data', () => {
   it('combines reviews and new cards into the hero count', () => {
@@ -39,9 +39,5 @@ describe('Home presentation data', () => {
     const state = storyReadStateForDate(reads, '2026-08-15')
     expect([...state.readTodayIds]).toEqual(['today'])
     expect([...state.readBeforeTodayIds]).toEqual(['earlier'])
-  })
-
-  it('locks the approved motion timings', () => {
-    expect(HOME_MOTION).toEqual({ pressDown: 120, pressReturn: 140, nav: 210, page: 190, stage: 340, reduced: 130 })
   })
 })

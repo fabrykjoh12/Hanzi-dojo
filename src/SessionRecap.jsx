@@ -12,12 +12,9 @@ import {
 // purely presentational: Study still owns all state (recap tally, forecast,
 // story unlock, chat mission) and side effects, and passes them + callbacks in.
 
-const SAGE = '#6E8466'
-const SAGE_DARK = '#5C7155'
-
-// Full-width sage call-to-action (kept identical to Study's own PrimaryButton so
-// the "Back home" button looks and behaves exactly as before).
-function PrimaryButton({ onClick, children, icon: Icon }) {
+// Full-width call-to-action in the language accent — the recap belongs to the
+// same product as the session it closes.
+function PrimaryButton({ onClick, children, icon: Icon, accentHex }) {
   const [hovered, setHovered] = useState(false)
   return (
     <button
@@ -26,15 +23,16 @@ function PrimaryButton({ onClick, children, icon: Icon }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-        width: '100%', minHeight: '54px', borderRadius: '16px', border: 'none',
-        background: hovered ? SAGE_DARK : SAGE, color: '#fff',
+        width: '100%', minHeight: '54px', borderRadius: '14px', border: 'none',
+        background: hovered ? 'color-mix(in srgb, ' + accentHex + ' 88%, #17110E)' : accentHex,
+        color: '#FFF9F2',
         fontSize: '15px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
         cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease, box-shadow 160ms ease',
         transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
-        boxShadow: hovered ? '0 12px 28px rgba(110,132,102,0.28)' : '0 6px 18px rgba(110,132,102,0.18)',
+        boxShadow: '0 8px 20px -14px color-mix(in srgb, ' + accentHex + ' 70%, transparent)',
       }}
     >
-      <Icon size={18} strokeWidth={2.1} color="#fff" />
+      <Icon size={18} strokeWidth={2.1} color="#FFF9F2" />
       {children}
     </button>
   )
@@ -391,7 +389,7 @@ export default function SessionRecap({
             Back home
           </button>
         ) : (
-          <PrimaryButton onClick={onBack} icon={ArrowLeft}>
+          <PrimaryButton onClick={onBack} icon={ArrowLeft} accentHex={accentHex}>
             Back home
           </PrimaryButton>
         )}

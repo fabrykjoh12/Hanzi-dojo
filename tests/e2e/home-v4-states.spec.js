@@ -1,5 +1,9 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 
+// Home V4 states: the daily rhythm is shown by emphasis, never by locks.
+// Each persisted learning state produces the right panel copy and marks the
+// right row as "Next" — and every control stays enabled in every state.
+
 const CORS = {
   'access-control-allow-origin': '*',
   'access-control-allow-headers': '*',
@@ -43,45 +47,51 @@ async function installHomeState(page, state) {
   });
 }
 
-const STATES = [
-  { key: 'cards', header: /Cards first|\d+ min/ },
-  { key: 'story', header: 'Story ready' },
-  { key: 'practice', header: 'Practice ready' },
-  { key: 'complete', header: 'Complete' },
-  { key: 'caught-up', header: 'Caught up' },
-];
+const STATES = ['cards', 'story', 'practice', 'complete', 'caught-up'];
 
 for (const state of STATES) {
-  test(`${state.key} renders from persisted learning state`, async ({ page }) => {
+  test(`${state} renders from persisted learning state`, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await installHomeState(page, state.key);
+    await installHomeState(page, state);
     await page.goto('/');
     const home = page.locator('[data-home-stage]');
-    await expect(home).toHaveAttribute('data-home-stage', state.key);
-    await expect(home.locator('header p')).toHaveText(state.header);
+    await expect(home).toHaveAttribute('data-home-stage', state);
 
-    const hero = page.getByRole('region', { name: 'Cards' });
-    const expectedHeight = state.key === 'cards' ? 234 : 226;
-    expect(Math.round((await hero.boundingBox()).height)).toBe(expectedHeight);
+    const panel = page.getByRole('region', { name: 'Cards' });
+    const upNext = page.getByRole('region', { name: 'Up next' });
 
-    if (state.key === 'cards') {
-      await expect(page.getByRole('button', { name: 'Start cards' })).toBeEnabled();
-      await expect(page.getByText('Finish cards to unlock')).toBeVisible();
+    if (state === 'cards') {
+      // Work waiting: the panel carries the count and no row says "Next" yet.
+      await expect(panel.getByText('1 card')).toBeVisible();
+      await expect(upNext.getByText('Next')).toHaveCount(0);
     } else {
-      await expect(page.getByRole('button', { name: 'Cards complete' })).toBeDisabled();
+      // Queue clear: the panel steps back to a quiet check.
+      await expect(panel.getByText('All clear')).toBeVisible();
+      await expect(panel.getByText('Nothing due right now')).toBeVisible();
     }
-    if (state.key === 'story') {
-      await expect(page.getByText('Ready to read')).toBeVisible();
-      await expect(page.getByRole('button', { name: /Open 我们的歌/ })).toBeEnabled();
+
+    if (state === 'story') {
+      await expect(upNext.getByText('我们的歌')).toBeVisible();
+      await expect(upNext.getByText('Next')).toHaveCount(1);
     }
-    if (state.key === 'practice') {
-      await expect(page.getByText('Story complete')).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Grammar review' })).toBeEnabled();
+    if (state === 'practice') {
+      // Story read, grammar due: Practice is the marked next step.
+      await expect(upNext.getByText('Read', { exact: true })).toBeVisible();
+      await expect(upNext.getByText('Next')).toHaveCount(1);
     }
-    if (state.key === 'complete') await expect(page.getByText('Complete for today')).toBeVisible();
-    if (state.key === 'caught-up') {
-      await expect(page.getByText('Open the story shelf')).toBeVisible();
-      await expect(page.getByText('Nothing due', { exact: true })).toBeVisible();
+    if (state === 'complete') {
+      await expect(upNext.getByText('Read', { exact: true })).toBeVisible();
+      await expect(upNext.getByText('Next')).toHaveCount(0);
+    }
+    if (state === 'caught-up') {
+      await expect(upNext.getByText('Open the story shelf')).toBeVisible();
+    }
+
+    // The rhythm is order, never locks: every control stays enabled.
+    const buttons = home.locator('button');
+    const count = await buttons.count();
+    for (let i = 0; i < count; i += 1) {
+      await expect(buttons.nth(i)).toBeEnabled();
     }
   });
 }

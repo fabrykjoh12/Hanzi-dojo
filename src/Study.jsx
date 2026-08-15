@@ -2,16 +2,16 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { isOnline } from './useOnline'
 import { enqueueGrade, gradeCardWrite, nextActivityCounts, newOpId } from './syncQueue'
-import { cacheSet, cacheGet, outboxDelete } from './offline'
+import { outboxDelete } from './offline'
 import { getTrackCards } from './data'
 import { studyFloorLevel } from './levelScope'
-import { missingVocabIds, mergeVocab } from './deckVocab'
+import { fetchStudyData, consumeStudyDeck } from './studyData'
 import { schedule, previewLabels, endOfLocalDay } from './srs'
 import { dueLearningCards, dueReviewCards, weakCards } from './studyAvailability'
 import { todayStr } from './streak'
 import { evaluateAchievements } from './achievements'
 import { toast } from './toast'
-import { languageTheme } from './languageTheme'
+import { languageTheme, ink } from './languageTheme'
 import { checkTypedAnswer } from './typedAnswer'
 import { useIsMobile } from './useIsMobile'
 import { useReadingFont } from './useReadingFont'
@@ -32,9 +32,9 @@ import { computeStudyTally } from './studyTally'
 import { sessionMix, bandTone, MIX_KEYS, MIX_LABELS } from './sessionMix'
 import { studyLayout } from './studyLayout'
 import {
-  cardMarker, markerCardShadow, markerPillStyle, markerDotStyle, MARKER_DOT,
+  cardMarker, markerPillStyle, markerDotStyle, MARKER_DOT,
 } from './cardMarker'
-import { MICRO, NUM } from './designTokens'
+import { NUM } from './designTokens'
 import { useStudyAudio } from './useStudyAudio'
 import { useStudyKeyboardShortcuts } from './useStudyKeyboardShortcuts'
 import AudioButton from './AudioButton'
@@ -51,15 +51,11 @@ const SAGE = '#6E8466'
 // ring only, kept vivid so the ring reads clearly against the card.
 const GRADE_COLORS = ['#DC2626', '#D97706', '#3E63DD', '#2F9E6D']
 
-// Grade button palette — desaturated to sit quietly on the card until pressed.
-// Fixed positions + text labels carry the meaning; color is a second signal,
-// never the only one (kept in sync with the icon/label per button below).
-const GRADE_STYLES = [
-  { bg: '#FBEDEA', border: '#E9C9C0', text: '#9B3521' }, // Again
-  { bg: '#FBF1E4', border: '#EBD7B8', text: '#8A5F1E' }, // Hard
-  { bg: '#E9F2EA', border: '#C4DCC7', text: '#35603C' }, // Good
-  { bg: '#E7EFF3', border: '#C2D6DF', text: '#2F5A6B' }, // Easy
-]
+// Grade band styling: four NEUTRAL buttons, so the band never fights the card
+// for attention. The suggested grade is the row's one accented control (it is
+// the primary action of the moment), and Again keeps the danger tone on its
+// label so "I forgot" is findable without reading. The vivid per-grade colour
+// lives only in the post-grade flash ring above.
 
 function hasKanji(text) {
   const value = text || ''
@@ -148,33 +144,33 @@ function HeaderIconButton({ icon: Icon, label, onClick, disabled }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        width: '38px', height: '38px', borderRadius: '12px', flexShrink: 0,
-        border: '1px solid var(--border)',
-        background: hovered && !disabled ? 'var(--surface-2)' : 'var(--surface)',
+        width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0,
+        border: 0,
+        background: hovered && !disabled ? 'var(--surface-2)' : 'transparent',
         cursor: disabled ? 'default' : 'pointer',
-        opacity: disabled ? 0.35 : 1,
+        opacity: disabled ? 0.3 : 1,
         transition: 'background 160ms ease, opacity 160ms ease',
+        WebkitTapHighlightColor: 'transparent',
       }}
     >
-      <Icon size={18} strokeWidth={1.9} color="var(--text-muted)" />
+      <Icon size={20} strokeWidth={2} color="var(--text-muted)" />
     </button>
   )
 }
 
 // Word and interval only — no icon. Four grades sit in one row, so each button
 // is a narrow column; an icon beside the label crowds it and forces the word to
-// shrink or wrap. The colour already carries the meaning the icon was adding.
+// shrink or wrap.
 function GradeButton({
-  grade, label, interval, bg, border, text, onClick, suggested,
+  grade, label, interval, accentHex, danger, onClick, suggested,
   // Sizing comes from studyLayout.js so a short phone can fit all four grades
   // on screen without ever dropping below a comfortable tap target.
   minHeight = 76, labelSize = 14, intervalSize = 11,
 }) {
   const [hovered, setHovered] = useState(false)
-  // Hover/suggested strengthens by swapping in the button's own border tone —
-  // one step darker than its resting bg, given directly by the palette rather
-  // than derived, so no new shades are invented.
-  const activeBg = hovered || suggested ? border : bg
+  // The tint a button strengthens toward: the accent for the suggested grade,
+  // the danger tone for Again, the plain surface step for the rest.
+  const tone = danger ? 'var(--danger)' : ink(accentHex)
   return (
     <button
       onClick={() => onClick(grade)}
@@ -184,19 +180,22 @@ function GradeButton({
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         gap: minHeight >= 68 ? '6px' : '3px',
         minHeight: minHeight + 'px', padding: minHeight >= 68 ? '12px 8px' : '8px 4px',
-        borderRadius: '16px',
-        border: (suggested ? '2px solid ' : '1.5px solid ') + border,
-        background: activeBg,
-        color: text, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-        transition: 'background 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease',
-        transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
-        boxShadow: hovered ? '0 10px 22px rgba(24,24,27,0.08)' : 'none',
+        borderRadius: '14px',
+        border: '1px solid ' + (suggested ? tone : 'var(--border)'),
+        background: suggested
+          ? 'color-mix(in srgb, ' + tone + ' 9%, var(--surface))'
+          : hovered ? 'var(--surface-2)' : 'var(--surface)',
+        color: suggested ? tone : danger ? 'var(--danger)' : 'var(--text)',
+        cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+        transition: 'background 160ms ease, border-color 160ms ease, transform 160ms ease',
+        transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
+        WebkitTapHighlightColor: 'transparent',
       }}
     >
       <span style={{ fontSize: labelSize + 'px', fontWeight: 750 }}>
         {label}
       </span>
-      <span style={{ fontSize: intervalSize + 'px', fontWeight: 650, color: 'var(--text-muted)' }}>
+      <span style={{ fontSize: intervalSize + 'px', fontWeight: 600, color: 'var(--text-muted)' }}>
         {interval}
       </span>
     </button>
@@ -323,59 +322,15 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     sessionVocabRef.current = []
     againCountRef.current = {}
 
-    // Cumulative deck: fetch the user's cards first so we can derive the study
-    // floor (the lowest level they actually study), then load every level's
-    // vocabulary from that floor up to the current level. Advancing a level
-    // keeps earlier levels in the deck for review instead of dropping them.
-    // Every card the learner owns on this track, not just the ones inside the
-    // level window. A card exists because they chose to study that word — saving
-    // it from a story is an explicit act — so it belongs in the queue even when
-    // the word sits above their current level or carries no level at all.
-    // Which words get INTRODUCED as new is still level-scoped: that comes from
-    // the `vocab` list below, never from the cards.
-    const cards = await getTrackCards(session.user.id, track, { includeUnleveled: true })
-    const floorLevel = studyFloorLevel(cards, track.current_level)
-
-    const vocabKey = 'vocab:' + track.language + ':' + track.system + ':' + floorLevel + '-' + track.current_level
-    let vocab = null
-    try {
-      const res = await supabase
-        .from('vocabulary')
-        .select('*')
-        .eq('language', track.language)
-        .eq('system', track.system)
-        .gte('level', floorLevel)
-        .lte('level', track.current_level)
-        .eq('is_active', true)
-        .order('level', { ascending: true })
-        .order('sort_order', { ascending: true })
-      vocab = res.data
-    } catch { /* offline — fall back to the cached vocabulary below */ }
-    // Mirror the cumulative vocabulary for offline; fall back to it when the
-    // fetch came back empty because the network is down.
-    if (vocab && vocab.length) cacheSet(vocabKey, vocab)
-    else { const cached = await cacheGet(vocabKey); if (cached) vocab = cached }
-    vocabRef.current = vocab || []
-
-    let vocabById = {}
-    ;(vocab || []).forEach(v => { vocabById[v.id] = v })
-
-    // A card whose vocabulary the level-scoped load didn't return used to be
-    // dropped on the floor by the `filter(c => c.vocab)` below — silently, so a
-    // saved word simply never appeared in a session again. Fetch exactly the
-    // rows still missing (dictionary words carry no level; a reach word saved
-    // from an easy story sits above the window) and merge them in.
-    const missingIds = missingVocabIds(cards, vocabById)
-    if (missingIds.length) {
-      try {
-        const extra = await supabase
-          .from('vocabulary').select('*').in('id', missingIds)
-        if (extra.data && extra.data.length) {
-          vocabById = mergeVocab(vocabById, extra.data)
-          vocabRef.current = [...(vocabRef.current || []), ...extra.data]
-        }
-      } catch { /* offline — those cards stay out of this session, as before */ }
-    }
+    // Cumulative deck: the user's cards plus every level's vocabulary from the
+    // study floor up to the current level (see studyData.js — the fetch phase
+    // lives there so Home can start it before the learner even taps Start).
+    // Consume the prefetch when one is warm; otherwise fetch fresh — identical
+    // data either way, the prefetch only moves WHEN the network round trips
+    // happen.
+    const prefetched = consumeStudyDeck(session.user.id, track)
+    const { cards, vocab, vocabById } = await (prefetched || fetchStudyData(session.user.id, track))
+    vocabRef.current = vocab
 
     const startOfToday = new Date()
     startOfToday.setHours(0, 0, 0, 0)
@@ -995,18 +950,30 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
 
   if (loading) {
+    // The session's own geometry, empty: the header rail's space and the card
+    // surface appear immediately and the content fills in, so entering Cards
+    // reads as the screen assembling — never a spinner page. (With the deck
+    // prefetched from Home this usually shows for a single frame, if at all.)
     return (
-      <div style={pageShell}>
-        <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{
-            width: '88px', height: '88px', borderRadius: '26px',
-            background: 'var(--surface)', border: '1px solid var(--border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 16px 40px rgba(24,24,27,0.06)',
-          }}>
-            <BookOpenCheck size={34} strokeWidth={1.75} color={accentHex} />
-          </div>
+      <div style={studyShell}>
+        <div style={{ ...railStyle, height: '40px' }} />
+        <div style={layout.fixed
+          ? { width: '100%', maxWidth: '680px', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }
+          : { maxWidth: '680px', margin: '0 auto' }}
+        >
+          <div aria-hidden="true" style={{
+            width: '100%', maxWidth: '680px',
+            minHeight: layout.cardMinHeight + 'px',
+            ...(layout.cardFlex ? { flex: layout.cardFlex } : {}),
+            background: 'var(--surface)',
+            border: '1px solid var(--border)', borderRadius: '20px',
+            boxShadow: 'var(--shadow-2)',
+          }} />
         </div>
+        <span role="status" style={{
+          position: 'absolute', width: '1px', height: '1px', margin: '-1px', padding: 0,
+          overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0,
+        }}>Loading session…</span>
       </div>
     )
   }
@@ -1213,25 +1180,25 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               <div style={{ flex: 1, borderRadius: '999px', background: 'var(--border)' }} />
             )}
           </div>
+          {/* Dot + count only. The words ("new / learning / due") used to sit
+              here too, but the card's own state line teaches the dot→meaning
+              mapping — a session header is not a place to read. */}
           <div style={{
             display: 'flex', justifyContent: 'center', flexWrap: 'wrap',
-            gap: isMobile ? '12px' : '16px', marginTop: '9px',
+            gap: isMobile ? '14px' : '18px', marginTop: '8px',
           }}>
             {MIX_KEYS.map(key => (
-              <span key={key} style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                opacity: mix.counts[key] > 0 ? 1 : 0.38,
+              <span key={key} title={MIX_LABELS[key]} style={{
+                display: 'flex', alignItems: 'center', gap: '5px',
+                opacity: mix.counts[key] > 0 ? 1 : 0.35,
               }}>
                 <span style={{
                   width: MARKER_DOT + 'px', height: MARKER_DOT + 'px',
                   borderRadius: '999px', flexShrink: 0,
                   background: bandTone(accentHex, key),
                 }} />
-                <span style={{ ...NUM, fontSize: '12.5px', fontWeight: 700, color: 'var(--text)' }}>
+                <span style={{ ...NUM, fontSize: '12px', fontWeight: 650, color: 'var(--text-muted)' }}>
                   {mix.counts[key]}
-                </span>
-                <span style={{ ...MICRO, fontSize: '9.5px', color: 'var(--text-faint)' }}>
-                  {MIX_LABELS[key]}
                 </span>
               </span>
             ))}
@@ -1297,12 +1264,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             minHeight: layout.cardMinHeight + 'px',
             ...(layout.cardFlex ? { flex: layout.cardFlex } : {}),
             background: 'var(--surface)',
-            border: '1px solid var(--border)', borderRadius: '26px',
-            // The front-of-card status band — new vs. review only, never a
-            // struggling/leech signal (that would bias the recall attempt;
-            // see the leech panel further down, which is answer-side only).
-            // Geometry and tone live in cardMarker.js.
-            boxShadow: markerCardShadow(marker),
+            border: '1px solid var(--border)', borderRadius: '20px',
+            boxShadow: 'var(--shadow-2)',
             display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'space-between',
             cursor: flipped ? 'default' : 'pointer', padding: layout.cardPadding + 'px',
             position: 'relative', perspective: '1200px',
@@ -1313,7 +1276,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               key={gradeId}
               aria-hidden
               style={{
-                position: 'absolute', inset: 0, borderRadius: '26px', pointerEvents: 'none',
+                position: 'absolute', inset: 0, borderRadius: '20px', pointerEvents: 'none',
                 ['--flash']: gradeColor, zIndex: 3,
                 animation: 'hd-grade-flash 460ms ease-out forwards',
               }}
@@ -1655,9 +1618,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                     grade={item.grade}
                     label={item.label}
                     interval={labels[item.grade]}
-                    bg={GRADE_STYLES[item.grade].bg}
-                    border={GRADE_STYLES[item.grade].border}
-                    text={GRADE_STYLES[item.grade].text}
+                    accentHex={accentHex}
+                    danger={item.grade === 0}
                     onClick={handleGrade}
                     suggested={suggestedGrade === item.grade}
                     minHeight={layout.gradeMinHeight}

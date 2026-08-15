@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import { getSystemLabel, getLevelLabel } from './utils'
 import { languageTheme, ink } from './languageTheme'
-import { HeroPanel, HeroAction, PageHeader, Eyebrow } from './panels'
-import { flatPanel, ON_HERO } from './designTokens'
 import { buildPracticePlan } from './practicePlan'
 import { speechRecognitionSupported } from './speechSupport'
 import { useIsMobile } from './useIsMobile'
 import {
-  ArrowLeft, ArrowRight, AlertTriangle, Headphones, PenLine,
+  AlertTriangle, Headphones, PenLine,
   AlignLeft, Blocks, Music2, Languages, Brush, Play, GraduationCap, BookA, ScanText, Mic, Search, Repeat2,
   ListChecks, ChevronRight,
 } from 'lucide-react'
@@ -16,22 +14,18 @@ import {
 // top-level navigation can stay focused on the daily loop (Flashcards → Stories
 // → Test).
 //
-// The screen is read top to bottom as one sentence:
-//
-//   1. ONE lit panel — the single drill worth opening right now. Anything with a
-//      real count behind it takes that slot; otherwise it is Listening.
-//   2. Drills — the rest of the practice modes, all the same size, one grid.
-//   3. Tools — lookup and reference. Slim rows, because these are places to go
-//      rather than things to practise, and a second grid of equal-weight cards
-//      is exactly what made this screen read as a pile.
-//
-// Which drill leads, what still carries a count, and the ordering all live in
-// practicePlan.js so they can be tested; this file only maps that onto panels.
+// The screen is a list, read top to bottom: drills first (whatever genuinely
+// has work waiting is already sorted to the top by practicePlan.js and says
+// so), then the reference tools. Rows of text directly on the background — no
+// hero, no tile grid, no icon chips. Which drill leads, what carries a count,
+// and the ordering all live in practicePlan.js so they can be tested; this
+// file only maps that onto rows.
 
 // The one status colour on this screen: something is waiting for you. Status
-// colours stay hardcoded (CLAUDE.md §5); everything neutral is a token and
-// every tint mixes into the surface so it survives dark mode.
+// colours stay hardcoded (CLAUDE.md §5); everything neutral is a token.
 const SIGNAL = '#D97706'
+
+const UI_FONT = "'Mona Sans', 'Inter', sans-serif"
 
 // lucide only — never an emoji as an icon.
 const ICONS = {
@@ -54,23 +48,9 @@ const ICONS = {
   youtube: Play,
 }
 
-// One spacing scale for the whole screen. The old layout mixed 30 / 18 / 14 /
-// 11px gaps, which is most of what "messy" actually looked like.
-const SECTION_GAP = '26px'
-const LABEL_GAP = '10px'
-
-function tint(color, pct) {
-  return 'color-mix(in srgb, ' + color + ' ' + pct + '%, var(--surface))'
-}
-
-function tintBorder(color, pct) {
-  return 'color-mix(in srgb, ' + color + ' ' + pct + '%, var(--border))'
-}
-
-export default function Practice({ profile, track, counts, onNavigate, onBack }) {
+export default function Practice({ profile, track, counts, onNavigate }) {
   const isMobile = useIsMobile()
   const theme = languageTheme(profile.active_language)
-  const accentHex = theme.accentHex
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
 
@@ -86,89 +66,47 @@ export default function Practice({ profile, track, counts, onNavigate, onBack })
     grammarDueCount: counts ? (counts.grammarDueCount || 0) : 0,
   })
 
-  const primary = plan.primary
-  const PrimaryIcon = ICONS[primary.key] || Headphones
+  // The plan's primary drill leads the same list as everything else — being
+  // first, and saying what's waiting, is the emphasis. A separate hero block
+  // gave one drill a marketing panel it never needed.
+  const drills = [
+    { ...plan.primary, desc: plan.primary.reason || plan.primary.desc },
+    ...plan.drills,
+  ]
 
   return (
-    <div style={{ maxWidth: '720px', margin: '0 auto', padding: isMobile ? '24px 16px 40px' : '44px 32px 60px' }}>
-      <BackButton onClick={onBack} />
+    <div style={{
+      width: '100%', maxWidth: '560px', margin: '0 auto',
+      padding: isMobile ? '20px 20px 28px' : '36px 20px 48px',
+      color: 'var(--text)', fontFamily: UI_FONT, WebkitFontSmoothing: 'antialiased',
+    }}>
+      <header>
+        <h1 style={{ margin: 0, fontSize: '27px', lineHeight: 1.05, fontWeight: 800, letterSpacing: '-0.02em' }}>Practice</h1>
+        <p style={{ margin: '5px 0 0', color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1, fontWeight: 550 }}>
+          {systemLabel + ' · ' + levelLabel}
+        </p>
+      </header>
 
-      <PageHeader
-        title="Practice"
-        meta={systemLabel + ' · ' + levelLabel}
-        style={{ margin: '18px 0 14px' }}
-      />
-
-      {/* ── The one lit block: the drill worth opening now ── */}
-      <HeroPanel
-        accentHex={accentHex}
-        seed={profile.active_language + '-practice'}
-        compact={isMobile}
-        onClick={() => onNavigate(primary.key)}
-        style={{ marginBottom: SECTION_GAP }}
-      >
-        {({ hovered }) => (
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <Eyebrow onHero>{primary.eyebrow}</Eyebrow>
-              <h2 style={{
-                margin: '9px 0 7px', color: '#fff', letterSpacing: '-0.02em',
-                fontSize: isMobile ? '26px' : '31px', fontWeight: 700, lineHeight: 1.1,
-              }}>
-                {primary.title}
-              </h2>
-              <p style={{
-                margin: 0, fontSize: '13.5px', lineHeight: 1.5,
-                color: ON_HERO.body, maxWidth: '42ch',
-              }}>
-                {primary.reason}
-              </p>
-              <HeroAction label={primary.cta} hovered={hovered} icon={ArrowRight} accentHex={accentHex} />
-            </div>
-            <span aria-hidden style={{
-              flexShrink: 0, width: '44px', height: '44px', borderRadius: '14px',
-              background: 'rgba(255,255,255,0.13)', border: '1px solid rgba(255,255,255,0.22)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <PrimaryIcon size={22} strokeWidth={1.85} color="#fff" />
-            </span>
-          </div>
-        )}
-      </HeroPanel>
-
-      {/* ── Everything else you can drill. One grid, one tile size. ── */}
-      <section className="hd-rise" style={{ marginBottom: SECTION_GAP, animationDelay: '80ms' }}>
-        <div style={{ marginBottom: LABEL_GAP }}>
-          <Eyebrow>More drills</Eyebrow>
-        </div>
-        <div style={{
-          display: 'grid', gap: '12px',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(' + (isMobile ? '148px' : '198px') + ', 1fr))',
-        }}>
-          {plan.drills.map(item => (
-            <DrillTile
-              key={item.key}
-              item={item}
-              accentHex={accentHex}
-              onClick={() => onNavigate(item.key)}
-            />
-          ))}
-        </div>
+      <section aria-label="Drills" style={{ marginTop: '14px' }}>
+        {drills.map((item, i) => (
+          <Row
+            key={item.key}
+            item={item}
+            last={i === drills.length - 1}
+            onPress={() => onNavigate(item.key)}
+          />
+        ))}
       </section>
 
-      {/* ── Reference, deliberately quieter than a drill. ── */}
-      <section className="hd-rise" style={{ animationDelay: '140ms' }}>
-        <div style={{ marginBottom: LABEL_GAP }}>
-          <Eyebrow>Look things up</Eyebrow>
-        </div>
-        <div style={{ ...flatPanel({ radius: 16 }), overflow: 'hidden' }}>
+      <section aria-label="Look up" style={{ marginTop: '30px' }}>
+        <h2 style={{ margin: 0, fontSize: '13px', lineHeight: 1, fontWeight: 700, color: 'var(--text-faint)' }}>Look up</h2>
+        <div style={{ marginTop: '4px' }}>
           {plan.tools.map((tool, i) => (
-            <ToolRow
+            <Row
               key={tool.key}
-              tool={tool}
-              accentHex={accentHex}
-              first={i === 0}
-              onClick={() => onNavigate(tool.key)}
+              item={tool}
+              last={i === plan.tools.length - 1}
+              onPress={() => onNavigate(tool.key)}
             />
           ))}
         </div>
@@ -177,102 +115,45 @@ export default function Practice({ profile, track, counts, onNavigate, onBack })
   )
 }
 
-// One drill. Every tile is the same size with the same icon, title and one line
-// of description — the only variation is the amber treatment when something is
-// genuinely waiting, so that variation actually means something.
-function DrillTile({ item, accentHex, onClick }) {
+// One row per drill or tool: a plain muted icon (no chip), name and one line of
+// purpose, and — only when something is genuinely waiting — an amber count.
+// The row itself sits directly on the background with a hairline below it.
+function Row({ item, last, onPress }) {
   const [hovered, setHovered] = useState(false)
-  const Icon = ICONS[item.key] || Headphones
-  const signal = item.tone === 'signal'
-  const color = signal ? SIGNAL : accentHex
-
+  const Icon = ICONS[item.key] || Search
+  const waiting = item.badge != null
   return (
     <button
-      onClick={onClick}
+      type="button"
+      onClick={onPress}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      className="hd-press"
       style={{
-        ...flatPanel({ radius: 16 }),
-        position: 'relative', textAlign: 'left', cursor: 'pointer',
-        padding: '15px 14px 16px', fontFamily: 'Inter, sans-serif',
-        border: '1px solid ' + (hovered ? tintBorder(color, 45) : 'var(--border)'),
-        boxShadow: (hovered ? 'var(--shadow-2)' : 'var(--shadow-1)') + ', inset 0 1px 0 var(--hairline)',
-        transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
-        transition: 'transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease',
-        display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '112px',
+        width: '100%', minHeight: '60px', padding: '11px 0', border: 0,
+        borderBottom: last ? 'none' : '1px solid var(--border)',
+        background: hovered ? 'var(--surface-2)' : 'transparent',
+        fontFamily: UI_FONT, cursor: 'pointer', textAlign: 'left',
+        display: 'flex', alignItems: 'center', gap: '13px',
+        transition: 'background 140ms ease',
+        WebkitTapHighlightColor: 'transparent',
       }}
     >
-      <span style={{
-        width: '36px', height: '36px', borderRadius: '11px',
-        background: tint(color, 11), border: '1px solid ' + tintBorder(color, 26),
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <Icon size={19} strokeWidth={1.85} color={ink(color)} />
-      </span>
-      <span style={{ display: 'block' }}>
-        <span style={{ display: 'block', fontSize: '14.5px', fontWeight: 700, color: 'var(--text)', lineHeight: 1.25 }}>
+      <Icon size={20} strokeWidth={1.8} color="var(--text-faint)" style={{ flexShrink: 0 }} aria-hidden="true" />
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: 'block', fontSize: '15.5px', fontWeight: 650, lineHeight: 1.25, color: 'var(--text)' }}>
           {item.title}
         </span>
-        <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.4 }}>
+        <span style={{ display: 'block', marginTop: '3px', fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.35 }}>
           {item.desc}
         </span>
       </span>
-      {item.badge != null && (
-        <span style={{
-          position: 'absolute', top: '13px', right: '13px',
-          fontSize: '11.5px', fontWeight: 750, lineHeight: 1,
-          color: ink(SIGNAL), background: tint(SIGNAL, 16),
-          border: '1px solid ' + tintBorder(SIGNAL, 34),
-          borderRadius: '999px', padding: '4px 9px',
-        }}>{item.badge}</span>
+      {waiting && (
+        <span style={{ flexShrink: 0, fontSize: '12.5px', fontWeight: 700, color: ink(SIGNAL), fontVariantNumeric: 'tabular-nums' }}>
+          {item.badge}
+        </span>
       )}
-    </button>
-  )
-}
-
-// One line per tool: icon, name, what it's for, chevron.
-function ToolRow({ tool, accentHex, first, onClick }) {
-  const [hovered, setHovered] = useState(false)
-  const Icon = ICONS[tool.key] || Search
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: 'flex', alignItems: 'center', gap: '13px', width: '100%',
-        textAlign: 'left', cursor: 'pointer', padding: '13px 15px',
-        background: hovered ? 'var(--surface-2)' : 'transparent',
-        border: 'none', borderTop: first ? 'none' : '1px solid var(--hairline)',
-        fontFamily: 'Inter, sans-serif', transition: 'background 140ms ease',
-      }}
-    >
-      <span style={{
-        width: '34px', height: '34px', borderRadius: '10px', flexShrink: 0,
-        background: tint(accentHex, 9), border: '1px solid ' + tintBorder(accentHex, 20),
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <Icon size={17} strokeWidth={1.85} color={ink(accentHex)} />
-      </span>
-      <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-        <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>{tool.title}</span>
-        <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.35 }}>{tool.desc}</span>
-      </span>
-      <ChevronRight size={17} strokeWidth={2} color="var(--text-faint)" style={{ flexShrink: 0 }} />
-    </button>
-  )
-}
-
-function BackButton({ onClick }) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} style={{
-      display: 'inline-flex', alignItems: 'center', gap: '8px',
-      minHeight: '44px', padding: '0 14px', borderRadius: '12px',
-      border: '1px solid var(--border)', background: hovered ? 'var(--surface-2)' : 'var(--surface)',
-      color: 'var(--text-muted)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-    }}>
-      <ArrowLeft size={17} strokeWidth={1.85} color="var(--text-muted)" /> Home
+      <ChevronRight size={15} strokeWidth={2.1} color="var(--text-muted)" style={{ flexShrink: 0, opacity: 0.55 }} aria-hidden="true" />
     </button>
   )
 }

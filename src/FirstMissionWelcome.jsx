@@ -5,9 +5,14 @@ import { BRAND_NAME, heroWordmarkStyle } from './brand'
 import { FIRST_MISSION_WELCOME } from './firstMission'
 import { ArrowRight } from 'lucide-react'
 import { tastedWordsLine } from './prelogin'
+import { languageTheme } from './languageTheme'
 
-const SAGE = '#6E8466'
-const SAGE_DARK = '#5C7155'
+// The first in-app screen a learner sees — it hands off to the vermilion
+// product, so its CTA is already the product's accent, not the landing sage.
+// Onboarding is Chinese-only (CLAUDE.md §1), and the accent still comes from
+// languageTheme rather than a hex written here.
+const ACCENT = languageTheme('chinese').accentHex
+const ACCENT_DARK = languageTheme('chinese').accentHexDark
 
 // The single welcome screen of the First Mission. One calm message, one CTA —
 // no skip, no secondary actions, no navigation. It hands straight off to the
@@ -53,11 +58,11 @@ export default function FirstMissionWelcome({ onStart, tastedWords }) {
           style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
             width: '100%', minHeight: '56px', borderRadius: '16px', border: 'none',
-            background: hovered ? SAGE_DARK : SAGE, color: '#fff',
+            background: hovered ? ACCENT_DARK : ACCENT, color: '#FFF9F2',
             fontSize: '16px', fontWeight: 750, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
             transition: 'background 160ms ease, transform 160ms ease, box-shadow 160ms ease',
             transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
-            boxShadow: hovered ? '0 14px 32px rgba(110,132,102,0.30)' : '0 6px 18px rgba(110,132,102,0.20)',
+            boxShadow: hovered ? '0 14px 32px rgba(184,58,36,0.28)' : '0 6px 18px rgba(184,58,36,0.18)',
           }}
         >
           {FIRST_MISSION_WELCOME.cta}

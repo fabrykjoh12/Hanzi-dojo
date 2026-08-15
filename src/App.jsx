@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense, startTransition } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './supabase'
 import ErrorBoundary from './ErrorBoundary'
@@ -81,11 +81,14 @@ const SR_ONLY = {
 // Calm centered fallback while a lazy screen loads. The 学 is decoration — a
 // screen reader announcing a lone Chinese character on every route change is
 // noise, so it is hidden and the status line says what is actually happening.
+// The glyph fades in only after a 300ms grace (hd-fallback-in): navigations
+// resolve well inside that on a warm cache, so the common path shows nothing
+// at all instead of flashing an intermediate screen.
 function ViewFallback() {
   return (
     <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <span role="status" style={SR_ONLY}>Loading…</span>
-      <div aria-hidden="true" lang="zh-Hans" style={{ fontSize: '30px', color: 'var(--text-faint)', fontFamily: "'Noto Sans SC'" }}>学</div>
+      <div aria-hidden="true" lang="zh-Hans" className="hd-fallback-in" style={{ fontSize: '30px', color: 'var(--text-faint)', fontFamily: "'Noto Sans SC'" }}>学</div>
     </div>
   )
 }
@@ -147,6 +150,8 @@ export default function App() {
   const routerNavigate = useNavigate()
   const location = useLocation()
   const view = pathToView(location.pathname)
+  // Focused sessions own the whole screen: no tab bar, minimal bottom inset.
+  const focusedSession = view === 'study' || view === 'weak'
   const publicStoryId = readStoryId(location.pathname)
   const assessment = isAssessmentPath(location.pathname)
   const trustPage = trustPageKey(location.pathname)
@@ -333,7 +338,12 @@ export default function App() {
     if (opts && opts.firstMission) setPendingStoryFirstMission(true)
     if (opts && opts.practiceWords) setPendingPracticeWords(opts.practiceWords)
     else if (key === 'fillblank') setPendingPracticeWords(null) // normal hub open — no stale story pool
-    routerNavigate(key === 'stories' && opts?.storyId ? storyPath(opts.storyId) : viewToPath(key))
+    // startTransition keeps the CURRENT screen rendered while a lazy view's
+    // chunk loads, instead of dropping the whole shell to the Suspense
+    // fallback — navigation reads as one continuous move, not a route change.
+    startTransition(() => {
+      routerNavigate(key === 'stories' && opts?.storyId ? storyPath(opts.storyId) : viewToPath(key))
+    })
     // Refetch the dashboard when landing on Home — but not after a detour
     // through a screen that provably changed nothing (see homeRefresh.js).
     if (session && key === 'home' && shouldRefreshHome(view, homeLoadedAt.current)) {
@@ -768,21 +778,31 @@ export default function App() {
           // reader's own bars) are positioned against the viewport, not this box,
           // so they still carry their own inset.
           paddingTop: isMobile ? 'env(safe-area-inset-top, 0px)' : 0,
-          // Leave room for the fixed bottom bar so content isn't hidden behind it.
+          // Leave room for the fixed bottom bar so content isn't hidden behind
+          // it. Focused sessions (study) run without the bar, so they only need
+          // the device inset itself.
           paddingBottom: isMobile
-            ? 'calc(' + (view === 'study' || view === 'weak' ? 62 : 94) + 'px + env(safe-area-inset-bottom))'
+            ? (focusedSession
+              ? 'calc(10px + env(safe-area-inset-bottom))'
+              : 'calc(68px + env(safe-area-inset-bottom))')
             : 0,
         }}>
           {/* Per-view boundary keyed on `view`: a screen that throws (or a stale
               lazy chunk after a deploy) degrades to the recovery UI without
-              taking down the shell, and recovers on the next navigation. */}
+              taking down the shell, and recovers on the next navigation. The
+              keyed wrapper also plays one shared 190ms settle on every screen
+              change, so switching views reads as choreography, not a reload. */}
           <Suspense fallback={<ViewFallback />}>
             <ErrorBoundary key={view}>
-              {content}
+              <div key={view} className="hd-screen-enter">
+                {content}
+              </div>
             </ErrorBoundary>
           </Suspense>
         </main>
-        {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} isAdmin={!!profile.is_admin} language={profile.active_language} />}
+        {/* A study session is a room you step into: the tab bar leaves with the
+            rest of the furniture and the session's own Exit brings you back. */}
+        {isMobile && !focusedSession && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} isAdmin={!!profile.is_admin} language={profile.active_language} />}
         {/* Calm screens only — floating over Study it covered the Easy grade
             button, and the story reader has its own bottom audio bar. */}
         {['practice', 'profile', 'settings', 'words', 'grammar', 'languages'].indexOf(view) !== -1 && (

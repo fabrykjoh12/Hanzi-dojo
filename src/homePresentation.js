@@ -12,15 +12,6 @@ export function homeProgressPct(learned, totalWords) {
   return totalWords > 0 ? (learned / totalWords) * 100 : 0
 }
 
-export const HOME_MOTION = Object.freeze({
-  pressDown: 120,
-  pressReturn: 140,
-  nav: 210,
-  page: 190,
-  stage: 340,
-  reduced: 130,
-})
-
 export function homeDailyStage({ counts = {}, daily } = {}) {
   const queue = homeQueueSummary(counts)
   if (!queue.clear) return 'cards'

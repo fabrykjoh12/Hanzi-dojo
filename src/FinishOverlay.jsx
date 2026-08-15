@@ -3,8 +3,9 @@ import { Check, ChevronRight, Lock, Zap } from 'lucide-react'
 import ComprehensionCheck from './ComprehensionCheck'
 import { trapDialogFocus } from './dialogFocus'
 
-const SAGE = '#6E8466'
-const btn = { border: 'none', borderRadius: '16px', background: SAGE, color: '#fff', fontSize: '15.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', width: 'auto', padding: '12px 22px', marginTop: '14px' }
+// Filled buttons here carry the language accent (passed in as `accent`) — the
+// finish overlay is part of the same product the vermilion belongs to.
+const btn = { border: 'none', borderRadius: '14px', color: '#FFF9F2', fontSize: '15.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', width: 'auto', padding: '12px 22px', marginTop: '14px' }
 
 // The end of a chapter must never be a dead end: it either hands the learner
 // the next chapter (unlocked), points them back at flashcards (locked — the
@@ -146,7 +147,7 @@ export default function FinishOverlay({ story, accent, onBack, note, core, onPra
           onClick={onBack}
           style={nextChapter && nextChapter.kind === 'unlocked'
             ? { ...btn, background: 'var(--surface)', color: 'var(--text-muted)', border: '1px solid var(--border)' }
-            : btn}
+            : { ...btn, background: accent }}
         >
           Back to library
         </button>

@@ -26,7 +26,7 @@ test.describe('First-run tour', () => {
   test('a fresh account sees the Home tour once; Skip ends it across reloads', async ({ page }) => {
     await serveFreshProfile(page);
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Today’s training' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible();
 
     // The tour opens on its first step, as a real dialog named by the step title.
     const dialog = page.getByRole('dialog', { name: 'Start here each day' });
@@ -45,7 +45,7 @@ test.describe('First-run tour', () => {
     // Give the async prefs write a beat to commit before reloading.
     await page.waitForTimeout(400);
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Today’s training' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible();
     // The trigger waits ~600ms before showing; wait past it, then assert quiet.
     await page.waitForTimeout(1500);
     await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -77,7 +77,7 @@ test.describe('First-run tour', () => {
   test('an established account is never toured', async ({ page }) => {
     // Default mock profile: created_at is months old — the age gate holds.
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Today’s training' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible();
     await page.waitForTimeout(1500);
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });

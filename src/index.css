@@ -64,9 +64,12 @@ body {
   --text-muted: #71717A;
   --text-faint: #6B6B72;
   --reader-watermark: rgba(24, 24, 27, 0.04);
-  --bg-image-opacity: 0.4;
+  /* The ink-wash landscape is texture, not a picture: with screens now built
+     as text directly on the background (no card layer covering it), 0.4 read
+     as a drawing behind the words. Quiet enough to be paper again. */
+  --bg-image-opacity: 0.2;
   /* What the above drops to while a lit hero panel is on screen. */
-  --bg-image-opacity-lit: 0.24;
+  --bg-image-opacity-lit: 0.12;
 
   /* Elevation + edge light. Two layers (a tight contact shadow and a wide,
      soft cast) read as a card resting on paper; a single blurred box-shadow
@@ -360,22 +363,29 @@ body {
   outline-offset: 2px;
 }
 
-@keyframes hd-home-settle {
+/* Every screen enters the same way: a short settle — fade plus a 3px rise —
+   applied by the app shell's keyed wrapper on each view change. One shared
+   motion instead of per-screen entrances is what makes navigation read as one
+   product. */
+@keyframes hd-screen-enter {
   from { opacity: 0; transform: translateY(3px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.hd-home-settle {
-  animation: hd-home-settle 190ms cubic-bezier(0.2, 0, 0, 1) both;
+.hd-screen-enter {
+  animation: hd-screen-enter 190ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+/* The lazy-chunk fallback glyph holds invisible through a 300ms grace before
+   fading in. Warm navigations resolve inside the grace, so the intermediate
+   state simply never appears; only a genuinely slow load shows the glyph. */
+.hd-fallback-in {
+  opacity: 0;
+  animation: hd-fade-in 240ms ease 300ms both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hd-home-settle {
-    animation: hd-home-settle 130ms ease-out both !important;
+  .hd-screen-enter {
+    animation: hd-screen-enter 130ms ease-out both !important;
     transform: none !important;
-  }
-  .hd-home-stage,
-  .hd-mobile-nav-motion,
-  .hd-mobile-nav-motion * {
-    transition-duration: 130ms !important;
   }
 }

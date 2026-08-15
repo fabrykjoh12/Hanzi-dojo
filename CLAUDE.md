@@ -261,10 +261,24 @@ Hardcoded neutral hexes are a bug.
   hex for tints and borders that already mix into a surface.
 - **Tints must mix into the surface:** `color-mix(in srgb, <accent> 11%, var(--surface))`,
   never an `<accent>+'14'` alpha hex (that stays light in dark mode).
-- **One lit panel per screen.** Exactly one `HeroPanel` — the thing the screen is
-  about — on a ground darkened from the *language accent*. Everything else is a
-  flat `Panel`. Atmosphere stays under ~12% opacity and is **drawn** (`inkWash.js`),
-  never photographic.
+- **One accent moment per screen, and text sits on the background by default**
+  *(revised 2026-08-15, physical-device pass)*. Exactly one thing per screen
+  carries the accent as a surface — the primary action (Home's session panel,
+  a reader's Start button, Stories' featured cover). Everything else is plain
+  text on `--bg` with hairline separators; a raised surface means "you can pick
+  this up" (the flashcard, a cover, a sheet), never "this is a section".
+  Don't wrap stats, lists or labels in containers, don't use icon-chips-in-tiles,
+  and don't build gradient heroes — `HeroPanel` survives only where real cover
+  art earns it (Stories). Atmosphere stays under ~12% opacity and is **drawn**
+  (`inkWash.js`), never photographic.
+- **Navigation is furniture.** The mobile tab bar is a standard full-width bar
+  (`MobileNav.jsx`): hairline top edge, three tabs, accent-as-ink active state.
+  It hides during focused sessions (`study`/`weak` — see `focusedSession` in
+  `App.jsx`). Never rebuild it as a floating tray, notch, or raised tab.
+- **No screen ever swaps to a spinner.** Navigation runs in `startTransition`;
+  Home warms the Study chunk + deck on idle (`studyData.js`); the lazy-route
+  fallback fades in only after a 300ms grace; in-screen loading states keep the
+  screen's own geometry (Study renders its empty card, not a centered icon).
 - **Flex scroll rule:** any `flex: 1` scroll area inside a `position: fixed` or
   fixed-height flex column needs `min-height: 0`, or it grows to fit its content
   and the overflow gets clipped.

@@ -201,24 +201,31 @@ function StoriesHero({ hero, accentHex, fontFamily, isMobile, levelLabelOf }) {
     >
       {({ hovered }) => (
         <div style={{ position: 'relative', minHeight: isMobile ? '280px' : '340px', display: 'flex', alignItems: 'end' }}>
-          <StoryCover
-            story={coverStory} path={coverStory && coverStory.image_path} accent={accentHex} radius={0} loading="eager"
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
-          />
-          <div aria-hidden="true" style={{
-            position: 'absolute', inset: 0,
-            background: isMobile
-              ? 'linear-gradient(0deg, rgba(13,13,15,0.94) 0%, rgba(13,13,15,0.58) 58%, rgba(13,13,15,0.16) 100%)'
-              : 'linear-gradient(90deg, rgba(13,13,15,0.94) 0%, rgba(13,13,15,0.70) 42%, rgba(13,13,15,0.14) 76%)',
-          }} />
+          {/* Cover art + a readability scrim — only when there IS art. Without
+              one, the panel's own accent ground carries the text; layering the
+              scrim over the bare ground just burned it to black, and layering
+              StoryCover's light fallback under white text made it unreadable. */}
+          {Boolean(coverStory && coverStory.image_path) && (
+            <>
+              <StoryCover
+                story={coverStory} path={coverStory.image_path} accent={accentHex} radius={0} loading="eager"
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+              />
+              <div aria-hidden="true" style={{
+                position: 'absolute', inset: 0,
+                background: isMobile
+                  ? 'linear-gradient(0deg, rgba(13,13,15,0.94) 0%, rgba(13,13,15,0.58) 58%, rgba(13,13,15,0.16) 100%)'
+                  : 'linear-gradient(90deg, rgba(13,13,15,0.94) 0%, rgba(13,13,15,0.70) 42%, rgba(13,13,15,0.14) 76%)',
+              }} />
+            </>
+          )}
           <div style={{ position: 'relative', zIndex: 1, padding: isMobile ? '22px 20px' : '34px 38px', maxWidth: isMobile ? '100%' : '620px' }}>
             <Eyebrow onHero>{hero.eyebrow}</Eyebrow>
             {hero.kicker && (
               <div style={{
                 display: 'inline-flex', alignItems: 'center', gap: '7px', marginTop: '12px',
-                fontSize: '12px', fontWeight: 800, letterSpacing: '0.04em',
-                color: '#fff', background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.22)',
-                borderRadius: '999px', padding: '6px 12px',
+                fontSize: '12px', fontWeight: 700, letterSpacing: '0.02em',
+                color: 'rgba(255,255,255,0.85)',
               }}>
                 {hero.kickerIcon}
                 {hero.kicker}

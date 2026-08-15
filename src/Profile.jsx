@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
-import { languageTheme, availableLanguages } from './languageTheme'
+import { languageTheme, availableLanguages, ink } from './languageTheme'
 import { PageHeader } from './panels'
 import { isMastered } from './mastery'
 import { cleanMeaning } from './cleanMeaning'
@@ -48,27 +48,28 @@ function Shell({ children }) {
   )
 }
 
+// A plain ghost icon button (the Back arrow) — navigation chrome, not a
+// bordered pill competing with the page's real controls.
 function IconButton({ icon: Icon, label, onClick }) {
   const [hovered, setHovered] = useState(false)
   return (
     <button
       onClick={onClick}
+      aria-label={label}
+      title={label}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-        height: '40px', padding: '0 14px', borderRadius: '12px',
-        border: '1px solid var(--border)',
-        background: hovered ? 'var(--surface-2)' : 'var(--surface)',
-        color: 'var(--text-muted)',
-        fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        width: '40px', height: '40px', marginLeft: '-9px', borderRadius: '12px',
+        border: 0,
+        background: hovered ? 'var(--surface-2)' : 'transparent',
         cursor: 'pointer',
-        transition: 'background 160ms ease, transform 160ms ease',
-        transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
+        transition: 'background 160ms ease',
+        WebkitTapHighlightColor: 'transparent',
       }}
     >
-      <Icon size={17} strokeWidth={1.85} color="var(--text-muted)" />
-      {label}
+      <Icon size={20} strokeWidth={2} color="var(--text-muted)" />
     </button>
   )
 }
@@ -110,7 +111,6 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   const [reviewStats, setReviewStats] = useState({ total: 0, correct: 0, days: {} })
   const [wordMap, setWordMap] = useState({ levels: [], totals: { total: 0, mastered: 0, known: 0, learning: 0, new: 0, readable: 0 } })
 
-  const isMobile = useIsMobile()
   const { accentHex, fontFamily } = getLanguageDetails(profile)
   const systemLabel = getSystemLabel(track.system)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
@@ -421,9 +421,11 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         </nav>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px', marginBottom: '18px' }}>
-        <StatCard label="Words learned" value={loading ? '-' : stats.learned} unit={'of ' + stats.totalWords} icon={Layers} color={accentHex} bg={accentHex + '10'} />
-        <StatCard label="Words mastered" value={loading ? '-' : stats.masteredCount} unit={masteryPct + '%'} icon={Sparkles} color="#2F9E6D" bg="var(--success-bg)" />
+      {/* The two level numbers, as text on the page — a profile's vital signs
+          don't need boxes and icon chips around them. */}
+      <div style={{ display: 'flex', gap: '40px', margin: '2px 2px 22px' }}>
+        <TextStat value={loading ? '–' : stats.learned} label={'of ' + stats.totalWords + ' words learned'} />
+        <TextStat value={loading ? '–' : stats.masteredCount} label={masteryPct + '% mastered'} />
       </div>
 
       {!loading && (
@@ -435,9 +437,9 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
             </span>
             <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 650 }}>{earnedCount}/{achievements.length} unlocked</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '12px' }}>
-            {achievements.map(a => (
-              <Badge key={a.id} ach={a} accentHex={accentHex} Icon={ACH_ICONS[a.icon] || Award} />
+          <div>
+            {achievements.map((a, i) => (
+              <Badge key={a.id} ach={a} accentHex={accentHex} Icon={ACH_ICONS[a.icon] || Award} last={i === achievements.length - 1} />
             ))}
           </div>
         </Panel>
@@ -518,23 +520,15 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
           <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: 1.5 }}>
             {monthHeadline(mr)}
           </div>
-          {/* Three across on a phone leaves ~100px a tile, which wraps
-              "Words mastered" onto three lines. Two across, with the third
-              spanning the row below. */}
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '12px' }}>
+          {/* Plain numbers, not three coloured boxes — the month's facts read
+              like a sentence rather than a scoreboard. */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '28px 40px' }}>
             {[
-              { label: 'Active days', value: activeDays, color: accentHex },
-              { label: 'Reviews', value: cardsThisMonth, color: '#3E63DD' },
-              { label: 'Words mastered', value: stats.lifetimeMastered || 0, color: '#2F9E6D', wide: true },
+              { label: 'Active days', value: activeDays },
+              { label: 'Reviews', value: cardsThisMonth },
+              { label: 'Words mastered', value: stats.lifetimeMastered || 0 },
             ].map(s => (
-              <div key={s.label} style={{
-                padding: '14px 12px', borderRadius: '14px', background: s.color + '0D',
-                border: '1px solid ' + s.color + '22', textAlign: 'center',
-                gridColumn: isMobile && s.wide ? '1 / -1' : 'auto',
-              }}>
-                <div style={{ fontSize: '26px', fontWeight: 800, color: s.color, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 650 }}>{s.label}</div>
-              </div>
+              <TextStat key={s.label} value={s.value} label={s.label} />
             ))}
           </div>
           {mr.bestDay && mr.bestDay.count > 0 && (
@@ -1197,52 +1191,34 @@ function Panel({ children, compact, danger }) {
   )
 }
 
-function StatCard({ label, value, unit, icon: Icon, color, bg }) {
+function TextStat({ value, label }) {
   return (
-    <div style={{
-      background: 'var(--surface)',
-      borderRadius: '18px',
-      border: '1px solid var(--border)',
-      boxShadow: '0 8px 26px rgba(24,24,27,0.05)',
-      padding: '18px',
-    }}>
-      <div style={{
-        width: '38px', height: '38px', borderRadius: '13px',
-        background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        marginBottom: '14px',
-      }}>
-        <Icon size={19} strokeWidth={1.85} color={color} />
-      </div>
-      <div style={{ fontSize: '29px', fontWeight: 850, color, lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '5px', fontWeight: 650 }}>{unit}</div>
-      <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '7px' }}>{label}</div>
+    <div>
+      <div style={{ fontSize: '27px', fontWeight: 800, color: 'var(--text)', lineHeight: 1, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+      <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 550 }}>{label}</div>
     </div>
   )
 }
 
-function Badge({ ach, accentHex, Icon }) {
+// One achievement per row: icon, name and requirement, a check when earned.
+// Rows, not a grid of little cards — a list of facts, quietly stated.
+function Badge({ ach, accentHex, Icon, last }) {
   const earned = ach.earned
   return (
     <div
-      title={ach.desc}
       style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '8px',
-        padding: '16px 10px', borderRadius: '16px',
-        border: '1px solid ' + (earned ? accentHex + '33' : 'var(--border)'),
-        background: earned ? accentHex + '0A' : 'var(--surface-2)',
-        opacity: earned ? 1 : 0.65,
+        display: 'flex', alignItems: 'center', gap: '13px',
+        padding: '11px 0',
+        borderBottom: last ? 'none' : '1px solid var(--border)',
+        opacity: earned ? 1 : 0.55,
       }}
     >
-      <div style={{
-        width: '46px', height: '46px', borderRadius: '14px',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: earned ? accentHex + '16' : 'var(--surface)',
-        border: '1px solid ' + (earned ? accentHex + '2E' : 'var(--border)'),
-      }}>
-        <Icon size={22} strokeWidth={1.9} color={earned ? accentHex : 'var(--text-faint)'} />
+      <Icon size={19} strokeWidth={1.9} color={earned ? ink(accentHex) : 'var(--text-faint)'} style={{ flexShrink: 0 }} aria-hidden="true" />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: '13.5px', fontWeight: 650, color: 'var(--text)' }}>{ach.title}</div>
+        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.35 }}>{ach.desc}</div>
       </div>
-      <div style={{ fontSize: '13px', fontWeight: 750, color: earned ? 'var(--text)' : 'var(--text-muted)' }}>{ach.title}</div>
-      <div style={{ fontSize: '11px', color: 'var(--text-faint)', lineHeight: 1.4 }}>{ach.desc}</div>
+      {earned && <Check size={16} strokeWidth={2.4} color={ink(accentHex)} style={{ flexShrink: 0 }} aria-hidden="true" />}
     </div>
   )
 }

@@ -4,13 +4,14 @@ import { toast } from './toast'
 import { useIsMobile } from './useIsMobile'
 import { feedbackStoryContext } from './feedbackContext'
 import { BUILD_SHA } from './version'
+import { languageTheme, ink } from './languageTheme'
 import { MessageCircleHeart, X, Bug, Lightbulb, MessageSquare } from 'lucide-react'
 import { trapDialogFocus } from './dialogFocus'
 
 // A small always-available way for users to send bug reports and ideas
-// straight into the database, no email/GitHub account required. Floating
-// button + a lightweight modal — no <form> tag per project rules, just a
-// controlled textarea and a button that inserts a row on click.
+// straight into the database, no email/GitHub account required. A quiet pill
+// + a lightweight modal — no <form> tag per project rules, just a controlled
+// textarea and a button that inserts a row on click.
 
 const CATEGORIES = [
   { key: 'bug', label: 'Bug', icon: Bug },
@@ -18,11 +19,10 @@ const CATEGORIES = [
   { key: 'other', label: 'Something else', icon: MessageSquare },
 ]
 
-const SAGE = '#6E8466'
-const SAGE_DARK = '#5C7155'
-
 export default function Feedback({ session, profile, view }) {
   const isMobile = useIsMobile()
+  const accentHex = languageTheme(profile ? profile.active_language : 'chinese').accentHex
+  const accentInk = ink(accentHex)
   const [open, setOpen] = useState(false)
   const [category, setCategory] = useState(null)
   const [message, setMessage] = useState('')
@@ -79,7 +79,7 @@ export default function Feedback({ session, profile, view }) {
     close()
     toast({
       kind: 'seal',
-      accent: SAGE,
+      accent: accentHex,
       title: 'Thanks for the feedback!',
       body: 'We read every submission.',
     })
@@ -87,21 +87,29 @@ export default function Feedback({ session, profile, view }) {
 
   return (
     <>
+      {/* A quiet themed pill, not a coloured circle floating over content —
+          discoverable, and never louder than the screen it sits on. */}
       <button
         onClick={() => setOpen(true)}
         title="Send feedback"
-        aria-label="Send feedback"
+        className="hd-press"
         style={{
           position: 'fixed', zIndex: 45,
           right: isMobile ? '16px' : '24px',
-          bottom: isMobile ? 'calc(72px + env(safe-area-inset-bottom))' : '24px',
-          width: '50px', height: '50px', borderRadius: '999px',
-          background: SAGE, border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 10px 26px rgba(24,24,27,0.22)',
+          bottom: isMobile ? 'calc(68px + env(safe-area-inset-bottom))' : '24px',
+          height: '36px', padding: '0 13px', borderRadius: '999px',
+          background: 'var(--surface-glass)',
+          WebkitBackdropFilter: 'blur(10px)', backdropFilter: 'blur(10px)',
+          border: '1px solid var(--border)', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: '7px',
+          color: 'var(--text-muted)', fontSize: '12.5px', fontWeight: 650,
+          fontFamily: 'Inter, sans-serif',
+          boxShadow: 'var(--shadow-1)',
+          WebkitTapHighlightColor: 'transparent',
         }}
       >
-        <MessageCircleHeart size={22} strokeWidth={1.9} color="#fff" />
+        <MessageCircleHeart size={16} strokeWidth={1.9} />
+        Feedback
       </button>
 
       {open && (
@@ -170,13 +178,13 @@ export default function Feedback({ session, profile, view }) {
                       style={{
                         display: 'inline-flex', alignItems: 'center', gap: '7px',
                         padding: '9px 13px', borderRadius: '12px', cursor: 'pointer',
-                        border: '1px solid ' + (active ? SAGE : 'var(--border)'),
-                        background: active ? SAGE + '14' : 'var(--surface-2)',
-                        color: active ? SAGE_DARK : 'var(--text-muted)',
+                        border: '1px solid ' + (active ? accentInk : 'var(--border)'),
+                        background: active ? 'color-mix(in srgb, ' + accentHex + ' 10%, var(--surface))' : 'var(--surface-2)',
+                        color: active ? accentInk : 'var(--text-muted)',
                         fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
                       }}
                     >
-                      <Icon size={16} strokeWidth={1.9} color={active ? SAGE_DARK : 'var(--text-muted)'} />
+                      <Icon size={16} strokeWidth={1.9} color={active ? accentInk : 'var(--text-muted)'} />
                       {c.label}
                     </button>
                   )
@@ -221,8 +229,8 @@ export default function Feedback({ session, profile, view }) {
                 disabled={!canSend}
                 style={{
                   width: '100%', marginTop: '16px', minHeight: '48px', borderRadius: '14px', border: 'none',
-                  background: canSend ? SAGE : 'var(--surface-2)',
-                  color: canSend ? '#fff' : 'var(--text-faint)',
+                  background: canSend ? accentHex : 'var(--surface-2)',
+                  color: canSend ? '#FFF9F2' : 'var(--text-faint)',
                   fontSize: '14.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
                   cursor: canSend ? 'pointer' : 'default',
                 }}
