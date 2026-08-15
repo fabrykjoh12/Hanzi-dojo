@@ -210,6 +210,47 @@ migration to drop them, since this removed the feature, not historical data.
 - [ ] Supabase generated types (gradual TypeScript adoption).
 - [ ] Centralize design tokens (colors/spacing/shadows) beyond the current shared primitives.
 
+## App icon V2 (audit done 2026-08-15 — awaiting a direction call)
+
+Full findings: [`docs/P14-APP-ICON-V2-AUDIT.md`](P14-APP-ICON-V2-AUDIT.md). Audit
+only; no asset or config was changed. The short version:
+
+- [ ] **iOS `AppIcon.appiconset/Contents.json` declares only the Any appearance.**
+  No `luminosity: dark` and no `luminosity: tinted` entry exists, and no dark or
+  greyscale artwork exists anywhere in the repo to put in one — the generator's
+  `DARK` constant is used by splash screens only. So iOS *synthesises* the dark
+  and tinted icons from the light one, differently on different surfaces, which
+  is why the icon appears to change by itself. The artwork is close to the worst
+  case for that treatment: 82% of the canvas is `#FAFAF8` (luma 250) and the ink
+  is *darker* than the ground (luma 87), so tinted inverts figure and ground.
+- [ ] **Android has no `<monochrome>` layer**, on either `ic_launcher.xml` or
+  `ic_launcher_round.xml` — themed icons (13+) are off by omission at
+  `targetSdk 36`.
+- [ ] **The adaptive background is inset 16.7%**, so it covers exactly the 72 dp
+  mask and the 18 dp effect margin is transparent. A background layer must be
+  full-bleed 108 dp. Compounding it, the foreground mark ends up at ~33% of the
+  canvas inside a 66 dp safe zone. `docs/PRE-RELEASE-CHECKLIST.md` §0 records the
+  inset as intentional; it isn't, and that entry needs correcting.
+- [ ] **Dead Android Studio templates** still in the tree:
+  `drawable/ic_launcher_background.xml` (teal grid),
+  `drawable-v24/ic_launcher_foreground.xml` (the robot),
+  `values/ic_launcher_background.xml`. Unreferenced, but they sit exactly where a
+  future monochrome drawable goes.
+- [ ] **Three reds and two marks.** `#B83A24` (product accent), `#C43A22`
+  (`favicon.svg`, a geometric arc), `#E1350F` (the icon's brush artwork).
+- [ ] **The current mark is an ensō — a Japanese Zen symbol** — on a
+  Chinese-only product. Named as such in `tools/generate-app-icons.mjs`,
+  `public/favicon.svg` and `docs/PRE-RELEASE-CHECKLIST.md`. This is the decision
+  V2 actually turns on; the audit recommends a vermilion seal (印) with the ring
+  reversed out of it, which fixes the appearance problem structurally at the same
+  time.
+- [ ] `docs/DEPLOY.md` (~132) is stale — it still describes icons as generated
+  from `src/assets/Hanzi-logo.png` by an ad-hoc script.
+- [ ] Follow-up, **sequenced after Home V3 lands**: `src/assets/Hanzi-logo.png`
+  is the same ensō and is imported by eight screens including `Sidebar.jsx`, so
+  the in-app logo and the app icon would show different marks until it follows.
+  Asset swap only — no code change in those files.
+
 ## Deploy steps (apply before the feature works)
 - [x] **Public story links — APPLIED (verified in prod 2026-08-07: `public_story` function exists).** Original entry: apply migration `supabase/migrations/20260716000000_add_public_story.sql` in the Supabase SQL editor. It adds the anon-callable `security-definer` RPC `public_story(uuid)` (returns one published story + its language's active vocab capped to the story's level). Until applied, `/read/:id` shows the "story not found" state (a `console.error` fires so it's diagnosable). Smoke-test: `POST $VITE_SUPABASE_URL/rest/v1/rpc/public_story` with the anon key and a published story UUID → JSON with `title` + `vocab_pool`; an unpublished id → `null`.
 
