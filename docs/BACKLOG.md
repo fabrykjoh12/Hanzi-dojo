@@ -210,10 +210,15 @@ migration to drop them, since this removed the feature, not historical data.
 - [ ] Supabase generated types (gradual TypeScript adoption).
 - [ ] Centralize design tokens (colors/spacing/shadows) beyond the current shared primitives.
 
-## App icon V2 (audit done 2026-08-15 — awaiting a direction call)
+## App icon V2 (V2 brush mark LOCKED 2026-08-15 — E1/E2 device gate pending)
 
-Full findings: [`docs/P14-APP-ICON-V2-AUDIT.md`](P14-APP-ICON-V2-AUDIT.md). Audit
-only; no asset or config was changed. The short version:
+Decision state: the refined **V2 brush mark is approved and locked**
+(`docs/icon-v2/brush/masters/mask-V2.png` is the single source for every
+surface). Final call pending: **E1 flat vs E2 shallow inlay**, on a real device
+— package in [`P14-APP-ICON-V2-DEVICE-GATE.md`](P14-APP-ICON-V2-DEVICE-GATE.md),
+execution plan in [`P14-APP-ICON-V2-IMPLEMENTATION.md`](P14-APP-ICON-V2-IMPLEMENTATION.md).
+Original technical findings: [`P14-APP-ICON-V2-AUDIT.md`](P14-APP-ICON-V2-AUDIT.md)
+— all still unfixed until the plan executes:
 
 - [ ] **iOS `AppIcon.appiconset/Contents.json` declares only the Any appearance.**
   No `luminosity: dark` and no `luminosity: tinted` entry exists, and no dark or
