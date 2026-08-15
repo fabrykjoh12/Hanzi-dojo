@@ -85,3 +85,50 @@ describe('getHomeCounts — failed flag', () => {
     expect(counts.rhythm7).toHaveLength(7)
   })
 })
+
+// Home is a promise about the session the learner is about to get. Study
+// serves every card in the track — a card exists only because the learner
+// chose that word — while Home used to count only the current level window,
+// so words saved from a story or the dictionary were due but invisible.
+describe('getHomeCounts — the deck, not just the level window', () => {
+  const dueYesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const started = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
+  it('counts a due card whose word sits outside the level window', async () => {
+    state.vocab = [{ id: 'in-level' }]
+    state.cards = [
+      { vocab_id: 'in-level', state: 'review', due_at: dueYesterday, created_at: started, learned: true, stability: 5, lapses: 0 },
+      // Saved from a story above the level, and from the dictionary (no level).
+      { vocab_id: 'above-level', state: 'review', due_at: dueYesterday, created_at: started, learned: true, stability: 5, lapses: 0 },
+      { vocab_id: 'no-level', state: 'learning', due_at: dueYesterday, created_at: started, learned: false, stability: 0, lapses: 0 },
+    ]
+    const counts = await getHomeCounts('u1', TRACK, 5)
+    expect(counts.dueCount).toBe(2)   // both reviews, not just the in-level one
+    expect(counts.learnCount).toBe(1) // the dictionary word is due too
+  })
+
+  it('keeps level progress scoped to the level window', async () => {
+    state.vocab = [{ id: 'in-level' }]
+    state.cards = [
+      { vocab_id: 'in-level', state: 'review', due_at: dueYesterday, created_at: started, learned: true, stability: 30, lapses: 0 },
+      { vocab_id: 'above-level', state: 'review', due_at: dueYesterday, created_at: started, learned: true, stability: 30, lapses: 0 },
+    ]
+    const counts = await getHomeCounts('u1', TRACK, 5)
+    // One active word at this level, one of them mastered — the off-level card
+    // must not inflate HSK progress past 100%.
+    expect(counts.totalWords).toBe(1)
+    expect(counts.masteredCount).toBe(1)
+    expect(counts.masteredPct).toBe(1) // a 0–1 fraction (mastery.js), not a percent
+    // ...but it is still a real card waiting in the session.
+    expect(counts.dueCount).toBe(2)
+  })
+
+  it('counts weak words over the whole deck, matching the weak drill', async () => {
+    state.vocab = [{ id: 'in-level' }]
+    state.cards = [
+      { vocab_id: 'above-level', state: 'review', due_at: dueYesterday, created_at: started, learned: true, stability: 2, lapses: 3 },
+    ]
+    const counts = await getHomeCounts('u1', TRACK, 5)
+    expect(counts.weakCount).toBe(1)
+  })
+})

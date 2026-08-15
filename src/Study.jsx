@@ -6,7 +6,8 @@ import { cacheSet, cacheGet, outboxDelete } from './offline'
 import { getTrackCards } from './data'
 import { studyFloorLevel } from './levelScope'
 import { missingVocabIds, mergeVocab } from './deckVocab'
-import { schedule, previewLabels, isCardDue, endOfLocalDay } from './srs'
+import { schedule, previewLabels, endOfLocalDay } from './srs'
+import { dueLearningCards, dueReviewCards, weakCards } from './studyAvailability'
 import { todayStr } from './streak'
 import { evaluateAchievements } from './achievements'
 import { toast } from './toast'
@@ -394,8 +395,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     // Weak-words drill: focus the cards the user keeps lapsing on, regardless of
     // their due date. No new cards; grading still feeds FSRS normally.
     if (isWeak) {
-      const weakQueue = levelCards
-        .filter(c => (c.lapses || 0) >= 2 && (c.stability || 0) < 21)
+      const weakQueue = weakCards(levelCards)
         .sort((a, b) => (b.lapses - a.lapses) || ((a.stability || 0) - (b.stability || 0)))
         .slice(0, 30)
       await primeTtsAudio(weakQueue)
@@ -409,13 +409,13 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       return
     }
 
-    const dueLearning = levelCards
-      .filter(c => (c.state === 'learning' || c.state === 'relearning') && isCardDue(c, now))
     // Day-based: every review scheduled for today is served from the 00:00
     // rollover, so a morning session isn't missing reviews that were last done
-    // in the afternoon (matches how the new-card allotment refreshes at midnight).
-    let dueReview = levelCards
-      .filter(c => c.state === 'review' && isCardDue(c, now))
+    // in the afternoon (matches how the new-card allotment refreshes at
+    // midnight). Both predicates live in studyAvailability.js, which is also
+    // what Home counts with — the number on Home is a promise about this queue.
+    const dueLearning = dueLearningCards(levelCards, now)
+    let dueReview = dueReviewCards(levelCards, now)
 
     // Gentle return: after a multi-day break the overdue backlog can be huge.
     // Cap it to a calm handful — oldest-due first (deterministic, and clears the

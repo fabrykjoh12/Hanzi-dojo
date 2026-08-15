@@ -2,7 +2,8 @@ import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { countMastery } from './mastery'
 import { studyFloorLevel } from './levelScope'
-import { isCardDue, endOfLocalDay } from './srs'
+import { endOfLocalDay } from './srs'
+import { dueLearningCards, dueReviewCards, weakCards } from './studyAvailability'
 import { reviewForecast } from './reviewForecast'
 import { studyRhythm, dateKey } from './studyRhythm'
 import { countDueGrammar } from './grammarReview'
@@ -69,13 +70,23 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
     remainingNew
   )
 
-  const levelCards = (cards || []).filter(c => vocabIds.has(c.vocab_id))
-  const learnCount = levelCards
-    .filter(c => (c.state === 'learning' || c.state === 'relearning') && isCardDue(c, now)).length
-  // Review cards are due for the whole day, so all of today's reviews are
-  // available from the 00:00 rollover (matching how new cards refresh).
-  const dueCount = levelCards
-    .filter(c => c.state === 'review' && isCardDue(c, now)).length
+  // Two scopes, deliberately different, because they answer different questions:
+  //
+  //   deckCards  — every card started in this track, every level. This is the
+  //                deck a study session serves (Study.jsx uses exactly this),
+  //                so it is what the "waiting for you" counts must run over.
+  //                A word saved from a story or the dictionary sits outside the
+  //                level window but is still due, and Home used to hide it.
+  //   levelCards — only the current level window. Level progress (learned /
+  //                mastered / totalWords) is a statement ABOUT the level, so it
+  //                keeps the narrow scope.
+  const deckCards = (cards || [])
+  const levelCards = deckCards.filter(c => vocabIds.has(c.vocab_id))
+
+  // Availability comes from studyAvailability.js — the same functions Study
+  // builds its queue from, so the promise and the delivery cannot drift.
+  const learnCount = dueLearningCards(deckCards, now).length
+  const dueCount = dueReviewCards(deckCards, now).length
   const easyCount = levelCards.filter(c => c.is_easy).length
   const totalWords = vocabIds.size
 
@@ -90,7 +101,7 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   const eod = endOfLocalDay(now)
   const endOfTomorrow = new Date(); endOfTomorrow.setHours(23, 59, 59, 999)
   endOfTomorrow.setDate(endOfTomorrow.getDate() + 1)
-  const dueTomorrow = levelCards.filter(c => {
+  const dueTomorrow = deckCards.filter(c => {
     if (c.state !== 'review') return false
     const d = new Date(c.due_at)
     return d > eod && d <= endOfTomorrow
@@ -99,16 +110,16 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   // A calm 7-day outlook: scheduled reviews bucketed by day (index 0 = today).
   // Learning cards are excluded (they can't be honestly forecast), so this is an
   // approximation the UI presents as "~N a day", never a hard promise.
-  const forecast7 = reviewForecast(levelCards, now, 7)
+  const forecast7 = reviewForecast(deckCards, now, 7)
 
   // Study rhythm (last 7 days), from the activity rows fetched above.
   const studiedDates = ((actsResult && actsResult.data) || [])
     .filter(a => a.studied_cards > 0).map(a => a.activity_date)
   const rhythm7 = studyRhythm(studiedDates, now, 7)
 
-  // Weak words: cards the user has lapsed on at least twice and that aren't yet
-  // mastered — the cleanup-drill pool.
-  const weakCount = levelCards.filter(c => (c.lapses || 0) >= 2 && (c.stability || 0) < 21).length
+  // Weak words: the cleanup-drill pool. Over the deck, because that is the pool
+  // Study's weak drill actually builds from.
+  const weakCount = weakCards(deckCards).length
 
   const { learnedCount, masteredCount, masteredPct } = countMastery(levelCards, totalWords)
 
