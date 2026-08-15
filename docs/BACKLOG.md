@@ -293,6 +293,13 @@ Research only; nothing was fixed. The five confirmed blockers:
   and the Apple sign-in **runtime** flow is still device-unverified. One
   successful TestFlight sign-in drops it to tech debt. **Do not downgrade
   Capacitor, vendor the plugin, or hand-patch Package.swift.**
+- [ ] 🟠 **DojoHQ's code ships inside the store bundle.** Excluding `hq.html`
+  (`vite.config.js:60-61`) drops only the second *entry point*; `src/App.jsx:58`
+  still lazy-imports `./DojoHQ` for the in-app `/hq` route, so a
+  `DOJO_PUBLIC_BUILD=1` build emits `DojoHQ-*.js` (**124 kB**) + `DojoHQ-*.css`
+  (69 kB), with the `127.0.0.1:43127` bridge string inside. Access is
+  server-enforced, so this is dead weight and an Apple 2.3.1(a) talking point,
+  not a leak. **Fix needs `App.jsx` — do it after Codex merges.**
 - [ ] 🟠 **`build:public` — the bundle both stores ship — is never run in CI.**
   `ci.yml:53-54` runs `npm run build`, the *Sites* variant (emits `hq.html`).
   A store-only regression passes every PR check. Not a blocker (the native
@@ -306,15 +313,36 @@ Research only; nothing was fixed. The five confirmed blockers:
   prompts are not archived either — `data/manhua/*.art.json` hold only `{file,url}`
   plus a prose `_style_comment`, so there is no per-image evidence the
   STORY-BIBLE "no resemblance to any franchise" constraint was applied.
+  **Deep-dive 2026-08-15 → `docs/CONTENT-PROVENANCE-AUDIT.md`.** Higgsfield's
+  terms came back *clean* (no ownership claim, commercial use permitted,
+  sublicensable), but three harder sub-blockers surfaced: (a) the icon master
+  `src/assets/86055582-…png` has **zero metadata** and no traceable origin, and
+  every shipped icon is a pixel-derivative of it — the approved V2 mark is a
+  cleaned raster, not a redraw; (b) `src/TrustPages.jsx:196` publicly claims
+  © over that artwork; (c) Azure grants commercial rights for prebuilt neural
+  voices on **paid tiers only** and the Speech resource tier is not in the repo.
+  Also new: the 16 `upstairs/hsk3/ep01` panels have **no manifest at all**, and
+  `public/icons.svg` ships four companies' brand marks while being referenced by
+  zero app code.
 - [ ] 🔴 **A personal email ships in the production bundle** — `src/devTools.js:11`
   `DEFAULT_DEV_EMAILS = 'fabrykjoh@gmail.com'`, confirmed present in
-  `dist/client/assets/devTools-DxUibobf.js`. Set `VITE_DEV_EMAILS` for store builds.
+  the emitted `dist/client/assets/devTools-*.js`. Because `VITE_DEV_EMAILS` was
+  unset at build time, Vite inlined the literal as the *only* surviving value.
   Related: `/dev` renders for **any** signed-in user (`src/App.jsx:690-701`) and is
   gated only inside the component, unlike `/hq` and `/dashboard` which 404.
+  **Preferred fix (see `docs/RELEASE-BLOCKER-REMEDIATION.md` §3): delete the email
+  allowlist entirely and gate `/dev` on `profile.is_admin` inside `Dev.jsx`** —
+  closes both halves at once, and touches no file Codex is holding.
+  Severity note: public-but-unprofessional, **not** a security exposure — every
+  `/dev` action is RLS-scoped to the signed-in account.
 - [ ] 🔴 **Play's web-accessible deletion URL.** Play requires an in-app path *and*
-  a URL reachable without the app. `docs/STORE-LISTING.md:191` answers
+  a URL reachable without the app. `docs/STORE-LISTING.md:183` answers
   `/profile`, which sits behind the `!session` gate (`src/App.jsx:375-380`).
-  `/support` is public and already describes the process — likely the cheap fix.
+  **Decided: answer Play with `/support`**, which is already in `TRUST_PAGES`
+  and already carries the in-app path plus the email fallback. What it lacks is
+  Play's second half — *which data is deleted, which is kept, and any retention
+  period*. Copy-only edit in `TrustPages.jsx`; no routing change, so it avoids
+  `routes.js`, which Codex is editing.
 
 Notable non-blockers worth queuing: `public/sw.js:177-178` references
 `pwa-192.png`, which **does not exist** (App Icon V2 rename missed it — broken

@@ -21,7 +21,7 @@ than guessing.
 | | Count |
 |---|---|
 | 🔴 **Confirmed release blockers** | **4** |
-| 🟠 Important gaps | 12 |
+| 🟠 Important gaps | 16 |
 | 🟡 Verification-only (owner/console/device) | 19 |
 | ⚪ / safe for v1.1 | 8 |
 
@@ -49,6 +49,17 @@ working software.
 Plus one blocker-adjacent pipeline gap that is cheap to close and prevents a
 whole class of silent failure: **`build:public` — the bundle both stores ship —
 is never run in CI.**
+
+> **Updated 2026-08-15 (remediation pass).** Blocker #1 was taken apart in
+> [`CONTENT-PROVENANCE-AUDIT.md`](CONTENT-PROVENANCE-AUDIT.md) and got *worse*,
+> not better: it is not one gap but three hard sub-blockers (the icon master's
+> unknown origin, the `© BRAND_NAME` artwork claim on `/terms`, and Azure TTS's
+> paid-tier-only commercial grant) plus seven documented gaps. §7 below is
+> rewritten to match. The remediation plan for all four blockers — with exact
+> fixes, Codex collision risk and ordering — is in
+> [`RELEASE-BLOCKER-REMEDIATION.md`](RELEASE-BLOCKER-REMEDIATION.md).
+> The blocker count is unchanged at 4; the 🟠 count rose 12 → 16 (§7 provenance
+> gaps, plus DojoHQ shipping in the public bundle, §8).
 
 ---
 
@@ -146,7 +157,7 @@ data is shared with data brokers or joined with third-party data for advertising
 | Location / Contacts / Photos / Audio / Files / Calendar / Financial / Health / Messages / Web browsing | **Not collected** | `AndroidManifest.xml:45` — INTERNET only |
 | Data encrypted in transit | **Yes** | `androidScheme: https` (`capacitor.config.json:6`); no cleartext config anywhere; all endpoints HTTPS |
 | Users can request deletion | Yes, in-app | §4 |
-| **Web-accessible deletion URL** | 🔴 **Not established** | `STORE-LISTING.md:191` currently answers `/profile`, which **requires sign-in** — see §4 |
+| **Web-accessible deletion URL** | 🔴 **Not established** | `STORE-LISTING.md:183` currently answers `/profile`, which **requires sign-in** — see §4 |
 
 ---
 
@@ -167,16 +178,20 @@ data is shared with data brokers or joined with third-party data for advertising
 | Deletes local device data | ✅ | `forgetDeviceData()` → `clearDownloads()` + `outboxClear()`, `accountDeletion.js:29-31` |
 | Requires contacting support? | ✅ No | Email is a *fallback only*, for users who can't sign in (`TrustPages.jsx:249-258`) |
 | Guarded against anon call | ✅ | Raises `'Not signed in'`; revoked from `anon`/`public`, granted to `authenticated` (`:28-38,60-62`) |
-| **Play web deletion URL** | 🔴 | `STORE-LISTING.md:191` answers `https://hanzi-dojo.com/profile` — that route is **behind the `!session` gate** at `src/App.jsx:375-380`. A user who uninstalled and cannot sign in has no web path |
+| **Play web deletion URL** | 🔴 | `STORE-LISTING.md:183` answers `https://hanzi-dojo.com/profile` — that route is **behind the `!session` gate** at `src/App.jsx:375-380`. A user who uninstalled and cannot sign in has no web path |
 | Stale comment: RPC header says "12 cascading tables" | ⚪ | Now 14 (`:11-13`). Cosmetic |
 | Two dead guards: `unlocked_stories`, `bodyos_app_state` never created by any migration | ⚪ | Harmless (`to_regclass` guarded) |
 
-**Action (🔴):** publish a **public** deletion page — e.g. `/delete-account`, reachable
-signed-out, explaining the in-app path *and* offering `support@hanzi-dojo.com` as
-the request channel — then use that URL in Play's Data safety form. `/support`
-already contains this content (`TrustPages.jsx:249-258`) and **is** public, so
-the cheapest correct fix may be to answer Play with `/support` instead of
-`/profile`. **Decision needed; do not change code yet.**
+**Action (🔴) — decided in the remediation pass:** answer Play with
+**`https://hanzi-dojo.com/support`**, not a new `/delete-account` route.
+`/support` is already in `TRUST_PAGES` (`src/routes.js:96`), already renders
+signed-out, and already carries the in-app path plus the email fallback
+(`TrustPages.jsx:249-258`). What it is missing is the *second half* of Play's
+requirement — enumerating **which data is deleted, which is kept, and any
+retention period**. That is a copy edit inside `TrustPages.jsx`, zero routing
+change, zero collision with Codex (who is editing `routes.js`). Reasoning and the
+rejected alternative are in
+[`RELEASE-BLOCKER-REMEDIATION.md`](RELEASE-BLOCKER-REMEDIATION.md) §4.
 
 ---
 
@@ -329,25 +344,43 @@ No StoreKit, no Play Billing, no purchase plugin in `package.json`. Terms state 
 
 ## 7 · Content / intellectual property
 
+**Superseded by the deep-dive.** Full evidence, per-asset, is in
+[`CONTENT-PROVENANCE-AUDIT.md`](CONTENT-PROVENANCE-AUDIT.md) (3 🔴 / 7 🟠 / 4 🟡
+/ 2 ✅). This section is the summary; that document is the source of truth, and
+it corrects two rows this table previously got optimistic about.
+
 | Item | Status | Evidence | Action |
 |---|---|---|---|
-| **No LICENSE / NOTICE / third-party-terms file anywhere** | 🔴 | No top-level `LICENSE`; no attribution artifact | Establish the licensing basis for everything shipped (below) |
-| AI story artwork — commercial-use rights | 🔴 | 127 committed panels + covers generated via **Higgsfield MCP, model `nano_banana_pro` at 2k** (`data/manhua/*.art.json:3`) | Confirm and **record** Higgsfield's commercial-use/ownership terms for the account that generated them |
-| **Generation prompts are not archived** | 🟠 | Manifests contain only `{file,url}` + a prose `_style_comment`; grep for `"prompt"` across all 9 manifests returns **0** | No per-image proof the "no resemblance to any franchise" constraint was applied. Start archiving prompts alongside output |
-| Story text — LLM-generated | 🟠 | Gemini → Groq chain (`llmProviders.mjs:63-70`), Anthropic premium tier (`llm.mjs:89-94`) | Confirm commercial-use terms; record them |
-| TTS audio — Azure Neural voices | 🟠 | `src/tts/providers/azure.js:28-29`; voices `zh-CN-Xiaoxiao*`, `zh-CN-Yunxi` | Azure permits commercial use under the Speech service terms — **record the citation**; legacy Google TTS rows also exist (`docs/TTS.md:245`) |
+| **No LICENSE / NOTICE / third-party-terms file anywhere** | 🔴 | `git ls-files \| grep -iE "licen\|notice\|copying\|attrib\|third.?party\|credits\|copyright"` over all **1,179 tracked files → zero matches**; `package.json` has no `license` key | Establish the licensing basis for everything shipped (below) |
+| **Every shipped app icon derives from a file of unknown origin** | 🔴 | `src/assets/86055582-d1d3-4cb7-a460-6c907025fe15.png` — UUID filename, **no PNG metadata chunks at all** (verified: no `tEXt`/`iTXt`/`zTXt`/`eXIf`; 1254×1254, colortype 2), added in the squashed initial commit. The approved V2 mark is a *cleaned raster of it*, not a redraw (`P14-APP-ICON-V2-BRUSH.md:20-23`), so `mask-V2.png` → every iOS/Android/web icon inherits the lineage. The V3 vector is measured from the same raster, so it is **not** a clean-room escape | Owner produces the acquisition record, or confirms it was self-made/commissioned, or the mark is regenerated from a provenance-clean source |
+| **`/terms` publicly claims © over artwork with no rights record** | 🔴 | `src/TrustPages.jsx:196` — *"Stories, artwork, and app design are © {BRAND_NAME}"*, covering the icon master, `Hanzi-logo.png`, 3 of 4 backgrounds, 267 covers, 127 panels and the third-party brand marks in `public/icons.svg` | Soften the wording to what is actually owned. Cheapest of the three to de-risk — one copy edit |
+| **Azure TTS commercial rights are paid-tier-only** | 🔴 | ~**10,522 clips** (`CHANGELOG.md:89`) from `zh-CN-Xiaoxiao*` / `zh-CN-Yunxi` (`src/tts/providers/azure.js:27-29`). Microsoft grants commercial use of prebuilt neural voices to paid tiers; **F0 is not licensed for it**. `.env.example` records only key + region — **tier cannot be determined from repo** | Owner confirms the Speech resource is **S0, not F0**, and archives a screenshot. If F0: every clip must be regenerated on a paid resource |
+| AI story artwork — commercial-use rights | 🟠 *(was 🔴)* | 127 committed panels + 267 covers via **Higgsfield MCP** (`nano_banana_pro` at 2k, `data/manhua/*.art.json:3`). Higgsfield's published terms are **favourable**: it claims no ownership of Outputs, does not restrict commercial use, and permits sublicensing | Downgraded on the terms themselves. Residual: `nano_banana_pro` is Google's model *via* Higgsfield, and Higgsfield grants rights but does **not indemnify**. Owner archives a dated PDF of the terms |
+| **Generation prompts are not archived** | 🟠 | Manifests hold exactly `{file,url}`; `grep -rn '"prompt"' data/` → **0** across all 9 | No per-image proof the "no resemblance to any franchise" constraint was applied. Extend `.art.json` with `prompt` + `generated` going forward |
+| **16 shipped panels have no manifest at all** | 🟠 | `public/stories/upstairs/hsk3/ep01` — no `.art.json`, no source URL, no model, no art-direction note. Also unmanifested: `data/manhua/references/upstairs-hsk3-cast.webp` and 2 of 5 `bible/` sheets | Record what is knowable; accept the gap for the rest |
+| Story text — LLM-generated | 🟠 | Gemini → Groq chain (`llmProviders.mjs:63-70`), Anthropic premium tier (`llm.mjs:89-94`). Plus 176 *"Human/Claude-authored"* stories with **no per-story marker** | Confirm commercial-use terms; record them |
+| **Third-party brand marks ship in the bundle** | 🟠 | `public/icons.svg` — Bluesky, X, GitHub and Discord marks (trademarks, not just copyright), present in `dist/client/` and publicly fetchable, **referenced by zero app code**. Origin cannot be determined from repo | Dead but deployed — deleting it is the whole fix |
+| Other bundled art of unknown origin | 🟠 | `src/assets/Hanzi-logo.png` (bundled, on 8 screens; `BACKLOG.md:271-273` says it is "the same ensō", i.e. §1's lineage); `bg-chinese`, `bg-japanese`, `bg-login` (only `bg-russian` is documented) | Record or replace |
 | Fonts — Noto Sans SC, Inter, Poppins, Noto Sans JP | 🟡 | All CDN-linked, **none bundled** (`index.html:24`, `fontLoader.js:13`) | All four are OFL 1.1, but **the repo states no license**. Add a NOTICE. No redistribution occurs, so risk is low |
 | Third-party franchise names in shipped content | ✅ | Grep of ~25 anime/manga/game/brand names across `src/`, `data/`, `public/` → **zero hits in story content** | — |
 | Competitor names in UI copy | 🟡 | `Anki`/`Pleco` named as import formats (`KnownWords.jsx:224`, `Dictionary.jsx:221`) | Nominative use is fine in-app; **do not put competitor names in store listing copy** |
 | WeChat | ✅ | `chatMissions.js:34` — comment explicitly says "**not** WeChat branding"; deliberate non-copy palette | — |
 | Originality policy exists and is enforced | ✅ | `docs/STORY-BIBLE.md:275-283` CRITICAL CONSTRAINTS (verbatim-locked), `:290-291` "Never name a franchise, a studio or an artist in a prompt", `:273-274` records 14/19 panels regenerated for a breach | Policy is strong; the **evidence trail** is what's missing |
-| CC-CEDICT / Tatoeba attribution | ✅ | Attributed on `/methodology` per `PM-BOARD.md` HD-P13 | Verify attribution text meets CC-BY-SA terms |
+| CC-CEDICT / Tatoeba attribution exists | ✅ | `TrustPages.jsx:198-201` (Terms) and `:306` (Methodology), plus `seed-dict.mjs:10` | — |
+| **CC-CEDICT ShareAlike is only half-satisfied** | 🟠 | CC BY-SA requires credit **+ a licence-deed link + indicating changes**, and ShareAlike on adaptations. The project *has* adapted it (pinyin corrections, curated readings); the current text names the licence but links no deed and states no changes | Add the deed link and a "changes made" line |
+| **Flashcard glosses are visibly CC-CEDICT-derived but unattributed as such** | 🟠 | `src/hskBuild.js:11` concedes the HSK glosses are *"CC-CEDICT-style dumps"*; e.g. 把 → "to hold; to grasp; to hold a baby in position to help it urinate or defecate". Source dataset `drkameleon/complete-hsk-vocabulary` is MIT and also unattributed | Attribute both |
+| **`hanzi-writer-data` and `lucide` notices not retained** | 🟠 | Stroke corpus derives from Make Me a Hanzi / **Arphic PL**, which has its own notice requirement (`src/strokeData.js:19`); `lucide-react` is ISC across 66 import sites | One NOTICE row each |
+| Fonts | 🟡 | **Zero font binaries in the repo**; all CDN-linked (`index.html:24`, `fontLoader.js:13`) — no OFL redistribution obligation is triggered | NOTICE entry closes it |
+| Third-party franchise names in shipped content | ✅ | Grep of ~25 anime/manga/game/brand names across `src/`, `data/`, `public/` → **zero hits in story content** | — |
 
-**The honest position:** the *policy* is excellent and the shipped content shows
-no franchise contamination. What's missing is the **paper trail** — a store or
-rights-holder asking "how was this made and are you licensed" can currently be
-answered only in prose. That's what makes it a blocker for a commercial release,
-not the artwork itself.
+**The honest position, revised.** The *policy* is excellent and the shipped
+content shows no franchise contamination — and the biggest single worry going in,
+Higgsfield's terms, turned out to be fine. What did **not** hold up is the
+foundation underneath the brand: the icon every store listing will carry traces
+back to a metadata-stripped UUID PNG nobody can source, and `/terms` already
+asserts ownership over it in public. That is a smaller, sharper problem than
+"licensing is unproven" — and a more urgent one, because it is the one thing here
+that could require re-drawing a shipped asset rather than writing a document.
 
 ---
 
@@ -363,11 +396,12 @@ not the artwork itself.
 | **No secrets committed** | ✅ | `git grep "eyJhbGciOi"`, `sk-…`, `AIza…` → **zero hits**. `service_role` never in `src/` or any `VITE_` var, guarded by a build-failing test (`src/tts/serverOnly.test.js:111`) |
 | `.gitignore` covers `.env`, `.env.script`, keystores, `.p8`/`.pem` | ✅ | `.gitignore:14-22,55-60` |
 | Committed env files are placeholders only | ✅ | `.env.test`, `.env.e2e`, `.env.example` — all fake values |
-| **Personal email in the production bundle** | 🔴 | `src/devTools.js:11` `DEFAULT_DEV_EMAILS = 'fabrykjoh@gmail.com'` — **confirmed present in `dist/client/assets/devTools-DxUibobf.js`** |
+| **Personal email in the production bundle** | 🔴 | `src/devTools.js:11` `DEFAULT_DEV_EMAILS = 'fabrykjoh@gmail.com'` — **confirmed present in the emitted `dist/client/assets/devTools-*.js`** (2,958 B). Because `VITE_DEV_EMAILS` was unset at build time, Vite's static `import.meta.env` replacement collapsed the fallback and the literal is the *only* surviving value. It is the only personal address in the whole build; the only other email is `support@hanzi-dojo.com`. No source maps are emitted. **Public-but-unprofessional, not a security exposure** — the gate is client-side, and every `/dev` action runs as the signed-in user under RLS |
 | **`/dev` reachable by any signed-in user** | 🟠 | `src/App.jsx:690-701` renders `<Dev>` unconditionally; only `Dev.jsx:60` gates by email. Contrast `/hq` and `/dashboard`, which 404 for non-admins (`:687-689`, `:703-705`) |
 | Admin surfaces server-enforced | ✅ | All six `admin_*` RPCs call `assert_admin()` — **verified live**: `assert_admin()` raises `'not authorized'` unless `auth.uid()` is an admin profile. Privilege escalation blocked by trigger (`20260716120000_guard_is_admin_flag.sql:18-34`) |
 | `admin_*` RPCs executable by `anon` role | 🟡 | Live Supabase advisor. **Not a leak** (guard verified above), but revoke `EXECUTE` from `anon` as defence-in-depth | 
-| `hq.html` excluded from store build | ✅ | `vite.config.js` — `SITES_BUILD` branch; `cap:sync` uses `build:public` |
+| `hq.html` excluded from store build | ✅ | `vite.config.js:60-61` — `SITES_BUILD` branch; `cap:sync` uses `build:public` |
+| **…but DojoHQ's code still ships in the store bundle** | 🟠 | *(New, 2026-08-15.)* Excluding `hq.html` only drops the second **entry point**. `src/App.jsx:58` lazy-imports `./DojoHQ` for the in-app `/hq` route, so a `DOJO_PUBLIC_BUILD=1` build still emits `dist/client/assets/DojoHQ-*.js` (**124 kB**) + `DojoHQ-*.css` (69 kB) — verified on a public build with no `hq.html` present. The localhost bridge string `127.0.0.1:43127` is inside that chunk. Access is server-enforced (`assert_admin()`), so this is **dead weight and a 2.3.1(a) talking point, not a leak** |
 | Paused Japanese/Russian tracks cannot leak | ✅ | `PUBLIC_LANGUAGES = ['chinese']` **and** `ADMIN_LANGUAGES = ['chinese']` (`languageTheme.js:84,89`); every picker uses `availableLanguages()`; single-language list makes the picker step skip entirely (`Landing.jsx:309`). Server-side trigger also enforces it |
 | Universal links / App Links | 🟠 | **Not configured** — no `apple-app-site-association`, no `assetlinks.json`, no `autoVerify`. Documented as a later step (`AndroidManifest.xml:23-25`) |
 | Orientation disagreement | 🟠 | iOS allows landscape (`Info.plist:65-70`); Android locks portrait (`AndroidManifest.xml:16`); web manifest says portrait (`manifest.webmanifest:8`) |
@@ -377,7 +411,7 @@ not the artwork itself.
 | `minifyEnabled false` | 🟡 | `build.gradle:43` — no shrinking/obfuscation in release |
 | `allowBackup="true"` | 🟡 | `AndroidManifest.xml:4` — Android default; means app data can be backed up to the user's Google account |
 | Console statements in `src/` | ⚪ | 7 total, all diagnostic, none log credentials/PII |
-| Localhost dev bridge in source tree | ⚪ | `dojoClaudeBridge.js:1` (`127.0.0.1:43127`) — imported only by admin-gated HQ |
+| Localhost dev bridge in source tree | 🟠 | `dojoClaudeBridge.js:1` (`127.0.0.1:43127`) — imported only by admin-gated HQ, but **that chunk ships** (row above). Harmless at runtime; it just should not be in a store binary |
 | Supabase: stale backup table with RLS-no-policy | ⚪ | `_reading_backup_20260725` — deny-all, but should be dropped |
 | Supabase: `pg_net`, `pg_trgm` in public schema | ⚪ | Advisor WARN; move to `extensions` schema in v1.1 |
 
