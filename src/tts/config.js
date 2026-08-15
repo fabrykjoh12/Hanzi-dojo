@@ -26,6 +26,18 @@ export const DEFAULT_CONCURRENCY = 2
 // fan-out just converts throughput into 429s and wasted retries.
 export const MAX_CONCURRENCY = 8
 
+// The Speech resource's pricing tier, recorded on every generated row.
+//
+// This is a LICENSING fact, not a performance one: Microsoft grants commercial
+// usage rights for prebuilt neural voices to paid-tier customers only, so "which
+// tier produced this clip" is the question a rights review actually asks. The
+// project ran on F0 until 2026-08-15; audio generated then is being re-rendered
+// under S0 precisely because the tier is what makes it licensed. Defaulting to
+// S0 matches the resource in use — set AZURE_SPEECH_TIER explicitly if that ever
+// stops being true, because a wrong value here is a false provenance record.
+export const AZURE_TIERS = ['S0', 'F0']
+export const DEFAULT_AZURE_TIER = 'S0'
+
 function requireString(env, name) {
   const v = env[name]
   if (typeof v !== 'string' || !v.trim()) {
@@ -43,6 +55,15 @@ function validRegion(region) {
     if (!ok) return false
   }
   return region.length > 0
+}
+
+// Absent means false. Only an explicit affirmative turns a flag on, so a stray
+// empty string in a CI environment cannot silently change migration behaviour.
+function boolFlag(env, name) {
+  const raw = env[name]
+  if (typeof raw !== 'string') return false
+  const v = raw.trim().toLowerCase()
+  return v === '1' || v === 'true' || v === 'yes'
 }
 
 function pickVoice(env, name, fallback, locale) {
@@ -102,7 +123,11 @@ export function validateTtsEnv(env = {}, { requireCredentials = true } = {}) {
       }
     }
     const key = requireCredentials ? requireString(env, 'AZURE_SPEECH_KEY') : (env.AZURE_SPEECH_KEY || '').trim()
-    azure = { key: key || null, region: region || null }
+    const tier = (env.AZURE_SPEECH_TIER || DEFAULT_AZURE_TIER).trim().toUpperCase()
+    if (AZURE_TIERS.indexOf(tier) === -1) {
+      throw new TtsConfigError('AZURE_SPEECH_TIER must be one of ' + AZURE_TIERS.join(', ') + ', got "' + tier + '"')
+    }
+    azure = { key: key || null, region: region || null, tier }
   }
 
   return Object.freeze({
@@ -113,6 +138,7 @@ export function validateTtsEnv(env = {}, { requireCredentials = true } = {}) {
     timeoutMs: positiveInt(env, 'TTS_TIMEOUT_MS', DEFAULT_TIMEOUT_MS),
     maxRetries: positiveInt(env, 'TTS_MAX_RETRIES', DEFAULT_MAX_RETRIES, { max: 10 }),
     concurrency: positiveInt(env, 'TTS_CONCURRENCY', DEFAULT_CONCURRENCY, { max: MAX_CONCURRENCY }),
+    retainSuperseded: boolFlag(env, 'TTS_RETAIN_SUPERSEDED'),
   })
 }
 
@@ -127,9 +153,11 @@ export function describeConfig(config) {
     locale: config.locale,
     voices: { ...config.voices },
     azureRegion: config.azure ? config.azure.region : null,
+    azureTier: config.azure ? config.azure.tier : null,
     azureKey: keyLen ? 'set (' + keyLen + ' chars)' : 'missing',
     timeoutMs: config.timeoutMs,
     maxRetries: config.maxRetries,
     concurrency: config.concurrency,
+    retainSuperseded: !!config.retainSuperseded,
   }
 }

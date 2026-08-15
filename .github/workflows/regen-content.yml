@@ -11,7 +11,7 @@ on:
         description: What to regenerate
         type: choice
         default: both
-        options: [meanings, examples, examples-fill, both, comprehension, comprehension-prune, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk1, audio-hsk2, stories-hsk2, examples-hsk3-6, audio-hsk3-6, tts-flashcards, serial-hsk3-6, seed-n4, audio-n4, stories-n4, seed-russian, audio-russian, examples-russian, stories-russian, stories-hsk1-replace, stories-hsk2-replace, stories-jlpt1-replace, publish-held-jlpt1, audio-jlpt1, audio-jlpt2, story-audio-hsk1, story-audio-hsk2, story-audio-hsk3, story-audio-jlpt1, story-audio-jlpt2, story-audio-n4, story-audio-russian, serial-hsk1, serial-hsk2, serial-jlpt1, serial-jlpt1-more, serial-jlpt2, serial-n4, serial-russian, story-images-list, story-images-apply, authored-vocab-hsk1, authored-vocab-hsk2, authored-vocab-hsk3, authored-vocab-hsk4, authored-vocab-hsk5, authored-vocab-hsk6, authored-vocab-jlpt1, authored-vocab-n4, authored-vocab-russian, authored-insert, normalize-readings, normalize-readings-apply]
+        options: [meanings, examples, examples-fill, both, comprehension, comprehension-prune, clean-meanings, deactivate-awkward, seed-hsk2, audio-hsk1, audio-hsk2, stories-hsk2, examples-hsk3-6, audio-hsk3-6, tts-flashcards, tts-migrate-s0, serial-hsk3-6, seed-n4, audio-n4, stories-n4, seed-russian, audio-russian, examples-russian, stories-russian, stories-hsk1-replace, stories-hsk2-replace, stories-jlpt1-replace, publish-held-jlpt1, audio-jlpt1, audio-jlpt2, story-audio-hsk1, story-audio-hsk2, story-audio-hsk3, story-audio-jlpt1, story-audio-jlpt2, story-audio-n4, story-audio-russian, serial-hsk1, serial-hsk2, serial-jlpt1, serial-jlpt1-more, serial-jlpt2, serial-n4, serial-russian, story-images-list, story-images-apply, authored-vocab-hsk1, authored-vocab-hsk2, authored-vocab-hsk3, authored-vocab-hsk4, authored-vocab-hsk5, authored-vocab-hsk6, authored-vocab-jlpt1, authored-vocab-n4, authored-vocab-russian, authored-insert, normalize-readings, normalize-readings-apply]
       language:
         description: Which language
         type: choice
@@ -35,9 +35,18 @@ on:
         type: string
         default: ''
       tts_confirm:
-        description: "tts-flashcards only: actually spend money. Unticked = dry run that bills nothing."
+        description: "tts-flashcards / tts-migrate-s0: actually spend money. Unticked = dry run that bills nothing."
         type: boolean
         default: false
+      tts_scope:
+        description: "tts-migrate-s0 only: what to re-render under S0."
+        type: choice
+        default: flashcards
+        options: [flashcards, stories]
+      tts_story_id:
+        description: "tts-migrate-s0 + scope=stories: a single story uuid. Blank = every published story at the chosen level. USE THIS FOR THE CANARY."
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -78,6 +87,11 @@ jobs:
           # run works without these; only --confirm requires them.
           AZURE_SPEECH_KEY: ${{ secrets.AZURE_SPEECH_KEY }}
           AZURE_SPEECH_REGION: ${{ secrets.AZURE_SPEECH_REGION }}
+          # The resource's pricing tier, recorded on every generated row as
+          # provider_version. Commercial rights for prebuilt neural voices are
+          # paid-tier-only, so this is provenance, not tuning. Defaults to S0 in
+          # config.js; set the repo variable only if the resource changes.
+          AZURE_SPEECH_TIER: ${{ vars.AZURE_SPEECH_TIER }}
           TTS_CONCURRENCY: ${{ vars.TTS_CONCURRENCY }}
           # Free-text workflow inputs reach the shell only through env vars —
           # never ${{ }} inside the script, which would splice attacker-typed
@@ -86,6 +100,7 @@ jobs:
           TTS_LEVEL: ${{ inputs.level }}
           TTS_IDS: ${{ inputs.tts_ids }}
           TTS_LIMIT: ${{ inputs.tts_limit }}
+          TTS_STORY_ID: ${{ inputs.tts_story_id }}
         run: |
           set -e
           LANG_FLAG=""
@@ -183,6 +198,9 @@ jobs:
           # unless --confirm, and a 200-record hard cap that --override-max must
           # unlock. This task surfaces those controls rather than bypassing them,
           # so a mistyped level costs a dry run instead of a bill.
+          # NOTE: --missing-only here is deliberate and stays. This task ADDS
+          # audio to words that have none. Replacing existing audio is the
+          # tts-migrate-s0 task below, which is --stale-only.
           if [ "${{ inputs.task }}" = "tts-flashcards" ]; then
             LEVEL_FLAG=()
             if [ -n "$TTS_LEVEL" ]; then LEVEL_FLAG=(--level "$TTS_LEVEL"); fi
@@ -210,6 +228,50 @@ jobs:
               --flashcards --missing-only \
               --language "$LANG_NAME" --system "$SYSTEM" "${LEVEL_FLAG[@]}" "${ID_FLAG[@]}" \
               --limit "$LIMIT" $OVERRIDE $CONFIRM
+            echo "::endgroup::"
+          fi
+
+          # ------------------------------------------------------------------
+          # tts-migrate-s0 — the F0 → S0 re-licensing re-render.
+          #
+          # A separate task from tts-flashcards on purpose. tts-flashcards is
+          # for ADDING audio and hardcodes --missing-only, which after the
+          # SYNTHESIS_CONFIG_VERSION bump would match nothing at all; this one
+          # is for REPLACING audio and is --stale-only. Keeping them apart
+          # means the migration cannot silently change how ordinary generation
+          # behaves, and an ordinary run cannot accidentally re-render 8,814
+          # clips.
+          #
+          # --retain-superseded is NOT optional here and is not exposed as an
+          # input. The old F0 objects are the only copy of what was there
+          # before, and they stay until the whole migration passes QA and a
+          # separate cleanup is approved.
+          if [ "${{ inputs.task }}" = "tts-migrate-s0" ]; then
+            SCOPE_FLAG=(--flashcards)
+            TARGET=()
+            if [ "${{ inputs.tts_scope }}" = "stories" ]; then
+              SCOPE_FLAG=(--stories)
+              if [ -n "$TTS_STORY_ID" ]; then
+                TARGET=(--story-id "$TTS_STORY_ID")
+              elif [ -n "$TTS_LEVEL" ]; then
+                TARGET=(--level "$TTS_LEVEL")
+              fi
+            elif [ -n "$TTS_LEVEL" ]; then
+              TARGET=(--level "$TTS_LEVEL")
+            fi
+            LIMIT="$TTS_LIMIT"
+            OVERRIDE=""
+            if [ "$LIMIT" -gt 200 ] 2>/dev/null; then OVERRIDE="--override-max"; fi
+            CONFIRM=""
+            if [ "${{ inputs.tts_confirm }}" = "true" ]; then CONFIRM="--confirm"; fi
+            if [ -z "$CONFIRM" ]; then
+              echo "DRY RUN — nothing will be billed. Tick tts_confirm to generate."
+            fi
+            echo "::group::Azure S0 migration · ${SCOPE_FLAG[*]} ${TARGET[*]} · limit $LIMIT · stale-only · retaining old files"
+            node tts-generate.mjs \
+              "${SCOPE_FLAG[@]}" --stale-only --retain-superseded \
+              --language chinese --system hsk_3 "${TARGET[@]}" \
+              --limit "$LIMIT" $OVERRIDE $CONFIRM --json
             echo "::endgroup::"
           fi
 

@@ -318,6 +318,30 @@ describe('generateOne', () => {
     expect(storage.objects.size).toBe(1)
   })
 
+  // Migration mode. The pipeline has no restore path — removeSuperseded is
+  // destructive and the old object is the only copy of the previous take — so a
+  // migration keeps them and garbage-collects later, deliberately.
+  it('retains the superseded file when the config asks it to', async () => {
+    const storage = fakeStorage()
+    const repository = fakeRepository()
+    const provider = new MockTTSProvider()
+    const config = { ...CONFIG, retainSuperseded: true }
+
+    const before = planFor([VOCAB])[0]
+    const first = await generateOne(before, { provider, storage, repository, config, now: NOW })
+    const after = planFor([{ ...VOCAB, word: '银行卡' }])[0]
+    const second = await generateOne(after, { provider, storage, repository, config, now: NOW })
+
+    expect(storage.removed).toHaveLength(0)
+    expect(storage.objects.has(first.storagePath)).toBe(true)
+    expect(storage.objects.has(second.storagePath)).toBe(true)
+    expect(second.retainedSuperseded).toBe(true)
+    // Retention must not change what the row points at — only what survives
+    // beside it. A row still tracking the old file would be the actual bug.
+    const row = repository.audio.get('vocabulary|' + VOCAB.id + '|word')
+    expect(row.storage_path).toBe(second.storagePath)
+  })
+
   it('deletes the superseded file only after the row points at the new one', async () => {
     const storage = fakeStorage()
     const repository = fakeRepository()

@@ -43,6 +43,7 @@ export class AzureTTSProvider {
   constructor({
     key,
     region,
+    tier = null,
     timeoutMs = 20000,
     fetchImpl = null,
     userAgent = 'hanzi-dojo-tts',
@@ -53,6 +54,15 @@ export class AzureTTSProvider {
     // The API version we are speaking. Stored on every generated row so a
     // future behaviour change on Azure's side is attributable.
     this.apiVersion = 'cognitiveservices/v1'
+    // The resource's pricing tier, appended to the recorded provider version.
+    //
+    // Commercial usage rights for prebuilt neural voices are granted on paid
+    // tiers only, so this is the difference between a clip we may ship and one
+    // we may not. Writing it next to the API version makes each row answer
+    // "under what licence was this made?" on its own, instead of relying on
+    // someone remembering what the portal said in August 2026.
+    this.tier = tier || null
+    this.providerVersion = this.tier ? this.apiVersion + ';tier=' + this.tier : this.apiVersion
     this.key = key
     this.region = region
     this.timeoutMs = timeoutMs
@@ -129,7 +139,7 @@ export class AzureTTSProvider {
       audio,
       contentType: OUTPUT_FORMAT_CONTENT_TYPE,
       provider: this.name,
-      providerVersion: this.apiVersion,
+      providerVersion: this.providerVersion,
       voice: request.voice,
       locale: request.locale,
       speakingRate: request.speakingRate,
