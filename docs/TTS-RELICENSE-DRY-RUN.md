@@ -1,13 +1,14 @@
 # 🔊 Azure S0 re-licensing — dry-run audit
 
-**Dry-run audit, then a one-story canary. 41 of 8,814 clips are now on S0;
-the other 8,773 are untouched and awaiting approval.** 2026-08-15. Every number
-comes from a read-only query against the production database; the SQL is at the
-end so it can be re-run before and after.
+**MIGRATION COMPLETE — all 8,814 active Azure clips are on S0.** 2026-08-15.
+Every number comes from a read-only query against the production database; the
+SQL is at the end so it can be re-run.
 
-> **Canary result: clean. See [§ Canary](#canary--one-story-migrated-to-s0) for
-> the evidence.** No old audio was deleted — retention is on for the whole
-> migration.
+> **Final state: 8,814 / 8,814 at `synthesis_config_version = 2` with
+> `provider_version = 'cognitiveservices/v1;tier=S0'`. Zero failures across the
+> whole run. No old F0 audio was deleted** — all 8,814 superseded objects are
+> retained pending a separate cleanup approval. See
+> [§ Migration report](#migration-report--complete).
 
 The Speech resource has been moved **F0 → S0**, which is what makes commercial
 use of prebuilt neural voices licensed. The audio already in the bucket was
@@ -141,6 +142,168 @@ Two honesty notes on the estimate:
   moving to S0 licenses audio already generated under F0. If it does, this whole
   run is unnecessary. Given the cost, regenerating anyway is the safe default —
   but the question is cheap to ask.
+
+---
+
+## Migration report — complete
+
+Executed 2026-08-15 in six stages through **Actions → Regenerate content →
+`tts-migrate-s0`**, all with `--stale-only --retain-superseded`.
+
+### Batch results
+
+| Batch | Scope | Expected | Generated | Failed | Characters | Cost |
+|---|---|---:|---:|---:|---:|---:|
+| Canary | HSK2 #58 (all 7 story voices) | 41 | 41 | 0 | 461 | $0.007 |
+| 1 | Flashcards / vocabulary | 2,090 | 2,090 | 0 | 9,168 | $0.147 |
+| 2 | Stories HSK1 | 1,854 | 1,854 | 0 | 14,610 | $0.234 |
+| 3 | Stories HSK2 (published) | 1,551 | 1,551 | 0 | 13,145 | $0.210 |
+| 4 | Stories HSK3–6 | 3,048 | 3,048 | 0 | 28,252 | $0.452 |
+| 5 | 15 unpublished HSK2 stories | 230 | 230 | 0 | 754 | $0.012 |
+| **Total** | | **8,814** | **8,814** | **0** | **66,390** | **≈ $1.06 ≈ NOK 10** |
+
+*Cost is computed from the pipeline's own per-clip `request_count` /
+`character_count` counters at $16/1M characters. Azure's portal does not expose
+per-run usage in real time.*
+
+### Independent reconciliation
+
+Queried live, not taken from the jobs' own output:
+
+| Check | Result |
+|---|---|
+| Active Azure clips | **8,814** |
+| At `synthesis_config_version = 2` | **8,814** (100%) |
+| With `provider_version = 'cognitiveservices/v1;tier=S0'` | **8,814** (100%) |
+| Active rows still stale (v1) | **0** |
+| Active rows referencing a missing storage object | **0** |
+| `storage_path` not matching its own `content_hash` | **0** |
+| Rows in `failed` or any non-`ready` status | **0** |
+| Zero-byte clips | **0** |
+| Clips under 0.5 s or over 60 s | **0** |
+| **Orphan rows touched** | **0** — all 7,416 still v1, `provider_version` unchanged |
+| **Legacy Google `audio_path` rows** | **6,580 — unchanged** |
+
+### Two things that did NOT go exactly to plan
+
+Both were found by the checkpoints, and neither is a defect in the migration
+design. Recording them because a report that says only "all green" is not worth
+much.
+
+**1. `--limit` counts source records, not clips.** Batch 1 ran with
+`tts_limit=600` and reported success at 1,988 of 2,090 clips. `loadVocabulary`
+loads rows from `vocabulary` — 4,998 Chinese rows, only 524 of which carry Azure
+audio — so a 600-row window covered the level 1–2 bulk and missed 27 words at
+levels 3–6 plus two null-level rows (僮, 操). Re-ran with `tts_limit=5200`; the
+remaining 102 clips completed. **The job was right to report success — it did
+process everything it loaded.**
+
+**2. GitHub drops an older *pending* run in a concurrency group.** The workflow
+sets `cancel-in-progress: false`, which queues runs — but only one may be
+pending at a time, so dispatching batch-5 stories back to back silently lost one
+(车站, 8 clips). Caught by the final reconciliation, re-dispatched, completed.
+**Pacing error in how the runs were driven, not in the tooling.**
+
+### A pre-existing inconsistency the migration corrected
+
+The post-migration voice histogram differs from the pre-migration one by six
+clips: `zh-CN-XiaohanNeural` 230 → 224, `zh-CN-XiaoxiaoMultilingualNeural`
+3,069 → 3,075. **This is not casting drift.** The evidence:
+
+* **Zero clips** now have a voice differing from their utterance's stored
+  `story_utterances.voice`.
+* `story_utterances` was last modified **2026-08-02 13:57–13:58** — nothing was
+  written to it today, and the TTS pipeline only ever reads it.
+
+So those six clips had been carrying a *stale* voice since a casting edit on
+2026-08-02 whose follow-up regeneration did not cover everything — the same
+`--limit` trap as above, two weeks earlier. They were doubly stale (voice **and**
+config version), and the re-render brought them into line with the data. Total
+active audio is 110.9 MB against a 111.8 MB baseline; the 0.9 MB and the
+16-character difference come from these same corrected clips.
+
+**Everything else re-rendered byte-identically**, exactly as the canary
+predicted: same voice, same text, same rate, same SSML, and Azure's neural
+synthesis is deterministic for identical input.
+
+### Final voice mapping — preserved
+
+| Voice | Clips | Avg |
+|---|---:|---:|
+| `zh-CN-XiaoxiaoMultilingualNeural` | 3,075 | 2.70 s |
+| `zh-CN-XiaoxiaoNeural` (all vocabulary) | 2,090 | 1.70 s |
+| `zh-CN-YunxiNeural` | 1,367 | 1.88 s |
+| `zh-CN-XiaoyiNeural` | 1,318 | 2.21 s |
+| `zh-CN-YunjianNeural` | 637 | 2.06 s |
+| `zh-CN-XiaohanNeural` | 224 | 2.51 s |
+| `zh-CN-YunyangNeural` | 91 | 1.73 s |
+| `zh-CN-XiaochenNeural` | 12 | 1.82 s |
+
+---
+
+## Storage accounting — NOTHING DELETED
+
+| | Objects | Size |
+|---|---:|---:|
+| Total under `tts/` in the `audio` bucket | 25,044 | 301.9 MB |
+| **Live, referenced by an active v2 row** | 8,814 | 110.9 MB |
+| Referenced by orphan rows (pre-existing) | 7,416 | 79.1 MB |
+| **A · Superseded F0 objects from this migration** | **8,814** | **111.8 MB** |
+| **B · Pre-existing orphan objects** | **7,416** | **79.1 MB** |
+| **C · Total reclaimable** | **16,230** | **190.9 MB** (63% of the bucket) |
+
+**D · Safe cleanup criteria** — every one must hold before anything is deleted:
+
+1. **Listening QA signed off** (below). Until a human has heard the new audio,
+   the F0 objects are the only fallback.
+2. **Delete only objects with no `tts_audio` row pointing at them.** The exact
+   predicate: `not exists (select 1 from tts_audio t where t.storage_path = o.name)`.
+   That set is currently *exactly* the 8,814 superseded F0 files — verified.
+3. **Orphan rows are a different decision.** Their 7,416 objects *are* still
+   referenced, by rows whose `source_id` points at deleted vocabulary. Deleting
+   the files without deleting the rows would create the one state this pipeline
+   must never have: a row pointing at a missing object. **Delete the rows first,
+   then the files** — or leave both. Recommend doing this **separately** from the
+   F0 cleanup, since it is a data decision rather than a storage one.
+4. **Keep a manifest of what was deleted**, so the action is auditable.
+
+Cleanup is a separate approval gate and has **not** been performed.
+
+---
+
+## Listening QA — for the owner, not claimable here
+
+This sandbox still cannot reach `bvqvturqupbggxaeihvi.supabase.co` (egress
+proxy), so **no clip has been played and listening QA is NOT signed off.**
+
+Prefix every path with:
+`https://bvqvturqupbggxaeihvi.supabase.co/storage/v1/object/public/audio/`
+
+**Every voice — one story line each:**
+
+| Voice | Where | Line | Path |
+|---|---|---|---|
+| XiaoxiaoMultilingual | HSK6 #5 一个月以后 | 他写的是，这封信到了他家… | `tts/zh-CN/story_utterance/f53d38ec-c508-47ef-9386-fcadc1bb457a/utterance/06bc52101c9087f72ca8f41a6dd1983ecf1b210477223ec600d9bc14dffea03f.mp3` |
+| Xiaohan | HSK1 #1 不见了的苹果 | 是的，你是对的。桌子上有几个苹果没有了。 | `tts/zh-CN/story_utterance/e49510b3-2776-4c0a-a72b-8967f13729f8/utterance/b217dd34a8de6a37b4d8aad796ee7f7fda937edceb3e480716c993db4080022b.mp3` |
+| Xiaoyi | HSK1 #8 上班和上学 | 喂，你好吗？我要上班了。 | `tts/zh-CN/story_utterance/f63a1a05-a551-44e3-9343-6693fb714aa6/utterance/3945c3a9179801d97ba485528637b115ee82cdc6e94a306421fad8a4cb8f6dc5.mp3` |
+| Xiaochen | HSK1 #60 第二话 · 花花 | 面条儿！好听！ | `tts/zh-CN/story_utterance/d67e0daf-0878-45b0-9c97-8a037b547fab/utterance/56c2bb0639f5b57a83e0150fc08a1447ac9ee0c4ff407748ebe5e70b21703a13.mp3` |
+| Yunxi | HSK2 #60 山那边的人 | 石族，树族，火族，夜族，风族。 | `tts/zh-CN/story_utterance/da210e67-5b08-44af-839b-91332a6e3499/utterance/dfa126e9b5f6b3196f0db38a2657f2ed058623c69a8553f6f7de662295d115db.mp3` |
+| Yunjian | HSK6 #15 一年一封 | 知道有两个人，三十年没有见面… | `tts/zh-CN/story_utterance/771437ac-269c-4e86-8ea9-c94c175019d1/utterance/48caba7f1690fbda03207b6b1e2a3093918aac38d8e89b562eafd3ae4b3b874b.mp3` |
+| Yunyang | HSK2 #44 六楼的爷爷 | 对。三点半出去，六点回来。 | `tts/zh-CN/story_utterance/cb556684-419d-424a-9f0a-2233915acd9a/utterance/074a345483ec03557648b72ae42cf93501be30b030548643f6966761997dadde.mp3` |
+
+**Flashcard audio** (Xiaoxiao — word then example sentence). 觉得 is the
+polyphone check: it must read *juéde*, not *jiàode*.
+
+| Word | Word clip | Sentence clip |
+|---|---|---|
+| 觉得 (juéde) | `tts/zh-CN/vocabulary/7bac4ef1-554e-42ce-89c3-2060c076ad9d/word/096e617f65da37fdc5c21f649fbe7dbd2e5d852ac1daaa1e6a4a868ad30cbfc8.mp3` | `tts/zh-CN/vocabulary/7bac4ef1-554e-42ce-89c3-2060c076ad9d/sentence/39de3ccd33584b85c463798a2381fab45c33615f933458167ca956b51528f50e.mp3` |
+| 朋友 (péngyou) | `tts/zh-CN/vocabulary/a2766939-5216-4f40-9361-4eb543584a0f/word/c8c277ff0cc5503c63934ace5f8db470b54bc5acd9ba9e83411a0468a50484cb.mp3` | `tts/zh-CN/vocabulary/a2766939-5216-4f40-9361-4eb543584a0f/sentence/0f5e5d24d158d92262e6bdd044265b8b61990f102389177d588889fceeeaa5f5.mp3` |
+| 高兴 (gāoxìng) | `tts/zh-CN/vocabulary/581d2d7b-ca0c-46d5-8f76-11cda8774f53/word/950830543718fd8a526df48ba6628d9f74013234c0e5afb7dd644990f90177cf.mp3` | `tts/zh-CN/vocabulary/581d2d7b-ca0c-46d5-8f76-11cda8774f53/sentence/ed3092bc71dd8a922d9b6796cf15876244d012569f2fc98d0911100ef1cc2a99.mp3` |
+
+**In the app, which is what actually matters:** open a Study session (word + slow
+word + sentence), then one story at HSK1, one at HSK2 and one at HSK3+, playing
+a few lines and a slow variant in each — on the phone as well as the browser.
+
 
 ---
 

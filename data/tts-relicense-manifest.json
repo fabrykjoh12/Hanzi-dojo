@@ -1,5 +1,5 @@
 {
-  "_comment": "Manifest for the Azure S0 re-licensing regeneration. Produced 2026-08-15 from read-only queries against production. The CANARY (one story, 41 clips) has been migrated; the remaining 8,773 clips await approval. See docs/TTS-RELICENSE-DRY-RUN.md.",
+  "_comment": "Manifest for the Azure S0 re-licensing migration. COMPLETE 2026-08-15: all 8,814 active Azure clips regenerated under S0, zero failures. No old F0 audio deleted. See docs/TTS-RELICENSE-DRY-RUN.md.",
   "_scope_rule": "Scope is defined by rule, not by a list of 8,814 rows, because that is what the generator actually consumes: tts-generate.mjs enumerates live source rows (vocabulary, story_utterances) and derives clips from them. Orphaned tts_audio rows are unreachable from a source and therefore cannot be selected at all. The counts below are the expected result of that enumeration and are the verification target.",
   "audited_at": "2026-08-15",
   "database": "bvqvturqupbggxaeihvi",
@@ -122,16 +122,107 @@
     "not_verified_here": "HTTP playback — the Supabase storage host is blocked by this sandbox's egress proxy. Structural DB/bucket consistency was verified via storage.objects instead. Listening QA is an owner step."
   },
   "remaining_after_canary": {
-    "clips": 8773,
-    "characters": 65929,
-    "estimated_usd": 1.05,
-    "order": [
-      "flashcards (524 words, 2,090 clips)",
-      "stories HSK1",
-      "stories HSK2",
-      "stories HSK3+",
-      "remaining active Azure content"
+    "status": "complete — see migration"
+  },
+  "migration": {
+    "status": "complete",
+    "completed": "2026-08-15",
+    "active_clips_migrated": 8814,
+    "canary": 41,
+    "remaining_batches": 8773,
+    "failed": 0,
+    "characters": 66390,
+    "cost_usd": 1.06,
+    "cost_nok_approx": 10,
+    "batches": [
+      {
+        "name": "canary",
+        "scope": "HSK2 #58 (all 7 story voices)",
+        "expected": 41,
+        "generated": 41,
+        "failed": 0,
+        "characters": 461
+      },
+      {
+        "name": "batch 1",
+        "scope": "flashcards / vocabulary",
+        "expected": 2090,
+        "generated": 2090,
+        "failed": 0,
+        "characters": 9168,
+        "note": "Ran twice: tts_limit=600 covered 1,988 because --limit counts SOURCE RECORDS from vocabulary (4,998 Chinese rows, only 524 with audio). Re-ran at 5200 for the remaining 102."
+      },
+      {
+        "name": "batch 2",
+        "scope": "stories HSK1",
+        "expected": 1854,
+        "generated": 1854,
+        "failed": 0,
+        "characters": 14610
+      },
+      {
+        "name": "batch 3",
+        "scope": "stories HSK2 published",
+        "expected": 1551,
+        "generated": 1551,
+        "failed": 0,
+        "characters": 13145
+      },
+      {
+        "name": "batch 4",
+        "scope": "stories HSK3-6",
+        "expected": 3048,
+        "generated": 3048,
+        "failed": 0,
+        "characters": 28252
+      },
+      {
+        "name": "batch 5",
+        "scope": "15 unpublished HSK2 stories",
+        "expected": 230,
+        "generated": 230,
+        "failed": 0,
+        "characters": 754,
+        "note": "tts-generate.mjs filters is_published=true for level-based story selection, so these needed per-story --story-id dispatches. One (车站) was lost when GitHub dropped an older PENDING run in the concurrency group; re-dispatched."
+      }
     ],
-    "status": "awaiting approval"
+    "reconciliation": {
+      "active_clips": 8814,
+      "cfg_version_2": 8814,
+      "tier_s0_provenance": 8814,
+      "stale_remaining": 0,
+      "rows_missing_object": 0,
+      "path_hash_mismatch": 0,
+      "failed_or_non_ready_rows": 0,
+      "zero_byte": 0,
+      "under_half_second": 0,
+      "over_60s": 0,
+      "orphan_rows_untouched": 7416,
+      "google_audio_path_rows_unchanged": 6580
+    },
+    "voice_correction": {
+      "observed": "XiaohanNeural 230 -> 224, XiaoxiaoMultilingualNeural 3069 -> 3075",
+      "verdict": "NOT drift. Zero clips now differ from their utterance's stored voice, and story_utterances was last modified 2026-08-02 (nothing written today). Those 6 clips had carried a stale voice since a 2026-08-02 casting edit whose follow-up regeneration missed them. The re-render brought them into line with the data.",
+      "size_effect": "Active audio 110.9 MB vs 111.8 MB baseline; 16-character difference. Same six clips."
+    }
+  },
+  "storage_accounting_no_deletion": {
+    "tts_objects_total": 25044,
+    "tts_objects_mb": 301.9,
+    "live_referenced_objects": 8814,
+    "live_referenced_mb": 110.9,
+    "A_superseded_f0_objects": 8814,
+    "A_superseded_f0_mb": 111.8,
+    "B_preexisting_orphan_objects": 7416,
+    "B_preexisting_orphan_mb": 79.1,
+    "C_total_reclaimable_objects": 16230,
+    "C_total_reclaimable_mb": 190.9,
+    "D_safe_cleanup_criteria": [
+      "Listening QA signed off first — until then the F0 objects are the only fallback.",
+      "Delete only objects with no tts_audio row pointing at them: not exists (select 1 from tts_audio t where t.storage_path = o.name). That set is currently EXACTLY the 8,814 superseded F0 files.",
+      "Orphan objects are still referenced by orphan rows. Delete the ROWS first, then the files — otherwise a row points at a missing object. Do this separately from the F0 cleanup; it is a data decision, not a storage one.",
+      "Keep a manifest of what was deleted."
+    ],
+    "status": "NOTHING DELETED — separate approval gate"
   }
 }

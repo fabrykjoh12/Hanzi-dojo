@@ -46,7 +46,7 @@ working software.
 1. **No App Review demo account exists** — Apple 2.1(a); a reviewer who cannot sign in is an automatic rejection.
 2. **Play's required web-accessible account-deletion URL is not established.** The copy is written and waiting on one fact: the Supabase backup-retention window.
 
-**Costed and awaiting approval, not blocking:** re-render 8,814 Azure clips under S0 (~NOK 10) — [`TTS-RELICENSE-DRY-RUN.md`](TTS-RELICENSE-DRY-RUN.md).
+**Azure TTS licensing: ✅ CLOSED 2026-08-15.** The resource is on S0 and all 8,814 active clips were re-rendered under it — zero failures, per-row provenance (`tier=S0`, config v2). One artifact still owed: a portal screenshot showing the tier. [`TTS-RELICENSE-DRY-RUN.md`](TTS-RELICENSE-DRY-RUN.md).
 
 **Closed:**
 
@@ -57,6 +57,15 @@ working software.
 **Closed 2026-08-15** — `ci.yml` now builds the store bundle on every PR and
 fails if a personal identifier appears in it.
 
+> **Azure TTS re-licensing COMPLETE, 2026-08-15.** All **8,814** active Azure
+> clips regenerated under **S0**, in six staged batches, **zero failures**,
+> 66,390 characters, ≈ USD 1.06. Independently reconciled against the live
+> database: 8,814/8,814 at config v2 with `tier=S0` provenance, zero stale, zero
+> rows pointing at a missing object, orphans untouched (7,416), Google audio
+> untouched (6,580). The 8,814 superseded F0 objects are **retained** pending
+> listening QA; cleanup is a separate gate. The blocker is closed on the
+> engineering side — what remains is one portal screenshot and a listening pass.
+>
 > **Azure tier answered, 2026-08-15.** The Speech resource was on **F0** and has
 > been moved to **S0**. Moving tier licenses future synthesis, not past output,
 > so the served clips still need re-rendering — but a dry-run audit
