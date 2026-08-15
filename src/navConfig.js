@@ -60,3 +60,15 @@ export const ADMIN_NAV = [
   { key: 'dashboard', label: 'Dashboard', icon: BarChart3 },
   { key: 'hq', label: 'Dojo HQ', icon: PanelsTopLeft },
 ]
+
+// Dojo HQ is stripped from the public/store bundle at build time (App.jsx
+// guards its import on Vite's __DOJO_INTERNAL_BUILD__ define), where /hq is a
+// 404 for everyone — admins included. Its nav entry has to disappear with it,
+// or an admin opening the store app gets a menu row that leads nowhere.
+//
+// Pure and parameterised rather than reading the build flag here, so the rule
+// is testable and navConfig stays free of build-time globals. Callers pass
+// whether the HQ module is actually present.
+export function adminNav(hasInternalTooling) {
+  return ADMIN_NAV.filter(item => item.key !== 'hq' || hasInternalTooling)
+}

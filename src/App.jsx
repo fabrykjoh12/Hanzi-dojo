@@ -662,6 +662,7 @@ export default function App() {
         track={track}
         onBack={() => navigate('home')}
         onNavigate={navigate}
+        hasInternalTooling={Boolean(DojoHQ)}
         onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
@@ -701,7 +702,9 @@ export default function App() {
       ? <DojoHQ session={session} profile={profile} />
       : <NotFound onHome={() => navigate('home')} />
   } else if (view === 'dev') {
-    // Developer tools — email-gated inside the component; every action is
+    // Developer tools — gated on profile.is_admin inside the component
+    // (devTools.js `isDevAllowed`, which replaced an email allowlist whose
+    // default literal shipped a personal address in the bundle); every action is
     // RLS-scoped to the signed-in account. Not linked from the main nav.
     content = (
       <Dev
@@ -748,6 +751,7 @@ export default function App() {
             <Sidebar
               view={view} onNavigate={navigate} onLogout={handleLogout}
               isAdmin={!!profile.is_admin} language={profile.active_language}
+              hasInternalTooling={Boolean(DojoHQ)}
               profile={profile} track={track} email={session.user.email} counts={counts}
             />
           </div>

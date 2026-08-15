@@ -15,7 +15,7 @@ import InfoTip from './InfoTip'
 import StuckWordCoach from './StuckWordCoach'
 import { STUCK_LAPSES } from './stuckWord'
 import { BRAND_URL } from './brand'
-import { ADMIN_NAV, PROFILE_NAV } from './navConfig'
+import { adminNav, PROFILE_NAV } from './navConfig'
 import { confirmWordOk, forgetDeviceData, DELETE_CONFIRM_WORD } from './accountDeletion'
 import {
   ArrowLeft, Layers, LogOut, RotateCcw, Save,
@@ -73,7 +73,7 @@ function IconButton({ icon: Icon, label, onClick }) {
   )
 }
 
-export default function Profile({ session, profile, track, onBack, onNavigate, onUpdate }) {
+export default function Profile({ session, profile, track, onBack, onNavigate, onUpdate, hasInternalTooling = true }) {
   const [stats, setStats] = useState({ learned: 0, totalCards: 0, masteredCount: 0, totalWords: 0 })
   const [editingGoal, setEditingGoal] = useState(false)
   const [newGoal, setNewGoal] = useState(profile.daily_new_cards)
@@ -405,7 +405,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
 
       {onNavigate && (
         <nav aria-label="Account" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '18px' }}>
-          {[...PROFILE_NAV, ...(profile.is_admin ? ADMIN_NAV : [])].map(item => {
+          {[...PROFILE_NAV, ...(profile.is_admin ? adminNav(hasInternalTooling) : [])].map(item => {
             const Icon = item.icon
             return (
               <button key={item.key} type="button" onClick={() => onNavigate(item.key)} className="hd-press" style={{
