@@ -16,6 +16,7 @@ const REGISTRY = {
   azure: (config, deps) => new AzureTTSProvider({
     key: config.azure && config.azure.key,
     region: config.azure && config.azure.region,
+    tier: config.azure && config.azure.tier,
     timeoutMs: config.timeoutMs,
     fetchImpl: deps.fetchImpl || null,
   }),

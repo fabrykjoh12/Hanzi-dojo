@@ -50,6 +50,13 @@ export default defineConfig(() => {
     define: {
       'import.meta.env.VITE_BUILD_SHA': JSON.stringify(info.sha),
       'import.meta.env.VITE_BUILD_TIME': JSON.stringify(info.builtAt),
+      // Compile-time constant, not a runtime check. App.jsx guards its
+      // `import('./DojoHQ')` on this, so in the public/store build the
+      // expression folds to `false` and Rollup drops the dynamic import
+      // entirely — no DojoHQ chunk, and no localhost Claude-bridge URL, in the
+      // bundle that ships to the App Store and Play. A runtime guard would
+      // still have emitted the chunk and left it fetchable.
+      __DOJO_INTERNAL_BUILD__: JSON.stringify(SITES_BUILD),
     },
     build: {
       outDir: 'dist/client',

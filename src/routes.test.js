@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   pathToView, viewToPath, isKnownView, KNOWN_VIEWS, readStoryId, isAssessmentPath,
-  trustPageKey, TRUST_PAGES, storyRoute, storyPath, seriesPath,
+  trustPageKey, TRUST_PAGES, storyRoute, storyPath, seriesPath, legacyRedirectPath,
   isResetPasswordPath, RESET_PASSWORD_PATH,
 } from './routes'
 
@@ -28,6 +28,29 @@ describe('viewToPath', () => {
 
   it('renders home as the root path', () => {
     expect(viewToPath('home')).toBe('/')
+  })
+})
+
+describe('legacy mobile destinations', () => {
+  it('keeps old Cards links valid by replacing them with Study', () => {
+    expect(legacyRedirectPath('/cards')).toBe('/study')
+    expect(legacyRedirectPath('/cards/')).toBe('/study')
+  })
+
+  it('renders legacy mobile destinations immediately through their canonical views', () => {
+    expect(pathToView('/cards')).toBe('study')
+    expect(pathToView('/more')).toBe('profile')
+  })
+
+  it('keeps old More links valid through the Profile hierarchy', () => {
+    expect(legacyRedirectPath('/more')).toBe('/profile')
+    expect(legacyRedirectPath('/more/')).toBe('/profile')
+  })
+
+  it('does not rewrite canonical or unknown paths', () => {
+    expect(legacyRedirectPath('/study')).toBe(null)
+    expect(legacyRedirectPath('/stories/abc')).toBe(null)
+    expect(legacyRedirectPath('/storeis')).toBe(null)
   })
 })
 

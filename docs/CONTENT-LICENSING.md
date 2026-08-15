@@ -1,0 +1,173 @@
+# 🧾 Content licensing — the generator record
+
+Hanzi Dojo's illustrations, speech audio and some story text were **generated**
+rather than licensed from a rights holder. That is a different question from the
+third-party components in [`NOTICE.md`](../NOTICE.md), and it needs its own
+record: which tool made what, under whose terms, and whether those terms permit
+commercial use.
+
+This file is the record. It is deliberately honest about what is **not yet
+established** — a question marked open here is open, not assumed fine.
+
+Evidence behind every row: [`CONTENT-PROVENANCE-AUDIT.md`](CONTENT-PROVENANCE-AUDIT.md).
+
+> ✅ settled · 🟠 terms believed fine, evidence not archived · 🔴 unresolved, blocks a commercial release
+
+---
+
+## The generators
+
+| Generator | Used for | Commercial use | Ownership of output | Evidence to archive | Status |
+|---|---|---|---|---|---|
+| **OpenAI / ChatGPT ImageGen** | The original Hanzi Dojo brush mark — `src/assets/86055582-…png`, from which the whole shipped icon family derives | **Permitted.** OpenAI's terms assign ownership of generated output to the user who created it | Owner | The generating conversation, if still recoverable — see the note below | 🟠 |
+| **Higgsfield** (model `nano_banana_pro`) | 127 manhua panels (`public/stories/**`), 267 story covers, `bg-russian` | **Permitted.** Higgsfield's published terms state it does not claim ownership of Inputs or Outputs, does not restrict commercial use, and that rights in Outputs may be transferred or sublicensed | Creator retains | **A dated PDF of the Terms of Use as they stood on the generation dates**, plus the account/plan the work was generated under | 🟠 |
+| **Microsoft Azure Neural TTS** (`zh-CN-Xiaoxiao*`, `zh-CN-Yunxi`, casting pools) | **8,814 served clips**, all regenerated under S0 on 2026-08-15 | **Paid tiers only** — and the resource is now **S0 (Standard)**. Every shipped clip was synthesised on the paid tier and says so per row: `provider_version = 'cognitiveservices/v1;tier=S0'`, `synthesis_config_version = 2`, with `generated_at`, `voice` and the source text association | n/a | **Owner: one screenshot of the Speech resource showing the S0 tier**, filed here | ✅ *(pending the screenshot)* |
+| **Google Cloud TTS** (`cmn-CN-Chirp3-HD-*`, `cmn-CN-Wavenet-A`) | Legacy clips still served (`docs/TTS.md:245`) | Standard Google Cloud terms | n/a | Terms citation for the generation period | 🟠 |
+| **Google Gemini** (`gemini-2.5-flash-lite`, `gemini-2.5-flash`) | Story text, primary generator (`llmProviders.mjs:63-84`) | Standard terms assign output rights to the customer | Customer | Terms citation | 🟠 |
+| **Groq** (`llama-3.3-70b-versatile`) | Story text, failover | Standard terms | Customer | Terms citation | 🟠 |
+| **Anthropic** (`claude-sonnet-5`) | Story text, premium tier (`llm.mjs:73-107`) | Standard terms | Customer | Terms citation | 🟠 |
+
+---
+
+### The icon mark — origin recorded 2026-08-15
+
+**Owner-supplied statement:** the original brush/ensō mark was generated
+specifically for the owner through **ChatGPT / OpenAI ImageGen**. It was **not**
+downloaded from a stock marketplace and **not** taken from a third-party logo.
+
+Derivation, unchanged: original generated raster → V2 cleanup/refinement → E2
+icon material → the iOS, Android and web icon family.
+
+What that statement establishes, and what it does not:
+
+- ✅ The source is known, and commercial use and modification are permitted.
+- ✅ There is no evidence the mark was bought from a marketplace or copied from
+  anyone's logo — the earlier "stock" characterisation in the icon audit was this
+  project's own guess and was wrong.
+- ⚠️ **The exact original prompt may be unavailable.** If the conversation cannot
+  be recovered, this asset simply has no archived prompt. Do not reconstruct one.
+- ⚠️ **AI output is not guaranteed unique** — a model can produce a closely
+  similar image for someone else.
+- ⚠️ **This is not a guarantee of copyright eligibility in every jurisdiction.**
+  Several do not recognise copyright in purely machine-generated images; the
+  narrowed `/terms` wording already says so.
+
+**Evidence level: owner statement, not an archived artifact.** If the ChatGPT
+conversation is still in the owner's history, exporting a dated PDF upgrades this
+row from 🟠 to ✅ in about a minute. Not required, and not a blocker.
+
+## The Azure tier — resolved 2026-08-15, and the audio re-rendered
+
+**Owner report: the Speech resource was on F0 (free) and has now been changed to
+S0 (Standard).** The tier question is settled; what remains is the consequence.
+
+F0 does not license commercial use of prebuilt neural voices, so the audio
+already in the bucket was generated without those rights. Moving to S0 licenses
+*future* synthesis, not past output — so the served clips need re-rendering
+under the paid tier before release.
+
+**The scope turned out to be much smaller than feared.** A dry-run audit
+([`TTS-RELICENSE-DRY-RUN.md`](TTS-RELICENSE-DRY-RUN.md)) found that of 16,230
+`tts_audio` rows, only **8,814 are reachable by the app** — 7,416 vocabulary
+clips are orphaned by a 2026-07-28 bulk re-import that gave the words new UUIDs.
+Re-rendering the reachable set is **66,390 characters ≈ USD 1.06 ≈ NOK 10**,
+against roughly NOK 1,931 of credit. Cost is not a constraint.
+
+**The re-render is done.** All 8,814 active clips were regenerated under S0 on
+2026-08-15 — six staged batches, **zero failures**, 66,390 characters, about
+USD 1.06. Every row now carries `provider_version = 'cognitiveservices/v1;tier=S0'`
+and `synthesis_config_version = 2`, so the licensed generation is evidenced per
+row rather than asserted. Full report and reconciliation:
+[`TTS-RELICENSE-DRY-RUN.md`](TTS-RELICENSE-DRY-RUN.md).
+
+**Listening QA is signed off** — the owner listened to the regenerated
+production audio on 2026-08-15 and confirmed it sounds correct.
+
+The superseded F0 objects are still deliberately **retained** (8,814 files,
+111.8 MB). Listening QA passing does not delete them: cleanup is its own
+approval gate and has not been given, so the rollback path stays intact.
+
+**What is still owed here: a screenshot of the Azure portal showing the Speech
+resource on S0.** The rows prove what the pipeline was told; the screenshot
+proves the resource actually was on that tier. Both together are the record.
+
+**Worth asking Microsoft support first:** whether moving to S0 covers audio
+already generated under F0. If it does, the re-render is unnecessary. At USD 1
+it is not worth *waiting* on the answer, but it is worth asking.
+
+---
+
+## Per-image provenance
+
+The manifests in `data/manhua/*.art.json` record where each panel came from, and
+**as of 2026-08-15 they also record the prompt and the generation date** — see
+"Manifest format" below.
+
+**Records created before that date are incomplete, and are left that way.**
+Backfilling a prompt after the fact would be inventing evidence, which is worse
+than having none. What genuinely exists for the earlier work:
+
+- The originality constraints are version-controlled and were in force the whole
+  time — `docs/STORY-BIBLE.md:275-283` (a verbatim-locked CRITICAL CONSTRAINTS
+  block including *"no resemblance to any existing franchise or artist"*) and
+  `:290-291` (*"Never name a franchise, a studio or an artist in a prompt"*).
+- Enforcement is documented: `docs/STORY-BIBLE.md:273-274` records 14 of one
+  episode's 19 panels being regenerated for breaching those constraints.
+- A grep of ~25 franchise, studio and brand names across `src/`, `data/` and
+  `public/` returns **zero hits in story content**.
+
+That is a reasonable good-faith record for work already done. It is not
+per-image evidence, and this file does not pretend otherwise.
+
+**Known gaps in the older records** (from the provenance audit):
+
+- The 16 panels in `public/stories/upstairs/hsk3/ep01` have **no manifest at all**.
+- `inkbound/hsk1/ep01` (12 panels), `train/hsk2/ep01` (17 panels) and 2 of the 5
+  `data/manhua/bible/` character sheets name no model.
+- The 267 story covers in `data/story-covers.json` carry a source URL only — no
+  model, no prompt.
+
+## Manifest format
+
+`.art.json` files describe a generated image set. Each asset supports four keys:
+
+```jsonc
+{
+  "dir": "public/stories/<series>/<level>/<episode>",
+  "assets": [
+    {
+      "file": "panel-01.webp",
+      "url": "https://…",               // where the generator returned it
+      "prompt": "…the full prompt, including the CRITICAL CONSTRAINTS block…",
+      "generated": "2026-08-15"          // ISO date, YYYY-MM-DD
+    }
+  ]
+}
+```
+
+`prompt` and `generated` are **required for new entries** and validated by
+`node fetch-manhua-art.mjs --check`. Older entries without them are reported as
+a warning, never an error — the gap is real and is not going to be papered over.
+
+---
+
+## Open questions
+
+1. ~~Azure tier — S0 or F0~~ — **resolved 2026-08-15.** Was F0, now S0, and all
+   8,814 served clips have been re-rendered under the paid tier with per-row
+   provenance. **Only the portal screenshot is still owed.**
+2. **Higgsfield terms as at the generation dates.** The site is unreachable from
+   the build sandbox; the owner should archive a dated PDF rather than relying on
+   whatever the page says later.
+3. **`nano_banana_pro` is Google's image model accessed through Higgsfield.**
+   Whether Google's model terms add anything beyond Higgsfield's grant is not
+   determinable from either source.
+4. **Higgsfield grants rights but does not indemnify** against a third-party
+   infringement claim. That is precisely why the prompt archive matters going
+   forward.
+5. **Which of the 176 stories in `data/authored-stories.json` are human-written
+   versus assistant-drafted** is not recorded per story. Relevant only if a
+   jurisdiction's rules on AI-assisted text bear on the ownership claim.
+6. ~~The icon master's origin~~ — **closed 2026-08-15**, see above. The one
+   remaining sub-question is whether the generating ChatGPT conversation can be
+   exported as a dated record. Optional.

@@ -259,6 +259,23 @@ const STORY_QUESTIONS = [
   ...questionsFromManhuaManifest(UPSTAIRS_MANIFEST, UPSTAIRS_STORY_ID),
 ];
 
+// Every vocabulary row the mock knows about, INCLUDING the ones deliberately
+// kept out of the level-scoped `VOCAB` list above: the cards fixture references
+// v8–v12 and the dictionary word dv1, and each card carries that row nested
+// under `vocabulary` because production fetches cards through an
+// `vocabulary!inner(...)` join. So those rows exist in production — they are
+// simply not what a level-scoped vocabulary query returns.
+//
+// Study looks them up by id (`.in('id', missingIds)` in Study.jsx, after
+// `missingVocabIds` spots a card whose word the level query didn't return).
+// Until the mock honored that lookup, Study silently dropped those six cards
+// while Home counted them, so Home and Study disagreed in the fixture for a
+// reason that cannot happen against the real database.
+const VOCAB_BY_ID = [
+  ...VOCAB,
+  ...CARDS.map(c => c.vocabulary).filter(v => v && !VOCAB.some(known => known.id === v.id)),
+];
+
 const TABLE_FIXTURES = { profiles: PROFILE, language_tracks: TRACK, vocabulary: VOCAB, cards: CARDS, stories: STORIES, story_reads: [], story_questions: STORY_QUESTIONS };
 
 // How many active words the mock curriculum holds. The profile's known-word map
@@ -303,6 +320,7 @@ export const ASSESSMENT_VOCAB = (() => {
 })();
 
 export async function mockSupabaseRoutes(page) {
+  const liveCards = CARDS.map(row => ({ ...row }));
   await page.route(`**/${REF}.supabase.co/**`, async (route) => {
     const req = route.request();
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS, body: '' });
@@ -311,7 +329,18 @@ export async function mockSupabaseRoutes(page) {
     if (url.pathname.startsWith('/rest/v1/rpc/')) {
       const fn = url.pathname.replace('/rest/v1/rpc/', '');
       let body = null;
-      if (fn === 'public_assessment_vocab') body = ASSESSMENT_VOCAB;
+      if (fn === 'grade_card') {
+        const payload = req.postDataJSON() || {};
+        let row = liveCards.find(card => card.id === payload.p_card_id || card.vocab_id === payload.p_vocab_id);
+        const inserted = !row;
+        if (!row) {
+          row = { id: `graded-${payload.p_vocab_id}`, user_id: USER_ID, vocab_id: payload.p_vocab_id, created_at: new Date().toISOString() };
+          liveCards.push(row);
+        }
+        Object.assign(row, payload.p_updates || {});
+        body = [{ card_id: row.id, log_id: null, already_applied: false, inserted }];
+      }
+      else if (fn === 'public_assessment_vocab') body = ASSESSMENT_VOCAB;
       else if (fn === 'dict_search') body = DICT_ENTRIES;
       else if (fn === 'dict_entry') body = DICT_ENTRIES[0];
       else if (fn === 'dict_examples_for') body = [];
@@ -323,7 +352,7 @@ export async function mockSupabaseRoutes(page) {
       const table = url.pathname.replace('/rest/v1/', '').split('?')[0];
       let body;
       if (table in TABLE_FIXTURES) {
-        const f = TABLE_FIXTURES[table];
+        const f = table === 'cards' ? liveCards : TABLE_FIXTURES[table];
         let rows = f;
         // Unlike most broad fixture reads, comprehension is story-scoped. Keep
         // that contract in the mock so one story cannot accidentally display
@@ -332,6 +361,18 @@ export async function mockSupabaseRoutes(page) {
           const filter = url.searchParams.get('story_id');
           const storyId = filter && filter.startsWith('eq.') ? filter.slice(3) : null;
           if (storyId) rows = rows.filter(row => row.story_id === storyId);
+        }
+        // A vocabulary lookup BY ID is not level-scoped in production — it is
+        // how Study resolves the words a level query didn't return (a saved
+        // dictionary word, a reach word from a story). Serve it from the full
+        // registry; every other vocabulary query keeps returning the
+        // level-scoped list, so nothing that counts curriculum words moves.
+        if (table === 'vocabulary' && Array.isArray(rows)) {
+          const idFilter = url.searchParams.get('id');
+          if (idFilter && idFilter.startsWith('in.')) {
+            const wanted = new Set(idFilter.slice(3).replace(/^\(|\)$/g, '').split(',').map(s => s.replace(/^"|"$/g, '')));
+            rows = VOCAB_BY_ID.filter(row => wanted.has(row.id));
+          }
         }
         // The flat shelf issues TWO stories queries — reachable levels
         // (level=lte.N) and the next level's teaser (level=eq.N+1). Honor the

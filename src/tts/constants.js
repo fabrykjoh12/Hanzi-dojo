@@ -10,7 +10,20 @@
 // shape, a different output format, a changed normalization rule. It is part of
 // the content hash, so bumping it marks every existing row stale and eligible
 // for regeneration (it never deletes anything on its own).
-export const SYNTHESIS_CONFIG_VERSION = 1
+//
+// v2 (2026-08-15) — regenerated under Azure Speech **S0 Standard** for
+// commercial-release provenance. Nothing about the audio itself changes: same
+// voices, same rates, same SSML, same normalization. What changes is the
+// licence the clips were produced under. Microsoft grants commercial usage
+// rights for prebuilt neural voices on paid tiers only, and everything at v1
+// was synthesized while the resource was on F0 (free), which does not carry
+// that grant. The tier is not a hash input — nor should it be, it does not
+// affect the sound — so this bump is the deliberate lever that marks the v1
+// clips stale and makes them eligible for a re-render. Every v2 row records
+// `provider_version = 'cognitiveservices/v1;tier=S0'`.
+//
+// Migration plan and verification: docs/TTS-RELICENSE-DRY-RUN.md.
+export const SYNTHESIS_CONFIG_VERSION = 2
 
 // What kind of thing is being spoken. Providers may tune delivery per type.
 export const CONTENT_TYPES = ['word', 'sentence', 'story', 'dialogue']

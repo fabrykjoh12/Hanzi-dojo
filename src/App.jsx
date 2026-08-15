@@ -5,7 +5,7 @@ import ErrorBoundary from './ErrorBoundary'
 import { getHomeCounts } from './homeCounts'
 import {
   pathToView, viewToPath, isKnownView, readStoryId, isAssessmentPath, trustPageKey,
-  storyRoute, storyPath, seriesPath, isResetPasswordPath,
+  storyRoute, storyPath, seriesPath, legacyRedirectPath, isResetPasswordPath,
 } from './routes'
 import { authNoticeFromSearch } from './nativeAuth'
 import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
@@ -55,7 +55,13 @@ const Profile = lazy(() => import('./Profile'))
 const YouTube = lazy(() => import('./YouTube'))
 const LanguageSwitcher = lazy(() => import('./LanguageSwitcher'))
 const Settings = lazy(() => import('./Settings'))
-const DojoHQ = lazy(() => import('./DojoHQ'))
+// Dojo HQ is internal tooling and must not exist at all in the public/store
+// bundle — it carries the localhost Claude bridge and the workspace admin UI.
+// `__DOJO_INTERNAL_BUILD__` is replaced by Vite with a literal (false for
+// `build:public`), so the dynamic import is dead code there and Rollup never
+// emits the chunk. Kept out of the route table below the same way.
+// tools/verify-public-bundle.mjs is the gate that keeps it out.
+const DojoHQ = __DOJO_INTERNAL_BUILD__ ? lazy(() => import('./DojoHQ')) : null
 // Public story page: only reached via a shared /read/:id link, so code-split it
 // out of the first-paint bundle (it pulls in storyReading.js).
 const PublicStory = lazy(() => import('./PublicStory'))
@@ -145,6 +151,11 @@ export default function App() {
   const assessment = isAssessmentPath(location.pathname)
   const trustPage = trustPageKey(location.pathname)
   const storyRouteState = storyRoute(location.pathname)
+
+  useEffect(() => {
+    const canonical = legacyRedirectPath(location.pathname)
+    if (canonical) routerNavigate(canonical, { replace: true })
+  }, [location.pathname, routerNavigate])
 
   // Apply the theme to the document so the CSS variables (index.css) switch.
   useEffect(() => {
@@ -651,6 +662,7 @@ export default function App() {
         track={track}
         onBack={() => navigate('home')}
         onNavigate={navigate}
+        hasInternalTooling={Boolean(DojoHQ)}
         onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
       />
     )
@@ -660,7 +672,7 @@ export default function App() {
         session={session}
         profile={profile}
         onSwitch={() => navigate('home')}
-        onBack={() => navigate('home')}
+        onBack={() => navigate('profile')}
       />
     )
   } else if (view === 'youtube') {
@@ -677,18 +689,22 @@ export default function App() {
         session={session}
         profile={profile}
         onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
-        onBack={() => navigate('home')}
+        onBack={() => navigate('profile')}
       />
     )
   } else if (view === 'hq') {
     // Dojo HQ is internal tooling, not a learner surface. Gated the same way
     // as the admin dashboard: a non-admin who types /hq gets a 404, because
     // hiding a menu entry is not access control.
-    content = profile.is_admin
+    // In the public build DojoHQ is null (the module isn't in the bundle), so
+    // /hq is a 404 for everyone there, admin included.
+    content = (profile.is_admin && DojoHQ)
       ? <DojoHQ session={session} profile={profile} />
       : <NotFound onHome={() => navigate('home')} />
   } else if (view === 'dev') {
-    // Developer tools — email-gated inside the component; every action is
+    // Developer tools — gated on profile.is_admin inside the component
+    // (devTools.js `isDevAllowed`, which replaced an email allowlist whose
+    // default literal shipped a personal address in the bundle); every action is
     // RLS-scoped to the signed-in account. Not linked from the main nav.
     content = (
       <Dev
@@ -735,6 +751,7 @@ export default function App() {
             <Sidebar
               view={view} onNavigate={navigate} onLogout={handleLogout}
               isAdmin={!!profile.is_admin} language={profile.active_language}
+              hasInternalTooling={Boolean(DojoHQ)}
               profile={profile} track={track} email={session.user.email} counts={counts}
             />
           </div>
@@ -752,7 +769,9 @@ export default function App() {
           // so they still carry their own inset.
           paddingTop: isMobile ? 'env(safe-area-inset-top, 0px)' : 0,
           // Leave room for the fixed bottom bar so content isn't hidden behind it.
-          paddingBottom: isMobile ? 'calc(62px + env(safe-area-inset-bottom))' : 0,
+          paddingBottom: isMobile
+            ? 'calc(' + (view === 'study' || view === 'weak' ? 62 : 94) + 'px + env(safe-area-inset-bottom))'
+            : 0,
         }}>
           {/* Per-view boundary keyed on `view`: a screen that throws (or a stale
               lazy chunk after a deploy) degrades to the recovery UI without
@@ -766,7 +785,7 @@ export default function App() {
         {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} isAdmin={!!profile.is_admin} language={profile.active_language} />}
         {/* Calm screens only — floating over Study it covered the Easy grade
             button, and the story reader has its own bottom audio bar. */}
-        {['home', 'practice', 'profile', 'settings', 'words', 'grammar', 'languages'].indexOf(view) !== -1 && (
+        {['practice', 'profile', 'settings', 'words', 'grammar', 'languages'].indexOf(view) !== -1 && (
           <Feedback session={session} profile={profile} view={view} />
         )}
         <Toasts />

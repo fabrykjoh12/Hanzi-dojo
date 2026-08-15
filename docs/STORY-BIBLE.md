@@ -289,6 +289,24 @@ Rules that go with it:
   person across episodes.
 - **Never name a franchise, a studio or an artist in a prompt.** Describe the
   picture, not somebody else's work.
+- **Record the prompt with the image.** Every new entry in a `.art.json`
+  manifest (and every story cover in `data/story-covers.json`) carries the full
+  prompt it was generated from — CRITICAL CONSTRAINTS block included — plus a
+  `generated` date:
+
+  ```jsonc
+  { "file": "panel-01.webp", "url": "https://…",
+    "prompt": "…the full prompt, verbatim…", "generated": "2026-08-15" }
+  ```
+
+  `fetch-manhua-art.mjs` refuses to download an asset that has neither, and
+  `generate-story-images.mjs` refuses a story's first cover on the same rule.
+  This turns the constraints above from a policy into per-image evidence that
+  the policy was applied — the difference between answering a rights query in
+  prose and answering it with a record. Artwork committed before 2026-08-15 has
+  no prompt on file; `node fetch-manhua-art.mjs --check` reports the gap, and it
+  stays a gap. **Never invent a prompt for an image already shipped.** Full
+  reasoning in [`CONTENT-LICENSING.md`](CONTENT-LICENSING.md).
 - **"No text" is not a style note, it is the format.** Every Chinese word is
   rendered by the app so it can be tapped, scaffolded, played and translated.
   Ask explicitly for blank lanterns and blank banners — they are what the model

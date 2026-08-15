@@ -21,6 +21,10 @@
          learner who will never see it. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Home V3 uses the bundled Mona Sans face. Preload the common Latin
+         subset so its editorial heading never paints in Inter and shifts on
+         the next frame during a cold native launch. -->
+    <link rel="preload" href="/src/assets/fonts/mona-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Inter:wght@300;400;500;600&family=Poppins:wght@500;600;700&display=swap" />
 
     <title>Hanzi Dojo — Learn to read Chinese free</title>

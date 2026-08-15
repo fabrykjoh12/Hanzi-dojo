@@ -80,6 +80,9 @@ export { estimateBatch }
 // Order matters: upload first, write the row second, delete superseded files
 // last. That way a crash can leave an unreferenced file (harmless, cleanable)
 // but never a database row pointing at audio that does not exist.
+//
+// `config.retainSuperseded` skips that last step entirely, keeping the previous
+// generation on disk. See the comment at the call site.
 export async function generateOne(plan, {
   provider, storage, repository, config, logger, signal = null, now = () => new Date(),
 }) {
@@ -119,15 +122,27 @@ export async function generateOne(plan, {
     request: plan.request, contentHash: plan.contentHash, storagePath, result, now: now(),
   }))
 
-  // Best-effort: leftover files cost a little storage, a failed delete must
-  // never fail a clip that is already live.
-  try {
-    await storage.removeSuperseded({
-      locale: plan.locale, sourceType: plan.sourceType, sourceId: plan.sourceId,
-      variant: plan.variant, keepPath: storagePath,
-    })
-  } catch (err) {
-    if (logger) logger.warn('could not clean up superseded audio for', plan.label || plan.sourceId, '-', err.message)
+  // Retention mode: keep the previous generation on disk.
+  //
+  // Normally the old file is dead weight the moment the row moves, so deleting
+  // it is right. During a MIGRATION it is the only copy of what was there
+  // before — and this pipeline has no other undo. Deleting it turns "the new
+  // clip is wrong" into "the audio is gone", which is a far worse failure than
+  // a few MB of orphaned objects. So a migration runs with retention on,
+  // verifies, and garbage-collects afterwards as a separate, deliberate step.
+  if (config && config.retainSuperseded) {
+    if (logger) logger.info('retaining superseded audio for', plan.label || plan.sourceId)
+  } else {
+    // Best-effort: leftover files cost a little storage, a failed delete must
+    // never fail a clip that is already live.
+    try {
+      await storage.removeSuperseded({
+        locale: plan.locale, sourceType: plan.sourceType, sourceId: plan.sourceId,
+        variant: plan.variant, keepPath: storagePath,
+      })
+    } catch (err) {
+      if (logger) logger.warn('could not clean up superseded audio for', plan.label || plan.sourceId, '-', err.message)
+    }
   }
 
   return {
@@ -136,6 +151,7 @@ export async function generateOne(plan, {
     requestCount: result.requestCount || 1,
     characterCount: plan.request.characterCount,
     durationMs: result.durationMs,
+    retainedSuperseded: !!(config && config.retainSuperseded),
   }
 }
 

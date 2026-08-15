@@ -1,6 +1,6 @@
 import {
   Home, Layers, BookOpen, Target, ClipboardCheck,
-  User, Settings, Globe, LogOut, BarChart3, PanelsTopLeft,
+  Settings, Globe, BarChart3, PanelsTopLeft,
 } from 'lucide-react'
 
 // Single source of truth for navigation, consumed by both Sidebar (desktop) and
@@ -34,20 +34,18 @@ export const NAV_GROUPS = [
 // builds those itself (an avatar row plus three icon buttons) and the language
 // gets its own identity card, so the array had no remaining reader.
 
-// Mobile bottom bar — 4 tabs + a "More" sheet.
+// Mobile navigation is the product architecture: Stories — Home — Practice.
+// Cards starts from Home; account destinations live inside Profile.
 export const MOBILE_PRIMARY = [
-  { key: 'home', label: 'Home', icon: Home },
-  { key: 'study', label: 'Cards', icon: Layers },
   { key: 'stories', label: 'Stories', icon: BookOpen },
+  { key: 'home', label: 'Home', icon: Home },
   { key: 'practice', label: 'Practice', icon: Target },
 ]
 
-export const MOBILE_MORE = [
+export const PROFILE_NAV = [
   { key: 'test', label: 'Test', icon: ClipboardCheck },
-  { key: 'profile', label: 'Profile', icon: User },
   { key: 'languages', label: 'Language', icon: Globe },
   { key: 'settings', label: 'Settings', icon: Settings },
-  { key: 'logout', label: 'Log out', icon: LogOut },
 ]
 
 // Admin-only entries — prepended to the bottom nav (Sidebar) / "More" sheet
@@ -62,3 +60,15 @@ export const ADMIN_NAV = [
   { key: 'dashboard', label: 'Dashboard', icon: BarChart3 },
   { key: 'hq', label: 'Dojo HQ', icon: PanelsTopLeft },
 ]
+
+// Dojo HQ is stripped from the public/store bundle at build time (App.jsx
+// guards its import on Vite's __DOJO_INTERNAL_BUILD__ define), where /hq is a
+// 404 for everyone — admins included. Its nav entry has to disappear with it,
+// or an admin opening the store app gets a menu row that leads nowhere.
+//
+// Pure and parameterised rather than reading the build flag here, so the rule
+// is testable and navConfig stays free of build-time globals. Callers pass
+// whether the HQ module is actually present.
+export function adminNav(hasInternalTooling) {
+  return ADMIN_NAV.filter(item => item.key !== 'hq' || hasInternalTooling)
+}

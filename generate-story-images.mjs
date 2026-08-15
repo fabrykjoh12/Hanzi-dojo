@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'node:fs'
 import { extname, resolve } from 'node:path'
+import { missingProvenance } from './artProvenance.mjs'
 
 // Attach illustrated cover art to stories (product request: make the library
 // feel alive and show what each story is about). Because image generation runs
@@ -11,7 +12,10 @@ import { extname, resolve } from 'node:path'
 //                 with scene-accurate prompts. (Run in CI, read from the log.)
 //   2. generate images with Higgsfield, collect each result's webp URL.
 //   3. write data/story-covers.json — a manifest keyed by the story's natural
-//      key (language/system/level/story_number) → image URL — and commit it.
+//      key (language/system/level/story_number) → image URL, plus the `prompt`
+//      used and the `generated` date — and commit it. Those two provenance keys
+//      are required for a story receiving its first cover; existing covers
+//      predate the rule and are reported rather than backfilled.
 //   4. --apply data/story-covers.json → download each URL, upload to the public
 //      `audio` bucket at stories/<id>/cover.webp, and set stories.image_path.
 //
@@ -87,11 +91,24 @@ async function applyManifest(file) {
     }
     try {
       const { data: rows, error: findErr } = await supabase
-        .from('stories').select('id')
+        .from('stories').select('id, image_path')
         .eq('language', l).eq('system', s).eq('level', lv).eq('story_number', n).limit(1)
       if (findErr) throw new Error(findErr.message)
       if (!rows || rows.length === 0) throw new Error('no matching story row')
       const storyId = rows[0].id
+
+      // Provenance gate — same rule the panel manifests use (artProvenance.mjs):
+      // a story getting its FIRST cover is new work and records how it was made.
+      // A story that already has one predates the rule; report it, never
+      // backfill it. See docs/CONTENT-LICENSING.md.
+      const missing = missingProvenance(entry)
+      if (missing.length > 0) {
+        if (!rows[0].image_path) {
+          throw new Error('new cover has no provenance record (missing ' + missing.join(' and ')
+            + ') — add the real prompt and generation date to the manifest, do not invent them')
+        }
+        console.log('  · ' + label + ': no ' + missing.join(' or ') + ' (cover predates the rule; left as-is)')
+      }
 
       let buf
       if (localFile) {

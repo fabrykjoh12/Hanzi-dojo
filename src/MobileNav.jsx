@@ -1,204 +1,89 @@
-import { useState, useEffect, useRef } from 'react'
-import { MoreHorizontal, X } from 'lucide-react'
-import { languageTheme, ink } from './languageTheme'
-import { MOBILE_PRIMARY, MOBILE_MORE, ADMIN_NAV } from './navConfig'
-import { trapDialogFocus } from './dialogFocus'
+import { useEffect, useState } from 'react'
+import { HomeGlyph, PracticeGlyph, StoriesGlyph } from './HomeV2NavGlyphs'
+import { HOME_MOTION } from './homePresentation'
+import { languageTheme } from './languageTheme'
+import { MOBILE_PRIMARY } from './navConfig'
+import { mobileNavRoot } from './mobileNavState'
 
-const MUTED = 'var(--text-muted)'
+const UI_FONT = "'Mona Sans', 'Inter', sans-serif"
+const EASE = 'cubic-bezier(0.2, 0, 0, 1)'
+const GLYPHS = { stories: StoriesGlyph, practice: PracticeGlyph }
 
-// Primary tabs live directly in the bottom bar; the rest go behind the "More"
-// sheet. Study/practice modes are reached through the Practice tab.
-const PRIMARY = MOBILE_PRIMARY
-const MORE_ITEMS = MOBILE_MORE
+function useReducedMotion() {
+  const [reduced, setReduced] = useState(() => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const update = event => setReduced(event.matches)
+    query.addEventListener('change', update)
+    return () => query.removeEventListener('change', update)
+  }, [])
+  return reduced
+}
 
-function Tab({ icon: Icon, label, active, accentHex, onClick, expanded, hasPopup }) {
+function Tray() {
   return (
-    <button
-      onClick={onClick}
-      aria-current={active ? 'page' : undefined}
-      aria-expanded={expanded}
-      aria-haspopup={hasPopup}
-      className={'hd-tab hd-press' + (active ? ' is-active' : '')}
-      style={{
-        flex: 1, background: 'none', border: 'none', cursor: 'pointer',
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        gap: '3px', padding: '9px 0 7px', minWidth: 0,
-      }}
-    >
-      <Icon
-        className="hd-tab-icon"
-        size={22} strokeWidth={active ? 2.2 : 1.85}
-        color={active ? accentHex : MUTED}
-      />
-      <span style={{
-        fontSize: '10.5px', fontWeight: active ? 700 : 500,
-        letterSpacing: '0.1px', color: active ? accentHex : MUTED,
-        transition: 'color 160ms ease',
-      }}>
-        {label}
+    <svg aria-hidden="true" viewBox="0 0 366 76" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', filter: 'drop-shadow(0 5px 9px rgba(52,37,31,0.08))', pointerEvents: 'none' }}>
+      <path d="M18 14H132C142 14 147 10 151 5C155 0 160 -2 166 -2H200C206 -2 211 0 215 5C219 10 224 14 234 14H348C358 14 364 20 364 30V58C364 68 358 74 348 74H18C8 74 2 68 2 58V30C2 20 8 14 18 14Z" fill="var(--surface)" stroke="var(--border)" strokeWidth="1" />
+      <path d="M19 15H131C142 15 148 11 152 6C156 1 161 -1 167 -1H199C205 -1 210 1 214 6C218 11 224 15 235 15H347" fill="none" stroke="var(--hairline)" strokeWidth="1" />
+    </svg>
+  )
+}
+
+function SideTab({ item, active, accent, motionMs, onNavigate }) {
+  const Glyph = GLYPHS[item.key]
+  return (
+    <button type="button" aria-current={active ? 'page' : undefined} onClick={() => onNavigate(item.key)} className="hd-press" style={{
+      minWidth: 0, minHeight: '60px', marginTop: '12px', padding: '8px 0 5px', border: 0, background: 'transparent',
+      color: active ? accent : 'var(--text-muted)', fontFamily: UI_FONT,
+      '--primary-bright': active ? '#E66A52' : 'var(--text-faint)', '--primary-fill': active ? accent : 'var(--text-muted)',
+      '--primary-pressed': active ? '#8F2D1D' : 'var(--text-muted)', '--plum': active ? accent : 'var(--text-muted)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: '3px', transition: 'color ' + motionMs + 'ms ' + EASE,
+    }}>
+      <span aria-hidden="true" style={{ width: '34px', height: '27px', display: 'grid', placeItems: 'center', transform: active ? 'translateY(-1px)' : 'none', opacity: active ? 1 : 0.82, filter: active ? 'saturate(1)' : 'saturate(0.55)', transition: 'transform ' + motionMs + 'ms ' + EASE + ', opacity ' + motionMs + 'ms ' + EASE }}>
+        <Glyph size={item.key === 'stories' ? 25 : 24} active={active} color="currentColor" />
       </span>
+      <span style={{ height: '12px', fontSize: '11.5px', lineHeight: '12px', fontWeight: active ? 760 : 610 }}>{item.label}</span>
     </button>
   )
 }
 
-export default function MobileNav({ view, onNavigate, onLogout, isAdmin, language }) {
-  const [moreOpen, setMoreOpen] = useState(false)
-  const accentHex = languageTheme(language).accentHex
-  const accentInk = ink(accentHex)
-  const moreItems = isAdmin ? [...ADMIN_NAV, ...MORE_ITEMS] : MORE_ITEMS
-  const moreKeys = moreItems.map(i => i.key)
-
-  const go = (key) => {
-    setMoreOpen(false)
-    if (key === 'logout') onLogout()
-    else onNavigate(key)
-  }
-
-  // Escape closes the "More" sheet (keyboard parity with the backdrop tap).
-  useEffect(() => {
-    if (!moreOpen) return
-    const onKey = (e) => { if (e.key === 'Escape') setMoreOpen(false) }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [moreOpen])
-
-  // aria-modal hides the page from assistive tech, so focus must actually move
-  // into the sheet — and back to the More button on close.
-  const sheetRef = useRef(null)
-  const openerRef = useRef(null)
-  useEffect(() => {
-    if (!moreOpen) return
-    openerRef.current = document.activeElement
-    if (sheetRef.current) sheetRef.current.focus({ preventScroll: true })
-    return () => {
-      if (openerRef.current && openerRef.current.focus) openerRef.current.focus({ preventScroll: true })
-    }
-  }, [moreOpen])
-
-  const moreActive = moreKeys.indexOf(view) !== -1
-  // The bar is PRIMARY tabs plus "More"; the marker slides across that many
-  // equal columns, so adding a tab needs no other change here.
-  const columns = PRIMARY.length + 1
-  const activeColumn = moreActive ? columns - 1 : PRIMARY.findIndex(i => i.key === view)
-
+function HomeTab({ active, accent, motionMs, reduced, onNavigate }) {
+  const [pressed, setPressed] = useState(false)
+  const lift = active && !reduced ? -2 : 0
   return (
-    <>
-      {/* "More" bottom sheet */}
-      {moreOpen && (
-        <>
-          <div
-            onClick={() => setMoreOpen(false)}
-            aria-hidden
-            style={{
-              position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, zIndex: 40,
-              background: 'rgba(9, 9, 11, 0.42)', backdropFilter: 'blur(2px)',
-              animation: 'hd-fade-in 200ms ease both',
-            }}
-          />
-          {/* `aria-modal` hides the rest of the page from assistive tech, so Tab
-              must not be able to leave the sheet — without the trap the next Tab
-              lands on a page the screen reader can no longer see. */}
-          <div ref={sheetRef} role="dialog" aria-modal="true" aria-label="More menu" tabIndex={-1}
-            onKeyDown={(e) => trapDialogFocus(e, sheetRef.current)} style={{
-            outline: 'none',
-            position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 41,
-            background: 'var(--surface)',
-            borderTopLeftRadius: '22px', borderTopRightRadius: '22px',
-            borderTop: '1px solid var(--border)',
-            boxShadow: '0 -12px 40px -12px rgba(0,0,0,0.35), inset 0 1px 0 var(--hairline)',
-            padding: '8px 14px calc(16px + env(safe-area-inset-bottom))',
-            animation: 'hd-sheet-up 280ms cubic-bezier(0.22, 1, 0.36, 1) both',
-          }}>
-            {/* Grab handle — tells the thumb this panel belongs to the bottom edge. */}
-            <div aria-hidden style={{
-              width: '38px', height: '4px', borderRadius: '999px',
-              background: 'var(--border)', margin: '6px auto 4px',
-            }} />
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 6px 8px' }}>
-              <span style={{
-                fontSize: '10.5px', fontWeight: 800, letterSpacing: '0.14em',
-                textTransform: 'uppercase', color: 'var(--text-faint)',
-              }}>
-                More
-              </span>
-              {/* 44x44 thumb target. The negative margin cancels the growth back
-                  to the old 28px box in layout, so the X sits exactly where it did
-                  and the row keeps its height — only the hit area gets bigger. */}
-              <button onClick={() => setMoreOpen(false)} aria-label="Close menu" className="hd-press"
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  width: '44px', height: '44px', margin: '-8px -8px -8px 0',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                <X size={20} strokeWidth={1.9} color={MUTED} />
-              </button>
-            </div>
-            {moreItems.map((item, i) => {
-              const Icon = item.icon
-              const active = view === item.key
-              const danger = item.key === 'logout'
-              const tint = danger ? '#DC2626' : accentHex
-              const tintInk = danger ? '#DC2626' : accentInk
-              return (
-                <button
-                  key={item.key}
-                  onClick={() => go(item.key)}
-                  aria-current={active ? 'page' : undefined}
-                  className="hd-press hd-rise"
-                  style={{
-                    position: 'relative', width: '100%', border: 'none', cursor: 'pointer',
-                    background: active ? `color-mix(in srgb, ${tint} 11%, var(--surface))` : 'none',
-                    display: 'flex', alignItems: 'center', gap: '14px',
-                    padding: '13px 14px', borderRadius: '12px',
-                    color: danger ? '#DC2626' : (active ? tintInk : 'var(--text)'),
-                    fontSize: '15px', fontWeight: active ? 650 : 500, textAlign: 'left',
-                    animationDelay: `${40 + i * 22}ms`,
-                  }}
-                >
-                  {active && (
-                    <span aria-hidden style={{
-                      position: 'absolute', left: 0, top: '11px', bottom: '11px',
-                      width: '3px', borderRadius: '0 3px 3px 0', background: tintInk,
-                    }} />
-                  )}
-                  <Icon size={20} strokeWidth={active ? 2.1 : 1.85} color={danger ? '#DC2626' : (active ? tintInk : MUTED)} />
-                  {item.label}
-                </button>
-              )
-            })}
-          </div>
-        </>
-      )}
-
-      {/* Fixed bottom navigation bar */}
-      <nav aria-label="Primary" data-tour="nav" style={{
-        position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 30,
-        display: 'flex', alignItems: 'stretch',
-        background: 'var(--surface-glass)', backdropFilter: 'blur(14px)',
-        borderTop: '1px solid var(--border)',
-        paddingBottom: 'env(safe-area-inset-bottom)',
+    <button type="button" aria-current={active ? 'page' : undefined} aria-label="Home" onClick={() => onNavigate('home')}
+      onPointerDown={() => setPressed(true)} onPointerUp={() => setPressed(false)} onPointerCancel={() => setPressed(false)} onPointerLeave={() => setPressed(false)}
+      style={{ minWidth: 0, height: '76px', padding: 0, border: 0, background: 'transparent', fontFamily: UI_FONT, position: 'relative' }}>
+      <span aria-hidden="true" style={{ position: 'absolute', top: '40px', left: '50%', width: '66px', height: '16px', marginLeft: '-33px', borderRadius: '50%', background: 'radial-gradient(ellipse at center, rgba(57,31,23,0.2) 0%, rgba(57,31,23,0.07) 46%, transparent 75%)', filter: 'blur(1.5px)', opacity: active ? 0.78 : 0.12, pointerEvents: 'none' }} />
+      <span aria-hidden="true" style={{
+        position: 'absolute', top: 0, left: '50%', width: '52px', height: '54px', marginLeft: '-26px', borderRadius: '16px 16px 13px 13px', overflow: 'hidden',
+        transform: 'translateY(' + (pressed ? lift + 1 : lift) + 'px)',
+        background: active ? 'linear-gradient(145deg, #C84E36 0%, ' + accent + ' 48%, #92291C 100%)' : 'transparent',
+        boxShadow: pressed ? '0 1px 2px rgba(71,25,18,0.15), inset 0 1px 0 var(--hairline)' : active ? '0 2px 5px -3px rgba(84,24,15,0.46), inset 0 1px 0 rgba(255,255,255,0.28)' : 'none',
+        transition: 'transform ' + (pressed ? 120 : motionMs) + 'ms ' + EASE + ', box-shadow ' + (pressed ? 120 : motionMs) + 'ms ' + EASE,
       }}>
-        {/* One ink marker riding the top edge, sliding between columns. */}
-        <span aria-hidden style={{
-          position: 'absolute', top: 0, left: 0, height: '3px',
-          width: `${100 / columns}%`,
-          transform: `translateX(${Math.max(0, activeColumn) * 100}%)`,
-          opacity: activeColumn < 0 ? 0 : 1,
-          transition: 'transform 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease',
-          pointerEvents: 'none',
-        }}>
-          <span style={{
-            display: 'block', height: '100%', width: '42%', margin: '0 auto',
-            borderRadius: '0 0 3px 3px', background: accentInk,
-          }} />
+        <span style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', '--primary-bright': active ? '#FFF9EE' : 'var(--text-faint)', '--primary-fill': active ? '#F4E4C8' : 'var(--text-muted)', '--primary-pressed': active ? '#D6B991' : 'var(--text-muted)' }}>
+          <HomeGlyph size={32} active color="currentColor" />
         </span>
+      </span>
+      <span style={{ position: 'absolute', left: 0, right: 0, bottom: '5px', height: '12px', fontSize: '11.5px', lineHeight: '12px', fontWeight: active ? 800 : 660, color: active ? accent : 'var(--text-muted)' }}>Home</span>
+    </button>
+  )
+}
 
-        {PRIMARY.map(item => (
-          <Tab key={item.key} icon={item.icon} label={item.label} accentHex={accentInk} active={view === item.key} onClick={() => go(item.key)} />
-        ))}
-        <Tab icon={MoreHorizontal} label="More" accentHex={accentInk} active={moreActive}
-          expanded={moreOpen} hasPopup="dialog" onClick={() => setMoreOpen(o => !o)} />
-      </nav>
-    </>
+export default function MobileNav({ view, onNavigate, language }) {
+  const reduced = useReducedMotion()
+  const motionMs = reduced ? HOME_MOTION.reduced : HOME_MOTION.nav
+  const activeKey = mobileNavRoot(view)
+  const accent = languageTheme(language).accentHex
+  return (
+    <nav aria-label="Primary" data-tour="nav" className="hd-mobile-nav-motion" style={{ position: 'fixed', left: '12px', right: '12px', bottom: 'max(6px, env(safe-area-inset-bottom))', zIndex: 30, height: '76px', maxWidth: '366px', margin: '0 auto', fontFamily: UI_FONT }}>
+      <Tray />
+      <div style={{ position: 'relative', height: '100%', display: 'grid', gridTemplateColumns: '1fr 94px 1fr' }}>
+        <SideTab item={MOBILE_PRIMARY[0]} active={activeKey === 'stories'} accent={accent} motionMs={motionMs} onNavigate={onNavigate} />
+        <HomeTab active={activeKey === 'home'} accent={accent} motionMs={motionMs} reduced={reduced} onNavigate={onNavigate} />
+        <SideTab item={MOBILE_PRIMARY[2]} active={activeKey === 'practice'} accent={accent} motionMs={motionMs} onNavigate={onNavigate} />
+      </div>
+    </nav>
   )
 }

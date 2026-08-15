@@ -54,7 +54,8 @@ Defined by `src/mastery.js`, `docs/ARCHITECTURE.md` §mastery:
 |---|---|
 | **Learned** | `cards.learned = true`, or FSRS state is `review`/`relearning`. Gates story tiers (the low bar, for early immersion). |
 | **Mastered** | FSRS `stability >= 21` days (`MASTERY_STABILITY_DAYS`). Gates the level test and the mastery display. `is_easy` gates nothing. |
-| **Due** | Day-based availability: everything scheduled for today is available from local midnight (Anki-style), not at the exact clock time last reviewed. |
+| **Due** | Day-based availability: everything scheduled for today is available from local midnight (Anki-style), not at the exact clock time last reviewed. **Scope: the deck** — every card started in the active track, every level, including words saved from a story or the dictionary that sit outside the current level window. Defined by `src/studyAvailability.js`, which is what both the Home counts and the Study queue are built from, so what Home promises is what the session delivers. |
+| **New** | Words at the current level window with no card yet, capped by the remaining daily allotment. **Scope: the current level window** — new words are only ever introduced from it. |
 | **Level progress** | Learned words at the current level / active words at that level. Level labels always via `getLevelLabel()` — never hardcoded. |
 
 When adding a new number to any screen: name its scope (current level / all

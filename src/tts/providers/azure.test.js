@@ -213,3 +213,27 @@ describe('MockTTSProvider', () => {
     await expect(mock.synthesize(request())).resolves.toBeTruthy()
   })
 })
+
+// The tier is a LICENSING fact, not a performance one: commercial rights for
+// prebuilt neural voices are paid-tier-only, so a row that cannot say which
+// tier produced it cannot answer a rights question either.
+describe('Azure tier provenance', () => {
+  it('records the tier alongside the API version', async () => {
+    const result = await provider(async () => audioResponse([1, 2]), { tier: 'S0' }).synthesize(request())
+    expect(result.providerVersion).toBe('cognitiveservices/v1;tier=S0')
+  })
+
+  it('falls back to the bare API version when no tier is supplied', async () => {
+    const result = await provider(async () => audioResponse([1, 2])).synthesize(request())
+    expect(result.providerVersion).toBe('cognitiveservices/v1')
+  })
+
+  it('does not let the tier change anything that is sent to Azure', async () => {
+    const plain = vi.fn(async () => audioResponse())
+    const tiered = vi.fn(async () => audioResponse())
+    await provider(plain).synthesize(request())
+    await provider(tiered, { tier: 'S0' }).synthesize(request())
+    expect(tiered.mock.calls[0][1].body).toBe(plain.mock.calls[0][1].body)
+    expect(tiered.mock.calls[0][0]).toBe(plain.mock.calls[0][0])
+  })
+})

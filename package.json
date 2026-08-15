@@ -10,6 +10,7 @@
     "db:generate": "drizzle-kit generate",
     "build": "vite build",
     "build:public": "cross-env DOJO_PUBLIC_BUILD=1 vite build",
+    "verify:public-bundle": "node tools/verify-public-bundle.mjs",
     "cap:sync": "npm run build:public && cap sync",
     "cap:android": "npm run cap:sync && cap open android",
     "cap:ios": "npm run cap:sync && cap open ios",

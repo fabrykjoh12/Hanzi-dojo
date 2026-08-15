@@ -4,7 +4,7 @@ import logo from './assets/Hanzi-logo.png'
 import { useTheme } from './ThemeContext'
 import { languageTheme, ink } from './languageTheme'
 import { getLevelLabel } from './utils'
-import { PRIMARY_NAV, NAV_GROUPS, ADMIN_NAV } from './navConfig'
+import { PRIMARY_NAV, NAV_GROUPS, adminNav } from './navConfig'
 import { BRAND_NAME, wordmarkStyle } from './brand'
 
 // ── Sidebar ───────────────────────────────────────────────────────────────
@@ -164,7 +164,9 @@ function IconControl({ icon: Icon, label, danger, onClick }) {
   )
 }
 
-export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language, profile, track, email, counts }) {
+export default function Sidebar({ view, onNavigate, onLogout, isAdmin, hasInternalTooling = true, language, profile, track, email, counts }) {
+  // Dojo HQ is absent from the store bundle, so its row goes with it.
+  const adminItems = adminNav(hasInternalTooling)
   const [collapsed, setCollapsed] = useState(false)
   const [logoHovered, setLogoHovered] = useState(false)
   const [sealHovered, setSealHovered] = useState(false)
@@ -347,8 +349,8 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, language,
           position: 'relative', marginTop: '14px',
           display: 'flex', flexDirection: 'column', gap: `${ROW_GAP}px`,
         }}>
-          <EdgeBar index={ADMIN_NAV.findIndex(i => i.key === view)} accentInk={accentInk} />
-          {ADMIN_NAV.map(item => (
+          <EdgeBar index={adminItems.findIndex(i => i.key === view)} accentInk={accentInk} />
+          {adminItems.map(item => (
             <NavItem
               key={item.key}
               item={item}

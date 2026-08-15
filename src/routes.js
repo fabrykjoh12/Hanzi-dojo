@@ -21,11 +21,24 @@ export function viewToPath(key) {
   return key === 'home' ? '/' : '/' + key
 }
 
+// Compatibility for the retired five-tab mobile architecture. Keep old
+// bookmarks, native snapshots and shared links alive without putting Cards or
+// More back into the visible tray. App replaces these paths with their current
+// canonical destinations so Back never reopens an obsolete tab.
+export function legacyRedirectPath(pathname) {
+  const normalized = (pathname || '/').replace(/\/+$/, '') || '/'
+  if (normalized === '/cards') return '/study'
+  if (normalized === '/more') return '/profile'
+  return null
+}
+
 // Map a URL pathname to the internal view key (first path segment; '' → home).
 export function pathToView(pathname) {
   let p = pathname || '/'
   if (p.startsWith('/')) p = p.slice(1)
   const seg = p.split('/')[0]
+  if (seg === 'cards') return 'study'
+  if (seg === 'more') return 'profile'
   return seg || 'home'
 }
 

@@ -15,6 +15,7 @@ import InfoTip from './InfoTip'
 import StuckWordCoach from './StuckWordCoach'
 import { STUCK_LAPSES } from './stuckWord'
 import { BRAND_URL } from './brand'
+import { adminNav, PROFILE_NAV } from './navConfig'
 import { confirmWordOk, forgetDeviceData, DELETE_CONFIRM_WORD } from './accountDeletion'
 import {
   ArrowLeft, Layers, LogOut, RotateCcw, Save,
@@ -72,7 +73,7 @@ function IconButton({ icon: Icon, label, onClick }) {
   )
 }
 
-export default function Profile({ session, profile, track, onBack, onNavigate, onUpdate }) {
+export default function Profile({ session, profile, track, onBack, onNavigate, onUpdate, hasInternalTooling = true }) {
   const [stats, setStats] = useState({ learned: 0, totalCards: 0, masteredCount: 0, totalWords: 0 })
   const [editingGoal, setEditingGoal] = useState(false)
   const [newGoal, setNewGoal] = useState(profile.daily_new_cards)
@@ -401,6 +402,24 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
         meta={`${systemLabel} · ${levelLabel}`}
         style={{ margin: '22px 0 18px' }}
       />
+
+      {onNavigate && (
+        <nav aria-label="Account" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '18px' }}>
+          {[...PROFILE_NAV, ...(profile.is_admin ? adminNav(hasInternalTooling) : [])].map(item => {
+            const Icon = item.icon
+            return (
+              <button key={item.key} type="button" onClick={() => onNavigate(item.key)} className="hd-press" style={{
+                minHeight: '44px', padding: '0 13px', borderRadius: '10px', border: '1px solid var(--border)',
+                background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '13px', fontWeight: 650,
+              }}>
+                <Icon size={16} strokeWidth={1.9} />
+                {item.label}
+              </button>
+            )
+          })}
+        </nav>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px', marginBottom: '18px' }}>
         <StatCard label="Words learned" value={loading ? '-' : stats.learned} unit={'of ' + stats.totalWords} icon={Layers} color={accentHex} bg={accentHex + '10'} />

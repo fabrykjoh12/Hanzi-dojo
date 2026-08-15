@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- App Icon V2 (P14, 2026-08-15). Background is FULL-BLEED 108dp — the old
+     16.7% inset left the launcher's 18dp parallax margin transparent, which
+     is invalid for a background layer. Sizing lives in the artwork, not here:
+     the foreground/monochrome PNGs draw the mark at 44% of the canvas (inside
+     the 66dp safe zone, 66% of the visible 72dp). The monochrome layer is the
+     real V2 brush silhouette; it must be declared on BOTH launcher XMLs or
+     themed icons stay off. Assets: tools/generate-app-icons.mjs. -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background>
-        <inset android:drawable="@mipmap/ic_launcher_background" android:inset="16.7%" />
-    </background>
-    <foreground>
-        <inset android:drawable="@mipmap/ic_launcher_foreground" android:inset="16.7%" />
-    </foreground>
+    <background android:drawable="@mipmap/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />
 </adaptive-icon>
