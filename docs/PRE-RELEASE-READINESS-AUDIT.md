@@ -20,7 +20,7 @@ than guessing.
 
 | | Count |
 |---|---|
-| 🔴 **Confirmed release blockers** | **3** — all owner-dependent, none is a code task |
+| 🔴 **Confirmed release blockers** | **2** — plus one approved-and-costed action (the Azure re-render) |
 | 🟠 Important gaps | 12 |
 | 🟡 Verification-only (owner/console/device) | 19 |
 | ⚪ / safe for v1.1 | 8 |
@@ -41,21 +41,41 @@ working software.
 
 ### The blockers
 
-**Remaining — 3, every one an owner action:**
+**Remaining — 2, both owner actions:**
 
-1. **The Azure Speech resource tier is unknown.** Commercial rights for prebuilt neural voices are paid-tier-only; ~10,522 shipped clips depend on whether the resource is S0 or F0. Longest lead time if the answer is F0.
-2. **No App Review demo account exists** — Apple 2.1(a); a reviewer who cannot sign in is an automatic rejection.
-3. **Play's required web-accessible account-deletion URL is not established.** The copy is written and waiting on one fact: the Supabase backup-retention window.
+1. **No App Review demo account exists** — Apple 2.1(a); a reviewer who cannot sign in is an automatic rejection.
+2. **Play's required web-accessible account-deletion URL is not established.** The copy is written and waiting on one fact: the Supabase backup-retention window.
+
+**Azure TTS licensing: ✅ CLOSED 2026-08-15.** The resource is on S0 and all 8,814 active clips were re-rendered under it — zero failures, per-row provenance (`tier=S0`, config v2). One artifact still owed: a portal screenshot showing the tier. [`TTS-RELICENSE-DRY-RUN.md`](TTS-RELICENSE-DRY-RUN.md).
 
 **Closed:**
 
-- ~~Content licensing is unproven~~ — `LICENSE`, `NOTICE.md` and `docs/CONTENT-LICENSING.md` now exist; `/terms` no longer overclaims; CC-CEDICT's ShareAlike terms are disclosed properly; new imagery records its prompt and date. The **icon master's origin is established** (ChatGPT / OpenAI ImageGen, owner statement). Only the Azure tier survives, as blocker 1 above.
+- ~~Content licensing is unproven~~ — `LICENSE`, `NOTICE.md` and `docs/CONTENT-LICENSING.md` now exist; `/terms` no longer overclaims; CC-CEDICT's ShareAlike terms are disclosed properly; new imagery records its prompt and date. The **icon master's origin is established** (ChatGPT / OpenAI ImageGen, owner statement), and the **Azure tier is now S0** — what survives is one costed re-render, not a blocker.
 - ~~A personal email address ships in the production bundle~~ — removed; `/dev` gates on `profile.is_admin`, and CI fails if it returns.
 
 ~~Plus one blocker-adjacent pipeline gap: `build:public` is never run in CI.~~
 **Closed 2026-08-15** — `ci.yml` now builds the store bundle on every PR and
 fails if a personal identifier appears in it.
 
+> **Azure TTS re-licensing COMPLETE, 2026-08-15.** All **8,814** active Azure
+> clips regenerated under **S0**, in six staged batches, **zero failures**,
+> 66,390 characters, ≈ USD 1.06. Independently reconciled against the live
+> database: 8,814/8,814 at config v2 with `tier=S0` provenance, zero stale, zero
+> rows pointing at a missing object, orphans untouched (7,416), Google audio
+> untouched (6,580). The 8,814 superseded F0 objects are **retained** pending
+> listening QA; cleanup is a separate gate. The blocker is closed on the
+> engineering side — what remains is one portal screenshot and a listening pass.
+>
+> **Azure tier answered, 2026-08-15.** The Speech resource was on **F0** and has
+> been moved to **S0**. Moving tier licenses future synthesis, not past output,
+> so the served clips still need re-rendering — but a dry-run audit
+> ([`TTS-RELICENSE-DRY-RUN.md`](TTS-RELICENSE-DRY-RUN.md)) sized that at
+> **8,814 clips / 66,390 characters ≈ USD 1.06 ≈ NOK 10**, against ~NOK 1,931 of
+> credit. It also found that **7,416 of 16,230 clips are orphaned** by the
+> 2026-07-28 vocabulary re-import and are unreachable by app and generator alike,
+> which is why the scope is half what the earlier "~10,522 clips" figure implied.
+> This stops being a blocker and becomes a costed, approved action.
+>
 > **Icon provenance closed, 2026-08-15 (owner statement).** The icon master
 > `src/assets/86055582-…png` is no longer of unknown origin: the owner has
 > confirmed it was **generated for them through ChatGPT / OpenAI ImageGen** — not

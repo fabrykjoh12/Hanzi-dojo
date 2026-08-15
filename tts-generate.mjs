@@ -84,6 +84,9 @@ Generate Chinese speech for flashcards and stories.
     --locale <tag>         Default zh-CN.
     --voice <name>         Override the voice for every clip in this run.
     --provider <name>      azure (default) or mock (free, for rehearsal).
+    --retain-superseded    Keep the previous generation's files instead of
+                           deleting them. Use for migrations — it is the only
+                           undo this pipeline has.
     --json                 Print a machine-readable summary line.
     --quiet                Errors only.
     --help                 This message.
@@ -114,6 +117,10 @@ try {
   if (opt('provider')) overrides.TTS_DEFAULT_PROVIDER = opt('provider')
   if (opt('locale')) overrides.TTS_DEFAULT_LOCALE = opt('locale')
   if (opt('concurrency')) overrides.TTS_CONCURRENCY = opt('concurrency')
+  // Retention is a migration switch, so it travels with the validated config
+  // rather than as a loose argument — the same path --provider and --locale
+  // take, and the same path the summary line reports back.
+  if (flag('retain-superseded')) overrides.TTS_RETAIN_SUPERSEDED = '1'
   // A dry run must work on a machine with no credentials at all.
   config = validateTtsEnv({ ...process.env, ...overrides }, { requireCredentials: apply })
 } catch (err) {
@@ -230,6 +237,9 @@ async function main() {
   logger.info('Hanzi Dojo speech generation')
   logger.info('  config:', JSON.stringify(describeConfig(config)))
   logger.info('  mode:  ', apply ? 'GENERATE (paid requests will be made)' : 'DRY RUN (nothing will be generated)')
+  if (config.retainSuperseded) {
+    logger.info('  files: ', 'RETAINING superseded audio — old objects are kept for rollback')
+  }
   logger.info('  source:', sourceType, retryFailed ? '(retrying failed jobs)' : '')
   logger.info('  limit: ', limit, 'source records')
 

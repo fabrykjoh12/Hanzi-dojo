@@ -132,3 +132,40 @@ describe('provider registry', () => {
     }
   })
 })
+
+// The S0 migration turned two operational facts into configuration: which
+// pricing tier produced a clip (a licensing question), and whether a run may
+// delete what it replaces (the only undo the pipeline has).
+describe('migration configuration', () => {
+  it('defaults the Azure tier to S0, the resource actually in use', () => {
+    expect(validateTtsEnv(goodEnv).azure.tier).toBe('S0')
+  })
+
+  it('accepts an explicit tier, case-insensitively', () => {
+    expect(validateTtsEnv({ ...goodEnv, AZURE_SPEECH_TIER: 'f0' }).azure.tier).toBe('F0')
+  })
+
+  it('refuses a tier it does not recognise rather than recording a fiction', () => {
+    expect(() => validateTtsEnv({ ...goodEnv, AZURE_SPEECH_TIER: 'premium' }))
+      .toThrow(/AZURE_SPEECH_TIER/)
+  })
+
+  it('keeps deletion of superseded audio as the default', () => {
+    expect(validateTtsEnv(goodEnv).retainSuperseded).toBe(false)
+  })
+
+  it('turns retention on only for an explicit affirmative', () => {
+    expect(validateTtsEnv({ ...goodEnv, TTS_RETAIN_SUPERSEDED: '1' }).retainSuperseded).toBe(true)
+    expect(validateTtsEnv({ ...goodEnv, TTS_RETAIN_SUPERSEDED: 'true' }).retainSuperseded).toBe(true)
+    // An empty or absent value in a CI environment must not flip the switch.
+    expect(validateTtsEnv({ ...goodEnv, TTS_RETAIN_SUPERSEDED: '' }).retainSuperseded).toBe(false)
+    expect(validateTtsEnv({ ...goodEnv, TTS_RETAIN_SUPERSEDED: '0' }).retainSuperseded).toBe(false)
+  })
+
+  it('reports both in the redacted summary, so a run log shows what it did', () => {
+    const summary = describeConfig(validateTtsEnv({ ...goodEnv, TTS_RETAIN_SUPERSEDED: '1' }))
+    expect(summary.azureTier).toBe('S0')
+    expect(summary.retainSuperseded).toBe(true)
+    expect(JSON.stringify(summary).indexOf(FAKE_KEY)).toBe(-1)
+  })
+})
