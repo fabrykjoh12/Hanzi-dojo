@@ -12,7 +12,7 @@ export default defineConfig([
   // `android/**` and `ios/**` are the generated Capacitor native projects —
   // `cap sync` copies the built bundle (dist JS) into their assets, which is
   // not source and must not be linted.
-  globalIgnores(['dist', '.claude/**', 'android/**', 'ios/**']),
+  globalIgnores(['dist', '.claude/**', '.agents/**', '.codex/**', 'android/**', 'ios/**']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

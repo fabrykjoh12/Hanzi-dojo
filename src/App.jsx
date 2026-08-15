@@ -5,7 +5,7 @@ import ErrorBoundary from './ErrorBoundary'
 import { getHomeCounts } from './homeCounts'
 import {
   pathToView, viewToPath, isKnownView, readStoryId, isAssessmentPath, trustPageKey,
-  storyRoute, storyPath, seriesPath,
+  storyRoute, storyPath, seriesPath, legacyRedirectPath,
 } from './routes'
 import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from './analytics'
 import { isBootstrapFailure } from './supabaseErrors'
@@ -140,6 +140,11 @@ export default function App() {
   const assessment = isAssessmentPath(location.pathname)
   const trustPage = trustPageKey(location.pathname)
   const storyRouteState = storyRoute(location.pathname)
+
+  useEffect(() => {
+    const canonical = legacyRedirectPath(location.pathname)
+    if (canonical) routerNavigate(canonical, { replace: true })
+  }, [location.pathname, routerNavigate])
 
   // Apply the theme to the document so the CSS variables (index.css) switch.
   useEffect(() => {
@@ -649,7 +654,7 @@ export default function App() {
         session={session}
         profile={profile}
         onSwitch={() => navigate('home')}
-        onBack={() => navigate('home')}
+        onBack={() => navigate('profile')}
       />
     )
   } else if (view === 'youtube') {
@@ -666,7 +671,7 @@ export default function App() {
         session={session}
         profile={profile}
         onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
-        onBack={() => navigate('home')}
+        onBack={() => navigate('profile')}
       />
     )
   } else if (view === 'hq') {
@@ -741,7 +746,9 @@ export default function App() {
           // so they still carry their own inset.
           paddingTop: isMobile ? 'env(safe-area-inset-top, 0px)' : 0,
           // Leave room for the fixed bottom bar so content isn't hidden behind it.
-          paddingBottom: isMobile ? 'calc(62px + env(safe-area-inset-bottom))' : 0,
+          paddingBottom: isMobile
+            ? 'calc(' + (view === 'study' || view === 'weak' ? 62 : 94) + 'px + env(safe-area-inset-bottom))'
+            : 0,
         }}>
           {/* Per-view boundary keyed on `view`: a screen that throws (or a stale
               lazy chunk after a deploy) degrades to the recovery UI without
@@ -755,7 +762,7 @@ export default function App() {
         {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} isAdmin={!!profile.is_admin} language={profile.active_language} />}
         {/* Calm screens only — floating over Study it covered the Easy grade
             button, and the story reader has its own bottom audio bar. */}
-        {['home', 'practice', 'profile', 'settings', 'words', 'grammar', 'languages'].indexOf(view) !== -1 && (
+        {['practice', 'profile', 'settings', 'words', 'grammar', 'languages'].indexOf(view) !== -1 && (
           <Feedback session={session} profile={profile} view={view} />
         )}
         <Toasts />

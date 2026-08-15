@@ -281,6 +281,7 @@ export const ASSESSMENT_VOCAB = (() => {
 })();
 
 export async function mockSupabaseRoutes(page) {
+  const liveCards = CARDS.map(row => ({ ...row }));
   await page.route(`**/${REF}.supabase.co/**`, async (route) => {
     const req = route.request();
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS, body: '' });
@@ -289,7 +290,18 @@ export async function mockSupabaseRoutes(page) {
     if (url.pathname.startsWith('/rest/v1/rpc/')) {
       const fn = url.pathname.replace('/rest/v1/rpc/', '');
       let body = null;
-      if (fn === 'public_assessment_vocab') body = ASSESSMENT_VOCAB;
+      if (fn === 'grade_card') {
+        const payload = req.postDataJSON() || {};
+        let row = liveCards.find(card => card.id === payload.p_card_id || card.vocab_id === payload.p_vocab_id);
+        const inserted = !row;
+        if (!row) {
+          row = { id: `graded-${payload.p_vocab_id}`, user_id: USER_ID, vocab_id: payload.p_vocab_id, created_at: new Date().toISOString() };
+          liveCards.push(row);
+        }
+        Object.assign(row, payload.p_updates || {});
+        body = [{ card_id: row.id, log_id: null, already_applied: false, inserted }];
+      }
+      else if (fn === 'public_assessment_vocab') body = ASSESSMENT_VOCAB;
       else if (fn === 'dict_search') body = DICT_ENTRIES;
       else if (fn === 'dict_entry') body = DICT_ENTRIES[0];
       else if (fn === 'dict_examples_for') body = [];
@@ -301,7 +313,7 @@ export async function mockSupabaseRoutes(page) {
       const table = url.pathname.replace('/rest/v1/', '').split('?')[0];
       let body;
       if (table in TABLE_FIXTURES) {
-        const f = TABLE_FIXTURES[table];
+        const f = table === 'cards' ? liveCards : TABLE_FIXTURES[table];
         let rows = f;
         // Unlike most broad fixture reads, comprehension is story-scoped. Keep
         // that contract in the mock so one story cannot accidentally display

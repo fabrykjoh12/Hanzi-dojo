@@ -13,6 +13,8 @@ so the community always sees the latest. Keep it current — move things to
 
 ## 🚧 Now — in progress
 
+- [ ] **Home + navigation v3 production migration** — the approved Cards → Story → Practice Home and Stories — Home — Practice navigation are locked. Production now preserves old Cards/More deep links, derives every daily stage from real learning state, and is in the final 320/390/430 light/dark, native-history, full-suite, CI and release gate before physical-device QA.
+
 **Just shipped**
 - [x] **The grade buttons explain themselves.** A small "?" next to Again / Hard / Good / Easy opens a plain-language note on what each grade means and what it does to the card's schedule — including that pressing Again loses nothing, it's just how the app finds the right pace. On desktop, hovering any grade button shows the same explanation.
 - [x] **Audio that fails now says so — and lets you try again.** When a word's clip doesn't load mid-review (a bad connection, a hiccup), the play button used to go quietly dead for the rest of the card. Every audio control on the flashcards now shows a clear "retry" state instead, and one tap tries the clip again.

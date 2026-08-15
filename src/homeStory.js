@@ -15,6 +15,7 @@ import { pickDailyStory } from './dailyStory'
 import { tiersFor } from './storyTiers'
 import { calculateStoryReadability } from './storyReading'
 import { todayStr } from './streak'
+import { storyReadStateForDate } from './homePresentation'
 
 // The hero needs a single readable line, not the whole story. The first
 // non-empty line is the story's opening — which is what a learner is being
@@ -63,7 +64,7 @@ export async function getDailyStoryCard(userId, track, learnedCount, dateStr = t
         .eq('language', track.language).eq('system', track.system)
         .lte('level', track.current_level).eq('is_published', true),
       supabase
-        .from('story_reads').select('story_id').eq('user_id', userId),
+        .from('story_reads').select('story_id,read_at').eq('user_id', userId),
       supabase
         .from('vocabulary').select('id, word, reading, meaning, level')
         .eq('language', track.language).eq('system', track.system)
@@ -73,11 +74,14 @@ export async function getDailyStoryCard(userId, track, learnedCount, dateStr = t
     const stories = storiesRes.data || []
     if (stories.length === 0) return null
 
+    const readState = storyReadStateForDate(readsRes.data || [], dateStr)
     const story = pickDailyStory({
       stories,
       categories: tiersFor(track.language, track.current_level),
       learnedCount,
-      readIds: new Set((readsRes.data || []).map(r => r.story_id)),
+      // A story finished today stays today's story after the Home refetch.
+      // Earlier reads still leave the daily picker preferring something new.
+      readIds: readState.readBeforeTodayIds,
       dateStr,
     })
     if (!story) return null
@@ -99,6 +103,7 @@ export async function getDailyStoryCard(userId, track, learnedCount, dateStr = t
       // knownPct is already rounded by calculateStoryReadability.
       knownPct: readability.knownPct,
       newCount: readability.newCount,
+      completedToday: readState.readTodayIds.has(story.id),
     }
   } catch {
     // Offline or a failed query — the hero degrades to its empty state. A Home

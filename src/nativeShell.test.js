@@ -63,6 +63,13 @@ describe('routeFromDeepLink', () => {
     expect(routeFromDeepLink(APP_URL_SCHEME + '://auth-callback?code=xyz')).toBe('/auth-callback?code=xyz')
   })
 
+  it('preserves retired-tab deep links for the app compatibility redirect', () => {
+    expect(routeFromDeepLink(APP_URL_SCHEME + '://cards')).toBe('/cards')
+    expect(routeFromDeepLink(APP_URL_SCHEME + '://more')).toBe('/more')
+    expect(routeFromDeepLink('https://hanzi-dojo.com/cards')).toBe('/cards')
+    expect(routeFromDeepLink('https://hanzi-dojo.com/more')).toBe('/more')
+  })
+
   it('rejects other schemes and garbage without throwing', () => {
     expect(routeFromDeepLink('mailto:hi@hanzi-dojo.com')).toBe(null)
     expect(routeFromDeepLink('not a url')).toBe(null)
@@ -86,5 +93,6 @@ describe('backAction', () => {
 
   it('falls back to Home when there is no history (cold deep link)', () => {
     expect(backAction('/study', false)).toBe('home')
+    expect(backAction('/cards', false)).toBe('home')
   })
 })
