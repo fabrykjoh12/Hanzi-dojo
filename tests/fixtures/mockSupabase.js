@@ -259,6 +259,23 @@ const STORY_QUESTIONS = [
   ...questionsFromManhuaManifest(UPSTAIRS_MANIFEST, UPSTAIRS_STORY_ID),
 ];
 
+// Every vocabulary row the mock knows about, INCLUDING the ones deliberately
+// kept out of the level-scoped `VOCAB` list above: the cards fixture references
+// v8–v12 and the dictionary word dv1, and each card carries that row nested
+// under `vocabulary` because production fetches cards through an
+// `vocabulary!inner(...)` join. So those rows exist in production — they are
+// simply not what a level-scoped vocabulary query returns.
+//
+// Study looks them up by id (`.in('id', missingIds)` in Study.jsx, after
+// `missingVocabIds` spots a card whose word the level query didn't return).
+// Until the mock honored that lookup, Study silently dropped those six cards
+// while Home counted them, so Home and Study disagreed in the fixture for a
+// reason that cannot happen against the real database.
+const VOCAB_BY_ID = [
+  ...VOCAB,
+  ...CARDS.map(c => c.vocabulary).filter(v => v && !VOCAB.some(known => known.id === v.id)),
+];
+
 const TABLE_FIXTURES = { profiles: PROFILE, language_tracks: TRACK, vocabulary: VOCAB, cards: CARDS, stories: STORIES, story_reads: [], story_questions: STORY_QUESTIONS };
 
 // How many active words the mock curriculum holds. The profile's known-word map
@@ -344,6 +361,18 @@ export async function mockSupabaseRoutes(page) {
           const filter = url.searchParams.get('story_id');
           const storyId = filter && filter.startsWith('eq.') ? filter.slice(3) : null;
           if (storyId) rows = rows.filter(row => row.story_id === storyId);
+        }
+        // A vocabulary lookup BY ID is not level-scoped in production — it is
+        // how Study resolves the words a level query didn't return (a saved
+        // dictionary word, a reach word from a story). Serve it from the full
+        // registry; every other vocabulary query keeps returning the
+        // level-scoped list, so nothing that counts curriculum words moves.
+        if (table === 'vocabulary' && Array.isArray(rows)) {
+          const idFilter = url.searchParams.get('id');
+          if (idFilter && idFilter.startsWith('in.')) {
+            const wanted = new Set(idFilter.slice(3).replace(/^\(|\)$/g, '').split(',').map(s => s.replace(/^"|"$/g, '')));
+            rows = VOCAB_BY_ID.filter(row => wanted.has(row.id));
+          }
         }
         // The flat shelf issues TWO stories queries — reachable levels
         // (level=lte.N) and the next level's teaser (level=eq.N+1). Honor the
