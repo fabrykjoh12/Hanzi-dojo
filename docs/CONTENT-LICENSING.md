@@ -21,7 +21,7 @@ Evidence behind every row: [`CONTENT-PROVENANCE-AUDIT.md`](CONTENT-PROVENANCE-AU
 |---|---|---|---|---|---|
 | **OpenAI / ChatGPT ImageGen** | The original Hanzi Dojo brush mark — `src/assets/86055582-…png`, from which the whole shipped icon family derives | **Permitted.** OpenAI's terms assign ownership of generated output to the user who created it | Owner | The generating conversation, if still recoverable — see the note below | 🟠 |
 | **Higgsfield** (model `nano_banana_pro`) | 127 manhua panels (`public/stories/**`), 267 story covers, `bg-russian` | **Permitted.** Higgsfield's published terms state it does not claim ownership of Inputs or Outputs, does not restrict commercial use, and that rights in Outputs may be transferred or sublicensed | Creator retains | **A dated PDF of the Terms of Use as they stood on the generation dates**, plus the account/plan the work was generated under | 🟠 |
-| **Microsoft Azure Neural TTS** (`zh-CN-Xiaoxiao*`, `zh-CN-Yunxi`, casting pools) | ~10,522 audio clips — words, examples, story lines | **Paid tiers only.** Microsoft grants commercial usage rights for prebuilt neural voices to paid-tier customers; the free F0 tier is not licensed for commercial use | n/a | **A screenshot of the Speech resource's pricing tier**, showing S0 rather than F0 | 🔴 |
+| **Microsoft Azure Neural TTS** (`zh-CN-Xiaoxiao*`, `zh-CN-Yunxi`, casting pools) | **8,814 served clips** (16,230 rows; the rest orphaned) — words, examples, story lines | **Paid tiers only.** Microsoft grants commercial usage rights for prebuilt neural voices to paid-tier customers; the free F0 tier is not licensed for commercial use | n/a | Screenshot of the resource on **S0**; then re-render the served clips under S0 | 🟠 |
 | **Google Cloud TTS** (`cmn-CN-Chirp3-HD-*`, `cmn-CN-Wavenet-A`) | Legacy clips still served (`docs/TTS.md:245`) | Standard Google Cloud terms | n/a | Terms citation for the generation period | 🟠 |
 | **Google Gemini** (`gemini-2.5-flash-lite`, `gemini-2.5-flash`) | Story text, primary generator (`llmProviders.mjs:63-84`) | Standard terms assign output rights to the customer | Customer | Terms citation | 🟠 |
 | **Groq** (`llama-3.3-70b-versatile`) | Story text, failover | Standard terms | Customer | Terms citation | 🟠 |
@@ -56,19 +56,30 @@ What that statement establishes, and what it does not:
 conversation is still in the owner's history, exporting a dated PDF upgrades this
 row from 🟠 to ✅ in about a minute. Not required, and not a blocker.
 
-## The blocking question
+## The Azure tier — answered 2026-08-15
 
-🔴 **The Azure Speech resource tier is not knowable from this repository.**
-`.env.example` records only `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION`; the
-tier is an Azure portal setting.
+**Owner report: the Speech resource was on F0 (free) and has now been changed to
+S0 (Standard).** The tier question is settled; what remains is the consequence.
 
-- If the resource is **S0 (paid)** — the expected answer — this row closes with a
-  screenshot and nothing needs regenerating.
-- If it is **F0 (free)** — every one of the ~10,522 shipped clips was produced
-  without commercial rights and must be regenerated on a paid resource before
-  release.
+F0 does not license commercial use of prebuilt neural voices, so the audio
+already in the bucket was generated without those rights. Moving to S0 licenses
+*future* synthesis, not past output — so the served clips need re-rendering
+under the paid tier before release.
 
-Nobody should guess this. **Owner action.**
+**The scope turned out to be much smaller than feared.** A dry-run audit
+([`TTS-RELICENSE-DRY-RUN.md`](TTS-RELICENSE-DRY-RUN.md)) found that of 16,230
+`tts_audio` rows, only **8,814 are reachable by the app** — 7,416 vocabulary
+clips are orphaned by a 2026-07-28 bulk re-import that gave the words new UUIDs.
+Re-rendering the reachable set is **66,390 characters ≈ USD 1.06 ≈ NOK 10**,
+against roughly NOK 1,931 of credit. Cost is not a constraint.
+
+Nothing has been regenerated yet. Once it is, `provider_version` should carry
+`;tier=S0` so the licensed generation is evidenced per row rather than asserted,
+and the portal screenshot belongs in this file.
+
+**Worth asking Microsoft support first:** whether moving to S0 covers audio
+already generated under F0. If it does, the re-render is unnecessary. At USD 1
+it is not worth *waiting* on the answer, but it is worth asking.
 
 ---
 
@@ -128,7 +139,9 @@ a warning, never an error — the gap is real and is not going to be papered ove
 
 ## Open questions
 
-1. **Azure tier — S0 or F0.** 🔴 Blocking. Owner.
+1. ~~Azure tier — S0 or F0~~ — **answered 2026-08-15: was F0, now S0.** What
+   remains is re-rendering the 8,814 served clips under the paid tier (≈ NOK 10)
+   and archiving the tier screenshot. Plan: `TTS-RELICENSE-DRY-RUN.md`.
 2. **Higgsfield terms as at the generation dates.** The site is unreachable from
    the build sandbox; the owner should archive a dated PDF rather than relying on
    whatever the page says later.

@@ -24,7 +24,8 @@ Evidence for blocker 1 lives in its own document —
 > | **1e · Per-image provenance** | ✅ Shipped — `artProvenance.mjs`; new images refuse to fetch without a prompt + date. Nothing backfilled |
 > | **4 · Play deletion URL** | ⏸ Copy drafted below, **not shipped** — needs the backup-retention window |
 > | **1a · Icon master provenance** | ✅ **Closed 2026-08-15** — owner statement: generated through ChatGPT / OpenAI ImageGen. Not stock, not a third-party logo. No icon pixel changed |
-> | **1c Azure · 2 demo account** | ⏸ Owner-blocked, untouched |
+> | **1c · Azure Speech tier** | ✅ **Answered 2026-08-15** — was F0, now S0. Re-render dry-run complete and costed (8,814 clips, ≈ NOK 10); nothing regenerated, awaiting approval |
+> | **2 · Demo account** | ⏸ Owner-blocked, untouched |
 > | **3b · DojoHQ in the bundle** | ⏸ Deferred — needs `App.jsx`, which Codex holds |
 
 > **Codex baseline used for every collision call:** `origin/codex/home-v3-final-craft`,
@@ -51,7 +52,7 @@ What did not come back clean is the foundation of the brand itself.
 |---|---|---|---|
 | 1a | ~~The icon master has no traceable origin~~ | **✅ CLOSED 2026-08-15.** Owner statement: `src/assets/86055582-…png` was generated for the owner through **ChatGPT / OpenAI ImageGen** — not bought from a stock marketplace, not taken from a third-party logo. The whole derivation chain (original raster → V2 cleanup → E2 material → the shipped icon family) inherits that. **No redraw. No icon pixel changed.** Caveats recorded in `CONTENT-LICENSING.md`: the original prompt may be unrecoverable, AI output is not guaranteed unique, and this is not a copyright guarantee in every jurisdiction | Recorded |
 | 1b | ~~`/terms` publicly asserts © over that artwork~~ | **✅ FIXED 2026-08-15** — the clause now asserts only what is owned and acknowledges the AI-generated artwork directly | Shipped |
-| 1c | **Azure TTS grants commercial use on paid tiers only** — ~10,522 shipped clips; the resource tier is not in the repo | If the Speech resource is F0, every clip is unlicensed for commercial use | **No** — worst case regenerate on S0. **The only remaining piece of blocker 1** |
+| 1c | ~~Azure TTS grants commercial use on paid tiers only~~ | **✅ ANSWERED 2026-08-15.** The resource was on **F0**; it has been moved to **S0**. Past output is not retroactively licensed, so the served clips still need re-rendering — but the dry-run audit sized that at **8,814 clips / 66,390 chars ≈ NOK 10** (the other 7,416 rows are orphans, unreachable by app and generator alike). Plan and verification: [`TTS-RELICENSE-DRY-RUN.md`](TTS-RELICENSE-DRY-RUN.md). Nothing regenerated | Costed, awaiting approval |
 
 Everything else in §7 of the audit (prompt archive, unmanifested `upstairs`
 panels, CC-CEDICT ShareAlike, HSK glosses, `hanzi-writer-data`, `lucide`, fonts,
@@ -87,7 +88,9 @@ by **zero** app code).
 - ~~The acquisition record for `86055582-…png`~~ — **answered 2026-08-15:**
   generated for the owner through ChatGPT / OpenAI ImageGen. Optional follow-up:
   export the generating conversation as a dated PDF.
-- The **Azure Speech resource tier** (S0 vs F0), with a screenshot.
+- ~~The Azure Speech resource tier (S0 vs F0)~~ — **answered: was F0, now S0.**
+  Remaining: approve the ≈ NOK 10 re-render, and archive a screenshot of the
+  resource on S0.
 - Archived PDFs of Higgsfield's terms as they stood on the generation dates
   (`higgsfield.ai` is egress-blocked from this sandbox).
 - Whether the softened `/terms` wording is acceptable to whoever signs it off.
@@ -337,9 +340,9 @@ XL = a design phase.
 **Phase 0 — start today, owner only, zero code.** Everything else waits on these
 and none of it is parallelisable later:
 
-1. **Azure tier check** (1c). One portal glance. If it comes back F0, a
-   ~10,500-clip regeneration lands on the critical path and everything reorders.
-   **This is now the single longest-lead risk in the project.**
+1. ~~Azure tier check~~ — **answered 2026-08-15: was F0, now S0.** The feared
+   ~10,500-clip regeneration turned out to be 8,814 clips for about NOK 10, and
+   it is no longer on the critical path. Approve the re-render when convenient.
 2. ~~Icon-master provenance~~ — **closed 2026-08-15.** It was the other candidate
    for longest task; it is not one any more.
 3. **Create and seed the demo account** (2). Owner time only; unblocks submission
@@ -387,21 +390,24 @@ changed by this task.*
 Everything Claude can do without Codex is done. These three are the whole
 remaining critical path, and none of them is a code task.
 
-### A · Azure Speech tier — **the long pole**
+### A · ~~Azure Speech tier~~ — **answered 2026-08-15, and much smaller than feared**
 
-**Question:** is the Azure Speech resource that generated the shipped audio on
-**F0 (free)** or **S0 (paid)**?
+**The answer was F0.** The resource has since been moved to **S0 (Standard)**.
+Moving tier licenses future synthesis, not past output, so the audio already in
+the bucket still needs re-rendering — but the dry-run audit
+([`TTS-RELICENSE-DRY-RUN.md`](TTS-RELICENSE-DRY-RUN.md)) cut the scope in half:
 
-**Where:** Azure portal → the Speech resource → Overview / Pricing tier.
+- **8,814 clips / 66,390 characters** are actually reachable by the app.
+- The other **7,416 clips are orphans** from the 2026-07-28 vocabulary
+  re-import — unreachable by the app *and* by the generator, so they cannot be
+  selected and cost nothing to skip. (Also 79 MB of dead bucket storage.)
+- **≈ USD 1.06 ≈ NOK 10**, against ~NOK 1,931 of credit. Roughly 190× headroom.
 
-**Why it matters:** Microsoft grants commercial usage rights for prebuilt neural
-voices to **paid tiers only**. ~10,522 clips depend on the answer.
+**What is left for the owner:** approve the re-render, and archive a screenshot
+of the resource on S0 in `docs/CONTENT-LICENSING.md`. This is no longer the long
+pole — it is an afternoon and one krone.
 
-- **S0** → archive a screenshot in `docs/CONTENT-LICENSING.md`, done.
-- **F0** → every clip must be regenerated on a paid resource before release, and
-  that becomes the longest task in the project.
-
-**Nothing is regenerated until the answer is known.**
+*Nothing has been regenerated. Awaiting approval.*
 
 ### B · App Review demo account
 
