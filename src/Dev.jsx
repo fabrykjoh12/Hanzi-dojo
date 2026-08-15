@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import { isDevUser, masteredCardRow, learningCardRow, chunk } from './devTools'
+import { isDevAllowed, masteredCardRow, learningCardRow, chunk } from './devTools'
 import { getLevels, getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { buildLabel } from './version'
@@ -11,7 +11,8 @@ import {
 
 // Developer page (/dev) — self-service testing tools. Everything here runs as
 // the signed-in user through RLS, so it can only touch this account's own
-// rows; access is additionally gated to the dev email allowlist (devTools.js).
+// rows; access is additionally gated on profile.is_admin (devTools.js), the
+// same server-backed flag /hq and /dashboard use.
 // Not linked from the main nav — reachable via /dev or the Settings link.
 
 function Section({ icon: Icon, title, children, accent }) {
@@ -58,7 +59,7 @@ function Action({ label, onRun, danger, confirm }) {
 
 export default function Dev({ session, profile, track, onBack, onNavigate }) {
   const email = session?.user?.email
-  const allowed = isDevUser(email)
+  const allowed = isDevAllowed(profile)
   const theme = languageTheme(profile.active_language)
   const accent = theme.accentHex
   const [counts, setCounts] = useState(null)
@@ -90,7 +91,7 @@ export default function Dev({ session, profile, track, onBack, onNavigate }) {
       <div style={{ maxWidth: '520px', margin: '80px auto', textAlign: 'center', color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
         <FlaskConical size={28} color="var(--text-faint)" style={{ marginBottom: '10px' }} />
         <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>Developer tools</div>
-        <div style={{ fontSize: '13px', marginTop: '6px' }}>This page is only available to developer accounts.</div>
+        <div style={{ fontSize: '13px', marginTop: '6px' }}>This page is only available to admin accounts.</div>
       </div>
     )
   }

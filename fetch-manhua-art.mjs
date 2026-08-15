@@ -18,21 +18,53 @@
 //
 // Manifest shape (data/manhua/<episode>.art.json):
 //   { "dir": "public/stories/inkbound/hsk1/ep01",
-//     "assets": [ { "file": "panel-01-arrival.webp", "url": "https://…" } ] }
+//     "assets": [ { "file": "panel-01-arrival.webp",
+//                   "url": "https://…",
+//                   "prompt": "…the full prompt, CRITICAL CONSTRAINTS included…",
+//                   "generated": "2026-08-15" } ] }
+//
+// `prompt` and `generated` are the provenance record, required on any entry
+// being fetched for the FIRST time (artProvenance.mjs). Panels already committed
+// predate the rule and are reported, never blocked and never backfilled — see
+// docs/CONTENT-LICENSING.md.
 //
 // Run with:
 //   node fetch-manhua-art.mjs data/manhua/inkbound-hsk1-ep01.art.json
 //   node fetch-manhua-art.mjs <manifest> --force    (re-fetch files already present)
+//   node fetch-manhua-art.mjs --check               (audit every manifest, fetch nothing)
 
-import { readFileSync, mkdirSync, writeFileSync, existsSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, mkdirSync, writeFileSync, existsSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { auditManifest, formatAudit } from './artProvenance.mjs'
 
 const args = process.argv.slice(2)
 const manifestPath = args.find(a => !a.startsWith('--'))
 const force = args.includes('--force')
+const checkOnly = args.includes('--check')
+
+// --check audits every manifest in data/manhua/ and reports the provenance gap
+// without fetching anything. It exits 0 even when entries are incomplete: the
+// legacy gap is a documented fact, not a build failure.
+if (checkOnly) {
+  const dir = 'data/manhua'
+  const files = readdirSync(dir).filter(f => f.endsWith('.art.json')).sort()
+  let totalAssets = 0
+  let totalComplete = 0
+  for (const f of files) {
+    const m = JSON.parse(readFileSync(join(dir, f), 'utf8'))
+    const audit = auditManifest(m, (file) => existsSync(join(m.dir || '', file)))
+    totalAssets += audit.total
+    totalComplete += audit.complete.length
+    console.log(formatAudit(audit, f))
+  }
+  console.log('\n' + totalComplete + '/' + totalAssets + ' manifest entries carry a prompt and a generation date.')
+  console.log('Entries without them predate the rule and are left honestly incomplete.')
+  process.exit(0)
+}
 
 if (!manifestPath) {
   console.error('Usage: node fetch-manhua-art.mjs <manifest.json> [--force]')
+  console.error('       node fetch-manhua-art.mjs --check')
   process.exit(1)
 }
 
@@ -48,6 +80,23 @@ const dir = manifest.dir
 const assets = Array.isArray(manifest.assets) ? manifest.assets : []
 if (!dir || assets.length === 0) {
   console.error('Manifest needs a "dir" and a non-empty "assets" array.')
+  process.exit(1)
+}
+
+// Provenance gate. An asset about to be downloaded for the first time is new
+// work, and new work records how it was made; anything already committed is
+// reported and left alone. Refusing here — before the fetch — is the only point
+// where the prompt still exists to be written down.
+const audit = auditManifest(manifest, (file) => existsSync(join(dir, file)))
+if (audit.legacy.length > 0 || audit.blocking.length > 0) {
+  console.log(formatAudit(audit, manifestPath) + '\n')
+}
+if (audit.blocking.length > 0) {
+  console.error('Refusing to fetch: ' + audit.blocking.length + ' new entr'
+    + (audit.blocking.length === 1 ? 'y has' : 'ies have')
+    + ' no provenance record.')
+  console.error('Add the real prompt and generation date to the manifest — do not invent them.')
+  console.error('Background: docs/CONTENT-LICENSING.md')
   process.exit(1)
 }
 

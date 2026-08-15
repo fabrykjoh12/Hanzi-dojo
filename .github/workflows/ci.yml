@@ -52,3 +52,25 @@ jobs:
       # build with them unset still compiles. This checks the bundle, not config.
       - name: Build
         run: npm run build
+
+      # `npm run build` is the *Sites* variant — it emits hq.html alongside the
+      # app. The bundle the App Store and Play actually ship is `build:public`
+      # (DOJO_PUBLIC_BUILD=1), and until now no PR check ever ran it, so a
+      # store-only regression could pass every gate. It reuses dist/, so it runs
+      # after the Sites build rather than instead of it.
+      - name: Build (public / store bundle)
+        run: npm run build:public
+
+      # A personal email once shipped inside the public bundle: devTools.js had
+      # a hardcoded fallback that Vite inlined because VITE_DEV_EMAILS was unset
+      # (see docs/RELEASE-BLOCKER-REMEDIATION.md §3). The gate is now
+      # profile.is_admin and no address remains — this keeps it that way.
+      # support@hanzi-dojo.com is the published address and is expected.
+      - name: Assert no personal identifiers in the store bundle
+        run: |
+          if grep -rq "fabrykjoh" dist/; then
+            echo "::error::A personal identifier is present in the public bundle:"
+            grep -rl "fabrykjoh" dist/
+            exit 1
+          fi
+          echo "Clean: no personal identifier in dist/"

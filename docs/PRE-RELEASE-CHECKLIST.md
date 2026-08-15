@@ -72,11 +72,25 @@ columns all exist — older "pending migration" doc entries were stale.
       fixed-height flashcard and writing screens.
 - [ ] **External links** (Discord, attribution links) open the system browser,
       never navigate the app webview.
-- [x] **App icons + splash screens — DONE 2026-08-07.** 88 assets rasterised
-      from the existing ensō mark for both platforms, all densities, light and
-      dark. The Android adaptive foreground is drawn at 830/1024 on purpose:
-      the adaptive-icon XML adds its own ~16.7% inset, so a full-bleed
-      foreground gets visibly cropped.
+- [x] **App icons — REDONE as App Icon V2, 2026-08-15.** The 2026-08-07 icon
+      set had two real defects found in the P14 audit: no dark/tinted
+      appearance declarations (iOS synthesised them, differently per surface)
+      and an Android background inset 16.7% (the 18dp parallax margin was
+      transparent; the earlier note claiming the inset was intentional was
+      wrong — the fix is a full-bleed background, not a shrunken foreground).
+      V2: the refined V2 brush mark on the E2 vermilion lacquer field, iOS
+      Any/Dark/Tinted all authored, Android full-bleed background +
+      safe-zone foreground + authored `<monochrome>` (themed icons on), web
+      icons + favicon unified onto the same mark. Regenerate:
+      `node tools/generate-app-icons.mjs`; gate:
+      `node tools/verify-app-icons.mjs`. **Still to verify on device:**
+      Settings › Apps in dark mode, the four appearance modes, Android themed
+      launchers (folded into §4 device pass).
+- [ ] **Splash screens still show the pre-V2 mark — regenerate AFTER Home V3.**
+      The native splash hands off to the web overlay (`SplashIntro.jsx`,
+      draws `Hanzi-logo.png`); both must switch to the V2 mark in the same
+      change or the mark visibly swaps mid-launch. Blocked on the Home V3
+      migration finishing (it owns those surfaces).
 
 ### 0b · Hard store blockers (rejection-level, code + config)
 

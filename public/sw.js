@@ -25,7 +25,11 @@
 // v6: adds a Background Sync handler ('hd-flush') that wakes open clients to
 // replay the offline write queue when connectivity returns — even if the page
 // was backgrounded.
-var VERSION = 'v7'
+//
+// v8: App Icon V2 — every icon PNG and favicon.svg changed content under the
+// same URLs, and same-origin assets are cache-first, so installed clients
+// would keep the old icons forever without a version bump.
+var VERSION = 'v8'
 var SHELL_CACHE = 'hanzi-shell-' + VERSION
 var ASSET_CACHE = 'hanzi-assets-' + VERSION
 var AUDIO_CACHE = 'hanzi-audio-' + VERSION

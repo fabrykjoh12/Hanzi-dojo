@@ -1,0 +1,43 @@
+Copyright (c) 2026 Hanzi Dojo. All rights reserved.
+
+This repository is source-visible, not open source. No license to use, copy,
+modify, merge, publish, distribute, sublicense or sell copies of this software
+is granted by its public availability. Viewing the source, and the forking and
+pull-request mechanics that GitHub's own Terms of Service enable for public
+repositories, are the extent of what is permitted without written permission.
+
+The app itself is free to use. Nothing here restricts using Hanzi Dojo as a
+learner.
+
+Third-party components and datasets are NOT covered by the above and remain
+under their own licenses. Those licenses grant rights this file does not, and
+carry obligations this project must meet. They are listed in NOTICE.md, and
+generated content is recorded in docs/CONTENT-LICENSING.md. Where a third-party
+license conflicts with anything above, the third-party license governs its own
+material.
+
+----
+
+NEEDS OWNER CONFIRMATION — do not treat this file as settled.
+
+This is a conservative placeholder chosen because the repository contained no
+license decision of any kind: no LICENSE file, no `license` key in package.json,
+and no statement in any document. All-rights-reserved is the default that
+applies to an unlicensed work anyway, so writing it down changes nothing legally
+while making the position explicit.
+
+Two things the owner should decide deliberately:
+
+1. Whether the repository should stay PUBLIC. It is public today
+   (github.com/fabrykjoh12/Hanzi-dojo), which is a fine choice — but it should
+   be a chosen one, since the code, content pipeline and internal docs are all
+   readable by anyone.
+
+2. Whether all-rights-reserved is the intent, or whether an actual open-source
+   license (MIT, Apache-2.0, AGPL-3.0, …) is wanted. That is a product decision
+   with real consequences, and it was not made here.
+
+Also unresolved, and tracked in docs/CONTENT-PROVENANCE-AUDIT.md: the origin of
+the icon master `src/assets/86055582-d1d3-4cb7-a460-6c907025fe15.png`, from
+which every shipped app icon derives. Until that is established, the copyright
+line above should not be read as a claim over that mark.

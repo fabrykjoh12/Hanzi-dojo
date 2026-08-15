@@ -1,25 +1,19 @@
 // Pure helpers for the developer page (/dev) — testable without the UI.
 //
 // The dev page is self-service testing: every action runs as the SIGNED-IN
-// user through RLS, so it can only ever touch that account's own rows. Access
-// is gated to the developer email allowlist below (override with a
-// comma-separated VITE_DEV_EMAILS at build time).
+// user through RLS, so it can only ever touch that account's own rows.
+//
+// Access is gated on `profile.is_admin` — the same server-backed flag that
+// gates /hq and /dashboard. It replaced a hardcoded email allowlist, which had
+// two problems: the default literal was a personal address that Vite inlined
+// into the public store bundle, and an email string is not access control at
+// all, only a convention. `is_admin` is set in the database and cannot be
+// self-assigned (guard_is_admin_flag trigger), so it is the honest gate.
 
-import { normalizeEmail } from './utils'
 import { creativeCardRow } from './creativeMode'
 
-const DEFAULT_DEV_EMAILS = 'fabrykjoh@gmail.com'
-
-export function devEmailList(raw) {
-  const src = raw != null
-    ? raw
-    : (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_DEV_EMAILS) || DEFAULT_DEV_EMAILS
-  return String(src).split(',').map(normalizeEmail).filter(Boolean)
-}
-
-export function isDevUser(email, raw) {
-  if (!email) return false
-  return devEmailList(raw).indexOf(normalizeEmail(email)) !== -1
+export function isDevAllowed(profile) {
+  return !!(profile && profile.is_admin)
 }
 
 // A card row that counts as fully MASTERED everywhere. Delegates to Creative
