@@ -85,7 +85,7 @@ function ViewFallback() {
   return (
     <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <span role="status" style={SR_ONLY}>Loading…</span>
-      <div aria-hidden="true" lang="zh-Hans" style={{ fontSize: '30px', color: 'var(--text-faint)', fontFamily: "'Noto Sans SC'" }}>学</div>
+      <div aria-hidden="true" lang="zh-Hans" className="hd-breathe" style={{ fontSize: '30px', color: 'var(--text-faint)', fontFamily: "'Noto Sans SC'" }}>学</div>
     </div>
   )
 }

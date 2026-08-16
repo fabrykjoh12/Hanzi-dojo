@@ -42,6 +42,6 @@ describe('Home presentation data', () => {
   })
 
   it('locks the approved motion timings', () => {
-    expect(HOME_MOTION).toEqual({ pressDown: 120, pressReturn: 140, nav: 210, page: 190, stage: 340, reduced: 130 })
+    expect(HOME_MOTION).toEqual({ press: 160, nav: 260, page: 460, reduced: 130 })
   })
 })

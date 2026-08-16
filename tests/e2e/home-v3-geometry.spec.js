@@ -77,7 +77,7 @@ test('Home content clears the raised nav and fonts settle without reflow', async
   await page.goto('/');
   const home = page.locator('[data-home-stage]');
   await expect(home).toBeVisible();
-  const heading = page.getByRole('heading', { name: 'Today’s training' });
+  const heading = page.getByRole('heading', { name: 'Today', exact: true });
   const before = await heading.boundingBox();
   await page.evaluate(() => document.fonts.ready);
   const after = await heading.boundingBox();

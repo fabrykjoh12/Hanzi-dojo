@@ -995,16 +995,26 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
 
   if (loading) {
+    // The session assembling, not a spinner: a ghost of the header rail and a
+    // paper card the size of the one about to appear, breathing quietly. Same
+    // shapes as the loaded screen, so the load reads as the screen settling
+    // into place rather than one unrelated visual swapped for another.
     return (
       <div style={pageShell}>
-        <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{
-            width: '88px', height: '88px', borderRadius: '26px',
+        <span role="status" style={{ position: 'absolute', width: '1px', height: '1px', margin: '-1px', padding: 0, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }}>Preparing your session…</span>
+        <div aria-hidden="true" style={{ width: '100%', maxWidth: '680px', margin: '0 auto' }}>
+          <div className="hd-skeleton" style={{ display: 'flex', gap: '6px', padding: '14px 2px 20px' }}>
+            <span style={{ flex: 3, height: '6px', borderRadius: '999px', background: 'var(--surface-2)' }} />
+            <span style={{ flex: 1, height: '6px', borderRadius: '999px', background: 'var(--surface-2)' }} />
+            <span style={{ flex: 2, height: '6px', borderRadius: '999px', background: 'var(--surface-2)' }} />
+          </div>
+          <div className="hd-fade-in" style={{
+            minHeight: 'min(58vh, 560px)', borderRadius: '24px',
             background: 'var(--surface)', border: '1px solid var(--border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 16px 40px rgba(24,24,27,0.06)',
+            boxShadow: 'var(--shadow-2), inset 0 1px 0 var(--hairline)',
+            display: 'grid', placeItems: 'center',
           }}>
-            <BookOpenCheck size={34} strokeWidth={1.75} color={accentHex} />
+            <span className="hd-breathe" lang="zh-Hans" style={{ fontFamily: langFont + ', sans-serif', fontSize: '44px', lineHeight: 1, color: 'var(--text-faint)' }}>学</span>
           </div>
         </div>
       </div>

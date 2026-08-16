@@ -12,12 +12,15 @@ export function homeProgressPct(learned, totalWords) {
   return totalWords > 0 ? (learned / totalWords) * 100 : 0
 }
 
+// Locked motion timings for Home and the dock (asserted by unit + e2e specs so
+// they can't drift by a stray edit). `press` lives in CSS (.hd-press-deep,
+// 160ms); `page` is the section settle (.hd-home-rise); `nav` is the dock's
+// sliding indicator; `reduced` is the ceiling any reduced-motion state change
+// may take.
 export const HOME_MOTION = Object.freeze({
-  pressDown: 120,
-  pressReturn: 140,
-  nav: 210,
-  page: 190,
-  stage: 340,
+  press: 160,
+  nav: 260,
+  page: 460,
   reduced: 130,
 })
 

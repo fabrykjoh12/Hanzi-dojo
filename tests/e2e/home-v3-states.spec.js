@@ -1,5 +1,10 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 
+// The five daily stages of the Home V4 "paper deck" screen, each rendered from
+// persisted learning state (cards / story reads / grammar reviews) — never
+// from client-side flags. The hero CTA, the story card and the practice row
+// must all agree with the stage machine.
+
 const CORS = {
   'access-control-allow-origin': '*',
   'access-control-allow-headers': '*',
@@ -43,44 +48,44 @@ async function installHomeState(page, state) {
   });
 }
 
-const STATES = [
-  { key: 'cards', header: /Cards first|\d+ min/ },
-  { key: 'story', header: 'Story ready' },
-  { key: 'practice', header: 'Practice ready' },
-  { key: 'complete', header: 'Complete' },
-  { key: 'caught-up', header: 'Caught up' },
-];
+const STATES = ['cards', 'story', 'practice', 'complete', 'caught-up'];
 
 for (const state of STATES) {
-  test(`${state.key} renders from persisted learning state`, async ({ page }) => {
+  test(`${state} renders from persisted learning state`, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await installHomeState(page, state.key);
+    await installHomeState(page, state);
     await page.goto('/');
     const home = page.locator('[data-home-stage]');
-    await expect(home).toHaveAttribute('data-home-stage', state.key);
-    await expect(home.locator('header p')).toHaveText(state.header);
+    await expect(home).toHaveAttribute('data-home-stage', state);
 
     const hero = page.getByRole('region', { name: 'Cards' });
-    const expectedHeight = state.key === 'cards' ? 234 : 226;
-    expect(Math.round((await hero.boundingBox()).height)).toBe(expectedHeight);
+    await expect(hero).toBeVisible();
 
-    if (state.key === 'cards') {
+    // The hero never overflows its column and never collapses.
+    const heroBox = await hero.boundingBox();
+    expect(heroBox.width).toBeLessThanOrEqual(390);
+    expect(heroBox.height).toBeGreaterThan(100);
+
+    if (state === 'cards') {
       await expect(page.getByRole('button', { name: 'Start cards' })).toBeEnabled();
+      await expect(hero.getByText(/1 review · /)).toBeVisible();
       await expect(page.getByText('Finish cards to unlock')).toBeVisible();
     } else {
       await expect(page.getByRole('button', { name: 'Cards complete' })).toBeDisabled();
+      await expect(hero.getByText('Nothing due right now')).toBeVisible();
     }
-    if (state.key === 'story') {
+    if (state === 'story') {
       await expect(page.getByText('Ready to read')).toBeVisible();
       await expect(page.getByRole('button', { name: /Open 我们的歌/ })).toBeEnabled();
     }
-    if (state.key === 'practice') {
+    if (state === 'practice') {
       await expect(page.getByText('Story complete')).toBeVisible();
       await expect(page.getByRole('button', { name: 'Grammar review' })).toBeEnabled();
+      await expect(page.getByText('Ready to practice')).toBeVisible();
     }
-    if (state.key === 'complete') await expect(page.getByText('Complete for today')).toBeVisible();
-    if (state.key === 'caught-up') {
-      await expect(page.getByText('Open the story shelf')).toBeVisible();
+    if (state === 'complete') await expect(page.getByText('Complete for today')).toBeVisible();
+    if (state === 'caught-up') {
+      await expect(page.getByRole('button', { name: /Open the story shelf/ })).toBeEnabled();
       await expect(page.getByText('Nothing due', { exact: true })).toBeVisible();
     }
   });

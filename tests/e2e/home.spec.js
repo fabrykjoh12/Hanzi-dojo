@@ -13,8 +13,8 @@ test.describe('Home (logged in)', () => {
 
   test('renders the locked Cards → Story → Practice sequence', async ({ page }) => {
     await expect(home.cardsHero).toBeVisible();
-    await expect(page.getByText('2 · Story', { exact: true })).toBeVisible();
-    await expect(page.getByText('3 · Practice', { exact: true })).toBeVisible();
+    await expect(page.getByText('Finish cards to unlock')).toBeVisible();
+    await expect(page.getByText('After your story')).toBeVisible();
   });
 
   test('offers exactly one primary action', async ({ page }) => {
