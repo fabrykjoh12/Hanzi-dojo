@@ -71,13 +71,18 @@ export default function TodayOverview({
     totalWords: counts.totalWords || 0,
   })
 
-  // Escape closes, and focus starts inside the sheet so a keyboard user is not
-  // left behind on the chip that opened it.
+  // Escape closes; focus moves into the sheet on open and returns to whatever
+  // opened it on close, so a keyboard user is never dropped at the top of the
+  // document after a look at the day.
   useEffect(() => {
+    const opener = document.activeElement
     const onKey = (e) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', onKey)
     if (sheetRef.current) sheetRef.current.focus({ preventScroll: true })
-    return () => document.removeEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      if (opener && document.contains(opener)) opener.focus({ preventScroll: true })
+    }
   }, [onClose])
 
   // Portalled to the document root on purpose. The sheet is modal — it has to

@@ -213,7 +213,10 @@ export function TodayView({
   onNavigate, onStartCards,
 }) {
   const isMobile = useIsMobile()
-  const [artFailed, setArtFailed] = useState(false)
+  // Which cover URL failed to load, not a bare boolean: a story whose art is
+  // missing must fall back to its title page without condemning the NEXT
+  // story's art, which a sticky flag would do for the rest of the session.
+  const [failedCover, setFailedCover] = useState(null)
   const theme = languageTheme(profile.active_language)
   const language = profile.active_language
   const stage = homeDailyStage({ counts, daily })
@@ -221,7 +224,7 @@ export function TodayView({
   const estimate = sessionEstimateLabel(counts)
   const story = daily ? daily.story : null
   const levelLabel = getLevelLabel(language, track.system, track.current_level)
-  const onArt = environment === 'story' && Boolean(story && story.cover_url) && !artFailed
+  const onArt = environment === 'story' && Boolean(story && story.cover_url) && failedCover !== story.cover_url
 
   // One stage, two geometries: a fixed non-scrolling screen on a phone, a
   // centred column on desktop. Identical children either way — the difference
@@ -257,7 +260,7 @@ export function TodayView({
           bleed={bleed} metaBottom={metaBottom} isMobile={isMobile}
           daily={daily} theme={theme} language={language} track={track}
           onOpen={() => onNavigate('stories', { storyId: story.id })}
-          onArtFail={() => setArtFailed(true)}
+          onArtFail={() => setFailedCover(story.cover_url)}
         />
       )
       : (
