@@ -6,6 +6,7 @@ import { feedbackStoryContext } from './feedbackContext'
 import { BUILD_SHA } from './version'
 import { MessageCircleHeart, X, Bug, Lightbulb, MessageSquare } from 'lucide-react'
 import { trapDialogFocus } from './dialogFocus'
+import { floatingBottom } from './bottomBar'
 
 // A small always-available way for users to send bug reports and ideas
 // straight into the database, no email/GitHub account required. Floating
@@ -21,7 +22,7 @@ const CATEGORIES = [
 const SAGE = '#6E8466'
 const SAGE_DARK = '#5C7155'
 
-export default function Feedback({ session, profile, view }) {
+export default function Feedback({ session, profile, view, navVisible = true, variant = 'floating' }) {
   const isMobile = useIsMobile()
   const [open, setOpen] = useState(false)
   const [category, setCategory] = useState(null)
@@ -87,22 +88,45 @@ export default function Feedback({ session, profile, view }) {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        title="Send feedback"
-        aria-label="Send feedback"
-        style={{
-          position: 'fixed', zIndex: 45,
-          right: isMobile ? '16px' : '24px',
-          bottom: isMobile ? 'calc(72px + env(safe-area-inset-bottom))' : '24px',
-          width: '50px', height: '50px', borderRadius: '999px',
-          background: SAGE, border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 10px 26px rgba(24,24,27,0.22)',
-        }}
-      >
-        <MessageCircleHeart size={22} strokeWidth={1.9} color="#fff" />
-      </button>
+      {variant === 'row' ? (
+        // In-flow entry point (Profile). Feedback is a beta utility, not a
+        // daily action: it does not earn a control that floats over content on
+        // every screen, and a row cannot collide with anything.
+        <button
+          onClick={() => setOpen(true)}
+          aria-label="Send feedback"
+          className="hd-press"
+          style={{
+            minHeight: '44px', padding: '0 13px', borderRadius: '10px',
+            border: '1px solid var(--border)', background: 'var(--surface)',
+            color: 'var(--text-muted)', cursor: 'pointer',
+            display: 'inline-flex', alignItems: 'center', gap: '7px',
+            fontSize: '13px', fontWeight: 650, fontFamily: 'inherit',
+          }}
+        >
+          <MessageCircleHeart size={16} strokeWidth={1.9} />
+          Send feedback
+        </button>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          title="Send feedback"
+          aria-label="Send feedback"
+          style={{
+            position: 'fixed', zIndex: 45,
+            right: isMobile ? '16px' : '24px',
+            // Parked above the dock by the shared contract, never on it.
+            bottom: isMobile ? floatingBottom(navVisible) : '24px',
+            transition: 'bottom 240ms cubic-bezier(0.25, 0.8, 0.25, 1)',
+            width: '50px', height: '50px', borderRadius: '999px',
+            background: SAGE, border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 10px 26px rgba(24,24,27,0.22)',
+          }}
+        >
+          <MessageCircleHeart size={22} strokeWidth={1.9} color="#fff" />
+        </button>
+      )}
 
       {open && (
         <>

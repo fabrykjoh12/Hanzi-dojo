@@ -942,7 +942,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         <span role="status" style={{ position: 'absolute', width: '1px', height: '1px', margin: '-1px', padding: 0, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }}>Preparing your session…</span>
         <div style={{ width: '100%', maxWidth: '680px', margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button type="button" onClick={onBack} aria-label="Close" className="hd-press" style={{ width: '40px', height: '40px', flexShrink: 0, borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', display: 'grid', placeItems: 'center', cursor: 'pointer' }}>
+            {/* "Exit", the same name the loaded header's control carries — one
+                control must not rename itself across the load boundary. */}
+            <button type="button" onClick={onBack} aria-label="Exit" className="hd-press" style={{ width: '40px', height: '40px', flexShrink: 0, borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', display: 'grid', placeItems: 'center', cursor: 'pointer' }}>
               <X size={18} strokeWidth={2.2} />
             </button>
             <div aria-hidden="true" style={{ flex: 1, display: 'flex', gap: '5px' }}>
