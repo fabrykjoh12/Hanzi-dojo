@@ -19,7 +19,8 @@ import Landing from './Landing'
 import PasswordReset from './PasswordReset'
 import Toasts from './Toasts'
 import OfflineBar from './OfflineBar'
-import Feedback from './Feedback'
+import { contentBottomInset, navVisibleFor } from './bottomBar'
+import { useNavFocused } from './navFocus'
 import Onboarding from './Onboarding'
 import FirstMissionWelcome from './FirstMissionWelcome'
 import Sidebar from './Sidebar'
@@ -85,7 +86,7 @@ function ViewFallback() {
   return (
     <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <span role="status" style={SR_ONLY}>Loading…</span>
-      <div aria-hidden="true" lang="zh-Hans" style={{ fontSize: '30px', color: 'var(--text-faint)', fontFamily: "'Noto Sans SC'" }}>学</div>
+      <div aria-hidden="true" lang="zh-Hans" className="hd-breathe" style={{ fontSize: '30px', color: 'var(--text-faint)', fontFamily: "'Noto Sans SC'" }}>学</div>
     </div>
   )
 }
@@ -147,6 +148,11 @@ export default function App() {
   const routerNavigate = useNavigate()
   const location = useLocation()
   const view = pathToView(location.pathname)
+  // Focused experiences (a flashcard session by route; the story reader, which
+  // opens inside the `stories` view and declares itself) hide the dock — and
+  // every bottom-anchored control follows it, via bottomBar.js.
+  const navFocused = useNavFocused()
+  const navVisible = navVisibleFor(view, { focused: navFocused })
   const publicStoryId = readStoryId(location.pathname)
   const assessment = isAssessmentPath(location.pathname)
   const trustPage = trustPageKey(location.pathname)
@@ -768,9 +774,14 @@ export default function App() {
           // reader's own bars) are positioned against the viewport, not this box,
           // so they still carry their own inset.
           paddingTop: isMobile ? 'env(safe-area-inset-top, 0px)' : 0,
-          // Leave room for the fixed bottom bar so content isn't hidden behind it.
+          // Room for the floating dock, from the one bottom-area contract
+          // (bottomBar.js) — never a per-screen number. A study session keeps
+          // its own locked shell height (studyLayout.js), so it is excluded
+          // here rather than re-measured.
           paddingBottom: isMobile
-            ? 'calc(' + (view === 'study' || view === 'weak' ? 62 : 94) + 'px + env(safe-area-inset-bottom))'
+            ? (view === 'study' || view === 'weak'
+              ? 'calc(62px + env(safe-area-inset-bottom))'
+              : contentBottomInset(navVisible))
             : 0,
         }}>
           {/* Per-view boundary keyed on `view`: a screen that throws (or a stale
@@ -782,14 +793,15 @@ export default function App() {
             </ErrorBoundary>
           </Suspense>
         </main>
-        {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} isAdmin={!!profile.is_admin} language={profile.active_language} />}
-        {/* Calm screens only — floating over Study it covered the Easy grade
-            button, and the story reader has its own bottom audio bar. */}
-        {['practice', 'profile', 'settings', 'words', 'grammar', 'languages'].indexOf(view) !== -1 && (
-          <Feedback session={session} profile={profile} view={view} />
-        )}
+        {/* The dock stays mounted and slides away in focused experiences (a
+            flashcard session, the story reader) so it leaves and returns
+            smoothly instead of popping. */}
+        {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} isAdmin={!!profile.is_admin} language={profile.active_language} hidden={!navVisible} />}
+        {/* Feedback no longer floats over content on six screens: it lives as a
+            row in Profile (see Profile.jsx), which is where an established app
+            keeps "contact us" and where it cannot collide with anything. */}
         <Toasts />
-        <OfflineBar session={session} />
+        <OfflineBar session={session} navVisible={navVisible} />
       </div>
     </ThemeContext.Provider>
   )

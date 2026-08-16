@@ -3,6 +3,7 @@ import { WifiOff, RefreshCw } from 'lucide-react'
 import { supabase } from './supabase'
 import { flushOutbox, pendingWrites } from './syncQueue'
 import { useOnline } from './useOnline'
+import { floatingBottom } from './bottomBar'
 
 // Ask the browser to replay the outbox when connectivity returns, even if the
 // page is backgrounded (the SW 'sync' handler wakes clients to flush). No-op
@@ -19,7 +20,7 @@ function registerFlushSync() {
 //  - online with queued writes → flush the outbox and show a brief "syncing".
 // It also drives the flush: on mount, every time the connection returns, and
 // when the service worker's background-sync handler pings. Sits above the nav.
-export default function OfflineBar({ session }) {
+export default function OfflineBar({ session, navVisible = true }) {
   const online = useOnline()
   const [pending, setPending] = useState(0)
   const [syncing, setSyncing] = useState(false)
@@ -69,7 +70,7 @@ export default function OfflineBar({ session }) {
 
   const bar = {
     position: 'fixed', left: '50%', transform: 'translateX(-50%)',
-    bottom: 'calc(80px + env(safe-area-inset-bottom))', zIndex: 55,
+    bottom: floatingBottom(navVisible), zIndex: 55,
     display: 'flex', alignItems: 'center', gap: '9px',
     maxWidth: 'calc(100vw - 32px)',
     padding: '10px 16px', borderRadius: '999px',

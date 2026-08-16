@@ -219,6 +219,12 @@ body {
    unmistakably the landscape the app is set in. */
 :root[data-lit-hero] { --bg-image-opacity: var(--bg-image-opacity-lit); }
 
+/* Home and the study session sit on plain paper: the ambient language
+   wallpaper steps out entirely while either is mounted, so the desk card and
+   the session card share one quiet ground and the tap transition moves
+   between two identical rooms. Set by Home.jsx / Study.jsx. */
+:root[data-quiet-bg] { --bg-image-opacity: 0; --bg-image-opacity-lit: 0; }
+
 /* Framing for the full-page language background (src/Background.jsx).
    The artwork is a wide landscape: mountains along the top, bamboo in the
    bottom-right corner, and a large expanse of empty paper through the middle
@@ -360,22 +366,61 @@ body {
   outline-offset: 2px;
 }
 
-@keyframes hd-home-settle {
-  from { opacity: 0; transform: translateY(3px); }
-  to { opacity: 1; transform: translateY(0); }
+/* ── Home V4 + the dock ───────────────────────────────────────
+   Home assembles top-down: each section rises a few pixels with a soft fade,
+   staggered by an inline animation-delay, so the screen settles rather than
+   popping. 460ms = HOME_MOTION.page. */
+@keyframes hd-home-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-.hd-home-settle {
-  animation: hd-home-settle 190ms cubic-bezier(0.2, 0, 0, 1) both;
+.hd-home-rise {
+  animation: hd-home-rise 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Content that arrives after its container (the hero's word) fades in in
+   place — never a layout shift, never a pop. */
+@keyframes hd-fade-in-soft {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.hd-fade-in {
+  animation: hd-fade-in-soft 320ms ease-out both;
+}
+
+/* Dock tabs answer the finger before the route does: the press is a plain
+   :active scale, so it lands on touch-down rather than after navigation. */
+.hd-dock-tab { -webkit-tap-highlight-color: transparent; }
+.hd-dock-tab:active { transform: scale(0.955); }
+.hd-dock-tab { transition-property: flex, background, color, transform; }
+.hd-dock-tab:active { transition-duration: 90ms; }
+
+/* Deeper press for primary actions: the control visibly gives under the
+   finger and springs back. 160ms = HOME_MOTION.press. */
+.hd-press-deep {
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 160ms ease, filter 160ms ease;
+}
+.hd-press-deep:not(:disabled):active {
+  transform: translateY(1px) scale(0.98);
+  filter: brightness(0.97);
+}
+
+/* Loading surfaces breathe instead of spinning — the app's calm idiom. */
+@keyframes hd-breathe {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.85; }
+}
+.hd-breathe { animation: hd-breathe 1.8s ease-in-out infinite; }
+
+/* Skeleton plates pulse quietly while their content is on its way. */
+@keyframes hd-skeleton-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+.hd-skeleton { animation: hd-skeleton-pulse 1.4s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
-  .hd-home-settle {
-    animation: hd-home-settle 130ms ease-out both !important;
-    transform: none !important;
-  }
-  .hd-home-stage,
-  .hd-mobile-nav-motion,
-  .hd-mobile-nav-motion * {
-    transition-duration: 130ms !important;
-  }
+  @keyframes hd-home-rise { from { opacity: 0; } to { opacity: 1; } }
+  .hd-breathe, .hd-skeleton { animation: none; }
 }

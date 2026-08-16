@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { resolvePresentation } from './readerMode'
 import { prefsGet, prefsMerge } from './offline'
+import { useDeclareNavFocus } from './navFocus'
 
 const PREFS_KEY = 'reader:prefs'
 
@@ -21,6 +22,9 @@ const SceneReader = lazy(() => import('./SceneReader'))
 // readers get `readerMode` + `onPickReaderMode` so the toggle reads the same
 // from either side — an equal choice, not a buried link.
 export default function StoryReader(props) {
+  // Reading is a focused experience: the dock slides away for every reader
+  // presentation while this is mounted, and slides back on the way out.
+  useDeclareNavFocus(true)
   const [modePref, setModePref] = useState('paced')
   useEffect(() => {
     let live = true

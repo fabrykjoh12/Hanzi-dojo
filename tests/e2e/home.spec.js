@@ -12,9 +12,9 @@ test.describe('Home (logged in)', () => {
   });
 
   test('renders the locked Cards → Story → Practice sequence', async ({ page }) => {
-    await expect(home.cardsHero).toBeVisible();
-    await expect(page.getByText('2 · Story', { exact: true })).toBeVisible();
-    await expect(page.getByText('3 · Practice', { exact: true })).toBeVisible();
+    await expect(home.desk).toBeVisible();
+    await expect(page.getByText('Finish cards to unlock')).toBeVisible();
+    await expect(page.getByText('After your story')).toBeVisible();
   });
 
   test('offers exactly one primary action', async ({ page }) => {
@@ -44,6 +44,17 @@ test.describe('Home (logged in)', () => {
     await home.heroAction.click();
     const study = new StudyPage(page);
     await expect(study.showAnswer).toBeVisible();
+  });
+
+  test('the desk card is the prepared session’s first card', async ({ page }) => {
+    // The word printed on Home's desk comes from the SAME prepared queue Study
+    // consumes — so the card the learner taps is the card the session opens on.
+    const word = home.desk.locator('span[lang]').first();
+    await expect(word).not.toBeEmpty();
+    const deskWord = (await word.textContent()).trim();
+    await home.heroAction.click();
+    await expect(page.getByText('Recall first, then reveal')).toBeVisible();
+    await expect(page.locator('[aria-live="polite"]').getByText(deskWord, { exact: true })).toBeVisible();
   });
 
   test('keeps retired Cards and More deep links compatible', async ({ page }) => {
@@ -79,8 +90,10 @@ test.describe('Home (logged in)', () => {
     await backHome.click();
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator('[data-home-stage]')).toHaveAttribute('data-home-stage', 'story');
-    await expect(page.getByRole('button', { name: 'Cards complete' })).toBeDisabled();
+    // The desk has retargeted: cards fold into a quiet done-row and tonight's
+    // story is the primary object.
     await expect(page.getByText('Nothing due right now')).toBeVisible();
-    await expect(page.getByText('Ready to read')).toBeVisible();
+    await expect(page.getByText('Start reading')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Start cards' })).toHaveCount(0);
   });
 });

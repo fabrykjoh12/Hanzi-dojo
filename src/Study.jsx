@@ -1,13 +1,14 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { isOnline } from './useOnline'
 import { enqueueGrade, gradeCardWrite, nextActivityCounts, newOpId } from './syncQueue'
-import { cacheSet, cacheGet, outboxDelete } from './offline'
+import { outboxDelete } from './offline'
 import { getTrackCards } from './data'
 import { studyFloorLevel } from './levelScope'
-import { missingVocabIds, mergeVocab } from './deckVocab'
 import { schedule, previewLabels, endOfLocalDay } from './srs'
-import { dueLearningCards, dueReviewCards, weakCards } from './studyAvailability'
+import { weakCards } from './studyAvailability'
+import { buildStudySession, takePreparedSession } from './sessionPrep'
+import { flipTransform, takeDeskHandoff } from './deskTransition'
 import { todayStr } from './streak'
 import { evaluateAchievements } from './achievements'
 import { toast } from './toast'
@@ -20,9 +21,7 @@ import { pickRecapStory } from './storyMatch'
 import { qualifiesForReward } from './storyReward'
 import { claimSessionReward } from './storyRewardData'
 import { tiersFor, learnedByLevel, readingGateCount } from './storyTiers'
-import { buildStudyQueue, reinsertSoon, queueSeed } from './studyQueue'
-import { isFirstRunSession, firstRunNewTarget } from './firstRun'
-import { isReturningFromBreak, gentleReviewTarget } from './gentleReturn'
+import { reinsertSoon } from './studyQueue'
 import { firstMissionCardHint } from './firstMission'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
 import SessionRecap from './SessionRecap'
@@ -205,8 +204,16 @@ function GradeButton({
 
 export default function Study({ session, profile, track, mode = 'review', onBack, onNavigate, onProfileUpdate }) {
   const isWeak = mode === 'weak'
-  const [queue, setQueue] = useState([])
-  const [loading, setLoading] = useState(true)
+  // Claim the session Home prepared, before the first paint. When the build
+  // already resolved (the normal tap-from-Home flow), the queue below is
+  // populated from the very first render — Study opens ON the first card,
+  // with no loading composition at all. `prepared` may instead be a still-
+  // resolving promise (awaited in the mount effect) or null (deep link /
+  // expired / weak mode), which falls back to building here.
+  const [prepared] = useState(() => (isWeak ? null : takePreparedSession({ userId: session.user.id, track })))
+  const preparedNow = prepared && typeof prepared.then !== 'function' ? prepared : null
+  const [queue, setQueue] = useState(() => (preparedNow ? preparedNow.queue : []))
+  const [loading, setLoading] = useState(() => !preparedNow)
   const [flipped, setFlipped] = useState(false)
   const [done, setDone] = useState(false)
   const [showFurigana, setShowFurigana] = useState(profile.furigana_default !== false)
@@ -273,6 +280,43 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const [mission, setMission] = useState(null)              // active running mission
 
   const isMobile = useIsMobile()
+
+  // The signature entrance: when Home handed off the desk card's rectangle,
+  // play a FLIP from it to this screen's card — the learner watches the same
+  // card grow into the session. Runs once, only when a fresh handoff exists,
+  // and never under reduced motion.
+  const cardElRef = useRef(null)
+  const flipPlayedRef = useRef(false)
+  useLayoutEffect(() => {
+    if (flipPlayedRef.current || loading || done || queue.length === 0) return
+    flipPlayedRef.current = true
+    const from = takeDeskHandoff()
+    const el = cardElRef.current
+    if (!from || !el) return
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const t = flipTransform(from, el.getBoundingClientRect())
+    if (!t) return
+    el.style.transformOrigin = 'top left'
+    el.style.transition = 'none'
+    el.style.transform = 'translate(' + t.x + 'px, ' + t.y + 'px) scale(' + t.sx + ', ' + t.sy + ')'
+    requestAnimationFrame(() => {
+      el.style.transition = 'transform 300ms cubic-bezier(0.2, 0, 0, 1)'
+      el.style.transform = ''
+      setTimeout(() => {
+        el.style.transition = ''
+        el.style.transformOrigin = ''
+      }, 340)
+    })
+  }, [loading, done, queue.length])
+
+  // The session owns the screen: while Study is mounted the ambient language
+  // wallpaper steps out entirely (index.css reads this attribute), so the
+  // card sits on plain paper — and matches the Home it grew out of.
+  useEffect(() => {
+    document.documentElement.setAttribute('data-quiet-bg', '')
+    return () => document.documentElement.removeAttribute('data-quiet-bg')
+  }, [])
+
   // The study screen is height-locked to the viewport on phones (see
   // studyLayout.js), so it has to know how tall that viewport currently is —
   // rotating the device or the address bar collapsing both change it.
@@ -318,84 +362,35 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     try { await loadTtsAudio('vocabulary', ids) } catch { /* legacy audio still plays */ }
   }
 
+  // Wire a built session (from sessionPrep — the queue construction itself
+  // lives there now, shared with Home's desk card) into this component's
+  // refs, state and analytics.
+  function applySession(data) {
+    vocabRef.current = data.vocabList
+    knownWordsRef.current = data.knownWords
+    setFirstRun(data.firstRun)
+    setQueue(data.queue)
+    setDone(data.queue.length === 0)
+    setLoading(false)
+    if (data.queue.length > 0 && !analyticsRef.current.started) {
+      analyticsRef.current.started = true
+      trackEvent(EVENTS.STUDY_SESSION_STARTED, { mode: 'review', first_run: data.firstRun })
+    }
+  }
+
   async function loadQueue() {
     setLoading(true)
     sessionVocabRef.current = []
     againCountRef.current = {}
 
-    // Cumulative deck: fetch the user's cards first so we can derive the study
-    // floor (the lowest level they actually study), then load every level's
-    // vocabulary from that floor up to the current level. Advancing a level
-    // keeps earlier levels in the deck for review instead of dropping them.
-    // Every card the learner owns on this track, not just the ones inside the
-    // level window. A card exists because they chose to study that word — saving
-    // it from a story is an explicit act — so it belongs in the queue even when
-    // the word sits above their current level or carries no level at all.
-    // Which words get INTRODUCED as new is still level-scoped: that comes from
-    // the `vocab` list below, never from the cards.
-    const cards = await getTrackCards(session.user.id, track, { includeUnleveled: true })
-    const floorLevel = studyFloorLevel(cards, track.current_level)
+    const data = await buildStudySession({ userId: session.user.id, profile, track, mode })
 
-    const vocabKey = 'vocab:' + track.language + ':' + track.system + ':' + floorLevel + '-' + track.current_level
-    let vocab = null
-    try {
-      const res = await supabase
-        .from('vocabulary')
-        .select('*')
-        .eq('language', track.language)
-        .eq('system', track.system)
-        .gte('level', floorLevel)
-        .lte('level', track.current_level)
-        .eq('is_active', true)
-        .order('level', { ascending: true })
-        .order('sort_order', { ascending: true })
-      vocab = res.data
-    } catch { /* offline — fall back to the cached vocabulary below */ }
-    // Mirror the cumulative vocabulary for offline; fall back to it when the
-    // fetch came back empty because the network is down.
-    if (vocab && vocab.length) cacheSet(vocabKey, vocab)
-    else { const cached = await cacheGet(vocabKey); if (cached) vocab = cached }
-    vocabRef.current = vocab || []
-
-    let vocabById = {}
-    ;(vocab || []).forEach(v => { vocabById[v.id] = v })
-
-    // A card whose vocabulary the level-scoped load didn't return used to be
-    // dropped on the floor by the `filter(c => c.vocab)` below — silently, so a
-    // saved word simply never appeared in a session again. Fetch exactly the
-    // rows still missing (dictionary words carry no level; a reach word saved
-    // from an easy story sits above the window) and merge them in.
-    const missingIds = missingVocabIds(cards, vocabById)
-    if (missingIds.length) {
-      try {
-        const extra = await supabase
-          .from('vocabulary').select('*').in('id', missingIds)
-        if (extra.data && extra.data.length) {
-          vocabById = mergeVocab(vocabById, extra.data)
-          vocabRef.current = [...(vocabRef.current || []), ...extra.data]
-        }
-      } catch { /* offline — those cards stay out of this session, as before */ }
-    }
-
-    const startOfToday = new Date()
-    startOfToday.setHours(0, 0, 0, 0)
-    const introducedToday = (cards || [])
-      .filter(c => new Date(c.created_at) >= startOfToday && vocabById[c.vocab_id]).length
-    const remainingNew = Math.max(0, profile.daily_new_cards - introducedToday)
-
-    const now = new Date()
-    const startedVocab = new Set()
-
-    const levelCards = (cards || [])
-      .map(c => ({ ...c, vocab: vocabById[c.vocab_id] }))
-      .filter(c => c.vocab)
-    levelCards.forEach(c => startedVocab.add(c.vocab_id))
-    knownWordsRef.current = levelCards.map(c => c.vocab.word)
-
-    // Weak-words drill: focus the cards the user keeps lapsing on, regardless of
-    // their due date. No new cards; grading still feeds FSRS normally.
+    // Weak-words drill: focus the cards the user keeps lapsing on, regardless
+    // of their due date. No new cards; grading still feeds FSRS normally.
     if (isWeak) {
-      const weakQueue = weakCards(levelCards)
+      vocabRef.current = data.vocabList
+      knownWordsRef.current = data.knownWords
+      const weakQueue = weakCards(data.levelCards)
         .sort((a, b) => (b.lapses - a.lapses) || ((a.stability || 0) - (b.stability || 0)))
         .slice(0, 30)
       await primeTtsAudio(weakQueue)
@@ -409,75 +404,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       return
     }
 
-    // Day-based: every review scheduled for today is served from the 00:00
-    // rollover, so a morning session isn't missing reviews that were last done
-    // in the afternoon (matches how the new-card allotment refreshes at
-    // midnight). Both predicates live in studyAvailability.js, which is also
-    // what Home counts with — the number on Home is a promise about this queue.
-    const dueLearning = dueLearningCards(levelCards, now)
-    let dueReview = dueReviewCards(levelCards, now)
-
-    // Gentle return: after a multi-day break the overdue backlog can be huge.
-    // Cap it to a calm handful — oldest-due first (deterministic, and clears the
-    // most-overdue cards first) — so coming back isn't a 300-card wall. Deferred
-    // cards stay due and simply resurface next session; FSRS reschedules from the
-    // actual review time, so nothing is lost. Only in normal review mode.
-    const returning = mode === 'review' && isReturningFromBreak(profile)
-    if (returning) {
-      const cap = gentleReviewTarget({ returning, dueReviewCount: dueReview.length })
-      if (cap < dueReview.length) {
-        dueReview = [...dueReview]
-          .sort((a, b) => new Date(a.due_at) - new Date(b.due_at))
-          .slice(0, cap)
-      }
-    }
-
-    // First-run detection: a brand-new learner (no cards ANYWHERE on the
-    // account) gets a gentle, capped first session. The account-wide count is
-    // only queried when this level is empty (the common returning-user path
-    // skips it), and a track switch — cards on another language — is excluded.
-    // Best-effort: any failure (offline) falls back to a normal session.
-    let isFirst = false
-    if ((cards || []).length === 0) {
-      try {
-        const { count } = await supabase
-          .from('cards').select('id', { count: 'exact', head: true })
-          .eq('user_id', session.user.id)
-        isFirst = isFirstRunSession({ mode, accountCardCount: count || 0 })
-      } catch { /* offline / error — treat as a normal session (no cap) */ }
-    }
-    setFirstRun(isFirst)
-    const newTarget = firstRunNewTarget(isFirst, remainingNew)
-
-    const newItems = (vocab || [])
-      .filter(v => !startedVocab.has(v.id))
-      .slice(0, newTarget)
-      .map(v => ({
-        id: null, vocab_id: v.id, vocab: v,
-        state: 'new', ease_factor: 2.5, interval_days: 0, learning_step: 0,
-      }))
-
-    // Order the session with the seeded queue builder (studyQueue.js): learning
-    // leads, reviews are the backbone, new cards are woven through — never a
-    // block of new up front, never 3 new in a row while a review remains. The
-    // seed is stable per user/level/day, so a reload the same day keeps the
-    // order and different days feel fresh.
-    const seed = queueSeed({
-      userId: session.user.id,
-      language: track.language,
-      system: track.system,
-      level: track.current_level,
-      day: todayStr(),
-    })
-    const newQueue = buildStudyQueue({ dueLearning, dueReview, newItems, seed })
-    await primeTtsAudio(newQueue)
-    setQueue(newQueue)
-    setDone(newQueue.length === 0)
-    setLoading(false)
-    if (newQueue.length > 0 && !analyticsRef.current.started) {
-      analyticsRef.current.started = true
-      trackEvent(EVENTS.STUDY_SESSION_STARTED, { mode: 'review', first_run: isFirst })
-    }
+    applySession(data)
   }
 
   // Lifetime stats that feed achievements (cross-language, like Profile).
@@ -499,10 +426,20 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   }
 
   useEffect(() => {
-    const timer = setTimeout(loadQueue, 0)
+    let alive = true
+    async function start() {
+      if (preparedNow) { applySession(preparedNow); return }
+      if (prepared && typeof prepared.then === 'function') {
+        const data = await prepared
+        if (!alive) return
+        if (data) { applySession(data); return }
+      }
+      if (alive) await loadQueue()
+    }
+    start()
     // Non-blocking before-snapshot for end-of-session achievement toasts.
     loadAchievementStats().then(stats => { achieveBeforeRef.current = stats })
-    return () => clearTimeout(timer)
+    return () => { alive = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -995,17 +932,35 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
 
   if (loading) {
+    // Not a loading composition — the study screen itself, one moment early:
+    // the real close button, a neutral header rail, and the card with a blank
+    // face. The incoming card fills the face in place; nothing here exists
+    // that the loaded screen doesn't have. (This renders only without a
+    // prepared session — a deep link, or a queue still resolving.)
     return (
       <div style={pageShell}>
-        <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{
-            width: '88px', height: '88px', borderRadius: '26px',
-            background: 'var(--surface)', border: '1px solid var(--border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 16px 40px rgba(24,24,27,0.06)',
-          }}>
-            <BookOpenCheck size={34} strokeWidth={1.75} color={accentHex} />
+        <span role="status" style={{ position: 'absolute', width: '1px', height: '1px', margin: '-1px', padding: 0, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }}>Preparing your session…</span>
+        <div style={{ width: '100%', maxWidth: '680px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {/* "Exit", the same name the loaded header's control carries — one
+                control must not rename itself across the load boundary. */}
+            <button type="button" onClick={onBack} aria-label="Exit" className="hd-press" style={{ width: '40px', height: '40px', flexShrink: 0, borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', display: 'grid', placeItems: 'center', cursor: 'pointer' }}>
+              <X size={18} strokeWidth={2.2} />
+            </button>
+            <div aria-hidden="true" style={{ flex: 1, display: 'flex', gap: '5px' }}>
+              <span style={{ flex: 3, height: '6px', borderRadius: '999px', background: 'var(--surface-2)' }} />
+              <span style={{ flex: 1, height: '6px', borderRadius: '999px', background: 'var(--surface-2)' }} />
+              <span style={{ flex: 2, height: '6px', borderRadius: '999px', background: 'var(--surface-2)' }} />
+            </div>
+            {/* Mirrors the loaded header's trailing undo button, so the rail
+                keeps exactly its final length when the session arrives. */}
+            <span aria-hidden="true" style={{ width: '40px', flexShrink: 0 }} />
           </div>
+          <div aria-hidden="true" style={{
+            marginTop: '16px', minHeight: 'min(62vh, 560px)', borderRadius: '26px',
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            boxShadow: 'var(--shadow-2), inset 0 1px 0 var(--hairline)',
+          }} />
         </div>
       </div>
     )
@@ -1285,6 +1240,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         }}
       >
         <div
+          ref={cardElRef}
           onClick={() => !flipped && setFlipped(true)}
           aria-live="polite"
           role={!flipped ? 'button' : undefined}

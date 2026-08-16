@@ -16,6 +16,7 @@ import StuckWordCoach from './StuckWordCoach'
 import { STUCK_LAPSES } from './stuckWord'
 import { BRAND_URL } from './brand'
 import { adminNav, PROFILE_NAV } from './navConfig'
+import Feedback from './Feedback'
 import { confirmWordOk, forgetDeviceData, DELETE_CONFIRM_WORD } from './accountDeletion'
 import {
   ArrowLeft, Layers, LogOut, RotateCcw, Save,
@@ -418,6 +419,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
               </button>
             )
           })}
+          <Feedback session={session} profile={profile} view="profile" variant="row" />
         </nav>
       )}
 
