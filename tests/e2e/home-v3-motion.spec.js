@@ -32,11 +32,15 @@ test('uses only the locked Home motion timings', async ({ page }) => {
   expect(before.width).toBeCloseTo(after.width, 1);
   expect(before.height).toBeCloseTo(after.height, 1);
 
-  // The dock's ink dot slides at the locked nav timing.
+  // The dock's selected capsule expands/collapses at the locked nav timing.
   const nav = page.getByRole('navigation', { name: 'Primary' });
-  const dot = nav.locator(':scope > span[aria-hidden]').first();
-  const dotTransition = await dot.evaluate(node => getComputedStyle(node).transitionDuration);
-  expect(dotTransition.split(',')[0].trim()).toBe('0.26s');
+  const activeTab = nav.locator('[aria-current="page"]');
+  const tabTransition = await activeTab.evaluate(node => getComputedStyle(node).transitionDuration);
+  expect(tabTransition.split(',')[0].trim()).toBe('0.26s');
+  // …and its label reveals on the same clock, so the two never disagree.
+  const labelTransition = await activeTab.locator('span').last()
+    .evaluate(node => getComputedStyle(node).transitionDuration);
+  expect(labelTransition.split(',')[0].trim()).toBe('0.26s');
 
   // And the whole screen stays smooth while settling.
   const frames = await page.evaluate(() => new Promise(resolve => {
@@ -71,7 +75,7 @@ test('reduced motion flattens every Home animation and transition', async ({ pag
   expect(deskAnim).toBeLessThanOrEqual(0.13);
 
   const nav = page.getByRole('navigation', { name: 'Primary' });
-  const dot = nav.locator(':scope > span[aria-hidden]').first();
-  const navTransition = await dot.evaluate(node => parseFloat(getComputedStyle(node).transitionDuration));
+  const activeTab = nav.locator('[aria-current="page"]');
+  const navTransition = await activeTab.evaluate(node => parseFloat(getComputedStyle(node).transitionDuration));
   expect(navTransition).toBeLessThanOrEqual(0.13);
 });
