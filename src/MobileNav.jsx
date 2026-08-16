@@ -52,7 +52,9 @@ export default function MobileNav({ view, onNavigate, language }) {
               color: active ? ink(accent) : 'var(--text-muted)',
               transition: 'color 220ms ease',
             }}>
-              <span style={{ fontSize: '13px', lineHeight: '13px', fontWeight: active ? 720 : 560, letterSpacing: '0.005em', transition: 'font-weight 240ms ease' }}>{item.label}</span>
+              {/* 580 → 700: enough contrast to read as selected, small enough
+                  that the label's width barely moves as the weight animates. */}
+              <span style={{ fontSize: '13px', lineHeight: '13px', fontWeight: active ? 700 : 580, letterSpacing: '0.005em', transition: 'font-weight 240ms ease' }}>{item.label}</span>
             </button>
           )
         })}

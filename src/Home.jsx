@@ -70,7 +70,7 @@ function DeskCards({ deck, counts, estimate, theme, onStart }) {
       data-tour="home-queue"
       onClick={event => onStart(event.currentTarget.getBoundingClientRect())}
       className="hd-press-deep hd-home-rise"
-      style={{ ...DESK_FRAME, height: 'min(56vh, 470px)', display: 'grid', placeItems: 'center', cursor: 'pointer', animationDelay: '40ms' }}
+      style={{ ...DESK_FRAME, height: 'min(51vh, 430px)', display: 'grid', placeItems: 'center', cursor: 'pointer', animationDelay: '40ms' }}
     >
       {deck && <span style={DESK_CHIP}>{deskChipLabel(deck.state)}</span>}
       {deck && (
@@ -84,19 +84,51 @@ function DeskCards({ deck, counts, estimate, theme, onStart }) {
   )
 }
 
-// Tonight's actual story takes the desk once cards are done.
+// Tonight's actual story takes the desk once cards are done. With cover art
+// the art leads; without it, the desk becomes the story's title page — the
+// level, the title, and the story's own opening line, which is real content
+// the learner is about to read, not decoration.
 function DeskStory({ daily, theme, language, track, onOpen }) {
   const [artFailed, setArtFailed] = useState(false)
   const loading = daily === undefined
   const story = daily ? daily.story : null
   const title = story ? stripLeadingNumber(story.title) : ''
+  const sentence = daily && daily.sentence ? daily.sentence : ''
   const eyebrow = story
     ? storyEyebrow({ levelLabel: getLevelLabel(language, track.system, story.level), knownPct: daily.knownPct })
     : ''
   const onArt = Boolean(story && story.cover_url) && !artFailed
 
   if (loading) {
-    return <div aria-busy="true" className="hd-skeleton hd-home-rise" style={{ ...DESK_FRAME, height: 'min(56vh, 470px)', animationDelay: '40ms' }} />
+    return <div aria-busy="true" className="hd-skeleton hd-home-rise" style={{ ...DESK_FRAME, height: 'min(51vh, 430px)', animationDelay: '40ms' }} />
+  }
+
+  if (!onArt) {
+    // The title page. Reading order: level → title → the first line of the
+    // story itself → the action. One hairline; everything else is type.
+    return (
+      <button
+        type="button"
+        aria-label={'Open ' + title}
+        data-tour="home-then-read"
+        onClick={onOpen}
+        className="hd-press-deep hd-home-rise"
+        style={{ ...DESK_FRAME, height: 'min(51vh, 430px)', cursor: 'pointer', display: 'grid', placeItems: 'center', alignContent: 'center', animationDelay: '40ms' }}
+      >
+        <span style={DESK_CHIP}>STORY</span>
+        <span style={{ display: 'block', width: '100%', padding: '0 26px' }}>
+          {eyebrow && (
+            <span style={{ display: 'block', fontSize: '10.5px', lineHeight: 1, fontWeight: 720, letterSpacing: '0.11em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>{eyebrow}</span>
+          )}
+          <span lang={theme.langTag} style={{ display: 'block', marginTop: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: theme.font + ', sans-serif', fontSize: '29px', lineHeight: 1.2, fontWeight: 650 }}>{title}</span>
+          <span aria-hidden="true" style={{ display: 'block', width: '36px', height: '1px', margin: '16px auto 0', background: 'color-mix(in srgb, var(--border) 90%, var(--text))' }} />
+          {sentence && (
+            <span lang={theme.langTag} style={{ display: 'block', marginTop: '15px', fontFamily: theme.font + ', sans-serif', fontSize: '16.5px', lineHeight: 1.6, fontWeight: 400, color: 'var(--text-muted)' }}>「{sentence}」</span>
+          )}
+          <span style={{ display: 'inline-block', marginTop: '19px', padding: '11px 18px', borderRadius: '999px', background: 'color-mix(in srgb, ' + theme.accentHex + ' 10%, var(--surface))', color: ink(theme.accentHex), fontSize: '13px', lineHeight: 1, fontWeight: 750, fontFamily: UI_FONT }}>Start reading</span>
+        </span>
+      </button>
+    )
   }
 
   return (
@@ -106,21 +138,16 @@ function DeskStory({ daily, theme, language, track, onOpen }) {
       data-tour="home-then-read"
       onClick={onOpen}
       className="hd-press-deep hd-home-rise"
-      style={{ ...DESK_FRAME, height: onArt ? 'min(56vh, 470px)' : 'min(44vh, 380px)', overflow: 'hidden', cursor: 'pointer', display: 'grid', placeItems: 'center', animationDelay: '40ms' }}
+      style={{ ...DESK_FRAME, height: 'min(56vh, 470px)', overflow: 'hidden', cursor: 'pointer', display: 'grid', placeItems: 'center', animationDelay: '40ms' }}
     >
-      {onArt && (
-        <img src={story.cover_url} alt="" onError={() => setArtFailed(true)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 42%' }} />
-      )}
-      {onArt && <span aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(12,9,7,0) 38%, rgba(12,9,7,0.45) 68%, rgba(12,9,7,0.8) 100%)' }} />}
-      {!onArt && <span style={DESK_CHIP}>STORY</span>}
-      <span style={onArt
-        ? { position: 'absolute', left: '20px', right: '20px', bottom: '18px' }
-        : { display: 'block', width: '100%', padding: '0 20px' }}>
+      <img src={story.cover_url} alt="" onError={() => setArtFailed(true)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 42%' }} />
+      <span aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(12,9,7,0) 38%, rgba(12,9,7,0.45) 68%, rgba(12,9,7,0.8) 100%)' }} />
+      <span style={{ position: 'absolute', left: '20px', right: '20px', bottom: '18px' }}>
         {eyebrow && (
-          <span style={{ display: 'block', fontSize: '10.5px', lineHeight: 1, fontWeight: 720, letterSpacing: '0.11em', textTransform: 'uppercase', color: onArt ? 'rgba(255,251,244,0.78)' : 'var(--text-faint)' }}>{eyebrow}</span>
+          <span style={{ display: 'block', fontSize: '10.5px', lineHeight: 1, fontWeight: 720, letterSpacing: '0.11em', textTransform: 'uppercase', color: 'rgba(255,251,244,0.78)' }}>{eyebrow}</span>
         )}
-        <span lang={theme.langTag} style={{ display: 'block', marginTop: '7px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: theme.font + ', sans-serif', fontSize: '27px', lineHeight: 1.15, fontWeight: 650, color: onArt ? '#FFFBF4' : 'var(--text)' }}>{title}</span>
-        <span style={{ display: 'inline-block', marginTop: '13px', padding: '10px 17px', borderRadius: '999px', background: onArt ? 'rgba(255,251,244,0.95)' : 'color-mix(in srgb, ' + theme.accentHex + ' 10%, var(--surface))', color: onArt ? theme.accentHex : ink(theme.accentHex), fontSize: '13px', lineHeight: 1, fontWeight: 750 }}>Start reading</span>
+        <span lang={theme.langTag} style={{ display: 'block', marginTop: '7px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: theme.font + ', sans-serif', fontSize: '27px', lineHeight: 1.15, fontWeight: 650, color: '#FFFBF4' }}>{title}</span>
+        <span style={{ display: 'inline-block', marginTop: '13px', padding: '10px 17px', borderRadius: '999px', background: 'rgba(255,251,244,0.95)', color: theme.accentHex, fontSize: '13px', lineHeight: 1, fontWeight: 750, fontFamily: UI_FONT }}>Start reading</span>
       </span>
     </button>
   )

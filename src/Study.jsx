@@ -950,9 +950,12 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               <span style={{ flex: 1, height: '6px', borderRadius: '999px', background: 'var(--surface-2)' }} />
               <span style={{ flex: 2, height: '6px', borderRadius: '999px', background: 'var(--surface-2)' }} />
             </div>
+            {/* Mirrors the loaded header's trailing undo button, so the rail
+                keeps exactly its final length when the session arrives. */}
+            <span aria-hidden="true" style={{ width: '40px', flexShrink: 0 }} />
           </div>
           <div aria-hidden="true" style={{
-            marginTop: '16px', minHeight: 'min(60vh, 560px)', borderRadius: '26px',
+            marginTop: '16px', minHeight: 'min(62vh, 560px)', borderRadius: '26px',
             background: 'var(--surface)', border: '1px solid var(--border)',
             boxShadow: 'var(--shadow-2), inset 0 1px 0 var(--hairline)',
           }} />
