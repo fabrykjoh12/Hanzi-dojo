@@ -6,6 +6,7 @@ import {
   ArrowLeft, CheckCircle2,
   MessageCircleMore, ChevronRight, BookOpen, BookOpenCheck, Download, CheckCheck,
 } from 'lucide-react'
+import { ink } from './languageTheme'
 
 // The study session's completed/"done" screen, extracted verbatim from Study.jsx
 // so that file stays focused on the active card + grading loop. This component is
@@ -286,24 +287,20 @@ export default function SessionRecap({
                 : 'No cards are waiting. Come back later, or continue the loop with stories.'}
         </p>
 
-        {/* Two calm tiles instead of a wall of numbers: what happened today,
-            what's waiting tomorrow. No XP, no accuracy — just the shape of it. */}
+        {/* The result as one line, not a pair of tiles. Two bordered stat boxes
+            were a small dashboard at the end of every session — and the screen
+            after this one is Today, which is not a dashboard either. What
+            happened, what is waiting: said, not framed. */}
         {didStudy && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '24px' }}>
-            <div style={{ padding: '14px 16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'left' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '4px' }}>Today</div>
-              <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{s.graded}</strong> reviewed
-                {s.newLearned > 0 && <>, <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{s.newLearned}</strong> new</>}
-              </div>
+          <div style={{ marginBottom: '24px' }}>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
+              {s.graded} reviewed{s.newLearned > 0 ? ' · ' + s.newLearned + ' new' : ''}
             </div>
-            <div style={{ padding: '14px 16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'left' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '4px' }}>Tomorrow</div>
-              <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{(forecast && forecast.reviews) || 0}</strong> due
-                {forecast && forecast.newAvail > 0 && <>, <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{forecast.newAvail}</strong> new</>}
+            {forecast && forecast.reviews > 0 && (
+              <div style={{ marginTop: '5px', fontSize: '13px', fontWeight: 520, color: 'var(--text-faint)', fontVariantNumeric: 'tabular-nums' }}>
+                {forecast.reviews} due tomorrow
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -324,24 +321,27 @@ export default function SessionRecap({
             }}>
               Recommended next
             </div>
+            {/* A row, not a slab. This used to be a full-bleed vermilion block
+                with its own coloured shadow — the loudest object in the app, at
+                the calmest moment in the day, recommending the thing Today is
+                already about to hold. */}
             <button
               onClick={nextStep.onClick}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', gap: '14px',
                 textAlign: 'left', cursor: 'pointer',
-                background: accentHex, border: '1px solid ' + accentHex, borderRadius: '18px',
-                padding: '16px 18px', color: '#fff',
-                boxShadow: '0 10px 26px ' + accentHex + '33',
+                background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px',
+                padding: '16px 18px', color: 'var(--text)',
               }}
             >
-              <div style={{ width: '44px', height: '44px', borderRadius: '14px', flexShrink: 0, background: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <nextStep.icon size={22} strokeWidth={2} color="#fff" />
+              <div style={{ width: '44px', height: '44px', borderRadius: '14px', flexShrink: 0, background: 'color-mix(in srgb, ' + accentHex + ' 10%, var(--surface))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <nextStep.icon size={22} strokeWidth={2} color={ink(accentHex)} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '15.5px', fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nextStep.label}</div>
-                <div style={{ fontSize: '12.5px', opacity: 0.9, lineHeight: 1.4, marginTop: '2px' }}>{nextStep.sub}</div>
+                <div style={{ fontSize: '15.5px', fontWeight: 750, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nextStep.label}</div>
+                <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.4, marginTop: '2px' }}>{nextStep.sub}</div>
               </div>
-              <ChevronRight size={22} color="#fff" style={{ flexShrink: 0, opacity: 0.9 }} />
+              <ChevronRight size={22} color="var(--text-faint)" style={{ flexShrink: 0 }} />
             </button>
           </div>
         )}
@@ -388,11 +388,11 @@ export default function SessionRecap({
             }}
           >
             <ArrowLeft size={16} strokeWidth={2.1} color="var(--text-muted)" />
-            Back home
+            Back to Today
           </button>
         ) : (
           <PrimaryButton onClick={onBack} icon={ArrowLeft}>
-            Back home
+            Back to Today
           </PrimaryButton>
         )}
       </div>

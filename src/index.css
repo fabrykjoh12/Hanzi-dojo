@@ -392,7 +392,10 @@ body {
    :active scale, so it lands on touch-down rather than after navigation. */
 .hd-dock-tab { -webkit-tap-highlight-color: transparent; }
 .hd-dock-tab:active { transform: scale(0.955); }
-.hd-dock-tab { transition-property: flex, background, color, transform; }
+/* Transform + colour only. The compact dock's segments never change size, so
+   there is no layout property in this list — the press is a composited scale
+   and the selection is a repaint. */
+.hd-dock-tab { transition-property: background, color, transform; }
 .hd-dock-tab:active { transition-duration: 90ms; }
 
 /* Deeper press for primary actions: the control visibly gives under the
@@ -405,6 +408,15 @@ body {
   transform: translateY(1px) scale(0.98);
   filter: brightness(0.97);
 }
+
+/* The Today overview sheet arrives from the edge it lives on. 260ms = the
+   dock's own clock (HOME_MOTION.nav), so every bottom-anchored surface in the
+   app moves at one speed. */
+@keyframes hd-sheet-rise {
+  from { transform: translateY(18px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+.hd-sheet-rise { animation: hd-sheet-rise 260ms cubic-bezier(0.25, 0.8, 0.25, 1) both; }
 
 /* Loading surfaces breathe instead of spinning — the app's calm idiom. */
 @keyframes hd-breathe {
@@ -422,5 +434,6 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   @keyframes hd-home-rise { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes hd-sheet-rise { from { opacity: 0; } to { opacity: 1; } }
   .hd-breathe, .hd-skeleton { animation: none; }
 }

@@ -26,9 +26,9 @@ import FirstMissionWelcome from './FirstMissionWelcome'
 import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
 import Background from './Background'
-import Home from './Home'
+import Today from './Today'
 // Lazy: heavier/less-frequent screens are code-split so the initial load stays
-// small (Home is what most sessions open to). react-router basename is unaffected.
+// small (Today is what most sessions open to). react-router basename is unaffected.
 const Study = lazy(() => import('./Study'))
 const Writing = lazy(() => import('./Writing'))
 const Test = lazy(() => import('./Test'))
@@ -727,8 +727,10 @@ export default function App() {
       : <NotFound onHome={() => navigate('home')} />
   } else if (isKnownView(view)) {
     // Only 'home' reaches here (every other known view has a branch above).
+    // The route is still `/`; the screen is TODAY — the learner's current task,
+    // not a dashboard (see Today.jsx).
     content = (
-      <Home
+      <Today
         profile={profile}
         track={track}
         counts={counts}

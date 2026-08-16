@@ -7,8 +7,17 @@ import { PRIMARY_NAV, NAV_GROUPS, MOBILE_PRIMARY, PROFILE_NAV, ADMIN_NAV, adminN
 describe('navigation config', () => {
   const learnerNav = [...PRIMARY_NAV, ...MOBILE_PRIMARY, ...PROFILE_NAV]
 
-  it('locks the mobile architecture to Stories — Home — Practice', () => {
+  it('locks the mobile architecture to Stories — Today — Practice', () => {
     expect(MOBILE_PRIMARY.map(i => i.key)).toEqual(['stories', 'home', 'practice'])
+    expect(MOBILE_PRIMARY.map(i => i.label)).toEqual(['Stories', 'Today', 'Practice'])
+  })
+
+  // The route is `home` and the destination is called Today. Both surfaces have
+  // to say the same word, or the phone and the desktop are different products.
+  it('names the root destination Today on every surface', () => {
+    const label = key => nav => (nav.find(i => i.key === key) || {}).label
+    expect(label('home')(MOBILE_PRIMARY)).toBe('Today')
+    expect(label('home')(PRIMARY_NAV)).toBe('Today')
   })
 
   it('keeps Cards reachable outside the mobile tab bar', () => {

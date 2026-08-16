@@ -858,10 +858,27 @@ src/Profile.jsx
   17 weeks mobile / 24 desktop) from daily_activity, with intensity by
   studied_cards, month labels, a today outline, and a Less→More legend.
 
-src/Home.jsx
-  Dashboard. Language identity header (native script + level + streak pill).
-  Today card with New/Learning/Due counts and mastery progress bar + InfoTip.
-  "Start studying" sage green CTA. "Keep the flow going" row of feature shortcuts.
+src/Today.jsx  (route `/`, view key `home` — was Home.jsx)
+  TODAY — the root screen, and deliberately not a dashboard. It holds the
+  learner's ONE current object and nothing else, chosen by homeDailyStage():
+    cards     → the actual first card of the prepared session (sessionPrep.js).
+                Tapping it hands its rect to Study (deskTransition.js), which
+                grows the same card into the session — no loading screen.
+    story     → tonight's story as a full-bleed doorway on its own cover art
+                (or its typographic title page when a story has no cover).
+    practice  → a centred prompt for the due grammar patterns.
+    complete  → "Done for today" + what actually happened + tomorrow's count.
+    caught-up → the story shelf.
+  On a phone the screen is a fixed, non-scrolling stage (every state fits, and
+  the doorway reaches the edges); on desktop the same tree is a centred column.
+  Chrome is two controls: the date chip opens TodayOverview.jsx (the utility
+  sheet holding the other steps, library, level progress and account) and the
+  avatar pushes Profile. Strings and stage selection live in todayModel.js.
+
+src/TodayOverview.jsx
+  The Today overview sheet: a modal bottom sheet, portalled to document.body so
+  it covers the compact dock (main is a z-indexed stacking context). Lists the
+  three daily steps with their status, then Library / Progress / Profile.
 
 src/YouTube.jsx
   Curated video grid for current language/system/level. Loads from
@@ -886,9 +903,24 @@ src/Sidebar.jsx
   Semi-transparent frosted glass (rgba(255,255,255,0.85) + blur).
 
 src/MobileNav.jsx
-  Fixed bottom navigation bar shown below 768px (instead of Sidebar). 5 primary
-  tabs (Home, Cards, Stories, Writing, More); "More" opens a bottom sheet with
-  Test, YouTube, Profile, Language, Settings, Log out. Respects iOS safe-area inset.
+  THE COMPACT DOCK — the phone's primary navigation, below 768px (instead of
+  Sidebar). A fixed-width control (276 × 58, bottomBar.js) centred over the
+  content, holding three equal 88px segments: Stories · Today · Practice, each
+  with an icon and a permanent label. Nothing resizes on selection: the selected
+  segment is seated on --surface-2 with accent ink, so switching is a repaint,
+  not a layout pass. Today is a tab like the others — no cradle, no notch, no
+  raised centre button. Profile is reached from Today's avatar, not the dock.
+  Hidden is a STATE, not an unmount: entering focused work sinks the dock toward
+  the bottom edge as it fades (HOME_MOTION.nav) and leaving lifts it back.
+
+src/bottomBar.js
+  The one bottom-area contract: dock geometry (DOCK_WIDTH/HEIGHT/SEGMENT/
+  PADDING/INSET), the clearance every other bottom-anchored thing must leave
+  (contentBottomInset, floatingBottom), and navVisibleFor() — the resting/focused
+  rule. Resting (Today, Stories, Practice, browsing screens) keeps the dock;
+  focused work (a card session, the level test, any drill where you are answering
+  rather than choosing) takes it away. The story reader declares itself through
+  navFocus.js instead, because it opens inside the `stories` view.
 
 src/useIsMobile.js
   useIsMobile() hook + MOBILE_BREAKPOINT (768). window.innerWidth + resize

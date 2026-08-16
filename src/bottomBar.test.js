@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  CONTENT_GAP, DOCK_HEIGHT, DOCK_INSET, FLOAT_GAP,
+  CONTENT_GAP, DOCK_HEIGHT, DOCK_INSET, DOCK_MIN_SIDE_MARGIN, DOCK_PADDING,
+  DOCK_SEGMENT, DOCK_SEGMENT_HEIGHT, DOCK_WIDTH, FLOAT_GAP, MIN_VIEWPORT,
   contentBottomInset, dockBottom, floatingBottom, navVisibleFor,
 } from './bottomBar'
 
@@ -40,6 +41,26 @@ describe('floatingBottom', () => {
   })
 })
 
+describe('the compact dock’s own geometry', () => {
+  it('is a fixed-width control, three equal destinations wide', () => {
+    expect(DOCK_WIDTH).toBe(DOCK_SEGMENT * 3 + DOCK_PADDING * 2)
+    expect(DOCK_HEIGHT).toBe(DOCK_SEGMENT_HEIGHT + DOCK_PADDING * 2)
+  })
+
+  it('keeps every destination past the 44px touch minimum', () => {
+    expect(DOCK_SEGMENT).toBeGreaterThanOrEqual(44)
+    expect(DOCK_SEGMENT_HEIGHT).toBeGreaterThanOrEqual(44)
+  })
+
+  // The reason the width is a constant and not a percentage: it has to clear
+  // both edges on the narrowest phone we support, and stay the same size on
+  // every larger one.
+  it('floats clear of both edges at 320px', () => {
+    expect(DOCK_WIDTH).toBeLessThan(MIN_VIEWPORT)
+    expect(DOCK_MIN_SIDE_MARGIN).toBeGreaterThanOrEqual(16)
+  })
+})
+
 describe('navVisibleFor', () => {
   it('hides the dock in a flashcard session', () => {
     expect(navVisibleFor('study')).toBe(false)
@@ -56,5 +77,22 @@ describe('navVisibleFor', () => {
   it('hides it whenever a screen declares itself focused (the reader)', () => {
     expect(navVisibleFor('stories', { focused: true })).toBe(false)
     expect(navVisibleFor('home', { focused: true })).toBe(false)
+  })
+
+  // Resting vs focused is the product model, not a per-screen decision: a drill
+  // where you are answering questions owns the screen exactly as a flashcard
+  // session does.
+  it('hides the dock in focused drills and the level test', () => {
+    for (const view of ['test', 'fillblank', 'builder', 'speak', 'tones', 'grammarpractice', 'strokes', 'writing']) {
+      expect(navVisibleFor(view), view).toBe(false)
+    }
+  })
+
+  it('keeps the dock on browsing screens inside Practice', () => {
+    // These are places you look things up or pick what to do next — resting
+    // states, so navigation stays.
+    for (const view of ['words', 'known', 'dictionary', 'grammar', 'analyzer', 'listen', 'youtube']) {
+      expect(navVisibleFor(view), view).toBe(true)
+    }
   })
 })

@@ -1,65 +1,93 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 
-// The bottom-area contract (src/bottomBar.js): the floating dock owns the
-// bottom of the screen, every other bottom-anchored control clears it, and
-// focused experiences take it away smoothly.
+// The compact dock and the bottom-area contract (src/bottomBar.js): three equal
+// destinations in a fixed-width control, every other bottom-anchored thing
+// clears it, and focused work takes it away smoothly.
 
 const WIDTHS = [320, 390, 430];
+const DESTINATIONS = ['Stories', 'Today', 'Practice'];
 
-test.describe('the floating dock', () => {
+test.describe('the compact dock', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
   });
 
-  test('selection travels: the capsule expands on the tapped tab', async ({ page }) => {
+  test('nothing resizes on selection — the segments are equal in every state', async ({ page }) => {
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: 'Primary' });
-    const home = nav.getByRole('button', { name: 'Home' });
+    const today = nav.getByRole('button', { name: 'Today' });
     const practice = nav.getByRole('button', { name: 'Practice' });
 
-    const homeSelected = await home.boundingBox();
+    const todaySelected = await today.boundingBox();
     const practiceResting = await practice.boundingBox();
-    expect(homeSelected.width).toBeGreaterThan(practiceResting.width);
+    expect(Math.round(todaySelected.width)).toBe(Math.round(practiceResting.width));
 
+    const navBefore = await nav.boundingBox();
     await practice.click();
     await expect(practice).toHaveAttribute('aria-current', 'page');
-    await expect(home).not.toHaveAttribute('aria-current', 'page');
+    await expect(today).not.toHaveAttribute('aria-current', 'page');
 
-    // Wait out the capsule animation, then the roles have swapped — and the
-    // dock itself has not moved or changed size.
+    // After the selection settles: same widths, same dock. Selection is a
+    // colour change, so there is no layout to wait for and nothing to shift.
     await page.waitForTimeout(400);
     const practiceSelected = await practice.boundingBox();
-    const homeResting = await home.boundingBox();
-    expect(practiceSelected.width).toBeGreaterThan(homeResting.width);
-    expect(Math.round(practiceSelected.width)).toBe(Math.round(homeSelected.width));
+    const todayResting = await today.boundingBox();
+    expect(Math.round(practiceSelected.width)).toBe(Math.round(todaySelected.width));
+    expect(Math.round(todayResting.width)).toBe(Math.round(practiceResting.width));
 
-    const navBox = await nav.boundingBox();
-    expect(Math.round(navBox.height)).toBe(58);
+    const navAfter = await nav.boundingBox();
+    expect(Math.round(navAfter.width)).toBe(Math.round(navBefore.width));
+    expect(Math.round(navAfter.x)).toBe(Math.round(navBefore.x));
+    expect(Math.round(navAfter.height)).toBe(58);
   });
 
-  test('every resting tab keeps its destination as the accessible name', async ({ page }) => {
+  test('every destination shows its icon and label at all times', async ({ page }) => {
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: 'Primary' });
-    for (const name of ['Stories', 'Home', 'Practice']) {
-      await expect(nav.getByRole('button', { name })).toHaveCount(1);
+    for (const name of DESTINATIONS) {
+      const tab = nav.getByRole('button', { name });
+      await expect(tab).toHaveCount(1);
+      // The label is real, visible text — not a clipped element kept only for
+      // the accessible name.
+      const labelWidth = await tab.evaluate(node => node.lastElementChild.getBoundingClientRect().width);
+      expect(labelWidth, name).toBeGreaterThan(20);
     }
   });
 
+  test('an unselected destination reads as available, not disabled', async ({ page }) => {
+    await page.goto('/');
+    const nav = page.getByRole('navigation', { name: 'Primary' });
+    const resting = await nav.getByRole('button', { name: 'Stories' }).evaluate(node => ({
+      opacity: Number(getComputedStyle(node).opacity),
+      disabled: node.disabled,
+    }));
+    expect(resting.opacity).toBe(1);
+    expect(resting.disabled).toBe(false);
+  });
+
   for (const width of WIDTHS) {
-    test(`${width}px: nothing floating overlaps the dock, on any root`, async ({ page }) => {
+    test(`${width}px: the dock floats clear, and nothing overlaps it on any root`, async ({ page }) => {
       await page.setViewportSize({ width, height: 844 });
       await page.goto('/');
       const nav = page.getByRole('navigation', { name: 'Primary' });
       await expect(nav).toBeVisible();
 
+      // Fixed width, centred, clear of both edges — the same control on every
+      // phone, never a bar stretched to the viewport.
+      const box = await nav.boundingBox();
+      expect(Math.round(box.width)).toBe(276);
+      expect(Math.round(box.x + box.width / 2)).toBe(Math.round(width / 2));
+      expect(box.x).toBeGreaterThanOrEqual(16);
+      expect(844 - (box.y + box.height)).toBeGreaterThanOrEqual(8);
+
       // Navigated the way a learner does — through the dock — rather than by
       // reloading each route.
       const steps = [
-        ['Home', null],
+        ['Today', null],
         ['Stories', () => nav.getByRole('button', { name: 'Stories' }).click()],
         ['Practice', () => nav.getByRole('button', { name: 'Practice' }).click()],
         ['Profile', async () => {
-          await nav.getByRole('button', { name: 'Home' }).click();
+          await nav.getByRole('button', { name: 'Today' }).click();
           await page.getByRole('button', { name: 'Open profile' }).click();
         }],
       ];
@@ -67,7 +95,6 @@ test.describe('the floating dock', () => {
         if (go) await go();
         await expect(nav).toBeVisible();
         await page.waitForTimeout(500);
-        const path = label;
 
         // Systemic, not per-button: every visible fixed-position element on the
         // screen must clear the dock's rectangle. This is the assertion the
@@ -84,7 +111,8 @@ test.describe('the floating dock', () => {
             if (style.pointerEvents === 'none') continue;
             const box = el.getBoundingClientRect();
             if (box.width === 0 || box.height === 0) continue;
-            // A full-screen scrim/background is not a competing control.
+            // A full-screen scrim/background (or Today's own stage) is not a
+            // competing control.
             if (box.width >= window.innerWidth && box.height >= window.innerHeight) continue;
             const overlaps = box.left < navBox.right && navBox.left < box.right
               && box.top < navBox.bottom && navBox.top < box.bottom;
@@ -92,7 +120,7 @@ test.describe('the floating dock', () => {
           }
           return hits;
         });
-        expect(collisions, path).toEqual([]);
+        expect(collisions, label).toEqual([]);
       }
     });
   }
@@ -143,6 +171,24 @@ test.describe('the floating dock', () => {
     await expect(nav).toBeHidden();
 
     await back.click();
+    await expect(nav).toBeVisible();
+  });
+
+  test('the dock steps aside for a focused drill, and returns when it ends', async ({ page }) => {
+    // Resting vs focused is the product model: answering questions owns the
+    // screen, browsing what to answer does not. Navigated in-app (the way a
+    // learner does) rather than by reloading each route.
+    await page.goto('/');
+    const nav = page.getByRole('navigation', { name: 'Primary' });
+    await nav.getByRole('button', { name: 'Practice' }).click();
+    await expect(page).toHaveURL(/\/practice$/);
+    await expect(nav).toBeVisible();
+
+    await page.getByRole('button', { name: /Fill in the blank/i }).first().click();
+    await expect(page).toHaveURL(/\/fillblank$/);
+    await expect(nav).toBeHidden();
+
+    await page.getByRole('button', { name: /Back|Practice/ }).first().click();
     await expect(nav).toBeVisible();
   });
 });

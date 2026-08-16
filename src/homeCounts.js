@@ -113,9 +113,16 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   const forecast7 = reviewForecast(deckCards, now, 7)
 
   // Study rhythm (last 7 days), from the activity rows fetched above.
-  const studiedDates = ((actsResult && actsResult.data) || [])
+  const activityRows = (actsResult && actsResult.data) || []
+  const studiedDates = activityRows
     .filter(a => a.studied_cards > 0).map(a => a.activity_date)
   const rhythm7 = studyRhythm(studiedDates, now, 7)
+
+  // What the learner actually reviewed today — the one honest number behind
+  // Today's done state. Absent row (or a failed fetch) means zero, and the done
+  // state prints nothing rather than a fabricated total.
+  const todayRow = activityRows.find(a => a.activity_date === dateKey(now))
+  const studiedToday = todayRow ? (todayRow.studied_cards || 0) : 0
 
   // Weak words: the cleanup-drill pool. Over the deck, because that is the pool
   // Study's weak drill actually builds from.
@@ -132,7 +139,7 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   return {
     newCount, learnCount, dueCount, easyCount, totalWords,
     learnedCount, masteredCount, masteredPct,
-    newDoneToday, dueTomorrow, weakCount, forecast7, rhythm7,
+    newDoneToday, studiedToday, dueTomorrow, weakCount, forecast7, rhythm7,
     lifetimeLearned, lifetimeMastered, grammarDueCount,
     failed,
   }

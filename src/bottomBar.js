@@ -13,8 +13,8 @@
 //
 //   ┌─ content / floating controls ─────────────────┐
 //   │                  gap                          │   CONTENT_GAP / FLOAT_GAP
-//   │  ┌─ the dock ───────────────────────────────┐ │   DOCK_HEIGHT
-//   │  └──────────────────────────────────────────┘ │
+//   │        ┌─ the dock ──────────────┐            │   DOCK_HEIGHT × DOCK_WIDTH
+//   │        └─────────────────────────┘            │   (centred, fixed width)
 //   │            max(safe-area, DOCK_INSET)         │   the dock's own offset
 //   └───────────────────────────────────────────────┘
 //
@@ -23,10 +23,25 @@
 // adding to it floats the dock uncomfortably high; on a flat-bottomed phone
 // (and every desktop browser) the inset is 0 and the dock still needs a margin.
 
-// The floating dock itself.
+// The floating dock itself. It is a COMPACT dock: a fixed-width control centred
+// over the content, not a bar stretched to the viewport. The width is a
+// constant rather than a percentage so the three destinations are the same
+// size on every phone — a control that resizes with the screen is a footer, and
+// this is meant to read as an object sitting above the page.
 export const DOCK_HEIGHT = 58
+// One destination: 88 × 46 is comfortably past the 44px touch minimum in both
+// directions while keeping the whole dock narrower than the narrowest phone.
+export const DOCK_SEGMENT = 88
+export const DOCK_SEGMENT_HEIGHT = 46
+// The shell around the three segments.
+export const DOCK_PADDING = 6
+export const DOCK_WIDTH = DOCK_SEGMENT * 3 + DOCK_PADDING * 2
 // Its minimum distance from the bottom edge — the floor under the safe area.
 export const DOCK_INSET = 12
+// The narrowest phone we support. The dock must still clear both edges there,
+// which is what pins DOCK_WIDTH: 276 leaves 22px a side at 320.
+export const MIN_VIEWPORT = 320
+export const DOCK_MIN_SIDE_MARGIN = (MIN_VIEWPORT - DOCK_WIDTH) / 2
 // Breathing room between the dock and the page content scrolling under it.
 export const CONTENT_GAP = 14
 // …and between the dock and a floating control parked above it.
@@ -54,12 +69,29 @@ export function floatingBottom(navVisible = true) {
   return 'calc(' + (DOCK_HEIGHT + FLOAT_GAP) + 'px + ' + dockBottom() + ')'
 }
 
-// Whether the dock is shown for a given view. Focused learning experiences own
-// the whole screen: a flashcard session and the story reader both have their own
-// way out, and a tab bar there is both a distraction and a collision risk.
-// (The reader lives inside the `stories` view, so it reports itself through
-// navFocus.js rather than being listed here.)
-const NAV_FREE_VIEWS = new Set(['study', 'weak'])
+// Whether the dock is shown for a given view.
+//
+// This is the resting/focused distinction the whole product model turns on. At
+// REST — Today's card, the story doorway, the practice prompt, the done state,
+// and the Stories and Practice destinations — navigation is present and easy to
+// reach, because the learner must always be able to say "not now, I want to
+// browse". In FOCUSED work — a grading session, the reader, a drill that is
+// answering questions rather than choosing them — the screen belongs to the
+// task: each has its own way out, and a tab bar there is both a distraction and
+// a collision risk.
+//
+// Listed by view, except the story reader: it opens INSIDE the `stories` view,
+// so it declares itself through navFocus.js instead.
+const NAV_FREE_VIEWS = new Set([
+  // Flashcards.
+  'study', 'weak',
+  // The level test — an assessment owns the screen.
+  'test',
+  // Drills: you are answering, not browsing.
+  'fillblank', 'builder', 'speak', 'tones', 'grammarpractice', 'strokes', 'writing',
+  // Script drills (frozen tracks, same rule — shared code, no special case).
+  'kana', 'cyrillic',
+])
 
 export function navVisibleFor(view, { focused = false } = {}) {
   if (focused) return false

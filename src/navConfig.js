@@ -7,9 +7,10 @@ import {
 // MobileNav (mobile) so the two can't drift. Individual study/practice modes are
 // reached through the Practice hub, not the top-level nav, to keep it calm.
 
-// Desktop sidebar — primary section (the daily loop + the goal gate).
+// Desktop sidebar — primary section (the daily loop + the goal gate). Same
+// destination names as the phone's dock: the root of the app is Today.
 export const PRIMARY_NAV = [
-  { key: 'home', label: 'Home', icon: Home },
+  { key: 'home', label: 'Today', icon: Home },
   { key: 'study', label: 'Flashcards', icon: Layers },
   { key: 'stories', label: 'Stories', icon: BookOpen },
   { key: 'practice', label: 'Practice', icon: Target },
@@ -34,11 +35,16 @@ export const NAV_GROUPS = [
 // builds those itself (an avatar row plus three icon buttons) and the language
 // gets its own identity card, so the array had no remaining reader.
 
-// Mobile navigation is the product architecture: Stories — Home — Practice.
-// Cards starts from Home; account destinations live inside Profile.
+// Mobile navigation is the product architecture: Stories — Today — Practice.
+//
+// The middle destination is keyed `home` because that is its route (`/`) and
+// every caller in the app navigates to it by that name; the LABEL is Today,
+// because that is what the screen is — the learner's current task, not a
+// dashboard you return to. Renaming the key would rewrite routing for a word.
+// Cards start from Today; account destinations live inside Profile.
 export const MOBILE_PRIMARY = [
   { key: 'stories', label: 'Stories', icon: BookOpen },
-  { key: 'home', label: 'Home', icon: Home },
+  { key: 'home', label: 'Today', icon: Home },
   { key: 'practice', label: 'Practice', icon: Target },
 ]
 

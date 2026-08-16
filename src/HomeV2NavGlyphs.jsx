@@ -194,6 +194,58 @@ export function HomeGlyph({ size = 24, active = false, color = 'currentColor' })
   )
 }
 
+// ── Today ───────────────────────────────────────────────────────────────────
+// The middle destination is not a place, it is a MOMENT — whatever the learner's
+// current task is right now. A house says "the screen you go back to", which is
+// exactly the dashboard idea this product removed, so Home's gateway could not
+// carry it.
+//
+// The mark is a seal impression: a solid disc with a ring bitten out of it,
+// leaving an outer band and a centred dot. It reads as "the point you are at"
+// rather than as a place, it shares nothing with Profile's concentric figure at
+// a glance (that one is a head in shoulders, this one is a target), and it is
+// the only shape tried that survives 20px — a calendar page loses its date, a
+// clock loses its hands, a sun loses its rays.
+//
+// Ink: π(12.4² − 9.6²) + π·5.6² = 292 units², which is 138px² at size 22 —
+// inside the family's 136–145 band, so it carries no more weight than Stories
+// or Practice sitting beside it.
+const TODAY_R = 12.4
+const TODAY_RING_OUTER = 9.6
+const TODAY_RING_INNER = 5.6
+
+function todayShapes() {
+  return <circle cx="16" cy="16" r={TODAY_R} />
+}
+
+export function TodayGlyph({ size = 24, active = false, color = 'currentColor' }) {
+  return (
+    <Glyph
+      size={size} active={active} color={color}
+      shapes={todayShapes()}
+      // The bitten ring, as one even-odd annulus: white keeps, black cuts, so
+      // the page shows through between the band and the dot in both themes.
+      cuts={(
+        <path
+          fillRule="evenodd"
+          d={'M16 ' + (16 - TODAY_RING_OUTER) + 'a' + TODAY_RING_OUTER + ' ' + TODAY_RING_OUTER + ' 0 1 0 0.01 0Z'
+            + 'M16 ' + (16 - TODAY_RING_INNER) + 'a' + TODAY_RING_INNER + ' ' + TODAY_RING_INNER + ' 0 1 1 -0.01 0Z'}
+        />
+      )}
+      facets={(
+        <>
+          {/* Front plane, then one lit quadrant up-left and one shaded quadrant
+              down-right — the family's single light source, applied to a round
+              object as two arcs rather than a gradient. */}
+          <circle cx="16" cy="16" r={TODAY_R} fill={FACE} />
+          <path d={'M16 ' + (16 - TODAY_R) + 'A' + TODAY_R + ' ' + TODAY_R + ' 0 0 0 ' + (16 - TODAY_R) + ' 16L16 16Z'} fill={LIT} />
+          <path d={'M16 ' + (16 + TODAY_R) + 'A' + TODAY_R + ' ' + TODAY_R + ' 0 0 0 ' + (16 + TODAY_R) + ' 16L16 16Z'} fill={SHADE} />
+        </>
+      )}
+    />
+  )
+}
+
 // ── Cards ───────────────────────────────────────────────────────────────────
 // The destination the product is about, so it gets the most ink on the bar: two
 // cards, the second smaller and sitting up and to the right of the first.

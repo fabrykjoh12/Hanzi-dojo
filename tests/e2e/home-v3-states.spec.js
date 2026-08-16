@@ -1,9 +1,9 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 
-// The five daily stages of the "Desk" Home, each rendered from persisted
-// learning state (cards / story reads / grammar reviews) — never client-side
-// flags. The desk always holds the current step's real object; the other
-// steps sit below as quiet status rows.
+// The five states TODAY can rest in, each rendered from persisted learning
+// state (cards / story reads / grammar reviews) — never client-side flags.
+// Today holds exactly one object at a time; the other steps are reported in the
+// overview sheet, not printed around it.
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -41,7 +41,7 @@ async function installHomeState(page, state) {
       stories: storyAvailable ? STORY : [],
       story_reads: reads,
       grammar_reviews: grammar,
-      daily_activity: [],
+      daily_activity: [{ activity_date: new Date().toISOString().slice(0, 10), studied_cards: 7 }],
     }[table];
     if (rows === undefined) return route.fallback();
     return route.fulfill({ status: 200, headers: CORS, body: JSON.stringify(rows) });
@@ -58,36 +58,56 @@ for (const state of STATES) {
     const home = page.locator('[data-home-stage]');
     await expect(home).toHaveAttribute('data-home-stage', state);
 
+    // Whatever the state, navigation stays: Today is session-first, never
+    // session-forced.
+    await expect(page.getByRole('navigation', { name: 'Primary' })).toBeVisible();
+
     if (state === 'cards') {
-      // The desk holds the actual first flashcard: the prepared session's
-      // opening word, the session contents in the footer, one tap to start.
-      const desk = page.getByRole('button', { name: 'Start cards' });
-      await expect(desk).toBeEnabled();
-      await expect(desk.getByText(/1 review · /)).toBeVisible();
-      await expect(desk.locator('span[lang]').first()).toHaveText('我们');
-      await expect(page.getByText('Finish cards to unlock')).toBeVisible();
-      await expect(page.getByText('After your story')).toBeVisible();
+      // Today IS the actual first flashcard: the prepared session's opening
+      // word, the session contents beneath it, one tap to start.
+      const card = page.getByRole('button', { name: 'Start cards' });
+      await expect(card).toBeEnabled();
+      await expect(card.getByText(/1 review · /)).toBeVisible();
+      await expect(card.locator('span[lang]').first()).toHaveText('我们');
     } else {
-      // Cards fold into a quiet done-row; no start action remains.
+      // Cards are done and simply gone from the screen — no "✓ done" row.
+      // (The caught-up state says "Nothing due right now." as its own headline,
+      // which is the object Today is resting on, not a status row about cards.)
       await expect(page.getByRole('button', { name: 'Start cards' })).toHaveCount(0);
-      await expect(page.getByText('Nothing due right now')).toBeVisible();
+      if (state !== 'caught-up') {
+        await expect(page.getByText('Nothing due right now')).toHaveCount(0);
+      }
     }
     if (state === 'story') {
       await expect(page.getByRole('button', { name: /Open 我们的歌/ })).toBeEnabled();
       await expect(page.getByText('Start reading')).toBeVisible();
     }
     if (state === 'practice') {
-      await expect(page.getByRole('button', { name: 'Grammar review' })).toBeEnabled();
-      await expect(page.getByText(/grammar pattern/)).toBeVisible();
-      await expect(page.getByText('Story complete')).toBeVisible();
+      const prompt = page.getByRole('button', { name: /Grammar review/ });
+      await expect(prompt).toBeEnabled();
+      await expect(page.getByText(/pattern.* from this week’s reading/)).toBeVisible();
     }
     if (state === 'complete') {
-      await expect(page.getByText('Done for today')).toBeVisible();
-      await expect(page.getByText('Complete for today')).toBeVisible();
+      await expect(page.getByText('Done for today.')).toBeVisible();
+      // Only what actually happened, from the day's own activity row.
+      await expect(page.getByText('7 cards · 1 story')).toBeVisible();
     }
     if (state === 'caught-up') {
-      await expect(page.getByRole('button', { name: 'Open the story shelf' })).toBeEnabled();
-      await expect(page.getByText('Nothing due', { exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: /Open the story shelf/ })).toBeEnabled();
+      await expect(page.getByText('Nothing due right now.')).toBeVisible();
     }
   });
 }
+
+test('the overview reports every step, whichever one Today is resting on', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await installHomeState(page, 'story');
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Open today’s overview' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Today overview' });
+  await expect(sheet).toBeVisible();
+  await expect(sheet.getByText('Cards')).toBeVisible();
+  await expect(sheet.getByText('Done', { exact: true })).toBeVisible();
+  await expect(sheet.getByText('Up now')).toBeVisible();
+  await expect(sheet.getByText('After your story')).toBeVisible();
+});

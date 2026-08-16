@@ -42,6 +42,12 @@ describe('Home presentation data', () => {
   })
 
   it('locks the approved motion timings', () => {
-    expect(HOME_MOTION).toEqual({ press: 160, nav: 260, page: 460, reduced: 130 })
+    expect(HOME_MOTION).toEqual({ press: 160, tab: 180, nav: 260, page: 460, reduced: 130 })
+  })
+
+  // Selecting a destination in the compact dock is a colour change on a control
+  // that never resizes, so it must land sooner than the dock's own entrance.
+  it('keeps a tab selection quicker than the dock’s arrival', () => {
+    expect(HOME_MOTION.tab).toBeLessThan(HOME_MOTION.nav)
   })
 })
