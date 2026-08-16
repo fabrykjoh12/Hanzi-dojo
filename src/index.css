@@ -219,6 +219,12 @@ body {
    unmistakably the landscape the app is set in. */
 :root[data-lit-hero] { --bg-image-opacity: var(--bg-image-opacity-lit); }
 
+/* Home and the study session sit on plain paper: the ambient language
+   wallpaper steps out entirely while either is mounted, so the desk card and
+   the session card share one quiet ground and the tap transition moves
+   between two identical rooms. Set by Home.jsx / Study.jsx. */
+:root[data-quiet-bg] { --bg-image-opacity: 0; --bg-image-opacity-lit: 0; }
+
 /* Framing for the full-page language background (src/Background.jsx).
    The artwork is a wide landscape: mountains along the top, bamboo in the
    bottom-right corner, and a large expanse of empty paper through the middle

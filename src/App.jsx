@@ -782,7 +782,9 @@ export default function App() {
             </ErrorBoundary>
           </Suspense>
         </main>
-        {isMobile && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} isAdmin={!!profile.is_admin} language={profile.active_language} />}
+        {/* The tab bar steps out entirely during a flashcard session — the
+            session owns the screen; ✕ on the card is the way back. */}
+        {isMobile && view !== 'study' && view !== 'weak' && <MobileNav view={view} onNavigate={navigate} onLogout={handleLogout} isAdmin={!!profile.is_admin} language={profile.active_language} />}
         {/* Calm screens only — floating over Study it covered the Easy grade
             button, and the story reader has its own bottom audio bar. */}
         {['practice', 'profile', 'settings', 'words', 'grammar', 'languages'].indexOf(view) !== -1 && (

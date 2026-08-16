@@ -1,9 +1,9 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 
-// The five daily stages of the Home V4 "paper deck" screen, each rendered from
-// persisted learning state (cards / story reads / grammar reviews) — never
-// from client-side flags. The hero CTA, the story card and the practice row
-// must all agree with the stage machine.
+// The five daily stages of the "Desk" Home, each rendered from persisted
+// learning state (cards / story reads / grammar reviews) — never client-side
+// flags. The desk always holds the current step's real object; the other
+// steps sit below as quiet status rows.
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -58,34 +58,35 @@ for (const state of STATES) {
     const home = page.locator('[data-home-stage]');
     await expect(home).toHaveAttribute('data-home-stage', state);
 
-    const hero = page.getByRole('region', { name: 'Cards' });
-    await expect(hero).toBeVisible();
-
-    // The hero never overflows its column and never collapses.
-    const heroBox = await hero.boundingBox();
-    expect(heroBox.width).toBeLessThanOrEqual(390);
-    expect(heroBox.height).toBeGreaterThan(100);
-
     if (state === 'cards') {
-      await expect(page.getByRole('button', { name: 'Start cards' })).toBeEnabled();
-      await expect(hero.getByText(/1 review · /)).toBeVisible();
+      // The desk holds the actual first flashcard: the prepared session's
+      // opening word, the session contents in the footer, one tap to start.
+      const desk = page.getByRole('button', { name: 'Start cards' });
+      await expect(desk).toBeEnabled();
+      await expect(desk.getByText(/1 review · /)).toBeVisible();
+      await expect(desk.locator('span[lang]').first()).toHaveText('我们');
       await expect(page.getByText('Finish cards to unlock')).toBeVisible();
+      await expect(page.getByText('After your story')).toBeVisible();
     } else {
-      await expect(page.getByRole('button', { name: 'Cards complete' })).toBeDisabled();
-      await expect(hero.getByText('Nothing due right now')).toBeVisible();
+      // Cards fold into a quiet done-row; no start action remains.
+      await expect(page.getByRole('button', { name: 'Start cards' })).toHaveCount(0);
+      await expect(page.getByText('Nothing due right now')).toBeVisible();
     }
     if (state === 'story') {
-      await expect(page.getByText('Ready to read')).toBeVisible();
       await expect(page.getByRole('button', { name: /Open 我们的歌/ })).toBeEnabled();
+      await expect(page.getByText('Start reading')).toBeVisible();
     }
     if (state === 'practice') {
-      await expect(page.getByText('Story complete')).toBeVisible();
       await expect(page.getByRole('button', { name: 'Grammar review' })).toBeEnabled();
-      await expect(page.getByText('Ready to practice')).toBeVisible();
+      await expect(page.getByText(/grammar pattern/)).toBeVisible();
+      await expect(page.getByText('Story complete')).toBeVisible();
     }
-    if (state === 'complete') await expect(page.getByText('Complete for today')).toBeVisible();
+    if (state === 'complete') {
+      await expect(page.getByText('Done for today')).toBeVisible();
+      await expect(page.getByText('Complete for today')).toBeVisible();
+    }
     if (state === 'caught-up') {
-      await expect(page.getByRole('button', { name: /Open the story shelf/ })).toBeEnabled();
+      await expect(page.getByRole('button', { name: 'Open the story shelf' })).toBeEnabled();
       await expect(page.getByText('Nothing due', { exact: true })).toBeVisible();
     }
   });

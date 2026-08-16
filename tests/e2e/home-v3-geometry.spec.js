@@ -1,5 +1,9 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 
+// The text dock: an edge-to-edge bar, three equal text tabs, one sliding ink
+// dot. These tests pin the geometry that keeps it usable — full-width, on the
+// bottom edge, 44px+ targets, single-line labels — across widths and themes.
+
 const WIDTHS = [320, 390, 430];
 const THEMES = ['light', 'dark'];
 const DESTINATIONS = [
@@ -39,11 +43,10 @@ async function assertMobileNavGeometry(page, active) {
   });
 
   expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.viewportWidth);
-  expect(geometry.rect.left).toBeGreaterThanOrEqual(0);
-  expect(geometry.rect.right).toBeLessThanOrEqual(geometry.viewportWidth);
-  expect(geometry.rect.top).toBeGreaterThanOrEqual(0);
-  expect(geometry.rect.bottom).toBeLessThanOrEqual(844);
-  expect(844 - geometry.rect.bottom).toBeGreaterThanOrEqual(5);
+  // Edge to edge, resting on the bottom edge of the viewport.
+  expect(geometry.rect.left).toBe(0);
+  expect(geometry.rect.right).toBe(geometry.viewportWidth);
+  expect(Math.round(geometry.rect.bottom)).toBe(844);
   for (const button of geometry.buttons) {
     expect(button.width, button.name).toBeGreaterThanOrEqual(44);
     expect(button.height, button.name).toBeGreaterThanOrEqual(44);
@@ -72,7 +75,7 @@ for (const width of WIDTHS) {
   }
 }
 
-test('Home content clears the raised nav and fonts settle without reflow', async ({ page }) => {
+test('Home content clears the bottom bar and fonts settle without reflow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   const home = page.locator('[data-home-stage]');
