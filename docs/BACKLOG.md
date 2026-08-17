@@ -10,29 +10,39 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
-### Playwright in a remote sandbox is slower than the 30s default allows
+### Reading a red check: CI is authoritative, a sandbox is not
 
-A remote Claude session runs the e2e suite against a cold Vite dev server on a
-shared container. Individual navigations that take ~1s on the GitHub runner take
-10–15s here, so any spec doing several `page.goto`s inside one test blows the
-30s default timeout and fails as a *timeout*, not an assertion — which reads
-exactly like a product regression and is not one.
+Three failures look identical in a terminal and mean completely different
+things. Classify before you debug:
 
-Observed 2026-08-15 on the release-integration branch: `home-v3-geometry.spec.js`
-(three navigations per test) failed 6/6, and `home.spec.js`'s back-navigation
-test failed 3/3, at the default timeout. Both passed **7/7 and 8/8** with
-`--timeout=180000`, and both were green on GitHub CI for the same commit.
-
-- **Do not raise the timeout in `playwright.config.js`.** CI passes at 30s;
-  raising it globally would hide a real slowdown from the runner that matters.
-  Pass `--timeout` on the command line in a sandbox instead.
-- **`visual.spec.js` cannot pass here at all.** Its baselines are captured on
-  the CI runner image (see the config comment); sandbox font rasterisation
-  differs by ~5% of pixels against a 2% threshold. Two specs — `landing mobile`
-  and `trust pages privacy desktop` — fail locally by design. CI is the only
-  authority for those.
-- Before calling a local e2e failure a regression, re-run it with a raised
-  timeout and check the same test on GitHub CI.
+1. **A GitHub CI failure is real.** `check` (lint + unit + build) and
+   `playwright` on a PR are the authority. Fix the code.
+2. **A Playwright failure inside a remote Claude sandbox is usually the
+   environment.** A remote session runs the e2e suite against a cold Vite dev
+   server on a shared container: navigations that take ~1s on the GitHub runner
+   take 10–15s here, so any spec doing several `page.goto`s in one test blows
+   the 30s default and fails as a *timeout* — which reads exactly like a
+   product regression and is not one. Observed 2026-08-15: two home specs
+   failed 6/6 and 3/3 at the default timeout, passed 7/7 and 8/8 with
+   `--timeout=180000`, and were green on GitHub CI for the same commit.
+   - **Do not raise the timeout in `playwright.config.js`.** CI passes at 30s;
+     raising it globally would hide a real slowdown on the runner. Pass
+     `--timeout` on the command line in a sandbox instead.
+   - **Visual snapshot specs cannot pass in a sandbox at all.** Baselines are
+     captured on the CI runner image; sandbox font rasterisation differs by
+     roughly 5% of pixels against a 2% threshold. **A snapshot diff produced
+     against CI baselines on different font rendering is not a regression, and
+     app code must never be changed to make sandbox-only pixels match.** CI is
+     the only authority for those specs.
+   - Before calling any local e2e failure a regression: re-run it with a raised
+     timeout, and check the same commit on GitHub CI.
+3. **The two `Workers Builds` checks are dead and not fixable here** — see the
+   Cloudflare entry under *Auth / email / hosting*. They fail in zero seconds
+   because there is no wrangler config in this repo, and there must not be one:
+   adding it would turn every push to `main` into an automatic Worker deploy of
+   a backend that ships by hand. The fix is two dashboard clicks outside this
+   repo. **Do not spend a session trying to make them green from application or
+   CI code.**
 
 ### An art-fetch commit lands without CI (know it before you merge)
 
@@ -72,21 +82,6 @@ Check the content type, not the status.
 ## Database
 - [x] **`20260730090000_manhua_presentation_rename.sql` — APPLIED (verified 2026-08-03: constraint is the final `('paced','chat','scene','manhua')` form, 8 rows on `manhua`, 0 on `manga`).** The `presentationOf` alias in `src/readerMode.js` and the `LEGACY_PROGRESS_PREFIX` fallback in `src/manhuaProgress.js` are now deletable per the plan below — though the IndexedDB fallback is cheap insurance for devices that saved positions under the old key and is fine to keep a while longer. Original entry: Retags the fourth presentation `'manga'` → `'manhua'` (Chinese word for the form; the Japanese one was a slip). Idempotent: it widens `stories_presentation_check` to accept both spellings, UPDATEs the one row, then narrows the constraint to `'manhua'` alone. **Order does not matter** — `presentationOf` in `src/readerMode.js` aliases the old tag to the new one, so the app deploy and this migration can land in either order without the live episode dropping to a plain paced story in between. Once it is applied everywhere, that alias and the `LEGACY_PROGRESS_PREFIX` fallback in `src/manhuaProgress.js` (which reads reading positions saved under the old `manga:` IndexedDB key) can both be deleted.
 - [x] **APPLIED 2026-07-28 — `20260728210000_fix_language_reset_missing_writing_stats.sql`.** "Reset HSK 3.0 progress" failed outright with `relation "public.writing_stats" does not exist`, so a language's progress could not be cleared. Root cause was the §10 classic: `20260605224500_add_writing_stats.sql` sat in the repo unapplied while the reset RPC that deletes from that table was applied. It cost more than the reset — `src/Writing.jsx` reads and upserts `writing_stats` on every writing answer, so writing practice was discarding its results. The fix creates the table idempotently AND guards the RPC's delete with `to_regclass`, so a missing optional table can never abort a reset again. Applied through the dashboard SQL editor (the sandbox's MCP write gate was unreachable that session). **Worth a check when convenient:** reset a language from Profile and confirm it completes, and that a writing answer now persists across a reload.
-
-- [ ] 🟡 **Data defect: the vocabulary row `白` (bái) has `level = null`.**
-  `id 77d6738b-e7f8-4608-aad0-f16404bfb291`, language `chinese`, system `hsk_3`,
-  `is_active = true` — with **no `audio_path`, no Azure `tts_audio` row, and no
-  `example_sentence`.** It is the only Chinese vocabulary row in the database
-  with no playable audio of any kind.
-  Surfaced 2026-08-15 while scoping the Azure S0 re-licensing migration, and
-  **deliberately kept out of it** — that migration re-renders existing audio
-  under a paid tier; this row has none to re-render, so voicing it would be new
-  content generation smuggled into a licensing fix.
-  A null level is the more interesting half: level gates study sets, so the row
-  is effectively unreachable by any learner. Decide whether it should carry a
-  level (and then get audio + an example sentence) or be deactivated
-  (`is_active = false` — never deleted, §7.1). **Do not repair as part of any
-  audio run.**
 
 ## Auth / email / hosting
 - [ ] **Custom SMTP — LIVE TEST PENDING.** Configured 2026-07-18: Brevo is the sending provider; `hanzi-dojo.com` shows **Authenticated** in Brevo (DKIM `brevo1/brevo2._domainkey`, `brevo-code` TXT, DMARC `p=none` — all added in Cloudflare DNS, the authoritative nameserver; Vercel only hosts). Supabase custom SMTP wired to `smtp-relay.brevo.com:587`, sender `no-reply@hanzi-dojo.com`. **Still to verify:** send a real magic-link/sign-up to an external inbox and confirm it (a) arrives (not spam) and (b) shows From `no-reply@hanzi-dojo.com`. Brevo "Branding" (the `em`/`img.em`/`r.em` CNAMEs) shows *Not branded* — optional, tracking-link cosmetics only, doesn't block sending.
@@ -154,9 +149,7 @@ when we resume, not scheduled.
 
 - [ ] **25 HSK 6 words still have no example sentence** (down from 335 on 2026-07-28; level 6 stands at 1596/1621). Levels 3, 4 and 5 are complete. Nothing is broken — this is purely a free-tier quota wall, and it does **not** clear on the hour. Two runs have now confirmed the shape of it: the 16:06 run wrote 300 and stopped at `Used 99085`; the 17:21 re-run, 65 minutes later, got only **10 more** words before stopping again at `Used 99430 / Limit 100000`, `retry-after: 3631`. Groq's tokens-per-day is a **rolling 24-hour window**, so an hourly re-run only recovers whatever trickles out of the window — roughly 10 words a run. Don't loop it. Either wait ~24h from the 16:06 bulk run for the window to clear properly and finish the last 25 in one pass, or use a key with real headroom (Gemini's daily free tier resets at midnight Pacific and would cover 25 words easily). Re-run is Actions → `examples-fill`, `language: chinese`, `level: 6`. History below.
 - [ ] **335 HSK 3-6 words still have no example sentence.** ✅ *Mostly resolved 2026-07-28 — 300 of 335 filled; see the entry above.* The Tatoeba backfill (`backfill-examples.mjs --levels 3-6 --apply`, Actions task `examples-hsk3-6`) matched **4,160 of 4,495** on 2026-07-28 and is now exhausted — the remainder simply has no Tatoeba sentence containing the word. Left: level 3 ×3, level 4 ×33, level 5 ×74, level 6 ×225 (the tail is the rarest vocabulary, so it skews to level 6). Finish with the LLM path, one level at a time: Actions → `examples-fill`, `language: chinese`, `level: 3` … `6`. That path is already paged and stops early on a spent quota (`f51c626`) and reports a refusal instead of retrying it 46 times (`6834533`), so a quota wall costs one short run, not a burned hour. ⚠️ **Gemini's free daily quota is spent** — the 15:43 level-3 run got a 429 on all four attempts and wrote nothing. `llm.mjs` now fails over to Groq after three consecutive quota refusals, so the next run finishes on the standby; if both are walled, the fill simply has to wait for the daily reset. Nothing is broken meanwhile — the fill-in-the-blank question builder already filters to rows whose `example_sentence` contains the word (`src/fillBlank.js`), so a missing example just means that word never becomes a cloze question.
-- [x] **Azure flashcard TTS can't run in CI — RESOLVED 2026-08-07: the owner added `AZURE_SPEECH_KEY`/`AZURE_SPEECH_REGION` as Actions secrets; run #108's env dump shows both set, and the 21-word regen ran successfully through Actions the same day (see §Learning quality). What remains open from this entry is only the optional per-level HSK 3–6 `tts-flashcards` pass for slow-word/sentence audio.** *(Re-confirmed 2026-08-03: a `tts-flashcards` dry run on that day's branch still shows both Azure vars empty in the workflow env — the 2026-08-02 story-audio batch must have run outside Actions. Adding the two secrets also unblocks the 21-word reading-fix regen in §Learning quality.)* `tts-flashcards` (`tts-generate.mjs`, the only script that spends money on speech) is wired into `regen-content.yml` with its dry-run/confirm/cap guards, but the 2026-07-28 run's env dump shows `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION` **empty** — only `GOOGLE_TTS_KEY` is populated. So HSK 3-6 has zero rows in `tts_audio` (levels 1-2 have full `word` coverage from the earlier pass), which means no slow-word and no sentence audio there. ~~**This is not user-visible today:** all 4,498 words have a legacy `audio_path`, and `flashcardAudio()` falls back to it for the `word` variant, hiding the slow/sentence controls when absent.~~ ⚠️ **Corrected 2026-08-15 — that claim checked the column, not the object.** Having an `audio_path` is not the same as having a file behind it. Measured against production storage during the S0 release gate: of 4,995 active Chinese words carrying a legacy path, only **504 resolve to an object that exists**. By level, the bucket vs the references: L1 300/300, L2 198/197, L3 457/453 — complete; then **L4 468/929, L5 481/1,495, L6 465/1,621**. So **4,471 active Chinese words have no playable audio at all** — no ready `tts_audio` row and no resolvable legacy object — and they degrade to the audio-retry state rather than hiding the control.
-
-  **Not caused by the S0 migration, and not a release blocker today.** The migration only re-rendered `tts_audio` rows and wrote under the `tts/` storage prefix; every object under `chinese/` was created between 2026-06-04 and 2026-07-20, before it ran. And the gap sits where nobody is: every Chinese learner is at HSK 1 or 2 (18 at L1, 4 at L2), where audio is complete, and the entire user base holds 5 cards at L5–L6. It becomes real the moment anyone reaches HSK 4. Fix is the deferred `tts-flashcards` run per level, not code. Fix is repo settings, not code: add `AZURE_SPEECH_KEY` / `AZURE_SPEECH_REGION` as Actions secrets, then run `tts-flashcards` per level (dry run first — `tts_confirm` unticked — then confirm; the 200-record cap needs `--override-max`, which the task adds automatically above a limit of 200).
+- [x] **Azure flashcard TTS can't run in CI — RESOLVED 2026-08-07: the owner added `AZURE_SPEECH_KEY`/`AZURE_SPEECH_REGION` as Actions secrets; run #108's env dump shows both set, and the 21-word regen ran successfully through Actions the same day (see §Learning quality). What remains open from this entry is only the optional per-level HSK 3–6 `tts-flashcards` pass for slow-word/sentence audio.** *(Re-confirmed 2026-08-03: a `tts-flashcards` dry run on that day's branch still shows both Azure vars empty in the workflow env — the 2026-08-02 story-audio batch must have run outside Actions. Adding the two secrets also unblocks the 21-word reading-fix regen in §Learning quality.)* `tts-flashcards` (`tts-generate.mjs`, the only script that spends money on speech) is wired into `regen-content.yml` with its dry-run/confirm/cap guards, but the 2026-07-28 run's env dump shows `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION` **empty** — only `GOOGLE_TTS_KEY` is populated. So HSK 3-6 has zero rows in `tts_audio` (levels 1-2 have full `word` coverage from the earlier pass), which means no slow-word and no sentence audio there. **This is not user-visible today:** all 4,498 words have a legacy `audio_path`, and `flashcardAudio()` falls back to it for the `word` variant, hiding the slow/sentence controls when absent. Fix is repo settings, not code: add `AZURE_SPEECH_KEY` / `AZURE_SPEECH_REGION` as Actions secrets, then run `tts-flashcards` per level (dry run first — `tts_confirm` unticked — then confirm; the 200-record cap needs `--override-max`, which the task adds automatically above a limit of 200).
 - [ ] **Stale fix instruction above:** the HSK 3-6 reading-fix entry says "re-run Actions → task `audio-hsk3-6`". That task was **retired** in `5e65347` (it billed Google, not Azure) and now exits 1 with a pointer. Once the Azure secrets exist, the equivalent is `tts-flashcards` for the affected levels; the legacy Google `audio_path` rows it replaces are the ones carrying the wrong readings.
 - [ ] **🔴 The serial-story generator cannot run on free LLM tiers — needs a funded key.** Settled empirically overnight 2026-07-29 across three batch runs (story-batch.yml #1, #3, #5). Run #5 was the clean experiment: dispatched at 07:30 UTC, half an hour after Gemini's daily reset, with the SEASON_SEEDS crash already fixed — all three levels ran real LLM calls for 27/16/16 minutes and published zero stories. Gemini's fresh daily quota exhausts mid-tier-one, failover lands on Groq, and Groq's 100k tokens-per-day is a rolling 24h window that the night's own attempts keep full (final reading: Used 98,091/100,000 with each season plan needing ~9k — it can never fit). This is structural, not timing: a season is ~100 calls and the two free tiers together cannot fund even one. The pipeline is otherwise healthy and now inherits the story canon. Fix is repo settings, not code: add a funded `ANTHROPIC_API_KEY` as an Actions secret (premiumLlm() picks it up automatically; a level costs a dollar or two on Sonnet) — or a paid-tier Gemini/Groq key. Until then, stories are hand-authored via `data/authored-stories.json` + `check-authored-stories.mjs`, which is how HSK 4-6 got their 45 chapters.
 - [ ] **Chinese → HSK 7-9** (the advanced band): seed the vocab, then run `generate-meanings` → `generate-examples` → `generate-serial-stories` → `generate-audio`/`generate-story-audio`. Add tiers to `storyTiers.js` and level labels in `utils.js`. *(HSK 3-6 vocab/examples/audio already shipped; stories pending LLM quota.)*
@@ -250,162 +243,6 @@ migration to drop them, since this removed the feature, not historical data.
 - [ ] Continue extracting the large `Study` screen into focused hooks/components.
 - [ ] Supabase generated types (gradual TypeScript adoption).
 - [ ] Centralize design tokens (colors/spacing/shadows) beyond the current shared primitives.
-
-## App icon V2 (E2 APPROVED and IMPLEMENTED 2026-08-15)
-
-**Shipped on the icon branch:** V2 balanced brush mark + E2 shallow-inlay
-vermilion lacquer, generated by the rewritten `tools/generate-app-icons.mjs`
-from the locked mask (`docs/icon-v2/brush/masters/mask-V2.png`) and gated by
-`tools/verify-app-icons.mjs` (8 checks incl. a mean-abs-diff match against the
-approved device-gate render). iOS Any/Dark/Tinted authored in
-`Contents.json`; Android full-bleed background, safe-zone foreground,
-authored `<monochrome>` on both launcher XMLs, three dead template files
-deleted; web icons + `favicon.svg` unified onto the same mark;
-`monochrome-512.png` added to the manifest; `sw.js` bumped to v8 so cached
-old icons flush. History: audit → concepts → rings → brush → device gate in
-the `P14-APP-ICON-V2-*.md` docs.
-
-Still open:
-
-- [ ] **Device verification** (needs a phone/TestFlight): the four iOS
-  appearance modes, Settings › Apps in dark mode, Android themed launchers,
-  masks + parallax. Folded into the §4 device pass in PRE-RELEASE.
-- [ ] **Splash screens + `Hanzi-logo.png` still show the pre-V2 mark** —
-  regenerate together AFTER Home V3 lands (the web splash overlay draws
-  Hanzi-logo.png; switching only one side makes the mark swap mid-launch).
-- [ ] **Icon Composer `.icon`** on a Mac with Xcode 26 — an upgrade over the
-  asset catalog, not a blocker. Flat layers ready in `assets/icon-composer/`.
-- [ ] E1 (flat, no inlay) remains the documented fallback: set `bands: false`
-  in the generator's `flatIcon()`/`markLayerPNG()` calls and re-run.
-
-- [ ] **iOS `AppIcon.appiconset/Contents.json` declares only the Any appearance.**
-  No `luminosity: dark` and no `luminosity: tinted` entry exists, and no dark or
-  greyscale artwork exists anywhere in the repo to put in one — the generator's
-  `DARK` constant is used by splash screens only. So iOS *synthesises* the dark
-  and tinted icons from the light one, differently on different surfaces, which
-  is why the icon appears to change by itself. The artwork is close to the worst
-  case for that treatment: 82% of the canvas is `#FAFAF8` (luma 250) and the ink
-  is *darker* than the ground (luma 87), so tinted inverts figure and ground.
-- [ ] **Android has no `<monochrome>` layer**, on either `ic_launcher.xml` or
-  `ic_launcher_round.xml` — themed icons (13+) are off by omission at
-  `targetSdk 36`.
-- [ ] **The adaptive background is inset 16.7%**, so it covers exactly the 72 dp
-  mask and the 18 dp effect margin is transparent. A background layer must be
-  full-bleed 108 dp. Compounding it, the foreground mark ends up at ~33% of the
-  canvas inside a 66 dp safe zone. `docs/PRE-RELEASE-CHECKLIST.md` §0 records the
-  inset as intentional; it isn't, and that entry needs correcting.
-- [ ] **Dead Android Studio templates** still in the tree:
-  `drawable/ic_launcher_background.xml` (teal grid),
-  `drawable-v24/ic_launcher_foreground.xml` (the robot),
-  `values/ic_launcher_background.xml`. Unreferenced, but they sit exactly where a
-  future monochrome drawable goes.
-- [ ] **Three reds and two marks.** `#B83A24` (product accent), `#C43A22`
-  (`favicon.svg`, a geometric arc), `#E1350F` (the icon's brush artwork).
-- [ ] **The current mark is an ensō — a Japanese Zen symbol** — on a
-  Chinese-only product. Named as such in `tools/generate-app-icons.mjs`,
-  `public/favicon.svg` and `docs/PRE-RELEASE-CHECKLIST.md`. This is the decision
-  V2 actually turns on; the audit recommends a vermilion seal (印) with the ring
-  reversed out of it, which fixes the appearance problem structurally at the same
-  time.
-- [ ] `docs/DEPLOY.md` (~132) is stale — it still describes icons as generated
-  from `src/assets/Hanzi-logo.png` by an ad-hoc script.
-- [ ] Follow-up, **sequenced after Home V3 lands**: `src/assets/Hanzi-logo.png`
-  is the same ensō and is imported by eight screens including `Sidebar.jsx`, so
-  the in-app logo and the app icon would show different marks until it follows.
-  Asset swap only — no code change in those files.
-
-## Pre-release readiness audit (2026-08-15) — 4 blockers
-
-Full evidence table: [`docs/PRE-RELEASE-READINESS-AUDIT.md`](PRE-RELEASE-READINESS-AUDIT.md).
-Research only; nothing was fixed. The five confirmed blockers:
-
-- [x] ~~🔴 iOS cannot be built (Apple Sign-In SPM conflict)~~ — **RETRACTED
-  2026-08-15, this was wrong.** It read the plugin's *upstream* manifest instead
-  of what `cap sync ios` produces. Capacitor **8.4.1** shipped `fix(cli): patch
-  Capacitor SPM dependency version in plugins` (#8492, `28bb2c6`); this project
-  runs CLI **8.5.0**, and `node_modules/@capacitor/cli/dist/ios/update.js:49-63`
-  rewrites the plugin's `from: "7.0.0"` → `from: "8.0.0"` on every sync, which
-  `exact: "8.5.0"` then satisfies. `ios-testflight.yml` runs `npm ci` (:90) →
-  `cap sync ios` (:126) → `xcodebuild archive` (:238), so the patch lands before
-  Xcode resolves. Builds 43/44/45 prove it. This sandbox is Linux and has never
-  run `cap sync`, so `node_modules` still holds the pristine manifest — reading
-  it directly is **not** the build path. Now tracked as 🟠 REAL RISK: the CLI
-  forces the version but warns *"built for Capacitor 7, it might cause issues"*,
-  and the Apple sign-in **runtime** flow is still device-unverified. One
-  successful TestFlight sign-in drops it to tech debt. **Do not downgrade
-  Capacitor, vendor the plugin, or hand-patch Package.swift.**
-- [ ] 🟠 **DojoHQ's code ships inside the store bundle.** Excluding `hq.html`
-  (`vite.config.js:60-61`) drops only the second *entry point*; `src/App.jsx:58`
-  still lazy-imports `./DojoHQ` for the in-app `/hq` route, so a
-  `DOJO_PUBLIC_BUILD=1` build emits `DojoHQ-*.js` (**124 kB**) + `DojoHQ-*.css`
-  (69 kB), with the `127.0.0.1:43127` bridge string inside. Access is
-  server-enforced, so this is dead weight and an Apple 2.3.1(a) talking point,
-  not a leak. **Fix needs `App.jsx` — do it after Codex merges.**
-- [x] 🟠 **`build:public` — the bundle both stores ship — is never run in CI.**
-  FIXED 2026-08-15 — `ci.yml` builds it on every PR, plus a personal-identifier
-  assertion over `dist/`. Original finding:
-  `ci.yml:53-54` runs `npm run build`, the *Sites* variant (emits `hq.html`).
-  A store-only regression passes every PR check. Not a blocker (the native
-  workflows do build it before upload) but cheap and high-value to close.
-- [ ] 🔴 **No App Review demo account exists.** `docs/STORE-LISTING.md:133-136`
-  holds a placeholder; Apple 2.1(a) makes a non-working login an automatic
-  rejection. Needs a real seeded account, password entered in the console only.
-- [ ] 🔴 **Content licensing is unproven.** *Partly closed 2026-08-15:* `LICENSE`
-  (all-rights-reserved, flagged for owner confirmation), `NOTICE.md` and
-  `docs/CONTENT-LICENSING.md` now exist; `/terms` no longer overclaims and
-  CC-CEDICT's ShareAlike terms are properly disclosed; `public/icons.svg` is
-  deleted; and new generated imagery must record its prompt and date
-  (`artProvenance.mjs`). **What still blocks is owner-only:** the icon master's
-  origin and the Azure Speech tier. Original finding: No LICENSE/NOTICE anywhere. Commercial-use
-  rights for the Higgsfield/`nano_banana_pro` art (127 committed panels + covers),
-  Azure Neural TTS audio, and LLM-generated story text are not recorded. Generation
-  prompts are not archived either — `data/manhua/*.art.json` hold only `{file,url}`
-  plus a prose `_style_comment`, so there is no per-image evidence the
-  STORY-BIBLE "no resemblance to any franchise" constraint was applied.
-  **Deep-dive 2026-08-15 → `docs/CONTENT-PROVENANCE-AUDIT.md`.** Higgsfield's
-  terms came back *clean* (no ownership claim, commercial use permitted,
-  sublicensable), but three harder sub-blockers surfaced: (a) the icon master
-  `src/assets/86055582-…png` has **zero metadata** and no traceable origin, and
-  every shipped icon is a pixel-derivative of it — the approved V2 mark is a
-  cleaned raster, not a redraw; (b) `src/TrustPages.jsx:196` publicly claims
-  © over that artwork; (c) Azure grants commercial rights for prebuilt neural
-  voices on **paid tiers only** and the Speech resource tier is not in the repo.
-  Also new: the 16 `upstairs/hsk3/ep01` panels have **no manifest at all**, and
-  `public/icons.svg` ships four companies' brand marks while being referenced by
-  zero app code.
-- [x] 🔴 **A personal email ships in the production bundle** — FIXED 2026-08-15.
-  The allowlist mechanism is gone; `/dev` gates on `profile.is_admin` inside
-  `Dev.jsx`, and CI now builds `build:public` and fails if the address returns.
-  Original finding: `src/devTools.js:11`
-  `DEFAULT_DEV_EMAILS = 'fabrykjoh@gmail.com'`, confirmed present in
-  the emitted `dist/client/assets/devTools-*.js`. Because `VITE_DEV_EMAILS` was
-  unset at build time, Vite inlined the literal as the *only* surviving value.
-  Related: `/dev` renders for **any** signed-in user (`src/App.jsx:690-701`) and is
-  gated only inside the component, unlike `/hq` and `/dashboard` which 404.
-  **Preferred fix (see `docs/RELEASE-BLOCKER-REMEDIATION.md` §3): delete the email
-  allowlist entirely and gate `/dev` on `profile.is_admin` inside `Dev.jsx`** —
-  closes both halves at once, and touches no file Codex is holding.
-  Severity note: public-but-unprofessional, **not** a security exposure — every
-  `/dev` action is RLS-scoped to the signed-in account.
-- [ ] 🔴 **Play's web-accessible deletion URL.** Play requires an in-app path *and*
-  a URL reachable without the app. `docs/STORE-LISTING.md:183` answers
-  `/profile`, which sits behind the `!session` gate (`src/App.jsx:375-380`).
-  **Decided: answer Play with `/support`**, which is already in `TRUST_PAGES`
-  and already carries the in-app path plus the email fallback. What it lacks is
-  Play's second half — *which data is deleted, which is kept, and any retention
-  period*. Copy-only edit in `TrustPages.jsx`; no routing change, so it avoids
-  `routes.js`, which Codex is editing.
-
-Notable non-blockers worth queuing: `public/sw.js:177-178` references
-`pwa-192.png`, which **does not exist** (App Icon V2 rename missed it — broken
-push icon); `syncQueue.js:6-7` only enqueues when `navigator.onLine === false`,
-so writes failing while nominally online are dropped; no timeout/backoff on any
-Supabase call; Grammar screens degrade to *empty* rather than an error state.
-
-Verified clean: no committed secrets, no third-party analytics/ads/crash SDK, no
-advertising ID, no monetization of any kind, paused JP/RU tracks cannot leak
-(both `PUBLIC_LANGUAGES` and `ADMIN_LANGUAGES` are Chinese-only), and all six
-`admin_*` RPCs genuinely guard with `assert_admin()` (verified live).
 
 ## Deploy steps (apply before the feature works)
 - [x] **Public story links — APPLIED (verified in prod 2026-08-07: `public_story` function exists).** Original entry: apply migration `supabase/migrations/20260716000000_add_public_story.sql` in the Supabase SQL editor. It adds the anon-callable `security-definer` RPC `public_story(uuid)` (returns one published story + its language's active vocab capped to the story's level). Until applied, `/read/:id` shows the "story not found" state (a `console.error` fires so it's diagnosable). Smoke-test: `POST $VITE_SUPABASE_URL/rest/v1/rpc/public_story` with the anon key and a published story UUID → JSON with `title` + `vocab_pool`; an unpublished id → `null`.
