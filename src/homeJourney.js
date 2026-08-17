@@ -6,8 +6,8 @@
 // step of the journey PRINTS for a given stage, so the JSX stays layout-only
 // and every visible string has a test.
 
-import { homeQueueSummary, homeProgressPct } from './homePresentation'
-import { practiceStatus, storyStatus } from './homeModel'
+import { homeProgressPct } from './homePresentation'
+import { deskCardsSub, practiceStatus, storyStatus } from './homeModel'
 import { leadingChapterNumber, stripLeadingNumber } from './storyArcs'
 
 // ── Header ──────────────────────────────────────────────────────────────────
@@ -29,30 +29,30 @@ export function homeLevelPill({ levelLabel = '', learned = 0, totalWords = 0 } =
 
 // ── The current session card ────────────────────────────────────────────────
 
-// Headline for the focus card, derived from the real queue — "Learn 4 new
-// words" only when the session genuinely is 4 new words.
-export function sessionHeadline(counts = {}) {
-  const queue = homeQueueSummary(counts)
-  if (queue.failed) return 'Start today’s session'
-  const reviews = queue.reviewCount
-  const fresh = queue.newCount
-  if (reviews > 0 && fresh > 0) return 'Review ' + reviews + ' · learn ' + fresh + ' new'
-  if (fresh > 0) return 'Learn ' + fresh + ' new ' + (fresh === 1 ? 'word' : 'words')
-  if (reviews > 0) return 'Review ' + reviews + ' ' + (reviews === 1 ? 'word' : 'words')
-  return ''
+// The queue line under the focus card's heading: the real composition,
+// "13 reviews · 10 new". Same string deskCardsSub prints minus the estimate,
+// so the promise and the delivery share one source.
+export function sessionQueueLine(counts = {}) {
+  return deskCardsSub({ counts })
 }
 
-// The word-sample row. Sizing contract: words render at up to SAMPLE_MAX_PX
-// with a SAMPLE_GAP_EM gap, and the whole row must fit one line inside the
-// card at every supported width — so the sample is capped by total em-length,
-// not just word count, and the font size shrinks for what remains.
+// The word-sample row. Sizing contract: the preview stays LARGE (never below
+// SAMPLE_MIN_PX) and never clips — so on a narrow viewport or with longer
+// vocabulary the sample DROPS WORDS instead of shrinking below the floor.
+// Whole real words only: never truncated, never substituted.
 export const SAMPLE_MAX_WORDS = 4
-export const SAMPLE_MAX_EM = 8.4
 export const SAMPLE_GAP_EM = 0.35
 export const SAMPLE_MAX_PX = 44
-// The column is capped at 430px; page (40) + card (44) padding leaves ~346.
-const SAMPLE_MAX_ROW_PX = 346
-const SAMPLE_VW_CHROME_PX = 92
+export const SAMPLE_MIN_PX = 34
+// The Home column caps at 430px; page (40) + card (44) padding + slack.
+const SAMPLE_COLUMN_MAX_PX = 430
+const SAMPLE_CHROME_PX = 88
+
+// The pixels the sample row actually has at a given viewport width.
+export function sampleRowWidth(viewportWidth) {
+  const vw = viewportWidth > 0 ? viewportWidth : SAMPLE_COLUMN_MAX_PX
+  return Math.min(SAMPLE_COLUMN_MAX_PX, vw) - SAMPLE_CHROME_PX
+}
 
 // Row length in em: one em per character plus the gaps between words.
 export function sampleEmLength(words = []) {
@@ -61,28 +61,28 @@ export function sampleEmLength(words = []) {
 }
 
 // Up to four words from the front of the ACTUAL prepared queue — never
-// fabricated. Greedy in queue order: stop at the first word that would
-// overflow the row, so what the learner sees is genuinely the top of the
-// session. The first word is always kept (the font size clamps it).
-export function sessionSampleWords(queue = []) {
+// fabricated. Greedy in queue order, capped by what fits at the premium
+// floor size for THIS viewport: a narrow screen or longer words simply show
+// fewer of them. The first word is always kept (the font size clamps it).
+export function sessionSampleWords(queueWords = [], viewportWidth) {
+  const maxEm = sampleRowWidth(viewportWidth) / SAMPLE_MIN_PX
   const words = []
-  for (const item of queue) {
-    const word = item && item.vocab && item.vocab.word
+  for (const word of queueWords) {
     if (!word || words.includes(word)) continue
-    if (words.length > 0 && sampleEmLength([...words, word]) > SAMPLE_MAX_EM) break
+    if (words.length > 0 && sampleEmLength([...words, word]) > maxEm) break
     words.push(word)
     if (words.length >= SAMPLE_MAX_WORDS) break
   }
   return words
 }
 
-// The CSS font-size expression that keeps the sample on one line: capped so
-// the row fits the 430px column, and viewport-scaled below that.
-export function sampleFontSize(words = []) {
+// Font size in px for the sample at this viewport — as large as the row
+// allows, capped at SAMPLE_MAX_PX. Only a single very long word can push it
+// under SAMPLE_MIN_PX (the sampler never lets a multi-word row do so).
+export function sampleFontSize(words = [], viewportWidth) {
   const em = sampleEmLength(words)
-  if (em <= 0) return SAMPLE_MAX_PX + 'px'
-  const cap = Math.min(SAMPLE_MAX_PX, Math.floor(SAMPLE_MAX_ROW_PX / em))
-  return 'min(' + cap + 'px, calc((100vw - ' + SAMPLE_VW_CHROME_PX + 'px) / ' + em + '))'
+  if (em <= 0) return SAMPLE_MAX_PX
+  return Math.max(20, Math.min(SAMPLE_MAX_PX, Math.floor(sampleRowWidth(viewportWidth) / em)))
 }
 
 // ── Journey steps ───────────────────────────────────────────────────────────
@@ -129,16 +129,21 @@ export function homeJourneySteps({ stage, counts = {}, daily } = {}) {
   }
 
   const cardsStep = stage === 'cards'
-    ? { key: 'cards', status: 'current', title: sessionHeadline(counts), sub: null }
+    ? { key: 'cards', status: 'current', title: 'Today’s session', sub: null }
     : { key: 'cards', status: 'done', title: 'Review', sub: 'Nothing due right now' }
 
-  const storyStep = {
-    key: 'story',
-    status: stage === 'cards' ? 'upcoming' : stage === 'story' ? 'current' : 'done',
-    title: stage === 'cards' ? storyUnlockTitle(daily) : storyTitle,
-    titleIsStory: stage !== 'cards' && Boolean(story),
-    sub: storyStatus({ stage, daily }),
-  }
+  // The story step never repeats the Story Reward card's title while that
+  // card is the primary action right below — "Story unlocked" points at it
+  // instead of competing with it.
+  const storyStep = stage === 'cards'
+    ? { key: 'story', status: 'upcoming', title: storyUnlockTitle(daily), sub: storyStatus({ stage, daily }) }
+    : stage === 'story'
+      ? {
+          key: 'story', status: 'current',
+          title: daily === undefined ? 'Today’s story' : 'Story unlocked',
+          sub: storyStatus({ stage, daily }),
+        }
+      : { key: 'story', status: 'done', title: storyTitle, titleIsStory: Boolean(story), sub: storyStatus({ stage, daily }) }
 
   const practiceStep = {
     key: 'practice',

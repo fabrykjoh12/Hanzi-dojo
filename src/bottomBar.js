@@ -28,7 +28,9 @@ export const DOCK_HEIGHT = 58
 // Its minimum distance from the bottom edge — the floor under the safe area.
 export const DOCK_INSET = 12
 // Breathing room between the dock and the page content scrolling under it.
-export const CONTENT_GAP = 14
+// 24px minimum (raised from 14 in the Misty Home polish pass): fully-scrolled
+// content must sit clearly above the dock, not graze it.
+export const CONTENT_GAP = 24
 // …and between the dock and a floating control parked above it.
 export const FLOAT_GAP = 12
 // What a focused screen (no dock: Study, the reader) leaves at the bottom

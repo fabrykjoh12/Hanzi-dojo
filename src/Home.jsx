@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react'
 import { ChevronRight } from 'lucide-react'
 import { getDailyStoryCard } from './homeStory'
 import { homeDailyStage } from './homePresentation'
-import { deskCardsSub } from './homeModel'
 import {
   homeFirstName, homeJourneySteps, homeLevelPill, homePrimaryAction,
-  sessionHeadline, sessionSampleWords, storyRewardState,
+  sampleFontSize, sessionQueueLine, sessionSampleWords, storyRewardState,
 } from './homeJourney'
 import { prepareStudySession } from './sessionPrep'
 import { setDeskHandoff } from './deskTransition'
@@ -15,6 +14,7 @@ import StoryRewardCard from './StoryRewardCard'
 import { languageTheme } from './languageTheme'
 import { sessionEstimateLabel } from './sessionEstimate'
 import { useIsMobile } from './useIsMobile'
+import { useViewportWidth } from './useViewportWidth'
 import { getLevelLabel } from './utils'
 import { maybeStartTour, markTourSeen } from './tour'
 import TourOverlay from './TourOverlay'
@@ -36,8 +36,9 @@ const SECTION_H2 = {
 // today's real object) → "Story Reward". The daily state machine
 // (homeDailyStage), the prepared-session handoff to Study, the story pick and
 // every navigation target are unchanged — this layer only presents them.
-export function HomeView({ profile, track, counts, daily, sampleWords, onNavigate, onStartCards }) {
+export function HomeView({ profile, track, counts, daily, sampleSource, onNavigate, onStartCards }) {
   const isMobile = useIsMobile()
+  const viewportWidth = useViewportWidth()
   const theme = languageTheme(profile.active_language)
   const language = profile.active_language
   const level = getLevelLabel(language, track.system, track.current_level)
@@ -47,15 +48,20 @@ export function HomeView({ profile, track, counts, daily, sampleWords, onNavigat
   const story = daily ? daily.story : null
   const reward = storyRewardState({ stage, daily })
 
+  // The word preview is responsive: at narrow widths (or with longer words)
+  // it shows fewer REAL words rather than shrinking or clipping them.
+  const sampleWords = sessionSampleWords(sampleSource, viewportWidth)
+
   // The story's large object is the Story Reward card below the journey, so
   // the journey never hosts a large card for it — one object per story.
   const currentCardKey = primary === 'story' ? null : primary
   const currentCard = currentCardKey === 'cards'
     ? (
       <CurrentSessionCard
-        headline={sessionHeadline(counts)}
         words={sampleWords}
-        sub={deskCardsSub({ counts, estimate: sessionEstimateLabel(counts) })}
+        wordSizePx={sampleFontSize(sampleWords, viewportWidth)}
+        queueLine={sessionQueueLine(counts)}
+        estimate={sessionEstimateLabel(counts)}
         theme={theme}
         onStart={onStartCards}
       />
@@ -115,7 +121,7 @@ export function HomeView({ profile, track, counts, daily, sampleWords, onNavigat
 
 export default function Home({ profile, track, counts, session, onNavigate }) {
   const [daily, setDaily] = useState(undefined)
-  const [sampleWords, setSampleWords] = useState([])
+  const [sampleSource, setSampleSource] = useState([])
   const [tourSteps, setTourSteps] = useState(null)
   const userId = session?.user?.id
   const learned = counts.learnedCount || 0
@@ -141,7 +147,9 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
       timer = setTimeout(() => {
         prepareStudySession({ userId, profile, track }).then(data => {
           if (!alive || !data) return
-          setSampleWords(sessionSampleWords(data.queue))
+          // Keep a few leading words; how many actually SHOW is decided at
+          // render time from the live viewport width.
+          setSampleSource(data.queue.slice(0, 8).map(c => c.vocab && c.vocab.word).filter(Boolean))
         })
         import('./Study').catch(() => {})
         import('./Stories').catch(() => {})
@@ -176,7 +184,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
 
   return (
     <>
-      <HomeView profile={profile} track={track} counts={counts} daily={daily} sampleWords={sampleWords} onNavigate={onNavigate} onStartCards={startCards} />
+      <HomeView profile={profile} track={track} counts={counts} daily={daily} sampleSource={sampleSource} onNavigate={onNavigate} onStartCards={startCards} />
       {tourSteps && (
         <TourOverlay
           steps={tourSteps}

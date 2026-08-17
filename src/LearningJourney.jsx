@@ -1,7 +1,7 @@
 import { Fragment } from 'react'
 import { Check, Lock, Play } from 'lucide-react'
 import MistyArt from './MistyArt'
-import { SAMPLE_GAP_EM, sampleFontSize } from './homeJourney'
+import { SAMPLE_GAP_EM } from './homeJourney'
 import { ink } from './languageTheme'
 
 // The Misty Atmosphere learning journey — the "Today's Learning" section.
@@ -21,6 +21,8 @@ import { ink } from './languageTheme'
 const UI_FONT = "'Mona Sans', 'Inter', sans-serif"
 const LIGHT_INK = '#FFFBF4'
 const RAIL_LINE = 'color-mix(in srgb, #5B6474 42%, var(--border))'
+// Connectors touching an upcoming step recede further than the travelled path.
+const RAIL_LINE_FAINT = 'color-mix(in srgb, #5B6474 24%, var(--border))'
 
 function RailNode({ status, accent }) {
   if (status === 'done') {
@@ -48,27 +50,30 @@ function RailNode({ status, accent }) {
   return (
     <span style={{
       width: '11px', height: '11px', borderRadius: '50%', flexShrink: 0,
-      border: '1.5px solid color-mix(in srgb, var(--text-faint) 45%, var(--border))',
+      border: '1.5px solid color-mix(in srgb, var(--text-faint) 32%, var(--border))',
       background: 'transparent',
     }} />
   )
 }
 
-// The rail cell for one step: an (optionally invisible) segment above, the
-// node, a segment below. Invisible segments keep the node centered against its
-// row; visible ones are the connectors between states.
+// The rail cell for one step. The spacers keep the node centered against its
+// row; the connector is a SHORT stroke hugging the node — never a full-height
+// line — so the rail reads as a journey's waypoints, not a spine.
 function RailCell({ status, accent, hasPrev, hasNext }) {
-  const segment = visible => (
+  const line = status === 'upcoming' ? RAIL_LINE_FAINT : RAIL_LINE
+  const spacer = (visible, side) => (
     <span style={{
-      width: '1.5px', flex: 1, minHeight: '8px', borderRadius: '1px',
-      background: visible ? RAIL_LINE : 'transparent',
-    }} />
+      flex: 1, width: '1.5px', display: 'flex', flexDirection: 'column',
+      justifyContent: side === 'top' ? 'flex-end' : 'flex-start',
+    }}>
+      {visible && <span style={{ width: '1.5px', height: '22px', maxHeight: '100%', borderRadius: '1px', background: line }} />}
+    </span>
   )
   return (
-    <span aria-hidden="true" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
-      {segment(hasPrev)}
+    <span aria-hidden="true" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+      {spacer(hasPrev, 'top')}
       <RailNode status={status} accent={accent} />
-      {segment(hasNext)}
+      {spacer(hasNext, 'bottom')}
     </span>
   )
 }
@@ -115,7 +120,7 @@ function CompactStep({ step, theme }) {
 // `currentCardKey` renders the passed large card; everything else is a row.
 export default function LearningJourney({ steps, currentCardKey, currentCard, theme }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '24px minmax(0, 1fr)', columnGap: '12px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '22px minmax(0, 1fr)', columnGap: '10px' }}>
       {steps.map((step, index) => (
         <Fragment key={step.key}>
           <RailCell
@@ -144,7 +149,7 @@ export default function LearningJourney({ steps, currentCardKey, currentCard, th
 // button (same handoff contract as before: the tapped rectangle is handed to
 // Study); the Start pill inside is the affordance, not a nested control. The
 // artwork is a separate aria-hidden layer — no text is baked into it.
-export function CurrentSessionCard({ headline, words, sub, theme, onStart }) {
+export function CurrentSessionCard({ words, wordSizePx, queueLine, estimate, theme, onStart }) {
   return (
     <button
       type="button"
@@ -177,12 +182,15 @@ export function CurrentSessionCard({ headline, words, sub, theme, onStart }) {
         </span>
         <span style={{ display: 'block' }}>
           <span style={{ display: 'block', fontSize: '21px', lineHeight: 1.25, fontWeight: 720, letterSpacing: '-0.01em', textShadow: '0 1px 14px rgba(15, 18, 26, 0.45)' }}>
-            {headline}
+            Today’s session
+          </span>
+          <span style={{ display: 'block', marginTop: '5px', fontSize: '12.5px', lineHeight: 1.3, fontWeight: 580, color: 'rgba(255, 251, 244, 0.82)' }}>
+            {queueLine}
           </span>
           <span style={{
             display: 'flex', alignItems: 'baseline', justifyContent: 'center',
-            gap: SAMPLE_GAP_EM + 'em', minHeight: '54px', marginTop: '10px',
-            fontSize: sampleFontSize(words), lineHeight: 1.15, fontWeight: 500,
+            gap: SAMPLE_GAP_EM + 'em', minHeight: '54px', marginTop: '12px',
+            fontSize: wordSizePx + 'px', lineHeight: 1.15, fontWeight: 500,
             color: '#FFFFFF', textShadow: '0 2px 16px rgba(15, 18, 26, 0.5)',
             whiteSpace: 'nowrap',
           }}>
@@ -192,8 +200,8 @@ export function CurrentSessionCard({ headline, words, sub, theme, onStart }) {
           </span>
         </span>
         <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12px', lineHeight: 1.2, fontWeight: 560, color: 'rgba(255, 251, 244, 0.8)' }}>
-            {sub}
+          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12.5px', lineHeight: 1.2, fontWeight: 600, color: 'rgba(255, 251, 244, 0.82)' }}>
+            {estimate}
           </span>
           <span aria-hidden="true" style={{
             flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '7px',

@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  SAMPLE_MAX_EM, SAMPLE_MAX_WORDS,
+  SAMPLE_MAX_PX, SAMPLE_MAX_WORDS, SAMPLE_MIN_PX,
   homeFirstName, homeJourneySteps, homeLevelPill, homePrimaryAction,
-  sampleEmLength, sampleFontSize, sessionHeadline, sessionSampleWords,
-  storyRewardState, storyUnlockTitle,
+  sampleEmLength, sampleFontSize, sampleRowWidth, sessionQueueLine,
+  sessionSampleWords, storyRewardState, storyUnlockTitle,
 } from './homeJourney'
-
-const queueOf = words => words.map(word => ({ vocab: { word } }))
 
 describe('homeFirstName', () => {
   it('takes the first word of the display name', () => {
@@ -33,51 +31,65 @@ describe('homeLevelPill', () => {
   })
 })
 
-describe('sessionHeadline', () => {
-  it('derives the headline from the real queue, never a fixed string', () => {
-    expect(sessionHeadline({ newCount: 4 })).toBe('Learn 4 new words')
-    expect(sessionHeadline({ newCount: 1 })).toBe('Learn 1 new word')
-    expect(sessionHeadline({ dueCount: 12 })).toBe('Review 12 words')
-    expect(sessionHeadline({ dueCount: 1 })).toBe('Review 1 word')
-    expect(sessionHeadline({ dueCount: 10, learnCount: 2, newCount: 4 })).toBe('Review 12 · learn 4 new')
+describe('sessionQueueLine', () => {
+  it('prints the real composition, sharing deskCardsSub’s wording', () => {
+    expect(sessionQueueLine({ dueCount: 13, newCount: 10 })).toBe('13 reviews · 10 new')
+    expect(sessionQueueLine({ dueCount: 1, newCount: 0 })).toBe('1 review · 0 new')
   })
 
   it('stays honest when the counts failed', () => {
-    expect(sessionHeadline({ failed: true, dueCount: 3 })).toBe('Start today’s session')
+    expect(sessionQueueLine({ failed: true })).toBe('Queue unavailable — starting will retry')
   })
 })
 
 describe('sessionSampleWords', () => {
+  const WIDE = 390
+  const NARROW = 320
+
   it('takes up to four words from the front of the actual queue', () => {
-    expect(sessionSampleWords(queueOf(['学', '夜', '路', '灯', '花'])))
+    expect(sessionSampleWords(['学', '夜', '路', '灯', '花'], WIDE))
       .toEqual(['学', '夜', '路', '灯'])
   })
 
   it('never fabricates and never repeats', () => {
-    expect(sessionSampleWords([])).toEqual([])
-    expect(sessionSampleWords([{ vocab: null }, {}])).toEqual([])
-    expect(sessionSampleWords(queueOf(['学', '学', '夜']))).toEqual(['学', '夜'])
+    expect(sessionSampleWords([], WIDE)).toEqual([])
+    expect(sessionSampleWords([null, ''], WIDE)).toEqual([])
+    expect(sessionSampleWords(['学', '学', '夜'], WIDE)).toEqual(['学', '夜'])
   })
 
-  it('caps by row length so long words still fit one line', () => {
-    const words = sessionSampleWords(queueOf(['不好意思', '没关系', '一点儿', '什么']))
-    expect(words.length).toBeLessThan(SAMPLE_MAX_WORDS)
-    expect(sampleEmLength(words)).toBeLessThanOrEqual(SAMPLE_MAX_EM)
+  it('shows four two-character words at normal width but drops to three when narrow', () => {
+    const queue = ['回家', '朋友', '喝水', '花']
+    expect(sessionSampleWords(queue, WIDE)).toEqual(['回家', '朋友', '喝水', '花'])
+    expect(sessionSampleWords(queue, NARROW)).toEqual(['回家', '朋友', '喝水'])
   })
 
-  it('always keeps at least the first word', () => {
-    expect(sessionSampleWords(queueOf(['不好意思了没关系吗']))).toEqual(['不好意思了没关系吗'])
+  it('never lets a multi-word sample fall below the premium floor size', () => {
+    for (const width of [WIDE, NARROW]) {
+      const words = sessionSampleWords(['不好意思', '没关系', '一点儿', '什么'], width)
+      expect(words.length).toBeLessThan(SAMPLE_MAX_WORDS)
+      if (words.length > 1) {
+        expect(sampleFontSize(words, width)).toBeGreaterThanOrEqual(SAMPLE_MIN_PX)
+      }
+    }
+  })
+
+  it('always keeps at least the first word, whole — never truncated', () => {
+    expect(sessionSampleWords(['不好意思了没关系吗'], NARROW)).toEqual(['不好意思了没关系吗'])
   })
 })
 
 describe('sampleFontSize', () => {
-  it('shrinks as the sample grows and stays viewport-bounded', () => {
-    expect(sampleFontSize(['学', '夜', '路', '灯'])).toContain('min(')
-    expect(sampleFontSize(['学', '夜', '路', '灯'])).toContain('100vw')
-    const short = sampleFontSize(['学'])
-    const long = sampleFontSize(['不好意思', '没关系吗'])
-    expect(parseInt(short.match(/min\((\d+)px/)[1], 10))
-      .toBeGreaterThan(parseInt(long.match(/min\((\d+)px/)[1], 10))
+  it('is large at normal width and never exceeds the cap', () => {
+    expect(sampleFontSize(['学', '夜', '路', '灯'], 390)).toBeLessThanOrEqual(SAMPLE_MAX_PX)
+    expect(sampleFontSize(['学'], 390)).toBe(SAMPLE_MAX_PX)
+  })
+
+  it('keeps the row inside the card at every supported width', () => {
+    for (const width of [320, 390, 430, 1440]) {
+      const words = sessionSampleWords(['回家', '朋友', '喝水', '花'], width)
+      const px = sampleFontSize(words, width)
+      expect(px * sampleEmLength(words)).toBeLessThanOrEqual(sampleRowWidth(width))
+    }
   })
 })
 
@@ -123,16 +135,16 @@ describe('homeJourneySteps', () => {
 
   it('cards stage: session is current, story locked with its unlock line, practice waits', () => {
     const steps = homeJourneySteps({ stage: 'cards', counts: { dueCount: 2, newCount: 4 }, daily })
-    expect(steps[0]).toMatchObject({ key: 'cards', status: 'current', title: 'Review 2 · learn 4 new' })
+    expect(steps[0]).toMatchObject({ key: 'cards', status: 'current', title: 'Today’s session' })
     expect(steps[1]).toMatchObject({ key: 'story', status: 'upcoming', title: 'Unlock 我们的歌 · Chapter 6', sub: 'Finish cards to unlock' })
     expect(steps[2]).toMatchObject({ key: 'practice', status: 'upcoming', sub: 'After your story' })
   })
 
-  it('story stage: cards fold into a done row, the story is current', () => {
+  it('story stage: cards fold into a done row; the step points at the reward card instead of repeating its title', () => {
     const steps = homeJourneySteps({ stage: 'story', counts: {}, daily })
     expect(steps[0]).toMatchObject({ key: 'cards', status: 'done', sub: 'Nothing due right now' })
-    expect(steps[1]).toMatchObject({ key: 'story', status: 'current', title: '我们的歌', sub: 'Ready to read' })
-    expect(steps[1].titleIsStory).toBe(true)
+    expect(steps[1]).toMatchObject({ key: 'story', status: 'current', title: 'Story unlocked', sub: 'Ready to read' })
+    expect(steps[1].title).not.toContain('我们的歌')
   })
 
   it('story stage while the story is loading says so instead of lying', () => {

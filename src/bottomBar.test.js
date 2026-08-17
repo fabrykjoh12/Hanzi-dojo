@@ -13,7 +13,11 @@ describe('dockBottom', () => {
 describe('contentBottomInset', () => {
   it('reserves the dock plus a content gap while the dock is shown', () => {
     expect(contentBottomInset(true))
-      .toBe('calc(72px + max(env(safe-area-inset-bottom), 12px))')
+      .toBe('calc(82px + max(env(safe-area-inset-bottom), 12px))')
+  })
+
+  it('gives fully-scrolled content at least 24px of air above the dock', () => {
+    expect(CONTENT_GAP).toBeGreaterThanOrEqual(24)
   })
 
   it('drops to the focused value when the dock is hidden', () => {

@@ -71,14 +71,20 @@ test.describe('Misty Home structure', () => {
     await expect(page.getByRole('button', { name: 'Browse stories' })).toBeVisible();
   });
 
-  test('everything scrolls above the dock — Story Reward is never hidden', async ({ page }) => {
+  test('everything scrolls above the dock — Story Reward sits fully clear of it', async ({ page }) => {
+    // Bounding-rect contract, not "the page can scroll": fully scrolled, the
+    // reward card's rectangle must sit completely above the dock's rectangle
+    // with real breathing room (bottomBar.js CONTENT_GAP, >= 24px).
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-    const clearance = await page.evaluate(() => {
-      const navTop = document.querySelector('nav[aria-label="Primary"]').getBoundingClientRect().top;
-      const reward = document.querySelector('[data-tour="home-then-read"]');
-      return navTop - reward.getBoundingClientRect().bottom;
+    const rects = await page.evaluate(() => {
+      const nav = document.querySelector('nav[aria-label="Primary"]').getBoundingClientRect();
+      const reward = document.querySelector('[data-tour="home-then-read"]').getBoundingClientRect();
+      return { navTop: nav.top, navLeft: nav.left, navRight: nav.right, rewardBottom: reward.bottom, rewardHeight: reward.height };
     });
-    expect(clearance).toBeGreaterThanOrEqual(0);
+    // The card is genuinely on screen (not scrolled out) and wholly above the
+    // dock — no intersection, and at least 24px of air between the two.
+    expect(rects.rewardHeight).toBeGreaterThan(100);
+    expect(rects.rewardBottom).toBeLessThanOrEqual(rects.navTop - 24);
   });
 });
 
@@ -94,16 +100,24 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       clientWidth: document.documentElement.clientWidth,
     }));
     expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
-    // The word row itself stays inside the focus card (no clipped Hanzi).
-    const fits = await home.desk.evaluate(node => {
-      const words = node.querySelectorAll('span[lang]');
+    // The word row itself stays inside the focus card (no clipped Hanzi),
+    // and the preview stays premium: with several words shown, none renders
+    // below the 34px floor — narrow widths drop words instead of shrinking.
+    const row = await home.desk.evaluate(node => {
+      const words = [...node.querySelectorAll('span[lang]')];
       const card = node.getBoundingClientRect();
-      return [...words].every(w => {
-        const r = w.getBoundingClientRect();
-        return r.left >= card.left && r.right <= card.right + 0.5;
-      });
+      return {
+        count: words.length,
+        fontSize: words.length ? parseFloat(getComputedStyle(words[0]).fontSize) : 0,
+        fits: words.every(w => {
+          const r = w.getBoundingClientRect();
+          return r.left >= card.left && r.right <= card.right + 0.5;
+        }),
+      };
     });
-    expect(fits).toBe(true);
+    expect(row.fits).toBe(true);
+    if (row.count > 1) expect(row.fontSize).toBeGreaterThanOrEqual(34);
+    if (viewport.width <= 320) expect(row.count).toBeLessThanOrEqual(3);
   });
 }
 
@@ -144,4 +158,10 @@ test('story stage: the reward card is the single primary action', async ({ page 
   // Exactly one primary action on the whole screen.
   await expect(page.getByRole('button', { name: 'Start cards' })).toHaveCount(0);
   await expect(page.locator('[data-step-status="current"]')).toHaveCount(1);
+  // The journey step points at the reward card rather than repeating its
+  // title — the story appears as one object, not two competing cards.
+  const storyStep = page.locator('[data-journey-step="story"]');
+  await expect(storyStep.getByText('Story unlocked')).toBeVisible();
+  await expect(storyStep.getByText('我们的歌')).toHaveCount(0);
+  await expect(page.getByText('我们的歌')).toHaveCount(1);
 });
