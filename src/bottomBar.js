@@ -23,8 +23,10 @@
 // adding to it floats the dock uncomfortably high; on a flat-bottomed phone
 // (and every desktop browser) the inset is 0 and the dock still needs a margin.
 
-// The floating dock itself.
-export const DOCK_HEIGHT = 58
+// The floating dock itself. 64 fits five icon+label tabs with 44px+ targets;
+// every bottom-clearance consumer derives from this, so the number lives here
+// and nowhere else.
+export const DOCK_HEIGHT = 64
 // Its minimum distance from the bottom edge — the floor under the safe area.
 export const DOCK_INSET = 12
 // Breathing room between the dock and the page content scrolling under it.

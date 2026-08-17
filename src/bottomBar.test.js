@@ -13,7 +13,7 @@ describe('dockBottom', () => {
 describe('contentBottomInset', () => {
   it('reserves the dock plus a content gap while the dock is shown', () => {
     expect(contentBottomInset(true))
-      .toBe('calc(72px + max(env(safe-area-inset-bottom), 12px))')
+      .toBe('calc(78px + max(env(safe-area-inset-bottom), 12px))')
   })
 
   it('drops to the focused value when the dock is hidden', () => {
@@ -24,7 +24,7 @@ describe('contentBottomInset', () => {
 describe('floatingBottom', () => {
   it('parks a floating control above the dock, never on it', () => {
     expect(floatingBottom(true))
-      .toBe('calc(70px + max(env(safe-area-inset-bottom), 12px))')
+      .toBe('calc(76px + max(env(safe-area-inset-bottom), 12px))')
   })
 
   it('follows the dock away in focused screens', () => {

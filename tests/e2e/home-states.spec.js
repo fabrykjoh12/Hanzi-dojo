@@ -1,9 +1,9 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 
-// The five daily stages of the "Desk" Home, each rendered from persisted
-// learning state (cards / story reads / grammar reviews) — never client-side
-// flags. The desk always holds the current step's real object; the other
-// steps sit below as quiet status rows.
+// Home's five daily states, each rendered from persisted learning state
+// (cards / story reads / grammar reviews) — never client-side flags. The
+// primary action reflects the real queue; the story and practice rows below
+// reflect their own real state.
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -59,35 +59,35 @@ for (const state of STATES) {
     await expect(home).toHaveAttribute('data-home-stage', state);
 
     if (state === 'cards') {
-      // The desk holds the actual first flashcard: the prepared session's
-      // opening word, the session contents in the footer, one tap to start.
-      const desk = page.getByRole('button', { name: 'Start cards' });
-      await expect(desk).toBeEnabled();
-      await expect(desk.getByText(/1 review · /)).toBeVisible();
-      await expect(desk.locator('span[lang]').first()).toHaveText('我们');
-      await expect(page.getByText('Finish cards to unlock')).toBeVisible();
-      await expect(page.getByText('After your story')).toBeVisible();
+      // The primary action holds the real prepared session: the opening word
+      // as a quiet preview, the session's contents, one tap to start.
+      const primary = page.getByRole('button', { name: 'Continue learning' });
+      await expect(primary).toBeEnabled();
+      await expect(primary.getByText(/1 review · /)).toBeVisible();
+      await expect(primary.locator('span[lang]').first()).toHaveText('我们');
+      await expect(page.getByText('Today’s story · after your cards')).toBeVisible();
     } else {
-      // Cards fold into a quiet done-row; no start action remains.
-      await expect(page.getByRole('button', { name: 'Start cards' })).toHaveCount(0);
+      // The primary block goes quiet; no start action remains.
+      await expect(page.getByRole('button', { name: 'Continue learning' })).toHaveCount(0);
+      await expect(page.getByText('All caught up')).toBeVisible();
       await expect(page.getByText('Nothing due right now')).toBeVisible();
     }
     if (state === 'story') {
       await expect(page.getByRole('button', { name: /Open 我们的歌/ })).toBeEnabled();
-      await expect(page.getByText('Start reading')).toBeVisible();
+      await expect(page.getByText('Ready to read')).toBeVisible();
     }
     if (state === 'practice') {
-      await expect(page.getByRole('button', { name: 'Grammar review' })).toBeEnabled();
-      await expect(page.getByText(/grammar pattern/)).toBeVisible();
-      await expect(page.getByText('Story complete')).toBeVisible();
+      // The story is done, practice is genuinely due — the row appears.
+      await expect(page.getByText('Read today')).toBeVisible();
+      await expect(page.getByRole('button', { name: /grammar pattern due/ })).toBeEnabled();
     }
     if (state === 'complete') {
-      await expect(page.getByText('Done for today')).toBeVisible();
-      await expect(page.getByText('Complete for today')).toBeVisible();
+      await expect(page.getByText('Read today')).toBeVisible();
+      await expect(page.getByText(/grammar pattern due/)).toHaveCount(0);
     }
     if (state === 'caught-up') {
-      await expect(page.getByRole('button', { name: 'Open the story shelf' })).toBeEnabled();
-      await expect(page.getByText('Nothing due', { exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Story shelf' })).toBeEnabled();
+      await expect(page.getByText('Browse stories at your level')).toBeVisible();
     }
   });
 }

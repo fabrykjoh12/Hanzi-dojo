@@ -1,6 +1,6 @@
 import {
   Home, Layers, BookOpen, Target, ClipboardCheck,
-  Settings, Globe, BarChart3, PanelsTopLeft,
+  Settings, Globe, BarChart3, PanelsTopLeft, UserRound,
 } from 'lucide-react'
 
 // Single source of truth for navigation, consumed by both Sidebar (desktop) and
@@ -34,12 +34,18 @@ export const NAV_GROUPS = [
 // builds those itself (an avatar row plus three icon buttons) and the language
 // gets its own identity card, so the array had no remaining reader.
 
-// Mobile navigation is the product architecture: Stories — Home — Practice.
-// Cards starts from Home; account destinations live inside Profile.
+// Mobile navigation is the product architecture:
+// Home — Stories — Cards — Practice — Profile.
+// Cards sits in the centre because it is the main learning action (the loop is
+// Cards → Stories → Practice); Home answers "what should I do next", Profile
+// holds the account destinations. Order is fixed — the dock renders this array
+// verbatim and every tab keeps the same geometry whether or not it is selected.
 export const MOBILE_PRIMARY = [
-  { key: 'stories', label: 'Stories', icon: BookOpen },
   { key: 'home', label: 'Home', icon: Home },
+  { key: 'stories', label: 'Stories', icon: BookOpen },
+  { key: 'study', label: 'Cards', icon: Layers },
   { key: 'practice', label: 'Practice', icon: Target },
+  { key: 'profile', label: 'Profile', icon: UserRound },
 ]
 
 export const PROFILE_NAV = [

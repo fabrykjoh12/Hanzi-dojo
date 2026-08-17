@@ -7,13 +7,13 @@ import { PRIMARY_NAV, NAV_GROUPS, MOBILE_PRIMARY, PROFILE_NAV, ADMIN_NAV, adminN
 describe('navigation config', () => {
   const learnerNav = [...PRIMARY_NAV, ...MOBILE_PRIMARY, ...PROFILE_NAV]
 
-  it('locks the mobile architecture to Stories — Home — Practice', () => {
-    expect(MOBILE_PRIMARY.map(i => i.key)).toEqual(['stories', 'home', 'practice'])
+  it('locks the mobile architecture to Home — Stories — Cards — Practice — Profile', () => {
+    expect(MOBILE_PRIMARY.map(i => i.key)).toEqual(['home', 'stories', 'study', 'practice', 'profile'])
   })
 
-  it('keeps Cards reachable outside the mobile tab bar', () => {
-    expect(PRIMARY_NAV.map(i => i.key)).toContain('study')
-    expect(MOBILE_PRIMARY.map(i => i.key)).not.toContain('study')
+  it('keeps Cards in the centre — it is the main learning action', () => {
+    expect(MOBILE_PRIMARY[2].key).toBe('study')
+    expect(MOBILE_PRIMARY[2].label).toBe('Cards')
   })
 
   it('never exposes Dojo HQ to a non-admin', () => {

@@ -11,8 +11,19 @@ describe('mobile navigation state', () => {
     expect(mobileNavRoot('stories')).toBe('stories')
   })
 
-  it('does not pretend profile or cards are tabs', () => {
-    expect(mobileNavRoot('profile')).toBeNull()
-    expect(mobileNavRoot('study')).toBeNull()
+  it('maps every session form to the Cards tab', () => {
+    expect(mobileNavRoot('study')).toBe('study')
+    expect(mobileNavRoot('weak')).toBe('study')
+  })
+
+  it('keeps account destinations under Profile', () => {
+    expect(mobileNavRoot('profile')).toBe('profile')
+    expect(mobileNavRoot('settings')).toBe('profile')
+    expect(mobileNavRoot('languages')).toBe('profile')
+  })
+
+  it('leaves flows with no tab of their own unmarked', () => {
+    expect(mobileNavRoot('test')).toBeNull()
+    expect(mobileNavRoot('hq')).toBeNull()
   })
 })

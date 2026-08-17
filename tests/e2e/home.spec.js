@@ -11,27 +11,33 @@ test.describe('Home (logged in)', () => {
     await home.goto();
   });
 
-  test('renders the locked Cards → Story → Practice sequence', async ({ page }) => {
-    await expect(home.desk).toBeVisible();
-    await expect(page.getByText('Finish cards to unlock')).toBeVisible();
-    await expect(page.getByText('After your story')).toBeVisible();
+  test('greets quietly and states the loop: learn, then read', async ({ page }) => {
+    // The mock profile's display name is "Test Learner" — the greeting takes
+    // the first word only.
+    await expect(page.getByText('你好, Test')).toBeVisible();
+    await expect(page.getByText('Continue your Chinese')).toBeVisible();
+    await expect(home.heroAction).toBeVisible();
+    await expect(page.getByText('Today’s story · after your cards')).toBeVisible();
   });
 
   test('offers exactly one primary action', async ({ page }) => {
     await expect(home.heroAction).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Start cards' })).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Continue learning' })).toHaveCount(1);
   });
 
-  test('hands off to reading beneath the hero', async () => {
-    await expect(home.storyHandoff).toBeVisible();
+  test('connects the story to the learner’s vocabulary', async () => {
+    // The story row prints the readability promise — the % of the story's
+    // words the learner already knows — from real card data, never a fake.
+    await expect(home.storyRow).toBeVisible();
+    await expect(home.storyRow.getByText(/% readable/)).toBeVisible();
   });
 
-  test('uses the approved three-tab primary navigation', async ({ page }) => {
+  test('uses the five-tab primary navigation, Cards centred', async ({ page }) => {
     const nav = page.getByRole('navigation', { name: 'Primary' });
-    await expect(nav.getByRole('button', { name: 'Stories' })).toBeVisible();
+    for (const name of ['Home', 'Stories', 'Cards', 'Practice', 'Profile']) {
+      await expect(nav.getByRole('button', { name })).toBeVisible();
+    }
     await expect(nav.getByRole('button', { name: 'Home' })).toHaveAttribute('aria-current', 'page');
-    await expect(nav.getByRole('button', { name: 'Practice' })).toBeVisible();
-    await expect(nav.getByRole('button', { name: 'Cards' })).toHaveCount(0);
     await expect(nav.getByRole('button', { name: 'More' })).toHaveCount(0);
   });
 
@@ -40,21 +46,28 @@ test.describe('Home (logged in)', () => {
     await expect(page.getByText(/study today to keep it/i)).toHaveCount(0);
   });
 
-  test('the hero opens Study while cards are due', async ({ page }) => {
+  test('the primary action opens Study while cards are due', async ({ page }) => {
     await home.heroAction.click();
     const study = new StudyPage(page);
     await expect(study.showAnswer).toBeVisible();
   });
 
-  test('the desk card is the prepared session’s first card', async ({ page }) => {
-    // The word printed on Home's desk comes from the SAME prepared queue Study
+  test('the Cards tab opens Study too, and the dock steps aside', async ({ page }) => {
+    const nav = page.getByRole('navigation', { name: 'Primary' });
+    await nav.getByRole('button', { name: 'Cards' }).click();
+    await expect(new StudyPage(page).showAnswer).toBeVisible();
+    await expect(nav).toBeHidden();
+  });
+
+  test('the preview word is the prepared session’s first card', async ({ page }) => {
+    // The word previewed on Home comes from the SAME prepared queue Study
     // consumes — so the card the learner taps is the card the session opens on.
-    const word = home.desk.locator('span[lang]').first();
+    const word = home.heroAction.locator('span[lang]').first();
     await expect(word).not.toBeEmpty();
-    const deskWord = (await word.textContent()).trim();
+    const previewWord = (await word.textContent()).trim();
     await home.heroAction.click();
     await expect(page.getByText('Recall first, then reveal')).toBeVisible();
-    await expect(page.locator('[aria-live="polite"]').getByText(deskWord, { exact: true })).toBeVisible();
+    await expect(page.locator('[aria-live="polite"]').getByText(previewWord, { exact: true })).toBeVisible();
   });
 
   test('keeps retired Cards and More deep links compatible', async ({ page }) => {
@@ -90,10 +103,9 @@ test.describe('Home (logged in)', () => {
     await backHome.click();
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator('[data-home-stage]')).toHaveAttribute('data-home-stage', 'story');
-    // The desk has retargeted: cards fold into a quiet done-row and tonight's
-    // story is the primary object.
-    await expect(page.getByText('Nothing due right now')).toBeVisible();
-    await expect(page.getByText('Start reading')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Start cards' })).toHaveCount(0);
+    // The primary block has gone quiet and the story row is ready.
+    await expect(page.getByText('All caught up')).toBeVisible();
+    await expect(page.getByText('Ready to read')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Continue learning' })).toHaveCount(0);
   });
 });

@@ -26,7 +26,7 @@ anonTest('a recovery link lands on the set-a-new-password screen', async ({ page
 authedTest('the app’s recovery route shows the password form, not the app', async ({ page }) => {
   await page.goto('/reset-password');
   await expect(page.getByRole('heading', { name: 'Set a new password' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Home', exact: true })).toHaveCount(0);
 });
 
 // A reset link that cannot complete — expired, or opened on a device that

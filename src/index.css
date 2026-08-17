@@ -389,11 +389,10 @@ body {
 }
 
 /* Dock tabs answer the finger before the route does: the press is a plain
-   :active scale, so it lands on touch-down rather than after navigation. */
+   :active scale, so it lands on touch-down rather than after navigation.
+   Colour transitions live inline on the tab; this class only owns the press. */
 .hd-dock-tab { -webkit-tap-highlight-color: transparent; }
-.hd-dock-tab:active { transform: scale(0.955); }
-.hd-dock-tab { transition-property: flex, background, color, transform; }
-.hd-dock-tab:active { transition-duration: 90ms; }
+.hd-dock-tab:active { transform: scale(0.94); }
 
 /* Deeper press for primary actions: the control visibly gives under the
    finger and springs back. 160ms = HOME_MOTION.press. */

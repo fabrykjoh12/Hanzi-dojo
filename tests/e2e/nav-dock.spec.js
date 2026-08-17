@@ -11,36 +11,31 @@ test.describe('the floating dock', () => {
     await page.setViewportSize({ width: 390, height: 844 });
   });
 
-  test('selection travels: the capsule expands on the tapped tab', async ({ page }) => {
+  test('selection moves between tabs without moving the dock', async ({ page }) => {
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: 'Primary' });
     const home = nav.getByRole('button', { name: 'Home' });
-    const practice = nav.getByRole('button', { name: 'Practice' });
+    const stories = nav.getByRole('button', { name: 'Stories' });
 
-    const homeSelected = await home.boundingBox();
-    const practiceResting = await practice.boundingBox();
-    expect(homeSelected.width).toBeGreaterThan(practiceResting.width);
+    await expect(home).toHaveAttribute('aria-current', 'page');
+    const navBefore = await nav.boundingBox();
 
-    await practice.click();
-    await expect(practice).toHaveAttribute('aria-current', 'page');
+    await stories.click();
+    await expect(stories).toHaveAttribute('aria-current', 'page');
     await expect(home).not.toHaveAttribute('aria-current', 'page');
 
-    // Wait out the capsule animation, then the roles have swapped — and the
-    // dock itself has not moved or changed size.
-    await page.waitForTimeout(400);
-    const practiceSelected = await practice.boundingBox();
-    const homeResting = await home.boundingBox();
-    expect(practiceSelected.width).toBeGreaterThan(homeResting.width);
-    expect(Math.round(practiceSelected.width)).toBe(Math.round(homeSelected.width));
-
-    const navBox = await nav.boundingBox();
-    expect(Math.round(navBox.height)).toBe(58);
+    await page.waitForTimeout(300);
+    const navAfter = await nav.boundingBox();
+    expect(Math.round(navAfter.x)).toBe(Math.round(navBefore.x));
+    expect(Math.round(navAfter.y)).toBe(Math.round(navBefore.y));
+    expect(Math.round(navAfter.width)).toBe(Math.round(navBefore.width));
+    expect(Math.round(navAfter.height)).toBe(64);
   });
 
-  test('every resting tab keeps its destination as the accessible name', async ({ page }) => {
+  test('every tab keeps its destination as the accessible name', async ({ page }) => {
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: 'Primary' });
-    for (const name of ['Stories', 'Home', 'Practice']) {
+    for (const name of ['Home', 'Stories', 'Cards', 'Practice', 'Profile']) {
       await expect(nav.getByRole('button', { name })).toHaveCount(1);
     }
   });
@@ -53,15 +48,13 @@ test.describe('the floating dock', () => {
       await expect(nav).toBeVisible();
 
       // Navigated the way a learner does — through the dock — rather than by
-      // reloading each route.
+      // reloading each route. (Cards is excluded: it opens a focused session
+      // that hides the dock, covered by its own test below.)
       const steps = [
         ['Home', null],
         ['Stories', () => nav.getByRole('button', { name: 'Stories' }).click()],
         ['Practice', () => nav.getByRole('button', { name: 'Practice' }).click()],
-        ['Profile', async () => {
-          await nav.getByRole('button', { name: 'Home' }).click();
-          await page.getByRole('button', { name: 'Open profile' }).click();
-        }],
+        ['Profile', () => nav.getByRole('button', { name: 'Profile' }).click()],
       ];
       for (const [label, go] of steps) {
         if (go) await go();
@@ -114,7 +107,7 @@ test.describe('the floating dock', () => {
     const nav = page.getByRole('navigation', { name: 'Primary' });
     await expect(nav).toBeVisible();
 
-    await page.getByRole('button', { name: 'Start cards' }).click();
+    await page.getByRole('button', { name: 'Continue learning' }).click();
     await expect(page.getByText('Recall first, then reveal')).toBeVisible();
     // Hidden as a state (still mounted, so it animates), and unreachable.
     await expect(nav).toBeHidden();

@@ -36,6 +36,10 @@ export const LANGUAGES = {
     // BCP-47 tag for the `lang` attribute — what makes a screen reader speak
     // this text with the right voice instead of reading hanzi as English.
     langTag: 'zh-Hans',
+    // The one word Home greets the learner with, in the language they are
+    // learning. Data-driven like everything else here, so a screen never
+    // hardcodes 你好 behind an `if (language === …)`.
+    greeting: '你好',
   },
   japanese: {
     key: 'japanese',
@@ -52,6 +56,7 @@ export const LANGUAGES = {
     cjk: true,
     script: 'kana',
     langTag: 'ja',
+    greeting: 'こんにちは',
   },
   russian: {
     key: 'russian',
@@ -70,6 +75,7 @@ export const LANGUAGES = {
     cjk: false,
     script: 'cyrillic',
     langTag: 'ru',
+    greeting: 'Привет',
   },
 }
 

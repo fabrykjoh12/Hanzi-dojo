@@ -1,76 +1,100 @@
 import { describe, expect, it } from 'vitest'
 import {
-  deskCardsSub, deskChipLabel, deskWordSize, homeDateEyebrow,
-  practiceStatus, storyEyebrow, storyStatus,
+  greetingName, practiceSubLabel, previewWordSize, primaryAction,
+  readableLabel, storyRowStatus,
 } from './homeModel'
 
-describe('homeDateEyebrow', () => {
-  it('prints weekday, month and day', () => {
-    expect(homeDateEyebrow(new Date(2026, 7, 16))).toBe('Sunday, August 16')
-    expect(homeDateEyebrow(new Date(2026, 0, 1))).toBe('Thursday, January 1')
+describe('greetingName', () => {
+  it('takes the first word of the display name', () => {
+    expect(greetingName('Fabian')).toBe('Fabian')
+    expect(greetingName('  Fabian J  ')).toBe('Fabian')
+  })
+
+  it('returns null when there is no usable name', () => {
+    expect(greetingName('')).toBeNull()
+    expect(greetingName(null)).toBeNull()
+    expect(greetingName(undefined)).toBeNull()
+    expect(greetingName('   ')).toBeNull()
+  })
+
+  it('never greets someone by their email address', () => {
+    expect(greetingName('fabrykjoh12@gmail.com')).toBeNull()
   })
 })
 
-describe('deskWordSize', () => {
-  it('steps down with character count so the word always fits one line', () => {
-    expect(deskWordSize('花')).toBe(76)
-    expect(deskWordSize('你好')).toBe(76)
-    expect(deskWordSize('一点儿')).toBe(60)
-    expect(deskWordSize('没关系吗')).toBe(48)
-    expect(deskWordSize('不好意思了')).toBe(38)
+describe('primaryAction', () => {
+  it('is the way into a waiting session, with the real contents', () => {
+    const action = primaryAction({ counts: { dueCount: 11, learnCount: 1, newCount: 4 }, estimate: '~6 min' })
+    expect(action.kind).toBe('cards')
+    expect(action.title).toBe('Continue learning')
+    expect(action.sub).toBe('12 reviews · 4 new · ~6 min')
+    expect(action.cta).toBe('Start')
+  })
+
+  it('pluralises a single review correctly and survives a missing estimate', () => {
+    const action = primaryAction({ counts: { dueCount: 1, learnCount: 0, newCount: 0 } })
+    expect(action.sub).toBe('1 review · 0 new')
+  })
+
+  it('goes quiet when nothing is due — and stops offering a start', () => {
+    const action = primaryAction({ counts: { dueCount: 0, learnCount: 0, newCount: 0 } })
+    expect(action.kind).toBe('clear')
+    expect(action.title).toBe('All caught up')
+    expect(action.sub).toBe('Nothing due right now')
+    expect(action.cta).toBeNull()
+  })
+
+  it('is honest when the queue could not load — never "all caught up"', () => {
+    const action = primaryAction({ counts: { dueCount: 0, learnCount: 0, newCount: 0, failed: true } })
+    expect(action.kind).toBe('cards')
+    expect(action.sub).toBe('Queue unavailable — starting will retry')
   })
 })
 
-describe('deskChipLabel', () => {
-  it('uses exactly the study card’s marker labels (cardMarker.js)', () => {
-    expect(deskChipLabel('new')).toBe('FIRST TIME')
-    expect(deskChipLabel('learning')).toBe('REVIEW')
-    expect(deskChipLabel('relearning')).toBe('REVIEW')
-    expect(deskChipLabel('review')).toBe('REVIEW')
+describe('previewWordSize', () => {
+  it('steps down with character count so the preview stays one quiet line', () => {
+    expect(previewWordSize('花')).toBe(40)
+    expect(previewWordSize('你好')).toBe(40)
+    expect(previewWordSize('一点儿')).toBe(32)
+    expect(previewWordSize('没关系吗')).toBe(26)
+    expect(previewWordSize('不好意思了')).toBe(21)
   })
 })
 
-describe('deskCardsSub', () => {
-  it('summarizes the session contents with the estimate', () => {
-    expect(deskCardsSub({ counts: { dueCount: 13, newCount: 10 }, estimate: '~9 min' }))
-      .toBe('13 reviews · 10 new · ~9 min')
-  })
-
-  it('uses the singular for one review and hides a missing estimate', () => {
-    expect(deskCardsSub({ counts: { dueCount: 1, newCount: 2 } })).toBe('1 review · 2 new')
-  })
-
-  it('says so when the counts failed, so starting reads as the retry', () => {
-    expect(deskCardsSub({ counts: { failed: true } })).toBe('Queue unavailable — starting will retry')
+describe('readableLabel', () => {
+  it('prints the readability promise only when the number is real', () => {
+    expect(readableLabel(87)).toBe('87% readable')
+    expect(readableLabel(0)).toBe('')
+    expect(readableLabel(null)).toBe('')
+    expect(readableLabel(undefined)).toBe('')
   })
 })
 
-describe('storyStatus', () => {
-  it('follows the daily stage', () => {
-    expect(storyStatus({ stage: 'cards' })).toBe('Finish cards to unlock')
-    expect(storyStatus({ stage: 'story', daily: { story: {} } })).toBe('Ready to read')
-    expect(storyStatus({ stage: 'story', daily: undefined })).toBe('Finding today’s story')
-    expect(storyStatus({ stage: 'caught-up', daily: null })).toBe('Caught up')
-    expect(storyStatus({ stage: 'practice', daily: { completedToday: true } })).toBe('Story complete')
-    expect(storyStatus({ stage: 'complete', daily: { completedToday: true } })).toBe('Story complete')
+describe('storyRowStatus', () => {
+  const daily = { story: { id: 's1' }, completedToday: false }
+
+  it('sequences the story after cards without pretending it is locked', () => {
+    expect(storyRowStatus({ stage: 'cards', daily })).toBe('Today’s story · after your cards')
+  })
+
+  it('is ready once cards are clear', () => {
+    expect(storyRowStatus({ stage: 'story', daily })).toBe('Ready to read')
+  })
+
+  it('marks a story finished today', () => {
+    expect(storyRowStatus({ stage: 'practice', daily: { ...daily, completedToday: true } })).toBe('Read today')
+    expect(storyRowStatus({ stage: 'complete', daily: { ...daily, completedToday: true } })).toBe('Read today')
+  })
+
+  it('says it is still looking while the pick loads', () => {
+    expect(storyRowStatus({ stage: 'story', daily: undefined })).toBe('Finding today’s story')
   })
 })
 
-describe('practiceStatus', () => {
-  it('follows the daily stage', () => {
-    expect(practiceStatus('practice')).toBe('Ready to practice')
-    expect(practiceStatus('complete')).toBe('Complete for today')
-    expect(practiceStatus('caught-up')).toBe('Nothing due')
-    expect(practiceStatus('cards')).toBe('After your story')
-    expect(practiceStatus('story')).toBe('After your story')
-  })
-})
-
-describe('storyEyebrow', () => {
-  it('joins level and readability when both are known', () => {
-    expect(storyEyebrow({ levelLabel: 'HSK 1', knownPct: 92 })).toBe('HSK 1 · 92% readable')
-    expect(storyEyebrow({ levelLabel: 'HSK 1', knownPct: null })).toBe('HSK 1')
-    expect(storyEyebrow({ levelLabel: 'HSK 1', knownPct: 0 })).toBe('HSK 1')
-    expect(storyEyebrow({})).toBe('')
+describe('practiceSubLabel', () => {
+  it('prints only when something is genuinely due, with the right plural', () => {
+    expect(practiceSubLabel(0)).toBeNull()
+    expect(practiceSubLabel(1)).toBe('1 grammar pattern due')
+    expect(practiceSubLabel(3)).toBe('3 grammar patterns due')
   })
 })

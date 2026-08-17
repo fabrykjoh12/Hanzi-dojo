@@ -1,10 +1,11 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 
-// The Desk Home's locked motion timings (HOME_MOTION in homePresentation.js):
+// Home's locked motion (HOME_MOTION in homePresentation.js):
 //   page  460ms — each block settles in via .hd-home-rise, staggered
-//   press 160ms — the desk card gives under the finger via .hd-press-deep
-//   nav   260ms — the dock's ink dot slides between tabs
-// Locked here so a stray inline edit can't quietly change how the app feels.
+//   press 160ms — the primary action gives under the finger via .hd-press-deep
+// The dock is deliberately quieter still: selection changes colour only
+// (~180ms), so switching tabs animates nothing geometric. Locked here so a
+// stray inline edit can't quietly change how the app feels.
 
 test('uses only the locked Home motion timings', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -12,35 +13,36 @@ test('uses only the locked Home motion timings', async ({ page }) => {
   await page.goto('/');
 
   const home = page.locator('[data-home-stage]');
-  const desk = page.locator('[data-tour="home-queue"]');
+  const primary = page.locator('[data-tour="home-queue"]');
   await expect(home).toBeVisible();
 
   // Blocks settle with the shared rise, genuinely staggered by inline delays.
-  expect(await desk.evaluate(node => getComputedStyle(node).animationDuration)).toBe('0.46s');
   const delays = await home.evaluate(node =>
-    [...node.querySelectorAll(':scope > .hd-home-rise')].map(el => getComputedStyle(el).animationDelay));
+    [...node.querySelectorAll('.hd-home-rise')].map(el => getComputedStyle(el).animationDelay));
   expect(delays.length).toBeGreaterThanOrEqual(4);
   expect(new Set(delays).size).toBe(delays.length);
+  expect(await primary.evaluate(node =>
+    getComputedStyle(node.closest('.hd-home-rise') || node).animationDuration)).toBe('0.46s');
 
-  // The desk presses with the deep-press physics and never changes size.
-  const deskDurations = (await desk.evaluate(node => getComputedStyle(node).transitionDuration)).split(',');
-  expect(deskDurations[0].trim()).toBe('0.16s');
-  const before = await desk.boundingBox();
-  await desk.dispatchEvent('pointerdown');
-  await desk.dispatchEvent('pointerup');
-  const after = await desk.boundingBox();
+  // The primary action presses with the deep-press physics and never changes size.
+  const pressDurations = (await primary.evaluate(node => getComputedStyle(node).transitionDuration)).split(',');
+  expect(pressDurations[0].trim()).toBe('0.16s');
+  const before = await primary.boundingBox();
+  await primary.dispatchEvent('pointerdown');
+  await primary.dispatchEvent('pointerup');
+  const after = await primary.boundingBox();
   expect(before.width).toBeCloseTo(after.width, 1);
   expect(before.height).toBeCloseTo(after.height, 1);
 
-  // The dock's selected capsule expands/collapses at the locked nav timing.
+  // Dock selection is colour-only: no flex, width or transform in the
+  // transition list, so changing tabs can never move geometry.
   const nav = page.getByRole('navigation', { name: 'Primary' });
   const activeTab = nav.locator('[aria-current="page"]');
-  const tabTransition = await activeTab.evaluate(node => getComputedStyle(node).transitionDuration);
-  expect(tabTransition.split(',')[0].trim()).toBe('0.26s');
-  // …and its label reveals on the same clock, so the two never disagree.
-  const labelTransition = await activeTab.locator('span').last()
-    .evaluate(node => getComputedStyle(node).transitionDuration);
-  expect(labelTransition.split(',')[0].trim()).toBe('0.26s');
+  const tabTransition = await activeTab.evaluate(node => getComputedStyle(node).transitionProperty);
+  expect(tabTransition).not.toContain('flex');
+  expect(tabTransition).not.toContain('width');
+  const tabDuration = await activeTab.evaluate(node => parseFloat(getComputedStyle(node).transitionDuration));
+  expect(tabDuration).toBeLessThanOrEqual(0.2);
 
   // And the whole screen stays smooth while settling.
   const frames = await page.evaluate(() => new Promise(resolve => {
@@ -70,9 +72,9 @@ test('reduced motion flattens every Home animation and transition', async ({ pag
 
   // The catch-all in index.css collapses durations to effectively zero; assert
   // a ceiling rather than an exact value so the mechanism can evolve.
-  const deskAnim = await page.locator('[data-tour="home-queue"]')
+  const primaryAnim = await page.locator('[data-tour="home-queue"]')
     .evaluate(node => parseFloat(getComputedStyle(node).animationDuration));
-  expect(deskAnim).toBeLessThanOrEqual(0.13);
+  expect(primaryAnim).toBeLessThanOrEqual(0.13);
 
   const nav = page.getByRole('navigation', { name: 'Primary' });
   const activeTab = nav.locator('[aria-current="page"]');

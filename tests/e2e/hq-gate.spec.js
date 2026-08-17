@@ -13,13 +13,13 @@ import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 test.describe('Dojo HQ is not a learner surface', () => {
   test('does not appear in the navigation', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('heading', { name: 'Today', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Home', exact: true }).waitFor();
     await expect(page.getByRole('button', { name: /Dojo HQ/i })).toHaveCount(0);
   });
 
   test('the client route renders 404 for a non-admin', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('heading', { name: 'Today', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Home', exact: true }).waitFor();
 
     // Client-side navigation, so App's route gate runs (the mock profile has
     // no is_admin flag).
