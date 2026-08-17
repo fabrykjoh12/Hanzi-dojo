@@ -1,34 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  deskCardsSub, deskChipLabel, deskWordSize, homeDateEyebrow,
-  practiceStatus, storyEyebrow, storyStatus,
+  deskCardsSub, practiceStatus, storyEyebrow, storyStatus,
 } from './homeModel'
-
-describe('homeDateEyebrow', () => {
-  it('prints weekday, month and day', () => {
-    expect(homeDateEyebrow(new Date(2026, 7, 16))).toBe('Sunday, August 16')
-    expect(homeDateEyebrow(new Date(2026, 0, 1))).toBe('Thursday, January 1')
-  })
-})
-
-describe('deskWordSize', () => {
-  it('steps down with character count so the word always fits one line', () => {
-    expect(deskWordSize('花')).toBe(76)
-    expect(deskWordSize('你好')).toBe(76)
-    expect(deskWordSize('一点儿')).toBe(60)
-    expect(deskWordSize('没关系吗')).toBe(48)
-    expect(deskWordSize('不好意思了')).toBe(38)
-  })
-})
-
-describe('deskChipLabel', () => {
-  it('uses exactly the study card’s marker labels (cardMarker.js)', () => {
-    expect(deskChipLabel('new')).toBe('FIRST TIME')
-    expect(deskChipLabel('learning')).toBe('REVIEW')
-    expect(deskChipLabel('relearning')).toBe('REVIEW')
-    expect(deskChipLabel('review')).toBe('REVIEW')
-  })
-})
 
 describe('deskCardsSub', () => {
   it('summarizes the session contents with the estimate', () => {

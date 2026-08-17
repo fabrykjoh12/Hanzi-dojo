@@ -1,41 +1,11 @@
-// Pure presentation model for the Home screen — the "Desk" design.
-//
-// Home holds the learner's current real task object: before cards, the actual
-// first flashcard of the prepared session; after cards, tonight's actual
-// story; after that, practice. This module turns raw counts and fetched rows
-// into exactly what the screen prints, so the JSX stays layout-only and every
-// visible string and sizing rule has a test.
+// Pure presentation model for the Home screen's daily loop strings. The
+// journey layout model (Misty Atmosphere, P1) lives in homeJourney.js and
+// composes these; this module owns the status strings the stages print, so
+// the JSX stays layout-only and every visible string has a test.
 
 import { homeQueueSummary } from './homePresentation'
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
-  'August', 'September', 'October', 'November', 'December']
-
-// The date line in the top bar, e.g. "Sunday, August 16".
-export function homeDateEyebrow(now = new Date()) {
-  return DAYS[now.getDay()] + ', ' + MONTHS[now.getMonth()] + ' ' + now.getDate()
-}
-
-// Display size for the desk card's word, by character count — one line,
-// centered, never clipped; the same word at study size is only a step larger,
-// which is what lets the tap transition read as the same object growing.
-export function deskWordSize(word = '') {
-  const len = [...String(word)].length
-  if (len <= 2) return 76
-  if (len === 3) return 60
-  if (len === 4) return 48
-  return 38
-}
-
-// The state chip on the desk card — the same two labels the study card's
-// marker uses (cardMarker.js: first-time vs. review, nothing else), so the
-// object Home shows is labelled exactly the way Study will label it.
-export function deskChipLabel(state) {
-  return state === 'new' ? 'FIRST TIME' : 'REVIEW'
-}
-
-// The desk card's footer line: what the session contains, in one quiet string.
+// The session card's footer line: what the session contains, in one quiet string.
 export function deskCardsSub({ counts = {}, estimate = '' } = {}) {
   const queue = homeQueueSummary(counts)
   if (queue.failed) return 'Queue unavailable — starting will retry'

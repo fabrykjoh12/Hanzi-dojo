@@ -36,6 +36,9 @@ export const LANGUAGES = {
     // BCP-47 tag for the `lang` attribute — what makes a screen reader speak
     // this text with the right voice instead of reading hanzi as English.
     langTag: 'zh-Hans',
+    // The one-word hello Home greets with ("你好, Fabian"). Per-language data,
+    // never a ternary at the call site.
+    greeting: '你好',
   },
   japanese: {
     key: 'japanese',
@@ -52,6 +55,7 @@ export const LANGUAGES = {
     cjk: true,
     script: 'kana',
     langTag: 'ja',
+    greeting: 'こんにちは',
   },
   russian: {
     key: 'russian',
@@ -70,6 +74,7 @@ export const LANGUAGES = {
     cjk: false,
     script: 'cyrillic',
     langTag: 'ru',
+    greeting: 'Привет',
   },
 }
 
