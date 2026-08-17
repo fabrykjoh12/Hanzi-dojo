@@ -1,730 +1,430 @@
-# Hanzi Dojo Design Bible v1
+# 🎨 Design Bible — Hanzi Dojo
 
-> **Status:** Product design source of truth for the mobile app.
-> **Goal:** Make Hanzi Dojo feel like a deliberate, premium learning tool — not a repackaged website, a generic SaaS dashboard, a Duolingo clone, or an AI-generated concept app.
+The permanent design source of truth. `CLAUDE.md` holds the short version; this
+file holds the reasoning and the detail.
 
----
+**What belongs in here:** principles that should survive several redesigns.
+**What does not:** the current layout of any particular screen. A Home mockup, a
+dock geometry, a nav order, a section list — those are *implementation*, and
+they live in the task that builds them, in `git log`, and (once shipped) in
+`docs/ARCHITECTURE.md`. Nothing in this file is permission to keep a specific
+2026 screen forever.
 
-## 1. North star
+> **Supersedes "Design Bible v1" (2026-08-16).** v1 mixed durable principles
+> with a specific Home structure, bottom-dock geometry and per-screen specs
+> written during that week's redesign. The principles are kept and sharpened
+> here; the screen-level detail was deliberately removed, because Home and
+> global navigation are being decided as their own piece of work. v1 is in
+> `git log` if you need it.
 
-Hanzi Dojo is **the better Anki experience for Chinese learners**: serious spaced repetition, directly connected to stories and practice that adapt to the vocabulary the learner actually knows.
+**Where this sits in the hierarchy** (also in `CLAUDE.md`):
 
-The design must make this loop obvious without explaining it constantly:
-
-**Learn words → remember them → meet them in stories → practice them in context.**
-
-The product's strongest idea is not a visual motif. It is the relationship between a learner's vocabulary and the content they can now understand.
-
-### The one-sentence design brief
-
-**A calm, modern Chinese learning tool where the content feels valuable enough that the interface can stay quiet.**
-
----
-
-## 2. Who we are designing for
-
-Primary user:
-
-- Serious beginner/intermediate Chinese learner, roughly HSK 1–4.
-- Understands the value of flashcards or is already using/considering Anki.
-- Wants an efficient system, not a game pretending to be language learning.
-- Wants level-appropriate reading but finds it difficult to locate material that matches their vocabulary.
-- May use the app every day for months or years.
-
-This means the interface should optimize for **repeat use**, not first-impression spectacle.
+1. `CLAUDE.md` — permanent product + engineering rules.
+2. **this file** — permanent design principles.
+3. `docs/ARCHITECTURE.md` — technical truth: schema, tokens, components as built.
+4. The current task/spec you were given — what to build now.
+5. `docs/superpowers/` and other old specs — history only. **They never
+   override 1–4.** A shipped-feature spec describing a screen that has since
+   changed is out of date, not an instruction.
 
 ---
 
-## 3. Product personality
+## 1. Product feeling
 
-Hanzi Dojo should feel:
+**Premium native consumer app × Japanese minimalism × content-first learning.**
 
-- **Calm** — no pressure, noise, fake urgency or casino feedback.
-- **Precise** — hierarchy and numbers mean something.
-- **Modern** — excellent mobile spacing, typography, interaction and motion.
-- **Confident** — the app does not over-explain or decorate ordinary controls.
-- **Human** — copy sounds like a useful tool, not an AI coach.
-- **Chinese-aware, not Chinese-themed** — typography, language content and a restrained ink-red accent provide identity. No cliché temples, lanterns, dragons, brush textures or ornamental pseudo-Asian UI.
+In practice:
 
-Reference feeling: a polished reading/productivity app, not a game and not a marketing website.
+- **Premium native consumer app** — it should feel like a well-made iOS/Android
+  app, not a responsive website in a wrapper. Controls sit where a thumb
+  expects them, transitions are quick and physical, nothing reflows or flashes
+  on load. Premium comes from precision, not decoration.
+- **Japanese minimalism** — restraint, alignment, generous space, few materials
+  used consistently. Emptiness is allowed to be empty. This is a *discipline*,
+  not a theme: no ornamental temples, lanterns, dragons or brush textures.
+  Identity comes from typography, the Chinese content itself, and a restrained
+  ink-red accent.
+- **Content-first learning** — the Chinese, the story and the learner's own
+  progress are the visually memorable things. UI chrome supports them and then
+  gets out of the way.
 
----
+The one-sentence brief: **a calm, modern Chinese learning tool where the content
+feels valuable enough that the interface can stay quiet.**
 
-## 4. The anti-slop rules
-
-These are hard constraints. Breaking one requires a specific product reason.
-
-### Never use decoration to solve weak hierarchy
-
-Do **not** add:
-
-- decorative gradients behind ordinary content
-- ink washes or atmospheric overlays inside generic cards
-- giant hero areas just because the screen needs visual interest
-- random floating blobs, glows or mesh gradients
-- background illustrations on core learning screens
-- excessive glassmorphism
-- ornamental Chinese characters used as watermarks
-- unnecessary badges, chips or pills
-- multiple competing card styles on one screen
-- huge empty vertical space marketed as "premium minimalism"
-- an icon in a colored rounded square for every row
-- uppercase microcopy everywhere
-- three different shadow strengths on the same screen
-- animation simply because an element appeared
-
-If a screen looks boring, fix **layout, type hierarchy, spacing, content or interaction** before adding decoration.
-
-### Never design by novelty
-
-A control should look familiar enough that a user knows what to do.
-
-Avoid unusual interaction patterns unless they materially improve the learning flow. Hanzi Dojo should not need a paragraph in the source code explaining why a navigation control behaves differently from normal mobile navigation.
-
-### One visual idea per screen
-
-The screen may have one visually dominant object because the **content** earns it: e.g. the current flashcard or a story cover.
-
-Everything else should support it quietly.
+The app is used daily for months. Optimise for the five-hundredth session, not
+the first impression: calm, precise, deliberate, modern, confident, and
+recognisably Hanzi Dojo.
 
 ---
 
-## 5. Visual foundation
+## 2. Product hierarchy — Cards → Stories → Practice
 
-## 5.1 Color
+The product's model is **Learn → Understand → Reinforce**:
 
-### Light theme
+- **Cards** teach and retain vocabulary through FSRS.
+- **Stories** turn learned vocabulary into comprehensible Chinese.
+- **Practice** strengthens learned vocabulary through contextual exercises and
+  active recall. Listening, writing, speaking and drills are *kinds of
+  practice*, not separate top-level pillars.
 
-Use neutral warm paper, not beige decoration:
+**The differentiator is the link between them:** the learner can read a story
+because the app knows which words they already know. Design should make that
+relationship visible — story readability expressed against the learner's own
+vocabulary, practice drawn from words they have actually met — rather than
+presenting three unrelated destinations that happen to share a nav bar.
 
-- `bg`: `#F7F7F5`
-- `surface`: `#FFFFFF`
-- `surface-subtle`: `#F1F1EF`
-- `border`: `#E5E5E2`
-- `text`: `#171717`
-- `text-secondary`: `#676767`
-- `text-tertiary`: `#8A8A86`
-- `accent`: Chinese ink red, current family around `#B83A24`
+Readability against the learner's vocabulary (the "% known" signal) is a
+flagship product number, not metadata. It should be easy to scan, not buried in
+a row of badges.
 
-The accent is for **meaning and action**, not atmosphere.
-
-Use accent for:
-
-- selected navigation state
-- the primary action when an action needs emphasis
-- progress/readability highlights
-- active controls
-- important vocabulary interaction
-
-Do not tint whole screens or large generic panels red.
-
-### Dark theme
-
-Dark mode should feel deliberately dark, not like the light UI with variables inverted:
-
-- `bg`: approximately `#0F1012`
-- `surface`: approximately `#191A1D`
-- `surface-subtle`: approximately `#222326`
-- `border`: approximately `#2B2C30`
-- `text`: approximately `#F1F1F1`
-- `text-secondary`: approximately `#A2A2A7`
-
-Accent may be lifted slightly for contrast, but should remain recognizably the same brand color.
-
-### Color rule
-
-**If removing the accent color makes the hierarchy collapse, the hierarchy was weak.**
-
-The UI must still read correctly in grayscale.
+When a design choice strengthens that chain, it is probably right. When it makes
+the three feel like separate apps, it is probably wrong.
 
 ---
 
-## 5.2 Typography
+## 3. Visual hierarchy
 
-### Latin UI
+Hierarchy comes first from **typography, spacing, composition, content and
+restrained contrast** — and only then from surfaces, borders and colour.
 
-Use **Mona Sans** as the primary interface typeface if it continues to render cleanly across iOS and Android. Stop mixing Mona Sans and Inter arbitrarily inside the product shell.
-
-Default hierarchy:
-
-- Screen title: 24–28px / 700
-- Section title: 17–19px / 650–700
-- Primary body: 15–16px / 450–550
-- Secondary body: 13–14px / 450–550
-- Metadata: 11–12px / 550–650
-
-Avoid ultra-heavy 800+ weights for normal UI.
-
-### Chinese
-
-Chinese text is content, not decoration.
-
-- Give Hanzi more breathing room than Latin UI text.
-- Keep large vocabulary words visually dominant on flashcards.
-- Do not force Latin letter-spacing conventions onto Chinese.
-- Never uppercase romanized metadata as a default aesthetic treatment.
-
-### Labels
-
-Sentence case by default.
-
-Prefer:
-
-- `New card`
-- `87% readable`
-- `12 reviews due`
-
-Avoid defaulting to:
-
-- `NEW CARD`
-- `STORY`
-- `PRACTICE`
-
-Uppercase is reserved for rare, genuinely tiny categorical metadata where it improves scanning.
+- If a section needs emphasis, try scale, weight, position and space before
+  reaching for a container.
+- One clearly dominant thing per screen is good. It should be dominant because
+  the *content* earns it (a flashcard, a story cover, a chapter), not because a
+  panel was painted to look important.
+- If removing every gradient, shadow and tint would collapse the hierarchy, the
+  hierarchy was never there. The screen should still read in greyscale.
+- **Boring is a hierarchy problem, not a decoration problem.** Fix layout, type,
+  spacing, content or interaction before adding anything decorative.
+- Familiar beats novel. A control should look like what it is; an unusual
+  interaction needs to earn its place by improving the learning flow, not by
+  being interesting.
 
 ---
 
-## 5.3 Spacing
+## 4. Colour
 
-Use an 8px rhythm with 4px half-steps.
+Technical definitions live in `docs/ARCHITECTURE.md` (full palette, token list,
+`ink()`, `heroGround()`); this section is the intent.
 
-Core values:
-
-- 4 — optical correction only
-- 8 — tight internal gap
-- 12 — compact control gap
-- 16 — default mobile padding / component spacing
-- 20 — comfortable content gap
-- 24 — section separation
-- 32 — major section separation
-- 40+ — only when a layout genuinely needs breathing room
-
-### Mobile page rule
-
-Default horizontal page padding: **16px**.
-
-Do not invent 13px, 19px, 27px and 31px repeatedly. Optical exceptions are allowed but should be rare.
-
----
-
-## 5.4 Radius
-
-Keep the radius vocabulary small:
-
-- 10–12px — buttons, compact controls
-- 14–16px — ordinary cards / panels
-- 20px — major interactive content card
-- full pill — only for true pills: filters, compact status, segmented controls
-
-Do not make every rectangle a 24–30px rounded blob.
+- **Semantic neutral tokens are mandatory.** Every neutral colour comes from
+  `--bg`, `--surface`, `--surface-2`, `--surface-glass`, `--border`, `--text`,
+  `--text-muted`, `--text-faint`, `--shadow-1`, `--shadow-2`, `--hairline`. A
+  hardcoded neutral hex is a bug — it will not theme.
+- **The accent stays data-driven.** Components read the accent from
+  `languageTheme(profile.active_language)`. Never a ternary on the language,
+  never a hardcoded per-screen accent.
+- **The Chinese vermilion (`#B83A24`) is an accent, not the canvas.** Use it for
+  active state, the one important action, progress, selection and small brand
+  details. Avoid large accent-filled blocks unless there is a product reason
+  that survives being asked twice.
+- **Raw accent vs `ink()`** — wrap the accent in `ink(hex)` wherever it is *text
+  or a drawn mark* (it lifts toward white in dark mode); keep the raw hex for
+  tints and borders that already mix into a surface.
+- **Tints mix into the surface** — `color-mix(in srgb, <accent> 11%, var(--surface))`,
+  never an `<accent>+'14'` alpha hex, which stays light in dark mode.
+- **Never carry meaning by colour alone.** Correct/wrong, known/unknown and
+  locked/unlocked need a second signal (text, icon, position).
 
 ---
 
-## 5.5 Borders and elevation
+## 5. Typography
 
-Most structure should come from spacing and contrast, not shadows.
+The stack is what the repo already loads: **Inter** for UI, **Noto Sans SC** for
+Chinese (the per-language font comes from `languageTheme`). Do not introduce a
+new typeface without a deliberate decision and a check that it renders in both
+webviews.
 
-Default surface:
-
-- 1px subtle border OR subtle tonal separation
-- no shadow unless the object is physically meant to float
-
-Floating navigation / sheets may use one restrained shadow.
-
-Avoid layered dramatic shadows on ordinary content cards.
-
----
-
-## 6. Mobile shell
-
-Hanzi Dojo is now a mobile-first product. The shell should feel native even though the implementation is React inside Capacitor.
-
-## 6.1 Top area
-
-Core screens should not begin with a web-style page header plus explanatory subtitle plus dashboard section.
-
-Use:
-
-- compact top safe-area spacing
-- one clear title when a title is needed
-- profile/settings action where context requires it
-
-Home does not need to shout "Home".
-
-## 6.2 Bottom navigation
-
-Keep the floating form if desired, but make its behavior conventional.
-
-Recommended:
-
-- 16px horizontal inset
-- approximately 58–64px visual height
-- three equal destinations
-- fixed geometry; tabs do **not** resize when selected
-- selected state uses accent + subtle background/tint
-- no centre-tab pedestal
-- no notch
-- no oversized active capsule
-- no bouncing or elastic flex animation
-
-A subtle translucent material is acceptable **only here or in other persistent chrome**, if it performs reliably in WKWebView/Android WebView. Content cards should remain opaque.
-
-The navigation should feel invisible after five minutes of use.
+- **Strong, few steps.** A small number of clearly distinct sizes and weights
+  beats many near-identical ones. Ultra-heavy weights (800+) are rarely right
+  for ordinary UI.
+- **Chinese gets room.** Hanzi need more optical space and line-height than
+  Latin UI text; never apply Latin letter-spacing conventions to Chinese, and
+  never shrink the Chinese to make chrome fit. On a flashcard the word is the
+  screen.
+- **Reading comfort wins in story surfaces.** Comfortable measure, generous
+  line-height, paragraph rhythm — closer to a good ebook than to a dashboard.
+- **Sentence case by default** (`New card`, `12 reviews due`, `87% readable`).
+  Uppercase is reserved for rare, genuinely tiny categorical metadata where it
+  aids scanning — never as a default label treatment.
+- **Less microcopy.** One clear line beats a title plus a subtitle plus a hint.
+  If a control needs a paragraph, the control is wrong.
+- **Type is not decoration.** No oversized numerals, watermark Hanzi or
+  display-weight text used purely to fill space.
 
 ---
 
-## 7. Home
+## 6. Spacing and density
 
-Home has one job:
+Use the **8px rhythm with 4px half-steps** already in the code:
 
-> **Show me what I should do next and let me begin immediately.**
+| | |
+|---|---|
+| **4** | optical correction only |
+| **8** | tight internal gap |
+| **12** | compact control gap |
+| **16** | default mobile padding / component spacing |
+| **20** | comfortable content gap |
+| **24** | section separation |
+| **32** | major section separation |
+| **40+** | only when a layout genuinely needs the room |
 
-The current product logic — Home contains the learner's real next task and hands directly into Study — is worth preserving. Do not rewrite working session preparation or zero-loading transition behavior merely to restyle the page.
+There is no spacing-token module and this file is not introducing one — inline
+styles use raw px on that rhythm. Don't invent 13, 19, 27, 31 repeatedly;
+optical exceptions should be rare and deliberate.
 
-### Structure
-
-1. Compact top area: date/context + profile.
-2. Current task object.
-3. Quiet preview of what comes after it.
-4. Bottom navigation.
-
-### Current task
-
-Before cards are complete, the flashcard can be the dominant object.
-
-But it should feel like **a real flashcard**, not a website hero panel:
-
-- neutral surface
-- generous Hanzi
-- restrained state indicator
-- clear tap/start affordance
-- no decorative background
-- no watermark
-- no gradient
-- no giant marketing CTA
-
-The card should occupy enough screen space to feel intentional, but not so much that the page looks empty merely because the card is artificially tall.
-
-### After cards
-
-The same area may transition to the recommended story.
-
-A real story cover is allowed to carry strong visual weight because it is content. If there is no cover, use typography rather than synthetic decoration.
-
-### Supporting steps
-
-Cards / story / practice status should look like a clean progression, not three dashboard widgets.
-
-Use rows, subtle dividers and concise status.
-
-### Home success test
-
-A new user should understand within ~3 seconds:
-
-- what their next action is
-- what happens after it
-- where the three main areas of the app are
+- Default mobile horizontal page padding: **16px**.
+- **Group with space, not boxes.** A gap change is usually a better grouping
+  signal than another border.
+- **Generous breathing room over density.** This is a daily-use learning tool,
+  not an ops console; nothing on a core screen needs to be dense. Equally,
+  empty space has to be doing something — vast blank areas are not minimalism.
+- **Touch-friendly controls** — see §13 for the minimum.
 
 ---
 
-## 8. Flashcard Study
+## 7. Surfaces
 
-This is the highest-frequency screen. Optimize for concentration and speed.
+**Not every section needs a card.** Cards and panels are tools for grouping,
+interaction and layering — not the default layout primitive. A screen of six
+rounded rectangles is a symptom, not a design.
 
-### Priority hierarchy
+Rough ladder, lightest first:
 
-1. Word / Hanzi
-2. Reading + meaning after reveal
-3. Context/example
-4. Grade actions
-5. Secondary controls
+| Level | Use it when |
+|-------|-------------|
+| **Flat content on the page background** | The default. Text, lists, headings, most sections. |
+| **`Panel`** | A group genuinely needs a boundary — mixed content that would otherwise run together, or a tappable unit. |
+| **Elevated / lit surface** (`HeroPanel`) | One object is genuinely the subject of the screen and benefits from being lifted off the ground. Available, useful, **not required** — see §14. |
+| **Sheet** | Transient, focused detail over retained context (a word lookup, a picker). Dismissible, respects safe areas. |
+| **Overlay / modal** | A blocking decision or a full-attention moment. Rare. |
 
-### Rules
+Rules that hold across all of them:
 
-- One card surface.
-- No ornamental card frame.
-- No competing panels inside the card unless semantically necessary.
-- Audio controls remain secondary.
-- Grades are large, thumb-friendly and visually distinct without becoming four neon blocks.
-- Schedule previews are useful but visually subordinate to the grade labels.
-- Session progress is visible but quiet.
-- Exit/undo controls are predictable and stay in stable positions.
-
-The learner should be able to complete dozens of cards without visual fatigue.
-
----
-
-## 9. Stories Library
-
-Stories are not a settings list and not a Netflix clone copied literally.
-
-The library should communicate three things extremely well:
-
-1. **What looks interesting?**
-2. **Can I understand it?**
-3. **Where am I in the series?**
-
-### Story card hierarchy
-
-- cover
-- title
-- level
-- **% readable / known vocabulary**
-- chapter/progress state where relevant
-
-The readability percentage is a flagship product signal and should be visually easy to scan.
-
-Example:
-
-**87% readable**
-
-not buried inside three metadata badges.
-
-### Covers
-
-- consistent vertical aspect ratio
-- consistent crop behavior
-- no stretched art
-- no redundant decorative frame around already-strong cover art
-
-### Series
-
-When opening a series, use a clear series detail screen with vertical cover, concise description and chapters/episodes beneath it.
-
-Do not mimic Netflix chrome for its own sake. Borrow only the useful information architecture.
+- At most two competing surface treatments on one screen.
+- One radius vocabulary, not five: compact controls ~10–12px, ordinary panels
+  ~14–16px, a major content object ~20px, full pill only for real pills
+  (filters, segmented controls, compact status). Not every rectangle is a
+  24–30px blob.
+- Structure comes from spacing and contrast first, a hairline border second, a
+  shadow last. Use `--shadow-1`/`--shadow-2`/`--hairline` rather than one-off
+  box-shadows, and only shadow things that are meant to float. Never three
+  shadow strengths on one screen.
+- **Glass/translucency is for system layers only** — floating navigation,
+  overlays, sheets, transient chrome — and only where it performs in
+  WKWebView/Android WebView. Ordinary content surfaces stay opaque.
+- **The flex scroll rule** (bites constantly): any `flex: 1` scroll area inside a
+  `position: fixed` or fixed-height flex column needs `min-height: 0`.
 
 ---
 
-## 10. Story Reader
+## 8. Navigation
 
-The reader should feel closer to a good ebook app than to a language-learning dashboard.
+Principles only. **The current Home and global-navigation design is its own
+decision — do not encode a specific dock, tab order, CTA layout or Home section
+list here.**
 
-### Reading mode
-
-- maximum visual calm
-- no persistent bottom navigation while actively reading
-- strong typography and line-height
-- comfortable margins
-- paragraph/content rhythm, not card rhythm
-
-### Word interaction
-
-Tap a word → immediate lookup.
-
-Lookup sheet should prioritize:
-
-1. word
-2. pinyin
-3. meaning
-4. whether it is already known / learning
-5. one useful action
-
-Do not turn the lookup sheet into a mini dashboard.
-
-### Known-word visualization
-
-If known/unknown highlighting exists, it must remain subtle enough that Chinese text still looks like text rather than a heatmap.
+- **Mobile first.** Navigation is designed for a thumb on a phone; desktop
+  adapts to it, not the other way round.
+- **Clear active state**, readable without colour alone.
+- **No layout shift on selection.** Tabs do not resize, reflow or bounce when
+  chosen; geometry is fixed.
+- **Safe-area aware**, top and bottom, on every device it runs on.
+- **Navigation must not obscure content.** Anything fixed or floating owns a
+  reserved amount of space; scrollable content ends above it, not behind it.
+- **Focused experiences may hide global navigation** — reading, a study session,
+  a drill — as long as the way out is obvious and predictable.
+- **One coherent icon family** (`lucide-react`), consistent stroke and size.
+  Emoji are content, never UI icons. A custom brand glyph must be simpler than
+  the UI around it.
+- Destinations are few and stable. Renaming or reordering them is a product
+  decision, not a styling one.
+- Navigation should be invisible after five minutes of use.
 
 ---
 
-## 11. Practice
-
-Practice should visually inherit from Study, not become a separate game mode aesthetic.
-
-- consistent question framing
-- one task at a time
-- answer feedback is clear but not celebratory noise
-- correct/wrong state uses semantic color carefully
-- explanation appears close to the answer
-- next action stays in a stable position
-
-No confetti, XP explosions or streak pressure.
-
----
-
-## 12. Components
-
-Create a small, strict component vocabulary.
-
-Core primitives should include:
-
-- `Screen`
-- `TopBar`
-- `SectionHeader`
-- `Surface`
-- `TaskCard`
-- `ListRow`
-- `PrimaryButton`
-- `SecondaryButton`
-- `IconButton`
-- `Chip` / `Badge` only when semantically justified
-- `BottomDock`
-- `Sheet`
-- `EmptyState`
-
-Before inventing a new component style, ask whether one of these can represent the same information.
-
-### One component, one appearance
-
-The same semantic control should not look different on Home, Stories and Profile because different AI sessions implemented it.
-
----
-
-## 13. Iconography
-
-Use Lucide consistently unless a specific custom glyph is a core brand asset.
-
-Rules:
-
-- same stroke family across the shell
-- default 20–24px navigation/action icons
-- avoid decorative icon tiles
-- never use emoji as UI icons
-- icons support labels; they do not replace unclear concepts
-
-Custom nav glyphs must be simpler than the UI around them, not mini illustrations.
-
----
-
-## 14. Motion
+## 9. Motion
 
 Motion communicates state change. It is not decoration.
 
-### Timing
-
-Typical ranges:
-
-- press response: 80–120ms
-- small state change: 160–220ms
-- navigation/sheet transition: 220–320ms
-
-### Good motion
-
-- flashcard reveal
-- Home task → Study card continuity
-- sheet appearing from its physical origin
-- navigation selection changing
-- list insertion/removal when it helps orientation
-
-### Avoid
-
-- every section rising into place on every screen load
-- stagger animation as a default
-- spring/bounce on serious learning controls
-- simultaneous scale + blur + fade + slide
-- re-running entrance animation whenever the user revisits a screen
-
-Reduced-motion must remain fully supported.
+- **Fast and subtle.** Press feedback ~80–120ms; small state changes ~160–220ms;
+  navigation/sheet transitions ~220–320ms.
+- **Functional only** — a reveal, continuity between two screens showing the
+  same object, a sheet growing from where it was summoned, list insert/remove
+  that aids orientation.
+- **Interruptible** where the user can act during it. Never block input waiting
+  for an animation to finish.
+- **`prefers-reduced-motion` is fully supported**, everywhere, with a static
+  end-state that still makes sense.
+- Avoid: staggered entrance choreography as a default, springs and bounce on
+  serious learning controls, simultaneous scale+blur+fade+slide, and re-running
+  entrance animations every time a screen is revisited.
 
 ---
 
-## 15. Copy
+## 10. Dark mode
 
-Write like a calm tool.
+Dark mode is a designed mode, not an inversion.
 
-Prefer:
+- **Surfaces** step up from the background in small, deliberate increments; a
+  dark screen should not be a stack of near-identical greys, nor pure black with
+  floating white boxes.
+- **Text** uses the tokens; muted/faint stay legible against dark surfaces.
+- **Accent** uses `ink()` wherever it is text or a mark, so it lifts instead of
+  sinking, while staying recognisably the same brand colour.
+- **Borders** carry more of the structure in dark mode than shadows do.
+- **Overlays and scrims** must not turn the whole screen into mud; keep the
+  layer beneath readable enough to give context.
+- **Translucency** is checked in dark mode explicitly — a glass layer that reads
+  as frosted in light can read as dirty in dark.
+- **Shadows** flip to near-black and do far less work; do not compensate by
+  making them heavier.
 
-- `12 reviews due`
-- `Start cards`
-- `87% readable`
-- `Nothing due`
-- `Continue reading`
-
-Avoid:
-
-- `You're crushing it! 🔥`
-- `Amazing job!`
-- `Don't lose your streak!`
-- `Unlock your full potential`
-- generic AI-coach encouragement
-
-The content itself is motivating.
-
----
-
-## 16. Empty, loading and error states
-
-These states are part of the product design, not placeholders.
-
-### Loading
-
-Prefer preserving final geometry with a subtle skeleton. Avoid spinners when the screen can keep its structure.
-
-### Empty
-
-Tell the user what the state means and provide one relevant next action.
-
-### Error
-
-Plain language. Explain what can be retried or what data remains safe.
-
-Do not decorate failures.
+Every visual change is reviewed in both modes before it ships. "Looks fine in
+light" is half a review.
 
 ---
 
-## 17. Accessibility and ergonomics
+## 11. Mobile behaviour
 
-- minimum practical touch target: 44×44px
-- critical actions reachable one-handed on common phone sizes
-- WCAG-appropriate contrast
-- never communicate state by color alone
-- Dynamic Type-like resilience: UI must survive larger text where practical
-- visible focus states for web/keyboard use
-- reduced-motion support
-- screen reader names must describe destination/action, not icon shape
+The primary environment is a native mobile shell (Capacitor → WKWebView /
+Android WebView). Design for it first.
 
----
-
-## 18. Responsive behavior
-
-Design mobile first at:
-
-- 320px narrow device
-- 390px standard target
-- 430px large phone
-
-Do not design at desktop width and collapse it later.
-
-Core mobile layouts should be deliberately checked at all three widths before approval.
-
-Tablet/desktop may expand spacing and max-width but should not introduce an entirely different visual language.
+- **Safe areas** on all four edges; nothing important under a notch, a home
+  indicator or a status bar.
+- **Check 320px, 390px and 430px.** 320 is the sanity floor — it may be tight,
+  it may not break.
+- **No horizontal overflow, ever.** A row that must scroll scrolls inside its
+  own container, not by moving the page.
+- **Touch targets ≥44×44px** for anything tappable, including icon-only controls.
+- **Fixed and floating controls may never cover content** at the end of a
+  scroll; reserve their height.
+- Critical actions should be reachable one-handed on a common phone.
+- Webview reality check: audio, storage, OAuth, haptics and system fonts behave
+  differently there than in a desktop browser. Verify, don't assume.
 
 ---
 
-## 19. Existing design system: what survives, what should be retired
+## 12. Desktop behaviour
 
-### Preserve
+Desktop should look considered — it is where the public/legal surface and much
+of the testing live — but mobile is the design priority.
 
-- semantic theme variables
-- language-driven accent source
-- accessibility work
-- shared geometry contracts such as bottom-safe-area handling
-- reduced-motion handling
-- session-preparation / Home-to-Study continuity
-- story readability as a first-class metric
-- real content instead of fake dashboard examples
-
-### Reconsider / retire from core mobile flows
-
-- `HeroPanel` as a universal design primitive
-- "one lit panel" as the defining visual language
-- `InkWash` decoration
-- `heroGround()` gradients for generic app surfaces
-- watermark Hanzi as atmosphere
-- default uppercase `MICRO` styling everywhere
-- global staggered `hd-rise` entrance behavior
-- expanding-flex active navigation tab
-- large-radius cards as the default answer to hierarchy
-
-These patterns are not forbidden in every possible future marketing surface; they should simply stop defining the daily learning UI.
+- Constrain content to a comfortable max-width; do not let a mobile layout
+  stretch across a 1920px window.
+- Extra width buys spacing and, where genuinely useful, a second column — not a
+  different visual language.
+- Hover states are additive; nothing may be reachable *only* by hover.
+- Keyboard use is a first-class path on desktop (§13).
 
 ---
 
-## 20. Home implementation constraint
+## 13. Accessibility
 
-The latest Home has valuable product behavior that should not be casually destroyed during visual redesign:
+Not a pass at the end — a constraint while designing.
 
-- it prepares the same actual first Study card
-- Study claims that prepared session immediately
-- Home → Study can preserve object continuity
-- the task changes from cards → story → practice based on real state
-
-**Restyle before rewriting.**
-
-If a design proposal requires breaking this logic, it must explain why the user benefit outweighs the proven fast transition.
-
----
-
-## 21. Design process from now on
-
-### Step 1 — Define the problem
-
-Example:
-
-> Home feels like an AI-designed webpage because the primary object is oversized, supporting hierarchy is weak and navigation is visually novel.
-
-Not:
-
-> Make Home more premium.
-
-### Step 2 — Make 2–3 materially different static directions
-
-Do not implement three production versions.
-
-Directions should differ in information hierarchy, not merely colors.
-
-### Step 3 — Owner selects direction
-
-No coding polish before the direction is approved.
-
-### Step 4 — Implement one screen
-
-Test on a real iPhone/Android device.
-
-### Step 5 — Propagate system
-
-Only after the screen proves the system should components/tokens spread to the other core screens.
+- **Contrast** meets WCAG AA for text and meaningful marks, in both themes.
+- **Semantic controls** — a button is a `<button>`, a link is a link. Do not
+  rebuild controls out of divs.
+- **Focus is visible** and follows a sensible order; dialogs and sheets trap
+  focus and return it on close.
+- **Screen-reader labels** describe the destination or action, not the icon
+  shape. Chinese text is marked with the right language so it is not read with
+  an English voice.
+- **Reduced motion** is honoured (§9).
+- **Minimum practical touch target 44×44px** (§11).
+- **Never colour alone** for state (§4).
+- **Survive larger text** where practical — a layout that breaks at a bigger
+  system font size is not finished.
 
 ---
 
-## 22. AI implementation rules
+## 14. Anti-patterns
 
-Claude/Codex are implementers, not autonomous art directors.
+Named so they can be pointed at in review:
 
-Every design task must provide:
-
-- the user problem
-- screenshot/reference context if available
-- relevant Design Bible rules
-- allowed structural changes
-- things that must be preserved
-- exact acceptance criteria
-
-### AI must not
-
-- add visual decoration to make a screen "premium"
-- create a new design primitive when an existing one works
-- introduce gradients/glass/shadows without an explicit reason
-- rewrite working product logic during a styling task
-- add new product features during visual polish
-- change multiple core screens before the first one has been visually approved
-
----
-
-## 23. The 30-second anti-slop review
-
-Before accepting any screen, ask:
-
-1. If all gradients/shadows were removed, would the hierarchy still be excellent?
-2. Is there one obvious thing to do next?
-3. Does any component look like it exists primarily to make the screenshot impressive?
-4. Is there unnecessary empty space?
-5. Are there more than two card/surface treatments competing?
-6. Are pills/badges being used as decoration rather than information?
-7. Does it look like an app used every day, or a Dribbble concept?
-8. Could this screen plausibly belong to the same product as Study and Reader?
-9. Does the screen show real learning content as early as possible?
-10. Would Fabian still like it after seeing it 500 times?
-
-If several answers are bad, do not polish the current direction. Revisit the hierarchy.
+- **Dashboard UI** — a learning screen turned into a metrics console.
+- **Card soup** — every section in its own rounded rectangle; multiple competing
+  card styles on one screen.
+- **Giant accent blocks** — vermilion used as a canvas instead of an accent.
+- **Mandatory hero** — the old "exactly one `HeroPanel` per screen" rule.
+  `HeroPanel` remains a legitimate component where one object really is the
+  subject; it is **not** a required structure, and no screen should grow a lit
+  panel to satisfy a template.
+- **Generic glassmorphism** on ordinary content surfaces.
+- **Decorative gradients, glows, mesh, blobs, ink washes and background
+  illustration** used to make a weak screen look interesting.
+- **Watermark Hanzi** and ornamental characters as atmosphere.
+- **Stat-tile walls, unnecessary pills, arbitrary badges** and a coloured icon
+  tile on every row.
+- **Uppercase microcopy everywhere.**
+- **Fake gamification** — XP, streaks, leagues, confetti, celebration noise.
+  These were deliberately removed from the product; do not reintroduce their
+  visual language.
+- **Mixed icon families** or emoji standing in for icons.
+- **Duplicated navigation patterns** — two ways to reach the same place, looking
+  different.
+- **Web-page furniture in an app** — a page title plus subtitle plus toolbar at
+  the top of every screen.
+- **Visual change with no product reason** — restyling something because it was
+  there, during a task that was about something else.
+- **Screens forked into twins** — a "mobile version" file and a "desktop
+  version" file of the same screen. They rot apart.
 
 ---
 
-## 24. Release-quality visual gate
+## 15. The decision test
 
-The five core screens are visually ready when:
+Before shipping a new visual element, ask:
 
-- Home, Study, Stories, Reader and Practice clearly belong to the same product.
-- Typography, spacing, radii, control geometry and navigation are consistent.
-- Light and dark modes both feel intentional.
-- No screen looks like a responsive website placed inside an app wrapper.
-- No screen relies on decorative AI-style effects for visual interest.
-- Real-device screenshots at 320/390/430 widths show no awkward empty zones, clipping or web-like spacing.
-- A tester can identify the primary action without instruction.
-- The content — Hanzi, stories and learning state — is more visually memorable than the chrome.
+1. Does it help the learner understand what to do next?
+2. Does it strengthen the **Cards → Stories → Practice** relationship?
+3. Could spacing or typography solve this without another card?
+4. Is the accent colour actually necessary here?
+5. Does it feel native and intentional — or generated?
+6. Does it work in dark mode?
+7. Does it work at 320px, with safe areas and a 44px touch target?
+8. Is the UI serving the content, or competing with it?
+
+If several answers are weak, the fix is the hierarchy, not more polish.
 
 ---
 
-## 25. Final principle
+## Working rules
 
-**Hanzi Dojo should not look impressive because it has more design. It should look expensive because nothing feels accidental.**
+Not visual principles, but they protect them.
+
+**Copy.** Write like a calm tool: `12 reviews due`, `Start cards`, `Nothing due`,
+`Continue reading`. Not `You're crushing it! 🔥`, `Don't lose your streak!` or
+generic coach encouragement. The content is the motivation. Copy is
+observational, never guilt-based (`CLAUDE.md` §1).
+
+**Empty, loading and error states are design, not placeholders.** Loading
+preserves the final geometry with a quiet skeleton rather than a spinner where
+the structure is already known. Empty says what the state means and offers one
+relevant next action. Errors use plain language, say what can be retried and
+what data is safe, and are never decorated.
+
+**One component, one appearance.** The same semantic control should not look
+different on two screens because two sessions built it. Before inventing a new
+component style, check whether an existing primitive can carry the same
+information.
+
+**Restyle before rewriting.** A visual task does not rewrite working product
+logic, does not add features, and does not change several core screens before
+the first one is approved. If a design proposal requires breaking proven
+behaviour, it has to say why the user benefit outweighs it.
+
+**Ask for the problem, not the polish.** A design task should name the user
+problem, what may change structurally, what must be preserved, and how it will
+be judged. "Make it more premium" is not a task.
+
+---
+
+## Appendix — what this file is not
+
+- **Not the token reference.** That is `docs/ARCHITECTURE.md`.
+- **Not a screen spec.** Current screens are described by the code; past ones by
+  `git log` and `docs/superpowers/`.
+- **Not a licence to redesign.** A styling task does not include rewriting
+  working product logic, and a visual pass does not add features.

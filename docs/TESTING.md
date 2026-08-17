@@ -8,6 +8,16 @@ the thread flips to ✅.
 
 Item format: `- [ ] ` + `` `stable-id` `` + `**Title**` + ` — what to check`.
 
+**Automated tests, for contrast:** `npm run lint`, `npm test` and `npm run build`
+are run before every commit, and GitHub CI re-runs them plus Playwright on every
+PR. **CI is the authority on e2e and visual-snapshot results** — an e2e or
+snapshot failure inside a remote Claude sandbox is usually the environment (cold
+dev server, slow container, different font rasterisation than the baselines were
+captured on), not a regression. Never change app code to make sandbox-only
+pixels match, and never raise the global Playwright timeout to hide sandbox
+latency. How to tell the three kinds of red apart: `docs/BACKLOG.md`, *Reading a
+red check*.
+
 ## Open
 - [ ] `no-streak-xp` **Streak & XP system removed** — study a full session end to end: Home shows no day-streak flame or "study today to keep it" line, the session recap shows no "+N XP" or level-up card, and Profile shows no streak/streak-freeze/account-level cards or streak/level achievements. After grading at least one card, close the app for a day or two and come back — does the "gentle return after a break" welcome still show up (it depends on `last_studied_on`, which is now written by the study screen itself rather than the old streak updater)?
 - [ ] `calm-home-recap` **Calmer Home & session recap** — open Home: no "day streak" badge or "study today to keep it" line anywhere, and the "Today's Dojo" card itself is tappable (whole card, not just a small pill) and opens your cards. Finish a study session: no XP or accuracy number, just two calm tiles ("Today: N reviewed, M new" / "Tomorrow: N due, M new"), then straight into the unlocked story.

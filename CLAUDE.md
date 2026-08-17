@@ -30,7 +30,8 @@ still get full detail — they are read once, on purpose.
 | Doc | What's in it | Read when |
 |-----|--------------|-----------|
 | **this file** | Vision, stack, repo shape, coding rules, DB safety rules, workflow | Always, first |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Full DB schema, level/mastery/SRS systems, design system, content pipeline | You need the detail |
+| [`docs/DESIGN-BIBLE.md`](docs/DESIGN-BIBLE.md) | The permanent design principles — feeling, hierarchy, colour, type, surfaces, motion, dark mode, mobile, a11y, anti-patterns | Any visual or UI work |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Full DB schema, level/mastery/SRS systems, design tokens and components as built, content pipeline | You need the detail |
 | [`docs/METRICS.md`](docs/METRICS.md) | The metric dictionary — one definition per number the product shows | Touching analytics or any displayed number |
 | [`docs/STORY-BIBLE.md`](docs/STORY-BIBLE.md) | The story universe: world rules, cast, how a season is made. Machine half: `data/story-canon.chinese.json` | Writing or reviewing stories |
 | [`docs/DEPLOY.md`](docs/DEPLOY.md) | Env vars, hosting, routing, PWA, secrets, failure cheat-sheet | Something is broken in prod |
@@ -51,6 +52,25 @@ still get full detail — they are read once, on purpose.
 | [`docs/STORY_EXPERIENCE_AUDIT.md`](docs/STORY_EXPERIENCE_AUDIT.md) | Long-form audit of the reading experience | Reworking the reader |
 | [`docs/DATABASE.md`](docs/DATABASE.md) | Older schema notes — **`docs/ARCHITECTURE.md` is the current source of truth**; last touched 2026-07-02 | Rarely; prefer ARCHITECTURE.md |
 | [`docs/superpowers/`](docs/superpowers/README.md) | Design specs and plans for features that already shipped — history, **not** current intent | Archaeology on a feature's design |
+
+### Which document wins (source-of-truth hierarchy)
+
+When two documents disagree, resolve it in this order — top wins:
+
+1. **`CLAUDE.md`** — permanent product and engineering rules.
+2. **`docs/DESIGN-BIBLE.md`** — permanent design principles.
+3. **`docs/ARCHITECTURE.md`** — technical truth: schema, systems, tokens and
+   components as they are actually built.
+4. **The task you were given** — the current implementation intent. It overrides
+   any older description of the same screen.
+5. **`docs/superpowers/`, audits, and other historical specs** — reference only.
+
+**A historical spec never overrides current intent.** Those files describe how a
+feature was designed at the time it shipped; several predate decisions that have
+since replaced them. If one contradicts 1–4, it is out of date — do not "fix"
+the code to match it, and do not cite it as a requirement. The code is the truth
+about what exists; `docs/ARCHITECTURE.md` is the truth about how it is meant to
+fit together.
 
 ### Keep the roadmap current (every task — it is live in Discord)
 
@@ -130,11 +150,15 @@ time; immersion works, but finding material at your level is hard. Hanzi-dojo
 combines SRS with immersion content matched to what you actually know, so the
 learner never hunts for comprehensible input — the right stories come to them.
 
-**The daily loop** (the UX should reinforce this order):
-1. **Flashcards** — daily SRS review and new cards
-2. **Stories** — reading immersion matched to learned vocabulary
-3. **Listening** — curated video/audio for the level
-4. **Writing / output** — active recall
+**The learning loop — Learn → Understand → Reinforce** (the UX should reinforce
+this order, and make the *link* between the three visible):
+1. **Cards** — FSRS review and new vocabulary. This is what everything else is built on.
+2. **Stories** — reading immersion matched to the vocabulary the learner has
+   actually learned. This link is the product's strongest differentiator: the
+   learner can read the story *because* the app knows their words.
+3. **Practice** — contextual exercises and active recall over learned
+   vocabulary. Listening, writing, speaking and drills are kinds of practice,
+   not separate top-level pillars.
 
 **Core philosophy:**
 - **No shortcuts.** Progression is gated on genuine mastery (FSRS stability), not self-graded buttons.
@@ -208,7 +232,7 @@ should arrive as a tested module, not another branch inside the component.
 | `src/TrustPages.jsx` | Public `/privacy` `/terms` `/support` `/methodology`. **Legal texts are owner-reviewed drafts — never present them as final** |
 | `src/errorMonitor.js` | Client error → `client_error` analytics events. Name + 40-char message + route ONLY — never stacks or typed text |
 | `src/syncQueue.js` | Durable write outbox — offline grading replay |
-| `src/designTokens.js` + `src/panels.jsx` | The "one lit panel" design language |
+| `src/designTokens.js` + `src/panels.jsx` | Shared surface primitives and token helpers — `Panel`, `HeroPanel`, `Readout`, `heroGround()`, `flatPanel()` |
 
 **Outside `src/`:** `*.mjs` at the repo root are **content-generation scripts**
 (never bundled — see `docs/ARCHITECTURE.md`). `supabase/migrations/` holds SQL.
@@ -246,7 +270,13 @@ reset goes through the `reset_current_language_progress` RPC. Full schema in
 
 ---
 
-## 5. Design system (essentials — full palette in `docs/ARCHITECTURE.md`)
+## 5. Design (essentials — principles in `docs/DESIGN-BIBLE.md`, palette in `docs/ARCHITECTURE.md`)
+
+**The feeling:** premium native consumer app × Japanese minimalism ×
+content-first learning. Calm, precise, deliberate, modern, mobile-native,
+premium without being decorative. The Chinese, the stories and the learner's own
+progress should visually dominate the UI chrome around them.
+`docs/DESIGN-BIBLE.md` is the detail; these are the rules that bite in code.
 
 **Use semantic tokens for every neutral colour**, or it won't theme:
 `--bg`, `--surface`, `--surface-2`, `--surface-glass`, `--border`, `--text`,
@@ -261,10 +291,19 @@ Hardcoded neutral hexes are a bug.
   hex for tints and borders that already mix into a surface.
 - **Tints must mix into the surface:** `color-mix(in srgb, <accent> 11%, var(--surface))`,
   never an `<accent>+'14'` alpha hex (that stays light in dark mode).
-- **One lit panel per screen.** Exactly one `HeroPanel` — the thing the screen is
-  about — on a ground darkened from the *language accent*. Everything else is a
-  flat `Panel`. Atmosphere stays under ~12% opacity and is **drawn** (`inkWash.js`),
-  never photographic.
+- **The accent is an accent, not the canvas.** Use it for active state, the one
+  important action, progress, selection and small brand details — not for large
+  filled blocks.
+- **Hierarchy comes from typography, spacing and composition first.** Surfaces
+  are tools, not the default layout primitive: **not every section needs a
+  card**, and no screen is required to have a hero. `HeroPanel` stays available
+  where one object genuinely is the subject of the screen — the old "exactly one
+  lit panel per screen" mandate is retired.
+- **Glass is for system layers only** — floating nav, overlays, sheets,
+  transient chrome. Content surfaces stay opaque.
+- **Mobile is the design target:** safe areas respected, no horizontal overflow,
+  44px touch targets, checked at 320/390/430 and in **both** themes.
+  `prefers-reduced-motion` is always honoured.
 - **Flex scroll rule:** any `flex: 1` scroll area inside a `position: fixed` or
   fixed-height flex column needs `min-height: 0`, or it grows to fit its content
   and the overflow gets clipped.
@@ -376,7 +415,17 @@ add one to the allow list only when a real task keeps hitting it.
 (`.github/workflows/e2e.yml`) — one `check` run + one `playwright` run per PR
 commit, usually green in ~3 minutes. A branch pushed WITHOUT a PR gets no CI.
 If it's red, it doesn't merge. (The two `Workers Builds` checks are a dead
-Cloudflare hookup — always red, always ignorable; see `docs/BACKLOG.md`.)
+Cloudflare hookup — always red, always ignorable, and **not fixable from this
+repo**; see `docs/BACKLOG.md`.)
+
+**CI is the authority on e2e and visual snapshots — a remote sandbox is not.**
+A Playwright failure inside a Claude sandbox is often the environment: cold dev
+server, slow container, different font rasterisation than the baselines were
+captured on. Before calling one a regression, re-run it with a raised
+`--timeout` on the command line and check the same commit on GitHub CI. Never
+"fix" it by changing app code to match sandbox-only pixels, and never raise the
+global Playwright timeout to hide sandbox latency — details in
+`docs/BACKLOG.md`.
 
 **Published content has its own validator:** Actions → Content utilities →
 task `check-published` runs `check-published-stories.mjs` against the live

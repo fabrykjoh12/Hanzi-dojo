@@ -604,12 +604,21 @@ Semantic tokens in index.css drive light/dark via `:root` and `:root[data-theme=
 
 **Fonts:** Inter (UI), Noto Sans SC (Chinese), Noto Sans JP (Japanese) — loaded from Google Fonts in index.css. **Russian uses Inter**, which already ships full Cyrillic coverage, so no extra web font is needed.
 
-**The "one lit panel" design language** (`src/designTokens.js` + `src/panels.jsx`):
-- A screen gets **exactly one** `HeroPanel` — the thing it is actually about — on a deep ground made by darkening the *language accent* (`heroGround`), never a fixed colour. Everything else on that screen is a flat `Panel`.
+**Surface primitives — `HeroPanel` / `Panel`** (`src/designTokens.js` + `src/panels.jsx`):
+
+> **Design authority:** this section describes how these components *behave*.
+> What a screen *should* look like is governed by
+> [`docs/DESIGN-BIBLE.md`](DESIGN-BIBLE.md). The old rule that every screen must
+> have **exactly one** `HeroPanel` (the "one lit panel" design language) is
+> **retired** — `HeroPanel` is a component to use where one object genuinely is
+> the subject of the screen, not a required structure. Screens are free to be
+> flat, and a section does not need a `Panel` to exist.
+
+- A `HeroPanel` sits on a deep ground made by darkening the *language accent* (`heroGround`), never a fixed colour. Use at most one per screen; a flat `Panel` is the lighter option, and no surface at all is often the right one.
 - Atmosphere is **contained** to the hero and stays **under ~12% opacity**; past that it competes with the text.
 - Atmosphere is **drawn, not photographic** — `src/inkWash.js` generates three seeded ridgelines in cream. A photo carries its own colours and fights the palette however far it is faded; ridges made from the accent cannot clash, cost no bytes, and stay crisp at any size. Seeded per language so a skyline is stable across renders.
 - While any `HeroPanel` is mounted it sets `data-lit-hero` on the document, which drops `--bg-image-opacity` to 0.04. The rule travels with the component — a screen adopting the hero gets the flattening automatically.
-- Screens using it: **Home** (the card queue), **Stories** (the day's story — it replaced the old tinted "Today's story" strip AND the plain page header), **Practice** (its title block).
+- Screens using it *at the time of writing*: **Home** (the card queue), **Stories** (the day's story — it replaced the old tinted "Today's story" strip AND the plain page header), **Practice** (its title block). This list goes stale as screens are redesigned — `grep -rn HeroPanel src/` is the live answer, and a screen dropping it is not a bug.
 
 **Card interaction:** `translateY(-2px)`, stronger shadow, accent border on hover, ~180ms transition.
 

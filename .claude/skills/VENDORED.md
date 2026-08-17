@@ -65,6 +65,15 @@ right. Several also teach in TypeScript (`frontend-patterns`, `error-handling`,
 `vite-patterns`, `security-review`, `e2e-testing`) — translate the pattern, never
 copy the annotations, because §6.1 bans TypeScript here.
 
+**Note on `design-system`:** its "generate a design system" mode writes a
+`DESIGN.md` + `design-tokens.json` + preview page from scratch, and its audit
+mode scores against whatever it invents. This repo already has both halves —
+[`docs/DESIGN-BIBLE.md`](../../docs/DESIGN-BIBLE.md) for the principles and
+`docs/ARCHITECTURE.md` + `src/designTokens.js` for the tokens. **Do not let it
+create a competing design document or a second token system.** Use it, if at
+all, as an audit lens (consistency, contrast, dark mode, AI-slop detection) with
+this repo's own design sources as the reference.
+
 **Note on `security-scan`:** it drives an external tool (AgentShield) that is not
 a dependency of this repo. It audits `.claude/` config, which is a different job
 from `security-review` (application security) — they are not duplicates.
