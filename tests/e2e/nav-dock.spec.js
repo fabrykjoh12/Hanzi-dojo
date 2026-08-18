@@ -114,7 +114,7 @@ test.describe('the floating dock', () => {
     const nav = page.getByRole('navigation', { name: 'Primary' });
     await expect(nav).toBeVisible();
 
-    await page.getByRole('button', { name: 'Start cards' }).click();
+    await page.getByRole('button', { name: /Start reviewing/ }).click();
     await expect(page.getByText('Recall first, then reveal')).toBeVisible();
     // Hidden as a state (still mounted, so it animates), and unreachable.
     await expect(nav).toBeHidden();

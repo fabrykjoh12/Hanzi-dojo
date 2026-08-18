@@ -1,9 +1,9 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 
-// The five daily stages of the "Desk" Home, each rendered from persisted
-// learning state (cards / story reads / grammar reviews) — never client-side
-// flags. The desk always holds the current step's real object; the other
-// steps sit below as quiet status rows.
+// The daily stages of Home, each rendered from persisted learning state
+// (cards / story reads / grammar reviews) — never client-side flags. The hero
+// is always the flashcard queue; what changes with the stage is the hero's
+// headline and action, and the "Then read" hand-off's status line.
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -57,37 +57,44 @@ for (const state of STATES) {
     await page.goto('/');
     const home = page.locator('[data-home-stage]');
     await expect(home).toHaveAttribute('data-home-stage', state);
+    const hero = page.locator('[data-tour="home-queue"]');
+    const handoff = page.locator('[data-tour="home-then-read"]');
 
     if (state === 'cards') {
-      // The desk holds the actual first flashcard: the prepared session's
-      // opening word, the session contents in the footer, one tap to start.
-      const desk = page.getByRole('button', { name: 'Start cards' });
-      await expect(desk).toBeEnabled();
-      await expect(desk.getByText(/1 review · /)).toBeVisible();
-      await expect(desk.locator('span[lang]').first()).toHaveText('我们');
-      await expect(page.getByText('Finish cards to unlock')).toBeVisible();
-      await expect(page.getByText('After your story')).toBeVisible();
+      // The hero shows the real queue — one due review — and starts it.
+      await expect(page.getByRole('button', { name: /Start reviewing — 1 card waiting/ })).toBeEnabled();
+      await expect(hero.getByText('Ready to review')).toBeVisible();
+      await expect(hero.getByText('1', { exact: true }).first()).toBeVisible();
+      await expect(hero.getByText('card waiting')).toBeVisible();
+      // The story is the locked next step, named beneath the hero.
+      await expect(handoff.getByText('Then read')).toBeVisible();
+      await expect(handoff.getByText('Finish cards to unlock')).toBeVisible();
+      await expect(handoff.getByText('我们的歌')).toBeVisible();
     } else {
-      // Cards fold into a quiet done-row; no start action remains.
-      await expect(page.getByRole('button', { name: 'Start cards' })).toHaveCount(0);
-      await expect(page.getByText('Nothing due right now')).toBeVisible();
+      // The queue is clear: the ✓ replaces the number and the one action is
+      // reading — no reviewing button remains.
+      await expect(hero.getByText('Queue clear')).toBeVisible();
+      await expect(hero.getByText('all caught up')).toBeVisible();
+      await expect(page.getByRole('button', { name: /Read a story/ })).toBeEnabled();
+      await expect(page.getByRole('button', { name: /Start reviewing/ })).toHaveCount(0);
     }
     if (state === 'story') {
-      await expect(page.getByRole('button', { name: /Open 我们的歌/ })).toBeEnabled();
-      await expect(page.getByText('Start reading')).toBeVisible();
+      await expect(handoff.getByText('Ready to read')).toBeVisible();
     }
-    if (state === 'practice') {
-      await expect(page.getByRole('button', { name: 'Grammar review' })).toBeEnabled();
-      await expect(page.getByText(/grammar pattern/)).toBeVisible();
-      await expect(page.getByText('Story complete')).toBeVisible();
-    }
-    if (state === 'complete') {
-      await expect(page.getByText('Done for today')).toBeVisible();
-      await expect(page.getByText('Complete for today')).toBeVisible();
+    if (state === 'practice' || state === 'complete') {
+      await expect(handoff.getByText('Story complete')).toBeVisible();
     }
     if (state === 'caught-up') {
-      await expect(page.getByRole('button', { name: 'Open the story shelf' })).toBeEnabled();
-      await expect(page.getByText('Nothing due', { exact: true })).toBeVisible();
+      // No story unlocked — the hand-off does not invent one.
+      await expect(handoff).toHaveCount(0);
     }
   });
 }
+
+test('the hand-off opens today’s story directly once the queue is clear', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await installHomeState(page, 'story');
+  await page.goto('/');
+  await page.locator('[data-tour="home-then-read"]').getByRole('button').click();
+  await expect(page).toHaveURL(/\/stories/);
+});

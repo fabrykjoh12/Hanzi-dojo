@@ -11,19 +11,54 @@ test.describe('Home (logged in)', () => {
     await home.goto();
   });
 
-  test('renders the locked Cards → Story → Practice sequence', async ({ page }) => {
-    await expect(home.desk).toBeVisible();
-    await expect(page.getByText('Finish cards to unlock')).toBeVisible();
-    await expect(page.getByText('After your story')).toBeVisible();
+  test('the lit block is about the flashcard queue, with real counts', async () => {
+    await expect(home.queueEyebrow).toBeVisible();
+    // The queue's own composition lives inside the block that is about it —
+    // on mobile too, and labelled Review, never "Due".
+    for (const label of ['New', 'Learning', 'Review']) {
+      await expect(home.hero.getByText(label, { exact: true })).toBeVisible();
+    }
+    await expect(home.hero.getByText('Due', { exact: true })).toHaveCount(0);
+    // The headline number is the real queue: exactly the sum of the three.
+    const numbers = await home.hero.evaluate((node) => {
+      const spans = [...node.querySelectorAll('span')];
+      const value = (label) => {
+        const el = spans.find(s => s.textContent === label);
+        return Number(el.previousElementSibling.textContent);
+      };
+      const headline = Number(node.textContent.match(/(\d+)\s*cards? waiting/)[1]);
+      return { headline, sum: value('New') + value('Learning') + value('Review') };
+    });
+    expect(numbers.headline).toBeGreaterThan(0);
+    expect(numbers.headline).toBe(numbers.sum);
+    // The session estimate comes from the actual queue, and the daily goal
+    // lives inside the queue block it belongs to.
+    await expect(home.hero.getByText(/~\d+ min/)).toBeVisible();
+    await expect(home.hero.getByText(/Daily goal/)).toBeVisible();
   });
 
   test('offers exactly one primary action', async ({ page }) => {
     await expect(home.heroAction).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Start cards' })).toHaveCount(1);
+    await expect(page.getByRole('button', { name: /Start reviewing/ })).toHaveCount(1);
+    // Home is a coach, not a menu — no competing per-stat buttons.
+    await expect(page.getByRole('button', { name: /Review now|Learn them|Practice now/ })).toHaveCount(0);
   });
 
-  test('hands off to reading beneath the hero', async () => {
+  test('hands off to reading beneath the hero, locked behind today’s cards', async () => {
     await expect(home.storyHandoff).toBeVisible();
+    await expect(home.storyHandoff.getByText('Then read')).toBeVisible();
+    // While cards are due the story is a locked next step, with its readability.
+    await expect(home.storyHandoff.getByText('Finish cards to unlock')).toBeVisible();
+    await expect(home.storyHandoff.getByText(/you know \d+% of it/)).toBeVisible();
+  });
+
+  test('shows the week rhythm and the road to the next level in one panel', async () => {
+    await expect(home.weekPanel.getByText('Your week')).toBeVisible();
+    await expect(home.weekPanel.getByText(/No sessions yet|Studied \d+ of the last \d+ days/)).toBeVisible();
+    await expect(home.weekPanel.getByText(/Toward HSK \d/)).toBeVisible();
+    await expect(home.weekPanel.getByText(/\d+ of \d+ words/)).toBeVisible();
+    await expect(home.weekPanel.getByRole('progressbar')).toBeVisible();
+    await expect(home.weekPanel.getByText(/waiting tomorrow|free day/)).toBeVisible();
   });
 
   test('uses the approved three-tab primary navigation', async ({ page }) => {
@@ -35,9 +70,16 @@ test.describe('Home (logged in)', () => {
     await expect(nav.getByRole('button', { name: 'More' })).toHaveCount(0);
   });
 
-  test('does not show a streak badge or "keep it" guilt copy', async ({ page }) => {
+  test('the header profile button opens Profile', async ({ page }) => {
+    await page.getByRole('button', { name: 'Open profile' }).click();
+    await expect(page).toHaveURL(/\/profile$/);
+  });
+
+  test('does not show a streak badge, XP, or a fluency score', async ({ page }) => {
     await expect(page.getByText(/day streak/i)).toHaveCount(0);
     await expect(page.getByText(/study today to keep it/i)).toHaveCount(0);
+    await expect(page.getByText(/\bXP\b/)).toHaveCount(0);
+    await expect(page.getByText(/fluency/i)).toHaveCount(0);
   });
 
   test('the hero opens Study while cards are due', async ({ page }) => {
@@ -46,15 +88,18 @@ test.describe('Home (logged in)', () => {
     await expect(study.showAnswer).toBeVisible();
   });
 
-  test('the desk card is the prepared session’s first card', async ({ page }) => {
-    // The word printed on Home's desk comes from the SAME prepared queue Study
-    // consumes — so the card the learner taps is the card the session opens on.
-    const word = home.desk.locator('span[lang]').first();
-    await expect(word).not.toBeEmpty();
-    const deskWord = (await word.textContent()).trim();
-    await home.heroAction.click();
-    await expect(page.getByText('Recall first, then reveal')).toBeVisible();
-    await expect(page.locator('[aria-live="polite"]').getByText(deskWord, { exact: true })).toBeVisible();
+  test('fits a small phone without horizontal overflow', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await home.goto();
+    await expect(home.hero).toBeVisible();
+    for (const label of ['New', 'Learning', 'Review']) {
+      await expect(home.hero.getByText(label, { exact: true })).toBeVisible();
+    }
+    const overflow = await page.evaluate(() => ({
+      scroll: document.documentElement.scrollWidth,
+      client: document.documentElement.clientWidth,
+    }));
+    expect(overflow.scroll).toBeLessThanOrEqual(overflow.client);
   });
 
   test('keeps retired Cards and More deep links compatible', async ({ page }) => {
@@ -90,10 +135,12 @@ test.describe('Home (logged in)', () => {
     await backHome.click();
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator('[data-home-stage]')).toHaveAttribute('data-home-stage', 'story');
-    // The desk has retargeted: cards fold into a quiet done-row and tonight's
-    // story is the primary object.
-    await expect(page.getByText('Nothing due right now')).toBeVisible();
-    await expect(page.getByText('Start reading')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Start cards' })).toHaveCount(0);
+    // The hero has retargeted: the queue is clear and the one action is
+    // reading, with the story hand-off unlocked beneath it.
+    await expect(page.getByText('Queue clear')).toBeVisible();
+    await expect(page.getByText('all caught up')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Read a story/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Start reviewing/ })).toHaveCount(0);
+    await expect(home.storyHandoff.getByText('Ready to read')).toBeVisible();
   });
 });

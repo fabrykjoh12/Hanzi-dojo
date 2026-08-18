@@ -22,7 +22,7 @@ let litCount = 0
 // function receiving { hovered } so a CTA inside shares the panel's hover.
 export function HeroPanel({
   accentHex, seed = 'a', watermark, watermarkFont,
-  onClick, children, padding, compact = false, style = {}, dataTour,
+  onClick, children, padding, compact = false, style = {}, dataTour, ariaLabel,
 }) {
   const [hovered, setHovered] = useState(false)
   const interactive = typeof onClick === 'function'
@@ -43,6 +43,7 @@ export function HeroPanel({
     <div
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
+      aria-label={ariaLabel}
       onClick={onClick}
       onKeyDown={interactive
         ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }
