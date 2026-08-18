@@ -7,13 +7,12 @@ import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './
 import { getDailyStoryCard, firstContentChar } from './homeStory'
 import { homeDailyStage, homeProgressPct } from './homePresentation'
 import {
-  aheadLine, goalLine, heroAriaLabel, homeAction, homeHeaderMeta,
+  aheadLine, heroAriaLabel, homeAction, homeHeaderMeta,
   queueBreakdown, queueHeadline, storyMetaLine, storyStatus, weekLine,
 } from './homeModel'
-import { HeroPanel, HeroAction, Panel, Eyebrow } from './panels'
+import { HeroPanel, Panel, Eyebrow } from './panels'
 import { weekdayInitial } from './studyRhythm'
 import { forecastSummary } from './reviewForecast'
-import { sessionEstimateLabel } from './sessionEstimate'
 import { prepareStudySession } from './sessionPrep'
 import { stripLeadingNumber } from './storyArcs'
 import { ProfileGlyph } from './HomeV2NavGlyphs'
@@ -22,10 +21,10 @@ import TourOverlay from './TourOverlay'
 import { MICRO, NUM } from './designTokens'
 
 // ── Home ──────────────────────────────────────────────────────────────────
-// The one lit block is TODAY'S FLASHCARDS, end to end: how many cards are
-// waiting, the New/Learning/Review breakdown, the daily goal, and the button
-// that starts the session. Everything about the queue lives in the block that
-// is about the queue.
+// The one lit block is TODAY'S FLASHCARDS: how many cards are waiting and the
+// New/Learning/Review breakdown. The whole panel is the button that starts the
+// session — no inner CTA competing with it. Everything about the queue lives
+// in the block that is about the queue.
 //
 // The story you have unlocked is a quiet flat hand-off underneath — the next
 // step in the daily loop (cards, then read), deliberately not styled as a
@@ -50,10 +49,6 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
 
   const learned = counts.learnedCount || 0
   const totalWords = counts.totalWords || 0
-
-  // Daily new-card goal, shown inside the queue block it belongs to.
-  const goal = profile.daily_new_cards || 0
-  const doneToday = counts.newDoneToday || 0
 
   // The week behind (which days had a session) and the load ahead.
   const rhythm = counts.rhythm7 || []
@@ -116,8 +111,6 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
   const openStory = () => onNavigate('stories', story ? { storyId: story.id } : undefined)
   const heroGo = () => { if (action.go === 'study') onNavigate('study'); else openStory() }
 
-  const estimate = sessionEstimateLabel(counts)
-
   return (
     <div data-home-stage={stage} style={{ maxWidth: '720px', margin: '0 auto', padding: isMobile ? '24px 16px 40px' : '44px 32px 60px' }}>
 
@@ -162,21 +155,10 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         compact={isMobile}
         onClick={heroGo}
         dataTour="home-queue"
-        ariaLabel={heroAriaLabel({ counts, estimate })}
+        ariaLabel={heroAriaLabel({ counts })}
         style={{ marginBottom: '14px', animationDelay: '40ms' }}
       >
-        {({ hovered }) => (
-          <QueueBody
-            counts={counts}
-            estimate={estimate}
-            goal={goal}
-            doneToday={doneToday}
-            isMobile={isMobile}
-            action={action}
-            accentHex={accentHex}
-            hovered={hovered}
-          />
-        )}
+        <QueueBody counts={counts} isMobile={isMobile} />
       </HeroPanel>
 
       {/* ── The next step in the loop, deliberately quiet. The hero owns the
@@ -312,15 +294,15 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
 }
 
 // The hero's contents: the whole block is about today's flashcards — how many
-// are waiting, what the session is made of, how the day's goal is going, and
-// the one button that starts it.
-function QueueBody({ counts, estimate, goal, doneToday, isMobile, action, accentHex, hovered }) {
+// are waiting and what the session is made of. The panel itself is the button
+// that starts it, so nothing in here is a control.
+function QueueBody({ counts, isMobile }) {
   const headline = queueHeadline(counts)
   const clear = !headline.failed && headline.value === '✓'
 
   // The counts never arrived, so every number here is a meaningless zero. Say
   // so plainly instead of showing the ✓ — Study loads its own queue fresh, so
-  // the usual button is the honest retry.
+  // tapping the panel is the honest retry.
   if (headline.failed) {
     return (
       <div>
@@ -338,8 +320,6 @@ function QueueBody({ counts, estimate, goal, doneToday, isMobile, action, accent
         <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45, marginTop: '12px' }}>
           Check your connection — starting a session loads it fresh.
         </div>
-
-        <HeroAction label={action.label} hovered={hovered} icon={ArrowRight} accentHex={accentHex} />
       </div>
     )
   }
@@ -361,12 +341,6 @@ function QueueBody({ counts, estimate, goal, doneToday, isMobile, action, accent
         </span>
         <span style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: 600, color: 'rgba(255,255,255,0.86)' }}>
           {headline.caption}
-          {/* Session length from the ACTUAL queue (see sessionEstimate.js). */}
-          {!clear && estimate && (
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
-              {' · ' + estimate}
-            </span>
-          )}
         </span>
       </div>
 
@@ -383,12 +357,6 @@ function QueueBody({ counts, estimate, goal, doneToday, isMobile, action, accent
           ))}
         </div>
       )}
-
-      <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45, marginTop: '12px' }}>
-        {goalLine({ goal, doneToday })}
-      </div>
-
-      <HeroAction label={action.label} hovered={hovered} icon={ArrowRight} accentHex={accentHex} />
     </div>
   )
 }

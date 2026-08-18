@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  aheadLine, goalLine, heroAriaLabel, homeAction, homeHeaderMeta,
+  aheadLine, heroAriaLabel, homeAction, homeHeaderMeta,
   queueBreakdown, queueHeadline, storyMetaLine, storyStatus, weekLine,
 } from './homeModel'
 
@@ -64,25 +64,10 @@ describe('queueBreakdown', () => {
   })
 })
 
-describe('goalLine', () => {
-  it('reports progress toward the daily new-card goal', () => {
-    expect(goalLine({ goal: 5, doneToday: 2 })).toBe('Daily goal: 2 of 5 new cards')
-  })
-
-  it('celebrates a met goal without pressure', () => {
-    expect(goalLine({ goal: 5, doneToday: 5 })).toBe('Daily goal complete — nice work.')
-    expect(goalLine({ goal: 5, doneToday: 7 })).toBe('Daily goal complete — nice work.')
-  })
-
-  it('states plainly when no goal is set', () => {
-    expect(goalLine({ goal: 0, doneToday: 0 })).toBe('No daily goal set.')
-  })
-})
-
 describe('heroAriaLabel', () => {
   it('names the action and the real queue size', () => {
-    expect(heroAriaLabel({ counts: { dueCount: 11, newCount: 1 }, estimate: '~3 min' }))
-      .toBe('Start reviewing — 12 cards waiting, ~3 min')
+    expect(heroAriaLabel({ counts: { dueCount: 11, newCount: 1 } }))
+      .toBe('Start reviewing — 12 cards waiting')
     expect(heroAriaLabel({ counts: { dueCount: 1 } }))
       .toBe('Start reviewing — 1 card waiting')
   })

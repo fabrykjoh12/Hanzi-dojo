@@ -56,22 +56,14 @@ export function queueBreakdown(counts = {}) {
   ]
 }
 
-// The day's new-card goal, as one quiet line inside the queue block.
-export function goalLine({ goal = 0, doneToday = 0 } = {}) {
-  if (goal > 0 && doneToday >= goal) return 'Daily goal complete — nice work.'
-  if (goal > 0) return 'Daily goal: ' + doneToday + ' of ' + goal + ' new cards'
-  return 'No daily goal set.'
-}
-
 // An honest accessible name for the hero, so a screen reader hears the action
 // and the state instead of every string inside the panel.
-export function heroAriaLabel({ counts = {}, estimate = '' } = {}) {
+export function heroAriaLabel({ counts = {} } = {}) {
   const queue = homeQueueSummary(counts)
   if (queue.failed) return 'Start reviewing — the queue couldn’t load, starting will retry'
   if (queue.clear) return 'Read a story — all caught up'
   return 'Start reviewing — ' + queue.totalReady
     + ' card' + (queue.totalReady === 1 ? '' : 's') + ' waiting'
-    + (estimate ? ', ' + estimate : '')
 }
 
 // Status line for the "Then read" hand-off — the story's locked/unlocked

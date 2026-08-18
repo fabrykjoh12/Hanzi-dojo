@@ -31,10 +31,14 @@ test.describe('Home (logged in)', () => {
     });
     expect(numbers.headline).toBeGreaterThan(0);
     expect(numbers.headline).toBe(numbers.sum);
-    // The session estimate comes from the actual queue, and the daily goal
-    // lives inside the queue block it belongs to.
-    await expect(home.hero.getByText(/~\d+ min/)).toBeVisible();
-    await expect(home.hero.getByText(/Daily goal/)).toBeVisible();
+  });
+
+  test('the whole hero is the button — no inner CTA, estimate, or goal line', async () => {
+    // The panel itself starts the session; nothing inside it is a control.
+    await expect(home.hero).toHaveAttribute('role', 'button');
+    await expect(home.hero.locator('button')).toHaveCount(0);
+    await expect(home.hero.getByText(/~\d+ min/)).toHaveCount(0);
+    await expect(home.hero.getByText(/Daily goal/)).toHaveCount(0);
   });
 
   test('offers exactly one primary action', async ({ page }) => {
