@@ -66,10 +66,12 @@ for (const state of STATES) {
       await expect(hero.getByText('Ready to review')).toBeVisible();
       await expect(hero.getByText('1', { exact: true }).first()).toBeVisible();
       await expect(hero.getByText('card waiting')).toBeVisible();
-      // The story is the locked next step, named beneath the hero.
+      // The story is the locked next step, named beneath the hero — with its
+      // own cover leading the row.
       await expect(handoff.getByText('Then read')).toBeVisible();
       await expect(handoff.getByText('Finish cards to unlock')).toBeVisible();
       await expect(handoff.getByText('我们的歌')).toBeVisible();
+      await expect(handoff.locator('img')).toBeVisible();
     } else {
       // The queue is clear: the ✓ replaces the number and the one action is
       // reading — no reviewing button remains.

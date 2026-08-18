@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, Sunrise } from 'lucide-react'
+import { ArrowRight, Lock, Sunrise } from 'lucide-react'
 import { getLevelLabel } from './utils'
 import { languageTheme, ink } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
@@ -8,7 +8,7 @@ import { getDailyStoryCard, firstContentChar } from './homeStory'
 import { homeDailyStage, homeProgressPct } from './homePresentation'
 import {
   aheadLine, heroAriaLabel, homeAction, homeHeaderMeta,
-  queueBreakdown, queueHeadline, storyMetaLine, storyStatus, weekLine,
+  queueBreakdown, queueHeadline, storyHandoffSub, storyStatus, weekLine,
 } from './homeModel'
 import { HeroPanel, Panel, Eyebrow } from './panels'
 import { weekdayInitial } from './studyRhythm'
@@ -168,43 +168,23 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         <QueueBody counts={counts} isMobile={isMobile} />
       </HeroPanel>
 
-      {/* ── The next step in the loop, deliberately quiet. The hero owns the
-          screen's action; this is a hand-off, not a rival CTA. ── */}
+      {/* ── The next step in the loop: tonight's story, with its own face.
+          The hero owns the screen's action; this is the reward it unlocks. ── */}
       {story && (
-        <Panel
-          padding={isMobile ? '14px 16px' : '15px 20px'}
-          dataTour="home-then-read"
-          style={{ marginBottom: '14px', animationDelay: '80ms', cursor: 'pointer' }}
-        >
-          <div
-            role="button"
-            tabIndex={0}
-            aria-label={'Then read: ' + storyTitle}
-            onClick={openStory}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openStory() } }}
-            className="hd-press"
-            style={{ display: 'flex', alignItems: 'center', gap: '14px' }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '5px' }}>
-                <Eyebrow>Then read</Eyebrow>
-                <span style={{ fontSize: '11.5px', fontWeight: 600, color: stage === 'story' ? accentInk : 'var(--text-faint)' }}>
-                  {storyStatus({ stage, daily })}
-                </span>
-              </div>
-              <div lang={theme.langTag} style={{
-                fontFamily: langFont, fontSize: '15px', fontWeight: 600, color: 'var(--text)',
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}>
-                {daily.sentence}
-              </div>
-              <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {storyMetaLine({ title: storyTitle, knownPct: daily.knownPct })}
-              </div>
-            </div>
-            <ArrowRight size={18} strokeWidth={2.1} color={accentInk} style={{ flexShrink: 0 }} />
-          </div>
-        </Panel>
+        <ThenRead
+          daily={daily}
+          stage={stage}
+          title={storyTitle}
+          sub={storyHandoffSub({
+            levelLabel: getLevelLabel(profile.active_language, track.system, story.level),
+            knownPct: daily.knownPct,
+          })}
+          theme={theme}
+          accentHex={accentHex}
+          accentInk={accentInk}
+          isMobile={isMobile}
+          onOpen={openStory}
+        />
       )}
 
       {/* ── Your week: the rhythm behind you and the load ahead. This is the
@@ -297,6 +277,55 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         />
       )}
     </div>
+  )
+}
+
+// The story hand-off beneath the hero. Tonight's story gets its own face — the
+// cover art when there is one, an accent-tinted title page when not — but it
+// stays the loop's second step: dimmed and locked while cards are due, lit in
+// full colour once reading is what's next.
+function ThenRead({ daily, stage, title, sub, theme, accentHex, accentInk, isMobile, onOpen }) {
+  const [artFailed, setArtFailed] = useState(false)
+  const art = daily.story.cover_url && !artFailed ? daily.story.cover_url : null
+  const ready = stage === 'story'
+  const status = storyStatus({ stage, daily })
+  const press = {
+    role: 'button',
+    tabIndex: 0,
+    'aria-label': 'Then read: ' + title,
+    onClick: onOpen,
+    onKeyDown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() } },
+  }
+
+  // The flat panel keeps its calm, but leads with the story's cover.
+  return (
+    <Panel
+      padding={isMobile ? '12px 14px' : '13px 18px'}
+      dataTour="home-then-read"
+      style={{ marginBottom: '14px', animationDelay: '80ms', cursor: 'pointer' }}
+    >
+      <div {...press} className="hd-press" style={{ display: 'flex', alignItems: 'center', gap: '13px' }}>
+        {art
+          ? <img src={art} alt="" onError={() => setArtFailed(true)} style={{ width: '54px', height: '54px', borderRadius: '12px', objectFit: 'cover', flexShrink: 0, filter: ready ? 'none' : 'saturate(0.5)' }} />
+          : (
+            <span aria-hidden="true" style={{ width: '54px', height: '54px', borderRadius: '12px', flexShrink: 0, display: 'grid', placeItems: 'center', background: 'color-mix(in srgb, ' + accentHex + ' 11%, var(--surface-2))', fontFamily: theme.font + ', sans-serif', fontSize: '26px', fontWeight: 650, color: accentInk }}>
+              {firstContentChar(title)}
+            </span>
+          )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px' }}>
+            <Eyebrow>Then read</Eyebrow>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', lineHeight: 1, fontWeight: 600, color: ready ? accentInk : 'var(--text-faint)', flexShrink: 0 }}>
+              {stage === 'cards' && <Lock size={11} strokeWidth={2.4} aria-hidden="true" />}
+              {status}
+            </span>
+          </div>
+          <div lang={theme.langTag} style={{ marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: theme.font + ', sans-serif', fontSize: '16px', lineHeight: 1.25, fontWeight: 640, color: 'var(--text)' }}>{title}</div>
+          <div style={{ fontSize: '12px', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-muted)' }}>{sub}</div>
+        </div>
+        {ready && <ArrowRight size={18} strokeWidth={2.1} color={accentInk} style={{ flexShrink: 0 }} />}
+      </div>
+    </Panel>
   )
 }
 

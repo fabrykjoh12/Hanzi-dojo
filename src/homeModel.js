@@ -76,13 +76,13 @@ export function storyStatus({ stage, daily } = {}) {
   return 'Story complete'
 }
 
-// The hand-off's context line: which story, and the product's whole promise —
-// how much of it the learner can already read.
-export function storyMetaLine({ title = '', knownPct = null } = {}) {
-  if (typeof knownPct === 'number' && knownPct > 0) {
-    return title + ' · you know ' + knownPct + '% of it'
-  }
-  return title
+// The hand-off's context line under the story's title: its level, and the
+// product's whole promise — how much of it the learner can already read.
+export function storyHandoffSub({ levelLabel = '', knownPct = null } = {}) {
+  const parts = []
+  if (levelLabel) parts.push(levelLabel)
+  if (typeof knownPct === 'number' && knownPct > 0) parts.push('you know ' + knownPct + '% of it')
+  return parts.join(' · ')
 }
 
 // The week panel's summary line. Observational copy only — no streaks, nothing

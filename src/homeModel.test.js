@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   aheadLine, heroAriaLabel, homeAction, homeHeaderMeta,
-  queueBreakdown, queueHeadline, storyMetaLine, storyStatus, weekLine,
+  queueBreakdown, queueHeadline, storyHandoffSub, storyStatus, weekLine,
 } from './homeModel'
 
 describe('homeHeaderMeta', () => {
@@ -96,14 +96,18 @@ describe('storyStatus', () => {
   })
 })
 
-describe('storyMetaLine', () => {
-  it('pairs the story with its readability', () => {
-    expect(storyMetaLine({ title: '我们的歌', knownPct: 92 })).toBe('我们的歌 · you know 92% of it')
+describe('storyHandoffSub', () => {
+  it('pairs the level with the readability', () => {
+    expect(storyHandoffSub({ levelLabel: 'HSK 1', knownPct: 92 })).toBe('HSK 1 · you know 92% of it')
   })
 
   it('drops the readability when it is unknown or zero', () => {
-    expect(storyMetaLine({ title: '我们的歌', knownPct: null })).toBe('我们的歌')
-    expect(storyMetaLine({ title: '我们的歌', knownPct: 0 })).toBe('我们的歌')
+    expect(storyHandoffSub({ levelLabel: 'HSK 1', knownPct: null })).toBe('HSK 1')
+    expect(storyHandoffSub({ levelLabel: 'HSK 1', knownPct: 0 })).toBe('HSK 1')
+  })
+
+  it('survives a missing level label', () => {
+    expect(storyHandoffSub({ levelLabel: '', knownPct: 40 })).toBe('you know 40% of it')
   })
 })
 
