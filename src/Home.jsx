@@ -156,7 +156,14 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         onClick={heroGo}
         dataTour="home-queue"
         ariaLabel={heroAriaLabel({ counts })}
-        style={{ marginBottom: '14px', animationDelay: '40ms' }}
+        padding={isMobile ? '26px 24px' : '34px 32px'}
+        style={{
+          marginBottom: '14px', animationDelay: '40ms',
+          // The hero is the screen's one action, so it keeps real presence even
+          // with its slim contents — a fixed floor, content centered in it.
+          minHeight: isMobile ? '250px' : '280px',
+          display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        }}
       >
         <QueueBody counts={counts} isMobile={isMobile} />
       </HeroPanel>
@@ -330,16 +337,14 @@ function QueueBody({ counts, isMobile }) {
         {headline.eyebrow}
       </span>
 
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', margin: '10px 0 6px' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '13px', margin: '12px 0 6px' }}>
         <span style={{
           ...NUM, color: '#fff', lineHeight: 0.95,
-          // A phone screen holds four blocks; a 52px numeral made this one
-          // read as the whole page. The number only needs to win the panel.
-          fontSize: isMobile ? '40px' : '64px', fontWeight: 700, letterSpacing: '-0.04em',
+          fontSize: isMobile ? '58px' : '72px', fontWeight: 700, letterSpacing: '-0.04em',
         }}>
           {headline.value}
         </span>
-        <span style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: 600, color: 'rgba(255,255,255,0.86)' }}>
+        <span style={{ fontSize: isMobile ? '16.5px' : '18px', fontWeight: 600, color: 'rgba(255,255,255,0.86)' }}>
           {headline.caption}
         </span>
       </div>
@@ -348,10 +353,10 @@ function QueueBody({ counts, isMobile }) {
           viewport: the session you are about to start is the one thing Home
           must be specific about. */}
       {!clear && (
-        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '12px' }}>
+        <div style={{ display: 'flex', gap: '22px', flexWrap: 'wrap', marginTop: '16px' }}>
           {queueBreakdown(counts).map(({ label, value }) => (
             <span key={label} style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-              <span style={{ ...NUM, fontSize: '17px', fontWeight: 700, color: '#fff' }}>{value}</span>
+              <span style={{ ...NUM, fontSize: '19px', fontWeight: 700, color: '#fff' }}>{value}</span>
               <span style={{ ...MICRO, fontSize: '9.5px', color: 'rgba(255,255,255,0.55)' }}>{label}</span>
             </span>
           ))}
