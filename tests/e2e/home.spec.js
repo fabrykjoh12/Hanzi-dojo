@@ -86,6 +86,20 @@ test.describe('Home (logged in)', () => {
     await expect(page.getByText(/fluency/i)).toHaveCount(0);
   });
 
+  test('a placeholder holds the hand-off row while the story is found', async ({ page }) => {
+    // Slow the stories fetch down: the row must be held by a same-sized
+    // skeleton rather than popping in and shifting the page.
+    await page.route('**/rest/v1/stories**', async (route) => {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      await route.fallback();
+    });
+    await page.goto('/');
+    const skeleton = page.locator('[data-home-stage] [aria-busy="true"]');
+    await expect(skeleton).toBeVisible();
+    await expect(home.storyHandoff).toBeVisible();
+    await expect(skeleton).toHaveCount(0);
+  });
+
   test('the hero opens Study while cards are due', async ({ page }) => {
     await home.heroAction.click();
     const study = new StudyPage(page);

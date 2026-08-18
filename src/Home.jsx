@@ -7,9 +7,10 @@ import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './
 import { getDailyStoryCard, firstContentChar } from './homeStory'
 import { homeDailyStage, homeProgressPct } from './homePresentation'
 import {
-  aheadLine, heroAriaLabel, homeAction, homeHeaderMeta,
-  queueBreakdown, queueHeadline, storyHandoffSub, storyStatus, weekLine,
+  aheadLine, heroAriaLabel, homeAction, homeHeaderMeta, queueBreakdown,
+  queueHeadline, storyHandoffSub, storyStatus, tomorrowLine, weekLine,
 } from './homeModel'
+import { setDeskHandoff } from './deskTransition'
 import { HeroPanel, Panel, Eyebrow } from './panels'
 import { weekdayInitial } from './studyRhythm'
 import { forecastSummary } from './reviewForecast'
@@ -18,7 +19,7 @@ import { stripLeadingNumber } from './storyArcs'
 import { ProfileGlyph } from './HomeV2NavGlyphs'
 import { maybeStartTour, markTourSeen } from './tour'
 import TourOverlay from './TourOverlay'
-import { MICRO, NUM } from './designTokens'
+import { MICRO, NUM, flatPanel } from './designTokens'
 
 // ── Home ──────────────────────────────────────────────────────────────────
 // The one lit block is TODAY'S FLASHCARDS: how many cards are waiting and the
@@ -106,10 +107,17 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
 
   // One action. Cards while there are cards; once the queue is clear the next
   // step in the daily loop is reading — straight into today's story when one
-  // is picked, the shelf otherwise.
+  // is picked, the shelf otherwise. On the way to Study the hero records its
+  // rectangle, and Study's card plays a FLIP entrance from it — the learner
+  // watches the red panel become the session, never a cut. (Keyboard
+  // activation carries no pointer rectangle; Study simply mounts normally.)
   const action = homeAction(counts)
   const openStory = () => onNavigate('stories', story ? { storyId: story.id } : undefined)
-  const heroGo = () => { if (action.go === 'study') onNavigate('study'); else openStory() }
+  const heroGo = (event) => {
+    if (action.go !== 'study') return openStory()
+    if (event && event.currentTarget) setDeskHandoff(event.currentTarget.getBoundingClientRect())
+    onNavigate('study')
+  }
 
   return (
     <div data-home-stage={stage} style={{ maxWidth: '720px', margin: '0 auto', padding: isMobile ? '24px 16px 40px' : '44px 32px 60px' }}>
@@ -169,7 +177,17 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
       </HeroPanel>
 
       {/* ── The next step in the loop: tonight's story, with its own face.
-          The hero owns the screen's action; this is the reward it unlocks. ── */}
+          The hero owns the screen's action; this is the reward it unlocks.
+          While the story is still being found, a same-sized placeholder holds
+          the row so the page doesn't shift when it arrives. ── */}
+      {daily === undefined && (
+        <div
+          aria-busy="true"
+          aria-label="Finding today’s story"
+          className="hd-rise hd-skeleton"
+          style={{ ...flatPanel({}), height: '80px', marginBottom: '14px', animationDelay: '80ms' }}
+        />
+      )}
       {story && (
         <ThenRead
           daily={daily}
@@ -389,6 +407,14 @@ function QueueBody({ counts, isMobile }) {
               <span style={{ ...MICRO, fontSize: '9.5px', color: 'rgba(255,255,255,0.55)' }}>{label}</span>
             </span>
           ))}
+        </div>
+      )}
+
+      {/* Done for today — say what tomorrow holds, but only when it holds
+          something: the ✓ already says everything about an empty tomorrow. */}
+      {clear && (counts.dueTomorrow || 0) > 0 && (
+        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45, marginTop: '12px' }}>
+          {tomorrowLine(counts.dueTomorrow)}
         </div>
       )}
     </div>

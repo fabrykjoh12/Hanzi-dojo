@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  aheadLine, heroAriaLabel, homeAction, homeHeaderMeta,
-  queueBreakdown, queueHeadline, storyHandoffSub, storyStatus, weekLine,
+  aheadLine, heroAriaLabel, homeAction, homeHeaderMeta, queueBreakdown,
+  queueHeadline, storyHandoffSub, storyStatus, tomorrowLine, weekLine,
 } from './homeModel'
 
 describe('homeHeaderMeta', () => {
@@ -119,6 +119,14 @@ describe('weekLine', () => {
       { date: '2026-08-11', studied: false },
       { date: '2026-08-12', studied: true },
     ])).toBe('Studied 2 of the last 3 days')
+  })
+})
+
+describe('tomorrowLine', () => {
+  it('previews tomorrow’s load, or calls a free day a free day', () => {
+    expect(tomorrowLine(25)).toBe('About 25 waiting tomorrow')
+    expect(tomorrowLine(0)).toBe('Nothing due tomorrow — a free day')
+    expect(tomorrowLine()).toBe('Nothing due tomorrow — a free day')
   })
 })
 

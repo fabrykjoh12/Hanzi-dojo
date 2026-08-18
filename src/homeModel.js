@@ -93,11 +93,17 @@ export function weekLine(rhythm) {
   return 'Studied ' + studiedDays + ' of the last ' + days + ' days'
 }
 
+// Tomorrow's load in one phrase — shared by the hero's done state and the
+// week panel's outlook, so the number speaks with one voice (docs/METRICS.md).
+export function tomorrowLine(dueTomorrow = 0) {
+  return dueTomorrow > 0
+    ? 'About ' + dueTomorrow + ' waiting tomorrow'
+    : 'Nothing due tomorrow — a free day'
+}
+
 // One quiet line for what's ahead — the return hook that doesn't depend on
 // guilt: tomorrow's load, plus the week's average when there is one.
 export function aheadLine({ dueTomorrow = 0, forecastTotal = 0, perDay = 0 } = {}) {
-  const tomorrow = dueTomorrow > 0
-    ? 'About ' + dueTomorrow + ' waiting tomorrow'
-    : 'Nothing due tomorrow — a free day'
+  const tomorrow = tomorrowLine(dueTomorrow)
   return forecastTotal > 0 ? tomorrow + ' · ~' + perDay + '/day this week' : tomorrow
 }

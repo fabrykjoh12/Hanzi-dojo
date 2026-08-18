@@ -23,9 +23,19 @@ async function installHomeState(page, state) {
   const queueWaiting = state === 'cards';
   const storyAvailable = state !== 'caught-up';
   const storyComplete = state === 'practice' || state === 'complete';
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(12, 0, 0, 0);
   const cards = [{
     id: 'c1', user_id: '00000000-0000-4000-8000-000000000001', vocab_id: 'v1',
     state: 'review', due_at: queueWaiting ? '2020-01-01T00:00:00.000Z' : '2099-01-01T00:00:00.000Z',
+    created_at: '2020-01-01T00:00:00.000Z', learned: true, is_easy: false,
+    stability: 20, lapses: 0,
+  }, {
+    // A second review lands tomorrow, so the cleared hero has a real number
+    // to preview. Same vocab row — it must not create a phantom "new" card.
+    id: 'c2', user_id: '00000000-0000-4000-8000-000000000001', vocab_id: 'v1',
+    state: 'review', due_at: tomorrow.toISOString(),
     created_at: '2020-01-01T00:00:00.000Z', learned: true, is_easy: false,
     stability: 20, lapses: 0,
   }];
@@ -77,6 +87,8 @@ for (const state of STATES) {
       // reading — no reviewing button remains.
       await expect(hero.getByText('Queue clear')).toBeVisible();
       await expect(hero.getByText('all caught up')).toBeVisible();
+      // The done state previews tomorrow's real load inside the hero.
+      await expect(hero.getByText('About 1 waiting tomorrow')).toBeVisible();
       await expect(page.getByRole('button', { name: /Read a story/ })).toBeEnabled();
       await expect(page.getByRole('button', { name: /Start reviewing/ })).toHaveCount(0);
     }
