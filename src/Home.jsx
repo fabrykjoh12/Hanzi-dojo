@@ -7,7 +7,7 @@ import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './
 import { getDailyStoryCard } from './homeStory'
 import { sceneMood } from './homeScene'
 import { tileVariant, worldTint } from './storyArt'
-import { DeskStillLife, StoryFallbackTile } from './HomeIllustrations.jsx'
+import { HeroLandscape, StoryFallbackTile } from './HomeIllustrations.jsx'
 // Explicit extension: homeScene.js (pure helpers) sits beside this component,
 // and an extensionless specifier is ambiguous on case-insensitive filesystems.
 import HomeScene from './HomeScene.jsx'
@@ -181,7 +181,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         accentHex={accentHex}
         seed={profile.active_language}
         wash={false}
-        art={<DeskStillLife tint={story ? worldTint(story) : null} compact={stage === 'cards' || Boolean(counts.failed)} />}
+        art={<HeroLandscape />}
         compact={isMobile}
         onClick={heroGo}
         dataTour="home-queue"

@@ -201,17 +201,15 @@ test.describe('Home (logged in)', () => {
     await expect(home.storyHandoff.locator('[data-story-tile]')).toBeVisible();
   });
 
-  test('the hero carries its still-life, and the desk follows the day', async ({ page }) => {
-    // Cards waiting: only the tea sits in the corner, decorative and inert.
-    const art = home.hero.locator('[data-desk-art]');
+  test('the hero carries its landscape, decorative and inert', async () => {
+    const art = home.hero.locator('[data-hero-art]');
     await expect(art).toBeVisible();
-    await expect(art).toHaveAttribute('data-desk-art', 'compact');
     expect(await art.getAttribute('aria-hidden')).toBe('true');
+    expect(await art.evaluate(node => getComputedStyle(node).pointerEvents)).toBe('none');
     // No trace of the old placeholders: the watermark Hanzi and the ink wash.
     const strayText = await home.hero.evaluate(node =>
       [...node.querySelectorAll('span')].some(el => el.textContent === '中'));
     expect(strayText).toBe(false);
-    void page;
   });
 
   test('shows the week rhythm and the road to the next level in one panel', async () => {

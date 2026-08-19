@@ -1,14 +1,17 @@
-// The Home illustration system: flat, layered, editorial desk objects with one
-// restrained supporting arc — Direction 3 (desk still-life) carried by
-// Direction 2's geometry. Everything is drawn in code: a handful of shapes per
-// piece, no assets, no scenes, no characters-as-decoration.
+// The Home illustration system.
 //
-// Colour discipline: the pieces borrow the story world's tint (storyArt.js)
-// only in small supporting places — an arc, the tea's surface, a tile's ground
-// — always through color-mix into an existing surface or paper colour, so the
-// dawn→dusk system and the hero's vermilion stay the base. Paper objects keep
-// one fixed warm-paper colour by design (like cover art, illustration content
-// does not re-theme; the grounds beneath them do).
+// The hero wears the owner-approved landscape (HeroLandscape): a tonal
+// cinnabar shan-shui range with a moon-gate courtyard wall and bamboo,
+// generated once, committed via the art-fetch pipeline
+// (data/manhua/home-hero.art.json carries its provenance), and composed so
+// its left half is flat deep red — the text zone. Like cover art, it does not
+// re-theme; the panel's own ground and text sit over and under it unchanged.
+//
+// The Then-read fallback family below stays code-drawn: flat desk objects on
+// world-tinted grounds (storyArt.js), mixed via color-mix into existing
+// surface colours so the dawn→dusk system stays the base.
+
+import heroLandscape from './assets/home-hero-landscape.webp'
 
 const PAPER = '#FBF5E9'
 
@@ -16,68 +19,23 @@ function mix(tint, pct, into) {
   return 'color-mix(in srgb, ' + tint + ' ' + pct + '%, ' + into + ')'
 }
 
-// ── The hero's still-life ───────────────────────────────────────────────────
-// The desk follows the day. While cards are waiting the panel is full of
-// numbers, so only the tea sits quietly under the chevron — steam rising,
-// waiting for you. Once the queue clears, the open corner shows the whole
-// desk: the cards set down beside the cup, one quiet arc behind them. The
-// tea's surface carries the next story's world tint.
-export function DeskStillLife({ tint, compact = false }) {
-  const tea = tint ? mix(tint, 55, PAPER) : mix('#B83A24', 30, PAPER)
-  const arc = tint ? mix(tint, 45, '#FFFBF4') : '#FFFBF4'
-
-  if (compact) {
-    return (
-      <svg
-        aria-hidden="true"
-        data-desk-art="compact"
-        viewBox="0 0 52 66"
-        style={{
-          position: 'absolute', right: '22px', top: '30px',
-          width: '52px', height: '66px',
-          pointerEvents: 'none', userSelect: 'none',
-        }}
-      >
-        <circle cx="44" cy="62" r="30" fill="none" stroke={arc} strokeOpacity="0.18" strokeWidth="1.5" />
-        <ellipse cx="26" cy="60" rx="14" ry="2.2" fill="rgba(0,0,0,0.16)" />
-        <path d="M14 42 H38 L35.2 55 Q26 60.5 16.8 55 Z" fill={PAPER} opacity="0.94" />
-        <ellipse cx="26" cy="42" rx="12" ry="2.8" fill={tea} opacity="0.95" />
-        <path d="M26 32 C22.5 27.5 29.5 24 26 18" fill="none" stroke="#FFFBF4" strokeOpacity="0.55" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    )
-  }
-
+// ── The hero's landscape ────────────────────────────────────────────────────
+// Fills the panel; anchored right so the scene survives every aspect the hero
+// takes (390 phone to 720 desktop) while the art's own empty red left half
+// stays the ground under the count and the breakdown. Decorative and inert.
+export function HeroLandscape() {
   return (
-    <svg
+    <img
+      src={heroLandscape}
+      alt=""
       aria-hidden="true"
-      data-desk-art="full"
-      viewBox="0 0 132 92"
+      data-hero-art=""
       style={{
-        position: 'absolute', right: '18px', bottom: '10px',
-        width: '132px', height: '92px',
+        position: 'absolute', inset: 0, width: '100%', height: '100%',
+        objectFit: 'cover', objectPosition: '100% 70%',
         pointerEvents: 'none', userSelect: 'none',
       }}
-    >
-      {/* The supporting geometry: one large arc, one echo. */}
-      <circle cx="104" cy="96" r="66" fill="none" stroke={arc} strokeOpacity="0.20" strokeWidth="1.5" />
-      <circle cx="104" cy="96" r="46" fill="none" stroke="#FFFBF4" strokeOpacity="0.10" strokeWidth="1.5" />
-
-      {/* Ground shadows — the objects rest on the desk, they don't float. */}
-      <ellipse cx="88" cy="84" rx="27" ry="3" fill="rgba(0,0,0,0.16)" />
-      <ellipse cx="33" cy="84" rx="16" ry="2.5" fill="rgba(0,0,0,0.16)" />
-
-      {/* The card stack, set down for the day. */}
-      <rect x="64" y="50" width="46" height="30" rx="5" fill="#FFFBF4" opacity="0.30" transform="rotate(5 87 65)" />
-      <rect x="63" y="47" width="46" height="30" rx="5" fill="#FFFBF4" opacity="0.55" transform="rotate(-4 86 62)" />
-      <rect x="62" y="44" width="46" height="30" rx="5" fill={PAPER} opacity="0.96" transform="rotate(1.5 85 59)" />
-      {/* One abstract text line — a mark, never a character. */}
-      <rect x="72" y="55" width="20" height="3" rx="1.5" fill="rgba(0,0,0,0.13)" transform="rotate(1.5 85 59)" />
-
-      {/* The tea. */}
-      <path d="M20 64 H46 L43 78 Q33 84 23 78 Z" fill={PAPER} opacity="0.94" />
-      <ellipse cx="33" cy="64" rx="13" ry="3" fill={tea} opacity="0.95" />
-      <path d="M33 54 C29 49 37 45 33 38" fill="none" stroke="#FFFBF4" strokeOpacity="0.55" strokeWidth="2" strokeLinecap="round" />
-    </svg>
+    />
   )
 }
 
