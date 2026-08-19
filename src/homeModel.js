@@ -78,10 +78,11 @@ export function storyStatus({ stage, daily } = {}) {
 
 // The hand-off's context line under the story's title: its level, and the
 // product's whole promise — how much of it the learner can already read.
+// "HSK 1 · 92% readable" is that promise in four words, so it stays compact.
 export function storyHandoffSub({ levelLabel = '', knownPct = null } = {}) {
   const parts = []
   if (levelLabel) parts.push(levelLabel)
-  if (typeof knownPct === 'number' && knownPct > 0) parts.push('you know ' + knownPct + '% of it')
+  if (typeof knownPct === 'number' && knownPct > 0) parts.push(knownPct + '% readable')
   return parts.join(' · ')
 }
 

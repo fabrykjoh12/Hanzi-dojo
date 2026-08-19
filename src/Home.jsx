@@ -11,7 +11,7 @@ import {
   queueHeadline, storyHandoffSub, storyStatus, tomorrowLine, weekLine,
 } from './homeModel'
 import { setDeskHandoff } from './deskTransition'
-import { HeroPanel, Panel, Eyebrow } from './panels'
+import { HeroPanel, HeroAction, Panel, Eyebrow } from './panels'
 import { weekdayInitial } from './studyRhythm'
 import { forecastSummary } from './reviewForecast'
 import { prepareStudySession } from './sessionPrep'
@@ -22,10 +22,11 @@ import TourOverlay from './TourOverlay'
 import { MICRO, NUM, flatPanel } from './designTokens'
 
 // ── Home ──────────────────────────────────────────────────────────────────
-// The one lit block is TODAY'S FLASHCARDS: how many cards are waiting and the
-// New/Learning/Review breakdown. The whole panel is the button that starts the
-// session — no inner CTA competing with it. Everything about the queue lives
-// in the block that is about the queue.
+// The one lit block is TODAY'S FLASHCARDS: how many cards are waiting, the
+// New/Learning/Review breakdown, and one restrained action inside the panel.
+// The whole panel is the tap target — the action is a span, not a nested
+// button — so the screen still offers exactly ONE control, visibly.
+// Everything about the queue lives in the block that is about the queue.
 //
 // The story you have unlocked is a quiet flat hand-off underneath — the next
 // step in the daily loop (cards, then read), deliberately not styled as a
@@ -173,7 +174,15 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
           display: 'flex', flexDirection: 'column', justifyContent: 'center',
         }}
       >
-        <QueueBody counts={counts} isMobile={isMobile} />
+        {({ hovered }) => (
+          <QueueBody
+            counts={counts}
+            isMobile={isMobile}
+            action={action}
+            accentHex={accentHex}
+            hovered={hovered}
+          />
+        )}
       </HeroPanel>
 
       {/* ── The next step in the loop: tonight's story, with its own face.
@@ -348,9 +357,10 @@ function ThenRead({ daily, stage, title, sub, theme, accentHex, accentInk, isMob
 }
 
 // The hero's contents: the whole block is about today's flashcards — how many
-// are waiting and what the session is made of. The panel itself is the button
-// that starts it, so nothing in here is a control.
-function QueueBody({ counts, isMobile }) {
+// are waiting and what the session is made of. The whole panel is the tap
+// target, but it carries a visible action so nobody has to discover that; the
+// action is a span, not a nested button, so there is still exactly one control.
+function QueueBody({ counts, isMobile, action, accentHex, hovered }) {
   const headline = queueHeadline(counts)
   const clear = !headline.failed && headline.value === '✓'
 
@@ -374,6 +384,8 @@ function QueueBody({ counts, isMobile }) {
         <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45, marginTop: '12px' }}>
           Check your connection — starting a session loads it fresh.
         </div>
+
+        <HeroAction label={action.label} hovered={hovered} icon={ArrowRight} accentHex={accentHex} />
       </div>
     )
   }
@@ -400,14 +412,20 @@ function QueueBody({ counts, isMobile }) {
           viewport: the session you are about to start is the one thing Home
           must be specific about. */}
       {!clear && (
-        <div style={{ display: 'flex', gap: '22px', flexWrap: 'wrap', marginTop: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '18px' }}>
           {queueBreakdown(counts).map(({ label, value }) => (
-            <span key={label} style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-              <span style={{ ...NUM, fontSize: '19px', fontWeight: 700, color: '#fff' }}>{value}</span>
-              <span style={{ ...MICRO, fontSize: '9.5px', color: 'rgba(255,255,255,0.55)' }}>{label}</span>
+            <span key={label} style={{ display: 'block', minWidth: 0 }}>
+              <span style={{ ...NUM, display: 'block', fontSize: '20px', lineHeight: 1, fontWeight: 700, color: '#fff' }}>{value}</span>
+              <span style={{ ...MICRO, display: 'block', marginTop: '5px', fontSize: '9.5px', whiteSpace: 'nowrap', color: 'rgba(255,255,255,0.55)' }}>{label}</span>
             </span>
           ))}
         </div>
+      )}
+
+      {/* The action, restrained and inside the hero. Only while there is a
+          session to start — a cleared queue offers reading, not reviewing. */}
+      {!clear && (
+        <HeroAction label={action.label} hovered={hovered} icon={ArrowRight} accentHex={accentHex} />
       )}
 
       {/* Done for today — say what tomorrow holds, but only when it holds

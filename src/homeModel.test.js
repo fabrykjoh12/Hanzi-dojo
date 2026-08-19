@@ -97,8 +97,9 @@ describe('storyStatus', () => {
 })
 
 describe('storyHandoffSub', () => {
-  it('pairs the level with the readability', () => {
-    expect(storyHandoffSub({ levelLabel: 'HSK 1', knownPct: 92 })).toBe('HSK 1 · you know 92% of it')
+  it('pairs the level with the readability, compactly', () => {
+    expect(storyHandoffSub({ levelLabel: 'HSK 1', knownPct: 92 })).toBe('HSK 1 · 92% readable')
+    expect(storyHandoffSub({ levelLabel: 'HSK 2', knownPct: 19 })).toBe('HSK 2 · 19% readable')
   })
 
   it('drops the readability when it is unknown or zero', () => {
@@ -107,7 +108,7 @@ describe('storyHandoffSub', () => {
   })
 
   it('survives a missing level label', () => {
-    expect(storyHandoffSub({ levelLabel: '', knownPct: 40 })).toBe('you know 40% of it')
+    expect(storyHandoffSub({ levelLabel: '', knownPct: 40 })).toBe('40% readable')
   })
 })
 

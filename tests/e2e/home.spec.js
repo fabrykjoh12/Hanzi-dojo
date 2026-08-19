@@ -33,12 +33,77 @@ test.describe('Home (logged in)', () => {
     expect(numbers.headline).toBe(numbers.sum);
   });
 
-  test('the whole hero is the button — no inner CTA, estimate, or goal line', async () => {
-    // The panel itself starts the session; nothing inside it is a control.
+  test('the hero shows its action, and is still a single control', async () => {
+    // Visible, so nobody has to discover that the panel is tappable…
+    await expect(home.hero.getByText('Start reviewing')).toBeVisible();
+    // …but the panel itself is the button: no nested control inside it.
     await expect(home.hero).toHaveAttribute('role', 'button');
     await expect(home.hero.locator('button')).toHaveCount(0);
     await expect(home.hero.getByText(/~\d+ min/)).toHaveCount(0);
     await expect(home.hero.getByText(/Daily goal/)).toHaveCount(0);
+  });
+
+  test('the breakdown holds one row of three equal columns at 320px', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await home.goto();
+    const columns = await home.hero.evaluate((node) => {
+      const grid = [...node.querySelectorAll('div')]
+        .find(d => getComputedStyle(d).display === 'grid');
+      return [...grid.children].map((col) => {
+        const [value, label] = col.children;
+        const box = col.getBoundingClientRect();
+        const valueBox = value.getBoundingClientRect();
+        const labelBox = label.getBoundingClientRect();
+        return {
+          label: label.textContent,
+          top: box.top, width: box.width,
+          valueText: value.textContent,
+          valueSize: parseFloat(getComputedStyle(value).fontSize),
+          labelSize: parseFloat(getComputedStyle(label).fontSize),
+          labelWidth: labelBox.width, labelScrollWidth: label.scrollWidth,
+          valueAboveLabel: valueBox.bottom <= labelBox.top + 0.5,
+        };
+      });
+    });
+    expect(columns.map(c => c.label)).toEqual(['New', 'Learning', 'Review']);
+    for (const column of columns) {
+      // One row: every column shares the first one's top edge…
+      expect(column.top, column.label).toBeCloseTo(columns[0].top, 0);
+      // …and its width, so the three read as fixed equal columns.
+      expect(column.width, column.label).toBeCloseTo(columns[0].width, 0);
+      // The label never wraps, and the value stays the prominent half.
+      expect(column.labelScrollWidth, column.label).toBeLessThanOrEqual(column.labelWidth + 0.5);
+      expect(column.valueSize, column.label).toBeGreaterThan(column.labelSize);
+      expect(column.valueAboveLabel, column.label).toBe(true);
+      expect(Number(column.valueText), column.label).not.toBeNaN();
+    }
+    const overflow = await page.evaluate(() => ({
+      scroll: document.documentElement.scrollWidth,
+      client: document.documentElement.clientWidth,
+    }));
+    expect(overflow.scroll).toBeLessThanOrEqual(overflow.client);
+  });
+
+  test('every Home block scrolls clear of the floating dock at 320x568', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await home.goto();
+    await expect(home.weekPanel).toBeVisible();
+    // The screen must genuinely scroll here, or the assertion proves nothing.
+    const scrollable = await page.evaluate(() =>
+      document.documentElement.scrollHeight > document.documentElement.clientHeight);
+    expect(scrollable).toBe(true);
+
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await page.waitForTimeout(200);
+    const geometry = await page.evaluate(() => {
+      const nav = document.querySelector('nav[aria-label="Primary"]').getBoundingClientRect();
+      const last = document.querySelector('[data-tour="home-week"]').getBoundingClientRect();
+      return { clearance: nav.top - last.bottom, navBottomGap: window.innerHeight - nav.bottom };
+    });
+    // Scrolled to the very end, the last block still sits a comfortable margin
+    // above the dock — the dock reserves its height, the inset, and the gap.
+    expect(geometry.clearance).toBeGreaterThanOrEqual(24);
+    expect(geometry.navBottomGap).toBeGreaterThan(0);
   });
 
   test('offers exactly one primary action', async ({ page }) => {
@@ -53,7 +118,7 @@ test.describe('Home (logged in)', () => {
     await expect(home.storyHandoff.getByText('Then read')).toBeVisible();
     // While cards are due the story is a locked next step, with its readability.
     await expect(home.storyHandoff.getByText('Finish cards to unlock')).toBeVisible();
-    await expect(home.storyHandoff.getByText(/you know \d+% of it/)).toBeVisible();
+    await expect(home.storyHandoff.getByText(/HSK \d · \d+% readable/)).toBeVisible();
   });
 
   test('shows the week rhythm and the road to the next level in one panel', async () => {
