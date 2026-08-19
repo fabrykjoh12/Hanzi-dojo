@@ -1,9 +1,10 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 
-// The Desk Home's locked motion timings (HOME_MOTION in homePresentation.js):
-//   page  460ms — each block settles in via .hd-home-rise, staggered
-//   press 160ms — the desk card gives under the finger via .hd-press-deep
-//   nav   260ms — the dock's ink dot slides between tabs
+// Home's locked motion values:
+//   rise  520ms — each block settles in via .hd-rise, staggered by inline
+//                 animation-delays (header → hero → hand-off → week)
+//   press 160ms — the hero gives under the finger via .hd-press-deep
+//   nav   260ms — the dock's selected capsule (HOME_MOTION.nav)
 // Locked here so a stray inline edit can't quietly change how the app feels.
 
 test('uses only the locked Home motion timings', async ({ page }) => {
@@ -12,25 +13,23 @@ test('uses only the locked Home motion timings', async ({ page }) => {
   await page.goto('/');
 
   const home = page.locator('[data-home-stage]');
-  const desk = page.locator('[data-tour="home-queue"]');
+  const hero = page.locator('[data-tour="home-queue"]');
   await expect(home).toBeVisible();
+  // The hand-off panel arrives with the async daily story — wait for it so the
+  // delay census below sees the full page.
+  await expect(page.locator('[data-tour="home-then-read"]')).toBeVisible();
 
   // Blocks settle with the shared rise, genuinely staggered by inline delays.
-  expect(await desk.evaluate(node => getComputedStyle(node).animationDuration)).toBe('0.46s');
+  expect(await hero.evaluate(node => getComputedStyle(node).animationDuration)).toBe('0.52s');
   const delays = await home.evaluate(node =>
-    [...node.querySelectorAll(':scope > .hd-home-rise')].map(el => getComputedStyle(el).animationDelay));
+    [...node.querySelectorAll(':scope > .hd-rise')].map(el => parseFloat(getComputedStyle(el).animationDelay)));
   expect(delays.length).toBeGreaterThanOrEqual(4);
   expect(new Set(delays).size).toBe(delays.length);
+  expect([...delays].sort((a, b) => a - b)).toEqual(delays);
 
-  // The desk presses with the deep-press physics and never changes size.
-  const deskDurations = (await desk.evaluate(node => getComputedStyle(node).transitionDuration)).split(',');
-  expect(deskDurations[0].trim()).toBe('0.16s');
-  const before = await desk.boundingBox();
-  await desk.dispatchEvent('pointerdown');
-  await desk.dispatchEvent('pointerup');
-  const after = await desk.boundingBox();
-  expect(before.width).toBeCloseTo(after.width, 1);
-  expect(before.height).toBeCloseTo(after.height, 1);
+  // The hero presses with the deep-press physics — it is the whole control.
+  const heroDurations = (await hero.evaluate(node => getComputedStyle(node).transitionDuration)).split(',');
+  expect(heroDurations[0].trim()).toBe('0.16s');
 
   // The dock's selected capsule expands/collapses at the locked nav timing.
   const nav = page.getByRole('navigation', { name: 'Primary' });
@@ -70,9 +69,9 @@ test('reduced motion flattens every Home animation and transition', async ({ pag
 
   // The catch-all in index.css collapses durations to effectively zero; assert
   // a ceiling rather than an exact value so the mechanism can evolve.
-  const deskAnim = await page.locator('[data-tour="home-queue"]')
+  const heroAnim = await page.locator('[data-tour="home-queue"]')
     .evaluate(node => parseFloat(getComputedStyle(node).animationDuration));
-  expect(deskAnim).toBeLessThanOrEqual(0.13);
+  expect(heroAnim).toBeLessThanOrEqual(0.13);
 
   const nav = page.getByRole('navigation', { name: 'Primary' });
   const activeTab = nav.locator('[aria-current="page"]');

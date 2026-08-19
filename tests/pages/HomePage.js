@@ -1,16 +1,20 @@
 // Page Object for the authenticated Home screen.
 //
-// The "Desk" Home: the screen holds the learner's current real task object —
-// before cards, the actual first flashcard of the prepared session (the desk
-// card IS the primary action); after cards, tonight's story; then practice.
-// The other steps sit below as quiet status rows.
+// Home's one lit block is the flashcard queue: how many cards are waiting, the
+// New/Learning/Review composition, the day's goal, and a single button that
+// starts the session. The story you have unlocked is a quiet hand-off beneath
+// it — the next step in the loop, not a rival call to action — and the week's
+// rhythm and level progress share one flat panel below.
 export class HomePage {
   constructor(page) {
     this.page = page;
     this.today = page.getByRole('heading', { name: 'Today', exact: true });
-    this.desk = page.locator('[data-tour="home-queue"]');
-    this.heroAction = page.getByRole('button', { name: 'Start cards' });
+    this.hero = page.locator('[data-tour="home-queue"]');
+    this.queueEyebrow = page.getByText(/Ready to review|Queue clear/);
+    // The hero's single action: cards while cards are due, reading once clear.
+    this.heroAction = page.getByRole('button', { name: /Start reviewing|Read a story/ });
     this.storyHandoff = page.locator('[data-tour="home-then-read"]');
+    this.weekPanel = page.locator('[data-tour="home-week"]');
   }
   async goto() {
     await this.page.goto('/');

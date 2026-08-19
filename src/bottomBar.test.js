@@ -13,7 +13,14 @@ describe('dockBottom', () => {
 describe('contentBottomInset', () => {
   it('reserves the dock plus a content gap while the dock is shown', () => {
     expect(contentBottomInset(true))
-      .toBe('calc(72px + max(env(safe-area-inset-bottom), 12px))')
+      .toBe('calc(82px + max(env(safe-area-inset-bottom), 12px))')
+  })
+
+  // The reservation a scrolled-to-the-end page depends on: the dock's own
+  // height, the safe area under it, and real breathing room on top — not the
+  // hairline that made the last panel look like it was resting on the dock.
+  it('leaves at least 24px of breathing room above the dock', () => {
+    expect(CONTENT_GAP).toBeGreaterThanOrEqual(24)
   })
 
   it('drops to the focused value when the dock is hidden', () => {

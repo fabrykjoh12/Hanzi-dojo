@@ -1,54 +1,73 @@
-// Pure presentation model for the Home screen — the "Desk" design.
+// Pure presentation model for the Home screen.
 //
-// Home holds the learner's current real task object: before cards, the actual
-// first flashcard of the prepared session; after cards, tonight's actual
-// story; after that, practice. This module turns raw counts and fetched rows
-// into exactly what the screen prints, so the JSX stays layout-only and every
-// visible string and sizing rule has a test.
+// Home is the restored "one lit block" layout: a header line, the flashcard
+// queue as the single hero, a quiet "Then read" hand-off, and one combined
+// week/progress panel. This module turns raw counts and fetched rows into
+// exactly what the screen prints, so the JSX stays layout-only and every
+// visible string has a test.
 
 import { homeQueueSummary } from './homePresentation'
+import { rhythmSummary } from './studyRhythm'
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
-  'August', 'September', 'October', 'November', 'December']
 
-// The date line in the top bar, e.g. "Sunday, August 16".
-export function homeDateEyebrow(now = new Date()) {
-  return DAYS[now.getDay()] + ', ' + MONTHS[now.getMonth()] + ' ' + now.getDate()
+// The header's compact context line, e.g. "HSK 1 · Saturday".
+export function homeHeaderMeta(levelLabel, now = new Date()) {
+  return levelLabel + ' · ' + DAYS[now.getDay()]
 }
 
-// Display size for the desk card's word, by character count — one line,
-// centered, never clipped; the same word at study size is only a step larger,
-// which is what lets the tap transition read as the same object growing.
-export function deskWordSize(word = '') {
-  const len = [...String(word)].length
-  if (len <= 2) return 76
-  if (len === 3) return 60
-  if (len === 4) return 48
-  return 38
-}
-
-// The state chip on the desk card — the same two labels the study card's
-// marker uses (cardMarker.js: first-time vs. review, nothing else), so the
-// object Home shows is labelled exactly the way Study will label it.
-export function deskChipLabel(state) {
-  return state === 'new' ? 'FIRST TIME' : 'REVIEW'
-}
-
-// The desk card's footer line: what the session contains, in one quiet string.
-export function deskCardsSub({ counts = {}, estimate = '' } = {}) {
+// The screen's one action. Cards while there are cards; once the queue is
+// clear the next step in the daily loop is reading. When the counts failed to
+// load, the zeros are meaningless — keep the button on Study, which loads its
+// own queue and so doubles as the retry.
+export function homeAction(counts = {}) {
   const queue = homeQueueSummary(counts)
-  if (queue.failed) return 'Queue unavailable — starting will retry'
-  const parts = [
-    queue.reviewCount + (queue.reviewCount === 1 ? ' review' : ' reviews'),
-    queue.newCount + ' new',
-  ]
-  if (estimate) parts.push(estimate)
-  return parts.join(' · ')
+  return queue.failed || !queue.clear
+    ? { label: 'Start reviewing', go: 'study' }
+    : { label: 'Read a story', go: 'stories' }
 }
 
-// Status line for the story step (rows and the story desk share it). Strings
-// are the product's calm, observational voice — state the fact, never nag.
+// The hero's headline: eyebrow, the big number (or the ✓ once clear), and
+// what the number means. The failed shape carries its own honest copy — every
+// count would be a meaningless zero, so no number is shown at all.
+export function queueHeadline(counts = {}) {
+  const queue = homeQueueSummary(counts)
+  if (queue.failed) {
+    return { eyebrow: 'Today’s cards', failed: true, value: '', caption: 'Couldn’t load today’s queue' }
+  }
+  if (queue.clear) {
+    return { eyebrow: 'Queue clear', failed: false, value: '✓', caption: 'all caught up' }
+  }
+  return {
+    eyebrow: 'Ready to review',
+    failed: false,
+    value: String(queue.totalReady),
+    caption: 'card' + (queue.totalReady === 1 ? '' : 's') + ' waiting',
+  }
+}
+
+// The queue's composition, in session order. "Review" (not "Due") — the label
+// names what the learner does with the cards, matching Study's own voice.
+export function queueBreakdown(counts = {}) {
+  return [
+    { label: 'New', value: counts.newCount || 0 },
+    { label: 'Learning', value: counts.learnCount || 0 },
+    { label: 'Review', value: counts.dueCount || 0 },
+  ]
+}
+
+// An honest accessible name for the hero, so a screen reader hears the action
+// and the state instead of every string inside the panel.
+export function heroAriaLabel({ counts = {} } = {}) {
+  const queue = homeQueueSummary(counts)
+  if (queue.failed) return 'Start reviewing — the queue couldn’t load, starting will retry'
+  if (queue.clear) return 'Read a story — all caught up'
+  return 'Start reviewing — ' + queue.totalReady
+    + ' card' + (queue.totalReady === 1 ? '' : 's') + ' waiting'
+}
+
+// Status line for the "Then read" hand-off — the story's locked/unlocked
+// state in the product's calm, observational voice.
 export function storyStatus({ stage, daily } = {}) {
   if (stage === 'cards') return 'Finish cards to unlock'
   if (daily === undefined) return 'Finding today’s story'
@@ -57,21 +76,35 @@ export function storyStatus({ stage, daily } = {}) {
   return 'Story complete'
 }
 
-// Status line for the practice step.
-export function practiceStatus(stage) {
-  if (stage === 'practice') return 'Ready to practice'
-  if (stage === 'complete') return 'Complete for today'
-  if (stage === 'caught-up') return 'Nothing due'
-  return 'After your story'
+// The hand-off's context line under the story's title: its level, and the
+// product's whole promise — how much of it the learner can already read.
+// "HSK 1 · 92% readable" is that promise in four words, so it stays compact.
+export function storyHandoffSub({ levelLabel = '', knownPct = null } = {}) {
+  const parts = []
+  if (levelLabel) parts.push(levelLabel)
+  if (typeof knownPct === 'number' && knownPct > 0) parts.push(knownPct + '% readable')
+  return parts.join(' · ')
 }
 
-// The story object's eyebrow: level, plus how much of it the learner can
-// already read when we know. "HSK 1 · 92% readable" is the product's whole
-// promise in five words, so it earns the spot.
-export function storyEyebrow({ levelLabel = '', knownPct = null } = {}) {
-  if (!levelLabel) return ''
-  if (typeof knownPct === 'number' && knownPct > 0) {
-    return levelLabel + ' · ' + knownPct + '% readable'
-  }
-  return levelLabel
+// The week panel's summary line. Observational copy only — no streaks, nothing
+// to protect or lose.
+export function weekLine(rhythm) {
+  const { studiedDays, days } = rhythmSummary(rhythm || [])
+  if (studiedDays === 0) return 'No sessions yet'
+  return 'Studied ' + studiedDays + ' of the last ' + days + ' days'
+}
+
+// Tomorrow's load in one phrase — shared by the hero's done state and the
+// week panel's outlook, so the number speaks with one voice (docs/METRICS.md).
+export function tomorrowLine(dueTomorrow = 0) {
+  return dueTomorrow > 0
+    ? 'About ' + dueTomorrow + ' waiting tomorrow'
+    : 'Nothing due tomorrow — a free day'
+}
+
+// One quiet line for what's ahead — the return hook that doesn't depend on
+// guilt: tomorrow's load, plus the week's average when there is one.
+export function aheadLine({ dueTomorrow = 0, forecastTotal = 0, perDay = 0 } = {}) {
+  const tomorrow = tomorrowLine(dueTomorrow)
+  return forecastTotal > 0 ? tomorrow + ' · ~' + perDay + '/day this week' : tomorrow
 }
