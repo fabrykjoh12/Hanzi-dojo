@@ -1,17 +1,19 @@
 // The Home illustration system.
 //
-// The hero wears the owner-approved landscape (HeroLandscape): a tonal
-// cinnabar shan-shui range with a moon-gate courtyard wall and bamboo,
-// generated once, committed via the art-fetch pipeline
-// (data/manhua/home-hero.art.json carries its provenance), and composed so
-// its left half is flat deep red — the text zone. Like cover art, it does not
-// re-theme; the panel's own ground and text sit over and under it unchanged.
+// The hero wears its landscape (HeroLandscape): one continuous tonal
+// cinnabar environment — calm mist bands across the full width, a moon-gate
+// courtyard wall, mountains and bamboo gathered lower-right — generated once
+// and committed via the art-fetch pipeline (data/manhua/home-hero.art.json
+// carries its provenance). No celestial disc: the horizon band outside the
+// card owns the sun and moon. The composition's own quiet upper-left is the
+// text zone, so the UI reads as layered on an environment, not beside an
+// image. Like cover art, it does not re-theme.
 //
 // The Then-read fallback family below stays code-drawn: flat desk objects on
 // world-tinted grounds (storyArt.js), mixed via color-mix into existing
 // surface colours so the dawn→dusk system stays the base.
 
-import heroLandscape from './assets/home-hero-landscape.webp'
+import heroLandscape from './assets/home-hero-fullbleed-b.webp'
 
 const PAPER = '#FBF5E9'
 
@@ -20,9 +22,9 @@ function mix(tint, pct, into) {
 }
 
 // ── The hero's landscape ────────────────────────────────────────────────────
-// Fills the panel; anchored right so the scene survives every aspect the hero
-// takes (390 phone to 720 desktop) while the art's own empty red left half
-// stays the ground under the count and the breakdown. Decorative and inert.
+// Full-bleed across the panel; biased slightly low so the gate survives the
+// wider desktop crop while the quiet upper field stays under the text at
+// every aspect the hero takes. Decorative and inert.
 export function HeroLandscape() {
   return (
     <img
@@ -32,7 +34,7 @@ export function HeroLandscape() {
       data-hero-art=""
       style={{
         position: 'absolute', inset: 0, width: '100%', height: '100%',
-        objectFit: 'cover', objectPosition: '100% 70%',
+        objectFit: 'cover', objectPosition: '50% 62%',
         pointerEvents: 'none', userSelect: 'none',
       }}
     />
