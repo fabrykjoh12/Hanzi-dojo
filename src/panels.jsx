@@ -32,6 +32,10 @@ let litCount = 0
 // button is invalid, and nothing may nest inside the one true control.
 export function HeroPanel({
   accentHex, seed = 'a', watermark, watermarkFont, element = 'div',
+  // `art` replaces the watermark slot with a drawn illustration (it positions
+  // itself); `wash={false}` drops the ink-wash for panels that carry art —
+  // one atmosphere per panel, never two. Defaults keep existing heroes as-is.
+  art = null, wash = true,
   onClick, children, padding, compact = false, style = {}, dataTour, ariaLabel,
 }) {
   const [hovered, setHovered] = useState(false)
@@ -87,9 +91,10 @@ export function HeroPanel({
       data-tour={dataTour}
     >
       {/* Rule 1: the atmosphere lives here and nowhere else on the screen. */}
-      <InkWash seed={seed} opacity={0.09} />
+      {wash && <InkWash seed={seed} opacity={0.09} />}
+      {art}
 
-      {watermark && (
+      {!art && watermark && (
         <span aria-hidden style={{
           position: 'absolute', right: compact ? '4px' : '10px',
           bottom: compact ? '-26px' : '-34px',

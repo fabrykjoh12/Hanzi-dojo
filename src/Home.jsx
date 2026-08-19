@@ -4,8 +4,10 @@ import { getLevelLabel } from './utils'
 import { languageTheme, ink } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
-import { getDailyStoryCard, firstContentChar } from './homeStory'
+import { getDailyStoryCard } from './homeStory'
 import { sceneMood } from './homeScene'
+import { tileVariant, worldTint } from './storyArt'
+import { DeskStillLife, StoryFallbackTile } from './HomeIllustrations.jsx'
 // Explicit extension: homeScene.js (pure helpers) sits beside this component,
 // and an extensionless specifier is ambiguous on case-insensitive filesystems.
 import HomeScene from './HomeScene.jsx'
@@ -48,9 +50,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
   const theme = languageTheme(profile.active_language)
   const accentHex = theme.accentHex
   const accentInk = ink(accentHex)
-  const langFont = theme.font
 
-  const langChar = firstContentChar(theme.nativeName) || theme.nativeName.slice(0, 1)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
   const nextLevelLabel = getLevelLabel(profile.active_language, track.system, track.current_level + 1)
 
@@ -180,8 +180,8 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         element="button"
         accentHex={accentHex}
         seed={profile.active_language}
-        watermark={langChar}
-        watermarkFont={langFont}
+        wash={false}
+        art={<DeskStillLife tint={story ? worldTint(story) : null} compact={stage === 'cards' || Boolean(counts.failed)} />}
         compact={isMobile}
         onClick={heroGo}
         dataTour="home-queue"
@@ -222,7 +222,6 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
             knownPct: daily.knownPct,
           })}
           theme={theme}
-          accentHex={accentHex}
           accentInk={accentInk}
           isMobile={isMobile}
           onOpen={openStory}
@@ -326,7 +325,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
 // cover art when there is one, an accent-tinted title page when not — but it
 // stays the loop's second step: dimmed and locked while cards are due, lit in
 // full colour once reading is what's next.
-function ThenRead({ daily, stage, title, sub, theme, accentHex, accentInk, isMobile, onOpen }) {
+function ThenRead({ daily, stage, title, sub, theme, accentInk, isMobile, onOpen }) {
   const [artFailed, setArtFailed] = useState(false)
   const art = daily.story.cover_url && !artFailed ? daily.story.cover_url : null
   const ready = stage === 'story'
@@ -350,9 +349,11 @@ function ThenRead({ daily, stage, title, sub, theme, accentHex, accentInk, isMob
         {art
           ? <img src={art} alt="" onError={() => setArtFailed(true)} style={{ width: '54px', height: '54px', borderRadius: '12px', objectFit: 'cover', flexShrink: 0, filter: ready ? 'none' : 'saturate(0.5)' }} />
           : (
-            <span aria-hidden="true" style={{ width: '54px', height: '54px', borderRadius: '12px', flexShrink: 0, display: 'grid', placeItems: 'center', background: 'color-mix(in srgb, ' + accentHex + ' 11%, var(--surface-2))', fontFamily: theme.font + ', sans-serif', fontSize: '26px', fontWeight: 650, color: accentInk }}>
-              {firstContentChar(title)}
-            </span>
+            <StoryFallbackTile
+              tint={worldTint(daily.story)}
+              variant={tileVariant(daily.story)}
+              style={{ filter: ready ? 'none' : 'saturate(0.5)' }}
+            />
           )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px' }}>
