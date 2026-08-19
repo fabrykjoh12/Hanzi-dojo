@@ -5,6 +5,10 @@ import { languageTheme, ink } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
 import { getDailyStoryCard, firstContentChar } from './homeStory'
+import { sceneMood } from './homeScene'
+// Explicit extension: homeScene.js (pure helpers) sits beside this component,
+// and an extensionless specifier is ambiguous on case-insensitive filesystems.
+import HomeScene from './HomeScene.jsx'
 import { homeDailyStage, homeProgressPct } from './homePresentation'
 import {
   aheadLine, heroAriaLabel, homeAction, homeHeaderMeta, queueBreakdown,
@@ -92,6 +96,13 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, track, queueSignature])
 
+  // The horizon band is Home's ground; the ambient language wallpaper steps
+  // out while Home is mounted (Study does the same) so the two never stack.
+  useEffect(() => {
+    document.documentElement.setAttribute('data-quiet-bg', '')
+    return () => document.documentElement.removeAttribute('data-quiet-bg')
+  }, [])
+
   useEffect(() => {
     let alive = true
     const timer = setTimeout(() => {
@@ -122,7 +133,15 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
   }
 
   return (
-    <div data-home-stage={stage} style={{ maxWidth: '720px', margin: '0 auto', padding: isMobile ? '24px 16px 40px' : '44px 32px 60px' }}>
+    <div
+      data-home-stage={stage}
+      data-scene={sceneMood(new Date().getHours())}
+      style={{ position: 'relative', maxWidth: '720px', margin: '0 auto', padding: isMobile ? '24px 16px 40px' : '44px 32px 60px' }}
+    >
+      {/* The horizon: sky, disc and hill crests behind the header, slipping
+          behind the hero — the red panel is the horizon line. zIndex -1, so
+          every surface and every line of text paints above it. */}
+      <HomeScene />
 
       {/* ── Where you are, and when ── */}
       <header className="hd-rise" style={{
@@ -169,7 +188,9 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
         ariaLabel={heroAriaLabel({ counts })}
         padding={isMobile ? '26px 24px' : '34px 32px'}
         style={{
-          marginBottom: '14px', animationDelay: '40ms',
+          // 44px of open sky between header and hero: the window the horizon
+          // band's crests and disc live in before slipping behind the panel.
+          marginTop: '44px', marginBottom: '14px', animationDelay: '40ms',
           // The hero is the screen's one action, so it keeps real presence even
           // with its slim contents — a fixed floor, content centered in it.
           minHeight: isMobile ? '250px' : '280px',
