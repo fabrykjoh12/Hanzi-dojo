@@ -1,11 +1,23 @@
 {
-  "_comment": "Not an episode: this is the Home hero's landscape art (Phase 2, owner-approved blend of the shan-shui and courtyard concepts). It rides the manhua art pipeline because that is the repo's one committed-art fetch path — which validates WebP containers only, so the generation's webp rendition is what ships.",
+  "_comment": "Not an episode: the Home hero's landscape art (Phase 2). Full-bleed revision round — no celestial disc (the horizon band owns it), one continuous environment with a quiet text-safe left. Three candidates are fetched for review; the losers are pruned once one ships. Rides the manhua art pipeline (WebP renditions) because that is the repo's committed-art fetch path.",
   "dir": "src/assets",
   "assets": [
     {
-      "file": "home-hero-landscape.webp",
-      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260819_214032_6a93e162-c0bb-4123-84e0-f7b067fda2dc_min.webp",
-      "prompt": "Premium mobile app hero background, wide 3:2, flat layered modern Chinese illustration, strictly monochrome deep vermilion-cinnabar tonal palette. Composition dominated by a majestic range of overlapping simplified flat mountain silhouettes on the right with elegant horizontal cloud bands between them; in the lower right corner a low courtyard wall segment with a circular moon gate and a small cluster of tall bamboo silhouettes; one small pale cream moon high on the right. Left half nearly empty deep red for text. Refined, minimal, mature, premium custom app art, flat shapes only, no outlines. No text, no people, no dragons, no lanterns, no gold ornament, no pagoda. [Recraft V4.1 job 6a93e162-c0bb-4123-84e0-f7b067fda2dc, colors #7E2413 #992F1B #B83A24 #C9583F #F0DDB4, background #992F1B]",
+      "file": "home-hero-fullbleed-a.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260819_223158_f2157656-86cc-4ed9-80ac-a65e8a94b8e4_min.webp",
+      "prompt": "Full-bleed continuous cinnabar landscape, quiet low-contrast left for text, layered mountains + moon-gate courtyard wall + bamboo right, thin cloud bands, EMPTY SKY no sun/moon. [Recraft V4.1 job f2157656, colors #7E2413 #992F1B #B83A24 #C9583F #D97757]",
+      "generated": "2026-08-19"
+    },
+    {
+      "file": "home-hero-fullbleed-b.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260819_223158_59bc751a-980c-468d-b9fc-2b6ad61bf289_min.webp",
+      "prompt": "Full-bleed cinnabar landscape: wide calm mist/hill bands across entire width, low-right moon-gate wall + bamboo, mountain crests behind, EMPTY SKY no sun/moon. [Recraft V4.1 job 59bc751a, same palette]",
+      "generated": "2026-08-19"
+    },
+    {
+      "file": "home-hero-fullbleed-c.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260819_223158_42ec19dd-3b19-498e-8b5e-f0b6c4cc392c_min.webp",
+      "prompt": "Full-bleed cinnabar landscape rising diagonally from quiet lower-left to taller right mountains, lower-right moon-gate wall + bamboo, thin cloud bands, EMPTY SKY no sun/moon. [Recraft V4.1 job 42ec19dd, same palette]",
       "generated": "2026-08-19"
     }
   ]
