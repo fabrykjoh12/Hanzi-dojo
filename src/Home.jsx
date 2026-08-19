@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, Lock, Sunrise } from 'lucide-react'
+import { ArrowRight, ChevronRight, Lock, Sunrise } from 'lucide-react'
 import { getLevelLabel } from './utils'
 import { languageTheme, ink } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
@@ -11,7 +11,7 @@ import {
   queueHeadline, storyHandoffSub, storyStatus, tomorrowLine, weekLine,
 } from './homeModel'
 import { setDeskHandoff } from './deskTransition'
-import { HeroPanel, HeroAction, Panel, Eyebrow } from './panels'
+import { HeroPanel, Panel, Eyebrow } from './panels'
 import { weekdayInitial } from './studyRhythm'
 import { forecastSummary } from './reviewForecast'
 import { prepareStudySession } from './sessionPrep'
@@ -22,11 +22,12 @@ import TourOverlay from './TourOverlay'
 import { MICRO, NUM, flatPanel } from './designTokens'
 
 // ── Home ──────────────────────────────────────────────────────────────────
-// The one lit block is TODAY'S FLASHCARDS: how many cards are waiting, the
-// New/Learning/Review breakdown, and one restrained action inside the panel.
-// The whole panel is the tap target — the action is a span, not a nested
-// button — so the screen still offers exactly ONE control, visibly.
-// Everything about the queue lives in the block that is about the queue.
+// The one lit block is TODAY'S FLASHCARDS: how many cards are waiting and the
+// New/Learning/Review breakdown. The panel IS the control — a real <button>
+// carrying the session's own context as its accessible name — so there is no
+// CTA inside it to compete with, and a chevron in the corner is the only
+// affordance needed. Everything about the queue lives in the block that is
+// about the queue.
 //
 // The story you have unlocked is a quiet flat hand-off underneath — the next
 // step in the daily loop (cards, then read), deliberately not styled as a
@@ -157,6 +158,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
 
       {/* ── The one lit block: today's cards ── */}
       <HeroPanel
+        element="button"
         accentHex={accentHex}
         seed={profile.active_language}
         watermark={langChar}
@@ -174,15 +176,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
           display: 'flex', flexDirection: 'column', justifyContent: 'center',
         }}
       >
-        {({ hovered }) => (
-          <QueueBody
-            counts={counts}
-            isMobile={isMobile}
-            action={action}
-            accentHex={accentHex}
-            hovered={hovered}
-          />
-        )}
+        <QueueBody counts={counts} isMobile={isMobile} />
       </HeroPanel>
 
       {/* ── The next step in the loop: tonight's story, with its own face.
@@ -357,10 +351,10 @@ function ThenRead({ daily, stage, title, sub, theme, accentHex, accentInk, isMob
 }
 
 // The hero's contents: the whole block is about today's flashcards — how many
-// are waiting and what the session is made of. The whole panel is the tap
-// target, but it carries a visible action so nobody has to discover that; the
-// action is a span, not a nested button, so there is still exactly one control.
-function QueueBody({ counts, isMobile, action, accentHex, hovered }) {
+// are waiting and what the session is made of. Phrasing content only (spans,
+// not divs): this renders inside the hero's <button>, and the panel itself is
+// the control, so nothing in here is interactive.
+function QueueBody({ counts, isMobile }) {
   const headline = queueHeadline(counts)
   const clear = !headline.failed && headline.value === '✓'
 
@@ -369,34 +363,37 @@ function QueueBody({ counts, isMobile, action, accentHex, hovered }) {
   // tapping the panel is the honest retry.
   if (headline.failed) {
     return (
-      <div>
-        <span style={{ ...MICRO, color: 'rgba(255,255,255,0.62)' }}>
+      <span style={{ display: 'block' }}>
+        <span style={{ ...MICRO, display: 'block', color: 'rgba(255,255,255,0.62)' }}>
           {headline.eyebrow}
         </span>
 
-        <div style={{
-          fontSize: isMobile ? '20px' : '24px', fontWeight: 700, color: '#fff',
-          lineHeight: 1.3, margin: '12px 0 6px',
+        <span style={{
+          display: 'block', fontSize: isMobile ? '20px' : '24px', fontWeight: 700,
+          color: '#fff', lineHeight: 1.3, margin: '12px 0 6px',
         }}>
           {headline.caption}
-        </div>
+        </span>
 
-        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45, marginTop: '12px' }}>
+        <span style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45, marginTop: '12px' }}>
           Check your connection — starting a session loads it fresh.
-        </div>
+        </span>
 
-        <HeroAction label={action.label} hovered={hovered} icon={ArrowRight} accentHex={accentHex} />
-      </div>
+        <Chevron />
+      </span>
     )
   }
 
   return (
-    <div>
-      <span style={{ ...MICRO, color: 'rgba(255,255,255,0.62)' }}>
+    <span style={{ display: 'block' }}>
+      <span style={{ ...MICRO, display: 'block', color: 'rgba(255,255,255,0.62)' }}>
         {headline.eyebrow}
       </span>
 
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '13px', margin: '12px 0 6px' }}>
+      {/* The only affordance the panel needs: decorative, never a control. */}
+      {!clear && <Chevron />}
+
+      <span style={{ display: 'flex', alignItems: 'baseline', gap: '13px', margin: '12px 0 6px' }}>
         <span style={{
           ...NUM, color: '#fff', lineHeight: 0.95,
           fontSize: isMobile ? '58px' : '72px', fontWeight: 700, letterSpacing: '-0.04em',
@@ -406,35 +403,40 @@ function QueueBody({ counts, isMobile, action, accentHex, hovered }) {
         <span style={{ fontSize: isMobile ? '16.5px' : '18px', fontWeight: 600, color: 'rgba(255,255,255,0.86)' }}>
           {headline.caption}
         </span>
-      </div>
+      </span>
 
       {/* The queue's composition — what the session is made of, on every
           viewport: the session you are about to start is the one thing Home
           must be specific about. */}
       {!clear && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '18px' }}>
+        <span style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '18px' }}>
           {queueBreakdown(counts).map(({ label, value }) => (
             <span key={label} style={{ display: 'block', minWidth: 0 }}>
               <span style={{ ...NUM, display: 'block', fontSize: '20px', lineHeight: 1, fontWeight: 700, color: '#fff' }}>{value}</span>
               <span style={{ ...MICRO, display: 'block', marginTop: '5px', fontSize: '9.5px', whiteSpace: 'nowrap', color: 'rgba(255,255,255,0.55)' }}>{label}</span>
             </span>
           ))}
-        </div>
-      )}
-
-      {/* The action, restrained and inside the hero. Only while there is a
-          session to start — a cleared queue offers reading, not reviewing. */}
-      {!clear && (
-        <HeroAction label={action.label} hovered={hovered} icon={ArrowRight} accentHex={accentHex} />
+        </span>
       )}
 
       {/* Done for today — say what tomorrow holds, but only when it holds
           something: the ✓ already says everything about an empty tomorrow. */}
       {clear && (counts.dueTomorrow || 0) > 0 && (
-        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45, marginTop: '12px' }}>
+        <span style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45, marginTop: '12px' }}>
           {tomorrowLine(counts.dueTomorrow)}
-        </div>
+        </span>
       )}
-    </div>
+    </span>
+  )
+}
+
+// The hero's one affordance: a quiet chevron in the corner saying the whole
+// panel opens something. Decorative and aria-hidden — the panel's own
+// accessible name already announces the action and the session waiting.
+function Chevron() {
+  return (
+    <span aria-hidden="true" style={{ position: 'absolute', top: '-2px', right: 0, opacity: 0.5, lineHeight: 0 }}>
+      <ChevronRight size={20} strokeWidth={2.4} color="#fff" />
+    </span>
   )
 }

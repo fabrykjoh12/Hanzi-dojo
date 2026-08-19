@@ -74,7 +74,6 @@ for (const state of STATES) {
       // The hero shows the real queue — one due review — and starts it.
       await expect(page.getByRole('button', { name: /Start reviewing — 1 card waiting/ })).toBeEnabled();
       await expect(hero.getByText('Ready to review')).toBeVisible();
-      await expect(hero.getByText('Start reviewing')).toBeVisible();
       await expect(hero.getByText('1', { exact: true }).first()).toBeVisible();
       await expect(hero.getByText('card waiting')).toBeVisible();
       // The story is the locked next step, named beneath the hero — with its
@@ -92,8 +91,6 @@ for (const state of STATES) {
       await expect(hero.getByText('About 1 waiting tomorrow')).toBeVisible();
       await expect(page.getByRole('button', { name: /Read a story/ })).toBeEnabled();
       await expect(page.getByRole('button', { name: /Start reviewing/ })).toHaveCount(0);
-      // No session action once there is no session to start.
-      await expect(hero.getByText('Start reviewing')).toHaveCount(0);
     }
     if (state === 'story') {
       await expect(handoff.getByText('Ready to read')).toBeVisible();

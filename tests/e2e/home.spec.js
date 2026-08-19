@@ -33,22 +33,73 @@ test.describe('Home (logged in)', () => {
     expect(numbers.headline).toBe(numbers.sum);
   });
 
-  test('the hero shows its action, and is still a single control', async () => {
-    // Visible, so nobody has to discover that the panel is tappable…
-    await expect(home.hero.getByText('Start reviewing')).toBeVisible();
-    // …but the panel itself is the button: no nested control inside it.
-    await expect(home.hero).toHaveAttribute('role', 'button');
+  test('the hero itself is the control: tapping it opens Study', async ({ page }) => {
+    // ONE semantic element — a real <button>, not a clickable container with
+    // another button inside it, and no CTA of its own to compete with.
+    const tag = await home.hero.evaluate(node => node.tagName.toLowerCase());
+    expect(tag).toBe('button');
     await expect(home.hero.locator('button')).toHaveCount(0);
+    await expect(home.hero.getByText('Start reviewing')).toHaveCount(0);
     await expect(home.hero.getByText(/~\d+ min/)).toHaveCount(0);
     await expect(home.hero.getByText(/Daily goal/)).toHaveCount(0);
+    // Its accessible name carries the session context.
+    await expect(home.hero).toHaveAccessibleName(/Start reviewing — \d+ cards? waiting/);
+
+    // Tapping the panel — not a button inside it — starts the session.
+    await home.hero.click();
+    await expect(page).toHaveURL(/\/study$/);
+    await expect(new StudyPage(page).showAnswer).toBeVisible();
+  });
+
+  test('the hero answers Enter and Space from the keyboard', async ({ page }) => {
+    await home.hero.focus();
+    await expect(home.hero).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/\/study$/);
+    await expect(new StudyPage(page).showAnswer).toBeVisible();
+
+    await home.goto();
+    await home.hero.focus();
+    await page.keyboard.press('Space');
+    await expect(page).toHaveURL(/\/study$/);
+    await expect(new StudyPage(page).showAnswer).toBeVisible();
+  });
+
+  test('the hero presses without resizing, and hover lifts its shadow', async () => {
+    // A whole surface giving way: ~0.98 scale plus a slight darkening, on the
+    // shared 160ms press clock — and the panel's box never changes size.
+    const press = await home.hero.evaluate((node) => {
+      const style = getComputedStyle(node);
+      const rest = node.getBoundingClientRect();
+      return {
+        classes: node.className,
+        duration: style.transitionDuration.split(',')[0].trim(),
+        width: rest.width, height: rest.height,
+      };
+    });
+    expect(press.classes).toContain('hd-press-deep');
+    expect(press.duration).toBe('0.16s');
+    await home.hero.dispatchEvent('pointerdown');
+    await home.hero.dispatchEvent('pointerup');
+    const after = await home.hero.boundingBox();
+    expect(after.width).toBeCloseTo(press.width, 1);
+    expect(after.height).toBeCloseTo(press.height, 1);
+
+    // A real pointer, not a synthetic event: React delegates mouseenter, so a
+    // dispatched one never reaches the handler and would fake a pass.
+    const resting = await home.hero.evaluate(node => getComputedStyle(node).boxShadow);
+    await home.hero.hover();
+    await expect(home.hero).toHaveAttribute('data-hovered', '');
+    const lifted = await home.hero.evaluate(node => getComputedStyle(node).boxShadow);
+    expect(lifted).not.toBe(resting);
   });
 
   test('the breakdown holds one row of three equal columns at 320px', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 568 });
     await home.goto();
     const columns = await home.hero.evaluate((node) => {
-      const grid = [...node.querySelectorAll('div')]
-        .find(d => getComputedStyle(d).display === 'grid');
+      const grid = [...node.querySelectorAll('*')]
+        .find(el => getComputedStyle(el).display === 'grid');
       return [...grid.children].map((col) => {
         const [value, label] = col.children;
         const box = col.getBoundingClientRect();

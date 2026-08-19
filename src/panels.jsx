@@ -20,12 +20,25 @@ let litCount = 0
 // The lit block. Optional watermark character, contained ink-wash, and an
 // accent-tinted shadow. Tappable when `onClick` is given; children may be a
 // function receiving { hovered } so a CTA inside shares the panel's hover.
+//
+// `element="button"` makes the panel ITSELF the control — a real <button>
+// rather than a clickable container. Use it when the whole block is the
+// action and there is no CTA inside it: the browser then supplies Enter and
+// Space, the focus ring and the button role, instead of this file
+// re-implementing them. Such a panel also presses deeper (hd-press-deep), the
+// physics of a whole surface giving way rather than a card acknowledging a
+// tap, and wraps its children in a span so the button holds only phrasing
+// content. A panel that CONTAINS a HeroAction stays a div — a button inside a
+// button is invalid, and nothing may nest inside the one true control.
 export function HeroPanel({
-  accentHex, seed = 'a', watermark, watermarkFont,
+  accentHex, seed = 'a', watermark, watermarkFont, element = 'div',
   onClick, children, padding, compact = false, style = {}, dataTour, ariaLabel,
 }) {
   const [hovered, setHovered] = useState(false)
   const interactive = typeof onClick === 'function'
+  const asButton = interactive && element === 'button'
+  const Root = asButton ? 'button' : 'div'
+  const Body = asButton ? 'span' : 'div'
 
   // Rule 1 again, at the page level: while a lit block is on screen the
   // page-wide background wash steps back, so the atmosphere reads as contained
@@ -40,17 +53,22 @@ export function HeroPanel({
   }, [])
 
   return (
-    <div
-      role={interactive ? 'button' : undefined}
-      tabIndex={interactive ? 0 : undefined}
+    <Root
+      type={asButton ? 'button' : undefined}
+      role={interactive && !asButton ? 'button' : undefined}
+      tabIndex={interactive && !asButton ? 0 : undefined}
       aria-label={ariaLabel}
       onClick={onClick}
-      onKeyDown={interactive
+      // A real button already answers Enter and Space; only the div form has
+      // to spell that out, and doing both would fire twice on Enter.
+      onKeyDown={interactive && !asButton
         ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }
         : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={interactive ? 'hd-press hd-rise' : 'hd-rise'}
+      className={interactive
+        ? (asButton ? 'hd-press-deep hd-rise' : 'hd-press hd-rise')
+        : 'hd-rise'}
       style={{
         position: 'relative', overflow: 'hidden',
         borderRadius: '22px',
@@ -59,6 +77,10 @@ export function HeroPanel({
         boxShadow: heroShadow(accentHex, hovered && interactive),
         cursor: interactive ? 'pointer' : 'default',
         color: '#fff',
+        // A <button> arrives with a UA border, centred text and its own font.
+        ...(asButton
+          ? { border: 0, width: '100%', textAlign: 'left', font: 'inherit', appearance: 'none', WebkitAppearance: 'none' }
+          : null),
         ...style,
       }}
       data-hovered={hovered ? '' : undefined}
@@ -79,10 +101,10 @@ export function HeroPanel({
         </span>
       )}
 
-      <div style={{ position: 'relative' }}>
+      <Body style={{ position: 'relative', display: 'block' }}>
         {typeof children === 'function' ? children({ hovered }) : children}
-      </div>
-    </div>
+      </Body>
+    </Root>
   )
 }
 

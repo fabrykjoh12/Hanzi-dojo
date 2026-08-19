@@ -3,7 +3,7 @@ import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 // Home's locked motion values:
 //   rise  520ms — each block settles in via .hd-rise, staggered by inline
 //                 animation-delays (header → hero → hand-off → week)
-//   press 150ms — tappable blocks give under the finger via .hd-press
+//   press 160ms — the hero gives under the finger via .hd-press-deep
 //   nav   260ms — the dock's selected capsule (HOME_MOTION.nav)
 // Locked here so a stray inline edit can't quietly change how the app feels.
 
@@ -27,9 +27,9 @@ test('uses only the locked Home motion timings', async ({ page }) => {
   expect(new Set(delays).size).toBe(delays.length);
   expect([...delays].sort((a, b) => a - b)).toEqual(delays);
 
-  // The hero presses with the shared press physics.
+  // The hero presses with the deep-press physics — it is the whole control.
   const heroDurations = (await hero.evaluate(node => getComputedStyle(node).transitionDuration)).split(',');
-  expect(heroDurations[0].trim()).toBe('0.15s');
+  expect(heroDurations[0].trim()).toBe('0.16s');
 
   // The dock's selected capsule expands/collapses at the locked nav timing.
   const nav = page.getByRole('navigation', { name: 'Primary' });
