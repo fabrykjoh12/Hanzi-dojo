@@ -1,0 +1,18 @@
+{
+  "_comment": "Not an episode: this is the Home hero's landscape art (Phase 2, owner-approved blend of the shan-shui and courtyard concepts). It rides the manhua art pipeline because that is the repo's one committed-art fetch path. Both renditions of the same generation are fetched; the session inspects them and keeps the better one for the bundle.",
+  "dir": "src/assets",
+  "assets": [
+    {
+      "file": "home-hero-landscape.png",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260819_214032_6a93e162-c0bb-4123-84e0-f7b067fda2dc.png",
+      "prompt": "Premium mobile app hero background, wide 3:2, flat layered modern Chinese illustration, strictly monochrome deep vermilion-cinnabar tonal palette. Composition dominated by a majestic range of overlapping simplified flat mountain silhouettes on the right with elegant horizontal cloud bands between them; in the lower right corner a low courtyard wall segment with a circular moon gate and a small cluster of tall bamboo silhouettes; one small pale cream moon high on the right. Left half nearly empty deep red for text. Refined, minimal, mature, premium custom app art, flat shapes only, no outlines. No text, no people, no dragons, no lanterns, no gold ornament, no pagoda. [Recraft V4.1, colors #7E2413 #992F1B #B83A24 #C9583F #F0DDB4, background #992F1B]",
+      "generated": "2026-08-19"
+    },
+    {
+      "file": "home-hero-landscape.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260819_214032_6a93e162-c0bb-4123-84e0-f7b067fda2dc_min.webp",
+      "prompt": "Same generation as home-hero-landscape.png — Higgsfield's pre-encoded webp rendition of job 6a93e162-c0bb-4123-84e0-f7b067fda2dc.",
+      "generated": "2026-08-19"
+    }
+  ]
+}
