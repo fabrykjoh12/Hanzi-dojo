@@ -157,6 +157,32 @@ test.describe('Home (logged in)', () => {
     expect(geometry.navBottomGap).toBeGreaterThan(0);
   });
 
+  test('the horizon band is decorative scenery, never a control', async ({ page }) => {
+    const scene = page.locator('[data-home-scene]');
+    await expect(scene).toBeVisible();
+    const traits = await scene.evaluate(node => ({
+      hidden: node.getAttribute('aria-hidden'),
+      pointer: getComputedStyle(node).pointerEvents,
+      z: Number(getComputedStyle(node).zIndex),
+    }));
+    expect(traits.hidden).toBe('true');
+    expect(traits.pointer).toBe('none');
+    // Below every in-flow surface and line of text.
+    expect(traits.z).toBeLessThan(0);
+    // The mood is always one the stylesheet defines.
+    const mood = await page.locator('[data-home-stage]').getAttribute('data-scene');
+    expect(['morning', 'day', 'evening', 'night']).toContain(mood);
+  });
+
+  test('the scene follows the local clock', async ({ page }) => {
+    await page.clock.setFixedTime(new Date(2026, 7, 20, 8, 0, 0));
+    await home.goto();
+    await expect(page.locator('[data-home-stage]')).toHaveAttribute('data-scene', 'morning');
+    await page.clock.setFixedTime(new Date(2026, 7, 20, 19, 0, 0));
+    await home.goto();
+    await expect(page.locator('[data-home-stage]')).toHaveAttribute('data-scene', 'evening');
+  });
+
   test('offers exactly one primary action', async ({ page }) => {
     await expect(home.heroAction).toBeVisible();
     await expect(page.getByRole('button', { name: /Start reviewing/ })).toHaveCount(1);
@@ -170,6 +196,20 @@ test.describe('Home (logged in)', () => {
     // While cards are due the story is a locked next step, with its readability.
     await expect(home.storyHandoff.getByText('Finish cards to unlock')).toBeVisible();
     await expect(home.storyHandoff.getByText(/HSK \d · \d+% readable/)).toBeVisible();
+    // The fixture story has no cover, so it wears the illustrated fallback
+    // family — a drawn tile, never a Hanzi placeholder.
+    await expect(home.storyHandoff.locator('[data-story-tile]')).toBeVisible();
+  });
+
+  test('the hero carries its landscape, decorative and inert', async () => {
+    const art = home.hero.locator('[data-hero-art]');
+    await expect(art).toBeVisible();
+    expect(await art.getAttribute('aria-hidden')).toBe('true');
+    expect(await art.evaluate(node => getComputedStyle(node).pointerEvents)).toBe('none');
+    // No trace of the old placeholders: the watermark Hanzi and the ink wash.
+    const strayText = await home.hero.evaluate(node =>
+      [...node.querySelectorAll('span')].some(el => el.textContent === '中'));
+    expect(strayText).toBe(false);
   });
 
   test('shows the week rhythm and the road to the next level in one panel', async () => {

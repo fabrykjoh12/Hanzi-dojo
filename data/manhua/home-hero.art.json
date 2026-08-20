@@ -1,0 +1,12 @@
+{
+  "_comment": "Not an episode: the Home hero's landscape art. The provenance record for the shipped artwork — a crested cinnabar range with a moon-gate courtyard wall and bamboo, no celestial disc (the Home horizon band owns the sun/moon). It rides the manhua art pipeline because that is the repo's committed-art fetch path; the review round's losing candidates were deleted once this one was approved.",
+  "dir": "src/assets",
+  "assets": [
+    {
+      "file": "home-hero-r2-2.webp",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260820_084115_b02aed9e-d121-4295-960e-612c1d58bcc0_min.webp",
+      "prompt": "Crisp flat vector cinnabar landscape: plain upper-left field, dark lower-third band, mountains right, large moon gate cropped at right edge, bamboo, two thin clouds upper right, empty sky. [Recraft V4.1 job b02aed9e]",
+      "generated": "2026-08-20"
+    }
+  ]
+}

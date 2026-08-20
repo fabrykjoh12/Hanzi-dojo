@@ -225,6 +225,57 @@ body {
    between two identical rooms. Set by Home.jsx / Study.jsx. */
 :root[data-quiet-bg] { --bg-image-opacity: 0; --bg-image-opacity-lit: 0; }
 
+/* ── The Home horizon band (HomeScene.jsx) ─────────────────────────────────
+   One scene language — three hills and a disc — whose colours are the only
+   thing the time of day changes. Home stamps [data-scene] from sceneMood()
+   (homeScene.js); dark mode always wears the night set, whatever the clock
+   says, because dark IS the night treatment. Values are deliberately close to
+   --bg so the band reads as weather, not wallpaper. */
+[data-scene] {
+  /* day (base) */
+  --scene-sky: #F1F3E8;
+  --scene-hill-1: #C9CFAE;
+  --scene-hill-2: #D8DCC0;
+  --scene-hill-3: #E4E7D2;
+  --scene-disc: #EDC75F;
+}
+[data-scene='morning'] {
+  --scene-sky: #FAF0D8;
+  --scene-hill-1: #DBBC85;
+  --scene-hill-2: #E6CD9F;
+  --scene-hill-3: #EFDDBA;
+  --scene-disc: #E9AE45;
+}
+[data-scene='evening'] {
+  --scene-sky: #F9E7D2;
+  --scene-hill-1: #DCA878;
+  --scene-hill-2: #E8BE95;
+  --scene-hill-3: #F2D3B4;
+  --scene-disc: #C96B42;
+}
+[data-scene='night'] {
+  --scene-sky: #E9E7F0;
+  --scene-hill-1: #B1B1C9;
+  --scene-hill-2: #C4C3D6;
+  --scene-hill-3: #D6D4E3;
+  --scene-disc: #F2ECDA;
+}
+:root[data-theme='dark'] [data-scene] {
+  --scene-sky: #1B2130;
+  --scene-hill-1: #333D62;
+  --scene-hill-2: #2C3554;
+  --scene-hill-3: #262D47;
+  --scene-disc: #E8E0C6;
+}
+
+/* The band's one motion: the disc's halo breathes. Opacity only, glacially
+   slow; the global reduced-motion catch-all flattens it to a still halo. */
+@keyframes hd-scene-breathe {
+  from { opacity: 0.18; }
+  to   { opacity: 0.34; }
+}
+.hd-scene-halo { animation: hd-scene-breathe 7s ease-in-out infinite alternate; }
+
 /* Framing for the full-page language background (src/Background.jsx).
    The artwork is a wide landscape: mountains along the top, bamboo in the
    bottom-right corner, and a large expanse of empty paper through the middle
