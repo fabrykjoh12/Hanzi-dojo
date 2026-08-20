@@ -147,6 +147,7 @@ export function analyzeStory(story, vocabMap) {
     title: story.title,
     level,
     presentation: story.presentation || 'paced',
+    counts,                                     // canonical word → occurrences (validator reads this)
     lines: lines.length,
     cjkChars,
     distinctVocab: storyWords.length,
