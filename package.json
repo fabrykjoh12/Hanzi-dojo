@@ -23,7 +23,8 @@
     "tts:dry-run": "node --env-file=.env.script tts-generate.mjs",
     "tts:generate": "node --env-file=.env.script tts-generate.mjs",
     "tts:retry-failed": "node --env-file=.env.script tts-generate.mjs --retry-failed",
-    "tts:integration": "node --env-file=.env.script tts-integration-check.mjs"
+    "tts:integration": "node --env-file=.env.script tts-integration-check.mjs",
+    "audit:stories": "node --env-file=.env.script audit-story-coverage.mjs"
   },
   "dependencies": {
     "@capacitor-community/apple-sign-in": "^7.1.0",

@@ -1,0 +1,288 @@
+{
+  "purpose": "Story corpus vocabulary coverage BASELINE, taken before any deliberate coverage work (FAB-8/FAB-9). Regenerate with: npm run audit:stories -- --baseline",
+  "generatedAt": "2026-08-20T18:58:45.364Z",
+  "engine": {
+    "matcher": "src/storyReading.js calculateStoryReadability — greedy longest-match, zh atomic spans, speaker labels stripped, proper names excluded",
+    "node": "v22.22.2",
+    "zhSegmenter": true,
+    "classification": "availableByLevel unique-story buckets: zero=0, single=1, weak=2–4, well=5+"
+  },
+  "corpus": {
+    "publishedStories": 204,
+    "storiesPerLevel": {
+      "1": 52,
+      "2": 51,
+      "3": 38,
+      "4": 21,
+      "5": 21,
+      "6": 21
+    },
+    "vocabItems": 4998,
+    "duplicateWords": [],
+    "unleveledWords": [
+      {
+        "id": null,
+        "word": "操"
+      },
+      {
+        "id": null,
+        "word": "白"
+      },
+      {
+        "id": null,
+        "word": "僮"
+      }
+    ]
+  },
+  "bands": {
+    "hsk1to6": {
+      "name": "HSK 1–6",
+      "levels": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "noStoryCorpus": false,
+      "totalItems": 4995,
+      "availableByLevel": {
+        "zero": 4398,
+        "single": 164,
+        "weak": 171,
+        "well": 262,
+        "pctZero": 88,
+        "pctSingle": 3.3,
+        "pctWeak": 3.4,
+        "pctWell": 5.2,
+        "mean": 0.87,
+        "median": 0
+      },
+      "all": {
+        "zero": 4167,
+        "single": 209,
+        "weak": 198,
+        "well": 421,
+        "pctZero": 83.4,
+        "pctSingle": 4.2,
+        "pctWeak": 4,
+        "pctWell": 8.4,
+        "mean": 2.99,
+        "median": 0
+      }
+    },
+    "hsk7to9": {
+      "name": "HSK 7–9",
+      "levels": [],
+      "noStoryCorpus": true,
+      "totalItems": 0,
+      "availableByLevel": {
+        "zero": 0,
+        "single": 0,
+        "weak": 0,
+        "well": 0,
+        "pctZero": 0,
+        "pctSingle": 0,
+        "pctWeak": 0,
+        "pctWell": 0,
+        "mean": 0,
+        "median": 0
+      },
+      "all": {
+        "zero": 0,
+        "single": 0,
+        "weak": 0,
+        "well": 0,
+        "pctZero": 0,
+        "pctSingle": 0,
+        "pctWeak": 0,
+        "pctWell": 0,
+        "mean": 0,
+        "median": 0
+      }
+    }
+  },
+  "byVocabLevel": [
+    {
+      "vocabLevel": 1,
+      "totalItems": 300,
+      "storiesAtLevel": 52,
+      "storiesAvailable": 52,
+      "availableByLevel": {
+        "zero": 26,
+        "single": 50,
+        "weak": 73,
+        "well": 151,
+        "pctZero": 8.7,
+        "pctSingle": 16.7,
+        "pctWeak": 24.3,
+        "pctWell": 50.3,
+        "mean": 9.12,
+        "median": 5
+      },
+      "all": {
+        "zero": 11,
+        "single": 22,
+        "weak": 44,
+        "well": 223,
+        "pctZero": 3.7,
+        "pctSingle": 7.3,
+        "pctWeak": 14.7,
+        "pctWell": 74.3,
+        "mean": 34.69,
+        "median": 15
+      }
+    },
+    {
+      "vocabLevel": 2,
+      "totalItems": 197,
+      "storiesAtLevel": 51,
+      "storiesAvailable": 103,
+      "availableByLevel": {
+        "zero": 70,
+        "single": 34,
+        "weak": 31,
+        "well": 62,
+        "pctZero": 35.5,
+        "pctSingle": 17.3,
+        "pctWeak": 15.7,
+        "pctWell": 31.5,
+        "mean": 4.1,
+        "median": 1
+      },
+      "all": {
+        "zero": 48,
+        "single": 22,
+        "weak": 32,
+        "well": 95,
+        "pctZero": 24.4,
+        "pctSingle": 11.2,
+        "pctWeak": 16.2,
+        "pctWell": 48.2,
+        "mean": 13.11,
+        "median": 4
+      }
+    },
+    {
+      "vocabLevel": 3,
+      "totalItems": 453,
+      "storiesAtLevel": 38,
+      "storiesAvailable": 141,
+      "availableByLevel": {
+        "zero": 356,
+        "single": 28,
+        "weak": 39,
+        "well": 30,
+        "pctZero": 78.6,
+        "pctSingle": 6.2,
+        "pctWeak": 8.6,
+        "pctWell": 6.6,
+        "mean": 0.88,
+        "median": 0
+      },
+      "all": {
+        "zero": 271,
+        "single": 47,
+        "weak": 62,
+        "well": 73,
+        "pctZero": 59.8,
+        "pctSingle": 10.4,
+        "pctWeak": 13.7,
+        "pctWell": 16.1,
+        "mean": 2.82,
+        "median": 0
+      }
+    },
+    {
+      "vocabLevel": 4,
+      "totalItems": 929,
+      "storiesAtLevel": 21,
+      "storiesAvailable": 162,
+      "availableByLevel": {
+        "zero": 882,
+        "single": 23,
+        "weak": 15,
+        "well": 9,
+        "pctZero": 94.9,
+        "pctSingle": 2.5,
+        "pctWeak": 1.6,
+        "pctWell": 1,
+        "mean": 0.16,
+        "median": 0
+      },
+      "all": {
+        "zero": 797,
+        "single": 72,
+        "weak": 41,
+        "well": 19,
+        "pctZero": 85.8,
+        "pctSingle": 7.8,
+        "pctWeak": 4.4,
+        "pctWell": 2,
+        "mean": 0.38,
+        "median": 0
+      }
+    },
+    {
+      "vocabLevel": 5,
+      "totalItems": 1495,
+      "storiesAtLevel": 21,
+      "storiesAvailable": 183,
+      "availableByLevel": {
+        "zero": 1459,
+        "single": 21,
+        "weak": 8,
+        "well": 7,
+        "pctZero": 97.6,
+        "pctSingle": 1.4,
+        "pctWeak": 0.5,
+        "pctWell": 0.5,
+        "mean": 0.12,
+        "median": 0
+      },
+      "all": {
+        "zero": 1435,
+        "single": 38,
+        "weak": 14,
+        "well": 8,
+        "pctZero": 96,
+        "pctSingle": 2.5,
+        "pctWeak": 0.9,
+        "pctWell": 0.5,
+        "mean": 0.16,
+        "median": 0
+      }
+    },
+    {
+      "vocabLevel": 6,
+      "totalItems": 1621,
+      "storiesAtLevel": 21,
+      "storiesAvailable": 204,
+      "availableByLevel": {
+        "zero": 1605,
+        "single": 8,
+        "weak": 5,
+        "well": 3,
+        "pctZero": 99,
+        "pctSingle": 0.5,
+        "pctWeak": 0.3,
+        "pctWell": 0.2,
+        "mean": 0.03,
+        "median": 0
+      },
+      "all": {
+        "zero": 1605,
+        "single": 8,
+        "weak": 5,
+        "well": 3,
+        "pctZero": 99,
+        "pctSingle": 0.5,
+        "pctWeak": 0.3,
+        "pctWell": 0.2,
+        "mean": 0.03,
+        "median": 0
+      }
+    }
+  ]
+}

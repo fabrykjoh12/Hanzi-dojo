@@ -52,6 +52,10 @@ playwright-report/
 # Scratch output of tools/manhua-contact-sheet.mjs — regenerate it, do not commit it.
 tools/.contact-sheets/
 
+# Full audit output of audit-story-coverage.mjs — regenerate it, do not commit
+# it. The committed snapshot is the compact docs/audits/story-coverage-baseline.json.
+reports/
+
 # Private keys. The Apple Sign-in signing key (.p8) is a plain-text PEM file,
 # so it is easy to save into the repo folder while wiring auth up and commit it
 # without noticing. Anyone holding it can mint Apple sign-ins for this app.
