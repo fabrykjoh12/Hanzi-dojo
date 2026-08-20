@@ -13,7 +13,7 @@
 // world-tinted grounds (storyArt.js), mixed via color-mix into existing
 // surface colours so the dawn→dusk system stays the base.
 
-import heroLandscape from './assets/home-hero-fullbleed-b.webp'
+import heroLandscape from './assets/home-hero-r2-2.webp'
 
 const PAPER = '#FBF5E9'
 
@@ -34,7 +34,7 @@ export function HeroLandscape() {
       data-hero-art=""
       style={{
         position: 'absolute', inset: 0, width: '100%', height: '100%',
-        objectFit: 'cover', objectPosition: '50% 62%',
+        objectFit: 'cover', objectPosition: '100% 62%',
         pointerEvents: 'none', userSelect: 'none',
       }}
     />
