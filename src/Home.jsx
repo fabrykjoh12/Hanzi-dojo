@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ArrowRight, ChevronRight, Lock, Sunrise } from 'lucide-react'
-import { getLevelLabel } from './utils'
+import { getLevelLabel, getAudioUrl } from './utils'
 import { languageTheme, ink } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
@@ -327,7 +327,7 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
 // full colour once reading is what's next.
 function ThenRead({ daily, stage, title, sub, theme, accentInk, isMobile, onOpen }) {
   const [artFailed, setArtFailed] = useState(false)
-  const art = daily.story.cover_url && !artFailed ? daily.story.cover_url : null
+  const art = daily.story.image_path && !artFailed ? getAudioUrl(daily.story.image_path) : null
   const ready = stage === 'story'
   const status = storyStatus({ stage, daily })
   const press = {

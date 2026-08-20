@@ -16,7 +16,10 @@ const VOCAB = [{ id: 'v1', word: '我们', reading: 'wǒmen', meaning: 'we', lev
 const STORY = [{
   id: 'published-our-song', title: '6. 我们的歌', content: '我们一起唱歌。',
   level: 1, tier: 1, story_number: 12, is_published: true,
-  cover_url: '/story-covers/generated/hsk1-12-our-song.webp',
+  // Production contract: image_path is a storage path inside the public
+  // audio bucket; the app builds the URL via getAudioUrl(). The route below
+  // serves the committed cover for it.
+  image_path: 'stories/published-our-song/cover.webp',
 }];
 
 async function installHomeState(page, state) {
@@ -41,6 +44,9 @@ async function installHomeState(page, state) {
   }];
   const reads = storyComplete ? [{ story_id: STORY[0].id, read_at: new Date().toISOString() }] : [];
   const grammar = state === 'practice' ? [{ topic_id: 'grammar-review', state: 'new', due_at: new Date().toISOString() }] : [];
+
+  await page.route('**/mock.supabase.co/storage/v1/object/public/audio/**', (route) =>
+    route.fulfill({ path: 'public/story-covers/generated/hsk1-12-our-song.webp', contentType: 'image/webp' }));
 
   await page.route('**/mock.supabase.co/rest/v1/**', async (route) => {
     const url = new URL(route.request().url());

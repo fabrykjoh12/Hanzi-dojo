@@ -60,7 +60,7 @@ export async function getDailyStoryCard(userId, track, learnedCount, dateStr = t
   try {
     const [storiesRes, readsRes, vocabRes] = await Promise.all([
       supabase
-        .from('stories').select('id, title, content, level, tier, story_number, cover_url')
+        .from('stories').select('id, title, content, level, tier, story_number, image_path')
         .eq('language', track.language).eq('system', track.system)
         .lte('level', track.current_level).eq('is_published', true),
       supabase
