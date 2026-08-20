@@ -23,8 +23,13 @@ const EYEBROWS = {
 // announces itself natively (第三话); a fresh multi-chapter unit sells its
 // size; a standalone just names its length via the state line below.
 function chapterLine(card) {
+  // A saga continuation counts past its own unit ("Chapter 8" of a 6-chapter
+  // run at this level) — never render the lie "Chapter 8 of 6".
+  const overflow = card.chapterNumber > card.total
   const pos = card.total > 1
-    ? (card.progress ? 'Chapter ' + card.chapterNumber + ' of ' + card.total : card.total + ' chapters')
+    ? (card.progress
+      ? (overflow ? 'Chapter ' + card.chapterNumber : 'Chapter ' + card.chapterNumber + ' of ' + card.total)
+      : card.total + ' chapters')
     : null
   // A fresh pick sells its size, not a chapter it hasn't started.
   if (card.kind === 'start-here' && !card.progress) return pos

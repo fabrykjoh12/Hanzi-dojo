@@ -13,6 +13,7 @@
 // all come from storyShelfFlat untouched. Pure — no React, no Supabase.
 
 import { chapterInfo, readingMinutes } from './storyChapters'
+import { leadingChapterNumber } from './storyArcs'
 
 // How many posters a collapsed earlier level shows before "See all".
 export const EARLIER_PREVIEW = 2
@@ -91,6 +92,10 @@ export function readableLabel(knownPct) {
 //   single read      'Read'
 //   single fresh     '6 min · 92% readable'
 //
+// A cross-level saga's continuation (chapters 7–12 at this level) states its
+// true chapter range — 'Chapters 7–12', 'Chapter 8 · …' — never a position
+// like "8 of 6" that pretends the numbering starts here.
+//
 // No level prefix (the section header names the level) and no format word
 // (the poster badge carries Manhua/Practice).
 export function posterMeta(unit, { levelLabel = null } = {}) {
@@ -106,9 +111,18 @@ export function posterMeta(unit, { levelLabel = null } = {}) {
   const parts = unit.parts || []
   if (parts.length > 1) {
     const started = unit.readCount > 0
-    const lead = started
-      ? 'Chapter ' + chapterInfo(unit.next, parts.indexOf(unit.next)).number + ' of ' + parts.length
-      : parts.length + ' chapters'
+    const firstNum = leadingChapterNumber(parts[0] && parts[0].title)
+    const lastNum = leadingChapterNumber(parts[parts.length - 1] && parts[parts.length - 1].title)
+    const continuation = firstNum != null && firstNum > 1
+    let lead
+    if (started) {
+      const n = chapterInfo(unit.next, parts.indexOf(unit.next)).number
+      lead = n > parts.length ? 'Chapter ' + n : 'Chapter ' + n + ' of ' + parts.length
+    } else {
+      lead = continuation && lastNum != null
+        ? 'Chapters ' + firstNum + '–' + lastNum
+        : parts.length + ' chapters'
+    }
     return [lead, readable].filter(Boolean).join(' · ')
   }
   const minutes = readingMinutes(parts[0])

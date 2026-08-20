@@ -107,6 +107,36 @@ export function stripLeadingNumber(title) {
   return t.slice(marker.length).trim()
 }
 
+// ── Cross-level sagas ────────────────────────────────────────────────────────
+// Two authored sagas number their chapters CONTINUOUSLY across HSK levels:
+// chapters 1–6 at HSK 1, 7–12 at HSK 2, 13–18 at HSK 3. Because arcs are
+// derived per level, a run starting at 7 (or 13) has no "1" to reset on, so it
+// used to be swallowed by whatever unrelated arc preceded it in story_number
+// order (守株待兔's five chapters grew the sea saga's 7–12, and so on).
+//
+// Chapter numbers ALONE cannot decide this: 没有人的地方 is a legitimate
+// single-level 1–12 series, numerically identical to an innocent 1–6 arc
+// followed by a saga's 7–12. Identity has to come from data — explicit
+// panels.meta.series where it exists (the manhua do this), and this registry
+// for the two prose sagas that predate it: the stripped title of each
+// continuation run's FIRST chapter, mapped to the saga it continues. A story
+// matching an entry (with a leading chapter number above 1) always starts a
+// new arc, and the arc is titled by its saga. New cross-level sagas should
+// ship with panels.meta.series from the generator instead of growing this map.
+export const SAGA_CONTINUATIONS = {
+  // The sea/island saga — 第七个人 (HSK 1, ch 1–6):
+  '我跟着他': '第七个人',            // HSK 2, ch 7–12
+  '上岛': '第七个人',                // HSK 3, ch 13–18
+  // The school saga — 八个人，我第八 (HSK 1, ch 1–6):
+  '十九和十八': '八个人，我第八',    // HSK 2, ch 7–12
+  '一个学校两个人': '八个人，我第八', // HSK 3, ch 13–18
+}
+
+function sagaContinuationOf(title, num) {
+  if (num == null || num <= 1) return null
+  return SAGA_CONTINUATIONS[stripLeadingNumber(title)] || null
+}
+
 function arcTitleFor(parts) {
   if (!parts.length) return 'Stories'
   const first = parts[0]
@@ -128,14 +158,15 @@ export function groupIntoArcs(orderedStories) {
   let prevNum = null
   for (const s of list) {
     const num = leadingChapterNumber(s && s.title)
-    const reset = num === 1 || (num != null && prevNum != null && num <= prevNum)
+    const saga = sagaContinuationOf(s && s.title, num)
+    const reset = num === 1 || (num != null && prevNum != null && num <= prevNum) || saga != null
     if (cur === null || reset) {
-      cur = { key: (s && s.id) || 'arc-' + arcs.length, parts: [], numbered: false }
+      cur = { key: (s && s.id) || 'arc-' + arcs.length, parts: [], numbered: false, sagaTitle: saga }
       arcs.push(cur)
     }
     cur.parts.push(s)
     if (num != null) cur.numbered = true
     prevNum = num
   }
-  return arcs.map(a => ({ key: a.key, title: arcTitleFor(a.parts), parts: a.parts, numbered: a.numbered }))
+  return arcs.map(a => ({ key: a.key, title: a.sagaTitle || arcTitleFor(a.parts), parts: a.parts, numbered: a.numbered }))
 }

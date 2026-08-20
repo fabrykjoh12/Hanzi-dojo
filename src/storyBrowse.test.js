@@ -102,6 +102,18 @@ describe('posterMeta', () => {
     expect(posterMeta(u, { levelLabel: 'HSK 3' })).toBe('Unlocks at HSK 3')
   })
 
+  it('a saga continuation states its true chapter range, never "8 of 6"', () => {
+    const cont = {
+      kind: 'series', key: 'saga2', title: '第七个人',
+      parts: [ch('s7', '7. 我跟着他'), ch('s8', '8. 出去七个，回来六个'), ch('s9', '9. 你为什么在这个船上')],
+      next: null, readCount: 0, total: 3, allRead: false, locked: false, remaining: 0, knownPct: 74,
+    }
+    expect(posterMeta(cont)).toBe('Chapters 7–9 · 74% readable')
+    cont.readCount = 1
+    cont.next = cont.parts[1]
+    expect(posterMeta(cont)).toBe('Chapter 8 · 74% readable')
+  })
+
   it('readableLabel formats once, null-safe', () => {
     expect(readableLabel(92)).toBe('92% readable')
     expect(readableLabel(null)).toBeNull()
