@@ -196,9 +196,10 @@ test.describe('Home (logged in)', () => {
     // While cards are due the story is a locked next step, with its readability.
     await expect(home.storyHandoff.getByText('Finish cards to unlock')).toBeVisible();
     await expect(home.storyHandoff.getByText(/HSK \d · \d+% readable/)).toBeVisible();
-    // The fixture story has no cover, so it wears the illustrated fallback
-    // family — a drawn tile, never a Hanzi placeholder.
-    await expect(home.storyHandoff.locator('[data-story-tile]')).toBeVisible();
+    // Fixture stories carry production-shaped cover art (image_path through
+    // the storage mock), so the hand-off leads with the real cover — the
+    // drawn fallback tile is reserved for a missing or failed image.
+    await expect(home.storyHandoff.locator('img')).toBeVisible();
   });
 
   test('the hero carries its landscape, decorative and inert', async () => {

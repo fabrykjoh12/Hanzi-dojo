@@ -8,6 +8,7 @@
 // This lets `npm run e2e` run anywhere — laptop, CI, cloud sandbox — with no
 // secrets and identical results every time. VITE_SUPABASE_URL is set to
 // https://mock.supabase.co in .env.e2e, so the project ref is "mock".
+import { fileURLToPath } from 'node:url';
 import { test as base, expect } from '@playwright/test';
 import {
   INKBOUND_MANIFEST,
@@ -218,6 +219,22 @@ const STORIES = [{
   },
 }];
 
+// Production has cover art on EVERY published story — image_path is a storage
+// path (stories/<uuid>/cover.webp) inside the public audio bucket, turned into
+// a URL by getAudioUrl(). The fixtures mirror that contract: every story gets
+// a realistic image_path, and the storage branch of the route mock serves a
+// committed cover for it — so E2E shelves and screenshots look like the real
+// library, not a wall of coverless fallbacks.
+for (const s of STORIES) if (!s.image_path) s.image_path = `stories/${s.id}/cover.webp`;
+
+// The committed covers the storage mock serves, mapped deterministically per
+// object path so a story keeps the same art across runs and screenshots.
+const COVER_FILES = [
+  'hsk1-08-work-and-school.webp',
+  'hsk1-10-li-ming-sings.webp',
+  'hsk1-12-our-song.webp',
+].map(f => fileURLToPath(new URL(`../../public/story-covers/generated/${f}`, import.meta.url)));
+
 function card(n, o = {}) {
   const state = o.state || 'review';
   const isNew = state === 'new';
@@ -347,6 +364,17 @@ export async function mockSupabaseRoutes(page) {
       else if (fn === 'dict_words_containing') body = [];
       else if (fn === 'dict_add_to_deck') body = { vocab_id: 'ddeck1', source: 'dictionary', already_in_deck: false };
       return route.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    }
+    // Public-bucket objects (getAudioUrl): serve story covers from the
+    // committed art; anything else (audio) 404s quietly like a missing file.
+    if (url.pathname.startsWith('/storage/v1/object/public/audio/')) {
+      const objectPath = url.pathname.replace('/storage/v1/object/public/audio/', '');
+      if (objectPath.endsWith('.webp')) {
+        let h = 0;
+        for (const ch of objectPath) h = (h * 31 + ch.charCodeAt(0)) % 997;
+        return route.fulfill({ path: COVER_FILES[h % COVER_FILES.length], contentType: 'image/webp' });
+      }
+      return route.fulfill({ status: 404, headers: CORS, body: '' });
     }
     if (url.pathname.startsWith('/rest/v1/')) {
       const table = url.pathname.replace('/rest/v1/', '').split('?')[0];
