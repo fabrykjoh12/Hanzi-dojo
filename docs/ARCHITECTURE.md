@@ -134,6 +134,10 @@ stories
   presentation text             -- 'paced' | 'chat' | 'scene' | 'manhua'; see src/readerMode.js
   interactions jsonb            -- reply-along chat only: { you, distractors }
   panels jsonb                  -- manhua only: the panel layout. See "Manhua episodes" below.
+  generation_meta jsonb         -- provenance of generated/staged stories (batch, manifest,
+                                   generator/prompt/validator versions, provider/model, targets).
+                                   NULL for hand-authored/legacy rows; written only by
+                                   stage-story-candidates.mjs; never read at runtime.
 
 story_vocab
   story_id uuid REFERENCES stories
@@ -681,6 +685,53 @@ The replacement for `generate-stories.mjs` (which is now legacy — kept for ref
 6. **TRANSLATE**: separate line-aligned pass, count-checked, one retry.
 
 Chapters passing every gate insert with `is_published=true`; failures insert `is_published=false` (review in the dashboard, fix, flip). Character bibles live in the script; Chinese names MUST stay within `src/characterNames.js`'s `CHARACTER_READINGS` map (name-tap detection) — currently 李明, 小红, 小明, 大毛 (妈妈 is a role noun and deliberately not in that map). Uses the **premium LLM tier** — `premiumLlm()` in `llm.mjs`, which picks Anthropic when `ANTHROPIC_API_KEY` is set (repo secret; `LLM_MODEL_PREMIUM` variable overrides the model) and falls back to the standard Gemini/Groq client otherwise. ~100 calls per level ≈ a dollar or two on a premium model. Bulk tasks (examples/meanings) never use the premium tier. Action tasks (all `--replace`: they DELETE the level's existing stories first): `serial-hsk1`, `serial-hsk2`, `serial-jlpt1`, `serial-n4`, `serial-russian`. After a run, dispatch the matching `story-audio-*` task to regenerate narration.
+
+### Targeted story generation (FAB-9/FAB-10) — coverage-driven candidates
+
+The pipeline that turns the FAB-5 coverage audit into new stories that
+deliberately reinforce under-covered vocabulary. Distinct from the serial
+generator above in one structural way: **generation cannot touch the
+database.** The flow is
+
+```
+coverage report → coverage plan → manifests → generate → validate → repair
+              → candidate FILES → (separate tool) staged HELD rows → human publish
+```
+
+**Modules (root `.mjs`, all pure, all unit-tested):**
+
+| Module | Role |
+|--------|------|
+| `storyCorpusCalibration.mjs` | Measures the published corpus through the canonical engine (length, same-level "teaching payload", out-of-level/unknown shares, repetition, pairwise similarity). Evidence committed at `docs/audits/story-defaults-calibration.json`; run `calibrate-story-defaults.mjs`. |
+| `storyCoveragePlanner.mjs` | WHICH words need reinforcement: zero-exposure first, then single; frequency order in-band; round-robin scheduling with per-word batch caps; `recordAcceptedCandidate` updates projected exposure so a batch stops targeting satisfied words. |
+| `storyManifestPlanner.mjs` | HOW targets become stories: composes `story-manifest@1` manifests (per-target occurrence bounds, difficulty caps, length, speakers, forbidden). Defaults mirror the calibration JSON, **provisional until the pilot**. Optional async `themePlanner` hook (an LLM may name a theme and bounce incompatible words to the next manifest — advice only, never authority). |
+| `storyCandidateValidation.mjs` | The deterministic FAB-10 gate: targets present within bounds, difficulty caps, structure, repetition, duplicate detection (copies FAIL, look-alikes WARN — thresholds calibrated on the real corpus). Machine-readable `{verdict, failures[], warnings[], metrics}` + `formatValidation` human summary. Counts come from `calculateStoryReadability` — validator, reader, audit and calibration agree by construction. |
+| `storyGenPrompts.mjs` / `storyGenPipeline.mjs` | Prompt builders/parsers (plain-text protocol, never JSON) and the per-manifest loop: draft → validate → targeted repair (bounded) → optional LLM critique + quality revision (**never overrules the gate**) → translation → final validation. Provider injected — tests run on scripted fakes, production wires `premiumLlm()`. |
+| `storyStaging.mjs` | The ingestion gate's pure logic: only `status: accepted` + verdict PASS stageable; already-staged and title collisions refused; rows always `is_published=false` with `generation_meta` provenance. |
+
+**Tools:**
+
+- `generate-targeted-stories.mjs` — the batch runner. **No Supabase import
+  (enforced by a spec in `storyStaging.test.mjs`)**; reads a corpus dump
+  (`--input`, same shape as `audit-story-coverage.mjs`), writes candidate files
+  to `data/story-candidates/<batch>/` plus a batch report with a projected
+  coverage delta. `--dry-run` composes manifests only; `--provider fake
+  --responses <file>` runs the whole loop on scripted responses (zero API
+  calls); `--provider premium` uses the `llm.mjs` premium tier.
+- `stage-story-candidates.mjs` — the ONLY door into the database. Dry-run by
+  default; refuses anything not accepted+PASS, anything already staged, title
+  collisions — and **re-validates every candidate with the current validator
+  against the live pool and corpus** before inserting `is_published=false`
+  rows. Publication stays the existing human flow (summaries, cover art,
+  questions, audio first — then `publish-stories.mjs` / the dashboard).
+
+The provisional defaults were calibrated 2026-08-20 over the 204-story corpus
+(the corpus dump was hash-verified against production and reproduces the FAB-5
+baseline exactly). Key calibration finding: existing HSK 3–6 stories carry
+almost no same-level vocabulary (median 5.5/2/1/0 distinct words), so
+targets-per-story at those levels comes from the healthy-corpus reference
+payload, not their own medians. No mass batch has been run; the first real
+pilot (3–5 HSK 3 stories) needs its own approval.
 
 ### generate-examples.mjs
 
