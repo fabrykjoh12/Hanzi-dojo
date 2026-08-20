@@ -8,6 +8,7 @@
 // This lets `npm run e2e` run anywhere — laptop, CI, cloud sandbox — with no
 // secrets and identical results every time. VITE_SUPABASE_URL is set to
 // https://mock.supabase.co in .env.e2e, so the project ref is "mock".
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { test as base, expect } from '@playwright/test';
 import {
@@ -369,6 +370,15 @@ export async function mockSupabaseRoutes(page) {
     // committed art; anything else (audio) 404s quietly like a missing file.
     if (url.pathname.startsWith('/storage/v1/object/public/audio/')) {
       const objectPath = url.pathname.replace('/storage/v1/object/public/audio/', '');
+      // Fixture stories whose image_path slug names a committed cover get that
+      // exact art (tests/fixtures/covers — real production covers, fetched by
+      // the art pipeline); everything else falls back to the hash wheel below
+      // so no story ever renders coverless.
+      const slug = objectPath.match(/^stories\/([A-Za-z0-9-]+)\/cover\.webp$/);
+      if (slug) {
+        const fixtureCover = fileURLToPath(new URL(`./covers/${slug[1]}.webp`, import.meta.url));
+        if (existsSync(fixtureCover)) return route.fulfill({ path: fixtureCover, contentType: 'image/webp' });
+      }
       if (objectPath.endsWith('.webp')) {
         let h = 0;
         for (const ch of objectPath) h = (h * 31 + ch.charCodeAt(0)) % 997;
