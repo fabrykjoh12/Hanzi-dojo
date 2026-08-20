@@ -328,12 +328,17 @@ export function proposeDefaults(calibration) {
   }
   for (const l of calibration.byLevel) {
     if (!l.calibratedOn) continue
-    const minLines = Math.max(6, Math.round(l.lines.p25))
-    const maxLines = Math.max(minLines + 8, Math.round(l.lines.p75))
     const payload = Math.max(l.sameLevelDistinct.median, REFERENCE_PAYLOAD)
+    const targetsPerStory = clamp(Math.round(payload * 0.6), 4, 12)
+    // Length must leave the targets room: each target needs min-occurrence
+    // repeats, so a floor of targets+6 lines keeps a manifest from demanding
+    // 16 required occurrences inside an 11-line story (the chat-format p25
+    // would otherwise allow exactly that at HSK 2-3).
+    const minLines = Math.max(6, Math.round(l.lines.p25), targetsPerStory + 6)
+    const maxLines = Math.max(minLines + 8, Math.round(l.lines.p75))
     out.byLevel[l.level] = {
       provisional: true,
-      targetsPerStory: clamp(Math.round(payload * 0.6), 4, 12),
+      targetsPerStory,
       occurrences: {
         min: 2,
         max: clamp(Math.round(l.sameLevelWordOccurrences.p90), 4, 8),
