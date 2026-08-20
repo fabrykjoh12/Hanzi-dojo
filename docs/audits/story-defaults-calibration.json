@@ -1,0 +1,873 @@
+{
+  "purpose": "Per-level distributions of the published Chinese story corpus, measured with the canonical matcher, plus the PROVISIONAL manifest defaults derived from them (FAB-9/FAB-10). Regenerate with: node calibrate-story-defaults.mjs --input <dump>. Refresh only deliberately — storyManifestPlanner.mjs defaults are justified by this file.",
+  "generatedAt": "2026-08-20T20:31:51.404Z",
+  "engine": {
+    "matcher": "src/storyReading.js — calculateStoryReadability for counts, segmentLine for unknown runs; same engine as reader, FAB-5 audit and FAB-10 validator",
+    "node": "v22.22.2",
+    "zhSegmenter": true
+  },
+  "defaults": {
+    "nearDuplicate": {
+      "provisional": true,
+      "warn": {
+        "jaccard": 0.3,
+        "containment": 0.6
+      },
+      "fail": {
+        "jaccard": 0.55,
+        "containment": 0.85
+      },
+      "evidence": {
+        "corpusP99": 0.04,
+        "corpusMax": 0.338
+      }
+    },
+    "byLevel": {
+      "1": {
+        "provisional": true,
+        "targetsPerStory": 12,
+        "occurrences": {
+          "min": 2,
+          "max": 5
+        },
+        "maxOutOfLevelDistinct": 4,
+        "maxOutOfLevelCharShare": 0.08,
+        "maxUnknownDistinct": 2,
+        "maxUnknownCharShare": 0.02,
+        "lines": [
+          17,
+          40
+        ],
+        "maxRepeatedTrigramShare": 0.24
+      },
+      "2": {
+        "provisional": true,
+        "targetsPerStory": 8,
+        "occurrences": {
+          "min": 2,
+          "max": 4
+        },
+        "maxOutOfLevelDistinct": 9,
+        "maxOutOfLevelCharShare": 0.12,
+        "maxUnknownDistinct": 2,
+        "maxUnknownCharShare": 0.03,
+        "lines": [
+          12,
+          42
+        ],
+        "maxRepeatedTrigramShare": 0.195
+      },
+      "3": {
+        "provisional": true,
+        "targetsPerStory": 8,
+        "occurrences": {
+          "min": 2,
+          "max": 4
+        },
+        "maxOutOfLevelDistinct": 3,
+        "maxOutOfLevelCharShare": 0.07,
+        "maxUnknownDistinct": 2,
+        "maxUnknownCharShare": 0.07,
+        "lines": [
+          11,
+          38
+        ],
+        "maxRepeatedTrigramShare": 0.165
+      },
+      "4": {
+        "provisional": true,
+        "targetsPerStory": 8,
+        "occurrences": {
+          "min": 2,
+          "max": 4
+        },
+        "maxOutOfLevelDistinct": 3,
+        "maxOutOfLevelCharShare": 0.02,
+        "maxUnknownDistinct": 4,
+        "maxUnknownCharShare": 0.04,
+        "lines": [
+          27,
+          38
+        ],
+        "maxRepeatedTrigramShare": 0.09
+      },
+      "5": {
+        "provisional": true,
+        "targetsPerStory": 8,
+        "occurrences": {
+          "min": 2,
+          "max": 4
+        },
+        "maxOutOfLevelDistinct": 2,
+        "maxOutOfLevelCharShare": 0.02,
+        "maxUnknownDistinct": 6,
+        "maxUnknownCharShare": 0.04,
+        "lines": [
+          26,
+          37
+        ],
+        "maxRepeatedTrigramShare": 0.075
+      },
+      "6": {
+        "provisional": true,
+        "targetsPerStory": 8,
+        "occurrences": {
+          "min": 2,
+          "max": 4
+        },
+        "maxOutOfLevelDistinct": 2,
+        "maxOutOfLevelCharShare": 0.02,
+        "maxUnknownDistinct": 6,
+        "maxUnknownCharShare": 0.04,
+        "lines": [
+          26,
+          37
+        ],
+        "maxRepeatedTrigramShare": 0.09
+      }
+    }
+  },
+  "byLevel": [
+    {
+      "level": 1,
+      "stories": 52,
+      "calibratedOn": 47,
+      "excluded": 5,
+      "lines": {
+        "n": 47,
+        "p25": 16.5,
+        "median": 34,
+        "p75": 39.5,
+        "p90": 42.8,
+        "max": 51
+      },
+      "cjkChars": {
+        "n": 47,
+        "p25": 86.5,
+        "median": 200,
+        "p75": 222.5,
+        "p90": 248.8,
+        "max": 321
+      },
+      "distinctVocab": {
+        "n": 47,
+        "p25": 39.5,
+        "median": 60,
+        "p75": 70.5,
+        "p90": 79.4,
+        "max": 89
+      },
+      "occurrencesTotal": {
+        "n": 47,
+        "p25": 63.5,
+        "median": 152,
+        "p75": 169,
+        "p90": 193.4,
+        "max": 231
+      },
+      "sameLevelDistinct": {
+        "n": 47,
+        "p25": 37,
+        "median": 58,
+        "p75": 67.5,
+        "p90": 76.4,
+        "max": 88
+      },
+      "sameLevelWordOccurrences": {
+        "n": 2567,
+        "p25": 1,
+        "median": 2,
+        "p75": 3,
+        "p90": 5,
+        "max": 17
+      },
+      "outOfLevelDistinct": {
+        "n": 47,
+        "p25": 1,
+        "median": 2,
+        "p75": 4,
+        "p90": 5.4,
+        "max": 10
+      },
+      "outOfLevelCharShare": {
+        "n": 47,
+        "p25": 0.01,
+        "median": 0.04,
+        "p75": 0.08,
+        "p90": 0.11,
+        "max": 0.20930232558139536
+      },
+      "unknownDistinct": {
+        "n": 47,
+        "p25": 0,
+        "median": 1,
+        "p75": 1,
+        "p90": 2,
+        "max": 5
+      },
+      "unknownCharShare": {
+        "n": 47,
+        "p25": 0,
+        "median": 0.01,
+        "p75": 0.01,
+        "p90": 0.04,
+        "max": 0.07772020725388601
+      },
+      "topWordShare": {
+        "n": 47,
+        "p25": 0.06,
+        "median": 0.07,
+        "p75": 0.09,
+        "p90": 0.1,
+        "max": 0.125
+      },
+      "repeatedLines": {
+        "n": 47,
+        "p25": 0,
+        "median": 0,
+        "p75": 0,
+        "p90": 1,
+        "max": 3
+      },
+      "repeatedTrigramShare": {
+        "n": 47,
+        "p25": 0.04,
+        "median": 0.08,
+        "p75": 0.12,
+        "p90": 0.16,
+        "max": 0.19047619047619047
+      }
+    },
+    {
+      "level": 2,
+      "stories": 51,
+      "calibratedOn": 47,
+      "excluded": 4,
+      "lines": {
+        "n": 47,
+        "p25": 12,
+        "median": 33,
+        "p75": 42,
+        "p90": 45.4,
+        "max": 52
+      },
+      "cjkChars": {
+        "n": 47,
+        "p25": 99.5,
+        "median": 199,
+        "p75": 279.5,
+        "p90": 382,
+        "max": 411
+      },
+      "distinctVocab": {
+        "n": 47,
+        "p25": 47,
+        "median": 67,
+        "p75": 86,
+        "p90": 102,
+        "max": 107
+      },
+      "occurrencesTotal": {
+        "n": 47,
+        "p25": 71.5,
+        "median": 154,
+        "p75": 224.5,
+        "p90": 300.6,
+        "max": 342
+      },
+      "sameLevelDistinct": {
+        "n": 47,
+        "p25": 11,
+        "median": 14,
+        "p75": 18.5,
+        "p90": 20.8,
+        "max": 27
+      },
+      "sameLevelWordOccurrences": {
+        "n": 678,
+        "p25": 1,
+        "median": 1,
+        "p75": 2,
+        "p90": 3,
+        "max": 12
+      },
+      "outOfLevelDistinct": {
+        "n": 47,
+        "p25": 2,
+        "median": 3,
+        "p75": 8.5,
+        "p90": 14.8,
+        "max": 19
+      },
+      "outOfLevelCharShare": {
+        "n": 47,
+        "p25": 0.04,
+        "median": 0.09,
+        "p75": 0.12,
+        "p90": 0.14,
+        "max": 0.20100502512562815
+      },
+      "unknownDistinct": {
+        "n": 47,
+        "p25": 0,
+        "median": 1,
+        "p75": 2,
+        "p90": 5,
+        "max": 8
+      },
+      "unknownCharShare": {
+        "n": 47,
+        "p25": 0,
+        "median": 0.01,
+        "p75": 0.03,
+        "p90": 0.04,
+        "max": 0.16
+      },
+      "topWordShare": {
+        "n": 47,
+        "p25": 0.06,
+        "median": 0.07,
+        "p75": 0.08,
+        "p90": 0.09,
+        "max": 0.1320754716981132
+      },
+      "repeatedLines": {
+        "n": 47,
+        "p25": 0,
+        "median": 0,
+        "p75": 0,
+        "p90": 0.4,
+        "max": 1
+      },
+      "repeatedTrigramShare": {
+        "n": 47,
+        "p25": 0.02,
+        "median": 0.07,
+        "p75": 0.11,
+        "p90": 0.13,
+        "max": 0.13777777777777778
+      }
+    },
+    {
+      "level": 3,
+      "stories": 38,
+      "calibratedOn": 36,
+      "excluded": 2,
+      "lines": {
+        "n": 36,
+        "p25": 11,
+        "median": 22.5,
+        "p75": 38,
+        "p90": 42,
+        "max": 45
+      },
+      "cjkChars": {
+        "n": 36,
+        "p25": 101.5,
+        "median": 151,
+        "p75": 245.25,
+        "p90": 277,
+        "max": 298
+      },
+      "distinctVocab": {
+        "n": 36,
+        "p25": 48.75,
+        "median": 65.5,
+        "p75": 79,
+        "p90": 87.5,
+        "max": 92
+      },
+      "occurrencesTotal": {
+        "n": 36,
+        "p25": 74.25,
+        "median": 113.5,
+        "p75": 190.25,
+        "p90": 213,
+        "max": 241
+      },
+      "sameLevelDistinct": {
+        "n": 36,
+        "p25": 3.75,
+        "median": 5.5,
+        "p75": 8,
+        "p90": 10,
+        "max": 13
+      },
+      "sameLevelWordOccurrences": {
+        "n": 207,
+        "p25": 1,
+        "median": 1,
+        "p75": 1,
+        "p90": 2,
+        "max": 4
+      },
+      "outOfLevelDistinct": {
+        "n": 36,
+        "p25": 1,
+        "median": 2,
+        "p75": 3,
+        "p90": 5,
+        "max": 8
+      },
+      "outOfLevelCharShare": {
+        "n": 36,
+        "p25": 0.01,
+        "median": 0.04,
+        "p75": 0.07,
+        "p90": 0.1,
+        "max": 0.12449799196787148
+      },
+      "unknownDistinct": {
+        "n": 36,
+        "p25": 1,
+        "median": 1,
+        "p75": 2,
+        "p90": 4,
+        "max": 5
+      },
+      "unknownCharShare": {
+        "n": 36,
+        "p25": 0,
+        "median": 0.02,
+        "p75": 0.07,
+        "p90": 0.09,
+        "max": 0.14049586776859505
+      },
+      "topWordShare": {
+        "n": 36,
+        "p25": 0.06,
+        "median": 0.07,
+        "p75": 0.08,
+        "p90": 0.1,
+        "max": 0.140625
+      },
+      "repeatedLines": {
+        "n": 36,
+        "p25": 0,
+        "median": 0,
+        "p75": 0,
+        "p90": 0.5,
+        "max": 1
+      },
+      "repeatedTrigramShare": {
+        "n": 36,
+        "p25": 0.02,
+        "median": 0.04,
+        "p75": 0.08,
+        "p90": 0.11,
+        "max": 0.14802631578947367
+      }
+    },
+    {
+      "level": 4,
+      "stories": 21,
+      "calibratedOn": 21,
+      "excluded": 0,
+      "lines": {
+        "n": 21,
+        "p25": 27,
+        "median": 32,
+        "p75": 38,
+        "p90": 39,
+        "max": 41
+      },
+      "cjkChars": {
+        "n": 21,
+        "p25": 192,
+        "median": 211,
+        "p75": 263,
+        "p90": 325,
+        "max": 346
+      },
+      "distinctVocab": {
+        "n": 21,
+        "p25": 77,
+        "median": 85,
+        "p75": 93,
+        "p90": 120,
+        "max": 126
+      },
+      "occurrencesTotal": {
+        "n": 21,
+        "p25": 146,
+        "median": 159,
+        "p75": 207,
+        "p90": 242,
+        "max": 266
+      },
+      "sameLevelDistinct": {
+        "n": 21,
+        "p25": 1,
+        "median": 2,
+        "p75": 3,
+        "p90": 5,
+        "max": 8
+      },
+      "sameLevelWordOccurrences": {
+        "n": 49,
+        "p25": 1,
+        "median": 1,
+        "p75": 2,
+        "p90": 2,
+        "max": 4
+      },
+      "outOfLevelDistinct": {
+        "n": 21,
+        "p25": 1,
+        "median": 2,
+        "p75": 3,
+        "p90": 3,
+        "max": 3
+      },
+      "outOfLevelCharShare": {
+        "n": 21,
+        "p25": 0.01,
+        "median": 0.02,
+        "p75": 0.02,
+        "p90": 0.03,
+        "max": 0.041025641025641026
+      },
+      "unknownDistinct": {
+        "n": 21,
+        "p25": 2,
+        "median": 2,
+        "p75": 4,
+        "p90": 7,
+        "max": 7
+      },
+      "unknownCharShare": {
+        "n": 21,
+        "p25": 0.01,
+        "median": 0.02,
+        "p75": 0.04,
+        "p90": 0.04,
+        "max": 0.055
+      },
+      "topWordShare": {
+        "n": 21,
+        "p25": 0.05,
+        "median": 0.06,
+        "p75": 0.07,
+        "p90": 0.08,
+        "max": 0.08641975308641975
+      },
+      "repeatedLines": {
+        "n": 21,
+        "p25": 0,
+        "median": 0,
+        "p75": 0,
+        "p90": 0,
+        "max": 0
+      },
+      "repeatedTrigramShare": {
+        "n": 21,
+        "p25": 0.02,
+        "median": 0.03,
+        "p75": 0.05,
+        "p90": 0.06,
+        "max": 0.08303249097472924
+      }
+    },
+    {
+      "level": 5,
+      "stories": 21,
+      "calibratedOn": 21,
+      "excluded": 0,
+      "lines": {
+        "n": 21,
+        "p25": 26,
+        "median": 32,
+        "p75": 37,
+        "p90": 40,
+        "max": 44
+      },
+      "cjkChars": {
+        "n": 21,
+        "p25": 204,
+        "median": 253,
+        "p75": 308,
+        "p90": 348,
+        "max": 416
+      },
+      "distinctVocab": {
+        "n": 21,
+        "p25": 88,
+        "median": 93,
+        "p75": 121,
+        "p90": 128,
+        "max": 138
+      },
+      "occurrencesTotal": {
+        "n": 21,
+        "p25": 160,
+        "median": 178,
+        "p75": 226,
+        "p90": 266,
+        "max": 311
+      },
+      "sameLevelDistinct": {
+        "n": 21,
+        "p25": 0,
+        "median": 1,
+        "p75": 3,
+        "p90": 4,
+        "max": 4
+      },
+      "sameLevelWordOccurrences": {
+        "n": 33,
+        "p25": 1,
+        "median": 1,
+        "p75": 2,
+        "p90": 2,
+        "max": 3
+      },
+      "outOfLevelDistinct": {
+        "n": 21,
+        "p25": 0,
+        "median": 0,
+        "p75": 1,
+        "p90": 1,
+        "max": 2
+      },
+      "outOfLevelCharShare": {
+        "n": 21,
+        "p25": 0,
+        "median": 0,
+        "p75": 0.01,
+        "p90": 0.01,
+        "max": 0.015810276679841896
+      },
+      "unknownDistinct": {
+        "n": 21,
+        "p25": 2,
+        "median": 4,
+        "p75": 6,
+        "p90": 8,
+        "max": 9
+      },
+      "unknownCharShare": {
+        "n": 21,
+        "p25": 0.01,
+        "median": 0.02,
+        "p75": 0.04,
+        "p90": 0.06,
+        "max": 0.06324110671936758
+      },
+      "topWordShare": {
+        "n": 21,
+        "p25": 0.05,
+        "median": 0.06,
+        "p75": 0.06,
+        "p90": 0.07,
+        "max": 0.0782122905027933
+      },
+      "repeatedLines": {
+        "n": 21,
+        "p25": 0,
+        "median": 0,
+        "p75": 0,
+        "p90": 0,
+        "max": 1
+      },
+      "repeatedTrigramShare": {
+        "n": 21,
+        "p25": 0.02,
+        "median": 0.03,
+        "p75": 0.04,
+        "p90": 0.05,
+        "max": 0.06808510638297872
+      }
+    },
+    {
+      "level": 6,
+      "stories": 21,
+      "calibratedOn": 21,
+      "excluded": 0,
+      "lines": {
+        "n": 21,
+        "p25": 26,
+        "median": 34,
+        "p75": 37,
+        "p90": 42,
+        "max": 43
+      },
+      "cjkChars": {
+        "n": 21,
+        "p25": 206,
+        "median": 265,
+        "p75": 344,
+        "p90": 354,
+        "max": 380
+      },
+      "distinctVocab": {
+        "n": 21,
+        "p25": 86,
+        "median": 102,
+        "p75": 119,
+        "p90": 125,
+        "max": 143
+      },
+      "occurrencesTotal": {
+        "n": 21,
+        "p25": 155,
+        "median": 200,
+        "p75": 260,
+        "p90": 267,
+        "max": 288
+      },
+      "sameLevelDistinct": {
+        "n": 21,
+        "p25": 0,
+        "median": 0,
+        "p75": 1,
+        "p90": 1,
+        "max": 2
+      },
+      "sameLevelWordOccurrences": {
+        "n": 11,
+        "p25": 1,
+        "median": 1,
+        "p75": 1,
+        "p90": 2,
+        "max": 3
+      },
+      "outOfLevelDistinct": {
+        "n": 21,
+        "p25": 0,
+        "median": 0,
+        "p75": 0,
+        "p90": 0,
+        "max": 0
+      },
+      "outOfLevelCharShare": {
+        "n": 21,
+        "p25": 0,
+        "median": 0,
+        "p75": 0,
+        "p90": 0,
+        "max": 0
+      },
+      "unknownDistinct": {
+        "n": 21,
+        "p25": 1,
+        "median": 4,
+        "p75": 6,
+        "p90": 8,
+        "max": 10
+      },
+      "unknownCharShare": {
+        "n": 21,
+        "p25": 0,
+        "median": 0.02,
+        "p75": 0.04,
+        "p90": 0.06,
+        "max": 0.09164420485175202
+      },
+      "topWordShare": {
+        "n": 21,
+        "p25": 0.05,
+        "median": 0.06,
+        "p75": 0.06,
+        "p90": 0.08,
+        "max": 0.08812260536398467
+      },
+      "repeatedLines": {
+        "n": 21,
+        "p25": 0,
+        "median": 0,
+        "p75": 0,
+        "p90": 0,
+        "max": 0
+      },
+      "repeatedTrigramShare": {
+        "n": 21,
+        "p25": 0.03,
+        "median": 0.04,
+        "p75": 0.05,
+        "p90": 0.06,
+        "max": 0.07407407407407407
+      }
+    }
+  ],
+  "similarity": {
+    "pairs": 19110,
+    "p50": 0.006,
+    "p90": 0.018,
+    "p99": 0.04,
+    "max": 0.338,
+    "topPairs": [
+      {
+        "a": "L2 周末做什么",
+        "b": "L2 周末的电影",
+        "jaccard": 0.338,
+        "containment": 0.649
+      },
+      {
+        "a": "L1 1. 八个人，我第八",
+        "b": "L1 6. 明天早上七点",
+        "jaccard": 0.121,
+        "containment": 0.22
+      },
+      {
+        "a": "L1 放学以后",
+        "b": "L1 放学以后聊天",
+        "jaccard": 0.114,
+        "containment": 0.225
+      },
+      {
+        "a": "L1 3. 二十四",
+        "b": "L1 4. 小明的二十分钟",
+        "jaccard": 0.103,
+        "containment": 0.203
+      },
+      {
+        "a": "L2 7. 十九和十八",
+        "b": "L2 12. 十八和十八",
+        "jaccard": 0.09,
+        "containment": 0.167
+      },
+      {
+        "a": "L1 放学以后聊天",
+        "b": "L2 周末的电影",
+        "jaccard": 0.085,
+        "containment": 0.162
+      },
+      {
+        "a": "L1 2. 椅子上的人",
+        "b": "L1 6. 您叫什么名字",
+        "jaccard": 0.08,
+        "containment": 0.192
+      },
+      {
+        "a": "L1 4. 小明的二十分钟",
+        "b": "L1 6. 明天早上七点",
+        "jaccard": 0.079,
+        "containment": 0.156
+      },
+      {
+        "a": "L1 2. 小红家的鸡蛋",
+        "b": "L1 5. 六点，七点，八点",
+        "jaccard": 0.078,
+        "containment": 0.149
+      },
+      {
+        "a": "L1 3. 我一个人做饭",
+        "b": "L1 5. 六点，七点，八点",
+        "jaccard": 0.078,
+        "containment": 0.149
+      },
+      {
+        "a": "L2 7. 十九和十八",
+        "b": "L3 15. 星期六",
+        "jaccard": 0.078,
+        "containment": 0.157
+      },
+      {
+        "a": "L2 2. 生日快乐",
+        "b": "L2 5. 快乐的生日",
+        "jaccard": 0.073,
+        "containment": 0.138
+      }
+    ]
+  }
+}
