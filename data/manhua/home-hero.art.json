@@ -1,29 +1,11 @@
 {
-  "_comment": "Not an episode: the Home hero's landscape art (Phase 2). Round 3 — crisper flat-vector craft, grounded dark base band, plain cinnabar text field, no celestial disc. Candidates are fetched for review; losers are pruned once one ships. Rides the manhua art pipeline (WebP renditions).",
+  "_comment": "Not an episode: the Home hero's landscape art. The provenance record for the shipped artwork — a crested cinnabar range with a moon-gate courtyard wall and bamboo, no celestial disc (the Home horizon band owns the sun/moon). It rides the manhua art pipeline because that is the repo's committed-art fetch path; the review round's losing candidates were deleted once this one was approved.",
   "dir": "src/assets",
   "assets": [
-    {
-      "file": "home-hero-r2-1.webp",
-      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260820_084115_1da04dfa-c60e-4ccb-a6aa-2449188ca5ac_min.webp",
-      "prompt": "Crisp flat vector cinnabar landscape: plain upper-left, full-width dark lower terrain band, mountains + moon-gate wall right-of-center, bamboo far right, one thin cloud, empty sky. [Recraft V4.1 job 1da04dfa]",
-      "generated": "2026-08-20"
-    },
     {
       "file": "home-hero-r2-2.webp",
       "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260820_084115_b02aed9e-d121-4295-960e-612c1d58bcc0_min.webp",
       "prompt": "Crisp flat vector cinnabar landscape: plain upper-left field, dark lower-third band, mountains right, large moon gate cropped at right edge, bamboo, two thin clouds upper right, empty sky. [Recraft V4.1 job b02aed9e]",
-      "generated": "2026-08-20"
-    },
-    {
-      "file": "home-hero-r2-3.webp",
-      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260820_084115_d47cf7c1-9813-43b7-9158-71a55e84a8a8_min.webp",
-      "prompt": "Crisp flat vector cinnabar landscape: plain upper-left half, dark bottom base band, lower-right concentration of stepped mountains + moon-gate wall + bamboo grove, one cloud line drifting left, empty sky. [Recraft V4.1 job d47cf7c1]",
-      "generated": "2026-08-20"
-    },
-    {
-      "file": "home-hero-r2-4.webp",
-      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3F2f9D8W1bdllmfrrKt84Fbkeot/hf_20260820_084115_41a5d737-c7d1-479b-8ce2-69d41e9d87c6_min.webp",
-      "prompt": "Museum-poster restraint: plain cinnabar field, one group of three mountains right, minimal moon-gate wall, bamboo leaves top right, one long thin cloud, dark bottom ground band, empty sky. [Recraft V4.1 job 41a5d737]",
       "generated": "2026-08-20"
     }
   ]
