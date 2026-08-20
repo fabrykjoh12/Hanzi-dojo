@@ -13,6 +13,8 @@ so the community always sees the latest. Keep it current — move things to
 
 ## 🚧 Now — in progress
 
+- [ ] **The Stories library is becoming series-first.** Browsing is being redesigned around choosing a series the way you'd choose a show, then choosing a chapter inside it: a single Continue-reading card at the top that always knows your next step (read the open chapter, read today's unlocked one, or do today's flashcards to unlock it), vertical cover grids in place of sideways-scrolling rails, short reads and practice as clearly secondary sections, passed levels folded behind "See all", and the next level as a small locked preview. The real cover art — every published story has one — finally carries the page. The series page (pick your chapter) is the next step of the same redesign. Unlock rules, rewards and reading progress are unchanged.
+
 - [ ] **A new app icon.** The brush-circle mark has been professionally refined — same logo, cleaner at small sizes — and now sits on a deep vermilion lacquer field. It gets proper dark-mode and tinted-mode versions on iOS (no more system-generated guesswork) and themed-icon support on Android. Lands with the next app release.
 
 **Just shipped**

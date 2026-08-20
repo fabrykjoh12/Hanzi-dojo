@@ -6,9 +6,8 @@
 // active-series resolution untouched; this is a presentation model over them:
 //
 //   { kind: 'continue' }        — the next unread chapter is open: read it
-//   { kind: 'session-locked' }  — the next chapter waits behind today's
-//                                 flashcard session (reward 'locked'/'banked');
-//                                 the card's action goes to Study
+//   { kind: 'session-locked' }  — the next unread chapter waits behind today's
+//                                 flashcard session; the action goes to Study
 //   { kind: 'unlocked-today' }  — today's reward chapter is claimed and unread
 //   { kind: 'start-here' }      — nothing is mid-flight; feature the best
 //                                 unstarted pick (the daily featured story)
@@ -21,7 +20,7 @@
 //   total } for a started multi-chapter unit), knownPct, minutes, action
 //   ('read' | 'study').
 
-import { chapterInfo, readingMinutes } from './storyChapters'
+import { chapterInfo, readingMinutes, seriesCta } from './storyChapters'
 
 function partIndex(unit, story) {
   if (!unit || !story) return 0
@@ -57,28 +56,28 @@ function model({ kind, unit, chapter, readIds, knownPct, action }) {
 }
 
 // continueCard({
-//   rewardState,   from rewardStateFor (or null while loading)
+//   rewardState,   from rewardStateFor (or null while loading) — only its
+//                  'unlocked-today' claim takes precedence here
 //   activeUnit,    from resolveActiveSeries (or null)
+//   unlockIds,     the learner's story_unlocks (chapter gate input)
 //   units,         every unit on the shelf (reward units), for lookups
 //   stories,       published rows, to resolve unlocked-today's storyId
 //   readIds,       Set of finished story ids
 //   featured,      the daily featured pick (pickDailyStory), or null
 //   knownPctFor,   (story) => 0-100 | null — caller memoizes readability
 // }) → card model | null
+//
+// Reading comes first: inside the active series the card points at the next
+// unread chapter — open means read it NOW, even when a later chapter could
+// also be unlocked by a session; only when that next chapter is itself locked
+// does the card become the session hand-off. (The reward machine still governs
+// what a session unlocks — this only decides what the card leads with.)
 export function continueCard({
-  rewardState, activeUnit, units, stories, readIds, featured, knownPctFor,
+  rewardState, activeUnit, unlockIds, units, stories, readIds, featured, knownPctFor,
 }) {
   const reads = readIds instanceof Set ? readIds : new Set(readIds || [])
   const pctOf = typeof knownPctFor === 'function' ? knownPctFor : () => null
   const state = rewardState && rewardState.state
-
-  if ((state === 'locked' || state === 'banked') && activeUnit && rewardState.chapter) {
-    // No readability on a locked chapter — the requirement is the message.
-    return model({
-      kind: 'session-locked', unit: activeUnit, chapter: rewardState.chapter,
-      readIds: reads, knownPct: null, action: 'study',
-    })
-  }
 
   if (state === 'unlocked-today') {
     const story = (stories || []).find(s => s && s.id === rewardState.storyId)
@@ -91,11 +90,28 @@ export function continueCard({
     // Already read today's unlock — fall through to whatever is next.
   }
 
-  if (state === 'all-unlocked' && activeUnit && rewardState.chapter) {
-    return model({
-      kind: 'continue', unit: activeUnit, chapter: rewardState.chapter,
-      readIds: reads, knownPct: pctOf(rewardState.chapter), action: 'read',
-    })
+  if (activeUnit) {
+    const cta = seriesCta({ parts: activeUnit.parts || [], readIds: reads, unlockIds })
+    if (cta && cta.kind === 'locked') {
+      // No readability on a locked chapter — the requirement is the message.
+      return model({
+        kind: 'session-locked', unit: activeUnit, chapter: cta.chapter,
+        readIds: reads, knownPct: null, action: 'study',
+      })
+    }
+    if (cta && cta.kind === 'continue') {
+      return model({
+        kind: 'continue', unit: activeUnit, chapter: cta.chapter,
+        readIds: reads, knownPct: pctOf(cta.chapter), action: 'read',
+      })
+    }
+    if (cta && cta.kind === 'start') {
+      return model({
+        kind: 'start-here', unit: activeUnit, chapter: cta.chapter,
+        readIds: reads, knownPct: pctOf(cta.chapter), action: 'read',
+      })
+    }
+    // 'reread' (series finished) falls through to the featured pick.
   }
 
   // Nothing mid-flight ('no-series', 'series-complete', or the fall-through

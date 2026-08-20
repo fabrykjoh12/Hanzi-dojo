@@ -135,7 +135,7 @@ test.describe('the floating dock', () => {
     const nav = page.getByRole('navigation', { name: 'Primary' });
     await expect(nav).toBeVisible();
 
-    await page.getByRole('button', { name: /Featured for you/ }).click();
+    await page.locator('button[data-continue-card]').click();
     // Every reader presentation (and the paced reader's launch screen) is
     // inside StoryReader, which declares focus.
     const back = page.getByRole('button', { name: /Back to (library|stories)/ });

@@ -17,12 +17,13 @@ const base = {
   units: [SERIES, MANHUA],
   stories: [...SERIES.parts, ...MANHUA.parts, STANDALONE],
   readIds: new Set(),
+  unlockIds: new Set(),
   featured: null,
   knownPctFor: () => 92,
 }
 
 describe('continueCard', () => {
-  it('session-locked: the next chapter waits behind today’s flashcards, action goes to Study', () => {
+  it('session-locked: the next unread chapter is gated, action goes to Study', () => {
     const card = continueCard({
       ...base,
       readIds: new Set(['m1']),
@@ -39,15 +40,21 @@ describe('continueCard', () => {
     expect(card.knownPct).toBeNull()
   })
 
-  it('banked behaves like session-locked (parity with the reward hero)', () => {
+  it('reading beats the reward pitch: an OPEN unread chapter leads even while a later one is lockable', () => {
+    // Chapter 2 is unlocked but unread; chapter 3 could be unlocked by a
+    // session. The honest next step is reading chapter 2 — the reward machine
+    // still governs what a session unlocks, but the card leads with reading.
     const card = continueCard({
       ...base,
       readIds: new Set(['m1']),
-      rewardState: { state: 'banked', chapter: SERIES.parts[1] },
+      unlockIds: new Set(['m2']),
+      rewardState: { state: 'locked', chapter: SERIES.parts[2] },
       activeUnit: SERIES,
     })
-    expect(card.kind).toBe('session-locked')
-    expect(card.action).toBe('study')
+    expect(card.kind).toBe('continue')
+    expect(card.chapter.id).toBe('m2')
+    expect(card.chapterNumber).toBe(2)
+    expect(card.action).toBe('read')
   })
 
   it('unlocked-today: the claimed chapter reads now, with readability and minutes', () => {
@@ -65,11 +72,23 @@ describe('continueCard', () => {
     expect(card.minutes).toBeGreaterThan(0)
   })
 
-  it('unlocked-today already read falls through to the featured pick', () => {
+  it('unlocked-today already read hands back to the series — next chapter gated means session-locked', () => {
     const card = continueCard({
       ...base,
       readIds: new Set(['m1', 'm2']),
       rewardState: { state: 'unlocked-today', storyId: 'm2' },
+      activeUnit: SERIES,
+      featured: STANDALONE,
+    })
+    expect(card.kind).toBe('session-locked')
+    expect(card.chapter.id).toBe('m3')
+  })
+
+  it('a finished active series falls through to the featured pick', () => {
+    const card = continueCard({
+      ...base,
+      readIds: new Set(['m1', 'm2', 'm3']),
+      rewardState: { state: 'series-complete' },
       activeUnit: SERIES,
       featured: STANDALONE,
     })
@@ -81,6 +100,7 @@ describe('continueCard', () => {
     const card = continueCard({
       ...base,
       readIds: new Set(['m1', 'm2']),
+      unlockIds: new Set(['m3']),
       rewardState: { state: 'all-unlocked', chapter: SERIES.parts[2] },
       activeUnit: SERIES,
     })
@@ -88,6 +108,17 @@ describe('continueCard', () => {
     expect(card.chapterNumber).toBe(3)
     expect(card.progress).toEqual({ readCount: 2, total: 3 })
     expect(card.knownPct).toBe(92)
+  })
+
+  it('an active series with nothing read yet starts at chapter one', () => {
+    const card = continueCard({
+      ...base,
+      rewardState: { state: 'locked', chapter: SERIES.parts[0] },
+      activeUnit: SERIES,
+    })
+    expect(card.kind).toBe('start-here')
+    expect(card.chapter.id).toBe('m1')
+    expect(card.action).toBe('read')
   })
 
   it('start-here: no active series features the daily pick through its unit', () => {
@@ -128,7 +159,10 @@ describe('continueCard', () => {
   })
 
   it('renders nothing when there is nothing to point at', () => {
-    expect(continueCard({ ...base, rewardState: { state: 'series-complete' }, activeUnit: SERIES })).toBeNull()
+    expect(continueCard({
+      ...base, readIds: new Set(['m1', 'm2', 'm3']),
+      rewardState: { state: 'series-complete' }, activeUnit: SERIES,
+    })).toBeNull()
     expect(continueCard({ ...base, rewardState: null, activeUnit: null })).toBeNull()
     // A featured story the learner already read is noise, not a card.
     expect(continueCard({

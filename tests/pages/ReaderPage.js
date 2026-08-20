@@ -1,16 +1,29 @@
-// Page Object for the story reader (poster shelf → series page → reader).
-// See src/Stories.jsx: the library is poster rails (level sections, manhua,
-// practice), one poster per series or standalone story. Tapping a standalone
-// poster opens the reader directly; tapping a multi-chapter series poster
-// opens its series detail page, whose chapter rows open the reader. A poster
-// can appear on more than one rail (its level section AND the Manhua rail),
-// so lookups always take the first match.
+// Page Object for the story reader (poster grids → series page → reader).
+// See src/Stories.jsx: the library is series-first vertical poster grids
+// (current level's series, short reads, practice, collapsed earlier levels),
+// one poster per series or standalone story. Tapping a standalone poster
+// opens the reader directly; tapping a multi-chapter series poster opens its
+// series detail page, whose chapter rows open the reader. Lookups scope to
+// the grids so the Continue card — which may show the same title — never
+// shadows a poster, and take the first match.
 export class ReaderPage {
   constructor(page) {
     this.page = page;
   }
   async gotoStories() {
     await this.page.goto('/stories');
+  }
+
+  // Passed levels collapse to a two-poster preview — open every "See all"
+  // so lookups reach the full library regardless of which level holds the
+  // story. Each click flips one expander to "Show less".
+  async expandAllLevels() {
+    await this.page.getByTestId('poster-grid').first().waitFor({ state: 'visible' });
+    for (let i = 0; i < 8; i += 1) {
+      const seeAll = this.page.getByRole('button', { name: /See all \d+/ }).first();
+      if ((await seeAll.count()) === 0) break;
+      await seeAll.click();
+    }
   }
 
   // Opens the seeded first story into the reader.
@@ -22,7 +35,8 @@ export class ReaderPage {
   // the hero — which may show the same title — never shadows the poster.
   async openStoryByTitle(title) {
     await this.gotoStories();
-    const card = this.page.getByTestId('story-shelf-rail')
+    await this.expandAllLevels();
+    const card = this.page.getByTestId('poster-grid')
       .getByRole('button', { name: new RegExp(title) }).first();
     await card.click();
   }
@@ -33,7 +47,8 @@ export class ReaderPage {
   // in that case there is no chapter list to go through.
   async openSeriesStoryByTitle(seriesTitle, storyTitle) {
     await this.gotoStories();
-    const poster = this.page.getByTestId('story-shelf-rail')
+    await this.expandAllLevels();
+    const poster = this.page.getByTestId('poster-grid')
       .getByRole('button', { name: new RegExp(seriesTitle) }).first();
     await poster.click();
     const chapters = this.page.getByRole('heading', { name: 'Chapters' });

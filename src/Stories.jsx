@@ -1,18 +1,20 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { fetchPagedSafe } from './supabasePaging'
 import { supabase } from './supabase'
-import { getLevelLabel, getSystemLabel } from './utils'
+import { getLevelLabel } from './utils'
 import { cacheSet, cacheGet, prefsGet, prefsMerge } from './offline'
 import { toast } from './toast'
-import { languageTheme } from './languageTheme'
-import { HeroPanel, HeroAction, Eyebrow } from './panels'
+import { languageTheme, ink } from './languageTheme'
+import { Eyebrow } from './panels'
 import { tiersFor, learnedByLevel, readingGateCount, nextLockedTier } from './storyTiers'
 import { isLearned } from './mastery'
+import { isPracticeFormat } from './storyFormat'
 import { useIsMobile } from './useIsMobile'
 import { todayStr } from './streak'
 import { pickDailyStory } from './dailyStory'
-import { formatLabel } from './storyFormat'
 import { buildFlatShelf, buildNextLevelSection } from './storyShelfFlat'
+import { buildBrowseModel, posterMeta, readableLabel } from './storyBrowse'
+import { continueCard } from './storyContinue'
 import { calculateStoryReadability } from './storyReading'
 import { stripSceneEmoji } from './sceneReading'
 import { chapterInfo, nextChapterInfo, readingMinutes, seedUnlockIds } from './storyChapters'
@@ -21,12 +23,11 @@ import { claimStoryReward } from './storyRewardData'
 import StoryReader from './StoryReader'
 import StoryCover from './StoryCover'
 import StoryPoster from './StoryPoster'
+import StoryContinueCard from './StoryContinueCard'
 import SeriesDetail from './SeriesDetail'
 import TourOverlay from './TourOverlay'
 import { maybeStartTour, markTourSeen } from './tour'
-import {
-  ArrowRight, BookOpen, CheckCircle2, ChevronLeft, ChevronRight, CloudOff, Library, RefreshCw, Zap,
-} from 'lucide-react'
+import { CloudOff, Library, Lock, RefreshCw } from 'lucide-react'
 
 // The Stories library. Content is organized as SERIES → CHAPTER → READER:
 // vertical posters on horizontal rails (continue reading, the current level's
@@ -60,98 +61,6 @@ function isManhuaUnit(unit) {
   return (unit.parts || []).some(p => p && p.presentation === 'manhua')
 }
 
-// ─── SHELF ROWS ────────────────────────────────────────────────────────────
-
-// Poster rail item width: ~2.4 posters visible on a phone, fixed on desktop.
-function posterItemStyle(isMobile) {
-  return {
-    flex: isMobile ? '0 0 clamp(128px, 38vw, 168px)' : '0 0 176px',
-    scrollSnapAlign: 'start', minWidth: 0,
-  }
-}
-
-function ShelfRow({ id, title, subtitle, isMobile, children, dataTour }) {
-  const railRef = useRef(null)
-  const scroll = (direction) => {
-    const rail = railRef.current
-    if (!rail) return
-    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    rail.scrollBy({ left: direction * Math.max(rail.clientWidth * 0.78, 280), behavior: reduced ? 'auto' : 'smooth' })
-  }
-  return (
-    <section aria-labelledby={id} data-tour={dataTour} className="hd-rise" style={{ minWidth: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: '16px', marginBottom: '10px' }}>
-        <div style={{ minWidth: 0 }}>
-          <h2 id={id} style={{ margin: 0, color: 'var(--text)', fontSize: isMobile ? '17px' : '19px', fontWeight: 800, letterSpacing: '-0.02em' }}>
-            {title}
-          </h2>
-          {subtitle && <p style={{ margin: '3px 0 0', color: 'var(--text-muted)', fontSize: '12.5px', lineHeight: 1.45 }}>{subtitle}</p>}
-        </div>
-        {!isMobile && (
-          <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-            <button type="button" onClick={() => scroll(-1)} aria-label={'Scroll ' + title + ' left'} className="hd-press" style={railArrowStyle}>
-              <ChevronLeft size={19} aria-hidden="true" />
-            </button>
-            <button type="button" onClick={() => scroll(1)} aria-label={'Scroll ' + title + ' right'} className="hd-press" style={railArrowStyle}>
-              <ChevronRight size={19} aria-hidden="true" />
-            </button>
-          </div>
-        )}
-      </div>
-      <div
-        ref={railRef}
-        data-testid="story-shelf-rail"
-        data-shelf={id}
-        style={{
-          display: 'flex', gap: isMobile ? '12px' : '16px', overflowX: 'auto', overflowY: 'visible',
-          overscrollBehaviorInline: 'contain', scrollSnapType: 'x proximity', scrollbarWidth: 'thin',
-          padding: '4px 3px 16px', margin: '0 -3px', minWidth: 0,
-        }}
-      >
-        {children}
-      </div>
-    </section>
-  )
-}
-
-const railArrowStyle = {
-  width: '44px', height: '44px', borderRadius: '999px', border: '1px solid var(--border)',
-  background: 'var(--surface)', color: 'var(--text-muted)', display: 'grid', placeItems: 'center', cursor: 'pointer',
-}
-
-// ─── FILTER CHIPS ──────────────────────────────────────────────────────────
-
-function FilterChips({ options, value, onChange, accentHex }) {
-  return (
-    <div role="group" aria-label="Filter stories" style={{
-      display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none',
-      padding: '2px 3px 12px', margin: '0 -3px',
-    }}>
-      {options.map(opt => {
-        const active = opt.value === value
-        return (
-          <button
-            key={opt.value}
-            onClick={() => onChange(opt.value)}
-            aria-pressed={active}
-            className="hd-press"
-            style={{
-              flexShrink: 0, minHeight: '38px', padding: '0 15px', borderRadius: '999px',
-              border: '1px solid ' + (active ? 'transparent' : 'var(--border)'),
-              background: active ? accentHex : 'var(--surface)',
-              color: active ? '#fff' : 'var(--text-muted)',
-              fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-              transition: 'background 140ms ease, color 140ms ease',
-            }}
-          >
-            {opt.label}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
 // ─── EMPTY STATE ───────────────────────────────────────────────────────────
 
 function EmptyPanel({ icon: Icon, title, text, actionIcon: ActionIcon, actionLabel, onAction }) {
@@ -179,71 +88,6 @@ function EmptyPanel({ icon: Icon, title, text, actionIcon: ActionIcon, actionLab
         </div>
       )}
     </div>
-  )
-}
-
-// ─── THE HERO ──────────────────────────────────────────────────────────────
-
-// One lit panel, carrying the day's most useful next step: the story reward
-// when the learner has a series going (locked → "start flashcards", unlocked →
-// "read now", everything open → "continue"), and a featured pick otherwise.
-function StoriesHero({ hero, accentHex, fontFamily, isMobile, levelLabelOf }) {
-  const coverStory = hero.cover
-  return (
-    <HeroPanel
-      accentHex={accentHex}
-      seed={hero.seed}
-      padding="0"
-      compact={isMobile}
-      onClick={hero.onAction}
-      style={{ margin: '0 0 26px', minHeight: isMobile ? '280px' : '340px' }}
-      dataTour="stories-hero"
-    >
-      {({ hovered }) => (
-        <div style={{ position: 'relative', minHeight: isMobile ? '280px' : '340px', display: 'flex', alignItems: 'end' }}>
-          <StoryCover
-            story={coverStory} path={coverStory && coverStory.image_path} accent={accentHex} radius={0} loading="eager"
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
-          />
-          <div aria-hidden="true" style={{
-            position: 'absolute', inset: 0,
-            background: isMobile
-              ? 'linear-gradient(0deg, rgba(13,13,15,0.94) 0%, rgba(13,13,15,0.58) 58%, rgba(13,13,15,0.16) 100%)'
-              : 'linear-gradient(90deg, rgba(13,13,15,0.94) 0%, rgba(13,13,15,0.70) 42%, rgba(13,13,15,0.14) 76%)',
-          }} />
-          <div style={{ position: 'relative', zIndex: 1, padding: isMobile ? '22px 20px' : '34px 38px', maxWidth: isMobile ? '100%' : '620px' }}>
-            <Eyebrow onHero>{hero.eyebrow}</Eyebrow>
-            {hero.kicker && (
-              <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: '7px', marginTop: '12px',
-                fontSize: '12px', fontWeight: 800, letterSpacing: '0.04em',
-                color: '#fff', background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.22)',
-                borderRadius: '999px', padding: '6px 12px',
-              }}>
-                {hero.kickerIcon}
-                {hero.kicker}
-              </div>
-            )}
-            <div style={{
-              fontFamily: fontFamily + ', Inter, sans-serif', color: '#fff',
-              fontSize: isMobile ? '26px' : '36px', fontWeight: 700, lineHeight: 1.18,
-              letterSpacing: '-0.02em', margin: '10px 0 8px',
-            }}>
-              {hero.title}
-            </div>
-            {hero.subtitle && (
-              <div style={{ fontSize: isMobile ? '13px' : '14px', color: 'rgba(255,255,255,0.82)', lineHeight: 1.55, maxWidth: '52ch' }}>
-                {hero.subtitle}
-              </div>
-            )}
-            <div style={{ marginTop: '10px', color: 'rgba(255,255,255,0.64)', fontSize: '12px', fontWeight: 700 }}>
-              {hero.metaStory ? levelLabelOf(hero.metaStory) + ' · ' + formatLabel(hero.metaStory) : hero.meta}
-            </div>
-            <HeroAction label={hero.actionLabel} hovered={hovered} icon={hero.actionIcon || ArrowRight} accentHex={accentHex} />
-          </div>
-        </div>
-      )}
-    </HeroPanel>
   )
 }
 
@@ -276,7 +120,8 @@ export default function Stories({
   const [userCards, setUserCards] = useState({})
   const [loading, setLoading] = useState(true)
   const [loadFailed, setLoadFailed] = useState(false)
-  const [filter, setFilter] = useState('all')
+  // Which passed levels are expanded past their two-poster preview.
+  const [expandedLevels, setExpandedLevels] = useState(() => new Set())
   const missingStoryNotified = useRef(null)
   const redeemAttempted = useRef(false)
   const isMobile = useIsMobile()
@@ -302,13 +147,6 @@ export default function Stories({
   // The flat shelf (level sections of units), same machinery as before the
   // poster redesign — tier gates and % known sorting are unchanged.
   const { sections, aheadSection } = useMemo(() => {
-    const tiersAtL = (lvl) => tiersFor(track.language, lvl == null ? track.current_level : lvl)
-    const learnedAtL = (lvl) => readingGateCount({
-      level: lvl == null ? track.current_level : lvl,
-      currentLevel: track.current_level,
-      learnedAtLevel: learnedPerLevel[lvl == null ? track.current_level : lvl] || 0,
-      tiers: tiersAtL(lvl),
-    })
     const cache = new Map()
     const knownPctFor = (story) => {
       if (cache.has(story.id)) return cache.get(story.id)
@@ -317,6 +155,13 @@ export default function Stories({
       cache.set(story.id, knownPct)
       return knownPct
     }
+    const tiersAtL = (lvl) => tiersFor(track.language, lvl == null ? track.current_level : lvl)
+    const learnedAtL = (lvl) => readingGateCount({
+      level: lvl == null ? track.current_level : lvl,
+      currentLevel: track.current_level,
+      learnedAtLevel: learnedPerLevel[lvl == null ? track.current_level : lvl] || 0,
+      tiers: tiersAtL(lvl),
+    })
     const filters = {}
     return {
       sections: buildFlatShelf({
@@ -341,6 +186,28 @@ export default function Stories({
     () => rewardStateFor({ unit: activeUnit, readIds, unlockIds, claim }),
     [activeUnit, readIds, unlockIds, claim]
   )
+
+  const browse = useMemo(() => buildBrowseModel({ sections, aheadSection }), [sections, aheadSection])
+
+  const daily = pickDailyStory({ stories, categories: CATEGORIES, learnedCount, readIds, dateStr: todayStr(), tiersFor: tiersAt, learnedFor: learnedAt })
+  // The card resolves over the reward machine; readability is computed here
+  // for at most the one chapter the card points at. "Start here" features a
+  // STORY, never a practice scenario — when the daily pick is practice, fall
+  // back to the shelf's best unstarted, unlocked unit (the sections are
+  // already sorted most-readable first).
+  const fallbackPool = browse.current ? [...browse.current.series, ...browse.current.shorts] : []
+  const fallbackPick = fallbackPool.find(u => !u.locked && u.readCount === 0)
+  const card = continueCard({
+    rewardState, activeUnit, unlockIds, units: rewardUnits, stories, readIds,
+    featured: daily && !isPracticeFormat(daily) ? daily : (fallbackPick ? fallbackPick.parts[0] : null),
+    // At most one chapter's readability per resolve — cheap enough to leave
+    // to the compiler's own memoization.
+    knownPctFor: (story) => {
+      if (!story || !story.content) return null
+      const content = story.presentation === 'scene' ? stripSceneEmoji(story.content) : story.content
+      return calculateStoryReadability({ content, vocabMap, cards: userCards, language: track.language }).knownPct
+    },
+  })
 
   async function loadData() {
     setLoading(true)
@@ -759,177 +626,138 @@ export default function Stories({
 
   // ── Browse view ──────────────────────────────────────────────────────────
 
-  const daily = pickDailyStory({ stories, categories: CATEGORIES, learnedCount, readIds, dateStr: todayStr(), tiersFor: tiersAt, learnedFor: learnedAt })
-
-  // The hero: today's story reward when a series is going, a featured pick
-  // otherwise. Always exactly one lit panel.
-  const buildHero = () => {
-    const unitOfStory = (story) => rewardUnits.find(u => u.parts.some(p => p.id === story.id)) || null
-    if (rewardState.state === 'locked' || rewardState.state === 'banked') {
-      const chapter = rewardState.chapter
-      const info = chapterInfo(chapter, activeUnit.parts.indexOf(chapter))
-      return {
-        seed: track.language + '-reward',
-        eyebrow: 'Today’s story reward',
-        kicker: 'Complete your flashcards to unlock',
-        kickerIcon: <Zap size={13} strokeWidth={2.3} color="#fff" aria-hidden="true" />,
-        title: activeUnit.title,
-        subtitle: (info.nativeLabel ? info.nativeLabel + ' · ' : 'Chapter ' + info.number + ' · ') + info.title,
-        metaStory: chapter,
-        cover: chapter.image_path ? chapter : activeUnit.parts[0],
-        actionLabel: 'Start flashcards',
-        actionIcon: Zap,
-        onAction: onNavigate ? () => onNavigate('study') : undefined,
-      }
-    }
-    if (rewardState.state === 'unlocked-today') {
-      const story = stories.find(s => s.id === rewardState.storyId)
-      if (story && !readIds.has(story.id)) {
-        const unit = unitOfStory(story)
-        const info = chapterInfo(story, unit ? unit.parts.findIndex(p => p.id === story.id) : 0)
-        return {
-          seed: track.language + '-reward',
-          eyebrow: 'Today’s story reward',
-          kicker: 'Chapter unlocked',
-          kickerIcon: <CheckCircle2 size={13} strokeWidth={2.4} color="#fff" aria-hidden="true" />,
-          title: unit ? unit.title : story.title,
-          subtitle: unit ? (info.nativeLabel ? info.nativeLabel + ' · ' : 'Chapter ' + info.number + ' · ') + info.title : story.english_summary,
-          metaStory: story,
-          cover: story.image_path ? story : (unit ? unit.parts[0] : story),
-          actionLabel: 'Read now',
-          actionIcon: BookOpen,
-          onAction: () => openStory(story),
-        }
-      }
-    }
-    if (rewardState.state === 'all-unlocked' && activeUnit) {
-      const chapter = rewardState.chapter
-      const info = chapterInfo(chapter, activeUnit.parts.indexOf(chapter))
-      const readCount = activeUnit.parts.filter(p => readIds.has(p.id)).length
-      return {
-        seed: track.language + '-continue',
-        eyebrow: 'Continue reading',
-        kicker: null,
-        title: activeUnit.title,
-        subtitle: (info.nativeLabel ? info.nativeLabel + ' · ' : 'Chapter ' + info.number + ' · ') + info.title,
-        meta: readCount + ' of ' + activeUnit.parts.length + ' chapters read',
-        cover: chapter.image_path ? chapter : activeUnit.parts[0],
-        actionLabel: 'Continue reading',
-        actionIcon: BookOpen,
-        onAction: () => openStory(chapter),
-      }
-    }
-    if (!daily) return null
-    const unit = unitOfStory(daily)
-    return {
-      seed: track.language + '-stories',
-      eyebrow: rewardState.state === 'series-complete' ? 'Choose your next story' : 'Featured for you',
-      kicker: rewardState.state === 'series-complete' ? 'Series complete — pick what’s next' : null,
-      title: unit && unit.parts.length > 1 ? unit.title : daily.title,
-      subtitle: daily.english_summary || null,
-      metaStory: daily,
-      cover: daily,
-      actionLabel: readIds.has(daily.id) ? 'Read again' : 'Start reading',
-      onAction: () => (unit && unit.parts.length > 1 ? openSeries(sectionsUnitFor(unit) || unit) : openStory(daily)),
-    }
-  }
+  // Series first: the library's real shape is 4–10 series per level plus a
+  // couple of standalone pieces and a few practice scenarios, so the page is
+  // a Continue-reading card, the current level's series as a vertical poster
+  // grid, short reads and practice as smaller secondary sections, passed
+  // levels collapsed to a two-poster preview, and the next level as a small
+  // locked teaser. All gating and ordering still comes from storyShelfFlat.
 
   // Prefer the tier-aware shelf unit (it carries lock state) when opening a
-  // series from the hero; the reward unit is a plain fallback.
+  // series from the card; the reward unit is a plain fallback.
   const sectionsUnitFor = (rewardUnit) => sections
     .flatMap(s => s.units)
     .find(u => u.kind === 'series' && u.parts.some(p => rewardUnit.parts.some(rp => rp.id === p.id))) || null
 
-  const hero = buildHero()
+  const onCardAction = () => {
+    if (!card) return
+    if (card.action === 'study') {
+      if (onNavigate) onNavigate('study')
+      return
+    }
+    // A fresh series pick is a "choose your show" moment — land on its page.
+    // Everything else (continue, unlocked chapter, a standalone) reads now.
+    if (card.kind === 'start-here' && card.unit && card.unit.parts.length > 1) {
+      openSeries(sectionsUnitFor(card.unit) || card.unit)
+      return
+    }
+    openStory(card.chapter)
+  }
 
-  // Filters: All · one chip per level with content · Manhua (when present).
-  const levelChips = sections.map(sec => ({
-    value: 'level:' + sec.level,
-    label: getLevelLabel(track.language, track.system, sec.level),
-  }))
-  const hasManhua = sections.some(sec => sec.units.some(isManhuaUnit))
-  const filterOptions = [
-    { value: 'all', label: 'All' },
-    ...levelChips,
-    ...(hasManhua ? [{ value: 'manhua', label: 'Manhua' }] : []),
-  ]
+  const levelLabelAt = (lvl) => getLevelLabel(track.language, track.system, lvl)
 
-  const primarySection = sections.find(sec => sec.isCurrent) || sections[0] || null
-  const continueUnits = sections.flatMap(sec => sec.units.map(unit => ({ unit, section: sec })))
-    .filter(({ unit }) => !unit.locked && unit.readCount > 0 && !unit.allRead)
-  const manhuaUnits = sections.flatMap(sec => sec.units.filter(isManhuaUnit).map(unit => ({ unit, section: sec })))
-  const practiceStories = sections.flatMap(sec => sec.practice.map(story => ({ story, section: sec })))
-  const upcomingUnits = aheadSection ? aheadSection.units.map(unit => ({ unit, section: aheadSection })) : []
+  const posterGrid = (small = false) => ({
+    display: 'grid',
+    gridTemplateColumns: isMobile
+      ? 'repeat(' + (small ? 3 : 2) + ', minmax(0, 1fr))'
+      : 'repeat(auto-fill, minmax(' + (small ? '124px' : '158px') + ', 1fr))',
+    gap: isMobile ? '18px 12px' : '24px 16px',
+  })
 
-  const posterFor = ({ unit, section }) => {
-    const lockLabel = section.levelLocked
-      ? 'Unlocks at ' + getLevelLabel(track.language, track.system, section.level)
-      : unit.locked ? 'Learn ' + unit.remaining + ' more word' + (unit.remaining === 1 ? '' : 's') : null
-    const series = unit.parts.length > 1
-    const first = unit.parts[0]
-    const minutes = !series ? readingMinutes(first) : null
-    const metaLine = series
-      ? [levelLabelFor(first), unit.total + ' chapters'].join(' · ')
-      : [levelLabelFor(first), formatLabel(first), minutes ? minutes + ' min' : null].filter(Boolean).join(' · ')
-        + (unit.readCount > 0 ? ' · Read' : '')
+  const renderUnit = (unit, { small = false } = {}) => (
+    <StoryPoster
+      key={unit.key}
+      story={unit.parts[0]}
+      title={unit.title}
+      metaLine={small && !unit.locked && !unit.allRead
+        ? (readableLabel(unit.knownPct) || posterMeta(unit))
+        : posterMeta(unit)}
+      accentHex={accentHex}
+      fontFamily={fontFamily}
+      read={unit.parts.length === 1 && unit.readCount > 0}
+      locked={unit.locked}
+      lockLabel={unit.locked ? posterMeta(unit) : null}
+      manhua={isManhuaUnit(unit)}
+      series={unit.kind === 'series' && unit.parts.length > 1}
+      progress={unit.parts.length > 1 ? { readCount: unit.readCount, total: unit.total } : null}
+      onClick={() => openUnit(unit)}
+    />
+  )
+
+  const renderPractice = (story) => {
+    const minutes = readingMinutes(story)
     return (
-      <div key={section.level + '-' + unit.key} style={posterItemStyle(isMobile)}>
-        <StoryPoster
-          story={first}
-          title={unit.title}
-          metaLine={metaLine}
-          accentHex={accentHex}
-          fontFamily={fontFamily}
-          read={!series && unit.readCount > 0}
-          locked={unit.locked}
-          lockLabel={lockLabel}
-          manhua={isManhuaUnit(unit)}
-          knownPct={unit.knownPct}
-          progress={series ? { readCount: unit.readCount, total: unit.total } : null}
-          onClick={() => openUnit(unit)}
-        />
+      <StoryPoster
+        key={story.id}
+        story={story}
+        title={story.title}
+        metaLine={readIds.has(story.id) ? 'Read' : (minutes ? minutes + ' min' : 'Practice')}
+        accentHex={accentHex}
+        fontFamily={fontFamily}
+        practice
+        read={readIds.has(story.id)}
+        onClick={() => openStory(story)}
+      />
+    )
+  }
+
+  // One header pattern for every group: the name, a quiet count, and at most
+  // one action (the earlier-levels expander).
+  const sectionHead = (id, title, count, action = null) => (
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '14px', marginBottom: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', minWidth: 0 }}>
+        <h2 id={id} style={{ margin: 0, color: 'var(--text)', fontSize: isMobile ? '17px' : '19px', fontWeight: 800, letterSpacing: '-0.02em' }}>
+          {title}
+        </h2>
+        {count && (
+          <span style={{ color: 'var(--text-faint)', fontSize: '12.5px', fontWeight: 650, whiteSpace: 'nowrap' }}>{count}</span>
+        )}
       </div>
-    )
-  }
+      {action}
+    </div>
+  )
 
-  const sectionRow = (sec) => {
-    const units = sec.units.map(unit => ({ unit, section: sec }))
-    if (units.length === 0) return null
-    const isCurrent = sec.isCurrent
-    return (
-      <ShelfRow
-        key={'level-' + sec.level}
-        id={isCurrent ? 'top-picks' : 'level-' + sec.level}
-        dataTour={isCurrent ? 'stories-shelf' : undefined}
-        title={isCurrent ? 'Top picks for you' : getLevelLabel(track.language, track.system, sec.level)}
-        subtitle={isCurrent
-          ? getLevelLabel(track.language, track.system, sec.level) + ' · easiest to read first'
-          : 'From a level you’ve already passed.'}
-        isMobile={isMobile}
-      >
-        {units.map(posterFor)}
-      </ShelfRow>
-    )
-  }
+  const toggleLevel = (level) => setExpandedLevels(prev => {
+    const next = new Set(prev)
+    if (next.has(level)) next.delete(level)
+    else next.add(level)
+    return next
+  })
 
-  const showAll = filter === 'all'
-  const filteredLevel = filter.startsWith('level:') ? Number(filter.slice(6)) : null
+  const hasShelf = browse.current || browse.earlier.length > 0 || browse.comingUp
+
+  // The tour's "Your library" step anchors on the first grid section present
+  // — the series grid normally, whatever leads the page otherwise.
+  const shelfAnchor = browse.current && browse.current.series.length > 0 ? 'current-series'
+    : browse.current && browse.current.shorts.length > 0 ? 'short-reads'
+    : browse.current && browse.current.practice.length > 0 ? 'practice-stories'
+    : browse.earlier.length > 0 ? 'level-' + browse.earlier[0].level
+    : null
+  const tourFor = (id) => (shelfAnchor === id ? 'stories-shelf' : undefined)
 
   return (
     <div style={pageShell()}>
       <div style={{ maxWidth: '1360px', margin: '0 auto', padding: isMobile ? '20px 16px 64px' : '34px 32px 80px', position: 'relative', zIndex: 1 }}>
         {/* Stories is a primary destination — no back button; the app nav is
             the way out. */}
-        <header style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '14px', margin: '0 0 16px', flexWrap: 'wrap' }}>
+        <header style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '14px', margin: '0 0 18px', flexWrap: 'wrap' }}>
           <h1 style={{ margin: 0, color: 'var(--text)', fontSize: isMobile ? '26px' : '30px', fontWeight: 820, letterSpacing: '-0.035em' }}>
             Stories
           </h1>
-          <Eyebrow>{getSystemLabel(track.system)} · {getLevelLabel(track.language, track.system, track.current_level)}</Eyebrow>
+          <Eyebrow>{levelLabelAt(track.current_level)}</Eyebrow>
         </header>
 
-        {hero ? (
-          <StoriesHero hero={hero} accentHex={accentHex} fontFamily={fontFamily} isMobile={isMobile} levelLabelOf={levelLabelFor} />
-        ) : loadFailed ? (
+        {card && (
+          <StoryContinueCard
+            card={card}
+            accentHex={accentHex}
+            fontFamily={fontFamily}
+            isMobile={isMobile}
+            onAction={onCardAction}
+          />
+        )}
+
+        {!hasShelf && (loadFailed ? (
           <EmptyPanel
             icon={CloudOff} title="Couldn't load stories"
             text="The library couldn't be reached. Check your connection and try again."
@@ -937,64 +765,96 @@ export default function Stories({
           />
         ) : (
           <EmptyPanel icon={Library} title="No stories yet" text="Stories for your level are on the way. Keep learning words — they'll be here waiting." />
-        )}
+        ))}
 
-        {(sections.length > 0 || aheadSection) && (
-          <>
-            {filterOptions.length > 2 && (
-              <FilterChips options={filterOptions} value={filter} onChange={setFilter} accentHex={accentHex} />
-            )}
+        <div style={{ display: 'grid', gap: isMobile ? '30px' : '38px' }}>
+          {browse.current && browse.current.series.length > 0 && (
+            <section aria-labelledby="current-series" data-tour={tourFor('current-series')} className="hd-rise" style={{ minWidth: 0 }}>
+              {sectionHead('current-series', levelLabelAt(browse.current.level) + ' series',
+                browse.current.readCount + ' of ' + browse.current.total + ' read')}
+              <div data-testid="poster-grid" style={posterGrid()}>
+                {browse.current.series.map(renderUnit)}
+              </div>
+            </section>
+          )}
 
-            <div style={{ display: 'grid', gap: isMobile ? '26px' : '32px' }}>
-              {showAll && continueUnits.length > 0 && (
-                <ShelfRow id="continue-reading" title="Continue reading" subtitle="Pick up where you left off." isMobile={isMobile}>
-                  {continueUnits.map(posterFor)}
-                </ShelfRow>
-              )}
+          {browse.current && browse.current.shorts.length > 0 && (
+            <section aria-labelledby="short-reads" data-tour={tourFor('short-reads')} className="hd-rise" style={{ minWidth: 0 }}>
+              {sectionHead('short-reads', 'Short reads', null)}
+              <div data-testid="poster-grid" style={posterGrid(true)}>
+                {browse.current.shorts.map(unit => renderUnit(unit, { small: true }))}
+              </div>
+            </section>
+          )}
 
-              {showAll && primarySection && sectionRow(primarySection)}
-              {showAll && sections.filter(sec => sec !== primarySection).map(sectionRow)}
-              {!showAll && filteredLevel != null && sections.filter(sec => sec.level === filteredLevel).map(sectionRow)}
+          {browse.current && browse.current.practice.length > 0 && (
+            <section aria-labelledby="practice-stories" data-tour={tourFor('practice-stories')} className="hd-rise" style={{ minWidth: 0 }}>
+              {sectionHead('practice-stories', 'Practice', null)}
+              <div data-testid="poster-grid" style={posterGrid(true)}>
+                {browse.current.practice.map(renderPractice)}
+              </div>
+            </section>
+          )}
 
-              {(showAll || filter === 'manhua') && manhuaUnits.length > 0 && (
-                <ShelfRow id="manhua" title="Manhua" subtitle="Illustrated episodes — read the panels, tap the bubbles." isMobile={isMobile}>
-                  {manhuaUnits.map(posterFor)}
-                </ShelfRow>
-              )}
+          {browse.earlier.map(lvl => {
+            const expanded = expandedLevels.has(lvl.level)
+            const shown = expanded ? [...lvl.preview, ...lvl.rest] : lvl.preview
+            const headId = 'level-' + lvl.level
+            return (
+              <section key={headId} aria-labelledby={headId} data-tour={tourFor(headId)} className="hd-rise" style={{ minWidth: 0 }}>
+                {sectionHead(headId, levelLabelAt(lvl.level), lvl.readCount + ' of ' + lvl.total + ' read',
+                  (lvl.rest.length > 0 || lvl.practice.length > 0) ? (
+                    <button
+                      onClick={() => toggleLevel(lvl.level)}
+                      aria-expanded={expanded}
+                      className="hd-press"
+                      style={{
+                        border: 'none', background: 'transparent', cursor: 'pointer', flexShrink: 0,
+                        color: ink(accentHex), fontSize: '13px', fontWeight: 750,
+                        fontFamily: 'Inter, sans-serif', padding: '6px 2px', minHeight: '36px',
+                      }}
+                    >
+                      {expanded ? 'Show less' : 'See all ' + (lvl.unitCount + lvl.practice.length)}
+                    </button>
+                  ) : null)}
+                <div data-testid="poster-grid" style={posterGrid()}>
+                  {shown.map(renderUnit)}
+                  {expanded && lvl.practice.map(renderPractice)}
+                </div>
+              </section>
+            )
+          })}
 
-              {showAll && practiceStories.length > 0 && (
-                <ShelfRow id="practice-stories" title="Practice through stories" subtitle="Short chats, scenes, and reply-alongs." isMobile={isMobile}>
-                  {practiceStories.map(({ story, section }) => (
-                    <div key={section.level + '-' + story.id} style={posterItemStyle(isMobile)}>
-                      <StoryPoster
-                        story={story}
-                        title={story.title}
-                        metaLine={[levelLabelFor(story), 'Practice'].join(' · ') + (readIds.has(story.id) ? ' · Read' : '')}
-                        accentHex={accentHex}
-                        fontFamily={fontFamily}
-                        practice
-                        read={readIds.has(story.id)}
-                        onClick={() => openStory(story)}
-                      />
-                    </div>
+          {browse.comingUp && (
+            <section aria-labelledby="coming-up" data-tour="stories-ahead" className="hd-rise" style={{ minWidth: 0 }}>
+              {sectionHead('coming-up', 'Coming up in ' + levelLabelAt(browse.comingUp.level), null)}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '16px',
+                padding: '14px 16px', borderRadius: '18px',
+                border: '1px dashed var(--border)', background: 'var(--surface)',
+              }}>
+                <div aria-hidden="true" style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                  {browse.comingUp.preview.map(unit => (
+                    <StoryCover
+                      key={unit.key} story={unit.parts[0]} path={unit.parts[0] && unit.parts[0].image_path}
+                      accent={accentHex} radius={9}
+                      style={{ width: isMobile ? '46px' : '54px', aspectRatio: '2 / 3', opacity: 0.72, border: '1px solid var(--border)' }}
+                    />
                   ))}
-                </ShelfRow>
-              )}
-
-              {showAll && upcomingUnits.length > 0 && (
-                <ShelfRow
-                  id="coming-up"
-                  title={'Coming up in ' + getLevelLabel(track.language, track.system, aheadSection.level)}
-                  subtitle={'Unlocks when you pass the ' + getLevelLabel(track.language, track.system, track.current_level) + ' test.'}
-                  isMobile={isMobile}
-                  dataTour="stories-ahead"
-                >
-                  {upcomingUnits.map(posterFor)}
-                </ShelfRow>
-              )}
-            </div>
-          </>
-        )}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: 'var(--text)', fontSize: '13.5px', fontWeight: 750 }}>
+                    <Lock size={14} strokeWidth={2.1} color="var(--text-muted)" aria-hidden="true" />
+                    {browse.comingUp.count + (browse.comingUp.count === 1 ? ' story' : ' stories') + ' waiting'}
+                  </div>
+                  <div style={{ marginTop: '3px', color: 'var(--text-muted)', fontSize: '12.5px', lineHeight: 1.5 }}>
+                    {'Unlocks when you pass the ' + levelLabelAt(track.current_level) + ' test.'}
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
 
         {tourSteps && (
           <TourOverlay

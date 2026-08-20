@@ -36,9 +36,10 @@ test.describe('《楼上没有声音》 standalone story', () => {
   test('appears as a complete HSK 3 work outside every series', async ({ page }) => {
     await serveHsk3Track(page);
     await page.goto('/stories');
-    const card = page.getByTestId('story-shelf-rail')
-      .getByRole('button', { name: new RegExp(`${STORY}.*HSK 3.*Manhua`) }).first();
+    const card = page.getByTestId('poster-grid')
+      .getByRole('button', { name: new RegExp(STORY) }).first();
     await expect(card).toBeVisible();
+    await expect(card.getByText('Manhua', { exact: true })).toBeVisible();
     await expect(card.getByText('第一话', { exact: true })).toHaveCount(0);
   });
 
@@ -89,7 +90,7 @@ test.describe('《楼上没有声音》 standalone story', () => {
     await expect(completion.getByRole('status', { name: /细心读者/ })).toBeVisible();
 
     await completion.getByRole('button', { name: /Back to stories/ }).click();
-    const card = page.getByTestId('story-shelf-rail')
+    const card = page.getByTestId('poster-grid')
       .getByRole('button', { name: new RegExp(`${STORY}.*Read`) }).first();
     await expect(card).toBeVisible();
   });

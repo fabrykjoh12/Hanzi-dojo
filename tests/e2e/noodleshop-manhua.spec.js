@@ -12,17 +12,30 @@ async function openEpisode(page) {
   await expect(page.getByRole('heading', { name: STORY, exact: true })).toBeVisible();
 }
 
+
+// Passed levels collapse behind "See all" — open them so grid lookups reach
+// the whole library.
+async function expandLevels(page) {
+  await page.getByTestId('poster-grid').first().waitFor({ state: 'visible' });
+  for (let i = 0; i < 8; i += 1) {
+    const seeAll = page.getByRole('button', { name: /See all \d+/ }).first();
+    if ((await seeAll.count()) === 0) break;
+    await seeAll.click();
+  }
+}
+
 test.describe('《一块钱》 vertical slice', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
   test('appears as a complete standalone work beside, not inside, series', async ({ page }) => {
     await page.goto('/stories');
+    await expandLevels(page);
     // One poster, no chapter framing — a standalone opens straight into the
-    // reader. (.first(): a manhua poster sits on its level rail AND the
-    // Manhua rail.)
-    const card = page.getByTestId('story-shelf-rail')
-      .getByRole('button', { name: new RegExp(`${STORY}.*HSK 1.*Manhua`) }).first();
+    // reader. The Manhua badge marks the format on the poster itself.
+    const card = page.getByTestId('poster-grid')
+      .getByRole('button', { name: new RegExp(STORY) }).first();
     await expect(card).toBeVisible();
+    await expect(card.getByText('Manhua', { exact: true })).toBeVisible();
     await expect(card.getByText('第一话', { exact: true })).toHaveCount(0);
     await card.click();
     await expect(page.getByRole('heading', { name: 'Chapters' })).toHaveCount(0);
@@ -85,7 +98,8 @@ test.describe('《一块钱》 vertical slice', () => {
     await expect(completion.getByRole('status', { name: /暖心读者/ })).toBeVisible();
 
     await completion.getByRole('button', { name: /Back to stories/ }).click();
-    const card = page.getByTestId('story-shelf-rail')
+    await expandLevels(page);
+    const card = page.getByTestId('poster-grid')
       .getByRole('button', { name: new RegExp(`${STORY}.*Read`) }).first();
     await expect(card).toBeVisible();
   });

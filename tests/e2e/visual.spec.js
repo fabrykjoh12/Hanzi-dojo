@@ -104,7 +104,7 @@ authedTest.describe('visual: stories shelf', () => {
     skipWithoutBaselines(authedTest, testInfo);
     await page.setViewportSize(DESKTOP);
     await page.goto('/stories');
-    await expect(page.getByRole('button', { name: /Featured for you/ })).toBeVisible();
+    await expect(page.locator('button[data-continue-card]')).toBeVisible();
     await fontsReady(page);
     await expect(page).toHaveScreenshot('stories-shelf-desktop.png');
   });
@@ -113,7 +113,7 @@ authedTest.describe('visual: stories shelf', () => {
     skipWithoutBaselines(authedTest, testInfo);
     await page.setViewportSize(MOBILE);
     await page.goto('/stories');
-    await expect(page.getByRole('button', { name: /Featured for you/ })).toBeVisible();
+    await expect(page.locator('button[data-continue-card]')).toBeVisible();
     await fontsReady(page);
     await expect(page).toHaveScreenshot('stories-shelf-mobile.png');
   });

@@ -1,18 +1,18 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 
-// The featured hero uses the daily-story picker: one calm recommendation from
-// what the learner can already read, opening straight into the reader.
+// The Continue card's "Start here" state uses the daily-story picker: one calm
+// recommendation from what the learner can already read (never a practice
+// scenario), opening into the reader or its series page.
 test.describe('Story of the day', () => {
-  test('shows a daily pick that opens into the reader', async ({ page }) => {
+  test('shows a daily pick that opens out of the browse screen', async ({ page }) => {
     await page.goto('/stories');
 
-    const daily = page.getByRole('button', { name: /Featured for you/i });
+    const daily = page.locator('button[data-continue-card="start-here"]');
     await expect(daily).toBeVisible();
 
     await daily.click();
-    // Navigates into the reader: we've left the browse screen (the tier tabs are
-    // gone). Format-agnostic, since the daily pick may be any presentation.
-    await expect(page.getByRole('tab', { name: /First Steps/ })).toHaveCount(0);
+    // Navigates out of browse (into the reader, or a series page for a
+    // multi-chapter pick) — the card itself is gone either way.
     await expect(daily).toHaveCount(0);
   });
 
