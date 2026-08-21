@@ -138,10 +138,14 @@ for (let attempt = 1; attempt <= 3 && !adopted; attempt += 1) {
   const prompt = structuralPatchPrompt({ manifest, candidate: original, failures: before.failures, meanings, lineHints, maxTouched, lineOutCounts, shareLimit, rejected })
   let text
   try {
-    text = await patcher.send({ prompt, maxTokens: 1200 })
+    // 3000, not 1200: gpt-oss spends reasoning tokens inside the same budget,
+    // and patch-test-3's first attempt came back EMPTY with
+    // finish_reason=length — a whole attempt lost to the ceiling, not to the
+    // task. A patch is at most 6 short lines; the headroom is for thinking.
+    text = await patcher.send({ prompt, maxTokens: 3000 })
   } catch (err) {
     patchError = String(err.message || err)
-    attempts.push({ attempt, outcome: 'provider_error', detail: patchError })
+    attempts.push({ attempt, outcome: /empty content/.test(patchError) ? 'empty_output' : 'provider_error', detail: patchError })
     if (/HTTP (400|401|403|404|413|422)\b/.test(patchError)) break
     continue
   }
