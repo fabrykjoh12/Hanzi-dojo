@@ -95,6 +95,8 @@ describe('prompt builders', () => {
     expect(parseChapter('no title here')).toBeNull()
     expect(parseCritique('SCORE: 7\nFEEDBACK: fine')).toEqual({ score: 7, feedback: 'fine' })
     expect(parseCritique('gibberish')).toBeNull()
+    expect(parseCritique('SCORE: 8/10\nFEEDBACK: ok').score).toBe(8)   // not 81→10
+    expect(parseCritique('SCORE: 7 out of 10\nFEEDBACK: ok').score).toBe(7)
     expect(parseTranslation('a\nb\nc', 3)).toBe('a\nb\nc')
     expect(parseTranslation('a\nb', 4)).toBe('a\nb\n\n')      // ±2 tolerance pads
     expect(parseTranslation('a', 5)).toBeNull()               // beyond tolerance

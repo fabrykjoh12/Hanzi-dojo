@@ -25,8 +25,11 @@
 //   --batch-cap  max manifests per word per batch (default 2)
 //   --targets    targets per story (default: calibrated per-level)
 //   --meanings   optional word→meaning JSON, enriches prompts
-//   --provider   'fake' (default; needs --responses) or 'premium'
-//                (llm.mjs premium tier — Anthropic/Gemini/Groq by env keys)
+//   --provider   'fake' (default; needs --responses), 'premium' (llm.mjs's
+//                premium tier), or an EXPLICIT provider — 'groq' / 'gemini' —
+//                with --model, which never fails over so a benchmark knows
+//                exactly which model wrote each story
+//   --model      exact model id for the explicit providers
 //   --responses  fake provider script: { "<manifestId>"|"*": { draft: [..],
 //                repair: [..], critique: [..], revise: [..], translate: [..] } }
 //   --dry-run    compose and write manifests + plan only; zero provider calls
@@ -43,6 +46,7 @@ import { composeManifests, manifestDefaults } from './storyManifestPlanner.mjs'
 import { generateCandidate, serializableCandidate, GENERATOR_VERSION } from './storyGenPipeline.mjs'
 import { PROMPT_VERSION } from './storyGenPrompts.mjs'
 import { CANDIDATE_FILE_SCHEMA } from './storyStaging.mjs'
+import { directProvider, DIRECT_PROVIDERS, newUsage, usageDelta } from './llmDirect.mjs'
 
 const args = process.argv.slice(2)
 const arg = (name, def) => { const i = args.indexOf('--' + name); return i !== -1 && args[i + 1] != null ? args[i + 1] : def }
@@ -58,6 +62,7 @@ const batchCap = parseInt(arg('batch-cap', '2'), 10)
 const targetsPerStory = arg('targets', null) ? parseInt(arg('targets', null), 10) : null
 const meaningsPath = arg('meanings', null)
 const providerName = arg('provider', 'fake')
+const modelId = arg('model', null)
 const responsesPath = arg('responses', null)
 const dryRun = has('dry-run')
 
@@ -159,8 +164,13 @@ if (providerName === 'fake') {
 } else if (providerName === 'premium') {
   const p = await premiumProvider()
   providerInfo = { name: p.name, model: p.model, send: p.send, usage: p.usage }
+} else if (DIRECT_PROVIDERS[providerName]) {
+  if (!modelId) { console.error('--provider ' + providerName + ' needs --model <id>'); process.exit(1) }
+  const p = directProvider(providerName, modelId)
+  console.log('[generate-targeted] provider=' + p.name + ' model=' + p.model + ' (explicit, no failover)')
+  providerInfo = { name: p.name, model: p.model, send: p.send, usage: p.usage }
 } else {
-  console.error('Unknown --provider "' + providerName + '" (fake | premium)')
+  console.error('Unknown --provider "' + providerName + '" (fake | premium | ' + Object.keys(DIRECT_PROVIDERS).join(' | ') + ')')
   process.exit(1)
 }
 
@@ -173,6 +183,10 @@ for (const manifest of manifests) {
     : providerInfo.send
   // Dedup corpus: every published story plus this batch's own accepted candidates.
   const corpus = stories.concat(acceptedContents)
+  // Snapshot usage around this manifest so tokens and latency are attributed
+  // per candidate, not just per batch.
+  const usageBefore = providerInfo.usage ? { ...providerInfo.usage } : newUsage()
+  const startedAt = Date.now()
   let result
   try {
     result = await generateCandidate({ manifest, pool, vocabMap, corpus, meanings, provider })
@@ -184,6 +198,8 @@ for (const manifest of manifests) {
       generatorVersion: GENERATOR_VERSION, promptVersion: PROMPT_VERSION,
     }
   }
+  const spent = usageDelta(usageBefore, providerInfo.usage || newUsage())
+  result.usage = { ...spent, wallMs: Date.now() - startedAt }
   console.log(result.status.toUpperCase()
     + (result.critique ? ' (score ' + result.critique.score + ')' : '')
     + (result.status === 'rejected' ? ' — ' + result.validation.failures.map(f => f.code).join(', ') : ''))
@@ -248,6 +264,8 @@ write('batch-report.json', {
     critiqueScore: result.critique ? result.critique.score : null,
     failures: result.validation.failures.map(f => f.code),
     warnings: result.validation.warnings.map(w => w.code),
+    calls: result.calls,
+    usage: result.usage || null,
   })),
 })
 

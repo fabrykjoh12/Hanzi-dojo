@@ -153,8 +153,11 @@ export function parseCritique(text) {
     const t = line.trim()
     const up = t.toUpperCase()
     if (up.startsWith('SCORE')) {
-      const digits = t.replace(/[^0-9]/g, '')
-      if (digits) score = Math.min(10, parseInt(digits.slice(0, 2), 10))
+      // First number only: "SCORE: 8/10" must read as 8. Concatenating the
+      // line's digits (inherited from the serial generator) made that 81,
+      // which clamped to a perfect 10 — silent quality inflation.
+      const m = t.match(/\d+(?:\.\d+)?/)
+      if (m) score = Math.max(1, Math.min(10, Math.round(parseFloat(m[0]))))
     } else if (up.startsWith('FEEDBACK')) {
       const ci = t.indexOf(':') >= 0 ? t.indexOf(':') : t.indexOf('：')
       feedback = ci >= 0 ? t.slice(ci + 1).trim() : ''
