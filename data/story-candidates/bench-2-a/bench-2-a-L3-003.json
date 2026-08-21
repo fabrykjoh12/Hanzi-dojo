@@ -1,0 +1,164 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "bench-2-a",
+  "generatedAt": "2026-08-21T14:18:55.115Z",
+  "provider": {
+    "name": "groq",
+    "model": "openai/gpt-oss-120b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bench-2-a-L3-003",
+    "batchId": "bench-2-a",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "参加",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "国家",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "安全",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "选择",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "或者",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "女人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "机会",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "受",
+        "min": 2,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "a bigger outing or adventure away from home with a genuine surprise in the middle",
+    "series": null,
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "bench-2-a-L3-003",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": {
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "no_candidate",
+          "message": "every draft attempt failed (provider error or unparseable response)"
+        }
+      ],
+      "warnings": [],
+      "metrics": {}
+    },
+    "critique": null,
+    "attempts": 2,
+    "calls": 6,
+    "providerErrors": [
+      {
+        "kind": "draft",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 413: Request too large for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8999, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier "
+      },
+      {
+        "kind": "draft",
+        "attempt": 2,
+        "message": "groq/openai/gpt-oss-120b HTTP 413: Request too large for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8999, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier "
+      },
+      {
+        "kind": "draft",
+        "attempt": 3,
+        "message": "groq/openai/gpt-oss-120b HTTP 413: Request too large for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8999, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier "
+      },
+      {
+        "kind": "draft",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 413: Request too large for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8999, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier "
+      },
+      {
+        "kind": "draft",
+        "attempt": 2,
+        "message": "groq/openai/gpt-oss-120b HTTP 413: Request too large for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8999, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier "
+      },
+      {
+        "kind": "draft",
+        "attempt": 3,
+        "message": "groq/openai/gpt-oss-120b HTTP 413: Request too large for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8999, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier "
+      }
+    ],
+    "generatorVersion": "fab9-pipeline@1",
+    "promptVersion": "fab9-prompts@1",
+    "usage": {
+      "requests": 6,
+      "failures": 6,
+      "promptTokens": 0,
+      "completionTokens": 0,
+      "latencyMsTotal": 604,
+      "wallMs": 48635
+    }
+  },
+  "staged": null
+}
