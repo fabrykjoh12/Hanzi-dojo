@@ -708,6 +708,8 @@ coverage report → coverage plan → manifests → generate → validate → re
 | `storyCandidateValidation.mjs` | The deterministic FAB-10 gate: targets present within bounds, difficulty caps, structure, repetition, duplicate detection (copies FAIL, look-alikes WARN — thresholds calibrated on the real corpus). Machine-readable `{verdict, failures[], warnings[], metrics}` + `formatValidation` human summary. Counts come from `calculateStoryReadability` — validator, reader, audit and calibration agree by construction. |
 | `storyGenPrompts.mjs` / `storyGenPipeline.mjs` | Prompt builders/parsers (plain-text protocol, never JSON) and the per-manifest loop: draft → validate → targeted repair (bounded) → optional LLM critique + quality revision (**never overrules the gate**) → translation → final validation. Provider injected — tests run on scripted fakes, production wires `premiumLlm()`. |
 | `storyStaging.mjs` | The ingestion gate's pure logic: only `status: accepted` + verdict PASS stageable; already-staged and title collisions refused; rows always `is_published=false` with `generation_meta` provenance. |
+| `llmDirect.mjs` | Explicit provider+model client that **never fails over**, so a benchmark knows exactly which model wrote each story. Per-call usage/latency accounting (`usageDelta` attributes tokens per candidate); empty content from a reasoning model surfaces as a retryable error. Used by the `--provider groq\|gemini --model <id>` path and by the judge. |
+| `storyJudge.mjs` | Semantic-quality judging: prompt, tolerant parser, and two structurally enforced rules — only a deterministic PASS may be judged (`judgeable`), and `applyJudgment` is additive (never writes `status` or `validation`), so an LLM can neither promote a FAIL nor demote a PASS. |
 
 **Tools:**
 
@@ -717,13 +719,34 @@ coverage report → coverage plan → manifests → generate → validate → re
   to `data/story-candidates/<batch>/` plus a batch report with a projected
   coverage delta. `--dry-run` composes manifests only; `--provider fake
   --responses <file>` runs the whole loop on scripted responses (zero API
-  calls); `--provider premium` uses the `llm.mjs` premium tier.
+  calls); `--provider premium` uses the `llm.mjs` premium tier; `--provider
+  groq|gemini --model <id>` pins one exact model with no failover (what the
+  benchmark uses), recording per-candidate tokens, latency and call counts.
 - `stage-story-candidates.mjs` — the ONLY door into the database. Dry-run by
   default; refuses anything not accepted+PASS, anything already staged, title
   collisions — and **re-validates every candidate with the current validator
   against the live pool and corpus** before inserting `is_published=false`
   rows. Publication stays the existing human flow (summaries, cover art,
   questions, audio first — then `publish-stories.mjs` / the dashboard).
+
+- `llm-smoke-test.mjs` — asks each provider's `/models` endpoint what it
+  actually serves today (model ids rot), reports key presence **without ever
+  printing a value**, and sends one minimal Chinese request per candidate
+  model, recording success, exact API error, latency, tokens, and whether the
+  output was really Chinese and followed the format. Run it before any
+  benchmark; never trust a hardcoded model id.
+- `judge-story-candidates.mjs` — semantic-quality judging over a candidate
+  batch. Judges only deterministic PASSes, appends to a `judgments` array, and
+  cannot alter a verdict. In a two-model benchmark each model judges the
+  other's stories, so no model grades its own homework.
+
+**Choosing the generation model.** `.github/workflows/llm-bench.yml` runs
+either mode on the dispatching branch: `smoke` (inventory + probes) or `bench`
+(same manifests through two models, then cross-judging), hard-capped at 16
+probes and 4 manifests per model. Anthropic is **not** available to this
+project (no API billing), so the premium tier falls back to the Gemini/Groq
+free tiers — which is why the model choice must be measured rather than
+assumed.
 
 The provisional defaults were calibrated 2026-08-20 over the 204-story corpus
 (the corpus dump was hash-verified against production and reproduces the FAB-5
