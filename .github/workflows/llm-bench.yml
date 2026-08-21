@@ -32,6 +32,10 @@ on:
         description: "smoke only: explicit list, e.g. groq:qwen/qwen3-32b,gemini:gemini-2.5-pro. Blank = auto-select."
         type: string
         default: ''
+      reasoning_effort:
+        description: "optional Groq reasoning_effort (none / low / medium / high). Qwen3 needs 'none' or it only thinks."
+        type: string
+        default: ''
       model_a:
         description: "bench only: provider:model for generator A"
         type: string
@@ -83,15 +87,22 @@ jobs:
           LLM_MODEL_PREMIUM: ${{ vars.LLM_MODEL_PREMIUM }}
           MAX_TESTS: ${{ inputs.max_tests }}
           PROBE_MODELS: ${{ inputs.probe_models }}
+          EFFORT: ${{ inputs.reasoning_effort }}
         run: |
           set -e
           case "$MAX_TESTS" in (*[!0-9]*|"") MAX_TESTS=12;; esac
           [ "$MAX_TESTS" -gt 16 ] && MAX_TESTS=16
+          EFFORT_FLAG=""
+          case "$EFFORT" in
+            "") ;;
+            none|low|medium|high) EFFORT_FLAG="--reasoning-effort $EFFORT";; 
+            *) echo "bad reasoning_effort"; exit 1;;
+          esac
           if [ -n "$PROBE_MODELS" ]; then
             case "$PROBE_MODELS" in (*[!A-Za-z0-9._/:,-]*) echo "bad probe_models"; exit 1;; esac
-            node llm-smoke-test.mjs --models "$PROBE_MODELS" --out reports/llm-smoke.json
+            node llm-smoke-test.mjs --models "$PROBE_MODELS" $EFFORT_FLAG --out reports/llm-smoke.json
           else
-            node llm-smoke-test.mjs --max-tests "$MAX_TESTS" --out reports/llm-smoke.json
+            node llm-smoke-test.mjs --max-tests "$MAX_TESTS" $EFFORT_FLAG --out reports/llm-smoke.json
           fi
 
       # ── bench ────────────────────────────────────────────────────────────
@@ -112,8 +123,15 @@ jobs:
           PREFIX: ${{ inputs.batch_prefix }}
           LEVEL: ${{ inputs.level }}
           COUNT: ${{ inputs.count }}
+          EFFORT: ${{ inputs.reasoning_effort }}
         run: |
           set -e
+          EFFORT_FLAG=""
+          case "$EFFORT" in
+            "") ;;
+            none|low|medium|high) EFFORT_FLAG="--reasoning-effort $EFFORT";;
+            *) echo "bad reasoning_effort"; exit 1;;
+          esac
           case "$PREFIX" in (*[!A-Za-z0-9_-]*|"") echo "bad batch_prefix"; exit 1;; esac
           case "$LEVEL" in (*[!0-9]*|"") echo "bad level"; exit 1;; esac
           case "$COUNT" in (*[!0-9]*|"") COUNT=4;; esac
@@ -130,7 +148,7 @@ jobs:
             node generate-targeted-stories.mjs \
               --input reports/story-corpus-dump.json \
               --level "$LEVEL" --count "$COUNT" --batch "${PREFIX}-$2" \
-              --provider "$prov" --model "$mdl"
+              --provider "$prov" --model "$mdl" $EFFORT_FLAG
             echo "::endgroup::"
           }
           gen "$MODEL_A" a
@@ -141,7 +159,7 @@ jobs:
             dir="data/story-candidates/${PREFIX}-$2"
             [ -d "$dir" ] || return 0
             echo "::group::judge $dir with $prov/$mdl"
-            node judge-story-candidates.mjs --batch "$dir" --provider "$prov" --model "$mdl"
+            node judge-story-candidates.mjs --batch "$dir" --provider "$prov" --model "$mdl" $EFFORT_FLAG
             echo "::endgroup::"
           }
           # Cross-judging: neither model grades its own homework.
