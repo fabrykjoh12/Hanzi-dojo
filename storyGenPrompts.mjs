@@ -92,9 +92,19 @@ export function draftPrompt({ manifest, pool, meanings = {} }) {
     'Rules:\n' +
     '- ' + manifest.length.minLines + '-' + manifest.length.maxLines + ' lines, one sentence or dialogue turn per line — a full scene, not a sketch\n' +
     '- Natural sentences around ' + manifest.length.maxLineChars + ' characters per line — vary the rhythm, avoid choppy three-word lines\n' +
-    '- Mix narration and dialogue. Dialogue format: NAME：text — speakers ONLY from: ' + manifest.speakers.join(', ') + '\n' +
+    '- Mix narration and dialogue. Dialogue format: NAME：text with NOTHING between the name and the colon — write "李明：我饿了。", never "李明惊讶地问：我饿了。" (put such description on its own narration line). Speakers ONLY from: ' + manifest.speakers.join(', ') + '\n' +
     '- Narration lines have no speaker prefix\n' +
-    '- Stay almost entirely inside the allowed vocabulary. At most ' + manifest.difficulty.maxUnknownDistinct + ' words outside it, only where the story genuinely needs them\n' +
+    // The single hardest constraint to convey, and the one bench-3 showed being
+    // ignored wholesale: qwen wrote 56-73 distinct words above the level
+    // against a cap of 3. A soft "stay almost entirely inside the list" does
+    // not survive contact with a model that writes well — the rule has to be
+    // stated as a rejection condition, with the numbers, and has to say what
+    // "outside" means when the printed list is necessarily a sample.
+    '- HARD VOCABULARY LIMIT — this is what gets stories rejected. Write using ONLY words a ' + name + ' learner knows: the list above, simpler words below that level, and the character names. ' +
+    'At most ' + manifest.difficulty.maxOutOfLevelDistinct + ' distinct words from ABOVE ' + name + ', and at most ' +
+    manifest.difficulty.maxUnknownDistinct + ' distinct words that are not standard vocabulary at all. ' +
+    'The printed list is a sample of what is allowed, not the whole of it — but if you are unsure whether a word is too advanced, do not use it. ' +
+    'Vivid literary vocabulary (懒洋洋, 灌木, 明媚, 身影 and the like) is exactly what fails this check.\n' +
     (manifest.forbidden && manifest.forbidden.words.length ? '- NEVER use these words: ' + manifest.forbidden.words.join('、') + '\n' : '') +
     (manifest.forbidden && manifest.forbidden.topics && manifest.forbidden.topics.length ? '- Avoid these topics entirely: ' + manifest.forbidden.topics.join('; ') + '\n' : '') +
     '- Write something a reader would actually enjoy: a real narrative arc, concrete sensory detail, a little humor, genuine character voice\n\n' +
@@ -111,7 +121,10 @@ export function repairPrompt({ manifest, candidate, failures, pool, meanings = {
     'TARGET WORDS (must stay within their ranges):\n' + targetList(manifest, meanings) + '\n\n' +
     'ALLOWED VOCABULARY (replace out-of-pool words using ONLY these plus names, particles and basic grammar):\n' +
     poolForPrompt(pool) + '\n\n' +
-    'Keep ' + manifest.length.minLines + '-' + manifest.length.maxLines + ' lines, dialogue format NAME：text, speakers only from: ' + manifest.speakers.join(', ') + '\n\n' +
+    'Every replacement must be a word a ' + name + ' learner knows. Simplify rather than substitute another advanced word — ' +
+    'a plainer sentence that passes is worth more than a vivid one that is rejected.\n' +
+    'Keep ' + manifest.length.minLines + '-' + manifest.length.maxLines + ' lines (this is a hard limit), dialogue format NAME：text with NOTHING after the name — ' +
+    'write "李明：…", never "李明惊讶地问：…" — speakers only from: ' + manifest.speakers.join(', ') + '\n\n' +
     CHAPTER_FORMAT
 }
 

@@ -350,3 +350,20 @@ describe('request sizing (bench-2 root cause: Groq 8000 TPM)', () => {
     expect(r.status).toBe('accepted')
   })
 })
+
+describe('vocabulary constraint wording (bench-3 non-compliance)', () => {
+  it('states the out-of-level cap as a rejection condition, with numbers', () => {
+    const p = draftPrompt({ manifest: manifest(), pool })
+    expect(p).toContain('HARD VOCABULARY LIMIT')
+    expect(p).toContain('distinct words from ABOVE HSK 3')
+    expect(p).toMatch(/At most 3 distinct words from ABOVE/)
+    expect(p).toContain('sample of what is allowed, not the whole of it')
+  })
+
+  it('spells out the bare-speaker-label rule in both draft and repair', () => {
+    const p = draftPrompt({ manifest: manifest(), pool })
+    const r = repairPrompt({ manifest: manifest(), candidate: { title: 'T', content: 'x' }, failures: [], pool })
+    expect(p).toContain('never "李明惊讶地问：')
+    expect(r).toContain('NOTHING after the name')
+  })
+})
