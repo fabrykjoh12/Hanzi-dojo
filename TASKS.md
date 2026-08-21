@@ -18,6 +18,35 @@ _Vedlikeholdes i Fabipilot. Jobb gjennom de åpne punktene under._
 ## Medium
 - [ ] add better story reader, maybe a better way to read.
 
+## Future tooling & integrations
+_Research pass 2026-08-21 against Hanzi Dojo's current stack, Public APIs and Awesome MCP. These are intentionally parked here so they can be picked up when useful rather than added all at once._
+
+### Claude / development tooling
+- [ ] **Install Playwright MCP** — high value. Give Claude an interactive browser so it can execute real Hanzi Dojo user journeys (onboarding, flashcards, stories, dictionary, dark mode, responsive flows), reproduce UI bugs and retest after fixes. This complements the existing `@playwright/test` E2E suite rather than replacing it.
+- [ ] **Install Chrome DevTools MCP** — high value. Use for console errors, network failures, performance traces, Core Web Vitals/Lighthouse and browser-level debugging. Pair with Playwright MCP: Playwright = what the user does; DevTools = why the browser/app is failing or slow.
+- [ ] **Verify Context7 MCP is actually connected** — the repo already has a `documentation-lookup` skill that expects Context7, but the server itself should be checked in Claude (`/mcp`). If missing, install it so Claude can fetch current/version-specific docs for React, Vite, Capacitor, Supabase, etc.
+- [ ] **Consider Vercel MCP later** — useful for deployment/build/log debugging from Claude. Lower priority than Playwright/DevTools/Context7.
+- [ ] **Consider Figma MCP if Figma becomes part of the regular design workflow** — useful for reading components, variables and layouts and translating design ↔ code. Skip if Figma is not actively used.
+- [ ] **Keep Scrapling available as an on-demand research tool** — useful for systematic competitor research, documentation/data collection and scraping public sources. Lower priority than the browser/dev MCPs for daily Hanzi Dojo development; do not make it an app dependency.
+- [ ] **Do not install random MCPs just because they are in awesome-mcp** — treat Awesome MCP as discovery only. Add a server only when it fills a concrete capability gap.
+
+### Product / learning experiments
+- [ ] **Prototype Azure Pronunciation Assessment for Chinese speaking practice** — top product opportunity. Hanzi Dojo already uses Azure Speech, so test a Practice Lab flow where the learner reads a known word/sentence aloud and receives pronunciation/accuracy/fluency/completeness feedback, with weak words highlighted and retry playback. Validate quality specifically for `zh-CN` before committing to a full feature.
+- [ ] **Evaluate PostHog (SDK + MCP) before wider public beta** — not for basic analytics (the app already has an internal funnel/retention dashboard), but for session replay, feature flags, experiments/A-B tests, error correlation and letting Claude query product behavior. Mask inputs/PII and avoid recording user-written chat/writing content.
+- [ ] **Consider Sentry only if error debugging needs exceed PostHog + current tooling** — likely redundant at the moment; revisit after public usage grows.
+- [ ] **Consider OCR/import later** — e.g. Google Vision or another proven Chinese OCR provider for a future “photo of Chinese text → Known Content Analyzer / dictionary / deck import” flow. Do not add now; Chinese handwriting quality and product value should be validated first.
+
+### APIs / external data policy
+- [ ] **Do not add a new Chinese dictionary API right now** — current data is stronger: CC-CEDICT (~120k entries), Tatoeba examples, HSK 3.0 vocabulary and Hanzi Writer/Make Me a Hanzi stroke data already cover the core needs.
+- [ ] **Do not add translation/OCR/text APIs from Public APIs by default** — Public APIs is a discovery catalogue, not a quality seal. Only integrate a service after checking that it is current, HTTPS-secure, licensed appropriately, reliable and measurably better than the existing OpenAI/Gemini/language pipeline.
+- [ ] **Keep Public APIs and Free-for-Dev as reference catalogues only** — use them when a concrete new need appears (monitoring, email, OCR, storage, etc.), not as permanent Claude context or app dependencies.
+
+### Already present — avoid duplicate work
+- [x] **Supabase MCP** — already configured in Claude with table/project/docs/logs/SQL/migration tools and approval gates for more dangerous operations.
+- [x] **Higgsfield MCP** — already configured for image generation workflows.
+- [x] **Core Chinese data stack** — CC-CEDICT, Tatoeba, HSK 3.0 vocabulary and Hanzi Writer/stroke data already exist in the project.
+- [x] **Existing speech stack** — Azure Speech/TTS, Google TTS and LLM providers already exist; new speech work should extend this rather than adding providers without a clear benefit.
+
 ## Lav
 - [ ] rework the youtube tab, maybe come with some idea
 
