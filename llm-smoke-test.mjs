@@ -22,6 +22,7 @@
 
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
+import { stripReasoning } from './llmDirect.mjs'
 
 const args = process.argv.slice(2)
 const arg = (name, def) => { const i = args.indexOf('--' + name); return i !== -1 && args[i + 1] != null ? args[i + 1] : def }
@@ -29,6 +30,9 @@ const has = (name) => args.includes('--' + name)
 
 const outPath = arg('out', 'reports/llm-smoke.json')
 const maxTests = parseInt(arg('max-tests', '12'), 10)
+// Reasoning models spend hidden tokens before answering; 400 was enough to
+// make gpt-oss-120b look broken when it was only mid-thought.
+const probeTokens = parseInt(arg('probe-tokens', '2000'), 10)
 const explicitModels = arg('models', null)
 const listOnly = has('list-only')
 
@@ -116,7 +120,7 @@ async function probe(providerName, cfg, key, model) {
   const started = Date.now()
   const body = {
     model,
-    max_tokens: 400,
+    max_tokens: probeTokens,
     messages: [{ role: 'user', content: PROBE_PROMPT }],
   }
   try {
@@ -139,7 +143,7 @@ async function probe(providerName, cfg, key, model) {
     const choice = json.choices && json.choices[0]
     let out = choice && choice.message && choice.message.content
     if (Array.isArray(out)) out = out.map(p => (typeof p === 'string' ? p : (p && p.text) || '')).join('')
-    out = typeof out === 'string' ? out.trim() : ''
+    out = typeof out === 'string' ? stripReasoning(out) : ''
     const lines = out.split('\n').map(l => l.trim()).filter(Boolean)
     const usage = json.usage || {}
     return {

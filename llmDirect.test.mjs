@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { directProvider, usageDelta, newUsage, DIRECT_PROVIDERS } from './llmDirect.mjs'
+import { directProvider, usageDelta, newUsage, stripReasoning, DIRECT_PROVIDERS } from './llmDirect.mjs'
 
 const ENV = { GROQ_API_KEY: 'k-groq', GEMINI_API_KEY: 'k-gemini' }
 
@@ -62,5 +62,29 @@ describe('usageDelta', () => {
     expect(usageDelta(before, after)).toEqual({
       requests: 3, failures: 0, promptTokens: 300, completionTokens: 150, latencyMsTotal: 2100,
     })
+  })
+})
+
+describe('stripReasoning', () => {
+  it('removes a closed <think> block and keeps the answer', () => {
+    expect(stripReasoning('<think>plan plan plan</think>\n我的邻居很好。')).toBe('我的邻居很好。')
+  })
+
+  it('an unclosed <think> yields nothing — a truncated scratchpad is not a story', () => {
+    expect(stripReasoning('<think>I should start by...')).toBe('')
+  })
+
+  it('handles a stray closing tag', () => {
+    expect(stripReasoning('reasoning text</think>\n他打算去。')).toBe('他打算去。')
+  })
+
+  it('leaves ordinary output untouched', () => {
+    expect(stripReasoning('TITLE: 去旅行\n李明去问邻居。')).toBe('TITLE: 去旅行\n李明去问邻居。')
+  })
+
+  it('a reasoning-only response surfaces as the retryable empty-content error', async () => {
+    mockFetch(async () => okResponse('<think>still thinking'))
+    const p = directProvider('groq', 'qwen/qwen3.6-27b', ENV)
+    await expect(p.send({ prompt: 'x', maxTokens: 100 })).rejects.toThrow(/empty content/)
   })
 })

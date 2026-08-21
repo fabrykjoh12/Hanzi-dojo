@@ -22,6 +22,25 @@ export const DIRECT_PROVIDERS = {
   },
 }
 
+// Reasoning models (Qwen3, gpt-oss) emit their scratchpad in the content
+// stream, wrapped in <think>…</think>. Left in place it would become story
+// text — English prose the validator counts as lines, and a truncated
+// scratchpad can swallow the entire answer. Strip it at the client boundary so
+// every caller sees only the model's actual output.
+//
+// An UNCLOSED <think> means the response hit its token ceiling before it
+// finished thinking: there is no answer in there, so stripping yields empty
+// content and the caller's retry logic takes over — which is the honest
+// outcome, not a silently truncated story.
+export function stripReasoning(text) {
+  let out = String(text || '')
+  out = out.replace(/<think>[\s\S]*?<\/think>/gi, '')
+  out = out.replace(/<think>[\s\S]*$/i, '')
+  // Some models emit the closing tag only (opened before the visible stream).
+  out = out.replace(/^[\s\S]*?<\/think>/i, '')
+  return out.trim()
+}
+
 export function newUsage() {
   return { requests: 0, failures: 0, promptTokens: 0, completionTokens: 0, latencyMsTotal: 0 }
 }
@@ -80,6 +99,7 @@ export function directProvider(providerName, model, env = process.env) {
     const choice = json.choices && json.choices[0]
     let text = choice && choice.message && choice.message.content
     if (Array.isArray(text)) text = text.map(p => (typeof p === 'string' ? p : (p && p.text) || '')).join('')
+    if (typeof text === 'string') text = stripReasoning(text)
     if (typeof text !== 'string' || !text.trim()) {
       // Reasoning models can spend the whole budget on hidden thinking and
       // return empty content; surface it as a retryable error rather than
