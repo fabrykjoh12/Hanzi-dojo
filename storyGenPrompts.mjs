@@ -249,6 +249,68 @@ export function microRepairPrompt({ manifest, candidate, failures, meanings = {}
     'Do not repeat unchanged lines. Do not add or remove lines. No commentary.'
 }
 
+// Bounded structural patch — the widened micro-repair (still patch-based,
+// still structurally incapable of a rewrite). Three operations against
+// numbered lines, hard-capped at `maxTouched` total:
+//   REPLACE LINE n: <new text>     DELETE LINE n     INSERT AFTER n: <text>
+// Replacement is preferred over insertion; insertion exists only for a
+// missing target that no existing line can naturally carry. The patcher's
+// only job is the listed deterministic failures — it is told, verbatim, not
+// to make the story better.
+export function structuralPatchPrompt({ manifest, candidate, failures, meanings = {}, lineHints = [], maxTouched = 6 }) {
+  const name = levelName(manifest)
+  const lines = candidate.content.split('\n').map(l => l.trim()).filter(Boolean)
+  return 'Minimal structural patch for a ' + name + ' Chinese graded-reader story. ' +
+    'The story failed validation on EXACTLY the points below. Your ONLY job is to satisfy them with the fewest possible local changes while preserving the meaning of every touched line.\n\n' +
+    'Do NOT make the story better. Do NOT rewrite or simplify it generally. Do NOT touch the title. Do NOT add characters, speakers, scenes or events. Any line you do not name stays exactly as it is.\n\n' +
+    'Problems to solve (all of them, nothing else):\n' + failures.map(f => '- ' + f.message).join('\n') + '\n\n' +
+    (lineHints.length ? 'Deterministic hints (derived from the failures):\n' + lineHints.map(h => '- ' + h).join('\n') + '\n\n' : '') +
+    'How to fix:\n' +
+    '- Too many lines → DELETE the least essential line(s), or merge two by replacing one and deleting the other.\n' +
+    '- A target word below its minimum → REPLACE an existing line so the word fits naturally. Use INSERT AFTER only if no replacement can carry it. Targets and ranges:\n' + targetList(manifest, meanings) + '\n' +
+    '- A difficult or unknown word → REPLACE its line, swapping that word for a plain ' + name + '-or-below equivalent, keeping the line\'s meaning.\n' +
+    '- Dialogue stays NAME：text with speakers only from: ' + manifest.speakers.join(', ') + '\n\n' +
+    'HARD BUDGET: at most ' + maxTouched + ' operations total (each REPLACE, DELETE or INSERT counts as one). If it cannot be done within ' + maxTouched + ', output the single line: IMPOSSIBLE\n\n' +
+    'Story (numbered):\n' +
+    lines.map((l, i) => (i + 1) + ': ' + l).join('\n') + '\n\n' +
+    'Output — ONLY operations, one per line, nothing else:\n' +
+    'REPLACE LINE <n>: <full new text of that line>\n' +
+    'DELETE LINE <n>\n' +
+    'INSERT AFTER <n>: <full new line>'
+}
+
+// Parse structural patch operations → [{op, line, text?}] or null (bad
+// syntax, out of range, duplicate ops on one line, or over budget).
+export function parseStructuralPatch(text, lineCount, maxTouched = 6) {
+  const raw = String(text || '')
+  if (/^\s*IMPOSSIBLE\s*$/im.test(raw)) return null
+  const ops = []
+  const touched = new Set()
+  for (const line of raw.split('\n')) {
+    const t = line.trim()
+    if (!t) continue
+    let m
+    if ((m = t.match(/^REPLACE\s+LINE\s+(\d+)\s*[:：]\s*(.+)$/i))) {
+      const n = parseInt(m[1], 10)
+      if (n < 1 || n > lineCount || touched.has('l' + n) || !m[2].trim()) return null
+      touched.add('l' + n)
+      ops.push({ op: 'replace', line: n, text: m[2].trim() })
+    } else if ((m = t.match(/^DELETE\s+LINE\s+(\d+)\s*$/i))) {
+      const n = parseInt(m[1], 10)
+      if (n < 1 || n > lineCount || touched.has('l' + n)) return null
+      touched.add('l' + n)
+      ops.push({ op: 'delete', line: n })
+    } else if ((m = t.match(/^INSERT\s+AFTER\s+(\d+)\s*[:：]\s*(.+)$/i))) {
+      const n = parseInt(m[1], 10)
+      if (n < 0 || n > lineCount || !m[2].trim()) return null
+      ops.push({ op: 'insert', line: n, text: m[2].trim() })
+    }
+    // anything else is prose noise — ignored, the ops lines are the protocol
+  }
+  if (ops.length === 0 || ops.length > maxTouched) return null
+  return ops
+}
+
 // Parse "LINE 7: …" entries → [{ line, text }] (1-based), or null when
 // nothing parseable / out of range / too many changes / duplicates.
 export function parseLinePatch(text, lineCount, maxChanged = 3) {

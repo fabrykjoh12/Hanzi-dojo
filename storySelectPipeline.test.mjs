@@ -6,6 +6,8 @@ import {
   draftBreakdown,
   SELECT_GENERATOR_VERSION,
 } from './storySelectPipeline.mjs'
+import { applyStructuralPatch, structurallyPatchable } from './storySelectPipeline.mjs'
+import { parseStructuralPatch, structuralPatchPrompt } from './storyGenPrompts.mjs'
 import { buildManifest } from './storyManifestPlanner.mjs'
 
 const POOL = [
@@ -175,5 +177,59 @@ describe('draftBreakdown', () => {
     expect(b.structureFailures).toBe(1)
     expect(b.lineDistance).toBe(5)       // fixture draftLines clamp to [6,20]; 25 is 5 over
     expect(b.warnings).toBe(1)
+  })
+})
+
+describe('bounded structural patch protocol', () => {
+  it('parses the three operations and enforces the budget', () => {
+    const ops = parseStructuralPatch('REPLACE LINE 3: 新的一行。\nDELETE LINE 7\nINSERT AFTER 5: 加的一行。', 40, 6)
+    expect(ops).toEqual([
+      { op: 'replace', line: 3, text: '新的一行。' },
+      { op: 'delete', line: 7 },
+      { op: 'insert', line: 5, text: '加的一行。' },
+    ])
+    expect(parseStructuralPatch('DELETE LINE 41', 40)).toBeNull()                       // out of range
+    expect(parseStructuralPatch('REPLACE LINE 3: 一。\nDELETE LINE 3', 40)).toBeNull()   // duplicate touch
+    expect(parseStructuralPatch(Array.from({length:7},(_,i)=>'DELETE LINE '+(i+1)).join('\n'), 40, 6)).toBeNull()  // over budget
+    expect(parseStructuralPatch('IMPOSSIBLE', 40)).toBeNull()
+    expect(parseStructuralPatch('some prose only', 40)).toBeNull()
+    expect(parseStructuralPatch('noise\nDELETE LINE 2\nmore noise', 5)).toEqual([{ op: 'delete', line: 2 }])
+  })
+
+  it('applies deterministically: untouched lines byte-for-byte, order preserved', () => {
+    const content = '一。\n二。\n三。\n四。'
+    const out = applyStructuralPatch(content, [
+      { op: 'replace', line: 2, text: '换二。' },
+      { op: 'delete', line: 3 },
+      { op: 'insert', line: 4, text: '尾行。' },
+    ])
+    expect(out).toBe('一。\n换二。\n四。\n尾行。')
+  })
+
+  it('structurallyPatchable admits patchable classes and refuses the rest', () => {
+    const f = (code) => ({ code })
+    expect(structurallyPatchable([f('too_long'), f('target_below_min'), f('out_of_level_share'), f('unknown_words')])).toBe(true)
+    expect(structurallyPatchable([f('too_short')])).toBe(false)
+    expect(structurallyPatchable([f('duplicate_of_existing')])).toBe(false)
+    expect(structurallyPatchable([])).toBe(false)
+  })
+
+  it('the patch prompt forbids improvement and carries the budget + failures + hints', () => {
+    const m = manifest()
+    const p = structuralPatchPrompt({
+      manifest: m,
+      candidate: { title: 'T', content: '一。\n二。' },
+      failures: [{ code: 'too_long', message: '40 lines (need 14-38)' }],
+      lineHints: ['unknown word 桌上 appears on line 9'],
+      maxTouched: 6,
+    })
+    expect(p).toContain('Do NOT make the story better')
+    expect(p).toContain('Do NOT rewrite or simplify it generally')
+    expect(p).toContain('at most 6 operations')
+    expect(p).toContain('40 lines (need 14-38)')
+    expect(p).toContain('unknown word 桌上 appears on line 9')
+    expect(p).toContain('1: 一。')
+    expect(p).toContain('REPLACE LINE <n>:')
+    expect(p).toContain('IMPOSSIBLE')
   })
 })

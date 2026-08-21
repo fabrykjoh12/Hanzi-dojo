@@ -89,6 +89,45 @@ export function compareDrafts(a, b) {
   return a.warnings - b.warnings
 }
 
+// Apply a structural patch deterministically: replacements substitute their
+// line, deletes drop it, inserts append after their anchor. Every untouched
+// line is byte-for-byte the original. The title is not a numbered line and
+// therefore cannot be touched at all.
+export function applyStructuralPatch(content, ops) {
+  const lines = String(content || '').split('\n').map(l => l.trim()).filter(Boolean)
+  const replaced = new Map()
+  const deleted = new Set()
+  const inserts = new Map()      // after-line-index (1-based, 0 = at start) → [texts]
+  for (const o of ops) {
+    if (o.op === 'replace') replaced.set(o.line, o.text)
+    else if (o.op === 'delete') deleted.add(o.line)
+    else if (o.op === 'insert') {
+      if (!inserts.has(o.line)) inserts.set(o.line, [])
+      inserts.get(o.line).push(o.text)
+    }
+  }
+  const out = []
+  if (inserts.has(0)) out.push(...inserts.get(0))
+  for (let i = 1; i <= lines.length; i += 1) {
+    if (!deleted.has(i)) out.push(replaced.has(i) ? replaced.get(i) : lines[i - 1])
+    if (inserts.has(i)) out.push(...inserts.get(i))
+  }
+  return out.join('\n')
+}
+
+// Failure classes a bounded line patch can plausibly address. Everything
+// else (too_short, invalid title/content, corpus duplicates) needs a new
+// draft, not surgery.
+const PATCHABLE_CODES = new Set([
+  'too_long', 'line_too_long', 'unknown_speaker',
+  'missing_target', 'target_below_min', 'target_above_max',
+  'out_of_level_share', 'unknown_words', 'unknown_share',
+  'repeated_line', 'repetition_excess',
+])
+export function structurallyPatchable(failures) {
+  return Boolean(failures && failures.length) && failures.every(f => PATCHABLE_CODES.has(f.code))
+}
+
 async function call(provider, kind, prompt, maxTokens, parse, parseRetries, calls, sleep) {
   let lastErr = null
   for (let i = 0; i <= parseRetries; i += 1) {

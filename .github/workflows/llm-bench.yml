@@ -22,7 +22,7 @@ on:
       mode:
         description: "smoke = probe; bench = benchmark; select = K-draft selection (production flow); duo = retired edit flow (diagnostic); writer-test = one draft"
         type: choice
-        options: [smoke, bench, duo, select, writer-test]
+        options: [smoke, bench, duo, select, writer-test, patch-test]
         default: smoke
       max_tests:
         description: "smoke only: how many models to probe (capped at 16)"
@@ -56,6 +56,10 @@ on:
         description: "writer-test only: max_tokens override for full-thinking runs (capped 4800; blank = pipeline budget)"
         type: string
         default: ''
+      stage_name:
+        description: "patch-test only: which stored stage to patch (e.g. draft-1)"
+        type: string
+        default: 'draft-1'
       drafts_k:
         description: "select only: independent drafts per manifest (capped 5)"
         type: string
@@ -289,6 +293,45 @@ jobs:
             --input reports/story-corpus-dump.json \
             --manifest "$MANIFEST" \
             --provider "$prov" --model "$mdl" $EFFORT_FLAG $TOKENS_FLAG \
+            --out "data/story-candidates/$PREFIX"
+
+      - name: Fresh corpus dump for patch-test (read-only)
+        if: inputs.mode == 'patch-test'
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node dump-story-corpus.mjs --out reports/story-corpus-dump.json
+
+      - name: "Patch test — bounded structural patch of ONE stored draft"
+        if: inputs.mode == 'patch-test'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MODEL_A: ${{ inputs.model_a }}      # patcher
+          EFFORT_A: ${{ inputs.effort_a }}
+          MODEL_B: ${{ inputs.model_b }}      # critic (runs only on PASS)
+          EFFORT_B: ${{ inputs.effort_b }}
+          MANIFEST: ${{ inputs.manifest_path }}   # the stored CANDIDATE file
+          PREFIX: ${{ inputs.batch_prefix }}
+          STAGE: ${{ inputs.stage_name }}
+        run: |
+          set -e
+          case "$PREFIX" in (*[!A-Za-z0-9_-]*|"") echo "bad batch_prefix"; exit 1;; esac
+          case "$MODEL_A" in (""|*[!A-Za-z0-9._/:-]*) echo "bad or missing model_a"; exit 1;; esac
+          case "$MANIFEST" in (*[!A-Za-z0-9._/-]*|""|/*|*..*) echo "bad manifest_path"; exit 1;; esac
+          [ -f "$MANIFEST" ] || { echo "candidate not found: $MANIFEST"; exit 1; }
+          case "$STAGE" in (*[!A-Za-z0-9-]*|"") STAGE=draft-1;; esac
+          A_EFF=""; case "$EFFORT_A" in ("") ;; (none|low|medium|high|default) A_EFF="--patcher-effort $EFFORT_A";; (*) echo bad; exit 1;; esac
+          B_FLAGS=""
+          if [ -n "$MODEL_B" ]; then
+            case "$MODEL_B" in (*[!A-Za-z0-9._/:-]*) echo "bad model_b"; exit 1;; esac
+            B_FLAGS="--critic $MODEL_B"
+            case "$EFFORT_B" in ("") ;; (none|low|medium|high|default) B_FLAGS="$B_FLAGS --critic-effort $EFFORT_B";; (*) echo bad; exit 1;; esac
+          fi
+          node patch-candidate-test.mjs \
+            --input reports/story-corpus-dump.json \
+            --candidate "$MANIFEST" --stage "$STAGE" \
+            --patcher "$MODEL_A" $A_EFF $B_FLAGS \
             --out "data/story-candidates/$PREFIX"
 
       - name: Show reports
