@@ -1,0 +1,182 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "bench-1-a",
+  "generatedAt": "2026-08-21T14:06:03.763Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bench-1-a-L3-004",
+    "batchId": "bench-1-a",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "要求",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "信",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "当然",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "接",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "刚",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "只要",
+        "min": 2,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "a new friend or visitor arrives and daily life is a little different for a while",
+    "series": null,
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "bench-1-a-L3-004",
+    "status": "rejected",
+    "title": "新朋友大毛",
+    "content": "昨天下午，小明带来一只白色的猫，它的名字叫大毛。\n李明很高兴，他刚到家，大毛跑了。\n妈妈在厨房做饭，说：“不要跑，小心！”\n李明说：“我要接它，它刚到我家。”\n小红说：“只要你慢一点，猫就不会跑。”\n李明说：“当然，我知道怎么接它。”\n可是李明冲过去，大毛跳到了桌子上。\n小红笑着说：“你刚才太急了。”\n李明问：“那个打针的男人是谁？”\n小红说：“那个男人在公园里。”\n李明觉得那个男人很可怕，不喜欢他。\n大毛看着他们，叫了一声。\n李明说：“它饿了，我要给它饭吃。”\n妈妈说：“只要它干净，我们可以喂它。”\n李明快快地拿了一个杯子，倒了牛奶。\n大毛过来吃，吃得很快。\n小明说：“它真可爱，我想留它。”\n李明说：“当然，我们大家都喜欢它。”\n小红看着大毛，说：“它刚到这里，有点怕。”\n李明说：“没关系，我会对它好。”\n妈妈走过来，摸了摸大毛的头。\n妈妈说：“这个猫很干净，满足我们的要求。”\n李明高兴地跳起来，说：“谢谢妈妈！”\n大毛吃完，躺在椅子上睡觉。\n李明悄悄走过去，想抱它。\n小红拉住李明，低声说：“让它休息。”\n李明说：“好的，我不吵它。”\n窗外下雨了，天气很冷。\n屋里很暖和，大毛睡得很香。\n李明看着大毛，觉得很幸福。\n妈妈端来热茶，说：“大家坐下来喝茶。”\n小明说：“今天很开心，有新朋友。”\n小红说：“只要小心，大毛会信我们。”\n李明点头，说：“我会照顾大毛。”\n大毛没有说话，只是尾巴轻轻动了一下。\n李明写信给爸爸，说他发了一个新朋友。\n李明说：“我满足大家的要求，会好好照顾它。”\n小红说：“当然，我们一起信大毛。”",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@1",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "unknown_speaker",
+          "message": "speakers outside the cast: 李明说、小红说、小红笑着说、李明问、妈妈说、小明说、李明点头，说 (allowed: 李明、小红、小明、妈妈)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "发 appears 1× (need 2-4)"
+        },
+        {
+          "code": "out_of_level_words",
+          "message": "21 distinct words above HSK 3 (max 3)"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 9.3% > 7.0%"
+        },
+        {
+          "code": "unknown_words",
+          "message": "4 unknown (non-vocabulary) runs (max 2): 留、怕、窗外、屋"
+        }
+      ],
+      "warnings": [],
+      "metrics": {
+        "lines": 38,
+        "cjkChars": 375,
+        "distinctVocab": 141,
+        "targetCounts": {
+          "发": 1,
+          "要求": 2,
+          "男人": 3,
+          "信": 3,
+          "当然": 3,
+          "接": 2,
+          "刚": 3,
+          "只要": 3
+        },
+        "inLevelCoverage": 0.893,
+        "outOfLevelDistinct": 21,
+        "outOfLevelCharShare": 0.093,
+        "unknownDistinct": 4,
+        "unknownCharShare": 0.013,
+        "unknownRuns": [
+          "留",
+          "怕",
+          "窗外",
+          "屋"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.031,
+        "nearestNeighbor": {
+          "title": "3. 回家",
+          "level": 1,
+          "jaccard": 0.022,
+          "containment": 0.164
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 1,
+    "calls": 8,
+    "generatorVersion": "fab9-pipeline@1",
+    "promptVersion": "fab9-prompts@1",
+    "usage": {
+      "requests": 8,
+      "failures": 6,
+      "promptTokens": 4882,
+      "completionTokens": 826,
+      "latencyMsTotal": 2977,
+      "wallMs": 51089
+    }
+  },
+  "staged": null
+}

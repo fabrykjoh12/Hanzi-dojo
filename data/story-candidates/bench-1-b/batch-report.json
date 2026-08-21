@@ -1,0 +1,133 @@
+{
+  "batchId": "bench-1-b",
+  "level": 3,
+  "generatedAt": "2026-08-21T14:09:20.277Z",
+  "provider": {
+    "name": "groq",
+    "model": "openai/gpt-oss-120b"
+  },
+  "versions": {
+    "generator": "fab9-pipeline@1",
+    "prompts": "fab9-prompts@1"
+  },
+  "manifests": 4,
+  "accepted": 0,
+  "rejected": 4,
+  "totalProviderCalls": 24,
+  "tokenUsage": {
+    "requests": 24,
+    "failures": 24,
+    "promptTokens": 0,
+    "completionTokens": 0,
+    "latencyMsTotal": 2298
+  },
+  "failureHistogram": {
+    "no_candidate": 4
+  },
+  "plan": {
+    "before": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    },
+    "after": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    }
+  },
+  "coverage": {
+    "current": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    },
+    "projectedIfPublished": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    }
+  },
+  "candidates": [
+    {
+      "manifestId": "bench-1-b-L3-001",
+      "status": "rejected",
+      "title": null,
+      "critiqueScore": null,
+      "failures": [
+        "no_candidate"
+      ],
+      "warnings": [],
+      "calls": 6,
+      "usage": {
+        "requests": 6,
+        "failures": 6,
+        "promptTokens": 0,
+        "completionTokens": 0,
+        "latencyMsTotal": 472,
+        "wallMs": 48503
+      }
+    },
+    {
+      "manifestId": "bench-1-b-L3-002",
+      "status": "rejected",
+      "title": null,
+      "critiqueScore": null,
+      "failures": [
+        "no_candidate"
+      ],
+      "warnings": [],
+      "calls": 6,
+      "usage": {
+        "requests": 6,
+        "failures": 6,
+        "promptTokens": 0,
+        "completionTokens": 0,
+        "latencyMsTotal": 889,
+        "wallMs": 48922
+      }
+    },
+    {
+      "manifestId": "bench-1-b-L3-003",
+      "status": "rejected",
+      "title": null,
+      "critiqueScore": null,
+      "failures": [
+        "no_candidate"
+      ],
+      "warnings": [],
+      "calls": 6,
+      "usage": {
+        "requests": 6,
+        "failures": 6,
+        "promptTokens": 0,
+        "completionTokens": 0,
+        "latencyMsTotal": 390,
+        "wallMs": 48420
+      }
+    },
+    {
+      "manifestId": "bench-1-b-L3-004",
+      "status": "rejected",
+      "title": null,
+      "critiqueScore": null,
+      "failures": [
+        "no_candidate"
+      ],
+      "warnings": [],
+      "calls": 6,
+      "usage": {
+        "requests": 6,
+        "failures": 6,
+        "promptTokens": 0,
+        "completionTokens": 0,
+        "latencyMsTotal": 547,
+        "wallMs": 48580
+      }
+    }
+  ]
+}

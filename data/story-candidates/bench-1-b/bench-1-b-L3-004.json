@@ -1,0 +1,132 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "bench-1-b",
+  "generatedAt": "2026-08-21T14:09:19.603Z",
+  "provider": {
+    "name": "groq",
+    "model": "openai/gpt-oss-120b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bench-1-b-L3-004",
+    "batchId": "bench-1-b",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "要求",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "信",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "当然",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "接",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "刚",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "只要",
+        "min": 2,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "a new friend or visitor arrives and daily life is a little different for a while",
+    "series": null,
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "bench-1-b-L3-004",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": {
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "no_candidate",
+          "message": "every draft attempt failed (provider error or unparseable response)"
+        }
+      ],
+      "warnings": [],
+      "metrics": {}
+    },
+    "critique": null,
+    "attempts": 2,
+    "calls": 6,
+    "generatorVersion": "fab9-pipeline@1",
+    "promptVersion": "fab9-prompts@1",
+    "usage": {
+      "requests": 6,
+      "failures": 6,
+      "promptTokens": 0,
+      "completionTokens": 0,
+      "latencyMsTotal": 547,
+      "wallMs": 48580
+    }
+  },
+  "staged": null
+}

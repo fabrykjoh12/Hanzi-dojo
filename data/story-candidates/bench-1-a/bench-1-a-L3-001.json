@@ -1,0 +1,196 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "bench-1-a",
+  "generatedAt": "2026-08-21T14:02:58.568Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bench-1-a-L3-001",
+    "batchId": "bench-1-a",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "被",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "中",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "该",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "像",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "认为",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "生活",
+        "min": 2,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "bench-1-a-L3-001",
+    "status": "rejected",
+    "title": "大白的秘密",
+    "content": "周末的下午，阳光很好。\n李明摸着肚子说：“我好饿，想吃东西。”\n小明躺在椅子上说：“等一下，别急。”\n小红坐在一旁看书，笑着说：“你总是饿。”\n这时候，一只白猫从树后面走出来。\n它走进灌木丛，过了一会儿，嘴里叼着一个东西出来。\n李明跑过去看，发现那是他的红色钱包。\n李明惊讶地问：“我的钱包怎么在你嘴里？”\n被大毛叼走的钱包在地上放着。\n大毛把钱包放下，走了两步，又回头看看他们。\n小红走过去捡起钱包，打开一看，笑了。\n小红说：“里面没有钱，只有几张卡片。”\n李明紧张地问：“钱呢？是不是被谁拿走了？”\n小明摇摇头说：“猫不吃钱包。”\n小红念出纸条上的字：“谢谢你的火腿肠。”\n李明恍然大悟说：“哦！那是昨天我吃剩的。”\n他以为火腿肠掉在地上，就没有再找。\n原来是大毛捡到了，把它当礼物还给他。\n李明笑着说：“大毛真聪明，像一只小狗。”\n小红说：“我觉得它只是喜欢火腿肠的味道。”\n大毛蹭了蹭李明的腿，像是在说谢谢。\n李明摸摸大毛的头，说：“下次我再给你买。”\n小明站起来说：“走吧，我们去吃饭。”\n李明问：“我们该去哪里吃呢？”\n小红说：“如果不去那家饭店，就去超市。”\n李明说：“我需要一碗热腾腾的面条儿。”\n小明说：“我也需要一些食物。”\n妈妈打电话来说，晚饭做好了。\n李明说：“好的，马上回去，我很高兴。”\n他们走在回家的路上，太阳慢慢下山了。\n这个下午虽然有小麻烦，但结局很好。\n李明认为，生活中的小意外也可以变成好事。\n小红也认为，爱护动物让生活更快乐。\n大毛住在旁边的人家，但经常来这儿玩。\n如果明天还有火腿肠，大毛还会来吗？\n李明说：“当然会，我们有很多朋友。”",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@1",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "unknown_speaker",
+          "message": "speakers outside the cast: 李明惊讶地问、小红说、李明紧张地问、小明摇摇头说、李明笑着说、小明站起来说、李明问、李明说、小明说 (allowed: 李明、小红、小明、妈妈)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "中 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "该 appears 1× (need 2-4)"
+        },
+        {
+          "code": "out_of_level_words",
+          "message": "20 distinct words above HSK 3 (max 3)"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 8.4% > 7.0%"
+        },
+        {
+          "code": "unknown_words",
+          "message": "16 unknown (non-vocabulary) runs (max 2): 一旁、灌木、丛、叼、叼走、步、张、念、纸条、火腿"
+        },
+        {
+          "code": "unknown_share",
+          "message": "unknown text: 7.8% > 7.0%"
+        }
+      ],
+      "warnings": [],
+      "metrics": {
+        "lines": 36,
+        "cjkChars": 438,
+        "distinctVocab": 168,
+        "targetCounts": {
+          "被": 2,
+          "中": 1,
+          "如果": 2,
+          "该": 1,
+          "需要": 2,
+          "像": 2,
+          "认为": 2,
+          "生活": 2
+        },
+        "inLevelCoverage": 0.838,
+        "outOfLevelDistinct": 20,
+        "outOfLevelCharShare": 0.084,
+        "unknownDistinct": 16,
+        "unknownCharShare": 0.078,
+        "unknownRuns": [
+          "一旁",
+          "灌木",
+          "丛",
+          "叼",
+          "叼走",
+          "步",
+          "张",
+          "念",
+          "纸条",
+          "火腿"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.019,
+        "nearestNeighbor": {
+          "title": "2. 最后一次",
+          "level": 5,
+          "jaccard": 0.015,
+          "containment": 0.036
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 2,
+    "calls": 10,
+    "generatorVersion": "fab9-pipeline@1",
+    "promptVersion": "fab9-prompts@1",
+    "usage": {
+      "requests": 10,
+      "failures": 7,
+      "promptTokens": 7728,
+      "completionTokens": 1337,
+      "latencyMsTotal": 4891,
+      "wallMs": 77058
+    }
+  },
+  "staged": null
+}

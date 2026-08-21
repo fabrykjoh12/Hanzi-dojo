@@ -1,0 +1,204 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "bench-1-a",
+  "generatedAt": "2026-08-21T14:04:24.041Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bench-1-a-L3-002",
+    "batchId": "bench-1-a",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发生",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "其他",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "或",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "得到",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "了解",
+        "min": 2,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "preparing for something over several days (a trip, a festival, a small competition) with setbacks",
+    "series": null,
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "bench-1-a-L3-002",
+    "status": "rejected",
+    "title": "寻找快乐的那一夜",
+    "content": "明天学校有文化表演，李明很兴奋，但是他的节目还没有准备好。\n小红路过他家，看见李明在客厅里走来走去，手里拿着两把雨伞。\n李明：你看，我要表演跳舞，但是我找不到合适的音乐，怎么办？\n小红：你总是这么着急，而且你的衣服也不太干净，需要洗一洗。\n那天下午，李明去商店买新衣服，但是那里的人非常多，他很累。\n他想得到一件漂亮的红色外套，但是那个尺码全卖完了。\n发生了一个小问题，李明只好买了一件蓝色的，虽然也不错。\n回家后，妈妈看见他，问他为什么脸色不好，是不是生病或者太热。\n妈妈：你必须早点休息，而且不要太担心，会好的，别发愁。\n李明想妈妈的话，觉得她是对的，但是心里还是有点不安静。\n大毛跳上桌子，看着李明，好像在说不要着急，慢慢来就好。\n第二天，李明和小明一起练习，小明觉得舞蹈动作太难了一点。\n小明：我不会这个旋转，每次都摔倒，我们换其他动作吧，行吗？\n李明：不行，老师说要原创，我们必须努力，这样才能得到好分数。\n他们练习了两个小时，小明累了，坐在椅子上不想再动任何动作。\n突然，窗户被风吹开，小明的帽子飞了出去，落到了外面的树上。\n李明看见帽子，跑出去捡，大毛也跟着跑出去，在树下坐着。\n发生了一件意外，树很高，李明够不到帽子，怎么办才好呢？\n小红正好路过，看见他们在树下着急，笑着说你们真是一对笨蛋。\n小红：把梯子拿来，我问妈妈借一个，很快就能拿到的，别急。\n他们爬上梯子，小明拿到了帽子，而且顺便摘了一些苹果给他们。\n李明很开心，觉得小红真是他的好朋友，而且很聪明，能帮忙。\n晚上，妈妈做了很多好吃的饭菜，有饺子还有鸡肉，非常香。\n李明：妈妈，谢谢你的帮助，我感觉好多了，我们一定会成功的。\n妈妈：别只想着赢，朋友之间的帮助比名次更重要，要记住这点。\n李明觉得妈妈说得有道理，因为他明白了合作的力量有多大。\n第三天早上，天气很好，阳光很充足，适合表演，大家都很高兴。\n在学校礼堂里，很多同学都来了，气氛很热闹，而且很紧张。\n李明和小明站在后台，李明深呼吸，手有点抖，他很害怕出错。\n小红走过来，拍拍李明的肩膀，跟他说没关系，大家都不容易。\n小明：我有点后悔刚才那么懒，不过现在我想好了，一起加油吧。\n他们走上舞台，灯光很亮，音乐响起来，他们开始跳舞，动作整齐。\n中间发生了一个小失误，小明踩了李明的脚，但是没有人 noticing。\n他们继续跳下去，直到最后一刻，掌声响起，他们成功了，真开心。\n回到家，李明和小红一起吃饭，聊聊今天的感受，气氛很轻松。\n小明：我觉得我们配合得很好，以后要加强练习，保持这个水平。\n小红：对，而且我们要感谢大毛，它帮我们捡东西，它很有用。\n大毛在墙角睡觉，好像听到了他们的谈话，尾巴轻轻摇了一下。\n李明：我学到了很多，不仅跳舞，还有关于朋友和努力的道理。\n妈妈：很高兴看到你们在一起，你们的进步比任何奖品都珍贵。\n李明看着窗外的月亮，心里想，虽然过程很难，但是结果很美好。\n他知道，下次遇到挑战，他不会害怕，因为他有朋友在身边帮忙。",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@1",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "too_long",
+          "message": "42 lines (need 14-38)"
+        },
+        {
+          "code": "target_above_max",
+          "message": "而且 appears 6× (max 4) — reads as spam"
+        },
+        {
+          "code": "target_below_min",
+          "message": "其他 appears 1× (need 2-4)"
+        },
+        {
+          "code": "missing_target",
+          "message": "missing target: 或"
+        },
+        {
+          "code": "missing_target",
+          "message": "missing target: 关系"
+        },
+        {
+          "code": "missing_target",
+          "message": "missing target: 了解"
+        },
+        {
+          "code": "out_of_level_words",
+          "message": "74 distinct words above HSK 3 (max 3)"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 17.0% > 7.0%"
+        },
+        {
+          "code": "unknown_words",
+          "message": "17 unknown (non-vocabulary) runs (max 2): 午、码、全、蓝色、原创、笨蛋、梯子、礼堂、深呼吸、抖"
+        }
+      ],
+      "warnings": [],
+      "metrics": {
+        "lines": 42,
+        "cjkChars": 932,
+        "distinctVocab": 301,
+        "targetCounts": {
+          "发生": 3,
+          "而且": 6,
+          "必须": 2,
+          "其他": 1,
+          "或": 0,
+          "得到": 2,
+          "关系": 0,
+          "了解": 0
+        },
+        "inLevelCoverage": 0.8,
+        "outOfLevelDistinct": 74,
+        "outOfLevelCharShare": 0.17,
+        "unknownDistinct": 17,
+        "unknownCharShare": 0.03,
+        "unknownRuns": [
+          "午",
+          "码",
+          "全",
+          "蓝色",
+          "原创",
+          "笨蛋",
+          "梯子",
+          "礼堂",
+          "深呼吸",
+          "抖"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.029,
+        "nearestNeighbor": {
+          "title": "5. 找歌的书",
+          "level": 1,
+          "jaccard": 0.015,
+          "containment": 0.078
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 2,
+    "calls": 11,
+    "generatorVersion": "fab9-pipeline@1",
+    "promptVersion": "fab9-prompts@1",
+    "usage": {
+      "requests": 11,
+      "failures": 9,
+      "promptTokens": 4644,
+      "completionTokens": 1636,
+      "latencyMsTotal": 5292,
+      "wallMs": 85472
+    }
+  },
+  "staged": null
+}

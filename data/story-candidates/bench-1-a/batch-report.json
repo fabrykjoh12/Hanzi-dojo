@@ -1,0 +1,160 @@
+{
+  "batchId": "bench-1-a",
+  "level": 3,
+  "generatedAt": "2026-08-21T14:06:04.434Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b"
+  },
+  "versions": {
+    "generator": "fab9-pipeline@1",
+    "prompts": "fab9-prompts@1"
+  },
+  "manifests": 4,
+  "accepted": 0,
+  "rejected": 4,
+  "totalProviderCalls": 35,
+  "tokenUsage": {
+    "requests": 35,
+    "failures": 28,
+    "promptTokens": 17254,
+    "completionTokens": 3799,
+    "latencyMsTotal": 13761
+  },
+  "failureHistogram": {
+    "unknown_speaker": 2,
+    "target_below_min": 4,
+    "out_of_level_words": 3,
+    "out_of_level_share": 3,
+    "unknown_words": 3,
+    "unknown_share": 1,
+    "too_long": 1,
+    "target_above_max": 1,
+    "missing_target": 3,
+    "no_candidate": 1
+  },
+  "plan": {
+    "before": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    },
+    "after": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    }
+  },
+  "coverage": {
+    "current": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    },
+    "projectedIfPublished": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    }
+  },
+  "candidates": [
+    {
+      "manifestId": "bench-1-a-L3-001",
+      "status": "rejected",
+      "title": "大白的秘密",
+      "critiqueScore": null,
+      "failures": [
+        "unknown_speaker",
+        "target_below_min",
+        "target_below_min",
+        "out_of_level_words",
+        "out_of_level_share",
+        "unknown_words",
+        "unknown_share"
+      ],
+      "warnings": [],
+      "calls": 10,
+      "usage": {
+        "requests": 10,
+        "failures": 7,
+        "promptTokens": 7728,
+        "completionTokens": 1337,
+        "latencyMsTotal": 4891,
+        "wallMs": 77058
+      }
+    },
+    {
+      "manifestId": "bench-1-a-L3-002",
+      "status": "rejected",
+      "title": "寻找快乐的那一夜",
+      "critiqueScore": null,
+      "failures": [
+        "too_long",
+        "target_above_max",
+        "target_below_min",
+        "missing_target",
+        "missing_target",
+        "missing_target",
+        "out_of_level_words",
+        "out_of_level_share",
+        "unknown_words"
+      ],
+      "warnings": [],
+      "calls": 11,
+      "usage": {
+        "requests": 11,
+        "failures": 9,
+        "promptTokens": 4644,
+        "completionTokens": 1636,
+        "latencyMsTotal": 5292,
+        "wallMs": 85472
+      }
+    },
+    {
+      "manifestId": "bench-1-a-L3-003",
+      "status": "rejected",
+      "title": null,
+      "critiqueScore": null,
+      "failures": [
+        "no_candidate"
+      ],
+      "warnings": [],
+      "calls": 6,
+      "usage": {
+        "requests": 6,
+        "failures": 6,
+        "promptTokens": 0,
+        "completionTokens": 0,
+        "latencyMsTotal": 601,
+        "wallMs": 48633
+      }
+    },
+    {
+      "manifestId": "bench-1-a-L3-004",
+      "status": "rejected",
+      "title": "新朋友大毛",
+      "critiqueScore": null,
+      "failures": [
+        "unknown_speaker",
+        "target_below_min",
+        "out_of_level_words",
+        "out_of_level_share",
+        "unknown_words"
+      ],
+      "warnings": [],
+      "calls": 8,
+      "usage": {
+        "requests": 8,
+        "failures": 6,
+        "promptTokens": 4882,
+        "completionTokens": 826,
+        "latencyMsTotal": 2977,
+        "wallMs": 51089
+      }
+    }
+  ]
+}
