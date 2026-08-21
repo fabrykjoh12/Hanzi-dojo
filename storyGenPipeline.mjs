@@ -39,6 +39,34 @@ export const DEFAULT_LIMITS = {
   parseRetries: 2,    // re-asks when a response is unparseable
 }
 
+// Output budgets, derived from the manifest rather than hardcoded.
+//
+// The serial generator asked for 6000 output tokens per draft, sized for
+// Anthropic-scale limits. Groq's free tier counts prompt + max_tokens against
+// a 8000 tokens-per-minute ceiling, so a ~3000-token prompt plus 6000 produced
+// HTTP 413 "Request too large … Limit 8000, Requested 8999" on EVERY draft in
+// bench-2 — generation was structurally impossible, for both models, before a
+// single word was written.
+//
+// A graded-reader story is small: 38 lines of Chinese is roughly 800-1000
+// tokens. Budgeting from the manifest's own line ceiling keeps requests inside
+// modest tiers while leaving reasoning models real headroom.
+export function outputBudget(manifest, kind) {
+  const lines = (manifest && manifest.length && manifest.length.maxLines) || 38
+  const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x))
+  if (kind === 'critique') return 800
+  // English runs longer in tokens than the Chinese it translates.
+  if (kind === 'translate') return clamp(Math.round(lines * 60) + 300, 1200, 3500)
+  return clamp(Math.round(lines * 50) + 600, 1200, 3000)
+}
+
+// A 413 (request too large), a 400 (bad request) or a 401 (bad key) fails
+// identically on every retry — re-sending an oversized request just burns the
+// budget and the clock. Only transient failures deserve the backoff loop.
+export function isPermanentProviderError(message) {
+  return /HTTP (400|401|403|404|413|422)\b/.test(String(message || ''))
+}
+
 // A critique below TARGET_SCORE gets a quality revision; the publish floor is
 // the staging tool's concern, recorded on the candidate for the human review.
 export const TARGET_SCORE = 8
@@ -70,7 +98,9 @@ async function call(provider, kind, prompt, maxTokens, parse, parseRetries, call
       // Record WHY, not just that it failed. bench-1 counted 24/24 failed
       // requests with no error text anywhere in the artifacts, which made a
       // dead model indistinguishable from a bad one.
-      calls.errors.push({ kind, attempt: i + 1, message: String(err.message || err).slice(0, 300) })
+      const message = String(err.message || err).slice(0, 300)
+      calls.errors.push({ kind, attempt: i + 1, message })
+      if (isPermanentProviderError(message)) break
       if (i < parseRetries) await sleep(Math.min(8000 * Math.pow(2, i), 30000))
       continue
     }
@@ -109,7 +139,7 @@ export async function generateCandidate({
   for (let attempt = 1; attempt <= lim.attempts; attempt += 1) {
     let cand
     try {
-      cand = await call(provider, 'draft', draftPrompt({ manifest, pool, meanings }), 6000, parseChapter, lim.parseRetries, calls, slp)
+      cand = await call(provider, 'draft', draftPrompt({ manifest, pool, meanings }), outputBudget(manifest, 'draft'), parseChapter, lim.parseRetries, calls, slp)
     } catch {
       continue                                   // a dead draft costs the attempt, not the manifest
     }
@@ -122,7 +152,7 @@ export async function generateCandidate({
       try {
         fixed = await call(provider, 'repair',
           repairPrompt({ manifest, candidate: cand, failures: validation.failures, pool, meanings }),
-          6000, parseChapter, lim.parseRetries, calls, slp)
+          outputBudget(manifest, 'repair'), parseChapter, lim.parseRetries, calls, slp)
       } catch {
         break
       }
@@ -136,14 +166,14 @@ export async function generateCandidate({
     let crit = null
     if (critiqueEnabled && validation.verdict === 'PASS') {
       try {
-        crit = await call(provider, 'critique', critiquePrompt({ manifest, candidate: cand }), 2000, parseCritique, lim.parseRetries, calls, slp)
+        crit = await call(provider, 'critique', critiquePrompt({ manifest, candidate: cand }), outputBudget(manifest, 'critique'), parseCritique, lim.parseRetries, calls, slp)
         for (let round = 0; round < lim.qualityRounds && crit && crit.score < TARGET_SCORE; round += 1) {
           const revised = await call(provider, 'revise',
             qualityRevisePrompt({ manifest, candidate: cand, feedback: crit.feedback || '', pool, meanings }),
-            6000, parseChapter, lim.parseRetries, calls, slp)
+            outputBudget(manifest, 'revise'), parseChapter, lim.parseRetries, calls, slp)
           const revisedValidation = validate(revised)
           if (revisedValidation.verdict !== 'PASS') break     // quality never overrules the gate
-          const revisedCrit = await call(provider, 'critique', critiquePrompt({ manifest, candidate: revised }), 2000, parseCritique, lim.parseRetries, calls, slp)
+          const revisedCrit = await call(provider, 'critique', critiquePrompt({ manifest, candidate: revised }), outputBudget(manifest, 'critique'), parseCritique, lim.parseRetries, calls, slp)
           if ((revisedCrit.score || 0) <= crit.score) break   // didn't help — keep the original
           cand = revised
           validation = revisedValidation
@@ -183,7 +213,7 @@ export async function generateCandidate({
   if (translateEnabled && best.validation.verdict === 'PASS') {
     const lineCount = best.candidate.content.split('\n').filter(l => l.trim()).length
     try {
-      english = await call(provider, 'translate', translatePrompt({ candidate: best.candidate }), 6000,
+      english = await call(provider, 'translate', translatePrompt({ candidate: best.candidate }), outputBudget(manifest, 'translate'),
         (t) => parseTranslation(t, lineCount), lim.parseRetries, calls, slp)
     } catch {
       english = null

@@ -3,6 +3,7 @@ import {
   generateCandidate,
   serializableCandidate,
   rankAttempt,
+  outputBudget,
   GENERATOR_VERSION,
 } from './storyGenPipeline.mjs'
 import {
@@ -293,5 +294,59 @@ describe('poolForPrompt stratification (bench-1 defect)', () => {
     expect(listed[0]).toBe('a0')
     const small = [{ word: 'x', level: 1, meaning: 'ex' }]
     expect(poolForPrompt(small, 280)).toBe('x (ex)')
+  })
+})
+
+describe('request sizing (bench-2 root cause: Groq 8000 TPM)', () => {
+  const m = manifest()
+
+  it('budgets from the manifest instead of the inherited 6000', () => {
+    expect(outputBudget(m, 'draft')).toBeLessThan(3001)
+    expect(outputBudget(m, 'draft')).toBeGreaterThanOrEqual(1200)
+    expect(outputBudget(m, 'critique')).toBe(800)
+    expect(outputBudget({ length: { maxLines: 38 } }, 'translate')).toBeGreaterThan(outputBudget({ length: { maxLines: 38 } }, 'draft'))
+  })
+
+  it('a full-length manifest still fits a modest tier alongside its prompt', () => {
+    const big = { length: { maxLines: 42 } }
+    // ~3000-token prompt + budget must stay under an 8000 tokens-per-minute cap
+    expect(3000 + outputBudget(big, 'draft')).toBeLessThan(8000)
+    expect(3000 + outputBudget(big, 'translate')).toBeLessThan(8000)
+  })
+
+  it('the draft call actually asks for the derived budget', async () => {
+    let asked = null
+    const provider = async ({ kind, maxTokens }) => {
+      if (kind === 'draft') { asked = maxTokens; return GOOD_TEXT }
+      throw new Error('unexpected')
+    }
+    await gen({ manifest: m, pool, vocabMap, provider, critique: false, translate: false })
+    expect(asked).toBe(outputBudget(m, 'draft'))
+  })
+
+  it('a permanent error is not retried — re-sending an oversized request cannot help', async () => {
+    let n = 0
+    const provider = async () => {
+      n += 1
+      throw new Error('groq/x HTTP 413: Request too large for model in organization … Limit 8000, Requested 8999')
+    }
+    const r = await gen({
+      manifest: m, pool, vocabMap, provider,
+      critique: false, translate: false, limits: { attempts: 1, parseRetries: 2 },
+    })
+    expect(n).toBe(1)                                     // not 3
+    expect(r.providerErrors[0].message).toContain('413')
+  })
+
+  it('a transient error still gets the full retry budget', async () => {
+    let n = 0
+    const provider = async ({ kind }) => {
+      n += 1
+      if (n === 1) throw new Error('groq/x HTTP 429: rate limit')
+      if (kind === 'draft') return GOOD_TEXT
+      throw new Error('unexpected')
+    }
+    const r = await gen({ manifest: m, pool, vocabMap, provider, critique: false, translate: false })
+    expect(r.status).toBe('accepted')
   })
 })
