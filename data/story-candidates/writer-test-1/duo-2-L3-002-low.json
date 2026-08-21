@@ -1,0 +1,199 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "writer-test",
+  "generatedAt": "2026-08-21T16:44:55.967Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "low"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "duo-2-L3-002",
+    "batchId": "duo-2",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发生",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "国家",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "结束",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "来自",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "生活",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "其他",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "或者",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "当然",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "out in the city: places, errands, and a small discovery",
+    "seasonSeed": "preparing for something over several days (a trip, a festival, a small competition) with setbacks",
+    "series": null,
+    "composition": {
+      "bucket": "places",
+      "reason": "4 pending hard targets share the \"places\" theme",
+      "hard": [
+        {
+          "word": "发生",
+          "meaning": "to happen; to occur; to take place; to break out"
+        },
+        {
+          "word": "国家",
+          "meaning": "country; nation; state"
+        },
+        {
+          "word": "结束",
+          "meaning": "termination; to finish"
+        },
+        {
+          "word": "来自",
+          "meaning": "to come from (a place); From: (in email header)"
+        },
+        {
+          "word": "生活",
+          "meaning": "to live; life"
+        }
+      ],
+      "soft": [
+        {
+          "word": "其他",
+          "meaning": "other; (sth or sb) else"
+        },
+        {
+          "word": "或者",
+          "meaning": "or; possibly; maybe; perhaps"
+        },
+        {
+          "word": "当然",
+          "meaning": "only natural; as it should be"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选",
+        "换",
+        "脸"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "duo-2-L3-002",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "n/a",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "provider_error",
+          "message": "groq/qwen/qwen3.6-27b HTTP 400: `reasoning_effort` must be one of `none` or `default`"
+        }
+      ],
+      "warnings": [],
+      "metrics": {}
+    },
+    "critique": null,
+    "attempts": 1,
+    "calls": 1,
+    "generatorVersion": "fab9-writer-test@1",
+    "promptVersion": "fab9-prompts@2",
+    "usage": {
+      "requests": 1,
+      "failures": 1,
+      "promptTokens": 0,
+      "completionTokens": 0,
+      "latencyMsTotal": 148,
+      "rateLimit429s": 0,
+      "throttleWaitMs": 0,
+      "retryAfterWaitMs": 0,
+      "wallMs": 150
+    },
+    "rawSample": ""
+  },
+  "staged": null
+}
