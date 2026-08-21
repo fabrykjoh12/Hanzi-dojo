@@ -1,0 +1,186 @@
+name: LLM provider smoke test and story benchmark
+
+# Two supervised modes for choosing the story-generation model on the keys we
+# already have. Neither mode touches Supabase, stages, or publishes anything —
+# both only write files under reports/ and data/story-candidates/.
+#
+#   mode: smoke  — inventory the keys (presence only, never values), ask each
+#                  provider's /models endpoint what it actually serves today,
+#                  then send ONE minimal Chinese request per candidate model
+#                  and report success/error/latency/tokens.
+#   mode: bench  — generate the SAME manifests with model A and model B, then
+#                  cross-judge: B scores A's stories, A scores B's, semantic
+#                  quality only. The deterministic validator remains the sole
+#                  authority on PASS/FAIL in both runs.
+#
+# Dispatch on the branch whose pipeline code you want to run; results are
+# committed back to that branch.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "smoke = probe models; bench = 2-model story benchmark"
+        type: choice
+        options: [smoke, bench]
+        default: smoke
+      max_tests:
+        description: "smoke only: how many models to probe (capped at 16)"
+        type: string
+        default: '12'
+      probe_models:
+        description: "smoke only: explicit list, e.g. groq:qwen/qwen3-32b,gemini:gemini-2.5-pro. Blank = auto-select."
+        type: string
+        default: ''
+      model_a:
+        description: "bench only: provider:model for generator A"
+        type: string
+        default: ''
+      model_b:
+        description: "bench only: provider:model for generator B (blank = single-model run)"
+        type: string
+        default: ''
+      batch_prefix:
+        description: "bench only: names data/story-candidates/<prefix>-a and -b"
+        type: string
+        default: 'bench-1'
+      level:
+        description: "bench only: HSK level"
+        type: string
+        default: '3'
+      count:
+        description: "bench only: manifests per model (hard-capped at 4)"
+        type: string
+        default: '4'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: llm-bench
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # ── smoke ────────────────────────────────────────────────────────────
+      - name: Provider inventory and model probes
+        if: inputs.mode == 'smoke'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          LLM_MODEL_PREMIUM: ${{ vars.LLM_MODEL_PREMIUM }}
+          MAX_TESTS: ${{ inputs.max_tests }}
+          PROBE_MODELS: ${{ inputs.probe_models }}
+        run: |
+          set -e
+          case "$MAX_TESTS" in (*[!0-9]*|"") MAX_TESTS=12;; esac
+          [ "$MAX_TESTS" -gt 16 ] && MAX_TESTS=16
+          if [ -n "$PROBE_MODELS" ]; then
+            case "$PROBE_MODELS" in (*[!A-Za-z0-9._/:,-]*) echo "bad probe_models"; exit 1;; esac
+            node llm-smoke-test.mjs --models "$PROBE_MODELS" --out reports/llm-smoke.json
+          else
+            node llm-smoke-test.mjs --max-tests "$MAX_TESTS" --out reports/llm-smoke.json
+          fi
+
+      # ── bench ────────────────────────────────────────────────────────────
+      - name: Fresh corpus dump (read-only)
+        if: inputs.mode == 'bench'
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node dump-story-corpus.mjs --out reports/story-corpus-dump.json
+
+      - name: Generate and cross-judge
+        if: inputs.mode == 'bench'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MODEL_A: ${{ inputs.model_a }}
+          MODEL_B: ${{ inputs.model_b }}
+          PREFIX: ${{ inputs.batch_prefix }}
+          LEVEL: ${{ inputs.level }}
+          COUNT: ${{ inputs.count }}
+        run: |
+          set -e
+          case "$PREFIX" in (*[!A-Za-z0-9_-]*|"") echo "bad batch_prefix"; exit 1;; esac
+          case "$LEVEL" in (*[!0-9]*|"") echo "bad level"; exit 1;; esac
+          case "$COUNT" in (*[!0-9]*|"") COUNT=4;; esac
+          [ "$COUNT" -gt 4 ] && COUNT=4
+          for spec in "$MODEL_A" "$MODEL_B"; do
+            [ -z "$spec" ] && continue
+            case "$spec" in (*[!A-Za-z0-9._/:-]*) echo "bad model spec: $spec"; exit 1;; esac
+          done
+          [ -z "$MODEL_A" ] && { echo "model_a is required for bench"; exit 1; }
+
+          gen () {   # gen <spec> <suffix>
+            prov="${1%%:*}"; mdl="${1#*:}"
+            echo "::group::generate $prov/$mdl → ${PREFIX}-$2"
+            node generate-targeted-stories.mjs \
+              --input reports/story-corpus-dump.json \
+              --level "$LEVEL" --count "$COUNT" --batch "${PREFIX}-$2" \
+              --provider "$prov" --model "$mdl"
+            echo "::endgroup::"
+          }
+          gen "$MODEL_A" a
+          [ -n "$MODEL_B" ] && gen "$MODEL_B" b
+
+          judge () { # judge <judge-spec> <batch-suffix>
+            prov="${1%%:*}"; mdl="${1#*:}"
+            dir="data/story-candidates/${PREFIX}-$2"
+            [ -d "$dir" ] || return 0
+            echo "::group::judge $dir with $prov/$mdl"
+            node judge-story-candidates.mjs --batch "$dir" --provider "$prov" --model "$mdl"
+            echo "::endgroup::"
+          }
+          # Cross-judging: neither model grades its own homework.
+          if [ -n "$MODEL_B" ]; then
+            judge "$MODEL_B" a
+            judge "$MODEL_A" b
+          else
+            judge "$MODEL_A" a
+          fi
+
+      - name: Show reports
+        if: always()
+        run: |
+          for f in reports/llm-smoke.json data/story-candidates/*/batch-report.json; do
+            [ -f "$f" ] || continue
+            echo "::group::$f"
+            cat "$f"
+            echo "::endgroup::"
+          done
+
+      - name: Commit results to this branch
+        if: always()
+        run: |
+          set -e
+          git config user.name "llm-bench[bot]"
+          git config user.email "llm-bench@users.noreply.github.com"
+          mkdir -p reports
+          git add -f reports/llm-smoke.json data/story-candidates 2>/dev/null || true
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+          git commit -m "LLM bench (${{ inputs.mode }}) — provider probes / candidate artifacts (NOT staged)"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: llm-bench-${{ inputs.mode }}-${{ github.run_id }}
+          path: |
+            reports/llm-smoke.json
+            data/story-candidates/
+          if-no-files-found: ignore
