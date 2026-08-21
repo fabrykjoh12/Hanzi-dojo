@@ -1,0 +1,115 @@
+name: Targeted story pilot
+
+# The supervised FAB-9 pilot runner: fresh production corpus dump → targeted
+# generation (real premium provider) → candidate FILES committed back to the
+# dispatching branch for human review.
+#
+# Deliberately NOT a mass-production workflow:
+#   - `count` is clamped to 6 manifests server-side below, whatever is typed;
+#   - generation writes files only (generate-targeted-stories.mjs has no
+#     Supabase capability — enforced by a spec);
+#   - nothing here stages, publishes, or touches existing stories. Staging is
+#     stage-story-candidates.mjs, run by a human, later, after review.
+#
+# Dispatch it on the branch whose pipeline code you want to run — the checkout
+# follows the dispatching ref, and the candidate files are pushed back to that
+# same branch under data/story-candidates/<batch>/.
+
+on:
+  workflow_dispatch:
+    inputs:
+      batch:
+        description: "Batch id (names data/story-candidates/<batch>/). Letters, digits, - _ only."
+        type: string
+        required: true
+      level:
+        description: "HSK level to target"
+        type: string
+        default: '3'
+      count:
+        description: "Manifests to generate (hard-capped at 6)"
+        type: string
+        default: '4'
+
+permissions:
+  contents: write   # to commit the candidate files back to the dispatching branch
+
+concurrency:
+  group: story-pilot
+  cancel-in-progress: false
+
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22   # global WebSocket for supabase-js
+          cache: npm
+      - run: npm ci
+
+      - name: Fresh corpus dump (read-only)
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node dump-story-corpus.mjs --out reports/story-corpus-dump.json
+
+      - name: Generate candidates (premium provider, files only)
+        env:
+          # Premium tier: Anthropic when the key is set, else the Gemini/Groq
+          # chain — same selection the serial pipeline uses (llm.mjs).
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          LLM_MODEL_PREMIUM: ${{ vars.LLM_MODEL_PREMIUM }}
+          # Free-text inputs reach the shell only via env (script-injection rule).
+          PILOT_BATCH: ${{ inputs.batch }}
+          PILOT_LEVEL: ${{ inputs.level }}
+          PILOT_COUNT: ${{ inputs.count }}
+        run: |
+          set -e
+          case "$PILOT_BATCH" in (*[!A-Za-z0-9_-]*|"") echo "bad batch id"; exit 1;; esac
+          case "$PILOT_LEVEL" in (*[!0-9]*|"") echo "bad level"; exit 1;; esac
+          case "$PILOT_COUNT" in (*[!0-9]*|"") echo "bad count"; exit 1;; esac
+          COUNT="$PILOT_COUNT"; [ "$COUNT" -gt 6 ] && COUNT=6
+          node generate-targeted-stories.mjs \
+            --input reports/story-corpus-dump.json \
+            --level "$PILOT_LEVEL" --count "$COUNT" --batch "$PILOT_BATCH" \
+            --provider premium
+
+      - name: Show batch report
+        if: always()
+        env:
+          PILOT_BATCH: ${{ inputs.batch }}
+        run: |
+          if [ -f "data/story-candidates/$PILOT_BATCH/batch-report.json" ]; then
+            echo "::group::batch-report.json"
+            cat "data/story-candidates/$PILOT_BATCH/batch-report.json"
+            echo "::endgroup::"
+          fi
+
+      - name: Commit candidate files to this branch
+        if: always()
+        env:
+          PILOT_BATCH: ${{ inputs.batch }}
+        run: |
+          set -e
+          case "$PILOT_BATCH" in (*[!A-Za-z0-9_-]*|"") exit 0;; esac
+          [ -d "data/story-candidates/$PILOT_BATCH" ] || { echo "no candidates produced"; exit 0; }
+          git config user.name "story-pilot[bot]"
+          git config user.email "story-pilot@users.noreply.github.com"
+          git add "data/story-candidates/$PILOT_BATCH"
+          git diff --cached --quiet && { echo "nothing to commit"; exit 0; }
+          git commit -m "Story pilot batch $PILOT_BATCH — candidate artifacts (generated, NOT staged)"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Upload artifact copy
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: story-pilot-${{ inputs.batch }}
+          path: data/story-candidates/${{ inputs.batch }}/
+          if-no-files-found: ignore

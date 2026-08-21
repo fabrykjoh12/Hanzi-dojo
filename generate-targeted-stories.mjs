@@ -88,16 +88,22 @@ async function premiumProvider() {
   const { premiumLlm } = await import('./llm.mjs')
   const { client, model, provider } = premiumLlm()
   console.log('[generate-targeted] provider=' + provider + ' model=' + model)
+  const usage = { promptTokens: 0, completionTokens: 0, requests: 0 }
   const send = async ({ prompt, maxTokens }) => {
     const response = await client.chat.completions.create({
       model, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }],
     })
+    usage.requests += 1
+    if (response && response.usage) {
+      usage.promptTokens += response.usage.prompt_tokens || 0
+      usage.completionTokens += response.usage.completion_tokens || 0
+    }
     const choice = response && response.choices && response.choices[0]
     let text = choice && choice.message && choice.message.content
     if (Array.isArray(text)) text = text.map(p => (typeof p === 'string' ? p : (p && p.text) || '')).join('')
     return typeof text === 'string' ? text : ''
   }
-  return { send, name: provider, model }
+  return { send, name: provider, model, usage }
 }
 
 // ── Load the world ───────────────────────────────────────────────────────────
@@ -152,7 +158,7 @@ if (providerName === 'fake') {
   providerInfo = { name: 'fake', model: 'scripted:' + responsesPath }
 } else if (providerName === 'premium') {
   const p = await premiumProvider()
-  providerInfo = { name: p.name, model: p.model, send: p.send }
+  providerInfo = { name: p.name, model: p.model, send: p.send, usage: p.usage }
 } else {
   console.error('Unknown --provider "' + providerName + '" (fake | premium)')
   process.exit(1)
@@ -231,6 +237,7 @@ write('batch-report.json', {
   accepted: accepted.length,
   rejected: results.length - accepted.length,
   totalProviderCalls: results.reduce((s, r) => s + (r.result.calls || 0), 0),
+  tokenUsage: providerInfo.usage || null,
   failureHistogram,
   plan: { before, after: planSummary(plan) },
   coverage: { current: zeroSingle(report), projectedIfPublished: zeroSingle(projected) },
