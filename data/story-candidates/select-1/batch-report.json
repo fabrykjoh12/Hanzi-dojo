@@ -1,0 +1,91 @@
+{
+  "batchId": "select-1",
+  "level": 3,
+  "generatedAt": "2026-08-21T17:16:42.257Z",
+  "provider": {
+    "name": "select",
+    "model": "qwen/qwen3.6-27b + openai/gpt-oss-120b"
+  },
+  "versions": {
+    "generator": "fab9-pipeline@1",
+    "prompts": "fab9-prompts@2"
+  },
+  "manifests": 1,
+  "accepted": 0,
+  "rejected": 1,
+  "totalProviderCalls": 3,
+  "tokenUsage": {
+    "requests": 3,
+    "failures": 0,
+    "promptTokens": 9672,
+    "completionTokens": 1423,
+    "latencyMsTotal": 4527,
+    "rateLimit429s": 0,
+    "throttleWaitMs": 117024,
+    "retryAfterWaitMs": 0
+  },
+  "failureHistogram": {
+    "too_long": 1,
+    "target_below_min": 2,
+    "out_of_level_share": 1,
+    "unknown_words": 1
+  },
+  "plan": {
+    "before": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    },
+    "after": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    }
+  },
+  "coverage": {
+    "current": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    },
+    "projectedIfPublished": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    }
+  },
+  "candidates": [
+    {
+      "manifestId": "duo-2-L3-002",
+      "status": "rejected",
+      "title": "城市里的秘密发现",
+      "critiqueScore": null,
+      "failures": [
+        "too_long",
+        "target_below_min",
+        "target_below_min",
+        "out_of_level_share",
+        "unknown_words"
+      ],
+      "warnings": [
+        "out_of_level_words"
+      ],
+      "calls": 3,
+      "usage": {
+        "requests": 3,
+        "failures": 0,
+        "promptTokens": 9672,
+        "completionTokens": 1423,
+        "latencyMsTotal": 4527,
+        "rateLimit429s": 0,
+        "throttleWaitMs": 117024,
+        "retryAfterWaitMs": 0,
+        "wallMs": 121791
+      }
+    }
+  ]
+}

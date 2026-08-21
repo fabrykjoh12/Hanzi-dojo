@@ -1,0 +1,552 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "select-1",
+  "generatedAt": "2026-08-21T17:16:41.440Z",
+  "provider": {
+    "name": "select",
+    "model": "qwen/qwen3.6-27b + openai/gpt-oss-120b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "duo-2-L3-002",
+    "batchId": "duo-2",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发生",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "国家",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "结束",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "来自",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "生活",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "其他",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "或者",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "当然",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "out in the city: places, errands, and a small discovery",
+    "seasonSeed": "preparing for something over several days (a trip, a festival, a small competition) with setbacks",
+    "series": null,
+    "composition": {
+      "bucket": "places",
+      "reason": "4 pending hard targets share the \"places\" theme",
+      "hard": [
+        {
+          "word": "发生",
+          "meaning": "to happen; to occur; to take place; to break out"
+        },
+        {
+          "word": "国家",
+          "meaning": "country; nation; state"
+        },
+        {
+          "word": "结束",
+          "meaning": "termination; to finish"
+        },
+        {
+          "word": "来自",
+          "meaning": "to come from (a place); From: (in email header)"
+        },
+        {
+          "word": "生活",
+          "meaning": "to live; life"
+        }
+      ],
+      "soft": [
+        {
+          "word": "其他",
+          "meaning": "other; (sth or sb) else"
+        },
+        {
+          "word": "或者",
+          "meaning": "or; possibly; maybe; perhaps"
+        },
+        {
+          "word": "当然",
+          "meaning": "only natural; as it should be"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选",
+        "换",
+        "脸"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "duo-2-L3-002",
+    "stages": [
+      {
+        "stage": "draft-1",
+        "role": "writer",
+        "title": "城市里的秘密发现",
+        "content": "李明：妈妈，下周五的国际文化比赛开始了，我们要准备什么？\n妈妈：我们要买来自中国的传统食物，你要去超市买东西。\n李明：好！我和小明一起去，小红也要参加，对吗？\n小明：我有点累，但是为了比赛，我一定去。\n小红：当然，我不能落后，你们两个要快点决定。\n李明：我们去银行取钱，然后去买礼物吗？\n妈妈：不，先检查家里有没有需要的东西，别浪费钱。\n李明：好，我看看我的本子和笔，都带好了吗？\n突然，大白猫大毛跳到了桌上，压住了我的钱包。\n李明：哎呀！大毛，别动，我的钱包！\n小红：哈哈，李明，你总是这样不小心，注意一点。\n李明：没关系，我拿出来，我们去车站坐地铁吧。\n小明：外面下雨了，我们打车或者等雨停？\n李明：雨不大，我们可以走路，这也是一次锻炼。\n他们走在城市里，看着两边的商店和行人。\n李明：你看，那个女人穿着红色的衣服，真漂亮。\n小红：看她后面的书店，我要进去看看有没有好书。\n李明：我也去，小明，你要来吗？\n小明：我不喜欢书店，我喜欢玩游戏，你们去吧。\n李明和小红走进书店，寻找关于国家的书籍。\n小红：李明，你看这本，讲了很多其他国家的文化。\n李明：哇，真有趣，我想知道它们的生活是什么样。\n突然，书里掉出一张旧照片，上面有一个男人。\n李明：这是谁？他看起来很开心，在什么地方？\n小红：不知道，也许这是一个故事，我们看看背面。\n李明：背面写着，这是来自日本的礼物，好神秘啊。\n小红：我们把它放在口袋里，回家问妈妈吧。\n李明：好主意，比赛结束前，我们可以研究一下。\n他们回到公交车站，心情很好，觉得今天很快活。\n小明：你们找到什么了吗？快去快回，车来了。\n李明：我们有个发现，一个有关旅行和友情的秘密。\n妈妈：你们回来了，发生什么事了？看起来很开心。\n李明：妈妈，小红发现了一张照片，来自另一个国家。\n妈妈：哦，也许是以前谁留在这里的，很有趣。\n李明：我想了解这个人，他的生活，他的故事。\n小红：也许我们可以把照片交给图书馆，让大家看看。\n妈妈：好主意，这是一种帮助，也解决了问题。\n李明：谢谢妈妈，我觉得这次比赛会很有趣。\n小明：我也觉得，只要大家在一起，什么困难都不怕。\n大毛跳出来，好像在说，我也支持你们，加油！",
+        "validation": {
+          "validatorVersion": "fab10-validator@2",
+          "verdict": "FAIL",
+          "failures": [
+            {
+              "code": "too_long",
+              "message": "40 lines (need 14-38)"
+            },
+            {
+              "code": "target_below_min",
+              "message": "发生 appears 1× (need 2-4)"
+            },
+            {
+              "code": "target_below_min",
+              "message": "结束 appears 1× (need 2-4)"
+            },
+            {
+              "code": "out_of_level_share",
+              "message": "out-of-level vocabulary: 10.4% > 7.0%"
+            },
+            {
+              "code": "unknown_words",
+              "message": "5 unknown (non-vocabulary) runs (max 2): 桌上、一张、背面、留在、不怕"
+            }
+          ],
+          "warnings": [
+            {
+              "code": "out_of_level_words",
+              "message": "33 distinct words above HSK 3 (advisory max 3)"
+            }
+          ],
+          "metrics": {
+            "lines": 40,
+            "cjkChars": 632,
+            "distinctVocab": 210,
+            "targetCounts": {
+              "发生": 1,
+              "国家": 3,
+              "结束": 1,
+              "来自": 3,
+              "生活": 2,
+              "其他": 1,
+              "或者": 1,
+              "当然": 1
+            },
+            "inLevelCoverage": 0.873,
+            "outOfLevelDistinct": 33,
+            "outOfLevelCharShare": 0.104,
+            "unknownDistinct": 5,
+            "unknownCharShare": 0.022,
+            "unknownRuns": [
+              "桌上",
+              "一张",
+              "背面",
+              "留在",
+              "不怕"
+            ],
+            "repeatedLines": 0,
+            "repeatedTrigramShare": 0.04,
+            "nearestNeighbor": {
+              "title": "1. 新的地方",
+              "level": 1,
+              "jaccard": 0.02,
+              "containment": 0.088
+            }
+          }
+        },
+        "latencyMs": 1676,
+        "usage": {
+          "promptTokens": 3224,
+          "completionTokens": 568
+        }
+      },
+      {
+        "stage": "draft-2",
+        "role": "writer",
+        "title": "城市里的小秘密",
+        "content": "本周我们要参加国际文化比赛，我很兴奋。\n我们要展示来自不同国家的有趣东西。\n我想知道其他小朋友会做什么。\n小红：你可以画照片，或者做手工。\n小明：我想去看比赛，不想准备。\n妈妈说我们必须在周末前完成。\n我们希望得到好成绩，所以很努力。\n大毛在我们的桌子上睡觉。\n它是一只白色的猫，很可爱。\n最近天气很好，适合出门买东西。\n我们需要材料来装饰我们的教室。\n李明，你去超市，好吗？\n我问什么材料最重要呢？\n你可以选择彩色纸或者旧报纸。\n当然，我们需要颜色明亮的东西。\n我想在银行旁边的小店看看。\n那里有很多来自国外的玩具。\n我觉得那些玩具很有故事。\n但是我没有时间去看。\n突然，大毛跑走了。\n我很担心，马上跟着它。\n它去了城市中心的广场。\n那里有很多人在跳舞。\n我发现一个旧箱子在地上。\n里面有很多旧照片和信件。\n这些照片来自很多不同的国家。\n我把它拿给妈妈看。\n妈妈：这是一个好发现。\n我们可以用这些照片做海报。\n我很开心，因为找到了好材料。\n小红和小明也来了。\n他们的眼睛亮了。\n小红：这些照片讲述了世界故事。\n小明：我们也参加游戏吗？\n我说当然，大家一起工作。\n我们画海报，非常开心。\n比赛那天，很多人来看。\n他们喜欢我们的海报。\n我们的老师很开心。\n比赛结束了，我们赢了。\n我觉得这次经历很特别。\n生活总是有惊喜发生。\n大家朋友的关系更好了。\n我想下次还要参加比赛。\n小明：我今天太累了。\n小红：你总是这样懒。\n但是我很感谢这次机会。\n来自各地的朋友都友好。\n这真是一个难忘的日子。",
+        "validation": {
+          "validatorVersion": "fab10-validator@2",
+          "verdict": "FAIL",
+          "failures": [
+            {
+              "code": "too_long",
+              "message": "49 lines (need 14-38)"
+            },
+            {
+              "code": "target_below_min",
+              "message": "发生 appears 1× (need 2-4)"
+            },
+            {
+              "code": "target_below_min",
+              "message": "结束 appears 1× (need 2-4)"
+            },
+            {
+              "code": "target_below_min",
+              "message": "生活 appears 1× (need 2-4)"
+            },
+            {
+              "code": "out_of_level_share",
+              "message": "out-of-level vocabulary: 10.0% > 7.0%"
+            },
+            {
+              "code": "unknown_words",
+              "message": "3 unknown (non-vocabulary) runs (max 2): 纸、海报、懒"
+            }
+          ],
+          "warnings": [
+            {
+              "code": "out_of_level_words",
+              "message": "23 distinct words above HSK 3 (advisory max 3)"
+            }
+          ],
+          "metrics": {
+            "lines": 49,
+            "cjkChars": 499,
+            "distinctVocab": 169,
+            "targetCounts": {
+              "发生": 1,
+              "国家": 2,
+              "结束": 1,
+              "来自": 4,
+              "生活": 1,
+              "其他": 1,
+              "或者": 2,
+              "当然": 2
+            },
+            "inLevelCoverage": 0.884,
+            "outOfLevelDistinct": 23,
+            "outOfLevelCharShare": 0.1,
+            "unknownDistinct": 3,
+            "unknownCharShare": 0.016,
+            "unknownRuns": [
+              "纸",
+              "海报",
+              "懒"
+            ],
+            "repeatedLines": 0,
+            "repeatedTrigramShare": 0.055,
+            "nearestNeighbor": {
+              "title": "2. 明天去新地方",
+              "level": 1,
+              "jaccard": 0.023,
+              "containment": 0.062
+            }
+          }
+        },
+        "latencyMs": 59509,
+        "usage": {
+          "promptTokens": 3224,
+          "completionTokens": 384
+        }
+      },
+      {
+        "stage": "draft-3",
+        "role": "writer",
+        "title": "城市里的照片比赛",
+        "content": "李明最近想参加一个有关城市的照片比赛。\n他需要去不同的地方，寻找特别的故事。\n小明说这很难，他想在家睡觉。\n小红笑着说：“你总是这么懒，李明会努力的。”\n第一天，李明去银行后面的一条小路。\n他在车站附近看到一只白色的猫，是大毛。\n突然，大毛跳到了墙上，李明没有拍到。\n李明生气地说：“为什么它不听话？”\n小红路过，说：“你别急，照片要自然。”\n李明问：“那我应该去哪里？”\n小红说：“去公园，或者去饭馆外面。”\n下午，李明在公园长椅上等待。\n他看到很多人，但觉得没有什么特别的。\n有一天，一个奇怪的事情发生了。\n李明看到两个男人和两个女人在聊天。\n他们看起来很开心，声音很大。\n李明打开相机，准备拍照。\n但是，大毛突然跑出来，撞倒了相机。\n李明大喊：“我的相机！”\n小红跑过来，帮李明捡起了相机。\n她检查了一下，说：“没事，只是擦了一下。”\n李明担心地说：“照片还在里面吗？”\n小红说：“当然在，你看电脑。”\n他们回家看照片，发现了一张有趣的照片。\n照片里，大毛笑着，背景是著名的国家博物馆。\n李明说：“这真是一张来自中国的照片。”\n妈妈说：“你的生活需要多一点耐心。”\n李明问：“我可以选这张吗？”\n小明说：“这张比其他的都好看。”\n但是，比赛要求照片必须关于城市生活。\n这张照片好像只关于猫。\n李明很失望，他想放弃。\n小红说：“别放弃，看看细节。”\n李明放大照片，发现后面有公交车站。\n还有很多人，正在等车，生活很忙碌。\n这张照片展示了城市和动物的关系。\n李明决定使用这张照片。\n两天后，比赛结束了。\n李明紧张地等待结果。\n终于，他听到了好消息。\n他得了第一名！\n李明高兴地说：“谢谢小红！”\n小红说：“你自己的努力很重要。”\n妈妈说：“看来我们的发现是正确的。”\n大家一起去饭馆吃饭庆祝。\n李明说：“下次我要带更多的钱。”\n因为比赛奖品是一张电影票。\n他们很开心地离开了。",
+        "validation": {
+          "validatorVersion": "fab10-validator@2",
+          "verdict": "FAIL",
+          "failures": [
+            {
+              "code": "too_long",
+              "message": "48 lines (need 14-38)"
+            },
+            {
+              "code": "unknown_speaker",
+              "message": "speakers outside the cast: 小红笑着说、李明生气地说、小红路过，说、李明问、小红说、李明大喊、李明担心地说、李明说、妈妈说、小明说、李明高兴地说 (allowed: 李明、小红、小明、妈妈)"
+            },
+            {
+              "code": "target_below_min",
+              "message": "发生 appears 1× (need 2-4)"
+            },
+            {
+              "code": "target_below_min",
+              "message": "国家 appears 1× (need 2-4)"
+            },
+            {
+              "code": "target_below_min",
+              "message": "结束 appears 1× (need 2-4)"
+            },
+            {
+              "code": "target_below_min",
+              "message": "来自 appears 1× (need 2-4)"
+            },
+            {
+              "code": "out_of_level_share",
+              "message": "out-of-level vocabulary: 11.0% > 7.0%"
+            },
+            {
+              "code": "unknown_words",
+              "message": "6 unknown (non-vocabulary) runs (max 2): 小明、懒、墙、长椅、一张、张"
+            }
+          ],
+          "warnings": [
+            {
+              "code": "out_of_level_words",
+              "message": "28 distinct words above HSK 3 (advisory max 3)"
+            }
+          ],
+          "metrics": {
+            "lines": 48,
+            "cjkChars": 507,
+            "distinctVocab": 185,
+            "targetCounts": {
+              "发生": 1,
+              "国家": 1,
+              "结束": 1,
+              "来自": 1,
+              "生活": 3,
+              "其他": 1,
+              "或者": 1,
+              "当然": 1
+            },
+            "inLevelCoverage": 0.856,
+            "outOfLevelDistinct": 28,
+            "outOfLevelCharShare": 0.11,
+            "unknownDistinct": 6,
+            "unknownCharShare": 0.034,
+            "unknownRuns": [
+              "小明",
+              "懒",
+              "墙",
+              "长椅",
+              "一张",
+              "张"
+            ],
+            "repeatedLines": 0,
+            "repeatedTrigramShare": 0.035,
+            "nearestNeighbor": {
+              "title": "2. 四点到五点",
+              "level": 2,
+              "jaccard": 0.012,
+              "containment": 0.061
+            }
+          }
+        },
+        "latencyMs": 60425,
+        "usage": {
+          "promptTokens": 3224,
+          "completionTokens": 471
+        }
+      }
+    ],
+    "ranking": [
+      {
+        "rank": 1,
+        "draft": "draft-1",
+        "title": "城市里的秘密发现",
+        "verdict": "FAIL",
+        "pass": false,
+        "failures": 5,
+        "targetsInRange": 6,
+        "targetsTotal": 8,
+        "outOfLevelShare": 0.104,
+        "unknownShare": 0.022,
+        "structureFailures": 1,
+        "lineDistance": 10,
+        "warnings": 1
+      },
+      {
+        "rank": 2,
+        "draft": "draft-2",
+        "title": "城市里的小秘密",
+        "verdict": "FAIL",
+        "pass": false,
+        "failures": 6,
+        "targetsInRange": 5,
+        "targetsTotal": 8,
+        "outOfLevelShare": 0.1,
+        "unknownShare": 0.016,
+        "structureFailures": 1,
+        "lineDistance": 19,
+        "warnings": 1
+      },
+      {
+        "rank": 3,
+        "draft": "draft-3",
+        "title": "城市里的照片比赛",
+        "verdict": "FAIL",
+        "pass": false,
+        "failures": 8,
+        "targetsInRange": 4,
+        "targetsTotal": 8,
+        "outOfLevelShare": 0.11,
+        "unknownShare": 0.034,
+        "structureFailures": 2,
+        "lineDistance": 18,
+        "warnings": 1
+      }
+    ],
+    "critique": null,
+    "attempts": 3,
+    "calls": 3,
+    "providerErrors": [],
+    "generatorVersion": "fab9-select@1",
+    "promptVersion": "fab9-prompts@2",
+    "status": "rejected",
+    "selectedFrom": "draft-1",
+    "title": "城市里的秘密发现",
+    "content": "李明：妈妈，下周五的国际文化比赛开始了，我们要准备什么？\n妈妈：我们要买来自中国的传统食物，你要去超市买东西。\n李明：好！我和小明一起去，小红也要参加，对吗？\n小明：我有点累，但是为了比赛，我一定去。\n小红：当然，我不能落后，你们两个要快点决定。\n李明：我们去银行取钱，然后去买礼物吗？\n妈妈：不，先检查家里有没有需要的东西，别浪费钱。\n李明：好，我看看我的本子和笔，都带好了吗？\n突然，大白猫大毛跳到了桌上，压住了我的钱包。\n李明：哎呀！大毛，别动，我的钱包！\n小红：哈哈，李明，你总是这样不小心，注意一点。\n李明：没关系，我拿出来，我们去车站坐地铁吧。\n小明：外面下雨了，我们打车或者等雨停？\n李明：雨不大，我们可以走路，这也是一次锻炼。\n他们走在城市里，看着两边的商店和行人。\n李明：你看，那个女人穿着红色的衣服，真漂亮。\n小红：看她后面的书店，我要进去看看有没有好书。\n李明：我也去，小明，你要来吗？\n小明：我不喜欢书店，我喜欢玩游戏，你们去吧。\n李明和小红走进书店，寻找关于国家的书籍。\n小红：李明，你看这本，讲了很多其他国家的文化。\n李明：哇，真有趣，我想知道它们的生活是什么样。\n突然，书里掉出一张旧照片，上面有一个男人。\n李明：这是谁？他看起来很开心，在什么地方？\n小红：不知道，也许这是一个故事，我们看看背面。\n李明：背面写着，这是来自日本的礼物，好神秘啊。\n小红：我们把它放在口袋里，回家问妈妈吧。\n李明：好主意，比赛结束前，我们可以研究一下。\n他们回到公交车站，心情很好，觉得今天很快活。\n小明：你们找到什么了吗？快去快回，车来了。\n李明：我们有个发现，一个有关旅行和友情的秘密。\n妈妈：你们回来了，发生什么事了？看起来很开心。\n李明：妈妈，小红发现了一张照片，来自另一个国家。\n妈妈：哦，也许是以前谁留在这里的，很有趣。\n李明：我想了解这个人，他的生活，他的故事。\n小红：也许我们可以把照片交给图书馆，让大家看看。\n妈妈：好主意，这是一种帮助，也解决了问题。\n李明：谢谢妈妈，我觉得这次比赛会很有趣。\n小明：我也觉得，只要大家在一起，什么困难都不怕。\n大毛跳出来，好像在说，我也支持你们，加油！",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@2",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "too_long",
+          "message": "40 lines (need 14-38)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "发生 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "结束 appears 1× (need 2-4)"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 10.4% > 7.0%"
+        },
+        {
+          "code": "unknown_words",
+          "message": "5 unknown (non-vocabulary) runs (max 2): 桌上、一张、背面、留在、不怕"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "out_of_level_words",
+          "message": "33 distinct words above HSK 3 (advisory max 3)"
+        }
+      ],
+      "metrics": {
+        "lines": 40,
+        "cjkChars": 632,
+        "distinctVocab": 210,
+        "targetCounts": {
+          "发生": 1,
+          "国家": 3,
+          "结束": 1,
+          "来自": 3,
+          "生活": 2,
+          "其他": 1,
+          "或者": 1,
+          "当然": 1
+        },
+        "inLevelCoverage": 0.873,
+        "outOfLevelDistinct": 33,
+        "outOfLevelCharShare": 0.104,
+        "unknownDistinct": 5,
+        "unknownCharShare": 0.022,
+        "unknownRuns": [
+          "桌上",
+          "一张",
+          "背面",
+          "留在",
+          "不怕"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.04,
+        "nearestNeighbor": {
+          "title": "1. 新的地方",
+          "level": 1,
+          "jaccard": 0.02,
+          "containment": 0.088
+        }
+      }
+    },
+    "usage": {
+      "requests": 3,
+      "failures": 0,
+      "promptTokens": 9672,
+      "completionTokens": 1423,
+      "latencyMsTotal": 4527,
+      "rateLimit429s": 0,
+      "throttleWaitMs": 117024,
+      "retryAfterWaitMs": 0,
+      "wallMs": 121791
+    }
+  },
+  "staged": null
+}
