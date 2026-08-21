@@ -363,7 +363,8 @@ describe('vocabulary constraint wording (bench-3 non-compliance)', () => {
   it('spells out the bare-speaker-label rule in both draft and repair', () => {
     const p = draftPrompt({ manifest: manifest(), pool })
     const r = repairPrompt({ manifest: manifest(), candidate: { title: 'T', content: 'x' }, failures: [], pool })
-    expect(p).toContain('never "李明惊讶地问：')
+    expect(p).toContain('NEVER "李明惊讶地问：')
+    expect(p).toContain('NEVER "小红说：')
     expect(r).toContain('NOTHING after the name')
   })
 })

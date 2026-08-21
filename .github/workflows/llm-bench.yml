@@ -20,9 +20,9 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "smoke = probe models; bench = 2-model story benchmark; duo = writer+editor pipeline pilot"
+        description: "smoke = probe; bench = 2-model benchmark; duo = writer+editor pilot; writer-test = ONE draft against a stored manifest"
         type: choice
-        options: [smoke, bench, duo]
+        options: [smoke, bench, duo, writer-test]
         default: smoke
       max_tests:
         description: "smoke only: how many models to probe (capped at 16)"
@@ -52,6 +52,10 @@ on:
         description: "bench only: provider:model for generator B (blank = single-model run)"
         type: string
         default: ''
+      manifest_path:
+        description: "writer-test only: repo path of the stored manifest/candidate file"
+        type: string
+        default: 'data/story-candidates/duo-2/duo-2-L3-002.json'
       batch_prefix:
         description: "bench only: names data/story-candidates/<prefix>-a and -b"
         type: string
@@ -218,6 +222,41 @@ jobs:
             --input reports/story-corpus-dump.json \
             --level "$LEVEL" --count "$COUNT" --batch "$PREFIX" \
             --provider duo --writer "$MODEL_A" --editor "$MODEL_B" $W_EFFORT $E_EFFORT
+
+      - name: Fresh corpus dump for writer-test (read-only)
+        if: inputs.mode == 'writer-test'
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node dump-story-corpus.mjs --out reports/story-corpus-dump.json
+
+      - name: Writer test — ONE draft, validated, no editor
+        if: inputs.mode == 'writer-test'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MODEL_A: ${{ inputs.model_a }}
+          EFFORT_A: ${{ inputs.effort_a }}
+          MANIFEST: ${{ inputs.manifest_path }}
+          PREFIX: ${{ inputs.batch_prefix }}
+        run: |
+          set -e
+          case "$PREFIX" in (*[!A-Za-z0-9_-]*|"") echo "bad batch_prefix"; exit 1;; esac
+          case "$MODEL_A" in (""|*[!A-Za-z0-9._/:-]*) echo "bad or missing model_a"; exit 1;; esac
+          case "$MANIFEST" in (*[!A-Za-z0-9._/-]*|""|/*|*..*) echo "bad manifest_path"; exit 1;; esac
+          [ -f "$MANIFEST" ] || { echo "manifest not found: $MANIFEST"; exit 1; }
+          EFFORT_FLAG=""
+          case "$EFFORT_A" in
+            "") ;;
+            none|low|medium|high) EFFORT_FLAG="--reasoning-effort $EFFORT_A";;
+            *) echo "bad effort_a"; exit 1;;
+          esac
+          prov="${MODEL_A%%:*}"; mdl="${MODEL_A#*:}"
+          node writer-draft-test.mjs \
+            --input reports/story-corpus-dump.json \
+            --manifest "$MANIFEST" \
+            --provider "$prov" --model "$mdl" $EFFORT_FLAG \
+            --out "data/story-candidates/$PREFIX"
 
       - name: Show reports
         if: always()

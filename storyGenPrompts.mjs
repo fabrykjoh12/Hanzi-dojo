@@ -93,9 +93,11 @@ export function draftPrompt({ manifest, pool, meanings = {} }) {
     // The writer aims for the MIDDLE of the allowed range, not the ceiling:
     // duo-1's 49-line drafts against a 38 ceiling forced the editor into
     // rewrites. draftLines is the creative target; maxLines stays the law.
-    '- Write ' + (manifest.length.draftLines ? manifest.length.draftLines[0] + '-' + manifest.length.draftLines[1] : manifest.length.minLines + '-' + manifest.length.maxLines) + ' lines, one sentence or dialogue turn per line — a complete story that fits comfortably. HARD CEILING: ' + manifest.length.maxLines + ' lines — anything longer is rejected outright\n' +
+    '- Write ' + (manifest.length.draftLines ? manifest.length.draftLines[0] + '-' + manifest.length.draftLines[1] : manifest.length.minLines + '-' + manifest.length.maxLines) + ' lines, one complete story unit (one sentence or one dialogue turn) per physical line. '
+      + (manifest.length.draftLines ? 'DO NOT exceed ' + manifest.length.draftLines[1] + ' lines; ' + manifest.length.maxLines + ' is a validator ceiling, not a writing target. ' : '')
+      + 'Anything longer than ' + manifest.length.maxLines + ' lines is rejected outright\n' +
     '- Natural sentences around ' + manifest.length.maxLineChars + ' characters per line — vary the rhythm, avoid choppy three-word lines\n' +
-    '- Mix narration and dialogue. Dialogue format: NAME：text with NOTHING between the name and the colon — write "李明：我饿了。", never "李明惊讶地问：我饿了。" (put such description on its own narration line). Speakers ONLY from: ' + manifest.speakers.join(', ') + '\n' +
+    '- Mix narration and dialogue. A dialogue label is ONLY a bare allowed speaker name followed by ：. Write "李明：我饿了。" — NEVER "李明惊讶地问：…", NEVER "小红说：…", NEVER "那位女人：…", NEVER "她指着角落：…". Any description goes on its own narration line. Speakers ONLY from: ' + manifest.speakers.join(', ') + '\n' +
     '- Narration lines have no speaker prefix\n' +
     // The single hardest constraint to convey, and the one bench-3 showed being
     // ignored wholesale: qwen wrote 56-73 distinct words above the level
