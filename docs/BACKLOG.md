@@ -154,6 +154,38 @@ Shipped 2026-07-20 (see Claude.md §0). Data loaded to prod Supabase: **123,465*
 
 ## Content
 
+### Targeted story generation: the free-tier ceiling (FAB-9, measured 2026-08-21)
+
+**Anthropic is not available to this project** (no API billing), and the
+fallback providers were measured rather than assumed — evidence in
+`reports/llm-smoke.json` and `data/story-candidates/bench-*/`.
+
+- **Gemini is dead, not throttled.** All 11 models probed return HTTP 429
+  *"Your prepayment credits are depleted"*. Nothing on the Gemini path can run
+  until credits are topped up — including the existing `serial-*` and
+  `examples`/`meanings` content tasks.
+- **Groq works but caps a request at 8000 tokens/minute** (`on_demand` tier).
+  The pipeline inherited `max_tokens: 6000` from the serial generator, so
+  prompt + budget hit HTTP 413 *"Requested 8999"* on every draft. Fixed by
+  deriving the budget from the manifest (`outputBudget`), but the ceiling still
+  bites: a 4-story batch spends 39-47 requests with **70-80% of them 429'd**.
+  **Mass production is not viable on this tier** — that is a billing decision,
+  not an engineering one.
+- **Model trade-off, 5 benchmark rounds, 0/20 accepted.**
+  `qwen/qwen3.6-27b` (needs `reasoning_effort=none`, or it spends its whole
+  budget thinking) writes the best Chinese by a wide margin — real narration,
+  character voices, genuine hooks — but ignores the constraints: 18-77 distinct
+  out-of-level words against a cap of 3, and 33-87 lines against a max of 38.
+  `openai/gpt-oss-120b` (needs `reasoning_effort=low`) obeys far better —
+  21-23 lines, 9-16 out-of-level — but writes flat, near-all-dialogue prose and
+  visibly bends sentences to插入 target words (`我受到了她的笑容`).
+- **Open calibration question:** `maxOutOfLevelDistinct: 3` (HSK 3) came from
+  the published corpus's p75. No free-tier model got within 3× of it. Either
+  the cap needs revisiting against what generation can actually achieve, or
+  generation needs a two-stage write-then-simplify pass. Decide before the next
+  pilot.
+
+
 - [ ] **Four small letterbox bars in the two already-shipped Inkbound episodes.**
   Found on 2026-07-30 by the bar check newly added to
   `tools/manhua-contact-sheet.mjs`, which did not exist when those episodes were
