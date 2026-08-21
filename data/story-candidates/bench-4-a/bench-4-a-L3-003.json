@@ -1,0 +1,247 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "bench-4-a",
+  "generatedAt": "2026-08-21T14:43:26.838Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bench-4-a-L3-003",
+    "batchId": "bench-4-a",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "参加",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "国家",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "安全",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "选择",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "或者",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "女人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "机会",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "受",
+        "min": 2,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "a bigger outing or adventure away from home with a genuine surprise in the middle",
+    "series": null,
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "bench-4-a-L3-003",
+    "status": "rejected",
+    "title": "城市里的惊喜",
+    "content": "李明：快醒醒，今天是我们参加比赛的日子。\n小明：我知道了，但是我想再睡五分钟。\n妈妈：别懒了，出门前必须检查安全事项。\n小红：我们早就在车站旁边等了，快点来。\n李明：我饿了，我们要先吃东西吗？\n小红：当然，我们可以选择三明治，或者面包。\n小明：我想喝可乐，你呢，李明？\n李明：我要吃两个汉堡，我太饿了。\n妈妈：别忘了，这次旅行需要保持安静。\n李明：好的，我会注意的。\n我们坐上了公交车，窗外风景很快变。\n小红：你看，那些高楼真高啊。\n李明：这个城市有我见过的所有不同。\n小明：我有点担心，我们会迷路吗？\n妈妈：别担心，我们有地图，而且懂路线。\n突然，车子停了下来，发生了什么事？\n李明：怎么了？我们是不是迟到了？\n小红：别急，看看窗外那个大的广场。\n李明：哇，那里有好多人在玩游戏。\n小明：好像有一个大的音乐表演。\n妈妈：我们可以停下来看一会儿，没关系。\n李明：真的吗？这是一个好机会！\n小红：但是我们要遵守比赛的时间。\n小明：我觉得观看一会儿也没有问题。\n妈妈：好吧，我们只有十五分钟时间。\n我们下了车，跑向那个热闹的广场。\n那里有三个年轻的女人在跳舞。\n李明：她们跳得真好，像专业的演员。\n小红：你看那个白色的猫，是大毛！\n李明：大毛也来参加表演吗？\n小明：它只是坐在旁边吃鱼干。\n妈妈：小心别踩到它，要确保安全。\n李明：我不会受伤的，我跑很快。\n突然，大毛跳到了一个男人的肩膀上。\n男人：这只猫想帮我表演吗？\n李明：它想成为明星吗？\n小红：它只是想要鱼干，看它的眼睛。\n妈妈：别笑了，时间快到了。\n李明：我们可以把它带过去吗？\n小明：不行，动物不能进入赛场。\n小红：但是我们可以给它买好吃的。\n妈妈：对，这是一个好的选择。\n我们买了几包小鱼干给大毛。\n李明：它吃得真开心，我也想要。\n小红：你别像猫一样，专心比赛。\n李明：我只是喜欢这种放松的感觉。\n突然，广播里叫我们的名字了。\n李明：哎呀，我们要迟到了！\n小明：快跑，别让它受惊吓。\n我们跑回公交车，心跳得很快。\n妈妈：你们看，其实刚才的休息很好。\n李明：是的，我感觉充满了力量。\n小红：那个跳舞的女人笑了，好可爱。\n小明：我觉得这次旅行很特别。\n李明：我也是，虽然我很饿。\n妈妈：到了目的地，我们可以吃饭。\n小明：我想吃面条，可以吗？\n李明：我要吃米饭，或者炒面。\n小红：我们可以一起点餐，分享快乐。\n李明：这是今天最好的部分。\n妈妈：记住，团队的合作最重要。\n李明：我知道了，我不会掉队。\n小红：你总是这么积极，李明。\n李明：因为我喜欢这种新的体验。\n小明：我也喜欢，虽然有点累。\n妈妈：休息是为了走更远的路。\n李明：那我们先去赛场吧。\n小红：你的书包带没有系好。\n李明：谢谢，我马上解决。\n小明：别紧张，只是一点小事。\n妈妈：你们两个真是让人操心。\n李明：我们会小心的，保证安全。\n小红：他说话很大声，像个大男人。\n李明：我可是很细心的人，真的。\n小明：我相信你，你的运气不错。\n李明：那是当然，大毛都帮我。\n妈妈：车到了，大家别拥挤。\n小红：我先下车，帮你们拿票。\n李明：你是我们最棒的朋友。\n小明：我们也帮你想办法。\n李明：谢谢大家，我们出发吧。\n妈妈：去吧，玩得开心点。\n李明：我们会完成的，一定努力。\n小红：加油，李明，别太冲动。\n李明：收到，我会听你的话。\n小明：走吧，别让他们等太久。\n李明：这是难忘的一天，真的。",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@1",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "too_long",
+          "message": "87 lines (need 14-38)"
+        },
+        {
+          "code": "unknown_speaker",
+          "message": "speakers outside the cast: 男人 (allowed: 李明、小红、小明、妈妈)"
+        },
+        {
+          "code": "missing_target",
+          "message": "missing target: 国家"
+        },
+        {
+          "code": "target_below_min",
+          "message": "机会 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "受 appears 1× (need 2-4)"
+        },
+        {
+          "code": "out_of_level_words",
+          "message": "53 distinct words above HSK 3 (max 3)"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 12.0% > 7.0%"
+        },
+        {
+          "code": "unknown_words",
+          "message": "10 unknown (non-vocabulary) runs (max 2): 懒、明治、可乐、汉堡、窗外、向、干、踩到、惊吓、餐"
+        }
+      ],
+      "warnings": [],
+      "metrics": {
+        "lines": 87,
+        "cjkChars": 899,
+        "distinctVocab": 263,
+        "targetCounts": {
+          "参加": 2,
+          "国家": 0,
+          "安全": 3,
+          "选择": 2,
+          "或者": 2,
+          "女人": 2,
+          "机会": 1,
+          "受": 1
+        },
+        "inLevelCoverage": 0.858,
+        "outOfLevelDistinct": 53,
+        "outOfLevelCharShare": 0.12,
+        "unknownDistinct": 10,
+        "unknownCharShare": 0.022,
+        "unknownRuns": [
+          "懒",
+          "明治",
+          "可乐",
+          "汉堡",
+          "窗外",
+          "向",
+          "干",
+          "踩到",
+          "惊吓",
+          "餐"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.058,
+        "nearestNeighbor": {
+          "title": "《末班车》",
+          "level": 2,
+          "jaccard": 0.012,
+          "containment": 0.042
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 2,
+    "calls": 11,
+    "providerErrors": [
+      {
+        "kind": "draft",
+        "attempt": 1,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 2963, Requested 5651. Please try again in 4.605s. Need more tokens? Upgrade to Dev Tier today at http"
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7842, Requested 4327. Please try again in 31.2675s. Need more tokens? Upgrade to Dev Tier today at ht"
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6760, Requested 4327. Please try again in 23.1525s. Need more tokens? Upgrade to Dev Tier today at ht"
+      },
+      {
+        "kind": "repair",
+        "attempt": 3,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4600, Requested 5973. Please try again in 19.2975s. Need more tokens? Upgrade to Dev Tier today at ht"
+      },
+      {
+        "kind": "draft",
+        "attempt": 1,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4581, Requested 3670. Please try again in 1.8825s. Need more tokens? Upgrade to Dev Tier today at htt"
+      },
+      {
+        "kind": "draft",
+        "attempt": 2,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 3504, Requested 5651. Please try again in 8.6625s. Need more tokens? Upgrade to Dev Tier today at htt"
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7595, Requested 4688. Please try again in 32.1225s. Need more tokens? Upgrade to Dev Tier today at ht"
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6505, Requested 4353. Please try again in 21.435s. Need more tokens? Upgrade to Dev Tier today at htt"
+      },
+      {
+        "kind": "repair",
+        "attempt": 3,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4347, Requested 4688. Please try again in 7.762499999s. Need more tokens? Upgrade to Dev Tier today a"
+      }
+    ],
+    "generatorVersion": "fab9-pipeline@1",
+    "promptVersion": "fab9-prompts@1",
+    "usage": {
+      "requests": 11,
+      "failures": 9,
+      "promptTokens": 6302,
+      "completionTokens": 1413,
+      "latencyMsTotal": 4950,
+      "wallMs": 85113
+    }
+  },
+  "staged": null
+}

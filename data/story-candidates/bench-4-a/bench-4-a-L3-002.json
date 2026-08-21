@@ -1,0 +1,250 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "bench-4-a",
+  "generatedAt": "2026-08-21T14:42:01.724Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bench-4-a-L3-002",
+    "batchId": "bench-4-a",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发生",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "其他",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "或",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "得到",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "了解",
+        "min": 2,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "preparing for something over several days (a trip, a festival, a small competition) with setbacks",
+    "series": null,
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "bench-4-a-L3-002",
+    "status": "rejected",
+    "title": "重要的比赛",
+    "content": "明天就要去博物馆参加绘画比赛了，李明非常激动。\n他在房间里跑来跑去，手里拿着画笔和画纸。\n李明：妈妈，我的颜色够不够？我要画很大的太阳。\n小明坐在床上，懒洋洋地看着李明忙碌的样子。\n小明：你别担心，你的画总是很好的。\n李明不放心，他又打开了书包仔细检查。\n突然，他发现红色的颜料盒不见了。\n李明：完了！红色丢了，我怎么做那朵大花呢？\n小红从门外走进来，手里拿着一盒红色的颜料。\n小红：李明，你是不是又忘记东西放在哪里了？\n李明：谢谢小红！我以为我的颜料彻底没有了。\n小红笑着摇摇头，其实她早就看到了那个盒子。\n小红：别紧张，我们还有很多时间准备。\n但是，李明的心里还是很着急，因为事情有点糟糕。\n他想确保一切都非常完美，不能出一点错。\n晚上，妈妈递给李明一个热热的苹果。\n妈妈：你太紧张了，休息一会儿吧。\n李明：妈妈，我害怕得不到第一名。\n妈妈：比赛的结果不重要，快乐和过程很重要。\n而且，你和其他同学的关系也很好，不是吗？\n李明低下头，觉得妈妈的话很有道理。\n他确实想和大家做朋友，不只是为了赢。\n第二天早上，外面下起了小雨。\n李明和小明、小红一起坐公交车去医院旁边的车站。\n大毛那只白猫突然出现在站台旁边，蹭了蹭李明的腿。\n李明：大毛，你也来给我们加油吗？\n大毛叫了一声，然后跳到了座椅上。\n到了博物馆，他们发现排队的人很多。\n李明：这里好多人啊，我有点紧张。\n小红：别怕，我们是一个团队的。\n小明点了点头，给了李明一个放心的眼神。\n比赛开始，李明坐下来，仔细思考要画什么。\n他决定画朋友和那只可爱的猫。\n他先画了一个大的圆圈，作为快乐的太阳。\n然后，他用红色的笔画出了鲜艳的花朵。\n空气中闻到了颜料和雨水混合的味道。\n李明画得很专心，忘记了自己的担心。\n时间过得很快，规定的两个小时结束了。\n李明：我把画完成了，感觉挺不错的。\n小红看了看李明的画，眼睛亮了起来。\n小红：这张画真有生活气息，我很喜欢。\n小明也笑着说：看起来非常开心。\n他们等待结果的时候，天气慢慢变好了。\n阳光透过窗户照在白色的画纸上。\n李明：希望我能得到一个好的分数。\n老师走了进来，脸上带着温和的笑容。\n老师：今天的比赛大家都表现得很好。\n李明、小明和小红都得到了鼓励奖。\n李明高兴得跳了起来，抱住小明。\n李明：我们成功了！虽然不是第一！\n小红：但是我们的努力得到了认可。\n李明看着手里的奖状，心里感到很温暖。\n他明白，努力的过程比结果更珍贵。\n而且，和朋友一起做事很有趣。\n回家的路上，大毛又出现在路口。\n李明蹲下来，摸了摸大毛柔软的毛。\n李明：谢谢你，大毛。\n大毛轻轻咪呜了一声，转身走开了。\n李明觉得今天发生的一切都很美好。\n他饿了，想吃一个大汉堡。\n妈妈在门口等着他们，手里提着饭袋。\n妈妈：玩累了吧？吃饭去吧。\n李明：妈妈，今晚的菜一定很香。\n妈妈笑了笑，眼神里充满了慈爱。\n李明知道，无论发生什么，家都是温暖的。\n他相信，以后还会遇到更多的挑战。\n但是，只要和朋友在一起，就不怕困难。\n这段经历让他更了解团结的意义。\n故事结束了，但他们的友谊还在继续。",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@1",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "too_long",
+          "message": "69 lines (need 14-38)"
+        },
+        {
+          "code": "unknown_speaker",
+          "message": "speakers outside the cast: 小明也笑着说、老师 (allowed: 李明、小红、小明、妈妈)"
+        },
+        {
+          "code": "missing_target",
+          "message": "missing target: 必须"
+        },
+        {
+          "code": "target_below_min",
+          "message": "其他 appears 1× (need 2-4)"
+        },
+        {
+          "code": "missing_target",
+          "message": "missing target: 或"
+        },
+        {
+          "code": "target_below_min",
+          "message": "关系 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "了解 appears 1× (need 2-4)"
+        },
+        {
+          "code": "out_of_level_words",
+          "message": "77 distinct words above HSK 3 (max 3)"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 17.9% > 7.0%"
+        },
+        {
+          "code": "unknown_words",
+          "message": "24 unknown (non-vocabulary) runs (max 2): 纸、懒洋洋、颜料、盒、一盒、摇、蹭、座椅、怕、闻"
+        }
+      ],
+      "warnings": [],
+      "metrics": {
+        "lines": 69,
+        "cjkChars": 920,
+        "distinctVocab": 290,
+        "targetCounts": {
+          "发生": 2,
+          "而且": 2,
+          "必须": 0,
+          "其他": 1,
+          "或": 0,
+          "得到": 3,
+          "关系": 1,
+          "了解": 1
+        },
+        "inLevelCoverage": 0.771,
+        "outOfLevelDistinct": 77,
+        "outOfLevelCharShare": 0.179,
+        "unknownDistinct": 24,
+        "unknownCharShare": 0.05,
+        "unknownRuns": [
+          "纸",
+          "懒洋洋",
+          "颜料",
+          "盒",
+          "一盒",
+          "摇",
+          "蹭",
+          "座椅",
+          "怕",
+          "闻"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.027,
+        "nearestNeighbor": {
+          "title": "1. 不见了的苹果",
+          "level": 1,
+          "jaccard": 0.014,
+          "containment": 0.08
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 1,
+    "calls": 10,
+    "providerErrors": [
+      {
+        "kind": "draft",
+        "attempt": 1,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4480, Requested 5655. Please try again in 16.0125s. Need more tokens? Upgrade to Dev Tier today at ht"
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7030, Requested 4582. Please try again in 27.09s. Need more tokens? Upgrade to Dev Tier today at http"
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 5911, Requested 6228. Please try again in 31.0425s. Need more tokens? Upgrade to Dev Tier today at ht"
+      },
+      {
+        "kind": "repair",
+        "attempt": 3,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 3753, Requested 6228. Please try again in 14.8575s. Need more tokens? Upgrade to Dev Tier today at ht"
+      },
+      {
+        "kind": "draft",
+        "attempt": 1,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 3723, Requested 5655. Please try again in 10.335s. Need more tokens? Upgrade to Dev Tier today at htt"
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6233, Requested 6211. Please try again in 33.33s. Need more tokens? Upgrade to Dev Tier today at http"
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 5149, Requested 6211. Please try again in 25.2s. Need more tokens? Upgrade to Dev Tier today at https"
+      },
+      {
+        "kind": "repair",
+        "attempt": 3,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 2980, Requested 6211. Please try again in 8.9325s. Need more tokens? Upgrade to Dev Tier today at htt"
+      }
+    ],
+    "generatorVersion": "fab9-pipeline@1",
+    "promptVersion": "fab9-prompts@1",
+    "usage": {
+      "requests": 10,
+      "failures": 8,
+      "promptTokens": 6310,
+      "completionTokens": 1504,
+      "latencyMsTotal": 5863,
+      "wallMs": 70030
+    }
+  },
+  "staged": null
+}

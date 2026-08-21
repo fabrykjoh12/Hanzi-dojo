@@ -1,0 +1,174 @@
+{
+  "batchId": "bench-4-a",
+  "level": 3,
+  "generatedAt": "2026-08-21T14:44:28.832Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b"
+  },
+  "versions": {
+    "generator": "fab9-pipeline@1",
+    "prompts": "fab9-prompts@1"
+  },
+  "manifests": 4,
+  "accepted": 0,
+  "rejected": 4,
+  "totalProviderCalls": 39,
+  "tokenUsage": {
+    "requests": 39,
+    "failures": 31,
+    "promptTokens": 25218,
+    "completionTokens": 5733,
+    "latencyMsTotal": 21858
+  },
+  "failureHistogram": {
+    "too_long": 4,
+    "missing_target": 9,
+    "target_below_min": 8,
+    "out_of_level_words": 4,
+    "out_of_level_share": 4,
+    "unknown_words": 4,
+    "unknown_share": 1,
+    "unknown_speaker": 2,
+    "target_above_max": 1
+  },
+  "plan": {
+    "before": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    },
+    "after": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    }
+  },
+  "coverage": {
+    "current": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    },
+    "projectedIfPublished": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    }
+  },
+  "candidates": [
+    {
+      "manifestId": "bench-4-a-L3-001",
+      "status": "rejected",
+      "title": "李明的蛋糕不见了",
+      "critiqueScore": null,
+      "failures": [
+        "too_long",
+        "missing_target",
+        "target_below_min",
+        "target_below_min",
+        "target_below_min",
+        "out_of_level_words",
+        "out_of_level_share",
+        "unknown_words",
+        "unknown_share"
+      ],
+      "warnings": [],
+      "calls": 9,
+      "usage": {
+        "requests": 9,
+        "failures": 7,
+        "promptTokens": 6302,
+        "completionTokens": 1436,
+        "latencyMsTotal": 5879,
+        "wallMs": 62048
+      }
+    },
+    {
+      "manifestId": "bench-4-a-L3-002",
+      "status": "rejected",
+      "title": "重要的比赛",
+      "critiqueScore": null,
+      "failures": [
+        "too_long",
+        "unknown_speaker",
+        "missing_target",
+        "target_below_min",
+        "missing_target",
+        "target_below_min",
+        "target_below_min",
+        "out_of_level_words",
+        "out_of_level_share",
+        "unknown_words"
+      ],
+      "warnings": [],
+      "calls": 10,
+      "usage": {
+        "requests": 10,
+        "failures": 8,
+        "promptTokens": 6310,
+        "completionTokens": 1504,
+        "latencyMsTotal": 5863,
+        "wallMs": 70030
+      }
+    },
+    {
+      "manifestId": "bench-4-a-L3-003",
+      "status": "rejected",
+      "title": "城市里的惊喜",
+      "critiqueScore": null,
+      "failures": [
+        "too_long",
+        "unknown_speaker",
+        "missing_target",
+        "target_below_min",
+        "target_below_min",
+        "out_of_level_words",
+        "out_of_level_share",
+        "unknown_words"
+      ],
+      "warnings": [],
+      "calls": 11,
+      "usage": {
+        "requests": 11,
+        "failures": 9,
+        "promptTokens": 6302,
+        "completionTokens": 1413,
+        "latencyMsTotal": 4950,
+        "wallMs": 85113
+      }
+    },
+    {
+      "manifestId": "bench-4-a-L3-004",
+      "status": "rejected",
+      "title": "远方的朋友",
+      "critiqueScore": null,
+      "failures": [
+        "too_long",
+        "missing_target",
+        "missing_target",
+        "missing_target",
+        "target_above_max",
+        "missing_target",
+        "missing_target",
+        "out_of_level_words",
+        "out_of_level_share",
+        "unknown_words"
+      ],
+      "warnings": [],
+      "calls": 9,
+      "usage": {
+        "requests": 9,
+        "failures": 7,
+        "promptTokens": 6304,
+        "completionTokens": 1380,
+        "latencyMsTotal": 5166,
+        "wallMs": 61323
+      }
+    }
+  ]
+}

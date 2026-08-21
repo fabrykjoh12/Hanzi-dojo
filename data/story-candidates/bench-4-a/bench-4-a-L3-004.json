@@ -1,0 +1,245 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "bench-4-a",
+  "generatedAt": "2026-08-21T14:44:28.162Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bench-4-a-L3-004",
+    "batchId": "bench-4-a",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "要求",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "信",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "当然",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "接",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "刚",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "只要",
+        "min": 2,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "a new friend or visitor arrives and daily life is a little different for a while",
+    "series": null,
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "bench-4-a-L3-004",
+    "status": "rejected",
+    "title": "远方的朋友",
+    "content": "周末下午，阳光照进李明家的客厅，空气很温暖。\n大毛那只白色的猫在沙发上睡觉，看起来很舒服。\n李明坐在窗前，手里拿着一封黄色的信。\n妈妈：李明，这是你爷爷从国外寄来的信。\n李明：真的吗？我有新的Pen友了？\n妈妈：当然，信封上写着他的名字和地址。\n李明：他叫什么名字？他住在哪里？\n妈妈：他叫杰克，住在加拿大，是一个很远的国家。\n李明：加拿大很大吗？那里冷不冷？\n妈妈：那里现在是冬天，比我们要冷很多。\n李明：我想立刻给他回信，但是我不会写英文。\n妈妈：别担心，我可以帮你翻译一些简单的句子。\n李明：谢谢妈妈！我有很多问题想问他。\n小明来家里玩，看到李明兴奋的样子，觉得很奇怪。\n小明：李明，你为什么这么高兴？有什么好事吗？\n李明：我收到了来自加拿大的信，我要认识新朋友。\n小明：哦，听起来不错，但是写信太慢了。\n李明：我们可以先打电话，或者用电子邮件联系。\n妈妈：写信是一种很好的交流方式，需要你认真思考。\n李明：我要问他加拿大的风是不是很大，天是不是很蓝。\n小明：你就问这些？别问什么吃的了吗？\n李明：当然！我要问他那里有没有好吃的苹果。\n小红走进房间，看了一眼桌上的信，露出了笑容。\n小红：李明，你总是这么天真，像个小孩子一样。\n李明：小红，你觉得写信无聊吗？我希望不是。\n小红：我不觉得无聊，我觉得这是一种浪漫的体验。\n李明：浪漫？写信怎么浪漫？我不太懂你的意思。\n小红：因为你能通过文字了解另一个世界的生活。\n小明：只要能得到好玩的游戏光盘，我就愿意写信。\n李明：我们加拿大的朋友好像对电子产品很有兴趣。\n妈妈：你们要注意，不能一直只想着玩游戏和吃。\n小明：妈妈，只要你答应给我们买蛋糕，我就认真写。\n李明：我同意！完成作业之后，我们可以休息一下。\n妈妈：好吧，但是你们必须答应我，每天只能写一会儿。\n李明：没问题，我们很守规则，你会看到我们的努力。\n小红：其实，和陌生人建立联系需要更多的耐心和信任。\n李明：我会仔细听的，而且我会把信放在书桌最显眼的位置。\n小明：那我先去写作业，不然爸爸回来会生气的。\n李明：我也是，我想在明天早上就把回信发出去。\n妈妈：只要你们用心，总有一天会成为真正的好朋友。\n小明：那我走啦，李明，别太兴奋得睡不着觉。\n李明：我会的，我要检查一下有没有写错别字。\n小红：我帮你看看，你的英文单词拼写总是出错。\n李明：谢谢小红，你真是我的最好朋友之一。\n妈妈的脸上露出了温柔的笑容，看着两个男孩离开的背影。\n大毛伸了个懒腰，跳下沙发，走到了窗台前。\n它看着窗外，好像也在期待着远方来客的故事。\n李明坐在书桌前，拿起笔，开始写下第一句话。\n他想，只要坚持，距离就不再是问题的障碍。\n生活总是充满惊喜，尤其是当朋友来自不同的地方。\n夜深了，城市安静下来，只有月亮挂在天空中。\n李明心想，明天太阳升起时，信就会飞向远方。\n这是一种奇妙的感觉，连接着两个完全不同的人。\n他相信，这段友谊会给他的生活带来新的色彩。\n故事到这里先暂停，让我们看看下一个章节的内容。\n希望读者也能体会到这种跨越国界的温暖情谊。",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@1",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "too_long",
+          "message": "56 lines (need 14-38)"
+        },
+        {
+          "code": "missing_target",
+          "message": "missing target: 发"
+        },
+        {
+          "code": "missing_target",
+          "message": "missing target: 要求"
+        },
+        {
+          "code": "missing_target",
+          "message": "missing target: 男人"
+        },
+        {
+          "code": "target_above_max",
+          "message": "信 appears 11× (max 4) — reads as spam"
+        },
+        {
+          "code": "missing_target",
+          "message": "missing target: 接"
+        },
+        {
+          "code": "missing_target",
+          "message": "missing target: 刚"
+        },
+        {
+          "code": "out_of_level_words",
+          "message": "71 distinct words above HSK 3 (max 3)"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 15.7% > 7.0%"
+        },
+        {
+          "code": "unknown_words",
+          "message": "32 unknown (non-vocabulary) runs (max 2): 照进、窗、一封、友、杰、英文、联系、蓝、桌上、露出"
+        }
+      ],
+      "warnings": [],
+      "metrics": {
+        "lines": 56,
+        "cjkChars": 931,
+        "distinctVocab": 273,
+        "targetCounts": {
+          "发": 0,
+          "要求": 0,
+          "男人": 0,
+          "信": 11,
+          "当然": 2,
+          "接": 0,
+          "刚": 0,
+          "只要": 4
+        },
+        "inLevelCoverage": 0.779,
+        "outOfLevelDistinct": 71,
+        "outOfLevelCharShare": 0.157,
+        "unknownDistinct": 32,
+        "unknownCharShare": 0.064,
+        "unknownRuns": [
+          "照进",
+          "窗",
+          "一封",
+          "友",
+          "杰",
+          "英文",
+          "联系",
+          "蓝",
+          "桌上",
+          "露出"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.029,
+        "nearestNeighbor": {
+          "title": "3. 星期六上午十点",
+          "level": 6,
+          "jaccard": 0.009,
+          "containment": 0.03
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 1,
+    "calls": 9,
+    "providerErrors": [
+      {
+        "kind": "draft",
+        "attempt": 1,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4324, Requested 4046. Please try again in 2.775s. Need more tokens? Upgrade to Dev Tier today at http"
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6857, Requested 4595. Please try again in 25.89s. Need more tokens? Upgrade to Dev Tier today at http"
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 5777, Requested 6201. Please try again in 29.835s. Need more tokens? Upgrade to Dev Tier today at htt"
+      },
+      {
+        "kind": "repair",
+        "attempt": 3,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 3611, Requested 4555. Please try again in 1.245s. Need more tokens? Upgrade to Dev Tier today at http"
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7096, Requested 4460. Please try again in 26.67s. Need more tokens? Upgrade to Dev Tier today at http"
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6020, Requested 6106. Please try again in 30.945s. Need more tokens? Upgrade to Dev Tier today at htt"
+      },
+      {
+        "kind": "repair",
+        "attempt": 3,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 3859, Requested 4500. Please try again in 2.6925s. Need more tokens? Upgrade to Dev Tier today at htt"
+      }
+    ],
+    "generatorVersion": "fab9-pipeline@1",
+    "promptVersion": "fab9-prompts@1",
+    "usage": {
+      "requests": 9,
+      "failures": 7,
+      "promptTokens": 6304,
+      "completionTokens": 1380,
+      "latencyMsTotal": 5166,
+      "wallMs": 61323
+    }
+  },
+  "staged": null
+}
