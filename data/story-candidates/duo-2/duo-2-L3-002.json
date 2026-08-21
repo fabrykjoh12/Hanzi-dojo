@@ -1,0 +1,452 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "duo-2",
+  "generatedAt": "2026-08-21T16:24:51.913Z",
+  "provider": {
+    "name": "duo",
+    "model": "qwen/qwen3.6-27b + openai/gpt-oss-120b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "duo-2-L3-002",
+    "batchId": "duo-2",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发生",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "国家",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "结束",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "来自",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "生活",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "其他",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "或者",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "当然",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "out in the city: places, errands, and a small discovery",
+    "seasonSeed": "preparing for something over several days (a trip, a festival, a small competition) with setbacks",
+    "series": null,
+    "composition": {
+      "bucket": "places",
+      "reason": "4 pending hard targets share the \"places\" theme",
+      "hard": [
+        {
+          "word": "发生",
+          "meaning": "to happen; to occur; to take place; to break out"
+        },
+        {
+          "word": "国家",
+          "meaning": "country; nation; state"
+        },
+        {
+          "word": "结束",
+          "meaning": "termination; to finish"
+        },
+        {
+          "word": "来自",
+          "meaning": "to come from (a place); From: (in email header)"
+        },
+        {
+          "word": "生活",
+          "meaning": "to live; life"
+        }
+      ],
+      "soft": [
+        {
+          "word": "其他",
+          "meaning": "other; (sth or sb) else"
+        },
+        {
+          "word": "或者",
+          "meaning": "or; possibly; maybe; perhaps"
+        },
+        {
+          "word": "当然",
+          "meaning": "only natural; as it should be"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选",
+        "换",
+        "脸"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "duo-2-L3-002",
+    "status": "rejected",
+    "title": "城市里的秘密照片",
+    "content": "下个月有一个关于不同国家的摄影比赛。\n李明很兴奋，他想拍一些特别的城市生活照片。\n小红说：“你选哪一个主题呢？”\n李明说：“我想拍城市里的普通人和动物。”\n妈妈检查了李明的计划，点了点头。\n她告诉李明：“注意安全，别去危险的地方。”\n李明答应了，他还问妈妈能不能早点结束作业。\n妈妈说：“当然，只要你完成得快。”\n第一天，李明和小明去了繁忙的中心广场。\n他们看到了来自世界各地的游客。\n李明想拍一张很好的照片，但是人多得很。\n他等了很久，还是没有找到好机会。\n小明有点懒，说：“我们回家吃饭吧？”\n李明觉得有点失望，但他说：“再等一会儿。”\n突然，一只白色的猫出现了。\n大毛跳上长椅，看起了远处的风景。\n李明赶紧按下快门，拍下了这个瞬间。\n第二天，李明去了安静的公园。\n他想拍一些关于中国生活的细节。\n小红也来了，她发现李明在专心地观察。\n小红问：“你找到什么有趣的了吗？”\n李明说：“我拍到了一只可爱的猫。”\n小红笑了，她说：“这很有趣，但是不够特别。”\n李明想了想，说：“也许我需要去其他地方。”\n他们决定去老城区，那里有很多不同的故事。\n在路上，李明问小红：“你觉得会发生什么？”\n小红说：“可能会有Unexpected的事情发生。”\n他们走进了狭窄的街道，闻到了饼干的香味。\n一个老人正在喂鸽子，场面很和谐。\n李明赶紧拍照，他小心地不发出声音。\n就在这时，大毛又出现了，它也在看鸽子。\n李明发现，这只猫总是在关键时候出现。\n他开心地说：“大毛是我的幸运助手！”\n小红点头，她也拍了几张照片。\n第三天，李明去了一家新的饭馆。\n他想尝尝来自其他国家的食物。\n妈妈陪着他，她说：“尝试新事物是学习的好方法。”\n李明点了一碗拉面，味道很好。\n但是，他忘记带相机了。\n他感到很后悔，说：“我太粗心了。”\n妈妈笑着说：“没关系，下次记住。”\n这时，李明看到窗户外有大毛的身影。\n大毛似乎在提醒他什么。\n李明想起，他把相机落在了家里的桌子上。\n他连忙跑回家，最后找到了相机。\n这次经历让他明白了准备的重要性。\n比赛结束了，李明得到了很多鼓励。\n他的作品展示了城市生活的不同侧面。\n小红说：“你的照片讲述了真实的故事。”\n李明很高兴，他感谢朋友和妈妈的帮助。\n他知道，以后还要更努力地观察世界。\n城市很大，但细心的人总能发现美。\n李明相信，每一个地方都有它的秘密。",
+    "englishContent": null,
+    "stages": [
+      {
+        "stage": "draft",
+        "role": "writer",
+        "title": "城市里的秘密照片",
+        "content": "下个月有一个关于不同国家的摄影比赛。\n李明很兴奋，他想拍一些特别的城市生活照片。\n小红说：“你选哪一个主题呢？”\n李明说：“我想拍城市里的普通人和动物。”\n妈妈检查了李明的计划，点了点头。\n她告诉李明：“注意安全，别去危险的地方。”\n李明答应了，他还问妈妈能不能早点结束作业。\n妈妈说：“当然，只要你完成得快。”\n第一天，李明和小明去了繁忙的中心广场。\n他们看到了来自世界各地的游客。\n李明想拍一张很好的照片，但是人多得很。\n他等了很久，还是没有找到好机会。\n小明有点懒，说：“我们回家吃饭吧？”\n李明觉得有点失望，但他说：“再等一会儿。”\n突然，一只白色的猫出现了。\n大毛跳上长椅，看起了远处的风景。\n李明赶紧按下快门，拍下了这个瞬间。\n第二天，李明去了安静的公园。\n他想拍一些关于中国生活的细节。\n小红也来了，她发现李明在专心地观察。\n小红问：“你找到什么有趣的了吗？”\n李明说：“我拍到了一只可爱的猫。”\n小红笑了，她说：“这很有趣，但是不够特别。”\n李明想了想，说：“也许我需要去其他地方。”\n他们决定去老城区，那里有很多不同的故事。\n在路上，李明问小红：“你觉得会发生什么？”\n小红说：“可能会有Unexpected的事情发生。”\n他们走进了狭窄的街道，闻到了饼干的香味。\n一个老人正在喂鸽子，场面很和谐。\n李明赶紧拍照，他小心地不发出声音。\n就在这时，大毛又出现了，它也在看鸽子。\n李明发现，这只猫总是在关键时候出现。\n他开心地说：“大毛是我的幸运助手！”\n小红点头，她也拍了几张照片。\n第三天，李明去了一家新的饭馆。\n他想尝尝来自其他国家的食物。\n妈妈陪着他，她说：“尝试新事物是学习的好方法。”\n李明点了一碗拉面，味道很好。\n但是，他忘记带相机了。\n他感到很后悔，说：“我太粗心了。”\n妈妈笑着说：“没关系，下次记住。”\n这时，李明看到窗户外有大毛的身影。\n大毛似乎在提醒他什么。\n李明想起，他把相机落在了家里的桌子上。\n他连忙跑回家，最后找到了相机。\n这次经历让他明白了准备的重要性。\n比赛结束了，李明得到了很多鼓励。\n他的作品展示了城市生活的不同侧面。\n小红说：“你的照片讲述了真实的故事。”\n李明很高兴，他感谢朋友和妈妈的帮助。\n他知道，以后还要更努力地观察世界。\n城市很大，但细心的人总能发现美。\n李明相信，每一个地方都有它的秘密。",
+        "validation": {
+          "validatorVersion": "fab10-validator@2",
+          "verdict": "FAIL",
+          "failures": [
+            {
+              "code": "too_long",
+              "message": "53 lines (need 14-38)"
+            },
+            {
+              "code": "unknown_speaker",
+              "message": "speakers outside the cast: 小红说、李明说、她告诉李明、妈妈说、小红问、他开心地说、妈妈笑着说 (allowed: 李明、小红、小明、妈妈)"
+            },
+            {
+              "code": "missing_target",
+              "message": "missing target: 或者"
+            },
+            {
+              "code": "out_of_level_share",
+              "message": "out-of-level vocabulary: 19.2% > 7.0%"
+            },
+            {
+              "code": "unknown_words",
+              "message": "10 unknown (non-vocabulary) runs (max 2): 一张、懒、长椅、狭窄、闻、香味、鸽子、张、一碗、身影"
+            }
+          ],
+          "warnings": [
+            {
+              "code": "out_of_level_words",
+              "message": "60 distinct words above HSK 3 (advisory max 3)"
+            }
+          ],
+          "metrics": {
+            "lines": 53,
+            "cjkChars": 673,
+            "distinctVocab": 228,
+            "targetCounts": {
+              "发生": 2,
+              "国家": 2,
+              "结束": 2,
+              "来自": 2,
+              "生活": 3,
+              "其他": 2,
+              "或者": 0,
+              "当然": 1
+            },
+            "inLevelCoverage": 0.78,
+            "outOfLevelDistinct": 60,
+            "outOfLevelCharShare": 0.192,
+            "unknownDistinct": 10,
+            "unknownCharShare": 0.028,
+            "unknownRuns": [
+              "一张",
+              "懒",
+              "长椅",
+              "狭窄",
+              "闻",
+              "香味",
+              "鸽子",
+              "张",
+              "一碗",
+              "身影"
+            ],
+            "repeatedLines": 0,
+            "repeatedTrigramShare": 0.033,
+            "nearestNeighbor": {
+              "title": "1. 不见了的苹果",
+              "level": 1,
+              "jaccard": 0.02,
+              "containment": 0.09
+            }
+          }
+        }
+      },
+      {
+        "stage": "simplify",
+        "role": "editor",
+        "title": "公园的惊喜",
+        "content": "李明：今天我们去公园散步吧。\n小红：好呀，我想看看花。\n小明：我带了相机。\n妈妈：我们可以一起吃午饭。\n他们来到公园，看到很多孩子在玩。\n公园里有一只小狗，它在草地上跑。\n小红看到一只鸽子，想喂它。\n李明说可以给鸽子一点面包。\n他们坐在长椅上，听到远处有音乐。\n音乐来自一个小乐队，乐队在表演。\n小明拍下了乐队的照片。\n妈妈说这音乐让人很开心。\n突然，天空下起小雨，大家赶快找地方避雨。\n他们跑到一个小亭子，雨停后，彩虹出现。\n彩虹像一道桥，连接两个国家的天空。\n小红说这像是一次奇妙的旅行。\n雨后，公园的花更香了，大家继续散步。\n他们在湖边看到一只白天鹅。\n李明说这只天鹅好像来自另一个国家。\n小明说我们应该多保护自然。\n下午的时间结束，大家决定下次再来。\n妈妈说今天的生活很有意思。\n他们回家，心里充满了美好回忆。\n结束。",
+        "validation": {
+          "validatorVersion": "fab10-validator@2",
+          "verdict": "FAIL",
+          "failures": [
+            {
+              "code": "missing_target",
+              "message": "missing target: 发生"
+            },
+            {
+              "code": "target_below_min",
+              "message": "生活 appears 1× (need 2-4)"
+            },
+            {
+              "code": "missing_target",
+              "message": "missing target: 其他"
+            },
+            {
+              "code": "missing_target",
+              "message": "missing target: 或者"
+            },
+            {
+              "code": "missing_target",
+              "message": "missing target: 当然"
+            },
+            {
+              "code": "out_of_level_share",
+              "message": "out-of-level vocabulary: 15.6% > 7.0%"
+            },
+            {
+              "code": "unknown_words",
+              "message": "7 unknown (non-vocabulary) runs (max 2): 鸽子、长椅、乐队、亭子、奇妙、鹅、天鹅"
+            },
+            {
+              "code": "title_changed",
+              "message": "the editor changed the title: \"城市里的秘密照片\" → \"公园的惊喜\""
+            },
+            {
+              "code": "speaker_added",
+              "message": "the editor introduced new speakers: 李明、小红、小明、妈妈"
+            },
+            {
+              "code": "speaker_lost",
+              "message": "main speakers disappeared in the edit: 小红说、李明说"
+            },
+            {
+              "code": "rewrite_detected",
+              "message": "the edit shares only 2% of the original's text (floor 30%) — this is a different story, not an edit"
+            }
+          ],
+          "warnings": [
+            {
+              "code": "out_of_level_words",
+              "message": "23 distinct words above HSK 3 (advisory max 3)"
+            }
+          ],
+          "metrics": {
+            "lines": 24,
+            "cjkChars": 275,
+            "distinctVocab": 105,
+            "targetCounts": {
+              "发生": 0,
+              "国家": 2,
+              "结束": 2,
+              "来自": 2,
+              "生活": 1,
+              "其他": 0,
+              "或者": 0,
+              "当然": 0
+            },
+            "inLevelCoverage": 0.775,
+            "outOfLevelDistinct": 23,
+            "outOfLevelCharShare": 0.156,
+            "unknownDistinct": 7,
+            "unknownCharShare": 0.069,
+            "unknownRuns": [
+              "鸽子",
+              "长椅",
+              "乐队",
+              "亭子",
+              "奇妙",
+              "鹅",
+              "天鹅"
+            ],
+            "repeatedLines": 0,
+            "repeatedTrigramShare": 0.021,
+            "nearestNeighbor": {
+              "title": "2. 学校里",
+              "level": 1,
+              "jaccard": 0.011,
+              "containment": 0.045
+            },
+            "edit": {
+              "jaccard": 0.007,
+              "containment": 0.025,
+              "titleChanged": true,
+              "speakersAdded": [
+                "李明",
+                "小红",
+                "小明",
+                "妈妈"
+              ],
+              "speakersLost": [
+                "小红说",
+                "李明说"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "validation": {
+      "validatorVersion": "fab10-validator@2",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "too_long",
+          "message": "53 lines (need 14-38)"
+        },
+        {
+          "code": "unknown_speaker",
+          "message": "speakers outside the cast: 小红说、李明说、她告诉李明、妈妈说、小红问、他开心地说、妈妈笑着说 (allowed: 李明、小红、小明、妈妈)"
+        },
+        {
+          "code": "missing_target",
+          "message": "missing target: 或者"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 19.2% > 7.0%"
+        },
+        {
+          "code": "unknown_words",
+          "message": "10 unknown (non-vocabulary) runs (max 2): 一张、懒、长椅、狭窄、闻、香味、鸽子、张、一碗、身影"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "out_of_level_words",
+          "message": "60 distinct words above HSK 3 (advisory max 3)"
+        }
+      ],
+      "metrics": {
+        "lines": 53,
+        "cjkChars": 673,
+        "distinctVocab": 228,
+        "targetCounts": {
+          "发生": 2,
+          "国家": 2,
+          "结束": 2,
+          "来自": 2,
+          "生活": 3,
+          "其他": 2,
+          "或者": 0,
+          "当然": 1
+        },
+        "inLevelCoverage": 0.78,
+        "outOfLevelDistinct": 60,
+        "outOfLevelCharShare": 0.192,
+        "unknownDistinct": 10,
+        "unknownCharShare": 0.028,
+        "unknownRuns": [
+          "一张",
+          "懒",
+          "长椅",
+          "狭窄",
+          "闻",
+          "香味",
+          "鸽子",
+          "张",
+          "一碗",
+          "身影"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.033,
+        "nearestNeighbor": {
+          "title": "1. 不见了的苹果",
+          "level": 1,
+          "jaccard": 0.02,
+          "containment": 0.09
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 1,
+    "calls": 2,
+    "providerErrors": [],
+    "generatorVersion": "fab9-duo@2",
+    "promptVersion": "fab9-prompts@2",
+    "usage": {
+      "requests": 2,
+      "failures": 0,
+      "promptTokens": 6221,
+      "completionTokens": 922,
+      "latencyMsTotal": 2643,
+      "rateLimit429s": 0,
+      "throttleWaitMs": 54568,
+      "retryAfterWaitMs": 0,
+      "wallMs": 57375
+    }
+  },
+  "staged": null
+}

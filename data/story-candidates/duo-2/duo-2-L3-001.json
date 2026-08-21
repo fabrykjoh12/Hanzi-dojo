@@ -1,0 +1,435 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "duo-2",
+  "generatedAt": "2026-08-21T16:23:54.537Z",
+  "provider": {
+    "name": "duo",
+    "model": "qwen/qwen3.6-27b + openai/gpt-oss-120b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "duo-2-L3-001",
+    "batchId": "duo-2",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "女人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "帮助",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "friends and neighbours: helping someone, or being helped",
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "composition": {
+      "bucket": "social",
+      "reason": "4 pending hard targets share the \"social\" theme",
+      "hard": [
+        {
+          "word": "关系",
+          "meaning": "relation; relationship"
+        },
+        {
+          "word": "女人",
+          "meaning": "woman"
+        },
+        {
+          "word": "男人",
+          "meaning": "a man; a male"
+        },
+        {
+          "word": "帮助",
+          "meaning": "assistance; aid; to help; to assist"
+        },
+        {
+          "word": "需要",
+          "meaning": "to need; to want; to demand; to require; needs"
+        }
+      ],
+      "soft": [
+        {
+          "word": "如果",
+          "meaning": "if; in case"
+        },
+        {
+          "word": "而且",
+          "meaning": "(not only ...) but also; moreover"
+        },
+        {
+          "word": "必须",
+          "meaning": "to have to; must"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "duo-2-L3-001",
+    "status": "rejected",
+    "title": "大毛的秘密",
+    "content": "中午，李明饿得肚子咕咕叫，只想马上吃午饭。\n他看到邻居家的白色大猫大毛在花园里跑。\n李明：小明，快来看，大毛好像拿着什么东西！\n小明不紧不慢地走过来，笑着说：“只是猫而已。”\n小红眼睛尖，立刻发现篱笆边有一个旧的纸袋。\n她走过去捡起纸袋，发现里面空空的。\n小红：昨天这里还有一个红色的苹果，现在不见了。\n李明：难道是大毛偷吃了？它看起来太狡猾了。\n小明：别瞎说，那是我们昨天留给邻居的礼物。\n这时，一位陌生的女人从隔壁的房子走出来。\n她看起来很着急，四处寻找着什么。\n那位女人：请问，你们看到我的药瓶了吗？\n李明观察了一下，说：我们只看到大毛和空袋子。\n那个女人叹了口气：那里面是我的紧急药物。\n李明心里有点担心：如果找不到，该怎么办？\n小红说：我们必须帮她，这很重要。\n李明：可是，大毛昨天就在那里躺着。\n小明：也许猫没动它，是风把它吹走了？\n那位女人摇摇头：不，这里没有大风。\n突然，一个大男人从后面走过来。\n他是那位女人的丈夫，看起来很生气。\n那个男人：谁动了我们的东西？\n李明害怕地后退了一步：我真的不知道。\n小红走上前去，礼貌地说：先生，请别生气。\n她指着角落：我刚才看到大毛躲在那边。\n那个男人：所以是猫把药瓶藏起来了？\n大家都看向那只白色的猫，大毛似乎很无辜。\n李明：我们需要检查那里，看看有没有药瓶。\n小明：好吧，我去看看，反正我也没事做。\n他爬进灌木丛，过了一会儿就出来了。\n小明：没有药瓶，但是有一张照片。\n那位女人走过来，看到照片笑了。\n她说：这是我的结婚照，我找了很久。\n那个男人也松了口气：原来你只是找照片。\n李明：但是你的药瓶呢？\n女人：我没动过，大概在家里沙发上。\n大家笑了：原来虚惊一场，关系还挺重要。\n小明：看吧，我就说不是猫偷的。\n李明：那刚才你为什么那么慌张？\n女人：因为没有药，我感觉很不安全。\n小红：以后把东西放好，别让大家担心。\n那个男人点点头：谢谢你们的帮助。\n李明：不用谢，互相帮助是应该的。\n大毛跳上墙头，舔了舔爪子，好像很自豪。\n妈妈走过来：吃饭了，别聊了。\n李明：好饿，我要吃很多！\n小明：走吧，今天的饭菜一定很香。\n小红：下次注意别乱猜，要动脑筋。\n李明：我知道了，这次是我太冲动。\n那个男人：谢谢你们，邻里关系很好。\n大家挥手再见，心里感到暖暖的。",
+    "englishContent": null,
+    "stages": [
+      {
+        "stage": "draft",
+        "role": "writer",
+        "title": "大毛的秘密",
+        "content": "中午，李明饿得肚子咕咕叫，只想马上吃午饭。\n他看到邻居家的白色大猫大毛在花园里跑。\n李明：小明，快来看，大毛好像拿着什么东西！\n小明不紧不慢地走过来，笑着说：“只是猫而已。”\n小红眼睛尖，立刻发现篱笆边有一个旧的纸袋。\n她走过去捡起纸袋，发现里面空空的。\n小红：昨天这里还有一个红色的苹果，现在不见了。\n李明：难道是大毛偷吃了？它看起来太狡猾了。\n小明：别瞎说，那是我们昨天留给邻居的礼物。\n这时，一位陌生的女人从隔壁的房子走出来。\n她看起来很着急，四处寻找着什么。\n那位女人：请问，你们看到我的药瓶了吗？\n李明观察了一下，说：我们只看到大毛和空袋子。\n那个女人叹了口气：那里面是我的紧急药物。\n李明心里有点担心：如果找不到，该怎么办？\n小红说：我们必须帮她，这很重要。\n李明：可是，大毛昨天就在那里躺着。\n小明：也许猫没动它，是风把它吹走了？\n那位女人摇摇头：不，这里没有大风。\n突然，一个大男人从后面走过来。\n他是那位女人的丈夫，看起来很生气。\n那个男人：谁动了我们的东西？\n李明害怕地后退了一步：我真的不知道。\n小红走上前去，礼貌地说：先生，请别生气。\n她指着角落：我刚才看到大毛躲在那边。\n那个男人：所以是猫把药瓶藏起来了？\n大家都看向那只白色的猫，大毛似乎很无辜。\n李明：我们需要检查那里，看看有没有药瓶。\n小明：好吧，我去看看，反正我也没事做。\n他爬进灌木丛，过了一会儿就出来了。\n小明：没有药瓶，但是有一张照片。\n那位女人走过来，看到照片笑了。\n她说：这是我的结婚照，我找了很久。\n那个男人也松了口气：原来你只是找照片。\n李明：但是你的药瓶呢？\n女人：我没动过，大概在家里沙发上。\n大家笑了：原来虚惊一场，关系还挺重要。\n小明：看吧，我就说不是猫偷的。\n李明：那刚才你为什么那么慌张？\n女人：因为没有药，我感觉很不安全。\n小红：以后把东西放好，别让大家担心。\n那个男人点点头：谢谢你们的帮助。\n李明：不用谢，互相帮助是应该的。\n大毛跳上墙头，舔了舔爪子，好像很自豪。\n妈妈走过来：吃饭了，别聊了。\n李明：好饿，我要吃很多！\n小明：走吧，今天的饭菜一定很香。\n小红：下次注意别乱猜，要动脑筋。\n李明：我知道了，这次是我太冲动。\n那个男人：谢谢你们，邻里关系很好。\n大家挥手再见，心里感到暖暖的。",
+        "validation": {
+          "validatorVersion": "fab10-validator@2",
+          "verdict": "FAIL",
+          "failures": [
+            {
+              "code": "too_long",
+              "message": "51 lines (need 14-38)"
+            },
+            {
+              "code": "unknown_speaker",
+              "message": "speakers outside the cast: 那位女人、小红说、那个男人、她指着角落、她说、女人、大家笑了、妈妈走过来 (allowed: 李明、小红、小明、妈妈)"
+            },
+            {
+              "code": "target_above_max",
+              "message": "女人 appears 5× (max 4) — reads as spam"
+            },
+            {
+              "code": "target_below_min",
+              "message": "需要 appears 1× (need 2-4)"
+            },
+            {
+              "code": "missing_target",
+              "message": "missing target: 而且"
+            },
+            {
+              "code": "out_of_level_share",
+              "message": "out-of-level vocabulary: 10.2% > 7.0%"
+            },
+            {
+              "code": "unknown_words",
+              "message": "33 unknown (non-vocabulary) runs (max 2): 咕咕、篱笆、纸、袋、狡猾、瞎、留给、药瓶、袋子、叹"
+            },
+            {
+              "code": "unknown_share",
+              "message": "unknown text: 9.6% > 7.0%"
+            }
+          ],
+          "warnings": [
+            {
+              "code": "out_of_level_words",
+              "message": "39 distinct words above HSK 3 (advisory max 3)"
+            }
+          ],
+          "metrics": {
+            "lines": 51,
+            "cjkChars": 657,
+            "distinctVocab": 204,
+            "targetCounts": {
+              "关系": 2,
+              "女人": 5,
+              "男人": 3,
+              "帮助": 2,
+              "需要": 1,
+              "如果": 1,
+              "而且": 0,
+              "必须": 1
+            },
+            "inLevelCoverage": 0.802,
+            "outOfLevelDistinct": 39,
+            "outOfLevelCharShare": 0.102,
+            "unknownDistinct": 33,
+            "unknownCharShare": 0.096,
+            "unknownRuns": [
+              "咕咕",
+              "篱笆",
+              "纸",
+              "袋",
+              "狡猾",
+              "瞎",
+              "留给",
+              "药瓶",
+              "袋子",
+              "叹"
+            ],
+            "repeatedLines": 0,
+            "repeatedTrigramShare": 0.036,
+            "nearestNeighbor": {
+              "title": "3. 这条街都知道了",
+              "level": 3,
+              "jaccard": 0.012,
+              "containment": 0.056
+            }
+          }
+        }
+      },
+      {
+        "stage": "simplify",
+        "role": "editor",
+        "title": "帮助的故事",
+        "content": "小红在公园散步，看到一个哭泣的女人。\n女人说她的手机不见了。\n小红想帮助她。\n她说如果找到手机，她会很高兴。\n小明走过来，问发生了什么，而且他想帮忙。\n小明说他可以帮忙找。\n三个人一起去车站找。\n在车站，一个男人也在找东西。\n男人说他的钥匙掉在地上。\n小红说他们可以一起找钥匙和手机。\n他们找了很久，终于在车下面发现手机。\n他们需要把钥匙交给车站的人。\n女人说谢谢大家，关系很重要。\n小明说帮助别人才是好事。\n小红说以后如果还有需要，她们会再帮助。\n妈妈走过来，看见大家在一起。\n妈妈说必须有爱心。\n女人说她会记得这次相遇。\n小明说他们的关系会更好。\n大家笑着回家，感到很开心.",
+        "validation": {
+          "validatorVersion": "fab10-validator@2",
+          "verdict": "FAIL",
+          "failures": [
+            {
+              "code": "title_changed",
+              "message": "the editor changed the title: \"大毛的秘密\" → \"帮助的故事\""
+            },
+            {
+              "code": "speaker_lost",
+              "message": "main speakers disappeared in the edit: 李明、小红、小明、那个男人、女人"
+            },
+            {
+              "code": "rewrite_detected",
+              "message": "the edit shares only 6% of the original's text (floor 30%) — this is a different story, not an edit"
+            }
+          ],
+          "warnings": [
+            {
+              "code": "out_of_level_words",
+              "message": "6 distinct words above HSK 3 (advisory max 3)"
+            }
+          ],
+          "metrics": {
+            "lines": 20,
+            "cjkChars": 224,
+            "distinctVocab": 82,
+            "targetCounts": {
+              "关系": 2,
+              "女人": 4,
+              "男人": 2,
+              "帮助": 3,
+              "需要": 2,
+              "如果": 2,
+              "而且": 1,
+              "必须": 1
+            },
+            "inLevelCoverage": 0.92,
+            "outOfLevelDistinct": 6,
+            "outOfLevelCharShare": 0.063,
+            "unknownDistinct": 2,
+            "unknownCharShare": 0.018,
+            "unknownRuns": [
+              "哭泣",
+              "相遇"
+            ],
+            "repeatedLines": 0,
+            "repeatedTrigramShare": 0.05,
+            "nearestNeighbor": {
+              "title": "5. 找歌的书",
+              "level": 1,
+              "jaccard": 0.016,
+              "containment": 0.032
+            },
+            "edit": {
+              "jaccard": 0.015,
+              "containment": 0.058,
+              "titleChanged": true,
+              "speakersAdded": [],
+              "speakersLost": [
+                "李明",
+                "小红",
+                "小明",
+                "那个男人",
+                "女人"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "validation": {
+      "validatorVersion": "fab10-validator@2",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "too_long",
+          "message": "51 lines (need 14-38)"
+        },
+        {
+          "code": "unknown_speaker",
+          "message": "speakers outside the cast: 那位女人、小红说、那个男人、她指着角落、她说、女人、大家笑了、妈妈走过来 (allowed: 李明、小红、小明、妈妈)"
+        },
+        {
+          "code": "target_above_max",
+          "message": "女人 appears 5× (max 4) — reads as spam"
+        },
+        {
+          "code": "target_below_min",
+          "message": "需要 appears 1× (need 2-4)"
+        },
+        {
+          "code": "missing_target",
+          "message": "missing target: 而且"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 10.2% > 7.0%"
+        },
+        {
+          "code": "unknown_words",
+          "message": "33 unknown (non-vocabulary) runs (max 2): 咕咕、篱笆、纸、袋、狡猾、瞎、留给、药瓶、袋子、叹"
+        },
+        {
+          "code": "unknown_share",
+          "message": "unknown text: 9.6% > 7.0%"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "out_of_level_words",
+          "message": "39 distinct words above HSK 3 (advisory max 3)"
+        }
+      ],
+      "metrics": {
+        "lines": 51,
+        "cjkChars": 657,
+        "distinctVocab": 204,
+        "targetCounts": {
+          "关系": 2,
+          "女人": 5,
+          "男人": 3,
+          "帮助": 2,
+          "需要": 1,
+          "如果": 1,
+          "而且": 0,
+          "必须": 1
+        },
+        "inLevelCoverage": 0.802,
+        "outOfLevelDistinct": 39,
+        "outOfLevelCharShare": 0.102,
+        "unknownDistinct": 33,
+        "unknownCharShare": 0.096,
+        "unknownRuns": [
+          "咕咕",
+          "篱笆",
+          "纸",
+          "袋",
+          "狡猾",
+          "瞎",
+          "留给",
+          "药瓶",
+          "袋子",
+          "叹"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.036,
+        "nearestNeighbor": {
+          "title": "3. 这条街都知道了",
+          "level": 3,
+          "jaccard": 0.012,
+          "containment": 0.056
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 1,
+    "calls": 2,
+    "providerErrors": [],
+    "generatorVersion": "fab9-duo@2",
+    "promptVersion": "fab9-prompts@2",
+    "usage": {
+      "requests": 2,
+      "failures": 0,
+      "promptTokens": 6263,
+      "completionTokens": 2264,
+      "latencyMsTotal": 5543,
+      "rateLimit429s": 0,
+      "throttleWaitMs": 0,
+      "retryAfterWaitMs": 0,
+      "wallMs": 5682
+    }
+  },
+  "staged": null
+}

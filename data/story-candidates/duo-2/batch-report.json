@@ -1,0 +1,126 @@
+{
+  "batchId": "duo-2",
+  "level": 3,
+  "generatedAt": "2026-08-21T16:24:52.835Z",
+  "provider": {
+    "name": "duo",
+    "model": "qwen/qwen3.6-27b + openai/gpt-oss-120b"
+  },
+  "versions": {
+    "generator": "fab9-pipeline@1",
+    "prompts": "fab9-prompts@2"
+  },
+  "manifests": 2,
+  "accepted": 0,
+  "rejected": 2,
+  "totalProviderCalls": 4,
+  "tokenUsage": {
+    "requests": 4,
+    "failures": 0,
+    "promptTokens": 12484,
+    "completionTokens": 3186,
+    "latencyMsTotal": 8186,
+    "rateLimit429s": 0,
+    "throttleWaitMs": 54568,
+    "retryAfterWaitMs": 0
+  },
+  "failureHistogram": {
+    "too_long": 2,
+    "unknown_speaker": 2,
+    "target_above_max": 1,
+    "target_below_min": 1,
+    "missing_target": 2,
+    "out_of_level_share": 2,
+    "unknown_words": 2,
+    "unknown_share": 1
+  },
+  "plan": {
+    "before": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    },
+    "after": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    }
+  },
+  "coverage": {
+    "current": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    },
+    "projectedIfPublished": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    }
+  },
+  "candidates": [
+    {
+      "manifestId": "duo-2-L3-001",
+      "status": "rejected",
+      "title": "大毛的秘密",
+      "critiqueScore": null,
+      "failures": [
+        "too_long",
+        "unknown_speaker",
+        "target_above_max",
+        "target_below_min",
+        "missing_target",
+        "out_of_level_share",
+        "unknown_words",
+        "unknown_share"
+      ],
+      "warnings": [
+        "out_of_level_words"
+      ],
+      "calls": 2,
+      "usage": {
+        "requests": 2,
+        "failures": 0,
+        "promptTokens": 6263,
+        "completionTokens": 2264,
+        "latencyMsTotal": 5543,
+        "rateLimit429s": 0,
+        "throttleWaitMs": 0,
+        "retryAfterWaitMs": 0,
+        "wallMs": 5682
+      }
+    },
+    {
+      "manifestId": "duo-2-L3-002",
+      "status": "rejected",
+      "title": "城市里的秘密照片",
+      "critiqueScore": null,
+      "failures": [
+        "too_long",
+        "unknown_speaker",
+        "missing_target",
+        "out_of_level_share",
+        "unknown_words"
+      ],
+      "warnings": [
+        "out_of_level_words"
+      ],
+      "calls": 2,
+      "usage": {
+        "requests": 2,
+        "failures": 0,
+        "promptTokens": 6221,
+        "completionTokens": 922,
+        "latencyMsTotal": 2643,
+        "rateLimit429s": 0,
+        "throttleWaitMs": 54568,
+        "retryAfterWaitMs": 0,
+        "wallMs": 57375
+      }
+    }
+  ]
+}
