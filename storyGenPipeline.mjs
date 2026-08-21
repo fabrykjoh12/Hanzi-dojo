@@ -52,11 +52,24 @@ export function rankAttempt(a) {
   return valid * 10000 + score * 100 - failures
 }
 
-async function call(provider, kind, prompt, maxTokens, parse, parseRetries, calls) {
+// One logical provider call: up to parseRetries+1 attempts covering BOTH an
+// unparseable response and a thrown provider error (rate limit, network) —
+// pilot-1 showed a 429 escaping this loop instantly while a garbled response
+// got retries, which is backwards. Thrown errors also back off (injectable
+// `sleep`, stubbed in tests), like the serial pipeline's callText. The per-call
+// cap is unchanged: at most parseRetries+1 provider requests either way.
+async function call(provider, kind, prompt, maxTokens, parse, parseRetries, calls, sleep) {
   let lastErr = null
   for (let i = 0; i <= parseRetries; i += 1) {
-    calls.count += 1
-    const text = await provider({ kind, prompt, maxTokens })
+    let text
+    try {
+      calls.count += 1
+      text = await provider({ kind, prompt, maxTokens })
+    } catch (err) {
+      lastErr = err
+      if (i < parseRetries) await sleep(Math.min(8000 * Math.pow(2, i), 30000))
+      continue
+    }
     const parsed = parse(text)
     if (parsed != null) return parsed
     lastErr = new Error(kind + ' response was unparseable')
@@ -77,7 +90,9 @@ export async function generateCandidate({
   limits = {},
   critique: critiqueEnabled = true,
   translate: translateEnabled = true,
+  sleep = null,                          // injectable backoff (tests stub it); default: real timer
 } = {}) {
+  const slp = sleep || ((ms) => new Promise(resolve => setTimeout(resolve, ms)))
   const lim = { ...DEFAULT_LIMITS, ...limits }
   const mCheck = validateManifest(manifest)
   if (!mCheck.ok) throw new Error('refusing to generate from an invalid manifest (' + (manifest && manifest.id) + '): ' + mCheck.problems.join('; '))
@@ -89,7 +104,7 @@ export async function generateCandidate({
   for (let attempt = 1; attempt <= lim.attempts; attempt += 1) {
     let cand
     try {
-      cand = await call(provider, 'draft', draftPrompt({ manifest, pool, meanings }), 6000, parseChapter, lim.parseRetries, calls)
+      cand = await call(provider, 'draft', draftPrompt({ manifest, pool, meanings }), 6000, parseChapter, lim.parseRetries, calls, slp)
     } catch {
       continue                                   // a dead draft costs the attempt, not the manifest
     }
@@ -102,7 +117,7 @@ export async function generateCandidate({
       try {
         fixed = await call(provider, 'repair',
           repairPrompt({ manifest, candidate: cand, failures: validation.failures, pool, meanings }),
-          6000, parseChapter, lim.parseRetries, calls)
+          6000, parseChapter, lim.parseRetries, calls, slp)
       } catch {
         break
       }
@@ -116,14 +131,14 @@ export async function generateCandidate({
     let crit = null
     if (critiqueEnabled && validation.verdict === 'PASS') {
       try {
-        crit = await call(provider, 'critique', critiquePrompt({ manifest, candidate: cand }), 2000, parseCritique, lim.parseRetries, calls)
+        crit = await call(provider, 'critique', critiquePrompt({ manifest, candidate: cand }), 2000, parseCritique, lim.parseRetries, calls, slp)
         for (let round = 0; round < lim.qualityRounds && crit && crit.score < TARGET_SCORE; round += 1) {
           const revised = await call(provider, 'revise',
             qualityRevisePrompt({ manifest, candidate: cand, feedback: crit.feedback || '', pool, meanings }),
-            6000, parseChapter, lim.parseRetries, calls)
+            6000, parseChapter, lim.parseRetries, calls, slp)
           const revisedValidation = validate(revised)
           if (revisedValidation.verdict !== 'PASS') break     // quality never overrules the gate
-          const revisedCrit = await call(provider, 'critique', critiquePrompt({ manifest, candidate: revised }), 2000, parseCritique, lim.parseRetries, calls)
+          const revisedCrit = await call(provider, 'critique', critiquePrompt({ manifest, candidate: revised }), 2000, parseCritique, lim.parseRetries, calls, slp)
           if ((revisedCrit.score || 0) <= crit.score) break   // didn't help — keep the original
           cand = revised
           validation = revisedValidation
@@ -146,7 +161,7 @@ export async function generateCandidate({
       title: null,
       content: null,
       englishContent: null,
-      validation: { verdict: 'FAIL', failures: [{ code: 'no_candidate', message: 'every draft was unparseable' }], warnings: [], metrics: {} },
+      validation: { verdict: 'FAIL', failures: [{ code: 'no_candidate', message: 'every draft attempt failed (provider error or unparseable response)' }], warnings: [], metrics: {} },
       critique: null,
       attempts: lim.attempts,
       calls: calls.count,
@@ -163,7 +178,7 @@ export async function generateCandidate({
     const lineCount = best.candidate.content.split('\n').filter(l => l.trim()).length
     try {
       english = await call(provider, 'translate', translatePrompt({ candidate: best.candidate }), 6000,
-        (t) => parseTranslation(t, lineCount), lim.parseRetries, calls)
+        (t) => parseTranslation(t, lineCount), lim.parseRetries, calls, slp)
     } catch {
       english = null
     }

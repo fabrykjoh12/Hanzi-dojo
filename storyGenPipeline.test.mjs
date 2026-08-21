@@ -31,6 +31,9 @@ const POOL = [
 const vocabMap = Object.fromEntries(POOL.map(([word, level]) => [word, { word, level }]))
 const pool = POOL.map(([word, level]) => ({ word, level }))
 
+// All specs stub the backoff timer — throw-paths must not actually wait.
+const gen = (opts) => generateCandidate({ sleep: async () => {}, ...opts })
+
 const manifest = () => buildManifest({
   batchId: 'test', seq: 1, level: 3,
   targets: ['护照', '邻居', '打算'],
@@ -101,7 +104,7 @@ describe('prompt builders', () => {
 describe('generateCandidate', () => {
   it('accepts a first-try pass and records provenance', async () => {
     const provider = scripted({ draft: [GOOD_TEXT], critique: [CRIT_OK], translate: [EN8] })
-    const r = await generateCandidate({ manifest: manifest(), pool, vocabMap, provider })
+    const r = await gen({ manifest: manifest(), pool, vocabMap, provider })
     expect(r.status).toBe('accepted')
     expect(r.validation.verdict).toBe('PASS')
     expect(r.title).toBe('去旅行')
@@ -118,7 +121,7 @@ describe('generateCandidate', () => {
       .replace('李明打算和妈妈去旅行。', '李明和妈妈去旅行。')
       .replace('他们打算明天买东西。', '他们明天买东西。')
     const provider = scripted({ draft: [missing], repair: [GOOD_TEXT], critique: [CRIT_OK], translate: [EN8] })
-    const r = await generateCandidate({ manifest: manifest(), pool, vocabMap, provider })
+    const r = await gen({ manifest: manifest(), pool, vocabMap, provider })
     expect(r.status).toBe('accepted')
     const repairReq = provider.seen.find(s => s.kind === 'repair')
     expect(repairReq.prompt).toContain('missing target: 打算')
@@ -130,7 +133,7 @@ describe('generateCandidate', () => {
       .replace('他们打算明天买东西。', '他们明天买东西。')
     const worse = 'TITLE: 坏\n坏。\n坏。\n坏。'
     const provider = scripted({ draft: [missingOne], repair: [worse, worse] })
-    const r = await generateCandidate({
+    const r = await gen({
       manifest: manifest(), pool, vocabMap, provider,
       critique: false, translate: false, limits: { attempts: 1 },
     })
@@ -141,13 +144,26 @@ describe('generateCandidate', () => {
 
   it('rejects with no_candidate when every draft is unparseable', async () => {
     const provider = scripted({ draft: ['garbage'] })
-    const r = await generateCandidate({
+    const r = await gen({
       manifest: manifest(), pool, vocabMap, provider,
       critique: false, translate: false,
     })
     expect(r.status).toBe('rejected')
     expect(r.validation.failures[0].code).toBe('no_candidate')
     expect(r.content).toBeNull()
+  })
+
+  it('a transient provider error is retried within the per-call budget (pilot-1 regression)', async () => {
+    let n = 0
+    const provider = async ({ kind }) => {
+      n += 1
+      if (n === 1) throw new Error('429 rate limited')
+      if (kind === 'draft') return GOOD_TEXT
+      throw new Error('unexpected ' + kind)
+    }
+    const r = await gen({ manifest: manifest(), pool, vocabMap, provider, critique: false, translate: false })
+    expect(r.status).toBe('accepted')
+    expect(r.calls).toBe(2)                       // the failed call + the successful retry
   })
 
   it('a quality revision that improves the critique is kept', async () => {
@@ -158,7 +174,7 @@ describe('generateCandidate', () => {
       revise: [revised],
       translate: [EN8],
     })
-    const r = await generateCandidate({ manifest: manifest(), pool, vocabMap, provider })
+    const r = await gen({ manifest: manifest(), pool, vocabMap, provider })
     expect(r.status).toBe('accepted')
     expect(r.content).toContain('他们都很高兴。')
     expect(r.critique.score).toBe(8)
@@ -172,7 +188,7 @@ describe('generateCandidate', () => {
       revise: [broken],
       translate: [EN8],
     })
-    const r = await generateCandidate({ manifest: manifest(), pool, vocabMap, provider })
+    const r = await gen({ manifest: manifest(), pool, vocabMap, provider })
     expect(r.status).toBe('accepted')
     expect(r.content).toBe(GOOD_LINES.join('\n'))  // original kept
     expect(r.critique.score).toBe(6)
@@ -180,7 +196,7 @@ describe('generateCandidate', () => {
 
   it('a failed translation never sinks an accepted candidate', async () => {
     const provider = scripted({ draft: [GOOD_TEXT], critique: [CRIT_OK], translate: ['one line only'] })
-    const r = await generateCandidate({ manifest: manifest(), pool, vocabMap, provider })
+    const r = await gen({ manifest: manifest(), pool, vocabMap, provider })
     expect(r.status).toBe('accepted')
     expect(r.englishContent).toBeNull()
   })
@@ -188,7 +204,7 @@ describe('generateCandidate', () => {
   it('near-duplicates of the corpus are rejected end-to-end', async () => {
     const provider = scripted({ draft: [GOOD_TEXT, GOOD_TEXT], repair: [GOOD_TEXT, GOOD_TEXT, GOOD_TEXT, GOOD_TEXT] })
     const corpus = [{ title: '旧故事', level: 3, content: GOOD_LINES.join('\n') }]
-    const r = await generateCandidate({
+    const r = await gen({
       manifest: manifest(), pool, vocabMap, corpus, provider,
       critique: false, translate: false,
     })
@@ -198,7 +214,7 @@ describe('generateCandidate', () => {
 
   it('refuses to run on an invalid manifest', async () => {
     const provider = scripted({})
-    await expect(generateCandidate({ manifest: { schema: 'nope' }, pool, vocabMap, provider }))
+    await expect(gen({ manifest: { schema: 'nope' }, pool, vocabMap, provider }))
       .rejects.toThrow(/invalid manifest/)
   })
 
