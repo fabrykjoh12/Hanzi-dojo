@@ -48,8 +48,8 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { publishedChineseStories, buildCoverageReport } from './storyCoverage.mjs'
-import { buildCoveragePlan, selectTargets, recordAcceptedCandidate, planSummary } from './storyCoveragePlanner.mjs'
-import { composeManifests, manifestDefaults } from './storyManifestPlanner.mjs'
+import { buildCoveragePlan, pendingTargets, useTargets, recordAcceptedCandidate, planSummary } from './storyCoveragePlanner.mjs'
+import { composeSemanticManifests, manifestDefaults } from './storyManifestPlanner.mjs'
 import { generateCandidate, serializableCandidate, GENERATOR_VERSION } from './storyGenPipeline.mjs'
 import { generateDuoCandidate, serializableDuoCandidate } from './storyDuoPipeline.mjs'
 import { PROMPT_VERSION } from './storyGenPrompts.mjs'
@@ -147,10 +147,24 @@ const before = planSummary(plan)
 console.log('HSK ' + level + ' plan: ' + before.totalTargets + ' under-covered words (goal ' + goal + ' stories each).')
 
 const defaults = targetsPerStory ? { targetsPerStory } : undefined
-const composed = await composeManifests({ batchId, level, plan, select: selectTargets, count, defaults })
+// Semantic composition (2026-08-21): coverage gap → target suitability →
+// semantic grouping → manifest. Structural words are skipped and reported on
+// each manifest's composition block; soft targets carry min 1.
+const composed = composeSemanticManifests({
+  batchId, level, plan,
+  pending: pendingTargets, use: useTargets,
+  meanings: Object.fromEntries(vocab.filter(v => v.meaning).map(v => [v.word, v.meaning])),
+  count, defaults,
+})
 plan = composed.plan
 const manifests = composed.manifests
 console.log('Composed ' + manifests.length + ' manifest(s), ' + (manifestDefaults(level).targetsPerStory) + ' targets/story default.')
+for (const m of manifests) {
+  const c = m.composition || {}
+  console.log('  ' + m.id + ' [' + (c.bucket || '?') + '] hard: ' + (c.hard || []).map(t => t.word).join('、')
+    + ' | soft: ' + (c.soft || []).map(t => t.word).join('、')
+    + (c.structuralSkipped && c.structuralSkipped.length ? ' | structural skipped: ' + c.structuralSkipped.join('、') : ''))
+}
 
 const outDir = join(outBase, batchId)
 mkdirSync(outDir, { recursive: true })

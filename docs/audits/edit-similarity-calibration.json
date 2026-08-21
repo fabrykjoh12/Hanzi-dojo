@@ -1,0 +1,185 @@
+{
+  "purpose": "Calibration for the rewrite_detected editor-preservation gate: contentSimilarity (char-trigram jaccard/containment) between an editor INPUT and OUTPUT. Faithful = controlled mechanical simplifications of 12 real corpus stories (drop 1/3 of lines + shorten clauses; halve lines). Rewrite = the two observed duo-1 editor rewrites that changed the plot.",
+  "generatedAt": "2026-08-21T16:14:59.450Z",
+  "faithful": {
+    "n": 24,
+    "jaccard": {
+      "min": 0.3333333333333333,
+      "max": 0.5921052631578947
+    },
+    "containment": {
+      "min": 0.7184466019417476,
+      "max": 0.9246575342465754
+    }
+  },
+  "rewrites": [
+    {
+      "label": "duo-1-L3-001 (observed rewrite)",
+      "jaccard": 0.016589861751152075,
+      "containment": 0.08333333333333333
+    },
+    {
+      "label": "duo-1-L3-002 (observed rewrite)",
+      "jaccard": 0.011337868480725623,
+      "containment": 0.04184100418410042
+    }
+  ],
+  "rows": [
+    {
+      "kind": "faithful",
+      "label": "1. 不见了的苹果 (drop+shorten)",
+      "jaccard": 0.5141509433962265,
+      "containment": 0.9008264462809917
+    },
+    {
+      "kind": "faithful",
+      "label": "1. 不见了的苹果 (halve)",
+      "jaccard": 0.4608294930875576,
+      "containment": 0.8547008547008547
+    },
+    {
+      "kind": "faithful",
+      "label": "1. 今天唱歌 (drop+shorten)",
+      "jaccard": 0.5210084033613446,
+      "containment": 0.8732394366197183
+    },
+    {
+      "kind": "faithful",
+      "label": "1. 今天唱歌 (halve)",
+      "jaccard": 0.461864406779661,
+      "containment": 0.872
+    },
+    {
+      "kind": "faithful",
+      "label": "2. 上班和上学 (drop+shorten)",
+      "jaccard": 0.46747967479674796,
+      "containment": 0.8712121212121212
+    },
+    {
+      "kind": "faithful",
+      "label": "2. 上班和上学 (halve)",
+      "jaccard": 0.5,
+      "containment": 0.8671328671328671
+    },
+    {
+      "kind": "faithful",
+      "label": "3. 商店寻宝记 (drop+shorten)",
+      "jaccard": 0.539906103286385,
+      "containment": 0.9126984126984127
+    },
+    {
+      "kind": "faithful",
+      "label": "3. 商店寻宝记 (halve)",
+      "jaccard": 0.41013824884792627,
+      "containment": 0.8557692307692307
+    },
+    {
+      "kind": "faithful",
+      "label": "4. 李明唱歌 (drop+shorten)",
+      "jaccard": 0.5665236051502146,
+      "containment": 0.8979591836734694
+    },
+    {
+      "kind": "faithful",
+      "label": "4. 李明唱歌 (halve)",
+      "jaccard": 0.3865546218487395,
+      "containment": 0.8214285714285714
+    },
+    {
+      "kind": "faithful",
+      "label": "5. 找歌的书 (drop+shorten)",
+      "jaccard": 0.5921052631578947,
+      "containment": 0.9246575342465754
+    },
+    {
+      "kind": "faithful",
+      "label": "5. 找歌的书 (halve)",
+      "jaccard": 0.4425531914893617,
+      "containment": 0.8524590163934426
+    },
+    {
+      "kind": "faithful",
+      "label": "6. 我们的歌 (drop+shorten)",
+      "jaccard": 0.46017699115044247,
+      "containment": 0.8455284552845529
+    },
+    {
+      "kind": "faithful",
+      "label": "6. 我们的歌 (halve)",
+      "jaccard": 0.4170403587443946,
+      "containment": 0.8532110091743119
+    },
+    {
+      "kind": "faithful",
+      "label": "1. 新的地方 (drop+shorten)",
+      "jaccard": 0.53125,
+      "containment": 0.9107142857142857
+    },
+    {
+      "kind": "faithful",
+      "label": "1. 新的地方 (halve)",
+      "jaccard": 0.417910447761194,
+      "containment": 0.8155339805825242
+    },
+    {
+      "kind": "faithful",
+      "label": "2. 明天去新地方 (drop+shorten)",
+      "jaccard": 0.570446735395189,
+      "containment": 0.9021739130434783
+    },
+    {
+      "kind": "faithful",
+      "label": "2. 明天去新地方 (halve)",
+      "jaccard": 0.4033333333333333,
+      "containment": 0.8175675675675675
+    },
+    {
+      "kind": "faithful",
+      "label": "3. 发现秘密的书 (drop+shorten)",
+      "jaccard": 0.5727699530516432,
+      "containment": 0.9037037037037037
+    },
+    {
+      "kind": "faithful",
+      "label": "3. 发现秘密的书 (halve)",
+      "jaccard": 0.4166666666666667,
+      "containment": 0.8490566037735849
+    },
+    {
+      "kind": "faithful",
+      "label": "1. 妈妈很忙 (drop+shorten)",
+      "jaccard": 0.5165876777251185,
+      "containment": 0.8582677165354331
+    },
+    {
+      "kind": "faithful",
+      "label": "1. 妈妈很忙 (halve)",
+      "jaccard": 0.3333333333333333,
+      "containment": 0.7184466019417476
+    },
+    {
+      "kind": "faithful",
+      "label": "2. 小红家的鸡蛋 (drop+shorten)",
+      "jaccard": 0.4474885844748858,
+      "containment": 0.7967479674796748
+    },
+    {
+      "kind": "faithful",
+      "label": "2. 小红家的鸡蛋 (halve)",
+      "jaccard": 0.3632286995515695,
+      "containment": 0.7363636363636363
+    },
+    {
+      "kind": "rewrite",
+      "label": "duo-1-L3-001 (observed rewrite)",
+      "jaccard": 0.016589861751152075,
+      "containment": 0.08333333333333333
+    },
+    {
+      "kind": "rewrite",
+      "label": "duo-1-L3-002 (observed rewrite)",
+      "jaccard": 0.011337868480725623,
+      "containment": 0.04184100418410042
+    }
+  ]
+}

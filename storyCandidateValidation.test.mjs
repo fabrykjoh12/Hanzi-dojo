@@ -4,6 +4,8 @@ import {
   formatValidation,
   serializableValidation,
   VALIDATOR_VERSION,
+  validateEdit,
+  EDIT_SIMILARITY,
 } from './storyCandidateValidation.mjs'
 import { buildManifest } from './storyManifestPlanner.mjs'
 import { analyzeStoryCoverage } from './storyCoverage.mjs'
@@ -233,5 +235,79 @@ describe('output contract', () => {
     const text = formatValidation(r)
     expect(text.startsWith('FAIL')).toBe(true)
     expect(text).toContain('- missing target: 铅笔')
+  })
+})
+
+describe('validateEdit — machine-enforced "edit, don\'t rewrite" (duo-1 regression)', () => {
+  const original = {
+    title: '消失的白猫',
+    content: [
+      '李明：我的饼干不见了。',
+      '小红：别急，我们找一找。',
+      '李明：是大毛拿走了！',
+      '小红：这只猫真调皮。',
+      '妈妈：你们要小心。',
+      '李明：我们去买猫粮吧。',
+    ].join('\n'),
+  }
+
+  it('a faithful simplification passes with its similarity recorded', () => {
+    const edited = {
+      title: '消失的白猫',
+      content: [
+        '李明：我的饼干不见了。',
+        '李明：是大毛拿走了！',
+        '小红：这只猫真调皮。',
+        '李明：我们去买猫粮吧。',
+      ].join('\n'),
+    }
+    const r = validateEdit(original, edited)
+    expect(r.ok).toBe(true)
+    expect(r.metrics.containment).toBeGreaterThan(0.6)
+    expect(r.metrics.titleChanged).toBe(false)
+  })
+
+  it('a changed title fails', () => {
+    const r = validateEdit(original, { ...original, title: '小城的秘密' })
+    expect(r.failures.map(f => f.code)).toContain('title_changed')
+  })
+
+  it('an introduced speaker fails unless explicitly allowed', () => {
+    const edited = { title: original.title, content: original.content + '\n小明：我也来帮忙。' }
+    expect(validateEdit(original, edited).failures.map(f => f.code)).toContain('speaker_added')
+    expect(validateEdit(original, edited, { allowNewSpeakers: true }).ok).toBe(true)
+  })
+
+  it('losing a main speaker (>=2 lines) fails; a one-line speaker may be cut', () => {
+    const noLiMing = {
+      title: original.title,
+      content: original.content.split('\n').filter(l => !l.startsWith('李明')).join('\n'),
+    }
+    expect(validateEdit(original, noLiMing).failures.map(f => f.code)).toContain('speaker_lost')
+
+    const noMama = {
+      title: original.title,
+      content: original.content.split('\n').filter(l => !l.startsWith('妈妈')).join('\n'),
+    }
+    expect(validateEdit(original, noMama).failures.map(f => f.code)).not.toContain('speaker_lost')
+  })
+
+  it('a different story fails rewrite_detected at the calibrated floor', () => {
+    const rewrite = {
+      title: original.title,
+      content: [
+        '今天学校有运动会。',
+        '小红：我们要跑步比赛。',
+        '李明：我很紧张。',
+        '妈妈：加油，孩子们。',
+      ].join('\n'),
+    }
+    const r = validateEdit(original, rewrite)
+    expect(r.failures.map(f => f.code)).toContain('rewrite_detected')
+    expect(r.metrics.containment).toBeLessThan(0.3)
+  })
+
+  it('the observed duo-1 rewrites would have failed (containment 0.04-0.08 << 0.3)', () => {
+    expect(EDIT_SIMILARITY.fail.containment).toBe(0.3)
   })
 })

@@ -18,6 +18,7 @@
 // Pure: no I/O, no clock, no Supabase.
 
 import { SEASON_SEEDS, BIBLE_CHINESE, levelConfig } from './storyLevels.mjs'
+import { composeTargetSet, occurrenceBounds } from './storyTargetability.mjs'
 
 export const MANIFEST_SCHEMA = 'story-manifest@1'
 
@@ -25,13 +26,19 @@ export const MANIFEST_SCHEMA = 'story-manifest@1'
 // 204-story corpus). targetsPerStory for HSK 3-6 uses the healthy-corpus
 // reference payload, NOT those levels' own degenerate medians — see
 // proposeDefaults in storyCorpusCalibration.mjs for the full reasoning.
+//
+// draftLines is the WRITER's creative target — deliberately tighter than the
+// validator bounds (lines), sitting in the middle of the allowed range. The
+// duo-1 pilot showed why: a 49-line draft against a 38 ceiling forces the
+// editor to cut 60%+, which it can only do by rewriting. A draft landing at
+// 22-30 lines leaves the editor editing.
 export const MANIFEST_DEFAULTS = {
-  1: { targetsPerStory: 12, occurrences: { min: 2, max: 5 }, maxOutOfLevelDistinct: 4, maxOutOfLevelCharShare: 0.08, maxUnknownDistinct: 2, maxUnknownCharShare: 0.02, lines: [18, 40], maxRepeatedTrigramShare: 0.24 },
-  2: { targetsPerStory: 8, occurrences: { min: 2, max: 4 }, maxOutOfLevelDistinct: 9, maxOutOfLevelCharShare: 0.12, maxUnknownDistinct: 2, maxUnknownCharShare: 0.03, lines: [14, 42], maxRepeatedTrigramShare: 0.195 },
-  3: { targetsPerStory: 8, occurrences: { min: 2, max: 4 }, maxOutOfLevelDistinct: 3, maxOutOfLevelCharShare: 0.07, maxUnknownDistinct: 2, maxUnknownCharShare: 0.07, lines: [14, 38], maxRepeatedTrigramShare: 0.165 },
-  4: { targetsPerStory: 8, occurrences: { min: 2, max: 4 }, maxOutOfLevelDistinct: 3, maxOutOfLevelCharShare: 0.02, maxUnknownDistinct: 4, maxUnknownCharShare: 0.04, lines: [27, 38], maxRepeatedTrigramShare: 0.09 },
-  5: { targetsPerStory: 8, occurrences: { min: 2, max: 4 }, maxOutOfLevelDistinct: 2, maxOutOfLevelCharShare: 0.02, maxUnknownDistinct: 6, maxUnknownCharShare: 0.04, lines: [26, 37], maxRepeatedTrigramShare: 0.075 },
-  6: { targetsPerStory: 8, occurrences: { min: 2, max: 4 }, maxOutOfLevelDistinct: 2, maxOutOfLevelCharShare: 0.02, maxUnknownDistinct: 6, maxUnknownCharShare: 0.04, lines: [26, 37], maxRepeatedTrigramShare: 0.09 },
+  1: { targetsPerStory: 12, occurrences: { min: 2, max: 5 }, maxOutOfLevelDistinct: 4, maxOutOfLevelCharShare: 0.08, maxUnknownDistinct: 2, maxUnknownCharShare: 0.02, draftLines: [25, 32], lines: [18, 40], maxRepeatedTrigramShare: 0.24 },
+  2: { targetsPerStory: 8, occurrences: { min: 2, max: 4 }, maxOutOfLevelDistinct: 9, maxOutOfLevelCharShare: 0.12, maxUnknownDistinct: 2, maxUnknownCharShare: 0.03, draftLines: [24, 32], lines: [14, 42], maxRepeatedTrigramShare: 0.195 },
+  3: { targetsPerStory: 8, occurrences: { min: 2, max: 4 }, maxOutOfLevelDistinct: 3, maxOutOfLevelCharShare: 0.07, maxUnknownDistinct: 2, maxUnknownCharShare: 0.07, draftLines: [22, 30], lines: [14, 38], maxRepeatedTrigramShare: 0.165 },
+  4: { targetsPerStory: 8, occurrences: { min: 2, max: 4 }, maxOutOfLevelDistinct: 3, maxOutOfLevelCharShare: 0.02, maxUnknownDistinct: 4, maxUnknownCharShare: 0.04, draftLines: [29, 34], lines: [27, 38], maxRepeatedTrigramShare: 0.09 },
+  5: { targetsPerStory: 8, occurrences: { min: 2, max: 4 }, maxOutOfLevelDistinct: 2, maxOutOfLevelCharShare: 0.02, maxUnknownDistinct: 6, maxUnknownCharShare: 0.04, draftLines: [28, 33], lines: [26, 37], maxRepeatedTrigramShare: 0.075 },
+  6: { targetsPerStory: 8, occurrences: { min: 2, max: 4 }, maxOutOfLevelDistinct: 2, maxOutOfLevelCharShare: 0.02, maxUnknownDistinct: 6, maxUnknownCharShare: 0.04, draftLines: [28, 33], lines: [26, 37], maxRepeatedTrigramShare: 0.09 },
 }
 
 // Near-duplicate thresholds (validator config, shared here so one table rules
@@ -64,6 +71,7 @@ export function buildManifest({
   presentation = 'paced',
   speakers,
   extraNames,
+  composition = null,        // provenance of the target selection (buckets, classes)
 } = {}) {
   const d = { ...manifestDefaults(level), ...(defaults || {}) }
   const cfg = levelConfig(language, system, level)
@@ -87,6 +95,15 @@ export function buildManifest({
     length: {
       minLines: d.lines[0],
       maxLines: d.lines[1],
+      // Writer's creative target, clamped inside the validator bounds — a
+      // defaults override that narrows `lines` must never leave draftLines
+      // pointing past the ceiling.
+      draftLines: (() => {
+        if (!d.draftLines) return null
+        const lo = Math.max(d.draftLines[0], d.lines[0])
+        const hi = Math.min(d.draftLines[1], d.lines[1])
+        return lo <= hi ? [lo, hi] : null
+      })(),
       maxLineChars: (cfg && cfg.maxLineChars) || 36,
     },
     quality: {
@@ -98,6 +115,7 @@ export function buildManifest({
     theme,
     seasonSeed,
     series,
+    composition,
     forbidden: forbidden || { words: [], topics: [] },
   }
 }
@@ -131,6 +149,62 @@ export function validateManifest(m) {
   if (!m.difficulty) problems.push('missing difficulty bounds')
   if (!Array.isArray(m.speakers) || m.speakers.length === 0) problems.push('no speakers')
   return { ok: problems.length === 0, problems }
+}
+
+// Semantic composition — the current default path (FAB-9, 2026-08-21):
+//   coverage gap → target suitability → semantic grouping → manifest.
+// The coverage plan supplies WHO needs reinforcement (priority order); the
+// targetability layer decides HOW each word may be targeted (hard min 2,
+// soft min 1, structural not at all) and which hard targets belong together
+// thematically. `useTargets` (storyCoveragePlanner) consumes batch uses for
+// exactly the chosen words. Structural skips are reported on the manifest's
+// composition block, never silently dropped.
+export function composeSemanticManifests({
+  batchId,
+  level,
+  plan,
+  pending,                    // (plan) => pendingTargets(plan)
+  use,                        // (plan, words) => plan — storyCoveragePlanner.useTargets
+  meanings = {},              // word → gloss (from the dump's vocabulary rows)
+  count,
+  defaults,
+  seedOffset = 0,
+} = {}) {
+  const d = { ...manifestDefaults(level), ...(defaults || {}) }
+  const hardCount = Math.max(3, Math.round(d.targetsPerStory * 0.65))
+  const softCount = Math.max(1, d.targetsPerStory - hardCount)
+  const manifests = []
+  let currentPlan = plan
+  for (let seq = 1; seq <= count; seq += 1) {
+    const rows = pending(currentPlan).map(t => ({ word: t.word, meaning: meanings[t.word] || null }))
+    if (rows.length === 0) break
+    const set = composeTargetSet(rows, { hardCount, softCount })
+    if (set.hard.length + set.soft.length === 0) break
+    const hardBounds = occurrenceBounds('hard', d.occurrences)
+    const softBounds = occurrenceBounds('soft', d.occurrences)
+    const targets = [
+      ...set.hard.map(t => ({ word: t.word, min: hardBounds.min, max: hardBounds.max })),
+      ...set.soft.map(t => ({ word: t.word, min: softBounds.min, max: softBounds.max })),
+    ]
+    currentPlan = use(currentPlan, targets.map(t => t.word))
+    const seasonSeed = SEASON_SEEDS[(seq - 1 + seedOffset) % SEASON_SEEDS.length]
+    const manifest = buildManifest({
+      batchId, seq, level, targets, defaults: d,
+      theme: set.theme,
+      seasonSeed,
+      composition: {
+        bucket: set.bucket,
+        reason: set.reason,
+        hard: set.hard,
+        soft: set.soft,
+        structuralSkipped: set.structuralSkipped,
+      },
+    })
+    const check = validateManifest(manifest)
+    if (!check.ok) throw new Error('composed an invalid manifest (' + manifest.id + '): ' + check.problems.join('; '))
+    manifests.push(manifest)
+  }
+  return { manifests, plan: currentPlan }
 }
 
 // Compose manifests for a batch: pull targets from the coverage plan in

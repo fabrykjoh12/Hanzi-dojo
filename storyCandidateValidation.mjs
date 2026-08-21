@@ -200,6 +200,83 @@ function finish(failures, warnings, metrics) {
   }
 }
 
+// ── Editor preservation gate ─────────────────────────────────────────────────
+// The duo-1 pilot proved prompt instructions alone do not keep an editor
+// editing: both simplifications changed title AND plot. These checks compare
+// the editor's OUTPUT against its INPUT and fail deterministically when the
+// output is a different story:
+//
+//   - title_changed      the title must survive an edit byte-for-byte
+//   - speaker_added      the editor may not introduce speakers the input
+//                        lacked (unless allowNewSpeakers)
+//   - speaker_lost       a cast member with >= 2 dialogue lines in the input
+//                        must still speak in the output
+//   - rewrite_detected   char-trigram containment below EDIT_SIMILARITY.fail —
+//                        calibrated in docs/audits/edit-similarity-calibration.json:
+//                        controlled faithful simplifications of 12 real corpus
+//                        stories score 0.72-0.92 containment, the two observed
+//                        duo-1 plot-rewrites score 0.04-0.08. The floor sits
+//                        far below faithful editing (word substitution has
+//                        room) and far above any observed rewrite. Provisional
+//                        until human-reviewed successful edits refine it.
+export const EDIT_SIMILARITY = {
+  fail: { containment: 0.3 },
+  warn: { containment: 0.5 },
+}
+
+function speakerCounts(content) {
+  const counts = new Map()
+  for (const raw of String(content || '').split('\n')) {
+    const { speaker } = splitSpeaker(raw.trim())
+    if (speaker) counts.set(speaker, (counts.get(speaker) || 0) + 1)
+  }
+  return counts
+}
+
+export function validateEdit(original, edited, { allowNewSpeakers = false, thresholds = EDIT_SIMILARITY } = {}) {
+  const failures = []
+  const warnings = []
+  const fail = (code, message) => failures.push({ code, message })
+  const warn = (code, message) => warnings.push({ code, message })
+
+  const titleBefore = String((original && original.title) || '').trim()
+  const titleAfter = String((edited && edited.title) || '').trim()
+  if (titleBefore && titleAfter !== titleBefore) {
+    fail('title_changed', 'the editor changed the title: "' + titleBefore + '" → "' + titleAfter + '"')
+  }
+
+  const before = speakerCounts(original && original.content)
+  const after = speakerCounts(edited && edited.content)
+  const added = [...after.keys()].filter(sp => !before.has(sp))
+  if (added.length && !allowNewSpeakers) {
+    fail('speaker_added', 'the editor introduced new speakers: ' + added.join('、'))
+  }
+  const lost = [...before.entries()].filter(([sp, n]) => n >= 2 && !after.has(sp)).map(([sp]) => sp)
+  if (lost.length) {
+    fail('speaker_lost', 'main speakers disappeared in the edit: ' + lost.join('、'))
+  }
+
+  const sim = contentSimilarity((original && original.content) || '', (edited && edited.content) || '')
+  if (sim.containment < thresholds.fail.containment) {
+    fail('rewrite_detected', 'the edit shares only ' + Math.round(sim.containment * 100) + '% of the original\'s text (floor ' + Math.round(thresholds.fail.containment * 100) + '%) — this is a different story, not an edit')
+  } else if (sim.containment < thresholds.warn.containment) {
+    warn('rewrite_detected', 'heavy edit: ' + Math.round(sim.containment * 100) + '% containment — check the plot survived')
+  }
+
+  return {
+    ok: failures.length === 0,
+    failures,
+    warnings,
+    metrics: {
+      jaccard: Math.round(sim.jaccard * 1000) / 1000,
+      containment: Math.round(sim.containment * 1000) / 1000,
+      titleChanged: Boolean(titleBefore) && titleAfter !== titleBefore,
+      speakersAdded: added,
+      speakersLost: lost,
+    },
+  }
+}
+
 // The concise human summary next to the machine-readable result:
 //   PASS            or   FAIL
 //                        - missing target: 护照

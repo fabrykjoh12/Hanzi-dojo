@@ -76,6 +76,17 @@ export function selectTargets(plan, count, exclude = null) {
   return { plan: next, selected: chosen.map(t => t.word) }
 }
 
+// Consume batch uses for an EXPLICIT word list — the semantic composition
+// path chooses its own grouping (storyManifestPlanner.composeSemanticManifests)
+// and then marks exactly those words as scheduled here.
+export function useTargets(plan, words) {
+  const chosen = new Set(words || [])
+  return {
+    ...plan,
+    targets: plan.targets.map(t => chosen.has(t.word) ? { ...t, batchUses: t.batchUses + 1 } : t),
+  }
+}
+
 // An accepted candidate updates projected exposure so the batch stops
 // targeting words whose goal is already met. Every plan-level word that
 // actually appears in the accepted story with at least `minOccurrences`

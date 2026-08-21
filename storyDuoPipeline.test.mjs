@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { generateDuoCandidate, serializableDuoCandidate, DUO_GENERATOR_VERSION } from './storyDuoPipeline.mjs'
+import {
+  generateDuoCandidate,
+  serializableDuoCandidate,
+  microRepairable,
+  applyLinePatch,
+  DUO_GENERATOR_VERSION,
+} from './storyDuoPipeline.mjs'
+import { parseLinePatch, microRepairPrompt } from './storyGenPrompts.mjs'
 import { simplifyPrompt } from './storyGenPrompts.mjs'
 import { buildManifest } from './storyManifestPlanner.mjs'
 
@@ -36,10 +43,12 @@ const GOOD_LINES = [
   '大家都很高兴。',
 ]
 const GOOD_TEXT = 'TITLE: 去旅行\n' + GOOD_LINES.join('\n')
-// A draft with the flavour of a real Qwen failure: targets underused.
-const BAD_TEXT = 'TITLE: 去旅行\n' + GOOD_LINES.join('\n')
+// NARROW failure: two targets one occurrence short — micro-repair territory.
+const NARROW_TEXT = 'TITLE: 去旅行\n' + GOOD_LINES.join('\n')
   .replace('李明打算和妈妈去旅行。', '李明和妈妈去旅行。')
   .replace('他们打算明天买东西。', '他们明天买东西。')
+// BROAD failure: an unknown speaker on top — simplification territory.
+const BROAD_TEXT = NARROW_TEXT + '\n王老师：你们要小心。'
 const EN8 = GOOD_LINES.map((_, i) => 'line ' + i).join('\n')
 const JUDGE_OK = 'NATURAL: 8\nCOHERENCE: 7\nINTEGRATION: 7\nLEVEL: 8\nHUMAN: 7\nINTEREST: 7\nOVERALL: 7\nSTRENGTHS: warm\nWEAKNESSES: thin\nMECHANICAL: no'
 
@@ -57,64 +66,83 @@ function scripted(responses) {
 
 const gen = (opts) => generateDuoCandidate({ sleep: async () => {}, manifest: manifest(), pool, vocabMap, ...opts })
 
-describe('generateDuoCandidate — the write→simplify division of labour', () => {
+describe('generateDuoCandidate — write → simplify/micro-repair → validate', () => {
   it('a passing draft never reaches the editor; the writer critiques it', async () => {
     const writer = scripted({ draft: [GOOD_TEXT], critique: [JUDGE_OK] })
     const editor = scripted({ translate: [EN8] })
     const r = await gen({ writer: writer, editor })
     expect(r.status).toBe('accepted')
     expect(r.stages.map(s => s.stage)).toEqual(['draft'])
-    expect(editor.seen.map(s => s.kind)).toEqual(['translate'])   // no simplify, no repair
+    expect(editor.seen.map(s => s.kind)).toEqual(['translate'])
     expect(r.critique.overall).toBe(7)
-    expect(r.critique.role).toBe('writer')
     expect(r.generatorVersion).toBe(DUO_GENERATOR_VERSION)
   })
 
-  it('a failing draft goes to the editor with the machine failures; the edit is revalidated', async () => {
-    const writer = scripted({ draft: [BAD_TEXT], critique: [JUDGE_OK] })
+  it('BROAD failures go to the editor; a faithful simplification is adopted', async () => {
+    const writer = scripted({ draft: [BROAD_TEXT], critique: [JUDGE_OK] })
     const editor = scripted({ simplify: [GOOD_TEXT], translate: [EN8] })
     const r = await gen({ writer, editor })
     expect(r.status).toBe('accepted')
     expect(r.stages.map(s => `${s.stage}:${s.validation.verdict}`)).toEqual(['draft:FAIL', 'simplify:PASS'])
-    const simplifyReq = editor.seen.find(s => s.kind === 'simplify')
-    expect(simplifyReq.prompt).toContain('missing target: 打算')
-    expect(simplifyReq.prompt).toContain('you are not the author')
-    expect(r.content).toBe(GOOD_LINES.join('\n'))
+    const req = editor.seen.find(s => s.kind === 'simplify')
+    expect(req.prompt).toContain('unknown_speaker'.length ? '王老师' : '')
+    expect(r.stages[1].validation.metrics.edit.containment).toBeGreaterThan(0.5)
   })
 
-  it('one targeted repair after a failed simplification — and only one', async () => {
-    const writer = scripted({ draft: [BAD_TEXT], critique: [JUDGE_OK] })
-    const editor = scripted({ simplify: [BAD_TEXT], repair: [GOOD_TEXT], translate: [EN8] })
+  it('NARROW failures skip simplification and get a deterministic line patch', async () => {
+    const writer = scripted({ draft: [NARROW_TEXT], critique: [JUDGE_OK] })
+    const editor = scripted({
+      'micro-repair': ['LINE 1: 李明打算和妈妈去旅行。\nLINE 6: 他们打算明天买东西。'],
+      translate: [EN8],
+    })
     const r = await gen({ writer, editor })
     expect(r.status).toBe('accepted')
-    expect(r.stages.map(s => s.stage)).toEqual(['draft', 'simplify', 'repair'])
-    expect(editor.seen.filter(s => s.kind === 'repair').length).toBe(1)
+    expect(r.stages.map(s => s.stage)).toEqual(['draft', 'micro-repair'])
+    expect(editor.seen.map(s => s.kind)).toEqual(['micro-repair', 'translate'])   // no simplify call
+    expect(r.stages[1].patch.length).toBe(2)
+    // every unpatched line is byte-for-byte the draft's
+    const draftLines = r.stages[0].content.split('\n')
+    const finalLines = r.content.split('\n')
+    for (let i = 0; i < finalLines.length; i += 1) {
+      if (i !== 0 && i !== 5) expect(finalLines[i]).toBe(draftLines[i])
+    }
   })
 
-  it('the validator has the last word: edits that stay broken end rejected, with the full evolution kept', async () => {
-    const writer = scripted({ draft: [BAD_TEXT] })
-    const editor = scripted({ simplify: [BAD_TEXT], repair: [BAD_TEXT] })
+  it('a plot rewrite is recorded but NEVER adopted, whatever it scores', async () => {
+    const rewrite = 'TITLE: 去旅行\n' + [
+      '今天学校有运动会。', '李明：我们要跑步。', '小红：我很紧张。', '小明：加油！',
+      '妈妈：孩子们真努力。', '大家一起跑步。', '李明跑得很快。', '大家都很高兴。',
+    ].join('\n')
+    const writer = scripted({ draft: [BROAD_TEXT] })
+    const editor = scripted({ simplify: [rewrite] })
     const r = await gen({ writer, editor })
     expect(r.status).toBe('rejected')
-    expect(r.validation.failures.map(f => f.code)).toContain('missing_target')
-    expect(r.stages.length).toBe(3)
-    // no critique, no translation for a FAIL — an LLM never sees a deterministic failure
+    const simplifyStage = r.stages.find(s => s.stage === 'simplify')
+    expect(simplifyStage.validation.failures.map(f => f.code)).toContain('rewrite_detected')
+    expect(r.content).toContain('王老师')          // the draft stayed the best candidate
+  })
+
+  it('the validator has the last word: a stubbornly broken flow ends rejected, evolution kept', async () => {
+    const writer = scripted({ draft: [BROAD_TEXT] })
+    const editor = scripted({ simplify: [BROAD_TEXT] })   // "edit" fixes nothing
+    const r = await gen({ writer, editor })
+    expect(r.status).toBe('rejected')
+    expect(r.stages.length).toBeGreaterThanOrEqual(2)
     expect(r.critique).toBeNull()
     expect(r.englishContent).toBeNull()
     expect(writer.seen.filter(s => s.kind === 'critique').length).toBe(0)
   })
 
-  it('an editor edit that makes things WORSE is not adopted', async () => {
-    const broken = 'TITLE: 坏\n坏。\n坏。\n坏。'
-    const writer = scripted({ draft: [BAD_TEXT] })
-    const editor = scripted({ simplify: [broken], repair: [broken] })
+  it('an unusable patch (bad line numbers / too many changes) is simply not applied', async () => {
+    const writer = scripted({ draft: [NARROW_TEXT] })
+    const editor = scripted({ 'micro-repair': ['LINE 99: 不存在的行。', 'garbage', 'also garbage'] })
     const r = await gen({ writer, editor })
     expect(r.status).toBe('rejected')
-    expect(r.content).toContain('护照')          // the draft, not the wreck
+    expect(r.content).toBe(NARROW_TEXT.split('\n').slice(1).join('\n'))   // draft untouched
   })
 
   it('a dead writer yields no_candidate without ever calling the editor', async () => {
-    const writer = scripted({})                   // throws on any call
+    const writer = scripted({})
     const editor = scripted({})
     const r = await gen({ writer, editor })
     expect(r.status).toBe('rejected')
@@ -123,8 +151,8 @@ describe('generateDuoCandidate — the write→simplify division of labour', () 
   })
 
   it('critique or translation failures never sink an accepted candidate', async () => {
-    const writer = scripted({ draft: [GOOD_TEXT] })   // no critique scripted → throws
-    const editor = scripted({})                        // no translate scripted → throws
+    const writer = scripted({ draft: [GOOD_TEXT] })
+    const editor = scripted({})
     const r = await gen({ writer, editor })
     expect(r.status).toBe('accepted')
     expect(r.critique).toBeNull()
@@ -137,8 +165,44 @@ describe('generateDuoCandidate — the write→simplify division of labour', () 
     const r = await gen({ writer, editor })
     const s = serializableDuoCandidate(r)
     expect(() => JSON.stringify(s)).not.toThrow()
-    expect(s.stages.length).toBe(1)
     expect(s.validation.metrics.counts).toBeUndefined()
+  })
+})
+
+describe('micro-repair machinery', () => {
+  it('microRepairable admits only the narrow failure shapes', () => {
+    const f = (code) => ({ code, message: code })
+    expect(microRepairable([f('target_below_min')])).toBe(true)
+    expect(microRepairable([f('target_below_min'), f('missing_target')])).toBe(true)
+    expect(microRepairable([f('target_below_min'), f('target_above_max'), f('line_too_long')])).toBe(true)
+    expect(microRepairable([f('target_below_min'), f('target_below_min'), f('missing_target')])).toBe(false)  // 3 below-min
+    expect(microRepairable([f('too_long')])).toBe(false)
+    expect(microRepairable([f('target_below_min'), f('out_of_level_share')])).toBe(false)
+    expect(microRepairable([])).toBe(false)
+  })
+
+  it('parseLinePatch enforces range, uniqueness and the change cap', () => {
+    expect(parseLinePatch('LINE 2: 新的一行。', 8)).toEqual([{ line: 2, text: '新的一行。' }])
+    expect(parseLinePatch('noise\nLINE 3: 好。\nmore noise', 8)).toEqual([{ line: 3, text: '好。' }])
+    expect(parseLinePatch('LINE 9: 超出。', 8)).toBeNull()
+    expect(parseLinePatch('LINE 2: 一。\nLINE 2: 二。', 8)).toBeNull()
+    expect(parseLinePatch('LINE 1: a\nLINE 2: b\nLINE 3: c\nLINE 4: d', 8)).toBeNull()   // > cap 3
+    expect(parseLinePatch('nothing here', 8)).toBeNull()
+  })
+
+  it('applyLinePatch touches exactly the named lines', () => {
+    const content = '一。\n二。\n三。'
+    expect(applyLinePatch(content, [{ line: 2, text: '换了。' }])).toBe('一。\n换了。\n三。')
+  })
+
+  it('microRepairPrompt numbers the lines and demands patch-only output', () => {
+    const m = manifest()
+    const p = microRepairPrompt({ manifest: m, candidate: { title: 'T', content: '一。\n二。' }, failures: [{ code: 'x', message: '中 appears 1× (need 2-4)' }] })
+    expect(p).toContain('1: 一。')
+    expect(p).toContain('2: 二。')
+    expect(p).toContain('LINE <number>:')
+    expect(p).toContain('中 appears 1×')
+    expect(p).toContain('Do not repeat unchanged lines')
   })
 })
 

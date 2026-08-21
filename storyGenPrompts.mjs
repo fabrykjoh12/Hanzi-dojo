@@ -90,7 +90,10 @@ export function draftPrompt({ manifest, pool, meanings = {} }) {
     'ALLOWED VOCABULARY — build the rest of the text mainly from these words plus names, particles and basic grammar:\n' +
     poolForPrompt(pool) + '\n\n' +
     'Rules:\n' +
-    '- ' + manifest.length.minLines + '-' + manifest.length.maxLines + ' lines, one sentence or dialogue turn per line — a full scene, not a sketch\n' +
+    // The writer aims for the MIDDLE of the allowed range, not the ceiling:
+    // duo-1's 49-line drafts against a 38 ceiling forced the editor into
+    // rewrites. draftLines is the creative target; maxLines stays the law.
+    '- Write ' + (manifest.length.draftLines ? manifest.length.draftLines[0] + '-' + manifest.length.draftLines[1] : manifest.length.minLines + '-' + manifest.length.maxLines) + ' lines, one sentence or dialogue turn per line — a complete story that fits comfortably. HARD CEILING: ' + manifest.length.maxLines + ' lines — anything longer is rejected outright\n' +
     '- Natural sentences around ' + manifest.length.maxLineChars + ' characters per line — vary the rhythm, avoid choppy three-word lines\n' +
     '- Mix narration and dialogue. Dialogue format: NAME：text with NOTHING between the name and the colon — write "李明：我饿了。", never "李明惊讶地问：我饿了。" (put such description on its own narration line). Speakers ONLY from: ' + manifest.speakers.join(', ') + '\n' +
     '- Narration lines have no speaker prefix\n' +
@@ -193,6 +196,47 @@ export function translatePrompt({ candidate }) {
     '- Keep dialogue format: Speaker: English text (romanize the speaker name, e.g. 李明 → Li Ming)\n' +
     '- Natural English, not word-by-word\n\n' +
     'Output format — plain text, NOT JSON: exactly ' + lines.length + ' lines, one English translation per line, in order, nothing else (no numbering).'
+}
+
+// Patch-based micro repair — for NARROW failures only (a target one
+// occurrence short, one spammed target, one overlong line). Rewriting a whole
+// story to add one word invites quality drift; instead the model sees the
+// numbered lines and must return ONLY the lines it changes. The patch is
+// applied deterministically (storyDuoPipeline.applyLinePatch), so every other
+// line stays byte-for-byte identical, then the FULL validator re-runs.
+export function microRepairPrompt({ manifest, candidate, failures, meanings = {}, maxChanged = 3 }) {
+  const name = levelName(manifest)
+  const lines = candidate.content.split('\n').map(l => l.trim()).filter(Boolean)
+  return 'Minimal surgical edit to a ' + name + ' Chinese graded-reader story. The story is good; it fails validation on the small points below. Fix them by changing AS FEW LINES AS POSSIBLE — at most ' + maxChanged + '.\n\n' +
+    'Problems:\n' + failures.map(f => '- ' + f.message).join('\n') + '\n\n' +
+    'Guidance:\n' +
+    '- To raise a word\'s count: rework an existing line so the word fits naturally (do not bolt it on).\n' +
+    '- To lower a word\'s count: rephrase one line that uses it, keeping the meaning.\n' +
+    '- To shorten an overlong line: split or trim THAT line only.\n' +
+    '- Replacement lines use only ' + name + '-or-below vocabulary, and dialogue stays NAME：text with speakers from: ' + manifest.speakers.join(', ') + '\n\n' +
+    'Story (numbered):\n' +
+    lines.map((l, i) => (i + 1) + ': ' + l).join('\n') + '\n\n' +
+    'Output format — ONLY the changed lines, nothing else, one per line:\n' +
+    'LINE <number>: <full new text of that line>\n' +
+    'Do not repeat unchanged lines. Do not add or remove lines. No commentary.'
+}
+
+// Parse "LINE 7: …" entries → [{ line, text }] (1-based), or null when
+// nothing parseable / out of range / too many changes / duplicates.
+export function parseLinePatch(text, lineCount, maxChanged = 3) {
+  const out = []
+  const seen = new Set()
+  for (const raw of String(text || '').split('\n')) {
+    const m = raw.trim().match(/^LINE\s+(\d+)\s*[:：]\s*(.+)$/i)
+    if (!m) continue
+    const line = parseInt(m[1], 10)
+    const body = m[2].trim()
+    if (!body || line < 1 || line > lineCount || seen.has(line)) return null
+    seen.add(line)
+    out.push({ line, text: body })
+  }
+  if (out.length === 0 || out.length > maxChanged) return null
+  return out
 }
 
 // ── Parsers ──────────────────────────────────────────────────────────────────
