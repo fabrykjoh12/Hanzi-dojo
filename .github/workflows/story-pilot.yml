@@ -101,7 +101,7 @@ jobs:
           git config user.name "story-pilot[bot]"
           git config user.email "story-pilot@users.noreply.github.com"
           git add "data/story-candidates/$PILOT_BATCH"
-          git diff --cached --quiet && { echo "nothing to commit"; exit 0; }
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
           git commit -m "Story pilot batch $PILOT_BATCH — candidate artifacts (generated, NOT staged)"
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
