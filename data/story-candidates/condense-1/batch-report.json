@@ -1,0 +1,94 @@
+{
+  "batchId": "condense-1",
+  "level": 3,
+  "generatedAt": "2026-08-21T17:03:48.436Z",
+  "provider": {
+    "name": "duo",
+    "model": "qwen/qwen3.6-27b + openai/gpt-oss-120b"
+  },
+  "versions": {
+    "generator": "fab9-pipeline@1",
+    "prompts": "fab9-prompts@2"
+  },
+  "manifests": 1,
+  "accepted": 0,
+  "rejected": 1,
+  "totalProviderCalls": 2,
+  "tokenUsage": {
+    "requests": 3,
+    "failures": 1,
+    "promptTokens": 3724,
+    "completionTokens": 675,
+    "latencyMsTotal": 2296,
+    "rateLimit429s": 1,
+    "throttleWaitMs": 0,
+    "retryAfterWaitMs": 8000
+  },
+  "failureHistogram": {
+    "too_long": 1,
+    "missing_target": 3,
+    "target_above_max": 1,
+    "out_of_level_share": 1,
+    "unknown_words": 1
+  },
+  "plan": {
+    "before": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    },
+    "after": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    }
+  },
+  "coverage": {
+    "current": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    },
+    "projectedIfPublished": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    }
+  },
+  "candidates": [
+    {
+      "manifestId": "duo-2-L3-002",
+      "status": "rejected",
+      "title": "城市里的发现",
+      "critiqueScore": null,
+      "failures": [
+        "too_long",
+        "missing_target",
+        "target_above_max",
+        "missing_target",
+        "missing_target",
+        "out_of_level_share",
+        "unknown_words"
+      ],
+      "warnings": [
+        "out_of_level_words"
+      ],
+      "calls": 2,
+      "usage": {
+        "requests": 3,
+        "failures": 1,
+        "promptTokens": 3724,
+        "completionTokens": 675,
+        "latencyMsTotal": 2296,
+        "rateLimit429s": 1,
+        "throttleWaitMs": 0,
+        "retryAfterWaitMs": 8000,
+        "wallMs": 10427
+      }
+    }
+  ]
+}

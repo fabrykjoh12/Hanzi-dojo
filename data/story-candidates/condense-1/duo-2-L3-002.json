@@ -1,0 +1,445 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "condense-1",
+  "generatedAt": "2026-08-21T17:03:47.566Z",
+  "provider": {
+    "name": "duo",
+    "model": "qwen/qwen3.6-27b + openai/gpt-oss-120b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "duo-2-L3-002",
+    "batchId": "duo-2",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发生",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "国家",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "结束",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "来自",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "生活",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "其他",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "或者",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "当然",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "out in the city: places, errands, and a small discovery",
+    "seasonSeed": "preparing for something over several days (a trip, a festival, a small competition) with setbacks",
+    "series": null,
+    "composition": {
+      "bucket": "places",
+      "reason": "4 pending hard targets share the \"places\" theme",
+      "hard": [
+        {
+          "word": "发生",
+          "meaning": "to happen; to occur; to take place; to break out"
+        },
+        {
+          "word": "国家",
+          "meaning": "country; nation; state"
+        },
+        {
+          "word": "结束",
+          "meaning": "termination; to finish"
+        },
+        {
+          "word": "来自",
+          "meaning": "to come from (a place); From: (in email header)"
+        },
+        {
+          "word": "生活",
+          "meaning": "to live; life"
+        }
+      ],
+      "soft": [
+        {
+          "word": "其他",
+          "meaning": "other; (sth or sb) else"
+        },
+        {
+          "word": "或者",
+          "meaning": "or; possibly; maybe; perhaps"
+        },
+        {
+          "word": "当然",
+          "meaning": "only natural; as it should be"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选",
+        "换",
+        "脸"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "duo-2-L3-002",
+    "status": "rejected",
+    "title": "城市里的发现",
+    "content": "李明：妈妈，下个月的文化节比赛什么时候结束？\n妈妈：还有三天，你需要准备来自不同国家的照片。\n小明：我可以帮你，但是我有点懒，不想去太远的地方。\n小红：别担心，我们可以去市中心，那里有很多有趣的地方。\n李明：好耶！我饿了，我们去吃饭吧？\n大毛坐在窗台上，看着三个孩子准备出门。\n他们来到广场，这里正在举办一个来自韩国的展览。\n李明：看，那个红色的灯笼很漂亮。\n小红：注意看那个角落，好像有东西。\n李明走过去，发现一只白色的猫躺在箱子里。\n这是大毛，它总是出现在奇怪的地方。\n小红：这只猫很可爱，它来自哪里？\n李明：不知道，它可能是其他地方的流浪猫。\n突然，下起了雨，他们必须马上离开。\n小明：我们把大毛带回家吧？\n妈妈：不行，我们需要找到它的原来的主人。\n他们决定在附近寻找，但是雨太大了。\n李明：我觉得我们应该结束今天的行程。\n小红：等等，那边有一个来自于法店的招牌。\n李明：什么叫法店？\n小红：哦，是说法国面包店，我们可以进去避雨。\n进去后，他们看到墙上有很多来自世界各地的照片。\n李明：哇，这些照片真好看，像在另一个世界。\n小红：看，这一张是来自日本的樱花。\n李明：我也想要一张来自我们城市的照片。\n大毛跳上柜台，打翻了杯子。\n对不起，大毛不听话。\n一个女人走过来，说这只猫是她的。\n当然，她很高兴找回大毛。\n李明：那我们就完成了任务吗？\n小红：还没有，文化节需要你完成更多。\n离开商店后，雨停了，天空出现了彩虹。\n李明：这次经历真开心，比玩游戏还好玩。\n小明：是的，我觉得我们能赢得比赛。\n回家路上，李明一直在想关于国家的故事。\n妈妈：明天我们再出去，看看有没有其他发现。\n李明：好，我想去银行，看看有没有外国人的照片。\n小红：那是不同的想法，但我们都可以试试。\n他们笑了，感觉这次旅行很有意义。",
+    "englishContent": null,
+    "stages": [
+      {
+        "stage": "draft",
+        "role": "writer",
+        "title": "城市里的发现",
+        "content": "李明：妈妈，下个月的文化节比赛什么时候结束？\n妈妈：还有三天，你需要准备来自不同国家的照片。\n小明：我可以帮你，但是我有点懒，不想去太远的地方。\n小红：别担心，我们可以去市中心，那里有很多有趣的地方。\n李明：好耶！我饿了，我们去吃饭吧？\n大毛坐在窗台上，看着三个孩子准备出门。\n他们来到广场，这里正在举办一个来自韩国的展览。\n李明：看，那个红色的灯笼很漂亮。\n小红：注意看那个角落，好像有东西。\n李明走过去，发现一只白色的猫躺在箱子里。\n这是大毛，它总是出现在奇怪的地方。\n小红：这只猫很可爱，它来自哪里？\n李明：不知道，它可能是其他地方的流浪猫。\n突然，下起了雨，他们必须马上离开。\n小明：我们把大毛带回家吧？\n妈妈：不行，我们需要找到它的原来的主人。\n他们决定在附近寻找，但是雨太大了。\n李明：我觉得我们应该结束今天的行程。\n小红：等等，那边有一个来自于法店的招牌。\n李明：什么叫法店？\n小红：哦，是说法国面包店，我们可以进去避雨。\n进去后，他们看到墙上有很多来自世界各地的照片。\n李明：哇，这些照片真好看，像在另一个世界。\n小红：看，这一张是来自日本的樱花。\n李明：我也想要一张来自我们城市的照片。\n大毛跳上柜台，打翻了杯子。\n对不起，大毛不听话。\n一个女人走过来，说这只猫是她的。\n当然，她很高兴找回大毛。\n李明：那我们就完成了任务吗？\n小红：还没有，文化节需要你完成更多。\n离开商店后，雨停了，天空出现了彩虹。\n李明：这次经历真开心，比玩游戏还好玩。\n小明：是的，我觉得我们能赢得比赛。\n回家路上，李明一直在想关于国家的故事。\n妈妈：明天我们再出去，看看有没有其他发现。\n李明：好，我想去银行，看看有没有外国人的照片。\n小红：那是不同的想法，但我们都可以试试。\n他们笑了，感觉这次旅行很有意义。",
+        "validation": {
+          "validatorVersion": "fab10-validator@2",
+          "verdict": "FAIL",
+          "failures": [
+            {
+              "code": "too_long",
+              "message": "39 lines (need 14-38)"
+            },
+            {
+              "code": "missing_target",
+              "message": "missing target: 发生"
+            },
+            {
+              "code": "target_above_max",
+              "message": "来自 appears 6× (max 4) — reads as spam"
+            },
+            {
+              "code": "missing_target",
+              "message": "missing target: 生活"
+            },
+            {
+              "code": "missing_target",
+              "message": "missing target: 或者"
+            },
+            {
+              "code": "out_of_level_share",
+              "message": "out-of-level vocabulary: 11.3% > 7.0%"
+            },
+            {
+              "code": "unknown_words",
+              "message": "11 unknown (non-vocabulary) runs (max 2): 节、懒、耶、韩国、流浪、来自于、法、墙、一张、樱花"
+            }
+          ],
+          "warnings": [
+            {
+              "code": "out_of_level_words",
+              "message": "34 distinct words above HSK 3 (advisory max 3)"
+            }
+          ],
+          "metrics": {
+            "lines": 39,
+            "cjkChars": 542,
+            "distinctVocab": 189,
+            "targetCounts": {
+              "发生": 0,
+              "国家": 2,
+              "结束": 2,
+              "来自": 6,
+              "生活": 0,
+              "其他": 2,
+              "或者": 0,
+              "当然": 1
+            },
+            "inLevelCoverage": 0.847,
+            "outOfLevelDistinct": 34,
+            "outOfLevelCharShare": 0.113,
+            "unknownDistinct": 11,
+            "unknownCharShare": 0.041,
+            "unknownRuns": [
+              "节",
+              "懒",
+              "耶",
+              "韩国",
+              "流浪",
+              "来自于",
+              "法",
+              "墙",
+              "一张",
+              "樱花"
+            ],
+            "repeatedLines": 0,
+            "repeatedTrigramShare": 0.036,
+            "nearestNeighbor": {
+              "title": "1. 新的地方",
+              "level": 1,
+              "jaccard": 0.016,
+              "containment": 0.06
+            }
+          }
+        }
+      },
+      {
+        "stage": "self-condense",
+        "role": "writer",
+        "title": "城市里的发现",
+        "content": "李明今天心情不好。\n他觉得城市的生活很无聊。\n他走到公园，坐在椅子上。\n这时，他看到一个小女孩。\n她捡起了地上的垃圾。\n小女孩对李明说：\n小红：你好，叔叔。\n李明觉得很奇怪。\n他问：你叫什么名字？\n小红：我叫小红。\n她是来自中国的学生。\n她在别的地方长大。\n现在她住在这里。\n李明问：你快乐吗？\n小红：是的，我很快乐。\n这里有很多其他国家的人。\n我们可以交朋友。\n李明想起了自己的生活。\n他总是很孤独。\n他从来没有这样想过。\n也许他应该改变一下。\n或者，他可以尝试新的事情。\n当然，这需要勇气。\n小红笑着跑开了。\n李明心里发生了一些变化。\n他开始观察周围的人。\n那里有来自不同国家的人。\n他们都在认真地生活。\n李明决定不再抱怨。\n他要像小红一样快乐。\n这一天很快结束了。\n但他觉得很充实。\n这是一个美好的发现。",
+        "validation": {
+          "validatorVersion": "fab10-validator@2",
+          "verdict": "FAIL",
+          "failures": [
+            {
+              "code": "unknown_speaker",
+              "message": "speakers outside the cast: 他问、李明问 (allowed: 李明、小红、小明、妈妈)"
+            },
+            {
+              "code": "target_below_min",
+              "message": "发生 appears 1× (need 2-4)"
+            },
+            {
+              "code": "target_below_min",
+              "message": "结束 appears 1× (need 2-4)"
+            },
+            {
+              "code": "out_of_level_share",
+              "message": "out-of-level vocabulary: 12.0% > 7.0%"
+            },
+            {
+              "code": "speaker_added",
+              "message": "the editor introduced new speakers: 他问、李明问"
+            },
+            {
+              "code": "speaker_lost",
+              "message": "main speakers disappeared in the edit: 李明、妈妈、小明"
+            },
+            {
+              "code": "rewrite_detected",
+              "message": "the edit shares only 6% of the original's text (floor 30%) — this is a different story, not an edit"
+            }
+          ],
+          "warnings": [
+            {
+              "code": "out_of_level_words",
+              "message": "16 distinct words above HSK 3 (advisory max 3)"
+            }
+          ],
+          "metrics": {
+            "lines": 33,
+            "cjkChars": 250,
+            "distinctVocab": 110,
+            "targetCounts": {
+              "发生": 1,
+              "国家": 2,
+              "结束": 1,
+              "来自": 2,
+              "生活": 3,
+              "其他": 1,
+              "或者": 1,
+              "当然": 1
+            },
+            "inLevelCoverage": 0.864,
+            "outOfLevelDistinct": 16,
+            "outOfLevelCharShare": 0.12,
+            "unknownDistinct": 1,
+            "unknownCharShare": 0.016,
+            "unknownRuns": [
+              "女孩"
+            ],
+            "repeatedLines": 0,
+            "repeatedTrigramShare": 0.026,
+            "nearestNeighbor": {
+              "title": "2. 椅子上的人",
+              "level": 1,
+              "jaccard": 0.017,
+              "containment": 0.041
+            },
+            "edit": {
+              "jaccard": 0.019,
+              "containment": 0.058,
+              "titleChanged": false,
+              "speakersAdded": [
+                "他问",
+                "李明问"
+              ],
+              "speakersLost": [
+                "李明",
+                "妈妈",
+                "小明"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "validation": {
+      "validatorVersion": "fab10-validator@2",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "too_long",
+          "message": "39 lines (need 14-38)"
+        },
+        {
+          "code": "missing_target",
+          "message": "missing target: 发生"
+        },
+        {
+          "code": "target_above_max",
+          "message": "来自 appears 6× (max 4) — reads as spam"
+        },
+        {
+          "code": "missing_target",
+          "message": "missing target: 生活"
+        },
+        {
+          "code": "missing_target",
+          "message": "missing target: 或者"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 11.3% > 7.0%"
+        },
+        {
+          "code": "unknown_words",
+          "message": "11 unknown (non-vocabulary) runs (max 2): 节、懒、耶、韩国、流浪、来自于、法、墙、一张、樱花"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "out_of_level_words",
+          "message": "34 distinct words above HSK 3 (advisory max 3)"
+        }
+      ],
+      "metrics": {
+        "lines": 39,
+        "cjkChars": 542,
+        "distinctVocab": 189,
+        "targetCounts": {
+          "发生": 0,
+          "国家": 2,
+          "结束": 2,
+          "来自": 6,
+          "生活": 0,
+          "其他": 2,
+          "或者": 0,
+          "当然": 1
+        },
+        "inLevelCoverage": 0.847,
+        "outOfLevelDistinct": 34,
+        "outOfLevelCharShare": 0.113,
+        "unknownDistinct": 11,
+        "unknownCharShare": 0.041,
+        "unknownRuns": [
+          "节",
+          "懒",
+          "耶",
+          "韩国",
+          "流浪",
+          "来自于",
+          "法",
+          "墙",
+          "一张",
+          "樱花"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.036,
+        "nearestNeighbor": {
+          "title": "1. 新的地方",
+          "level": 1,
+          "jaccard": 0.016,
+          "containment": 0.06
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 1,
+    "calls": 2,
+    "providerErrors": [],
+    "generatorVersion": "fab9-duo@3",
+    "promptVersion": "fab9-prompts@2",
+    "usage": {
+      "requests": 3,
+      "failures": 1,
+      "promptTokens": 3724,
+      "completionTokens": 675,
+      "latencyMsTotal": 2296,
+      "rateLimit429s": 1,
+      "throttleWaitMs": 0,
+      "retryAfterWaitMs": 8000,
+      "wallMs": 10427
+    }
+  },
+  "staged": null
+}
