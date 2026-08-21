@@ -32,6 +32,10 @@ const providerName = arg('provider', null)
 const modelId = arg('model', null)
 const reasoningEffort = arg('reasoning-effort', null)
 const outDir = arg('out', null)
+// Reasoning models spend hidden tokens before the story; the pipeline budget
+// (outputBudget) is sized for effort=none. This override exists so THIS
+// diagnostic can give full-thinking runs room without touching the pipeline.
+const maxTokensOverride = arg('max-tokens', null) ? parseInt(arg('max-tokens', null), 10) : null
 
 if (!inputPath || !manifestPath || !providerName || !modelId || !outDir) {
   console.error('Required: --input <dump> --manifest <candidate-or-manifest.json> --provider <p> --model <m> --out <dir>  [--reasoning-effort e]')
@@ -63,7 +67,7 @@ const prompt = draftPrompt({ manifest, pool, meanings })
 let text = null
 let error = null
 try {
-  text = await p.send({ prompt, maxTokens: outputBudget(manifest, 'draft') })
+  text = await p.send({ prompt, maxTokens: maxTokensOverride || outputBudget(manifest, 'draft') })
 } catch (err) {
   error = String(err.message || err)
 }

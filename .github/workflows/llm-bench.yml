@@ -52,6 +52,10 @@ on:
         description: "bench only: provider:model for generator B (blank = single-model run)"
         type: string
         default: ''
+      writer_max_tokens:
+        description: "writer-test only: max_tokens override for full-thinking runs (capped 4800; blank = pipeline budget)"
+        type: string
+        default: ''
       manifest_path:
         description: "writer-test only: repo path of the stored manifest/candidate file"
         type: string
@@ -239,6 +243,7 @@ jobs:
           EFFORT_A: ${{ inputs.effort_a }}
           MANIFEST: ${{ inputs.manifest_path }}
           PREFIX: ${{ inputs.batch_prefix }}
+          WRITER_MAX_TOKENS: ${{ inputs.writer_max_tokens }}
         run: |
           set -e
           case "$PREFIX" in (*[!A-Za-z0-9_-]*|"") echo "bad batch_prefix"; exit 1;; esac
@@ -248,14 +253,20 @@ jobs:
           EFFORT_FLAG=""
           case "$EFFORT_A" in
             "") ;;
-            none|low|medium|high) EFFORT_FLAG="--reasoning-effort $EFFORT_A";;
+            none|low|medium|high|default) EFFORT_FLAG="--reasoning-effort $EFFORT_A";;
             *) echo "bad effort_a"; exit 1;;
+          esac
+          TOKENS_FLAG=""
+          case "$WRITER_MAX_TOKENS" in
+            "") ;;
+            *[!0-9]*) echo "bad writer max tokens"; exit 1;;
+            *) [ "$WRITER_MAX_TOKENS" -le 4800 ] && TOKENS_FLAG="--max-tokens $WRITER_MAX_TOKENS";;
           esac
           prov="${MODEL_A%%:*}"; mdl="${MODEL_A#*:}"
           node writer-draft-test.mjs \
             --input reports/story-corpus-dump.json \
             --manifest "$MANIFEST" \
-            --provider "$prov" --model "$mdl" $EFFORT_FLAG \
+            --provider "$prov" --model "$mdl" $EFFORT_FLAG $TOKENS_FLAG \
             --out "data/story-candidates/$PREFIX"
 
       - name: Show reports
