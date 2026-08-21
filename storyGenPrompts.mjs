@@ -26,13 +26,50 @@ function levelName(manifest) {
 }
 
 // The allowed pool listed in the prompt. Big pools would drown the prompt, so
-// only the most frequent slice is listed — the manifest's targets travel
-// separately in every prompt, and the validator polices against the FULL pool,
-// so being stricter in the prompt than in validation is safe (same trade-off
-// the serial generator made).
+// only a slice is listed — the manifest's targets travel separately in every
+// prompt, and the validator polices against the FULL pool, so being stricter
+// in the prompt than in validation is safe.
+//
+// The slice must be STRATIFIED BY LEVEL. The pool arrives level-ordered, so a
+// plain `slice(0, cap)` handed an HSK 3 job a list of 280 HSK 1 words and
+// ZERO words from HSK 2 or HSK 3 (measured on the real pool: 300/197/453
+// words per level). The model was being shown beginner vocabulary and asked
+// to write at level — which is exactly what bench-1's rejected candidates
+// looked like: fluent Chinese reaching far above the level because the level's
+// own words were never on the page.
+//
+// Allocation is proportional to each level's share of the pool, with any
+// remainder going to the HIGHEST levels first: the level being taught is the
+// one whose vocabulary the writer most needs to see.
 export function poolForPrompt(pool, cap = 280) {
-  const listed = pool.length <= cap ? pool : pool.slice(0, cap)
-  return listed.map(v => v.word + (v.meaning ? ' (' + v.meaning + ')' : '')).join(', ')
+  const format = (items) => items.map(v => v.word + (v.meaning ? ' (' + v.meaning + ')' : '')).join(', ')
+  if (pool.length <= cap) return format(pool)
+
+  const byLevel = new Map()
+  for (const v of pool) {
+    const key = Number.isFinite(v.level) ? v.level : 0
+    if (!byLevel.has(key)) byLevel.set(key, [])
+    byLevel.get(key).push(v)
+  }
+  const levels = [...byLevel.keys()].sort((a, b) => a - b)
+
+  const quota = new Map()
+  let assigned = 0
+  for (const l of levels) {
+    const q = Math.max(1, Math.floor((cap * byLevel.get(l).length) / pool.length))
+    quota.set(l, q)
+    assigned += q
+  }
+  let left = cap - assigned
+  for (let i = levels.length - 1; left > 0 && i >= 0; i -= 1) {
+    const l = levels[i]
+    const add = Math.min(byLevel.get(l).length - quota.get(l), left)
+    if (add > 0) { quota.set(l, quota.get(l) + add); left -= add }
+  }
+
+  const out = []
+  for (const l of levels) out.push(...byLevel.get(l).slice(0, quota.get(l)))
+  return format(out)
 }
 
 function targetList(manifest, meanings = {}) {

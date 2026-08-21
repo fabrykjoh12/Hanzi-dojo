@@ -11,6 +11,7 @@ import {
   parseChapter,
   parseCritique,
   parseTranslation,
+  poolForPrompt,
   PROMPT_VERSION,
 } from './storyGenPrompts.mjs'
 import { buildManifest } from './storyManifestPlanner.mjs'
@@ -260,5 +261,37 @@ describe('provider error capture (bench-1 regression)', () => {
     })
     expect(r.providerErrors.some(e => e.message === 'unparseable response')).toBe(true)
     expect(r.providerErrors[0].sample).toContain('I cannot help')
+  })
+})
+
+describe('poolForPrompt stratification (bench-1 defect)', () => {
+  const bigPool = [
+    ...Array.from({ length: 300 }, (_, i) => ({ word: 'a' + i, level: 1 })),
+    ...Array.from({ length: 197 }, (_, i) => ({ word: 'b' + i, level: 2 })),
+    ...Array.from({ length: 453 }, (_, i) => ({ word: 'c' + i, level: 3 })),
+  ]
+
+  it('shows every level, not just the first one (plain slice showed zero HSK 2/3)', () => {
+    const listed = poolForPrompt(bigPool, 280).split(', ')
+    const perLevel = { 1: 0, 2: 0, 3: 0 }
+    for (const entry of listed) perLevel[entry[0] === 'a' ? 1 : entry[0] === 'b' ? 2 : 3] += 1
+    expect(perLevel[1]).toBeGreaterThan(0)
+    expect(perLevel[2]).toBeGreaterThan(0)
+    expect(perLevel[3]).toBeGreaterThan(0)
+    expect(listed.length).toBe(280)
+  })
+
+  it('gives the level being taught the largest share', () => {
+    const listed = poolForPrompt(bigPool, 280).split(', ')
+    const lvl3 = listed.filter(e => e.startsWith('c')).length
+    const lvl1 = listed.filter(e => e.startsWith('a')).length
+    expect(lvl3).toBeGreaterThan(lvl1)
+  })
+
+  it('keeps frequency order within each level and passes small pools through whole', () => {
+    const listed = poolForPrompt(bigPool, 280).split(', ')
+    expect(listed[0]).toBe('a0')
+    const small = [{ word: 'x', level: 1, meaning: 'ex' }]
+    expect(poolForPrompt(small, 280)).toBe('x (ex)')
   })
 })
