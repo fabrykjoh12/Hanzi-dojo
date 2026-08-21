@@ -33,7 +33,15 @@ on:
         type: string
         default: ''
       reasoning_effort:
-        description: "optional Groq reasoning_effort (none / low / medium / high). Qwen3 needs 'none' or it only thinks."
+        description: "smoke only: Groq reasoning_effort (none / low / medium / high). Qwen3 needs 'none' or it only thinks."
+        type: string
+        default: ''
+      effort_a:
+        description: "bench only: reasoning_effort for model A (blank = send none). Per-model: what Qwen needs, gpt-oss may reject."
+        type: string
+        default: ''
+      effort_b:
+        description: "bench only: reasoning_effort for model B"
         type: string
         default: ''
       model_a:
@@ -123,15 +131,21 @@ jobs:
           PREFIX: ${{ inputs.batch_prefix }}
           LEVEL: ${{ inputs.level }}
           COUNT: ${{ inputs.count }}
-          EFFORT: ${{ inputs.reasoning_effort }}
+          EFFORT_A: ${{ inputs.effort_a }}
+          EFFORT_B: ${{ inputs.effort_b }}
         run: |
           set -e
-          EFFORT_FLAG=""
-          case "$EFFORT" in
-            "") ;;
-            none|low|medium|high) EFFORT_FLAG="--reasoning-effort $EFFORT";;
-            *) echo "bad reasoning_effort"; exit 1;;
-          esac
+          # Reasoning control is per model: Qwen3 needs it off to write at all,
+          # while a model that does not accept the parameter would 400 on it.
+          effort_flag () {
+            case "$1" in
+              "") echo "";;
+              none|low|medium|high) echo "--reasoning-effort $1";;
+              *) echo "bad reasoning_effort: $1" >&2; exit 1;;
+            esac
+          }
+          FLAG_A=$(effort_flag "$EFFORT_A")
+          FLAG_B=$(effort_flag "$EFFORT_B")
           case "$PREFIX" in (*[!A-Za-z0-9_-]*|"") echo "bad batch_prefix"; exit 1;; esac
           case "$LEVEL" in (*[!0-9]*|"") echo "bad level"; exit 1;; esac
           case "$COUNT" in (*[!0-9]*|"") COUNT=4;; esac
@@ -142,32 +156,32 @@ jobs:
           done
           [ -z "$MODEL_A" ] && { echo "model_a is required for bench"; exit 1; }
 
-          gen () {   # gen <spec> <suffix>
+          gen () {   # gen <spec> <suffix> <effort-flag>
             prov="${1%%:*}"; mdl="${1#*:}"
             echo "::group::generate $prov/$mdl → ${PREFIX}-$2"
             node generate-targeted-stories.mjs \
               --input reports/story-corpus-dump.json \
               --level "$LEVEL" --count "$COUNT" --batch "${PREFIX}-$2" \
-              --provider "$prov" --model "$mdl" $EFFORT_FLAG
+              --provider "$prov" --model "$mdl" $3
             echo "::endgroup::"
           }
-          gen "$MODEL_A" a
-          [ -n "$MODEL_B" ] && gen "$MODEL_B" b
+          gen "$MODEL_A" a "$FLAG_A"
+          [ -n "$MODEL_B" ] && gen "$MODEL_B" b "$FLAG_B"
 
-          judge () { # judge <judge-spec> <batch-suffix>
+          judge () { # judge <judge-spec> <batch-suffix> <effort-flag>
             prov="${1%%:*}"; mdl="${1#*:}"
             dir="data/story-candidates/${PREFIX}-$2"
             [ -d "$dir" ] || return 0
             echo "::group::judge $dir with $prov/$mdl"
-            node judge-story-candidates.mjs --batch "$dir" --provider "$prov" --model "$mdl" $EFFORT_FLAG
+            node judge-story-candidates.mjs --batch "$dir" --provider "$prov" --model "$mdl" $3
             echo "::endgroup::"
           }
           # Cross-judging: neither model grades its own homework.
           if [ -n "$MODEL_B" ]; then
-            judge "$MODEL_B" a
-            judge "$MODEL_A" b
+            judge "$MODEL_B" a "$FLAG_B"
+            judge "$MODEL_A" b "$FLAG_A"
           else
-            judge "$MODEL_A" a
+            judge "$MODEL_A" a "$FLAG_A"
           fi
 
       - name: Show reports
