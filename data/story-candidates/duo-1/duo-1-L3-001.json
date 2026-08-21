@@ -1,0 +1,402 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "duo-1",
+  "generatedAt": "2026-08-21T15:53:40.618Z",
+  "provider": {
+    "name": "duo",
+    "model": "qwen/qwen3.6-27b + openai/gpt-oss-120b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "duo-1-L3-001",
+    "batchId": "duo-1",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "被",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "中",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "该",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "像",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "认为",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "生活",
+        "min": 2,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "duo-1-L3-001",
+    "status": "rejected",
+    "title": "小城的秘密",
+    "content": "李明：我今天在学校中看到一只小猫。\n小红：它好像很饿。\n李明：我把它带回家，妈妈说应该喂它。\n妈妈：如果你想让它好，就需要每天喂饭。\n小明：我认为我们应该给它找一个好地方。\n小红：我们可以在花园的角落放一个小箱子。\n李明：我已经把箱子准备好了，被雨淋不怕。\n妈妈：该让它先喝点水。\n小明：我觉得它像我们家的小成员。\n李明：我每天帮它整理毛发，生活会更有趣。\n小红：如果天气好，就可以带它到院子里走。\n妈妈：该注意它不要跑远。\n小明：我认为它已经在我们中间习惯我们的生活。\n李明：我们一起照顾它，大家都很开心。\n小红：我也会帮助你们，像朋友一样。\n妈妈：如果有困难，应该马上说。\n小明：我们会一直照顾它，直到它长大。\n李明：这只小猫被大家喜欢，让我们的生活更温暖。",
+    "englishContent": null,
+    "stages": [
+      {
+        "stage": "draft",
+        "role": "writer",
+        "title": "消失的白猫",
+        "content": "李明：我的饼干不见了，我饿坏了，到底是谁拿走了？\n小红：别急，我们仔细看看周围，也许能发现什么线索。\n小明：我也没看见，我觉得可能是被风吹到外面去了。\n李明：不可能，窗户关着，饼干怎么会被风带走呢？\n小红：你看，桌子下面有一张白色的纸，这很奇怪。\n小明：拿起来看看，也许纸上写着什么重要的信息。\n李明：原来是被大毛藏在下面，它正在偷偷地吃饼干。\n小红：哈哈，这只白色的猫真调皮，它喜欢我们的零食。\n李明：大毛真可爱，但是它不应该偷吃我的东西。\n妈妈：李明，你总是这么粗心，吃东西前要看好东西。\n李明：对不起妈妈，下次我会注意，不会让饼干消失。\n小红：我觉得大毛是因为饿了，才拿走了李明的饼干。\n小明：是呀，如果我们不喂它，它就会来找食物。\n妈妈：确实需要给大毛准备一些猫粮，这样它就不会偷吃。\n李明：那我们现在去买猫粮吗？我很想知道它喜欢什么。\n小红：我想大毛喜欢吃鱼肉，这像它以前喜欢的食物。\n小李：我们可以去附近的商店，看看有没有卖鱼味的猫粮。\n小明：好的，走吧，我觉得这个问题很容易就可以解决。\n妈妈：路上要小心，不要跑太快，注意安全最重要。\n李明：我知道了，妈妈，我们快点走，大毛一定在等我们。\n小红：你看，大毛跟来了，它好像知道我们要去买东西。\n小明：它跑在前面，样子很开心，好像在带我们去商店。\n李明：大毛，你真是个聪明的猫，谢谢你帮我们找到饼干。\n小红：其实是大毛自己告诉我们的，它留下的线索很清楚。\n小明：是啊，如果我们不仔细找，就不会发现这个秘密。\n妈妈：生活中有很多小事，需要我们去观察和思考。\n李明：妈妈说得对，我觉得观察周围很有趣，像玩侦探游戏。\n小红：没错，只要用心看，就能发现生活中不一样的美好。\n小明：我也这么认为，这样的生活比只在手机里游戏好玩。\n李明：那以后我每天喂大毛，不让它再饿肚子偷饼干。\n小红：好主意，这样你和它就有了更好的关系，大家都开心。\n小明：对，而且我们也学会了要关心身边的动物和朋友。\n妈妈：孩子们，你们长大了，懂得关心别人，我很开心。\n李明：谢谢妈妈，我觉得今天是我最近最开心的一天了。\n小红：大家都开心，这就是一个完美的结局，不是吗？\n小明：是啊，让我们快去商店，给大毛买好吃的鱼罐头。\n李明：好，我要选最大的那个，因为大毛帮了我们大忙。\n小红：慢慢走，别着急，商店还在那边，我们马上就到。\n小明：看，大毛还在前面跑，它好像比我们还要着急呢。\n妈妈：跟上孩子们，别让大毛跑太远，安全第一最重要。\n李明：不会的，妈妈，我会看着它，保证它的安全。\n小红：李明，你进步了，现在你真的像一个可靠的大哥哥。\n小明：哈哈，李明变了，他不再只是一分钟就忘记事情。\n李明：谢谢你夸我，小红，我会继续努力，做一个好人。\n妈妈：回家吧，我们已经买了很多东西，该回去休息了。\n小明：是呀，我也累了，但是心里觉得很温暖，很舒服。\n小红：今天的故事真有趣，我会把它写在我的日记本里。\n李明：我也记得这个故事，它像一幅画，印在我的心里。\n妈妈：好了，孩子们，我们回家吧，晚饭已经准备好了。",
+        "validation": {
+          "validatorVersion": "fab10-validator@2",
+          "verdict": "FAIL",
+          "failures": [
+            {
+              "code": "too_long",
+              "message": "49 lines (need 14-38)"
+            },
+            {
+              "code": "unknown_speaker",
+              "message": "speakers outside the cast: 小李 (allowed: 李明、小红、小明、妈妈)"
+            },
+            {
+              "code": "target_below_min",
+              "message": "该 appears 1× (need 2-4)"
+            },
+            {
+              "code": "target_below_min",
+              "message": "认为 appears 1× (need 2-4)"
+            },
+            {
+              "code": "out_of_level_share",
+              "message": "out-of-level vocabulary: 12.7% > 7.0%"
+            },
+            {
+              "code": "unknown_words",
+              "message": "10 unknown (non-vocabulary) runs (max 2): 我也没、关、一张、纸、粮、味、侦探、没错、夸、印"
+            }
+          ],
+          "warnings": [
+            {
+              "code": "out_of_level_words",
+              "message": "45 distinct words above HSK 3 (advisory max 3)"
+            }
+          ],
+          "metrics": {
+            "lines": 49,
+            "cjkChars": 887,
+            "distinctVocab": 246,
+            "targetCounts": {
+              "被": 3,
+              "中": 2,
+              "如果": 2,
+              "该": 1,
+              "需要": 2,
+              "像": 4,
+              "认为": 1,
+              "生活": 3
+            },
+            "inLevelCoverage": 0.852,
+            "outOfLevelDistinct": 45,
+            "outOfLevelCharShare": 0.127,
+            "unknownDistinct": 10,
+            "unknownCharShare": 0.02,
+            "unknownRuns": [
+              "我也没",
+              "关",
+              "一张",
+              "纸",
+              "粮",
+              "味",
+              "侦探",
+              "没错",
+              "夸",
+              "印"
+            ],
+            "repeatedLines": 0,
+            "repeatedTrigramShare": 0.039,
+            "nearestNeighbor": {
+              "title": "2. 明天去新地方",
+              "level": 1,
+              "jaccard": 0.016,
+              "containment": 0.066
+            }
+          }
+        }
+      },
+      {
+        "stage": "simplify",
+        "role": "editor",
+        "title": "小城的秘密",
+        "content": "李明：我今天在学校看到一只小猫。\n小红：它好像很饿。\n李明：我把它带回家，妈妈说应该喂它。\n妈妈：如果你想让它健康，就需要每天喂饭。\n小明：我认为我们应该给它找一个好地方。\n小红：我们可以在花园的角落放一个小箱子。\n李明：我已经把箱子准备好了，被雨淋不怕。\n妈妈：该让它先喝点水。\n小明：我觉得它像我们家的小成员。\n李明：我每天帮它整理毛发，生活会更有趣。\n小红：如果天气好，就可以带它出去散步。\n妈妈：该注意安全，不要让它跑远。\n小明：我认为它已经适应我们的生活。\n李明：我们一起照顾它，大家都很开心。\n小红：我也会帮助你们，像朋友一样。\n妈妈：如果有困难，应该马上说。\n小明：我们会一直照顾它，直到它长大。\n李明：这只小猫让我们的生活更温暖。",
+        "validation": {
+          "validatorVersion": "fab10-validator@2",
+          "verdict": "FAIL",
+          "failures": [
+            {
+              "code": "target_below_min",
+              "message": "被 appears 1× (need 2-4)"
+            },
+            {
+              "code": "missing_target",
+              "message": "missing target: 中"
+            },
+            {
+              "code": "target_below_min",
+              "message": "需要 appears 1× (need 2-4)"
+            },
+            {
+              "code": "out_of_level_share",
+              "message": "out-of-level vocabulary: 7.6% > 7.0%"
+            }
+          ],
+          "warnings": [
+            {
+              "code": "out_of_level_words",
+              "message": "9 distinct words above HSK 3 (advisory max 3)"
+            }
+          ],
+          "metrics": {
+            "lines": 18,
+            "cjkChars": 224,
+            "distinctVocab": 93,
+            "targetCounts": {
+              "被": 1,
+              "中": 0,
+              "如果": 3,
+              "该": 2,
+              "需要": 1,
+              "像": 2,
+              "认为": 2,
+              "生活": 3
+            },
+            "inLevelCoverage": 0.906,
+            "outOfLevelDistinct": 9,
+            "outOfLevelCharShare": 0.076,
+            "unknownDistinct": 2,
+            "unknownCharShare": 0.018,
+            "unknownRuns": [
+              "不怕",
+              "毛发"
+            ],
+            "repeatedLines": 0,
+            "repeatedTrigramShare": 0.027,
+            "nearestNeighbor": {
+              "title": "1. 新的地方",
+              "level": 1,
+              "jaccard": 0.015,
+              "containment": 0.033
+            }
+          }
+        }
+      },
+      {
+        "stage": "repair",
+        "role": "editor",
+        "title": "小城的秘密",
+        "content": "李明：我今天在学校中看到一只小猫。\n小红：它好像很饿。\n李明：我把它带回家，妈妈说应该喂它。\n妈妈：如果你想让它好，就需要每天喂饭。\n小明：我认为我们应该给它找一个好地方。\n小红：我们可以在花园的角落放一个小箱子。\n李明：我已经把箱子准备好了，被雨淋不怕。\n妈妈：该让它先喝点水。\n小明：我觉得它像我们家的小成员。\n李明：我每天帮它整理毛发，生活会更有趣。\n小红：如果天气好，就可以带它到院子里走。\n妈妈：该注意它不要跑远。\n小明：我认为它已经在我们中间习惯我们的生活。\n李明：我们一起照顾它，大家都很开心。\n小红：我也会帮助你们，像朋友一样。\n妈妈：如果有困难，应该马上说。\n小明：我们会一直照顾它，直到它长大。\n李明：这只小猫被大家喜欢，让我们的生活更温暖。",
+        "validation": {
+          "validatorVersion": "fab10-validator@2",
+          "verdict": "FAIL",
+          "failures": [
+            {
+              "code": "target_below_min",
+              "message": "中 appears 1× (need 2-4)"
+            },
+            {
+              "code": "target_below_min",
+              "message": "需要 appears 1× (need 2-4)"
+            }
+          ],
+          "warnings": [
+            {
+              "code": "out_of_level_words",
+              "message": "8 distinct words above HSK 3 (advisory max 3)"
+            }
+          ],
+          "metrics": {
+            "lines": 18,
+            "cjkChars": 232,
+            "distinctVocab": 95,
+            "targetCounts": {
+              "被": 2,
+              "中": 1,
+              "如果": 3,
+              "该": 2,
+              "需要": 1,
+              "像": 2,
+              "认为": 2,
+              "生活": 3
+            },
+            "inLevelCoverage": 0.918,
+            "outOfLevelDistinct": 8,
+            "outOfLevelCharShare": 0.065,
+            "unknownDistinct": 2,
+            "unknownCharShare": 0.017,
+            "unknownRuns": [
+              "不怕",
+              "毛发"
+            ],
+            "repeatedLines": 0,
+            "repeatedTrigramShare": 0.026,
+            "nearestNeighbor": {
+              "title": "1. 新的地方",
+              "level": 1,
+              "jaccard": 0.015,
+              "containment": 0.033
+            }
+          }
+        }
+      }
+    ],
+    "validation": {
+      "validatorVersion": "fab10-validator@2",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "target_below_min",
+          "message": "中 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "需要 appears 1× (need 2-4)"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "out_of_level_words",
+          "message": "8 distinct words above HSK 3 (advisory max 3)"
+        }
+      ],
+      "metrics": {
+        "lines": 18,
+        "cjkChars": 232,
+        "distinctVocab": 95,
+        "targetCounts": {
+          "被": 2,
+          "中": 1,
+          "如果": 3,
+          "该": 2,
+          "需要": 1,
+          "像": 2,
+          "认为": 2,
+          "生活": 3
+        },
+        "inLevelCoverage": 0.918,
+        "outOfLevelDistinct": 8,
+        "outOfLevelCharShare": 0.065,
+        "unknownDistinct": 2,
+        "unknownCharShare": 0.017,
+        "unknownRuns": [
+          "不怕",
+          "毛发"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.026,
+        "nearestNeighbor": {
+          "title": "1. 新的地方",
+          "level": 1,
+          "jaccard": 0.015,
+          "containment": 0.033
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 1,
+    "calls": 6,
+    "providerErrors": [
+      {
+        "kind": "simplify",
+        "attempt": 1,
+        "message": "unparseable response",
+        "sample": "I’m sorry, but I can’t edit the story because the original text was not included in your request. Please provide the story you’d like me to revise, and I’ll be happy to help make it meet the validatio"
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b returned empty content (finish_reason=length)"
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/openai/gpt-oss-120b returned empty content (finish_reason=length)"
+      }
+    ],
+    "generatorVersion": "fab9-duo@1",
+    "promptVersion": "fab9-prompts@2",
+    "usage": {
+      "requests": 6,
+      "failures": 0,
+      "promptTokens": 18503,
+      "completionTokens": 6892,
+      "latencyMsTotal": 17630,
+      "rateLimit429s": 0,
+      "throttleWaitMs": 202155,
+      "retryAfterWaitMs": 0,
+      "wallMs": 244010
+    }
+  },
+  "staged": null
+}

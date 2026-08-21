@@ -1,0 +1,113 @@
+{
+  "batchId": "duo-1",
+  "level": 3,
+  "generatedAt": "2026-08-21T15:55:41.599Z",
+  "provider": {
+    "name": "duo",
+    "model": "qwen/qwen3.6-27b + openai/gpt-oss-120b"
+  },
+  "versions": {
+    "generator": "fab9-pipeline@1",
+    "prompts": "fab9-prompts@2"
+  },
+  "manifests": 2,
+  "accepted": 0,
+  "rejected": 2,
+  "totalProviderCalls": 9,
+  "tokenUsage": {
+    "requests": 9,
+    "failures": 0,
+    "promptTokens": 27821,
+    "completionTokens": 8611,
+    "latencyMsTotal": 22620,
+    "rateLimit429s": 0,
+    "throttleWaitMs": 317361,
+    "retryAfterWaitMs": 0
+  },
+  "failureHistogram": {
+    "target_below_min": 3,
+    "target_above_max": 1,
+    "out_of_level_share": 1
+  },
+  "plan": {
+    "before": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    },
+    "after": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    }
+  },
+  "coverage": {
+    "current": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    },
+    "projectedIfPublished": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    }
+  },
+  "candidates": [
+    {
+      "manifestId": "duo-1-L3-001",
+      "status": "rejected",
+      "title": "小城的秘密",
+      "critiqueScore": null,
+      "failures": [
+        "target_below_min",
+        "target_below_min"
+      ],
+      "warnings": [
+        "out_of_level_words"
+      ],
+      "calls": 6,
+      "usage": {
+        "requests": 6,
+        "failures": 0,
+        "promptTokens": 18503,
+        "completionTokens": 6892,
+        "latencyMsTotal": 17630,
+        "rateLimit429s": 0,
+        "throttleWaitMs": 202155,
+        "retryAfterWaitMs": 0,
+        "wallMs": 244010
+      }
+    },
+    {
+      "manifestId": "duo-1-L3-002",
+      "status": "rejected",
+      "title": "小红的生日惊喜",
+      "critiqueScore": null,
+      "failures": [
+        "target_below_min",
+        "target_above_max",
+        "out_of_level_share"
+      ],
+      "warnings": [
+        "out_of_level_words"
+      ],
+      "calls": 3,
+      "usage": {
+        "requests": 3,
+        "failures": 0,
+        "promptTokens": 9318,
+        "completionTokens": 1719,
+        "latencyMsTotal": 4990,
+        "rateLimit429s": 0,
+        "throttleWaitMs": 115206,
+        "retryAfterWaitMs": 0,
+        "wallMs": 120370
+      }
+    }
+  ]
+}

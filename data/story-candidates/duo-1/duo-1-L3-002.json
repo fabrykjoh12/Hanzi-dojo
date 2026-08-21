@@ -1,0 +1,398 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "duo-1",
+  "generatedAt": "2026-08-21T15:55:40.988Z",
+  "provider": {
+    "name": "duo",
+    "model": "qwen/qwen3.6-27b + openai/gpt-oss-120b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "duo-1-L3-002",
+    "batchId": "duo-1",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发生",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "其他",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "或",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "得到",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "了解",
+        "min": 2,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "preparing for something over several days (a trip, a festival, a small competition) with setbacks",
+    "series": null,
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "duo-1-L3-002",
+    "status": "rejected",
+    "title": "小红的生日惊喜",
+    "content": "李明：今天是小红的生日，我们一起做准备。\n小明：我们在教室布置气球，关系很好。\n小红：我不知道发生了什么计划，能告诉我吗？\n李明：我们已经得到蛋糕和礼物。\n小明：如果下雨或老师不在，必须改在操场。\n小红：我很期待，今天一定很好玩。\n小明：我们得到老师的同意，可以开始布置。\n李明：我们得到同学的帮助，布置很快完成。\n小红：我了解大家的努力，感觉很温暖。\n李明：这次活动和同学的关系很好。\n小明：我们了解活动的意义，也学会合作。\n小红：谢谢大家，今天的惊喜让我很开心。\n李明：以后我们还能一起参加其他活动。\n小明：我们必须保持这种团队关系。\n小红：我会记得这次经历，帮助其他同学。\n李明：大家一起做，关系会更好。\n小明：如果有困难或需要帮助，我们一起解决。\n小红：我们了解以后还能得到更多好事。\n李明：这件事发生得很快，而且大家都很高兴。\n小明：我们必须继续努力，关系会更紧密。",
+    "englishContent": null,
+    "stages": [
+      {
+        "stage": "draft",
+        "role": "writer",
+        "title": "李明的生日惊喜",
+        "content": "明天是李明的生日，他想给妈妈一个惊喜。\n小明：你想做什么礼物？手工还是买电子产品？\n李明：我要自己做一个蛋糕，而且我要做很大。\n小明：你不会做蛋糕，这很难，而且很危险。\n李明：没关系的，我可以从网上学到了很多办法。\n小红：你真聪明，但是蛋打不好，做不了蛋糕。\n大毛在旁边看着，尾巴轻轻摇动。\n第二天，李明去超市买了很多东西。\n他买鸡蛋、牛奶、面粉，还有很多其他配料。\n回到家，他打开冰箱，发现牛奶已经坏了。\n李明：怎么办？我还必须买新的牛奶。\n小明：别担心，我爸爸开车，我们可以去。\n他们去了三个不同的超市，但是都没有了。\n最后，他们在远的地方才得到了牛奶。\n李明：好累啊，回家快把蛋糕做完。\n他打鸡蛋，但是蛋壳掉进了碗里。\n他把蛋壳捞出来，然后继续搅拌面粉。\n大毛跳上桌子，闻了闻蛋糕生料。\n小明：猫不能吃东西，这对你不好。\n李明：没关系，它只是看看，我不给它。\n小红来了，她看到桌子上的面粉。\n小红：李明的房间变成白色的世界了。\n李明：我知道，但是蛋糕正在做，很重要。\n突然，李明发现糖没有打开，全是纸袋。\n他打开袋子，糖撒了一地，很难看。\n李明：真倒霉，今天发生太多不好的事。\n小红：别哭，我们可以扫干净，然后重来。\n小明：我帮你，我们一起努力，一定行。\n妈妈下班回家，看到一片狼藉的景象。\n妈妈：发生什么事了？我的厨房怎么了？\n李明：妈妈，对不起，我想做生日蛋糕。\n妈妈：你准备了几天？而且这么累，值得吗？\n李明：是的，我想让你开心，这关系我们的爱。\n妈妈笑了，她的眼睛里有温柔的光。\n妈妈：心意最重要，过程比结果更有趣。\n妈妈：但是下次，你必须提前告诉我需求。\n李明：好，我了解了，我会注意安全措施。\n妈妈：好吧，我们一起把剩下的做完。\n他们一起搅拌，大毛在脚边打呼噜。\n小红：看，大家在一起，气氛多温馨。\n小明：对，合作让困难的事情变简单。\n最后，蛋糕虽然没有书上的美。\n但是味道不错，而且充满了大家的心意。\n李明：谢谢你们，这是我最好的生日。\n妈妈说：爱你，儿子，这礼物我收到了。\n大毛跳下来，走回它的猫窝里睡觉。\n李明想到，未来还会有很多其他惊喜。\n只要朋友和家人在一起，生活就很快乐。\n这个夜晚，李明感到特别幸福和满足。",
+        "validation": {
+          "validatorVersion": "fab10-validator@2",
+          "verdict": "FAIL",
+          "failures": [
+            {
+              "code": "too_long",
+              "message": "49 lines (need 14-38)"
+            },
+            {
+              "code": "unknown_speaker",
+              "message": "speakers outside the cast: 妈妈说 (allowed: 李明、小红、小明、妈妈)"
+            },
+            {
+              "code": "missing_target",
+              "message": "missing target: 或"
+            },
+            {
+              "code": "target_below_min",
+              "message": "得到 appears 1× (need 2-4)"
+            },
+            {
+              "code": "target_below_min",
+              "message": "关系 appears 1× (need 2-4)"
+            },
+            {
+              "code": "target_below_min",
+              "message": "了解 appears 1× (need 2-4)"
+            },
+            {
+              "code": "out_of_level_share",
+              "message": "out-of-level vocabulary: 10.7% > 7.0%"
+            },
+            {
+              "code": "unknown_words",
+              "message": "17 unknown (non-vocabulary) runs (max 2): 蛋、摇动、蛋壳、碗、捞、搅拌、闻、全是、纸、袋"
+            }
+          ],
+          "warnings": [
+            {
+              "code": "out_of_level_words",
+              "message": "36 distinct words above HSK 3 (advisory max 3)"
+            }
+          ],
+          "metrics": {
+            "lines": 49,
+            "cjkChars": 652,
+            "distinctVocab": 212,
+            "targetCounts": {
+              "发生": 2,
+              "而且": 4,
+              "必须": 2,
+              "其他": 2,
+              "或": 0,
+              "得到": 1,
+              "关系": 1,
+              "了解": 1
+            },
+            "inLevelCoverage": 0.836,
+            "outOfLevelDistinct": 36,
+            "outOfLevelCharShare": 0.107,
+            "unknownDistinct": 17,
+            "unknownCharShare": 0.057,
+            "unknownRuns": [
+              "蛋",
+              "摇动",
+              "蛋壳",
+              "碗",
+              "捞",
+              "搅拌",
+              "闻",
+              "全是",
+              "纸",
+              "袋"
+            ],
+            "repeatedLines": 0,
+            "repeatedTrigramShare": 0.028,
+            "nearestNeighbor": {
+              "title": "1. 不见了的苹果",
+              "level": 1,
+              "jaccard": 0.014,
+              "containment": 0.06
+            }
+          }
+        }
+      },
+      {
+        "stage": "simplify",
+        "role": "editor",
+        "title": "小红的生日惊喜",
+        "content": "小明：今天是小红的生日，我们要准备惊喜。\n李明：我们可以在学校里布置气球。\n小红：我不知道有什么计划，能不能告诉我？\n小明：我们已经买了蛋糕，还准备了礼物。\n李明：我们必须把气球挂在教室门口。\n小明：如果下雨，或者老师不在，我们就改在操场。\n小红：我很期待，今天一定很好玩。\n老师走进教室，看到彩带，笑了。\n小明：我们得到老师的同意，可以开始布置。\n李明：我们得到同学们的帮助，布置很快完成。\n小红：我了解大家的努力，感觉很温暖。\n老师说，这次活动和同学关系很好。\n小明：我们了解活动的意义，也学会合作。\n小红：谢谢大家，今天的惊喜让我很开心。\n李明：以后我们还能一起参加其他活动。\n小明：我们必须保持这种团队关系。\n小红：我会记得这次经历，帮助其他同学。\n老师：你们做得不错，继续加油。",
+        "validation": {
+          "validatorVersion": "fab10-validator@2",
+          "verdict": "FAIL",
+          "failures": [
+            {
+              "code": "unknown_speaker",
+              "message": "speakers outside the cast: 老师 (allowed: 李明、小红、小明、妈妈)"
+            },
+            {
+              "code": "missing_target",
+              "message": "missing target: 发生"
+            },
+            {
+              "code": "missing_target",
+              "message": "missing target: 而且"
+            },
+            {
+              "code": "missing_target",
+              "message": "missing target: 或"
+            },
+            {
+              "code": "out_of_level_share",
+              "message": "out-of-level vocabulary: 19.8% > 7.0%"
+            }
+          ],
+          "warnings": [
+            {
+              "code": "out_of_level_words",
+              "message": "19 distinct words above HSK 3 (advisory max 3)"
+            }
+          ],
+          "metrics": {
+            "lines": 18,
+            "cjkChars": 243,
+            "distinctVocab": 93,
+            "targetCounts": {
+              "发生": 0,
+              "而且": 0,
+              "必须": 2,
+              "其他": 2,
+              "或": 0,
+              "得到": 2,
+              "关系": 2,
+              "了解": 2
+            },
+            "inLevelCoverage": 0.798,
+            "outOfLevelDistinct": 19,
+            "outOfLevelCharShare": 0.198,
+            "unknownDistinct": 1,
+            "unknownCharShare": 0.004,
+            "unknownRuns": [
+              "彩"
+            ],
+            "repeatedLines": 0,
+            "repeatedTrigramShare": 0.016,
+            "nearestNeighbor": {
+              "title": "1. 新的地方",
+              "level": 1,
+              "jaccard": 0.012,
+              "containment": 0.027
+            }
+          }
+        }
+      },
+      {
+        "stage": "repair",
+        "role": "editor",
+        "title": "小红的生日惊喜",
+        "content": "李明：今天是小红的生日，我们一起做准备。\n小明：我们在教室布置气球，关系很好。\n小红：我不知道发生了什么计划，能告诉我吗？\n李明：我们已经得到蛋糕和礼物。\n小明：如果下雨或老师不在，必须改在操场。\n小红：我很期待，今天一定很好玩。\n小明：我们得到老师的同意，可以开始布置。\n李明：我们得到同学的帮助，布置很快完成。\n小红：我了解大家的努力，感觉很温暖。\n李明：这次活动和同学的关系很好。\n小明：我们了解活动的意义，也学会合作。\n小红：谢谢大家，今天的惊喜让我很开心。\n李明：以后我们还能一起参加其他活动。\n小明：我们必须保持这种团队关系。\n小红：我会记得这次经历，帮助其他同学。\n李明：大家一起做，关系会更好。\n小明：如果有困难或需要帮助，我们一起解决。\n小红：我们了解以后还能得到更多好事。\n李明：这件事发生得很快，而且大家都很高兴。\n小明：我们必须继续努力，关系会更紧密。",
+        "validation": {
+          "validatorVersion": "fab10-validator@2",
+          "verdict": "FAIL",
+          "failures": [
+            {
+              "code": "target_below_min",
+              "message": "而且 appears 1× (need 2-4)"
+            },
+            {
+              "code": "target_above_max",
+              "message": "关系 appears 5× (max 4) — reads as spam"
+            },
+            {
+              "code": "out_of_level_share",
+              "message": "out-of-level vocabulary: 16.5% > 7.0%"
+            }
+          ],
+          "warnings": [
+            {
+              "code": "out_of_level_words",
+              "message": "19 distinct words above HSK 3 (advisory max 3)"
+            }
+          ],
+          "metrics": {
+            "lines": 20,
+            "cjkChars": 272,
+            "distinctVocab": 87,
+            "targetCounts": {
+              "发生": 2,
+              "而且": 1,
+              "必须": 3,
+              "其他": 2,
+              "或": 2,
+              "得到": 4,
+              "关系": 5,
+              "了解": 3
+            },
+            "inLevelCoverage": 0.835,
+            "outOfLevelDistinct": 19,
+            "outOfLevelCharShare": 0.165,
+            "unknownDistinct": 0,
+            "unknownCharShare": 0,
+            "unknownRuns": [],
+            "repeatedLines": 0,
+            "repeatedTrigramShare": 0.055,
+            "nearestNeighbor": {
+              "title": "2. 生日快乐",
+              "level": 2,
+              "jaccard": 0.022,
+              "containment": 0.108
+            }
+          }
+        }
+      }
+    ],
+    "validation": {
+      "validatorVersion": "fab10-validator@2",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "target_below_min",
+          "message": "而且 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_above_max",
+          "message": "关系 appears 5× (max 4) — reads as spam"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 16.5% > 7.0%"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "out_of_level_words",
+          "message": "19 distinct words above HSK 3 (advisory max 3)"
+        }
+      ],
+      "metrics": {
+        "lines": 20,
+        "cjkChars": 272,
+        "distinctVocab": 87,
+        "targetCounts": {
+          "发生": 2,
+          "而且": 1,
+          "必须": 3,
+          "其他": 2,
+          "或": 2,
+          "得到": 4,
+          "关系": 5,
+          "了解": 3
+        },
+        "inLevelCoverage": 0.835,
+        "outOfLevelDistinct": 19,
+        "outOfLevelCharShare": 0.165,
+        "unknownDistinct": 0,
+        "unknownCharShare": 0,
+        "unknownRuns": [],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.055,
+        "nearestNeighbor": {
+          "title": "2. 生日快乐",
+          "level": 2,
+          "jaccard": 0.022,
+          "containment": 0.108
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 1,
+    "calls": 3,
+    "providerErrors": [],
+    "generatorVersion": "fab9-duo@1",
+    "promptVersion": "fab9-prompts@2",
+    "usage": {
+      "requests": 3,
+      "failures": 0,
+      "promptTokens": 9318,
+      "completionTokens": 1719,
+      "latencyMsTotal": 4990,
+      "rateLimit429s": 0,
+      "throttleWaitMs": 115206,
+      "retryAfterWaitMs": 0,
+      "wallMs": 120370
+    }
+  },
+  "staged": null
+}
