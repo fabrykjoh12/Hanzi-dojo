@@ -1,0 +1,95 @@
+{
+  "batchId": "pilot-1",
+  "level": 3,
+  "generatedAt": "2026-08-21T11:44:47.742Z",
+  "provider": {
+    "name": "gemini",
+    "model": "gemini-2.5-flash"
+  },
+  "versions": {
+    "generator": "fab9-pipeline@1",
+    "prompts": "fab9-prompts@1"
+  },
+  "manifests": 4,
+  "accepted": 0,
+  "rejected": 4,
+  "totalProviderCalls": 8,
+  "tokenUsage": {
+    "promptTokens": 0,
+    "completionTokens": 0,
+    "requests": 0
+  },
+  "failureHistogram": {
+    "no_candidate": 4
+  },
+  "plan": {
+    "before": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    },
+    "after": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    }
+  },
+  "coverage": {
+    "current": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    },
+    "projectedIfPublished": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    }
+  },
+  "candidates": [
+    {
+      "manifestId": "pilot-1-L3-001",
+      "status": "rejected",
+      "title": null,
+      "critiqueScore": null,
+      "failures": [
+        "no_candidate"
+      ],
+      "warnings": []
+    },
+    {
+      "manifestId": "pilot-1-L3-002",
+      "status": "rejected",
+      "title": null,
+      "critiqueScore": null,
+      "failures": [
+        "no_candidate"
+      ],
+      "warnings": []
+    },
+    {
+      "manifestId": "pilot-1-L3-003",
+      "status": "rejected",
+      "title": null,
+      "critiqueScore": null,
+      "failures": [
+        "no_candidate"
+      ],
+      "warnings": []
+    },
+    {
+      "manifestId": "pilot-1-L3-004",
+      "status": "rejected",
+      "title": null,
+      "critiqueScore": null,
+      "failures": [
+        "no_candidate"
+      ],
+      "warnings": []
+    }
+  ]
+}
