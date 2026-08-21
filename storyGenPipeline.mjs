@@ -67,12 +67,17 @@ async function call(provider, kind, prompt, maxTokens, parse, parseRetries, call
       text = await provider({ kind, prompt, maxTokens })
     } catch (err) {
       lastErr = err
+      // Record WHY, not just that it failed. bench-1 counted 24/24 failed
+      // requests with no error text anywhere in the artifacts, which made a
+      // dead model indistinguishable from a bad one.
+      calls.errors.push({ kind, attempt: i + 1, message: String(err.message || err).slice(0, 300) })
       if (i < parseRetries) await sleep(Math.min(8000 * Math.pow(2, i), 30000))
       continue
     }
     const parsed = parse(text)
     if (parsed != null) return parsed
     lastErr = new Error(kind + ' response was unparseable')
+    calls.errors.push({ kind, attempt: i + 1, message: 'unparseable response', sample: String(text).slice(0, 200) })
   }
   throw lastErr
 }
@@ -97,7 +102,7 @@ export async function generateCandidate({
   const mCheck = validateManifest(manifest)
   if (!mCheck.ok) throw new Error('refusing to generate from an invalid manifest (' + (manifest && manifest.id) + '): ' + mCheck.problems.join('; '))
 
-  const calls = { count: 0 }
+  const calls = { count: 0, errors: [] }
   const validate = (candidate) => validateCandidate(candidate, { manifest, vocabMap, corpus })
 
   let best = null
@@ -165,6 +170,7 @@ export async function generateCandidate({
       critique: null,
       attempts: lim.attempts,
       calls: calls.count,
+      providerErrors: calls.errors.slice(0, 12),
       generatorVersion: GENERATOR_VERSION,
       promptVersion: PROMPT_VERSION,
     }
@@ -197,6 +203,7 @@ export async function generateCandidate({
     critique: best.critique,
     attempts: best.attempt,
     calls: calls.count,
+    providerErrors: calls.errors.slice(0, 12),
     generatorVersion: GENERATOR_VERSION,
     promptVersion: PROMPT_VERSION,
   }

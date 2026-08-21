@@ -237,3 +237,28 @@ describe('generateCandidate', () => {
     expect(rankAttempt(valid)).toBeGreaterThan(rankAttempt(invalid))
   })
 })
+
+describe('provider error capture (bench-1 regression)', () => {
+  it('records why calls failed, so a dead model is distinguishable from a bad one', async () => {
+    const provider = async () => { throw new Error('groq/x HTTP 429: rate limit reached') }
+    const r = await gen({
+      manifest: manifest(), pool, vocabMap, provider,
+      critique: false, translate: false, limits: { attempts: 1, parseRetries: 1 },
+    })
+    expect(r.status).toBe('rejected')
+    expect(r.validation.failures[0].code).toBe('no_candidate')
+    expect(r.providerErrors.length).toBeGreaterThan(0)
+    expect(r.providerErrors[0].message).toContain('HTTP 429')
+    expect(r.providerErrors[0].kind).toBe('draft')
+  })
+
+  it('records unparseable responses with a sample of what came back', async () => {
+    const provider = async () => 'I cannot help with that request.'
+    const r = await gen({
+      manifest: manifest(), pool, vocabMap, provider,
+      critique: false, translate: false, limits: { attempts: 1, parseRetries: 1 },
+    })
+    expect(r.providerErrors.some(e => e.message === 'unparseable response')).toBe(true)
+    expect(r.providerErrors[0].sample).toContain('I cannot help')
+  })
+})
