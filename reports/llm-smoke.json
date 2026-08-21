@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-21T13:51:41.214Z",
+  "generatedAt": "2026-08-21T13:56:28.496Z",
   "keyPresence": {
     "GEMINI_API_KEY": {
       "present": true,
@@ -30,7 +30,7 @@
     "gemini": {
       "ok": true,
       "status": 200,
-      "latencyMs": 200,
+      "latencyMs": 225,
       "models": [
         "antigravity-preview-05-2026",
         "deep-research-max-preview-04-2026",
@@ -74,7 +74,7 @@
     "groq": {
       "ok": true,
       "status": 200,
-      "latencyMs": 121,
+      "latencyMs": 158,
       "models": [
         "allam-2-7b",
         "canopylabs/orpheus-arabic-saudi",
@@ -97,55 +97,12 @@
     {
       "provider": "groq",
       "model": "qwen/qwen3.6-27b",
-      "ok": true,
+      "ok": false,
       "status": 200,
-      "latencyMs": 870,
+      "latencyMs": 4318,
       "finishReason": "length",
       "promptTokens": 74,
-      "completionTokens": 400,
-      "chinese": true,
-      "lineCount": 25,
-      "wordsPresent": [
-        "邻居",
-        "打算"
-      ],
-      "followedFormat": false,
-      "output": "<think>\nHere's a thinking process:\n\n1.  **Analyze User Input:**\n   - **Exactly 3 short lines**\n   - **Simple Chinese (HSK 3 level)**\n   - **Topic:** A neighbour helping with a plan\n   - **Required words:** 邻居 (neighbour), 打算 (plan/intend to)\n   - **Output format:** Plain text only, 3 lines, one sentence per line, no numbering, no explanation, no pinyin, no English.\n\n2.  **Deconstruct Requirements:**\n   - HSK 3 level: Basic vocabulary, simple sentence structures (SVO, basic conjunctions, common time expressions, simple aspect particles like 了, 过, 着).\n   - Topic: Neighbour helps with a plan.\n   - Must include: 邻居, 打算\n   - Format: Exactly 3 lines, each a complete sentence, plain text.\n\n3.  **Brainstorming & Drafting (Mental):**\n   Line 1: Introduce the neighbour and the plan/intention. (Include 邻居 and 打算)\n   Line 2: Describe how the neighbour helps.\n   Line 3: Show the result or conclusion.\n   Keep it simple, HSK 3 appropriate.\n\n   Let's try:\n   我的邻居听说我的打算。\n   他主动帮我准备材料。\n   我们的事情进行得很顺利。\n\n   Check HSK 3 level:\n   我的 (HSK 1) 邻居 (HSK 3) 听说 (HSK 3) 我 (HSK 1) 的 (HSK 1) 打算 (HSK 2/3). -> Good.\n   他 (HSK 1) 主动 (HSK 4? Maybe too high. Let's use 愿意 or just 帮我)",
-      "apiError": null
-    },
-    {
-      "provider": "gemini",
-      "model": "gemini-2.5-pro",
-      "ok": false,
-      "status": 429,
-      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
-      "latencyMs": 139
-    },
-    {
-      "provider": "gemini",
-      "model": "gemini-3.1-pro-preview",
-      "ok": false,
-      "status": 429,
-      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
-      "latencyMs": 144
-    },
-    {
-      "provider": "gemini",
-      "model": "gemini-3.1-pro-preview-customtools",
-      "ok": false,
-      "status": 429,
-      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
-      "latencyMs": 120
-    },
-    {
-      "provider": "groq",
-      "model": "openai/gpt-oss-120b",
-      "ok": false,
-      "status": 200,
-      "latencyMs": 1114,
-      "finishReason": "length",
-      "promptTokens": 136,
-      "completionTokens": 400,
+      "completionTokens": 2000,
       "chinese": false,
       "lineCount": 0,
       "wordsPresent": [],
@@ -154,78 +111,14 @@
       "apiError": "empty content (finish_reason=length)"
     },
     {
-      "provider": "gemini",
-      "model": "gemini-2.5-flash",
-      "ok": false,
-      "status": 429,
-      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
-      "latencyMs": 127
-    },
-    {
-      "provider": "gemini",
-      "model": "gemini-3-flash-preview",
-      "ok": false,
-      "status": 429,
-      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
-      "latencyMs": 139
-    },
-    {
-      "provider": "gemini",
-      "model": "gemini-3.1-flash-lite",
-      "ok": false,
-      "status": 429,
-      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
-      "latencyMs": 107
-    },
-    {
-      "provider": "gemini",
-      "model": "gemini-3.1-flash-lite-preview",
-      "ok": false,
-      "status": 429,
-      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
-      "latencyMs": 106
-    },
-    {
-      "provider": "gemini",
-      "model": "gemini-3.5-flash",
-      "ok": false,
-      "status": 429,
-      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
-      "latencyMs": 141
-    },
-    {
-      "provider": "gemini",
-      "model": "gemini-3.5-flash-lite",
-      "ok": false,
-      "status": 429,
-      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
-      "latencyMs": 107
-    },
-    {
-      "provider": "gemini",
-      "model": "gemini-3.6-flash",
-      "ok": false,
-      "status": 429,
-      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
-      "latencyMs": 108
-    },
-    {
-      "provider": "gemini",
-      "model": "gemini-3.7-flash",
-      "ok": false,
-      "status": 429,
-      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
-      "latencyMs": 158
-    },
-    {
       "provider": "groq",
-      "model": "openai/gpt-oss-20b",
+      "model": "openai/gpt-oss-120b",
       "ok": true,
       "status": 200,
-      "latencyMs": 601,
+      "latencyMs": 948,
       "finishReason": "stop",
       "promptTokens": 136,
-      "completionTokens": 350,
+      "completionTokens": 348,
       "chinese": true,
       "lineCount": 3,
       "wordsPresent": [
@@ -233,8 +126,51 @@
         "打算"
       ],
       "followedFormat": true,
-      "output": "我的邻居打算帮我规划搬家时间。  \n邻居说他打算给我买搬家工具。  \n我和邻居一起打算制定搬家细节。",
+      "output": "邻居知道我的打算，主动来帮忙。  \n我和邻居一起商量打算的步骤。  \n在邻居的帮助下，我的打算顺利完成。",
       "apiError": null
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-20b",
+      "ok": true,
+      "status": 200,
+      "latencyMs": 929,
+      "finishReason": "stop",
+      "promptTokens": 136,
+      "completionTokens": 747,
+      "chinese": true,
+      "lineCount": 3,
+      "wordsPresent": [
+        "邻居",
+        "打算"
+      ],
+      "followedFormat": true,
+      "output": "邻居说他打算帮忙做计划。  \n邻居告诉我，他打算先列出步骤。  \n邻居说他打算把计划写下来。",
+      "apiError": null
+    },
+    {
+      "provider": "groq",
+      "model": "groq/compound",
+      "ok": false,
+      "status": 429,
+      "apiError": "Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 1830, Requested 6556. Please try again in 2.895s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
+      "latencyMs": 3119
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-3.7-flash",
+      "ok": false,
+      "status": 429,
+      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
+      "latencyMs": 154
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-flash-latest",
+      "ok": false,
+      "status": 429,
+      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
+      "latencyMs": 278
     }
   ]
 }
