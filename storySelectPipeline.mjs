@@ -28,6 +28,7 @@
 // Pure: providers injected, no network/fs/Supabase here.
 
 import { validateCandidate, serializableValidation } from './storyCandidateValidation.mjs'
+import { analyzeStory } from './storyCorpusCalibration.mjs'
 import { validateManifest } from './storyManifestPlanner.mjs'
 import {
   PROMPT_VERSION,
@@ -135,6 +136,64 @@ const PATCHABLE_CODES = new Set([
 ])
 export function structurallyPatchable(failures) {
   return Boolean(failures && failures.length) && failures.every(f => PATCHABLE_CODES.has(f.code))
+}
+
+// ── Pre-adoption patch checks (patch-test-2 regression, 2026-08-21) ──────────
+// A patch that satisfies every failure it was given can still leave the story
+// worse: that run fixed two unknown words by substituting HARDER known ones
+// (一张 → 一幅, 留在 → 留下, both HSK 4) and deleted two below-average-difficulty
+// lines for length, pushing out-of-level share 10.4% → 10.9% past the ceiling.
+// Both checks below run BEFORE a patch may be adopted; either one rejects the
+// whole patch. The prompt states these rules, but the prompt is not the
+// enforcement — this is.
+
+// Above-level words the new text introduces that the old text did not carry.
+// Counts come from the canonical engine, so "a word" means exactly what the
+// reader, the audit and the validator mean by it. Manifest targets are exempt:
+// a target may legitimately sit above the story's level — that is why it is
+// being taught.
+export function newAboveLevelWords(beforeText, afterText, { level, vocabMap, allow = [] } = {}) {
+  const allowed = new Set(allow)
+  const countsOf = (text) => (String(text || '').trim()
+    ? analyzeStory({ title: '', level, content: String(text) }, vocabMap).counts
+    : new Map())
+  const before = countsOf(beforeText)
+  const after = countsOf(afterText)
+  const out = []
+  for (const [word, n] of after) {
+    if (allowed.has(word)) continue
+    const v = vocabMap && vocabMap[word]
+    if (!v || !(v.level > level)) continue
+    const added = n - (before.get(word) || 0)
+    if (added > 0) out.push({ word, level: v.level, added })
+  }
+  return out
+}
+
+// Per-operation view of the same check: which ops introduced what. A REPLACE
+// is judged against the line it replaces (keeping an above-level word that was
+// already on that line is fine — removing it is not this patch's job); an
+// INSERT is judged against nothing, since every word on a new line is new.
+export function patchAboveLevelViolations(originalContent, ops, { level, vocabMap, allow = [] } = {}) {
+  const lines = String(originalContent || '').split('\n').map(l => l.trim()).filter(Boolean)
+  const out = []
+  for (const o of ops || []) {
+    if (o.op === 'delete') continue
+    const previous = o.op === 'replace' ? (lines[o.line - 1] || '') : ''
+    const added = newAboveLevelWords(previous, o.text, { level, vocabMap, allow })
+    if (added.length) out.push({ op: o.op, line: o.line, text: o.text, words: added })
+  }
+  return out
+}
+
+// Gates that were satisfied before the patch and are not after it — i.e. a
+// metric that crossed its boundary in the wrong direction. Both hard failures
+// and review-band entries count: crossing INTO the review band is a
+// regression too. Any result here rejects the entire patch.
+export function patchRegressions(before, after) {
+  const codes = (v) => new Set([...((v && v.failures) || []), ...((v && v.reviews) || [])].map(f => f.code))
+  const had = codes(before)
+  return [...codes(after)].filter(code => !had.has(code))
 }
 
 async function call(provider, kind, prompt, maxTokens, parse, parseRetries, calls, sleep) {

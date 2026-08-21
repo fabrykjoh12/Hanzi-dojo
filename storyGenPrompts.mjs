@@ -257,22 +257,54 @@ export function microRepairPrompt({ manifest, candidate, failures, meanings = {}
 // missing target that no existing line can naturally carry. The patcher's
 // only job is the listed deterministic failures — it is told, verbatim, not
 // to make the story better.
-export function structuralPatchPrompt({ manifest, candidate, failures, meanings = {}, lineHints = [], maxTouched = 6 }) {
+//
+// Two hard constraints beyond the budget, both added after the patch-test-2
+// run (2026-08-21) fixed every listed failure yet still failed the story:
+//
+//   1. NO NEW ABOVE-LEVEL VOCABULARY. That run "fixed" two unknown words by
+//      swapping in harder known ones (一张 → 一幅, 幅 is HSK 4; 留在 → 留下,
+//      HSK 4) — satisfying the unknown-word gate by feeding the out-of-level
+//      one. Only manifest targets may sit above the story's level.
+//   2. NO METRIC REGRESSION ACROSS A BOUNDARY. Deleting text shrinks the
+//      denominator of the out-of-level share, so deleting EASY lines raises
+//      it: that run's two deletions removed 35 characters carrying only 3
+//      above-level ones and pushed 10.4% → 10.9%, past the 10.5% ceiling.
+//      `shareLimit` states the current value and the ceiling explicitly, and
+//      `lineOutCounts` gives the per-line above-level character counts so the
+//      choice of which line to delete is informed rather than blind.
+//
+// The prompt asking is not the enforcement — storySelectPipeline's
+// newAboveLevelWords/patchRegressions reject a violating patch deterministically.
+export function structuralPatchPrompt({ manifest, candidate, failures, meanings = {}, lineHints = [], maxTouched = 6, lineOutCounts = null, shareLimit = null, rejected = null }) {
   const name = levelName(manifest)
   const lines = candidate.content.split('\n').map(l => l.trim()).filter(Boolean)
+  const pct = (x) => (x * 100).toFixed(1) + '%'
+  const numbered = lines.map((l, i) => {
+    const n = lineOutCounts && lineOutCounts[i] ? lineOutCounts[i] : 0
+    return (i + 1) + (lineOutCounts ? ' [' + n + '↑]' : '') + ': ' + l
+  }).join('\n')
   return 'Minimal structural patch for a ' + name + ' Chinese graded-reader story. ' +
     'The story failed validation on EXACTLY the points below. Your ONLY job is to satisfy them with the fewest possible local changes while preserving the meaning of every touched line.\n\n' +
     'Do NOT make the story better. Do NOT rewrite or simplify it generally. Do NOT touch the title. Do NOT add characters, speakers, scenes or events. Any line you do not name stays exactly as it is.\n\n' +
+    (rejected ? 'YOUR PREVIOUS PATCH WAS REJECTED:\n' + rejected.map(r => '- ' + r).join('\n') + '\nProduce a new complete patch that avoids this.\n\n' : '') +
     'Problems to solve (all of them, nothing else):\n' + failures.map(f => '- ' + f.message).join('\n') + '\n\n' +
     (lineHints.length ? 'Deterministic hints (derived from the failures):\n' + lineHints.map(h => '- ' + h).join('\n') + '\n\n' : '') +
+    'HARD CONSTRAINT 1 — no new above-level words. Every line you write (REPLACE or INSERT) must use ONLY ' + name + '-or-below vocabulary. ' +
+    'The one exception is the target words listed below, which are allowed wherever they belong.\n' +
+    'Never trade an unknown word for a HARDER known one — that fails a different gate. Two swaps rejected in an earlier run of this exact task: 一张 → 一幅 (幅 is above ' + name + ') and 留在 → 留下 (留下 is above ' + name + '). ' +
+    'Reach for the plainest, most common wording you know instead.\n\n' +
+    (shareLimit ? 'HARD CONSTRAINT 2 — do not make the story harder. ' + pct(shareLimit.current) + ' of this story\'s characters are already above ' + name + '; the ceiling is ' + pct(shareLimit.ceiling) + '. ' +
+      'Your patch must leave it at or below ' + pct(shareLimit.ceiling) + ', and ideally below ' + pct(shareLimit.current) + '.\n' +
+      'This percentage is above-level characters ÷ total characters, so it rises BOTH when you add a hard word AND when you delete an easy line. ' +
+      'Each numbered line below is marked [N↑] with how many above-level characters it carries: to lose lines, delete ones with a HIGH [N↑] — deleting a [0↑] or [1↑] line pushes the percentage up.\n\n' : '') +
     'How to fix:\n' +
-    '- Too many lines → DELETE the least essential line(s), or merge two by replacing one and deleting the other.\n' +
+    '- Too many lines → DELETE the least essential line(s), preferring high [N↑] lines, or merge two by replacing one and deleting the other.\n' +
     '- A target word below its minimum → REPLACE an existing line so the word fits naturally. Use INSERT AFTER only if no replacement can carry it. Targets and ranges:\n' + targetList(manifest, meanings) + '\n' +
     '- A difficult or unknown word → REPLACE its line, swapping that word for a plain ' + name + '-or-below equivalent, keeping the line\'s meaning.\n' +
     '- Dialogue stays NAME：text with speakers only from: ' + manifest.speakers.join(', ') + '\n\n' +
     'HARD BUDGET: at most ' + maxTouched + ' operations total (each REPLACE, DELETE or INSERT counts as one). If it cannot be done within ' + maxTouched + ', output the single line: IMPOSSIBLE\n\n' +
-    'Story (numbered):\n' +
-    lines.map((l, i) => (i + 1) + ': ' + l).join('\n') + '\n\n' +
+    'Story (numbered' + (lineOutCounts ? '; [N↑] = above-level characters on that line' : '') + '):\n' +
+    numbered + '\n\n' +
     'Output — ONLY operations, one per line, nothing else:\n' +
     'REPLACE LINE <n>: <full new text of that line>\n' +
     'DELETE LINE <n>\n' +

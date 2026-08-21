@@ -22,7 +22,7 @@ import { publishedChineseStories } from './storyCoverage.mjs'
 import { validateCandidate, validateEdit, formatValidation, serializableValidation } from './storyCandidateValidation.mjs'
 import { structuralPatchPrompt, parseStructuralPatch, isImpossiblePatch, PROMPT_VERSION } from './storyGenPrompts.mjs'
 import { MANIFEST_DEFAULTS } from './storyManifestPlanner.mjs'
-import { applyStructuralPatch, structurallyPatchable } from './storySelectPipeline.mjs'
+import { applyStructuralPatch, structurallyPatchable, patchAboveLevelViolations, patchRegressions } from './storySelectPipeline.mjs'
 import { analyzeStory } from './storyCorpusCalibration.mjs'
 import { judgePrompt, parseJudgment, JUDGE_VERSION } from './storyJudge.mjs'
 import { directProvider } from './llmDirect.mjs'
@@ -93,55 +93,117 @@ for (const run of (before.metrics.unknownRuns || [])) {
   const at = originalLines.map((l, i) => (l.includes(run) ? i + 1 : 0)).filter(Boolean)
   if (at.length) lineHints.push('unknown word ' + run + ' appears on line ' + at.join(', '))
 }
-// Per-line out-of-level weight, worst first — where simplification buys the
-// most. Only offered when out_of_level_share is actually among the HARD
-// failures: the patcher's job is the listed failures and nothing else, so a
-// share that merely sits in the review band earns no hint.
+// Per-line above-level character counts — every line, always. They travel
+// into the prompt as [N↑] annotations so the DELETE choice is informed:
+// deleting an easy line RAISES the out-of-level share of what remains, which
+// is exactly how patch-test-2 crossed the ceiling while fixing everything it
+// was asked to fix.
+const lineOutCounts = originalLines.map((l) => {
+  const a = analyzeStory({ title: '', level: manifest.level, content: l }, vocabMap)
+  return Math.round(a.outOfLevelCharShare * a.cjkChars)
+})
+// The "simplify here" hint stays scoped to an actual hard failure: the
+// patcher's job is the listed failures and nothing else.
 if (before.failures.some(f => f.code === 'out_of_level_share')) {
-  const lineOut = originalLines.map((l, i) => {
-    const a = analyzeStory({ title: 'x', level: manifest.level, content: l }, vocabMap)
-    return { line: i + 1, chars: Math.round(a.outOfLevelCharShare * a.cjkChars) }
-  }).filter(x => x.chars > 0).sort((a, b) => b.chars - a.chars).slice(0, 8)
+  const lineOut = lineOutCounts.map((chars, i) => ({ line: i + 1, chars }))
+    .filter(x => x.chars > 0).sort((a, b) => b.chars - a.chars).slice(0, 8)
   if (lineOut.length) {
     lineHints.push('most above-level characters sit on lines ' + lineOut.map(x => x.line + ' (' + x.chars + ' chars)').join(', ') + ' — simplify or delete there')
   }
 }
 
-// ── ONE bounded patch attempt ────────────────────────────────────────────────
+// The non-regression ceiling the patch must respect even though the share is
+// not one of the hard failures this time: the review band's own hard ceiling.
+const shareCeiling = manifest.difficulty.reviewMaxOutOfLevelCharShare != null
+  ? Math.max(manifest.difficulty.reviewMaxOutOfLevelCharShare, manifest.difficulty.maxOutOfLevelCharShare)
+  : manifest.difficulty.maxOutOfLevelCharShare
+const shareLimit = { current: before.metrics.outOfLevelCharShare, ceiling: shareCeiling }
+const targetWords = manifest.targets.map(t => t.word)
+
+// ── Bounded patch attempts — a patch is ADOPTED only if it survives both
+// pre-adoption checks and the full validator. A rejected patch is never
+// applied; the exact violation goes back to the patcher for one more try.
 const patcher = directProvider(patcherSpec.slice(0, patcherSpec.indexOf(':')), patcherSpec.slice(patcherSpec.indexOf(':') + 1), process.env, { reasoningEffort: patcherEffort })
-console.log('[patch-test] patcher ' + patcher.name + '/' + patcher.model + (patcherEffort ? ' effort=' + patcherEffort : '') + ' — budget ' + maxTouched + ' ops')
-const prompt = structuralPatchPrompt({ manifest, candidate: original, failures: before.failures, meanings, lineHints, maxTouched })
+console.log('[patch-test] patcher ' + patcher.name + '/' + patcher.model + (patcherEffort ? ' effort=' + patcherEffort : '') + ' — budget ' + maxTouched + ' ops, share ceiling ' + (shareCeiling * 100).toFixed(1) + '%')
 
 const startedAt = Date.now()
+const attempts = []
 let ops = null
+let adopted = null
 let patchError = null
 let impossible = false
-for (let attempt = 0; attempt <= 2 && !ops; attempt += 1) {
+let rejected = null
+
+for (let attempt = 1; attempt <= 3 && !adopted; attempt += 1) {
+  const prompt = structuralPatchPrompt({ manifest, candidate: original, failures: before.failures, meanings, lineHints, maxTouched, lineOutCounts, shareLimit, rejected })
+  let text
   try {
-    const text = await patcher.send({ prompt, maxTokens: 1200 })
-    // IMPOSSIBLE is a valid terminal answer, not a parse failure — it
-    // short-circuits immediately and is never retried.
-    if (isImpossiblePatch(text)) {
-      impossible = true
-      patchError = 'patcher declared IMPOSSIBLE (terminal — not retried)'
-      break
-    }
-    ops = parseStructuralPatch(text, originalLines.length, maxTouched)
-    if (!ops) patchError = 'unparseable or over-budget patch: ' + String(text).slice(0, 200)
+    text = await patcher.send({ prompt, maxTokens: 1200 })
   } catch (err) {
     patchError = String(err.message || err)
+    attempts.push({ attempt, outcome: 'provider_error', detail: patchError })
     if (/HTTP (400|401|403|404|413|422)\b/.test(patchError)) break
+    continue
   }
+  // IMPOSSIBLE is a valid terminal answer, not a parse failure — it
+  // short-circuits immediately and is never retried.
+  if (isImpossiblePatch(text)) {
+    impossible = true
+    patchError = 'patcher declared IMPOSSIBLE (terminal — not retried)'
+    attempts.push({ attempt, outcome: 'impossible' })
+    break
+  }
+  const parsed = parseStructuralPatch(text, originalLines.length, maxTouched)
+  if (!parsed) {
+    patchError = 'unparseable or over-budget patch: ' + String(text).slice(0, 200)
+    attempts.push({ attempt, outcome: 'unparseable', detail: String(text).slice(0, 300) })
+    rejected = ['Your output could not be parsed, or exceeded the ' + maxTouched + '-operation budget. Output ONLY operation lines.']
+    continue
+  }
+
+  // Check 1 — no newly introduced above-level vocabulary in written lines.
+  const violations = patchAboveLevelViolations(original.content, parsed, { level: manifest.level, vocabMap, allow: targetWords })
+  if (violations.length) {
+    const detail = violations.map(v => v.op.toUpperCase() + ' ' + v.line + ' introduced ' + v.words.map(w => w.word + ' (HSK ' + w.level + ')').join('、'))
+    console.log('[patch-test] attempt ' + attempt + ' REJECTED — new above-level words: ' + detail.join('; '))
+    attempts.push({ attempt, outcome: 'rejected_above_level', ops: parsed, violations })
+    rejected = detail.map(d => d + ' — above ' + ('HSK ' + manifest.level) + ' and not a target word')
+    patchError = 'patch introduced above-level vocabulary'
+    continue
+  }
+
+  // Check 2 — apply, run the COMPLETE validator, reject on any boundary
+  // crossed in the wrong direction.
+  const candidatePatched = { title: original.title, content: applyStructuralPatch(original.content, parsed) }
+  const edit = validateEdit(original, candidatePatched, { allowNewSpeakers: false })
+  const v = validateCandidate(candidatePatched, { manifest, vocabMap, corpus: stories })
+  const regressions = patchRegressions(before, v)
+  if (regressions.length || !edit.ok) {
+    const detail = [
+      ...regressions.map(code => 'newly failing gate: ' + code
+        + (code === 'out_of_level_share' ? ' (' + (v.metrics.outOfLevelCharShare * 100).toFixed(1) + '% > ' + (shareCeiling * 100).toFixed(1) + '%, was ' + (before.metrics.outOfLevelCharShare * 100).toFixed(1) + '%)' : '')),
+      ...edit.failures.map(f => 'preservation: ' + f.code),
+    ]
+    console.log('[patch-test] attempt ' + attempt + ' REJECTED — ' + detail.join('; '))
+    attempts.push({ attempt, outcome: 'rejected_regression', ops: parsed, regressions, editFailures: edit.failures, metrics: { outOfLevelCharShare: v.metrics.outOfLevelCharShare, lines: v.metrics.lines } })
+    rejected = detail
+    patchError = 'patch regressed a previously satisfied gate: ' + detail.join('; ')
+    continue
+  }
+
+  ops = parsed
+  adopted = { patched: candidatePatched, edit, validation: v }
+  attempts.push({ attempt, outcome: 'adopted', ops: parsed })
 }
 
 let after = null
 let patched = null
 let editCheck = null
 let touched = []
-if (ops) {
-  patched = { title: original.title, content: applyStructuralPatch(original.content, ops) }
-  editCheck = validateEdit(original, patched, { allowNewSpeakers: false })
-  const v = validateCandidate(patched, { manifest, vocabMap, corpus: stories })
+if (adopted) {
+  patched = adopted.patched
+  editCheck = adopted.edit
+  const v = adopted.validation
   after = {
     ...v,
     // Preservation-gate failures demote any verdict to FAIL; otherwise the
@@ -187,6 +249,9 @@ const file = {
     lineHints,
     ops: ops || null,
     touched,
+    attempts,
+    lineOutCounts,
+    shareLimit,
     impossible,
     patchError: ops ? null : patchError,
     before: serializableValidation(before),
@@ -205,7 +270,7 @@ const file = {
     critique,
     attempts: 1,
     calls: patcher.usage.requests + (typeof criticUsage !== 'undefined' ? criticUsage.requests : 0),
-    generatorVersion: 'fab9-structural-patch@2',
+    generatorVersion: 'fab9-structural-patch@3',
     promptVersion: PROMPT_VERSION,
     usage: { patcher: patcher.usage, critic: typeof criticUsage !== 'undefined' ? criticUsage : null, wallMs: Date.now() - startedAt },
   },
@@ -220,8 +285,10 @@ if (ops) {
   console.log('\n=== OPS (' + ops.length + '/' + maxTouched + ') ===')
   for (const t of touched) console.log(t.op.toUpperCase() + ' ' + t.line + (t.before ? '\n  - ' + t.before : '') + (t.after ? '\n  + ' + t.after : ''))
   console.log('\n=== AFTER ===\n' + formatValidation(after))
+  console.log('\n=== FINAL STORY ===\nTITLE: ' + patched.title + '\n' + patched.content)
   if (after.verdict === 'REVIEW_REQUIRED') console.log('\nREVIEW_REQUIRED: no hard failures remain, but the out-of-level share sits in the experimental band — mandatory human review, never auto-publishable.')
   if (critique) console.log('\nCRITIQUE overall ' + critique.overall + '/10')
 } else {
   console.log('\nNo usable patch: ' + patchError)
+  console.log('attempts: ' + attempts.map(a => a.attempt + ':' + a.outcome).join(', '))
 }

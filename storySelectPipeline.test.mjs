@@ -6,7 +6,13 @@ import {
   draftBreakdown,
   SELECT_GENERATOR_VERSION,
 } from './storySelectPipeline.mjs'
-import { applyStructuralPatch, structurallyPatchable } from './storySelectPipeline.mjs'
+import {
+  applyStructuralPatch,
+  structurallyPatchable,
+  newAboveLevelWords,
+  patchAboveLevelViolations,
+  patchRegressions,
+} from './storySelectPipeline.mjs'
 import { parseStructuralPatch, structuralPatchPrompt, isImpossiblePatch } from './storyGenPrompts.mjs'
 import { buildManifest } from './storyManifestPlanner.mjs'
 
@@ -254,5 +260,87 @@ describe('bounded structural patch protocol', () => {
     expect(p).toContain('1: 一。')
     expect(p).toContain('REPLACE LINE <n>:')
     expect(p).toContain('IMPOSSIBLE')
+  })
+})
+
+// The patch-test-2 regression: gpt-oss satisfied every listed failure and
+// still left the story failing, by swapping unknown words for HARDER known
+// ones (一张 → 一幅, 留在 → 留下 — both HSK 4) and deleting easy lines. These
+// are the deterministic checks that now reject such a patch before adoption.
+describe('pre-adoption patch guards', () => {
+  it('newAboveLevelWords catches a harder replacement, ignores retained above-level words', () => {
+    // 旅行/森林/警察/签证 sit at level 4 in POOL; the story level is 3.
+    const opts = { level: 3, vocabMap }
+    // swapping an in-level word for an above-level one is an introduction
+    expect(newAboveLevelWords('他们去商店。', '他们去森林。', opts)).toEqual([{ word: '森林', level: 4, added: 1 }])
+    // keeping an above-level word that was already on the line is NOT
+    expect(newAboveLevelWords('他们去旅行。', '他们要去旅行。', opts)).toEqual([])
+    // a second occurrence of an already-present word still counts as added
+    expect(newAboveLevelWords('他们去旅行。', '他们去旅行，旅行很好。', opts)).toEqual([{ word: '旅行', level: 4, added: 1 }])
+    // in-level replacements are clean
+    expect(newAboveLevelWords('他们去森林。', '他们去商店。', opts)).toEqual([])
+    // manifest targets are exempt — an above-level target is the point
+    expect(newAboveLevelWords('他们去商店。', '他们去森林。', { ...opts, allow: ['森林'] })).toEqual([])
+  })
+
+  it('patchAboveLevelViolations judges REPLACE against its own line and INSERT against nothing', () => {
+    const content = '他们去商店。\n李明去旅行。\n大家都很高兴。'
+    const opts = { level: 3, vocabMap }
+    const v = patchAboveLevelViolations(content, [
+      { op: 'replace', line: 1, text: '他们去森林。' },          // introduces 森林
+      { op: 'replace', line: 2, text: '李明想去旅行。' },        // keeps 旅行 — fine
+      { op: 'delete', line: 3 },                                // deletes are never checked
+    ], opts)
+    expect(v.length).toBe(1)
+    expect(v[0].line).toBe(1)
+    expect(v[0].words.map(w => w.word)).toEqual(['森林'])
+
+    const ins = patchAboveLevelViolations(content, [{ op: 'insert', line: 2, text: '警察也来了。' }], opts)
+    expect(ins[0].words.map(w => w.word)).toEqual(['警察'])
+    expect(patchAboveLevelViolations(content, [{ op: 'insert', line: 2, text: '妈妈也来了。' }], opts)).toEqual([])
+  })
+
+  it('patchRegressions reports gates that were satisfied before and are not after', () => {
+    const before = { failures: [{ code: 'too_long' }], reviews: [{ code: 'out_of_level_share_review' }], warnings: [] }
+    // the length fix landed, but the share crossed its ceiling — a regression
+    const after = { failures: [{ code: 'out_of_level_share' }], reviews: [], warnings: [] }
+    expect(patchRegressions(before, after)).toEqual(['out_of_level_share'])
+    // fixing everything regresses nothing
+    expect(patchRegressions(before, { failures: [], reviews: [{ code: 'out_of_level_share_review' }] })).toEqual([])
+    // a failure that was already there is not a regression
+    expect(patchRegressions(before, { failures: [{ code: 'too_long' }], reviews: [] })).toEqual([])
+    // crossing INTO the review band counts
+    expect(patchRegressions({ failures: [], reviews: [] }, { failures: [], reviews: [{ code: 'out_of_level_share_review' }] }))
+      .toEqual(['out_of_level_share_review'])
+  })
+
+  it('the patch prompt carries both hard constraints and the per-line [N↑] counts', () => {
+    const p = structuralPatchPrompt({
+      manifest: manifest(),
+      candidate: { title: 'T', content: '他们去森林。\n大家都很高兴。' },
+      failures: [{ code: 'too_long', message: '40 lines (need 14-38)' }],
+      lineOutCounts: [2, 0],
+      shareLimit: { current: 0.104, ceiling: 0.105 },
+      maxTouched: 6,
+    })
+    expect(p).toContain('HARD CONSTRAINT 1')
+    expect(p).toContain('no new above-level words')
+    expect(p).toContain('一张 → 一幅')
+    expect(p).toContain('留在 → 留下')
+    expect(p).toContain('HARD CONSTRAINT 2')
+    expect(p).toContain('10.4%')
+    expect(p).toContain('10.5%')
+    expect(p).toContain('1 [2↑]: 他们去森林。')
+    expect(p).toContain('2 [0↑]: 大家都很高兴。')
+    expect(p).toContain('delete ones with a HIGH')
+    // a rejected previous attempt comes back as explicit feedback
+    const retry = structuralPatchPrompt({
+      manifest: manifest(),
+      candidate: { title: 'T', content: '他们去森林。' },
+      failures: [{ code: 'too_long', message: 'x' }],
+      rejected: ['REPLACE 3 introduced 幅 (HSK 4)'],
+    })
+    expect(retry).toContain('YOUR PREVIOUS PATCH WAS REJECTED')
+    expect(retry).toContain('REPLACE 3 introduced 幅 (HSK 4)')
   })
 })
