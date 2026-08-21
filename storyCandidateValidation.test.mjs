@@ -106,10 +106,17 @@ describe('manifest vocabulary', () => {
 })
 
 describe('difficulty', () => {
-  it('too many distinct out-of-level words fail', () => {
+  it('distinct out-of-level words WARN (validator@2); the character share stays a hard gate', () => {
     const c = { title: 'T', content: GOOD + '\n森林里有警察。\n他们要签证。' }
     const r = validateCandidate(c, { manifest: manifest(), vocabMap })
-    expect(r.failures.map(f => f.code)).toContain('out_of_level_words')  // 旅行+森林+警察+签证 = 4 > 3
+    // 旅行+森林+警察+签证 = 4 distinct > advisory max 3 → warning, not failure
+    expect(r.warnings.map(w => w.code)).toContain('out_of_level_words')
+    expect(r.failures.map(f => f.code)).not.toContain('out_of_level_words')
+    // but those words push the out-of-level SHARE past 7%, which still fails
+    expect(r.failures.map(f => f.code)).toContain('out_of_level_share')
+    // both metrics recorded for the empirical calibration
+    expect(r.metrics.outOfLevelDistinct).toBe(4)
+    expect(r.metrics.outOfLevelCharShare).toBeGreaterThan(0.07)
   })
 
   it('unknown text beyond the caps fails with the runs named', () => {

@@ -82,6 +82,22 @@ for (const dir of dirs) {
       if (j.strengths) console.log('     strengths: ' + j.strengths)
       if (j.weaknesses) console.log('     weakness : ' + j.weaknesses)
     }
+    for (const st of c.stages || []) {
+      const v = st.validation || {}
+      console.log('  STAGE ' + st.stage + ' (' + st.role + ') → ' + v.verdict
+        + (v.failures && v.failures.length ? '  [' + v.failures.map(x => x.code).join(', ') + ']' : ''))
+      if (!brief && st.content) {
+        console.log('    TITLE: ' + st.title)
+        st.content.split('\n').forEach(l => console.log('    ' + l))
+      }
+    }
+    if (c.critique && c.critique.judgeVersion) {
+      console.log('  CRITIQUE (writer) → overall ' + c.critique.overall + '/10'
+        + (c.critique.mechanical === true ? ' [reads mechanical]' : c.critique.mechanical === false ? ' [reads human]' : ''))
+      console.log('     scores   : ' + Object.entries(c.critique.scores || {}).map(([k, v2]) => k + ' ' + v2).join(', '))
+      if (c.critique.strengths) console.log('     strengths: ' + c.critique.strengths)
+      if (c.critique.weaknesses) console.log('     weakness : ' + c.critique.weaknesses)
+    }
     if (!brief && c.status === 'accepted' && c.content) {
       console.log('\n  --- Chinese ---')
       c.content.split('\n').forEach(l => console.log('  ' + l))

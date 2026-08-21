@@ -32,6 +32,11 @@
 //   --model      exact model id for the explicit providers
 //   --reasoning-effort  optional Groq reasoning_effort (e.g. none/low) — Qwen3
 //                spends its whole budget thinking without it
+//   --provider duo --writer <p:m> --editor <p:m>  the two-model flow: writer
+//                drafts naturally, deterministic validation, editor performs a
+//                constrained simplification of failures, revalidate, one
+//                repair, writer critiques after PASS. --writer-effort /
+//                --editor-effort set reasoning_effort per model.
 //   --responses  fake provider script: { "<manifestId>"|"*": { draft: [..],
 //                repair: [..], critique: [..], revise: [..], translate: [..] } }
 //   --dry-run    compose and write manifests + plan only; zero provider calls
@@ -46,6 +51,7 @@ import { publishedChineseStories, buildCoverageReport } from './storyCoverage.mj
 import { buildCoveragePlan, selectTargets, recordAcceptedCandidate, planSummary } from './storyCoveragePlanner.mjs'
 import { composeManifests, manifestDefaults } from './storyManifestPlanner.mjs'
 import { generateCandidate, serializableCandidate, GENERATOR_VERSION } from './storyGenPipeline.mjs'
+import { generateDuoCandidate, serializableDuoCandidate } from './storyDuoPipeline.mjs'
 import { PROMPT_VERSION } from './storyGenPrompts.mjs'
 import { CANDIDATE_FILE_SCHEMA } from './storyStaging.mjs'
 import { directProvider, DIRECT_PROVIDERS, newUsage, usageDelta } from './llmDirect.mjs'
@@ -66,6 +72,10 @@ const meaningsPath = arg('meanings', null)
 const providerName = arg('provider', 'fake')
 const modelId = arg('model', null)
 const reasoningEffort = arg('reasoning-effort', null)
+const writerSpec = arg('writer', null)          // duo: provider:model for the storyteller
+const writerEffort = arg('writer-effort', null)
+const editorSpec = arg('editor', null)          // duo: provider:model for the constraint editor
+const editorEffort = arg('editor-effort', null)
 const responsesPath = arg('responses', null)
 const dryRun = has('dry-run')
 
@@ -167,6 +177,34 @@ if (providerName === 'fake') {
 } else if (providerName === 'premium') {
   const p = await premiumProvider()
   providerInfo = { name: p.name, model: p.model, send: p.send, usage: p.usage }
+} else if (providerName === 'duo') {
+  if (!writerSpec || !editorSpec) { console.error('--provider duo needs --writer <p:m> and --editor <p:m>'); process.exit(1) }
+  const mk = (spec, effort) => {
+    const i = spec.indexOf(':')
+    return directProvider(spec.slice(0, i), spec.slice(i + 1), process.env, { reasoningEffort: effort })
+  }
+  const writer = mk(writerSpec, writerEffort)
+  const editor = mk(editorSpec, editorEffort)
+  console.log('[generate-targeted] duo: writer=' + writer.name + '/' + writer.model
+    + (writerEffort ? ' (effort ' + writerEffort + ')' : '')
+    + ' editor=' + editor.name + '/' + editor.model
+    + (editorEffort ? ' (effort ' + editorEffort + ')' : ''))
+  const sum = (k) => (writer.usage[k] || 0) + (editor.usage[k] || 0)
+  providerInfo = {
+    name: 'duo',
+    model: writer.model + ' + ' + editor.model,
+    writer, editor,
+    // Live combined view: the runner snapshots this before/after each
+    // manifest to attribute usage per candidate.
+    get usage() {
+      return {
+        requests: sum('requests'), failures: sum('failures'),
+        promptTokens: sum('promptTokens'), completionTokens: sum('completionTokens'),
+        latencyMsTotal: sum('latencyMsTotal'), rateLimit429s: sum('rateLimit429s'),
+        throttleWaitMs: sum('throttleWaitMs'), retryAfterWaitMs: sum('retryAfterWaitMs'),
+      }
+    },
+  }
 } else if (DIRECT_PROVIDERS[providerName]) {
   if (!modelId) { console.error('--provider ' + providerName + ' needs --model <id>'); process.exit(1) }
   const p = directProvider(providerName, modelId, process.env, { reasoningEffort })
@@ -193,7 +231,12 @@ for (const manifest of manifests) {
   const startedAt = Date.now()
   let result
   try {
-    result = await generateCandidate({ manifest, pool, vocabMap, corpus, meanings, provider })
+    result = providerInfo.name === 'duo'
+      ? await generateDuoCandidate({
+          manifest, pool, vocabMap, corpus, meanings,
+          writer: providerInfo.writer.send, editor: providerInfo.editor.send,
+        })
+      : await generateCandidate({ manifest, pool, vocabMap, corpus, meanings, provider })
   } catch (err) {
     result = {
       manifestId: manifest.id, status: 'rejected', title: null, content: null, englishContent: null,
@@ -222,7 +265,7 @@ for (const manifest of manifests) {
     generatedAt: new Date().toISOString(),
     provider: { name: providerInfo.name, model: providerInfo.model },
     manifest,
-    candidate: serializableCandidate(result),
+    candidate: providerInfo.name === 'duo' ? serializableDuoCandidate(result) : serializableCandidate(result),
     staged: null,
   }
   write(manifest.id + '.json', fileData)

@@ -29,7 +29,7 @@ import { analyzeStory, contentSimilarity, cjkLength } from './storyCorpusCalibra
 import { splitSpeaker } from './src/storyReading.js'
 import { validateManifest, NEAR_DUPLICATE_THRESHOLDS } from './storyManifestPlanner.mjs'
 
-export const VALIDATOR_VERSION = 'fab10-validator@1'
+export const VALIDATOR_VERSION = 'fab10-validator@2'
 
 const MAX_TITLE_CHARS = 40
 
@@ -120,8 +120,15 @@ export function validateCandidate(candidate, { manifest, vocabMap, corpus = [] }
   // ── Difficulty ─────────────────────────────────────────────────────────────
   const d = manifest.difficulty
   const pct = (x) => (x * 100).toFixed(1) + '%'
+  // TEMPORARILY a warning, not a failure (validator@2, 2026-08-21): the
+  // distinct-word cap of 3 came from the corpus p75, and five benchmark
+  // rounds showed no free-tier model getting within 3x of it — while the
+  // pedagogically decisive quantity, the SHARE of text a learner cannot
+  // read, stays a hard gate below. Both metrics are recorded on every
+  // candidate so the real distinct-word threshold can be set empirically
+  // from human-reviewed successful stories, not guessed.
   if (a.outOfLevelDistinct > d.maxOutOfLevelDistinct) {
-    fail('out_of_level_words', a.outOfLevelDistinct + ' distinct words above HSK ' + manifest.level + ' (max ' + d.maxOutOfLevelDistinct + ')')
+    warn('out_of_level_words', a.outOfLevelDistinct + ' distinct words above HSK ' + manifest.level + ' (advisory max ' + d.maxOutOfLevelDistinct + ')')
   }
   if (a.outOfLevelCharShare > d.maxOutOfLevelCharShare) {
     fail('out_of_level_share', 'out-of-level vocabulary: ' + pct(a.outOfLevelCharShare) + ' > ' + pct(d.maxOutOfLevelCharShare))

@@ -20,9 +20,9 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "smoke = probe models; bench = 2-model story benchmark"
+        description: "smoke = probe models; bench = 2-model story benchmark; duo = writer+editor pipeline pilot"
         type: choice
-        options: [smoke, bench]
+        options: [smoke, bench, duo]
         default: smoke
       max_tests:
         description: "smoke only: how many models to probe (capped at 16)"
@@ -183,6 +183,41 @@ jobs:
           else
             judge "$MODEL_A" a "$FLAG_A"
           fi
+
+      - name: Fresh corpus dump for duo (read-only)
+        if: inputs.mode == 'duo'
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node dump-story-corpus.mjs --out reports/story-corpus-dump.json
+
+      - name: Duo pilot (writer drafts, editor simplifies, validator decides)
+        if: inputs.mode == 'duo'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MODEL_A: ${{ inputs.model_a }}      # writer
+          MODEL_B: ${{ inputs.model_b }}      # editor
+          EFFORT_A: ${{ inputs.effort_a }}
+          EFFORT_B: ${{ inputs.effort_b }}
+          PREFIX: ${{ inputs.batch_prefix }}
+          LEVEL: ${{ inputs.level }}
+          COUNT: ${{ inputs.count }}
+        run: |
+          set -e
+          case "$PREFIX" in (*[!A-Za-z0-9_-]*|"") echo "bad batch_prefix"; exit 1;; esac
+          case "$LEVEL" in (*[!0-9]*|"") echo "bad level"; exit 1;; esac
+          case "$COUNT" in (*[!0-9]*|"") COUNT=2;; esac
+          [ "$COUNT" -gt 4 ] && COUNT=4
+          for spec in "$MODEL_A" "$MODEL_B"; do
+            case "$spec" in (""|*[!A-Za-z0-9._/:-]*) echo "bad or missing model spec: $spec"; exit 1;; esac
+          done
+          W_EFFORT=""; [ -n "$EFFORT_A" ] && W_EFFORT="--writer-effort $EFFORT_A"
+          E_EFFORT=""; [ -n "$EFFORT_B" ] && E_EFFORT="--editor-effort $EFFORT_B"
+          node generate-targeted-stories.mjs \
+            --input reports/story-corpus-dump.json \
+            --level "$LEVEL" --count "$COUNT" --batch "$PREFIX" \
+            --provider duo --writer "$MODEL_A" --editor "$MODEL_B" $W_EFFORT $E_EFFORT
 
       - name: Show reports
         if: always()

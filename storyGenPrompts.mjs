@@ -13,7 +13,7 @@
 
 import { BIBLE_CHINESE, levelConfig } from './storyLevels.mjs'
 
-export const PROMPT_VERSION = 'fab9-prompts@1'
+export const PROMPT_VERSION = 'fab9-prompts@2'
 
 const CHAPTER_FORMAT =
   'Output format — plain text, NOT JSON, no markdown, no quotes around lines:\n' +
@@ -108,6 +108,29 @@ export function draftPrompt({ manifest, pool, meanings = {} }) {
     (manifest.forbidden && manifest.forbidden.words.length ? '- NEVER use these words: ' + manifest.forbidden.words.join('、') + '\n' : '') +
     (manifest.forbidden && manifest.forbidden.topics && manifest.forbidden.topics.length ? '- Avoid these topics entirely: ' + manifest.forbidden.topics.join('; ') + '\n' : '') +
     '- Write something a reader would actually enjoy: a real narrative arc, concrete sensory detail, a little humor, genuine character voice\n\n' +
+    CHAPTER_FORMAT
+}
+
+// Constrained simplification — the EDITOR's prompt in the two-model flow
+// (write → simplify). The writer model produces the story; this hands it to a
+// more obedient model whose only job is to bring it inside the deterministic
+// constraints WITHOUT re-imagining it. Explicitly not a rewrite: plot, cast,
+// scene order and the target vocabulary stay; advanced words get replaced
+// with in-level equivalents, long stretches get cut, sentences get simpler.
+export function simplifyPrompt({ manifest, candidate, failures, pool, meanings = {} }) {
+  const name = levelName(manifest)
+  return 'You are the EDITOR of a ' + name + ' Chinese graded reader. Another writer produced the story below. ' +
+    'It is a good story that fails mechanical validation. Your job is to EDIT it into compliance — you are not the author.\n\n' +
+    'DO NOT invent a new story, change the plot, add scenes, or alter what happens. Preserve the events, the cast, the tone and the story\'s voice as far as the constraints allow.\n\n' +
+    'Validation failures to fix (fix ONLY these):\n' + failures.map(f => '- ' + f.message).join('\n') + '\n\n' +
+    'How to edit:\n' +
+    '- Replace every word above ' + name + ' with a simpler in-level equivalent, or rephrase the sentence so it is not needed. Plainer and passing beats vivid and rejected.\n' +
+    '- If the story is too long, CUT — merge thin lines, drop asides — do not compress by writing denser sentences. Target ' + manifest.length.minLines + '-' + manifest.length.maxLines + ' lines.\n' +
+    '- Keep every TARGET WORD, within its range (add an occurrence naturally if one is below range):\n' + targetList(manifest, meanings) + '\n' +
+    '- Dialogue lines are exactly NAME：text with NOTHING after the name (write "李明：…", never "李明惊讶地问：…"). Speakers only from: ' + manifest.speakers.join(', ') + '. Turn any other speaker\'s line into narration.\n' +
+    '- Keep sentences short and structures simple — ' + name + ' grammar only.\n\n' +
+    'ALLOWED VOCABULARY (a sample of what the learner knows — replacements must come from words at this level or below):\n' +
+    poolForPrompt(pool) + '\n\n' +
     CHAPTER_FORMAT
 }
 
