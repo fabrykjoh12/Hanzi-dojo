@@ -1,0 +1,238 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "bench-5-a",
+  "generatedAt": "2026-08-21T14:48:05.080Z",
+  "provider": {
+    "name": "groq",
+    "model": "openai/gpt-oss-120b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bench-5-a-L3-002",
+    "batchId": "bench-5-a",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发生",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "其他",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "或",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "得到",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "了解",
+        "min": 2,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "preparing for something over several days (a trip, a festival, a small competition) with setbacks",
+    "series": null,
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "bench-5-a-L3-002",
+    "status": "rejected",
+    "title": "运动会的准备",
+    "content": "今天是运动会的前一天，大家都在准备。\n李明：我想要跑得快，怎么练？\n小红：先了解跑步的动作，慢慢跑。\n小明：我们可以先跑两圈，看看时间。\n妈妈：你们必须在今天晚上把鞋子准备好。\n大毛在操场的角落里睡觉，大家都没注意。\n李明：我饿了，能吃点水果吗？\n小红：水果已经在厨房，快去拿。\n小明：我不想跑步，想玩游戏，或者去画画。\n妈妈：运动会很重要，其他同学也需要帮助。\n李明：我昨天在跑步时摔了一下，脚有点疼。\n小红：我发现你摔倒的地方有石头，应该搬走。\n老师说，比赛如果发生意外，必须马上报告。\n李明：我怕摔倒会影响成绩。\n小红：只要你多练，关系就会变好。\n小明：我们一起练习，得到更好的成绩。\n妈妈检查了所有装备，确保没有忘记。\n大毛突然跑到跑道上，大家笑了。\n老师说，运动会结束后，大家可以一起吃饭。\n李明：我很开心，准备好参加比赛了。\n小红：我们一起加油，明天一定会赢。",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@1",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "target_below_min",
+          "message": "发生 appears 1× (need 2-4)"
+        },
+        {
+          "code": "missing_target",
+          "message": "missing target: 而且"
+        },
+        {
+          "code": "target_below_min",
+          "message": "其他 appears 1× (need 2-4)"
+        },
+        {
+          "code": "missing_target",
+          "message": "missing target: 或"
+        },
+        {
+          "code": "target_below_min",
+          "message": "得到 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "关系 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "了解 appears 1× (need 2-4)"
+        },
+        {
+          "code": "out_of_level_words",
+          "message": "16 distinct words above HSK 3 (max 3)"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 11.3% > 7.0%"
+        }
+      ],
+      "warnings": [],
+      "metrics": {
+        "lines": 21,
+        "cjkChars": 274,
+        "distinctVocab": 121,
+        "targetCounts": {
+          "发生": 1,
+          "而且": 0,
+          "必须": 2,
+          "其他": 1,
+          "或": 0,
+          "得到": 1,
+          "关系": 1,
+          "了解": 1
+        },
+        "inLevelCoverage": 0.876,
+        "outOfLevelDistinct": 16,
+        "outOfLevelCharShare": 0.113,
+        "unknownDistinct": 2,
+        "unknownCharShare": 0.011,
+        "unknownRuns": [
+          "都没",
+          "怕"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.025,
+        "nearestNeighbor": {
+          "title": "6. 我们的歌",
+          "level": 1,
+          "jaccard": 0.013,
+          "containment": 0.029
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 1,
+    "calls": 10,
+    "providerErrors": [
+      {
+        "kind": "draft",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4118, Requested 5658. Please try again in 13.32s. Need more tokens? Upgrade to Dev Tier today a"
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6468, Requested 3846. Please try again in 17.355s. Need more tokens? Upgrade to Dev Tier today "
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 5392, Requested 5721. Please try again in 23.3475s. Need more tokens? Upgrade to Dev Tier today"
+      },
+      {
+        "kind": "repair",
+        "attempt": 3,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 3248, Requested 5721. Please try again in 7.2675s. Need more tokens? Upgrade to Dev Tier today "
+      },
+      {
+        "kind": "draft",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 3239, Requested 5658. Please try again in 6.7275s. Need more tokens? Upgrade to Dev Tier today "
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7989, Requested 3997. Please try again in 29.895s. Need more tokens? Upgrade to Dev Tier today "
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6901, Requested 3997. Please try again in 21.735s. Need more tokens? Upgrade to Dev Tier today "
+      },
+      {
+        "kind": "repair",
+        "attempt": 3,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4757, Requested 5872. Please try again in 19.7175s. Need more tokens? Upgrade to Dev Tier today"
+      }
+    ],
+    "generatorVersion": "fab9-pipeline@1",
+    "promptVersion": "fab9-prompts@1",
+    "usage": {
+      "requests": 10,
+      "failures": 8,
+      "promptTokens": 6316,
+      "completionTokens": 1013,
+      "latencyMsTotal": 3492,
+      "wallMs": 67619
+    }
+  },
+  "staged": null
+}

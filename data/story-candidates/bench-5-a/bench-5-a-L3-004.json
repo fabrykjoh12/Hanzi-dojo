@@ -1,0 +1,233 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "bench-5-a",
+  "generatedAt": "2026-08-21T14:51:24.118Z",
+  "provider": {
+    "name": "groq",
+    "model": "openai/gpt-oss-120b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bench-5-a-L3-004",
+    "batchId": "bench-5-a",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "要求",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "信",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "当然",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "接",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "刚",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "只要",
+        "min": 2,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "a new friend or visitor arrives and daily life is a little different for a while",
+    "series": null,
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "bench-5-a-L3-004",
+    "status": "rejected",
+    "title": "新来的朋友",
+    "content": "今天，妈妈说我们家要来一个新朋友。\n李明：谁来？我想吃东西。\n小红：我看到门口有一个男人，手里拿着信。\n小明：他是老师吗？\n妈妈：他是我们隔壁的大叔，刚搬来。\n大毛在门口跑来跑去，大家都笑了。\n男人把信递给妈妈，妈妈说要接下来。\n妈妈：信上说他想和我们一起吃饭。\n李明：当然可以！我饿了。\n小红：只要我们准备好饭菜。\n妈妈开始做饭，李明帮忙洗菜。\n小明：我可以帮把碗拿到客厅。\n男人坐下来，大家开始吃饭。\n吃饭时，男人说他有一些要求。\n男人：只要大家不太吵，我就很开心。\n大家都点头，饭菜味道很好。\n饭后，男人要发一张照片给朋友。\n妈妈帮他用手机接收信号。\n李明：我也想发一封信给我的表哥。\n小红：只要写好内容，就可以发。\n晚上，男人说再见，大家说下次再来。\n李明：今天真开心，明天还能再玩吗？\n小红笑着说：只要我们有时间，当然可以。",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@1",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "unknown_speaker",
+          "message": "speakers outside the cast: 男人、小红笑着说 (allowed: 李明、小红、小明、妈妈)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "要求 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_above_max",
+          "message": "男人 appears 6× (max 4) — reads as spam"
+        },
+        {
+          "code": "target_below_min",
+          "message": "接 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "刚 appears 1× (need 2-4)"
+        },
+        {
+          "code": "out_of_level_words",
+          "message": "9 distinct words above HSK 3 (max 3)"
+        },
+        {
+          "code": "unknown_words",
+          "message": "5 unknown (non-vocabulary) runs (max 2): 大叔、碗、一张、一封信、表哥"
+        }
+      ],
+      "warnings": [],
+      "metrics": {
+        "lines": 23,
+        "cjkChars": 258,
+        "distinctVocab": 97,
+        "targetCounts": {
+          "发": 3,
+          "要求": 1,
+          "男人": 6,
+          "信": 3,
+          "当然": 2,
+          "接": 1,
+          "刚": 1,
+          "只要": 4
+        },
+        "inLevelCoverage": 0.899,
+        "outOfLevelDistinct": 9,
+        "outOfLevelCharShare": 0.062,
+        "unknownDistinct": 5,
+        "unknownCharShare": 0.039,
+        "unknownRuns": [
+          "大叔",
+          "碗",
+          "一张",
+          "一封信",
+          "表哥"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.031,
+        "nearestNeighbor": {
+          "title": "1. 新的地方",
+          "level": 1,
+          "jaccard": 0.019,
+          "containment": 0.044
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 2,
+    "calls": 9,
+    "providerErrors": [
+      {
+        "kind": "draft",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7951, Requested 3768. Please try again in 27.8925s. Need more tokens? Upgrade to Dev Tier today"
+      },
+      {
+        "kind": "draft",
+        "attempt": 2,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6869, Requested 5655. Please try again in 33.93s. Need more tokens? Upgrade to Dev Tier today a"
+      },
+      {
+        "kind": "draft",
+        "attempt": 3,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4716, Requested 5655. Please try again in 17.7825s. Need more tokens? Upgrade to Dev Tier today"
+      },
+      {
+        "kind": "draft",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4701, Requested 5655. Please try again in 17.67s. Need more tokens? Upgrade to Dev Tier today a"
+      },
+      {
+        "kind": "draft",
+        "attempt": 2,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 3619, Requested 5655. Please try again in 9.555s. Need more tokens? Upgrade to Dev Tier today a"
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7473, Requested 5717. Please try again in 38.925s. Need more tokens? Upgrade to Dev Tier today "
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6388, Requested 5717. Please try again in 30.7875s. Need more tokens? Upgrade to Dev Tier today"
+      },
+      {
+        "kind": "repair",
+        "attempt": 3,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4236, Requested 5717. Please try again in 14.6475s. Need more tokens? Upgrade to Dev Tier today"
+      }
+    ],
+    "generatorVersion": "fab9-pipeline@1",
+    "promptVersion": "fab9-prompts@1",
+    "usage": {
+      "requests": 9,
+      "failures": 8,
+      "promptTokens": 3155,
+      "completionTokens": 629,
+      "latencyMsTotal": 3296,
+      "wallMs": 75388
+    }
+  },
+  "staged": null
+}

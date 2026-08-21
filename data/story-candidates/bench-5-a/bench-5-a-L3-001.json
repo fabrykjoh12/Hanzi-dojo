@@ -1,0 +1,218 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "bench-5-a",
+  "generatedAt": "2026-08-21T14:46:57.460Z",
+  "provider": {
+    "name": "groq",
+    "model": "openai/gpt-oss-120b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bench-5-a-L3-001",
+    "batchId": "bench-5-a",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "被",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "中",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "该",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "像",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "认为",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "生活",
+        "min": 2,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "bench-5-a-L3-001",
+    "status": "rejected",
+    "title": "小猫的秘密",
+    "content": "李明：今天放学，我和小明走在路上，看到大毛在墙边睡。\n小明：大毛怎么不走？\n李明：它可能在等什么。\n小明：我们去学校看看吧。\n小红：我在窗户里看到一只白色的影子。\n李明：是谁把窗户弄坏的？\n小红：如果是风，应该没有声音。\n李明：我们需要把窗户弄好，也要找原因。\n小明：我在教室里发现本子不见了。\n李明：我的本子被偷了吗？\n小明：可能是大毛跑进去拿的。\n小红：大毛像小偷，但它不会偷东西。\n小红：我认为大毛只是在找食物。\n李明：我想到妈妈说的话，如果饿了就要先吃饭。\n妈妈：你该先吃饭，再去找本子。\n李明：好的，我先吃饭，然后再去学校。\n李明：在走廊里，我看到本子在老师的桌子下。\n小明：原来是被大毛推到这里的。\n小红：我们该学会像大毛一样，注意周围的细节。\n李明：我以后会更仔细，感谢大家的帮助。\n小明：生活中有时候会有小惊喜。\n小红：我们需要多注意，生活会更舒服。",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@1",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "target_below_min",
+          "message": "中 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "认为 appears 1× (need 2-4)"
+        },
+        {
+          "code": "out_of_level_words",
+          "message": "15 distinct words above HSK 3 (max 3)"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 13.9% > 7.0%"
+        }
+      ],
+      "warnings": [],
+      "metrics": {
+        "lines": 22,
+        "cjkChars": 245,
+        "distinctVocab": 101,
+        "targetCounts": {
+          "被": 2,
+          "中": 1,
+          "如果": 2,
+          "该": 2,
+          "需要": 2,
+          "像": 2,
+          "认为": 1,
+          "生活": 2
+        },
+        "inLevelCoverage": 0.853,
+        "outOfLevelDistinct": 15,
+        "outOfLevelCharShare": 0.139,
+        "unknownDistinct": 2,
+        "unknownCharShare": 0.008,
+        "unknownRuns": [
+          "墙",
+          "候"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.027,
+        "nearestNeighbor": {
+          "title": "1. 大毛不见了",
+          "level": 1,
+          "jaccard": 0.023,
+          "containment": 0.082
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 2,
+    "calls": 11,
+    "providerErrors": [
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6036, Requested 5814. Please try again in 28.875s. Need more tokens? Upgrade to Dev Tier today "
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4955, Requested 5814. Please try again in 20.7675s. Need more tokens? Upgrade to Dev Tier today"
+      },
+      {
+        "kind": "repair",
+        "attempt": 3,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 2819, Requested 5814. Please try again in 4.7475s. Need more tokens? Upgrade to Dev Tier today "
+      },
+      {
+        "kind": "draft",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 2810, Requested 5653. Please try again in 3.4725s. Need more tokens? Upgrade to Dev Tier today "
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4730, Requested 5817. Please try again in 19.1025s. Need more tokens? Upgrade to Dev Tier today"
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7352, Requested 5669. Please try again in 37.6575s. Need more tokens? Upgrade to Dev Tier today"
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6273, Requested 3794. Please try again in 15.5025s. Need more tokens? Upgrade to Dev Tier today"
+      },
+      {
+        "kind": "repair",
+        "attempt": 3,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4130, Requested 5669. Please try again in 13.4925s. Need more tokens? Upgrade to Dev Tier today"
+      }
+    ],
+    "generatorVersion": "fab9-pipeline@1",
+    "promptVersion": "fab9-prompts@1",
+    "usage": {
+      "requests": 11,
+      "failures": 8,
+      "promptTokens": 9623,
+      "completionTokens": 1836,
+      "latencyMsTotal": 5817,
+      "wallMs": 69988
+    }
+  },
+  "staged": null
+}

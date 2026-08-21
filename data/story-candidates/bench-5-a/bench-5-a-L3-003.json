@@ -1,0 +1,232 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "bench-5-a",
+  "generatedAt": "2026-08-21T14:50:08.730Z",
+  "provider": {
+    "name": "groq",
+    "model": "openai/gpt-oss-120b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bench-5-a-L3-003",
+    "batchId": "bench-5-a",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "参加",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "国家",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "安全",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "选择",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "或者",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "女人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "机会",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "受",
+        "min": 2,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "a bigger outing or adventure away from home with a genuine surprise in the middle",
+    "series": null,
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "bench-5-a-L3-003",
+    "status": "rejected",
+    "title": "神秘的城市探险",
+    "content": "李明：我们要去城市春游，老师说可以去国家的博物馆或者公园。\n小红：我们怎么去？\n李明：可以坐公交车或者打车。\n小明：老师说要注意安全。\n妈妈：记得带本子和笔，别忘了吃饭。\n老师：今天可以选择参加博物馆或者选择参加公园的活动。\n小红：我想去博物馆，那里有很多画。\n李明：我想去公园，那里可以跑。\n老师：如果大家都想去公园，就一起去。\n小明：我们先去公园，然后再去博物馆，怎么样？\n老师：可以，这也是学习国家历史的机会。\n在公园里，李明看到一个穿红色衣服的女人在喂鸟。\n李明：那个女人在做什么？\n小红：她在喂鸟，真好。\n小明：我受到了她的笑容，感觉很开心。\n老师：大家要保持排队，安全最重要。\n李明不小心摔倒，受了点小伤。\n小红：我帮你检查。\n妈妈：只要休息就好。\n老师：这也是学习照顾自己的机会。\n最后大家一起参加了游戏，大家都很开心。\n回到车上，李明说今天真的很有意思，下次还想再参加这样的活动。",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@1",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "unknown_speaker",
+          "message": "speakers outside the cast: 老师 (allowed: 李明、小红、小明、妈妈)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "受 appears 1× (need 2-4)"
+        },
+        {
+          "code": "out_of_level_words",
+          "message": "9 distinct words above HSK 3 (max 3)"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 9.7% > 7.0%"
+        }
+      ],
+      "warnings": [],
+      "metrics": {
+        "lines": 22,
+        "cjkChars": 279,
+        "distinctVocab": 107,
+        "targetCounts": {
+          "参加": 4,
+          "国家": 2,
+          "安全": 2,
+          "选择": 2,
+          "或者": 3,
+          "女人": 2,
+          "机会": 2,
+          "受": 1
+        },
+        "inLevelCoverage": 0.9,
+        "outOfLevelDistinct": 9,
+        "outOfLevelCharShare": 0.097,
+        "unknownDistinct": 1,
+        "unknownCharShare": 0.004,
+        "unknownRuns": [
+          "春"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.078,
+        "nearestNeighbor": {
+          "title": "3. 一起运动",
+          "level": 2,
+          "jaccard": 0.018,
+          "containment": 0.078
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 1,
+    "calls": 16,
+    "providerErrors": [
+      {
+        "kind": "draft",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4745, Requested 3709. Please try again in 3.405s. Need more tokens? Upgrade to Dev Tier today a"
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7241, Requested 3864. Please try again in 23.2875s. Need more tokens? Upgrade to Dev Tier today"
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6164, Requested 5808. Please try again in 29.79s. Need more tokens? Upgrade to Dev Tier today a"
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7883, Requested 3795. Please try again in 27.585s. Need more tokens? Upgrade to Dev Tier today "
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6811, Requested 5670. Please try again in 33.6075s. Need more tokens? Upgrade to Dev Tier today"
+      },
+      {
+        "kind": "repair",
+        "attempt": 3,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4661, Requested 3795. Please try again in 3.42s. Need more tokens? Upgrade to Dev Tier today at"
+      },
+      {
+        "kind": "draft",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4653, Requested 3778. Please try again in 3.2325s. Need more tokens? Upgrade to Dev Tier today "
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7160, Requested 5663. Please try again in 36.1725s. Need more tokens? Upgrade to Dev Tier today"
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6083, Requested 5663. Please try again in 28.095s. Need more tokens? Upgrade to Dev Tier today "
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7415, Requested 5626. Please try again in 37.8075s. Need more tokens? Upgrade to Dev Tier today"
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6339, Requested 3785. Please try again in 15.93s. Need more tokens? Upgrade to Dev Tier today a"
+      }
+    ],
+    "generatorVersion": "fab9-pipeline@1",
+    "promptVersion": "fab9-prompts@1",
+    "usage": {
+      "requests": 16,
+      "failures": 11,
+      "promptTokens": 15903,
+      "completionTokens": 4313,
+      "latencyMsTotal": 11384,
+      "wallMs": 123648
+    }
+  },
+  "staged": null
+}

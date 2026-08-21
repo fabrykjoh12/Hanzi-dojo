@@ -1,0 +1,159 @@
+{
+  "batchId": "bench-5-a",
+  "level": 3,
+  "generatedAt": "2026-08-21T14:51:24.971Z",
+  "provider": {
+    "name": "groq",
+    "model": "openai/gpt-oss-120b"
+  },
+  "versions": {
+    "generator": "fab9-pipeline@1",
+    "prompts": "fab9-prompts@1"
+  },
+  "manifests": 4,
+  "accepted": 0,
+  "rejected": 4,
+  "totalProviderCalls": 46,
+  "tokenUsage": {
+    "requests": 46,
+    "failures": 35,
+    "promptTokens": 34997,
+    "completionTokens": 7791,
+    "latencyMsTotal": 23989
+  },
+  "failureHistogram": {
+    "target_below_min": 11,
+    "out_of_level_words": 4,
+    "out_of_level_share": 3,
+    "missing_target": 2,
+    "unknown_speaker": 2,
+    "target_above_max": 1,
+    "unknown_words": 1
+  },
+  "plan": {
+    "before": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    },
+    "after": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    }
+  },
+  "coverage": {
+    "current": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    },
+    "projectedIfPublished": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    }
+  },
+  "candidates": [
+    {
+      "manifestId": "bench-5-a-L3-001",
+      "status": "rejected",
+      "title": "小猫的秘密",
+      "critiqueScore": null,
+      "failures": [
+        "target_below_min",
+        "target_below_min",
+        "out_of_level_words",
+        "out_of_level_share"
+      ],
+      "warnings": [],
+      "calls": 11,
+      "usage": {
+        "requests": 11,
+        "failures": 8,
+        "promptTokens": 9623,
+        "completionTokens": 1836,
+        "latencyMsTotal": 5817,
+        "wallMs": 69988
+      }
+    },
+    {
+      "manifestId": "bench-5-a-L3-002",
+      "status": "rejected",
+      "title": "运动会的准备",
+      "critiqueScore": null,
+      "failures": [
+        "target_below_min",
+        "missing_target",
+        "target_below_min",
+        "missing_target",
+        "target_below_min",
+        "target_below_min",
+        "target_below_min",
+        "out_of_level_words",
+        "out_of_level_share"
+      ],
+      "warnings": [],
+      "calls": 10,
+      "usage": {
+        "requests": 10,
+        "failures": 8,
+        "promptTokens": 6316,
+        "completionTokens": 1013,
+        "latencyMsTotal": 3492,
+        "wallMs": 67619
+      }
+    },
+    {
+      "manifestId": "bench-5-a-L3-003",
+      "status": "rejected",
+      "title": "神秘的城市探险",
+      "critiqueScore": null,
+      "failures": [
+        "unknown_speaker",
+        "target_below_min",
+        "out_of_level_words",
+        "out_of_level_share"
+      ],
+      "warnings": [],
+      "calls": 16,
+      "usage": {
+        "requests": 16,
+        "failures": 11,
+        "promptTokens": 15903,
+        "completionTokens": 4313,
+        "latencyMsTotal": 11384,
+        "wallMs": 123648
+      }
+    },
+    {
+      "manifestId": "bench-5-a-L3-004",
+      "status": "rejected",
+      "title": "新来的朋友",
+      "critiqueScore": null,
+      "failures": [
+        "unknown_speaker",
+        "target_below_min",
+        "target_above_max",
+        "target_below_min",
+        "target_below_min",
+        "out_of_level_words",
+        "unknown_words"
+      ],
+      "warnings": [],
+      "calls": 9,
+      "usage": {
+        "requests": 9,
+        "failures": 8,
+        "promptTokens": 3155,
+        "completionTokens": 629,
+        "latencyMsTotal": 3296,
+        "wallMs": 75388
+      }
+    }
+  ]
+}
