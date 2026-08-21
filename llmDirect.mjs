@@ -56,7 +56,12 @@ export function usageDelta(before, after) {
   }
 }
 
-export function directProvider(providerName, model, env = process.env) {
+// `reasoningEffort` maps to Groq's reasoning_effort parameter. Qwen3 burns its
+// entire token budget on a hidden scratchpad by default — 2000 tokens of
+// thinking to produce three lines — so a graded-reader job wants it dialled
+// down or off. Sent only when set, so models that do not accept the parameter
+// are unaffected; a model that rejects it returns a 400 the probe reports.
+export function directProvider(providerName, model, env = process.env, { reasoningEffort = null } = {}) {
   const cfg = DIRECT_PROVIDERS[providerName]
   if (!cfg) throw new Error('Unknown provider "' + providerName + '" (known: ' + Object.keys(DIRECT_PROVIDERS).join(', ') + ')')
   const key = env[cfg.keyName]
@@ -71,7 +76,12 @@ export function directProvider(providerName, model, env = process.env) {
       res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
-        body: JSON.stringify({ model, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] }),
+        body: JSON.stringify({
+          model,
+          max_tokens: maxTokens,
+          messages: [{ role: 'user', content: prompt }],
+          ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
+        }),
       })
     } catch (err) {
       usage.requests += 1

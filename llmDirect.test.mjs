@@ -88,3 +88,15 @@ describe('stripReasoning', () => {
     await expect(p.send({ prompt: 'x', maxTokens: 100 })).rejects.toThrow(/empty content/)
   })
 })
+
+describe('reasoning_effort', () => {
+  it('is sent only when set', async () => {
+    const fetchMock = mockFetch(async () => okResponse('ok'))
+    await directProvider('groq', 'qwen/qwen3.6-27b', ENV, { reasoningEffort: 'none' }).send({ prompt: 'x', maxTokens: 10 })
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).reasoning_effort).toBe('none')
+
+    const plain = mockFetch(async () => okResponse('ok'))
+    await directProvider('groq', 'm', ENV).send({ prompt: 'x', maxTokens: 10 })
+    expect(JSON.parse(plain.mock.calls[0][1].body)).not.toHaveProperty('reasoning_effort')
+  })
+})

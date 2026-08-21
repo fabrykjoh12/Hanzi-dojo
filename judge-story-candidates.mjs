@@ -26,13 +26,14 @@ const batchDir = arg('batch', null)
 const providerName = arg('provider', null)
 const modelId = arg('model', null)
 const retries = parseInt(arg('retries', '2'), 10)
+const reasoningEffort = arg('reasoning-effort', null)
 
 if (!batchDir || !providerName || !modelId) {
   console.error('Required: --batch <dir> --provider <groq|gemini> --model <id>')
   process.exit(1)
 }
 
-const provider = directProvider(providerName, modelId)
+const provider = directProvider(providerName, modelId, process.env, { reasoningEffort })
 console.log('[judge] ' + providerName + '/' + modelId + ' judging ' + batchDir)
 
 const files = []

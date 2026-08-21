@@ -33,6 +33,7 @@ const maxTests = parseInt(arg('max-tests', '12'), 10)
 // Reasoning models spend hidden tokens before answering; 400 was enough to
 // make gpt-oss-120b look broken when it was only mid-thought.
 const probeTokens = parseInt(arg('probe-tokens', '2000'), 10)
+const reasoningEffort = arg('reasoning-effort', null)
 const explicitModels = arg('models', null)
 const listOnly = has('list-only')
 
@@ -122,6 +123,7 @@ async function probe(providerName, cfg, key, model) {
     model,
     max_tokens: probeTokens,
     messages: [{ role: 'user', content: PROBE_PROMPT }],
+    ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
   }
   try {
     const res = await fetch(cfg.baseURL.replace(/\/$/, '') + '/chat/completions', {

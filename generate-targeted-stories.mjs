@@ -30,6 +30,8 @@
 //                with --model, which never fails over so a benchmark knows
 //                exactly which model wrote each story
 //   --model      exact model id for the explicit providers
+//   --reasoning-effort  optional Groq reasoning_effort (e.g. none/low) — Qwen3
+//                spends its whole budget thinking without it
 //   --responses  fake provider script: { "<manifestId>"|"*": { draft: [..],
 //                repair: [..], critique: [..], revise: [..], translate: [..] } }
 //   --dry-run    compose and write manifests + plan only; zero provider calls
@@ -63,6 +65,7 @@ const targetsPerStory = arg('targets', null) ? parseInt(arg('targets', null), 10
 const meaningsPath = arg('meanings', null)
 const providerName = arg('provider', 'fake')
 const modelId = arg('model', null)
+const reasoningEffort = arg('reasoning-effort', null)
 const responsesPath = arg('responses', null)
 const dryRun = has('dry-run')
 
@@ -166,8 +169,9 @@ if (providerName === 'fake') {
   providerInfo = { name: p.name, model: p.model, send: p.send, usage: p.usage }
 } else if (DIRECT_PROVIDERS[providerName]) {
   if (!modelId) { console.error('--provider ' + providerName + ' needs --model <id>'); process.exit(1) }
-  const p = directProvider(providerName, modelId)
-  console.log('[generate-targeted] provider=' + p.name + ' model=' + p.model + ' (explicit, no failover)')
+  const p = directProvider(providerName, modelId, process.env, { reasoningEffort })
+  console.log('[generate-targeted] provider=' + p.name + ' model=' + p.model + ' (explicit, no failover)'
+    + (reasoningEffort ? ' reasoning_effort=' + reasoningEffort : ''))
   providerInfo = { name: p.name, model: p.model, send: p.send, usage: p.usage }
 } else {
   console.error('Unknown --provider "' + providerName + '" (fake | premium | ' + Object.keys(DIRECT_PROVIDERS).join(' | ') + ')')
